@@ -19,6 +19,19 @@
 *>     (TL-CASE set): asserts the packet bytes equal the fixture bytes; on a difference the
 *>     observed text names the first differing offset and both bytes, or both lengths.
 *>   TEST-HEX-OF USING area, count (at most 512), hex out (PIC X(1024)): lowercase hex.
+*>   TEST-JOIN USING name (PIC X(16)), name length, connection id out: a memory connection that
+*>     logs in with that name (Intention and Hello as the client sends them), completes
+*>     configuration, accepts the join teleport, acknowledges the chunk batch and sends Player
+*>     Loaded; everything the core queued for it is drained and discarded.
+*>   TEST-JOIN-UNDRAINED USING name, name length, connection id out: the same without the drain.
+*>   TEST-ACCEPT-TELEPORT USING connection id: Accept Teleportation of the connection's last
+*>     teleport id (position and rotation of its player).
+*>   TEST-MOVE USING connection id, packet id (30 to 33), x, y, z (FLOAT-LONG), yaw, pitch
+*>     (FLOAT-SHORT), flags (BINARY-LONG): feeds that Move Player packet (only the fields the
+*>     packet id has are written).
+*>   TEST-DRAIN-IDS USING connection id, text out (PIC X(1024)): drains the connection and lists
+*>     the packet ids of the drained stream, a run of equal ids as <id>x<count>, separated by one
+*>     space ("" when nothing was queued).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -259,3 +272,181 @@
      CALL "PB-FREE" USING FX-BUFFER
      GOBACK.
  END PROGRAM TEST-SAME-AS-FIXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-ID.
+     CALL "TEST-JOIN-UNDRAINED" USING L-NAME L-NAME-LENGTH L-ID
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN-UNDRAINED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COREAPI.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-PATH                PIC X(256).
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-ID.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND L-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-NAME L-NAME-LENGTH WS-MAX
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-00-client-information.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "TEST-ACCEPT-TELEPORT" USING L-ID
+     MOVE "contract/fixtures/wire/play-c2s-0b-chunk-batch-received.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-JOIN-UNDRAINED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ACCEPT-TELEPORT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER CN-TELEPORT-ID(L-ID)
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER PL-X(WS-ROW)
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER PL-Y(WS-ROW)
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER PL-Z(WS-ROW)
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER PL-YAW(WS-ROW)
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER PL-PITCH(WS-ROW)
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-ACCEPT-TELEPORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-PACKET-ID            BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-PACKET-ID L-X L-Y L-Z L-YAW L-PITCH L-FLAGS.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-PACKET-ID
+     IF L-PACKET-ID = 30 OR L-PACKET-ID = 31
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     END-IF
+     IF L-PACKET-ID = 31 OR L-PACKET-ID = 32
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     END-IF
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FLAGS
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-MOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-IDS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-LAST-ID             BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME WS-RUN
+     MOVE -1 TO WS-LAST-ID
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME NOT = 0
+             MOVE -2 TO WS-PACKET-ID
+         END-IF
+         IF WS-PACKET-ID = WS-LAST-ID
+             ADD 1 TO WS-RUN
+         ELSE
+             IF WS-LAST-ID >= 0
+                 IF WS-PTR > 1
+                     STRING " " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 END-IF
+                 MOVE WS-LAST-ID TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 IF WS-RUN > 1
+                     MOVE WS-RUN TO WS-EDIT
+                     STRING "x" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         POINTER WS-PTR
+                 END-IF
+             END-IF
+             MOVE WS-PACKET-ID TO WS-LAST-ID
+             MOVE 1 TO WS-RUN
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-IDS.

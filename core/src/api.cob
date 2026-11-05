@@ -29,7 +29,7 @@
          MOVE CW-CONSOLE TO PB-BUFFER
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
-     INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS
+     INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
      MOVE "Y" TO CW-OPEN
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
@@ -115,14 +115,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-TICK.
-*> One 50 ms game tick (research R6): the tick counter, the time of day (0 to 29999, standin §4.8)
-*> and the connections' keep-alives.
+*> One 50 ms game tick (research R6): the tick counter, the time of day and its Set Time cadence
+*> (WORLD-TIME-TICK) and the connections' keep-alives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  PROCEDURE DIVISION.
      ADD 1 TO CW-TICKS
-     COMPUTE CW-TIME = FUNCTION MOD(CW-TIME + 1, 30000)
+     CALL "WORLD-TIME-TICK"
      CALL "SESSION-TICK"
      GOBACK.
  END PROGRAM CORE-TICK.

@@ -4,7 +4,8 @@
 *> Known Packs, then Finish Configuration. The clientbound play stream must be Login, Player
 *> Abilities, Set Held Slot, Container Set Content, Set Default Spawn Position, Set Time, Game Event
 *> 13, Set Chunk Cache Center, Chunk Batch Start, the 25 chunks of view distance 2, Chunk Batch
-*> Finished, Player Position at the spawn facing east, with the spawn chunk byte-equal to
+*> Finished, Player Position at the spawn facing east, then Player Info Update for itself (US3-core,
+*> 09 §3.2 "Join sequence"), with the spawn chunk byte-equal to
 *> play-s2c-2e-level-chunk-with-light-spawn.hex. Then Accept Teleportation, Chunk Batch Received and
 *> Player Loaded make the player Alive.
  IDENTIFICATION DIVISION.
@@ -82,7 +83,7 @@
  SEQUENCE-CASE.
      MOVE "test play join: after Finish Configuration the play stream is Login, abilities, held "
          & "slot, inventory, spawn position, time, Game Event 13, chunk cache center, batch of 25 "
-         & "chunks, Player Position" TO TL-CASE
+         & "chunks, Player Position, Player Info Update (itself, the only player)" TO TL-CASE
      PERFORM START-ROW
      PERFORM RESTART-STREAM
      MOVE 0 TO WS-OUTCOME WS-RUN
@@ -100,7 +101,7 @@
              MOVE 1 TO WS-RUN
          END-IF
      END-PERFORM
-     MOVE "50 65 107 18 99 115 39 96 12 46x25 11 73" TO TL-EXPECTED
+     MOVE "50 65 107 18 99 115 39 96 12 46x25 11 73 71" TO TL-EXPECTED
      PERFORM ASSERT-ROW.
 
  WRITE-RUN.

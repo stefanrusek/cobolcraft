@@ -615,23 +615,23 @@ chunk byte-equal to `play-s2c-2e-level-chunk-with-light-spawn.hex`.
 **Goal**: server-validated movement, streaming by view distance, other players' entities and the time of day.
 **Independent Test**: `make gate-core` with `core/tests/acc_us3_streaming.cob` passing.
 
-- [ ] T412 [P] [US3-core] Write `contract_wire_server.cob` cases: Move Player Pos/PosRot/Rot/Status Only and serverbound Player Abilities decode; Add Entity (operator), Player Info Update, Player Info Remove, Move Entity Pos/PosRot/Rot, Rotate Head, Teleport Entity, Remove Entities and Forget Level Chunk equal their fixtures
-- [ ] T413 [P] [US3-core] Write implementation test `core/tests/test_movement.cob`: a move into open space is accepted; a move whose player box (0.7 × 1.75, standin-content §3) would intersect a solid block is answered with Player Position at the last valid position (US3-2)
-- [ ] T414 [P] [US3-core] Write implementation test `core/tests/test_on_ground.cob`: on-ground and the fall start height are tracked from moves (data-model §6)
-- [ ] T415 [P] [US3-core] Write implementation test `core/tests/test_flying.cob`: serverbound flying is accepted only in creative (US3-3)
-- [ ] T416 [US3-core] Implement movement validation against block collision in `core/src/movement.cob`
-- [ ] T417 [US3-core] Implement on-ground and fall-start tracking in `core/src/movement.cob`
-- [ ] T418 [US3-core] Implement the creative-only flying flag in `core/src/movement.cob`
-- [ ] T419 [P] [US3-core] Write acceptance test `core/tests/acc_us3_streaming.cob`: case "acceptance US3-4 given a player walking across chunk borders when they move then Set Chunk Cache Center and every newly in-range chunk are sent and chunks beyond the view distance are forgotten"
-- [ ] T420 [US3-core] Implement view-distance streaming on movement (centre update, new chunks in batches, Forget Level Chunk) in `core/src/chunks-stream.cob`
-- [ ] T421 [P] [US3-core] Write implementation test `core/tests/test_entities.cob`: network entity ids are unique per run; a player sees an entity iff same dimension and within view distance; entering, moving (small deltas as Move Entity, large as Teleport Entity, head rotation as Rotate Head) and leaving visibility produce the right packets (US3-5)
-- [ ] T422 [US3-core] Implement entity id allocation and per-player entity visibility tracking in `core/src/entities.cob`
-- [ ] T423 [P] [US3-core] Write implementation test `core/tests/test_other_players.cob`: when B joins near A, A receives Player Info Update and Add Entity `cobolcraft:operator` at B's position and facing; B's moves reach A; B's disconnect or moving out of view sends Remove Entities and (on disconnect) Player Info Remove
-- [ ] T424 [US3-core] Implement other-player presence (Player Info Update/Remove, operator entities) using the entity tracker in `core/src/play.cob`
-- [ ] T425 [P] [US3-core] Write implementation test `core/tests/test_time.cob`: time of day advances 1 per tick and wraps at the day length of standin-content §4.8; Set Time is sent once per second (US3-6)
-- [ ] T426 [US3-core] Implement time of day and the Set Time cadence in `core/src/world.cob`
-- [ ] T427 [US3-core] Extend the core implementation tests to 100 % coverage of the US3 changes
-- [ ] T428 Gate: run `make gate-core` and record the command and its real output
+- [X] T412 [P] [US3-core] Write `contract_wire_server.cob` cases: Move Player Pos/PosRot/Rot/Status Only and serverbound Player Abilities decode; Add Entity (operator), Player Info Update, Player Info Remove, Move Entity Pos/PosRot/Rot, Rotate Head, Teleport Entity, Remove Entities and Forget Level Chunk equal their fixtures
+- [X] T413 [P] [US3-core] Write implementation test `core/tests/test_movement.cob`: a move into open space is accepted; a move whose player box (0.7 × 1.75, standin-content §3) would intersect a solid block is answered with Player Position at the last valid position (US3-2)
+- [X] T414 [P] [US3-core] Write implementation test `core/tests/test_on_ground.cob`: on-ground and the fall start height are tracked from moves (data-model §6)
+- [X] T415 [P] [US3-core] Write implementation test `core/tests/test_flying.cob`: serverbound flying is accepted only in creative (US3-3)
+- [X] T416 [US3-core] Implement movement validation against block collision in `core/src/movement.cob`
+- [X] T417 [US3-core] Implement on-ground and fall-start tracking in `core/src/movement.cob`
+- [X] T418 [US3-core] Implement the creative-only flying flag in `core/src/movement.cob`
+- [X] T419 [P] [US3-core] Write acceptance test `core/tests/acc_us3_streaming.cob`: case "acceptance US3-4 given a player walking across chunk borders when they move then Set Chunk Cache Center and every newly in-range chunk are sent and chunks beyond the view distance are forgotten"
+- [X] T420 [US3-core] Implement view-distance streaming on movement (centre update, new chunks in batches, Forget Level Chunk) in `core/src/chunks-stream.cob`
+- [X] T421 [P] [US3-core] Write implementation test `core/tests/test_entities.cob`: network entity ids are unique per run; a player sees an entity iff same dimension and within view distance; entering, moving (small deltas as Move Entity, large as Teleport Entity, head rotation as Rotate Head) and leaving visibility produce the right packets (US3-5)
+- [X] T422 [US3-core] Implement entity id allocation and per-player entity visibility tracking in `core/src/entities.cob`
+- [X] T423 [P] [US3-core] Write implementation test `core/tests/test_other_players.cob`: when B joins near A, A receives Player Info Update and Add Entity `cobolcraft:operator` at B's position and facing; B's moves reach A; B's disconnect or moving out of view sends Remove Entities and (on disconnect) Player Info Remove
+- [X] T424 [US3-core] Implement other-player presence (Player Info Update/Remove, operator entities) using the entity tracker in `core/src/play.cob`
+- [X] T425 [P] [US3-core] Write implementation test `core/tests/test_time.cob`: time of day advances 1 per tick and wraps at the day length of standin-content §4.8; Set Time is sent once per second (US3-6)
+- [X] T426 [US3-core] Implement time of day and the Set Time cadence in `core/src/world.cob`
+- [X] T427 [US3-core] Extend the core implementation tests to 100 % coverage of the US3 changes
+- [X] T428 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 14: US4-core — placing, breaking, glowtube toggling, inventory
 

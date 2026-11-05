@@ -3,7 +3,7 @@
 *> builders produce for the fixture's stated inputs, and every serverbound fixture decodes to the
 *> stated values. The cases are grouped by phase in the test copybooks COPYed after this program
 *> (test infrastructure): WIRESTATUS (handshake, status, login), WIRECONFIG (registries and
-*> configuration), WIRECHUNK (chunks), WIREPLAY (play join).
+*> configuration), WIRECHUNK (chunks), WIREPLAY (play join), WIREMOVE (movement and other players).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
  PROCEDURE DIVISION.
@@ -11,6 +11,7 @@
      CALL "WIRE-CONFIG-CASES"
      CALL "WIRE-CHUNK-CASES"
      CALL "WIRE-PLAY-CASES"
+     CALL "WIRE-MOVE-CASES"
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-SERVER.
 
@@ -18,4 +19,5 @@
  COPY WIRECONFIG.
  COPY WIRECHUNK.
  COPY WIREPLAY.
+ COPY WIREMOVE.
  COPY CORETEST.

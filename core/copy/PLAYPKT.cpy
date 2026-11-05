@@ -1,8 +1,8 @@
-*> Decoded serverbound play packets of the join (docs/protocol/05c; 09 §3.2 play table), filled by
+*> Decoded serverbound play packets the core handles (docs/protocol/05c; 09 §3.2 play table), filled by
 *> PLAY-DECODE (core/src/play.cob). Only the fields of the decoded packet are set; the others are
 *> cleared.
  01 PLAY-SERVERBOUND.
-*>  0x00 Accept Teleportation
+*>  0x00 Accept Teleportation; 0x1E to 0x21 Move Player use the position and rotation fields too
     05 PSB-TELEPORT-ID        BINARY-LONG.
     05 PSB-X                  FLOAT-LONG.
     05 PSB-Y                  FLOAT-LONG.
@@ -15,3 +15,6 @@
     05 PSB-VIEW-DISTANCE      BINARY-LONG.
 *>  0x1C Keep Alive
     05 PSB-KEEPALIVE          BINARY-DOUBLE.
+*>  0x1E to 0x21 Move Player: MoveFlags (UByte: 0x01 on ground, 0x02 horizontal collision);
+*>  0x28 Player Abilities: flags (Byte: 0x02 flying)
+    05 PSB-FLAGS              BINARY-LONG.

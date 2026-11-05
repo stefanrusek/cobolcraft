@@ -16,6 +16,8 @@
 *>   8. CHUNKS-INITIAL-BATCH: Set Chunk Cache Center, Chunk Batch Start, the chunks, Chunk Batch
 *>      Finished
 *>   9. Player Position (0x49) with the next teleport id of the connection (counting up from 1)
+*>  10. OTHERS-JOIN: Player Info Update for every player in the world, the player's entity for the
+*>      others and Add Entity for the other players it sees (09 §3.2, US3-5)
 *> 09 places Player Position after the chunk batches; the tasks text (T404) lists it before the
 *> batch, but 09 is the protocol authority and the client relies only on: Login first, Game Event 13
 *> before the first batch, chunks only inside a batch.
@@ -23,7 +25,8 @@
 *> Serverbound (PLAY-PACKET): Accept Teleportation with the awaited id marks the teleport accepted
 *> (another id is ignored, as 05c's server does); Chunk Batch Received acknowledges one batch;
 *> Player Loaded makes the player Alive; Client Tick End needs nothing yet; Client Information
-*> stores the view distance; Keep Alive goes to CORE-KEEPALIVE-ANSWER. A Cookie Response is
+*> stores the view distance; Keep Alive goes to CORE-KEEPALIVE-ANSWER; Move Player 0x1E to 0x21 go
+*> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob). A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
 *> the 09 §3 inventory that later phases handle (movement, actions, chat, containers, ...) are
 *> discarded unread, so a CobolCraft client is not dropped while those phases are developed; any
@@ -46,6 +49,11 @@
 *>   PLAY-TIME-BUILD USING time (BINARY-DOUBLE), PB-BUFFER
 *>   PLAY-GAME-EVENT-BUILD USING event, value (FLOAT-SHORT), PB-BUFFER
 *>   PLAY-POSITION-BUILD USING teleport id, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), PB-BUFFER
+*>   PLAYER-INFO-UPDATE-BUILD USING player row, PB-BUFFER
+*>   PLAYER-INFO-REMOVE-BUILD USING UUID (PIC X(16)), PB-BUFFER
+*> Other players (US3-5):
+*>   OTHERS-JOIN USING connection id         end of the join sequence
+*>   OTHERS-LEAVE USING player row           the player leaves the world (PLAYER-LEAVE)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-JOIN.
@@ -93,6 +101,7 @@
          PL-Z(WS-ROW) PL-YAW(WS-ROW) PL-PITCH(WS-ROW) PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+     CALL "OTHERS-JOIN" USING L-ID
      GOBACK.
  END PROGRAM PLAY-JOIN.
 
@@ -107,10 +116,10 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x01, 0x07, 0x09, 0x0C, 0x0F, 0x12, 0x1E to 0x21, 0x27 to 0x2A, 0x32, 0x36,
-*> 0x39, 0x42, 0x43).
+*> phase handles it (0x01, 0x07, 0x09, 0x0C, 0x0F, 0x12, 0x27, 0x29, 0x2A, 0x32, 0x36, 0x39, 0x42,
+*> 0x43).
  01 WS-LATER               PIC X(69) VALUE
-     "010000010100100100100000000000111100000111100000001000100100000000110".
+     "010000010100100100100000000000000000000101100000001000100100000000110".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -151,6 +160,10 @@
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID PSB-KEEPALIVE
          WHEN L-PACKET-ID = 44
              MOVE PS-ALIVE TO PL-STATE(WS-ROW)
+         WHEN L-PACKET-ID = 40
+             CALL "MOVE-ABILITIES" USING L-ID PSB-FLAGS
+         WHEN L-PACKET-ID >= 30 AND L-PACKET-ID <= 33
+             CALL "MOVE-PLAYER" USING L-ID L-PACKET-ID PLAY-SERVERBOUND
      END-EVALUATE
      GOBACK.
  END PROGRAM PLAY-PACKET.
@@ -161,7 +174,9 @@
 *> serverbound play packets of the join (05c field tables): Accept Teleportation 0x00 (VarInt, three
 *> Doubles, two Floats), Chunk Batch Received 0x0B (Float), Client Tick End 0x0D (no fields),
 *> Client Information 0x0E (the 03 layout, through CONFIG-DECODE), Keep Alive 0x1C (Long), Player
-*> Loaded 0x2C (no fields). Outcome 1 when a read fails or bytes are left over.
+*> Loaded 0x2C (no fields); Move Player Pos 0x1E (three Doubles, UByte flags), Pos Rot 0x1F (three
+*> Doubles, two Floats, UByte), Rot 0x20 (two Floats, UByte), Status Only 0x21 (UByte), Player
+*> Abilities 0x28 (Byte). Outcome 1 when a read fails or bytes are left over.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONFIGPKT.
@@ -195,6 +210,26 @@
              CALL "PB-GET-LONG" USING PB-BUFFER PSB-KEEPALIVE
          WHEN 44
              CONTINUE
+         WHEN 30
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-X
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Y
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Z
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 31
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-X
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Y
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Z
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 32
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 33
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 40
+             CALL "PB-GET-BYTE" USING PB-BUFFER PSB-FLAGS
          WHEN OTHER
              MOVE 2 TO L-OUTCOME
      END-EVALUATE
@@ -458,3 +493,134 @@
      CALL "PB-PUT-INT" USING PB-BUFFER WS-ZERO
      GOBACK.
  END PROGRAM PLAY-POSITION-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-INFO-UPDATE-BUILD.
+*> USING player row, PB-BUFFER: Player Info Update 0x47 (05a; 09 §3.2): actions 0x01 (ADD_PLAYER
+*> only), one entry: the player's offline UUID, name, 0 properties.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 71.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER PL-UUID(L-ROW)
+     CALL "PB-PUT-STRING" USING PB-BUFFER PL-NAME(L-ROW) PL-NAME-LENGTH(L-ROW) WS-MAX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     GOBACK.
+ END PROGRAM PLAYER-INFO-UPDATE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-INFO-REMOVE-BUILD.
+*> USING UUID (PIC X(16)), PB-BUFFER: Player Info Remove 0x46 (05a): one profile id.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 70.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-UUID                 PIC X(16).
+ PROCEDURE DIVISION USING L-UUID PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER L-UUID
+     GOBACK.
+ END PROGRAM PLAYER-INFO-REMOVE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. OTHERS-JOIN.
+*> USING connection id of a player whose join sequence has just been sent (US3-5; 09 §3.2 Player
+*> Info Update and Add Entity rows, "Join sequence"): the player is sent Player Info Update for
+*> itself and for every player already in the world, and every player already in the world is sent
+*> Player Info Update for the new player. Then the player's entity (cobolcraft:operator, its entity
+*> id and offline UUID, position and facing) enters the tracker: the others who see it get Add
+*> Entity, and the new player gets Add Entity for every entity it sees.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY ENTITYTYPES.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PLAYER-INFO-UPDATE-BUILD" USING WS-ROW PB-BUFFER
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-OTHER) = 1 AND PL-ENTITY-ROW(WS-OTHER) > 0
+             CALL "CORE-SEND" USING PL-CONN(WS-OTHER) PB-BUFFER
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-OTHER) = 1 AND PL-ENTITY-ROW(WS-OTHER) > 0
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "PLAYER-INFO-UPDATE-BUILD" USING WS-OTHER PB-BUFFER
+             CALL "CORE-SEND" USING L-ID PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "ENTITY-ALLOC" USING WS-ENTITY
+     MOVE PL-ENTITY-ID(WS-ROW) TO EN-ID(WS-ENTITY)
+     MOVE ET-OPERATOR TO EN-TYPE(WS-ENTITY)
+     MOVE PL-UUID(WS-ROW) TO EN-UUID(WS-ENTITY)
+     MOVE WS-ROW TO EN-PLAYER(WS-ENTITY)
+     MOVE PL-DIM(WS-ROW) TO EN-DIM(WS-ENTITY)
+     MOVE PL-X(WS-ROW) TO EN-X(WS-ENTITY)
+     MOVE PL-Y(WS-ROW) TO EN-Y(WS-ENTITY)
+     MOVE PL-Z(WS-ROW) TO EN-Z(WS-ENTITY)
+     MOVE PL-YAW(WS-ROW) TO EN-YAW(WS-ENTITY)
+     MOVE PL-PITCH(WS-ROW) TO EN-PITCH(WS-ENTITY)
+     MOVE PL-ON-GROUND(WS-ROW) TO EN-ON-GROUND(WS-ENTITY)
+     MOVE WS-ENTITY TO PL-ENTITY-ROW(WS-ROW)
+     CALL "ENTITY-VIEWER-FORGET" USING WS-ROW
+     CALL "ENTITY-TRACK" USING WS-ENTITY
+     CALL "ENTITY-VIEWER-REFRESH" USING WS-ROW
+     GOBACK.
+ END PROGRAM OTHERS-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. OTHERS-LEAVE.
+*> USING player row of a player leaving the world (US3-5; 09 §3.2 Remove Entities and Player Info
+*> Remove rows): when its join was sent, its entity leaves the tracker (Remove Entities to those who
+*> had it), its client is marked as having nothing, and every other player in the world is sent
+*> Player Info Remove with its UUID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE L-ROW TO WS-ROW
+     IF PL-ENTITY-ROW(WS-ROW) = 0
+         GOBACK
+     END-IF
+     CALL "ENTITY-REMOVE" USING PL-ENTITY-ROW(WS-ROW)
+     MOVE 0 TO PL-ENTITY-ROW(WS-ROW)
+     CALL "ENTITY-VIEWER-FORGET" USING WS-ROW
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PLAYER-INFO-REMOVE-BUILD" USING PL-UUID(WS-ROW) PB-BUFFER
+     PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-OTHER) = 1 AND PL-ENTITY-ROW(WS-OTHER) > 0
+             CALL "CORE-SEND" USING PL-CONN(WS-OTHER) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM OTHERS-LEAVE.

@@ -38,8 +38,7 @@
          MOVE L-NAME TO PL-NAME(L-ROW)
          MOVE L-NAME-LENGTH TO PL-NAME-LENGTH(L-ROW)
          MOVE L-UUID TO PL-UUID(L-ROW)
-         MOVE CW-NEXT-ENTITY-ID TO PL-ENTITY-ID(L-ROW)
-         ADD 1 TO CW-NEXT-ENTITY-ID
+         CALL "ENTITY-NEW-ID" USING PL-ENTITY-ID(L-ROW)
          MOVE PS-JOINING TO PL-STATE(L-ROW)
          MOVE CW-DIM(1) TO PL-DIM(L-ROW)
          MOVE CW-SPAWN-X TO PL-X(L-ROW)
@@ -93,8 +92,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAYER-LEAVE.
-*> USING player row: the player leaves the world; the row is free again and its connection no
-*> longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
+*> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
+*> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -103,6 +102,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "OTHERS-LEAVE" USING WS-ROW
      IF PL-CONN(WS-ROW) > 0
          MOVE 0 TO CN-PLAYER(PL-CONN(WS-ROW))
      END-IF

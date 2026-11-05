@@ -452,6 +452,12 @@
      MOVE RULE-MAX-FOOD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "test content tables day length (standin-content §4.8: Time 0 to 29999)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 30000 TO TL-EXPECTED-N
+     MOVE RULE-DAY-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Synchronized registries (§4). Summary (§4.2): one case per registry.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
          MOVE SPACES TO TL-CASE

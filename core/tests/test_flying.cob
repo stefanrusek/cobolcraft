@@ -1,0 +1,105 @@
+*> Implementation test of the creative-only flying flag (core/src/movement.cob MOVE-ABILITIES; tasks
+*> T415; US3-3; 05c 0x28; 09 §3.2 Player Abilities rows). Serverbound Player Abilities with 0x02 is
+*> accepted from a creative player and refused for a survival player, who is sent its abilities
+*> (flags 0x00) again.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FLYING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-ALICE               PIC X(16) VALUE "Alice".
+ 01 WS-BOB                 PIC X(16) VALUE "Bob".
+ 01 WS-FIVE                BINARY-LONG VALUE 5.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-CREATIVE            BINARY-LONG.
+ 01 WS-SURVIVAL            BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG VALUE 40.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-PATH                PIC X(256).
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC 9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-ALICE WS-FIVE WS-CREATIVE
+     CALL "TEST-JOIN" USING WS-BOB WS-THREE WS-SURVIVAL
+     MOVE 0 TO PL-MODE(CN-PLAYER(WS-SURVIVAL))
+     CALL "TEST-DRAIN-IDS" USING WS-CREATIVE WS-IDS
+
+     MOVE "test flying (US3-3): a creative player's Player Abilities 0x02 starts flying, 0x00 "
+         & "stops it; nothing is sent back" TO TL-CASE
+     PERFORM START-ROW
+     MOVE WS-CREATIVE TO WS-CONN
+     MOVE "contract/fixtures/wire/play-c2s-28-player-abilities.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     PERFORM ADD-FLYING
+     MOVE 0 TO WS-FLAGS
+     PERFORM SEND-ABILITIES
+     PERFORM ADD-FLYING
+     MOVE -2 TO WS-FLAGS
+     PERFORM SEND-ABILITIES
+     PERFORM ADD-FLYING
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     STRING "[" FUNCTION TRIM(WS-IDS) "]" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE "1 0 1 []" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test flying (US3-3): a survival player's Player Abilities 0x02 is refused: flying "
+         & "stays off and Player Abilities equal to play-s2c-41-player-abilities-survival.hex is "
+         & "sent" TO TL-CASE
+     PERFORM START-ROW
+     MOVE WS-SURVIVAL TO WS-CONN
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 2 TO WS-FLAGS
+     PERFORM SEND-ABILITIES
+     PERFORM ADD-FLYING
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-CONN PB-BUFFER WS-CLOSE
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE WS-OUTCOME TO WS-EDIT
+     STRING WS-EDIT DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     MOVE "test flying: the survival player's refusal is play-s2c-41-player-abilities-survival.hex"
+         TO TL-CASE
+     MOVE "contract/fixtures/wire/play-s2c-41-player-abilities-survival.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-PATH TESTLIB-ASSERT
+     STOP RUN.
+
+ SEND-ABILITIES.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-FLAGS
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER.
+
+ ADD-FLYING.
+     MOVE PL-FLYING(CN-PLAYER(WS-CONN)) TO WS-EDIT
+     STRING WS-EDIT " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-FLYING.
+
+ COPY CORETEST.

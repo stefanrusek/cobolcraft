@@ -12,6 +12,7 @@
  78 CORE-SETTINGS-SIZE      VALUE 1707.   *> LENGTH OF CORE-SETTINGS
  78 CORE-CHUNK-CELLS        VALUE 65536.  *> 16 x 256 x 16 cells, index y * 256 + z * 16 + x
  78 CORE-CHUNK-BYTES        VALUE 196608. *> states, sky light, block light: one byte per cell each
+ 78 CORE-MAX-ENTITIES       VALUE 1024.
 
 *> Connection phases (data-model §12; 01 §7.1).
  78 PH-HANDSHAKE            VALUE 0.
@@ -32,6 +33,9 @@
 
 *> Compression threshold on network connections (09 §2).
  78 CORE-COMPRESSION        VALUE 256.
+
+*> Set Time is sent to every player in play every 20 ticks (09 §3.2 Set Time row).
+ 78 CORE-TIME-TICKS         VALUE 20.
 
 *> World (data-model §1).
  01 CORE-WORLD EXTERNAL.
@@ -109,6 +113,7 @@
        10 PL-CENTER-X        BINARY-LONG.        *> chunk cache center
        10 PL-CENTER-Z        BINARY-LONG.
        10 PL-BATCH-PENDING   BINARY-LONG.        *> chunk batches sent and not yet acknowledged
+       10 PL-ENTITY-ROW      BINARY-LONG.        *> CORE-ENTITIES row; 0 until the join is sent
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
@@ -130,3 +135,29 @@
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
        10 CK-SOURCES         BINARY-LONG OCCURS 16 TIMES.
+
+*> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
+*> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
+*> the player row), later ground items and mobs. EN-X to EN-ON-GROUND are the values last sent to the
+*> viewers (the base of the next Move Entity delta). EN-COUNT is the highest row number ever used.
+ 01 CORE-ENTITIES EXTERNAL.
+    05 EN-COUNT              BINARY-LONG.
+    05 EN-ENTRY OCCURS 1024 TIMES.
+       10 EN-USED            PIC 9.
+       10 EN-ID              BINARY-LONG.        *> network entity id
+       10 EN-TYPE            BINARY-LONG.        *> entity type id (ENTITYTYPES.cpy)
+       10 EN-UUID            PIC X(16).
+       10 EN-PLAYER          BINARY-LONG.        *> player row, 0 = not a player
+       10 EN-DIM             BINARY-LONG.
+       10 EN-X               FLOAT-LONG.
+       10 EN-Y               FLOAT-LONG.
+       10 EN-Z               FLOAT-LONG.
+       10 EN-YAW             FLOAT-SHORT.
+       10 EN-PITCH           FLOAT-SHORT.
+       10 EN-ON-GROUND       BINARY-LONG.
+
+*> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
+*> that client has the entity (Add Entity sent, Remove Entities not yet).
+ 01 CORE-VIEWS EXTERNAL.
+    05 VW-ENTRY OCCURS 64 TIMES.
+       10 VW-SEEN            PIC X(1024).

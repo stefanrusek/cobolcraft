@@ -324,3 +324,110 @@
      ADD 1 TO PL-BATCH-PENDING(WS-PLAYER)
      GOBACK.
  END PROGRAM CHUNKS-INITIAL-BATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FORGET-CHUNK-BUILD.
+*> USING chunk x, chunk z (BINARY-LONG), PB-BUFFER: appends Forget Level Chunk (0x26, 05a; 00 §4.2
+*> ChunkPos: one Long, chunk x in the low 32 bits, chunk z in the high 32 bits).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 38.
+ 01 WS-TWO-32              BINARY-DOUBLE VALUE 4294967296.
+ 01 WS-POS                 BINARY-DOUBLE.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CX L-CZ PB-BUFFER.
+     COMPUTE WS-POS = L-CZ * WS-TWO-32 + FUNCTION MOD(L-CX, WS-TWO-32)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-POS
+     GOBACK.
+ END PROGRAM FORGET-CHUNK-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHUNKS-FOLLOW.
+*> USING connection id (BINARY-LONG) of a player who moved (US3-4; 09 §3.2 Set Chunk Cache Center,
+*> Forget Level Chunk, Level Chunk With Light rows). When the chunk of the player's feet differs
+*> from the chunk cache center (PL-CENTER-X/Z): Set Chunk Cache Center with the new chunk; Forget
+*> Level Chunk for every chunk of the old view square (Chebyshev distance <= the configured view
+*> distance d of the old center) outside the new one; then one batch (Chunk Batch Start, Level
+*> Chunk With Light for every chunk of the new square outside the old one, by z ascending then x
+*> ascending, Chunk Batch Finished with their count; PL-BATCH-PENDING + 1). The new center is
+*> stored and the entities the player sees are re-evaluated (ENTITY-VIEWER-REFRESH).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OZ                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LOW-X               BINARY-LONG.
+ 01 WS-LOW-Z               BINARY-LONG.
+ COPY PROTO.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     MOVE CN-PLAYER(L-ID) TO WS-PLAYER
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER) / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER) / 16)
+     MOVE PL-CENTER-X(WS-PLAYER) TO WS-OX
+     MOVE PL-CENTER-Z(WS-PLAYER) TO WS-OZ
+     IF WS-CX = WS-OX AND WS-CZ = WS-OZ
+         GOBACK
+     END-IF
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE CS-VIEW-DISTANCE TO WS-D
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-CACHE-CENTER-BUILD" USING WS-CX WS-CZ PB-BUFFER
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     COMPUTE WS-LOW-X = WS-OX - WS-D
+     COMPUTE WS-LOW-Z = WS-OZ - WS-D
+     PERFORM VARYING WS-Z FROM WS-LOW-Z BY 1 UNTIL WS-Z > WS-OZ + WS-D
+         PERFORM VARYING WS-X FROM WS-LOW-X BY 1 UNTIL WS-X > WS-OX + WS-D
+             IF FUNCTION ABS(WS-X - WS-CX) > WS-D OR FUNCTION ABS(WS-Z - WS-CZ) > WS-D
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "FORGET-CHUNK-BUILD" USING WS-X WS-Z PB-BUFFER
+                 CALL "CORE-SEND" USING L-ID PB-BUFFER
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     MOVE 0 TO WS-COUNT
+     COMPUTE WS-LOW-X = WS-CX - WS-D
+     COMPUTE WS-LOW-Z = WS-CZ - WS-D
+     PERFORM VARYING WS-Z FROM WS-LOW-Z BY 1 UNTIL WS-Z > WS-CZ + WS-D
+         PERFORM VARYING WS-X FROM WS-LOW-X BY 1 UNTIL WS-X > WS-CX + WS-D
+             IF FUNCTION ABS(WS-X - WS-OX) > WS-D OR FUNCTION ABS(WS-Z - WS-OZ) > WS-D
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "CHUNK-PACKET-BUILD" USING WS-DIM WS-X WS-Z PB-BUFFER
+                 CALL "CORE-SEND" USING L-ID PB-BUFFER
+                 ADD 1 TO WS-COUNT
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-BATCH-FINISHED-BUILD" USING WS-COUNT PB-BUFFER
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     MOVE WS-CX TO PL-CENTER-X(WS-PLAYER)
+     MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
+     ADD 1 TO PL-BATCH-PENDING(WS-PLAYER)
+     CALL "ENTITY-VIEWER-REFRESH" USING WS-PLAYER
+     GOBACK.
+ END PROGRAM CHUNKS-FOLLOW.

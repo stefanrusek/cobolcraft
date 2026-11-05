@@ -54,6 +54,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Core state** is the EXTERNAL records of `core/copy/CORESTATE.cpy`; PB-BUFFERs are kept there as
   their raw 21 bytes and moved into a local `PB-BUFFER` to use them.
 - **No `C$LIST-DIRECTORY`** in GnuCOBOL 3.2: use `cc_fs_list` (contracts/shim-abi.md §7).
+- **Reserved words as paragraph names** (`MOVE`, `SEPARATE`, …) fail with "unexpected PERFORM"
+  far from the cause: give test paragraphs verb-noun names (`DO-MOVE`, `ADD-SPACE`).
+- **`PERFORM VARYING … FROM a - b`** is a syntax error: compute the start into a field first.
+- **The same item twice in one `CALL … USING`** warns under `-Wall` (`-Werror` in lint): pass
+  distinct fields (e.g. three zero fields for a zero vector).
+- **Float edges**: `x + 0.35` is not exact; compare cell faces with a small tolerance (movement.cob
+  uses 1e-7) so that touching faces do not count as overlaps.
 - **Fixed format breaks past column 72**, which is why the project is free format. Don't switch.
 
 ## Interfaces
@@ -80,6 +87,11 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - Tests run from the repository root, so open fixtures as `contract/fixtures/wire/<name>.hex`.
 - `<test>.stdin` feeds standard input. `<test>.expect` holds the expected exit status on line 1, and
   optionally on line 2 text that stderr must contain.
+- Core test helpers live in `core/tests/CORETEST.cpy` (COPY it after the test program):
+  `TEST-JOIN` (a memory connection that logs in, configures and loads), `TEST-MOVE`,
+  `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), fixture loading and
+  comparison. Test copybooks are not make dependencies: touch the test or delete
+  `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
 
 ## Failure handling (FR-012)
