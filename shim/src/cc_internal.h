@@ -1,7 +1,8 @@
 /* Shared state between the shim's own modules (not part of the contract surface, never included by
  * other packages). cc_vk creates its Vulkan surface on the window cc_win owns; cc_vk keeps its Vulkan
  * objects in one state record, and frame submission is split in two steps that cc_vk_frame_end runs
- * in order (the shim's own tests read a rendered image between them). */
+ * in order (the shim's own tests read a rendered image between them). cc_tls runs TLS over cc_net
+ * connections and tells cc_net_poll what its sockets wait for. */
 #ifndef COBOLCRAFT_CC_INTERNAL_H
 #define COBOLCRAFT_CC_INTERNAL_H
 
@@ -10,6 +11,16 @@
 #include <stdint.h>
 
 #include "ccshim.h"
+
+/* cc_net handles are a socket's file descriptor plus 1, for descriptors below this bound. */
+#define CC_NET_MAX_FD 4096
+
+/* Set by cc_tls when it opens its first TLS connection (so a program that never calls cc_tls does
+ * not link OpenSSL). cc_net_poll asks it, for each listed socket, which poll events the socket's
+ * TLS layer waits for (0 for a socket without TLS, or while its TCP connect is still running: cc_net
+ * then decides), and whether decrypted bytes are already buffered, which make the handle ready
+ * without the socket being readable (shim-abi.md §6). */
+extern short (*cc_net_tls_events)(int fd, int *buffered);
 
 /* The window opened by cc_win_open; NULL while none is open. */
 extern GLFWwindow *cc_win_window;

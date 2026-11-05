@@ -2,21 +2,24 @@
 # (contracts/test-harness.md §2). Shared rules: tools/package.mk.
 #
 # Modules (contracts/shim-abi.md): cc_fatal.c (§2), cc_net.c (§3), cc_con.c (§4), cc_zlib.c (§5),
-# cc_fs.c (§7), cc_win.c (§8), cc_vk.c (§9). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
+# cc_tls.c (§6), cc_fs.c (§7), cc_win.c (§8), cc_vk.c (§9). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
 # the generated header $(GEN)/spirv.h (generated code, excluded from coverage).
 PKG      := shim
 LIBNAME  := libccshim.a
-SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_zlib.c src/cc_win.c src/cc_vk.c
+SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_zlib.c src/cc_tls.c src/cc_win.c src/cc_vk.c
 TESTS    := $(wildcard tests/acc_*.c tests/contract_*.c tests/test_*.c)
 SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag
 
 # Library include directories in "-I <dir>" form (tools/package.mk passes them to the lint).
 SHIM_GEN   = $(BUILD)/shim/gen
-CFLAGS_DIRS := $(patsubst -I%,%,$(shell pkg-config --cflags-only-I glfw3 vulkan))
+# OpenSSL comes first, through the pinned $(PKG_CONFIG) of tools/package.mk (research R1): the shared
+# Homebrew include and lib directories hold OpenSSL 4. Recursive (=) so that $(PKG_CONFIG) is defined
+# when package.mk expands them.
+CFLAGS_DIRS = $(patsubst -I%,%,$(shell $(PKG_CONFIG) --cflags-only-I openssl) $(shell pkg-config --cflags-only-I glfw3 vulkan))
 INCLUDES  = -I $(CURDIR)/src $(addprefix -I ,$(CFLAGS_DIRS)) -I $(SHIM_GEN)
 DEPLIBS  :=
-LDLIBS   := $(shell pkg-config --libs glfw3 vulkan zlib)
-LINT_FILES = $(SRC) $(TESTS) $(SHADERS)
+LDLIBS    = $(shell $(PKG_CONFIG) --libs openssl) $(shell pkg-config --libs glfw3 vulkan zlib)
+LINT_FILES = $(SRC) $(TESTS) tests/tls_testsrv.h $(SHADERS)
 
 include ../tools/package.mk
 
@@ -40,5 +43,6 @@ $(SHIM_GEN)/spirv.h: $(SPV)
 	mv $@.tmp $@
 
 $(OBJ)/cc_vk.o: $(SHIM_GEN)/spirv.h src/cc_internal.h
-$(OBJ)/cc_win.o: src/cc_internal.h
+$(OBJ)/cc_win.o $(OBJ)/cc_net.o $(OBJ)/cc_tls.o: src/cc_internal.h
 lint: $(SHIM_GEN)/spirv.h
+$(TOUT)/contract_shim_provider $(TOUT)/test_cc_tls: tests/tls_testsrv.h

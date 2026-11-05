@@ -1,6 +1,7 @@
-/* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §7 cc_fs, §8 cc_win,
- * §9 cc_vk):
- * every function against the real libraries (loopback sockets, real zlib, a hidden GLFW window,
+/* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §6 cc_tls, §7 cc_fs,
+ * §8 cc_win, §9 cc_vk):
+ * every function against the real libraries (loopback sockets, real zlib, OpenSSL against
+ * tools/testsrv/testsrv.py over HTTPS with SSL_CERT_FILE at its test CA, a hidden GLFW window,
  * MoltenVK), asserting the return codes and outputs the contract states. cc_fatal (§2) is the
  * fatal-path program contract_shim_fatal.c. */
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include "cc_internal.h"
 #include "ccshim.h"
 #include "testlib.h"
+#include "tls_testsrv.h"
 
 /* Polls `h` (up to 2 s) until cc_net_poll reports it ready; returns the ready flag. */
 static int wait_ready(int32_t h) {
@@ -134,6 +136,104 @@ static void net_poll(void) {
     cc_net_close(server);
     cc_net_close(client);
     cc_net_close(listener);
+}
+
+/* Polls the TLS handle and calls cc_tls_status (up to 10 s) until it is no longer CC_AGAIN. */
+static int32_t tls_settle(int32_t h) {
+    int32_t rc = CC_AGAIN;
+    for (int i = 0; i < 100 && rc == CC_AGAIN; i++) {
+        uint8_t ready = 0;
+        cc_net_poll(100, &h, 1, 0, &ready);
+        rc = cc_tls_status(h);
+    }
+    return rc;
+}
+
+/* Receives from the TLS handle into `buf` until the peer closes (or 10 s pass); returns the byte
+ * count and leaves the last cc_tls_recv outcome in *last. */
+static int32_t tls_read_all(int32_t h, uint8_t *buf, int32_t cap, int32_t *last) {
+    int32_t have = 0, got = 0;
+    *last = CC_AGAIN;
+    for (int i = 0; i < 100 && *last != CC_CLOSED && have < cap; i++) {
+        if (!wait_ready(h)) continue;
+        *last = cc_tls_recv(h, buf + have, cap - have, &got);
+        if (*last == 0) have += got;
+    }
+    return have;
+}
+
+static const char TLS_BODY[] = "CobolCraft over TLS\n";
+
+static void tls(void) {
+    char dir[] = "/tmp/cc_tls.XXXXXX";
+    mkdtemp(dir);
+    char file[600];
+    snprintf(file, sizeof file, "%s/hello.txt", dir);
+    FILE *f = fopen(file, "w");
+    fputs(TLS_BODY, f);
+    fclose(f);
+    pid_t server = 0;
+    int port = testsrv_start(dir, &server);
+
+    int32_t h = 0, sent = -1, got = -1, last = 0;
+    uint8_t buffer[1024];
+    int32_t rc = cc_tls_connect("127.0.0.1", port, &h);
+    tl_int("contract shim cc_tls_connect on loopback returns 0 (started)", 0, rc);
+    tl_int("contract shim cc_tls_connect returns a positive handle", 1, h > 0);
+    tl_int("contract shim cc_tls_status with the test CA trusted returns 0 (ready)", 0, tls_settle(h));
+    rc = cc_tls_recv(h, buffer, sizeof buffer, &got);
+    tl_int("contract shim cc_tls_recv with no data returns CC_AGAIN", CC_AGAIN, rc);
+    uint8_t ready = 9;
+    cc_net_poll(0, &h, 1, 0, &ready);
+    tl_int("contract shim cc_net_poll TLS handle without data is not ready", 0, ready);
+    static const char request[] = "GET /hello.txt HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+    rc = cc_tls_send(h, (const uint8_t *)request, (int32_t)strlen(request), &sent);
+    tl_int("contract shim cc_tls_send returns 0", 0, rc);
+    tl_int("contract shim cc_tls_send reports the bytes sent", (long long)strlen(request), sent);
+    tl_int("contract shim cc_net_poll TLS handle with a response is ready", 1, wait_ready(h));
+    int32_t have = tls_read_all(h, buffer, sizeof buffer, &last);
+    buffer[have < (int32_t)sizeof buffer ? have : (int32_t)sizeof buffer - 1] = 0;
+    tl_int("contract shim cc_tls_recv delivers the response status line", 0,
+           strncmp((const char *)buffer, "HTTP/1.1 200", 12));
+    size_t body = strlen(TLS_BODY);
+    tl_bytes("contract shim cc_tls_recv delivers the response body", TLS_BODY, body,
+             have >= (int32_t)body ? buffer + have - body : buffer, have >= (int32_t)body ? body : (size_t)have);
+    tl_int("contract shim cc_tls_recv after the peer closed returns CC_CLOSED", CC_CLOSED, last);
+    rc = 0;
+    for (int i = 0; i < 50 && rc == 0; i++) {
+        rc = cc_tls_send(h, (const uint8_t *)"x", 1, &sent);
+        usleep(10000);
+    }
+    tl_int("contract shim cc_tls_send to a closed peer returns CC_CLOSED", CC_CLOSED, rc);
+    cc_tls_close(h);
+    tl_int("contract shim cc_tls_close completes", 1, 1);
+
+    rc = cc_tls_connect("no-such-host.invalid", port, &h);
+    tl_int("contract shim cc_tls_connect to an unresolvable host returns CC_UNRESOLVED", CC_UNRESOLVED, rc);
+
+    /* "127.1" resolves to 127.0.0.1 but is a host name the test certificate (localhost, 127.0.0.1)
+     * does not list. */
+    cc_tls_connect("127.1", port, &h);
+    tl_int("contract shim cc_tls_status on a host-name mismatch returns CC_CLOSED", CC_CLOSED, tls_settle(h));
+    cc_tls_close(h);
+
+    setenv("SSL_CERT_FILE", "/dev/null", 1);
+    cc_tls_connect("127.0.0.1", port, &h);
+    tl_int("contract shim cc_tls_status with SSL_CERT_FILE=/dev/null returns CC_CLOSED", CC_CLOSED, tls_settle(h));
+    cc_tls_close(h);
+    testsrv_trust_ca();
+
+    testsrv_stop(server);
+    cc_tls_connect("127.0.0.1", port, &h);
+    tl_int("contract shim cc_tls_status of a refused connect returns CC_CLOSED", CC_CLOSED, tls_settle(h));
+    cc_tls_close(h);
+
+    cc_tls_connect("127.0.0.2", 443, &h);
+    tl_int("contract shim cc_tls_status while connecting returns CC_AGAIN", CC_AGAIN, cc_tls_status(h));
+    cc_tls_close(h);
+
+    remove(file);
+    rmdir(dir);
 }
 
 /* Whether `text` (length `n`) is a dotted IPv4 address: four decimal parts 0 to 255. */
@@ -374,6 +474,7 @@ int main(void) {
     net_poll();
     net_poll_console();
     net_local_addresses();
+    tls();
     zlib_deflate();
     zlib_inflate();
     fs_list();

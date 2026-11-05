@@ -398,13 +398,13 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 **Goal**: HTTPS transport for server pack downloads (research R10). **Independent Test**: `make gate-shim` with
 `tools/testsrv/testsrv.py` serving HTTPS and `SSL_CERT_FILE` pointing at the test CA.
 
-- [ ] T260 [P] [US18-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_tls_connect`, `cc_tls_status` (ready with the test CA; `CC_CLOSED` with `SSL_CERT_FILE=/dev/null` and on host-name mismatch), `cc_tls_send`, `cc_tls_recv`, `cc_tls_close`, `cc_net_poll` accepting TLS handles, and `CC_UNRESOLVED` (shim-abi §6)
-- [ ] T261 [US18-shim] Implement `cc_tls_connect` (non-blocking TCP connect, OpenSSL 3 pinned context with default verify paths, TLS 1.2 minimum, SNI and host-name verification) in `shim/src/cc_tls.c`, linking `libssl` in `shim/Makefile`
-- [ ] T262 [US18-shim] Implement `cc_tls_status` (non-blocking handshake progress via `SSL_get_error` mapping, `CC_CLOSED` on connect, handshake or verification failure) in `shim/src/cc_tls.c`
-- [ ] T263 [US18-shim] Implement `cc_tls_send`, `cc_tls_recv` and `cc_tls_close` in `shim/src/cc_tls.c`
-- [ ] T264 [US18-shim] Make `cc_net_poll` in `shim/src/cc_net.c` accept TLS handles (pending decrypted bytes count as readable)
-- [ ] T265 [US18-shim] Write implementation test `shim/tests/test_cc_tls.c` (partial reads, peer close mid-stream) to 100 % coverage of `shim/src/cc_tls.c`
-- [ ] T266 Gate: run `make gate-shim` and record the command and its real output
+- [X] T260 [P] [US18-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_tls_connect`, `cc_tls_status` (ready with the test CA; `CC_CLOSED` with `SSL_CERT_FILE=/dev/null` and on host-name mismatch), `cc_tls_send`, `cc_tls_recv`, `cc_tls_close`, `cc_net_poll` accepting TLS handles, and `CC_UNRESOLVED` (shim-abi §6)
+- [X] T261 [US18-shim] Implement `cc_tls_connect` (non-blocking TCP connect, OpenSSL 3 pinned context with default verify paths, TLS 1.2 minimum, SNI and host-name verification) in `shim/src/cc_tls.c`, linking `libssl` in `shim/Makefile`
+- [X] T262 [US18-shim] Implement `cc_tls_status` (non-blocking handshake progress via `SSL_get_error` mapping, `CC_CLOSED` on connect, handshake or verification failure) in `shim/src/cc_tls.c`
+- [X] T263 [US18-shim] Implement `cc_tls_send`, `cc_tls_recv` and `cc_tls_close` in `shim/src/cc_tls.c`
+- [X] T264 [US18-shim] Make `cc_net_poll` in `shim/src/cc_net.c` accept TLS handles (pending decrypted bytes count as readable)
+- [X] T265 [US18-shim] Write implementation test `shim/tests/test_cc_tls.c` (partial reads, peer close mid-stream) to 100 % coverage of `shim/src/cc_tls.c`
+- [X] T266 Gate: run `make gate-shim` and record the command and its real output
 
 ### Lane: proto
 

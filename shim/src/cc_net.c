@@ -19,12 +19,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "cc_internal.h"
 #include "ccshim.h"
 
 /* Connection state per file descriptor: what cc_net_status and cc_net_poll need to know. */
 enum { ST_NONE = 0, ST_LISTENER, ST_CONNECTING, ST_CONNECTED, ST_FAILED };
-#define MAX_FD 4096
+#define MAX_FD CC_NET_MAX_FD
 static unsigned char state[MAX_FD];
+
+short (*cc_net_tls_events)(int fd, int *buffered);
 
 static int fd_of(int32_t h) {
     int fd = h - 1;
@@ -153,9 +156,15 @@ int32_t cc_net_poll(int32_t timeout_ms, const int32_t *handles, int32_t count, i
                     uint8_t *ready_out) {
     struct pollfd *fds = calloc((size_t)count + 1, sizeof *fds);
     if (fds == NULL) cc_fatal("cc_net_poll: out of memory");
+    /* A TLS handle with decrypted bytes already buffered is ready now (shim-abi §6): it is marked
+     * before polling and the poll does not wait. */
     for (int32_t i = 0; i < count; i++) {
+        int buffered = 0;
         fds[i].fd = fd_of(handles[i]);
-        fds[i].events = state[fds[i].fd] == ST_CONNECTING ? POLLOUT : POLLIN;
+        fds[i].events = cc_net_tls_events != NULL ? cc_net_tls_events(fds[i].fd, &buffered) : 0;
+        if (fds[i].events == 0) fds[i].events = state[fds[i].fd] == ST_CONNECTING ? POLLOUT : POLLIN;
+        ready_out[i] = (uint8_t)buffered;
+        if (buffered) timeout_ms = 0;
     }
     /* The console (standard input, read by cc_con_readline) is the extra entry after the handles. */
     nfds_t nfds = (nfds_t)count;
@@ -165,7 +174,7 @@ int32_t cc_net_poll(int32_t timeout_ms, const int32_t *handles, int32_t count, i
         nfds++;
     }
     if (poll(fds, nfds, timeout_ms) < 0 && errno != EINTR) cc_fatal("cc_net_poll: poll failed");
-    for (int32_t i = 0; i < count; i++) ready_out[i] = fds[i].revents != 0;
+    for (int32_t i = 0; i < count; i++) ready_out[i] |= fds[i].revents != 0;
     if (include_console) ready_out[count] = fds[count].revents != 0;
     free(fds);
     return 0;
