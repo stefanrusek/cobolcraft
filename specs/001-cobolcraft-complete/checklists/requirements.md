@@ -62,3 +62,7 @@
   with the allow-list (config value is only the new-world default; FR-009, FR-014, FR-016, US13-4); single-player
   offers every command, with commands aimed at other players finding no target until opened (FR-016, US16-3).
   Recorded under Clarifications, Session 2026-11-05. Re-validated: all items pass.
+- Revision 2026-11-05 (operator decisions I1, A1 from the third analyze pass): named-player rule narrowed (in-world
+  commands need the player online; ban/lift-ban/allow-list add-remove/grant-revoke operator accept offline names;
+  FR-016, US14 edge cases, US16-3); FR-001 now states encryption is never enabled (FR-010). Recorded under
+  Clarifications, Session 2026-11-05. Re-validated: all items pass.
