@@ -882,6 +882,8 @@ with every `core/tests/acc_us4_*.cob` passing.
 - [ ] T624 [US13-core] Queue the death message line from `core/src/health.cob`
 - [ ] T625 [US13-core] Queue the `<name> went to <dimension key>` line from `core/src/dimensions.cob`
 - [ ] T626 [US13-core] Queue the `<name> message` chat line from `core/src/chat.cob`
+- [ ] T1068 [P] [US13-core] Write implementation test `core/tests/test_chunk_unload.cob` (added after Phase 13; constitution 5.7): a loaded chunk outside every player's view in its dimension is released from the chunk cache; a changed chunk is first written to its region file (07 §9) and reads back the same when it comes into view again, an unchanged one is regenerated; a player who walks far enough to load more than 4096 distinct chunks in total does not hit the cache-full fatal
+- [ ] T1069 [US13-core] Implement chunk unloading (save if changed, then release the cache row) in `core/src/chunks-stream.cob`
 - [ ] T627 [US13-core] Extend the core implementation tests to 100 % coverage of the US13 changes
 - [ ] T628 Gate: run `make gate-core` and record the command and its real output
 
