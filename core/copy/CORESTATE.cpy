@@ -159,6 +159,10 @@
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
        10 PL-KILLER-LENGTH   BINARY-LONG.
+*>     Travel (standin §15.5; core/src/dimensions.cob): 1 once the player has travelled this
+*>     session, and the CW-TICKS of that travel (a use within TRAVEL-COOLDOWN ticks is ignored).
+       10 PL-TRAVELLED       PIC 9.
+       10 PL-TRAVEL-TICK     BINARY-DOUBLE.
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
@@ -241,7 +245,9 @@
 *> first-time player). One offline UUID per row, KN-COUNT rows used; a full table records no more.
 *> Player files (US13) will also count as known. A player who left while dead (standin §10.6,
 *> data-model §6) keeps that death in KN-DEATH-CAUSE (0 = left alive) and KN-KILLER-*: on the next
-*> join the player is dead again and is shown the death screen.
+*> join the player is dead again and is shown the death screen. A player who has left keeps the
+*> dimension, position and facing it left from (KN-PLACED 1; US12-3, data-model §6 "state stored"):
+*> the next join restores them while that dimension is enabled.
  78 CORE-MAX-KNOWN          VALUE 4096.
  01 CORE-KNOWN EXTERNAL.
     05 KN-COUNT              BINARY-LONG.
@@ -249,3 +255,11 @@
     05 KN-DEATH-CAUSE        BINARY-LONG OCCURS 4096 TIMES.
     05 KN-KILLER-NAME        PIC X(16) OCCURS 4096 TIMES.
     05 KN-KILLER-LENGTH      BINARY-LONG OCCURS 4096 TIMES.
+    05 KN-PLACE OCCURS 4096 TIMES.
+       10 KN-PLACED          PIC 9.
+       10 KN-DIM             BINARY-LONG.
+       10 KN-X               FLOAT-LONG.
+       10 KN-Y               FLOAT-LONG.
+       10 KN-Z               FLOAT-LONG.
+       10 KN-YAW             FLOAT-SHORT.
+       10 KN-PITCH           FLOAT-SHORT.

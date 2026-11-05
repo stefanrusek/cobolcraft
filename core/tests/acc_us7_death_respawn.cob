@@ -5,7 +5,8 @@
 *> with the §10.6 motion and pickup delay 30 and the inventory is empty; after Client Command
 *> PERFORM_RESPAWN the player is sent Respawn to cobolcraft:main (data to keep 0x00) and the join
 *> stream, and is at the world spawn with full health and food. A player who disconnects while dead
-*> is dead again on the next join and is shown the death screen. Alice (entity 1) and Bobby (entity
+*> is dead again on the next join, where they left (the stored state "as they left it", data-model
+*> §6; US12-3), and is shown the death screen. Alice (entity 1) and Bobby (entity
 *> 2) are survival with the starting items (slots 0 to 9); Alice's health is set to 2 and she falls
 *> 10 blocks onto greystone at (20, 100, 20).
  IDENTIFICATION DIVISION.
@@ -156,7 +157,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US7-4 given a player who disconnects while dead when they join again then "
-         & "they are dead with health 0 and are shown the death screen (Player Combat Kill)"
+         & "they are dead with health 0 where they left and are shown the death screen (Player "
+         & "Combat Kill)"
          TO TL-CASE
      MOVE "Carol" TO WS-NAME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CAROL
@@ -174,7 +176,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-CAROL WS-TEXT
      MOVE PL-ENTITY-ID(WS-ROW) TO WS-E1
      MOVE SPACES TO TL-EXPECTED
-     STRING "health 0 food 24 | position 4.5 54.0 8.5 | kill " FUNCTION TRIM(WS-E1)
+     STRING "health 0 food 24 | position 20.5 101.0 20.5 | kill " FUNCTION TRIM(WS-E1)
          " cobolcraft.death.fall(Carol)" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US7-4 given a player who rejoined dead when they have loaded then they "

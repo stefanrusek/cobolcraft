@@ -1,9 +1,9 @@
 *> Acceptance test, US11 edge case core half (spec US11 edge "a dimension without weather"; tasks
 *> T567; standin-content §14.2, §14.4; 09 §3.3 weather values): a player in a dimension without
 *> weather is always sent the clear sequence (STOP_RAINING, rain 0.0, thunder 0.0), whatever the
-*> weather of cobolcraft:main, and a change in cobolcraft:main is not sent to them. Until the
-*> extra dimension of §15 exists (US12-core), the dimension without weather is DIMENSIONS.cpy row 2,
-*> whose has-weather flag is 0; Alice is put there directly. The pair is sent by WEATHER-SEND, the
+*> weather of cobolcraft:main, and a change in cobolcraft:main is not sent to them. The dimension
+*> without weather is cobolcraft:subroutine (DIMENSIONS.cpy row 2, has-weather flag 0, §15.1);
+*> Alice is put there directly. The pair is sent by WEATHER-SEND, the
 *> step of the join sequence (PLAY-ARRIVE) that a join, a respawn or an arrival by travel runs.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US11-NO-WEATHER.

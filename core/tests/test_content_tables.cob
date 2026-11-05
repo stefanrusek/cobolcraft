@@ -1,7 +1,7 @@
 *> Implementation test of the US2 content copybooks (core/copy/BLOCKS.cpy, ITEMS.cpy, ENTITYTYPES.cpy,
 *> RULES.cpy, DIMENSIONS.cpy, REGISTRY.cpy) against docs/design/standin-content.md: blocks §1.1, block
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
-*> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
+*> dimensions and spawn point §5.1, §5.2, §15, maximum health §10.1 and maximum food §11.1,
 *> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
 *> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy), the
 *> recipes of §13 (RECIPES.cpy), the weather of §14 (WEATHER.cpy),
@@ -239,6 +239,14 @@
     05 FILLER PIC X(80) VALUE "31 cobolcraft:hail cobolcraft.hail never 0".
  01 WS-DAMAGE-EXPECT REDEFINES WS-DAMAGE-ROWS.
     05 WS-DAMAGE-ROW PIC X(80) OCCURS 32 TIMES.
+*> Dimension rows (§5.1, §15.1, §15.5; see the dimension cases).
+ 01 WS-DIMENSION-ROWS.
+    05 FILLER PIC X(100) VALUE
+       "cobolcraft:main 0 cobolcraft:surface 0 256 48 1 1 1 1 -1 0 2".
+    05 FILLER PIC X(100) VALUE
+       "cobolcraft:subroutine 1 cobolcraft:sunless 0 128 32 2 2 0 0 2 1 1".
+ 01 WS-DIMENSION-TABLE REDEFINES WS-DIMENSION-ROWS.
+    05 WS-DIMENSION-ROW    PIC X(100) OCCURS 2 TIMES.
  PROCEDURE DIVISION.
 *>   Block ids, block-state ids and palette widths (§1.1, §1.2, §4.3).
      MOVE "test content tables block id constants" TO TL-CASE
@@ -618,34 +626,66 @@
          PERFORM ASSERT-ROW
      END-PERFORM
 
-*>   The cobolcraft:main dimension (§5.1, §5.2, §4.6, §14.2). Row: key type-id type-key min-y height
-*>   sea-level generator light-policy skylight weather.
-     MOVE "test content tables main dimension" TO TL-CASE
-     PERFORM START-ROW
-     MOVE DIM-MAIN TO WS-I
-     STRING DM-KEY(WS-I)(1:DM-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
-         INTO WS-ROW WITH POINTER WS-PTR
-     MOVE DM-TYPE-ID(WS-I) TO WS-NUM PERFORM ADD-NUM
-     PERFORM ADD-SPACE
-     STRING DM-TYPE-KEY(WS-I)(1:DM-TYPE-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
-         INTO WS-ROW WITH POINTER WS-PTR
-     MOVE DM-MIN-Y(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-HEIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-SEA-LEVEL(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-GENERATOR(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-LIGHT-POLICY(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-SKYLIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE DM-WEATHER(WS-I) TO WS-NUM PERFORM ADD-NUM
-     MOVE "cobolcraft:main 0 cobolcraft:surface 0 256 48 1 1 1 1" TO TL-EXPECTED
-     PERFORM ASSERT-ROW
+*>   The dimension table (§5.1, §5.2, §4.6, §14.2, §15.1 to §15.5). Row: key type-id type-key min-y
+*>   height sea-level generator light-policy skylight weather biome (-1 = from the generator)
+*>   extra (1 = enabled by the extra-dimensions setting) travel-destination-row.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
+         MOVE SPACES TO TL-CASE
+         STRING "test content tables dimension " DELIMITED BY SIZE
+             DM-KEY(WS-I)(1:DM-KEY-LENGTH(WS-I)) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         STRING DM-KEY(WS-I)(1:DM-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE DM-TYPE-ID(WS-I) TO WS-NUM PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING DM-TYPE-KEY(WS-I)(1:DM-TYPE-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE DM-MIN-Y(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-HEIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-SEA-LEVEL(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-GENERATOR(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-LIGHT-POLICY(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-SKYLIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-WEATHER(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-BIOME(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-EXTRA(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-TRAVEL-TO(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-DIMENSION-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
 
+*>   Row numbers, generator and light policy ids, the §15.2 generator constants (base, amplitude,
+*>   x and z divisors, marker chunk modulus) and the §15.5 travel constants (travel block id, the
+*>   arrival goto_pad state, cooldown ticks, Respawn data to keep).
      MOVE "test content tables dimension constants" TO TL-CASE
      PERFORM START-ROW
      MOVE DIM-MAIN TO WS-NUM PERFORM ADD-NUM
+     MOVE DIM-SUBROUTINE TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-TABLE-ROWS TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-GEN-MAIN TO WS-NUM PERFORM ADD-NUM
+     MOVE DIM-GEN-SUBROUTINE TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-LIGHT-STANDIN TO WS-NUM PERFORM ADD-NUM
-     MOVE "1 2 1 1" TO TL-EXPECTED
+     MOVE DIM-LIGHT-BLOCK-ONLY TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 2 2 1 2 1 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables subroutine generator constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE GEN-SUB-BASE TO WS-NUM PERFORM ADD-NUM
+     MOVE GEN-SUB-AMPLITUDE TO WS-NUM PERFORM ADD-NUM
+     MOVE GEN-SUB-X-DIVISOR TO WS-NUM PERFORM ADD-NUM
+     MOVE GEN-SUB-Z-DIVISOR TO WS-NUM PERFORM ADD-NUM
+     MOVE GEN-SUB-MARKER-MOD TO WS-NUM PERFORM ADD-NUM
+     MOVE "32 5 11 13 3" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables travel constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE TRAVEL-BLOCK TO WS-NUM PERFORM ADD-NUM
+     MOVE TRAVEL-PAD-STATE TO WS-NUM PERFORM ADD-NUM
+     MOVE TRAVEL-COOLDOWN TO WS-NUM PERFORM ADD-NUM
+     MOVE TRAVEL-KEEP TO WS-NUM PERFORM ADD-NUM
+     MOVE "10 16 20 3" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
 *>   Spawn point (§5.2): feet (4.5, 54.0, 8.5) in tenths, yaw -90, pitch 0.

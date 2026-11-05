@@ -82,6 +82,25 @@
      PERFORM APPEND-EDIT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   US12 (standin-content §15.1): with extra-dimensions on, a new world has every enabled extra
+*>   dimension too, in Login order: cobolcraft:main (row 1), cobolcraft:subroutine (row 2).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN of a new world with extra-dimensions on creates "
+         & "every enabled extra dimension" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "2 1 2" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CW-DIM-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CW-DIM(1) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE CW-DIM(2) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+
      CALL "CBL_CREATE_DIR" USING WS-OLD-DIR
      CALL "CBL_CREATE_FILE" USING WS-OLD-LEVEL WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
      CALL "CBL_CLOSE_FILE" USING WS-HANDLE

@@ -5,10 +5,10 @@
  PROGRAM-ID. CORE-WORLD-OPEN.
 *> USING world folder path (z-string), CORE-SETTINGS, created-flag out (BINARY-LONG). Stores the
 *> settings and empties every table (a world already open in this process is closed first). A
-*> folder without level.dat becomes a new in-memory world: the cobolcraft:main dimension, its spawn
-*> point (standin-content §5.2), time 0 (§4.8) and the starting weather (§14.3, WEATHER-INIT);
-*> created-flag 1. Extra dimensions are added by
-*> US12-core and reading an existing world by US13-core.
+*> folder without level.dat becomes a new in-memory world: the cobolcraft:main dimension and, while
+*> the extra-dimensions setting is on, every extra dimension (DIMENSIONS.cpy DM-EXTRA 1, standin
+*> §15.1), in table (Login) order; the spawn point (standin-content §5.2), time 0 (§4.8) and the
+*> starting weather (§14.3, WEATHER-INIT); created-flag 1. Reading an existing world is US13-core.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -47,8 +47,13 @@
      MOVE PB-BUFFER TO CW-CONSOLE
      MOVE 0 TO CW-RUN-STATE CW-TIME CW-TICKS
      MOVE 1 TO CW-NEXT-ENTITY-ID
-     MOVE 1 TO CW-DIM-COUNT
-     MOVE DIM-MAIN TO CW-DIM(1)
+     MOVE 0 TO CW-DIM-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
+         IF DM-EXTRA(WS-I) = 0 OR CS-EXTRA-DIMENSIONS = 1
+             ADD 1 TO CW-DIM-COUNT
+             MOVE WS-I TO CW-DIM(CW-DIM-COUNT)
+         END-IF
+     END-PERFORM
      CALL "WEATHER-INIT"
      COMPUTE CW-SPAWN-X = SPAWN-X10 / 10
      COMPUTE CW-SPAWN-Y = SPAWN-Y10 / 10

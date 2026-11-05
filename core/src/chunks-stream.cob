@@ -8,10 +8,11 @@
 *> that chunk, generated and lit on first access (WORLD-CHUNK). Heightmaps WORLD_SURFACE (1),
 *> MOTION_BLOCKING (4) and MOTION_BLOCKING_NO_LEAVES (5), identical: topmost non-void Y + 1 - min Y,
 *> ceillog2(height + 1) bits per entry (06 §3.1, §6). One section per 16 block layers through
-*> CHUNK-SECTION-ENCODE (fluid count 0; biomes of WORLDGEN-BIOMES, the same for every cell Y). No
+*> CHUNK-SECTION-ENCODE (fluid count 0; biomes of WORLDGEN-DIM-BIOMES, the same for every cell Y). No
 *> block entities. Light (LIGHT-ENCODE) for every light section index 0 to section count + 1: an
 *> all-zero layer is empty, every other layer an array; the section below the world has no sky or
-*> block light, the section above it sky light 15 and no block light (standin §5.2).
+*> block light, the section above it sky light 15 and no block light (standin §5.2). A dimension
+*> without sky light (DIM-LIGHT-BLOCK-ONLY, §15.3) sets no sky light bit in any mask.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -120,7 +121,7 @@
          MOVE 1 TO WS-SB-READY
      END-IF
      CALL "PB-RESET" USING SB-BUFFER
-     CALL "WORLDGEN-BIOMES" USING L-CX L-CZ WS-BIOME-COLUMNS
+     CALL "WORLDGEN-DIM-BIOMES" USING L-DIM L-CX L-CZ WS-BIOME-COLUMNS
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 63
          MOVE WS-BIOME-COLUMN(FUNCTION MOD(WS-I, 16) + 1) TO WS-BIOME(WS-I + 1)
      END-PERFORM
@@ -172,9 +173,14 @@
      MOVE 1 TO WS-SKY-STATE(1) WS-BLOCK-STATE(1) WS-BLOCK-STATE(WS-LIGHTS)
      MOVE 2 TO WS-SKY-STATE(WS-LIGHTS)
      MOVE ALL X"FF" TO WS-SKY-ARRAY-X(WS-LIGHTS)
+     IF DM-LIGHT-POLICY(L-DIM) = DIM-LIGHT-BLOCK-ONLY
+         MOVE 0 TO WS-SKY-STATE(1) WS-SKY-STATE(WS-LIGHTS)
+     END-IF
      PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
          COMPUTE WS-BASE = WS-S * 4096
          EVALUATE TRUE
+             WHEN DM-LIGHT-POLICY(L-DIM) = DIM-LIGHT-BLOCK-ONLY
+                 MOVE 0 TO WS-SKY-STATE(WS-S + 2)
              WHEN CM-SKYS(WS-BASE + 1:4096) = LOW-VALUES
                  MOVE 1 TO WS-SKY-STATE(WS-S + 2)
              WHEN CM-SKYS(WS-BASE + 1:4096) = ALL X"0F"

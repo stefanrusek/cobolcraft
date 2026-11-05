@@ -10,8 +10,8 @@
 *> 180); at 400 dx -2, dz -5 (too near); at 800 column (-11, 4), grit at 49; at 300 column (2, 17)
 *> (spawn position (2.5, 53, 17.5)); at 16100 column (-6, 8), turf at 51, yaw 315, far from any
 *> marker glowtube (block light 0). Bobby at (2.5, 53, 15.5) gives at 300 column (-18, 29), grit at
-*> 49; Carol at (-14.5, 50, 10.5) gives at 100 column (-1, 15), turf at 52. The cobolcraft:subroutine rule (§15.4) is data in MOBS.cpy; that dimension is enabled by
-*> US12 (T572), so only cobolcraft:main is exercised here. Alice and Bobby are creative, so a new
+*> 49; Carol at (-14.5, 50, 10.5) gives at 100 column (-1, 15), turf at 52. The cobolcraft:subroutine rule (§15.4) is exercised by test_mob_spawn_extra.cob; only
+*> cobolcraft:main is exercised here. Alice and Bobby are creative, so a new
 *> abend has no target and stands still.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US9-SPAWNING.

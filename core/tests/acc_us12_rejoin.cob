@@ -1,0 +1,146 @@
+*> Acceptance test, US12-3 core half (spec US12 scenario 3; tasks T588; standin-content §15.5;
+*> data-model §6 "disconnect (state stored)"): a player who disconnects while in an extra dimension
+*> rejoins in that dimension at the position (and facing) they left: the Login carries that
+*> dimension's spawn info and the join's Player Position that position. Alice travels from
+*> cobolcraft:main by the goto_pad at (6, 54, 12) and arrives in cobolcraft:subroutine at
+*> (6.5, 36, 12.5) (slag at 34, §15.2), then steps down onto the slag at (8.5, 35, 13.5) facing
+*> yaw 45, pitch 10.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US12-REJOIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY PROTO.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQUENCE            BINARY-LONG VALUE 1.
+ 01 WS-MOVE                BINARY-LONG VALUE 31.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-TEXT2               PIC X(4096).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS CS-WEATHER-CHANGES
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+
+     MOVE "acceptance US12-3 given Alice in cobolcraft:subroutine at (8.5, 35, 13.5) when she "
+         & "disconnects and rejoins then she is in that dimension at that position and facing"
+         TO TL-CASE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE 6 TO WS-X MOVE 54 TO WS-Y MOVE 12 TO WS-Z
+     MOVE TRAVEL-PAD-STATE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQUENCE
+     CALL "TEST-ACCEPT-TELEPORT" USING WS-ALICE
+     MOVE 8.5 TO WS-FX
+     MOVE 35 TO WS-FY
+     MOVE 13.5 TO WS-FZ
+     MOVE 45 TO WS-YAW
+     MOVE 10 TO WS-PITCH
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     CALL "CORE-CONN-CLOSED" USING WS-ALICE
+     CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE PL-DIM(WS-ROW) TO WS-E1
+     MOVE PL-YAW(WS-ROW) TO WS-E2
+     MOVE PL-PITCH(WS-ROW) TO WS-E3
+     MOVE WS-TEXT TO WS-TEXT2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-TEXT2) " dim " FUNCTION TRIM(WS-E1) " yaw " FUNCTION TRIM(WS-E2)
+         " pitch " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "position 8.5 35.0 13.5 dim 2 yaw 45 pitch 10" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12-3 the rejoin's Login carries the spawn info of cobolcraft:subroutine "
+         & "(dimension type 1)" TO TL-CASE
+     PERFORM LOGIN-DIMENSION
+     MOVE "type 1 cobolcraft:subroutine" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12-3 given Alice left cobolcraft:main at (3.5, 54, 5.5) when she rejoins "
+         & "then she is there, not at the world spawn" TO TL-CASE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE 3.5 TO WS-FX
+     MOVE 54 TO WS-FY
+     MOVE 5.5 TO WS-FZ
+     MOVE 0 TO WS-YAW WS-PITCH
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     CALL "CORE-CONN-CLOSED" USING WS-ALICE
+     CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     MOVE PL-DIM(CN-PLAYER(WS-ALICE)) TO WS-E1
+     MOVE WS-TEXT TO WS-TEXT2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-TEXT2) " dim " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "position 3.5 54.0 5.5 dim 1" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+*> The Login packet the core builds for Alice now, decoded up to its spawn info: "type <dimension
+*> type id> <dimension key>".
+ LOGIN-DIMENSION.
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-N
+     CALL "PB-GET-INT" USING PB-BUFFER WS-N
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-N
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM WS-COUNT TIMES
+         CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+     END-PERFORM
+     PERFORM 3 TIMES
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-N
+     END-PERFORM
+     PERFORM 3 TIMES
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-N
+     END-PERFORM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-N
+     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+     MOVE WS-N TO WS-E1
+     MOVE SPACES TO WS-TEXT
+     STRING "type " FUNCTION TRIM(WS-E1) " " WS-KEY(1:WS-KEY-LENGTH) DELIMITED BY SIZE
+         INTO WS-TEXT
+     CALL "PB-FREE" USING PB-BUFFER.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US12-REJOIN.
+
+ COPY CORETEST.

@@ -820,31 +820,31 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §15 dimensions. **Independent Test**: `make gate-core`.
 
-- [ ] T571 [US12-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the dimension table of standin-content §5 and §15 (test first, constitution 5.1 rule 3)
-- [ ] T572 [US12-core] Add the extra dimensions of standin-content §15 (keys, dimension types, generators, light policies, weather flag, spawning, travel trigger and arrival rules) to `core/copy/DIMENSIONS.cpy`
-- [ ] T573 [P] [US12-core] Write `core/tests/contract_coreapi_provider.cob` case: `CORE-WORLD-OPEN` of a new world creates every enabled extra dimension of §15
-- [ ] T574 [US12-core] Extend `CORE-WORLD-OPEN` in `core/src/api.cob` to create every enabled extra dimension
-- [ ] T575 [P] [US12-core] Write implementation test `core/tests/test_worldgen_extra.cob`: sample columns of every extra dimension's §15 generator
-- [ ] T576 [US12-core] Implement the §15 generator(s) in `core/src/worldgen.cob`, selected by dimension
-- [ ] T577 [P] [US12-core] Write implementation test `core/tests/test_light_extra.cob`: the §15 light policy of every extra dimension
-- [ ] T578 [US12-core] Implement per-dimension light policy selection in `core/src/light.cob`
-- [ ] T1070 [P] [US12-core] Write implementation test `core/tests/test_mob_spawn_extra.cob` (added after Phase 19; constitution 5.7): mobs spawn in every extra dimension only by that dimension's §12/§15 spawn rule (in `cobolcraft:subroutine`, abends on slag; no sodgrazers), with expected columns computed from the §1.4.1 hash independently of the code
-- [ ] T1071 [US12-core] Make `core/src/mobs.cob` spawning use each dimension's rule from `core/copy/MOBS.cpy` (if T1070 already passes once the dimension exists, record that and mark this done without code changes)
-- [ ] T579 [P] [US12-core] Write `contract_wire_server.cob` cases: Respawn for every extra dimension equals its fixture; Login with every enabled dimension equals `play-s2c-32-login-all-dimensions.hex`
-- [ ] T580 [P] [US12-core] Write acceptance test `core/tests/acc_us12_travel.cob`: case "acceptance US12-1 given the §15 means of travel when used then the player is at the §15 arrival point of the target dimension with the same inventory, health, food and game mode, and receives Respawn, Player Position, that dimension's chunks and weather pair" (each direction)
-- [ ] T581 [US12-core] Implement the §15 travel trigger (Use Item On the travel block, or moving into it) in `core/src/dimensions.cob`
-- [ ] T582 [US12-core] Implement the §15 arrival-point rule on each side in `core/src/dimensions.cob`
-- [ ] T583 [US12-core] Implement the dimension switch (Respawn with data to keep 0x03, then the join stream of the new dimension: Player Position, chunks, weather pair, Set Health, inventory) in `core/src/dimensions.cob`
-- [ ] T584 [P] [US12-core] Write acceptance test `core/tests/acc_us12_isolation.cob`: case "acceptance US12-2 given players in different dimensions when either changes the world then the other is not sent the change until they are in that dimension"; case "US12 edge mobs and ground items near a traveller stay in their dimension"
-- [ ] T585 [US12-core] Implement dimension scoping of entity visibility (mobs and ground items stay in their dimension) in `core/src/entities.cob`
-- [ ] T586 [US12-core] Implement dimension scoping of block-change broadcasts in `core/src/blocks.cob`
-- [ ] T587 [US12-core] Implement dimension scoping of chunk streaming in `core/src/chunks-stream.cob`
-- [ ] T588 [P] [US12-core] Write acceptance test `core/tests/acc_us12_rejoin.cob`: case "acceptance US12-3 given a player in an extra dimension when they disconnect and rejoin then they are in that dimension at the position they left"
-- [ ] T589 [US12-core] Implement stored-dimension restore on join in `core/src/players.cob`
-- [ ] T590 [P] [US12-core] Write acceptance test `core/tests/acc_us12_disabled.cob`: case "acceptance US12-4 given extra-dimensions off when a player tries to travel then they stay"; case "a player stored in a disabled dimension joins at the world spawn in the main dimension"; Login lists only enabled dimensions
-- [ ] T591 [US12-core] Implement the extra-dimensions setting in `core/src/dimensions.cob`
-- [ ] T592 [US12-core] Extend the core implementation tests to 100 % coverage of the US12 changes
-- [ ] T593 Gate: run `make gate-core` and record the command and its real output
+- [X] T571 [US12-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the dimension table of standin-content §5 and §15 (test first, constitution 5.1 rule 3)
+- [X] T572 [US12-core] Add the extra dimensions of standin-content §15 (keys, dimension types, generators, light policies, weather flag, spawning, travel trigger and arrival rules) to `core/copy/DIMENSIONS.cpy`
+- [X] T573 [P] [US12-core] Write `core/tests/contract_coreapi_provider.cob` case: `CORE-WORLD-OPEN` of a new world creates every enabled extra dimension of §15
+- [X] T574 [US12-core] Extend `CORE-WORLD-OPEN` in `core/src/api.cob` to create every enabled extra dimension
+- [X] T575 [P] [US12-core] Write implementation test `core/tests/test_worldgen_extra.cob`: sample columns of every extra dimension's §15 generator
+- [X] T576 [US12-core] Implement the §15 generator(s) in `core/src/worldgen.cob`, selected by dimension
+- [X] T577 [P] [US12-core] Write implementation test `core/tests/test_light_extra.cob`: the §15 light policy of every extra dimension
+- [X] T578 [US12-core] Implement per-dimension light policy selection in `core/src/light.cob`
+- [X] T1070 [P] [US12-core] Write implementation test `core/tests/test_mob_spawn_extra.cob` (added after Phase 19; constitution 5.7): mobs spawn in every extra dimension only by that dimension's §12/§15 spawn rule (in `cobolcraft:subroutine`, abends on slag; no sodgrazers), with expected columns computed from the §1.4.1 hash independently of the code
+- [X] T1071 [US12-core] Make `core/src/mobs.cob` spawning use each dimension's rule from `core/copy/MOBS.cpy` (if T1070 already passes once the dimension exists, record that and mark this done without code changes)
+- [X] T579 [P] [US12-core] Write `contract_wire_server.cob` cases: Respawn for every extra dimension equals its fixture; Login with every enabled dimension equals `play-s2c-32-login-all-dimensions.hex`
+- [X] T580 [P] [US12-core] Write acceptance test `core/tests/acc_us12_travel.cob`: case "acceptance US12-1 given the §15 means of travel when used then the player is at the §15 arrival point of the target dimension with the same inventory, health, food and game mode, and receives Respawn, Player Position, that dimension's chunks and weather pair" (each direction)
+- [X] T581 [US12-core] Implement the §15 travel trigger (Use Item On the travel block, or moving into it) in `core/src/dimensions.cob`
+- [X] T582 [US12-core] Implement the §15 arrival-point rule on each side in `core/src/dimensions.cob`
+- [X] T583 [US12-core] Implement the dimension switch (Respawn with data to keep 0x03, then the join stream of the new dimension: Player Position, chunks, weather pair, Set Health, inventory) in `core/src/dimensions.cob`
+- [X] T584 [P] [US12-core] Write acceptance test `core/tests/acc_us12_isolation.cob`: case "acceptance US12-2 given players in different dimensions when either changes the world then the other is not sent the change until they are in that dimension"; case "US12 edge mobs and ground items near a traveller stay in their dimension"
+- [X] T585 [US12-core] Implement dimension scoping of entity visibility (mobs and ground items stay in their dimension) in `core/src/entities.cob`
+- [X] T586 [US12-core] Implement dimension scoping of block-change broadcasts in `core/src/blocks.cob`
+- [X] T587 [US12-core] Implement dimension scoping of chunk streaming in `core/src/chunks-stream.cob`
+- [X] T588 [P] [US12-core] Write acceptance test `core/tests/acc_us12_rejoin.cob`: case "acceptance US12-3 given a player in an extra dimension when they disconnect and rejoin then they are in that dimension at the position they left"
+- [X] T589 [US12-core] Implement stored-dimension restore on join in `core/src/players.cob`
+- [X] T590 [P] [US12-core] Write acceptance test `core/tests/acc_us12_disabled.cob`: case "acceptance US12-4 given extra-dimensions off when a player tries to travel then they stay"; case "a player stored in a disabled dimension joins at the world spawn in the main dimension"; Login lists only enabled dimensions
+- [X] T591 [US12-core] Implement the extra-dimensions setting in `core/src/dimensions.cob`
+- [X] T592 [US12-core] Extend the core implementation tests to 100 % coverage of the US12 changes
+- [X] T593 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 23: US13-core — persistence and console lines
 

@@ -25,6 +25,8 @@
 *>   ENTITY-VIEWER-FORGET USING player row       the player's client has nothing (no packets)
 *>   ENTITY-MOVE USING row, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), on-ground (BINARY-LONG)
 *>   ENTITY-REMOVE USING row                     Remove Entities to its viewers; the row is free
+*>   ENTITY-CHANGE-DIM USING row, dimension row, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT),
+*>     on-ground (BINARY-LONG)                   the entity moves to another dimension
 *> Builders (append id + body to the caller's PB-BUFFER):
 *>   ENTITY-ADD-BUILD USING row, PB-BUFFER
 *>   MOVE-ENTITY-POS-BUILD USING entity id, dx, dy, dz, on-ground, PB-BUFFER
@@ -537,3 +539,37 @@
      INITIALIZE EN-ENTRY(WS-ROW)
      GOBACK.
  END PROGRAM ENTITY-REMOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-CHANGE-DIM.
+*> USING tracker row, dimension row (BINARY-LONG), x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT),
+*> on-ground (BINARY-LONG): the entity leaves its dimension (Remove Entities to every client that
+*> has it: it is in no dimension, 0, while that happens) and appears in the other one at the given
+*> position (Add Entity to the players there who see it, never a move from its old position).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ 01 L-ON-GROUND            BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-YAW L-PITCH L-ON-GROUND.
+     MOVE L-ROW TO WS-ROW
+     MOVE 0 TO EN-DIM(WS-ROW)
+     CALL "ENTITY-TRACK" USING WS-ROW
+     MOVE L-X TO EN-X(WS-ROW)
+     MOVE L-Y TO EN-Y(WS-ROW)
+     MOVE L-Z TO EN-Z(WS-ROW)
+     MOVE L-YAW TO EN-YAW(WS-ROW)
+     MOVE L-PITCH TO EN-PITCH(WS-ROW)
+     MOVE L-ON-GROUND TO EN-ON-GROUND(WS-ROW)
+     MOVE L-DIM TO EN-DIM(WS-ROW)
+     CALL "ENTITY-TRACK" USING WS-ROW
+     GOBACK.
+ END PROGRAM ENTITY-CHANGE-DIM.

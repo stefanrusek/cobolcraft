@@ -1,5 +1,6 @@
-*> The stand-in light policy (standin-content §5.2; docs/protocol/09-cobolcraft-profile.md §3.4
-*> rule 4) over the chunk cache (world.cob, CHUNKMEM.cpy). Sky light: 15 in every cell above its
+*> The light policies (standin-content §5.2; docs/protocol/09-cobolcraft-profile.md §3.4 rule 4;
+*> §15.3), selected by the chunk's dimension (DIMENSIONS.cpy DM-LIGHT-POLICY), over the chunk cache
+*> (world.cob, CHUNKMEM.cpy). DIM-LIGHT-BLOCK-ONLY has no sky light at all; otherwise sky light: 15 in every cell above its
 *> column's topmost non-void block, 0 at or below it; no sideways spreading. Block light: a source of
 *> level L (SB-LIGHT) has L, a non-opaque cell has L minus the length of the shortest face-adjacent
 *> path from the source through non-opaque cells (never below 0), opaque cells other than sources
@@ -59,10 +60,12 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LIGHT-SKY.
 *> USING row (BINARY-LONG): the sky light of that cached chunk. Whole layers are set at once up to
-*> the lowest column top, then each column from there to its own top.
+*> the lowest column top, then each column from there to its own top. A dimension whose light policy
+*> has no sky light (DIM-LIGHT-BLOCK-ONLY, standin §15.3) gets 0 in every cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DIMENSIONS.
  COPY CHUNKMEM.
  01 WS-TOPS.
     05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
@@ -75,6 +78,10 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
+     IF DM-LIGHT-POLICY(CK-DIM(L-ROW)) = DIM-LIGHT-BLOCK-ONLY
+         MOVE LOW-VALUES TO CM-SKYS
+         GOBACK
+     END-IF
      CALL "WORLD-COLUMN-TOPS" USING L-ROW WS-TOPS
      MOVE 255 TO WS-MIN
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
@@ -325,7 +332,8 @@
 *> when block section s changed), PB-BUFFER: Light Update 0x31 (05a: VarInt chunk x, VarInt chunk z,
 *> LightData; 09 §3.4 rule 3). Only the changed sections carry light, each with both kinds: an
 *> all-zero layer sets its bit in the empty mask, any other layer is an array (rule 2); every other
-*> light section index has no bit in any mask.
+*> light section index has no bit in any mask. A dimension without sky light (DIM-LIGHT-BLOCK-ONLY,
+*> standin §15.3) sets no sky light bit at all.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -360,7 +368,10 @@
      PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
          IF L-CHANGED(WS-S + 1:1) = "1"
              COMPUTE WS-BASE = WS-S * 4096
-             MOVE 1 TO WS-SKY-STATE(WS-S + 2) WS-BLOCK-STATE(WS-S + 2)
+             MOVE 1 TO WS-BLOCK-STATE(WS-S + 2)
+             IF DM-LIGHT-POLICY(CK-DIM(L-ROW)) NOT = DIM-LIGHT-BLOCK-ONLY
+                 MOVE 1 TO WS-SKY-STATE(WS-S + 2)
+             END-IF
              IF CM-SKYS(WS-BASE + 1:4096) NOT = LOW-VALUES
                  MOVE 2 TO WS-SKY-STATE(WS-S + 2)
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048

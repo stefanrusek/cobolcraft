@@ -1,0 +1,232 @@
+*> Implementation test of the light policy of the extra dimension (core/src/light.cob,
+*> core/src/chunks-stream.cob; standin-content §15.3, §5.2; DIMENSIONS.cpy DM-LIGHT-POLICY): in
+*> cobolcraft:subroutine there is no sky light at all (every cell 0, and Level Chunk With Light and
+*> Light Update carry no sky light bit in any mask), while block light is exactly the §5.2 rule (the
+*> marker glowtube 15, minus 1 per step through void; a goto_pad 6). The subroutine chunk payload has
+*> 8 block sections, 10 light sections, 32 Longs per heightmap (8-bit entries) and the ash_flats
+*> biome. cobolcraft:main keeps its sky light.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LIGHT-EXTRA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY CHUNKMEM.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-NON-EMPTY           BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-BLOCK-BITS          BINARY-LONG VALUE 5.
+ 01 WS-BIOME-BITS          BINARY-LONG VALUE 2.
+ 01 WS-STATES.
+    05 WS-ST               BINARY-LONG OCCURS 4096 TIMES.
+ 01 WS-BIOMES.
+    05 WS-BIOME            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-LIGHTS              BINARY-LONG.
+ 01 WS-SKY-STATES.
+    05 WS-SKY-STATE        BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-BLOCK-STATES.
+    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-SKY-ARRAYS.
+    05 WS-SKY-ARRAY        PIC X(2048) OCCURS 18 TIMES.
+ 01 WS-BLOCK-ARRAYS.
+    05 WS-BLOCK-ARRAY      PIC X(2048) OCCURS 18 TIMES.
+ 01 WS-CHANGED             PIC X(16).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE DIM-SUBROUTINE TO WS-DIM
+
+     MOVE "test light extra subroutine has no sky light: every sky cell of chunks (0, 0), (1, -1) "
+         & "and (-3, 3) is 0" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 8 TO WS-Z MOVE 0 TO WS-Y PERFORM SKY-ZERO
+     MOVE 20 TO WS-X MOVE -5 TO WS-Z PERFORM SKY-ZERO
+     MOVE -40 TO WS-X MOVE 56 TO WS-Z PERFORM SKY-ZERO
+     MOVE "0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra subroutine block light: marker glowtube (8, 36, 8) 15, minus 1 per step "
+         & "through void, 0 in the slag below" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 36 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 37 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 40 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 12 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 35 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 50 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 51 TO WS-Y PERFORM BLOCK-NUM
+     MOVE "15 14 11 7 0 1 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra subroutine a goto_pad emits 6 and still no sky light" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 40 TO WS-X MOVE 80 TO WS-Y MOVE 40 TO WS-Z
+     MOVE TRAVEL-PAD-STATE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     PERFORM BLOCK-NUM
+     MOVE 81 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 46 TO WS-X MOVE 80 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 40 TO WS-X PERFORM SKY-ZERO
+     MOVE "6 5 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra cobolcraft:main keeps its sky light (15 above the spawn column)"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE 4 TO WS-X MOVE 54 TO WS-Y MOVE 8 TO WS-Z PERFORM SKY-NUM
+     MOVE 53 TO WS-Y PERFORM SKY-NUM
+     MOVE "15 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     MOVE DIM-SUBROUTINE TO WS-DIM
+
+*>   Level Chunk With Light of subroutine chunk (0, 0), decoded.
+     MOVE 0 TO WS-CX WS-CZ
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-PACKET-BUILD" USING WS-DIM WS-CX WS-CZ PB-BUFFER
+     MOVE "test light extra subroutine chunk packet: 3 heightmaps of 32 Longs, column (8, 8) holds 37"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM
+     CALL "PB-GET-INT" USING PB-BUFFER WS-NUM
+     CALL "PB-GET-INT" USING PB-BUFFER WS-NUM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     PERFORM 3 TIMES
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-N
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+*>           Entry 136 = x 8 + 16 * z 8: 8 entries per Long, Long 17 (from 0), slot 0, bits 0 to 7.
+             IF WS-K = 18
+                 COMPUTE WS-NUM = FUNCTION MOD(WS-LONG, 256)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     PERFORM ADD-NUM
+     MOVE WS-N TO WS-NUM PERFORM ADD-NUM
+     MOVE "3 37 32" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra subroutine chunk packet: 8 sections, biome ash_flats, nothing left over"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-LENGTH
+     COMPUTE WS-LENGTH = WS-LENGTH + PB-POS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 7
+         CALL "CHUNK-SECTION-DECODE" USING PB-BUFFER WS-BLOCK-BITS WS-BIOME-BITS WS-NON-EMPTY
+             WS-FLUID WS-STATES WS-BIOMES
+     END-PERFORM
+     MOVE WS-BIOME(1) TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-BIOME(64) TO WS-NUM PERFORM ADD-NUM
+     COMPUTE WS-NUM = PB-POS - WS-LENGTH PERFORM ADD-NUM
+     MOVE PB-ERROR TO WS-NUM PERFORM ADD-NUM
+     MOVE "2 2 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra subroutine chunk packet light: no sky light bit in any mask, block light "
+         & "arrays for sections 2 and 3 only" TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     MOVE 10 TO WS-LIGHTS
+     CALL "LIGHT-DECODE" USING PB-BUFFER WS-LIGHTS WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES
+         WS-BLOCK-ARRAYS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE WS-SKY-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE WS-BLOCK-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     COMPUTE WS-NUM = PB-LENGTH - PB-POS PERFORM ADD-NUM
+     MOVE PB-ERROR TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0 0 0 0 0 0 0 0 0 0 1 1 1 2 2 1 1 1 1 1 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light extra subroutine Light Update of sections 2 and 3 carries no sky light bit"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
+     MOVE "0011000000000000" TO WS-CHANGED
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "LIGHT-UPDATE-BUILD" USING WS-ROW WS-CHANGED PB-BUFFER
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM
+     CALL "LIGHT-DECODE" USING PB-BUFFER WS-LIGHTS WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES
+         WS-BLOCK-ARRAYS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE WS-SKY-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE WS-BLOCK-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     MOVE PB-ERROR TO WS-NUM PERFORM ADD-NUM
+     MOVE "49 0 0 0 0 0 0 0 0 0 0 0 0 0 2 2 0 0 0 0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     STOP RUN.
+
+ LOCATE.
+     COMPUTE WS-CX = (WS-X - FUNCTION MOD(WS-X, 16)) / 16
+     COMPUTE WS-CZ = (WS-Z - FUNCTION MOD(WS-Z, 16)) / 16
+     CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
+     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW)
+     COMPUTE WS-CELL = WS-Y * 256 + (WS-Z - WS-CZ * 16) * 16 + WS-X - WS-CX * 16 + 1.
+
+*> The number of non-zero sky cells of the whole chunk holding (x, z).
+ SKY-ZERO.
+     PERFORM LOCATE
+     MOVE 0 TO WS-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 65536
+         IF CM-SKY(WS-I) NOT = 0
+             ADD 1 TO WS-NUM
+         END-IF
+     END-PERFORM
+     PERFORM ADD-NUM.
+
+ SKY-NUM.
+     PERFORM LOCATE
+     MOVE CM-SKY(WS-CELL) TO WS-NUM
+     PERFORM ADD-NUM.
+
+ BLOCK-NUM.
+     PERFORM LOCATE
+     MOVE CM-BLOCK(WS-CELL) TO WS-NUM
+     PERFORM ADD-NUM.
+
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-LIGHT-EXTRA.
+
+ COPY CORETEST.

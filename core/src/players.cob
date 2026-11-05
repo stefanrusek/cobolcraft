@@ -13,7 +13,7 @@
 *> given the starting inventory of standin §2 (ITEMS.cpy START-ITEM-TABLE; US4-8), once. A known
 *> player who left while dead (KN-DEATH-CAUSE > 0, standin §10.6) is dead again: survival, health 0,
 *> the same death cause and killer (Player Loaded then makes it Dead, PLAY-JOIN shows the death
-*> screen).
+*> screen). A known player who left from a place (KN-PLACED) is put back there (PLAYER-PLACE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -83,6 +83,9 @@
                      MOVE KN-KILLER-NAME(WS-I) TO PL-KILLER-NAME(L-ROW)
                      MOVE KN-KILLER-LENGTH(WS-I) TO PL-KILLER-LENGTH(L-ROW)
                  END-IF
+                 IF KN-PLACED(WS-I) = 1
+                     CALL "PLAYER-PLACE" USING L-ROW WS-I
+                 END-IF
              END-IF
          END-PERFORM
          IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
@@ -99,6 +102,34 @@
      END-IF
      GOBACK.
  END PROGRAM PLAYER-CREATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-PLACE.
+*> USING player row, known-player row (BINARY-LONG): when the dimension the player left from is
+*> enabled (one of CW-DIM), the player is in it at the stored position and facing (US12-3);
+*> otherwise it stays at the world spawn point in cobolcraft:main (standin §15.5, US12-4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-D                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-KNOWN.
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > CW-DIM-COUNT
+         IF CW-DIM(WS-D) = KN-DIM(L-KNOWN)
+             MOVE KN-DIM(L-KNOWN) TO PL-DIM(L-ROW)
+             MOVE KN-X(L-KNOWN) TO PL-X(L-ROW)
+             MOVE KN-Y(L-KNOWN) TO PL-Y(L-ROW) PL-FALL-START(L-ROW)
+             MOVE KN-Z(L-KNOWN) TO PL-Z(L-ROW)
+             MOVE KN-YAW(L-KNOWN) TO PL-YAW(L-ROW)
+             MOVE KN-PITCH(L-KNOWN) TO PL-PITCH(L-ROW)
+             COMPUTE PL-CENTER-X(L-ROW) = FUNCTION INTEGER(PL-X(L-ROW) / 16)
+             COMPUTE PL-CENTER-Z(L-ROW) = FUNCTION INTEGER(PL-Z(L-ROW) / 16)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PLAYER-PLACE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAYER-FIND-NAME.
@@ -126,7 +157,8 @@
  PROGRAM-ID. PLAYER-LEAVE.
 *> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
 *> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
-*> Its known-player row keeps whether it left dead, with the death cause and killer (standin §10.6).
+*> Its known-player row keeps whether it left dead, with the death cause and killer (standin §10.6),
+*> and the dimension, position and facing it left from (US12-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -141,6 +173,13 @@
              MOVE PL-DEATH-CAUSE(WS-ROW) TO KN-DEATH-CAUSE(WS-I)
              MOVE PL-KILLER-NAME(WS-ROW) TO KN-KILLER-NAME(WS-I)
              MOVE PL-KILLER-LENGTH(WS-ROW) TO KN-KILLER-LENGTH(WS-I)
+             MOVE 1 TO KN-PLACED(WS-I)
+             MOVE PL-DIM(WS-ROW) TO KN-DIM(WS-I)
+             MOVE PL-X(WS-ROW) TO KN-X(WS-I)
+             MOVE PL-Y(WS-ROW) TO KN-Y(WS-I)
+             MOVE PL-Z(WS-ROW) TO KN-Z(WS-I)
+             MOVE PL-YAW(WS-ROW) TO KN-YAW(WS-I)
+             MOVE PL-PITCH(WS-ROW) TO KN-PITCH(WS-I)
          END-IF
      END-PERFORM
      CALL "OTHERS-LEAVE" USING WS-ROW

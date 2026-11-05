@@ -125,6 +125,20 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   is clear with 6000 ticks left; tests that need a kind set `CW-WEATHER-KIND(dim)` and
   `CW-WEATHER-LEFT(dim)` directly. Hail (§14.6) strikes exposed survival players and mobs on ticks with
   Time mod 80 = 0 only during a hailstorm, so it never acts in a test that does not set one.
+- **Extra dimensions** (standin §15): `TEST-SETTINGS` leaves `CS-EXTRA-DIMENSIONS` 0, so a test world
+  has only cobolcraft:main; set it to 1 before opening the world to get cobolcraft:subroutine
+  (`DIM-SUBROUTINE`, row 2: generator `WORLDGEN-SUB-CHUNK`, no sky light, ash_flats, no weather). Tests
+  travel for real: place a goto_pad (`TRAVEL-PAD-STATE`) with `WORLD-SET-BLOCK` and `TEST-USE-ON` it;
+  a player who travelled is ignored for 20 ticks (`TEST-TICKS` 20 between trips). Travel sends Respawn,
+  abilities, held slot, inventory, then `PLAY-ARRIVE` (`TEST-DRAIN-IDS`: `84 65 107 18 106 99 115 39x4 96
+  12 46x25 11 73` at view distance 2). Expected Subroutine heights come from the §15.2 formula
+  (32 + round(5 sin(x/11) cos(z/13))), computed independently.
+- **Rejoin restores the place left** (US12-3): `PLAYER-LEAVE` stores dimension, position and facing in
+  `CORE-KNOWN` (`KN-PLACED`, `KN-DIM`, `KN-X`...), and the next join of that UUID starts there while the
+  dimension is enabled (else at the world spawn). A test that expects a rejoin at the spawn point must
+  not move the player first.
+- An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
+  new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
   mod 100 = 0 by day). A test that runs many ticks and does not test mobs keeps them out with
   `MOVE 0 TO CS-HOSTILE-MOBS` before opening the world and `MOVE 16001 TO CW-TIME` after it (night, when

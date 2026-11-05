@@ -1,7 +1,7 @@
 *> Per-dimension chunk cache and block access (data-model §2, §3; CORESTATE.cpy CORE-CHUNKS,
 *> CHUNKMEM.cpy). Dimensions are rows of DIMENSIONS.cpy. Chunk coordinates are block >> 4 (floor
 *> division by 16); a chunk is generated on first access (WORLD-CHUNK-LOAD) and lit when it is first
-*> asked for whole (WORLD-CHUNK; light.cob). Only the cobolcraft:main generator exists in US2.
+*> asked for whole (WORLD-CHUNK; light.cob) by the dimension's generator (WORLDGEN-DIM-CHUNK).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-RESET.
@@ -91,7 +91,7 @@
      MOVE L-ROW TO CK-BUCKET(WS-HASH)
      ALLOCATE WS-BYTES CHARACTERS RETURNING CK-ADDR(L-ROW)
      SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
-     CALL "WORLDGEN-CHUNK" USING L-CX L-CZ CM-CHUNK WS-MARKER-Y
+     CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CM-CHUNK WS-MARKER-Y
      IF WS-MARKER-Y >= 0
          ADD 1 TO CK-SOURCES(L-ROW, WS-MARKER-Y / 16 + 1)
      END-IF

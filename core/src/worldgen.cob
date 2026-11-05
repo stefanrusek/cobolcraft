@@ -1,5 +1,6 @@
-*> The cobolcraft:main generator (standin-content §5.2): deterministic and stateless, every column is
-*> generated from its world (x, z) alone. Trigonometry uses FUNCTION SIN / COS (research R2).
+*> The world generators (standin-content §5.2 for cobolcraft:main, §15.2 for cobolcraft:subroutine),
+*> selected by dimension (WORLDGEN-DIM-CHUNK, WORLDGEN-DIM-BIOMES): deterministic and stateless,
+*> every column is generated from its world (x, z) alone. Trigonometry uses FUNCTION SIN / COS (research R2).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-HEIGHT.
@@ -182,3 +183,140 @@
      END-PERFORM
      GOBACK.
  END PROGRAM WORLDGEN-BIOMES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDGEN-SUB-HEIGHT.
+*> USING x, z, h-out (BINARY-LONG): the floor height of cobolcraft:subroutine column (x, z) (standin
+*> §15.2), GEN-SUB-BASE + GEN-SUB-AMPLITUDE x sin(x / GEN-SUB-X-DIVISOR) x cos(z /
+*> GEN-SUB-Z-DIVISOR) rounded to the nearest integer, halves away from zero.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-SIN                 FLOAT-LONG.
+ 01 WS-COS                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Z L-H.
+     COMPUTE WS-ANGLE = L-X / GEN-SUB-X-DIVISOR
+     COMPUTE WS-SIN = FUNCTION SIN(WS-ANGLE)
+     COMPUTE WS-ANGLE = L-Z / GEN-SUB-Z-DIVISOR
+     COMPUTE WS-COS = FUNCTION COS(WS-ANGLE)
+     COMPUTE L-H ROUNDED MODE NEAREST-AWAY-FROM-ZERO
+         = GEN-SUB-BASE + GEN-SUB-AMPLITUDE * WS-SIN * WS-COS
+     GOBACK.
+ END PROGRAM WORLDGEN-SUB-HEIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDGEN-SUB-CHUNK.
+*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CHUNKMEM.cpy layout; only the block states
+*> are written), marker-y out (BINARY-LONG: y of the marker glowtube, -1 when the chunk has none).
+*> The §15.2 generator: per column (h = floor height) y 0 baseplate, 1 to h - 3 greystone, h - 2 to
+*> h slag, above void (up to the top of the chunk memory); in chunks whose chunk x and z are both
+*> multiples of GEN-SUB-MARKER-MOD (mathematical modulo) a lit glowtube at local (8, h + 1, 8). The
+*> sines and cosines are taken once per row and column of the chunk.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BLOCKS.
+ COPY DIMENSIONS.
+ COPY CHUNKMEM.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-SINS.
+    05 WS-SIN              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-COSS.
+    05 WS-COS              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CHUNK                PIC X.
+ 01 L-MARKER-Y             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CX L-CZ L-CHUNK L-MARKER-Y.
+     SET ADDRESS OF CM-CHUNK TO ADDRESS OF L-CHUNK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         COMPUTE WS-ANGLE = (L-CX * 16 + WS-I - 1) / GEN-SUB-X-DIVISOR
+         COMPUTE WS-SIN(WS-I) = FUNCTION SIN(WS-ANGLE)
+         COMPUTE WS-ANGLE = (L-CZ * 16 + WS-I - 1) / GEN-SUB-Z-DIVISOR
+         COMPUTE WS-COS(WS-I) = FUNCTION COS(WS-ANGLE)
+     END-PERFORM
+     MOVE LOW-VALUES TO CM-STATES
+     MOVE ALL X"01" TO CM-STATES(1:256)
+     MOVE -1 TO L-MARKER-Y
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
+         COMPUTE WS-LZ = (WS-C - 1) / 16
+         COMPUTE WS-LX = WS-C - 1 - WS-LZ * 16
+         COMPUTE WS-H ROUNDED MODE NEAREST-AWAY-FROM-ZERO
+             = GEN-SUB-BASE + GEN-SUB-AMPLITUDE * WS-SIN(WS-LX + 1) * WS-COS(WS-LZ + 1)
+         PERFORM VARYING WS-Y FROM 1 BY 1 UNTIL WS-Y > WS-H
+             COMPUTE WS-CELL = WS-Y * 256 + WS-C
+             IF WS-Y <= WS-H - 3
+                 MOVE ST-GREYSTONE TO CM-STATE(WS-CELL)
+             ELSE
+                 MOVE ST-SLAG TO CM-STATE(WS-CELL)
+             END-IF
+         END-PERFORM
+         IF WS-C = 137 AND FUNCTION MOD(L-CX, GEN-SUB-MARKER-MOD) = 0
+                 AND FUNCTION MOD(L-CZ, GEN-SUB-MARKER-MOD) = 0
+             COMPUTE L-MARKER-Y = WS-H + 1
+             MOVE ST-GLOWTUBE-LIT TO CM-STATE(L-MARKER-Y * 256 + WS-C)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLDGEN-SUB-CHUNK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDGEN-DIM-CHUNK.
+*> USING dimension row, chunk x, chunk z (BINARY-LONG), chunk memory, marker-y out: the chunk from
+*> the dimension's generator (DIMENSIONS.cpy DM-GENERATOR): WORLDGEN-CHUNK (§5.2) or
+*> WORLDGEN-SUB-CHUNK (§15.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CHUNK                PIC X.
+ 01 L-MARKER-Y             BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y.
+     IF DM-GENERATOR(L-DIM) = DIM-GEN-SUBROUTINE
+         CALL "WORLDGEN-SUB-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+     ELSE
+         CALL "WORLDGEN-CHUNK" USING L-CX L-CZ L-CHUNK L-MARKER-Y
+     END-IF
+     GOBACK.
+ END PROGRAM WORLDGEN-DIM-CHUNK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDGEN-DIM-BIOMES.
+*> USING dimension row, chunk x, chunk z (BINARY-LONG), biomes out (table of 16 BINARY-LONG, as
+*> WORLDGEN-BIOMES): the dimension's single biome (DM-BIOME, §15.1) in every cell, or, when it has
+*> none (-1), the biomes of WORLDGEN-BIOMES (§5.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-BIOMES.
+    05 L-BIOME             BINARY-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-BIOMES.
+     IF DM-BIOME(L-DIM) < 0
+         CALL "WORLDGEN-BIOMES" USING L-CX L-CZ L-BIOMES
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE DM-BIOME(L-DIM) TO L-BIOME(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLDGEN-DIM-BIOMES.
