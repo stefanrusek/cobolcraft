@@ -50,3 +50,6 @@
   Every yield (survival block breaks, mob defeats) now drops as a ground item, superseding standin-content §1.3.
   FR-002, FR-007-FR-009, FR-013-FR-017 updated; SC-011-SC-013 added. Sounds remain out of scope. Re-validated:
   all items pass except the three open markers (no new markers added).
+- Clarification 2026-11-05 (Q1): FR-010 resolved — offline mode only; the name is a client command-line argument;
+  bans, allow-list, operator status and stored player data are keyed by the offline identity. Re-validated: all items
+  pass except the two remaining markers (FR-011, FR-012).
