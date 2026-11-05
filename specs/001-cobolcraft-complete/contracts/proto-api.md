@@ -54,7 +54,7 @@ frames.
 
 ## 5. Entry point parameters
 
-Recorded with the US2, US3 and US10 implementations of `proto` so that `core` and `client` call it the same way. It adds
+Recorded with the US2, US3, US10 and US14 implementations of `proto` so that `core` and `client` call it the same way. It adds
 no record shape: `PROTO.cpy` is unchanged. Every program is called `CALL "<name>" USING …` with every
 argument by reference. Integers are `BINARY-LONG` unless stated. An *area* is any caller item at least as
 long as the count passed with it; a *table* is a caller table of the stated item type (the callee addresses
@@ -90,6 +90,7 @@ identifier, bit outside a fixed set, unsendable frame) sets `PB-ERROR` and appen
 | `PB-PUT-` / `PB-GET-ENTITY-METADATA` | `PB-BUFFER`, `PB-METADATA-ENTRY` (one entry, or the 0xFF terminator when `PB-MD-INDEX` = `PB-MD-END`; serializers other than those of `PROTO.cpy` set `PB-ERROR`; a read clears the value fields the serializer does not use) |
 | `PB-PUT-` / `PB-GET-SLOT-DISPLAY` | `PB-BUFFER`, `PB-SLOT-DISPLAY` (types `empty`, `item`, `item_stack` with an empty DataComponentPatch; another type, or a read stack with components, sets `PB-ERROR`; a read clears the fields the type does not use) |
 | `PB-PUT-` / `PB-GET-RECIPE-DISPLAY` | `PB-BUFFER`, `PB-RECIPE-DISPLAY` (one RecipeDisplayEntry: display id, RecipeDisplay `crafting_shapeless` or `crafting_shaped`, group, category, optional requirements each written and read as HolderSet selector 2 + one item id; the Recipe Book Add entry flags byte is the caller's; another type, a count above `PB-RECIPE-MAX-SLOTS` or another SlotDisplay type sets `PB-ERROR`) |
+| `PB-PUT-` / `PB-GET-COMMAND-NODE` | `PB-BUFFER`, `PB-COMMAND-NODE` (one 05a CommandNode: flags byte, children, redirect when flag 0x08, name for types 1 and 2, parser and properties for type 2 (NumberRange for `brigadier:double` and `brigadier:integer`, kind for `brigadier:string`, none for `game_profile`), suggestions type when type 2 and flag 0x10; types 0 and 3 have no stub; the node count and root index of the packet are the caller's; flags outside 0 to 255, more than `PB-NODE-MAX-CHILDREN` children, a name longer than `PB-CN-NAME`, another parser, a string kind outside 0 to 2, range flags outside 0 to 3 or an invalid or over-long suggestions type sets `PB-ERROR`; a read clears the fields the node does not use) |
 | `NBT-WRITE-BYTE`, `-SHORT`, `-INT` | `PB-BUFFER`, name area, name length, value (`BINARY-LONG`) |
 | `NBT-WRITE-LONG`, `-FLOAT`, `-DOUBLE` | `PB-BUFFER`, name area, name length, value (`BINARY-DOUBLE`, `FLOAT-SHORT`, `FLOAT-LONG`) |
 | `NBT-WRITE-STRING` | `PB-BUFFER`, name area, name length, text area (UTF-8), byte length |
