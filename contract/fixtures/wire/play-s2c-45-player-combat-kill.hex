@@ -1,0 +1,18 @@
+# Player Combat Kill
+# Phase play, clientbound (S->C), packet id 0x45 (69)
+# Docs: 09 §3.3 row 0x45; 05a 0x45; 00 §9.1; 09 §1 text encoding; standin §10.7
+# Stated inputs: dead player `Alice`, entity id 1 (her own Login entity id); killed by an abend:
+#   translate key `cobolcraft.death.mob.abend`, arguments [`Alice`].
+
+45                                                 # packet id 0x45 (VarInt)
+01                                                 # Player id: VarInt 1 (Alice)
+# Message: TextComponent
+  # TextComponent (00 §9.1, 09 §1 `translate` with arguments): network NBT Compound root
+  0a                                                 # root tag type 10 Compound (no root name, 00 §8)
+    08 00 09 74 72 61 6e 73 6c 61 74 65                # entry: type 8 String, name "translate"
+    00 1a 63 6f 62 6f 6c 63 72 61 66 74 2e 64 65 61    # value: UShort length 26, "cobolcraft.death.mob.abend"
+    74 68 2e 6d 6f 62 2e 61 62 65 6e 64                # (cont.)
+    09 00 04 77 69 74 68                               # entry: type 9 List, name "with"
+    08 00 00 00 01                                     # list element type 8 String, Int count 1
+      00 05 41 6c 69 63 65                               # element 0: UShort length 5, "Alice" (literal argument)
+  00                                                 # End of compound

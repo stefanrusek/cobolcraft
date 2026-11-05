@@ -1,0 +1,13 @@
+# Fixture: play-s2c-63-set-default-spawn-position.hex
+# Set Default Spawn Position (ClientboundSetDefaultSpawnPositionPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x63 (99).
+# Task T129. 09 §3.2 row: Set Default Spawn Position. Fixture: (4, 54, 8), yaw -90.0, pitch 0.0.
+# Doc refs: 05b 0x63; 05b RespawnData, GlobalPos; 00 §4.1 Position, §3.2 Identifier, §2 Float.
+# Content: standin-content §5.2 spawn point (feet (4.5, 54.0, 8.5) -> block (4, 54, 8)).
+# Stated inputs: dimension cobolcraft:main; block position (4, 54, 8); yaw -90.0; pitch 0.0.
+
+63                                                            # packet id: VarInt 0x63 (99) Set Default Spawn Position (play, clientbound)
+0f 63 6f 62 6f 6c 63 72 61 66 74 3a 6d 61 69 6e               # Respawn data.Position.Dimension: Identifier (String) "cobolcraft:main" (VarInt length 15 + UTF-8)
+00 00 01 00 00 00 80 36                                       # Respawn data.Position.Position: Position (x 4, y 54, z 8) = (4<<38)|(8<<12)|54
+c2 b4 00 00                                                   # Respawn data.Yaw: Float -90.0 (IEEE-754 binary32 c2b40000)
+00 00 00 00                                                   # Respawn data.Pitch: Float 0.0 (IEEE-754 binary32 00000000)

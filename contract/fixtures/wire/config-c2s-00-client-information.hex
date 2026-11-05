@@ -1,0 +1,18 @@
+# Client Information (ServerboundClientInformationPacket) -- configuration phase, serverbound (C->S), packet id 0x00
+# Docs: 09 §3.1 row "Client Information"; 03 "0x00 (0) Serverbound Client Information";
+#       00 §3.1 String, §2 Byte/UByte/Boolean, §2.1 VarInt (IdEnum).
+# Stated inputs: language "en_us"; view distance 8 (the client's setting; fixture choice); chat visibility 0 (full);
+#   chat colors true; model customisation 0; main hand 1 (right); text filtering false; allows listing true;
+#   particle status 0 (all).
+
+00                                               # packet id: VarInt 0x00 (Client Information)
+05                                               # language (String(16)) length: VarInt 5 (UTF-8 bytes)
+65 6e 5f 75 73                                   # language (String(16)): "en_us"
+08                                               # view distance: Byte 8
+00                                               # chat visibility: VarInt 0 (full)
+01                                               # chat colors: Boolean true
+00                                               # model customisation: UByte 0
+01                                               # main hand: VarInt 1 (right)
+00                                               # text filtering enabled: Boolean false
+01                                               # allows listing: Boolean true
+00                                               # particle status: VarInt 0 (all)

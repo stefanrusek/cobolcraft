@@ -1,0 +1,9 @@
+# Player Command 2 STOP_SPRINTING
+# Phase play, serverbound (C->S), packet id 0x2A (42)
+# Docs: 09 §3.3 row 0x2A action 2; 05c 0x2A
+# Stated inputs: the player's own entity id 1 (Alice), action 2, data 0.
+
+2a                                                 # packet id 0x2A (VarInt)
+01                                                 # Entity id: VarInt 1 (the player's own)
+02                                                 # Action: VarInt 2 STOP_SPRINTING
+00                                                 # Data: VarInt 0

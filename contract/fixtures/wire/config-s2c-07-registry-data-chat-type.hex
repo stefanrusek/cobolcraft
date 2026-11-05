@@ -1,0 +1,40 @@
+# Fixture: config-s2c-07-registry-data-chat-type.hex
+# Registry Data (minecraft:chat_type)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data minecraft:chat_type (1 entry cobolcraft:say)
+# Content: docs/design/standin-content.md §4.4
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): standin §4.4 column order: chat, narration; inside each ChatTypeDecoration: translation_key, parameters
+#   (List of String, element order sender, content). style absent.
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:chat_type, 1 entry: id 0 cobolcraft:say
+#   chat: translation_key cobolcraft.chat.say, parameters [sender, content]
+#   narration: translation_key cobolcraft.chat.say.narrate, parameters [sender, content]
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+13 6d 69 6e 65 63 72 61 66 74 3a 63 68 61 74 5f 74 79 70 65   # Registry: Identifier (String) "minecraft:chat_type" (VarInt length 19 + UTF-8)
+01                                                            # Entries: VarInt count 1
+
+# ---- entry 0 (id 0): cobolcraft:say ----
+0e 63 6f 62 6f 6c 63 72 61 66 74 3a 73 61 79                  # Entry[0].Id: Identifier (String) "cobolcraft:say" (VarInt length 14 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  0a 00 04 63 68 61 74                                        # NBT Compound (type 0a) name "chat"
+    08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b 65 79 00 13 63 6f 62 6f 6c 63 72 61 66 74 2e 63 68 61 74 2e 73 61 79  # NBT String (type 08) name "translation_key" = String "cobolcraft.chat.say"
+    09 00 0a 70 61 72 61 6d 65 74 65 72 73                    # NBT List (type 09) name "parameters"
+    08 00 00 00 02                                            #   list element type 08 (String), count 2
+      00 06 73 65 6e 64 65 72                                 #   [0] String "sender" (payload only, no type, no name)
+      00 07 63 6f 6e 74 65 6e 74                              #   [1] String "content" (payload only, no type, no name)
+  00                                                          # NBT End (type 00): end of compound "chat"
+  0a 00 09 6e 61 72 72 61 74 69 6f 6e                         # NBT Compound (type 0a) name "narration"
+    08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b 65 79 00 1b 63 6f 62 6f 6c 63 72 61 66 74 2e 63 68 61 74 2e 73 61 79 2e 6e 61 72 72 61 74 65  # NBT String (type 08) name "translation_key" = String "cobolcraft.chat.say.narrate"
+    09 00 0a 70 61 72 61 6d 65 74 65 72 73                    # NBT List (type 09) name "parameters"
+    08 00 00 00 02                                            #   list element type 08 (String), count 2
+      00 06 73 65 6e 64 65 72                                 #   [0] String "sender" (payload only, no type, no name)
+      00 07 63 6f 6e 74 65 6e 74                              #   [1] String "content" (payload only, no type, no name)
+  00                                                          # NBT End (type 00): end of compound "narration"
+00                                                            # NBT End (type 00): end of compound root

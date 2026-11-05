@@ -1,0 +1,8 @@
+# Clientbound Chunk Batch Start (ClientboundChunkBatchStartPacket)
+# phase: play   direction: S->C (clientbound)   packet id 0x0C (12)
+# refs: 09 §3 row "0x0C Chunk Batch Start" (no fields); 05a 0x0C (singleton, StreamCodec.unit).
+#
+# STATED INPUTS
+#   none (the packet has no fields)
+#
+0c    # packet id 0x0C (12); no fields follow

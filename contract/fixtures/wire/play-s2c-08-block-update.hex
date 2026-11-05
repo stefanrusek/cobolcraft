@@ -1,0 +1,11 @@
+# Fixture: play-s2c-08-block-update.hex
+# Block Update (ClientboundBlockUpdatePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x08 (8).
+# Task T135. 09 §3.2 row: Block Update (position, global block state id 0-17).
+# Doc refs: 05a 0x08 (Position, VarInt block state); 00 §4.1 Position; standin-content §1.2 state ids.
+# Stated inputs: position (8, 59, 8) (the spawn chunk's marker glowtube, standin-content §5.2: column (8, 8) has h 54,
+#   glowtube at h + 5 = 59); new state 14 (glowtube lit=false: the glowtube was toggled off).
+
+08                                                            # packet id: VarInt 0x08 (8) Block Update (play, clientbound)
+00 00 02 00 00 00 80 3b                                       # Location: Position (x 8, y 59, z 8) = (8<<38)|(8<<12)|59
+0e                                                            # Block state: VarInt 14 (cobolcraft:glowtube lit=false)

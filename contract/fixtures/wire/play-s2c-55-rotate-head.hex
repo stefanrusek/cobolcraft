@@ -1,0 +1,10 @@
+# Fixture: play-s2c-55-rotate-head.hex
+# Rotate Head (ClientboundRotateHeadPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x55 (85).
+# Task T145. 09 §3.2 row: Rotate Head (head yaw = the entity's yaw, sent with each rotation change).
+# Doc refs: 05b 0x55 (VarInt entity id, Angle head yaw); 00 §4.4 Angle.
+# Stated inputs: entity id 20 (the sodgrazer, after the rotation of move-entity-rot); head yaw -90.0.
+
+55                                                            # packet id: VarInt 0x55 (85) Rotate Head (play, clientbound)
+14                                                            # Entity id: VarInt 20
+c0                                                            # Head yaw: Angle -90.0 deg -> floor(-64.0) = -64 -> byte 0xc0

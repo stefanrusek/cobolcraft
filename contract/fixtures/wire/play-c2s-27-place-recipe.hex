@@ -1,0 +1,9 @@
+# Place Recipe
+# Phase play, serverbound (C->S), packet id 0x27 (39)
+# Docs: 09 §3.3 row 0x27; 05c 0x27
+# Stated inputs: container id 0, recipe display id 0 (4 greystone -> 2 ledger_tile), use max items false.
+
+27                                                 # packet id 0x27 (VarInt)
+00                                                 # Container id: VarInt 0
+00                                                 # Recipe: VarInt 0 (display id)
+00                                                 # Use max items: Boolean false

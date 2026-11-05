@@ -1,0 +1,6 @@
+# Keep Alive (ClientboundKeepAlivePacket) -- configuration phase, clientbound (S->C), packet id 0x04
+# Docs: 09 §2 "Keep-alive", 09 §3.1 row "Keep Alive" (S->C); 03 "0x04 (4) Clientbound Keep Alive"; 00 §2 Long.
+# Stated inputs: id = 123456789 (Long; 0x00000000075bcd15).
+
+04                                               # packet id: VarInt 0x04 (Keep Alive)
+00 00 00 00 07 5b cd 15                          # id: Long 123456789

@@ -1,0 +1,10 @@
+# Use Item
+# Phase play, serverbound (C->S), packet id 0x43 (67)
+# Docs: 09 §3.3 row 0x43; 05c 0x43
+# Stated inputs: main hand (0), sequence 5, yaw -90.0, pitch 0.0 (start eating the held food).
+
+43                                                 # packet id 0x43 (VarInt)
+00                                                 # Hand: VarInt 0 (main)
+05                                                 # Sequence: VarInt 5
+c2 b4 00 00                                        # Yaw: Float -90.0
+00 00 00 00                                        # Pitch: Float 0.0

@@ -1,0 +1,14 @@
+# Fixture: play-s2c-47-player-info-update.hex
+# Player Info Update (ClientboundPlayerInfoUpdatePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x47 (71).
+# Task T139. 09 §3.2 row: Player Info Update (actions 0x01 ADD_PLAYER only: offline UUID, name, 0 properties).
+# Doc refs: 05a 0x47 (FixedBitSet(8) actions, Prefixed Array of PlayerInfoEntry), GameProfileProperties;
+#   00 §5 UUID, §3.1 String; 02 Offline mode (UUID = nameUUIDFromBytes("OfflinePlayer:Alice"), version 3).
+# Stated inputs: 1 entry: player Alice, profile id 10920508-d5d8-3eed-93d2-92f193afe7d7, 0 properties.
+
+47                                                            # packet id: VarInt 0x47 (71) Player Info Update (play, clientbound)
+01                                                            # Actions: FixedBitSet(8), 1 byte 0x01 (bit 0 ADD_PLAYER only)
+01                                                            # Entries: Prefixed Array count VarInt 1
+  10 92 05 08 d5 d8 3e ed 93 d2 92 f1 93 af e7 d7             # Entries[0].Profile id: UUID 10920508-d5d8-3eed-93d2-92f193afe7d7 (offline UUID of Alice)
+  05 41 6c 69 63 65                                           # Entries[0].ADD_PLAYER.Name: String(16) "Alice" (VarInt length 5 + UTF-8)
+  00                                                          # Entries[0].ADD_PLAYER.Properties: GameProfileProperties count VarInt 0

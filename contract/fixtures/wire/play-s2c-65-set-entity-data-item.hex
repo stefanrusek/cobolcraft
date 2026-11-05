@@ -1,0 +1,15 @@
+# Fixture: play-s2c-65-set-entity-data-item.hex
+# Set Entity Data (ClientboundSetEntityDataPacket), loose_item item stack
+# Phase: play. Direction: clientbound (S->C). Packet id 0x65 (101).
+# Task T157. 09 §3.3 row: Set Entity Data (item stack): one entry index 0, serializer 7 ITEM_STACK, the stack, then 0xFF.
+# Doc refs: 05b 0x65; 00 §13.1 metadata list (UByte index, VarInt serializer, value; 0xFF terminator), §13.2 serializer 7,
+#   §12.1 ItemStack (no components, standin-content §2); standin-content §3 (loose_item metadata).
+# Stated inputs: entity id 10 (the loose_item of add-entity-loose-item); stack 1 x item 4 cobolcraft:turf
+#   (the yield of the turf broken at (5, 53, 8)).
+
+65                                                            # packet id: VarInt 0x65 (101) Set Entity Data (play, clientbound)
+0a                                                            # Entity id: VarInt 10
+  00                                                          # Metadata[0].Index: UByte 0
+  07                                                          # Metadata[0].Serializer: VarInt 7 (ITEM_STACK)
+  01 04 00 00                                                 # Metadata[0].Value: ItemStack Count 1, Item RegistryId 4 (cobolcraft:turf), DataComponentPatch AddedCount 0, RemovedCount 0
+ff                                                            # Metadata end: UByte 0xFF (EOF_MARKER)

@@ -1,0 +1,38 @@
+# Fixture: play-s2c-32-login-main.hex
+# Login (ClientboundLoginPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x32 (50).
+# Task T116. 09 §3.2 row: Login (extra-dimensions off: names [cobolcraft:main]).
+# Doc refs: 05a 0x32 Login; 05a/05b CommonPlayerSpawnInfo; 00 §2 (Int, Boolean, VarInt, Long), §3.2 Identifier.
+# Content: standin-content §5.1 (dimension, sea level 48, hashed seed 0, view distance 8), §15.1, §4.6 (dimension type ids).
+# Stated inputs:
+#   player entity id 1 (Alice); hardcore false; dimension names [cobolcraft:main];
+#   max players 20; view distance 8; simulation distance 8; reduced debug info false; show death screen true;
+#   limited crafting false; spawn info of cobolcraft:main: dimension type 0 (cobolcraft:surface), hashed seed 0,
+#   game mode 0 survival, previous game mode absent, is debug false, is flat false, last death location absent,
+#   portal cooldown 0, sea level 48; online mode false; enforces secure chat false.
+
+32                                                            # packet id: VarInt 0x32 (50) Login (play, clientbound)
+00 00 00 01                                                   # Entity id: Int 1 (Alice, the joining player)
+00                                                            # Hardcore: Boolean false
+01                                                            # Dimension names: Prefixed Array count VarInt 1
+  0f 63 6f 62 6f 6c 63 72 61 66 74 3a 6d 61 69 6e             # Dimension names[0]: Identifier (String) "cobolcraft:main" (VarInt length 15 + UTF-8)
+14                                                            # Max players: VarInt 20
+08                                                            # View distance: VarInt 8
+08                                                            # Simulation distance: VarInt 8
+00                                                            # Reduced debug info: Boolean false
+01                                                            # Show death screen: Boolean true
+00                                                            # Limited crafting: Boolean false
+# ---- Spawn info: CommonPlayerSpawnInfo (05a/05b composite types) ----
+  00                                                          # Spawn info.Dimension type: RegistryId<dimension_type> VarInt 0 (cobolcraft:surface)
+  0f 63 6f 62 6f 6c 63 72 61 66 74 3a 6d 61 69 6e             # Spawn info.Dimension: Identifier (String) "cobolcraft:main" (VarInt length 15 + UTF-8)
+  00 00 00 00 00 00 00 00                                     # Spawn info.Hashed seed: Long 0
+  00                                                          # Spawn info.Game mode: VarInt 0 (survival)
+  00                                                          # Spawn info.Previous game mode: OptionalVarInt 0 (absent)
+  00                                                          # Spawn info.Is debug: Boolean false
+  00                                                          # Spawn info.Is flat: Boolean false
+  00                                                          # Spawn info.Last death location: Optional GlobalPos, present Boolean false (absent)
+  00                                                          # Spawn info.Portal cooldown: VarInt 0
+  30                                                          # Spawn info.Sea level: VarInt 48
+# ---- end of spawn info ----
+00                                                            # Online mode: Boolean false (offline mode only, 09 §1)
+00                                                            # Enforces secure chat: Boolean false (09 §1)

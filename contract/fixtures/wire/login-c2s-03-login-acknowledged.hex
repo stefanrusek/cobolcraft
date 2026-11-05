@@ -1,0 +1,5 @@
+# Login Acknowledged (ServerboundLoginAcknowledgedPacket) -- login phase, serverbound (C->S), packet id 0x03
+# Docs: 09 §3.1 row "Login Acknowledged"; 02 "0x03 (3) Serverbound Login Acknowledged" (terminal).
+# Stated inputs: none (no fields).
+
+03                                               # packet id: VarInt 0x03 (Login Acknowledged); no fields follow

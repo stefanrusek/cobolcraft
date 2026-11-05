@@ -1,0 +1,11 @@
+# Fixture: play-s2c-41-player-abilities-creative.hex
+# Player Abilities (ClientboundPlayerAbilitiesPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x41 (65).
+# Task T128. 09 §3.2 row: Player Abilities (creative), flags 0x0D.
+# Doc refs: 05a 0x41 Player Abilities (Byte flags, Float flying speed, Float walking speed).
+# Stated inputs: flags 0x0d (0x01 invulnerable | 0x04 can fly | 0x08 instant build; not flying); flying speed 0.05; walking speed 0.1 (09 §3.2, Open question 6).
+
+41                                                            # packet id: VarInt 0x41 (65) Player Abilities (play, clientbound)
+0d                                                            # Flags: Byte 0x0d (0x01 invulnerable | 0x04 can fly | 0x08 instant build; not flying)
+3d 4c cc cd                                                   # Flying speed: Float 0.05 (IEEE-754 binary32 3d4ccccd)
+3d cc cc cd                                                   # Walking speed: Float 0.1 (IEEE-754 binary32 3dcccccd)

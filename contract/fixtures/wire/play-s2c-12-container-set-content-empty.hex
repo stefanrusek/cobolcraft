@@ -1,0 +1,49 @@
+# Fixture: play-s2c-12-container-set-content-empty.hex
+# Container Set Content (ClientboundContainerSetContentPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x12 (18).
+# Task T133. 09 §3.2 row: Container Set Content (empty): container 0, a state id, 36 slots all empty, carried item empty.
+# Doc refs: 05a 0x12 (VarInt container id, VarInt state id, Prefixed Array of ItemStack, ItemStack carried);
+#   00 §12.1 ItemStack (optional form; no components, standin-content §2); 09 §3.2 slot numbering (0-8 hotbar, 9-35 main).
+# Stated inputs: container id 0 (player inventory); state id 1; 36 slots: all empty; carried item empty.
+
+12                                                            # packet id: VarInt 0x12 (18) Container Set Content (play, clientbound)
+00                                                            # Container id: VarInt 0 (player inventory)
+01                                                            # State id: VarInt 1
+24                                                            # Slots: Prefixed Array count VarInt 36
+  00                                                          # Slots[0]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[1]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[2]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[3]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[4]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[5]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[6]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[7]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[8]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[9]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[10]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[11]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[12]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[13]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[14]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[15]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[16]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[17]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[18]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[19]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[20]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[21]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[22]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[23]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[24]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[25]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[26]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[27]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[28]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[29]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[30]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[31]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[32]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[33]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[34]: ItemStack empty (Count VarInt 0, nothing follows)
+  00                                                          # Slots[35]: ItemStack empty (Count VarInt 0, nothing follows)
+00                                                            # Carried item: ItemStack empty (Count VarInt 0, nothing follows)

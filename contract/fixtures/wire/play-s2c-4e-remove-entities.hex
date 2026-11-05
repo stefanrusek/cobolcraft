@@ -1,0 +1,12 @@
+# Fixture: play-s2c-4e-remove-entities.hex
+# Remove Entities (ClientboundRemoveEntitiesPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4E (78).
+# Task T147. 09 §3.2 row: Remove Entities (entities leaving view, the dimension or the world).
+# Doc refs: 05b 0x4E (Prefixed Array of VarInt).
+# Stated inputs: entity ids [10, 21] (the loose_item of add-entity-loose-item after it was picked up completely, and
+#   the abend of add-entity-abend after its defeat).
+
+4e                                                            # packet id: VarInt 0x4e (78) Remove Entities (play, clientbound)
+02                                                            # Entity ids: Prefixed Array count VarInt 2
+  0a                                                          # Entity ids[0]: VarInt 10 (loose_item)
+  15                                                          # Entity ids[1]: VarInt 21 (abend)

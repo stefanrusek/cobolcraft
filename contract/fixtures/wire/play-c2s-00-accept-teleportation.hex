@@ -1,0 +1,13 @@
+# Accept Teleportation
+# Phase play, serverbound (C->S), packet id 0x00 (0)
+# Docs: 09 §3.2 row 0x00; 05c 0x00
+# Stated inputs: teleport id 1 (the first Player Position of the connection, 09 §3.2), applied position = spawn
+#   feet (4.5, 54.0, 8.5), yaw -90.0, pitch 0.0 (as play-s2c-49-player-position.hex, standin §5.2).
+
+00                                                 # packet id 0x00 (VarInt)
+01                                                 # Teleport id: VarInt 1
+40 12 00 00 00 00 00 00                            # X: Double 4.5
+40 4b 00 00 00 00 00 00                            # Y: Double 54.0
+40 21 00 00 00 00 00 00                            # Z: Double 8.5
+c2 b4 00 00                                        # Yaw: Float -90.0
+00 00 00 00                                        # Pitch: Float 0.0

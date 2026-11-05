@@ -1,0 +1,11 @@
+# Update Enabled Features (ClientboundUpdateEnabledFeaturesPacket) -- configuration phase, clientbound (S->C), packet id 0x0d
+# Docs: 09 §3.1 row "Update Enabled Features"; standin-content §4.1; 03 "0x0D (13) Clientbound Update Enabled Features";
+#       00 §6.4 Prefixed Array, §3.2 Identifier.
+# Stated inputs: features = ["minecraft:vanilla"] (exactly one).
+
+0d                                               # packet id: VarInt 0x0d (Update Enabled Features)
+01                                               # features count: VarInt 1
+11                                               # features[0] (Identifier) length: VarInt 17 (UTF-8 bytes)
+# features[0] (Identifier): "minecraft:vanilla"
+6d 69 6e 65 63 72 61 66 74 3a 76 61 6e 69 6c 6c
+61

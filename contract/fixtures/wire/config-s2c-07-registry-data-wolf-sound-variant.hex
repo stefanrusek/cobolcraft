@@ -1,0 +1,70 @@
+# Fixture: config-s2c-07-registry-data-wolf-sound-variant.hex
+# Registry Data (minecraft:wolf_sound_variant)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data, each of the 13 MV registries (this file: minecraft:wolf_sound_variant, #2 of the 13 in 09's order); one entry cobolcraft:placeholder
+# Content: docs/design/standin-content.md §4.5
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): adult_sounds then baby_sounds; inside each: ambient_sound, death_sound, growl_sound, hurt_sound, pant_sound, whine_sound, step_sound (standin §4.5 cell order); each sound an inline SoundEvent Compound {sound_id}
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:wolf_sound_variant, 1 entry: id 0 cobolcraft:placeholder
+#   every sound field = inline SoundEvent {sound_id: "cobolcraft:silent"}, no range
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+1c 6d 69 6e 65 63 72 61 66 74 3a 77 6f 6c 66 5f 73 6f 75 6e 64 5f 76 61 72 69 61 6e 74  # Registry: Identifier (String) "minecraft:wolf_sound_variant" (VarInt length 28 + UTF-8)
+01                                                            # Entries: VarInt count 1
+
+# ---- entry 0 (id 0): cobolcraft:placeholder ----
+16 63 6f 62 6f 6c 63 72 61 66 74 3a 70 6c 61 63 65 68 6f 6c 64 65 72  # Entry[0].Id: Identifier (String) "cobolcraft:placeholder" (VarInt length 22 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  0a 00 0c 61 64 75 6c 74 5f 73 6f 75 6e 64 73                # NBT Compound (type 0a) name "adult_sounds"
+    0a 00 0d 61 6d 62 69 65 6e 74 5f 73 6f 75 6e 64           # NBT Compound (type 0a) name "ambient_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "ambient_sound"
+    0a 00 0b 64 65 61 74 68 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "death_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "death_sound"
+    0a 00 0b 67 72 6f 77 6c 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "growl_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "growl_sound"
+    0a 00 0a 68 75 72 74 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "hurt_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "hurt_sound"
+    0a 00 0a 70 61 6e 74 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "pant_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "pant_sound"
+    0a 00 0b 77 68 69 6e 65 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "whine_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "whine_sound"
+    0a 00 0a 73 74 65 70 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "step_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "step_sound"
+  00                                                          # NBT End (type 00): end of compound "adult_sounds"
+  0a 00 0b 62 61 62 79 5f 73 6f 75 6e 64 73                   # NBT Compound (type 0a) name "baby_sounds"
+    0a 00 0d 61 6d 62 69 65 6e 74 5f 73 6f 75 6e 64           # NBT Compound (type 0a) name "ambient_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "ambient_sound"
+    0a 00 0b 64 65 61 74 68 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "death_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "death_sound"
+    0a 00 0b 67 72 6f 77 6c 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "growl_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "growl_sound"
+    0a 00 0a 68 75 72 74 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "hurt_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "hurt_sound"
+    0a 00 0a 70 61 6e 74 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "pant_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "pant_sound"
+    0a 00 0b 77 68 69 6e 65 5f 73 6f 75 6e 64                 # NBT Compound (type 0a) name "whine_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "whine_sound"
+    0a 00 0a 73 74 65 70 5f 73 6f 75 6e 64                    # NBT Compound (type 0a) name "step_sound"
+      08 00 08 73 6f 75 6e 64 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 3a 73 69 6c 65 6e 74  # NBT String (type 08) name "sound_id" = String "cobolcraft:silent"
+    00                                                        # NBT End (type 00): end of compound "step_sound"
+  00                                                          # NBT End (type 00): end of compound "baby_sounds"
+00                                                            # NBT End (type 00): end of compound root

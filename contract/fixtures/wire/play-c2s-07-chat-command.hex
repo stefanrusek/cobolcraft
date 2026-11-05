@@ -1,0 +1,7 @@
+# Chat Command (unsigned)
+# Phase play, serverbound (C->S), packet id 0x07 (7)
+# Docs: 09 §1, §3.3 row 0x07; 05c 0x07
+# Stated inputs: command `promote Alice` (typed as `/promote Alice`; sent without the leading `/`).
+
+07                                                 # packet id 0x07 (VarInt)
+0d 70 72 6f 6d 6f 74 65 20 41 6c 69 63 65          # Command: String "promote Alice"

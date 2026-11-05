@@ -1,0 +1,7 @@
+# Chunk Batch Received
+# Phase play, serverbound (C->S), packet id 0x0B (11)
+# Docs: 09 §3.2 row 0x0B; 05c 0x0B
+# Stated inputs: desired chunks per tick 9.0 (fixed by 09).
+
+0b                                                 # packet id 0x0B (VarInt)
+41 10 00 00                                        # Desired chunks per tick: Float 9.0

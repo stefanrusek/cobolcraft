@@ -1,0 +1,23 @@
+# Fixture: play-s2c-01-add-entity-abend.hex
+# Add Entity (ClientboundAddEntityPacket), cobolcraft:abend
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Task T141. 09 §3.3 row: Add Entity (cobolcraft:abend): type 3, otherwise as the sodgrazer.
+# Doc refs: 05a 0x01 Add Entity; 00 §5 UUID, §2 Double, §4.6 LpVec3, §4.4 Angle (floor(deg * 256 / 360) mod 256).
+# Content: standin-content §3 entity type ids.
+# Scenario: an abend standing on the turf of column (-4, -7) (h 51, standin §5.2). Entity id 21 is the attacker in
+#   damage-event and is removed in remove-entities.
+# Stated inputs: entity id 21; entity UUID 00000000-0000-0000-0000-000000000015 (msb 0, lsb 21 = entity id); entity type 3 (cobolcraft:abend); position (-3.5, 52.0, -6.5);
+#   movement (0.0, 0.0, 0.0); pitch 0.0, yaw 180.0, head yaw 180.0 (degrees; byte 0x80, which decodes as -180.0, 09 §3.4 rule 10); data 0.
+
+01                                                            # packet id: VarInt 0x01 (1) Add Entity (play, clientbound)
+15                                                            # Entity id: VarInt 21
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 15               # Entity UUID: UUID 00000000-0000-0000-0000-000000000015 (msb 0, lsb 21 = entity id)
+03                                                            # Entity type: VarInt 3 (cobolcraft:abend)
+c0 0c 00 00 00 00 00 00                                       # X: Double -3.5 (IEEE-754 binary64 c00c000000000000)
+40 4a 00 00 00 00 00 00                                       # Y: Double 52.0 (IEEE-754 binary64 404a000000000000)
+c0 1a 00 00 00 00 00 00                                       # Z: Double -6.5 (IEEE-754 binary64 c01a000000000000)
+00                                                            # Movement: LpVec3 (0.0, 0.0, 0.0) -> single 0x00 byte (zero vector)
+00                                                            # Pitch: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+80                                                            # Yaw: Angle 180.0 deg -> floor(180.0 * 256 / 360) = 128 -> byte 0x80 (decodes as -180.0)
+80                                                            # Head yaw: Angle 180.0 deg -> floor(180.0 * 256 / 360) = 128 -> byte 0x80 (decodes as -180.0)
+00                                                            # Data: VarInt 0

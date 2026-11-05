@@ -1,0 +1,14 @@
+# Chat (unsigned)
+# Phase play, serverbound (C->S), packet id 0x09 (9)
+# Docs: 09 §1 (chat is unsigned), §3.2 row 0x09; 05c 0x09, LastSeenMessagesUpdate
+# Stated inputs: message `hello`; timestamp 1700000000000 ms (0x0000018bcfe56800, the client's clock); salt 0;
+#   signature absent; last seen messages: offset 0, acknowledged 00 00 00, checksum 0.
+
+09                                                 # packet id 0x09 (VarInt)
+05 68 65 6c 6c 6f                                  # Message: String "hello"
+00 00 01 8b cf e5 68 00                            # Timestamp: Long 1700000000000
+00 00 00 00 00 00 00 00                            # Salt: Long 0
+00                                                 # Signature: Optional absent
+00                                                 # Last seen: Offset VarInt 0
+00 00 00                                           # Last seen: Acknowledged FixedBitSet(20), 3 bytes, none set
+00                                                 # Last seen: Checksum Byte 0

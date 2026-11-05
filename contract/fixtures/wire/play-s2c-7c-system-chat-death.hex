@@ -1,0 +1,18 @@
+# System Chat (death message)
+# Phase play, clientbound (S->C), packet id 0x7C (124)
+# Docs: 09 §3.2 row 0x7C (death message); 05b 0x7C; 00 §9.1; 09 §1 text encoding; 07 §1
+# Stated inputs: `Alice` died of fall damage (standin §10.7): translate key
+#   `cobolcraft.death.fall`, arguments [`Alice`]; overlay false.
+
+7c                                                 # packet id 0x7C (VarInt)
+# Content: TextComponent
+  # TextComponent (00 §9.1, 09 §1 `translate` with arguments): network NBT Compound root
+  0a                                                 # root tag type 10 Compound (no root name, 00 §8)
+    08 00 09 74 72 61 6e 73 6c 61 74 65                # entry: type 8 String, name "translate"
+    00 15 63 6f 62 6f 6c 63 72 61 66 74 2e 64 65 61    # value: UShort length 21, "cobolcraft.death.fall"
+    74 68 2e 66 61 6c 6c                               # (cont.)
+    09 00 04 77 69 74 68                               # entry: type 9 List, name "with"
+    08 00 00 00 01                                     # list element type 8 String, Int count 1
+      00 05 41 6c 69 63 65                               # element 0: UShort length 5, "Alice" (literal argument)
+  00                                                 # End of compound
+00                                                 # Overlay: Boolean false (chat, not action bar)

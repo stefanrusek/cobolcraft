@@ -1,0 +1,10 @@
+# Fixture: play-s2c-46-player-info-remove.hex
+# Player Info Remove (ClientboundPlayerInfoRemovePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x46 (70).
+# Task T140. 09 §3.2 row: Player Info Remove (the leaving player's UUID).
+# Doc refs: 05a 0x46 (Prefixed Array of UUID); 00 §5 UUID; 02 Offline mode.
+# Stated inputs: 1 profile id: Alice's offline UUID 10920508-d5d8-3eed-93d2-92f193afe7d7 (Alice leaves).
+
+46                                                            # packet id: VarInt 0x46 (70) Player Info Remove (play, clientbound)
+01                                                            # Profile ids: Prefixed Array count VarInt 1
+  10 92 05 08 d5 d8 3e ed 93 d2 92 f1 93 af e7 d7             # Profile ids[0]: UUID 10920508-d5d8-3eed-93d2-92f193afe7d7 (Alice)

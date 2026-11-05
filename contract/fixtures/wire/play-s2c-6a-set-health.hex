@@ -1,0 +1,11 @@
+# Fixture: play-s2c-6a-set-health.hex
+# Set Health (ClientboundSetHealthPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x6A (106).
+# Task T160. 09 §3.3 row: Set Health (health 0-30 Float, food 0-24 VarInt, saturation 0.0).
+# Doc refs: 05b 0x6A (Float health, VarInt food, Float saturation); standin-content §10.1, §11.1.
+# Stated inputs: health 30.0 (maximum); food 24 (maximum); saturation 0.0 (a new or respawned player).
+
+6a                                                            # packet id: VarInt 0x6a (106) Set Health (play, clientbound)
+41 f0 00 00                                                   # Health: Float 30.0 (IEEE-754 binary32 41f00000)
+18                                                            # Food: VarInt 24
+00 00 00 00                                                   # Saturation: Float 0.0 (IEEE-754 binary32 00000000)

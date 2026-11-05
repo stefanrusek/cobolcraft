@@ -1,0 +1,11 @@
+# Clientbound Chunk Batch Finished (ClientboundChunkBatchFinishedPacket)
+# phase: play   direction: S->C (clientbound)   packet id 0x0B (11)
+# refs: 09 §3 row "0x0B Chunk Batch Finished" (number of Level Chunk With Light packets in the batch);
+#       05a 0x0B (Batch size VarInt).
+#
+# STATED INPUTS
+#   batch size = 9 (the batch held 9 Level Chunk With Light packets; 9 matches the client's
+#   desired chunks per tick in Chunk Batch Received, 09 §3)
+#
+0b    # packet id 0x0B (11)
+09    # batch size: VarInt 9

@@ -1,0 +1,11 @@
+# Hello / Login Start (ServerboundHelloPacket) -- login phase, serverbound (C->S), packet id 0x00
+# Docs: 09 §1 (offline mode, names), 09 §3.1 row "Hello (Login Start)"; 02 "0x00 (0) Serverbound Hello";
+#       02 "Offline mode" (UUID); 00 §3.3 PlayerName = String(16), 00 §5 UUID (MSB Long, LSB Long).
+# Stated inputs: name "Alice"; profile id = offline UUID of Alice,
+#   MD5("OfflinePlayer:Alice") with version 3 / IETF variant bits = 10920508-d5d8-3eed-93d2-92f193afe7d7.
+
+00                                               # packet id: VarInt 0x00 (Hello)
+05                                               # name length: VarInt 5 (UTF-8 bytes)
+41 6c 69 63 65                                   # name: "Alice"
+10 92 05 08 d5 d8 3e ed                          # profile id, most significant Long (UUID 10920508-d5d8-3eed-93d2-92f193afe7d7)
+93 d2 92 f1 93 af e7 d7                          # profile id, least significant Long

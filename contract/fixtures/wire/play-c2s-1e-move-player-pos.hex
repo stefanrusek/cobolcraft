@@ -1,0 +1,11 @@
+# Move Player Pos
+# Phase play, serverbound (C->S), packet id 0x1E (30)
+# Docs: 09 §3.2 row 0x1E; 05c 0x1E, MoveFlags
+# Stated inputs: feet position (5.25, 54.0, 8.5) (one step east of spawn), on ground, no horizontal collision
+#   (MoveFlags 0x01).
+
+1e                                                 # packet id 0x1E (VarInt)
+40 15 00 00 00 00 00 00                            # X: Double 5.25
+40 4b 00 00 00 00 00 00                            # Y: Double 54.0
+40 21 00 00 00 00 00 00                            # Z: Double 8.5
+01                                                 # Flags: UByte 0x01 (on ground)

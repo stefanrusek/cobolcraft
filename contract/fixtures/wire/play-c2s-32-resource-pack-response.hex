@@ -1,0 +1,10 @@
+# Resource Pack Response
+# Phase play, serverbound (C->S), packet id 0x32 (50)
+# Docs: 09 §3.3 row 0x32 (as configuration row 0x06); 05c 0x32 -> 03 0x06; 00 §5 UUID; 08 §9
+# Stated inputs: pack id UUID 00112233-4455-6677-8899-aabbccddeeff (the pack id of play-s2c-52-resource-pack-push.hex
+#   and the config-s2c-09-resource-pack-push-*.hex fixtures), action 0 (successfully loaded, terminal).
+
+32                                                 # packet id 0x32 (VarInt)
+00 11 22 33 44 55 66 77                            # Pack id: UUID most significant Long 0x0011223344556677
+88 99 aa bb cc dd ee ff                            # Pack id: UUID least significant Long 0x8899aabbccddeeff
+00                                                 # Action: VarInt 0 (successfully loaded)

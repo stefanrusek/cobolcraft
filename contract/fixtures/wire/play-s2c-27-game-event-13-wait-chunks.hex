@@ -1,0 +1,10 @@
+# Fixture: play-s2c-27-game-event-13-wait-chunks.hex
+# Game Event (ClientboundGameEventPacket), event 13 LEVEL_CHUNKS_LOAD_START
+# Phase: play. Direction: clientbound (S->C). Packet id 0x27 (39).
+# Task T118. 09 §3.2 row: Game Event 13, value 0.0, sent after Login or Respawn before the first chunk batch.
+# Doc refs: 05a 0x27 Game Event (UByte event, Float value); 00 §2 (UByte, Float).
+# Stated inputs: event 13 (LEVEL_CHUNKS_LOAD_START), value 0.0.
+
+27                                                            # packet id: VarInt 0x27 (39) Game Event (play, clientbound)
+0d                                                            # Event: UByte 13 (LEVEL_CHUNKS_LOAD_START)
+00 00 00 00                                                   # Value: Float 0.0 (IEEE-754 binary32 00000000)

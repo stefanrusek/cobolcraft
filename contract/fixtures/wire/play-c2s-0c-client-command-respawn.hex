@@ -1,0 +1,7 @@
+# Client Command (respawn)
+# Phase play, serverbound (C->S), packet id 0x0C (12)
+# Docs: 09 §3.3 row 0x0C; 05c 0x0C
+# Stated inputs: action 0 PERFORM_RESPAWN.
+
+0c                                                 # packet id 0x0C (VarInt)
+00                                                 # Action: VarInt 0 PERFORM_RESPAWN

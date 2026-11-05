@@ -1,0 +1,25 @@
+# Fixture: config-s2c-07-registry-data-frog-variant.hex
+# Registry Data (minecraft:frog_variant)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data, each of the 13 MV registries (this file: minecraft:frog_variant, #5 of the 13 in 09's order); one entry cobolcraft:placeholder
+# Content: docs/design/standin-content.md §4.5
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): asset_id (only field)
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:frog_variant, 1 entry: id 0 cobolcraft:placeholder
+#   asset_id "cobolcraft:entity/placeholder"
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+16 6d 69 6e 65 63 72 61 66 74 3a 66 72 6f 67 5f 76 61 72 69 61 6e 74  # Registry: Identifier (String) "minecraft:frog_variant" (VarInt length 22 + UTF-8)
+01                                                            # Entries: VarInt count 1
+
+# ---- entry 0 (id 0): cobolcraft:placeholder ----
+16 63 6f 62 6f 6c 63 72 61 66 74 3a 70 6c 61 63 65 68 6f 6c 64 65 72  # Entry[0].Id: Identifier (String) "cobolcraft:placeholder" (VarInt length 22 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 08 61 73 73 65 74 5f 69 64 00 1d 63 6f 62 6f 6c 63 72 61 66 74 3a 65 6e 74 69 74 79 2f 70 6c 61 63 65 68 6f 6c 64 65 72  # NBT String (type 08) name "asset_id" = String "cobolcraft:entity/placeholder"
+00                                                            # NBT End (type 00): end of compound root

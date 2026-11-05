@@ -1,0 +1,19 @@
+# Status Response (ClientboundStatusResponsePacket) -- status phase, clientbound (S->C), packet id 0x00
+# Docs: 09 §2 "Status" (exact JSON), 09 §3.1 row "Status Response"; 02 "0x00 (0) Clientbound Status Response";
+#       00 §9.2 JsonTextComponent (description as a JSON string, 09 §1 text encoding); 00 §3.1 String(32767).
+# Stated inputs: version name "CobolCraft", protocol 777, players max 20, online 0,
+#                description "A CobolCraft server" (literal -> JSON string), no favicon, no sample,
+#                no enforcesSecureChat. JSON has no whitespace, keys in the 09 §2 order:
+#   {"version":{"name":"CobolCraft","protocol":777},"players":{"max":20,"online":0},"description":"A CobolCraft server"}
+
+00                                               # packet id: VarInt 0x00 (Status Response)
+74                                               # status JSON length: VarInt 116 (UTF-8 bytes)
+# status JSON (UTF-8): {"version":{"name":"CobolCraft","protocol":777},"players":{"max":20,"online":0},"description":"A CobolCraft server"}
+7b 22 76 65 72 73 69 6f 6e 22 3a 7b 22 6e 61 6d
+65 22 3a 22 43 6f 62 6f 6c 43 72 61 66 74 22 2c
+22 70 72 6f 74 6f 63 6f 6c 22 3a 37 37 37 7d 2c
+22 70 6c 61 79 65 72 73 22 3a 7b 22 6d 61 78 22
+3a 32 30 2c 22 6f 6e 6c 69 6e 65 22 3a 30 7d 2c
+22 64 65 73 63 72 69 70 74 69 6f 6e 22 3a 22 41
+20 43 6f 62 6f 6c 43 72 61 66 74 20 73 65 72 76
+65 72 22 7d

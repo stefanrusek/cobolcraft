@@ -1,0 +1,14 @@
+# Command Suggestions
+# Phase play, clientbound (S->C), packet id 0x0F (15)
+# Docs: 09 §3.3 row 0x0F; 05a 0x0F; standin §16.3 (player-name suggestions)
+# Stated inputs: answer to play-c2s-0f-command-suggestion.hex (transaction id 1, text `/murmur Al`,
+#   10 characters, leading `/` included as the vanilla client sends it). The word being completed
+#   is `Al` at offset 8, length 2. Online players: `Alice` only. One suggestion `Alice`, no tooltip.
+
+0f                                                 # packet id 0x0F (VarInt)
+01                                                 # Transaction id: VarInt 1
+08                                                 # Start: VarInt 8
+02                                                 # Length: VarInt 2
+01                                                 # Suggestions: Prefixed Array count 1
+  05 41 6c 69 63 65                                  # entry 0 Text: String "Alice"
+  00                                                 # entry 0 Tooltip: Optional TextComponent absent

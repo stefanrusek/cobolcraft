@@ -1,0 +1,14 @@
+# Login Finished (ClientboundLoginFinishedPacket) -- login phase, clientbound (S->C), packet id 0x02
+# Docs: 09 §1 (offline UUID, empty property map), 09 §3.1 row "Login Finished" (session id all-zero);
+#       02 "0x02 (2) Clientbound Login Finished", 02 "Offline mode"; 00 §11.1 GameProfile, §11.2 PropertyMap, §5 UUID.
+# Stated inputs: profile id = offline UUID of "Alice" = 10920508-d5d8-3eed-93d2-92f193afe7d7; name "Alice";
+#                0 properties; session id = 00000000-0000-0000-0000-000000000000.
+
+02                                               # packet id: VarInt 0x02 (Login Finished)
+10 92 05 08 d5 d8 3e ed                          # profile.id, most significant Long (UUID 10920508-d5d8-3eed-93d2-92f193afe7d7)
+93 d2 92 f1 93 af e7 d7                          # profile.id, least significant Long
+05                                               # profile.name length: VarInt 5 (UTF-8 bytes)
+41 6c 69 63 65                                   # profile.name: "Alice"
+00                                               # profile.properties count: VarInt 0 (empty PropertyMap)
+00 00 00 00 00 00 00 00                          # session id, most significant Long (all-zero UUID)
+00 00 00 00 00 00 00 00                          # session id, least significant Long

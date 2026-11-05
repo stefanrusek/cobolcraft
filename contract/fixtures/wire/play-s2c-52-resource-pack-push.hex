@@ -1,0 +1,16 @@
+# Fixture: play-s2c-52-resource-pack-push.hex
+# Resource Pack Push (ClientboundResourcePackPushPacket), play
+# Phase: play. Direction: clientbound (S->C). Packet id 0x52 (82).
+# Task T169. 09 §3.3 row: Resource Pack Push (play), as the configuration rows (08 §9). This fixture uses the
+#   optional form of the config row: Required false, Prompt absent.
+# Doc refs: 05b 0x52 (common packet) -> 03 'Clientbound Resource Pack Push' (UUID, String(32767) URL, String(40) hash,
+#   Boolean required, Optional ContextFreeTextComponent prompt); 08 §9; 00 §5 UUID, §3.1 String, §6.6 Optional.
+# Stated inputs: pack id 00112233-4455-6677-8899-aabbccddeeff; URL "http://127.0.0.1:8080/pack.zip"; hash "da39a3ee5e6b4b0d3255bfef95601890afd80709" (pack-sha1, 40 lowercase hex);
+#   required false; prompt absent (same pack settings as config-s2c-09-resource-pack-push-optional.hex).
+
+52                                                            # packet id: VarInt 0x52 (82) Resource Pack Push (play, clientbound)
+00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff               # Pack id: UUID 00112233-4455-6677-8899-aabbccddeeff
+1e 68 74 74 70 3a 2f 2f 31 32 37 2e 30 2e 30 2e 31 3a 38 30 38 30 2f 70 61 63 6b 2e 7a 69 70  # URL: String(32767) "http://127.0.0.1:8080/pack.zip" (VarInt length 30 + UTF-8)
+28 64 61 33 39 61 33 65 65 35 65 36 62 34 62 30 64 33 32 35 35 62 66 65 66 39 35 36 30 31 38 39 30 61 66 64 38 30 37 30 39  # Hash: String(40) "da39a3ee5e6b4b0d3255bfef95601890afd80709" (VarInt length 40 + UTF-8)
+00                                                            # Required: Boolean false
+00                                                            # Prompt: Optional ContextFreeTextComponent, present Boolean false (absent)

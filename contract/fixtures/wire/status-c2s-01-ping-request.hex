@@ -1,0 +1,6 @@
+# Ping Request (ServerboundPingRequestPacket) -- status phase, serverbound (C->S), packet id 0x01
+# Docs: 09 §3.1 row "Ping Request"; 02 "0x01 (1) Serverbound Ping Request"; 00 §2 Long (signed 64-bit big-endian).
+# Stated inputs: time = 1762300800000 (Long; 0x0000019a51502c00).
+
+01                                               # packet id: VarInt 0x01 (Ping Request)
+00 00 01 9a 51 50 2c 00                          # time: Long 1762300800000

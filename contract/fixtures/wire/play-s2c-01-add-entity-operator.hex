@@ -1,0 +1,22 @@
+# Fixture: play-s2c-01-add-entity-operator.hex
+# Add Entity (ClientboundAddEntityPacket), cobolcraft:operator
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Task T141. 09 §3.2 row: Add Entity (cobolcraft:operator): type 0, UUID = the player's offline UUID, movement (0, 0, 0), data 0.
+# Doc refs: 05a 0x01 Add Entity; 00 §5 UUID, §2 Double, §4.6 LpVec3, §4.4 Angle (floor(deg * 256 / 360) mod 256).
+# Content: standin-content §3 entity type ids.
+# Scenario: Alice (entity id 1) standing at the spawn point (standin §5.2), sent to another player who sees her.
+# Stated inputs: entity id 1; entity UUID 10920508-d5d8-3eed-93d2-92f193afe7d7 (offline UUID of Alice); entity type 0 (cobolcraft:operator); position (4.5, 54.0, 8.5);
+#   movement (0.0, 0.0, 0.0); pitch 0.0, yaw -90.0, head yaw -90.0 (degrees); data 0.
+
+01                                                            # packet id: VarInt 0x01 (1) Add Entity (play, clientbound)
+01                                                            # Entity id: VarInt 1
+10 92 05 08 d5 d8 3e ed 93 d2 92 f1 93 af e7 d7               # Entity UUID: UUID 10920508-d5d8-3eed-93d2-92f193afe7d7 (offline UUID of Alice)
+00                                                            # Entity type: VarInt 0 (cobolcraft:operator)
+40 12 00 00 00 00 00 00                                       # X: Double 4.5 (IEEE-754 binary64 4012000000000000)
+40 4b 00 00 00 00 00 00                                       # Y: Double 54.0 (IEEE-754 binary64 404b000000000000)
+40 21 00 00 00 00 00 00                                       # Z: Double 8.5 (IEEE-754 binary64 4021000000000000)
+00                                                            # Movement: LpVec3 (0.0, 0.0, 0.0) -> single 0x00 byte (zero vector)
+00                                                            # Pitch: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+c0                                                            # Yaw: Angle -90.0 deg -> floor(-90.0 * 256 / 360) = -64 -> byte 0xc0
+c0                                                            # Head yaw: Angle -90.0 deg -> floor(-90.0 * 256 / 360) = -64 -> byte 0xc0
+00                                                            # Data: VarInt 0

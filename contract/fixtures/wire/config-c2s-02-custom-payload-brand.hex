@@ -1,0 +1,10 @@
+# Custom Payload (ServerboundCustomPayloadPacket) -- configuration phase, serverbound (C->S), packet id 0x02
+# Docs: 09 §3.1 row "Custom Payload" (C->S); 03 "0x02 (2) Serverbound Custom Payload" (minecraft:brand = String(32767));
+#       00 §3.2 Identifier, §3.1 String.
+# Stated inputs: channel "minecraft:brand", brand "cobolcraft".
+
+02                                               # packet id: VarInt 0x02 (Custom Payload)
+0f                                               # channel (Identifier) length: VarInt 15 (UTF-8 bytes)
+6d 69 6e 65 63 72 61 66 74 3a 62 72 61 6e 64     # channel (Identifier): "minecraft:brand"
+0a                                               # data: brand (String) length: VarInt 10 (UTF-8 bytes)
+63 6f 62 6f 6c 63 72 61 66 74                    # data: brand (String): "cobolcraft"

@@ -1,0 +1,10 @@
+# Resource Pack Response (ServerboundResourcePackPacket) -- configuration phase, serverbound (C->S), packet id 0x06
+# Variant: action 3 (accepted, not terminal). The 8 variants -0 .. -7 differ only in the action VarInt.
+# Docs: 09 §3.1 row "Resource Pack Response"; 03 "0x06 (6) Serverbound Resource Pack Response" (action table);
+#       08 §9.2; 00 §5 UUID, §2.1 VarInt.
+# Stated inputs: pack id 00112233-4455-6677-8899-aabbccddeeff (the pack id of the config-s2c-09-resource-pack-push-*.hex fixtures); action 3.
+
+06                                               # packet id: VarInt 0x06 (Resource Pack Response)
+00 11 22 33 44 55 66 77                          # pack id, most significant Long (UUID 00112233-4455-6677-8899-aabbccddeeff)
+88 99 aa bb cc dd ee ff                          # pack id, least significant Long
+03                                               # action: VarInt ordinal 3 (accepted)

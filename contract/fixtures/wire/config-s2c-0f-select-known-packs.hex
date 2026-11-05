@@ -1,0 +1,6 @@
+# Select Known Packs (ClientboundSelectKnownPacks) -- configuration phase, clientbound (S->C), packet id 0x0f
+# Docs: 09 §3.1 row "Select Known Packs" (S->C); standin-content §4.1; 03 "0x0F (15) Clientbound Select Known Packs"; 00 §6.4.
+# Stated inputs: known packs = [] (empty list).
+
+0f                                               # packet id: VarInt 0x0f (Select Known Packs)
+00                                               # known packs count: VarInt 0 (no KnownPack entries)

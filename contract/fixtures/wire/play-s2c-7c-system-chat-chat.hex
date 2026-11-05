@@ -1,0 +1,12 @@
+# System Chat (player chat)
+# Phase play, clientbound (S->C), packet id 0x7C (124)
+# Docs: 09 §3.2 row 0x7C (player chat); 05b 0x7C; 00 §9.1; 09 §1 text encoding; 07 §1
+# Stated inputs: chat from player `Alice` with message `hello`; broadcast as the literal
+#   text `<Alice> hello` (09 §1, standin §17 'Player chat stays literal'); overlay false.
+
+7c                                                 # packet id 0x7C (VarInt)
+# Content: TextComponent
+  # TextComponent (00 §9.1, 09 §1 literal form): network NBT, bare String root
+  08                                                 # root tag type 8 String (no root name, 00 §8)
+  00 0d 3c 41 6c 69 63 65 3e 20 68 65 6c 6c 6f       # String payload: UShort length 13, "<Alice> hello"
+00                                                 # Overlay: Boolean false (chat, not action bar)

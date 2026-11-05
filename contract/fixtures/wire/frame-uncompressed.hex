@@ -1,0 +1,14 @@
+# Frame, compression off -- full frame per 01 §2 (Length VarInt, then the packet).
+# Docs: 01 §2 Framing; 00 §2.1 VarInt; 09 §3 framing fixtures.
+# Stated inputs: compression off (no Set Compression yet); inner packet = the handshake Intention of
+#   handshake-c2s-00-intention-status.hex (protocol 777, host "localhost", port 25565, intent 1),
+#   16 bytes.
+
+10                                               # frame length: VarInt 16
+# packet (16 bytes, identical to handshake-c2s-00-intention-status.hex):
+00                                               #   packet id: VarInt 0x00 (Intention)
+89 06                                            #   protocol version: VarInt 777
+09                                               #   host name length: VarInt 9
+6c 6f 63 61 6c 68 6f 73 74                       #   host name: "localhost"
+63 dd                                            #   port: UShort 25565
+01                                               #   intent: VarInt 1 (status)

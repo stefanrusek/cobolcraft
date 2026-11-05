@@ -1,0 +1,9 @@
+# Fixture: play-s2c-04-block-changed-ack.hex
+# Block Changed Ack (ClientboundBlockChangedAckPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x04 (4).
+# Task T137. 09 §3.2 row: Block Changed Ack (the sequence of the Player Action or Use Item On it answers).
+# Doc refs: 05a 0x04 (VarInt sequence).
+# Stated inputs: sequence 7.
+
+04                                                            # packet id: VarInt 0x04 (4) Block Changed Ack (play, clientbound)
+07                                                            # Sequence: VarInt 7

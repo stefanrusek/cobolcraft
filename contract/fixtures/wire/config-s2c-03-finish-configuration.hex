@@ -1,0 +1,5 @@
+# Finish Configuration (ClientboundFinishConfigurationPacket) -- configuration phase, clientbound (S->C), packet id 0x03
+# Docs: 09 §3.1 row "Finish Configuration" (S->C); 03 "0x03 (3) Clientbound Finish Configuration" (terminal).
+# Stated inputs: none (no fields).
+
+03                                               # packet id: VarInt 0x03 (Finish Configuration); no fields follow

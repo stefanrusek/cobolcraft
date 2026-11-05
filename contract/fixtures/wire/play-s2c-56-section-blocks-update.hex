@@ -1,0 +1,15 @@
+# Fixture: play-s2c-56-section-blocks-update.hex
+# Section Blocks Update (ClientboundSectionBlocksUpdatePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x56 (86).
+# Task T136. 09 §3.2 row: Section Blocks Update (several changes in one section).
+# Doc refs: 05b 0x56 (SectionPos Long, VarInt count, VarLong entries (state << 12) | (localX << 8) | (localZ << 4) | localY);
+#   05b SectionPos (x bits 42-63, z bits 20-41, y bits 0-19); 00 §2.1 VarLong; standin-content §1.2 state ids.
+# Stated inputs: section (0, 3, 0) of cobolcraft:main (blocks y 48-63 of chunk (0, 0)); 3 changes, in this order:
+#   (8, 59, 8) -> 14 glowtube lit=false; (9, 55, 8) -> 15 ledger_tile; (8, 60, 8) -> 11 cardstack axis=z punched=false.
+
+56                                                            # packet id: VarInt 0x56 (86) Section Blocks Update (play, clientbound)
+00 00 00 00 00 00 00 03                                       # Section position: SectionPos Long (x 0, y 3, z 0) = 3
+03                                                            # Count: VarInt 3
+  8b d1 03                                                    # Entries[0]: VarLong 0xe88b = state 14 (glowtube lit=false) << 12 | local x 8 << 8 | local z 8 << 4 | local y 11 (block (8, 59, 8))
+  87 f3 03                                                    # Entries[1]: VarLong 0xf987 = state 15 (ledger_tile) << 12 | local x 9 << 8 | local z 8 << 4 | local y 7 (block (9, 55, 8))
+  8c f1 02                                                    # Entries[2]: VarLong 0xb88c = state 11 (cardstack axis=z punched=false) << 12 | local x 8 << 8 | local z 8 << 4 | local y 12 (block (8, 60, 8))

@@ -1,0 +1,9 @@
+# Command Suggestion
+# Phase play, serverbound (C->S), packet id 0x0F (15)
+# Docs: 09 §3.3 row 0x0F; 05c 0x0F
+# Stated inputs: transaction id 1; partial text `/murmur Al` (leading `/` included, as the vanilla client sends
+#   it; answered by play-s2c-0f-command-suggestions.hex).
+
+0f                                                 # packet id 0x0F (VarInt)
+01                                                 # Transaction id: VarInt 1
+0a 2f 6d 75 72 6d 75 72 20 41 6c                   # Text: String "/murmur Al"

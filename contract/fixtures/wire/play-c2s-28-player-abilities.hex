@@ -1,0 +1,7 @@
+# Player Abilities
+# Phase play, serverbound (C->S), packet id 0x28 (40)
+# Docs: 09 §3.2 row 0x28; 05c 0x28
+# Stated inputs: the creative player is flying (flags 0x02).
+
+28                                                 # packet id 0x28 (VarInt)
+02                                                 # Flags: Byte 0x02 (flying)

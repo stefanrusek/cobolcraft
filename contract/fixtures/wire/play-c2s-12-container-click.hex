@@ -1,0 +1,21 @@
+# Container Click
+# Phase play, serverbound (C->S), packet id 0x12 (18)
+# Docs: 09 §3.2 row 0x12 and inventory-slot rule; 05c 0x12; 00 §12.4 HashedStack
+# Stated inputs: container 0 (player inventory), state id 1, left click (button 0, click type 0 PICKUP) on slot 0
+#   holding the starting 64 `greystone` (item 2): changed slots = {slot 0 -> empty}, carried item =
+#   64 greystone with no components.
+
+12                                                 # packet id 0x12 (VarInt)
+00                                                 # Container id: VarInt 0
+01                                                 # State id: VarInt 1
+00 00                                              # Slot: Short 0
+00                                                 # Button: Byte 0
+00                                                 # Click type: VarInt 0 PICKUP
+01                                                 # Changed slots: Map count 1
+00 00                                              #   changed slot key: Short 0
+00                                                 #   changed slot value: HashedStack Present false (empty)
+01                                                 # Carried item: HashedStack Present true
+02                                                 #   Item: VarInt 2 (greystone)
+40                                                 #   Count: VarInt 64
+00                                                 #   HashedPatchMap AddedCount: VarInt 0
+00                                                 #   HashedPatchMap RemovedCount: VarInt 0

@@ -1,0 +1,14 @@
+# Disconnect (server stopping)
+# Phase play, clientbound (S->C), packet id 0x20 (32)
+# Docs: 09 §3.2 row 0x20 (server stopping); 05a 0x20 -> 03 0x02 Clientbound Disconnect (Reason:
+#   ContextFreeTextComponent); 00 §9.1; 09 §1 text encoding; standin §17
+# Stated inputs: translate key `cobolcraft.disconnect.shutdown`, arguments none.
+
+20                                                 # packet id 0x20 (VarInt)
+# Reason: TextComponent
+  # TextComponent (00 §9.1, 09 §1 `translate` without arguments): network NBT Compound root
+  0a                                                 # root tag type 10 Compound (no root name, 00 §8)
+    08 00 09 74 72 61 6e 73 6c 61 74 65                # entry: type 8 String, name "translate"
+    00 1e 63 6f 62 6f 6c 63 72 61 66 74 2e 64 69 73    # value: UShort length 30, "cobolcraft.disconnect.shutdown"
+    63 6f 6e 6e 65 63 74 2e 73 68 75 74 64 6f 77 6e    # (cont.)
+  00                                                 # End of compound

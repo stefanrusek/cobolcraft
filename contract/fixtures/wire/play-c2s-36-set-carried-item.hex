@@ -1,0 +1,7 @@
+# Set Carried Item
+# Phase play, serverbound (C->S), packet id 0x36 (54)
+# Docs: 09 §3.2 row 0x36; 05c 0x36
+# Stated inputs: hotbar slot 3.
+
+36                                                 # packet id 0x36 (VarInt)
+00 03                                              # Slot: Short 3

@@ -1,0 +1,8 @@
+# Attack
+# Phase play, serverbound (C->S), packet id 0x01 (1)
+# Docs: 09 §3.3 row 0x01; 05c 0x01
+# Stated inputs: target entity id 21 (the `abend` mob of play-s2c-01-add-entity-abend.hex; the same abend is the
+#   attacker in play-s2c-19-damage-event.hex and is removed in play-s2c-4e-remove-entities.hex).
+
+01                                                 # packet id 0x01 (VarInt)
+15                                                 # Entity id: VarInt 21
