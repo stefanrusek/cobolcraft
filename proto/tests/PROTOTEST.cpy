@@ -1,0 +1,186 @@
+*> Test helpers of the proto package (test infrastructure, excluded from coverage). COPY this after
+*> the END PROGRAM of a test program; it adds these programs to the test executable:
+*>   TEST-LOAD-HEX USING path (PIC X(256), space-padded), PB-BUFFER: replaces the buffer content with
+*>     the bytes of a hex fixture (contracts/proto-api.md §3: whitespace-separated hex, "#" comments).
+*>   TEST-BUFFER-HEX USING PB-BUFFER, hex out (PIC X(1024)): the buffer's bytes 1 to PB-LENGTH (at
+*>     most 512) as lowercase hex without separators.
+*>   TEST-BUFFER-SLICE-HEX USING PB-BUFFER, offset (BINARY-LONG, 0-based), count (BINARY-LONG, at most
+*>     512), hex out (PIC X(1024)): the same for a slice.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LOAD-HEX.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT HEX-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD HEX-FILE.
+ 01 HEX-LINE               PIC X(1024).
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BYTE                PIC X.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING L-PATH PB-BUFFER.
+     MOVE L-PATH TO WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     OPEN INPUT HEX-FILE
+     IF WS-STATUS NOT = "00"
+         DISPLAY "TEST-LOAD-HEX cannot open " FUNCTION TRIM(WS-PATH) " status " WS-STATUS
+         STOP RUN RETURNING 2
+     END-IF
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO HEX-LINE
+         READ HEX-FILE
+         IF WS-STATUS = "00"
+             MOVE 1024 TO WS-END
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1024
+                 IF HEX-LINE(WS-I:1) = "#" AND WS-END = 1024
+                     COMPUTE WS-END = WS-I - 1
+                 END-IF
+             END-PERFORM
+             MOVE 1 TO WS-I
+             PERFORM UNTIL WS-I > WS-END
+                 IF HEX-LINE(WS-I:1) = SPACE OR HEX-LINE(WS-I:1) = X"09"
+                     ADD 1 TO WS-I
+                 ELSE
+                     MOVE FUNCTION HEX-TO-CHAR(HEX-LINE(WS-I:2)) TO WS-BYTE
+                     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BYTE WS-ONE
+                     ADD 2 TO WS-I
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     CLOSE HEX-FILE
+     GOBACK.
+ END PROGRAM TEST-LOAD-HEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BUFFER-SLICE-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 B-MEM                  PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-HEX                  PIC X(1024).
+ PROCEDURE DIVISION USING PB-BUFFER L-OFFSET L-COUNT L-HEX.
+     MOVE SPACES TO L-HEX
+     COMPUTE WS-COUNT = FUNCTION MIN(L-COUNT, 512, PB-LENGTH - L-OFFSET)
+     IF WS-COUNT > 0
+         SET ADDRESS OF B-MEM TO PB-ADDR
+         MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(B-MEM(L-OFFSET + 1:WS-COUNT)))
+             TO L-HEX(1:WS-COUNT * 2)
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-BUFFER-SLICE-HEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BUFFER-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-HEX                  PIC X(1024).
+ PROCEDURE DIVISION USING PB-BUFFER L-HEX.
+     CALL "TEST-BUFFER-SLICE-HEX" USING PB-BUFFER WS-ZERO PB-LENGTH L-HEX
+     GOBACK.
+ END PROGRAM TEST-BUFFER-HEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FILL-HEX.
+*> USING hex (PIC X(1024): hex digit pairs, spaces ignored, ends at the first "."), PB-BUFFER:
+*> replaces the buffer content with those bytes and clears PB-POS and PB-ERROR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BYTE                PIC X.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-HEX                  PIC X(1024).
+ PROCEDURE DIVISION USING L-HEX PB-BUFFER.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > 1023 OR L-HEX(WS-I:1) = "."
+         IF L-HEX(WS-I:1) = SPACE
+             ADD 1 TO WS-I
+         ELSE
+             MOVE FUNCTION HEX-TO-CHAR(L-HEX(WS-I:2)) TO WS-BYTE
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BYTE WS-ONE
+             ADD 2 TO WS-I
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-FILL-HEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SLICE-EQUALS.
+*> USING PB-BUFFER (a), offset (BINARY-LONG, 0-based), PB-BUFFER (b), equal out (BINARY-LONG):
+*> 1 when bytes offset+1 .. offset+length(b) of a equal all of b, else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 B-A                    PIC X(1073741824) BASED.
+ 01 B-B                    PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-EQUAL                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-OFFSET PK-BUFFER L-EQUAL.
+     MOVE 0 TO L-EQUAL
+     IF L-OFFSET + PK-LENGTH <= PB-LENGTH AND PK-LENGTH > 0
+         SET ADDRESS OF B-A TO PB-ADDR
+         SET ADDRESS OF B-B TO PK-ADDR
+         IF B-A(L-OFFSET + 1:PK-LENGTH) = B-B(1:PK-LENGTH)
+             MOVE 1 TO L-EQUAL
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-SLICE-EQUALS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COPY-SLICE.
+*> USING PB-BUFFER (a), offset (BINARY-LONG, 0-based), count (BINARY-LONG), PB-BUFFER (b): replaces
+*> the content of b with count bytes of a starting after offset bytes.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-OFFSET L-COUNT PK-BUFFER.
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-APPEND-SLICE" USING PB-BUFFER L-OFFSET L-COUNT PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-COPY-SLICE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-APPEND-SLICE.
+*> USING PB-BUFFER (a), offset (BINARY-LONG, 0-based), count (BINARY-LONG), PB-BUFFER (b): appends
+*> count bytes of a starting after offset bytes to b.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 B-A                    PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-OFFSET L-COUNT PK-BUFFER.
+     IF L-COUNT > 0
+         SET ADDRESS OF B-A TO PB-ADDR
+         CALL "PB-APPEND-BYTES" USING PK-BUFFER B-A(L-OFFSET + 1:L-COUNT) L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-APPEND-SLICE.

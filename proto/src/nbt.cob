@@ -1,0 +1,802 @@
+*> NBT codec (docs/protocol/07-nbt-and-anvil.md §1 to §3; contracts/proto-api.md §2 "NBT").
+*> Writers take a name and a name length that selects the tag header:
+*>   name length >= 0  named tag: type byte, Modified UTF-8 name, payload (compound entries; a file
+*>                     root is a compound with name length 0, 07 §3)
+*>   name length = -1  payload only (list elements, 07 §1)
+*>   name length = -2  network root: type byte and payload, no name (00 §8, 07 §3)
+*> Readers walk the bytes in place: NBT-READ-ROOT reads a root header, NBT-READ-COMPOUND-NEXT the next
+*> entry header of a compound, NBT-READ-LIST-BEGIN a list header; scalar payloads are read with the
+*> PB-GET-BYTE/-SHORT/-INT/-LONG/-FLOAT/-DOUBLE programs (same encodings, 07 §1); NBT-READ-SKIP skips
+*> one payload (the tree walk) and NBT-READ-FIND looks a path up from a compound or list payload.
+*> Text is UTF-8 in COBOL and Modified UTF-8 on the wire (07 §2): U+0000 is C0 80 and a 4-byte
+*> sequence is a surrogate pair of two 3-byte sequences. Malformed input sets PB-ERROR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-PUT-MUTF8.
+*> USING PB-BUFFER, text (any area of UTF-8 bytes), byte length (BINARY-LONG): UShort length, then the
+*> Modified UTF-8 bytes. Longer than 65535 bytes once encoded: PB-ERROR, nothing written (07 §2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OUT                 PIC X(131072).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-HIGH                BINARY-LONG.
+ 01 WS-LOW                 BINARY-LONG.
+ 01 WS-SEQUENCE-LENGTH     BINARY-LONG.
+ 01 WS-SEQUENCE.
+    05 WS-SEQUENCE-BYTE    BINARY-LONG OCCURS 6 TIMES.
+ 01 B-TEXT                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X.
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-LENGTH.
+     SET ADDRESS OF B-TEXT TO ADDRESS OF L-TEXT
+     MOVE 0 TO WS-OUT-LENGTH
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > L-LENGTH OR WS-OUT-LENGTH > 65535
+         COMPUTE WS-CODE = FUNCTION ORD(B-TEXT(WS-I:1)) - 1
+         EVALUATE TRUE
+             WHEN WS-CODE = 0
+                 MOVE 192 TO WS-SEQUENCE-BYTE(1)
+                 MOVE 128 TO WS-SEQUENCE-BYTE(2)
+                 MOVE 2 TO WS-SEQUENCE-LENGTH
+                 ADD 1 TO WS-I
+             WHEN WS-CODE >= 240 AND WS-I + 3 <= L-LENGTH
+*>               The code point minus 10000 hex, split into the 10 bits of each surrogate; the
+*>               surrogates D800 + high and DC00 + low are written as 3-byte sequences.
+                 COMPUTE WS-CODE = (WS-CODE - 240) * 262144
+                     + (FUNCTION ORD(B-TEXT(WS-I + 1:1)) - 129) * 4096
+                     + (FUNCTION ORD(B-TEXT(WS-I + 2:1)) - 129) * 64
+                     + FUNCTION ORD(B-TEXT(WS-I + 3:1)) - 129 - 65536
+                 DIVIDE WS-CODE BY 1024 GIVING WS-HIGH REMAINDER WS-LOW
+                 MOVE 237 TO WS-SEQUENCE-BYTE(1) WS-SEQUENCE-BYTE(4)
+                 COMPUTE WS-SEQUENCE-BYTE(2) = 160 + WS-HIGH / 64
+                 COMPUTE WS-SEQUENCE-BYTE(3) = 128 + FUNCTION MOD(WS-HIGH, 64)
+                 COMPUTE WS-SEQUENCE-BYTE(5) = 176 + WS-LOW / 64
+                 COMPUTE WS-SEQUENCE-BYTE(6) = 128 + FUNCTION MOD(WS-LOW, 64)
+                 MOVE 6 TO WS-SEQUENCE-LENGTH
+                 ADD 4 TO WS-I
+             WHEN OTHER
+                 MOVE WS-CODE TO WS-SEQUENCE-BYTE(1)
+                 MOVE 1 TO WS-SEQUENCE-LENGTH
+                 ADD 1 TO WS-I
+         END-EVALUATE
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-SEQUENCE-LENGTH
+             ADD 1 TO WS-OUT-LENGTH
+             MOVE FUNCTION CHAR(WS-SEQUENCE-BYTE(WS-K) + 1) TO WS-OUT(WS-OUT-LENGTH:1)
+         END-PERFORM
+     END-PERFORM
+     IF WS-OUT-LENGTH > 65535
+         MOVE 1 TO PB-ERROR
+     ELSE
+         CALL "PB-PUT-USHORT" USING PB-BUFFER WS-OUT-LENGTH
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-OUT WS-OUT-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-PUT-MUTF8.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-HEADER.
+*> USING PB-BUFFER, tag type (BINARY-LONG), name (any area), name length (BINARY-LONG; see above).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-NAME L-NAME-LENGTH.
+     IF L-NAME-LENGTH NOT = -1
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER L-TYPE
+     END-IF
+     IF L-NAME-LENGTH >= 0
+         CALL "NBT-PUT-MUTF8" USING PB-BUFFER L-NAME L-NAME-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-WRITE-HEADER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-BYTE.
+*> USING PB-BUFFER, name, name length, value (BINARY-LONG): tag 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-BYTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-SHORT.
+*> USING PB-BUFFER, name, name length, value (BINARY-LONG): tag 2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 2.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-SHORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-INT.
+*> USING PB-BUFFER, name, name length, value (BINARY-LONG): tag 3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-INT" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-LONG.
+*> USING PB-BUFFER, name, name length, value (BINARY-DOUBLE): tag 4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 4.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                BINARY-DOUBLE.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-LONG" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-LONG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-FLOAT.
+*> USING PB-BUFFER, name, name length, value (FLOAT-SHORT): tag 5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 5.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                FLOAT-SHORT.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-FLOAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-DOUBLE.
+*> USING PB-BUFFER, name, name length, value (FLOAT-LONG): tag 6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 6.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-VALUE.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-VALUE
+     GOBACK.
+ END PROGRAM NBT-WRITE-DOUBLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-BYTE-ARRAY.
+*> USING PB-BUFFER, name, name length, count (BINARY-LONG), bytes (any area): tag 7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 7.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-BYTES                PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-COUNT L-BYTES.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-INT" USING PB-BUFFER L-COUNT
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER L-BYTES L-COUNT
+     GOBACK.
+ END PROGRAM NBT-WRITE-BYTE-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-STRING.
+*> USING PB-BUFFER, name, name length, text (any area of UTF-8), byte length (BINARY-LONG): tag 8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 8.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-TEXT                 PIC X.
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-TEXT L-LENGTH.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "NBT-PUT-MUTF8" USING PB-BUFFER L-TEXT L-LENGTH
+     GOBACK.
+ END PROGRAM NBT-WRITE-STRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-LIST-BEGIN.
+*> USING PB-BUFFER, name, name length, element type (BINARY-LONG), count (BINARY-LONG): tag 9 header.
+*> The count elements follow, each written with name length -1; an empty list uses element type 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 9.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-ELEMENT-TYPE         BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-ELEMENT-TYPE L-COUNT.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-ELEMENT-TYPE
+     CALL "PB-PUT-INT" USING PB-BUFFER L-COUNT
+     GOBACK.
+ END PROGRAM NBT-WRITE-LIST-BEGIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-LIST-END.
+*> USING PB-BUFFER: a list has no end marker (07 §1); kept so writers read as begin/end pairs.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     GOBACK.
+ END PROGRAM NBT-WRITE-LIST-END.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-COMPOUND-BEGIN.
+*> USING PB-BUFFER, name, name length: tag 10 header; entries follow, then NBT-WRITE-COMPOUND-END.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 10.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH.
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     GOBACK.
+ END PROGRAM NBT-WRITE-COMPOUND-BEGIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-COMPOUND-END.
+*> USING PB-BUFFER: the End tag closing a compound (07 §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-END                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-END
+     GOBACK.
+ END PROGRAM NBT-WRITE-COMPOUND-END.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-END.
+*> USING PB-BUFFER: a network root End tag, "no tag" / absent (00 §8, 07 §3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-END                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-END
+     GOBACK.
+ END PROGRAM NBT-WRITE-END.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-INT-ARRAY.
+*> USING PB-BUFFER, name, name length, count (BINARY-LONG), ints (BINARY-LONG table): tag 11.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 11.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-INTS BASED.
+    05 B-INT               BINARY-LONG OCCURS 268435455 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-INTS                 PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-COUNT L-INTS.
+     SET ADDRESS OF B-INTS TO ADDRESS OF L-INTS
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-INT" USING PB-BUFFER L-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         CALL "PB-PUT-INT" USING PB-BUFFER B-INT(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NBT-WRITE-INT-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-WRITE-LONG-ARRAY.
+*> USING PB-BUFFER, name, name length, count (BINARY-LONG), longs (BINARY-DOUBLE table): tag 12.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 12.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-LONGS BASED.
+    05 B-LONG              BINARY-DOUBLE OCCURS 134217727 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-LONGS                PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-NAME-LENGTH L-COUNT L-LONGS.
+     SET ADDRESS OF B-LONGS TO ADDRESS OF L-LONGS
+     CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TYPE L-NAME L-NAME-LENGTH
+     CALL "PB-PUT-INT" USING PB-BUFFER L-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         CALL "PB-PUT-LONG" USING PB-BUFFER B-LONG(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NBT-WRITE-LONG-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-STRING.
+*> USING PB-BUFFER, text out (any area), capacity (BINARY-LONG bytes), byte length out (BINARY-LONG):
+*> a tag 8 payload (also used for names), converted from Modified UTF-8 to UTF-8. More than the
+*> capacity once converted, or beyond the data: PB-ERROR, PB-POS kept, length 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-IN                  PIC X(65541).
+ 01 WS-IN-LENGTH           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-SEQUENCE-LENGTH     BINARY-LONG.
+ 01 WS-SEQUENCE.
+    05 WS-SEQUENCE-BYTE    BINARY-LONG OCCURS 4 TIMES.
+ 01 B-OUT                  PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-CAPACITY L-LENGTH.
+     SET ADDRESS OF B-OUT TO ADDRESS OF L-TEXT
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO L-LENGTH WS-OUT-LENGTH
+     CALL "PB-GET-USHORT" USING PB-BUFFER WS-IN-LENGTH
+     CALL "PB-GET-BYTES" USING PB-BUFFER WS-IN WS-IN-LENGTH
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > WS-IN-LENGTH
+         COMPUTE WS-CODE = FUNCTION ORD(WS-IN(WS-I:1)) - 1
+         COMPUTE WS-NEXT = FUNCTION ORD(WS-IN(WS-I + 1:1)) - 1
+         EVALUATE TRUE
+             WHEN WS-CODE = 192 AND WS-I < WS-IN-LENGTH AND WS-NEXT = 128
+                 MOVE 0 TO WS-SEQUENCE-BYTE(1)
+                 MOVE 1 TO WS-SEQUENCE-LENGTH
+                 ADD 2 TO WS-I
+             WHEN WS-CODE = 237 AND WS-I + 5 <= WS-IN-LENGTH AND WS-NEXT >= 160 AND WS-NEXT <= 175
+                     AND FUNCTION ORD(WS-IN(WS-I + 3:1)) = 238
+                     AND FUNCTION ORD(WS-IN(WS-I + 4:1)) >= 177
+                     AND FUNCTION ORD(WS-IN(WS-I + 4:1)) <= 192
+*>               A surrogate pair (ED A0-AF xx, ED B0-BF xx) back to one 4-byte UTF-8 sequence.
+                 COMPUTE WS-CODE = 65536 + (WS-NEXT - 160) * 65536
+                     + (FUNCTION ORD(WS-IN(WS-I + 2:1)) - 129) * 1024
+                     + (FUNCTION ORD(WS-IN(WS-I + 4:1)) - 177) * 64
+                     + FUNCTION ORD(WS-IN(WS-I + 5:1)) - 129
+                 COMPUTE WS-SEQUENCE-BYTE(1) = 240 + WS-CODE / 262144
+                 COMPUTE WS-SEQUENCE-BYTE(2) = 128
+                     + FUNCTION MOD(FUNCTION INTEGER-PART(WS-CODE / 4096), 64)
+                 COMPUTE WS-SEQUENCE-BYTE(3) = 128
+                     + FUNCTION MOD(FUNCTION INTEGER-PART(WS-CODE / 64), 64)
+                 COMPUTE WS-SEQUENCE-BYTE(4) = 128 + FUNCTION MOD(WS-CODE, 64)
+                 MOVE 4 TO WS-SEQUENCE-LENGTH
+                 ADD 6 TO WS-I
+             WHEN OTHER
+                 MOVE WS-CODE TO WS-SEQUENCE-BYTE(1)
+                 MOVE 1 TO WS-SEQUENCE-LENGTH
+                 ADD 1 TO WS-I
+         END-EVALUATE
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-SEQUENCE-LENGTH
+             ADD 1 TO WS-OUT-LENGTH
+             IF WS-OUT-LENGTH <= L-CAPACITY
+                 MOVE FUNCTION CHAR(WS-SEQUENCE-BYTE(WS-K) + 1) TO B-OUT(WS-OUT-LENGTH:1)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF PB-ERROR = 1 OR WS-OUT-LENGTH > L-CAPACITY
+         MOVE 1 TO PB-ERROR
+         MOVE WS-START TO PB-POS
+     ELSE
+         MOVE WS-OUT-LENGTH TO L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-STRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-ROOT.
+*> USING PB-BUFFER, framing (BINARY-LONG 0 = network, 1 = file), type out (BINARY-LONG). Network: the
+*> type byte (0 = End, "absent"). File: a Compound type byte and a name, which is skipped; any other
+*> type is malformed (07 §3). PB-POS is left at the root payload.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-FRAMING              BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-FRAMING L-TYPE.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-TYPE
+     EVALUATE TRUE
+         WHEN L-FRAMING = 1 AND WS-TYPE = 10
+             CALL "PB-GET-USHORT" USING PB-BUFFER WS-NAME-LENGTH
+             CALL "PB-SKIP" USING PB-BUFFER WS-NAME-LENGTH
+         WHEN L-FRAMING = 1 OR WS-TYPE > 12
+             MOVE 1 TO PB-ERROR
+     END-EVALUATE
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO WS-TYPE
+     END-IF
+     MOVE WS-TYPE TO L-TYPE
+     GOBACK.
+ END PROGRAM NBT-READ-ROOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-COMPOUND-NEXT.
+*> USING PB-BUFFER, type out (BINARY-LONG), name out (any area), name capacity (BINARY-LONG bytes),
+*> name length out (BINARY-LONG): the next entry header of a compound payload. Type 0 is the End tag
+*> (the compound is finished, no name). PB-POS is left at the entry's payload.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-NAME                 PIC X.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-NAME L-CAPACITY L-NAME-LENGTH.
+     MOVE 0 TO L-NAME-LENGTH
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-TYPE
+     IF WS-TYPE > 12
+         MOVE 1 TO PB-ERROR
+     END-IF
+     IF WS-TYPE > 0 AND PB-ERROR = 0
+         CALL "NBT-READ-STRING" USING PB-BUFFER L-NAME L-CAPACITY L-NAME-LENGTH
+     END-IF
+     IF PB-ERROR = 1
+         MOVE 0 TO WS-TYPE
+     END-IF
+     MOVE WS-TYPE TO L-TYPE
+     GOBACK.
+ END PROGRAM NBT-READ-COMPOUND-NEXT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-LIST-BEGIN.
+*> USING PB-BUFFER, element type out (BINARY-LONG), count out (BINARY-LONG): a tag 9 payload header.
+*> A negative count, an unknown element type, or element type 0 with a count above 0: PB-ERROR (07 §1.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ELEMENT-TYPE         BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ELEMENT-TYPE L-COUNT.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-UBYTE" USING PB-BUFFER L-ELEMENT-TYPE
+     CALL "PB-GET-INT" USING PB-BUFFER L-COUNT
+     IF PB-ERROR = 1 OR L-ELEMENT-TYPE > 12 OR L-COUNT < 0
+             OR (L-ELEMENT-TYPE = 0 AND L-COUNT > 0)
+         MOVE 1 TO PB-ERROR
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO L-ELEMENT-TYPE L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-LIST-BEGIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-BYTE-ARRAY.
+*> USING PB-BUFFER, capacity (BINARY-LONG bytes), count out (BINARY-LONG), bytes out (any area): a
+*> tag 7 payload. A negative count, one above the capacity or beyond the data: PB-ERROR, count 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-BYTES                PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-CAPACITY L-COUNT L-BYTES.
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO L-COUNT
+     CALL "PB-GET-INT" USING PB-BUFFER WS-COUNT
+     IF PB-ERROR = 1 OR WS-COUNT < 0 OR WS-COUNT > L-CAPACITY OR WS-COUNT > PB-LENGTH - PB-POS
+         MOVE 1 TO PB-ERROR
+         MOVE WS-START TO PB-POS
+     ELSE
+         CALL "PB-GET-BYTES" USING PB-BUFFER L-BYTES WS-COUNT
+         MOVE WS-COUNT TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-BYTE-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-INT-ARRAY.
+*> USING PB-BUFFER, capacity (BINARY-LONG ints), count out (BINARY-LONG), ints out (BINARY-LONG table):
+*> a tag 11 payload, with the checks of NBT-READ-BYTE-ARRAY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-INTS BASED.
+    05 B-INT               BINARY-LONG OCCURS 268435455 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-INTS                 PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-CAPACITY L-COUNT L-INTS.
+     SET ADDRESS OF B-INTS TO ADDRESS OF L-INTS
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO L-COUNT
+     CALL "PB-GET-INT" USING PB-BUFFER WS-COUNT
+     IF PB-ERROR = 1 OR WS-COUNT < 0 OR WS-COUNT > L-CAPACITY
+             OR WS-COUNT > (PB-LENGTH - PB-POS) / 4
+         MOVE 1 TO PB-ERROR
+         MOVE WS-START TO PB-POS
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             CALL "PB-GET-INT" USING PB-BUFFER B-INT(WS-I)
+         END-PERFORM
+         MOVE WS-COUNT TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-INT-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-LONG-ARRAY.
+*> USING PB-BUFFER, capacity (BINARY-LONG longs), count out (BINARY-LONG), longs out (BINARY-DOUBLE
+*> table): a tag 12 payload, with the checks of NBT-READ-BYTE-ARRAY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-LONGS BASED.
+    05 B-LONG              BINARY-DOUBLE OCCURS 134217727 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-LONGS                PIC X.
+ PROCEDURE DIVISION USING PB-BUFFER L-CAPACITY L-COUNT L-LONGS.
+     SET ADDRESS OF B-LONGS TO ADDRESS OF L-LONGS
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO L-COUNT
+     CALL "PB-GET-INT" USING PB-BUFFER WS-COUNT
+     IF PB-ERROR = 1 OR WS-COUNT < 0 OR WS-COUNT > L-CAPACITY
+             OR WS-COUNT > (PB-LENGTH - PB-POS) / 8
+         MOVE 1 TO PB-ERROR
+         MOVE WS-START TO PB-POS
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             CALL "PB-GET-LONG" USING PB-BUFFER B-LONG(WS-I)
+         END-PERFORM
+         MOVE WS-COUNT TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-LONG-ARRAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-SKIP.
+*> USING PB-BUFFER, tag type (BINARY-LONG): skips one payload of that type at PB-POS, walking nested
+*> compounds and lists without recursion. Malformed content (an unknown type, a negative length, a
+*> list rule of 07 §1.1, nesting deeper than 512, 07 §1) or truncation: PB-ERROR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-PENDING             BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-DEPTH               BINARY-LONG.
+ 01 WS-SIZE-TABLE          PIC X(6) VALUE "124848".   *> payload bytes of tag types 1 to 6
+ 01 FILLER REDEFINES WS-SIZE-TABLE.
+    05 WS-SIZE             PIC 9 OCCURS 6 TIMES.
+ 01 WS-STACK.
+    05 WS-LEVEL            OCCURS 512 TIMES.
+       10 WS-KIND          BINARY-LONG.      *> 10 compound, 9 list
+       10 WS-ELEMENT       BINARY-LONG.
+       10 WS-LEFT          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE.
+     MOVE 0 TO WS-DEPTH
+     MOVE L-TYPE TO WS-TYPE
+     MOVE 1 TO WS-PENDING
+     PERFORM UNTIL PB-ERROR = 1 OR (WS-PENDING = 0 AND WS-DEPTH = 0)
+         IF WS-PENDING = 1
+*>           A payload of type WS-TYPE: skip a scalar or array, or open a compound or list level.
+             MOVE 0 TO WS-PENDING WS-ELEMENT-TYPE WS-COUNT
+             EVALUATE WS-TYPE
+                 WHEN 1 THRU 6
+                     MOVE WS-SIZE(WS-TYPE) TO WS-COUNT
+                     CALL "PB-SKIP" USING PB-BUFFER WS-COUNT
+                 WHEN 7
+                     CALL "PB-GET-INT" USING PB-BUFFER WS-COUNT
+                     CALL "PB-SKIP" USING PB-BUFFER WS-COUNT
+                 WHEN 8
+                     CALL "PB-GET-USHORT" USING PB-BUFFER WS-COUNT
+                     CALL "PB-SKIP" USING PB-BUFFER WS-COUNT
+                 WHEN 11 THRU 12
+                     CALL "PB-GET-INT" USING PB-BUFFER WS-COUNT
+                     COMPUTE WS-COUNT = FUNCTION MIN(WS-COUNT, 268435455) * 4 * (WS-TYPE - 10)
+                     CALL "PB-SKIP" USING PB-BUFFER WS-COUNT
+                 WHEN 9
+                     CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 WHEN 10
+                     CONTINUE
+                 WHEN OTHER
+                     MOVE 1 TO PB-ERROR
+             END-EVALUATE
+             IF WS-TYPE = 9 OR WS-TYPE = 10
+                 IF WS-DEPTH >= 512
+                     MOVE 1 TO PB-ERROR
+                 ELSE
+                     ADD 1 TO WS-DEPTH
+                     MOVE WS-TYPE TO WS-KIND(WS-DEPTH)
+                     MOVE WS-ELEMENT-TYPE TO WS-ELEMENT(WS-DEPTH)
+                     MOVE WS-COUNT TO WS-LEFT(WS-DEPTH)
+                 END-IF
+             END-IF
+         ELSE
+*>           The next payload of the innermost open level, or close it.
+             IF WS-KIND(WS-DEPTH) = 10
+                 CALL "PB-GET-UBYTE" USING PB-BUFFER WS-TYPE
+                 IF WS-TYPE = 0
+                     SUBTRACT 1 FROM WS-DEPTH
+                 ELSE
+                     CALL "PB-GET-USHORT" USING PB-BUFFER WS-COUNT
+                     CALL "PB-SKIP" USING PB-BUFFER WS-COUNT
+                     MOVE 1 TO WS-PENDING
+                 END-IF
+             ELSE
+                 IF WS-LEFT(WS-DEPTH) = 0
+                     SUBTRACT 1 FROM WS-DEPTH
+                 ELSE
+                     SUBTRACT 1 FROM WS-LEFT(WS-DEPTH)
+                     MOVE WS-ELEMENT(WS-DEPTH) TO WS-TYPE
+                     MOVE 1 TO WS-PENDING
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NBT-READ-SKIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBT-READ-FIND.
+*> USING PB-BUFFER, container type (BINARY-LONG 9 or 10: the payload at PB-POS), path (any area), path
+*> length (BINARY-LONG), found type out (BINARY-LONG). The path is compound entry names separated by
+*> "." with list indices in brackets, e.g. a.b[2].c (names must not contain "." or "["). Found:
+*> PB-POS at the payload of the tag the path names, found type = its type. Not found: found type 0,
+*> PB-POS unchanged. Malformed content on the way: PB-ERROR, found type 0, PB-POS unchanged.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SEGMENT-START       BINARY-LONG.
+ 01 WS-SEGMENT-LENGTH      BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ENTRY-TYPE          BINARY-LONG.
+ 01 WS-NAME.
+    05 WS-NAME-FIRST       PIC X.
+    05 FILLER              PIC X(131071).
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 131072.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 B-PATH                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-PATH                 PIC X.
+ 01 L-PATH-LENGTH          BINARY-LONG.
+ 01 L-FOUND-TYPE           BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-PATH L-PATH-LENGTH L-FOUND-TYPE.
+     SET ADDRESS OF B-PATH TO ADDRESS OF L-PATH
+     MOVE PB-POS TO WS-START
+     MOVE L-TYPE TO WS-TYPE
+     MOVE 1 TO WS-FOUND WS-I
+     PERFORM UNTIL WS-I > L-PATH-LENGTH OR WS-FOUND = 0 OR PB-ERROR = 1
+         IF B-PATH(WS-I:1) = "."
+             ADD 1 TO WS-I
+         END-IF
+         IF WS-I <= L-PATH-LENGTH AND B-PATH(WS-I:1) = "["
+*>           "[n]": element n (from 0) of the list payload at PB-POS.
+             MOVE 0 TO WS-INDEX WS-COUNT
+             ADD 1 TO WS-I
+             PERFORM UNTIL WS-I > L-PATH-LENGTH OR B-PATH(WS-I:1) = "]"
+                 COMPUTE WS-INDEX = WS-INDEX * 10 + FUNCTION ORD(B-PATH(WS-I:1)) - 49
+                 ADD 1 TO WS-I
+             END-PERFORM
+             ADD 1 TO WS-I
+             IF WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+             END-IF
+             IF WS-INDEX >= WS-COUNT
+                 MOVE 0 TO WS-FOUND
+             ELSE
+                 PERFORM WS-INDEX TIMES
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
+                 END-PERFORM
+                 MOVE WS-ELEMENT-TYPE TO WS-TYPE
+             END-IF
+         ELSE
+*>           A name: the entry of that name in the compound payload at PB-POS.
+             MOVE WS-I TO WS-SEGMENT-START
+             PERFORM UNTIL WS-I > L-PATH-LENGTH OR B-PATH(WS-I:1) = "." OR B-PATH(WS-I:1) = "["
+                 ADD 1 TO WS-I
+             END-PERFORM
+             COMPUTE WS-SEGMENT-LENGTH = WS-I - WS-SEGMENT-START
+             MOVE 0 TO WS-FOUND
+             IF WS-TYPE = 10
+                 MOVE 11 TO WS-ENTRY-TYPE
+             ELSE
+                 MOVE 0 TO WS-ENTRY-TYPE
+             END-IF
+             PERFORM UNTIL WS-ENTRY-TYPE = 0 OR WS-FOUND = 1
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-ENTRY-TYPE WS-NAME-FIRST
+                     WS-NAME-CAPACITY WS-NAME-LENGTH
+                 EVALUATE TRUE
+                     WHEN WS-ENTRY-TYPE = 0
+                         CONTINUE
+                     WHEN WS-NAME-LENGTH = WS-SEGMENT-LENGTH AND (WS-SEGMENT-LENGTH = 0
+                             OR WS-NAME(1:WS-SEGMENT-LENGTH)
+                                 = B-PATH(WS-SEGMENT-START:WS-SEGMENT-LENGTH))
+                         MOVE WS-ENTRY-TYPE TO WS-TYPE
+                         MOVE 1 TO WS-FOUND
+                     WHEN OTHER
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ENTRY-TYPE
+                 END-EVALUATE
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     IF WS-FOUND = 0 OR PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO L-FOUND-TYPE
+     ELSE
+         MOVE WS-TYPE TO L-FOUND-TYPE
+     END-IF
+     GOBACK.
+ END PROGRAM NBT-READ-FIND.

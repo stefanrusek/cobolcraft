@@ -415,66 +415,66 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 **Independent Test**: `make gate-proto` — `proto/tests/contract_proto_primitives.cob` passes against the 00, 01,
 06 and 07 examples and the framing fixtures; 100 % coverage of `proto/src`.
 
-- [ ] T267 [P] [US2-proto] Write `proto/tests/contract_shim_consumer.cob`: the `CCSHIM.cpy` constants `proto` uses have the values of shim-abi §1 and §5, and `cc_deflate`/`cc_inflate` link and return 0 on a minimal valid call
-- [ ] T268 [P] [US2-proto] Write implementation test `proto/tests/test_buffer.cob`: `PB-INIT` capacity, `PB-APPEND-BYTES` growth beyond capacity, `PB-RESET`, `PB-FREE`, read past `PB-LENGTH` sets `PB-ERROR` and leaves `PB-POS` (proto-api §1)
-- [ ] T269 [US2-proto] Implement `PB-INIT`, `PB-FREE`, `PB-RESET`, `PB-APPEND-BYTES` in `proto/src/buffer.cob` and add it to `SRC` in `proto/Makefile`
-- [ ] T270 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BOOL` against the 00 examples (00 §1)
-- [ ] T271 [US2-proto] Implement `PB-PUT-BOOL` and `PB-GET-BOOL` in `proto/src/scalars.cob`
-- [ ] T272 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BYTE` against the 00 examples (signed, 00 §2)
-- [ ] T273 [US2-proto] Implement `PB-PUT-BYTE` and `PB-GET-BYTE` in `proto/src/scalars.cob`
-- [ ] T274 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `UBYTE` against the 00 examples (unsigned, 00 §2)
-- [ ] T275 [US2-proto] Implement `PB-PUT-UBYTE` and `PB-GET-UBYTE` in `proto/src/scalars.cob`
-- [ ] T276 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `SHORT` against the 00 examples (big-endian signed, 00 §3)
-- [ ] T277 [US2-proto] Implement `PB-PUT-SHORT` and `PB-GET-SHORT` in `proto/src/scalars.cob`
-- [ ] T278 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `USHORT` against the 00 examples (big-endian unsigned)
-- [ ] T279 [US2-proto] Implement `PB-PUT-USHORT` and `PB-GET-USHORT` in `proto/src/scalars.cob`
-- [ ] T280 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `INT` against the 00 examples (big-endian signed 32-bit)
-- [ ] T281 [US2-proto] Implement `PB-PUT-INT` and `PB-GET-INT` in `proto/src/scalars.cob`
-- [ ] T282 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LONG` against the 00 examples (big-endian signed 64-bit)
-- [ ] T283 [US2-proto] Implement `PB-PUT-LONG` and `PB-GET-LONG` in `proto/src/scalars.cob`
-- [ ] T284 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `FLOAT` (IEEE big-endian via `REDEFINES` and byte reversal, research R2)
-- [ ] T285 [US2-proto] Implement `PB-PUT-FLOAT` and `PB-GET-FLOAT` in `proto/src/scalars.cob`
-- [ ] T286 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `DOUBLE` (IEEE big-endian via `REDEFINES` and byte reversal)
-- [ ] T287 [US2-proto] Implement `PB-PUT-DOUBLE` and `PB-GET-DOUBLE` in `proto/src/scalars.cob`
-- [ ] T288 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `VARINT` against every 00 example, an over-long encoding setting `PB-ERROR`
-- [ ] T289 [US2-proto] Implement `PB-PUT-VARINT` and `PB-GET-VARINT` in `proto/src/scalars.cob`
-- [ ] T290 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `VARLONG` against every 00 example, an over-long encoding setting `PB-ERROR`
-- [ ] T291 [US2-proto] Implement `PB-PUT-VARLONG` and `PB-GET-VARLONG` in `proto/src/scalars.cob`
-- [ ] T292 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `STRING` with maximum lengths (00 UTF-8 byte and code-unit limits), over-length setting `PB-ERROR`
-- [ ] T293 [US2-proto] Implement `PB-PUT-STRING` and `PB-GET-STRING` in `proto/src/scalars.cob`
-- [ ] T294 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `IDENTIFIER` (00 identifier rules and maximum length)
-- [ ] T295 [US2-proto] Implement `PB-PUT-IDENTIFIER` and `PB-GET-IDENTIFIER` in `proto/src/scalars.cob`
-- [ ] T296 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `UUID` (00)
-- [ ] T297 [US2-proto] Implement `PB-PUT-UUID` and `PB-GET-UUID` in `proto/src/scalars.cob`
-- [ ] T298 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `POSITION` (00 packing of x, y, z with sign extension)
-- [ ] T299 [US2-proto] Implement `PB-PUT-POSITION` and `PB-GET-POSITION` in `proto/src/scalars.cob`
-- [ ] T300 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BITSET` (00 long-array bit set)
-- [ ] T301 [US2-proto] Implement `PB-PUT-BITSET` and `PB-GET-BITSET` in `proto/src/scalars.cob`
-- [ ] T302 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `FIXED-BITSET` (00 fixed-size bit set)
-- [ ] T303 [US2-proto] Implement `PB-PUT-FIXED-BITSET` and `PB-GET-FIXED-BITSET` in `proto/src/scalars.cob`
-- [ ] T304 [P] [US2-proto] Write `contract_proto_primitives.cob` cases for NBT writing: every tag type, compound and list begin/end, network root (nameless) and file root (named empty) framing, against 07 §1 to §3 examples
-- [ ] T305 [US2-proto] Implement the `NBT-WRITE-*` programs in `proto/src/nbt.cob`
-- [ ] T306 [P] [US2-proto] Write `contract_proto_primitives.cob` cases for NBT reading: tree walk, path lookup (`a.b[2].c`), every tag type, malformed input sets `PB-ERROR`
-- [ ] T307 [US2-proto] Implement the `NBT-READ-*` programs in `proto/src/nbt.cob`
-- [ ] T308 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `TEXT` (plain string, `{"text":…}`, `{"translate":…,"with":[…]}` as network NBT, 00 §7)
-- [ ] T309 [US2-proto] Implement `PB-PUT-TEXT` and `PB-GET-TEXT` in `proto/src/composites.cob`
-- [ ] T310 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `ITEMSTACK` (empty, non-empty with AddedCount 0 and RemovedCount 0, standin-content §2)
-- [ ] T311 [US2-proto] Implement `PB-PUT-ITEMSTACK` and `PB-GET-ITEMSTACK` in `proto/src/composites.cob`
-- [ ] T312 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `PB-FRAME-ENCODE` against `contract/fixtures/wire/frame-uncompressed.hex`, `frame-compressed.hex` and `frame-below-threshold.hex`
-- [ ] T313 [US2-proto] Implement `PB-FRAME-ENCODE` (length prefix; compression via `cc_deflate` mode `CC_ZLIB` when threshold ≥ 0 and body ≥ threshold) in `proto/src/frame.cob`
-- [ ] T314 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `PB-FRAME-DECODE` against the three frame fixtures and a stream split at every byte boundary ("need more")
-- [ ] T315 [US2-proto] Implement `PB-FRAME-DECODE` (accumulating decoder, `cc_inflate` for compressed frames) in `proto/src/frame.cob`
-- [ ] T316 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `CHUNK-SECTION-ENCODE`/`-DECODE` (single-value and 4-bit linear block palettes, hash-map and global palettes for decoding, 1-bit biome palette, non-empty count) against 06 examples and the sections of `contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex`
-- [ ] T317 [US2-proto] Implement `CHUNK-SECTION-ENCODE` and `CHUNK-SECTION-DECODE` in `proto/src/chunk.cob` (06 §5)
-- [ ] T318 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LIGHT-ENCODE`/`-DECODE` (masks, empty masks, 2048-byte arrays) against the light data of the spawn chunk fixture
-- [ ] T319 [US2-proto] Implement `LIGHT-ENCODE` and `LIGHT-DECODE` in `proto/src/chunk.cob`
-- [ ] T320 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `NBT-FILE-WRITE` and `NBT-FILE-READ`: a gzip NBT file (07 §5.1, named empty root) written with `CBL_*` routines and `cc_deflate` mode `CC_GZIP` reads back equal; an unreadable or corrupt file is reported as outcome 1 to the caller
-- [ ] T321 [US2-proto] Implement `NBT-FILE-WRITE` and `NBT-FILE-READ` in `proto/src/nbtfile.cob` (the one gzip NBT file path shared by core and client; contracts/proto-api.md §2)
-- [ ] T322 [US2-proto] Write implementation test `proto/tests/test_scalars.cob` to 100 % coverage of `proto/src/scalars.cob` and `proto/src/buffer.cob`
-- [ ] T323 [US2-proto] Write implementation test `proto/tests/test_nbt.cob` to 100 % coverage of `proto/src/nbt.cob` and `proto/src/nbtfile.cob`
-- [ ] T324 [US2-proto] Write implementation test `proto/tests/test_frame.cob` to 100 % coverage of `proto/src/frame.cob`
-- [ ] T325 [US2-proto] Write implementation test `proto/tests/test_chunk.cob` to 100 % coverage of `proto/src/chunk.cob` and `proto/src/composites.cob`, and list every test program in `TESTS` of `proto/Makefile`
-- [ ] T326 Gate: run `make gate-proto` (root `Makefile`) and record the command and its real output
+- [X] T267 [P] [US2-proto] Write `proto/tests/contract_shim_consumer.cob`: the `CCSHIM.cpy` constants `proto` uses have the values of shim-abi §1 and §5, and `cc_deflate`/`cc_inflate` link and return 0 on a minimal valid call
+- [X] T268 [P] [US2-proto] Write implementation test `proto/tests/test_buffer.cob`: `PB-INIT` capacity, `PB-APPEND-BYTES` growth beyond capacity, `PB-RESET`, `PB-FREE`, read past `PB-LENGTH` sets `PB-ERROR` and leaves `PB-POS` (proto-api §1)
+- [X] T269 [US2-proto] Implement `PB-INIT`, `PB-FREE`, `PB-RESET`, `PB-APPEND-BYTES` in `proto/src/buffer.cob` and add it to `SRC` in `proto/Makefile`
+- [X] T270 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BOOL` against the 00 examples (00 §1)
+- [X] T271 [US2-proto] Implement `PB-PUT-BOOL` and `PB-GET-BOOL` in `proto/src/scalars.cob`
+- [X] T272 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BYTE` against the 00 examples (signed, 00 §2)
+- [X] T273 [US2-proto] Implement `PB-PUT-BYTE` and `PB-GET-BYTE` in `proto/src/scalars.cob`
+- [X] T274 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `UBYTE` against the 00 examples (unsigned, 00 §2)
+- [X] T275 [US2-proto] Implement `PB-PUT-UBYTE` and `PB-GET-UBYTE` in `proto/src/scalars.cob`
+- [X] T276 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `SHORT` against the 00 examples (big-endian signed, 00 §3)
+- [X] T277 [US2-proto] Implement `PB-PUT-SHORT` and `PB-GET-SHORT` in `proto/src/scalars.cob`
+- [X] T278 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `USHORT` against the 00 examples (big-endian unsigned)
+- [X] T279 [US2-proto] Implement `PB-PUT-USHORT` and `PB-GET-USHORT` in `proto/src/scalars.cob`
+- [X] T280 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `INT` against the 00 examples (big-endian signed 32-bit)
+- [X] T281 [US2-proto] Implement `PB-PUT-INT` and `PB-GET-INT` in `proto/src/scalars.cob`
+- [X] T282 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LONG` against the 00 examples (big-endian signed 64-bit)
+- [X] T283 [US2-proto] Implement `PB-PUT-LONG` and `PB-GET-LONG` in `proto/src/scalars.cob`
+- [X] T284 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `FLOAT` (IEEE big-endian via `REDEFINES` and byte reversal, research R2)
+- [X] T285 [US2-proto] Implement `PB-PUT-FLOAT` and `PB-GET-FLOAT` in `proto/src/scalars.cob`
+- [X] T286 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `DOUBLE` (IEEE big-endian via `REDEFINES` and byte reversal)
+- [X] T287 [US2-proto] Implement `PB-PUT-DOUBLE` and `PB-GET-DOUBLE` in `proto/src/scalars.cob`
+- [X] T288 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `VARINT` against every 00 example, an over-long encoding setting `PB-ERROR`
+- [X] T289 [US2-proto] Implement `PB-PUT-VARINT` and `PB-GET-VARINT` in `proto/src/scalars.cob`
+- [X] T290 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `VARLONG` against every 00 example, an over-long encoding setting `PB-ERROR`
+- [X] T291 [US2-proto] Implement `PB-PUT-VARLONG` and `PB-GET-VARLONG` in `proto/src/scalars.cob`
+- [X] T292 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `STRING` with maximum lengths (00 UTF-8 byte and code-unit limits), over-length setting `PB-ERROR`
+- [X] T293 [US2-proto] Implement `PB-PUT-STRING` and `PB-GET-STRING` in `proto/src/scalars.cob`
+- [X] T294 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `IDENTIFIER` (00 identifier rules and maximum length)
+- [X] T295 [US2-proto] Implement `PB-PUT-IDENTIFIER` and `PB-GET-IDENTIFIER` in `proto/src/scalars.cob`
+- [X] T296 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `UUID` (00)
+- [X] T297 [US2-proto] Implement `PB-PUT-UUID` and `PB-GET-UUID` in `proto/src/scalars.cob`
+- [X] T298 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `POSITION` (00 packing of x, y, z with sign extension)
+- [X] T299 [US2-proto] Implement `PB-PUT-POSITION` and `PB-GET-POSITION` in `proto/src/scalars.cob`
+- [X] T300 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `BITSET` (00 long-array bit set)
+- [X] T301 [US2-proto] Implement `PB-PUT-BITSET` and `PB-GET-BITSET` in `proto/src/scalars.cob`
+- [X] T302 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `FIXED-BITSET` (00 fixed-size bit set)
+- [X] T303 [US2-proto] Implement `PB-PUT-FIXED-BITSET` and `PB-GET-FIXED-BITSET` in `proto/src/scalars.cob`
+- [X] T304 [P] [US2-proto] Write `contract_proto_primitives.cob` cases for NBT writing: every tag type, compound and list begin/end, network root (nameless) and file root (named empty) framing, against 07 §1 to §3 examples
+- [X] T305 [US2-proto] Implement the `NBT-WRITE-*` programs in `proto/src/nbt.cob`
+- [X] T306 [P] [US2-proto] Write `contract_proto_primitives.cob` cases for NBT reading: tree walk, path lookup (`a.b[2].c`), every tag type, malformed input sets `PB-ERROR`
+- [X] T307 [US2-proto] Implement the `NBT-READ-*` programs in `proto/src/nbt.cob`
+- [X] T308 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `TEXT` (plain string, `{"text":…}`, `{"translate":…,"with":[…]}` as network NBT, 00 §7)
+- [X] T309 [US2-proto] Implement `PB-PUT-TEXT` and `PB-GET-TEXT` in `proto/src/composites.cob`
+- [X] T310 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `ITEMSTACK` (empty, non-empty with AddedCount 0 and RemovedCount 0, standin-content §2)
+- [X] T311 [US2-proto] Implement `PB-PUT-ITEMSTACK` and `PB-GET-ITEMSTACK` in `proto/src/composites.cob`
+- [X] T312 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `PB-FRAME-ENCODE` against `contract/fixtures/wire/frame-uncompressed.hex`, `frame-compressed.hex` and `frame-below-threshold.hex`
+- [X] T313 [US2-proto] Implement `PB-FRAME-ENCODE` (length prefix; compression via `cc_deflate` mode `CC_ZLIB` when threshold ≥ 0 and body ≥ threshold) in `proto/src/frame.cob`
+- [X] T314 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `PB-FRAME-DECODE` against the three frame fixtures and a stream split at every byte boundary ("need more")
+- [X] T315 [US2-proto] Implement `PB-FRAME-DECODE` (accumulating decoder, `cc_inflate` for compressed frames) in `proto/src/frame.cob`
+- [X] T316 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `CHUNK-SECTION-ENCODE`/`-DECODE` (single-value and 4-bit linear block palettes, hash-map and global palettes for decoding, 1-bit biome palette, non-empty count) against 06 examples and the sections of `contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex`
+- [X] T317 [US2-proto] Implement `CHUNK-SECTION-ENCODE` and `CHUNK-SECTION-DECODE` in `proto/src/chunk.cob` (06 §5)
+- [X] T318 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LIGHT-ENCODE`/`-DECODE` (masks, empty masks, 2048-byte arrays) against the light data of the spawn chunk fixture
+- [X] T319 [US2-proto] Implement `LIGHT-ENCODE` and `LIGHT-DECODE` in `proto/src/chunk.cob`
+- [X] T320 [P] [US2-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `NBT-FILE-WRITE` and `NBT-FILE-READ`: a gzip NBT file (07 §5.1, named empty root) written with `CBL_*` routines and `cc_deflate` mode `CC_GZIP` reads back equal; an unreadable or corrupt file is reported as outcome 1 to the caller
+- [X] T321 [US2-proto] Implement `NBT-FILE-WRITE` and `NBT-FILE-READ` in `proto/src/nbtfile.cob` (the one gzip NBT file path shared by core and client; contracts/proto-api.md §2)
+- [X] T322 [US2-proto] Write implementation test `proto/tests/test_scalars.cob` to 100 % coverage of `proto/src/scalars.cob` and `proto/src/buffer.cob`
+- [X] T323 [US2-proto] Write implementation test `proto/tests/test_nbt.cob` to 100 % coverage of `proto/src/nbt.cob` and `proto/src/nbtfile.cob`
+- [X] T324 [US2-proto] Write implementation test `proto/tests/test_frame.cob` to 100 % coverage of `proto/src/frame.cob`
+- [X] T325 [US2-proto] Write implementation test `proto/tests/test_chunk.cob` to 100 % coverage of `proto/src/chunk.cob` and `proto/src/composites.cob`, and list every test program in `TESTS` of `proto/Makefile`
+- [X] T326 Gate: run `make gate-proto` (root `Makefile`) and record the command and its real output
 
 #### Phase 9: US3-proto — angles, motion vectors and entity metadata
 
