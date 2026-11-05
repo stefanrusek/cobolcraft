@@ -58,3 +58,7 @@
 - Clarification 2026-11-05 (Q3): FR-012 resolved — failures not handled by docs/protocol/ or the spec's scenarios are
   either non-fatal (logged to the program's console; the game or server continues) or fatal (logged to the console,
   then the game or server shuts down); nothing else is specified. Re-validated: all items pass; no markers remain.
+- Revision 2026-11-05 (operator decisions A1, A2 after analyze): the allow-list enforced flag is world state saved
+  with the allow-list (config value is only the new-world default; FR-009, FR-014, FR-016, US13-4); single-player
+  offers every command, with commands aimed at other players finding no target until opened (FR-016, US16-3).
+  Recorded under Clarifications, Session 2026-11-05. Re-validated: all items pass.
