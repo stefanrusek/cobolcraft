@@ -1,0 +1,85 @@
+---
+name: cobolcraft-cobol
+description: CobolCraft's GnuCOBOL conventions and known compiler/coverage pitfalls. Use whenever writing, editing, reviewing or debugging COBOL (.cob, .cpy) or package Makefiles in this repository — proto, core, server, client, tools/testlib or contract/copy — including speckit-implement phases, test programs and coverage fixes.
+---
+
+# CobolCraft COBOL conventions
+
+Apply these to every COBOL source and test in this repo. They come from the constitution (v1.2.0),
+`specs/001-cobolcraft-complete/tasks.md` "Conventions every task inherits", and pitfalls found while
+implementing. If this file and tasks.md disagree, tasks.md and the constitution win; fix this file.
+
+## Language and build
+
+- GnuCOBOL 3.2, **free format**. Every build uses `-free -debug -std=default -fstatic-call`
+  (`tools/package.mk`). Comments are `*>`.
+- `-fstatic-call` is required: without it a `CALL "X"` does not pull program X out of a package `.a`.
+- Calls to C use `CALL STATIC` (research R2). COBOL may call any C library directly; C glue
+  (`shim/`) exists only where a call can't be expressed cleanly (callbacks, struct layouts, variadics),
+  and contains no game or protocol logic (constitution Principle I).
+- Shared record shapes come only from `contract/copy/*.cpy` (`PROTO`, `COREAPI`, `CCSHIM`, …). Never
+  redefine them locally. Package-private copybooks live in `<pkg>/copy/`.
+- Package Makefiles only set `PKG`, `LIBNAME`, `SRC`, `TESTS`, `INCLUDES`, `DEPLIBS`, `LDLIBS` and include
+  `tools/package.mk`. `src/main.cob` is a single `CALL` into a library entry point and is kept out of the
+  library.
+- Any package that links proto frame or NBT-file code must link `-lz`.
+
+## Program structure (coverage-driven)
+
+- 100 % line coverage is a gate (constitution 4.2). Generated code and test infrastructure are the only
+  exclusions.
+- **Keep production logic inline.** Trailing performed paragraphs make gcov report the `END PROGRAM`
+  line as uncovered. Prefer several small programs (one `PROGRAM-ID` each) to paragraphs.
+- Write a failure branch on its own line(s), so coverage actually shows whether it ran.
+- Several programs may share one source file (`END PROGRAM` after each). Under `-Wall`, calls between
+  programs in one file are size-checked: the argument sizes must match.
+
+## GnuCOBOL pitfalls
+
+- **LINKAGE size under `-debug`:** a LINKAGE item longer than the caller's argument aborts at run time.
+  For caller areas of variable size, declare a one-byte `PIC X` LINKAGE item and read it through a
+  `BASED` view (see `proto/src/buffer.cob`).
+- **64-bit literal arithmetic:** constant expressions overflow silently (`2 ** 64` is 0). Put large
+  constants in `VALUE` clauses.
+- **High-byte hex literals:** `X"…"` with bytes ≥ 0x80 makes clang warn; build such bytes another way
+  (e.g. `FUNCTION CHAR`, or a `VALUE` in a binary field).
+- **No `C$LIST-DIRECTORY`** in GnuCOBOL 3.2: use `cc_fs_list` (contracts/shim-abi.md §7).
+- **Fixed format breaks past column 72**, which is why the project is free format. Don't switch.
+
+## Interfaces
+
+- C layer: `specs/001-cobolcraft-complete/contracts/shim-abi.md`, including recorded edge behaviour of
+  `cc_con_readline`, `cc_fs_list` and `cc_net_local_addresses`.
+- Protocol codec: `contracts/proto-api.md`, with entry-point parameters and conventions in **§5**:
+  - A failed read leaves `PB-POS` unchanged, and `PB-ERROR` stays set until `PB-RESET`.
+  - NBT writer name length: ≥ 0 named tag, −1 list element, −2 network root.
+- Protocol facts come only from `docs/protocol/` (Principle II), plus `09-cobolcraft-profile.md`. Never
+  read the shipped jar. Content values (ids, numbers, names, texts) are transcribed from
+  `docs/design/standin-content.md`, never invented in code.
+
+## Tests
+
+- Test files follow these patterns:
+  - `acc_<story>_<topic>` for acceptance tests. Case names contain `acceptance US<n>-<scenario>` and Given/When/Then.
+  - `contract_<seam>_<side>` for contract tests.
+  - `test_<unit>` for implementation tests.
+- Tests are written before the code they test (constitution 4.1), and use no test doubles: real sockets, GPU, window and zlib.
+- Use `tools/testlib/` (`COPY TESTLIB.`, set `TL-CASE`, `TL-EXPECTED`/`TL-OBSERVED` or the `-N`
+  numeric forms with `TL-MODE "N"`, then `CALL "TEST-ASSERT" USING TESTLIB-ASSERT`). One output line per
+  case: `TEST <case> PASS` / `TEST <case> FAIL expected=<x> observed=<y>`.
+- Tests run from the repository root, so open fixtures as `contract/fixtures/wire/<name>.hex`.
+- `<test>.stdin` feeds standard input. `<test>.expect` holds the expected exit status on line 1, and
+  optionally on line 2 text that stderr must contain.
+- Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
+
+## Failure handling (FR-012)
+
+- A non-fatal failure prints one `ERROR <what>: <detail>` console line and processing continues.
+- A fatal failure does `CALL STATIC "cc_fatal"` with `"<what>: <detail>"`, which prints `FATAL <what>: <detail>` and exits.
+- Nothing else: no retries, dialogs or extra recovery (constitution 5.5, 5.6).
+
+## Gates
+
+- Each package has a gate: `make gate-<pkg>` (shim, proto, core, server, client), `make gate-contract` and
+  `make gate-tools`, plus `make gate` for everything. A gate runs lint, the tests and coverage.
+- Check a command's exit status directly, not through a pipe.
