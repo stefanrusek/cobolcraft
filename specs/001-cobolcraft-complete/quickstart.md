@@ -11,7 +11,7 @@ surfaces are [contracts/operator-surface.md](contracts/operator-surface.md) and
 
 ```sh
 xcode-select --install                      # if the command line tools are missing
-brew install gnucobol glfw molten-vk vulkan-loader vulkan-headers glslang openssl@3
+brew install gnucobol glfw molten-vk vulkan-loader vulkan-headers glslang openssl@3 pkg-config
 make bootstrap                              # exit 0 = every prerequisite present; shaders compiled
 ```
 

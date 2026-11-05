@@ -31,6 +31,7 @@ other dependency is part of macOS itself.
 | Python 3 | 3.14 (stdlib only) | Test runner, coverage and lint drivers (test infrastructure) | system/pyenv |
 | gcov (llvm-cov gcov) | system | Line coverage of COBOL and C | system |
 | vulkan-tools (`vulkaninfo`) | 1.4.363 | Contributor diagnostics only | `brew install vulkan-tools` |
+| pkg-config | 2.x | Locates GLFW, Vulkan, zlib and OpenSSL flags for the build | `brew install pkg-config` |
 
 **Rationale**: every row was probed (R2 to R10). Homebrew is the de-facto package manager on macOS and
 carries every library; the same libraries exist on Linux, Windows and Android (FR-011 portability).
