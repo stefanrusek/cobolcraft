@@ -88,6 +88,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   - `contract_<seam>_<side>` for contract tests.
   - `test_<unit>` for implementation tests.
 - Tests are written before the code they test (constitution 4.1), and use no test doubles: real sockets, GPU, window and zlib.
+- **Red, then green, every time.** Write the test task, build and run it, and see its new cases FAIL (or fail to
+  link because the entry point doesn't exist yet) before writing the implementation task. Writing tests and code in
+  the same pass, even if they all pass first time, violates 4.1. Report the observed failing run in the phase
+  summary.
 - Use `tools/testlib/` (`COPY TESTLIB.`, set `TL-CASE`, `TL-EXPECTED`/`TL-OBSERVED` or the `-N`
   numeric forms with `TL-MODE "N"`, then `CALL "TEST-ASSERT" USING TESTLIB-ASSERT`). One output line per
   case: `TEST <case> PASS` / `TEST <case> FAIL expected=<x> observed=<y>`.
