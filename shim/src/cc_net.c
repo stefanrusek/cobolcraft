@@ -149,15 +149,22 @@ void cc_net_close(int32_t h) {
 
 int32_t cc_net_poll(int32_t timeout_ms, const int32_t *handles, int32_t count, int32_t include_console,
                     uint8_t *ready_out) {
-    (void)include_console; /* console readiness is added with cc_con (US15) */
     struct pollfd *fds = calloc((size_t)count + 1, sizeof *fds);
     if (fds == NULL) cc_fatal("cc_net_poll: out of memory");
     for (int32_t i = 0; i < count; i++) {
         fds[i].fd = fd_of(handles[i]);
         fds[i].events = state[fds[i].fd] == ST_CONNECTING ? POLLOUT : POLLIN;
     }
-    if (poll(fds, (nfds_t)count, timeout_ms) < 0 && errno != EINTR) cc_fatal("cc_net_poll: poll failed");
+    /* The console (standard input, read by cc_con_readline) is the extra entry after the handles. */
+    nfds_t nfds = (nfds_t)count;
+    if (include_console) {
+        fds[count].fd = STDIN_FILENO;
+        fds[count].events = POLLIN;
+        nfds++;
+    }
+    if (poll(fds, nfds, timeout_ms) < 0 && errno != EINTR) cc_fatal("cc_net_poll: poll failed");
     for (int32_t i = 0; i < count; i++) ready_out[i] = fds[i].revents != 0;
+    if (include_console) ready_out[count] = fds[count].revents != 0;
     free(fds);
     return 0;
 }

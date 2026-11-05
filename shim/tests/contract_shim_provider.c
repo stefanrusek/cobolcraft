@@ -133,6 +133,36 @@ static void net_poll(void) {
     cc_net_close(listener);
 }
 
+/* include_console = 1: ready_out[count] reports whether standard input has input. Standard input is
+ * replaced by a pipe for these cases (and restored afterwards), so "no input" can be observed. */
+static void net_poll_console(void) {
+    int32_t listener = 0, port = 0;
+    int pipe_fds[2];
+    int saved_stdin = dup(STDIN_FILENO);
+    pipe(pipe_fds);
+    dup2(pipe_fds[0], STDIN_FILENO);
+    cc_net_listen(0, &listener, &port);
+    uint8_t ready[2] = {9, 9};
+    int32_t rc = cc_net_poll(0, &listener, 1, 1, ready);
+    tl_int("contract shim cc_net_poll include_console returns 0", 0, rc);
+    tl_int("contract shim cc_net_poll include_console without console input sets ready_out[count] to 0", 0, ready[1]);
+    tl_int("contract shim cc_net_poll include_console still marks the handles", 0, ready[0]);
+    write(pipe_fds[1], "stop\n", 5);
+    cc_net_poll(1000, &listener, 1, 1, ready);
+    tl_int("contract shim cc_net_poll include_console with console input sets ready_out[count] to 1", 1, ready[1]);
+    uint8_t console_only = 9;
+    cc_net_poll(1000, NULL, 0, 1, &console_only);
+    tl_int("contract shim cc_net_poll with no handles and console input sets ready_out[0] to 1", 1, console_only);
+    ready[1] = 9;
+    cc_net_poll(0, &listener, 1, 0, ready);
+    tl_int("contract shim cc_net_poll include_console 0 leaves ready_out[count] untouched", 9, ready[1]);
+    cc_net_close(listener);
+    dup2(saved_stdin, STDIN_FILENO);
+    close(saved_stdin);
+    close(pipe_fds[0]);
+    close(pipe_fds[1]);
+}
+
 static const char *TEXT = "CobolCraft compresses this text, CobolCraft compresses this text, again and again.";
 
 static void zlib_deflate(void) {
@@ -251,6 +281,7 @@ int main(void) {
     net_connect_status();
     net_send_recv_close();
     net_poll();
+    net_poll_console();
     zlib_deflate();
     zlib_inflate();
     window();

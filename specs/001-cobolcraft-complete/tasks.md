@@ -370,12 +370,12 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 
 **Goal**: non-blocking console lines for the server console (US15). **Independent Test**: `make gate-shim`.
 
-- [ ] T248 [P] [US15-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_poll` with `include_console` = 1 setting `ready_out[count]` (shim-abi §3)
-- [ ] T249 [P] [US15-shim] Write test program `shim/tests/contract_shim_console.c` with `shim/tests/contract_shim_console.stdin` (two lines, then end of input) asserting `cc_con_readline` returns each line without newline, then `CC_CLOSED` (shim-abi §4)
-- [ ] T250 [US15-shim] Add console readiness (`include_console`) to `cc_net_poll` in `shim/src/cc_net.c`
-- [ ] T251 [US15-shim] Implement `cc_con_readline` (non-blocking read of standard input, line assembly across partial reads, `CC_AGAIN`, `CC_CLOSED`) in `shim/src/cc_con.c` and add it to `shim/Makefile`
-- [ ] T252 [US15-shim] Write implementation test `shim/tests/test_cc_con.c` (partial line across reads, line longer than one read) to 100 % coverage of `shim/src/cc_con.c`
-- [ ] T253 Gate: run `make gate-shim` and record the command and its real output
+- [X] T248 [P] [US15-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_poll` with `include_console` = 1 setting `ready_out[count]` (shim-abi §3)
+- [X] T249 [P] [US15-shim] Write test program `shim/tests/contract_shim_console.c` with `shim/tests/contract_shim_console.stdin` (two lines, then end of input) asserting `cc_con_readline` returns each line without newline, then `CC_CLOSED` (shim-abi §4)
+- [X] T250 [US15-shim] Add console readiness (`include_console`) to `cc_net_poll` in `shim/src/cc_net.c`
+- [X] T251 [US15-shim] Implement `cc_con_readline` (non-blocking read of standard input, line assembly across partial reads, `CC_AGAIN`, `CC_CLOSED`) in `shim/src/cc_con.c` and add it to `shim/Makefile`
+- [X] T252 [US15-shim] Write implementation test `shim/tests/test_cc_con.c` (partial line across reads, line longer than one read) to 100 % coverage of `shim/src/cc_con.c`
+- [X] T253 Gate: run `make gate-shim` and record the command and its real output
 
 #### Phase 5: US16-shim — directory listing
 
