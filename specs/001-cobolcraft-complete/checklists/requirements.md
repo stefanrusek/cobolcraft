@@ -41,3 +41,7 @@
 - Reference artifacts are referenced in place rather than copied into the feature directory, because project
   Principle II makes `docs/protocol/` the single source of truth (see spec, Reference Artifacts).
 - No performance targets are specified, by design (constitution 2.7; none were requested).
+- Revision 2026-11-04 (operator approval-gate feedback): single-player, health, mobs, crafting and the full
+  command set brought into scope (US6-US8, US10-US12; FR-014 to FR-017); sounds stay out of scope. FR-015
+  requires docs/design/standin-content.md to be extended with the original content first. Re-validated: all
+  items pass except the open markers.
