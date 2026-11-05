@@ -51,3 +51,63 @@ frames.
   produce for the fixture's stated inputs, and every serverbound fixture decodes to the stated values.
 - `client/tests/contract_wire_client.cob`: the mirror image: every serverbound fixture equals what the
   client's builders produce, and every clientbound fixture decodes to the stated values.
+
+## 5. Entry point parameters
+
+Recorded with the US2 implementation of `proto` so that `core` and `client` call it the same way. It adds
+no record shape: `PROTO.cpy` is unchanged. Every program is called `CALL "<name>" USING …` with every
+argument by reference. Integers are `BINARY-LONG` unless stated. An *area* is any caller item at least as
+long as the count passed with it; a *table* is a caller table of the stated item type (the callee addresses
+both through a `BASED` view, so `-debug` checks the count, not a declared size).
+
+**Errors.** A short or malformed read sets `PB-ERROR` = 1, leaves `PB-POS` where it was before the call and
+yields 0 / empty. `PB-ERROR` stays set until `PB-RESET`: every later read yields zero bytes, so a caller can
+decode a whole packet and test `PB-ERROR` once. A value a writer cannot encode (over-long string, invalid
+identifier, bit outside a fixed set, unsendable frame) sets `PB-ERROR` and appends nothing.
+
+| Program | Parameters |
+|---|---|
+| `PB-INIT` | `PB-BUFFER`, capacity (at least 16 bytes are allocated) |
+| `PB-FREE`, `PB-RESET` | `PB-BUFFER` |
+| `PB-APPEND-BYTES` / `PB-GET-BYTES` | `PB-BUFFER`, area (in / out), count |
+| `PB-SKIP` | `PB-BUFFER`, count (advances `PB-POS`) |
+| `PB-PUT-` / `PB-GET-` `BOOL`, `BYTE`, `UBYTE`, `SHORT`, `USHORT`, `INT`, `VARINT` | `PB-BUFFER`, value (`BINARY-LONG`; `BOOL` 0 or 1; writers keep the low bits of out-of-range values) |
+| `PB-PUT-` / `PB-GET-` `LONG`, `VARLONG` | `PB-BUFFER`, value (`BINARY-DOUBLE`) |
+| `PB-PUT-` / `PB-GET-` `FLOAT`, `DOUBLE` | `PB-BUFFER`, value (`FLOAT-SHORT`, `FLOAT-LONG`) |
+| `PB-PUT-STRING` | `PB-BUFFER`, text area (UTF-8), byte length, maximum N in UTF-16 code units (00 §3.1) |
+| `PB-GET-STRING` | `PB-BUFFER`, maximum N, text area out, capacity in bytes, byte length out |
+| `PB-PUT-IDENTIFIER` | `PB-BUFFER`, text area, byte length |
+| `PB-GET-IDENTIFIER` | `PB-BUFFER`, text area out, capacity, byte length out |
+| `PB-PUT-` / `PB-GET-UUID` | `PB-BUFFER`, `PIC X(16)` (most significant byte first) |
+| `PB-PUT-` / `PB-GET-POSITION` | `PB-BUFFER`, x, y, z |
+| `PB-PUT-BITSET` | `PB-BUFFER`, Long count, table of `BINARY-DOUBLE` (00 §6.3 LongArray form) |
+| `PB-GET-BITSET` | `PB-BUFFER`, capacity in Longs, Long count out, table out |
+| `PB-PUT-` / `PB-GET-FIXED-BITSET` | `PB-BUFFER`, bit count n, area of ceil(n / 8) bytes (bit i = bit i mod 8 of byte i / 8) |
+| `PB-PUT-` / `PB-GET-TEXT` | `PB-BUFFER`, `PB-TEXT` (network NBT root, 09 §1 fixed form) |
+| `PB-PUT-` / `PB-GET-ITEMSTACK` | `PB-BUFFER`, `PB-ITEMSTACK` |
+| `NBT-WRITE-BYTE`, `-SHORT`, `-INT` | `PB-BUFFER`, name area, name length, value (`BINARY-LONG`) |
+| `NBT-WRITE-LONG`, `-FLOAT`, `-DOUBLE` | `PB-BUFFER`, name area, name length, value (`BINARY-DOUBLE`, `FLOAT-SHORT`, `FLOAT-LONG`) |
+| `NBT-WRITE-STRING` | `PB-BUFFER`, name area, name length, text area (UTF-8), byte length |
+| `NBT-WRITE-BYTE-ARRAY` / `-INT-ARRAY` / `-LONG-ARRAY` | `PB-BUFFER`, name area, name length, count, area / table of `BINARY-LONG` / table of `BINARY-DOUBLE` |
+| `NBT-WRITE-LIST-BEGIN` | `PB-BUFFER`, name area, name length, element type, count; then the elements (name length -1) |
+| `NBT-WRITE-COMPOUND-BEGIN` | `PB-BUFFER`, name area, name length; then the entries |
+| `NBT-WRITE-COMPOUND-END`, `NBT-WRITE-LIST-END`, `NBT-WRITE-END` | `PB-BUFFER` (End tag; nothing; a network End root = absent) |
+| `NBT-READ-ROOT` | `PB-BUFFER`, framing (0 network, 1 file: named compound root), type out; `PB-POS` left at the payload |
+| `NBT-READ-COMPOUND-NEXT` | `PB-BUFFER`, type out (0 = End), name area out, capacity, name length out |
+| `NBT-READ-LIST-BEGIN` | `PB-BUFFER`, element type out, count out |
+| `NBT-READ-STRING` | `PB-BUFFER`, text area out (UTF-8), capacity, byte length out |
+| `NBT-READ-BYTE-ARRAY` / `-INT-ARRAY` / `-LONG-ARRAY` | `PB-BUFFER`, capacity, count out, area / table out |
+| `NBT-READ-SKIP` | `PB-BUFFER`, type (skips one payload, any nesting up to 512) |
+| `NBT-READ-FIND` | `PB-BUFFER`, container type (9 or 10, payload at `PB-POS`), path area (`a.b[2].c`), path length, found type out (0 = not found, `PB-POS` unchanged) |
+| `NBT-FILE-WRITE` / `NBT-FILE-READ` | path area, path length, `PB-BUFFER` (named-root NBT stream), outcome out (0 ok, 1 cannot write / unreadable or corrupt) |
+| `PB-FRAME-ENCODE` | frame `PB-BUFFER` (appended to), packet `PB-BUFFER` (id + body), threshold (< 0 = compression off) |
+| `PB-FRAME-DECODE` | stream `PB-BUFFER` (from `PB-POS`), packet `PB-BUFFER` (caller-initialised; id + body, `PB-POS` after the id), threshold, validate (1 = reject compressed packets below the threshold, server side), packet id out, outcome out (0 packet, 1 need more, 2 malformed) |
+| `CHUNK-SECTION-ENCODE` | `PB-BUFFER`, non-empty count, fluid count, block states (table of 4096 `BINARY-LONG`, index y·256 + z·16 + x), biomes (table of 64, index y·16 + z·4 + x), block global palette bits, biome global palette bits |
+| `CHUNK-SECTION-DECODE` | `PB-BUFFER`, block global palette bits, biome global palette bits, non-empty count out, fluid count out, block states out, biomes out |
+| `LIGHT-ENCODE` / `LIGHT-DECODE` | `PB-BUFFER`, light section count (at most 256), sky states (table of `BINARY-LONG`: 0 no information, 1 empty, 2 array), sky arrays (table of `PIC X(2048)`), block states, block arrays |
+
+NBT writer name length: ≥ 0 a named tag (a file root is a compound with name length 0); -1 payload only
+(list elements); -2 a network root (type byte, no name). Scalar NBT payloads are read with
+`PB-GET-BYTE`/`-SHORT`/`-INT`/`-LONG`/`-FLOAT`/`-DOUBLE` (same encodings, 07 §1). Programs not in this
+table (`PB-PUT-BE-INTEGER`, `PB-GET-VARNUM`, `NBT-PUT-MUTF8`, `CHUNK-CONTAINER-ENCODE`, `LIGHT-PUT-MASK`, …)
+are internal to `proto`.
