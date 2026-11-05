@@ -172,9 +172,10 @@
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
-*> the player row), ground items (core/src/ground-items.cob) and later mobs. EN-X to EN-ON-GROUND are
-*> the values last sent to the viewers (the base of the next Move Entity delta); for a ground item
-*> they are its position, sent after every change, and EN-ON-GROUND is 1 while it is resting.
+*> the player row), ground items (core/src/ground-items.cob) and mobs (core/src/mobs.cob). EN-X to
+*> EN-ON-GROUND are the values last sent to the viewers (the base of the next Move Entity delta); for
+*> a ground item or a mob they are its position, sent after every change, and for a ground item
+*> EN-ON-GROUND is 1 while it is resting.
 *> EN-VX to EN-VZ: the current motion (blocks per tick; 0 for players). EN-ITEM to EN-AGE: the
 *> stack, pickup delay and age of a ground item (data-model §5). EN-COUNT is the highest row number
 *> ever used.
@@ -200,6 +201,24 @@
        10 EN-ITEM-COUNT      BINARY-LONG.
        10 EN-DELAY           BINARY-LONG.        *> pickup delay, ticks
        10 EN-AGE             BINARY-LONG.        *> ticks a player was near (standin §9.2)
+*>     Mobs (standin §12; core/src/mobs.cob). EN-VY is a mob's vertical velocity (its EN-VX and EN-VZ
+*>     stay 0) and EN-ON-GROUND its on-ground flag; EN-X to EN-YAW are its position and yaw. EN-HEALTH
+*>     and EN-HURT: health and hurt cooldown (§10.2). EN-WANDER-X/-Z: the horizontal velocity of the
+*>     last wander decision. EN-FLEE: flee ticks left; EN-FLEE-PLAYER/-ID: the player row and entity
+*>     id of the attacker fled from, EN-FLEE-X/-Z its last known position. EN-TARGET/-ID: the target
+*>     player row and its entity id (0 = none). EN-COOLDOWN: attack cooldown. None of it is saved.
+       10 EN-HEALTH          BINARY-LONG.
+       10 EN-HURT            BINARY-LONG.
+       10 EN-WANDER-X        FLOAT-LONG.
+       10 EN-WANDER-Z        FLOAT-LONG.
+       10 EN-FLEE            BINARY-LONG.
+       10 EN-FLEE-PLAYER     BINARY-LONG.
+       10 EN-FLEE-ID         BINARY-LONG.
+       10 EN-FLEE-X          FLOAT-LONG.
+       10 EN-FLEE-Z          FLOAT-LONG.
+       10 EN-TARGET          BINARY-LONG.
+       10 EN-TARGET-ID       BINARY-LONG.
+       10 EN-COOLDOWN        BINARY-LONG.
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

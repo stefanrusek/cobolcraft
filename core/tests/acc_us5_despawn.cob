@@ -44,7 +44,11 @@
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
      MOVE 2 TO CS-VIEW-DISTANCE
+*>   No mob spawns during the test: night (standin §4.8) with hostile mobs off, where §12.4
+*>   names only the abend for cobolcraft:main.
+     MOVE 0 TO CS-HOSTILE-MOBS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
      MOVE "Alice" TO WS-NAME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
      MOVE "Bobby" TO WS-NAME

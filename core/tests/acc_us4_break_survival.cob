@@ -33,7 +33,11 @@
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
+*>   No mob spawns during the test: night (standin §4.8) with hostile mobs off, where §12.4
+*>   names only the abend for cobolcraft:main.
+     MOVE 0 TO CS-HOSTILE-MOBS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
 
      MOVE "acceptance US4-3 given survival and greystone (hand break time 1.5 s) when a block is "

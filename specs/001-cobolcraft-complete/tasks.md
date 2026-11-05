@@ -758,29 +758,29 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §12 mobs. **Independent Test**: `make gate-core` with every `acc_us9_*.cob` passing.
 
-- [ ] T524 [US9-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the mob table of standin-content §12 (test first, constitution 5.1 rule 3)
-- [ ] T525 [US9-core] Create `core/copy/MOBS.cpy` (per mob type of standin-content §12: health, speed, behaviour, notice range, reach, damage, cooldown, spawning per dimension, yield)
-- [ ] T526 [P] [US9-core] Write implementation test `core/tests/test_rng.cob` for the deterministic pseudo-random rule of standin-content §12 (and §14) with reference values computed from the doc
-- [ ] T527 [US9-core] Implement the deterministic pseudo-random source in `core/src/rng.cob`
-- [ ] T528 [P] [US9-core] Write `contract_wire_server.cob` cases: Add Entity for each mob type equals its fixture
-- [ ] T529 [P] [US9-core] Write acceptance test `core/tests/acc_us9_spawning.cob`: case "acceptance US9-1 given a dimension when ticks pass then mobs of each §12 type spawn where, when and as many as its rules allow and viewers are sent them" (one case per dimension)
-- [ ] T530 [US9-core] Implement mob spawning per dimension in `core/src/mobs.cob`
-- [ ] T531 [P] [US9-core] Write implementation test `core/tests/test_mob_movement.cob`: wandering per §12 speed, collision with blocks, movement and head rotation sent to viewers
-- [ ] T532 [US9-core] Implement mob movement and collision in `core/src/mobs.cob`
-- [ ] T533 [P] [US9-core] Write acceptance test `core/tests/acc_us9_hostile.cob`: case "acceptance US9-2 given a hostile mob and a survival player within notice range then it moves toward them and attacks in reach for its §12 damage"; case "acceptance US9-3 given a passive mob when the player approaches then it never attacks"
-- [ ] T534 [US9-core] Implement hostile noticing and pursuit in `core/src/mobs.cob`
-- [ ] T535 [US9-core] Implement hostile attacks in reach with cooldown through the damage path in `core/src/mobs.cob`
-- [ ] T536 [P] [US9-core] Write acceptance test `core/tests/acc_us9_target_drop.cob`: cases for the US9 edge case — the target switches to creative, disconnects, dies or changes dimension and the mob stops pursuing
-- [ ] T537 [US9-core] Implement target dropping in `core/src/mobs.cob`
-- [ ] T538 [P] [US9-core] Write acceptance test `core/tests/acc_us9_defeat.cob`: case "acceptance US9-4 given a player attacks a mob when its health reaches zero then it is removed and its §12 yield lies on the ground where it was"; Hurt Animation on each hit
-- [ ] T539 [US9-core] Implement mob health and damage from player attacks (Hurt Animation) in `core/src/health.cob`
-- [ ] T540 [US9-core] Implement mob defeat (removal, §12 yield spawned as ground items) in `core/src/mobs.cob`
-- [ ] T541 [P] [US9-core] Write acceptance test `core/tests/acc_us9_hostile_off.cob`: case "acceptance US9-6 given hostile-mobs off then no hostile mob spawns and existing hostile mobs are removed"
-- [ ] T542 [US9-core] Implement the hostile-mobs setting in `core/src/mobs.cob`
-- [ ] T543 [P] [US9-core] Write acceptance test `core/tests/acc_us9_place_overlap.cob`: case "US4 edge given a mob occupying a position when a block is placed there then nothing is placed and, in survival, the item is not used up"
-- [ ] T544 [US9-core] Add the mob-box overlap refusal to placement in `core/src/blocks.cob`
-- [ ] T545 [US9-core] Extend the core implementation tests to 100 % coverage of the US9 changes
-- [ ] T546 Gate: run `make gate-core` and record the command and its real output
+- [X] T524 [US9-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the mob table of standin-content §12 (test first, constitution 5.1 rule 3)
+- [X] T525 [US9-core] Create `core/copy/MOBS.cpy` (per mob type of standin-content §12: health, speed, behaviour, notice range, reach, damage, cooldown, spawning per dimension, yield)
+- [X] T526 [P] [US9-core] Write implementation test `core/tests/test_rng.cob` for the deterministic pseudo-random rule of standin-content §12 (and §14) with reference values computed from the doc
+- [X] T527 [US9-core] Implement the deterministic pseudo-random source in `core/src/rng.cob`
+- [X] T528 [P] [US9-core] Write `contract_wire_server.cob` cases: Add Entity for each mob type equals its fixture
+- [X] T529 [P] [US9-core] Write acceptance test `core/tests/acc_us9_spawning.cob`: case "acceptance US9-1 given a dimension when ticks pass then mobs of each §12 type spawn where, when and as many as its rules allow and viewers are sent them" (one case per dimension)
+- [X] T530 [US9-core] Implement mob spawning per dimension in `core/src/mobs.cob`
+- [X] T531 [P] [US9-core] Write implementation test `core/tests/test_mob_movement.cob`: wandering per §12 speed, collision with blocks, movement and head rotation sent to viewers
+- [X] T532 [US9-core] Implement mob movement and collision in `core/src/mobs.cob`
+- [X] T533 [P] [US9-core] Write acceptance test `core/tests/acc_us9_hostile.cob`: case "acceptance US9-2 given a hostile mob and a survival player within notice range then it moves toward them and attacks in reach for its §12 damage"; case "acceptance US9-3 given a passive mob when the player approaches then it never attacks"
+- [X] T534 [US9-core] Implement hostile noticing and pursuit in `core/src/mobs.cob`
+- [X] T535 [US9-core] Implement hostile attacks in reach with cooldown through the damage path in `core/src/mobs.cob`
+- [X] T536 [P] [US9-core] Write acceptance test `core/tests/acc_us9_target_drop.cob`: cases for the US9 edge case — the target switches to creative, disconnects, dies or changes dimension and the mob stops pursuing
+- [X] T537 [US9-core] Implement target dropping in `core/src/mobs.cob`
+- [X] T538 [P] [US9-core] Write acceptance test `core/tests/acc_us9_defeat.cob`: case "acceptance US9-4 given a player attacks a mob when its health reaches zero then it is removed and its §12 yield lies on the ground where it was"; Hurt Animation on each hit
+- [X] T539 [US9-core] Implement mob health and damage from player attacks (Hurt Animation) in `core/src/health.cob`
+- [X] T540 [US9-core] Implement mob defeat (removal, §12 yield spawned as ground items) in `core/src/mobs.cob`
+- [X] T541 [P] [US9-core] Write acceptance test `core/tests/acc_us9_hostile_off.cob`: case "acceptance US9-6 given hostile-mobs off then no hostile mob spawns and existing hostile mobs are removed"
+- [X] T542 [US9-core] Implement the hostile-mobs setting in `core/src/mobs.cob`
+- [X] T543 [P] [US9-core] Write acceptance test `core/tests/acc_us9_place_overlap.cob`: case "US4 edge given a mob occupying a position when a block is placed there then nothing is placed and, in survival, the item is not used up"
+- [X] T544 [US9-core] Add the mob-box overlap refusal to placement in `core/src/blocks.cob`
+- [X] T545 [US9-core] Extend the core implementation tests to 100 % coverage of the US9 changes
+- [X] T546 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 20: US10-core — crafting
 

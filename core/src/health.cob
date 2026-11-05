@@ -13,10 +13,16 @@
 *> dies (HEALTH-DIE). Fall damage is applied by MOVE-PLAYER (core/src/movement.cob).
 *>
 *> Attack (HEALTH-ATTACK, 05c 0x01, §10.4): from an alive attacker, on an alive player of the same
-*> dimension (not the attacker) whose collision box is within 4.0 blocks of the attacker's eye
-*> point (feet + (0, 1.6, 0)) at its nearest point; it does the held item's attack damage (ITEMS.cpy
-*> IT-ATTACK, the bare hand 1) when `player-combat` is on. A ground item, an unknown entity or a
-*> target out of reach is not hit. (Mobs are US9.)
+*> dimension (not the attacker) or a mob of that dimension, whose collision box is within 4.0
+*> blocks of the attacker's eye point (feet + (0, 1.6, 0)) at its nearest point; it does the held
+*> item's attack damage (ITEMS.cpy IT-ATTACK, the bare hand 1), to a player only when
+*> `player-combat` is on. A ground item, an unknown entity or a target out of reach is not hit.
+*>
+*> Mob damage (HEALTH-MOB-DAMAGE, §10.2, US9-4): a mob whose hurt cooldown is 0 loses the amount
+*> (never below 0) and the cooldown becomes 12 ticks; its viewers are sent Damage Event
+*> (player_attack, source id = attacker entity id + 1) and Hurt Animation; a mob that can flee
+*> (MOBS.cpy MB-FLEE-MILLI above 0: the sodgrazer) flees from the attacker for 40 ticks (§12.3); at
+*> 0 health it is defeated (MOB-DEFEAT, core/src/mobs.cob).
 *>
 *> Recovery (HEALTH-TICK, step 4 of §9.5): every tick the hurt cooldown of each alive player
 *> decreases, then the hunger rules run (HUNGER-TICK, core/src/hunger.cob: eating, exhaustion from
@@ -45,6 +51,7 @@
 *>     attacker player row (0 none)                       (BINARY-LONG each)
 *>   HEALTH-DIE USING player row, cause, attacker player row (0 none)
 *>   HEALTH-ATTACK USING connection id, PLAY-SERVERBOUND  Attack
+*>   HEALTH-MOB-DAMAGE USING mob tracker row, amount, attacker player row (BINARY-LONG each)
 *>   HEALTH-RESPAWN USING connection id, PLAY-SERVERBOUND Client Command
 *>   HEALTH-TICK                                          the per-tick rules (CORE-TICK)
 *>   HEALTH-SEND USING player row                         Set Health to the player
@@ -358,6 +365,51 @@
  END PROGRAM HEALTH-DAMAGE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEALTH-MOB-DAMAGE.
+*> USING mob tracker row, amount, attacker player row (BINARY-LONG each): the mob damage rules above.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY MOBS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SOURCE              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT L-ATTACKER.
+     MOVE L-ROW TO WS-ROW
+     IF EN-HURT(WS-ROW) > 0
+         GOBACK
+     END-IF
+     COMPUTE EN-HEALTH(WS-ROW) = FUNCTION MAX(0, EN-HEALTH(WS-ROW) - L-AMOUNT)
+     MOVE RULE-HURT-COOLDOWN TO EN-HURT(WS-ROW)
+     COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) RULE-CAUSE-TYPE(CAUSE-PLAYER) WS-SOURCE
+         PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "HURT-ANIMATION-BUILD" USING EN-ID(WS-ROW) PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     IF MB-FLEE-MILLI(EN-TYPE(WS-ROW) - MOB-FIRST-TYPE + 1) > 0
+         MOVE MOB-FLEE-TICKS TO EN-FLEE(WS-ROW)
+         MOVE L-ATTACKER TO EN-FLEE-PLAYER(WS-ROW)
+         MOVE PL-ENTITY-ID(L-ATTACKER) TO EN-FLEE-ID(WS-ROW)
+         MOVE PL-X(L-ATTACKER) TO EN-FLEE-X(WS-ROW)
+         MOVE PL-Z(L-ATTACKER) TO EN-FLEE-Z(WS-ROW)
+     END-IF
+     IF EN-HEALTH(WS-ROW) = 0
+         CALL "MOB-DEFEAT" USING WS-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM HEALTH-MOB-DAMAGE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-ATTACK.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Attack 0x01): the attack rules above.
  DATA DIVISION.
@@ -407,10 +459,11 @@
          GOBACK
      END-IF
      MOVE EN-PLAYER(WS-ENTITY) TO WS-TARGET
-     IF WS-TARGET = 0 OR WS-TARGET = WS-ROW OR EN-DIM(WS-ENTITY) NOT = PL-DIM(WS-ROW)
+     IF EN-TYPE(WS-ENTITY) = ET-LOOSE-ITEM OR WS-TARGET = WS-ROW
+             OR EN-DIM(WS-ENTITY) NOT = PL-DIM(WS-ROW)
          GOBACK
      END-IF
-     IF PL-STATE(WS-TARGET) NOT = PS-ALIVE
+     IF WS-TARGET > 0 AND PL-STATE(WS-TARGET) NOT = PS-ALIVE
          GOBACK
      END-IF
 *>   Nearest point of the target's box to the eye point, then the distance to it.
@@ -432,14 +485,18 @@
      END-IF
      COMPUTE WS-EXHAUST = RULE-EXHAUST-ATTACK-MILLI / 1000
      CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
-     IF CS-PLAYER-COMBAT NOT = 1
-         GOBACK
-     END-IF
      MOVE 0 TO WS-ITEM
      IF PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) > 0
          MOVE PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) TO WS-ITEM
      END-IF
      MOVE IT-ATTACK(WS-ITEM + 1) TO WS-AMOUNT
+     IF WS-TARGET = 0
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ENTITY WS-AMOUNT WS-ROW
+         GOBACK
+     END-IF
+     IF CS-PLAYER-COMBAT NOT = 1
+         GOBACK
+     END-IF
      MOVE CAUSE-PLAYER TO WS-CAUSE
      CALL "HEALTH-DAMAGE" USING WS-TARGET WS-AMOUNT WS-CAUSE PL-ENTITY-ID(WS-ROW) WS-ROW
      GOBACK.

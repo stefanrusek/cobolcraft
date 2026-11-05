@@ -15,8 +15,8 @@
 *> north/south z, west/east x; punched false); otherwise a glowtube toggles lit, and anything else
 *> does nothing. A placement is refused, with Block Update of the target's real state to the player
 *> when the target is in the height range, when the target is not void, lies outside the dimension's
-*> height range or would overlap a player's box (standin §3, the movement.cob rule: positive volume,
-*> 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
+*> height range or would overlap a player's or a mob's box (standin §3, the movement.cob rule:
+*> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
 *>
 *> Player Action (BLOCK-ACTION; actions 0, 2, 3; the others belong to later phases and are not
@@ -209,15 +209,17 @@
  END PROGRAM BLOCK-ACK.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-OVERLAPS-PLAYER.
+ PROGRAM-ID. BLOCK-OVERLAPS-BODY.
 *> USING dimension row, x, y, z (BINARY-LONG block position), hit out (BINARY-LONG 1 or 0): 1 when
-*> the cell overlaps the box of a player in that dimension with positive volume (standin §3 player
-*> box; faces within 1e-7 of each other only touch).
+*> the cell overlaps with positive volume the box of a player or of a mob in that dimension (standin
+*> §3 sizes; faces within 1e-7 of each other only touch).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY ENTITYTYPES.
+ COPY MOBS.
  01 WS-PLAYER              BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -242,8 +244,22 @@
              MOVE 1 TO L-HIT
          END-IF
      END-PERFORM
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) >= MOB-FIRST-TYPE AND EN-DIM(WS-E) = L-DIM
+             COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
+             COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+             IF L-X < EN-X(WS-E) + WS-HALF - WS-EPSILON
+                     AND L-X + 1 > EN-X(WS-E) - WS-HALF + WS-EPSILON
+                     AND L-Y < EN-Y(WS-E) + WS-HEIGHT - WS-EPSILON
+                     AND L-Y + 1 > EN-Y(WS-E) + WS-EPSILON
+                     AND L-Z < EN-Z(WS-E) + WS-HALF - WS-EPSILON
+                     AND L-Z + 1 > EN-Z(WS-E) - WS-HALF + WS-EPSILON
+                 MOVE 1 TO L-HIT
+             END-IF
+         END-IF
+     END-PERFORM
      GOBACK.
- END PROGRAM BLOCK-OVERLAPS-PLAYER.
+ END PROGRAM BLOCK-OVERLAPS-BODY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-PLACE.
@@ -298,7 +314,7 @@
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OLD
      MOVE 1 TO WS-HIT
      IF WS-OLD = ST-VOID
-         CALL "BLOCK-OVERLAPS-PLAYER" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
+         CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
      END-IF
      IF WS-HIT = 1
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z

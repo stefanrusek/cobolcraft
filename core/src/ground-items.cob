@@ -161,11 +161,12 @@
  END PROGRAM GI-SOLID-CELL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GI-BOX-HITS.
-*> USING dimension row (BINARY-LONG), x, y, z (FLOAT-LONG item position), hit out, top out
-*> (BINARY-LONG): hit 1 when the item box at that position overlaps a solid cell (GI-SOLID-CELL)
-*> with positive volume, faces within 1e-7 block counting as touching; top is then the highest y
-*> among those cells.
+ PROGRAM-ID. ENTITY-BOX-HITS.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out,
+*> top out (BINARY-LONG): hit 1 when the collision box of that entity type (ENTITYTYPES.cpy, standin
+*> §3) at that position overlaps a solid cell (GI-SOLID-CELL) with positive volume, faces within
+*> 1e-7 block counting as touching; top is then the highest y among those cells. Ground items
+*> (GI-MOVE) and mobs (core/src/mobs.cob) move with it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY ENTITYTYPES.
@@ -184,15 +185,16 @@
  01 WS-SOLID               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
  01 L-X                    FLOAT-LONG.
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
  01 L-HIT                  BINARY-LONG.
  01 L-TOP                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT L-TOP.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
      MOVE 0 TO L-HIT
-     COMPUTE WS-HALF = ET-WIDTH-MILLI(ET-LOOSE-ITEM + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(ET-LOOSE-ITEM + 1) / 1000
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(L-TYPE + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(L-TYPE + 1) / 1000
 *>   First cell floor(low edge + e), last cell ceil(high edge - e) - 1 (as MOVE-COLLIDES).
      COMPUTE WS-X0 = FUNCTION INTEGER(L-X - WS-HALF + WS-EPSILON)
      COMPUTE WS-X1 = - FUNCTION INTEGER(WS-EPSILON - (L-X + WS-HALF)) - 1
@@ -212,7 +214,7 @@
          END-PERFORM
      END-PERFORM
      GOBACK.
- END PROGRAM GI-BOX-HITS.
+ END PROGRAM ENTITY-BOX-HITS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-SPAWN.
@@ -226,8 +228,6 @@
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-N                   BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -244,12 +244,7 @@
      CALL "ENTITY-ALLOC" USING WS-ROW
      CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
      MOVE ET-LOOSE-ITEM TO EN-TYPE(WS-ROW)
-     MOVE LOW-VALUES TO EN-UUID(WS-ROW)
-     MOVE EN-ID(WS-ROW) TO WS-N
-     PERFORM VARYING WS-I FROM 16 BY -1 UNTIL WS-I < 13
-         MOVE FUNCTION CHAR(FUNCTION MOD(WS-N, 256) + 1) TO EN-UUID(WS-ROW)(WS-I:1)
-         DIVIDE 256 INTO WS-N
-     END-PERFORM
+     CALL "ENTITY-SET-UUID" USING WS-ROW
      MOVE L-DIM TO EN-DIM(WS-ROW)
      MOVE L-X TO EN-X(WS-ROW)
      MOVE L-Y TO EN-Y(WS-ROW)
@@ -494,6 +489,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY ENTITYTYPES.
  COPY RULES.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
@@ -516,6 +512,7 @@
  01 WS-SOLID               BINARY-LONG.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-TYPE                BINARY-LONG VALUE ET-LOOSE-ITEM.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -533,7 +530,7 @@
      MOVE EN-VZ(WS-ROW) TO WS-VZ
      MOVE EN-ON-GROUND(WS-ROW) TO WS-RESTING
 *>   3.1 Out of a block placed into the box.
-     CALL "GI-BOX-HITS" USING WS-DIM WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-HIT WS-TOP
      IF WS-HIT = 1
          COMPUTE WS-Y = WS-TOP + 1
      END-IF
@@ -552,7 +549,7 @@
      IF WS-RESTING = 0
          COMPUTE WS-VY = WS-VY - RULE-GI-GRAVITY-MILLI / 1000
          COMPUTE WS-NEW = WS-Y + WS-VY
-         CALL "GI-BOX-HITS" USING WS-DIM WS-X WS-NEW WS-Z WS-HIT WS-TOP
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
          EVALUATE TRUE
              WHEN WS-HIT = 0
                  MOVE WS-NEW TO WS-Y
@@ -563,14 +560,14 @@
                  MOVE 0 TO WS-VY
          END-EVALUATE
          COMPUTE WS-NEW = WS-X + WS-VX
-         CALL "GI-BOX-HITS" USING WS-DIM WS-NEW WS-Y WS-Z WS-HIT WS-TOP
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-NEW TO WS-X
          ELSE
              MOVE 0 TO WS-VX
          END-IF
          COMPUTE WS-NEW = WS-Z + WS-VZ
-         CALL "GI-BOX-HITS" USING WS-DIM WS-X WS-Y WS-NEW WS-HIT WS-TOP
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-NEW TO WS-Z
          ELSE

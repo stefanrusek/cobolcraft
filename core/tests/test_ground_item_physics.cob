@@ -1,5 +1,5 @@
 *> Implementation test of ground-item movement (core/src/ground-items.cob GI-MOVE, GI-STEP,
-*> GI-BOX-HITS, GI-SOLID-CELL; tasks T466; standin-content §9.2 step 3; data-model §5 state machine):
+*> ENTITY-BOX-HITS, GI-SOLID-CELL; tasks T466; standin-content §9.2 step 3; data-model §5 state machine):
 *> gravity and drag per tick, coming to rest on a solid block, being pushed up out of a block placed
 *> into the item, falling again when the block below is removed, horizontal moves blocked by walls,
 *> an upward move blocked by a ceiling, a cell of an unloaded chunk counting as solid, an item in an

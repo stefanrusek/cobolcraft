@@ -60,6 +60,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `FUNCTION MIN(C(R, F), MX(I(R, T) + 1) - C(R, T))` yields a wrong value with no warning. Move the
   inner subscript or the difference into a field first, then call the function.
 - **`PERFORM VARYING … FROM a - b`** is a syntax error: compute the start into a field first.
+- **Division inside an intrinsic is not truncated**: `FUNCTION MOD(R / 1681, 8)` takes the MOD of a
+  fraction. Compute the integer quotient into a binary field first (`COMPUTE Q = R / 1681`), then MOD.
+- **`IF … ELSE IF … END-IF`** with one END-IF leaves the outer IF open until the next period, so the
+  statements after it (even GOBACK) belong to the ELSE branch. Use EVALUATE.
 - **The same item twice in one `CALL … USING`** warns under `-Wall` (`-Werror` in lint): pass
   distinct fields (e.g. three zero fields for a zero vector).
 - **Float edges**: `x + 0.35` is not exact; compare cell faces with a small tolerance (movement.cob
@@ -110,6 +114,12 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
+- **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
+  mod 100 = 0 by day). A test that runs many ticks and does not test mobs keeps them out with
+  `MOVE 0 TO CS-HOSTILE-MOBS` before opening the world and `MOVE 16001 TO CW-TIME` after it (night, when
+  the only cobolcraft:main candidate is the abend, refused while hostile mobs are off). Mob tests set the
+  Time just before the tick they test and place mobs with `MOB-SPAWN`. Expected spawn columns and wander
+  decisions come from the §1.4.1 hash (`core/src/rng.cob`), computed independently from the doc.
 
 ## Failure handling (FR-012)
 

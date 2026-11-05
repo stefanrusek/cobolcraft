@@ -3,7 +3,7 @@
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
 *> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
-*> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy),
+*> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -19,6 +19,7 @@
  COPY MESSAGES.
  COPY DIMENSIONS.
  COPY REGISTRY.
+ COPY MOBS.
  01 WS-ROW                 PIC X(400).
  01 WS-J                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
@@ -98,6 +99,12 @@
     05 FILLER PIC X(60) VALUE "3 cobolcraft:abend 750 750 500".
  01 WS-ENTITY-EXPECT REDEFINES WS-ENTITY-ROWS.
     05 WS-ENTITY-ROW       PIC X(60) OCCURS 4 TIMES.
+*> Mob type rows (§12.1; see the mob cases).
+ 01 WS-MOB-ROWS.
+    05 FILLER PIC X(80) VALUE "2 cobolcraft:sodgrazer 0 8 50 100 0 0 0 0 0 0 12 2 12".
+    05 FILLER PIC X(80) VALUE "3 cobolcraft:abend 1 12 40 0 120 12000 20000 1750 2 30 15 1 8".
+ 01 WS-MOB-EXPECT REDEFINES WS-MOB-ROWS.
+    05 WS-MOB-ROW          PIC X(80) OCCURS 2 TIMES.
 *> Registry rows (§4.2 summary): registry number, key, entries sent.
  01 WS-REG-ROWS.
     05 FILLER PIC X(60) VALUE "0 minecraft:worldgen/biome 3".
@@ -413,6 +420,100 @@
          MOVE WS-ENTITY-ROW(WS-I) TO TL-EXPECTED
          PERFORM ASSERT-ROW
      END-PERFORM
+
+*>   Mob types (§12.1). Row: entity type, key, kind (0 passive, 1 hostile), maximum health, wander,
+*>   flee and pursue speeds, notice, give-up and attack reach (thousandths of a block), attack
+*>   cause (RULES.cpy CAUSE-*, 0 none), attack cooldown, yield item and count, dimension cap (§12.4).
+     MOVE "test content tables mob type constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE MOB-TYPE-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-FIRST-TYPE TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-PASSIVE TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-HOSTILE TO WS-NUM PERFORM ADD-NUM
+     MOVE "2 2 0 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MOB-TYPE-COUNT
+         MOVE SPACES TO TL-CASE
+         STRING "test content tables mob type " DELIMITED BY SIZE
+             ET-KEY(MB-ENTITY-TYPE(WS-I) + 1)(1:ET-KEY-LENGTH(MB-ENTITY-TYPE(WS-I) + 1))
+             DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         MOVE MB-ENTITY-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING ET-KEY(MB-ENTITY-TYPE(WS-I) + 1)(1:ET-KEY-LENGTH(MB-ENTITY-TYPE(WS-I) + 1))
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         MOVE MB-KIND(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-HEALTH(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-WANDER-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-FLEE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-PURSUE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-NOTICE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-GIVE-UP-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-REACH-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-CAUSE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-COOLDOWN(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-YIELD-ITEM(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-YIELD-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MB-CAP(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-MOB-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+     MOVE "test content tables mob attack amount (§12.3, §10.3: an abend hit does 3)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE RULE-CAUSE-AMOUNT(MB-CAUSE(2)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test content tables mob physics (§12.2: gravity 0.05, vertical drag 0.96, step-up 1)"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE MOB-GRAVITY-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-DRAG-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-STEP-UP TO WS-NUM PERFORM ADD-NUM
+     MOVE "50 960 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables mob behaviour (§12.3: decide every 80 ticks, stand when r mod 3 = "
+         & "0, 8 yaws of 45 degrees, flee 40 ticks, pursuit stops within 1.0)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE MOB-DECIDE-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-STAND-MOD TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-YAW-DIRECTIONS TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-YAW-STEP TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-FLEE-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-PURSUE-STOP-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "80 3 8 45 40 1000" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables mob spawning (§12.4: every 100 ticks, offsets (r mod 41) - 20, "
+         & "none nearer than 8, no player within 8.0; §4.8 night 16000 to 29000)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE MOB-SPAWN-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-SPAWN-SPREAD TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-SPAWN-OFFSET TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-SPAWN-MIN TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-SPAWN-NEAR-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-NIGHT-START TO WS-NUM PERFORM ADD-NUM
+     MOVE MOB-NIGHT-END TO WS-NUM PERFORM ADD-NUM
+     MOVE "100 41 20 8 8000 16000 29000" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Spawn rules (§12.4 step 4, §15.4), in order. Row: dimension row, time (0 any, 1 day, 2
+*>   night), ground block (-1 any), maximum block light (-1 any), entity type.
+     MOVE "test content tables mob spawn rules (§12.4 step 4)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE MOB-SPAWN-RULE-COUNT TO WS-NUM PERFORM ADD-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MOB-SPAWN-RULE-COUNT
+         MOVE MS-DIM(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MS-TIME(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MS-GROUND(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MS-LIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE MS-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     MOVE "3 1 2 -1 5 3 1 1 4 -1 2 2 0 11 5 3" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
 
 *>   The cobolcraft:main dimension (§5.1, §5.2, §4.6, §14.2). Row: key type-id type-key min-y height
 *>   sea-level generator light-policy skylight weather.

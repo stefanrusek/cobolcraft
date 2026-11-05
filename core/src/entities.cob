@@ -17,6 +17,7 @@
 *>
 *> Entry points:
 *>   ENTITY-NEW-ID USING id out                  next per-run network entity id (from 1)
+*>   ENTITY-SET-UUID USING row                   UUID msb 0, lsb = entity id (ground items, mobs)
 *>   ENTITY-ALLOC USING row out                  a free tracker row (fatal when all are in use);
 *>                                               the caller fills EN-* and calls ENTITY-TRACK
 *>   ENTITY-TRACK USING row                      visibility of one entity for every player
@@ -50,15 +51,40 @@
  END PROGRAM ENTITY-NEW-ID.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. ENTITY-ADD-BUILD.
-*> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2, §3.3): entity id, UUID, type,
-*> position, movement (the current motion EN-VX to EN-VZ, (0, 0, 0) for players) as LpVec3, pitch,
-*> yaw and head yaw (= yaw) as Angles, data 0.
+ PROGRAM-ID. ENTITY-SET-UUID.
+*> USING tracker row (BINARY-LONG): the entity UUID of a ground item or a mob (09 §3.3): the most
+*> significant 64 bits 0, the least significant 64 bits the entity id EN-ID.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE LOW-VALUES TO EN-UUID(L-ROW)
+     MOVE EN-ID(L-ROW) TO WS-N
+     PERFORM VARYING WS-I FROM 16 BY -1 UNTIL WS-I < 13
+         MOVE FUNCTION CHAR(FUNCTION MOD(WS-N, 256) + 1) TO EN-UUID(L-ROW)(WS-I:1)
+         DIVIDE 256 INTO WS-N
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-SET-UUID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ADD-BUILD.
+*> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2, §3.3): entity id, UUID, type,
+*> position, movement as LpVec3 (a ground item's current motion EN-VX to EN-VZ; (0, 0, 0) for
+*> players and mobs, 09 §3.3 Mobs rows), pitch, yaw and head yaw (= yaw) as Angles, data 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY ENTITYTYPES.
  01 WS-PACKET-ID           BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -70,7 +96,13 @@
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-X(L-ROW)
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Y(L-ROW)
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Z(L-ROW)
-     CALL "PB-PUT-LPVEC3" USING PB-BUFFER EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
+     MOVE 0 TO WS-VX WS-VY WS-VZ
+     IF EN-TYPE(L-ROW) = ET-LOOSE-ITEM
+         MOVE EN-VX(L-ROW) TO WS-VX
+         MOVE EN-VY(L-ROW) TO WS-VY
+         MOVE EN-VZ(L-ROW) TO WS-VZ
+     END-IF
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-VX WS-VY WS-VZ
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-PITCH(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
