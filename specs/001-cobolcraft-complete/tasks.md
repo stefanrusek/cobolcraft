@@ -674,25 +674,25 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the `loose_item` rules of standin-content §9 and data-model §5. **Independent Test**: `make gate-core`.
 
-- [ ] T460 [US5-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the ground-item constants of standin-content §9 (test first, constitution 5.1 rule 3)
-- [ ] T461 [US5-core] Add the ground-item constants of standin-content §9 to `core/copy/RULES.cpy`
-- [ ] T462 [P] [US5-core] Write `contract_wire_server.cob` cases: Add Entity (loose_item), Set Entity Data (item), Set Entity Motion and Take Item Entity equal their fixtures; Player Action drop item and drop all items decode
-- [ ] T463 [P] [US5-core] Write acceptance test `core/tests/acc_us5_break_drop.cob`: case "acceptance US5-1 given survival when a block is broken then a loose_item with the block's item appears where the block was, falls and rests on a block, and every player in the same dimension within view distance is sent it" (also the ground-item half of US4-3)
-- [ ] T464 [US5-core] Implement ground-item spawning (entity record, Add Entity plus item metadata to viewers) in `core/src/ground-items.cob`
-- [ ] T465 [US5-core] Call ground-item spawning with the block's item from survival breaking in `core/src/blocks.cob`
-- [ ] T466 [P] [US5-core] Write implementation test `core/tests/test_ground_item_physics.cob`: gravity per §9, resting on a solid block, falling again when the block below is removed, motion and position updates to viewers (data-model §5 state machine)
-- [ ] T467 [US5-core] Implement ground-item physics per tick in `core/src/ground-items.cob`
-- [ ] T468 [P] [US5-core] Write acceptance test `core/tests/acc_us5_pickup.cob`: case "acceptance US5-2 given a ground item when a survival or creative player comes within pickup range then it leaves the ground (Take Item Entity, Remove Entities) and is added to their inventory"
-- [ ] T469 [P] [US5-core] Write acceptance test `core/tests/acc_us5_pickup_edges.cob`: cases for the US5 edge cases — two players reach it in the same tick and exactly one gets it; a player with room for part of the stack takes what fits and the rest stays (Set Entity Data with the reduced count); a full inventory leaves it on the ground (SC-011)
-- [ ] T470 [US5-core] Implement pickup resolution inside the tick in player order with partial pickup and pickup delay in `core/src/ground-items.cob` (data-model §5 exactly-once rule)
-- [ ] T471 [P] [US5-core] Write acceptance test `core/tests/acc_us5_throw.cob`: case "acceptance US5-3 given a held item when throw is used then one item (whole stack with the modifier) leaves the inventory and lands in front of the player" with §9's initial motion and the thrower's pickup delay
-- [ ] T472 [US5-core] Implement throwing (Player Action drop item / drop all items) in `core/src/ground-items.cob`
-- [ ] T473 [P] [US5-core] Write acceptance test `core/tests/acc_us5_despawn.cob`: case "acceptance US5-4 given a ground item when it has aged the despawn time then it disappears for everyone"; case "its age does not advance while no player is within the §9 near distance" (US5 edge)
-- [ ] T474 [US5-core] Implement ageing near players and despawn in `core/src/ground-items.cob`
-- [ ] T475 [P] [US5-core] Write implementation test `core/tests/test_ground_item_merge.cob` for the merge rule of standin-content §9 (merge within range, or — if §9 states items never merge — two identical items stay separate)
-- [ ] T476 [US5-core] Implement the standin-content §9 merge rule in `core/src/ground-items.cob`
-- [ ] T477 [US5-core] Extend the core implementation tests to 100 % coverage of the US5 changes
-- [ ] T478 Gate: run `make gate-core` and record the command and its real output
+- [X] T460 [US5-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the ground-item constants of standin-content §9 (test first, constitution 5.1 rule 3)
+- [X] T461 [US5-core] Add the ground-item constants of standin-content §9 to `core/copy/RULES.cpy`
+- [X] T462 [P] [US5-core] Write `contract_wire_server.cob` cases: Add Entity (loose_item), Set Entity Data (item), Set Entity Motion and Take Item Entity equal their fixtures; Player Action drop item and drop all items decode
+- [X] T463 [P] [US5-core] Write acceptance test `core/tests/acc_us5_break_drop.cob`: case "acceptance US5-1 given survival when a block is broken then a loose_item with the block's item appears where the block was, falls and rests on a block, and every player in the same dimension within view distance is sent it" (also the ground-item half of US4-3)
+- [X] T464 [US5-core] Implement ground-item spawning (entity record, Add Entity plus item metadata to viewers) in `core/src/ground-items.cob`
+- [X] T465 [US5-core] Call ground-item spawning with the block's item from survival breaking in `core/src/blocks.cob`
+- [X] T466 [P] [US5-core] Write implementation test `core/tests/test_ground_item_physics.cob`: gravity per §9, resting on a solid block, falling again when the block below is removed, motion and position updates to viewers (data-model §5 state machine)
+- [X] T467 [US5-core] Implement ground-item physics per tick in `core/src/ground-items.cob`
+- [X] T468 [P] [US5-core] Write acceptance test `core/tests/acc_us5_pickup.cob`: case "acceptance US5-2 given a ground item when a survival or creative player comes within pickup range then it leaves the ground (Take Item Entity, Remove Entities) and is added to their inventory"
+- [X] T469 [P] [US5-core] Write acceptance test `core/tests/acc_us5_pickup_edges.cob`: cases for the US5 edge cases — two players reach it in the same tick and exactly one gets it; a player with room for part of the stack takes what fits and the rest stays (Set Entity Data with the reduced count); a full inventory leaves it on the ground (SC-011)
+- [X] T470 [US5-core] Implement pickup resolution inside the tick in player order with partial pickup and pickup delay in `core/src/ground-items.cob` (data-model §5 exactly-once rule)
+- [X] T471 [P] [US5-core] Write acceptance test `core/tests/acc_us5_throw.cob`: case "acceptance US5-3 given a held item when throw is used then one item (whole stack with the modifier) leaves the inventory and lands in front of the player" with §9's initial motion and the thrower's pickup delay
+- [X] T472 [US5-core] Implement throwing (Player Action drop item / drop all items) in `core/src/ground-items.cob`
+- [X] T473 [P] [US5-core] Write acceptance test `core/tests/acc_us5_despawn.cob`: case "acceptance US5-4 given a ground item when it has aged the despawn time then it disappears for everyone"; case "its age does not advance while no player is within the §9 near distance" (US5 edge)
+- [X] T474 [US5-core] Implement ageing near players and despawn in `core/src/ground-items.cob`
+- [X] T475 [P] [US5-core] Write implementation test `core/tests/test_ground_item_merge.cob` for the merge rule of standin-content §9 (merge within range, or — if §9 states items never merge — two identical items stay separate)
+- [X] T476 [US5-core] Implement the standin-content §9 merge rule in `core/src/ground-items.cob`
+- [X] T477 [US5-core] Extend the core implementation tests to 100 % coverage of the US5 changes
+- [X] T478 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 16: US6-core — chat
 

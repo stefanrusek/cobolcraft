@@ -11,14 +11,14 @@
 *>     empty slot, tops up a slot of the same item (the rest stays on the cursor) or is swapped with a
 *>     slot of another item. Button 1 (right): an empty cursor takes half the slot (rounded up); a
 *>     full cursor puts one item on an empty slot or a non-full slot of the same item, or is swapped
-*>     with a slot of another item. A click outside the window (slot -999) would throw the cursor
-*>     stack: throwing is US5, so it changes nothing yet.
+*>     with a slot of another item. A click outside the window (slot -999) changes nothing: the
+*>     ground-item sources of standin §9.1 throw only with Player Action 4 and 5.
 *>   1 QUICK_MOVE: the slot's stack moves to the other part of the inventory (hotbar to main, main to
 *>     hotbar), filling stacks of the same item first, then empty slots in slot order; what does not
 *>     fit stays.
 *>   2 SWAP: the slot is swapped with hotbar slot "button" (0 to 8).
 *>   3 CLONE: creative only, with an empty cursor: the cursor gets a full stack of the slot's item.
-*>   4 THROW: throwing is US5; nothing changes yet.
+*>   4 THROW: nothing changes (throws are Player Action 4 and 5 only, standin §9.1).
 *>   5 QUICK_CRAFT (drag): button mod 4 is the stage (0 start, 1 add a slot, 2 end), button / 4 the
 *>     kind (0 split the cursor evenly, 1 one item each, 2 a full stack each, creative only). Slots
 *>     can be added when empty or holding the cursor's item below its maximum; at the end each slot
@@ -513,7 +513,8 @@
 *> USING connection id, PLAY-SERVERBOUND (a decoded Set Creative Mode Slot, 05c 0x39): acted on only
 *> for a creative player (09 §3.2). Slot 0 to 35 becomes the stack: count 0 empties it; an item id
 *> outside 1 to 17 (standin §2) is ignored; a count above the item's maximum stack is lowered to it.
-*> Other slots (-1 is a creative throw, US5) are ignored. Nothing is echoed (the client set it).
+*> Other slots (-1, a creative-inventory throw, is no ground-item source of standin §9.1) are
+*> ignored. Nothing is echoed (the client set it).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.

@@ -26,8 +26,9 @@
 *> (another id is ignored, as 05c's server does); Chunk Batch Received acknowledges one batch;
 *> Player Loaded makes the player Alive; Client Tick End needs nothing yet; Client Information
 *> stores the view distance; Keep Alive goes to CORE-KEEPALIVE-ANSWER; Move Player 0x1E to 0x21 go
-*> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob); Player Action goes
-*> to BLOCK-ACTION and Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
+*> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob); Player Action 4
+*> and 5 (throws) go to GI-THROW (core/src/ground-items.cob), the other actions to BLOCK-ACTION, and
+*> Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
 *> Click and Set Creative Mode Slot go to INV-HELD, INV-CLICK and INV-CREATIVE-SET
 *> (core/src/inventory.cob). A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
@@ -166,6 +167,8 @@
              CALL "MOVE-ABILITIES" USING L-ID PSB-FLAGS
          WHEN L-PACKET-ID >= 30 AND L-PACKET-ID <= 33
              CALL "MOVE-PLAYER" USING L-ID L-PACKET-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 41 AND (PSB-ACTION = 4 OR PSB-ACTION = 5)
+             CALL "GI-THROW" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 41
              CALL "BLOCK-ACTION" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 66
@@ -636,7 +639,8 @@
 *> itself and for every player already in the world, and every player already in the world is sent
 *> Player Info Update for the new player. Then the player's entity (cobolcraft:operator, its entity
 *> id and offline UUID, position and facing) enters the tracker: the others who see it get Add
-*> Entity, and the new player gets Add Entity for every entity it sees.
+*> Entity, and the new player gets Add Entity for every entity it sees. The player's entering order
+*> (PL-ENTERED, standin §9.3 pickup order) is the next CW-NEXT-ENTER.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -679,6 +683,8 @@
      MOVE PL-PITCH(WS-ROW) TO EN-PITCH(WS-ENTITY)
      MOVE PL-ON-GROUND(WS-ROW) TO EN-ON-GROUND(WS-ENTITY)
      MOVE WS-ENTITY TO PL-ENTITY-ROW(WS-ROW)
+     ADD 1 TO CW-NEXT-ENTER
+     MOVE CW-NEXT-ENTER TO PL-ENTERED(WS-ROW)
      CALL "ENTITY-VIEWER-FORGET" USING WS-ROW
      CALL "ENTITY-TRACK" USING WS-ENTITY
      CALL "ENTITY-VIEWER-REFRESH" USING WS-ROW

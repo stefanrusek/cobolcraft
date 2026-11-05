@@ -51,16 +51,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-ADD-BUILD.
-*> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2): entity id, UUID, type, position,
-*> movement (0, 0, 0) as LpVec3, pitch, yaw and head yaw (= yaw) as Angles, data 0.
+*> USING tracker row, PB-BUFFER: Add Entity 0x01 (05a; 09 §3.2, §3.3): entity id, UUID, type,
+*> position, movement (the current motion EN-VX to EN-VZ, (0, 0, 0) for players) as LpVec3, pitch,
+*> yaw and head yaw (= yaw) as Angles, data 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-PACKET-ID           BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-VX                  FLOAT-LONG VALUE 0.
- 01 WS-VY                  FLOAT-LONG VALUE 0.
- 01 WS-VZ                  FLOAT-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -72,7 +70,7 @@
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-X(L-ROW)
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Y(L-ROW)
      CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Z(L-ROW)
-     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-VX WS-VY WS-VZ
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER EN-VX(L-ROW) EN-VY(L-ROW) EN-VZ(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-PITCH(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
      CALL "PB-PUT-ANGLE" USING PB-BUFFER EN-YAW(L-ROW)
@@ -293,10 +291,12 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-VIEW-UPDATE.
 *> USING player row, tracker row: sends Add Entity when the player now sees the entity and its
-*> client does not have it, Remove Entities when the client has it and the player no longer sees it.
+*> client does not have it (for a ground item followed by Set Entity Data with its stack, 09 §3.3),
+*> Remove Entities when the client has it and the player no longer sees it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY ENTITYTYPES.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
@@ -317,6 +317,12 @@
      IF WS-SEES = 1 AND VW-SEEN(L-PLAYER)(L-ROW:1) NOT = "1"
          CALL "ENTITY-ADD-BUILD" USING L-ROW PB-BUFFER
          MOVE "1" TO VW-SEEN(L-PLAYER)(L-ROW:1)
+         IF EN-TYPE(L-ROW) = ET-LOOSE-ITEM
+             CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW)
+                 EN-ITEM-COUNT(L-ROW) PB-BUFFER
+         END-IF
      END-IF
      IF WS-SEES = 0 AND VW-SEEN(L-PLAYER)(L-ROW:1) = "1"
          MOVE EN-ID(L-ROW) TO WS-ID(1)

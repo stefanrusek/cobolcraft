@@ -64,6 +64,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   distinct fields (e.g. three zero fields for a zero vector).
 - **Float edges**: `x + 0.35` is not exact; compare cell faces with a small tolerance (movement.cob
   uses 1e-7) so that touching faces do not count as overlaps.
+- **MOVE of a float to a numeric-edited item truncates** (100.215 shows as 100.21499): use
+  `COMPUTE edited ROUNDED = float` when a test prints a float.
+- **OCCURS is not allowed at level 01**: wrap a table in a 01 group (`01 WS-ORDERS. 05 WS-ORDER
+  ... OCCURS n TIMES.`).
 - **Fixed format breaks past column 72**, which is why the project is free format. Don't switch.
 
 ## Interfaces

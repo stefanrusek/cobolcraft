@@ -27,7 +27,8 @@
 *> otherwise leaves it (Block Update of the real state to the player); ABORT ends the break. A block
 *> without a break time (void, and the baseplate, which nobody may break) is never broken: Block
 *> Update of its real state to the player. Each answered action and every Use Item On end with Block
-*> Changed Ack of their sequence. (The ground item of a survival break is US5.)
+*> Changed Ack of their sequence. A survival break leaves the block's item on the ground
+*> (GI-BLOCK-YIELD, core/src/ground-items.cob; standin §1.3); a creative break leaves nothing.
 *>
 *> Break progress (BLOCKS-TICK, every tick): while a survival break lasts, the other players who see
 *> the block get Block Destruction (the breaker's entity id, the position, stage = elapsed ticks x 10
@@ -443,6 +444,8 @@
                  AND CW-TICKS - PL-BREAK-START(WS-ROW) >= PL-BREAK-TICKS(WS-ROW)
              CALL "BLOCK-BREAK-END" USING WS-ROW
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
+             COMPUTE WS-BLOCK = WS-BLOCK - 1
+             CALL "GI-BLOCK-YIELD" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-BLOCK
          WHEN OTHER
              CALL "BLOCK-BREAK-END" USING WS-ROW
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ

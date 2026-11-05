@@ -1,7 +1,7 @@
 *> Implementation test of the remaining Use Item On and Player Action rules (core/src/blocks.cob,
 *> core/src/light.cob LIGHT-SET-BLOCK; tasks T458): the off hand does nothing; Use Item On a goto_pad
-*> places nothing whatever is held (travel is US12); Player Actions other than 0, 2 and 3 are not
-*> answered; a change next to a chunk that is loaded but not lit sends Light Update only for the lit
+*> places nothing whatever is held (travel is US12); Player Actions other than 0, 2 and 3 (and the
+*> throws 4 and 5, core/src/ground-items.cob) are not answered; a change next to a chunk that is loaded but not lit sends Light Update only for the lit
 *> chunks. Alice is creative holding greystone; view distance 2.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-BLOCKS.
@@ -69,8 +69,8 @@
      MOVE "4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test blocks Player Action 4 (drop all items, US5) is not answered here" TO TL-CASE
-     MOVE 4 TO WS-NUM
+     MOVE "test blocks Player Action 6 (release use item, US8) is not answered here" TO TL-CASE
+     MOVE 6 TO WS-NUM
      MOVE 3 TO WS-SEQ
      CALL "TEST-ACTION" USING WS-CONN WS-NUM WS-X WS-Y WS-Z WS-FACE WS-SEQ
      PERFORM LIST-AND-STATE

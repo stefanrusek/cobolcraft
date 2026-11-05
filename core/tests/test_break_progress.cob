@@ -77,7 +77,8 @@
      PERFORM CHECK
 
      MOVE "test break progress a break that runs to its end sends stages 0 to 9, then the "
-         & "clear, then the Block Update and Light Update of the broken block" TO TL-CASE
+         & "clear, then the Block Update and Light Update of the broken block and its ground item "
+         & "(Add Entity, Set Entity Data)" TO TL-CASE
      MOVE 0 TO WS-ACTION
      PERFORM ACT
      MOVE 30 TO WS-TICKS
@@ -87,7 +88,7 @@
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
      MOVE "5(1,20,100,20=0) 5(1,20,100,20=1) 5(1,20,100,20=2) 5(1,20,100,20=3) "
          & "5(1,20,100,20=4) 5(1,20,100,20=5) 5(1,20,100,20=6) 5(1,20,100,20=7) "
-         & "5(1,20,100,20=8) 5(1,20,100,20=9) 5(1,20,100,20=255) 8(20,100,20=0) 49(1,1)"
+         & "5(1,20,100,20=8) 5(1,20,100,20=9) 5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101"
          TO TL-EXPECTED
      PERFORM CHECK
 

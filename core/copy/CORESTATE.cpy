@@ -58,6 +58,7 @@
     05 CW-DIM                BINARY-LONG OCCURS 2 TIMES.   *> row of the DIMENSIONS.cpy table
     05 CW-RUN-STATE          PIC 9.              *> CST-RUN-STATE
     05 CW-NEXT-ENTITY-ID     BINARY-LONG.
+    05 CW-NEXT-ENTER         BINARY-LONG.        *> entering order of the next player (PL-ENTERED)
     05 CW-CONSOLE            PIC X(21).          *> PB-BUFFER bytes: pending console lines
 
 *> Connection table (core-host-api §3; data-model §12). The connection id is the row number.
@@ -118,6 +119,7 @@
        10 PL-CENTER-Z        BINARY-LONG.
        10 PL-BATCH-PENDING   BINARY-LONG.        *> chunk batches sent and not yet acknowledged
        10 PL-ENTITY-ROW      BINARY-LONG.        *> CORE-ENTITIES row; 0 until the join is sent
+       10 PL-ENTERED         BINARY-LONG.        *> order of entering the world this run (standin §9.3)
 *>     The item on the cursor of the inventory screen (Container Click; core/src/inventory.cob).
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.        *> 0 = nothing carried
@@ -158,8 +160,12 @@
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is
-*> the player row), later ground items and mobs. EN-X to EN-ON-GROUND are the values last sent to the
-*> viewers (the base of the next Move Entity delta). EN-COUNT is the highest row number ever used.
+*> the player row), ground items (core/src/ground-items.cob) and later mobs. EN-X to EN-ON-GROUND are
+*> the values last sent to the viewers (the base of the next Move Entity delta); for a ground item
+*> they are its position, sent after every change, and EN-ON-GROUND is 1 while it is resting.
+*> EN-VX to EN-VZ: the current motion (blocks per tick; 0 for players). EN-ITEM to EN-AGE: the
+*> stack, pickup delay and age of a ground item (data-model §5). EN-COUNT is the highest row number
+*> ever used.
  01 CORE-ENTITIES EXTERNAL.
     05 EN-COUNT              BINARY-LONG.
     05 EN-ENTRY OCCURS 1024 TIMES.
@@ -175,6 +181,13 @@
        10 EN-YAW             FLOAT-SHORT.
        10 EN-PITCH           FLOAT-SHORT.
        10 EN-ON-GROUND       BINARY-LONG.
+       10 EN-VX              FLOAT-LONG.
+       10 EN-VY              FLOAT-LONG.
+       10 EN-VZ              FLOAT-LONG.
+       10 EN-ITEM            BINARY-LONG.
+       10 EN-ITEM-COUNT      BINARY-LONG.
+       10 EN-DELAY           BINARY-LONG.        *> pickup delay, ticks
+       10 EN-AGE             BINARY-LONG.        *> ticks a player was near (standin §9.2)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

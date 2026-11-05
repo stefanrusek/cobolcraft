@@ -43,6 +43,14 @@
 *>   TEST-HELD USING connection id, slot: feeds Set Carried Item.
 *>   TEST-CLICK USING connection id, slot, button, click type: feeds Container Click (container 0,
 *>     the current state id, no predicted slots, empty predicted cursor).
+*>   TEST-DRAIN-ENTITIES USING connection id, text out (PIC X(1024)): drains the connection and
+*>     describes each packet (Add Entity, Set Entity Data, Set Entity Motion, Teleport Entity, Take
+*>     Item Entity, Remove Entities and Container Set Slot with their fields, others by id; Set Time
+*>     left out), a run of equal descriptions as <description>x<count>.
+*>   TEST-FIND-ENTITY USING network entity id, tracker row out (0 when no row has that id).
+*>   TEST-TICKS-ANSWERED USING count: runs that many CORE-TICKs in steps of at most 100, answering
+*>     after each step every pending Keep Alive of a connection in play (as a client would), so
+*>     long runs do not time the connections out.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -707,3 +715,196 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM TEST-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-ENTITIES.
+*> USING connection id, text out (PIC X(1024)): drains the connection and describes each packet,
+*> separated by one space: Add Entity "1(id,type@x,y,z)", Set Entity Data "101(id=itemxcount)",
+*> Set Entity Motion "103(id)", Teleport Entity "128(id)", Take Item Entity
+*> "127(collected,collector,amount)", Remove Entities "78(first id)", Container Set Slot
+*> "20(slot=itemxcount)", any other packet its id; Set Time (0x73) is left out. Positions are
+*> rounded to two decimals. A run of equal descriptions is written once with "x<count>".
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-DESC                PIC X(80).
+ 01 WS-LAST                PIC X(80).
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-DPTR                BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-R1                  PIC -(6)9.99.
+ 01 WS-R2                  PIC -(6)9.99.
+ 01 WS-R3                  PIC -(6)9.99.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT WS-LAST
+     MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-RUN
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "PB-RESET" USING PK-BUFFER
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         MOVE SPACES TO WS-DESC
+         MOVE 1 TO WS-DPTR
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115
+             MOVE WS-PACKET-ID TO WS-E1
+             STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
+             EVALUATE WS-PACKET-ID
+                 WHEN 1
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-UUID" USING PK-BUFFER WS-UUID
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-X
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-Y
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-Z
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-B TO WS-E2
+                     COMPUTE WS-R1 ROUNDED = WS-X
+                     COMPUTE WS-R2 ROUNDED = WS-Y
+                     COMPUTE WS-R3 ROUNDED = WS-Z
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "@"
+                         FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) "," FUNCTION TRIM(WS-R3)
+                         ")" DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
+                 WHEN 101
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-UBYTE" USING PK-BUFFER WS-B
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     MOVE WS-A TO WS-E1
+                     MOVE PK-IS-ITEM TO WS-E2
+                     MOVE PK-IS-COUNT TO WS-E3
+                     STRING "(" FUNCTION TRIM(WS-E1) "=" FUNCTION TRIM(WS-E2) "x"
+                         FUNCTION TRIM(WS-E3) ")" DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
+                 WHEN 103
+                 WHEN 128
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING "(" FUNCTION TRIM(WS-E1) ")" DELIMITED BY SIZE INTO WS-DESC
+                         POINTER WS-DPTR
+                 WHEN 127
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-C
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-B TO WS-E2
+                     MOVE WS-C TO WS-E3
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) ","
+                         FUNCTION TRIM(WS-E3) ")" DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
+                 WHEN 78
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING "(" FUNCTION TRIM(WS-E1) ")" DELIMITED BY SIZE INTO WS-DESC
+                         POINTER WS-DPTR
+                 WHEN 20
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     MOVE WS-B TO WS-E1
+                     MOVE PK-IS-ITEM TO WS-E2
+                     MOVE PK-IS-COUNT TO WS-E3
+                     STRING "(" FUNCTION TRIM(WS-E1) "=" FUNCTION TRIM(WS-E2) "x"
+                         FUNCTION TRIM(WS-E3) ")" DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
+             END-EVALUATE
+         END-IF
+         IF WS-DESC NOT = SPACES OR WS-OUTCOME NOT = 0
+             IF WS-DESC = WS-LAST AND WS-OUTCOME = 0
+                 ADD 1 TO WS-RUN
+             ELSE
+                 IF WS-LAST NOT = SPACES
+                     IF WS-PTR > 1
+                         STRING " " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                     STRING FUNCTION TRIM(WS-LAST) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     IF WS-RUN > 1
+                         MOVE WS-RUN TO WS-E1
+                         STRING "x" FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT
+                             POINTER WS-PTR
+                     END-IF
+                 END-IF
+                 MOVE WS-DESC TO WS-LAST
+                 MOVE 1 TO WS-RUN
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-ENTITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FIND-ENTITY.
+*> USING network entity id, tracker row out (BINARY-LONG): the CORE-ENTITIES row in use with that
+*> id, 0 when there is none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY-ID L-ROW.
+     MOVE 0 TO L-ROW
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         IF EN-USED(WS-ROW) = 1 AND EN-ID(WS-ROW) = L-ENTITY-ID
+             MOVE WS-ROW TO L-ROW
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-FIND-ENTITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-TICKS-ANSWERED.
+*> USING count (BINARY-LONG): see the list above.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 28.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE L-COUNT TO WS-LEFT
+     PERFORM UNTIL WS-LEFT = 0
+         COMPUTE WS-STEP = FUNCTION MIN(WS-LEFT, 100)
+         CALL "TEST-TICKS" USING WS-STEP
+         SUBTRACT WS-STEP FROM WS-LEFT
+         PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
+             IF CN-USED(WS-ID) = 1 AND CN-PHASE(WS-ID) = PH-PLAY AND CN-KA-PENDING(WS-ID) = 1
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+                 CALL "PB-PUT-LONG" USING PB-BUFFER CN-KA-ID(WS-ID)
+                 CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-TICKS-ANSWERED.

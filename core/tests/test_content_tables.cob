@@ -471,6 +471,62 @@
      MOVE RULE-DAY-LENGTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   Ground items (§9, §1.3), lengths and factors in thousandths.
+     MOVE "test content tables ground item pickup delays (§9.1: break 6, throw 30)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-BREAK-DELAY TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-THROW-DELAY TO WS-NUM PERFORM ADD-NUM
+     MOVE "6 30" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables ground item source positions (§1.3 yield (0.5, 0.25, 0.5), §9.1 "
+         & "throw feet + 1.3)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-BREAK-DXZ-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-BREAK-DY-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-THROW-DY-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "500 250 1300" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables ground item thrown motion (§9.1: speed 0.25, lift 0.12)"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-THROW-SPEED-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-THROW-LIFT-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "250 120" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables ground item age (§9.2: near 32.0, despawn at 4800)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-NEAR-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-DESPAWN-AGE TO WS-NUM PERFORM ADD-NUM
+     MOVE "32000 4800" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables ground item movement (§9.2: gravity 0.035, drag 0.97)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-GRAVITY-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-DRAG-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "35 970" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables ground item pickup range and merging (§9.3: 0.75 in x and z, "
+         & "0.25 in y; §9.2: never merge)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-GI-REACH-XZ-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-REACH-Y-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-GI-MERGES TO WS-NUM PERFORM ADD-NUM
+     MOVE "750 250 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables block yields (§1.3: blocks 0 to 11)" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE RULE-YIELD-ITEM(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     MOVE "0 0 2 3 4 5 6 7 8 9 16 17" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
 *>   Synchronized registries (§4). Summary (§4.2): one case per registry.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
          MOVE SPACES TO TL-CASE

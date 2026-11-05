@@ -3,8 +3,9 @@
 *> it with the matching tool of §2, and leaves void; a finish before the break time leaves the block;
 *> the baseplate is never broken (US4 edge). Alice is a first-time survival player: slot 0 holds
 *> greystone (not a tool), slot 8 the pry_bar (hard class), slot 9 the trowel (soft class; swapped
-*> into hotbar slot 7 with Container Click SWAP to be held). (The
-*> ground item of the break is US5.)
+*> into hotbar slot 7 with Container Click SWAP to be held). A completed break also sends the
+*> ground item of the yield (Add Entity 1, Set Entity Data 101; the yield itself is checked in
+*> acc_us5_break_drop.cob).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-BREAK-SURVIVAL.
  DATA DIVISION.
@@ -40,7 +41,7 @@
      MOVE 2 TO WS-STATE
      MOVE 30 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 4(2) state 0" TO TL-EXPECTED
+     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (pry_bar, hard class) when "
@@ -50,7 +51,7 @@
      MOVE 2 TO WS-STATE
      MOVE 7 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 4(4) state 0" TO TL-EXPECTED
+     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(4) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (trowel, soft class) when loam "
@@ -64,7 +65,7 @@
      MOVE 3 TO WS-STATE
      MOVE 3 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 4(6) state 0" TO TL-EXPECTED
+     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(6) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and a tool of the other class (trowel on greystone) "
