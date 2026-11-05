@@ -15,7 +15,9 @@
 *>
 *> Fall start (standin §10.3): while the player is on the ground, flying or in creative mode it
 *> follows the feet y; otherwise it is the highest feet y since the player was last on the ground.
-*> (Fall damage on landing is US7.)
+*> An accepted move with on-ground true ends a fall: D = fall start - the new feet y, and when
+*> floor(D) >= 5 the player takes 2 x (floor(D) - 4) fall damage (HEALTH-DAMAGE, cause fall; a
+*> creative player takes none) after the move has been applied and sent.
 *>
 *> Entry points:
 *>   MOVE-PLAYER USING connection id, packet id (30 to 33), PLAY-SERVERBOUND
@@ -82,6 +84,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY RULES.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 128.
@@ -89,6 +92,11 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-MOVED               PIC 9.
  01 WS-ON-GROUND           BINARY-LONG.
+ 01 WS-FALL                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -124,6 +132,10 @@
          MOVE PSB-PITCH TO PL-PITCH(WS-ROW)
      END-IF
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO PL-ON-GROUND(WS-ROW)
+     MOVE 0 TO WS-FALL
+     IF PL-ON-GROUND(WS-ROW) = 1
+         COMPUTE WS-FALL = FUNCTION INTEGER(PL-FALL-START(WS-ROW) - PL-Y(WS-ROW))
+     END-IF
      IF PL-ON-GROUND(WS-ROW) = 1 OR PL-FLYING(WS-ROW) = 1 OR PL-MODE(WS-ROW) = 1
              OR PL-Y(WS-ROW) > PL-FALL-START(WS-ROW)
          MOVE PL-Y(WS-ROW) TO PL-FALL-START(WS-ROW)
@@ -135,6 +147,11 @@
          MOVE PL-ON-GROUND(WS-ROW) TO WS-ON-GROUND
          CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
+     END-IF
+     IF WS-FALL > RULE-SAFE-FALL
+         COMPUTE WS-AMOUNT = RULE-FALL-FACTOR * (WS-FALL - RULE-SAFE-FALL)
+         MOVE CAUSE-FALL TO WS-CAUSE
+         CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
      END-IF
      GOBACK.
  END PROGRAM MOVE-PLAYER.

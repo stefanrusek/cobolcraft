@@ -117,8 +117,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-TICK.
 *> One 50 ms game tick (research R6): the tick counter, the time of day and its Set Time cadence
-*> (WORLD-TIME-TICK), break progress (BLOCKS-TICK), ground items (GROUND-ITEMS-TICK, last of the
-*> game rules, standin §9.5) and the connections' keep-alives.
+*> (WORLD-TIME-TICK), break progress (BLOCKS-TICK), the player survival rules (HEALTH-TICK, step 4
+*> of standin §9.5), ground items (GROUND-ITEMS-TICK, last of the game rules) and the connections'
+*> keep-alives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -126,6 +127,7 @@
      ADD 1 TO CW-TICKS
      CALL "WORLD-TIME-TICK"
      CALL "BLOCKS-TICK"
+     CALL "HEALTH-TICK"
      CALL "GROUND-ITEMS-TICK"
      CALL "SESSION-TICK"
      GOBACK.

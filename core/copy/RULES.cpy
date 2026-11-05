@@ -1,4 +1,4 @@
-*> Player rules (standin-content §10.1, §11.1), transcribed. Tested by core/tests/test_content_tables.cob.
+*> Player rules (standin-content §10, §11.1), transcribed. Tested by core/tests/test_content_tables.cob.
 *> Maximum health (§10.1): health is a whole number 0..30; new and respawned players have 30.
  78 RULE-MAX-HEALTH           VALUE 30.
 *> Maximum food level (§11.1): food is a whole number 0..24; new and respawned players have 24.
@@ -48,3 +48,54 @@
     05 FILLER BINARY-LONG VALUE 17.             *> slag
  01 RULE-YIELD-TABLE REDEFINES RULE-YIELD-DATA.
     05 RULE-YIELD-ITEM BINARY-LONG OCCURS 12 TIMES.
+*> Health and death (§10.2 to §10.6; US7). Lengths and amounts in THOUSANDTHS where marked MILLI.
+*> Hurt cooldown (§10.2): after damage, further damage is ignored for 12 ticks.
+ 78 RULE-HURT-COOLDOWN        VALUE 12.
+*> Fall damage (§10.3): 2 x (floor(D) - 4) when floor(D) >= 5; the safe fall height is 4 blocks.
+ 78 RULE-SAFE-FALL            VALUE 4.
+ 78 RULE-FALL-FACTOR          VALUE 2.
+*> Causes of damage (§10.3), numbered in table order; MESSAGES.cpy has each cause's death message.
+ 78 CAUSE-FALL                VALUE 1.
+ 78 CAUSE-ABEND               VALUE 2.
+ 78 CAUSE-PLAYER              VALUE 3.
+ 78 CAUSE-STARVATION          VALUE 4.
+ 78 CAUSE-HAIL                VALUE 5.
+ 78 CAUSE-COMMAND             VALUE 6.
+ 78 CAUSE-COUNT               VALUE 6.
+*> Per cause: the damage type id (§4.7) and the fixed amount (0: the fall formula, the attacker's
+*> held item (§10.4), or the command sets health to 0 directly).
+ 01 RULE-CAUSE-DATA.
+    05 FILLER BINARY-LONG VALUE 1.              *> fall: cobolcraft:impact
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 28.             *> abend: cobolcraft:mob_attack
+    05 FILLER BINARY-LONG VALUE 3.
+    05 FILLER BINARY-LONG VALUE 29.             *> player: cobolcraft:player_attack
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 30.             *> starvation: cobolcraft:starvation
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 31.             *> hail: cobolcraft:hail
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.              *> command: cobolcraft:generic
+    05 FILLER BINARY-LONG VALUE 0.
+ 01 RULE-CAUSE-TABLE REDEFINES RULE-CAUSE-DATA.
+    05 RULE-CAUSE OCCURS 6 TIMES.
+       10 RULE-CAUSE-TYPE    BINARY-LONG.
+       10 RULE-CAUSE-AMOUNT  BINARY-LONG.
+*> Starvation (§10.3): 1 damage every 60th consecutive tick at food 0.
+ 78 RULE-STARVE-TICKS         VALUE 60.
+*> Attacks (§10.4): a hit reaches at most 4.0 blocks from the attacker's eye point, feet + (0, 1.6, 0),
+*> to the nearest point of the target's collision box.
+ 78 RULE-ATTACK-REACH-MILLI   VALUE 4000.
+ 78 RULE-ATTACK-EYE-MILLI     VALUE 1600.
+*> Recovery (§10.5): while food is at least 20 and health below the maximum, every 50th consecutive
+*> tick gives 1 health and 2.5 exhaustion.
+ 78 RULE-RECOVER-FOOD         VALUE 20.
+ 78 RULE-RECOVER-TICKS        VALUE 50.
+ 78 RULE-RECOVER-AMOUNT       VALUE 1.
+ 78 RULE-RECOVER-EXHAUST-MILLI VALUE 2500.
+*> Death drops (§10.6): slot s (0 to 35) becomes a ground item at the feet + (0, 0.5, 0) with motion
+*> (((s mod 6) x 2 - 5) x 0.02, 0.2, (((s div 6) mod 6) x 2 - 5) x 0.02) and pickup delay 30.
+ 78 RULE-DEATH-DY-MILLI       VALUE 500.
+ 78 RULE-DEATH-SPREAD-MILLI   VALUE 20.
+ 78 RULE-DEATH-LIFT-MILLI     VALUE 200.
+ 78 RULE-DEATH-DELAY          VALUE 30.

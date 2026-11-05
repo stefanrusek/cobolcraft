@@ -58,6 +58,14 @@
 *>     its System Chat packets separated by " | ": plain or literal text as the text, translate as
 *>     key(arg,arg...), with "[overlay]" appended when the overlay flag is set; other packets are
 *>     left out.
+*>   TEST-ATTACK USING connection id, target entity id: feeds Attack (05c 0x01).
+*>   TEST-CLIENT-COMMAND USING connection id, action: feeds Client Command (05c 0x0C).
+*>   TEST-DRAIN-HEALTH USING connection id, text out (PIC X(4096)): drains the connection and lists
+*>     its health packets separated by " | ": Set Health "health <h> food <f>", Damage Event
+*>     "damage <entity> type <t> source <s>", Hurt Animation "hurt <entity>", Player Combat Kill
+*>     "kill <entity> key(arg,...)", System Chat "chat key(arg,...)" (plain text as the text),
+*>     Respawn "respawn <dimension key> mode <m> keep <k>" and Player Position "position <x> <y>
+*>     <z>" (one decimal); other packets are left out.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -1010,3 +1018,183 @@
      CALL "PB-FREE" USING PK-BUFFER
      GOBACK.
  END PROGRAM TEST-DRAIN-CHAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ATTACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TARGET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-TARGET.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TARGET
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CLIENT-COMMAND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 12.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ACTION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-CLIENT-COMMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-HEALTH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-R1                  PIC -(5)9.9.
+ 01 WS-R2                  PIC -(5)9.9.
+ 01 WS-R3                  PIC -(5)9.9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0
+             EVALUATE WS-PACKET-ID
+                 WHEN 106
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     COMPUTE WS-E1 ROUNDED = WS-FLOAT
+                     MOVE WS-A TO WS-E2
+                     STRING "health " FUNCTION TRIM(WS-E1) " food " FUNCTION TRIM(WS-E2)
+                         DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 WHEN 25
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-C
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-B TO WS-E2
+                     MOVE WS-C TO WS-E3
+                     STRING "damage " FUNCTION TRIM(WS-E1) " type " FUNCTION TRIM(WS-E2)
+                         " source " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO L-TEXT
+                         POINTER WS-PTR
+                 WHEN 43
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING "hurt " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT
+                         POINTER WS-PTR
+                 WHEN 69
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING "kill " FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO L-TEXT
+                         POINTER WS-PTR
+                     PERFORM ADD-TEXT
+                 WHEN 124
+                     PERFORM SEPARATE-ENTRY
+                     STRING "chat " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     PERFORM ADD-TEXT
+                 WHEN 84
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-KEY WS-KEY-CAPACITY
+                         WS-KEY-LENGTH
+                     CALL "PB-GET-LONG" USING PK-BUFFER WS-LONG
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+                     CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+                     CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-BYTE" USING PK-BUFFER WS-C
+                     MOVE WS-B TO WS-E2
+                     MOVE WS-C TO WS-E3
+                     STRING "respawn " WS-KEY(1:FUNCTION MAX(1, WS-KEY-LENGTH)) " mode "
+                         FUNCTION TRIM(WS-E2) " keep " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                 WHEN 73
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-X
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-Y
+                     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-Z
+                     COMPUTE WS-R1 ROUNDED = WS-X
+                     COMPUTE WS-R2 ROUNDED = WS-Y
+                     COMPUTE WS-R3 ROUNDED = WS-Z
+                     STRING "position " FUNCTION TRIM(WS-R1) " " FUNCTION TRIM(WS-R2) " "
+                         FUNCTION TRIM(WS-R3) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+
+ SEPARATE-ENTRY.
+     IF WS-PTR > 1
+         STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+     END-IF.
+
+ ADD-TEXT.
+     CALL "PB-GET-TEXT" USING PK-BUFFER PK-TEXT
+     IF PK-TX-LENGTH > 0
+         STRING PK-TX-VALUE(1:PK-TX-LENGTH) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+     END-IF
+     IF PK-TX-KIND = PK-TEXT-TRANSLATE
+         STRING "(" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PK-TX-ARG-COUNT
+             IF WS-I > 1
+                 STRING "," DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             IF PK-TX-ARG-LENGTH(WS-I) > 0
+                 STRING PK-TX-ARG-VALUE(WS-I)(1:PK-TX-ARG-LENGTH(WS-I))
+                     DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+         END-PERFORM
+         STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+     END-IF.
+ END PROGRAM TEST-DRAIN-HEALTH.

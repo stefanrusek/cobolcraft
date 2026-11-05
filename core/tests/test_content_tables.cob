@@ -2,6 +2,8 @@
 *> RULES.cpy, DIMENSIONS.cpy, REGISTRY.cpy) against docs/design/standin-content.md: blocks §1.1, block
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
+*> the health and death rules of §10.2 to §10.6 (RULES.cpy) and the death messages of §10.7
+*> (MESSAGES.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -14,6 +16,7 @@
  COPY ITEMS.
  COPY ENTITYTYPES.
  COPY RULES.
+ COPY MESSAGES.
  COPY DIMENSIONS.
  COPY REGISTRY.
  01 WS-ROW                 PIC X(400).
@@ -470,6 +473,81 @@
      MOVE 30000 TO TL-EXPECTED-N
      MOVE RULE-DAY-LENGTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Health and death (§10.2 to §10.7; US7), lengths and amounts in thousandths.
+     MOVE "test content tables hurt cooldown and fall damage (§10.2: 12 ticks; §10.3: safe fall "
+         & "height 4, 2 x (floor(D) - 4))" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-HURT-COOLDOWN TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-SAFE-FALL TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-FALL-FACTOR TO WS-NUM PERFORM ADD-NUM
+     MOVE "12 4 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables causes of damage (§10.3: per cause fall, abend, player, "
+         & "starvation, hail, command the damage type id and fixed amount)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE CAUSE-FALL TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-ABEND TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-PLAYER TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-STARVATION TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-HAIL TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-COMMAND TO WS-NUM PERFORM ADD-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CAUSE-COUNT
+         MOVE RULE-CAUSE-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RULE-CAUSE-AMOUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     MOVE "1 2 3 4 5 6 1 0 28 3 29 0 30 1 31 1 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables starvation and attacks (§10.3: every 60th tick; §10.4: reach 4.0 "
+         & "from the eye point feet + 1.6)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-STARVE-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-ATTACK-REACH-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-ATTACK-EYE-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "60 4000 1600" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables recovery (§10.5: food at least 20, every 50 ticks 1 health and "
+         & "2.5 exhaustion)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-RECOVER-FOOD TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-RECOVER-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-RECOVER-AMOUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-RECOVER-EXHAUST-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "20 50 1 2500" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables death drops (§10.6: feet + 0.5, spread 0.02, lift 0.2, pickup "
+         & "delay 30)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-DEATH-DY-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-DEATH-SPREAD-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-DEATH-LIFT-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-DEATH-DELAY TO WS-NUM PERFORM ADD-NUM
+     MOVE "500 20 200 30" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables death messages (§10.7: per cause the translate key and its "
+         & "arguments, v victim name, a attacker name)" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CAUSE-COUNT
+         PERFORM ADD-SPACE
+         STRING DTH-KEY(WS-I)(1:DTH-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > DTH-ARG-COUNT(WS-I)
+             IF DTH-ARG-KIND(WS-I, WS-J) = MSG-ARG-VICTIM
+                 STRING ",v" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+             ELSE
+                 STRING ",a" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE "cobolcraft.death.fall,v cobolcraft.death.mob.abend,v cobolcraft.death.player,v,a "
+         & "cobolcraft.death.starvation,v cobolcraft.death.hail,v cobolcraft.death.command,v"
+         TO TL-EXPECTED
+     PERFORM ASSERT-ROW
 
 *>   Ground items (§9, §1.3), lengths and factors in thousandths.
      MOVE "test content tables ground item pickup delays (§9.1: break 6, throw 30)" TO TL-CASE

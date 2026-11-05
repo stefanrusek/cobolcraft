@@ -9,6 +9,8 @@
     05 PSB-Z                  FLOAT-LONG.
     05 PSB-YAW                FLOAT-SHORT.
     05 PSB-PITCH              FLOAT-SHORT.
+*>  0x01 Attack: the target entity id (VarInt). 0x0C Client Command uses PSB-ACTION (VarInt action).
+    05 PSB-TARGET             BINARY-LONG.
 *>  0x0B Chunk Batch Received
     05 PSB-CHUNK-RATE         FLOAT-SHORT.
 *>  0x0E Client Information (03 layout; only the view distance is kept)

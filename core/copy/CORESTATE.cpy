@@ -136,6 +136,13 @@
        10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
        10 PL-BREAK-TICKS     BINARY-LONG.        *> ticks the break takes
        10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
+*>     Health (standin §10; core/src/health.cob). PL-DEATH-CAUSE is the RULES.cpy CAUSE-* of the
+*>     death while the player is dead (0 while alive); PL-KILLER-* name the attacker of a player kill.
+       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> ticks left in which damage is ignored (§10.2)
+       10 PL-RECOVER-TICKS   BINARY-LONG.        *> consecutive ticks of the recovery condition (§10.5)
+       10 PL-DEATH-CAUSE     BINARY-LONG.
+       10 PL-KILLER-NAME     PIC X(16).
+       10 PL-KILLER-LENGTH   BINARY-LONG.
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
@@ -197,8 +204,13 @@
 
 *> Players who have been in the world (US4-8: the survival starting items are given once, to a
 *> first-time player). One offline UUID per row, KN-COUNT rows used; a full table records no more.
-*> Player files (US13) will also count as known.
+*> Player files (US13) will also count as known. A player who left while dead (standin §10.6,
+*> data-model §6) keeps that death in KN-DEATH-CAUSE (0 = left alive) and KN-KILLER-*: on the next
+*> join the player is dead again and is shown the death screen.
  78 CORE-MAX-KNOWN          VALUE 4096.
  01 CORE-KNOWN EXTERNAL.
     05 KN-COUNT              BINARY-LONG.
     05 KN-UUID               PIC X(16) OCCURS 4096 TIMES.
+    05 KN-DEATH-CAUSE        BINARY-LONG OCCURS 4096 TIMES.
+    05 KN-KILLER-NAME        PIC X(16) OCCURS 4096 TIMES.
+    05 KN-KILLER-LENGTH      BINARY-LONG OCCURS 4096 TIMES.

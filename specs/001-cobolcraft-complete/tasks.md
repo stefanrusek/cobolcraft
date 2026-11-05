@@ -708,24 +708,24 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §10 rules. **Independent Test**: `make gate-core` with every `acc_us7_*.cob` passing.
 
-- [ ] T484 [US7-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the remaining health and death constants of standin-content §10 (the maximum health is in US2) and the death-message translation keys (test first, constitution 5.1 rule 3)
-- [ ] T485 [US7-core] Add the remaining §10 health and death constants to `core/copy/RULES.cpy`
-- [ ] T486 [US7-core] Create `core/copy/MESSAGES.cpy` holding the §10 death-message translation keys and argument kinds (server-sent messages are `translate` components, `docs/protocol/09-cobolcraft-profile.md` §1)
-- [ ] T487 [P] [US7-core] Write `contract_wire_server.cob` cases: Set Health, Damage Event, Hurt Animation, Player Combat Kill and Respawn (main) equal their fixtures; the core's System Chat death message is byte-equal to `play-s2c-7c-system-chat-death.hex`; Attack and Client Command (respawn) decode
-- [ ] T488 [P] [US7-core] Write acceptance test `core/tests/acc_us7_fall_damage.cob`: case "acceptance US7-2 given a survival player when they land after falling farther than the safe height then they lose the §10 fall damage and are sent Set Health and the hurt packets"
-- [ ] T489 [US7-core] Implement damage application (health decrease, Set Health, Damage Event, Hurt Animation to viewers, damage type) in `core/src/health.cob`
-- [ ] T490 [US7-core] Implement fall damage on landing beyond the safe height in `core/src/movement.cob`
-- [ ] T491 [P] [US7-core] Write acceptance test `core/tests/acc_us7_attack.cob`: case "acceptance US7-5 given a player aiming at another player within reach when they attack then the target takes the §10 damage of the held item"; case "acceptance US7-2 the hit survival player loses that health"; case "US7 edge given player combat disabled then no damage"
-- [ ] T492 [US7-core] Implement the Attack packet (reach check, held-item damage, player combat setting) in `core/src/health.cob`
-- [ ] T493 [P] [US7-core] Write acceptance test `core/tests/acc_us7_recovery.cob`: case "acceptance US7-3 given a hurt survival player with the §10 required food level when time passes without damage then health recovers at the §10 rate up to the maximum"; case "below the required food level it does not"
-- [ ] T494 [US7-core] Implement health recovery in `core/src/health.cob`
-- [ ] T495 [P] [US7-core] Write acceptance test `core/tests/acc_us7_death_respawn.cob`: case "acceptance US7-4 given health reaches zero then Player Combat Kill carries the cause, every player receives the §10 death message, the inventory follows the §10 death rule, and after respawn the player is in the main dimension at the world spawn with full health and food"; case "a player who disconnects while dead is stored dead and sees the death screen on rejoin" (data-model §6)
-- [ ] T496 [US7-core] Implement death (Player Combat Kill with the cause as a `translate` component, the death message to every player, the §10 inventory rule) in `core/src/health.cob`
-- [ ] T497 [US7-core] Implement respawn on Client Command action 0 (Respawn to the main dimension, Player Position at the world spawn, Set Health full) in `core/src/health.cob`
-- [ ] T498 [P] [US7-core] Write acceptance test `core/tests/acc_us7_creative.cob`: case "acceptance US7-6 given creative when anything would damage them then no damage is taken"; case "US7 edge switching from survival while hurt keeps the stored health and restores it when switching back"
-- [ ] T499 [US7-core] Implement creative immunity across every damage cause in `core/src/health.cob`
-- [ ] T500 [US7-core] Extend the core implementation tests to 100 % coverage of the US7 changes
-- [ ] T501 Gate: run `make gate-core` and record the command and its real output
+- [X] T484 [US7-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the remaining health and death constants of standin-content §10 (the maximum health is in US2) and the death-message translation keys (test first, constitution 5.1 rule 3)
+- [X] T485 [US7-core] Add the remaining §10 health and death constants to `core/copy/RULES.cpy`
+- [X] T486 [US7-core] Create `core/copy/MESSAGES.cpy` holding the §10 death-message translation keys and argument kinds (server-sent messages are `translate` components, `docs/protocol/09-cobolcraft-profile.md` §1)
+- [X] T487 [P] [US7-core] Write `contract_wire_server.cob` cases: Set Health, Damage Event, Hurt Animation, Player Combat Kill and Respawn (main) equal their fixtures; the core's System Chat death message is byte-equal to `play-s2c-7c-system-chat-death.hex`; Attack and Client Command (respawn) decode
+- [X] T488 [P] [US7-core] Write acceptance test `core/tests/acc_us7_fall_damage.cob`: case "acceptance US7-2 given a survival player when they land after falling farther than the safe height then they lose the §10 fall damage and are sent Set Health and the hurt packets"
+- [X] T489 [US7-core] Implement damage application (health decrease, Set Health, Damage Event, Hurt Animation to viewers, damage type) in `core/src/health.cob`
+- [X] T490 [US7-core] Implement fall damage on landing beyond the safe height in `core/src/movement.cob`
+- [X] T491 [P] [US7-core] Write acceptance test `core/tests/acc_us7_attack.cob`: case "acceptance US7-5 given a player aiming at another player within reach when they attack then the target takes the §10 damage of the held item"; case "acceptance US7-2 the hit survival player loses that health"; case "US7 edge given player combat disabled then no damage"
+- [X] T492 [US7-core] Implement the Attack packet (reach check, held-item damage, player combat setting) in `core/src/health.cob`
+- [X] T493 [P] [US7-core] Write acceptance test `core/tests/acc_us7_recovery.cob`: case "acceptance US7-3 given a hurt survival player with the §10 required food level when time passes without damage then health recovers at the §10 rate up to the maximum"; case "below the required food level it does not"
+- [X] T494 [US7-core] Implement health recovery in `core/src/health.cob`
+- [X] T495 [P] [US7-core] Write acceptance test `core/tests/acc_us7_death_respawn.cob`: case "acceptance US7-4 given health reaches zero then Player Combat Kill carries the cause, every player receives the §10 death message, the inventory follows the §10 death rule, and after respawn the player is in the main dimension at the world spawn with full health and food"; case "a player who disconnects while dead is stored dead and sees the death screen on rejoin" (data-model §6)
+- [X] T496 [US7-core] Implement death (Player Combat Kill with the cause as a `translate` component, the death message to every player, the §10 inventory rule) in `core/src/health.cob`
+- [X] T497 [US7-core] Implement respawn on Client Command action 0 (Respawn to the main dimension, Player Position at the world spawn, Set Health full) in `core/src/health.cob`
+- [X] T498 [P] [US7-core] Write acceptance test `core/tests/acc_us7_creative.cob`: case "acceptance US7-6 given creative when anything would damage them then no damage is taken"; case "US7 edge switching from survival while hurt keeps the stored health and restores it when switching back"
+- [X] T499 [US7-core] Implement creative immunity across every damage cause in `core/src/health.cob`
+- [X] T500 [US7-core] Extend the core implementation tests to 100 % coverage of the US7 changes
+- [X] T501 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 18: US8-core — hunger and eating
 

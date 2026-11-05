@@ -10,7 +10,10 @@
 *> slot 0, an empty inventory, state Joining. Operator status: the host of a single-player or
 *> opened world, and guests when guests may use operator commands (FR-016, FR-017). A player whose
 *> UUID has not been in the world before (CORE-KNOWN) becomes known; when it is in survival it is
-*> given the starting inventory of standin §2 (ITEMS.cpy START-ITEM-TABLE; US4-8), once.
+*> given the starting inventory of standin §2 (ITEMS.cpy START-ITEM-TABLE; US4-8), once. A known
+*> player who left while dead (KN-DEATH-CAUSE > 0, standin §10.6) is dead again: survival, health 0,
+*> the same death cause and killer (Player Loaded then makes it Dead, PLAY-JOIN shows the death
+*> screen).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -74,6 +77,12 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
              IF KN-UUID(WS-I) = L-UUID
                  MOVE 1 TO WS-KNOWN
+                 IF KN-DEATH-CAUSE(WS-I) > 0
+                     MOVE 0 TO PL-MODE(L-ROW) PL-HEALTH(L-ROW)
+                     MOVE KN-DEATH-CAUSE(WS-I) TO PL-DEATH-CAUSE(L-ROW)
+                     MOVE KN-KILLER-NAME(WS-I) TO PL-KILLER-NAME(L-ROW)
+                     MOVE KN-KILLER-LENGTH(WS-I) TO PL-KILLER-LENGTH(L-ROW)
+                 END-IF
              END-IF
          END-PERFORM
          IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
@@ -85,6 +94,7 @@
          IF WS-KNOWN = 0 AND KN-COUNT < CORE-MAX-KNOWN
              ADD 1 TO KN-COUNT
              MOVE L-UUID TO KN-UUID(KN-COUNT)
+             MOVE 0 TO KN-DEATH-CAUSE(KN-COUNT)
          END-IF
      END-IF
      GOBACK.
@@ -116,14 +126,23 @@
  PROGRAM-ID. PLAYER-LEAVE.
 *> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
 *> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
+*> Its known-player row keeps whether it left dead, with the death cause and killer (standin §10.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+         IF KN-UUID(WS-I) = PL-UUID(WS-ROW)
+             MOVE PL-DEATH-CAUSE(WS-ROW) TO KN-DEATH-CAUSE(WS-I)
+             MOVE PL-KILLER-NAME(WS-ROW) TO KN-KILLER-NAME(WS-I)
+             MOVE PL-KILLER-LENGTH(WS-ROW) TO KN-KILLER-LENGTH(WS-I)
+         END-IF
+     END-PERFORM
      CALL "OTHERS-LEAVE" USING WS-ROW
      IF PL-CONN(WS-ROW) > 0
          MOVE 0 TO CN-PLAYER(PL-CONN(WS-ROW))

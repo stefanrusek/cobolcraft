@@ -4,7 +4,8 @@
 *> stated values. The cases are grouped by phase in the test copybooks COPYed after this program
 *> (test infrastructure): WIRESTATUS (handshake, status, login), WIRECONFIG (registries and
 *> configuration), WIRECHUNK (chunks), WIREPLAY (play join), WIREMOVE (movement and other
-*> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIRECHAT (chat).
+*> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIRECHAT (chat), WIREHEALTH
+*> (health, damage, death and respawn).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
  PROCEDURE DIVISION.
@@ -16,6 +17,7 @@
      CALL "WIRE-BLOCK-CASES"
      CALL "WIRE-ITEM-CASES"
      CALL "WIRE-CHAT-CASES"
+     CALL "WIRE-HEALTH-CASES"
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-SERVER.
 
@@ -27,4 +29,5 @@
  COPY WIREBLOCK.
  COPY WIREITEM.
  COPY WIRECHAT.
+ COPY WIREHEALTH.
  COPY CORETEST.

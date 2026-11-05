@@ -3,34 +3,37 @@
 *>
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph, restricted to the packets this phase has (Commands,
-*> Recipe Book Add, Set Health, weather events, Player Info Update and Add Entity are added by later
-*> phases at their places in that list):
+*> Recipe Book Add and weather events are added by later phases at their places in that list):
 *>   1. Login (0x32)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
 *>      raised by one first (as every send of the container's content does)
-*>   5. Set Default Spawn Position (0x63)
-*>   6. Set Time (0x73)
-*>   7. Game Event 13 LEVEL_CHUNKS_LOAD_START (0x27), before the first chunk batch
-*>   8. CHUNKS-INITIAL-BATCH: Set Chunk Cache Center, Chunk Batch Start, the chunks, Chunk Batch
-*>      Finished
-*>   9. Player Position (0x49) with the next teleport id of the connection (counting up from 1)
-*>  10. OTHERS-JOIN: Player Info Update for every player in the world, the player's entity for the
+*>   5. PLAY-ARRIVE, the part of the sequence a respawn repeats (core/src/health.cob):
+*>      Set Health (0x6A, survival players only, 09 §3.3), Set Default Spawn Position (0x63),
+*>      Set Time (0x73), Game Event 13 LEVEL_CHUNKS_LOAD_START (0x27) before the first chunk batch,
+*>      CHUNKS-INITIAL-BATCH (Set Chunk Cache Center, Chunk Batch Start, the chunks, Chunk Batch
+*>      Finished), Player Position (0x49) with the next teleport id of the connection (counting up
+*>      from 1)
+*>   6. OTHERS-JOIN: Player Info Update for every player in the world, the player's entity for the
 *>      others and Add Entity for the other players it sees (09 §3.2, US3-5)
+*>   7. A player who left while dead (PL-DEATH-CAUSE > 0) is sent Player Combat Kill again, which
+*>      shows the death screen (standin §10.6, HEALTH-DEATH-SCREEN)
 *> 09 places Player Position after the chunk batches; the tasks text (T404) lists it before the
 *> batch, but 09 is the protocol authority and the client relies only on: Login first, Game Event 13
 *> before the first batch, chunks only inside a batch.
 *>
 *> Serverbound (PLAY-PACKET): Accept Teleportation with the awaited id marks the teleport accepted
 *> (another id is ignored, as 05c's server does); Chunk Batch Received acknowledges one batch;
-*> Player Loaded makes the player Alive; Client Tick End needs nothing yet; Client Information
+*> Player Loaded makes the player Alive, or Dead when it joined dead (PL-DEATH-CAUSE > 0); Client
+*> Tick End needs nothing yet; Client Information
 *> stores the view distance; Keep Alive goes to CORE-KEEPALIVE-ANSWER; Move Player 0x1E to 0x21 go
 *> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob); Player Action 4
 *> and 5 (throws) go to GI-THROW (core/src/ground-items.cob), the other actions to BLOCK-ACTION, and
 *> Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
 *> Click and Set Creative Mode Slot go to INV-HELD, INV-CLICK and INV-CREATIVE-SET
-*> (core/src/inventory.cob). A Cookie Response is
+*> (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
+*> (core/src/health.cob). A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
 *> the 09 §3 inventory that later phases handle (movement, actions, chat, containers, ...) are
 *> discarded unread, so a CobolCraft client is not dropped while those phases are developed; any
@@ -43,8 +46,11 @@
 *>   PLAY-DECODE USING packet id, PB-BUFFER (PB-POS after the id), PLAY-SERVERBOUND
 *>     (core/copy/PLAYPKT.cpy), outcome out (0 decoded, 1 malformed or bytes left over, 2 not a
 *>     packet this module decodes)
+*>   PLAY-ARRIVE USING connection id         the arrival part of the join sequence (step 5)
 *> Builders (append id + body to the caller's PB-BUFFER):
 *>   PLAY-LOGIN-BUILD USING player row, PB-BUFFER
+*>   PLAY-SPAWN-INFO-BUILD USING dimension row, game mode (PIC 9), PB-BUFFER (no packet id)
+*>   PLAY-RESPAWN-BUILD USING dimension row, game mode (PIC 9), data to keep, PB-BUFFER
 *>   PLAY-ABILITIES-BUILD USING game mode, flying (PIC 9 each), PB-BUFFER
 *>   PLAY-HELD-SLOT-BUILD USING slot, PB-BUFFER
 *>   PLAY-CONTENT-BUILD USING player row, PB-BUFFER
@@ -69,8 +75,6 @@
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-EVENT               BINARY-LONG VALUE 13.
- 01 WS-VALUE               FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID.
@@ -88,7 +92,35 @@
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
-     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PLAY-ARRIVE" USING L-ID
+     CALL "OTHERS-JOIN" USING L-ID
+     IF PL-DEATH-CAUSE(WS-ROW) > 0
+         CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM PLAY-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-ARRIVE.
+*> USING connection id of a connection in play with its player: the arrival part of the join
+*> sequence (step 5 above), sent on joining and after a respawn.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 13.
+ 01 WS-VALUE               FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     IF PL-MODE(WS-ROW) = 0
+         CALL "HEALTH-SEND" USING WS-ROW
+     END-IF
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PLAY-SPAWN-POSITION-BUILD" USING PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "PB-RESET" USING PB-BUFFER
@@ -105,9 +137,8 @@
          PL-Z(WS-ROW) PL-YAW(WS-ROW) PL-PITCH(WS-ROW) PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
-     CALL "OTHERS-JOIN" USING L-ID
      GOBACK.
- END PROGRAM PLAY-JOIN.
+ END PROGRAM PLAY-ARRIVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-PACKET.
@@ -120,9 +151,9 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x01, 0x07, 0x0C, 0x0F, 0x27, 0x2A, 0x32, 0x43).
+*> phase handles it (0x07, 0x0F, 0x27, 0x2A, 0x32, 0x43).
  01 WS-LATER               PIC X(69) VALUE
-     "010000010000100100000000000000000000000100100000001000000000000000010".
+     "000000010000000100000000000000000000000100100000001000000000000000010".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -163,6 +194,9 @@
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID PSB-KEEPALIVE
          WHEN L-PACKET-ID = 44
              MOVE PS-ALIVE TO PL-STATE(WS-ROW)
+             IF PL-DEATH-CAUSE(WS-ROW) > 0
+                 MOVE PS-DEAD TO PL-STATE(WS-ROW)
+             END-IF
          WHEN L-PACKET-ID = 40
              CALL "MOVE-ABILITIES" USING L-ID PSB-FLAGS
          WHEN L-PACKET-ID >= 30 AND L-PACKET-ID <= 33
@@ -181,6 +215,10 @@
              CALL "INV-CREATIVE-SET" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 9
              CALL "CHAT-MESSAGE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 1
+             CALL "HEALTH-ATTACK" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 12
+             CALL "HEALTH-RESPAWN" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      GOBACK.
  END PROGRAM PLAY-PACKET.
@@ -203,6 +241,7 @@
 *> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
 *> of 256 raw bytes, LastSeenMessagesUpdate: VarInt offset, FixedBitSet(20), Byte checksum); the
 *> signature and the last seen messages are not checked (09 §1: secure chat is not enforced).
+*> Attack 0x01 (VarInt entity id); Client Command 0x0C (VarInt action).
 *> Outcome 1 when a read fails or bytes are left over.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -310,6 +349,10 @@
              CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
              MOVE WK-IS-ITEM TO PSB-STACK-ITEM
              MOVE WK-IS-COUNT TO PSB-STACK-COUNT
+         WHEN 1
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+         WHEN 12
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
          WHEN 9
              CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
                  PSB-MESSAGE-LENGTH
@@ -375,8 +418,6 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-MAX-PLAYERS         BINARY-LONG VALUE 20.
- 01 WS-SEED                BINARY-DOUBLE VALUE 0.
- 01 WS-MODE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
@@ -399,11 +440,55 @@
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     MOVE PL-DIM(L-ROW) TO WS-DIM
+     CALL "PLAY-SPAWN-INFO-BUILD" USING PL-DIM(L-ROW) PL-MODE(L-ROW) PB-BUFFER
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     GOBACK.
+ END PROGRAM PLAY-LOGIN-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-RESPAWN-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
+*> Respawn 0x54 (05b; 09 §3.3): CommonPlayerSpawnInfo of the dimension, then the Byte data to keep
+*> (0x00 after a death, 0x03 for travel).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 84.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ 01 L-KEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-MODE L-KEEP PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PLAY-SPAWN-INFO-BUILD" USING L-DIM L-MODE PB-BUFFER
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-KEEP
+     GOBACK.
+ END PROGRAM PLAY-RESPAWN-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
+*> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2): dimension type id, dimension key,
+*> hashed seed 0, game mode, previous game mode absent, not debug, not flat, no last death location,
+*> portal cooldown 0, sea level.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ PROCEDURE DIVISION USING L-DIM L-MODE PB-BUFFER.
+     MOVE L-DIM TO WS-DIM
      CALL "PB-PUT-VARINT" USING PB-BUFFER DM-TYPE-ID(WS-DIM)
      CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DIM) DM-KEY-LENGTH(WS-DIM)
      CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
-     MOVE PL-MODE(L-ROW) TO WS-MODE
+     MOVE L-MODE TO WS-MODE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MODE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
@@ -411,10 +496,8 @@
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-VARINT" USING PB-BUFFER DM-SEA-LEVEL(WS-DIM)
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      GOBACK.
- END PROGRAM PLAY-LOGIN-BUILD.
+ END PROGRAM PLAY-SPAWN-INFO-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-ABILITIES-BUILD.
