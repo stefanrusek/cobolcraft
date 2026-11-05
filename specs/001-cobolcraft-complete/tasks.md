@@ -37,6 +37,7 @@ Foundational (docs-first, contract materialization, shared test infrastructure) 
 
 - COBOL: GnuCOBOL 3.2, free format (`-free`), `-std=default`, `-debug` in every build, comments `*>`; calls to C
   with `CALL STATIC` per research R2; shared shapes only from `contract/copy/*.cpy` (never redefined locally).
+- The project skill `.claude/skills/cobolcraft-cobol/SKILL.md` collects these conventions and pitfalls; keep it in sync.
 - GnuCOBOL pitfalls found in Phase 8 (apply in every COBOL lane):
   - Production programs keep their logic inline: trailing performed paragraphs leave `END PROGRAM` reported
     uncovered by gcov.
