@@ -1,0 +1,61 @@
+
+[2026-11-05T04:24:55Z] constitution phase (bootstrap): /speckit-constitution could not be run to completion. Subagent has no user-question tool (AskUserQuestion unavailable), and bootstrap mode forbids assuming answers. constitution.md left as untouched template. Returned list of required questions to orchestrator.
+
+[2026-11-05T04:34:11Z] bootstrap answers relayed by orchestrator; wrote constitution v1.0.0 (2 principles, tech constraints, workflow, governance). Testing deferred to SDD amendment. Full text in constitution.md.
+<!--
+Sync Impact Report
+Version change: (template, unversioned) -> 1.0.0
+Modified principles: none (initial adoption)
+Added sections: Core Principles (I-II), Technology Constraints, Development Workflow, Governance
+Removed sections: unused template principle slots 3-5
+Follow-up TODOs: none. Testing gates are intentionally deferred to the SDD amendment.
+-->
+# CobolCraft Constitution
+
+## Core Principles
+
+### I. COBOL-First, Pragmatic Native Shim
+Game logic MUST be written in COBOL (GnuCOBOL 3.x). A thin C shim is permitted only where COBOL
+cannot reach the capability directly: Vulkan, sockets, zlib, and cryptography. The shim MUST stay
+minimal and MUST NOT contain game logic. Build scripts and test harnesses MAY use any language.
+
+Rationale: the project exists to be a COBOL implementation; the shim boundary keeps that true while
+acknowledging platform facilities COBOL cannot call.
+
+### II. Spec Is the Source of Truth
+Implementation MUST work from `docs/protocol/` only. Implementers MUST NOT read the shipped
+client jar's bytecode. When the spec is missing, ambiguous, or wrong, the gap MUST be resolved by
+updating the spec first, and only then implementing against the updated spec.
+
+Rationale: a single reviewed spec keeps client and server consistent and keeps implementation
+work separated from the reverse-engineering that produced the spec.
+
+## Technology Constraints
+
+- Language and compiler: GnuCOBOL 3.x for all game logic (Principle I).
+- C is allowed only for the shim described in Principle I.
+- Build scripts and test harnesses are not restricted in language.
+
+## Development Workflow
+
+- Changes that alter observable protocol behavior MUST be preceded or accompanied by the matching
+  `docs/protocol/` update (Principle II).
+- Testing gates and verification requirements are defined by the SDD amendment applied to this
+  project, not by this constitution.
+
+## Governance
+
+This constitution supersedes other project practices. Amendments are made by pull request; PR
+review is sufficient to approve an amendment. Versioning follows semantic versioning: MAJOR for
+backward-incompatible principle removals or redefinitions, MINOR for new principles or materially
+expanded guidance, PATCH for clarifications and wording fixes. Reviewers MUST verify compliance
+with this constitution on every PR.
+
+**Version**: 1.0.0 | **Ratified**: 2026-11-04 | **Last Amended**: 2026-11-04
+
+--- constitution phase (amendment mode, SDD v6.3.0) ---
+Subagent applied SDD Amendment v6.3.0 as a whole to .specify/memory/constitution.md (1.0.0 -> 1.1.0, MINOR).
+Amendment headings demoted one level under "## Spec-Driven Development Amendment (v6.3.0)";
+amendment "Governance" renamed "Amendment Governance"; project Principles I-II and Governance retained.
+Follow-ups: personas.md missing (Principle 2.2); workspace bootstrap command undefined (Principle 5.2).
+No presets-src or installed sdd-constitution preset found.
