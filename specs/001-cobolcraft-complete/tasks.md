@@ -541,72 +541,72 @@ US2 cases of `core/tests/contract_wire_server.cob` pass; a memory connection fed
 configuration and play fixtures receives Login, Player Position at (4.5, 54.0, 8.5) facing east and the spawn
 chunk byte-equal to `play-s2c-2e-level-chunk-with-light-spawn.hex`.
 
-- [ ] T346 [P] [US2-core] Write `core/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant the core uses (outcomes, `CC_ZLIB`, `CC_GZIP`) has the shim-abi value, and `cc_deflate` and `cc_inflate` link and behave per shim-abi §5
-- [ ] T347 [P] [US2-core] Write fatal-path contract test `core/tests/contract_shim_consumer_fatal.cob` with `core/tests/contract_shim_consumer_fatal.expect`: `cc_fatal` called from COBOL exits 1 with the shim-abi §1 line
-- [ ] T348 [P] [US2-core] Write `core/tests/contract_proto_consumer.cob`: `PB-BUFFER` and every `PROTO.cpy` record the core uses have the lengths and field layout of contracts/proto-api.md §1, and each `PB-*`/`NBT-*` program the core calls links and returns on a minimal valid call
-- [ ] T349 [P] [US2-core] Write implementation test `core/tests/test_content_tables.cob` asserting the US2 content copybooks equal the extended standin-content: block ids, keys, properties, solid/opaque flags, light, hand break time, hard/soft class, state-id ranges and default states (§1.1, §1.2: cardstack default state 9, glowtube default 13); item ids, keys, placed states, stack sizes, tool classes, food values, attack damage (§2, §10, §11, §13); entity type ids, keys, sizes and eye heights (§3, §12); every registry entry of §4; the `cobolcraft:main` dimension of §5; player maximum health (§10) and maximum food level (§11)
-- [ ] T350 [US2-core] Create `core/copy/BLOCKS.cpy` (block and block-state tables of standin-content §1.1, §1.2 and every block the extension adds)
-- [ ] T351 [US2-core] Create `core/copy/ITEMS.cpy` (item table of standin-content §2 as extended: placed state, max stack, tool class, food value, attack damage per §10)
-- [ ] T352 [US2-core] Create `core/copy/ENTITYTYPES.cpy` (entity type table of standin-content §3 as extended: id, key, width, height, eye height)
-- [ ] T353 [US2-core] Create `core/copy/RULES.cpy` with the player maximum health of standin-content §10 and maximum food level of §11
-- [ ] T354 [US2-core] Create `core/copy/DIMENSIONS.cpy` with the `cobolcraft:main` dimension of standin-content §5 (key, dimension type, generator id, light policy, spawn point, weather flag)
-- [ ] T355 [US2-core] Create `core/copy/REGISTRY.cpy` (entry data of every Registry Data packet of standin-content §4.2 as extended, in id order: biomes, chat type, MV placeholders, dimension types, damage types, world clock)
-- [ ] T356 [US2-core] Create `core/copy/CORESTATE.cpy`: `EXTERNAL` records for settings, connection table (id, kind, phase, inbound accumulator, outbound queue, compression on, close flag, keep-alive id and deadline), player table (data-model §6 fields), world (time, spawn, dimension list) and per-dimension chunk cache (data-model §1 to §3)
-- [ ] T357 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-WORLD-OPEN` (new world in a temporary folder, created flag 1, record layouts from `COREAPI.cpy`; core-host-api §2, §4)
-- [ ] T358 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-OPEN` (memory kind returns an id; ids are reused only after close)
-- [ ] T359 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-INPUT` with the handshake and login fixtures and `CORE-CONN-OUTPUT` containing Login Finished bytes
-- [ ] T360 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-CLOSED`
-- [ ] T361 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-TICK`
-- [ ] T362 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONSOLE-DRAIN` and `CORE-STATUS-GET`
-- [ ] T363 [US2-core] Implement `CORE-WORLD-OPEN` in `core/src/api.cob`: settings stored; a folder without `level.dat` becomes a new in-memory world with the `cobolcraft:main` dimension only, its spawn point and time 0 (standin-content §5; extra dimensions are added in US12-core); add the core sources to `SRC` in `core/Makefile`
-- [ ] T364 [US2-core] Implement `CORE-CONN-OPEN` in `core/src/api.cob`
-- [ ] T365 [US2-core] Implement `CORE-CONN-INPUT` and `CORE-CONN-OUTPUT` (delegating to the session module) in `core/src/api.cob`
-- [ ] T366 [US2-core] Implement `CORE-CONN-CLOSED` in `core/src/api.cob`
-- [ ] T367 [US2-core] Implement `CORE-TICK` (one 50 ms tick over every ticking module) in `core/src/api.cob`
-- [ ] T368 [US2-core] Implement `CORE-CONSOLE-DRAIN` and `CORE-STATUS-GET` in `core/src/api.cob`
-- [ ] T369 [P] [US2-core] Write implementation test `core/tests/test_session.cob`: connection table allocation and id reuse only after close (core-host-api §3)
-- [ ] T370 [P] [US2-core] Write implementation test `core/tests/test_session_inbound.cob`: inbound bytes split at arbitrary boundaries assemble into packets, packets dispatch by phase, a packet the receiver cannot decode is handled as 01 defines
-- [ ] T371 [P] [US2-core] Write implementation test `core/tests/test_session_outbound.cob`: outbound frames are compressed only on network connections after Set Compression; the close flag is raised after a disconnect packet
-- [ ] T372 [US2-core] Implement the connection table in `core/src/session.cob`
-- [ ] T373 [US2-core] Implement inbound frame accumulation (`PB-FRAME-DECODE`) and the phase dispatcher in `core/src/session.cob`
-- [ ] T374 [US2-core] Implement the outbound queue (`PB-FRAME-ENCODE`, compression per connection) and the close flag in `core/src/session.cob`
-- [ ] T375 [P] [US2-core] Write implementation test `core/tests/test_keepalive.cob`: Keep Alive every 15 s (300 ticks) in configuration and play, echo accepted, timeout disconnect as 01 §7.5 defines (`docs/protocol/09-cobolcraft-profile.md` §2)
-- [ ] T376 [US2-core] Implement keep-alive sending and timeout disconnect in `core/src/session.cob`
-- [ ] T377 [P] [US2-core] Write `core/tests/contract_wire_server.cob` status cases: Intention fixtures decode; Status Response for default settings equals `status-s2c-00-status-response.hex` (online count from the player table); Ping Request answered by `status-s2c-01-pong-response.hex`
-- [ ] T378 [US2-core] Implement the status phase (Status Response JSON per `docs/protocol/09-cobolcraft-profile.md` §2, Pong, close after pong) in `core/src/status.cob`
-- [ ] T379 [P] [US2-core] Write acceptance test `core/tests/acc_us2_protocol_mismatch.cob`: case "acceptance US2 edge given a client with a different protocol version when it pings and when it logs in then status is answered and login ends with the 02 disconnect behaviour" (fixture `handshake-c2s-00-intention-other-protocol.hex`, expected `login-s2c-00-login-disconnect-protocol-mismatch.hex`)
-- [ ] T380 [US2-core] Implement the protocol-version check of 02 for login intentions in `core/src/login.cob`
-- [ ] T381 [P] [US2-core] Write `core/tests/contract_wire_server.cob` login cases: Hello decodes name and UUID; Set Compression (network only), Login Finished and Login Acknowledged match their fixtures; the core's Login Disconnect for the banned, not-allow-listed and name-in-use keys is byte-equal to `login-s2c-00-login-disconnect-banned.hex`, `-not-allow-listed.hex` and `-name-in-use.hex`
-- [ ] T382 [P] [US2-core] Write implementation test `core/tests/test_login.cob`: offline UUID of `Notch` is `b50ad385-829d-3141-a216-7e7d7539ba7f` and of `Alice` matches the fixture (02 Offline mode, research R11)
-- [ ] T383 [US2-core] Implement the offline UUID in `core/src/login.cob`: direct `CALL STATIC "EVP_Digest"` with `EVP_md5` over `OfflinePlayer:<name>`, then version-3 and variant bits (research R11)
-- [ ] T384 [US2-core] Implement Set Compression with threshold 256 on network connections only in `core/src/login.cob` (`docs/protocol/09-cobolcraft-profile.md` §2)
-- [ ] T385 [US2-core] Implement Login Finished without properties and the transition to configuration on Login Acknowledged in `core/src/login.cob` (09 §1)
-- [ ] T386 [P] [US2-core] Write acceptance test `core/tests/acc_us2_duplicate_name.cob`: case "acceptance US2 edge given a player online when a second login uses the same name then the first connection is disconnected and the new one joins" (fixture `play-s2c-20-disconnect-duplicate-login.hex`)
-- [ ] T387 [US2-core] Implement duplicate-name handling (disconnect the earlier connection with the standin-content §17 text, 02 Login sequence) in `core/src/login.cob`
-- [ ] T388 [P] [US2-core] Write `contract_wire_server.cob` registry cases: every `config-s2c-07-registry-data-*.hex` fixture equals the core's Registry Data for that registry
-- [ ] T389 [US2-core] Implement Registry Data builders for every registry of `REGISTRY.cpy` in `core/src/registries.cob` (network NBT entries, 04 §3, §4; no packet for empty registries)
-- [ ] T390 [P] [US2-core] Write `contract_wire_server.cob` configuration cases: brand, Update Enabled Features, Select Known Packs, Update Tags, Finish Configuration and configuration Keep Alive equal their fixtures; serverbound brand, Client Information, Select Known Packs and Finish Configuration decode
-- [ ] T391 [US2-core] Implement the configuration sequence in `core/src/config-phase.cob` in the order of 03 "Configuration sequence" (brand, features, known packs, Registry Data ×n, Update Tags, Finish Configuration; no code of conduct, no server links), moving to play on the client's Finish Configuration
-- [ ] T392 [P] [US2-core] Write implementation test `core/tests/test_worldgen.cob`: surface height of sample columns (4, 8) = 53 and extremes 46 to 58, column layers, marker pillar states at chunk (0, 0) local (8, 8), biome per 4 × 4 × 4 cell (standin-content §5.2)
-- [ ] T393 [US2-core] Implement the `cobolcraft:main` generator in `core/src/worldgen.cob` (standin-content §5.2, `FUNCTION SIN`/`COS`, research R2)
-- [ ] T394 [P] [US2-core] Write implementation test `core/tests/test_light.cob`: sky light column drop, block light from a lit glowtube decreasing by taxicab distance through non-opaque cells, recompute of affected sections on change (standin-content §5.2 light policy)
-- [ ] T395 [US2-core] Implement the stand-in light policy in `core/src/light.cob`
-- [ ] T396 [P] [US2-core] Write implementation test `core/tests/test_world.cob`: chunk cache generates on first access, block get/set by position, height-range check, changed flag set on set (data-model §3)
-- [ ] T397 [US2-core] Implement the per-dimension chunk cache and block access in `core/src/world.cob`
-- [ ] T398 [P] [US2-core] Write `contract_wire_server.cob` chunk cases: the core's Level Chunk With Light for chunk (0, 0) equals `play-s2c-2e-level-chunk-with-light-spawn.hex`; Chunk Batch Start/Finished and Set Chunk Cache Center equal their fixtures; Chunk Batch Received decodes
-- [ ] T399 [US2-core] Implement chunk payload building (sections via `CHUNK-SECTION-ENCODE`, heightmaps, light via `LIGHT-ENCODE`) in `core/src/chunks-stream.cob` (06; `docs/protocol/09-cobolcraft-profile.md` §3.2)
-- [ ] T400 [US2-core] Implement the initial batch (Chunk Batch Start, every chunk within view distance, Chunk Batch Finished, Set Chunk Cache Center) in `core/src/chunks-stream.cob`
-- [ ] T401 [P] [US2-core] Write implementation test `core/tests/test_players.cob`: a new player record has the offline identity, the configured default game mode (FR-007, FR-009), the world spawn point and yaw facing east, full health and food per standin-content §10, §11
-- [ ] T402 [US2-core] Implement the player table and new-player creation in `core/src/players.cob`
-- [ ] T403 [P] [US2-core] Write `contract_wire_server.cob` play-join cases: Login (play) equals `play-s2c-32-login-main.hex`; Game Event 13 and Game Event 3 (`play-s2c-27-game-event-03-game-mode.hex`), Player Position, Player Abilities (creative and survival), Set Default Spawn Position, Set Time, Set Held Slot, Set Player Inventory and Container Set Content (empty) equal their fixtures; Accept Teleportation, Player Loaded, Client Tick End and play Keep Alive decode
-- [ ] T404 [P] [US2-core] Write implementation test `core/tests/test_play_join.cob`: over a memory connection fed every serverbound join fixture, the clientbound sequence is Login, abilities, spawn position, time, inventory, Player Position at the spawn, chunk batch with the spawn chunk, and the player becomes Alive after Player Loaded (data-model §6, plan US2 sequence diagram)
-- [ ] T405 [US2-core] Implement the clientbound play join sequence (Login, abilities, spawn position, time, inventory, Player Position, initial batch) in `core/src/play.cob`
-- [ ] T406 [US2-core] Implement handling of Accept Teleportation, Chunk Batch Received, Player Loaded (player becomes Alive), Client Tick End and Client Information in `core/src/play.cob`
-- [ ] T407 [US2-core] Write implementation test `core/tests/test_api.cob` to 100 % coverage of `core/src/api.cob`
-- [ ] T408 [US2-core] Write implementation test `core/tests/test_status.cob` to 100 % coverage of `core/src/status.cob` and `core/src/login.cob`
-- [ ] T409 [US2-core] Write implementation test `core/tests/test_registries.cob` to 100 % coverage of `core/src/registries.cob`, `core/src/config-phase.cob` and `core/copy`
-- [ ] T410 [US2-core] Write implementation test `core/tests/test_chunks_stream.cob` to 100 % coverage of `core/src/chunks-stream.cob` and `core/src/play.cob`, and list every test program in `TESTS` of `core/Makefile`
-- [ ] T411 Gate: run `make gate-core` (root `Makefile`) and record the command and its real output
+- [X] T346 [P] [US2-core] Write `core/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant the core uses (outcomes, `CC_ZLIB`, `CC_GZIP`) has the shim-abi value, and `cc_deflate` and `cc_inflate` link and behave per shim-abi §5
+- [X] T347 [P] [US2-core] Write fatal-path contract test `core/tests/contract_shim_consumer_fatal.cob` with `core/tests/contract_shim_consumer_fatal.expect`: `cc_fatal` called from COBOL exits 1 with the shim-abi §1 line
+- [X] T348 [P] [US2-core] Write `core/tests/contract_proto_consumer.cob`: `PB-BUFFER` and every `PROTO.cpy` record the core uses have the lengths and field layout of contracts/proto-api.md §1, and each `PB-*`/`NBT-*` program the core calls links and returns on a minimal valid call
+- [X] T349 [P] [US2-core] Write implementation test `core/tests/test_content_tables.cob` asserting the US2 content copybooks equal the extended standin-content: block ids, keys, properties, solid/opaque flags, light, hand break time, hard/soft class, state-id ranges and default states (§1.1, §1.2: cardstack default state 9, glowtube default 13); item ids, keys, placed states, stack sizes, tool classes, food values, attack damage (§2, §10, §11, §13); entity type ids, keys, sizes and eye heights (§3, §12); every registry entry of §4; the `cobolcraft:main` dimension of §5; player maximum health (§10) and maximum food level (§11)
+- [X] T350 [US2-core] Create `core/copy/BLOCKS.cpy` (block and block-state tables of standin-content §1.1, §1.2 and every block the extension adds)
+- [X] T351 [US2-core] Create `core/copy/ITEMS.cpy` (item table of standin-content §2 as extended: placed state, max stack, tool class, food value, attack damage per §10)
+- [X] T352 [US2-core] Create `core/copy/ENTITYTYPES.cpy` (entity type table of standin-content §3 as extended: id, key, width, height, eye height)
+- [X] T353 [US2-core] Create `core/copy/RULES.cpy` with the player maximum health of standin-content §10 and maximum food level of §11
+- [X] T354 [US2-core] Create `core/copy/DIMENSIONS.cpy` with the `cobolcraft:main` dimension of standin-content §5 (key, dimension type, generator id, light policy, spawn point, weather flag)
+- [X] T355 [US2-core] Create `core/copy/REGISTRY.cpy` (entry data of every Registry Data packet of standin-content §4.2 as extended, in id order: biomes, chat type, MV placeholders, dimension types, damage types, world clock)
+- [X] T356 [US2-core] Create `core/copy/CORESTATE.cpy`: `EXTERNAL` records for settings, connection table (id, kind, phase, inbound accumulator, outbound queue, compression on, close flag, keep-alive id and deadline), player table (data-model §6 fields), world (time, spawn, dimension list) and per-dimension chunk cache (data-model §1 to §3)
+- [X] T357 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-WORLD-OPEN` (new world in a temporary folder, created flag 1, record layouts from `COREAPI.cpy`; core-host-api §2, §4)
+- [X] T358 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-OPEN` (memory kind returns an id; ids are reused only after close)
+- [X] T359 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-INPUT` with the handshake and login fixtures and `CORE-CONN-OUTPUT` containing Login Finished bytes
+- [X] T360 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONN-CLOSED`
+- [X] T361 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-TICK`
+- [X] T362 [P] [US2-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONSOLE-DRAIN` and `CORE-STATUS-GET`
+- [X] T363 [US2-core] Implement `CORE-WORLD-OPEN` in `core/src/api.cob`: settings stored; a folder without `level.dat` becomes a new in-memory world with the `cobolcraft:main` dimension only, its spawn point and time 0 (standin-content §5; extra dimensions are added in US12-core); add the core sources to `SRC` in `core/Makefile`
+- [X] T364 [US2-core] Implement `CORE-CONN-OPEN` in `core/src/api.cob`
+- [X] T365 [US2-core] Implement `CORE-CONN-INPUT` and `CORE-CONN-OUTPUT` (delegating to the session module) in `core/src/api.cob`
+- [X] T366 [US2-core] Implement `CORE-CONN-CLOSED` in `core/src/api.cob`
+- [X] T367 [US2-core] Implement `CORE-TICK` (one 50 ms tick over every ticking module) in `core/src/api.cob`
+- [X] T368 [US2-core] Implement `CORE-CONSOLE-DRAIN` and `CORE-STATUS-GET` in `core/src/api.cob`
+- [X] T369 [P] [US2-core] Write implementation test `core/tests/test_session.cob`: connection table allocation and id reuse only after close (core-host-api §3)
+- [X] T370 [P] [US2-core] Write implementation test `core/tests/test_session_inbound.cob`: inbound bytes split at arbitrary boundaries assemble into packets, packets dispatch by phase, a packet the receiver cannot decode is handled as 01 defines
+- [X] T371 [P] [US2-core] Write implementation test `core/tests/test_session_outbound.cob`: outbound frames are compressed only on network connections after Set Compression; the close flag is raised after a disconnect packet
+- [X] T372 [US2-core] Implement the connection table in `core/src/session.cob`
+- [X] T373 [US2-core] Implement inbound frame accumulation (`PB-FRAME-DECODE`) and the phase dispatcher in `core/src/session.cob`
+- [X] T374 [US2-core] Implement the outbound queue (`PB-FRAME-ENCODE`, compression per connection) and the close flag in `core/src/session.cob`
+- [X] T375 [P] [US2-core] Write implementation test `core/tests/test_keepalive.cob`: Keep Alive every 15 s (300 ticks) in configuration and play, echo accepted, timeout disconnect as 01 §7.5 defines (`docs/protocol/09-cobolcraft-profile.md` §2)
+- [X] T376 [US2-core] Implement keep-alive sending and timeout disconnect in `core/src/session.cob`
+- [X] T377 [P] [US2-core] Write `core/tests/contract_wire_server.cob` status cases: Intention fixtures decode; Status Response for default settings equals `status-s2c-00-status-response.hex` (online count from the player table); Ping Request answered by `status-s2c-01-pong-response.hex`
+- [X] T378 [US2-core] Implement the status phase (Status Response JSON per `docs/protocol/09-cobolcraft-profile.md` §2, Pong, close after pong) in `core/src/status.cob`
+- [X] T379 [P] [US2-core] Write acceptance test `core/tests/acc_us2_protocol_mismatch.cob`: case "acceptance US2 edge given a client with a different protocol version when it pings and when it logs in then status is answered and login ends with the 02 disconnect behaviour" (fixture `handshake-c2s-00-intention-other-protocol.hex`, expected `login-s2c-00-login-disconnect-protocol-mismatch.hex`)
+- [X] T380 [US2-core] Implement the protocol-version check of 02 for login intentions in `core/src/login.cob`
+- [X] T381 [P] [US2-core] Write `core/tests/contract_wire_server.cob` login cases: Hello decodes name and UUID; Set Compression (network only), Login Finished and Login Acknowledged match their fixtures; the core's Login Disconnect for the banned, not-allow-listed and name-in-use keys is byte-equal to `login-s2c-00-login-disconnect-banned.hex`, `-not-allow-listed.hex` and `-name-in-use.hex`
+- [X] T382 [P] [US2-core] Write implementation test `core/tests/test_login.cob`: offline UUID of `Notch` is `b50ad385-829d-3141-a216-7e7d7539ba7f` and of `Alice` matches the fixture (02 Offline mode, research R11)
+- [X] T383 [US2-core] Implement the offline UUID in `core/src/login.cob`: direct `CALL STATIC "EVP_Digest"` with `EVP_md5` over `OfflinePlayer:<name>`, then version-3 and variant bits (research R11)
+- [X] T384 [US2-core] Implement Set Compression with threshold 256 on network connections only in `core/src/login.cob` (`docs/protocol/09-cobolcraft-profile.md` §2)
+- [X] T385 [US2-core] Implement Login Finished without properties and the transition to configuration on Login Acknowledged in `core/src/login.cob` (09 §1)
+- [X] T386 [P] [US2-core] Write acceptance test `core/tests/acc_us2_duplicate_name.cob`: case "acceptance US2 edge given a player online when a second login uses the same name then the first connection is disconnected and the new one joins" (fixture `play-s2c-20-disconnect-duplicate-login.hex`)
+- [X] T387 [US2-core] Implement duplicate-name handling (disconnect the earlier connection with the standin-content §17 text, 02 Login sequence) in `core/src/login.cob`
+- [X] T388 [P] [US2-core] Write `contract_wire_server.cob` registry cases: every `config-s2c-07-registry-data-*.hex` fixture equals the core's Registry Data for that registry
+- [X] T389 [US2-core] Implement Registry Data builders for every registry of `REGISTRY.cpy` in `core/src/registries.cob` (network NBT entries, 04 §3, §4; no packet for empty registries)
+- [X] T390 [P] [US2-core] Write `contract_wire_server.cob` configuration cases: brand, Update Enabled Features, Select Known Packs, Update Tags, Finish Configuration and configuration Keep Alive equal their fixtures; serverbound brand, Client Information, Select Known Packs and Finish Configuration decode
+- [X] T391 [US2-core] Implement the configuration sequence in `core/src/config-phase.cob` in the order of 03 "Configuration sequence" (brand, features, known packs, Registry Data ×n, Update Tags, Finish Configuration; no code of conduct, no server links), moving to play on the client's Finish Configuration
+- [X] T392 [P] [US2-core] Write implementation test `core/tests/test_worldgen.cob`: surface height of sample columns (4, 8) = 53 and extremes 46 to 58, column layers, marker pillar states at chunk (0, 0) local (8, 8), biome per 4 × 4 × 4 cell (standin-content §5.2)
+- [X] T393 [US2-core] Implement the `cobolcraft:main` generator in `core/src/worldgen.cob` (standin-content §5.2, `FUNCTION SIN`/`COS`, research R2)
+- [X] T394 [P] [US2-core] Write implementation test `core/tests/test_light.cob`: sky light column drop, block light from a lit glowtube decreasing by taxicab distance through non-opaque cells, recompute of affected sections on change (standin-content §5.2 light policy)
+- [X] T395 [US2-core] Implement the stand-in light policy in `core/src/light.cob`
+- [X] T396 [P] [US2-core] Write implementation test `core/tests/test_world.cob`: chunk cache generates on first access, block get/set by position, height-range check, changed flag set on set (data-model §3)
+- [X] T397 [US2-core] Implement the per-dimension chunk cache and block access in `core/src/world.cob`
+- [X] T398 [P] [US2-core] Write `contract_wire_server.cob` chunk cases: the core's Level Chunk With Light for chunk (0, 0) equals `play-s2c-2e-level-chunk-with-light-spawn.hex`; Chunk Batch Start/Finished and Set Chunk Cache Center equal their fixtures; Chunk Batch Received decodes
+- [X] T399 [US2-core] Implement chunk payload building (sections via `CHUNK-SECTION-ENCODE`, heightmaps, light via `LIGHT-ENCODE`) in `core/src/chunks-stream.cob` (06; `docs/protocol/09-cobolcraft-profile.md` §3.2)
+- [X] T400 [US2-core] Implement the initial batch (Chunk Batch Start, every chunk within view distance, Chunk Batch Finished, Set Chunk Cache Center) in `core/src/chunks-stream.cob`
+- [X] T401 [P] [US2-core] Write implementation test `core/tests/test_players.cob`: a new player record has the offline identity, the configured default game mode (FR-007, FR-009), the world spawn point and yaw facing east, full health and food per standin-content §10, §11
+- [X] T402 [US2-core] Implement the player table and new-player creation in `core/src/players.cob`
+- [X] T403 [P] [US2-core] Write `contract_wire_server.cob` play-join cases: Login (play) equals `play-s2c-32-login-main.hex`; Game Event 13 and Game Event 3 (`play-s2c-27-game-event-03-game-mode.hex`), Player Position, Player Abilities (creative and survival), Set Default Spawn Position, Set Time, Set Held Slot, Set Player Inventory and Container Set Content (empty) equal their fixtures; Accept Teleportation, Player Loaded, Client Tick End and play Keep Alive decode
+- [X] T404 [P] [US2-core] Write implementation test `core/tests/test_play_join.cob`: over a memory connection fed every serverbound join fixture, the clientbound sequence is Login, abilities, spawn position, time, inventory, Player Position at the spawn, chunk batch with the spawn chunk, and the player becomes Alive after Player Loaded (data-model §6, plan US2 sequence diagram)
+- [X] T405 [US2-core] Implement the clientbound play join sequence (Login, abilities, spawn position, time, inventory, Player Position, initial batch) in `core/src/play.cob`
+- [X] T406 [US2-core] Implement handling of Accept Teleportation, Chunk Batch Received, Player Loaded (player becomes Alive), Client Tick End and Client Information in `core/src/play.cob`
+- [X] T407 [US2-core] Write implementation test `core/tests/test_api.cob` to 100 % coverage of `core/src/api.cob`
+- [X] T408 [US2-core] Write implementation test `core/tests/test_status.cob` to 100 % coverage of `core/src/status.cob` and `core/src/login.cob`
+- [X] T409 [US2-core] Write implementation test `core/tests/test_registries.cob` to 100 % coverage of `core/src/registries.cob`, `core/src/config-phase.cob` and `core/copy`
+- [X] T410 [US2-core] Write implementation test `core/tests/test_chunks_stream.cob` to 100 % coverage of `core/src/chunks-stream.cob` and `core/src/play.cob`, and list every test program in `TESTS` of `core/Makefile`
+- [X] T411 Gate: run `make gate-core` (root `Makefile`) and record the command and its real output
 
 #### Phase 13: US3-core — movement, chunk streaming, other players, day and night
 

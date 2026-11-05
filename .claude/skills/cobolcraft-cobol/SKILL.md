@@ -43,6 +43,16 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   constants in `VALUE` clauses.
 - **High-byte hex literals:** `X"…"` with bytes ≥ 0x80 makes clang warn; build such bytes another way
   (e.g. `FUNCTION CHAR`, or a `VALUE` in a binary field).
+- **BY REFERENCE aliasing:** a caller may pass a field the callee itself changes (for example
+  `PLAYER-LEAVE USING CN-PLAYER(id)`, which zeroes `CN-PLAYER`). Copy such LINKAGE arguments into
+  WORKING-STORAGE before changing shared state.
+- **`-Wall` size checks between programs of one file** only see programs defined *earlier* in the
+  file; put a program that takes a one-byte `PIC X` area after its callers.
+- **`FUNCTION SIN`/`COS` are slow** (about 90 µs a call): remember results that repeat (worldgen).
+- **Shifting a large buffer byte by byte is quadratic**: keep a read offset (`PB-POS`) instead of
+  moving the rest to the front after every partial read.
+- **Core state** is the EXTERNAL records of `core/copy/CORESTATE.cpy`; PB-BUFFERs are kept there as
+  their raw 21 bytes and moved into a local `PB-BUFFER` to use them.
 - **No `C$LIST-DIRECTORY`** in GnuCOBOL 3.2: use `cc_fs_list` (contracts/shim-abi.md §7).
 - **Fixed format breaks past column 72**, which is why the project is free format. Don't switch.
 

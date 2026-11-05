@@ -1,0 +1,697 @@
+*> Implementation test of the US2 content copybooks (core/copy/BLOCKS.cpy, ITEMS.cpy, ENTITYTYPES.cpy,
+*> RULES.cpy, DIMENSIONS.cpy, REGISTRY.cpy) against docs/design/standin-content.md: blocks §1.1, block
+*> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
+*> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
+*> and every synchronized registry entry of §4 (§4.2 to §4.8).
+*> Each table row is rendered as one line of text, fields separated by single spaces, and compared
+*> with the row transcribed from the document.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CONTENT-TABLES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY BLOCKS.
+ COPY ITEMS.
+ COPY ENTITYTYPES.
+ COPY RULES.
+ COPY DIMENSIONS.
+ COPY REGISTRY.
+ 01 WS-ROW                 PIC X(400).
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-SUM                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+*> Expected rows, transcribed from standin-content. Block row: id key solid opaque light
+*> hand-break-ms class(0 none, 1 hard, 2 soft) first-state state-count default-state.
+ 01 WS-BLOCK-ROWS.
+    05 FILLER PIC X(60) VALUE "0 cobolcraft:void 0 0 0 0 0 0 1 0".
+    05 FILLER PIC X(60) VALUE "1 cobolcraft:baseplate 1 1 0 -1 0 1 1 1".
+    05 FILLER PIC X(60) VALUE "2 cobolcraft:greystone 1 1 0 1500 1 2 1 2".
+    05 FILLER PIC X(60) VALUE "3 cobolcraft:loam 1 1 0 600 2 3 1 3".
+    05 FILLER PIC X(60) VALUE "4 cobolcraft:turf 1 1 0 700 2 4 1 4".
+    05 FILLER PIC X(60) VALUE "5 cobolcraft:grit 1 1 0 500 2 5 1 5".
+    05 FILLER PIC X(60) VALUE "6 cobolcraft:cardstack 1 1 0 1000 1 6 6 9".
+    05 FILLER PIC X(60) VALUE "7 cobolcraft:lucite 1 0 0 400 0 12 1 12".
+    05 FILLER PIC X(60) VALUE "8 cobolcraft:glowtube 1 1 15 300 0 13 2 13".
+    05 FILLER PIC X(60) VALUE "9 cobolcraft:ledger_tile 1 1 0 1200 1 15 1 15".
+    05 FILLER PIC X(60) VALUE "10 cobolcraft:goto_pad 1 1 6 2000 0 16 1 16".
+    05 FILLER PIC X(60) VALUE "11 cobolcraft:slag 1 1 0 1200 1 17 1 17".
+ 01 WS-BLOCK-EXPECT REDEFINES WS-BLOCK-ROWS.
+    05 WS-BLOCK-ROW        PIC X(60) OCCURS 12 TIMES.
+*> State row: id block solid opaque light axis punched lit [properties].
+ 01 WS-STATE-ROWS.
+    05 FILLER PIC X(60) VALUE "0 0 0 0 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "1 1 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "2 2 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "3 3 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "4 4 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "5 5 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "6 6 1 1 0 0 1 -1 axis=x,punched=true".
+    05 FILLER PIC X(60) VALUE "7 6 1 1 0 0 0 -1 axis=x,punched=false".
+    05 FILLER PIC X(60) VALUE "8 6 1 1 0 1 1 -1 axis=y,punched=true".
+    05 FILLER PIC X(60) VALUE "9 6 1 1 0 1 0 -1 axis=y,punched=false".
+    05 FILLER PIC X(60) VALUE "10 6 1 1 0 2 1 -1 axis=z,punched=true".
+    05 FILLER PIC X(60) VALUE "11 6 1 1 0 2 0 -1 axis=z,punched=false".
+    05 FILLER PIC X(60) VALUE "12 7 1 0 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "13 8 1 1 15 -1 -1 1 lit=true".
+    05 FILLER PIC X(60) VALUE "14 8 1 1 0 -1 -1 0 lit=false".
+    05 FILLER PIC X(60) VALUE "15 9 1 1 0 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "16 10 1 1 6 -1 -1 -1".
+    05 FILLER PIC X(60) VALUE "17 11 1 1 0 -1 -1 -1".
+ 01 WS-STATE-EXPECT REDEFINES WS-STATE-ROWS.
+    05 WS-STATE-ROW        PIC X(60) OCCURS 18 TIMES.
+*> Item row: id key placed-state max-stack tool-class food-value attack-damage.
+ 01 WS-ITEM-ROWS.
+    05 FILLER PIC X(60) VALUE "0 cobolcraft:nothing -1 0 0 0 1".
+    05 FILLER PIC X(60) VALUE "1 cobolcraft:baseplate 1 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "2 cobolcraft:greystone 2 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "3 cobolcraft:loam 3 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "4 cobolcraft:turf 4 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "5 cobolcraft:grit 5 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "6 cobolcraft:cardstack 9 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "7 cobolcraft:lucite 12 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "8 cobolcraft:glowtube 13 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "9 cobolcraft:ledger_tile 15 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "10 cobolcraft:pry_bar -1 1 1 0 4".
+    05 FILLER PIC X(60) VALUE "11 cobolcraft:trowel -1 1 2 0 2".
+    05 FILLER PIC X(60) VALUE "12 cobolcraft:grazer_flank -1 32 0 3 1".
+    05 FILLER PIC X(60) VALUE "13 cobolcraft:seared_flank -1 32 0 8 1".
+    05 FILLER PIC X(60) VALUE "14 cobolcraft:sod_cake -1 16 0 2 1".
+    05 FILLER PIC X(60) VALUE "15 cobolcraft:dump_shard -1 64 0 0 1".
+    05 FILLER PIC X(60) VALUE "16 cobolcraft:goto_pad 16 16 0 0 1".
+    05 FILLER PIC X(60) VALUE "17 cobolcraft:slag 17 64 0 0 1".
+ 01 WS-ITEM-EXPECT REDEFINES WS-ITEM-ROWS.
+    05 WS-ITEM-ROW         PIC X(60) OCCURS 18 TIMES.
+*> Entity type row: id key width height eye-height, in thousandths of a block.
+ 01 WS-ENTITY-ROWS.
+    05 FILLER PIC X(60) VALUE "0 cobolcraft:operator 700 1750 1600".
+    05 FILLER PIC X(60) VALUE "1 cobolcraft:loose_item 300 300 150".
+    05 FILLER PIC X(60) VALUE "2 cobolcraft:sodgrazer 900 900 700".
+    05 FILLER PIC X(60) VALUE "3 cobolcraft:abend 750 750 500".
+ 01 WS-ENTITY-EXPECT REDEFINES WS-ENTITY-ROWS.
+    05 WS-ENTITY-ROW       PIC X(60) OCCURS 4 TIMES.
+*> Registry rows (§4.2 summary): registry number, key, entries sent.
+ 01 WS-REG-ROWS.
+    05 FILLER PIC X(60) VALUE "0 minecraft:worldgen/biome 3".
+    05 FILLER PIC X(60) VALUE "1 minecraft:chat_type 1".
+    05 FILLER PIC X(60) VALUE "2 minecraft:trim_pattern 0".
+    05 FILLER PIC X(60) VALUE "3 minecraft:trim_material 0".
+    05 FILLER PIC X(60) VALUE "4 minecraft:wolf_variant 1".
+    05 FILLER PIC X(60) VALUE "5 minecraft:wolf_sound_variant 1".
+    05 FILLER PIC X(60) VALUE "6 minecraft:pig_variant 1".
+    05 FILLER PIC X(60) VALUE "7 minecraft:pig_sound_variant 1".
+    05 FILLER PIC X(60) VALUE "8 minecraft:frog_variant 1".
+    05 FILLER PIC X(60) VALUE "9 minecraft:cat_variant 1".
+    05 FILLER PIC X(60) VALUE "10 minecraft:cat_sound_variant 1".
+    05 FILLER PIC X(60) VALUE "11 minecraft:cow_sound_variant 1".
+    05 FILLER PIC X(60) VALUE "12 minecraft:cow_variant 1".
+    05 FILLER PIC X(60) VALUE "13 minecraft:chicken_sound_variant 1".
+    05 FILLER PIC X(60) VALUE "14 minecraft:chicken_variant 1".
+    05 FILLER PIC X(60) VALUE "15 minecraft:zombie_nautilus_variant 1".
+    05 FILLER PIC X(60) VALUE "16 minecraft:painting_variant 1".
+    05 FILLER PIC X(60) VALUE "17 minecraft:sulfur_cube_archetype 0".
+    05 FILLER PIC X(60) VALUE "18 minecraft:dimension_type 2".
+    05 FILLER PIC X(60) VALUE "19 minecraft:damage_type 32".
+    05 FILLER PIC X(60) VALUE "20 minecraft:banner_pattern 0".
+    05 FILLER PIC X(60) VALUE "21 minecraft:enchantment 0".
+    05 FILLER PIC X(60) VALUE "22 minecraft:jukebox_song 0".
+    05 FILLER PIC X(60) VALUE "23 minecraft:instrument 0".
+    05 FILLER PIC X(60) VALUE "24 minecraft:test_environment 0".
+    05 FILLER PIC X(60) VALUE "25 minecraft:test_instance 0".
+    05 FILLER PIC X(60) VALUE "26 minecraft:dialog 0".
+    05 FILLER PIC X(60) VALUE "27 minecraft:world_clock 1".
+    05 FILLER PIC X(60) VALUE "28 minecraft:timeline 0".
+    05 FILLER PIC X(60) VALUE "29 minecraft:decorated_pot_pattern 0".
+    05 FILLER PIC X(60) VALUE "30 minecraft:block_transformer 0".
+    05 FILLER PIC X(60) VALUE "31 minecraft:worldgen/block_state_provider 0".
+ 01 WS-REG-EXPECT REDEFINES WS-REG-ROWS.
+    05 WS-REG-ROW PIC X(60) OCCURS 32 TIMES.
+*> MV rows (§4.5): registry key, group compounds, then name=value per field; T = the placeholder
+*> texture, S = the inline placeholder sound {sound_id}, other values literal (Int or String).
+ 01 WS-MV-ROWS.
+    05 FILLER PIC X(240) VALUE "minecraft:wolf_variant assets baby_assets wild=T tame=T angry=T".
+    05 FILLER PIC X(240) VALUE
+        "minecraft:wolf_sound_variant adult_sounds baby_sounds ambient_sound=S " &
+        "death_sound=S growl_sound=S hurt_sound=S pant_sound=S whine_sound=S st" &
+        "ep_sound=S".
+    05 FILLER PIC X(240) VALUE "minecraft:pig_variant model=normal asset_id=T baby_asset_id=T".
+    05 FILLER PIC X(240) VALUE
+        "minecraft:pig_sound_variant adult_sounds baby_sounds ambient_sound=S h" &
+        "urt_sound=S death_sound=S step_sound=S eat_sound=S".
+    05 FILLER PIC X(240) VALUE "minecraft:frog_variant asset_id=T".
+    05 FILLER PIC X(240) VALUE "minecraft:cat_variant asset_id=T baby_asset_id=T".
+    05 FILLER PIC X(240) VALUE
+        "minecraft:cat_sound_variant adult_sounds baby_sounds ambient_sound=S s" &
+        "tray_ambient_sound=S hiss_sound=S hurt_sound=S death_sound=S eat_sound" &
+        "=S beg_for_food_sound=S purr_sound=S purreow_sound=S".
+    05 FILLER PIC X(240) VALUE "minecraft:cow_sound_variant ambient_sound=S hurt_sound=S death_sound=S step_sound=S".
+    05 FILLER PIC X(240) VALUE "minecraft:cow_variant model=normal asset_id=T baby_asset_id=T".
+    05 FILLER PIC X(240) VALUE
+        "minecraft:chicken_sound_variant adult_sounds baby_sounds ambient_sound" &
+        "=S hurt_sound=S death_sound=S step_sound=S".
+    05 FILLER PIC X(240) VALUE "minecraft:chicken_variant model=normal asset_id=T baby_asset_id=T".
+    05 FILLER PIC X(240) VALUE "minecraft:zombie_nautilus_variant model=normal asset_id=T".
+    05 FILLER PIC X(240) VALUE
+        "minecraft:painting_variant width=1 height=1 asset_id=cobolcraft:placeh" &
+        "older title=Placeholder".
+ 01 WS-MV-EXPECT REDEFINES WS-MV-ROWS.
+    05 WS-MV-ROW PIC X(240) OCCURS 13 TIMES.
+*> damage_type rows (§4.7): id key message_id scaling exhaustion-in-thousandths.
+ 01 WS-DAMAGE-ROWS.
+    05 FILLER PIC X(80) VALUE "0 cobolcraft:generic cobolcraft.generic never 0".
+    05 FILLER PIC X(80) VALUE "1 cobolcraft:impact cobolcraft.impact never 0".
+    05 FILLER PIC X(80) VALUE "2 cobolcraft:below_world cobolcraft.below_world never 0".
+    05 FILLER PIC X(80) VALUE "3 minecraft:in_fire cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "4 minecraft:campfire cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "5 minecraft:lightning_bolt cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "6 minecraft:on_fire cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "7 minecraft:lava cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "8 minecraft:hot_floor cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "9 minecraft:in_wall cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "10 minecraft:cramming cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "11 minecraft:drown cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "12 minecraft:starve cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "13 minecraft:cactus cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "14 minecraft:fall cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "15 minecraft:ender_pearl cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "16 minecraft:fly_into_wall cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "17 minecraft:fell_out_of_world cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "18 minecraft:generic cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "19 minecraft:magic cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "20 minecraft:wither cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "21 minecraft:dragon_breath cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "22 minecraft:dry_out cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "23 minecraft:sweet_berry_bush cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "24 minecraft:freeze cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "25 minecraft:stalagmite cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "26 minecraft:outside_border cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "27 minecraft:generic_kill cobolcraft.compat never 0".
+    05 FILLER PIC X(80) VALUE "28 cobolcraft:mob_attack cobolcraft.mob_attack never 0".
+    05 FILLER PIC X(80) VALUE "29 cobolcraft:player_attack cobolcraft.player_attack never 0".
+    05 FILLER PIC X(80) VALUE "30 cobolcraft:starvation cobolcraft.starvation never 0".
+    05 FILLER PIC X(80) VALUE "31 cobolcraft:hail cobolcraft.hail never 0".
+ 01 WS-DAMAGE-EXPECT REDEFINES WS-DAMAGE-ROWS.
+    05 WS-DAMAGE-ROW PIC X(80) OCCURS 32 TIMES.
+ PROCEDURE DIVISION.
+*>   Block ids, block-state ids and palette widths (§1.1, §1.2, §4.3).
+     MOVE "test content tables block id constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE BLK-VOID TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-BASEPLATE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-GREYSTONE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-LOAM TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-TURF TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-GRIT TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-CARDSTACK TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-LUCITE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-GLOWTUBE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-LEDGER-TILE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-GOTO-PAD TO WS-NUM PERFORM ADD-NUM
+     MOVE BLK-SLAG TO WS-NUM PERFORM ADD-NUM
+     MOVE BLOCK-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 1 2 3 4 5 6 7 8 9 10 11 12" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables block state id constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE ST-VOID TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-BASEPLATE TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-GREYSTONE TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-LOAM TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-TURF TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-GRIT TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-X-PUNCHED TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-X TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-Y-PUNCHED TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-Y TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-Z-PUNCHED TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-CARDSTACK-Z TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-LUCITE TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-GLOWTUBE-LIT TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-GLOWTUBE-UNLIT TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-LEDGER-TILE TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-GOTO-PAD TO WS-NUM PERFORM ADD-NUM
+     MOVE ST-SLAG TO WS-NUM PERFORM ADD-NUM
+     MOVE BLOCK-STATE-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables palette widths and biome ids" TO TL-CASE
+     PERFORM START-ROW
+     MOVE BLOCK-PALETTE-BITS TO WS-NUM PERFORM ADD-NUM
+     MOVE BIOME-PALETTE-BITS TO WS-NUM PERFORM ADD-NUM
+     MOVE BIOME-PLAINS TO WS-NUM PERFORM ADD-NUM
+     MOVE BIOME-UPLAND TO WS-NUM PERFORM ADD-NUM
+     MOVE BIOME-ASH-FLATS TO WS-NUM PERFORM ADD-NUM
+     MOVE "5 2 0 1 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Block table (§1.1), one case per block.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BLOCK-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables block " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING BL-KEY(WS-I)(1:BL-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE BL-SOLID(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-OPAQUE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-LIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-BREAK-MS(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-CLASS(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-FIRST-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-STATE-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE BL-DEFAULT-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-BLOCK-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+     MOVE "test content tables block class constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE BLOCK-CLASS-NONE TO WS-NUM PERFORM ADD-NUM
+     MOVE BLOCK-CLASS-HARD TO WS-NUM PERFORM ADD-NUM
+     MOVE BLOCK-CLASS-SOFT TO WS-NUM PERFORM ADD-NUM
+     MOVE BREAK-UNBREAKABLE TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 1 2 -1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Block-state table (§1.2), one case per state.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BLOCK-STATE-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables block state " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         MOVE SB-BLOCK(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-SOLID(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-OPAQUE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-LIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-AXIS(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-PUNCHED(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SB-LIT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         IF SB-PROPS(WS-I) NOT = SPACES
+             PERFORM ADD-SPACE
+             STRING FUNCTION TRIM(SB-PROPS(WS-I)) DELIMITED BY SIZE
+                 INTO WS-ROW WITH POINTER WS-PTR
+         END-IF
+         MOVE WS-STATE-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   Every state of a block lies in the block's range, and states of a block share its solid and
+*>   opaque flags (§1.2: first state = number of states before the block).
+     MOVE "test content tables state ranges match blocks" TO TL-CASE
+     MOVE 0 TO WS-BAD
+     MOVE 0 TO WS-S
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BLOCK-COUNT
+         IF BL-FIRST-STATE(WS-I) NOT = WS-S
+             ADD 1 TO WS-BAD
+         END-IF
+         IF BL-DEFAULT-STATE(WS-I) < BL-FIRST-STATE(WS-I)
+            OR BL-DEFAULT-STATE(WS-I) >= BL-FIRST-STATE(WS-I) + BL-STATE-COUNT(WS-I)
+             ADD 1 TO WS-BAD
+         END-IF
+         PERFORM BL-STATE-COUNT(WS-I) TIMES
+             ADD 1 TO WS-S
+             IF SB-BLOCK(WS-S) NOT = WS-I - 1
+                OR SB-SOLID(WS-S) NOT = BL-SOLID(WS-I)
+                OR SB-OPAQUE(WS-S) NOT = BL-OPAQUE(WS-I)
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+         IF SB-LIGHT(BL-DEFAULT-STATE(WS-I) + 1) NOT = BL-LIGHT(WS-I)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test content tables cardstack and glowtube default states" TO TL-CASE
+     PERFORM START-ROW
+     MOVE BL-DEFAULT-STATE(BLK-CARDSTACK + 1) TO WS-NUM PERFORM ADD-NUM
+     MOVE BL-DEFAULT-STATE(BLK-GLOWTUBE + 1) TO WS-NUM PERFORM ADD-NUM
+     MOVE "9 13" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Item table (§2, §10.4, §11.5), one case per item.
+     MOVE "test content tables item count" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE ITEM-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ITEM-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables item " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING IT-KEY(WS-I)(1:IT-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE IT-PLACES-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE IT-MAX-STACK(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE IT-TOOL-CLASS(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE IT-FOOD(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE IT-ATTACK(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-ITEM-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   Entity type table (§3, §12.1).
+     MOVE "test content tables entity type id constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE ET-OPERATOR TO WS-NUM PERFORM ADD-NUM
+     MOVE ET-LOOSE-ITEM TO WS-NUM PERFORM ADD-NUM
+     MOVE ET-SODGRAZER TO WS-NUM PERFORM ADD-NUM
+     MOVE ET-ABEND TO WS-NUM PERFORM ADD-NUM
+     MOVE ENTITY-TYPE-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 1 2 3 4" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ENTITY-TYPE-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables entity type " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING ET-KEY(WS-I)(1:ET-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE ET-WIDTH-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE ET-HEIGHT-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE ET-EYE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-ENTITY-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   The cobolcraft:main dimension (§5.1, §5.2, §4.6, §14.2). Row: key type-id type-key min-y height
+*>   sea-level generator light-policy skylight weather.
+     MOVE "test content tables main dimension" TO TL-CASE
+     PERFORM START-ROW
+     MOVE DIM-MAIN TO WS-I
+     STRING DM-KEY(WS-I)(1:DM-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+         INTO WS-ROW WITH POINTER WS-PTR
+     MOVE DM-TYPE-ID(WS-I) TO WS-NUM PERFORM ADD-NUM
+     PERFORM ADD-SPACE
+     STRING DM-TYPE-KEY(WS-I)(1:DM-TYPE-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+         INTO WS-ROW WITH POINTER WS-PTR
+     MOVE DM-MIN-Y(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-HEIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-SEA-LEVEL(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-GENERATOR(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-LIGHT-POLICY(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-SKYLIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE DM-WEATHER(WS-I) TO WS-NUM PERFORM ADD-NUM
+     MOVE "cobolcraft:main 0 cobolcraft:surface 0 256 48 1 1 1 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables dimension constants" TO TL-CASE
+     PERFORM START-ROW
+     MOVE DIM-MAIN TO WS-NUM PERFORM ADD-NUM
+     MOVE DIM-TABLE-ROWS TO WS-NUM PERFORM ADD-NUM
+     MOVE DIM-GEN-MAIN TO WS-NUM PERFORM ADD-NUM
+     MOVE DIM-LIGHT-STANDIN TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 2 1 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Spawn point (§5.2): feet (4.5, 54.0, 8.5) in tenths, yaw -90, pitch 0.
+     MOVE "test content tables spawn point" TO TL-CASE
+     PERFORM START-ROW
+     MOVE SPAWN-X10 TO WS-NUM PERFORM ADD-NUM
+     MOVE SPAWN-Y10 TO WS-NUM PERFORM ADD-NUM
+     MOVE SPAWN-Z10 TO WS-NUM PERFORM ADD-NUM
+     MOVE SPAWN-YAW TO WS-NUM PERFORM ADD-NUM
+     MOVE SPAWN-PITCH TO WS-NUM PERFORM ADD-NUM
+     MOVE "45 540 85 -90 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Player rules (§10.1, §11.1).
+     MOVE "test content tables maximum health" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 30 TO TL-EXPECTED-N
+     MOVE RULE-MAX-HEALTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test content tables maximum food" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 24 TO TL-EXPECTED-N
+     MOVE RULE-MAX-FOOD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Synchronized registries (§4). Summary (§4.2): one case per registry.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables registry " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING RG-KEY(WS-I)(1:RG-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE RG-ENTRY-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-REG-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   18 packets and 52 entries (§4.2); each kind's entry count equals its table's row count.
+     MOVE "test content tables registry packet and entry totals" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 0 TO WS-S WS-SUM WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
+         IF RG-ENTRY-COUNT(WS-I) > 0
+             ADD 1 TO WS-S
+         END-IF
+         ADD RG-ENTRY-COUNT(WS-I) TO WS-SUM
+         EVALUATE RG-KIND(WS-I)
+             WHEN RGK-EMPTY
+                 MOVE 0 TO WS-NUM
+             WHEN RGK-BIOME
+                 MOVE RB-COUNT TO WS-NUM
+             WHEN RGK-CHAT
+                 MOVE RC-COUNT TO WS-NUM
+             WHEN RGK-MV
+                 MOVE 1 TO WS-NUM
+                 IF RM-REGISTRY(RG-MV-ROW(WS-I)) NOT = WS-I - 1
+                     ADD 1 TO WS-BAD
+                 END-IF
+             WHEN RGK-DIMENSION-TYPE
+                 MOVE RD-COUNT TO WS-NUM
+             WHEN RGK-DAMAGE
+                 MOVE RX-COUNT TO WS-NUM
+             WHEN RGK-CLOCK
+                 MOVE RW-COUNT TO WS-NUM
+             WHEN OTHER
+                 MOVE -1 TO WS-NUM
+         END-EVALUATE
+         IF RG-ENTRY-COUNT(WS-I) NOT = WS-NUM
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE WS-S TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-SUM TO WS-NUM PERFORM ADD-NUM
+     MOVE REG-PACKETS TO WS-NUM PERFORM ADD-NUM
+     MOVE REG-ENTRIES TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-BAD TO WS-NUM PERFORM ADD-NUM
+     MOVE "18 52 18 52 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   worldgen/biome (§4.3): id key has_precipitation temperature downfall (thousandths) water grass
+*>   foliage colours.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RB-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables biome " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING RB-KEY(WS-I)(1:RB-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE RB-PRECIPITATION(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RB-TEMPERATURE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RB-DOWNFALL-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         STRING " " RB-WATER-COLOR(WS-I) " " RB-GRASS-COLOR(WS-I) " " RB-FOLIAGE-COLOR(WS-I)
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE "0 minecraft:plains 1 600 400 #3A6EA5 #4F8F3A #4F8F3A" TO TL-EXPECTED
+             WHEN 2
+                 MOVE "1 cobolcraft:upland 1 300 200 #2F5C8C #6B9A55 #6B9A55" TO TL-EXPECTED
+             WHEN OTHER
+                 MOVE "2 cobolcraft:ash_flats 0 1400 0 #3A2F2A #5A4A40 #5A4A40" TO TL-EXPECTED
+         END-EVALUATE
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   chat_type (§4.4): key, then per decoration its name, translation_key and parameters.
+     MOVE "test content tables chat type 0" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 0 TO WS-NUM PERFORM ADD-NUM
+     PERFORM ADD-SPACE
+     STRING RC-KEY(1)(1:RC-KEY-LENGTH(1)) DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 2
+         STRING " " RC-DEC-NAME(1, WS-J)(1:RC-DEC-NAME-LENGTH(1, WS-J))
+             " " RC-DEC-KEY(1, WS-J)(1:RC-DEC-KEY-LENGTH(1, WS-J))
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > RC-PARAM-COUNT(1, WS-J)
+             STRING " " RC-PARAM-NAME(1, WS-J, WS-F)(1:RC-PARAM-LENGTH(1, WS-J, WS-F))
+                 DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         END-PERFORM
+     END-PERFORM
+     MOVE "0 cobolcraft:say chat cobolcraft.chat.say sender content narration "
+         & "cobolcraft.chat.say.narrate sender content" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   MV placeholders (§4.5): shared key, texture and sound, then one case per registry.
+     MOVE "test content tables MV placeholder key, texture and sound" TO TL-CASE
+     PERFORM START-ROW
+     STRING RG-PLACEHOLDER-KEY(1:RG-PLACEHOLDER-KEY-LENGTH) " "
+         RG-PLACEHOLDER-TEXTURE(1:RG-PLACEHOLDER-TEXTURE-LENGTH) " "
+         RG-PLACEHOLDER-SOUND(1:RG-PLACEHOLDER-SOUND-LENGTH)
+         DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+     MOVE "cobolcraft:placeholder cobolcraft:entity/placeholder cobolcraft:silent"
+         TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RM-COUNT
+         MOVE SPACES TO TL-CASE
+         STRING "test content tables MV registry " DELIMITED BY SIZE
+             RG-KEY(RM-REGISTRY(WS-I) + 1)(1:RG-KEY-LENGTH(RM-REGISTRY(WS-I) + 1))
+             DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         STRING RG-KEY(RM-REGISTRY(WS-I) + 1)(1:RG-KEY-LENGTH(RM-REGISTRY(WS-I) + 1))
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RM-GROUP-COUNT(WS-I)
+             STRING " " RM-GROUP-NAME(WS-I, WS-J)(1:RM-GROUP-LENGTH(WS-I, WS-J))
+                 DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         END-PERFORM
+         PERFORM VARYING WS-F FROM RM-FIRST-FIELD(WS-I) BY 1
+                 UNTIL WS-F >= RM-FIRST-FIELD(WS-I) + RM-FIELD-COUNT(WS-I)
+             STRING " " RF-NAME(WS-F)(1:RF-NAME-LENGTH(WS-F)) "="
+                 DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+             EVALUATE RF-KIND(WS-F)
+                 WHEN RMF-TEXTURE
+                     STRING "T" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+                 WHEN RMF-SOUND
+                     STRING "S" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+                 WHEN RMF-STRING
+                     STRING RF-STRING(WS-F)(1:RF-STRING-LENGTH(WS-F)) DELIMITED BY SIZE
+                         INTO WS-ROW WITH POINTER WS-PTR
+                 WHEN OTHER
+                     MOVE RF-INT(WS-F) TO WS-EDIT
+                     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+                         INTO WS-ROW WITH POINTER WS-PTR
+             END-EVALUATE
+         END-PERFORM
+         MOVE WS-MV-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   dimension_type (§4.6): id key has_fixed_time (-1 absent) has_skylight has_ceiling
+*>   has_ender_dragon_fight coordinate_scale min_y height logical_height ambient_light (scale and
+*>   light in thousandths) monster_spawn_light_level monster_spawn_block_light_limit skybox
+*>   default_clock ("-" = absent).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables dimension type " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING RD-KEY(WS-I)(1:RD-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE RD-FIXED-TIME(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-SKYLIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-CEILING(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-DRAGON-FIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-COORD-SCALE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-MIN-Y(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-HEIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-LOGICAL-HEIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-AMBIENT-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-SPAWN-LIGHT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RD-SPAWN-BLOCK-LIMIT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         IF RD-SKYBOX-LENGTH(WS-I) > 0
+             STRING " " RD-SKYBOX(WS-I)(1:RD-SKYBOX-LENGTH(WS-I)) DELIMITED BY SIZE
+                 INTO WS-ROW WITH POINTER WS-PTR
+         ELSE
+             STRING " -" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         END-IF
+         IF RD-CLOCK-LENGTH(WS-I) > 0
+             STRING " " RD-CLOCK(WS-I)(1:RD-CLOCK-LENGTH(WS-I)) DELIMITED BY SIZE
+                 INTO WS-ROW WITH POINTER WS-PTR
+         ELSE
+             STRING " -" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         END-IF
+         IF WS-I = 1
+             MOVE "0 cobolcraft:surface -1 1 0 0 1000 0 256 256 0 0 0 - cobolcraft:daylight"
+                 TO TL-EXPECTED
+         ELSE
+             MOVE "1 cobolcraft:sunless 1 0 0 0 1000 0 128 128 0 0 0 none -" TO TL-EXPECTED
+         END-IF
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   damage_type (§4.7), one case per entry.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RX-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables damage type " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         STRING " " RX-KEY(WS-I)(1:RX-KEY-LENGTH(WS-I))
+             " " RX-MESSAGE(WS-I)(1:RX-MESSAGE-LENGTH(WS-I))
+             " " RX-SCALING(WS-I)(1:RX-SCALING-LENGTH(WS-I))
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         MOVE RX-EXHAUSTION-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-DAMAGE-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   world_clock (§4.8).
+     MOVE "test content tables world clock 0" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 0 TO WS-NUM PERFORM ADD-NUM
+     STRING " " RW-KEY(1)(1:RW-KEY-LENGTH(1)) DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+     MOVE "0 cobolcraft:daylight" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     STOP RUN.
+
+*> Row rendering helpers: START-ROW clears the row; ADD-NUM appends WS-NUM, preceded by a space
+*> unless the row is empty; ASSERT-ROW compares the row with TL-EXPECTED.
+ START-ROW.
+     MOVE SPACES TO WS-ROW
+     MOVE 1 TO WS-PTR.
+
+ ADD-SPACE.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+     END-IF.
+
+ ADD-NUM.
+     PERFORM ADD-SPACE
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-ROW TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

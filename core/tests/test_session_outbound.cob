@@ -1,0 +1,149 @@
+*> Implementation test of outbound handling (core/src/session.cob; 01 §2, §3; 09 §2): frames are
+*> compressed only on network connections after Set Compression; a disconnect packet raises the
+*> close flag, which the host sees once the queue is empty; nothing is queued after it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SESSION-OUTBOUND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COREAPI.
+ COPY CORESTATE.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ COPY TESTLIB.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-THRESHOLD           BINARY-LONG.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-DATA-LENGTH         BINARY-LONG.
+ 01 WS-FRAME-LENGTH        BINARY-LONG.
+ 01 WS-BODY                PIC X(299) VALUE ALL "a".
+ 01 WS-BODY-LENGTH         BINARY-LONG VALUE 299.
+ 01 WS-FIXTURE             PIC X(256).
+ 01 WS-EDIT                PIC -(8)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     MOVE 127 TO WS-VALUE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-VALUE
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BODY WS-BODY-LENGTH
+
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE 1 TO CN-COMPRESS(WS-ID)
+     MOVE 0 TO CN-COMPRESS(WS-ID)
+     MOVE "test session outbound memory connection: a 300-byte packet is framed uncompressed" TO TL-CASE
+     MOVE "300 127 299" TO TL-EXPECTED
+     PERFORM SEND-AND-DESCRIBE
+
+     MOVE CORE-CONN-NETWORK TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "test session outbound network connection before Set Compression: uncompressed" TO TL-CASE
+     MOVE "300 127 299" TO TL-EXPECTED
+     PERFORM SEND-AND-DESCRIBE
+
+     MOVE 1 TO CN-COMPRESS(WS-ID)
+     MOVE "test session outbound network connection after Set Compression: compressed at 256"
+         TO TL-CASE
+     MOVE "c300 127 299" TO TL-EXPECTED
+     PERFORM SEND-AND-DESCRIBE
+
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-VALUE
+     MOVE "test session outbound after Set Compression a short packet has Data length 0" TO TL-CASE
+     MOVE "0 127 0" TO TL-EXPECTED
+     PERFORM SEND-AND-DESCRIBE
+
+*>   Disconnect packets by phase, then the close flag.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE PH-PLAY TO CN-PHASE(WS-ID)
+     INITIALIZE PB-TEXT
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     MOVE "cobolcraft.disconnect.replaced" TO PB-TX-VALUE
+     MOVE 30 TO PB-TX-LENGTH
+     CALL "CORE-SEND-DISCONNECT" USING WS-ID PB-TEXT
+     CALL "CORE-SEND" USING WS-ID PB-BUFFER
+     MOVE "test session outbound play disconnect is Disconnect 0x20 with the reason" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-s2c-20-disconnect-duplicate-login.hex" TO WS-FIXTURE
+     PERFORM DRAIN-FIRST-PACKET
+     CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-FIXTURE TESTLIB-ASSERT
+     MOVE "test session outbound after the disconnect nothing more is queued and the close flag is handed back"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 11 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUTCOME * 10 + WS-CLOSE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE PH-CONFIG TO CN-PHASE(WS-ID)
+     MOVE "cobolcraft.disconnect.pack_required" TO PB-TX-VALUE
+     MOVE 35 TO PB-TX-LENGTH
+     CALL "CORE-SEND-DISCONNECT" USING WS-ID PB-TEXT
+     MOVE "test session outbound configuration disconnect is Disconnect 0x02 with the reason" TO TL-CASE
+     MOVE "contract/fixtures/wire/config-s2c-02-disconnect-pack-required.hex" TO WS-FIXTURE
+     PERFORM DRAIN-FIRST-PACKET
+     CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-FIXTURE TESTLIB-ASSERT
+
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     CALL "CORE-SEND-DISCONNECT" USING WS-ID PB-TEXT
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     MOVE "test session outbound a handshake-phase disconnect sends nothing and closes" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ST-LENGTH * 10 + WS-CLOSE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+*> Sends PB-BUFFER on WS-ID and describes the frame as "<data length> <packet id> <body length>",
+*> with a "c" prefix when the frame is shorter than the packet (compressed).
+ SEND-AND-DESCRIBE.
+     CALL "CORE-SEND" USING WS-ID PB-BUFFER
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     CALL "PB-GET-VARINT" USING ST-BUFFER WS-FRAME-LENGTH
+     MOVE -1 TO WS-THRESHOLD
+     MOVE WS-FRAME-LENGTH TO WS-DATA-LENGTH
+     IF CN-COMPRESS(WS-ID) = 1
+         CALL "PB-GET-VARINT" USING ST-BUFFER WS-DATA-LENGTH
+         MOVE 256 TO WS-THRESHOLD
+     END-IF
+     MOVE 0 TO ST-POS
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-FRAME-LENGTH < PK-LENGTH
+         MOVE "c" TO TL-OBSERVED
+     END-IF
+     MOVE WS-DATA-LENGTH TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE WS-PACKET-ID TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     COMPUTE WS-EDIT = PK-LENGTH - PK-POS
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Drains WS-ID; the first packet goes to PK-BUFFER (from byte 1); WS-OUTCOME = 1 when no second
+*> packet follows.
+ DRAIN-FIRST-PACKET.
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     MOVE -1 TO WS-THRESHOLD
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE 0 TO PK-POS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PB-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME.
+ END PROGRAM TEST-SESSION-OUTBOUND.
+
+ COPY CORETEST.

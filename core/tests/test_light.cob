@@ -1,0 +1,175 @@
+*> Implementation test of the stand-in light policy (core/src/light.cob; standin-content §5.2,
+*> docs/protocol/09-cobolcraft-profile.md §3.4 rule 4): sky light 15 above each column's top block
+*> and 0 at or below it (lucite included); block light L at a source and L minus the shortest path
+*> length through non-opaque cells elsewhere, across chunk borders in both directions; recompute of
+*> the affected chunks when a block is placed, broken or a glowtube toggled.
+*> Light is read straight from the cache (CHUNKMEM.cpy) of chunks that WORLD-CHUNK has lit.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LIGHT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CHUNKMEM.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+
+     MOVE "test light sky light drops to 0 at and below each column's top block" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 4 TO WS-X MOVE 52 TO WS-Y MOVE 8 TO WS-Z PERFORM SKY-NUM
+     MOVE 53 TO WS-Y PERFORM SKY-NUM
+     MOVE 54 TO WS-Y PERFORM SKY-NUM
+     MOVE 255 TO WS-Y PERFORM SKY-NUM
+     MOVE 8 TO WS-X MOVE 58 TO WS-Y PERFORM SKY-NUM
+     MOVE 59 TO WS-Y PERFORM SKY-NUM
+     MOVE 60 TO WS-Y PERFORM SKY-NUM
+     MOVE 0 TO WS-Y PERFORM SKY-NUM
+     MOVE "0 0 15 15 0 0 15 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light block light is 15 at the lit glowtube and drops 1 per step through void"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 59 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 60 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 9 TO WS-X MOVE 59 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 12 TO WS-X PERFORM BLOCK-NUM
+     MOVE 8 TO WS-X MOVE 73 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 74 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 9 TO WS-X MOVE 60 TO WS-Y MOVE 9 TO WS-Z PERFORM BLOCK-NUM
+     MOVE "15 14 14 11 1 0 12" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light lucite passes block light and opaque cells other than sources stay 0"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 58 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 57 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 54 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 7 TO WS-X MOVE 58 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 7 TO WS-X MOVE 54 TO WS-Y PERFORM BLOCK-NUM
+     MOVE "14 0 0 13 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light block light of a marker reaches the neighbouring chunks" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 20 TO WS-X MOVE 59 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 22 TO WS-X PERFORM BLOCK-NUM
+     MOVE 23 TO WS-X PERFORM BLOCK-NUM
+     MOVE -5 TO WS-X PERFORM BLOCK-NUM
+     MOVE -6 TO WS-X PERFORM BLOCK-NUM
+     MOVE 8 TO WS-X MOVE 59 TO WS-Y MOVE -5 TO WS-Z PERFORM BLOCK-NUM
+     MOVE "3 1 0 2 1 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light shortest path goes around a placed opaque block, removal restores it"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 60 TO WS-Y MOVE 8 TO WS-Z
+     MOVE 2 TO WS-STATE PERFORM SET-STATE
+     MOVE 61 TO WS-Y PERFORM BLOCK-NUM
+     PERFORM SKY-NUM
+     MOVE 60 TO WS-Y PERFORM SKY-NUM
+     PERFORM BLOCK-NUM
+     MOVE 0 TO WS-STATE PERFORM SET-STATE
+     MOVE 61 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 60 TO WS-Y PERFORM SKY-NUM
+     MOVE "11 15 0 0 13 15" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light toggling the marker glowtube off clears its light in every lit chunk"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 59 TO WS-Y MOVE 8 TO WS-Z
+     MOVE 14 TO WS-STATE PERFORM SET-STATE
+     PERFORM BLOCK-NUM
+     MOVE 60 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 20 TO WS-X MOVE 59 TO WS-Y PERFORM BLOCK-NUM
+     MOVE -5 TO WS-X PERFORM BLOCK-NUM
+     MOVE "0 0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light toggling the marker glowtube on restores its light" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 8 TO WS-X MOVE 59 TO WS-Y MOVE 8 TO WS-Z
+     MOVE 13 TO WS-STATE PERFORM SET-STATE
+     PERFORM BLOCK-NUM
+     MOVE 60 TO WS-Y PERFORM BLOCK-NUM
+     MOVE 20 TO WS-X MOVE 59 TO WS-Y PERFORM BLOCK-NUM
+     MOVE -5 TO WS-X PERFORM BLOCK-NUM
+     MOVE "15 14 3 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light a source placed in a neighbouring chunk lights this chunk, highest level wins"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 15 TO WS-X MOVE 60 TO WS-Y MOVE 8 TO WS-Z PERFORM BLOCK-NUM
+     MOVE 17 TO WS-X
+     MOVE 13 TO WS-STATE PERFORM SET-STATE
+     MOVE 15 TO WS-X PERFORM BLOCK-NUM
+     MOVE 17 TO WS-X PERFORM BLOCK-NUM
+     MOVE "7 13 15" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test light a goto_pad emits 6" TO TL-CASE
+     PERFORM START-ROW
+     MOVE -20 TO WS-X MOVE 70 TO WS-Y MOVE -20 TO WS-Z
+     MOVE 16 TO WS-STATE PERFORM SET-STATE
+     PERFORM BLOCK-NUM
+     MOVE 71 TO WS-Y PERFORM BLOCK-NUM
+     MOVE -25 TO WS-X MOVE 70 TO WS-Y PERFORM BLOCK-NUM
+     MOVE -26 TO WS-X PERFORM BLOCK-NUM
+     MOVE "6 5 1 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     STOP RUN.
+
+ SET-STATE.
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE.
+
+ LOCATE.
+     COMPUTE WS-CX = (WS-X - FUNCTION MOD(WS-X, 16)) / 16
+     COMPUTE WS-CZ = (WS-Z - FUNCTION MOD(WS-Z, 16)) / 16
+     CALL "WORLD-CHUNK" USING WS-DIM WS-CX WS-CZ WS-ROW
+     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW)
+     COMPUTE WS-CELL = WS-Y * 256 + (WS-Z - WS-CZ * 16) * 16 + WS-X - WS-CX * 16 + 1.
+
+ SKY-NUM.
+     PERFORM LOCATE
+     MOVE CM-SKY(WS-CELL) TO WS-NUM
+     PERFORM ADD-NUM.
+
+ BLOCK-NUM.
+     PERFORM LOCATE
+     MOVE CM-BLOCK(WS-CELL) TO WS-NUM
+     PERFORM ADD-NUM.
+
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-LIGHT.
+
+ COPY CORETEST.

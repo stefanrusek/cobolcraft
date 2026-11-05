@@ -1,0 +1,214 @@
+*> Implementation test of core/src/api.cob (tasks T407; contracts/core-host-api.md §2 to §4): every
+*> host entry point through its own call. CORE-WORLD-OPEN on a new folder and on one holding a
+*> level.dat, and reopening while a world is open; CORE-CONN-OPEN, -INPUT, -OUTPUT and -CLOSED on a
+*> memory connection (a status exchange); CORE-TICK with the time-of-day wrap; CORE-CONSOLE-DRAIN in
+*> pieces; CORE-STATUS-GET with and without a player in play.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-API.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-NEW-PATH            PIC X(64) VALUE Z"build/core-test-api-new".
+ 01 WS-OLD-PATH            PIC X(64) VALUE Z"build/core-test-api-old".
+ 01 WS-COMMAND             PIC X(128) VALUE
+     "mkdir -p build/core-test-api-old && touch build/core-test-api-old/level.dat".
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-AREA                PIC X(256).
+ 01 WS-LINE                PIC X(5) VALUE "hello".
+ 01 WS-LINE-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(18)9.
+ 01 WS-EDIT-REAL           PIC -(6)9.9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM WORLD-OPEN-CASES
+     PERFORM CONNECTION-CASES
+     PERFORM TICK-CASES
+     PERFORM CONSOLE-CASES
+     PERFORM STATUS-CASES
+     STOP RUN.
+
+*> ---------------------------------------------------------------------------------------------
+ WORLD-OPEN-CASES.
+     MOVE "test api CORE-WORLD-OPEN of a folder without level.dat creates a new world: created 1, "
+         & "folder, one dimension (main), spawn (4.5, 54.0, 8.5) yaw -90.0, time 0, entity id 1"
+         TO TL-CASE
+     MOVE 1 TO CS-HOST-KIND
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     PERFORM START-ROW
+     MOVE WS-CREATED TO WS-NUM PERFORM ADD-NUM
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE CW-DIM-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE CW-DIM(1) TO WS-NUM PERFORM ADD-NUM
+     MOVE CW-SPAWN-X TO WS-EDIT-REAL PERFORM ADD-REAL
+     MOVE CW-SPAWN-Y TO WS-EDIT-REAL PERFORM ADD-REAL
+     MOVE CW-SPAWN-Z TO WS-EDIT-REAL PERFORM ADD-REAL
+     MOVE CW-SPAWN-YAW TO WS-EDIT-REAL PERFORM ADD-REAL
+     MOVE CW-TIME TO WS-NUM PERFORM ADD-NUM
+     MOVE CW-NEXT-ENTITY-ID TO WS-NUM PERFORM ADD-NUM
+     MOVE CW-RUN-STATE TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 build/core-test-api-new 1 1 4.5 54.0 8.5 -90.0 0 1 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test api CORE-WORLD-OPEN stores the settings and the new world name" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 0 TO CS-HOST-KIND
+     MOVE CW-SETTINGS TO CORE-SETTINGS
+     MOVE CS-HOST-KIND TO WS-NUM PERFORM ADD-NUM
+     STRING FUNCTION TRIM(CW-NAME) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE "1 New World" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test api CORE-WORLD-OPEN while a world is open releases its connections and opens "
+         & "the folder holding level.dat with created 0" TO TL-CASE
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     MOVE 0 TO CS-HOST-KIND
+     CALL "SYSTEM" USING WS-COMMAND
+     CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
+     PERFORM START-ROW
+     MOVE WS-CREATED TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-USED(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE "0 0 build/core-test-api-old" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+*> A status exchange over the host entry points.
+ CONNECTION-CASES.
+     MOVE "test api CORE-CONN-OPEN of a memory connection returns id 1 in the handshake phase"
+         TO TL-CASE
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     PERFORM START-ROW
+     MOVE WS-CONN TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-KIND(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-PHASE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE CORE-CONN-MEMORY TO WS-NUM
+     MOVE WS-NUM TO WS-EDIT
+     MOVE SPACES TO TL-EXPECTED
+     STRING "1 " FUNCTION TRIM(WS-EDIT) " 0" DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test api CORE-CONN-INPUT of the status intention and request, CORE-CONN-OUTPUT gives "
+         & "the Status Response" TO TL-CASE
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-status.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/status-c2s-00-status-request.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 256 TO CB-CAPACITY
+     CALL "CORE-CONN-OUTPUT" USING WS-CONN CORE-BUFFER WS-CLOSE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-AREA CB-LENGTH
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     PERFORM START-ROW
+     MOVE WS-OUTCOME TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-PACKET-ID TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-CLOSE TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-PHASE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0 0 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test api CORE-CONN-CLOSED releases the connection; the next open reuses id 1"
+         TO TL-CASE
+     CALL "CORE-CONN-CLOSED" USING WS-CONN
+     PERFORM START-ROW
+     MOVE CN-USED(1) TO WS-NUM PERFORM ADD-NUM
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     MOVE WS-CONN TO WS-NUM PERFORM ADD-NUM
+     CALL "CORE-CONN-CLOSED" USING WS-CONN
+     MOVE "0 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+ TICK-CASES.
+     MOVE "test api CORE-TICK counts ticks and wraps the time of day from 29999 to 0" TO TL-CASE
+     MOVE 29998 TO CW-TIME
+     MOVE 0 TO CW-TICKS
+     PERFORM START-ROW
+     CALL "CORE-TICK"
+     MOVE CW-TIME TO WS-NUM PERFORM ADD-NUM
+     CALL "CORE-TICK"
+     MOVE CW-TIME TO WS-NUM PERFORM ADD-NUM
+     MOVE CW-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE "29999 0 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+ CONSOLE-CASES.
+     MOVE "test api CORE-CONSOLE-DRAIN hands out queued lines in pieces of the buffer capacity, "
+         & "then nothing" TO TL-CASE
+     CALL "CORE-LOG" USING WS-LINE WS-LINE-LENGTH
+     CALL "CORE-LOG" USING WS-LINE WS-LINE-LENGTH
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 8 TO CB-CAPACITY
+     MOVE SPACES TO WS-AREA
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     PERFORM START-ROW
+     MOVE CB-LENGTH TO WS-NUM PERFORM ADD-NUM
+     STRING WS-AREA(1:5) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE SPACES TO WS-AREA
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE CB-LENGTH TO WS-NUM PERFORM ADD-NUM
+     STRING WS-AREA(1:3) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE CB-LENGTH TO WS-NUM PERFORM ADD-NUM
+     MOVE "8 hello 4 llo 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+ STATUS-CASES.
+     MOVE "test api CORE-STATUS-GET: running, no players; then one player in play" TO TL-CASE
+     PERFORM START-ROW
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE CST-RUN-STATE TO WS-NUM PERFORM ADD-NUM
+     MOVE CST-PLAYERS-ONLINE TO WS-NUM PERFORM ADD-NUM
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     MOVE PH-PLAY TO CN-PHASE(WS-CONN)
+     MOVE 1 TO PL-USED(1)
+     MOVE WS-CONN TO PL-CONN(1)
+     MOVE 1 TO CN-PLAYER(WS-CONN)
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE CST-PLAYERS-ONLINE TO WS-NUM PERFORM ADD-NUM
+     CALL "CORE-CONN-CLOSED" USING WS-CONN
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE CST-PLAYERS-ONLINE TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0 1 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ADD-REAL.
+     STRING FUNCTION TRIM(WS-EDIT-REAL) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-API.
+
+ COPY CORETEST.
