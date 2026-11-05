@@ -6,7 +6,9 @@
  * O_NONBLOCK, TCP_NODELAY and SO_NOSIGPIPE (a send to a closed peer returns EPIPE instead of raising
  * SIGPIPE). Failures that are not a defined outcome of §3 go through cc_fatal. */
 #include <errno.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -167,4 +169,28 @@ int32_t cc_net_poll(int32_t timeout_ms, const int32_t *handles, int32_t count, i
     if (include_console) ready_out[count] = fds[count].revents != 0;
     free(fds);
     return 0;
+}
+
+/* US17-1: every IPv4 interface address outside 127.0.0.0/8, in interface order, each written as
+ * "<dotted>\n". Only whole entries are written: one that does not fit in the rest of `cap` is left
+ * out, so the return value is always the number of entries actually in `out`. */
+int32_t cc_net_local_addresses(uint8_t *out, int32_t cap) {
+    struct ifaddrs *list = NULL;
+    if (getifaddrs(&list) != 0) cc_fatal("cc_net_local_addresses: getifaddrs failed");
+    int32_t count = 0, at = 0;
+    for (struct ifaddrs *i = list; i != NULL; i = i->ifa_next) {
+        if (i->ifa_addr == NULL || i->ifa_addr->sa_family != AF_INET) continue;
+        struct in_addr address = ((struct sockaddr_in *)(void *)i->ifa_addr)->sin_addr;
+        if ((ntohl(address.s_addr) >> 24) == 127) continue;
+        char text[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &address, text, sizeof text);
+        int32_t length = (int32_t)strlen(text);
+        if (length + 1 > cap - at) continue;
+        memcpy(out + at, text, (size_t)length);
+        out[at + length] = '\n';
+        at += length + 1;
+        count++;
+    }
+    freeifaddrs(list);
+    return count;
 }

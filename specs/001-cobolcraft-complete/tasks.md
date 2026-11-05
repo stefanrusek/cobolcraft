@@ -389,9 +389,9 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 
 **Goal**: the addresses a host shows when opening a world (US17-1). **Independent Test**: `make gate-shim`.
 
-- [ ] T257 [P] [US17-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_net_local_addresses`: returns the count, every entry is a dotted IPv4 string, `127.0.0.1` is never listed (shim-abi §3)
-- [ ] T258 [US17-shim] Implement `cc_net_local_addresses` (`getifaddrs`, non-loopback IPv4, `\n`-separated) in `shim/src/cc_net.c`
-- [ ] T259 Gate: run `make gate-shim` and record the command and its real output
+- [X] T257 [P] [US17-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_net_local_addresses`: returns the count, every entry is a dotted IPv4 string, `127.0.0.1` is never listed (shim-abi §3)
+- [X] T258 [US17-shim] Implement `cc_net_local_addresses` (`getifaddrs`, non-loopback IPv4, `\n`-separated) in `shim/src/cc_net.c`
+- [X] T259 Gate: run `make gate-shim` and record the command and its real output
 
 #### Phase 7: US18-shim — TLS
 

@@ -136,6 +136,45 @@ static void net_poll(void) {
     cc_net_close(listener);
 }
 
+/* Whether `text` (length `n`) is a dotted IPv4 address: four decimal parts 0 to 255. */
+static int is_dotted_ipv4(const char *text, size_t n) {
+    int parts = 0, digits = 0, value = 0;
+    for (size_t i = 0; i <= n; i++) {
+        if (i == n || text[i] == '.') {
+            if (digits == 0 || value > 255) return 0;
+            parts++;
+            digits = value = 0;
+        } else if (text[i] >= '0' && text[i] <= '9' && digits < 3) {
+            value = value * 10 + (text[i] - '0');
+            digits++;
+        } else {
+            return 0;
+        }
+    }
+    return parts == 4;
+}
+
+/* cc_net_local_addresses (US17-1): the count, one dotted IPv4 entry per line, never 127.0.0.1. */
+static void net_local_addresses(void) {
+    char out[4096];
+    memset(out, 0, sizeof out);
+    int32_t count = cc_net_local_addresses((uint8_t *)out, (int32_t)sizeof out - 1);
+    tl_int("contract shim cc_net_local_addresses returns a non-negative count", 1, count >= 0);
+    int lines = 0, dotted = 1, loopback = 0;
+    for (char *line = out; *line != '\0'; lines++) {
+        char *end = strchr(line, '\n');
+        size_t n = end ? (size_t)(end - line) : strlen(line);
+        dotted = dotted && is_dotted_ipv4(line, n);
+        loopback = loopback || (n == 9 && memcmp(line, "127.0.0.1", 9) == 0);
+        line += end ? n + 1 : n;
+    }
+    tl_int("contract shim cc_net_local_addresses returns the number of entries written", count, lines);
+    tl_int("contract shim cc_net_local_addresses writes every entry as a dotted IPv4 string", 1, dotted);
+    tl_int("contract shim cc_net_local_addresses never lists 127.0.0.1", 0, loopback);
+    count = cc_net_local_addresses((uint8_t *)out, 0);
+    tl_int("contract shim cc_net_local_addresses with no room writes no entry", 0, count);
+}
+
 /* include_console = 1: ready_out[count] reports whether standard input has input. Standard input is
  * replaced by a pipe for these cases (and restored afterwards), so "no input" can be observed. */
 static void net_poll_console(void) {
@@ -334,6 +373,7 @@ int main(void) {
     net_send_recv_close();
     net_poll();
     net_poll_console();
+    net_local_addresses();
     zlib_deflate();
     zlib_inflate();
     fs_list();
