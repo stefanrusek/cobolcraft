@@ -8,13 +8,18 @@
 *> (standin §5.2), the game mode of the settings (FR-007, FR-009; a guest of a world opened to
 *> others gets the guest mode, FR-017), full health and food (§10.1, §11.1), a new entity id, held
 *> slot 0, an empty inventory, state Joining. Operator status: the host of a single-player or
-*> opened world, and guests when guests may use operator commands (FR-016, FR-017).
+*> opened world, and guests when guests may use operator commands (FR-016, FR-017). A player whose
+*> UUID has not been in the world before (CORE-KNOWN) becomes known; when it is in survival it is
+*> given the starting inventory of standin §2 (ITEMS.cpy START-ITEM-TABLE; US4-8), once.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
+ COPY ITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-HOST                PIC 9.
+ 01 WS-KNOWN               PIC 9.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-CONN                 BINARY-LONG.
@@ -64,6 +69,23 @@
          MOVE CS-VIEW-DISTANCE TO PL-VIEW-DISTANCE(L-ROW)
          COMPUTE PL-CENTER-X(L-ROW) = FUNCTION INTEGER(PL-X(L-ROW) / 16)
          COMPUTE PL-CENTER-Z(L-ROW) = FUNCTION INTEGER(PL-Z(L-ROW) / 16)
+         MOVE -1 TO PL-BREAK-STAGE(L-ROW)
+         MOVE 0 TO WS-KNOWN
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+             IF KN-UUID(WS-I) = L-UUID
+                 MOVE 1 TO WS-KNOWN
+             END-IF
+         END-PERFORM
+         IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
+                 MOVE SI-ITEM(WS-I) TO PL-SLOT-ITEM(L-ROW, SI-SLOT(WS-I) + 1)
+                 MOVE SI-COUNT(WS-I) TO PL-SLOT-COUNT(L-ROW, SI-SLOT(WS-I) + 1)
+             END-PERFORM
+         END-IF
+         IF WS-KNOWN = 0 AND KN-COUNT < CORE-MAX-KNOWN
+             ADD 1 TO KN-COUNT
+             MOVE L-UUID TO KN-UUID(KN-COUNT)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM PLAYER-CREATE.

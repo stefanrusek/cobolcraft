@@ -6,6 +6,8 @@
 *> have 0, and the highest level from any source wins. Light never reaches 15 blocks from its source,
 *> so a chunk's block light depends only on the sources of its 3 x 3 chunk neighbourhood; those
 *> chunks are generated (not lit) to find them, and the spread walks generated cells only.
+*> A block change made by a player (LIGHT-SET-BLOCK) sends the light that changed in Light Update
+*> packets (09 §3.4 rule 3; LIGHT-UPDATE-BUILD).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LIGHT-CHUNK.
@@ -316,3 +318,160 @@
      END-PERFORM
      GOBACK.
  END PROGRAM LIGHT-SPREAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-UPDATE-BUILD.
+*> USING row (BINARY-LONG) of a lit cached chunk, changed sections (PIC X(16): position s + 1 is "1"
+*> when block section s changed), PB-BUFFER: Light Update 0x31 (05a: VarInt chunk x, VarInt chunk z,
+*> LightData; 09 §3.4 rule 3). Only the changed sections carry light, each with both kinds: an
+*> all-zero layer sets its bit in the empty mask, any other layer is an array (rule 2); every other
+*> light section index has no bit in any mask.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CHUNKMEM.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 49.
+ 01 WS-LIGHTS              BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-SKY-STATES.
+    05 WS-SKY-STATE        BINARY-LONG OCCURS 18 TIMES.
+ 01 WS-BLOCK-STATES.
+    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 18 TIMES.
+ 01 WS-SKY-ARRAYS.
+    05 WS-SKY-ARRAY        OCCURS 18 TIMES.
+       10 WS-SKY-BYTE      BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
+ 01 WS-BLOCK-ARRAYS.
+    05 WS-BLOCK-ARRAY      OCCURS 18 TIMES.
+       10 WS-BLOCK-BYTE    BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CHANGED              PIC X(16).
+ PROCEDURE DIVISION USING L-ROW L-CHANGED PB-BUFFER.
+     SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
+     COMPUTE WS-SECTIONS = DM-HEIGHT(CK-DIM(L-ROW)) / 16
+     COMPUTE WS-LIGHTS = WS-SECTIONS + 2
+     INITIALIZE WS-SKY-STATES WS-BLOCK-STATES
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
+         IF L-CHANGED(WS-S + 1:1) = "1"
+             COMPUTE WS-BASE = WS-S * 4096
+             MOVE 1 TO WS-SKY-STATE(WS-S + 2) WS-BLOCK-STATE(WS-S + 2)
+             IF CM-SKYS(WS-BASE + 1:4096) NOT = LOW-VALUES
+                 MOVE 2 TO WS-SKY-STATE(WS-S + 2)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+                     COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
+                     COMPUTE WS-SKY-BYTE(WS-S + 2, WS-I)
+                         = CM-SKY(WS-CELL) + CM-SKY(WS-CELL + 1) * 16
+                 END-PERFORM
+             END-IF
+             IF CM-BLOCKS(WS-BASE + 1:4096) NOT = LOW-VALUES
+                 MOVE 2 TO WS-BLOCK-STATE(WS-S + 2)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+                     COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
+                     COMPUTE WS-BLOCK-BYTE(WS-S + 2, WS-I)
+                         = CM-BLOCK(WS-CELL) + CM-BLOCK(WS-CELL + 1) * 16
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER CK-X(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER CK-Z(L-ROW)
+     CALL "LIGHT-ENCODE" USING PB-BUFFER WS-LIGHTS WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES
+         WS-BLOCK-ARRAYS
+     GOBACK.
+ END PROGRAM LIGHT-UPDATE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIGHT-SET-BLOCK.
+*> USING dimension row, x, y, z, state (BINARY-LONG): sets the block (WORLD-SET-BLOCK, which
+*> recomputes the light of the affected chunks) and sends the light that changed (09 §3.4 rule 3):
+*> the light of every lit chunk of the 3 x 3 neighbourhood is kept before the change; afterwards each
+*> of them whose sky or block light differs in some section gets one Light Update with those
+*> sections, to the players who see that chunk (VIEWERS-SEND).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CHUNKMEM.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
+ 01 WS-ANY                 PIC 9.
+ 01 WS-CHANGED             PIC X(16).
+ 01 WS-ROWS.
+    05 WS-ROW              BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-SNAPS.
+    05 WS-SNAP             PIC X(131072) OCCURS 9 TIMES.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
+     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-DZ FROM -1 BY 1 UNTIL WS-DZ > 1
+         PERFORM VARYING WS-DX FROM -1 BY 1 UNTIL WS-DX > 1
+             ADD 1 TO WS-K
+             COMPUTE WS-X = WS-CX + WS-DX
+             COMPUTE WS-Z = WS-CZ + WS-DZ
+             CALL "WORLD-FIND" USING L-DIM WS-X WS-Z WS-ROW(WS-K)
+             IF WS-ROW(WS-K) > 0
+                 IF CK-LIT(WS-ROW(WS-K)) = 1
+                     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW(WS-K))
+                     MOVE CM-CHUNK(65537:131072) TO WS-SNAP(WS-K)
+                 ELSE
+                     MOVE 0 TO WS-ROW(WS-K)
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "WORLD-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
+     COMPUTE WS-SECTIONS = DM-HEIGHT(L-DIM) / 16
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
+         IF WS-ROW(WS-K) > 0
+             SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW(WS-K))
+             MOVE ALL "0" TO WS-CHANGED
+             MOVE 0 TO WS-ANY
+             PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
+                 COMPUTE WS-BASE = WS-S * 4096
+                 IF CM-SKYS(WS-BASE + 1:4096) NOT = WS-SNAP(WS-K)(WS-BASE + 1:4096)
+                         OR CM-BLOCKS(WS-BASE + 1:4096)
+                         NOT = WS-SNAP(WS-K)(65536 + WS-BASE + 1:4096)
+                     MOVE "1" TO WS-CHANGED(WS-S + 1:1)
+                     MOVE 1 TO WS-ANY
+                 END-IF
+             END-PERFORM
+             IF WS-ANY = 1
+                 IF WS-READY = 0
+                     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                     MOVE 1 TO WS-READY
+                 END-IF
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "LIGHT-UPDATE-BUILD" USING WS-ROW(WS-K) WS-CHANGED PB-BUFFER
+                 CALL "VIEWERS-SEND" USING L-DIM CK-X(WS-ROW(WS-K)) CK-Z(WS-ROW(WS-K)) WS-NONE
+                     PB-BUFFER
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LIGHT-SET-BLOCK.

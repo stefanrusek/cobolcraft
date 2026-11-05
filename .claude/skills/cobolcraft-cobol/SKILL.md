@@ -56,6 +56,9 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **No `C$LIST-DIRECTORY`** in GnuCOBOL 3.2: use `cc_fs_list` (contracts/shim-abi.md §7).
 - **Reserved words as paragraph names** (`MOVE`, `SEPARATE`, …) fail with "unexpected PERFORM"
   far from the cause: give test paragraphs verb-noun names (`DO-MOVE`, `ADD-SPACE`).
+- **Nested subscripts with arithmetic inside an intrinsic's arguments** can be miscompiled:
+  `FUNCTION MIN(C(R, F), MX(I(R, T) + 1) - C(R, T))` yields a wrong value with no warning. Move the
+  inner subscript or the difference into a field first, then call the function.
 - **`PERFORM VARYING … FROM a - b`** is a syntax error: compute the start into a field first.
 - **The same item twice in one `CALL … USING`** warns under `-Wall` (`-Werror` in lint): pass
   distinct fields (e.g. three zero fields for a zero vector).
@@ -89,7 +92,9 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   optionally on line 2 text that stderr must contain.
 - Core test helpers live in `core/tests/CORETEST.cpy` (COPY it after the test program):
   `TEST-JOIN` (a memory connection that logs in, configures and loads), `TEST-MOVE`,
-  `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), fixture loading and
+  `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), `TEST-USE-ON`,
+  `TEST-ACTION`, `TEST-HELD`, `TEST-CLICK`, `TEST-TICKS`, `TEST-DRAIN-BLOCKS` (block, ack, slot and
+  light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, fixture loading and
   comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).

@@ -2,7 +2,7 @@
 *> RULES.cpy, DIMENSIONS.cpy, REGISTRY.cpy) against docs/design/standin-content.md: blocks §1.1, block
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
-*> and every synchronized registry entry of §4 (§4.2 to §4.8).
+*> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
  IDENTIFICATION DIVISION.
@@ -369,6 +369,19 @@
          MOVE WS-ITEM-ROW(WS-I) TO TL-EXPECTED
          PERFORM ASSERT-ROW
      END-PERFORM
+
+*>   Starting inventory (§2 "Starting inventory", US4-8): slot item count per row.
+     MOVE "test content tables starting inventory (slots 0 to 7 items 2 to 9 x 64, slot 8 "
+         & "pry_bar, slot 9 trowel)" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
+         MOVE SI-SLOT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SI-ITEM(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE SI-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     MOVE "0 2 64 1 3 64 2 4 64 3 5 64 4 6 64 5 7 64 6 8 64 7 9 64 8 10 1 9 11 1"
+         TO TL-EXPECTED
+     PERFORM ASSERT-ROW
 
 *>   Entity type table (§3, §12.1).
      MOVE "test content tables entity type id constants" TO TL-CASE

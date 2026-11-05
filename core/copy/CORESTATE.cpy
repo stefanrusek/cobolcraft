@@ -34,6 +34,10 @@
 *> Compression threshold on network connections (09 §2).
  78 CORE-COMPRESSION        VALUE 256.
 
+*> One game tick lasts 50 ms (research R6); block break times (BLOCKS.cpy, milliseconds) are counted
+*> in ticks.
+ 78 CORE-TICK-MS            VALUE 50.
+
 *> Set Time is sent to every player in play every 20 ticks (09 §3.2 Set Time row).
  78 CORE-TIME-TICKS         VALUE 20.
 
@@ -114,6 +118,22 @@
        10 PL-CENTER-Z        BINARY-LONG.
        10 PL-BATCH-PENDING   BINARY-LONG.        *> chunk batches sent and not yet acknowledged
        10 PL-ENTITY-ROW      BINARY-LONG.        *> CORE-ENTITIES row; 0 until the join is sent
+*>     The item on the cursor of the inventory screen (Container Click; core/src/inventory.cob).
+       10 PL-CARRIED-ITEM    BINARY-LONG.
+       10 PL-CARRIED-COUNT   BINARY-LONG.        *> 0 = nothing carried
+*>     A Container Click drag (QUICK_CRAFT, 05c 0x12): its type (button / 4) and the slots added.
+       10 PL-DRAG-ACTIVE     PIC 9.
+       10 PL-DRAG-TYPE       BINARY-LONG.
+       10 PL-DRAG-COUNT      BINARY-LONG.
+       10 PL-DRAG-SLOT       BINARY-LONG OCCURS 36 TIMES.
+*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/blocks.cob).
+       10 PL-BREAKING        PIC 9.
+       10 PL-BREAK-X         BINARY-LONG.
+       10 PL-BREAK-Y         BINARY-LONG.
+       10 PL-BREAK-Z         BINARY-LONG.
+       10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
+       10 PL-BREAK-TICKS     BINARY-LONG.        *> ticks the break takes
+       10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
@@ -161,3 +181,11 @@
  01 CORE-VIEWS EXTERNAL.
     05 VW-ENTRY OCCURS 64 TIMES.
        10 VW-SEEN            PIC X(1024).
+
+*> Players who have been in the world (US4-8: the survival starting items are given once, to a
+*> first-time player). One offline UUID per row, KN-COUNT rows used; a full table records no more.
+*> Player files (US13) will also count as known.
+ 78 CORE-MAX-KNOWN          VALUE 4096.
+ 01 CORE-KNOWN EXTERNAL.
+    05 KN-COUNT              BINARY-LONG.
+    05 KN-UUID               PIC X(16) OCCURS 4096 TIMES.

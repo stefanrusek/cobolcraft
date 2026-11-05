@@ -638,37 +638,37 @@ chunk byte-equal to `play-s2c-2e-level-chunk-with-light-spawn.hex`.
 **Goal**: the server rules of standin-content §1.3 and data-model §3, §4. **Independent Test**: `make gate-core`
 with every `core/tests/acc_us4_*.cob` passing.
 
-- [ ] T429 [P] [US4-core] Write `contract_wire_server.cob` cases: Use Item On, Player Action start/abort/stop destroy, Set Carried Item, Container Click and Set Creative Mode Slot decode
-- [ ] T430 [P] [US4-core] Write `contract_wire_server.cob` cases: Block Update, Section Blocks Update, Block Changed Ack, Block Destruction, Container Set Slot, Set Held Slot and Light Update equal their fixtures
-- [ ] T431 [P] [US4-core] Write implementation test `core/tests/test_inventory.cob`: 36 slots (0–8 hotbar, 9–35 main), add fills matching stacks then empty slots in slot order and returns the part that did not fit, remove, move and swap, held slot 0–8 (data-model §4)
-- [ ] T432 [US4-core] Implement the inventory model in `core/src/inventory.cob`
-- [ ] T433 [P] [US4-core] Write acceptance test `core/tests/acc_us4_place.cob`: case "acceptance US4-2 given a held block item when place is used on a face then the block appears in the adjacent void position in its default state" plus one case per cardstack face axis (§1.3)
-- [ ] T434 [P] [US4-core] Write acceptance test `core/tests/acc_us4_place_refusals.cob`: cases for the US4 edge cases: target not void, outside the dimension height range, overlapping a player — nothing placed, Block Changed Ack sent, in survival the item is not used up
-- [ ] T435 [P] [US4-core] Write acceptance test `core/tests/acc_us4_use_up.cob`: cases "given survival when a block is placed then one item leaves the held stack" and "given creative when a block is placed then the stack is unchanged" (US4 edge case, FR-007)
-- [ ] T436 [US4-core] Implement block selection on Use Item On with a block item (default state, cardstack axis from the clicked face, standin-content §1.3) in `core/src/blocks.cob`
-- [ ] T437 [US4-core] Implement the placement refusals (target not void, outside the height range, overlap with any player box) with Block Changed Ack in `core/src/blocks.cob`
-- [ ] T438 [US4-core] Implement survival use-up of the placed item (none in creative) in `core/src/blocks.cob`
-- [ ] T439 [P] [US4-core] Write acceptance test `core/tests/acc_us4_break_survival.cob`: case "acceptance US4-3 given survival when a block is broken then it takes the §1.1 hand break time, a quarter with the matching tool of §2, and becomes void"; case "a finish before the break time leaves the block"; case "the baseplate is never broken" (US4 edge)
-- [ ] T440 [P] [US4-core] Write acceptance test `core/tests/acc_us4_break_creative.cob`: case "acceptance US4-4 given creative when a block is broken then it breaks at once and no item appears"; baseplate case
-- [ ] T441 [US4-core] Implement survival break timing (start to stop in ticks, data-model §3; early stop leaves the block; abort) and the void result in `core/src/blocks.cob`
-- [ ] T442 [US4-core] Implement the matching-tool quarter break time (standin-content §2) in `core/src/blocks.cob`
-- [ ] T443 [US4-core] Implement creative instant breaking on start in `core/src/blocks.cob`
-- [ ] T444 [US4-core] Implement the baseplate refusal in `core/src/blocks.cob`
-- [ ] T445 [P] [US4-core] Write implementation test `core/tests/test_break_progress.cob`: while a survival player breaks a block, the other players in the same dimension within view distance are sent Block Destruction with the breaker's entity id, the position and the progress stage (05a 0x05) as the break advances, and the stage is cleared on abort or when the block breaks
-- [ ] T446 [US4-core] Implement break-progress broadcasting (Block Destruction) in `core/src/blocks.cob`
-- [ ] T447 [P] [US4-core] Write acceptance test `core/tests/acc_us4_glowtube.cob`: case "acceptance US4-5 given no held block item when place is used on a glowtube then lit toggles and the light around it is recomputed and sent" (Block Update plus Light Update)
-- [ ] T448 [US4-core] Implement glowtube toggling on Use Item On without a held block item in `core/src/blocks.cob`
-- [ ] T449 [US4-core] Implement section light recomputation with Light Update to viewers on every place, break and toggle in `core/src/light.cob`
-- [ ] T450 [P] [US4-core] Write implementation test `core/tests/test_block_broadcast.cob`: two connections in the same dimension within view distance both receive each change; a third outside view distance does not; two changes to one block in one tick leave both players with the final state (US4-7 server half, US4 edge)
-- [ ] T451 [US4-core] Implement the dimension- and distance-scoped block change broadcast used by place, break and toggle in `core/src/blocks.cob`
-- [ ] T452 [P] [US4-core] Write acceptance test `core/tests/acc_us4_inventory.cob`: case "acceptance US4-6 given an inventory when the held slot is changed and items are moved between slots then the server's slots and held slot match and Container Set Slot echoes"; creative Set Creative Mode Slot case
-- [ ] T453 [US4-core] Implement Set Carried Item in `core/src/inventory.cob`
-- [ ] T454 [US4-core] Implement Container Click on the player inventory window (05c modes) with Container Set Slot echoes in `core/src/inventory.cob`
-- [ ] T455 [US4-core] Implement creative Set Creative Mode Slot in `core/src/inventory.cob`
-- [ ] T456 [P] [US4-core] Write acceptance test `core/tests/acc_us4_starting_items.cob`: case "acceptance US4-8 given a first-time survival player when they join then their inventory holds the §2 starting items"; case "a returning player is not given them again"
-- [ ] T457 [US4-core] Implement the one-time survival starting inventory in `core/src/players.cob`
-- [ ] T458 [US4-core] Extend the core implementation tests to 100 % coverage of the US4 changes
-- [ ] T459 Gate: run `make gate-core` and record the command and its real output
+- [X] T429 [P] [US4-core] Write `contract_wire_server.cob` cases: Use Item On, Player Action start/abort/stop destroy, Set Carried Item, Container Click and Set Creative Mode Slot decode
+- [X] T430 [P] [US4-core] Write `contract_wire_server.cob` cases: Block Update, Section Blocks Update, Block Changed Ack, Block Destruction, Container Set Slot, Set Held Slot and Light Update equal their fixtures
+- [X] T431 [P] [US4-core] Write implementation test `core/tests/test_inventory.cob`: 36 slots (0–8 hotbar, 9–35 main), add fills matching stacks then empty slots in slot order and returns the part that did not fit, remove, move and swap, held slot 0–8 (data-model §4)
+- [X] T432 [US4-core] Implement the inventory model in `core/src/inventory.cob`
+- [X] T433 [P] [US4-core] Write acceptance test `core/tests/acc_us4_place.cob`: case "acceptance US4-2 given a held block item when place is used on a face then the block appears in the adjacent void position in its default state" plus one case per cardstack face axis (§1.3)
+- [X] T434 [P] [US4-core] Write acceptance test `core/tests/acc_us4_place_refusals.cob`: cases for the US4 edge cases: target not void, outside the dimension height range, overlapping a player — nothing placed, Block Changed Ack sent, in survival the item is not used up
+- [X] T435 [P] [US4-core] Write acceptance test `core/tests/acc_us4_use_up.cob`: cases "given survival when a block is placed then one item leaves the held stack" and "given creative when a block is placed then the stack is unchanged" (US4 edge case, FR-007)
+- [X] T436 [US4-core] Implement block selection on Use Item On with a block item (default state, cardstack axis from the clicked face, standin-content §1.3) in `core/src/blocks.cob`
+- [X] T437 [US4-core] Implement the placement refusals (target not void, outside the height range, overlap with any player box) with Block Changed Ack in `core/src/blocks.cob`
+- [X] T438 [US4-core] Implement survival use-up of the placed item (none in creative) in `core/src/blocks.cob`
+- [X] T439 [P] [US4-core] Write acceptance test `core/tests/acc_us4_break_survival.cob`: case "acceptance US4-3 given survival when a block is broken then it takes the §1.1 hand break time, a quarter with the matching tool of §2, and becomes void"; case "a finish before the break time leaves the block"; case "the baseplate is never broken" (US4 edge)
+- [X] T440 [P] [US4-core] Write acceptance test `core/tests/acc_us4_break_creative.cob`: case "acceptance US4-4 given creative when a block is broken then it breaks at once and no item appears"; baseplate case
+- [X] T441 [US4-core] Implement survival break timing (start to stop in ticks, data-model §3; early stop leaves the block; abort) and the void result in `core/src/blocks.cob`
+- [X] T442 [US4-core] Implement the matching-tool quarter break time (standin-content §2) in `core/src/blocks.cob`
+- [X] T443 [US4-core] Implement creative instant breaking on start in `core/src/blocks.cob`
+- [X] T444 [US4-core] Implement the baseplate refusal in `core/src/blocks.cob`
+- [X] T445 [P] [US4-core] Write implementation test `core/tests/test_break_progress.cob`: while a survival player breaks a block, the other players in the same dimension within view distance are sent Block Destruction with the breaker's entity id, the position and the progress stage (05a 0x05) as the break advances, and the stage is cleared on abort or when the block breaks
+- [X] T446 [US4-core] Implement break-progress broadcasting (Block Destruction) in `core/src/blocks.cob`
+- [X] T447 [P] [US4-core] Write acceptance test `core/tests/acc_us4_glowtube.cob`: case "acceptance US4-5 given no held block item when place is used on a glowtube then lit toggles and the light around it is recomputed and sent" (Block Update plus Light Update)
+- [X] T448 [US4-core] Implement glowtube toggling on Use Item On without a held block item in `core/src/blocks.cob`
+- [X] T449 [US4-core] Implement section light recomputation with Light Update to viewers on every place, break and toggle in `core/src/light.cob`
+- [X] T450 [P] [US4-core] Write implementation test `core/tests/test_block_broadcast.cob`: two connections in the same dimension within view distance both receive each change; a third outside view distance does not; two changes to one block in one tick leave both players with the final state (US4-7 server half, US4 edge)
+- [X] T451 [US4-core] Implement the dimension- and distance-scoped block change broadcast used by place, break and toggle in `core/src/blocks.cob`
+- [X] T452 [P] [US4-core] Write acceptance test `core/tests/acc_us4_inventory.cob`: case "acceptance US4-6 given an inventory when the held slot is changed and items are moved between slots then the server's slots and held slot match and Container Set Slot echoes"; creative Set Creative Mode Slot case
+- [X] T453 [US4-core] Implement Set Carried Item in `core/src/inventory.cob`
+- [X] T454 [US4-core] Implement Container Click on the player inventory window (05c modes) with Container Set Slot echoes in `core/src/inventory.cob`
+- [X] T455 [US4-core] Implement creative Set Creative Mode Slot in `core/src/inventory.cob`
+- [X] T456 [P] [US4-core] Write acceptance test `core/tests/acc_us4_starting_items.cob`: case "acceptance US4-8 given a first-time survival player when they join then their inventory holds the §2 starting items"; case "a returning player is not given them again"
+- [X] T457 [US4-core] Implement the one-time survival starting inventory in `core/src/players.cob`
+- [X] T458 [US4-core] Extend the core implementation tests to 100 % coverage of the US4 changes
+- [X] T459 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 15: US5-core — ground items
 

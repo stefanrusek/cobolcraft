@@ -32,6 +32,17 @@
 *>   TEST-DRAIN-IDS USING connection id, text out (PIC X(1024)): drains the connection and lists
 *>     the packet ids of the drained stream, a run of equal ids as <id>x<count>, separated by one
 *>     space ("" when nothing was queued).
+*>   TEST-USE-ON USING connection id, x, y, z, face, sequence: feeds Use Item On (main hand,
+*>     cursor 0.5 on each axis).
+*>   TEST-ACTION USING connection id, action, x, y, z, face, sequence: feeds Player Action.
+*>   TEST-TICKS USING count: runs that many CORE-TICKs.
+*>   TEST-DRAIN-BLOCKS USING connection id, text out (PIC X(1024)): drains the connection and
+*>     describes each packet (Block Update, Block Destruction, Block Changed Ack, Container Set Slot
+*>     and Light Update with their fields, others by id).
+*>   TEST-BLOCK-AT USING x, y, z, state out: the block state of cobolcraft:main there.
+*>   TEST-HELD USING connection id, slot: feeds Set Carried Item.
+*>   TEST-CLICK USING connection id, slot, button, click type: feeds Container Click (container 0,
+*>     the current state id, no predicted slots, empty predicted cursor).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -450,3 +461,249 @@
      CALL "PB-FREE" USING PK-BUFFER
      GOBACK.
  END PROGRAM TEST-DRAIN-IDS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-USE-ON.
+*> USING connection id, x, y, z, face, sequence (BINARY-LONG): feeds Use Item On with the main hand on
+*> that block and face, cursor (0.5, 0.5, 0.5), not inside, no border hit.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 66.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HALF                FLOAT-SHORT VALUE 0.5.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-X L-Y L-Z L-FACE L-SEQUENCE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-HALF
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-HALF
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-HALF
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-USE-ON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ACTION.
+*> USING connection id, action, x, y, z, face, sequence (BINARY-LONG): feeds Player Action.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 41.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ACTION L-X L-Y L-Z L-FACE L-SEQUENCE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-TICKS.
+*> USING count (BINARY-LONG): runs that many CORE-TICKs.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         CALL "CORE-TICK"
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-TICKS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-BLOCKS.
+*> USING connection id, text out (PIC X(1024)): drains the connection and describes each packet,
+*> separated by one space: Block Update "8(x,y,z=state)", Block Destruction "5(entity,x,y,z=stage)",
+*> Block Changed Ack "4(sequence)", Container Set Slot "20(state id,slot=itemxcount)", Light Update
+*> "49(chunk x,chunk z)", any other packet its id. Set Time (0x73), sent every 20 ticks, is left
+*> out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ 01 WS-E5                  PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "PB-RESET" USING PK-BUFFER
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115
+             IF WS-PTR > 1
+                 STRING " " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             MOVE WS-PACKET-ID TO WS-E1
+             STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             EVALUATE WS-PACKET-ID
+                 WHEN 8
+                     CALL "PB-GET-POSITION" USING PK-BUFFER WS-X WS-Y WS-Z
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-X TO WS-E1
+                     MOVE WS-Y TO WS-E2
+                     MOVE WS-Z TO WS-E3
+                     MOVE WS-A TO WS-E4
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) ","
+                         FUNCTION TRIM(WS-E3) "=" FUNCTION TRIM(WS-E4) ")" DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                 WHEN 5
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-POSITION" USING PK-BUFFER WS-X WS-Y WS-Z
+                     CALL "PB-GET-UBYTE" USING PK-BUFFER WS-B
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-X TO WS-E2
+                     MOVE WS-Y TO WS-E3
+                     MOVE WS-Z TO WS-E4
+                     MOVE WS-B TO WS-E5
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) ","
+                         FUNCTION TRIM(WS-E3) "," FUNCTION TRIM(WS-E4) "=" FUNCTION TRIM(WS-E5)
+                         ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 WHEN 4
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING "(" FUNCTION TRIM(WS-E1) ")" DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                 WHEN 20
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-B TO WS-E2
+                     MOVE PK-IS-ITEM TO WS-E3
+                     MOVE PK-IS-COUNT TO WS-E4
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "="
+                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) ")" DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                 WHEN 49
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
+                     MOVE WS-A TO WS-E1
+                     MOVE WS-B TO WS-E2
+                     STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) ")"
+                         DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-BLOCKS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BLOCK-AT.
+*> USING x, y, z, state out (BINARY-LONG): the block state at that position of cobolcraft:main.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-STATE.
+     CALL "WORLD-GET-BLOCK" USING WS-DIM L-X L-Y L-Z L-STATE
+     GOBACK.
+ END PROGRAM TEST-BLOCK-AT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-HELD.
+*> USING connection id, slot (BINARY-LONG): feeds Set Carried Item with that slot (Short).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 16.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 54.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SLOT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-HELD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CLICK.
+*> USING connection id, slot, button, click type (BINARY-LONG): feeds Container Click on container 0
+*> with the player's current state id, no predicted changed slots and an empty predicted cursor.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 18.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-BUTTON               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SLOT L-BUTTON L-TYPE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER PL-STATE-ID(CN-PLAYER(L-ID))
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-BUTTON
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-CLICK.

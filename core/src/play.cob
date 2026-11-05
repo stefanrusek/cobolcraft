@@ -26,7 +26,10 @@
 *> (another id is ignored, as 05c's server does); Chunk Batch Received acknowledges one batch;
 *> Player Loaded makes the player Alive; Client Tick End needs nothing yet; Client Information
 *> stores the view distance; Keep Alive goes to CORE-KEEPALIVE-ANSWER; Move Player 0x1E to 0x21 go
-*> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob). A Cookie Response is
+*> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob); Player Action goes
+*> to BLOCK-ACTION and Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
+*> Click and Set Creative Mode Slot go to INV-HELD, INV-CLICK and INV-CREATIVE-SET
+*> (core/src/inventory.cob). A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
 *> the 09 §3 inventory that later phases handle (movement, actions, chat, containers, ...) are
 *> discarded unread, so a CobolCraft client is not dropped while those phases are developed; any
@@ -116,10 +119,9 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x01, 0x07, 0x09, 0x0C, 0x0F, 0x12, 0x27, 0x29, 0x2A, 0x32, 0x36, 0x39, 0x42,
-*> 0x43).
+*> phase handles it (0x01, 0x07, 0x09, 0x0C, 0x0F, 0x27, 0x2A, 0x32, 0x43).
  01 WS-LATER               PIC X(69) VALUE
-     "010000010100100100100000000000000000000101100000001000100100000000110".
+     "010000010100100100000000000000000000000100100000001000000000000000010".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -164,6 +166,16 @@
              CALL "MOVE-ABILITIES" USING L-ID PSB-FLAGS
          WHEN L-PACKET-ID >= 30 AND L-PACKET-ID <= 33
              CALL "MOVE-PLAYER" USING L-ID L-PACKET-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 41
+             CALL "BLOCK-ACTION" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 66
+             CALL "BLOCK-USE-ON" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 54
+             CALL "INV-HELD" USING L-ID PSB-SLOT
+         WHEN L-PACKET-ID = 18
+             CALL "INV-CLICK" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 57
+             CALL "INV-CREATIVE-SET" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      GOBACK.
  END PROGRAM PLAY-PACKET.
@@ -176,12 +188,21 @@
 *> Client Information 0x0E (the 03 layout, through CONFIG-DECODE), Keep Alive 0x1C (Long), Player
 *> Loaded 0x2C (no fields); Move Player Pos 0x1E (three Doubles, UByte flags), Pos Rot 0x1F (three
 *> Doubles, two Floats, UByte), Rot 0x20 (two Floats, UByte), Status Only 0x21 (UByte), Player
-*> Abilities 0x28 (Byte). Outcome 1 when a read fails or bytes are left over.
+*> Abilities 0x28 (Byte); Player Action 0x29 (VarInt action, Position, UByte face, VarInt sequence);
+*> Use Item On 0x42 (VarInt hand, Position, VarInt face, three Floats, two Booleans, VarInt
+*> sequence); Set Carried Item 0x36 (Short); Container Click 0x12 (VarInt container, VarInt state id,
+*> Short slot, Byte button, VarInt click type, a map of at most 128 Short slots to HashedStacks, the
+*> carried HashedStack); Set Creative Mode Slot 0x39 (Short, ItemStack). A HashedStack is a Boolean
+*> present, then VarInt item, VarInt count and the component counts (00 §12.4); CobolCraft items
+*> carry no data components (standin §2), so a stack with any is malformed, as for an ItemStack.
+*> Outcome 1 when a read fails or bytes are left over.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONFIGPKT.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 WS-CONFIG-ID           BINARY-LONG VALUE 0.
  01 WS-CONFIG-OUTCOME      BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  COPY PLAYPKT.
@@ -230,6 +251,50 @@
              CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
          WHEN 40
              CALL "PB-GET-BYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 41
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
+             CALL "PB-GET-POSITION" USING PB-BUFFER PSB-BX PSB-BY PSB-BZ
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FACE
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-SEQUENCE
+             MOVE FUNCTION MOD(PSB-FACE, 6) TO PSB-FACE
+         WHEN 66
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-HAND
+             CALL "PB-GET-POSITION" USING PB-BUFFER PSB-BX PSB-BY PSB-BZ
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-FACE
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-CURSOR-X
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-CURSOR-Y
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-CURSOR-Z
+             CALL "PB-GET-BOOL" USING PB-BUFFER PSB-INSIDE
+             CALL "PB-GET-BOOL" USING PB-BUFFER PSB-BORDER
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-SEQUENCE
+             MOVE FUNCTION MOD(PSB-FACE, 6) TO PSB-FACE
+         WHEN 54
+             CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
+         WHEN 18
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-STATE-ID
+             CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
+             CALL "PB-GET-BYTE" USING PB-BUFFER PSB-BUTTON
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CLICK-TYPE
+             IF PSB-CLICK-TYPE < 0 OR PSB-CLICK-TYPE > 6
+                 MOVE 0 TO PSB-CLICK-TYPE
+             END-IF
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CHANGED-COUNT
+             IF PSB-CHANGED-COUNT < 0 OR PSB-CHANGED-COUNT > 128
+                 MOVE 1 TO PB-ERROR
+                 MOVE 0 TO PSB-CHANGED-COUNT
+             END-IF
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PSB-CHANGED-COUNT
+                 CALL "PB-GET-SHORT" USING PB-BUFFER PSB-CHANGED-SLOT(WS-I)
+                 CALL "PLAY-GET-HASHED-STACK" USING PB-BUFFER PSB-CHANGED-ITEM(WS-I)
+                     PSB-CHANGED-AMOUNT(WS-I)
+             END-PERFORM
+             CALL "PLAY-GET-HASHED-STACK" USING PB-BUFFER PSB-CARRIED-ITEM PSB-CARRIED-COUNT
+         WHEN 57
+             CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
+             CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
+             MOVE WK-IS-ITEM TO PSB-STACK-ITEM
+             MOVE WK-IS-COUNT TO PSB-STACK-COUNT
          WHEN OTHER
              MOVE 2 TO L-OUTCOME
      END-EVALUATE
@@ -238,6 +303,34 @@
      END-IF
      GOBACK.
  END PROGRAM PLAY-DECODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-GET-HASHED-STACK.
+*> USING PB-BUFFER, item out, count out (BINARY-LONG): one HashedStack (00 §12.4; 05c 0x12). Absent
+*> is item 0, count 0. A stack with data components sets PB-ERROR (see PLAY-DECODE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-ADDED               BINARY-LONG.
+ 01 WS-REMOVED             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ITEM L-COUNT.
+     MOVE 0 TO L-ITEM L-COUNT
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+     IF WS-PRESENT = 1
+         CALL "PB-GET-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-GET-VARINT" USING PB-BUFFER L-COUNT
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-ADDED
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-REMOVED
+         IF WS-ADDED NOT = 0 OR WS-REMOVED NOT = 0
+             MOVE 1 TO PB-ERROR
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PLAY-GET-HASHED-STACK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-LOGIN-BUILD.
@@ -345,7 +438,7 @@
  PROGRAM-ID. PLAY-CONTENT-BUILD.
 *> USING player row, PB-BUFFER: Container Set Content 0x12 (05a; 09 §3.2): container 0, the
 *> player's state id, the 36 inventory slots in the 09 §3.2 numbering (PL-SLOT(n + 1) is slot n;
-*> count 0 = empty), carried item empty.
+*> count 0 = empty), then the item on the player's cursor (PL-CARRIED-*).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -367,7 +460,8 @@
          MOVE PL-SLOT-ITEM(L-ROW, WS-I) TO WK-IS-ITEM
          CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
      END-PERFORM
-     MOVE 0 TO WK-IS-COUNT WK-IS-ITEM
+     MOVE PL-CARRIED-COUNT(L-ROW) TO WK-IS-COUNT
+     MOVE PL-CARRIED-ITEM(L-ROW) TO WK-IS-ITEM
      CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
      GOBACK.
  END PROGRAM PLAY-CONTENT-BUILD.
