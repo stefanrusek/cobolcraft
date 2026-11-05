@@ -120,9 +120,9 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x01, 0x07, 0x09, 0x0C, 0x0F, 0x27, 0x2A, 0x32, 0x43).
+*> phase handles it (0x01, 0x07, 0x0C, 0x0F, 0x27, 0x2A, 0x32, 0x43).
  01 WS-LATER               PIC X(69) VALUE
-     "010000010100100100000000000000000000000100100000001000000000000000010".
+     "010000010000100100000000000000000000000100100000001000000000000000010".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -179,6 +179,8 @@
              CALL "INV-CLICK" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 57
              CALL "INV-CREATIVE-SET" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 9
+             CALL "CHAT-MESSAGE" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      GOBACK.
  END PROGRAM PLAY-PACKET.
@@ -198,6 +200,9 @@
 *> carried HashedStack); Set Creative Mode Slot 0x39 (Short, ItemStack). A HashedStack is a Boolean
 *> present, then VarInt item, VarInt count and the component counts (00 §12.4); CobolCraft items
 *> carry no data components (standin §2), so a stack with any is malformed, as for an ItemStack.
+*> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
+*> of 256 raw bytes, LastSeenMessagesUpdate: VarInt offset, FixedBitSet(20), Byte checksum); the
+*> signature and the last seen messages are not checked (09 §1: secure chat is not enforced).
 *> Outcome 1 when a read fails or bytes are left over.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -206,6 +211,13 @@
  01 WS-CONFIG-ID           BINARY-LONG VALUE 0.
  01 WS-CONFIG-OUTCOME      BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-MAX-MESSAGE         BINARY-LONG VALUE 256.
+ 01 WS-MESSAGE-CAPACITY    BINARY-LONG VALUE 768.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-SIGNATURE-BYTES     BINARY-LONG VALUE 256.
+ 01 WS-SEEN-BITS           BINARY-LONG VALUE 20.
+ 01 WS-SEEN                PIC X(3).
  LINKAGE SECTION.
  COPY PROTO.
  COPY PLAYPKT.
@@ -298,6 +310,18 @@
              CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
              MOVE WK-IS-ITEM TO PSB-STACK-ITEM
              MOVE WK-IS-COUNT TO PSB-STACK-COUNT
+         WHEN 9
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
+                 PSB-MESSAGE-LENGTH
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+             CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+             IF WS-PRESENT = 1
+                 CALL "PB-SKIP" USING PB-BUFFER WS-SIGNATURE-BYTES
+             END-IF
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-I
+             CALL "PB-GET-FIXED-BITSET" USING PB-BUFFER WS-SEEN-BITS WS-SEEN
+             CALL "PB-GET-BYTE" USING PB-BUFFER WS-I
          WHEN OTHER
              MOVE 2 TO L-OUTCOME
      END-EVALUATE

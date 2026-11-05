@@ -51,6 +51,13 @@
 *>   TEST-TICKS-ANSWERED USING count: runs that many CORE-TICKs in steps of at most 100, answering
 *>     after each step every pending Keep Alive of a connection in play (as a client would), so
 *>     long runs do not time the connections out.
+*>   TEST-CHAT USING connection id, message (PIC X(768)), byte length: feeds Chat (unsigned) as the
+*>     client sends it (play-c2s-09-chat.hex layout: timestamp 1700000000000, salt 0, no signature,
+*>     last seen offset 0, nothing acknowledged, checksum 0).
+*>   TEST-DRAIN-CHAT USING connection id, text out (PIC X(4096)): drains the connection and lists
+*>     its System Chat packets separated by " | ": plain or literal text as the text, translate as
+*>     key(arg,arg...), with "[overlay]" appended when the overlay flag is set; other packets are
+*>     left out.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -908,3 +915,98 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM TEST-TICKS-ANSWERED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 9.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-TIMESTAMP           BINARY-DOUBLE VALUE 1700000000000.
+ 01 WS-SALT                BINARY-DOUBLE VALUE 0.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-BITS                BINARY-LONG VALUE 20.
+ 01 WS-ACK                 PIC X(3) VALUE LOW-VALUES.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-MESSAGE              PIC X(768).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-MESSAGE L-LENGTH.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-MESSAGE L-LENGTH WS-MAX
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-TIMESTAMP
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SALT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-FIXED-BITSET" USING PB-BUFFER WS-BITS WS-ACK
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-ZERO
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-CHAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-CHAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-OVERLAY             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 124
+             CALL "PB-GET-TEXT" USING PK-BUFFER PK-TEXT
+             CALL "PB-GET-BOOL" USING PK-BUFFER WS-OVERLAY
+             IF WS-PTR > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             IF PK-ERROR = 1
+                 STRING "malformed" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             ELSE
+                 IF PK-TX-LENGTH > 0
+                     STRING PK-TX-VALUE(1:PK-TX-LENGTH) DELIMITED BY SIZE INTO L-TEXT
+                         POINTER WS-PTR
+                 END-IF
+                 IF PK-TX-KIND = PK-TEXT-TRANSLATE
+                     STRING "(" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PK-TX-ARG-COUNT
+                         IF WS-I > 1
+                             STRING "," DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         END-IF
+                         IF PK-TX-ARG-LENGTH(WS-I) > 0
+                             STRING PK-TX-ARG-VALUE(WS-I)(1:PK-TX-ARG-LENGTH(WS-I))
+                                 DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                         END-IF
+                     END-PERFORM
+                     STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 END-IF
+                 IF WS-OVERLAY = 1
+                     STRING "[overlay]" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-CHAT.

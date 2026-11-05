@@ -1,0 +1,125 @@
+*> Implementation test of core/src/chat.cob and the Chat decoding of core/src/play.cob (tasks T482;
+*> FR-013; 05c 0x09 field table and "String(max N)"; 09 §1): an empty message, a signed message (the
+*> signature is skipped, secure chat is not enforced), a message of exactly 256 code units of
+*> three-byte characters, a message of 257 code units (a decoding error: the sender's connection is
+*> closed and nothing is broadcast) and a connection that is not yet in play (it is sent nothing).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHAT-PROGRAM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-LATE                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-MESSAGE             PIC X(768).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 9.
+ 01 WS-MAX                 BINARY-LONG VALUE 256.
+ 01 WS-LONG                BINARY-DOUBLE VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-SIGNATURE           PIC X(256) VALUE ALL "s".
+ 01 WS-SIGNATURE-LENGTH    BINARY-LONG VALUE 256.
+ 01 WS-BITS                BINARY-LONG VALUE 20.
+ 01 WS-ACK                 PIC X(3) VALUE LOW-VALUES.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-EDIT                PIC -(9)9.
+*> U+201C, three UTF-8 bytes E2 80 9C (built with FUNCTION CHAR: hex literals of 0x80 and above warn)
+ 01 WS-QUOTE               PIC X(3).
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE "Bobby" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-LATE
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-LATE WS-PATH
+     CALL "TEST-DRAIN-CHAT" USING WS-ALICE WS-TEXT
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+     CALL "TEST-DRAIN-CHAT" USING WS-LATE WS-TEXT
+
+     MOVE "chat an empty message is broadcast as <Alice> with nothing after it" TO TL-CASE
+     MOVE 0 TO WS-LENGTH
+     CALL "TEST-CHAT" USING WS-ALICE WS-MESSAGE WS-LENGTH
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+     MOVE "<Alice> " TO TL-EXPECTED
+     PERFORM CHECK
+     CALL "TEST-DRAIN-CHAT" USING WS-ALICE WS-TEXT
+
+     MOVE "chat a connection that has not reached play is sent no System Chat" TO TL-CASE
+     CALL "TEST-DRAIN-CHAT" USING WS-LATE WS-TEXT
+     MOVE SPACES TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "chat a message with a signature (256 bytes) decodes and is broadcast unchecked" TO TL-CASE
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     MOVE "signed" TO WS-MESSAGE
+     MOVE 6 TO WS-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-MESSAGE WS-LENGTH WS-MAX
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-SIGNATURE WS-SIGNATURE-LENGTH
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-FIXED-BITSET" USING PB-BUFFER WS-BITS WS-ACK
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-ZERO
+     CALL "TEST-FEED-BUFFER" USING WS-BOB PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "TEST-DRAIN-CHAT" USING WS-ALICE WS-TEXT
+     MOVE "<Bobby> signed" TO TL-EXPECTED
+     PERFORM CHECK
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+
+     MOVE "chat a message of 256 code units (768 UTF-8 bytes) is broadcast whole" TO TL-CASE
+     STRING FUNCTION CHAR(227) FUNCTION CHAR(129) FUNCTION CHAR(157) DELIMITED BY SIZE
+         INTO WS-QUOTE
+     MOVE SPACES TO WS-MESSAGE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+         MOVE WS-QUOTE TO WS-MESSAGE(WS-I * 3 - 2:3)
+     END-PERFORM
+     MOVE 768 TO WS-LENGTH
+     CALL "TEST-CHAT" USING WS-BOB WS-MESSAGE WS-LENGTH
+     CALL "TEST-DRAIN-CHAT" USING WS-ALICE WS-TEXT
+     MOVE SPACES TO WS-EXPECTED
+     STRING "<Bobby> " WS-MESSAGE DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     PERFORM CHECK
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+
+     MOVE "chat a message of 257 code units is a decoding error: nothing is broadcast" TO TL-CASE
+     MOVE ALL "a" TO WS-MESSAGE(1:257)
+     MOVE 257 TO WS-LENGTH
+     CALL "TEST-CHAT" USING WS-ALICE WS-MESSAGE WS-LENGTH
+     CALL "TEST-DRAIN-CHAT" USING WS-BOB WS-TEXT
+     MOVE SPACES TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "chat a message of 257 code units closes the sender's connection" TO TL-CASE
+     CALL "TEST-DRAIN-CHAT" USING WS-ALICE WS-TEXT
+     MOVE CN-USED(WS-ALICE) TO WS-EDIT
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "0" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+ CHECK.
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-CHAT-PROGRAM.
+
+ COPY CORETEST.

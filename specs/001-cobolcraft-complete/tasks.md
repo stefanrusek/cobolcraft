@@ -698,11 +698,11 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: FR-013 chat delivery. **Independent Test**: `make gate-core` with `acc_us6_chat_broadcast.cob` passing.
 
-- [ ] T479 [P] [US6-core] Write `contract_wire_server.cob` cases: Chat (unsigned) decodes; System Chat (chat line) equals `play-s2c-7c-system-chat-chat.hex`
-- [ ] T480 [P] [US6-core] Write acceptance test `core/tests/acc_us6_chat_broadcast.cob`: case "acceptance US6-1 given players in different dimensions when one sends a message then every connected player including the sender receives `<name> message` as System Chat, in the order the server received the messages" (FR-013, SC-006 server half)
-- [ ] T481 [US6-core] Implement chat handling and broadcast in `core/src/chat.cob` (message length limits of 05c)
-- [ ] T482 [US6-core] Extend the core implementation tests to 100 % coverage of `core/src/chat.cob`
-- [ ] T483 Gate: run `make gate-core` and record the command and its real output
+- [X] T479 [P] [US6-core] Write `contract_wire_server.cob` cases: Chat (unsigned) decodes; System Chat (chat line) equals `play-s2c-7c-system-chat-chat.hex`
+- [X] T480 [P] [US6-core] Write acceptance test `core/tests/acc_us6_chat_broadcast.cob`: case "acceptance US6-1 given players in different dimensions when one sends a message then every connected player including the sender receives `<name> message` as System Chat, in the order the server received the messages" (FR-013, SC-006 server half)
+- [X] T481 [US6-core] Implement chat handling and broadcast in `core/src/chat.cob` (message length limits of 05c)
+- [X] T482 [US6-core] Extend the core implementation tests to 100 % coverage of `core/src/chat.cob`
+- [X] T483 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 17: US7-core — health, damage, death and respawn
 

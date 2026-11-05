@@ -52,3 +52,8 @@
 *>  0x39 Set Creative Mode Slot: the stack (count 0 = empty).
     05 PSB-STACK-ITEM         BINARY-LONG.
     05 PSB-STACK-COUNT        BINARY-LONG.
+*>  0x09 Chat (unsigned; 09 §1): the message (String, at most 256 UTF-16 code units, so at most 768
+*>  UTF-8 bytes) and its byte length. Timestamp, salt, signature and last seen messages are read and
+*>  not kept.
+    05 PSB-MESSAGE-LENGTH     BINARY-LONG.
+    05 PSB-MESSAGE            PIC X(768).

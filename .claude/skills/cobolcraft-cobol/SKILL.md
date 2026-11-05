@@ -98,7 +98,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-JOIN` (a memory connection that logs in, configures and loads), `TEST-MOVE`,
   `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), `TEST-USE-ON`,
   `TEST-ACTION`, `TEST-HELD`, `TEST-CLICK`, `TEST-TICKS`, `TEST-DRAIN-BLOCKS` (block, ack, slot and
-  light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, fixture loading and
+  light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, `TEST-CHAT` (feeds unsigned
+  Chat), `TEST-DRAIN-CHAT` (System Chat texts, `|`-separated), fixture loading and
   comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
