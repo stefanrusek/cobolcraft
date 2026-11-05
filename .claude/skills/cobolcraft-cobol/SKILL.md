@@ -73,6 +73,15 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **OCCURS is not allowed at level 01**: wrap a table in a 01 group (`01 WS-ORDERS. 05 WS-ORDER
   ... OCCURS n TIMES.`).
 - **Fixed format breaks past column 72**, which is why the project is free format. Don't switch.
+- **A z-string from a shorter field**: `MOVE LOW-VALUES TO Z` then `MOVE A(1:N) TO Z` pads Z with
+  spaces again, so there is no NUL; move into `Z(1:N)` instead.
+- **Reference-modified arguments with a computed offset** (`CALL … USING HDR(I * 4 + 1:4)`) warn
+  "does not conform to the parameter definition" under `-Wall`: copy the slice into a fixed-size
+  field, call, copy it back.
+- **Free-format literals cannot use `-` continuation lines**: build long text with `MOVE "a" & "b"`.
+- **Reading NBT compounds**: `MOVE SPACES TO WN` before each `NBT-READ-COMPOUND-NEXT` and compare
+  the whole field (`WN = "Pos"`); the wrapper name `""` of a mixed list (07 §1.1) leaves it spaces.
+  Never reference-modify a name by a length that can be 0.
 
 ## Interfaces
 
@@ -137,6 +146,18 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `CORE-KNOWN` (`KN-PLACED`, `KN-DIM`, `KN-X`...), and the next join of that UUID starts there while the
   dimension is enabled (else at the world spawn). A test that expects a rejoin at the spawn point must
   not move the player first.
+- **Persistence** (US13; `core/src/persistence.cob`, `region.cob`): `TEST-OPEN-WORLD` deletes
+  `build/core-test-world` first, because saves and chunk unloading (`CHUNKS-UNLOAD` after every
+  `CHUNKS-FOLLOW`: changed chunks outside every view are written to their region file and
+  released) now write there. A test that opens another folder removes it itself (`CALL "SYSTEM"`).
+  `CORE-SAVE` writes 07 §9; `CORE-WORLD-OPEN` of a folder with `level.dat` loads it (entities at
+  once, chunks on first use, player files on join). A rejoin restores game mode, health, food, held
+  slot and inventory too (`PLAYER-REMEMBER` / `KN-STORED`), not only the place. `TEST-NBT-GET`
+  (render any tag by path), `TEST-NBT-FILE`, `TEST-WORLD-SNAPSHOT` and `TEST-PLAYER-SNAPSHOT` help
+  assert saved and reloaded state.
+- **Console lines**: joining, leaving, dying, changing dimension and chatting each queue a console
+  line (`CORE-LOG`, `CONSOLE-TEXT` renders `translate` texts through `CONSOLELANG.cpy`); a test that
+  drains the console sees them.
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time

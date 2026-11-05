@@ -55,7 +55,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHAT-MESSAGE.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Chat 0x09): broadcasts the sender's chat line
-*> (CHAT-LINE-BUILD) to every connection in play that has a player, the sender included.
+*> (CHAT-LINE-BUILD) to every connection in play that has a player, the sender included, and
+*> queues the same text "<name> message" as a console line (operator-surface §3, US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -63,6 +64,8 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 1024.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
+ 01 WS-LINE                PIC X(800).
+ 01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -77,5 +80,13 @@
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO WS-LINE
+     STRING "<" PL-NAME(WS-ROW)(1:PL-NAME-LENGTH(WS-ROW)) "> " DELIMITED BY SIZE INTO WS-LINE
+     COMPUTE WS-LENGTH = PL-NAME-LENGTH(WS-ROW) + 3
+     IF PSB-MESSAGE-LENGTH > 0
+         MOVE PSB-MESSAGE(1:PSB-MESSAGE-LENGTH) TO WS-LINE(WS-LENGTH + 1:PSB-MESSAGE-LENGTH)
+         ADD PSB-MESSAGE-LENGTH TO WS-LENGTH
+     END-IF
+     CALL "CORE-LOG" USING WS-LINE WS-LENGTH
      GOBACK.
  END PROGRAM CHAT-MESSAGE.

@@ -74,13 +74,16 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-JOIN.
 *> USING connection id of a connection that has just entered play with its player (CN-PLAYER):
-*> sends the join sequence above.
+*> sends the join sequence above, then queues the console line "<name> joined" (operator-surface
+*> §3, US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-LINE                PIC X(32).
+ 01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID.
@@ -105,6 +108,10 @@
      IF PL-DEATH-CAUSE(WS-ROW) > 0
          CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
      END-IF
+     MOVE SPACES TO WS-LINE
+     STRING PL-NAME(WS-ROW)(1:PL-NAME-LENGTH(WS-ROW)) " joined" DELIMITED BY SIZE INTO WS-LINE
+     COMPUTE WS-LENGTH = PL-NAME-LENGTH(WS-ROW) + 7
+     CALL "CORE-LOG" USING WS-LINE WS-LENGTH
      GOBACK.
  END PROGRAM PLAY-JOIN.
 
@@ -835,7 +842,8 @@
 *> USING player row of a player leaving the world (US3-5; 09 §3.2 Remove Entities and Player Info
 *> Remove rows): when its join was sent, its entity leaves the tracker (Remove Entities to those who
 *> had it), its client is marked as having nothing, and every other player in the world is sent
-*> Player Info Remove with its UUID.
+*> Player Info Remove with its UUID; the console line "<name> left" is queued (operator-surface §3,
+*> US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -843,6 +851,8 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OTHER               BINARY-LONG.
+ 01 WS-LINE                PIC X(32).
+ 01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -861,5 +871,9 @@
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO WS-LINE
+     STRING PL-NAME(WS-ROW)(1:PL-NAME-LENGTH(WS-ROW)) " left" DELIMITED BY SIZE INTO WS-LINE
+     COMPUTE WS-LENGTH = PL-NAME-LENGTH(WS-ROW) + 5
+     CALL "CORE-LOG" USING WS-LINE WS-LENGTH
      GOBACK.
  END PROGRAM OTHERS-LEAVE.

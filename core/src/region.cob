@@ -1,0 +1,330 @@
+*> Anvil region files (docs/protocol/07-nbt-and-anvil.md §6; §5.2 compression id 2, zlib), the
+*> container of a world folder's region/ and entities/ folders (07 §9.1, §9.3, §9.4). A chunk payload
+*> is a named-root NBT stream (07 §3) that the caller builds or parses; this module only stores it.
+*> Files are read and written with the GnuCOBOL CBL_* byte-stream routines and compressed with
+*> cc_deflate / cc_inflate mode CC_ZLIB (research R2; shim-abi §5).
+*>
+*> Sector allocation: a rewritten chunk that still fits its sectors stays where it is; any other
+*> chunk is appended at the end of the file (07 Open question 6 leaves the strategy free; readers
+*> only follow the location table). Oversized chunks (07 §6.4, 256 sectors or more) never occur: a
+*> CobolCraft chunk or entity payload stays far below 1 MiB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGION-FILE-NAME.
+*> USING folder (PIC X(1024)), folder length, chunk x, chunk z, file name out (PIC X(1100), space
+*> filled: the CBL_* name), table index out (BINARY-LONG, 0 to 1023). The file is
+*> <folder>/r.<chunk x >> 5>.<chunk z >> 5>.mca (07 §6.1); the index (x & 31) + (z & 31) x 32 (07 §6.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-EDIT-X              PIC -(9)9.
+ 01 WS-EDIT-Z              PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-DIR                  PIC X(1024).
+ 01 L-DIR-LENGTH           BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-NAME                 PIC X(1100).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-DIR-LENGTH L-CX L-CZ L-NAME L-INDEX.
+     COMPUTE WS-RX = (L-CX - FUNCTION MOD(L-CX, 32)) / 32
+     COMPUTE WS-RZ = (L-CZ - FUNCTION MOD(L-CZ, 32)) / 32
+     COMPUTE L-INDEX = FUNCTION MOD(L-CX, 32) + FUNCTION MOD(L-CZ, 32) * 32
+     MOVE WS-RX TO WS-EDIT-X
+     MOVE WS-RZ TO WS-EDIT-Z
+     MOVE SPACES TO L-NAME
+     STRING L-DIR(1:L-DIR-LENGTH) "/r." FUNCTION TRIM(WS-EDIT-X) "." FUNCTION TRIM(WS-EDIT-Z) ".mca"
+         DELIMITED BY SIZE INTO L-NAME
+     GOBACK.
+ END PROGRAM REGION-FILE-NAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGION-BE-PUT.
+*> USING value (BINARY-DOUBLE, 0 to 2^32 - 1), area (PIC X(4)): the value as a big-endian Int.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-V                   BINARY-DOUBLE.
+ 01 WS-Q                   BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BYTE                BINARY-CHAR UNSIGNED.
+ 01 WS-BYTE-X REDEFINES WS-BYTE PIC X.
+ LINKAGE SECTION.
+ 01 L-VALUE                BINARY-DOUBLE.
+ 01 L-AREA                 PIC X(4).
+ PROCEDURE DIVISION USING L-VALUE L-AREA.
+     MOVE L-VALUE TO WS-V
+     PERFORM VARYING WS-I FROM 4 BY -1 UNTIL WS-I < 1
+         COMPUTE WS-Q = WS-V / 256
+         COMPUTE WS-BYTE = WS-V - WS-Q * 256
+         MOVE WS-BYTE-X TO L-AREA(WS-I:1)
+         MOVE WS-Q TO WS-V
+     END-PERFORM
+     GOBACK.
+ END PROGRAM REGION-BE-PUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGION-BE-GET.
+*> USING area (PIC X(4)), value out (BINARY-DOUBLE): the big-endian Int read unsigned.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AREA                 PIC X(4).
+ 01 L-VALUE                BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-AREA L-VALUE.
+     MOVE 0 TO L-VALUE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         COMPUTE L-VALUE = L-VALUE * 256 + FUNCTION ORD(L-AREA(WS-I:1)) - 1
+     END-PERFORM
+     GOBACK.
+ END PROGRAM REGION-BE-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGION-WRITE.
+*> USING folder (any area), folder length (BINARY-LONG), chunk x, chunk z (BINARY-LONG), PB-BUFFER
+*> (the payload: bytes 1 to PB-LENGTH), outcome out (BINARY-LONG: 0 written, 1 the file could not be
+*> created or written). The payload is stored zlib-compressed (07 §6.3: Int length = data + 1, Byte
+*> 2, data) in whole sectors; its location entry and timestamp (seconds since the epoch, UTC) are
+*> updated. A missing region file is created with an empty header.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-NAME                PIC X(1100).
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ACCESS              PIC X COMP-X VALUE 3.
+ 01 WS-DENY                PIC X COMP-X VALUE 0.
+ 01 WS-DEVICE              PIC X COMP-X VALUE 0.
+ 01 WS-HANDLE              PIC X(4).
+ 01 WS-OFFSET              PIC X(8) COMP-X.
+ 01 WS-COUNT               PIC X(4) COMP-X.
+ 01 WS-FLAGS               BINARY-CHAR UNSIGNED.
+ 01 WS-DUMMY               PIC X.
+ 01 WS-HEADER              PIC X(8192).
+ 01 WS-FOUR                PIC X(4).
+ 01 WS-SIZE                BINARY-DOUBLE.
+ 01 WS-MODE                BINARY-LONG VALUE CC-ZLIB.
+ 01 WS-CAPACITY            BINARY-LONG.
+ 01 WS-OUT-ADDR            USAGE POINTER.
+ 01 WS-DATA-ADDR           USAGE POINTER.
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-SECTORS             BINARY-LONG.
+ 01 WS-BYTES               BINARY-LONG.
+ 01 WS-ENTRY               BINARY-DOUBLE.
+ 01 WS-OLD-OFFSET          BINARY-LONG.
+ 01 WS-OLD-COUNT           BINARY-LONG.
+ 01 WS-SECTOR              BINARY-LONG.
+ 01 WS-VALUE               BINARY-DOUBLE.
+ 01 WS-NOW                 PIC X(21).
+ 01 WS-DAYS                BINARY-LONG.
+ 01 WS-ZONE                BINARY-LONG.
+ 01 WS-DEFLATE-RC          BINARY-LONG.
+ 01 WS-RC1                 BINARY-LONG.
+ 01 WS-RC2                 BINARY-LONG.
+ 01 WS-RC3                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-DIR                  PIC X(1024) BASED.
+ 01 B-OUT                  PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIR                  PIC X.
+ 01 L-DIR-LENGTH           BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-OUTCOME              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-DIR-LENGTH L-CX L-CZ PB-BUFFER L-OUTCOME.
+     SET ADDRESS OF B-DIR TO ADDRESS OF L-DIR
+     MOVE SPACES TO WS-DIR
+     MOVE B-DIR(1:L-DIR-LENGTH) TO WS-DIR
+     CALL "REGION-FILE-NAME" USING WS-DIR L-DIR-LENGTH L-CX L-CZ WS-NAME WS-INDEX
+     MOVE 1 TO L-OUTCOME
+*>   The sector image: 4-byte length, compression byte, zlib data, zero padding.
+     COMPUTE WS-CAPACITY = PB-LENGTH + PB-LENGTH / 1000 + 4096 + 64
+     ALLOCATE WS-CAPACITY CHARACTERS RETURNING WS-OUT-ADDR
+     SET ADDRESS OF B-OUT TO WS-OUT-ADDR
+     SET WS-DATA-ADDR TO WS-OUT-ADDR
+     SET WS-DATA-ADDR UP BY 5
+     COMPUTE WS-BYTES = WS-CAPACITY - 4096 - 5
+     CALL STATIC "cc_deflate" USING BY VALUE WS-MODE BY VALUE PB-ADDR BY VALUE PB-LENGTH
+         BY VALUE WS-DATA-ADDR BY VALUE WS-BYTES BY REFERENCE WS-OUT-LENGTH
+         RETURNING WS-DEFLATE-RC
+     COMPUTE WS-TOTAL = WS-OUT-LENGTH + 5
+     COMPUTE WS-SECTORS = (WS-TOTAL + 4095) / 4096
+     COMPUTE WS-VALUE = WS-OUT-LENGTH + 1
+     CALL "REGION-BE-PUT" USING WS-VALUE WS-FOUR
+     MOVE WS-FOUR TO B-OUT(1:4)
+     MOVE FUNCTION CHAR(3) TO B-OUT(5:1)
+     COMPUTE WS-BYTES = WS-SECTORS * 4096 - WS-TOTAL
+     MOVE LOW-VALUES TO B-OUT(WS-TOTAL + 1:WS-BYTES)
+*>   The file and its header (a new file starts with an empty 8192-byte header).
+     MOVE LOW-VALUES TO WS-HEADER
+     MOVE 8192 TO WS-SIZE
+     CALL "CBL_OPEN_FILE" USING WS-NAME WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE RETURNING WS-RC1
+     IF WS-RC1 = 0
+         MOVE 0 TO WS-OFFSET WS-COUNT
+         MOVE 128 TO WS-FLAGS
+         CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS WS-DUMMY
+         MOVE WS-OFFSET TO WS-SIZE
+         MOVE 0 TO WS-OFFSET WS-FLAGS
+         MOVE FUNCTION MIN(WS-SIZE, 8192) TO WS-COUNT
+         CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS WS-HEADER
+     ELSE
+         CALL "CBL_CREATE_FILE" USING WS-NAME WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
+             RETURNING WS-RC1
+     END-IF
+     IF WS-RC1 NOT = 0
+         FREE WS-OUT-ADDR
+         MOVE 0 TO RETURN-CODE
+         GOBACK
+     END-IF
+     MOVE WS-HEADER(WS-INDEX * 4 + 1:4) TO WS-FOUR
+     CALL "REGION-BE-GET" USING WS-FOUR WS-ENTRY
+     COMPUTE WS-OLD-OFFSET = WS-ENTRY / 256
+     COMPUTE WS-OLD-COUNT = WS-ENTRY - WS-OLD-OFFSET * 256
+     IF WS-OLD-OFFSET >= 2 AND WS-OLD-COUNT >= WS-SECTORS
+         MOVE WS-OLD-OFFSET TO WS-SECTOR
+     ELSE
+         COMPUTE WS-SECTOR = FUNCTION MAX(2, (WS-SIZE + 4095) / 4096)
+     END-IF
+     COMPUTE WS-OFFSET = WS-SECTOR * 4096
+     COMPUTE WS-COUNT = WS-SECTORS * 4096
+     MOVE 0 TO WS-FLAGS
+     CALL "CBL_WRITE_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS B-OUT RETURNING WS-RC2
+*>   Location entry (offset << 8 | count) and timestamp (07 §6.2).
+     COMPUTE WS-VALUE = WS-SECTOR * 256 + WS-SECTORS
+     CALL "REGION-BE-PUT" USING WS-VALUE WS-FOUR
+     MOVE WS-FOUR TO WS-HEADER(WS-INDEX * 4 + 1:4)
+     MOVE FUNCTION CURRENT-DATE TO WS-NOW
+     COMPUTE WS-DAYS = FUNCTION INTEGER-OF-DATE(FUNCTION NUMVAL(WS-NOW(1:8)))
+         - FUNCTION INTEGER-OF-DATE(19700101)
+     COMPUTE WS-ZONE = FUNCTION NUMVAL(WS-NOW(18:2)) * 3600 + FUNCTION NUMVAL(WS-NOW(20:2)) * 60
+     IF WS-NOW(17:1) = "-"
+         COMPUTE WS-ZONE = 0 - WS-ZONE
+     END-IF
+     COMPUTE WS-VALUE = WS-DAYS * 86400 + FUNCTION NUMVAL(WS-NOW(9:2)) * 3600
+         + FUNCTION NUMVAL(WS-NOW(11:2)) * 60 + FUNCTION NUMVAL(WS-NOW(13:2)) - WS-ZONE
+     CALL "REGION-BE-PUT" USING WS-VALUE WS-FOUR
+     MOVE WS-FOUR TO WS-HEADER(WS-INDEX * 4 + 4097:4)
+     MOVE 0 TO WS-OFFSET
+     MOVE 8192 TO WS-COUNT
+     CALL "CBL_WRITE_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS WS-HEADER RETURNING WS-RC3
+     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+     COMPUTE L-OUTCOME = FUNCTION MIN(1, FUNCTION ABS(WS-DEFLATE-RC) + FUNCTION ABS(WS-RC2)
+         + FUNCTION ABS(WS-RC3))
+     FREE WS-OUT-ADDR
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM REGION-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGION-READ.
+*> USING folder (any area), folder length (BINARY-LONG), chunk x, chunk z (BINARY-LONG), PB-BUFFER
+*> (initialised by the caller), outcome out (BINARY-LONG). 0: the buffer holds the payload
+*> (uncompressed), PB-POS 0. 1: absent: no region file, a header shorter than 8192 bytes, a zero
+*> location entry or one overlapping the header, with count 0 or past the end of the file, a length
+*> of 0 or longer than the allocated sectors, a compression other than 2, or data that does not
+*> inflate (07 §6.2, §6.3: such chunks are logged and read as absent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-NAME                PIC X(1100).
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ACCESS              PIC X COMP-X VALUE 1.
+ 01 WS-DENY                PIC X COMP-X VALUE 0.
+ 01 WS-DEVICE              PIC X COMP-X VALUE 0.
+ 01 WS-HANDLE              PIC X(4).
+ 01 WS-OFFSET              PIC X(8) COMP-X.
+ 01 WS-COUNT               PIC X(4) COMP-X.
+ 01 WS-FLAGS               BINARY-CHAR UNSIGNED.
+ 01 WS-DUMMY               PIC X.
+ 01 WS-HEADER              PIC X(8192).
+ 01 WS-FOUR                PIC X(4).
+ 01 WS-SIZE                BINARY-DOUBLE.
+ 01 WS-ENTRY               BINARY-DOUBLE.
+ 01 WS-SECTOR              BINARY-LONG.
+ 01 WS-SECTORS             BINARY-LONG.
+ 01 WS-AVAILABLE           BINARY-LONG.
+ 01 WS-LENGTH              BINARY-DOUBLE.
+ 01 WS-MODE                BINARY-LONG VALUE CC-ZLIB.
+ 01 WS-IN-ADDR             USAGE POINTER.
+ 01 WS-DATA-ADDR           USAGE POINTER.
+ 01 WS-DATA-LENGTH         BINARY-LONG.
+ 01 WS-OUT-ADDR            USAGE POINTER.
+ 01 WS-OUT-CAPACITY        BINARY-LONG VALUE 4194304.
+ 01 WS-ZLIB-BYTE           BINARY-CHAR UNSIGNED VALUE 2.
+ 01 WS-ZLIB-ID REDEFINES WS-ZLIB-BYTE PIC X.
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 B-DIR                  PIC X(1024) BASED.
+ 01 B-IN                   PIC X(1073741824) BASED.
+ 01 B-OUT                  PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DIR                  PIC X.
+ 01 L-DIR-LENGTH           BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-OUTCOME              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-DIR-LENGTH L-CX L-CZ PB-BUFFER L-OUTCOME.
+     SET ADDRESS OF B-DIR TO ADDRESS OF L-DIR
+     MOVE SPACES TO WS-DIR
+     MOVE B-DIR(1:L-DIR-LENGTH) TO WS-DIR
+     CALL "REGION-FILE-NAME" USING WS-DIR L-DIR-LENGTH L-CX L-CZ WS-NAME WS-INDEX
+     MOVE 1 TO L-OUTCOME
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CBL_OPEN_FILE" USING WS-NAME WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE RETURNING WS-RC
+     IF WS-RC NOT = 0
+         MOVE 0 TO RETURN-CODE
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-OFFSET WS-COUNT
+     MOVE 128 TO WS-FLAGS
+     CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS WS-DUMMY
+     MOVE WS-OFFSET TO WS-SIZE
+     MOVE 0 TO WS-OFFSET WS-FLAGS
+     MOVE LOW-VALUES TO WS-HEADER
+     MOVE FUNCTION MIN(WS-SIZE, 8192) TO WS-COUNT
+     CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS WS-HEADER
+     MOVE WS-HEADER(WS-INDEX * 4 + 1:4) TO WS-FOUR
+     CALL "REGION-BE-GET" USING WS-FOUR WS-ENTRY
+     COMPUTE WS-SECTOR = WS-ENTRY / 256
+     COMPUTE WS-SECTORS = WS-ENTRY - WS-SECTOR * 256
+     IF WS-SIZE < 8192 OR WS-SECTOR < 2 OR WS-SECTORS = 0 OR WS-SECTOR * 4096 >= WS-SIZE
+         CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+         MOVE 0 TO RETURN-CODE
+         GOBACK
+     END-IF
+     COMPUTE WS-AVAILABLE = FUNCTION MIN(WS-SECTORS * 4096, WS-SIZE - WS-SECTOR * 4096)
+     ALLOCATE WS-AVAILABLE CHARACTERS RETURNING WS-IN-ADDR
+     SET ADDRESS OF B-IN TO WS-IN-ADDR
+     COMPUTE WS-OFFSET = WS-SECTOR * 4096
+     MOVE WS-AVAILABLE TO WS-COUNT
+     CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS B-IN
+     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+     MOVE 0 TO WS-LENGTH
+     IF WS-AVAILABLE >= 5
+         MOVE B-IN(1:4) TO WS-FOUR
+         CALL "REGION-BE-GET" USING WS-FOUR WS-LENGTH
+     END-IF
+     IF WS-LENGTH >= 2 AND WS-LENGTH + 4 <= WS-AVAILABLE AND B-IN(5:1) = WS-ZLIB-ID
+         ALLOCATE WS-OUT-CAPACITY CHARACTERS RETURNING WS-OUT-ADDR
+         SET ADDRESS OF B-OUT TO WS-OUT-ADDR
+         SET WS-DATA-ADDR TO WS-IN-ADDR
+         SET WS-DATA-ADDR UP BY 5
+         COMPUTE WS-DATA-LENGTH = WS-LENGTH - 1
+         CALL STATIC "cc_inflate" USING BY VALUE WS-MODE BY VALUE WS-DATA-ADDR
+             BY VALUE WS-DATA-LENGTH BY VALUE WS-OUT-ADDR BY VALUE WS-OUT-CAPACITY
+             BY REFERENCE WS-OUT-LENGTH RETURNING WS-RC
+         IF WS-RC = 0
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER B-OUT WS-OUT-LENGTH
+             MOVE 0 TO L-OUTCOME PB-POS
+         END-IF
+         FREE WS-OUT-ADDR
+     END-IF
+     FREE WS-IN-ADDR
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM REGION-READ.

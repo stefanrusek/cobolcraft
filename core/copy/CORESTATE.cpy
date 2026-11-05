@@ -48,6 +48,7 @@
     05 CW-FOLDER             PIC X(1024).
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).
+    05 CW-GAME-MODE          PIC 9.              *> level.dat GameMode (07 §9.2): new players, host kinds 1-2
     05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 29999 (standin §4.8)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
     05 CW-SPAWN-X            FLOAT-LONG.
@@ -243,7 +244,8 @@
 
 *> Players who have been in the world (US4-8: the survival starting items are given once, to a
 *> first-time player). One offline UUID per row, KN-COUNT rows used; a full table records no more.
-*> Player files (US13) will also count as known. A player who left while dead (standin §10.6,
+*> A player whose file players/<uuid>.dat exists (07 §9.2) becomes known when it joins (the file is
+*> read into a row: core/src/persistence.cob). A player who left while dead (standin §10.6,
 *> data-model §6) keeps that death in KN-DEATH-CAUSE (0 = left alive) and KN-KILLER-*: on the next
 *> join the player is dead again and is shown the death screen. A player who has left keeps the
 *> dimension, position and facing it left from (KN-PLACED 1; US12-3, data-model §6 "state stored"):
@@ -263,3 +265,33 @@
        10 KN-Z               FLOAT-LONG.
        10 KN-YAW             FLOAT-SHORT.
        10 KN-PITCH           FLOAT-SHORT.
+*>  The rest of the stored state of a player (FR-014; 07 §9.2 players/<uuid>.dat): KN-STORED 1 once
+*>  a leave or a player file filled it (the next join restores game mode, health, food, held slot and
+*>  inventory); KN-DIRTY 1 while it has changed since the last world save (the save writes its file).
+    05 KN-STATE OCCURS 4096 TIMES.
+       10 KN-STORED          PIC 9.
+       10 KN-DIRTY           PIC 9.
+       10 KN-NAME            PIC X(16).
+       10 KN-NAME-LENGTH     BINARY-LONG.
+       10 KN-MODE            PIC 9.
+       10 KN-HEALTH          FLOAT-SHORT.
+       10 KN-FOOD            BINARY-LONG.
+       10 KN-HELD            BINARY-LONG.
+       10 KN-INVENTORY       PIC X(288).         *> the PL-INVENTORY bytes
+
+*> Access lists of the world (FR-016, US13-4; 07 §9.2 access.dat; core/src/access.cob): list
+*> ACCESS-OPERATORS, ACCESS-BANS and ACCESS-ALLOW, each up to CORE-MAX-ACCESS offline identities
+*> (name and offline UUID), and whether the allow-list is enforced in this world (operator decision
+*> A2: a new world seeds it from the settings, an existing world keeps its stored value).
+ 78 CORE-MAX-ACCESS         VALUE 256.
+ 78 ACCESS-OPERATORS        VALUE 1.
+ 78 ACCESS-BANS             VALUE 2.
+ 78 ACCESS-ALLOW            VALUE 3.
+ 01 CORE-ACCESS EXTERNAL.
+    05 AC-ENFORCED           PIC 9.
+    05 AC-LIST OCCURS 3 TIMES.
+       10 AC-COUNT           BINARY-LONG.
+       10 AC-ENTRY OCCURS 256 TIMES.
+          15 AC-NAME         PIC X(16).
+          15 AC-NAME-LENGTH  BINARY-LONG.
+          15 AC-UUID         PIC X(16).

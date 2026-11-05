@@ -1,6 +1,7 @@
 *> Contract test, provider side of the game core host API (contracts/core-host-api.md §1, §2, §4), US2
 *> entry points: CORE-WORLD-OPEN, CORE-CONN-OPEN, CORE-CONN-INPUT, CORE-CONN-OUTPUT, CORE-CONN-CLOSED,
-*> CORE-TICK, CORE-CONSOLE-DRAIN and CORE-STATUS-GET with the record layouts of COREAPI.cpy.
+*> CORE-TICK, CORE-CONSOLE-DRAIN and CORE-STATUS-GET with the record layouts of COREAPI.cpy; US13:
+*> CORE-SAVE and CORE-WORLD-OPEN of an existing world folder.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-COREAPI-PROVIDER.
  DATA DIVISION.
@@ -12,12 +13,10 @@
  COPY TESTLIB.
  01 WS-NEW-PATH            PIC X(64) VALUE Z"build/core-test-world-new".
  01 WS-OLD-PATH            PIC X(64) VALUE Z"build/core-test-world-old".
- 01 WS-OLD-DIR             PIC X(64) VALUE "build/core-test-world-old".
  01 WS-OLD-LEVEL           PIC X(64) VALUE "build/core-test-world-old/level.dat".
- 01 WS-HANDLE              PIC X(4).
- 01 WS-ACCESS              PIC X COMP-X VALUE 2.
- 01 WS-DENY                PIC X COMP-X VALUE 0.
- 01 WS-DEVICE              PIC X COMP-X VALUE 0.
+ 01 WS-OLD-ACCESS          PIC X(64) VALUE "build/core-test-world-old/access.dat".
+ 01 WS-RM-OLD              PIC X(64) VALUE "rm -rf build/core-test-world-old build/core-test-world-new".
+ 01 WS-FILE-INFO           PIC X(16).
  01 WS-CREATED             BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
@@ -51,6 +50,7 @@
 *>   CORE-WORLD-OPEN (core-host-api §2; US13-1, standin-content §5).
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE "A different description" TO CS-DESCRIPTION
+     CALL "SYSTEM" USING WS-RM-OLD
      CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
      MOVE "contract coreapi provider CORE-WORLD-OPEN folder without level.dat creates a world (flag 1)"
          TO TL-CASE
@@ -101,15 +101,34 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
 
-     CALL "CBL_CREATE_DIR" USING WS-OLD-DIR
-     CALL "CBL_CREATE_FILE" USING WS-OLD-LEVEL WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
-     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+*>   CORE-SAVE (no parameters) writes the world folder of 07 §9: level.dat, access.dat and a
+*>   players/ folder; CORE-WORLD-OPEN of that folder opens the existing world (created flag 0).
+     CALL "SYSTEM" USING WS-RM-OLD
      CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
-     MOVE "contract coreapi provider CORE-WORLD-OPEN folder with level.dat creates nothing (flag 0)"
+     MOVE 12345 TO CW-TIME
+     CALL "CORE-SAVE"
+     MOVE "contract coreapi provider CORE-SAVE writes level.dat and access.dat into the world folder"
          TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "level.dat access.dat" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-LEVEL WS-FILE-INFO
+     IF RETURN-CODE = 0
+         STRING "level.dat" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-ACCESS WS-FILE-INFO
+     IF RETURN-CODE = 0
+         STRING FUNCTION TRIM(TL-OBSERVED) " access.dat" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CW-TIME
+     CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN folder with level.dat opens that world (flag "
+         & "0, its time 12345)" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE WS-CREATED TO TL-OBSERVED-N
+     MOVE 12345 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-CREATED * 1000000 + CW-TIME
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   CORE-CONN-OPEN: ids, reuse only after close (core-host-api §3).

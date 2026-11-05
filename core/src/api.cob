@@ -8,7 +8,11 @@
 *> folder without level.dat becomes a new in-memory world: the cobolcraft:main dimension and, while
 *> the extra-dimensions setting is on, every extra dimension (DIMENSIONS.cpy DM-EXTRA 1, standin
 *> §15.1), in table (Login) order; the spawn point (standin-content §5.2), time 0 (§4.8) and the
-*> starting weather (§14.3, WEATHER-INIT); created-flag 1. Reading an existing world is US13-core.
+*> starting weather (§14.3, WEATHER-INIT), the access state of a new world (ACCESS-RESET) and the
+*> settings' game mode as its GameMode; created-flag 1. A folder with level.dat is an existing
+*> world (created-flag 0): WORLD-LOAD reads its level.dat, access.dat and entities over those
+*> defaults; the settings never overwrite them (US13 edge case). Either way the world's folders are
+*> created when missing (PERSIST-DIRS, 07 §9.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -31,10 +35,11 @@
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
      INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
-         CORE-KNOWN
+         CORE-KNOWN CORE-ACCESS
      MOVE "Y" TO CW-OPEN
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
+     MOVE CS-DEFAULT-MODE TO CW-GAME-MODE
      SET ADDRESS OF B-PATH TO ADDRESS OF L-PATH
      MOVE 0 TO CW-FOLDER-LENGTH
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1024 OR CW-FOLDER-LENGTH > 0
@@ -55,6 +60,7 @@
          END-IF
      END-PERFORM
      CALL "WEATHER-INIT"
+     CALL "ACCESS-RESET"
      COMPUTE CW-SPAWN-X = SPAWN-X10 / 10
      COMPUTE CW-SPAWN-Y = SPAWN-Y10 / 10
      COMPUTE CW-SPAWN-Z = SPAWN-Z10 / 10
@@ -64,12 +70,22 @@
      CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-FILE-INFO
      IF RETURN-CODE = 0
          MOVE 0 TO L-CREATED
+         CALL "WORLD-LOAD"
      ELSE
          MOVE 1 TO L-CREATED
      END-IF
      MOVE 0 TO RETURN-CODE
+     CALL "PERSIST-DIRS"
      GOBACK.
  END PROGRAM CORE-WORLD-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CORE-SAVE.
+*> No parameters: writes the whole world to its folder (FR-014; WORLD-SAVE, 07 §9.5).
+ PROCEDURE DIVISION.
+     CALL "WORLD-SAVE"
+     GOBACK.
+ END PROGRAM CORE-SAVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-CONN-OPEN.
@@ -151,31 +167,10 @@
 *> USING CORE-BUFFER: moves up to CB-CAPACITY bytes of pending console lines into the buffer
 *> (CB-LENGTH = bytes moved); the rest stays queued.
  DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY PROTO.
- 01 WS-COUNT               BINARY-LONG.
- 01 WS-REST                BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 B-QUEUE                PIC X(1073741824) BASED.
- 01 B-HOST                 PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY COREAPI.
  PROCEDURE DIVISION USING CORE-BUFFER.
-     MOVE CW-CONSOLE TO PB-BUFFER
-     COMPUTE WS-COUNT = FUNCTION MIN(PB-LENGTH, CB-CAPACITY)
-     MOVE WS-COUNT TO CB-LENGTH
-     IF WS-COUNT > 0
-         SET ADDRESS OF B-QUEUE TO PB-ADDR
-         SET ADDRESS OF B-HOST TO CB-ADDR
-         MOVE B-QUEUE(1:WS-COUNT) TO B-HOST(1:WS-COUNT)
-         COMPUTE WS-REST = PB-LENGTH - WS-COUNT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-REST
-             MOVE B-QUEUE(WS-COUNT + WS-I:1) TO B-QUEUE(WS-I:1)
-         END-PERFORM
-         MOVE WS-REST TO PB-LENGTH
-         MOVE PB-BUFFER TO CW-CONSOLE
-     END-IF
+     CALL "CONSOLE-DRAIN" USING CORE-BUFFER
      GOBACK.
  END PROGRAM CORE-CONSOLE-DRAIN.
 

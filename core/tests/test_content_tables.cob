@@ -4,7 +4,8 @@
 *> dimensions and spawn point §5.1, §5.2, §15, maximum health §10.1 and maximum food §11.1,
 *> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
 *> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy), the
-*> recipes of §13 (RECIPES.cpy), the weather of §14 (WEATHER.cpy),
+*> recipes of §13 (RECIPES.cpy), the weather of §14 (WEATHER.cpy), the console's en_us texts of
+*> docs/protocol/08-resource-packs.md §10.8.2 to §10.8.4 (CONSOLELANG.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -23,6 +24,170 @@
  COPY MOBS.
  COPY RECIPES.
  COPY WEATHER.
+ COPY CONSOLELANG.
+ 01 WS-CONSOLE-ROWS.
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.fall => %s misjudged the drop".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.mob.abend => %s was halted by an Abend".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.player => %s lost a duel with %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.starvation => %s ran out of rations".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.hail => %s was battered by hail".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.death.command => %s had their vitality set to zero".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.unknown => Unknown command %s (howto lists the commands)".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.not_permitted => You may not use %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.missing_argument => Missing argument. Usage: %s (see howto)".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.invalid_argument => Invalid argument %s. Usage: %s (see howto)".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.invalid_name => %s is not a valid player name".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.player_not_found => No player named %s is online".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.dimension_not_found => No dimension is named %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.item_not_found => No item is named %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.mob_not_found => No mob is named %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.not_survival => %s is not in survival mode".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.not_alive => %s is dead and has not respawned yet".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.is_host => %s is the host of this world".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.promote.notice => You now hold operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.demote.notice => You no longer hold operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.howto.header => Commands you may use (%s):".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.howto.entry => - %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.roster => Online (%s): %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.murmur.incoming => %s murmurs to you: %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.murmur.incoming_console => The server murmurs to you: %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.murmur.sent => You murmur to %s: %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.promote.done => %s now holds operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.promote.already => %s already holds operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.demote.done => %s no longer holds operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.demote.not_operator => %s does not hold operator status".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.eject.done => Ejected %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.bar.done => Barred %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.bar.already => %s is already barred".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.unbar.done => Lifted the bar on %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.unbar.not_barred => %s is not barred".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.barlist => Barred (%s): %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.on => The guest list is now enforced".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.off => The guest list is no longer enforced".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.added => Added %s to the guest list".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.already => %s is already on the guest list".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.removed => Removed %s from the guest list".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.not_listed => %s is not on the guest list".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.guestlist.show => Guest list enforcement %s; guests (%s): %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.mode.done => %s now plays in %s mode".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.relocate.position => Relocated %s to %s, %s, %s in %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.relocate.player => Relocated %s to %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.supply.done => Supplied %s %s to %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.supply.no_room => %s has no room for that".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.empty.done => Emptied the inventory of %s (%s items removed)".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.vitality.done => Set the health of %s to %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.ration.done => Set the food level of %s to %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.conjure.done => Conjured a %s at %s, %s, %s in %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.conjure.hostile_disabled => Hostile mobs are switched off, so no %s can be conjured".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.sweep.done => Swept away %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.sweep.unknown_target => Nothing to sweep is named %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.clock.done => The clock now reads %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.skies.timed => The skies over %s turn to %s for %s seconds".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.skies.held => The skies over %s turn to %s until changed".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.skies.no_weather => %s has no skies to change".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.homestead.done => The world spawn point is now %s, %s, %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.announce.message => [Server] %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.announce.done => Announcement sent".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.persist.done => The world has been saved".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.command.shutdown.done => Shutting down".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.barred => You are barred from this world".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.not_on_guestlist => You are not on this world's guest list".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.name_is_host => The name %s belongs to the host of this world".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.replaced => Someone joined elsewhere under your name".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.shutdown => The server is shutting down".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.host_closed => The host closed the world".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.pack_required => This server requires its resource pack".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.ejected => You were ejected: %s".
+    05 FILLER PIC X(128) VALUE
+        "cobolcraft.disconnect.ejected_plain => You were ejected by an operator".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.incompatible => This server runs %s and cannot talk to your game version".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.outdated_client => Your game version is too old for this server (%s)".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.transfers_disabled => This server does not take transferred players".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.slow_login => Logging in took too long".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.unexpected_query_response => The server got a reply it never asked for".
+    05 FILLER PIC X(128) VALUE
+        "multiplayer.disconnect.invalid_player_movement => The server refused an impossible position".
+    05 FILLER PIC X(128) VALUE
+        "disconnect.timeout => No reply arrived in time".
+ 01 WS-CONSOLE-TABLE REDEFINES WS-CONSOLE-ROWS.
+    05 WS-CONSOLE-ROW      PIC X(128) OCCURS 80 TIMES.
  01 WS-ROW                 PIC X(400).
  01 WS-J                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
@@ -1092,6 +1257,24 @@
      STRING " " RW-KEY(1)(1:RW-KEY-LENGTH(1)) DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
      MOVE "0 cobolcraft:daylight" TO TL-EXPECTED
      PERFORM ASSERT-ROW
+
+*>   The en_us texts of the console (CONSOLELANG.cpy; docs/protocol/08-resource-packs.md §10.8.2 to
+*>   §10.8.4): every translation key the core sends, with its text.
+     MOVE "test content tables console language: 80 keys" TO TL-CASE
+     PERFORM START-ROW
+     MOVE CL-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE "80" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
+         MOVE SPACES TO TL-CASE
+         STRING "test content tables console language " CL-KEY(WS-I)(1:CL-KEY-LENGTH(WS-I))
+             DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         STRING CL-KEY(WS-I)(1:CL-KEY-LENGTH(WS-I)) " => " CL-TEXT(WS-I)(1:CL-TEXT-LENGTH(WS-I))
+             DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         MOVE WS-CONSOLE-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
 
      STOP RUN.
 

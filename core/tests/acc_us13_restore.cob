@@ -1,0 +1,234 @@
+*> Acceptance test, US13-4 core half (spec US13 scenario 4; FR-014; SC-003; tasks T616; 07 §9): a
+*> world with block changes, mobs, ground items and weather in every dimension, a set time and spawn
+*> point, access lists, and players who left in different dimensions (one of them dead) is saved
+*> with CORE-SAVE and opened again with CORE-WORLD-OPEN: every one of them is as it was. Alice
+*> leaves from cobolcraft:main; Bob travels by the goto_pad at (6, 54, 12) to cobolcraft:subroutine
+*> and leaves from there; Dave dies by a fall and leaves dead (standin §10.6: stored with health 0,
+*> shown the death screen again; the file keeps no cause, so it comes back as CAUSE-COMMAND).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US13-RESTORE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY BLOCKS.
+ COPY ENTITYTYPES.
+ COPY WEATHER.
+ COPY RULES.
+ 01 WS-WORLD               PIC X(64) VALUE Z"build/core-test-world".
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
+ 01 WS-CAROL-NAME          PIC X(16) VALUE "Carol".
+ 01 WS-DAVE-NAME           PIC X(16) VALUE "Dave".
+ 01 WS-LENGTH-5            BINARY-LONG VALUE 5.
+ 01 WS-LENGTH-3            BINARY-LONG VALUE 3.
+ 01 WS-LENGTH-4            BINARY-LONG VALUE 4.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-DAVE                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQUENCE            BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG VALUE 0.
+ 01 WS-VY                  FLOAT-LONG VALUE 0.
+ 01 WS-VZ                  FLOAT-LONG VALUE 0.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-DELAY               BINARY-LONG VALUE 0.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-NOBODY              BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-BEFORE              PIC X(8192).
+ 01 WS-ALICE-BEFORE        PIC X(8192).
+ 01 WS-BOB-BEFORE          PIC X(8192).
+ 01 WS-DAVE-BEFORE         PIC X(8192).
+ 01 WS-BLOCKS-BEFORE       PIC X(256).
+ 01 WS-BLOCKS              PIC X(256).
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE CS-HOSTILE-MOBS CS-WEATHER-CHANGES
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     CALL "TEST-JOIN" USING WS-DAVE-NAME WS-LENGTH-4 WS-DAVE
+
+*>   Bob travels to cobolcraft:subroutine.
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE 6 TO WS-X MOVE 54 TO WS-Y MOVE 12 TO WS-Z
+     MOVE TRAVEL-PAD-STATE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "TEST-USE-ON" USING WS-BOB WS-X WS-Y WS-Z WS-FACE WS-SEQUENCE
+     CALL "TEST-ACCEPT-TELEPORT" USING WS-BOB
+
+*>   Block changes in both dimensions.
+     MOVE 10 TO WS-X MOVE 60 TO WS-Y MOVE 10 TO WS-Z
+     MOVE ST-LUCITE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE -20 TO WS-X MOVE 70 TO WS-Y MOVE 33 TO WS-Z
+     MOVE ST-CARDSTACK-Z-PUNCHED TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE DIM-SUBROUTINE TO WS-DIM
+     MOVE 20 TO WS-X MOVE 50 TO WS-Y MOVE 20 TO WS-Z
+     MOVE ST-GLOWTUBE-UNLIT TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     PERFORM DESCRIBE-BLOCKS
+     MOVE WS-BLOCKS TO WS-BLOCKS-BEFORE
+
+*>   Mobs and ground items in both dimensions.
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE ET-SODGRAZER TO WS-TYPE
+     MOVE 30.5 TO WS-FX MOVE 55 TO WS-FY MOVE 30.5 TO WS-FZ
+     MOVE 135 TO WS-YAW
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ROW
+     MOVE 6 TO EN-HEALTH(WS-ROW)
+     MOVE 12.5 TO WS-FX MOVE 56 TO WS-FY MOVE 12.5 TO WS-FZ
+     MOVE 3 TO WS-ITEM
+     MOVE 3 TO WS-COUNT
+     CALL "GI-SPAWN" USING WS-DIM WS-FX WS-FY WS-FZ WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
+         WS-ROW
+     MOVE 100 TO EN-AGE(WS-ROW)
+     MOVE DIM-SUBROUTINE TO WS-DIM
+     MOVE ET-ABEND TO WS-TYPE
+     MOVE 25.5 TO WS-FX MOVE 36 TO WS-FY MOVE -25.5 TO WS-FZ
+     MOVE -45 TO WS-YAW
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-ROW
+     MOVE 9 TO EN-HEALTH(WS-ROW)
+     MOVE -3.5 TO WS-FX MOVE 37 TO WS-FY MOVE 4.5 TO WS-FZ
+     MOVE 17 TO WS-ITEM
+     MOVE 5 TO WS-COUNT
+     CALL "GI-SPAWN" USING WS-DIM WS-FX WS-FY WS-FZ WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
+         WS-ROW
+     MOVE 2000 TO EN-AGE(WS-ROW)
+
+*>   Weather, time, spawn and the access lists.
+     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(DIM-MAIN)
+     MOVE 777 TO CW-WEATHER-LEFT(DIM-MAIN)
+     MOVE 4321 TO CW-TIME
+     MOVE 1.5 TO CW-SPAWN-X
+     MOVE 60 TO CW-SPAWN-Y
+     MOVE 2.5 TO CW-SPAWN-Z
+     MOVE 10 TO CW-SPAWN-YAW
+     MOVE ACCESS-OPERATORS TO WS-LIST
+     CALL "LOGIN-OFFLINE-UUID" USING WS-ALICE-NAME WS-LENGTH-5 WS-UUID
+     CALL "ACCESS-ADD" USING WS-LIST WS-ALICE-NAME WS-LENGTH-5 WS-UUID WS-OUTCOME
+     MOVE ACCESS-BANS TO WS-LIST
+     CALL "LOGIN-OFFLINE-UUID" USING WS-CAROL-NAME WS-LENGTH-5 WS-UUID
+     CALL "ACCESS-ADD" USING WS-LIST WS-CAROL-NAME WS-LENGTH-5 WS-UUID WS-OUTCOME
+     MOVE ACCESS-ALLOW TO WS-LIST
+     CALL "LOGIN-OFFLINE-UUID" USING WS-BOB-NAME WS-LENGTH-3 WS-UUID
+     CALL "ACCESS-ADD" USING WS-LIST WS-BOB-NAME WS-LENGTH-3 WS-UUID WS-OUTCOME
+     MOVE 1 TO AC-ENFORCED
+
+*>   Alice changes, Dave dies, then all three leave.
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE 21.5 TO PL-HEALTH(WS-ROW)
+     MOVE 13 TO PL-FOOD(WS-ROW)
+     MOVE 2 TO PL-HELD(WS-ROW)
+     MOVE CN-PLAYER(WS-DAVE) TO WS-ROW
+     MOVE CAUSE-FALL TO WS-CAUSE
+     MOVE 0 TO PL-HEALTH(WS-ROW)
+     CALL "HEALTH-DIE" USING WS-ROW WS-CAUSE WS-NOBODY
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-ALICE) WS-ALICE-BEFORE
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-BOB) WS-BOB-BEFORE
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-DAVE) WS-DAVE-BEFORE
+     CALL "CORE-CONN-CLOSED" USING WS-ALICE
+     CALL "CORE-CONN-CLOSED" USING WS-BOB
+     CALL "CORE-CONN-CLOSED" USING WS-DAVE
+     CALL "TEST-WORLD-SNAPSHOT" USING WS-BEFORE
+     CALL "CORE-SAVE"
+
+*>   A different world in between, then the saved one again.
+     CALL "CORE-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
+
+     MOVE "acceptance US13-4 given a saved world when it is opened again then it is an existing "
+         & "world (created flag 0)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-CREATED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US13-4 given block changes in every dimension when saved and reopened then "
+         & "every one of them is as it was" TO TL-CASE
+     PERFORM DESCRIBE-BLOCKS
+     MOVE WS-BLOCKS-BEFORE TO TL-EXPECTED
+     MOVE WS-BLOCKS TO WS-TEXT
+     PERFORM CHECK
+
+     MOVE "acceptance US13-4 given mobs, ground items (with their despawn age), weather, time, "
+         & "spawn and access lists when saved and reopened then every one of them is as it was"
+         TO TL-CASE
+     CALL "TEST-WORLD-SNAPSHOT" USING WS-TEXT
+     MOVE WS-BEFORE TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US13-4 given Alice left cobolcraft:main when she rejoins after the reopen "
+         & "then position, facing, game mode, health, food, held slot and inventory are as she left"
+         TO TL-CASE
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-ALICE) WS-TEXT
+     MOVE WS-ALICE-BEFORE TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US13-4 given Bob left cobolcraft:subroutine when he rejoins after the "
+         & "reopen then he is in that dimension at the position he left, with his state" TO TL-CASE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-BOB) WS-TEXT
+     MOVE WS-BOB-BEFORE TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US13-4 given Dave left dead when he rejoins after the reopen then he is dead "
+         & "again (health 0, a death cause) with the rest of his state" TO TL-CASE
+     CALL "TEST-JOIN" USING WS-DAVE-NAME WS-LENGTH-4 WS-DAVE
+     CALL "TEST-PLAYER-SNAPSHOT" USING CN-PLAYER(WS-DAVE) WS-TEXT
+     MOVE WS-DAVE-BEFORE TO TL-EXPECTED
+     INSPECT TL-EXPECTED REPLACING FIRST " death 1 " BY " death 6 "
+     PERFORM CHECK
+     STOP RUN.
+
+ DESCRIBE-BLOCKS.
+     MOVE SPACES TO WS-BLOCKS
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE 10 TO WS-X MOVE 60 TO WS-Y MOVE 10 TO WS-Z
+     PERFORM ADD-BLOCK
+     MOVE -20 TO WS-X MOVE 70 TO WS-Y MOVE 33 TO WS-Z
+     PERFORM ADD-BLOCK
+     MOVE 6 TO WS-X MOVE 54 TO WS-Y MOVE 12 TO WS-Z
+     PERFORM ADD-BLOCK
+     MOVE DIM-SUBROUTINE TO WS-DIM
+     MOVE 20 TO WS-X MOVE 50 TO WS-Y MOVE 20 TO WS-Z
+     PERFORM ADD-BLOCK
+     MOVE 6 TO WS-X MOVE 35 TO WS-Y MOVE 12 TO WS-Z
+     PERFORM ADD-BLOCK.
+
+ ADD-BLOCK.
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE WS-STATE TO WS-EDIT
+     STRING FUNCTION TRIM(WS-BLOCKS) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-BLOCKS.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US13-RESTORE.
+
+ COPY CORETEST.

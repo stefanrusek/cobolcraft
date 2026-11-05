@@ -1,7 +1,8 @@
 *> Acceptance test, US4-8 (spec US4 scenario 8; tasks T456; standin-content §2 "Starting inventory";
 *> 09 §3.2 Container Set Content rows): a first-time survival player's inventory holds the starting
 *> items, sent in the join's Container Set Content (play-s2c-12-container-set-content-starting-
-*> items.hex); a returning player is not given them again.
+*> items.hex); a returning player is not given them again (the inventory they left with comes back,
+*> US13-4, so the returning player leaves with an empty one).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-STARTING-ITEMS.
  DATA DIVISION.
@@ -26,9 +27,10 @@
          TO WS-PATH
      CALL "STARTING-CONTENT-CASE" USING WS-CONN WS-PATH TESTLIB-ASSERT
 
-     MOVE "acceptance US4-8 given a player who has been in the world when they join again "
-         & "then they are not given the starting items again (Container Set Content equal to "
-         & "play-s2c-12-container-set-content-empty.hex)" TO TL-CASE
+     MOVE "acceptance US4-8 given a player who has been in the world and left with an empty "
+         & "inventory when they join again then they are not given the starting items again "
+         & "(Container Set Content equal to play-s2c-12-container-set-content-empty.hex)" TO TL-CASE
+     INITIALIZE PL-INVENTORY(CN-PLAYER(WS-CONN))
      CALL "CORE-CONN-CLOSED" USING WS-CONN
      CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-CONN
      MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-empty.hex" TO WS-PATH

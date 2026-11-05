@@ -8,7 +8,11 @@
 *> (standin §5.2), the game mode of the settings (FR-007, FR-009; a guest of a world opened to
 *> others gets the guest mode, FR-017), full health and food (§10.1, §11.1), a new entity id, held
 *> slot 0, an empty inventory, state Joining. Operator status: the host of a single-player or
-*> opened world, and guests when guests may use operator commands (FR-016, FR-017). A player whose
+*> opened world, and guests when guests may use operator commands (FR-016, FR-017). In a world
+*> hosted by the client (host kinds 1 and 2) new players get the world's GameMode (CW-GAME-MODE,
+*> level.dat; guests the guest mode). A UUID not yet known is looked up in the world's player
+*> files (PLAYER-DAT-READ: load on join). A known player whose state is stored (KN-STORED) gets back
+*> its game mode, health, food, held slot and inventory (FR-014). A player whose
 *> UUID has not been in the world before (CORE-KNOWN) becomes known; when it is in survival it is
 *> given the starting inventory of standin §2 (ITEMS.cpy START-ITEM-TABLE; US4-8), once. A known
 *> player who left while dead (KN-DEATH-CAUSE > 0, standin §10.6) is dead again: survival, health 0,
@@ -21,7 +25,7 @@
  COPY ITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-HOST                PIC 9.
- 01 WS-KNOWN               PIC 9.
+ 01 WS-KNOWN               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -60,6 +64,9 @@
              MOVE 1 TO WS-HOST
          END-IF
          MOVE CS-DEFAULT-MODE TO PL-MODE(L-ROW)
+         IF CS-HOST-KIND > 0
+             MOVE CW-GAME-MODE TO PL-MODE(L-ROW)
+         END-IF
          IF CS-HOST-KIND = 2 AND WS-HOST = 0
              MOVE CS-GUEST-MODE TO PL-MODE(L-ROW)
              MOVE CS-GUEST-OPERATOR TO PL-OPERATOR(L-ROW)
@@ -76,7 +83,21 @@
          MOVE 0 TO WS-KNOWN
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
              IF KN-UUID(WS-I) = L-UUID
-                 MOVE 1 TO WS-KNOWN
+                 MOVE WS-I TO WS-KNOWN
+             END-IF
+         END-PERFORM
+         IF WS-KNOWN = 0
+             CALL "PLAYER-DAT-READ" USING L-UUID WS-KNOWN
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+             IF KN-UUID(WS-I) = L-UUID
+                 IF KN-STORED(WS-I) = 1
+                     MOVE KN-MODE(WS-I) TO PL-MODE(L-ROW)
+                     MOVE KN-HEALTH(WS-I) TO PL-HEALTH(L-ROW)
+                     MOVE KN-FOOD(WS-I) TO PL-FOOD(L-ROW)
+                     MOVE KN-HELD(WS-I) TO PL-HELD(L-ROW)
+                     MOVE KN-INVENTORY(WS-I) TO PL-INVENTORY(L-ROW)
+                 END-IF
                  IF KN-DEATH-CAUSE(WS-I) > 0
                      MOVE 0 TO PL-MODE(L-ROW) PL-HEALTH(L-ROW)
                      MOVE KN-DEATH-CAUSE(WS-I) TO PL-DEATH-CAUSE(L-ROW)
@@ -98,6 +119,7 @@
              ADD 1 TO KN-COUNT
              MOVE L-UUID TO KN-UUID(KN-COUNT)
              MOVE 0 TO KN-DEATH-CAUSE(KN-COUNT)
+             INITIALIZE KN-PLACE(KN-COUNT) KN-STATE(KN-COUNT)
          END-IF
      END-IF
      GOBACK.
@@ -157,8 +179,7 @@
  PROGRAM-ID. PLAYER-LEAVE.
 *> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
 *> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
-*> Its known-player row keeps whether it left dead, with the death cause and killer (standin §10.6),
-*> and the dimension, position and facing it left from (US12-3).
+*> Its known-player row keeps its state (PLAYER-REMEMBER).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -168,20 +189,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
-         IF KN-UUID(WS-I) = PL-UUID(WS-ROW)
-             MOVE PL-DEATH-CAUSE(WS-ROW) TO KN-DEATH-CAUSE(WS-I)
-             MOVE PL-KILLER-NAME(WS-ROW) TO KN-KILLER-NAME(WS-I)
-             MOVE PL-KILLER-LENGTH(WS-ROW) TO KN-KILLER-LENGTH(WS-I)
-             MOVE 1 TO KN-PLACED(WS-I)
-             MOVE PL-DIM(WS-ROW) TO KN-DIM(WS-I)
-             MOVE PL-X(WS-ROW) TO KN-X(WS-I)
-             MOVE PL-Y(WS-ROW) TO KN-Y(WS-I)
-             MOVE PL-Z(WS-ROW) TO KN-Z(WS-I)
-             MOVE PL-YAW(WS-ROW) TO KN-YAW(WS-I)
-             MOVE PL-PITCH(WS-ROW) TO KN-PITCH(WS-I)
-         END-IF
-     END-PERFORM
+     CALL "PLAYER-REMEMBER" USING WS-ROW
      CALL "OTHERS-LEAVE" USING WS-ROW
      IF PL-CONN(WS-ROW) > 0
          MOVE 0 TO CN-PLAYER(PL-CONN(WS-ROW))
@@ -211,3 +219,42 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PLAYERS-ONLINE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-REMEMBER.
+*> USING player row: its known-player row keeps the player's state (FR-014; data-model §6 "state
+*> stored"): whether it is dead, with the death cause and killer (standin §10.6); the dimension,
+*> position and facing (KN-PLACED, US12-3); name, game mode, health, food, held slot and inventory
+*> (KN-STORED); and it is marked to be written by the next world save (KN-DIRTY).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE L-ROW TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > KN-COUNT
+         IF KN-UUID(WS-I) = PL-UUID(WS-ROW)
+             MOVE PL-DEATH-CAUSE(WS-ROW) TO KN-DEATH-CAUSE(WS-I)
+             MOVE PL-KILLER-NAME(WS-ROW) TO KN-KILLER-NAME(WS-I)
+             MOVE PL-KILLER-LENGTH(WS-ROW) TO KN-KILLER-LENGTH(WS-I)
+             MOVE 1 TO KN-PLACED(WS-I) KN-STORED(WS-I) KN-DIRTY(WS-I)
+             MOVE PL-DIM(WS-ROW) TO KN-DIM(WS-I)
+             MOVE PL-X(WS-ROW) TO KN-X(WS-I)
+             MOVE PL-Y(WS-ROW) TO KN-Y(WS-I)
+             MOVE PL-Z(WS-ROW) TO KN-Z(WS-I)
+             MOVE PL-YAW(WS-ROW) TO KN-YAW(WS-I)
+             MOVE PL-PITCH(WS-ROW) TO KN-PITCH(WS-I)
+             MOVE PL-NAME(WS-ROW) TO KN-NAME(WS-I)
+             MOVE PL-NAME-LENGTH(WS-ROW) TO KN-NAME-LENGTH(WS-I)
+             MOVE PL-MODE(WS-ROW) TO KN-MODE(WS-I)
+             MOVE PL-HEALTH(WS-ROW) TO KN-HEALTH(WS-I)
+             MOVE PL-FOOD(WS-ROW) TO KN-FOOD(WS-I)
+             MOVE PL-HELD(WS-ROW) TO KN-HELD(WS-I)
+             MOVE PL-INVENTORY(WS-ROW) TO KN-INVENTORY(WS-I)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PLAYER-REMEMBER.

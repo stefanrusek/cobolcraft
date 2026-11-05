@@ -15,7 +15,7 @@
  01 WS-NEW-PATH            PIC X(64) VALUE Z"build/core-test-api-new".
  01 WS-OLD-PATH            PIC X(64) VALUE Z"build/core-test-api-old".
  01 WS-COMMAND             PIC X(128) VALUE
-     "mkdir -p build/core-test-api-old && touch build/core-test-api-old/level.dat".
+     "rm -rf build/core-test-api-old build/core-test-api-new".
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-CREATED             BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
@@ -36,6 +36,10 @@
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+*>   build/core-test-api-old: a world saved by an earlier run (level.dat and the rest of 07 §9).
+     CALL "SYSTEM" USING WS-COMMAND
+     CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
+     CALL "CORE-SAVE"
      PERFORM WORLD-OPEN-CASES
      PERFORM CONNECTION-CASES
      PERFORM TICK-CASES
@@ -79,7 +83,6 @@
      MOVE CORE-CONN-MEMORY TO WS-KIND
      CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
      MOVE 0 TO CS-HOST-KIND
-     CALL "SYSTEM" USING WS-COMMAND
      CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
      PERFORM START-ROW
      MOVE WS-CREATED TO WS-NUM PERFORM ADD-NUM

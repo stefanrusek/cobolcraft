@@ -4,7 +4,8 @@
 *>     of a hex fixture (contracts/proto-api.md §3: whitespace-separated hex, "#" comments).
 *>   TEST-SETTINGS USING CORE-SETTINGS: the operator-surface §2 defaults, with extra dimensions off
 *>     (US2: only cobolcraft:main) and host kind 0 (dedicated server).
-*>   TEST-OPEN-WORLD USING CORE-SETTINGS: CORE-WORLD-OPEN on build/core-test-world (no level.dat).
+*>   TEST-OPEN-WORLD USING CORE-SETTINGS: removes build/core-test-world, then CORE-WORLD-OPEN on it
+*>     (a new world: no level.dat, no region files left by an earlier test).
 *>   TEST-FEED USING connection id, path (PIC X(256)): frames the fixture packet as the client
 *>     would (compressed at 256 once the connection's CN-COMPRESS is set) and passes it to
 *>     CORE-CONN-INPUT.
@@ -83,6 +84,23 @@
 *>   TEST-DRAIN-WEATHER USING connection id, text out (PIC X(4096)): drains the connection and lists
 *>     its weather Game Events (events 1, 2, 7 and 8) separated by " | " as "<event> <value>" (one
 *>     decimal); other packets, and other Game Events, are left out.
+*>   TEST-NBT-RENDER USING PB-BUFFER, tag type, text (PIC X(8192)), text length (appended to):
+*>     renders the payload of that type at PB-POS as text and moves past it: numbers in decimal
+*>     (Float and Double with three decimals), strings as they are, a List as [e,e,...], a Compound
+*>     as {name:value,...} in file order, an Int Array as I[i,i,...], a Byte Array as B<count> and a
+*>     Long Array as L<count>. Recursive.
+*>   TEST-NBT-GET USING PB-BUFFER, root payload position, path (PIC X(128), NBT-READ-FIND form),
+*>     text out (PIC X(8192)): the rendering of the tag the path names in the root compound whose
+*>     payload starts at that position, or "absent".
+*>   TEST-NBT-FILE USING path (PIC X(256)), PB-BUFFER (initialised), root payload position out:
+*>     reads a gzip NBT file (NBT-FILE-READ) and its file root header; position -1 when unreadable.
+*>   TEST-WORLD-SNAPSHOT USING text out (PIC X(8192)): the saved world state as text: time, spawn,
+*>     the weather of each dimension, the allow-list flag and the names on each access list, then
+*>     every mob and ground item by dimension and entity type (type, position, yaw, health, item,
+*>     count, age; at most one entity of a type per dimension keeps the order stable).
+*>   TEST-PLAYER-SNAPSHOT USING player row, text out (PIC X(8192)): a player's stored state as text:
+*>     dimension, position, rotation, game mode, health, food, held slot, death cause and the
+*>     non-empty inventory slots.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -162,10 +180,12 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PATH                PIC X(64) VALUE Z"build/core-test-world".
+ 01 WS-COMMAND             PIC X(64) VALUE "rm -rf build/core-test-world".
  01 WS-CREATED             BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  PROCEDURE DIVISION USING CORE-SETTINGS.
+     CALL "SYSTEM" USING WS-COMMAND
      CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
      GOBACK.
  END PROGRAM TEST-OPEN-WORLD.
@@ -1480,3 +1500,331 @@
      CALL "PB-FREE" USING PK-BUFFER
      GOBACK.
  END PROGRAM TEST-DRAIN-WEATHER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-NBT-RENDER RECURSIVE.
+ DATA DIVISION.
+ LOCAL-STORAGE SECTION.
+ 01 LS-INT                 BINARY-LONG.
+ 01 LS-LONG                BINARY-DOUBLE.
+ 01 LS-FLOAT               FLOAT-SHORT.
+ 01 LS-DOUBLE              FLOAT-LONG.
+ 01 LS-EDIT                PIC -(18)9.
+ 01 LS-FEDIT               PIC -(12)9.999.
+ 01 LS-TEXT                PIC X(1024).
+ 01 LS-LENGTH              BINARY-LONG.
+ 01 LS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 LS-TYPE                BINARY-LONG.
+ 01 LS-COUNT               BINARY-LONG.
+ 01 LS-I                   BINARY-LONG.
+ 01 LS-INTS.
+    05 LS-INT-ITEM         BINARY-LONG OCCURS 64 TIMES.
+ 01 LS-INT-CAPACITY        BINARY-LONG VALUE 64.
+ 01 LS-NUMBER              PIC X(32).
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(8192).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TYPE L-TEXT L-LENGTH.
+     MOVE SPACES TO LS-NUMBER
+     EVALUATE L-TYPE
+         WHEN 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER LS-INT
+             MOVE LS-INT TO LS-EDIT
+             MOVE FUNCTION TRIM(LS-EDIT) TO LS-NUMBER
+         WHEN 2
+             CALL "PB-GET-SHORT" USING PB-BUFFER LS-INT
+             MOVE LS-INT TO LS-EDIT
+             MOVE FUNCTION TRIM(LS-EDIT) TO LS-NUMBER
+         WHEN 3
+             CALL "PB-GET-INT" USING PB-BUFFER LS-INT
+             MOVE LS-INT TO LS-EDIT
+             MOVE FUNCTION TRIM(LS-EDIT) TO LS-NUMBER
+         WHEN 4
+             CALL "PB-GET-LONG" USING PB-BUFFER LS-LONG
+             MOVE LS-LONG TO LS-EDIT
+             MOVE FUNCTION TRIM(LS-EDIT) TO LS-NUMBER
+         WHEN 5
+             CALL "PB-GET-FLOAT" USING PB-BUFFER LS-FLOAT
+             COMPUTE LS-FEDIT ROUNDED = LS-FLOAT
+             MOVE FUNCTION TRIM(LS-FEDIT) TO LS-NUMBER
+         WHEN 6
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER LS-DOUBLE
+             COMPUTE LS-FEDIT ROUNDED = LS-DOUBLE
+             MOVE FUNCTION TRIM(LS-FEDIT) TO LS-NUMBER
+         WHEN 7
+             CALL "PB-GET-INT" USING PB-BUFFER LS-COUNT
+             CALL "PB-SKIP" USING PB-BUFFER LS-COUNT
+             MOVE LS-COUNT TO LS-EDIT
+             STRING "B" FUNCTION TRIM(LS-EDIT) DELIMITED BY SIZE INTO LS-NUMBER
+         WHEN 8
+             CALL "NBT-READ-STRING" USING PB-BUFFER LS-TEXT LS-CAPACITY LS-LENGTH
+             IF LS-LENGTH > 0
+                 MOVE LS-TEXT(1:LS-LENGTH) TO L-TEXT(L-LENGTH + 1:LS-LENGTH)
+                 ADD LS-LENGTH TO L-LENGTH
+             END-IF
+         WHEN 9
+             CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER LS-TYPE LS-COUNT
+             MOVE "[" TO L-TEXT(L-LENGTH + 1:1)
+             ADD 1 TO L-LENGTH
+             PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > LS-COUNT OR PB-ERROR = 1
+                 IF LS-I > 1
+                     MOVE "," TO L-TEXT(L-LENGTH + 1:1)
+                     ADD 1 TO L-LENGTH
+                 END-IF
+                 CALL "TEST-NBT-RENDER" USING PB-BUFFER LS-TYPE L-TEXT L-LENGTH
+             END-PERFORM
+             MOVE "]" TO L-TEXT(L-LENGTH + 1:1)
+             ADD 1 TO L-LENGTH
+         WHEN 10
+             MOVE "{" TO L-TEXT(L-LENGTH + 1:1)
+             ADD 1 TO L-LENGTH
+             MOVE 0 TO LS-I
+             PERFORM UNTIL PB-ERROR = 1
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER LS-TYPE LS-TEXT LS-CAPACITY
+                     LS-LENGTH
+                 IF LS-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF LS-I > 0
+                     MOVE "," TO L-TEXT(L-LENGTH + 1:1)
+                     ADD 1 TO L-LENGTH
+                 END-IF
+                 ADD 1 TO LS-I
+                 IF LS-LENGTH > 0
+                     MOVE LS-TEXT(1:LS-LENGTH) TO L-TEXT(L-LENGTH + 1:LS-LENGTH)
+                     ADD LS-LENGTH TO L-LENGTH
+                 END-IF
+                 MOVE ":" TO L-TEXT(L-LENGTH + 1:1)
+                 ADD 1 TO L-LENGTH
+                 CALL "TEST-NBT-RENDER" USING PB-BUFFER LS-TYPE L-TEXT L-LENGTH
+             END-PERFORM
+             MOVE "}" TO L-TEXT(L-LENGTH + 1:1)
+             ADD 1 TO L-LENGTH
+         WHEN 11
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER LS-INT-CAPACITY LS-COUNT LS-INTS
+             MOVE "I[" TO L-TEXT(L-LENGTH + 1:2)
+             ADD 2 TO L-LENGTH
+             PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > LS-COUNT
+                 IF LS-I > 1
+                     MOVE "," TO L-TEXT(L-LENGTH + 1:1)
+                     ADD 1 TO L-LENGTH
+                 END-IF
+                 MOVE LS-INT-ITEM(LS-I) TO LS-EDIT
+                 MOVE FUNCTION TRIM(LS-EDIT) TO LS-NUMBER
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(LS-NUMBER)) TO LS-LENGTH
+                 MOVE LS-NUMBER(1:LS-LENGTH) TO L-TEXT(L-LENGTH + 1:LS-LENGTH)
+                 ADD LS-LENGTH TO L-LENGTH
+             END-PERFORM
+             MOVE SPACES TO LS-NUMBER
+             MOVE "]" TO L-TEXT(L-LENGTH + 1:1)
+             ADD 1 TO L-LENGTH
+         WHEN 12
+             CALL "PB-GET-INT" USING PB-BUFFER LS-COUNT
+             COMPUTE LS-I = LS-COUNT * 8
+             CALL "PB-SKIP" USING PB-BUFFER LS-I
+             MOVE LS-COUNT TO LS-EDIT
+             STRING "L" FUNCTION TRIM(LS-EDIT) DELIMITED BY SIZE INTO LS-NUMBER
+     END-EVALUATE
+     IF LS-NUMBER NOT = SPACES
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(LS-NUMBER)) TO LS-LENGTH
+         MOVE LS-NUMBER(1:LS-LENGTH) TO L-TEXT(L-LENGTH + 1:LS-LENGTH)
+         ADD LS-LENGTH TO L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-NBT-RENDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-NBT-GET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COMPOUND            BINARY-LONG VALUE 10.
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROOT                 BINARY-LONG.
+ 01 L-PATH                 PIC X(128).
+ 01 L-TEXT                 PIC X(8192).
+ PROCEDURE DIVISION USING PB-BUFFER L-ROOT L-PATH L-TEXT.
+     MOVE SPACES TO L-TEXT
+     IF L-ROOT < 0
+         MOVE "absent (no file)" TO L-TEXT
+         GOBACK
+     END-IF
+     MOVE L-ROOT TO PB-POS
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO WS-PATH-LENGTH
+     CALL "NBT-READ-FIND" USING PB-BUFFER WS-COMPOUND L-PATH WS-PATH-LENGTH WS-TYPE
+     IF WS-TYPE = 0
+         MOVE "absent" TO L-TEXT
+     ELSE
+         MOVE 0 TO WS-LENGTH
+         CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-TYPE L-TEXT WS-LENGTH
+     END-IF
+     MOVE L-ROOT TO PB-POS
+     GOBACK.
+ END PROGRAM TEST-NBT-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-NBT-FILE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PATH                 PIC X(256).
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PATH PB-BUFFER L-ROOT.
+     MOVE -1 TO L-ROOT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO WS-LENGTH
+     CALL "NBT-FILE-READ" USING L-PATH WS-LENGTH PB-BUFFER WS-OUTCOME
+     IF WS-OUTCOME = 0
+         CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+         MOVE PB-POS TO L-ROOT
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-NBT-FILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-WORLD-SNAPSHOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FEDIT               PIC -(6)9.999.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(8192).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE CW-TIME TO WS-EDIT
+     STRING "time " FUNCTION TRIM(WS-EDIT) " spawn" DELIMITED BY SIZE INTO L-TEXT
+         WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-X
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Y
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Z
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-YAW
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 2
+         MOVE CW-WEATHER-KIND(WS-D) TO WS-EDIT
+         STRING " | weather " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+             WITH POINTER WS-PTR
+         MOVE CW-WEATHER-LEFT(WS-D) TO WS-EDIT
+         STRING " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE AC-ENFORCED TO WS-EDIT
+     STRING " | enforced " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+         WITH POINTER WS-PTR
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 3
+         STRING " | list" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+         PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > AC-COUNT(WS-L)
+             STRING " " AC-NAME(WS-L, WS-ROW)(1:AC-NAME-LENGTH(WS-L, WS-ROW)) DELIMITED BY SIZE
+                 INTO L-TEXT WITH POINTER WS-PTR
+         END-PERFORM
+     END-PERFORM
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 2
+         PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 3
+             PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+                 IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-DIM(WS-ROW) = WS-D
+                         AND EN-TYPE(WS-ROW) = WS-T
+                     MOVE WS-D TO WS-EDIT
+                     STRING " | dim " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     MOVE WS-T TO WS-EDIT
+                     STRING " type " FUNCTION TRIM(WS-EDIT) " at" DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     COMPUTE WS-FEDIT ROUNDED = EN-X(WS-ROW)
+                     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     COMPUTE WS-FEDIT ROUNDED = EN-Y(WS-ROW)
+                     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     COMPUTE WS-FEDIT ROUNDED = EN-Z(WS-ROW)
+                     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     COMPUTE WS-FEDIT ROUNDED = EN-YAW(WS-ROW)
+                     STRING " yaw " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     MOVE EN-HEALTH(WS-ROW) TO WS-EDIT
+                     STRING " health " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     MOVE EN-ITEM(WS-ROW) TO WS-EDIT
+                     STRING " item " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     MOVE EN-ITEM-COUNT(WS-ROW) TO WS-EDIT
+                     STRING "x" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                     MOVE EN-AGE(WS-ROW) TO WS-EDIT
+                     STRING " age " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT
+                         WITH POINTER WS-PTR
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-WORLD-SNAPSHOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PLAYER-SNAPSHOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FEDIT               PIC -(6)9.999.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-TEXT                 PIC X(8192).
+ PROCEDURE DIVISION USING L-ROW L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE PL-DIM(L-ROW) TO WS-EDIT
+     STRING "dim " FUNCTION TRIM(WS-EDIT) " at" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-X(L-ROW)
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-Y(L-ROW)
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-Z(L-ROW)
+     STRING " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-YAW(L-ROW)
+     STRING " yaw " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-PITCH(L-ROW)
+     STRING " pitch " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE PL-MODE(L-ROW) TO WS-EDIT
+     STRING " mode " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     COMPUTE WS-FEDIT ROUNDED = PL-HEALTH(L-ROW)
+     STRING " health " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE PL-FOOD(L-ROW) TO WS-EDIT
+     STRING " food " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE PL-HELD(L-ROW) TO WS-EDIT
+     STRING " held " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+     MOVE PL-DEATH-CAUSE(L-ROW) TO WS-EDIT
+     STRING " death " FUNCTION TRIM(WS-EDIT) " inventory" DELIMITED BY SIZE INTO L-TEXT
+         WITH POINTER WS-PTR
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT-COUNT(L-ROW, WS-S) > 0
+             COMPUTE WS-EDIT = WS-S - 1
+             STRING " " FUNCTION TRIM(WS-EDIT) "=" DELIMITED BY SIZE INTO L-TEXT
+                 WITH POINTER WS-PTR
+             MOVE PL-SLOT-ITEM(L-ROW, WS-S) TO WS-EDIT
+             STRING FUNCTION TRIM(WS-EDIT) "x" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+             MOVE PL-SLOT-COUNT(L-ROW, WS-S) TO WS-EDIT
+             STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-PLAYER-SNAPSHOT.

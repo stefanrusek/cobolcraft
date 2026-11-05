@@ -851,43 +851,43 @@ with every `core/tests/acc_us4_*.cob` passing.
 **Goal**: the world folder of `docs/protocol/07-nbt-and-anvil.md` §9 (files through proto `NBT-FILE-*`) and the console lines of operator-surface
 §3. **Independent Test**: `make gate-core` with `acc_us13_restore.cob` passing.
 
-- [ ] T594 [P] [US13-core] Write implementation test `core/tests/test_region.cob`: region file header, sector allocation, zlib chunk payloads, rewrite of a grown chunk, reading an absent chunk (07 §6)
-- [ ] T595 [US13-core] Implement region file read and write in `core/src/region.cob`
-- [ ] T596 [P] [US13-core] Write implementation test `core/tests/test_chunk_nbt.cob`: chunk NBT per 07 §7 with the 07 §9 values (status, block-state and biome palettes with keys and properties, no block entities, `LastUpdate`) round-trips
-- [ ] T597 [US13-core] Implement chunk NBT save and load in `core/src/persistence.cob`
-- [ ] T598 [P] [US13-core] Write implementation test `core/tests/test_entity_nbt.cob`: entity chunk payloads (`DataVersion`, `Position`, `Entities` with mob and ground-item keys of 07 §9) round-trip including remaining despawn age
-- [ ] T599 [US13-core] Implement entity storage save and load in `core/src/persistence.cob`
-- [ ] T600 [P] [US13-core] Write implementation test `core/tests/test_level_dat.cob`: `level.dat` keys of 07 §9 round-trip (name, game mode, time, spawn, per-dimension weather); `GameMode` applies to new players only for host kinds 1 and 2
-- [ ] T601 [US13-core] Implement `level.dat` save and load in `core/src/persistence.cob`
-- [ ] T602 [P] [US13-core] Write implementation test `core/tests/test_access_dat.cob`: `access.dat` operators, bans and allow-list round-trip as offline identities, and the allow-list enforcement flag round-trips; a new dedicated-server world seeds the flag from `CS-ALLOW-LIST-ENFORCED`; a new world with `CS-HOST-KIND` 1 seeds it as 0; an existing world ignores the setting (operator decision A2)
-- [ ] T603 [US13-core] Implement the in-memory operator, ban and allow lists and the allow-list enforcement flag in `core/src/access.cob` (a new world seeds the flag from `CS-ALLOW-LIST-ENFORCED`; an existing world keeps its stored flag)
-- [ ] T604 [US13-core] Implement `access.dat` save and load (through proto `NBT-FILE-WRITE`/`NBT-FILE-READ`) in `core/src/persistence.cob`
-- [ ] T605 [P] [US13-core] Write implementation test `core/tests/test_player_dat.cob`: `players/<uuid>.dat` round-trip of dimension, position, rotation, game mode, health, food, inventory and held slot; files of players who left since the last save are written (07 §9)
-- [ ] T606 [US13-core] Implement player file save and load (load on join) in `core/src/persistence.cob`
-- [ ] T607 [P] [US13-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-SAVE` and for `CORE-WORLD-OPEN` of an existing folder (created flag 0)
-- [ ] T608 [US13-core] Implement the world save (every changed chunk, every chunk holding entities, player files of online players and of players who left since the last save, `level.dat`, `access.dat`; 07 §9) in `core/src/persistence.cob`
-- [ ] T609 [US13-core] Implement the `CORE-SAVE` entry point calling the world save in `core/src/api.cob`
-- [ ] T610 [US13-core] Implement loading an existing world in `CORE-WORLD-OPEN` (created flag 0) in `core/src/api.cob`
-- [ ] T611 [P] [US13-core] Write fatal-path test `core/tests/test_world_unreadable.cob` with `core/tests/test_world_unreadable.expect`: an unreadable `level.dat` makes `CORE-WORLD-OPEN` exit through `cc_fatal` naming the file (research R14)
-- [ ] T612 [P] [US13-core] Write fatal-path test `core/tests/test_save_write_fails.cob` with `core/tests/test_save_write_fails.expect`: a failing write during save exits through `cc_fatal`
-- [ ] T613 [US13-core] Route unreadable world files to `cc_fatal` in `core/src/persistence.cob`
-- [ ] T614 [US13-core] Route failed save writes to `cc_fatal` in `core/src/persistence.cob`
-- [ ] T615 [P] [US13-core] Write acceptance test `core/tests/acc_us13_new_world.cob`: case "acceptance US13-1 given no world folder when the world is opened then a new world folder is created and the created flag is 1" (core half; the console lines are the server's)
-- [ ] T616 [P] [US13-core] Write acceptance test `core/tests/acc_us13_restore.cob`: case "acceptance US13-4 given a world with block changes, mobs, ground items, weather, time, spawn and access lists in every dimension and players who left in different dimensions when saved and reopened then every one of them is as it was" (FR-014, SC-003 core half)
-- [ ] T617 [P] [US13-core] Write acceptance test `core/tests/acc_us13_copy_folder.cob`: case "acceptance US13-5 given a world folder copied to another path when opened there then every dimension, block, player record, mob and ground item is the same"
-- [ ] T618 [P] [US13-core] Write acceptance test `core/tests/acc_us13_changed_settings.cob`: case "US13 edge given an existing world and changed settings when opened then the world is kept and the new settings apply"; case "the `allow-list` setting does not override the enforcement flag stored in the world's `access.dat`" (A2)
-- [ ] T619 [P] [US13-core] Write acceptance test `core/tests/acc_us13_console_lines.cob`: case "acceptance US13-3 given a running world when a player joins, leaves, dies or changes dimension or chats then `CORE-CONSOLE-DRAIN` yields `<name> joined`, `<name> left`, the death message, `<name> went to <dimension key>` and `<name> message`" (operator-surface §3)
-- [ ] T620 [US13-core] Extend implementation test `core/tests/test_content_tables.cob` to assert `core/copy/CONSOLELANG.cpy` holds the `en_us` text of every translation key the core sends (test first)
-- [ ] T621 [US13-core] Create `core/copy/CONSOLELANG.cpy`: the `en_us` text of every translation key the core sends (from `docs/protocol/08-resource-packs.md` §10.8), used only to render console lines
-- [ ] T622 [US13-core] Implement the console line queue drained by `CORE-CONSOLE-DRAIN` in `core/src/console.cob`, with server-sent `translate` messages rendered to text through `core/copy/CONSOLELANG.cpy`
-- [ ] T623 [US13-core] Queue the `<name> joined` and `<name> left` lines from `core/src/play.cob`
-- [ ] T624 [US13-core] Queue the death message line from `core/src/health.cob`
-- [ ] T625 [US13-core] Queue the `<name> went to <dimension key>` line from `core/src/dimensions.cob`
-- [ ] T626 [US13-core] Queue the `<name> message` chat line from `core/src/chat.cob`
-- [ ] T1068 [P] [US13-core] Write implementation test `core/tests/test_chunk_unload.cob` (added after Phase 13; constitution 5.7): a loaded chunk outside every player's view in its dimension is released from the chunk cache; a changed chunk is first written to its region file (07 §9) and reads back the same when it comes into view again, an unchanged one is regenerated; a player who walks far enough to load more than 4096 distinct chunks in total does not hit the cache-full fatal
-- [ ] T1069 [US13-core] Implement chunk unloading (save if changed, then release the cache row) in `core/src/chunks-stream.cob`
-- [ ] T627 [US13-core] Extend the core implementation tests to 100 % coverage of the US13 changes
-- [ ] T628 Gate: run `make gate-core` and record the command and its real output
+- [X] T594 [P] [US13-core] Write implementation test `core/tests/test_region.cob`: region file header, sector allocation, zlib chunk payloads, rewrite of a grown chunk, reading an absent chunk (07 §6)
+- [X] T595 [US13-core] Implement region file read and write in `core/src/region.cob`
+- [X] T596 [P] [US13-core] Write implementation test `core/tests/test_chunk_nbt.cob`: chunk NBT per 07 §7 with the 07 §9 values (status, block-state and biome palettes with keys and properties, no block entities, `LastUpdate`) round-trips
+- [X] T597 [US13-core] Implement chunk NBT save and load in `core/src/persistence.cob`
+- [X] T598 [P] [US13-core] Write implementation test `core/tests/test_entity_nbt.cob`: entity chunk payloads (`DataVersion`, `Position`, `Entities` with mob and ground-item keys of 07 §9) round-trip including remaining despawn age
+- [X] T599 [US13-core] Implement entity storage save and load in `core/src/persistence.cob`
+- [X] T600 [P] [US13-core] Write implementation test `core/tests/test_level_dat.cob`: `level.dat` keys of 07 §9 round-trip (name, game mode, time, spawn, per-dimension weather); `GameMode` applies to new players only for host kinds 1 and 2
+- [X] T601 [US13-core] Implement `level.dat` save and load in `core/src/persistence.cob`
+- [X] T602 [P] [US13-core] Write implementation test `core/tests/test_access_dat.cob`: `access.dat` operators, bans and allow-list round-trip as offline identities, and the allow-list enforcement flag round-trips; a new dedicated-server world seeds the flag from `CS-ALLOW-LIST-ENFORCED`; a new world with `CS-HOST-KIND` 1 seeds it as 0; an existing world ignores the setting (operator decision A2)
+- [X] T603 [US13-core] Implement the in-memory operator, ban and allow lists and the allow-list enforcement flag in `core/src/access.cob` (a new world seeds the flag from `CS-ALLOW-LIST-ENFORCED`; an existing world keeps its stored flag)
+- [X] T604 [US13-core] Implement `access.dat` save and load (through proto `NBT-FILE-WRITE`/`NBT-FILE-READ`) in `core/src/persistence.cob`
+- [X] T605 [P] [US13-core] Write implementation test `core/tests/test_player_dat.cob`: `players/<uuid>.dat` round-trip of dimension, position, rotation, game mode, health, food, inventory and held slot; files of players who left since the last save are written (07 §9)
+- [X] T606 [US13-core] Implement player file save and load (load on join) in `core/src/persistence.cob`
+- [X] T607 [P] [US13-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-SAVE` and for `CORE-WORLD-OPEN` of an existing folder (created flag 0)
+- [X] T608 [US13-core] Implement the world save (every changed chunk, every chunk holding entities, player files of online players and of players who left since the last save, `level.dat`, `access.dat`; 07 §9) in `core/src/persistence.cob`
+- [X] T609 [US13-core] Implement the `CORE-SAVE` entry point calling the world save in `core/src/api.cob`
+- [X] T610 [US13-core] Implement loading an existing world in `CORE-WORLD-OPEN` (created flag 0) in `core/src/api.cob`
+- [X] T611 [P] [US13-core] Write fatal-path test `core/tests/test_world_unreadable.cob` with `core/tests/test_world_unreadable.expect`: an unreadable `level.dat` makes `CORE-WORLD-OPEN` exit through `cc_fatal` naming the file (research R14)
+- [X] T612 [P] [US13-core] Write fatal-path test `core/tests/test_save_write_fails.cob` with `core/tests/test_save_write_fails.expect`: a failing write during save exits through `cc_fatal`
+- [X] T613 [US13-core] Route unreadable world files to `cc_fatal` in `core/src/persistence.cob`
+- [X] T614 [US13-core] Route failed save writes to `cc_fatal` in `core/src/persistence.cob`
+- [X] T615 [P] [US13-core] Write acceptance test `core/tests/acc_us13_new_world.cob`: case "acceptance US13-1 given no world folder when the world is opened then a new world folder is created and the created flag is 1" (core half; the console lines are the server's)
+- [X] T616 [P] [US13-core] Write acceptance test `core/tests/acc_us13_restore.cob`: case "acceptance US13-4 given a world with block changes, mobs, ground items, weather, time, spawn and access lists in every dimension and players who left in different dimensions when saved and reopened then every one of them is as it was" (FR-014, SC-003 core half)
+- [X] T617 [P] [US13-core] Write acceptance test `core/tests/acc_us13_copy_folder.cob`: case "acceptance US13-5 given a world folder copied to another path when opened there then every dimension, block, player record, mob and ground item is the same"
+- [X] T618 [P] [US13-core] Write acceptance test `core/tests/acc_us13_changed_settings.cob`: case "US13 edge given an existing world and changed settings when opened then the world is kept and the new settings apply"; case "the `allow-list` setting does not override the enforcement flag stored in the world's `access.dat`" (A2)
+- [X] T619 [P] [US13-core] Write acceptance test `core/tests/acc_us13_console_lines.cob`: case "acceptance US13-3 given a running world when a player joins, leaves, dies or changes dimension or chats then `CORE-CONSOLE-DRAIN` yields `<name> joined`, `<name> left`, the death message, `<name> went to <dimension key>` and `<name> message`" (operator-surface §3)
+- [X] T620 [US13-core] Extend implementation test `core/tests/test_content_tables.cob` to assert `core/copy/CONSOLELANG.cpy` holds the `en_us` text of every translation key the core sends (test first)
+- [X] T621 [US13-core] Create `core/copy/CONSOLELANG.cpy`: the `en_us` text of every translation key the core sends (from `docs/protocol/08-resource-packs.md` §10.8), used only to render console lines
+- [X] T622 [US13-core] Implement the console line queue drained by `CORE-CONSOLE-DRAIN` in `core/src/console.cob`, with server-sent `translate` messages rendered to text through `core/copy/CONSOLELANG.cpy`
+- [X] T623 [US13-core] Queue the `<name> joined` and `<name> left` lines from `core/src/play.cob`
+- [X] T624 [US13-core] Queue the death message line from `core/src/health.cob`
+- [X] T625 [US13-core] Queue the `<name> went to <dimension key>` line from `core/src/dimensions.cob`
+- [X] T626 [US13-core] Queue the `<name> message` chat line from `core/src/chat.cob`
+- [X] T1068 [P] [US13-core] Write implementation test `core/tests/test_chunk_unload.cob` (added after Phase 13; constitution 5.7): a loaded chunk outside every player's view in its dimension is released from the chunk cache; a changed chunk is first written to its region file (07 §9) and reads back the same when it comes into view again, an unchanged one is regenerated; a player who walks far enough to load more than 4096 distinct chunks in total does not hit the cache-full fatal
+- [X] T1069 [US13-core] Implement chunk unloading (save if changed, then release the cache row) in `core/src/chunks-stream.cob`
+- [X] T627 [US13-core] Extend the core implementation tests to 100 % coverage of the US13 changes
+- [X] T628 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 24: US14-core — commands
 

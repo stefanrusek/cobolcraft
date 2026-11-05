@@ -3,11 +3,58 @@
 *> packet id and body to the caller's PB-BUFFER (contracts/proto-api.md §5), ready for CORE-SEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHUNK-HEIGHTMAP.
+*> USING cache row, Long count out (BINARY-LONG), Longs out (table of 256 BINARY-DOUBLE UNSIGNED):
+*> the heightmap of the chunk (06 §3.1), shared by Level Chunk With Light and the on-disk chunk
+*> (07 §7 Heightmaps): per column z * 16 + x the topmost non-void Y + 1 - min Y, ceillog2(height + 1)
+*> bits per entry, floor(64 / bits) entries per Long, no entry spanning two Longs.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ 01 WS-TOPS.
+    05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-RANGE               BINARY-LONG.
+ 01 WS-PER-LONG            BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-MULS.
+    05 WS-MUL              BINARY-DOUBLE UNSIGNED OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-LONGS                BINARY-LONG.
+ 01 L-HEIGHTMAP.
+    05 L-HM                BINARY-DOUBLE UNSIGNED OCCURS 256 TIMES.
+ PROCEDURE DIVISION USING L-ROW L-LONGS L-HEIGHTMAP.
+     MOVE 0 TO WS-BITS
+     MOVE 1 TO WS-RANGE
+     PERFORM UNTIL WS-RANGE >= DM-HEIGHT(CK-DIM(L-ROW)) + 1
+         ADD 1 TO WS-BITS
+         COMPUTE WS-RANGE = WS-RANGE * 2
+     END-PERFORM
+     COMPUTE WS-PER-LONG = 64 / WS-BITS
+     COMPUTE L-LONGS = (256 + WS-PER-LONG - 1) / WS-PER-LONG
+     MOVE 1 TO WS-MUL(1)
+     PERFORM VARYING WS-SLOT FROM 2 BY 1 UNTIL WS-SLOT > WS-PER-LONG
+         COMPUTE WS-MUL(WS-SLOT) = WS-MUL(WS-SLOT - 1) * WS-RANGE
+     END-PERFORM
+     CALL "WORLD-COLUMN-TOPS" USING L-ROW WS-TOPS
+     INITIALIZE L-HEIGHTMAP
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
+         COMPUTE WS-K = WS-I / WS-PER-LONG
+         COMPUTE WS-SLOT = WS-I - WS-K * WS-PER-LONG
+         COMPUTE L-HM(WS-K + 1) = L-HM(WS-K + 1) + (WS-TOP(WS-I + 1) + 1) * WS-MUL(WS-SLOT + 1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CHUNK-HEIGHTMAP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CHUNK-PACKET-BUILD.
 *> USING dim, chunk x, chunk z (BINARY-LONG), PB-BUFFER: appends Level Chunk With Light (0x2E) for
 *> that chunk, generated and lit on first access (WORLD-CHUNK). Heightmaps WORLD_SURFACE (1),
-*> MOTION_BLOCKING (4) and MOTION_BLOCKING_NO_LEAVES (5), identical: topmost non-void Y + 1 - min Y,
-*> ceillog2(height + 1) bits per entry (06 §3.1, §6). One section per 16 block layers through
+*> MOTION_BLOCKING (4) and MOTION_BLOCKING_NO_LEAVES (5), identical (CHUNK-HEIGHTMAP). One section per 16 block layers through
 *> CHUNK-SECTION-ENCODE (fluid count 0; biomes of WORLDGEN-DIM-BIOMES, the same for every cell Y). No
 *> block entities. Light (LIGHT-ENCODE) for every light section index 0 to section count + 1: an
 *> all-zero layer is empty, every other layer an array; the section below the world has no sky or
@@ -84,26 +131,7 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
      CALL "PB-PUT-INT" USING PB-BUFFER L-CX
      CALL "PB-PUT-INT" USING PB-BUFFER L-CZ
-*>   Heightmaps (06 §3.1): bits = ceillog2(height + 1), floor(64 / bits) entries per Long.
-     MOVE 0 TO WS-BITS
-     MOVE 1 TO WS-RANGE
-     PERFORM UNTIL WS-RANGE >= DM-HEIGHT(L-DIM) + 1
-         ADD 1 TO WS-BITS
-         COMPUTE WS-RANGE = WS-RANGE * 2
-     END-PERFORM
-     COMPUTE WS-PER-LONG = 64 / WS-BITS
-     COMPUTE WS-LONGS = (256 + WS-PER-LONG - 1) / WS-PER-LONG
-     MOVE 1 TO WS-MUL(1)
-     PERFORM VARYING WS-SLOT FROM 2 BY 1 UNTIL WS-SLOT > WS-PER-LONG
-         COMPUTE WS-MUL(WS-SLOT) = WS-MUL(WS-SLOT - 1) * WS-RANGE
-     END-PERFORM
-     CALL "WORLD-COLUMN-TOPS" USING WS-ROW WS-TOPS
-     INITIALIZE WS-HEIGHTMAP
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
-         COMPUTE WS-K = WS-I / WS-PER-LONG
-         COMPUTE WS-SLOT = WS-I - WS-K * WS-PER-LONG
-         COMPUTE WS-HM(WS-K + 1) = WS-HM(WS-K + 1) + (WS-TOP(WS-I + 1) + 1) * WS-MUL(WS-SLOT + 1)
-     END-PERFORM
+     CALL "CHUNK-HEIGHTMAP" USING WS-ROW WS-LONGS WS-HEIGHTMAP
      MOVE 3 TO WS-TYPE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE
      PERFORM VARYING WS-TYPE FROM 1 BY 1 UNTIL WS-TYPE > 5
@@ -435,5 +463,45 @@
      MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
      ADD 1 TO PL-BATCH-PENDING(WS-PLAYER)
      CALL "ENTITY-VIEWER-REFRESH" USING WS-PLAYER
+     CALL "CHUNKS-UNLOAD"
      GOBACK.
  END PROGRAM CHUNKS-FOLLOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHUNKS-UNLOAD.
+*> No parameters (called after a player's chunk cache center moved): every loaded chunk that is
+*> outside the view square (Chebyshev distance <= the view distance from the chunk cache center) of
+*> every player in its dimension leaves the chunk cache: a changed chunk is first written to its
+*> region file (PERSIST-CHUNK-SAVE, 07 §9.5), so it reads back the same when next used; an
+*> unchanged one is generated again then (WORLD-CHUNK-LOAD).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ PROCEDURE DIVISION.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CK-COUNT
+         IF CK-USED(WS-ROW) = 1
+             MOVE 0 TO WS-SEEN
+             PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
+                     OR WS-SEEN = 1
+                 IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = CK-DIM(WS-ROW)
+                         AND FUNCTION ABS(CK-X(WS-ROW) - PL-CENTER-X(WS-PLAYER)) <= CS-VIEW-DISTANCE
+                         AND FUNCTION ABS(CK-Z(WS-ROW) - PL-CENTER-Z(WS-PLAYER)) <= CS-VIEW-DISTANCE
+                     MOVE 1 TO WS-SEEN
+                 END-IF
+             END-PERFORM
+             IF WS-SEEN = 0
+                 IF CK-CHANGED(WS-ROW) = 1
+                     CALL "PERSIST-CHUNK-SAVE" USING WS-ROW
+                 END-IF
+                 CALL "WORLD-CHUNK-RELEASE" USING WS-ROW
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CHUNKS-UNLOAD.

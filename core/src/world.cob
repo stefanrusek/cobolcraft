@@ -48,8 +48,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-CHUNK-LOAD.
-*> USING dim, chunk x, chunk z, row out (BINARY-LONG): the cache row of that chunk, generated (not
-*> lit) when it was not loaded. A new row is the one above the high-water mark CK-COUNT, else the
+*> USING dim, chunk x, chunk z, row out (BINARY-LONG): the cache row of that chunk, read from the
+*> dimension's region file when it is there (PERSIST-CHUNK-LOAD), else generated; not lit. A new row is the one above the high-water mark CK-COUNT, else the
 *> first unused row; a full cache (CORE-MAX-CHUNKS chunks loaded) is fatal.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -58,6 +58,7 @@
  01 WS-HASH                BINARY-DOUBLE.
  01 WS-BYTES               BINARY-LONG VALUE 196608.
  01 WS-MARKER-Y            BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
  01 WS-FATAL               PIC X(40) VALUE Z"chunk cache: 4096 chunks loaded".
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
@@ -91,12 +92,45 @@
      MOVE L-ROW TO CK-BUCKET(WS-HASH)
      ALLOCATE WS-BYTES CHARACTERS RETURNING CK-ADDR(L-ROW)
      SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
-     CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CM-CHUNK WS-MARKER-Y
-     IF WS-MARKER-Y >= 0
-         ADD 1 TO CK-SOURCES(L-ROW, WS-MARKER-Y / 16 + 1)
+     CALL "PERSIST-CHUNK-LOAD" USING L-ROW WS-FOUND
+     IF WS-FOUND = 0
+         CALL "WORLDGEN-DIM-CHUNK" USING L-DIM L-CX L-CZ CM-CHUNK WS-MARKER-Y
+         IF WS-MARKER-Y >= 0
+             ADD 1 TO CK-SOURCES(L-ROW, WS-MARKER-Y / 16 + 1)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM WORLD-CHUNK-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-CHUNK-RELEASE.
+*> USING row (BINARY-LONG) of a loaded chunk: the row leaves its hash chain, its memory is freed and
+*> it is unused again (CHUNKS-UNLOAD; a later WORLD-CHUNK-LOAD may reuse it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-HASH                BINARY-DOUBLE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-PREV                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE L-ROW TO WS-ROW
+     COMPUTE WS-HASH = FUNCTION MOD(73 * CK-X(WS-ROW) + 1031 * CK-Z(WS-ROW) + 7 * CK-DIM(WS-ROW),
+         CORE-MAX-CHUNKS) + 1
+     IF CK-BUCKET(WS-HASH) = WS-ROW
+         MOVE CK-NEXT(WS-ROW) TO CK-BUCKET(WS-HASH)
+     ELSE
+         MOVE CK-BUCKET(WS-HASH) TO WS-PREV
+         PERFORM UNTIL CK-NEXT(WS-PREV) = WS-ROW
+             MOVE CK-NEXT(WS-PREV) TO WS-PREV
+         END-PERFORM
+         MOVE CK-NEXT(WS-ROW) TO CK-NEXT(WS-PREV)
+     END-IF
+     FREE CK-ADDR(WS-ROW)
+     MOVE 0 TO CK-USED(WS-ROW) CK-NEXT(WS-ROW)
+     GOBACK.
+ END PROGRAM WORLD-CHUNK-RELEASE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-CHUNK.

@@ -241,7 +241,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-DIE.
 *> USING player row, cause, attacker player row (0 = none) (BINARY-LONG each): the player dies (see
-*> above).
+*> above); the death message is also queued as a console line (CONSOLE-TEXT, US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -291,6 +291,7 @@
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
+     CALL "CONSOLE-TEXT" USING PB-TEXT
      MOVE PL-DIM(WS-ROW) TO WS-DIM
      MOVE PL-X(WS-ROW) TO WS-X
      COMPUTE WS-Y = PL-Y(WS-ROW) + RULE-DEATH-DY-MILLI / 1000
