@@ -53,3 +53,6 @@
 - Clarification 2026-11-05 (Q1): FR-010 resolved — offline mode only; the name is a client command-line argument;
   bans, allow-list, operator status and stored player data are keyed by the offline identity. Re-validated: all items
   pass except the two remaining markers (FR-011, FR-012).
+- Clarification 2026-11-05 (Q2): FR-011 resolved — macOS on Apple silicon (arm64) only for this feature; other macOS
+  architectures, Linux, Windows and Android are follow-up platforms that design choices must not block. Re-validated: all
+  items pass except the one remaining marker (FR-012).
