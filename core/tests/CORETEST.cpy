@@ -38,7 +38,7 @@
 *>   TEST-TICKS USING count: runs that many CORE-TICKs.
 *>   TEST-DRAIN-BLOCKS USING connection id, text out (PIC X(1024)): drains the connection and
 *>     describes each packet (Block Update, Block Destruction, Block Changed Ack, Container Set Slot
-*>     and Light Update with their fields, others by id).
+*>     and Light Update with their fields, others by id; Set Time and Recipe Book Add left out).
 *>   TEST-BLOCK-AT USING x, y, z, state out: the block state of cobolcraft:main there.
 *>   TEST-HELD USING connection id, slot: feeds Set Carried Item.
 *>   TEST-CLICK USING connection id, slot, button, click type: feeds Container Click (container 0,
@@ -46,7 +46,7 @@
 *>   TEST-DRAIN-ENTITIES USING connection id, text out (PIC X(1024)): drains the connection and
 *>     describes each packet (Add Entity, Set Entity Data, Set Entity Motion, Teleport Entity, Take
 *>     Item Entity, Remove Entities and Container Set Slot with their fields, others by id; Set Time
-*>     left out), a run of equal descriptions as <description>x<count>.
+*>     and Recipe Book Add left out), a run of equal descriptions as <description>x<count>.
 *>   TEST-FIND-ENTITY USING network entity id, tracker row out (0 when no row has that id).
 *>   TEST-TICKS-ANSWERED USING count: runs that many CORE-TICKs in steps of at most 100, answering
 *>     after each step every pending Keep Alive of a connection in play (as a client would), so
@@ -74,6 +74,12 @@
 *>     its hunger packets separated by " | ": Set Health "health <h> food <f>", Entity Event
 *>     "event <entity> <id>" and Container Set Slot "slot <s>=<item>x<count>"; other packets are
 *>     left out.
+*>   TEST-PLACE-RECIPE USING connection id, recipe display id: feeds Place Recipe (05c 0x27:
+*>     container 0, the display id, use max items false).
+*>   TEST-DRAIN-CRAFT USING connection id, text out (PIC X(4096)): drains the connection and lists
+*>     its crafting packets separated by " | ": Recipe Book Add "book <entries> craftable <display
+*>     ids with crafting requirements, space-separated> replace <0|1>" and Container Set Slot
+*>     "slot <s>=<item>x<count>"; other packets are left out.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -576,8 +582,8 @@
 *> USING connection id, text out (PIC X(1024)): drains the connection and describes each packet,
 *> separated by one space: Block Update "8(x,y,z=state)", Block Destruction "5(entity,x,y,z=stage)",
 *> Block Changed Ack "4(sequence)", Container Set Slot "20(state id,slot=itemxcount)", Light Update
-*> "49(chunk x,chunk z)", any other packet its id. Set Time (0x73), sent every 20 ticks, is left
-*> out.
+*> "49(chunk x,chunk z)", any other packet its id. Set Time (0x73), sent every 20 ticks, and Recipe
+*> Book Add (0x4B), sent after every inventory change (TEST-DRAIN-CRAFT shows it), are left out.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -611,7 +617,7 @@
      PERFORM UNTIL WS-OUTCOME NOT = 0
          CALL "PB-RESET" USING PK-BUFFER
          CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
-         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115 AND WS-PACKET-ID NOT = 75
              IF WS-PTR > 1
                  STRING " " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
              END-IF
@@ -745,7 +751,8 @@
 *> separated by one space: Add Entity "1(id,type@x,y,z)", Set Entity Data "101(id=itemxcount)",
 *> Set Entity Motion "103(id)", Teleport Entity "128(id)", Take Item Entity
 *> "127(collected,collector,amount)", Remove Entities "78(first id)", Container Set Slot
-*> "20(slot=itemxcount)", any other packet its id; Set Time (0x73) is left out. Positions are
+*> "20(slot=itemxcount)", any other packet its id; Set Time (0x73) and Recipe Book Add (0x4B,
+*> shown by TEST-DRAIN-CRAFT) are left out. Positions are
 *> rounded to two decimals. A run of equal descriptions is written once with "x<count>".
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -790,7 +797,7 @@
          CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
          MOVE SPACES TO WS-DESC
          MOVE 1 TO WS-DPTR
-         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID NOT = 115 AND WS-PACKET-ID NOT = 75
              MOVE WS-PACKET-ID TO WS-E1
              STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-DESC POINTER WS-DPTR
              EVALUATE WS-PACKET-ID
@@ -1324,3 +1331,102 @@
          STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
      END-IF.
  END PROGRAM TEST-DRAIN-HUNGER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PLACE-RECIPE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 39.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-RECIPE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-RECIPE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RECIPE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-PLACE-RECIPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-CRAFT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0
+             EVALUATE WS-PACKET-ID
+                 WHEN 75
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+                     MOVE WS-COUNT TO WS-E1
+                     STRING "book " FUNCTION TRIM(WS-E1) " craftable" DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+                         CALL "PB-GET-RECIPE-DISPLAY" USING PK-BUFFER PK-RECIPE-DISPLAY
+                         CALL "PB-GET-BYTE" USING PK-BUFFER WS-A
+                         IF PK-RD-REQ-PRESENT = 1
+                             MOVE PK-RD-DISPLAY-ID TO WS-E1
+                             STRING " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+                                 INTO L-TEXT POINTER WS-PTR
+                         END-IF
+                     END-PERFORM
+                     CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+                     MOVE WS-A TO WS-E1
+                     STRING " replace " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+                         INTO L-TEXT POINTER WS-PTR
+                 WHEN 20
+                     PERFORM SEPARATE-ENTRY
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
+                     CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
+                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     MOVE WS-B TO WS-E1
+                     MOVE PK-IS-ITEM TO WS-E2
+                     MOVE PK-IS-COUNT TO WS-E3
+                     STRING "slot " FUNCTION TRIM(WS-E1) "=" FUNCTION TRIM(WS-E2) "x"
+                         FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+
+ SEPARATE-ENTRY.
+     IF WS-PTR > 1
+         STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+     END-IF.
+ END PROGRAM TEST-DRAIN-CRAFT.

@@ -234,16 +234,17 @@
      PERFORM CHECK
 
      MOVE "test inventory click a click with a stale state id is applied, echoed and followed "
-         & "by Container Set Content" TO TL-CASE
+         & "by Container Set Content (then the recipe book of the changed inventory)" TO TL-CASE
      PERFORM BUILD-CLICK
      MOVE 999 TO WS-C-STATE
      PERFORM FEED-CLICK
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "20 18" TO TL-EXPECTED
+     MOVE "20 18 75" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test inventory click a wrong predicted slot is followed by Container Set Content; a "
-         & "predicted slot outside 0 to 35 is ignored" TO TL-CASE
+     MOVE "test inventory click a wrong predicted slot is followed by Container Set Content (then "
+         & "the recipe book of the changed inventory); a predicted slot outside 0 to 35 is ignored"
+         TO TL-CASE
      PERFORM BUILD-CLICK
      MOVE 2 TO WS-C-COUNT
      MOVE 30 TO WS-C-PRED-SLOT(1)
@@ -254,7 +255,7 @@
      MOVE 64 TO WS-C-CARRIED-COUNT
      PERFORM FEED-CLICK
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "20 18" TO TL-EXPECTED
+     MOVE "20 18 75" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click a survival player's Set Creative Mode Slot is ignored" TO TL-CASE

@@ -55,6 +55,10 @@
        10 PSB-CHANGED-AMOUNT  BINARY-LONG.
     05 PSB-CARRIED-ITEM       BINARY-LONG.
     05 PSB-CARRIED-COUNT      BINARY-LONG.
+*>  0x27 Place Recipe: container id in PSB-CONTAINER, the recipe display id (VarInt) and use max
+*>  items (Boolean, 1 = true).
+    05 PSB-RECIPE             BINARY-LONG.
+    05 PSB-USE-MAX            BINARY-LONG.
 *>  0x39 Set Creative Mode Slot: the stack (count 0 = empty).
     05 PSB-STACK-ITEM         BINARY-LONG.
     05 PSB-STACK-COUNT        BINARY-LONG.

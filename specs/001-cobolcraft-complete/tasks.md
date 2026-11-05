@@ -786,16 +786,16 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §13 recipes and data-model §8. **Independent Test**: `make gate-core`.
 
-- [ ] T547 [US10-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the recipe list of standin-content §13 (test first, constitution 5.1 rule 3)
-- [ ] T548 [US10-core] Create `core/copy/RECIPES.cpy` (recipes of standin-content §13 in display-id order)
-- [ ] T549 [P] [US10-core] Write acceptance test `core/tests/acc_us10_obtainable.cob`: case "SC-008 every recipe result and every food item is obtainable in survival from the §2 starting inventory, block yields, mob yields and other recipes" (closure over the content tables)
-- [ ] T550 [P] [US10-core] Write `contract_wire_server.cob` cases: Recipe Book Add equals `play-s2c-4b-recipe-book-add.hex` for the fixture's inventory; Place Recipe decodes
-- [ ] T551 [P] [US10-core] Write acceptance test `core/tests/acc_us10_recipe_book.cob`: case "acceptance US10-1 given a joining player then every recipe is sent with its ingredients and result and craftable marked from their inventory"; case "the flags are re-sent when the inventory changes"
-- [ ] T552 [US10-core] Implement the recipe book (Recipe Book Add on join and on inventory change, craftable = ingredients present and result fits after removal) in `core/src/crafting.cob`
-- [ ] T553 [P] [US10-core] Write acceptance test `core/tests/acc_us10_craft.cob`: case "acceptance US10-2 given the ingredients when crafted then they are removed and the result added"; case "acceptance US10-3 given missing ingredients then nothing changes"; case "acceptance US10-4 given no room for the result then nothing changes"
-- [ ] T554 [US10-core] Implement Place Recipe as an atomic craft-one in `core/src/crafting.cob`
-- [ ] T555 [US10-core] Extend the core implementation tests to 100 % coverage of `core/src/crafting.cob`
-- [ ] T556 Gate: run `make gate-core` and record the command and its real output
+- [X] T547 [US10-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the recipe list of standin-content §13 (test first, constitution 5.1 rule 3)
+- [X] T548 [US10-core] Create `core/copy/RECIPES.cpy` (recipes of standin-content §13 in display-id order)
+- [X] T549 [P] [US10-core] Write acceptance test `core/tests/acc_us10_obtainable.cob`: case "SC-008 every recipe result and every food item is obtainable in survival from the §2 starting inventory, block yields, mob yields and other recipes" (closure over the content tables)
+- [X] T550 [P] [US10-core] Write `contract_wire_server.cob` cases: Recipe Book Add equals `play-s2c-4b-recipe-book-add.hex` for the fixture's inventory; Place Recipe decodes
+- [X] T551 [P] [US10-core] Write acceptance test `core/tests/acc_us10_recipe_book.cob`: case "acceptance US10-1 given a joining player then every recipe is sent with its ingredients and result and craftable marked from their inventory"; case "the flags are re-sent when the inventory changes"
+- [X] T552 [US10-core] Implement the recipe book (Recipe Book Add on join and on inventory change, craftable = ingredients present and result fits after removal) in `core/src/crafting.cob`
+- [X] T553 [P] [US10-core] Write acceptance test `core/tests/acc_us10_craft.cob`: case "acceptance US10-2 given the ingredients when crafted then they are removed and the result added"; case "acceptance US10-3 given missing ingredients then nothing changes"; case "acceptance US10-4 given no room for the result then nothing changes"
+- [X] T554 [US10-core] Implement Place Recipe as an atomic craft-one in `core/src/crafting.cob`
+- [X] T555 [US10-core] Extend the core implementation tests to 100 % coverage of `core/src/crafting.cob`
+- [X] T556 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 21: US11-core — weather
 

@@ -110,10 +110,15 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   Chat), `TEST-DRAIN-CHAT` (System Chat texts, `|`-separated), `TEST-ATTACK`, `TEST-CLIENT-COMMAND`,
   `TEST-DRAIN-HEALTH` (Set Health, Damage Event, Hurt Animation, Player Combat Kill, System Chat,
   Respawn and Player Position, `|`-separated), `TEST-USE-ITEM`, `TEST-PLAYER-COMMAND`,
-  `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), fixture loading and
-  comparison. Test copybooks are not make dependencies: touch the test or delete
+  `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), `TEST-PLACE-RECIPE`,
+  `TEST-DRAIN-CRAFT` (Recipe Book Add as `book <n> craftable <ids> replace <r>` and Container Set Slot,
+  `|`-separated), fixture loading and comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
+- **Recipe Book Add follows every inventory change** (standin §13; `CRAFT-REFRESH-ALL` runs after each
+  play packet and each tick). `TEST-DRAIN-BLOCKS` and `TEST-DRAIN-ENTITIES` leave it out (like Set Time);
+  `TEST-DRAIN-IDS` lists it (id 75). A test that edits `PL-SLOT` directly gets a book on the next packet
+  or tick; call `CRAFT-REFRESH-ALL` and drain first when that matters.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
   mod 100 = 0 by day). A test that runs many ticks and does not test mobs keeps them out with
   `MOVE 0 TO CS-HOSTILE-MOBS` before opening the world and `MOVE 16001 TO CW-TIME` after it (night, when

@@ -119,7 +119,8 @@
 *> One 50 ms game tick (research R6): the tick counter, the time of day and its Set Time cadence
 *> (WORLD-TIME-TICK), break progress (BLOCKS-TICK), the player survival and hunger rules
 *> (HEALTH-TICK, step 4 of standin §9.5), mob spawning (MOBS-SPAWN-TICK, step 5), the mobs
-*> (MOBS-TICK, step 6), ground items (GROUND-ITEMS-TICK, step 7, last of the game rules) and the
+*> (MOBS-TICK, step 6), ground items (GROUND-ITEMS-TICK, step 7, last of the game rules), the
+*> recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL) and the
 *> connections' keep-alives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -132,6 +133,7 @@
      CALL "MOBS-SPAWN-TICK"
      CALL "MOBS-TICK"
      CALL "GROUND-ITEMS-TICK"
+     CALL "CRAFT-REFRESH-ALL"
      CALL "SESSION-TICK"
      GOBACK.
  END PROGRAM CORE-TICK.

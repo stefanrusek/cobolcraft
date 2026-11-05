@@ -3,7 +3,8 @@
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
 *> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
-*> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy),
+*> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy), the
+*> recipes of §13 (RECIPES.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -20,6 +21,7 @@
  COPY DIMENSIONS.
  COPY REGISTRY.
  COPY MOBS.
+ COPY RECIPES.
  01 WS-ROW                 PIC X(400).
  01 WS-J                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
@@ -105,6 +107,26 @@
     05 FILLER PIC X(80) VALUE "3 cobolcraft:abend 1 12 40 0 120 12000 20000 1750 2 30 15 1 8".
  01 WS-MOB-EXPECT REDEFINES WS-MOB-ROWS.
     05 WS-MOB-ROW          PIC X(80) OCCURS 2 TIMES.
+*> Recipe rows (§13, display-id order): display id, then each ingredient line as count x item key,
+*> "->", the result count x item key.
+ 01 WS-RECIPE-ROWS.
+    05 FILLER PIC X(120) VALUE "0 4xcobolcraft:greystone -> 2xcobolcraft:ledger_tile".
+    05 FILLER PIC X(120) VALUE "1 4xcobolcraft:grit -> 2xcobolcraft:lucite".
+    05 FILLER PIC X(120) VALUE
+        "2 3xcobolcraft:greystone 1xcobolcraft:cardstack -> 1xcobolcraft:pry_bar".
+    05 FILLER PIC X(120) VALUE
+        "3 2xcobolcraft:greystone 1xcobolcraft:cardstack -> 1xcobolcraft:trowel".
+    05 FILLER PIC X(120) VALUE
+        "4 1xcobolcraft:lucite 1xcobolcraft:dump_shard -> 2xcobolcraft:glowtube".
+    05 FILLER PIC X(120) VALUE "5 4xcobolcraft:turf 1xcobolcraft:loam -> 1xcobolcraft:sod_cake".
+    05 FILLER PIC X(120) VALUE
+        "6 2xcobolcraft:grazer_flank 1xcobolcraft:glowtube -> 2xcobolcraft:seared_flank".
+    05 FILLER PIC X(120) VALUE "7 4xcobolcraft:ledger_tile 2xcobolcraft:dump_shard "
+        & "1xcobolcraft:glowtube -> 1xcobolcraft:goto_pad".
+    05 FILLER PIC X(120) VALUE
+        "8 2xcobolcraft:cardstack 2xcobolcraft:lucite -> 1xcobolcraft:dump_shard".
+ 01 WS-RECIPE-EXPECT REDEFINES WS-RECIPE-ROWS.
+    05 WS-RECIPE-ROW       PIC X(120) OCCURS 9 TIMES.
 *> Registry rows (§4.2 summary): registry number, key, entries sent.
  01 WS-REG-ROWS.
     05 FILLER PIC X(60) VALUE "0 minecraft:worldgen/biome 3".
@@ -514,6 +536,37 @@
      END-PERFORM
      MOVE "3 1 2 -1 5 3 1 1 4 -1 2 2 0 11 5 3" TO TL-EXPECTED
      PERFORM ASSERT-ROW
+
+*>   Recipes (§13): the count, then one case per recipe in display-id order.
+     MOVE "test content tables recipe count (§13: nine recipes, at most three ingredient lines)"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE RECIPE-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE RECIPE-MAX-LINES TO WS-NUM PERFORM ADD-NUM
+     MOVE "9 3" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RECIPE-COUNT
+         MOVE SPACES TO TL-CASE
+         COMPUTE WS-EDIT = WS-I - 1
+         STRING "test content tables recipe " DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RP-LINE-COUNT(WS-I)
+             MOVE RP-IN-COUNT(WS-I, WS-J) TO WS-NUM PERFORM ADD-NUM
+             MOVE RP-IN-ITEM(WS-I, WS-J) TO WS-F
+             STRING "x" IT-KEY(WS-F + 1)(1:IT-KEY-LENGTH(WS-F + 1)) DELIMITED BY SIZE
+                 INTO WS-ROW WITH POINTER WS-PTR
+         END-PERFORM
+         STRING " ->" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         MOVE RP-RESULT-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RP-RESULT-ITEM(WS-I) TO WS-F
+         STRING "x" IT-KEY(WS-F + 1)(1:IT-KEY-LENGTH(WS-F + 1)) DELIMITED BY SIZE
+             INTO WS-ROW WITH POINTER WS-PTR
+         MOVE WS-RECIPE-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
 
 *>   The cobolcraft:main dimension (§5.1, §5.2, §4.6, §14.2). Row: key type-id type-key min-y height
 *>   sea-level generator light-policy skylight weather.

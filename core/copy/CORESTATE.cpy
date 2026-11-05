@@ -115,9 +115,14 @@
        10 PL-STARVE-TICKS    BINARY-LONG.
        10 PL-OPERATOR        PIC 9.
        10 PL-HELD            BINARY-LONG.        *> hotbar slot 0 to 8
-       10 PL-SLOT OCCURS 36 TIMES.               *> inventory slot n is PL-SLOT(n + 1)
-          15 PL-SLOT-ITEM    BINARY-LONG.
-          15 PL-SLOT-COUNT   BINARY-LONG.        *> 0 = empty
+       10 PL-INVENTORY.                          *> the 36 slots as one area (288 bytes)
+          15 PL-SLOT OCCURS 36 TIMES.            *> inventory slot n is PL-SLOT(n + 1)
+             20 PL-SLOT-ITEM BINARY-LONG.
+             20 PL-SLOT-COUNT BINARY-LONG.       *> 0 = empty
+*>     Recipe book (standin §13; core/src/crafting.cob): 1 once the join has sent Recipe Book Add,
+*>     and the inventory that book was computed from; a different inventory re-sends it.
+       10 PL-BOOK-SENT       PIC 9.
+       10 PL-BOOK-INVENTORY  PIC X(288).
        10 PL-STATE-ID        BINARY-LONG.        *> container 0 state id
        10 PL-VIEW-DISTANCE   BINARY-LONG.        *> Client Information view distance
        10 PL-CENTER-X        BINARY-LONG.        *> chunk cache center
