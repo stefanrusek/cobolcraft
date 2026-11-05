@@ -1,8 +1,11 @@
-/* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §8 cc_win, §9 cc_vk):
+/* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §7 cc_fs, §8 cc_win,
+ * §9 cc_vk):
  * every function against the real libraries (loopback sockets, real zlib, a hidden GLFW window,
  * MoltenVK), asserting the return codes and outputs the contract states. cc_fatal (§2) is the
  * fatal-path program contract_shim_fatal.c. */
+#include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "cc_internal.h"
@@ -206,6 +209,55 @@ static void zlib_inflate(void) {
     tl_int("contract shim cc_inflate on corrupt input returns CC_BADDATA", CC_BADDATA, rc);
 }
 
+/* Creates `name` under `dir`: a directory when is_dir, otherwise an empty file. */
+static void make_entry(const char *dir, const char *name, int is_dir) {
+    char path[512];
+    snprintf(path, sizeof path, "%s/%s", dir, name);
+    if (is_dir) {
+        mkdir(path, 0700);
+    } else {
+        FILE *f = fopen(path, "w");
+        fclose(f);
+    }
+}
+
+static void fs_list(void) {
+    char dir[] = "/tmp/cc_fs_list.XXXXXX";
+    mkdtemp(dir);
+    /* Created out of order; "B" < "_" < "a" < "\xc3\xa9" in byte order. */
+    make_entry(dir, "a.txt", 0);
+    make_entry(dir, "\xc3\xa9t\xc3\xa9", 1);
+    make_entry(dir, "Beta", 1);
+    make_entry(dir, "_x", 0);
+    static const char expected[] = "DBeta\nF_x\nFa.txt\nD\xc3\xa9t\xc3\xa9\n";
+    uint8_t out[256];
+    int32_t count = -1;
+    int32_t rc = cc_fs_list(dir, out, sizeof out, &count);
+    tl_int("contract shim cc_fs_list on a directory returns 0", 0, rc);
+    tl_int("contract shim cc_fs_list count is the number of entries without . and ..", 4, count);
+    tl_bytes("contract shim cc_fs_list writes F and D entries in byte order, one per line", expected,
+             strlen(expected), out, strlen(expected));
+    rc = cc_fs_list(dir, out, (int32_t)strlen(expected), &count);
+    tl_int("contract shim cc_fs_list fits a listing of exactly cap bytes", 0, rc);
+    rc = cc_fs_list(dir, out, (int32_t)strlen(expected) - 1, &count);
+    tl_int("contract shim cc_fs_list on a short output buffer returns CC_SMALL", CC_SMALL, rc);
+    char missing[600];
+    snprintf(missing, sizeof missing, "%s/absent", dir);
+    rc = cc_fs_list(missing, out, sizeof out, &count);
+    tl_int("contract shim cc_fs_list on an absent directory returns CC_NOTFOUND", CC_NOTFOUND, rc);
+    char empty[600];
+    snprintf(empty, sizeof empty, "%s/Beta", dir);
+    rc = cc_fs_list(empty, out, sizeof out, &count);
+    tl_int("contract shim cc_fs_list on an empty directory returns 0", 0, rc);
+    tl_int("contract shim cc_fs_list on an empty directory counts 0 entries", 0, count);
+    static const char *const names[] = {"a.txt", "\xc3\xa9t\xc3\xa9", "Beta", "_x"};
+    for (int i = 0; i < 4; i++) {
+        snprintf(missing, sizeof missing, "%s/%s", dir, names[i]);
+        remove(missing);
+    }
+    rmdir(dir);
+}
+
 static void window(void) {
     int32_t rc = cc_win_open(320, 240, "contract_shim_provider", 0);
     tl_int("contract shim cc_win_open hidden window returns 0", 0, rc);
@@ -284,6 +336,7 @@ int main(void) {
     net_poll_console();
     zlib_deflate();
     zlib_inflate();
+    fs_list();
     window();
     vulkan();
     cc_win_close();

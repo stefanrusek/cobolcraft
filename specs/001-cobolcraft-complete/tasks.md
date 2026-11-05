@@ -381,9 +381,9 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 
 **Goal**: `cc_fs_list` for the single-player world list and pack folders. **Independent Test**: `make gate-shim`.
 
-- [ ] T254 [P] [US16-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_fs_list`: files and directories as `F<name>\n`/`D<name>\n`, `.` and `..` excluded, byte-order sorting, `CC_SMALL`, `CC_NOTFOUND` (shim-abi §7)
-- [ ] T255 [US16-shim] Implement `cc_fs_list` in `shim/src/cc_fs.c` and add it to `shim/Makefile`
-- [ ] T256 Gate: run `make gate-shim` and record the command and its real output
+- [X] T254 [P] [US16-shim] Write cases in `shim/tests/contract_shim_provider.c` for `cc_fs_list`: files and directories as `F<name>\n`/`D<name>\n`, `.` and `..` excluded, byte-order sorting, `CC_SMALL`, `CC_NOTFOUND` (shim-abi §7)
+- [X] T255 [US16-shim] Implement `cc_fs_list` in `shim/src/cc_fs.c` and add it to `shim/Makefile`
+- [X] T256 Gate: run `make gate-shim` and record the command and its real output
 
 #### Phase 6: US17-shim — local network addresses
 
