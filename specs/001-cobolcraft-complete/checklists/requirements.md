@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -56,3 +56,6 @@
 - Clarification 2026-11-05 (Q2): FR-011 resolved — macOS on Apple silicon (arm64) only for this feature; other macOS
   architectures, Linux, Windows and Android are follow-up platforms that design choices must not block. Re-validated: all
   items pass except the one remaining marker (FR-012).
+- Clarification 2026-11-05 (Q3): FR-012 resolved — failures not handled by docs/protocol/ or the spec's scenarios are
+  either non-fatal (logged to the program's console; the game or server continues) or fatal (logged to the console,
+  then the game or server shuts down); nothing else is specified. Re-validated: all items pass; no markers remain.
