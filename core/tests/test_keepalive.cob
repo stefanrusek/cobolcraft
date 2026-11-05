@@ -1,6 +1,7 @@
 *> Implementation test of keep-alive (core/src/session.cob; 01 §7.5; 09 §2): in configuration and play
 *> the server sends Keep Alive every 300 ticks (15 s), an echo of the pending id is accepted, and a
-*> missing or wrong answer disconnects with disconnect.timeout.
+*> missing or wrong answer disconnects with disconnect.timeout. A login not finished within 600 ticks
+*> is disconnected with multiplayer.disconnect.slow_login (02 "Login timeouts and errors", 09 §1).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-KEEPALIVE.
  DATA DIVISION.
@@ -25,6 +26,11 @@
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-DESCRIPTION         PIC X(64).
  01 WS-EDIT                PIC -(18)9.
+ 01 WS-FIXTURE             PIC X(256).
+ 01 WS-JSON                PIC X(256).
+ 01 WS-JSON-MAX            BINARY-LONG VALUE 262144.
+ 01 WS-JSON-CAPACITY       BINARY-LONG VALUE 256.
+ 01 WS-JSON-LENGTH         BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -98,6 +104,53 @@
      MOVE "test keepalive no Keep Alive outside configuration and play" TO TL-CASE
      MOVE "none" TO TL-EXPECTED
      PERFORM DESCRIBE-OUTPUT
+
+*>   Slow login (02 "Login timeouts and errors"): 600 ticks after the login Intention.
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     MOVE 599 TO WS-TICKS
+     PERFORM RUN-TICKS
+     MOVE "test keepalive slow login: nothing happens during the first 599 ticks of login" TO TL-CASE
+     MOVE "none" TO TL-EXPECTED
+     PERFORM DESCRIBE-OUTPUT
+     MOVE 1 TO WS-TICKS
+     PERFORM RUN-TICKS
+     MOVE "test keepalive slow login: at tick 600 Login Disconnect multiplayer.disconnect.slow_login"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE '0 {"translate":"multiplayer.disconnect.slow_login"} closed' TO TL-EXPECTED
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID PB-BUFFER WS-CLOSE
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE SPACES TO WS-JSON
+     MOVE 0 TO WS-JSON-LENGTH
+     CALL "PB-GET-STRING" USING PK-BUFFER WS-JSON-MAX WS-JSON WS-JSON-CAPACITY WS-JSON-LENGTH
+     MOVE SPACES TO TL-OBSERVED WS-DESCRIPTION
+     IF WS-CLOSE = 1
+         MOVE "closed" TO WS-DESCRIPTION
+     END-IF
+     MOVE WS-PACKET-ID TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " WS-JSON(1:FUNCTION MAX(WS-JSON-LENGTH, 1)) " "
+         WS-DESCRIPTION DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     MOVE "contract/fixtures/wire/login-c2s-00-hello.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     MOVE 300 TO WS-TICKS
+     PERFORM RUN-TICKS
+     MOVE CN-KA-ID(WS-ID) TO WS-LONG
+     CALL "CORE-KEEPALIVE-ANSWER" USING WS-ID WS-LONG
+     PERFORM RUN-TICKS
+     MOVE "test keepalive slow login: a login finished in time is not disconnected" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = PH-CONFIG * 10
+     COMPUTE TL-OBSERVED-N = CN-PHASE(WS-ID) * 10 + CN-CLOSE(WS-ID)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  RUN-TICKS.

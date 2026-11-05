@@ -340,10 +340,29 @@
  END PROGRAM CORE-TIMEOUT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CORE-SLOW-LOGIN.
+*> USING id: disconnects with multiplayer.disconnect.slow_login (Login Disconnect, 02, 09 §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     INITIALIZE PB-TEXT
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     MOVE "multiplayer.disconnect.slow_login" TO PB-TX-VALUE
+     MOVE 33 TO PB-TX-LENGTH
+     CALL "CORE-SEND-DISCONNECT" USING L-ID PB-TEXT
+     GOBACK.
+ END PROGRAM CORE-SLOW-LOGIN.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SESSION-TICK.
 *> One tick of every connection in configuration or play: at each keep-alive deadline, an
 *> unanswered Keep Alive disconnects (disconnect.timeout); otherwise a new Keep Alive is sent, with
 *> the tick count as its id, and the next deadline is CORE-KEEPALIVE-TICKS later (01 §7.5, 09 §2).
+*> A connection still in login CORE-LOGIN-TICKS after its login Intention is disconnected with
+*> multiplayer.disconnect.slow_login (02 "Login timeouts and errors", 09 §1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -353,6 +372,10 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 16.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
+         IF CN-USED(WS-ID) = 1 AND CN-CLOSE(WS-ID) = 0 AND CN-PHASE(WS-ID) = PH-LOGIN
+                 AND CW-TICKS - CN-PHASE-TICK(WS-ID) >= CORE-LOGIN-TICKS
+             CALL "CORE-SLOW-LOGIN" USING WS-ID
+         END-IF
          IF CN-USED(WS-ID) = 1 AND CN-CLOSE(WS-ID) = 0 AND CN-PHASE(WS-ID) >= PH-CONFIG
                  AND CW-TICKS >= CN-KA-DEADLINE(WS-ID)
              IF CN-KA-PENDING(WS-ID) = 1
