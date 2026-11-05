@@ -1,8 +1,9 @@
-*> Implementation test of the entity metadata (00 §13.1) and recipe display (05b SlotDisplay,
-*> RecipeDisplayEntry) code of proto/src/composites.cob: values the writer cannot encode (an index
-*> outside 0 to 254, a serializer, SlotDisplay or RecipeDisplay type outside PROTO.cpy, a count
-*> above PB-RECIPE-MAX-SLOTS) append nothing and set PB-ERROR; a failed read leaves PB-POS where it
-*> was and yields an all-zero value.
+*> Implementation test of the entity metadata (00 §13.1), recipe display (05b SlotDisplay,
+*> RecipeDisplayEntry) and command node (05a 0x10 CommandNode) code of proto/src/composites.cob:
+*> values the writer cannot encode (an index outside 0 to 254, a serializer, SlotDisplay or
+*> RecipeDisplay type outside PROTO.cpy, a count above PB-RECIPE-MAX-SLOTS, node flags, children,
+*> name, parser, string kind, range flags or suggestions type out of range) append nothing and set
+*> PB-ERROR; a failed read leaves PB-POS where it was and yields an all-zero value.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMPOSITES.
  DATA DIVISION.
@@ -173,6 +174,137 @@
      COMPUTE TL-OBSERVED-N = PB-RD-REQ-PRESENT * 1000 + PB-RD-REQ-COUNT * 100 + PB-ERROR * 10
          + PB-POS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- CommandNode: writer ----
+     CALL "PB-RESET" USING PB-BUFFER
+     INITIALIZE PB-COMMAND-NODE
+     MOVE 256 TO PB-CN-FLAGS
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of flags 256 sets PB-ERROR and appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-CN-FLAGS
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of flags -1 sets PB-ERROR and appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 0 TO PB-CN-FLAGS
+     MOVE 65 TO PB-CN-CHILD-COUNT
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of 65 children sets PB-ERROR and appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-CN-CHILD-COUNT
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of -1 children sets PB-ERROR and appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 0 TO PB-CN-CHILD-COUNT
+     MOVE PB-NODE-LITERAL TO PB-CN-FLAGS
+     MOVE 33 TO PB-CN-NAME-LENGTH
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of a 33-byte name sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-CN-NAME-LENGTH
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of name length -1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE "a" TO PB-CN-NAME
+     MOVE 1 TO PB-CN-NAME-LENGTH
+     MOVE PB-NODE-ARGUMENT TO PB-CN-FLAGS
+     MOVE 6 TO PB-CN-PARSER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of parser 6 entity sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-PARSER-DOUBLE TO PB-CN-PARSER
+     MOVE 4 TO PB-CN-RANGE-FLAGS
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of range flags 4 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-PARSER-INTEGER TO PB-CN-PARSER
+     MOVE -1 TO PB-CN-RANGE-FLAGS
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of range flags -1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 0 TO PB-CN-RANGE-FLAGS
+     MOVE PB-PARSER-STRING TO PB-CN-PARSER
+     MOVE 3 TO PB-CN-STRING-KIND
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of string kind 3 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-CN-STRING-KIND
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of string kind -1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-PARSER-GAME-PROFILE TO PB-CN-PARSER
+     COMPUTE PB-CN-FLAGS = PB-NODE-ARGUMENT + PB-NODE-HAS-SUGGEST
+     MOVE 65 TO PB-CN-SUGGEST-LENGTH
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of a 65-byte suggestions type sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-CN-SUGGEST-LENGTH
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of suggestions type length -1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE "Ask Server" TO PB-CN-SUGGEST
+     MOVE 10 TO PB-CN-SUGGEST-LENGTH
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of an invalid suggestions type sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+*>   05a: type 3 has no stub, so name and parser are not written.
+     MOVE 3 TO PB-CN-FLAGS
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE put of type 3 is 03 00" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "0300" TO TL-EXPECTED
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- CommandNode: reader ----
+     MOVE "00 41" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of 65 children sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "02 00 01 61 02 04" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of range flags 4 sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "02 00 01 61 03 03 00 00 00 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of an integer range without its maximum sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "02 00 01 61 05 03" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of string kind 3 sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "12 00 01 61 07 03 41 42 43" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of an invalid suggestions type sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "01 00 21 6161616161616161 6161616161616161 6161616161616161 6161616161616161 61"
+         TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of a 33-byte name sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-NODE-GET-ERROR
+     MOVE "03 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "test composites COMMAND-NODE get of type 3 reads no stub" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 302 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-CN-FLAGS * 100 + PB-ERROR * 10 + PB-POS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
 
@@ -212,6 +344,19 @@
          + PB-RD-IN-ITEM(1) + PB-RD-IN-COUNT(1) + PB-RD-RES-TYPE + PB-RD-RES-ITEM
          + PB-RD-RES-COUNT + PB-RD-ST-TYPE + PB-RD-GROUP + PB-RD-CATEGORY + PB-RD-REQ-PRESENT
          + PB-RD-REQ-COUNT + PB-RD-REQ-ITEM(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> PB-ERROR 1, PB-POS back at 0, the node all zero (every numeric field summed, texts spaces).
+ CHECK-NODE-GET-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 1000 + PB-POS * 100 + PB-CN-FLAGS + PB-CN-CHILD-COUNT
+         + PB-CN-CHILD(1) + PB-CN-REDIRECT + PB-CN-NAME-LENGTH + PB-CN-PARSER
+         + PB-CN-STRING-KIND + PB-CN-RANGE-FLAGS + PB-CN-MIN-INT + PB-CN-MAX-INT
+         + PB-CN-MIN-DOUBLE + PB-CN-MAX-DOUBLE + PB-CN-SUGGEST-LENGTH
+     IF PB-CN-NAME NOT = SPACES OR PB-CN-SUGGEST NOT = SPACES
+         ADD 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-COMPOSITES.
  COPY PROTOTEST.

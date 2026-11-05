@@ -1,7 +1,8 @@
 *> Contract test of the protocol codec (contracts/proto-api.md §2, §4): every entry point against the
 *> encodings of docs/protocol/00-data-types.md, 01-transport.md §2-§3, 06-chunk-format.md and
 *> 07-nbt-and-anvil.md, and the wire fixtures contract/fixtures/wire/frame-*.hex and
-*> play-s2c-2e-level-chunk-with-light-spawn.hex, play-s2c-4b-recipe-book-add.hex. Expected bytes are worked out from the documents'
+*> play-s2c-2e-level-chunk-with-light-spawn.hex, play-s2c-4b-recipe-book-add.hex,
+*> play-s2c-10-commands-operator.hex. Expected bytes are worked out from the documents'
 *> rules by hand (never produced by this encoder).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-PROTO-PRIMITIVES.
@@ -48,6 +49,9 @@
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-DIGIT               PIC 9.
+ 01 WS-DIGIT2              PIC 99.
+ 01 WS-NODE-STARTS.
+    05 WS-NODE-START       BINARY-LONG OCCURS 91 TIMES.
  01 WS-PATH                PIC X(256).
  01 WS-FIXTURE             PIC X(256).
  01 WS-BYTES               PIC X(64).
@@ -135,6 +139,7 @@
      PERFORM METADATA-CASES
      PERFORM SLOT-DISPLAY-CASES
      PERFORM RECIPE-DISPLAY-CASES
+     PERFORM COMMAND-NODE-CASES
      PERFORM FRAME-ENCODE-CASES
      PERFORM FRAME-DECODE-CASES
      PERFORM CHUNK-SECTION-CASES
@@ -1519,6 +1524,275 @@
      COMPUTE WS-LEN = PB-RD-TYPE + PB-RD-INGREDIENT-COUNT + PB-RD-RES-ITEM
      MOVE "contract proto RECIPE-DISPLAY get of type 2 furnace sets PB-ERROR" TO TL-CASE
      PERFORM CHECK-READ-ERROR.
+
+*> ---- 05a 0x10 CommandNode, against play-s2c-10-commands-operator.hex --------------------------
+*> The whole packet: id 0x10, 90 nodes, root index 0. WS-NODE-START(n + 1) is the offset of node n
+*> (found by decoding); WS-NODE-START(91) the offset of the root index. Expected values are the
+*> fixture's annotations (09 §3.3 'Command tree', 05a CommandNode, parser table and NumberRange).
+ COMMAND-NODE-CASES.
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-FIXTURE
+     CALL "TEST-LOAD-HEX" USING WS-FIXTURE PK-BUFFER
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-INT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-INT
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR WS-I > 90
+         MOVE PK-POS TO WS-NODE-START(WS-I)
+         CALL "PB-GET-COMMAND-NODE" USING PK-BUFFER PB-COMMAND-NODE
+         CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     END-PERFORM
+     MOVE PK-POS TO WS-NODE-START(91)
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-INT2
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-INT2
+     MOVE "contract proto COMMAND-NODE get every node of play-s2c-10-commands-operator: id 16, 90 nodes, root 0, all bytes read"
+         TO TL-CASE
+     MOVE "16 90 0 0 0" TO TL-EXPECTED
+     PERFORM START-TEXT
+     MOVE WS-INT TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-COUNT TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-INT2 TO WS-NUM
+     PERFORM ADD-NUMBER
+     COMPUTE WS-NUM = PK-LENGTH - PK-POS
+     PERFORM ADD-NUMBER
+     MOVE PK-ERROR TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract proto COMMAND-NODE put of every decoded node equals play-s2c-10-commands-operator"
+         TO TL-CASE
+     PERFORM CHECK-PK-EQUALS-PB
+*>   Decoding single nodes.
+     MOVE 0 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 0 root of play-s2c-10-commands-operator" TO TL-CASE
+     MOVE "0 24 1 2 3 6 8 10 13 15 17 18 26 30 39 43 45 50 55 61 72 74 82 86 88 89 0 - 0 0 0 0 0 0 0 - 0"
+         TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 3 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 3 literal murmur" TO TL-CASE
+     MOVE "1 1 4 0 murmur 0 0 0 0 0 0 0 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 4 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 4 argument player game_profile with suggestions"
+         TO TL-CASE
+     MOVE "18 1 5 0 player 7 0 0 0 0 0 0 minecraft:ask_server 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 33 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 33 argument x brigadier:double -30000000 to 30000000"
+         TO TL-CASE
+     MOVE "2 1 34 0 x 2 0 3 0 0 -30000000 30000000 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 34 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 34 argument y brigadier:double 0 to 256" TO TL-CASE
+     MOVE "2 1 35 0 y 2 0 3 0 0 0 256 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 36 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 36 argument dimension brigadier:string single word with suggestions"
+         TO TL-CASE
+     MOVE "22 0 0 dimension 5 0 0 0 0 0 0 minecraft:ask_server 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 42 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 42 argument count brigadier:integer 1 to 2304"
+         TO TL-CASE
+     MOVE "6 0 0 count 3 0 3 1 2304 0 0 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 87 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 87 argument message brigadier:string greedy"
+         TO TL-CASE
+     MOVE "6 0 0 message 5 2 0 0 0 0 0 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+     MOVE 89 TO WS-I
+     MOVE "contract proto COMMAND-NODE get node 89 literal shutdown executable" TO TL-CASE
+     MOVE "5 0 0 shutdown 0 0 0 0 0 0 0 - 0" TO TL-EXPECTED
+     PERFORM DECODE-COMMAND-NODE
+*>   Encoding single nodes from the annotated values.
+     INITIALIZE PB-COMMAND-NODE
+     MOVE 24 TO PB-CN-CHILD-COUNT
+     MOVE "01020306081013151718263039434550556172748286888900" TO WS-TEXT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 24
+         MOVE WS-TEXT(WS-J * 2 - 1:2) TO WS-DIGIT2
+         MOVE WS-DIGIT2 TO PB-CN-CHILD(WS-J)
+     END-PERFORM
+     MOVE 0 TO WS-I
+     MOVE "contract proto COMMAND-NODE put root with 24 children equals node 0" TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     MOVE 1 TO PB-CN-FLAGS PB-CN-CHILD-COUNT
+     MOVE 4 TO PB-CN-CHILD(1)
+     MOVE "murmur" TO PB-CN-NAME
+     MOVE 6 TO PB-CN-NAME-LENGTH
+     MOVE 3 TO WS-I
+     MOVE "contract proto COMMAND-NODE put literal murmur equals node 3" TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     COMPUTE PB-CN-FLAGS = PB-NODE-ARGUMENT + PB-NODE-HAS-SUGGEST
+     MOVE 1 TO PB-CN-CHILD-COUNT
+     MOVE 5 TO PB-CN-CHILD(1)
+     MOVE "player" TO PB-CN-NAME
+     MOVE 6 TO PB-CN-NAME-LENGTH
+     MOVE PB-PARSER-GAME-PROFILE TO PB-CN-PARSER
+     MOVE "minecraft:ask_server" TO PB-CN-SUGGEST
+     MOVE 20 TO PB-CN-SUGGEST-LENGTH
+     MOVE 4 TO WS-I
+     MOVE "contract proto COMMAND-NODE put argument player game_profile ask_server equals node 4"
+         TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     MOVE PB-NODE-ARGUMENT TO PB-CN-FLAGS
+     MOVE 1 TO PB-CN-CHILD-COUNT
+     MOVE 34 TO PB-CN-CHILD(1)
+     MOVE "x" TO PB-CN-NAME
+     MOVE 1 TO PB-CN-NAME-LENGTH
+     MOVE PB-PARSER-DOUBLE TO PB-CN-PARSER
+     COMPUTE PB-CN-RANGE-FLAGS = PB-RANGE-HAS-MIN + PB-RANGE-HAS-MAX
+     MOVE -30000000 TO PB-CN-MIN-DOUBLE
+     MOVE 30000000 TO PB-CN-MAX-DOUBLE
+     MOVE 33 TO WS-I
+     MOVE "contract proto COMMAND-NODE put argument x brigadier:double equals node 33" TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     COMPUTE PB-CN-FLAGS = PB-NODE-ARGUMENT + PB-NODE-EXECUTABLE + PB-NODE-HAS-SUGGEST
+     MOVE "dimension" TO PB-CN-NAME
+     MOVE 9 TO PB-CN-NAME-LENGTH
+     MOVE PB-PARSER-STRING TO PB-CN-PARSER
+     MOVE PB-STRING-SINGLE-WORD TO PB-CN-STRING-KIND
+     MOVE "minecraft:ask_server" TO PB-CN-SUGGEST
+     MOVE 20 TO PB-CN-SUGGEST-LENGTH
+     MOVE 36 TO WS-I
+     MOVE "contract proto COMMAND-NODE put argument dimension brigadier:string single word equals node 36"
+         TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     COMPUTE PB-CN-FLAGS = PB-NODE-ARGUMENT + PB-NODE-EXECUTABLE
+     MOVE "count" TO PB-CN-NAME
+     MOVE 5 TO PB-CN-NAME-LENGTH
+     MOVE PB-PARSER-INTEGER TO PB-CN-PARSER
+     MOVE 3 TO PB-CN-RANGE-FLAGS
+     MOVE 1 TO PB-CN-MIN-INT
+     MOVE 2304 TO PB-CN-MAX-INT
+     MOVE 42 TO WS-I
+     MOVE "contract proto COMMAND-NODE put argument count brigadier:integer equals node 42" TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+     INITIALIZE PB-COMMAND-NODE
+     COMPUTE PB-CN-FLAGS = PB-NODE-ARGUMENT + PB-NODE-EXECUTABLE
+     MOVE "message" TO PB-CN-NAME
+     MOVE 7 TO PB-CN-NAME-LENGTH
+     MOVE PB-PARSER-STRING TO PB-CN-PARSER
+     MOVE PB-STRING-GREEDY TO PB-CN-STRING-KIND
+     MOVE 87 TO WS-I
+     MOVE "contract proto COMMAND-NODE put argument message brigadier:string greedy equals node 87"
+         TO TL-CASE
+     PERFORM ENCODE-COMMAND-NODE
+*>   05a: a redirect (flag 0x08) is a VarInt after the children; literal 0x09, no children,
+*>   redirect 3, name "tp".
+     INITIALIZE PB-COMMAND-NODE
+     COMPUTE PB-CN-FLAGS = PB-NODE-LITERAL + PB-NODE-HAS-REDIRECT
+     MOVE 3 TO PB-CN-REDIRECT
+     MOVE "tp" TO PB-CN-NAME
+     MOVE 2 TO PB-CN-NAME-LENGTH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put literal tp with redirect 3 is 09 00 03 02 74 70" TO TL-CASE
+     MOVE "090003027470" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     MOVE "09 00 03 02 74 70" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get 09 00 03 02 74 70 is literal tp with redirect 3" TO TL-CASE
+     MOVE "9 0 3 tp 0 0 0 0 0 0 0 - 6" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   05a NumberRange with only a minimum (flags 0x01): argument n, brigadier:integer, min 5.
+     MOVE "02 00 01 6e 03 01 00 00 00 05" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get brigadier:integer with only a minimum 5" TO TL-CASE
+     MOVE "2 0 0 n 3 0 1 5 0 0 0 - 10" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put brigadier:integer with only a minimum 5" TO TL-CASE
+     MOVE "0200016e030100000005" TO WS-HEX
+     PERFORM CHECK-BUFFER
+*>   05a parser 6 entity is not one CobolCraft uses: malformed.
+     MOVE "02 00 01 61 06 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     COMPUTE WS-LEN = PB-CN-FLAGS + PB-CN-NAME-LENGTH + PB-CN-PARSER
+     MOVE "contract proto COMMAND-NODE get of parser 6 entity sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-READ-ERROR.
+
+*> Decodes node WS-I of the fixture in PK-BUFFER and checks it against TL-EXPECTED, followed by
+*> the number of bytes between the end of the read and the start of the next node (0).
+ DECODE-COMMAND-NODE.
+     MOVE WS-NODE-START(WS-I + 1) TO PK-POS
+     CALL "PB-GET-COMMAND-NODE" USING PK-BUFFER PB-COMMAND-NODE
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     COMPUTE WS-NUM = WS-NODE-START(WS-I + 2) - PK-POS
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Encodes PB-COMMAND-NODE and checks it equals node WS-I of the fixture in PK-BUFFER, byte for byte
+*> and in length.
+ ENCODE-COMMAND-NODE.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE WS-NODE-START(WS-I + 1) TO WS-OFFSET
+     CALL "TEST-SLICE-EQUALS" USING PK-BUFFER WS-OFFSET PB-BUFFER WS-EQUAL
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = WS-NODE-START(WS-I + 2) - WS-NODE-START(WS-I + 1)
+     COMPUTE TL-OBSERVED-N = WS-EQUAL * PB-LENGTH
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> PB-COMMAND-NODE appended to TL-OBSERVED: flags, child count, children, redirect, name ("-" when
+*> empty), parser, string kind, range flags, min and max Int, min and max Double (truncated),
+*> suggestions type ("-" when empty).
+ ADD-COMMAND-NODE.
+     MOVE PB-CN-FLAGS TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-CHILD-COUNT TO WS-NUM
+     PERFORM ADD-NUMBER
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-CN-CHILD-COUNT
+         MOVE PB-CN-CHILD(WS-J) TO WS-NUM
+         PERFORM ADD-NUMBER
+     END-PERFORM
+     MOVE PB-CN-REDIRECT TO WS-NUM
+     PERFORM ADD-NUMBER
+     IF PB-CN-NAME-LENGTH > 0
+         STRING " " PB-CN-NAME(1:PB-CN-NAME-LENGTH) DELIMITED BY SIZE
+             INTO TL-OBSERVED WITH POINTER WS-PTR
+     ELSE
+         STRING " -" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     MOVE PB-CN-PARSER TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-STRING-KIND TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-RANGE-FLAGS TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-MIN-INT TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-MAX-INT TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-MIN-DOUBLE TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-CN-MAX-DOUBLE TO WS-NUM
+     PERFORM ADD-NUMBER
+     IF PB-CN-SUGGEST-LENGTH > 0
+         STRING " " PB-CN-SUGGEST(1:PB-CN-SUGGEST-LENGTH) DELIMITED BY SIZE
+             INTO TL-OBSERVED WITH POINTER WS-PTR
+     ELSE
+         STRING " -" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF.
 
 *> ---- 01 §2, §3 framing: encode against the three frame fixtures ----------------------------
  FRAME-ENCODE-CASES.

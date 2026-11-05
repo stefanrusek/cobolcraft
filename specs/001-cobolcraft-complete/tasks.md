@@ -518,10 +518,10 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 
 **Goal**: codecs for the Commands packet node graph (05a 0x10). **Independent Test**: `make gate-proto`.
 
-- [ ] T342 [P] [US14-proto] Write `contract_proto_primitives.cob` cases for `COMMAND-NODE` encode and decode (root, literal and argument nodes, flags, children, redirect, parsers `brigadier:double` (2), `brigadier:integer` (3) with bounds, `brigadier:string` (5) single word and greedy, `game_profile` (7), suggestions type `minecraft:ask_server`) against `contract/fixtures/wire/play-s2c-10-commands-operator.hex`
-- [ ] T343 [US14-proto] Implement `PB-PUT-COMMAND-NODE` and `PB-GET-COMMAND-NODE` in `proto/src/composites.cob`
-- [ ] T344 [US14-proto] Extend `proto/tests/test_composites.cob` to 100 % coverage of the command node code
-- [ ] T345 Gate: run `make gate-proto` and record the command and its real output
+- [X] T342 [P] [US14-proto] Write `contract_proto_primitives.cob` cases for `COMMAND-NODE` encode and decode (root, literal and argument nodes, flags, children, redirect, parsers `brigadier:double` (2), `brigadier:integer` (3) with bounds, `brigadier:string` (5) single word and greedy, `game_profile` (7), suggestions type `minecraft:ask_server`) against `contract/fixtures/wire/play-s2c-10-commands-operator.hex`
+- [X] T343 [US14-proto] Implement `PB-PUT-COMMAND-NODE` and `PB-GET-COMMAND-NODE` in `proto/src/composites.cob`
+- [X] T344 [US14-proto] Extend `proto/tests/test_composites.cob` to 100 % coverage of the command node code
+- [X] T345 Gate: run `make gate-proto` and record the command and its real output
 
 ### Lane: core
 
