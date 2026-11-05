@@ -62,7 +62,7 @@ Console output (server console lines US13-3, US15; logged failures FR-012) is CO
 | `int32_t cc_net_recv(int32_t h, uint8_t *buf, int32_t cap, int32_t *got_out)` | 0 with `got_out > 0`, `CC_AGAIN = 1` (no data), `CC_CLOSED = 4` (peer closed or reset). |
 | `void cc_net_close(int32_t h)` | Closes a connection or listener. |
 | `int32_t cc_net_poll(int32_t timeout_ms, const int32_t *handles, int32_t count, int32_t include_console, uint8_t *ready_out)` | Waits up to `timeout_ms` for any listed handle (and, if `include_console`, standard input) to become readable or, for connecting handles, writable. `ready_out[i]` = 1 for ready handles; `ready_out[count]` = 1 if the console has input. Returns 0. |
-| `int32_t cc_net_local_addresses(uint8_t *out, int32_t cap)` | Writes the non-loopback IPv4 addresses as dotted strings separated by `\n` (US17-1). Returns the count. |
+| `int32_t cc_net_local_addresses(uint8_t *out, int32_t cap)` | Writes the non-loopback IPv4 addresses as dotted strings, each ending in `\n` (US17-1). Only whole entries are written; one that does not fit in `cap` is left out. Returns the number of entries written (never `CC_SMALL`). |
 
 TCP_NODELAY is set on every connection.
 
@@ -70,7 +70,7 @@ TCP_NODELAY is set on every connection.
 
 | Function | Behaviour |
 |---|---|
-| `int32_t cc_con_readline(uint8_t *buf, int32_t cap, int32_t *len_out)` | Non-blocking: 0 with one complete line (without newline), `CC_AGAIN = 1`, or `CC_CLOSED = 4` at end of input. |
+| `int32_t cc_con_readline(uint8_t *buf, int32_t cap, int32_t *len_out)` | Non-blocking: 0 with one complete line (without newline), `CC_AGAIN = 1`, or `CC_CLOSED = 4` at end of input. A line longer than `cap` is cut to `cap` bytes and the rest of it is dropped. An unterminated last line is returned at end of input; every later call returns `CC_CLOSED`. |
 
 ## 5. `cc_zlib` — compression
 
@@ -94,7 +94,7 @@ TCP_NODELAY is set on every connection.
 
 | Function | Behaviour |
 |---|---|
-| `int32_t cc_fs_list(const char *dir, uint8_t *out, int32_t cap, int32_t *count_out)` | Writes each entry as `<type><name>\n`, type `F` file or `D` directory, excluding `.` and `..`, sorted by byte order. 0, `CC_SMALL = 5`, or `CC_NOTFOUND = 7` (directory absent). |
+| `int32_t cc_fs_list(const char *dir, uint8_t *out, int32_t cap, int32_t *count_out)` | Writes each entry as `<type><name>\n`, type `F` file or `D` directory, excluding `.` and `..`, sorted by byte order. 0, `CC_SMALL = 5`, or `CC_NOTFOUND = 7` (any directory that cannot be opened: absent, not a directory, or unreadable). Types follow symbolic links. On `CC_SMALL` nothing is written and the count is 0; the caller enlarges `out` and calls again. |
 
 Everything else on files (create, read, write, delete, rename, make directory) is COBOL `CBL_*` routines
 (research R2).
