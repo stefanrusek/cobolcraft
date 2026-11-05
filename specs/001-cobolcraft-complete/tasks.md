@@ -315,56 +315,56 @@ when lanes are taken shim → proto → core → server → client.
 **Independent Test**: `make gate-shim` — `shim/tests/contract_shim_provider.c` passes against the real
 libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage of `shim/src`.
 
-- [ ] T198 [P] [US2-shim] Write `contract_shim_provider.c` cases for `cc_fatal` as a fatal-path test program `shim/tests/contract_shim_fatal.c` with `shim/tests/contract_shim_fatal.expect` (exit status 1, stderr `FATAL probe: detail`) (shim-abi §1, §2)
-- [ ] T199 [US2-shim] Implement `cc_fatal` in `shim/src/cc_fatal.c` (write `FATAL <what>: <detail>` to standard error, exit 1) and add it to `SRC` in `shim/Makefile`
-- [ ] T200 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_listen` (port 0 returns the actual port; a second listen on the same port returns `CC_ADDR_IN_USE`) and `cc_net_accept` (`CC_AGAIN` with no pending client, a handle after a loopback connect) (shim-abi §3)
-- [ ] T201 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_connect` (started on loopback, `CC_UNRESOLVED` for an unresolvable host) and `cc_net_status` (`CC_AGAIN` while connecting, 0 connected, `CC_CLOSED` when refused)
-- [ ] T202 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_send`, `cc_net_recv` (`CC_AGAIN` with no data, data, `CC_CLOSED` after peer close) and `cc_net_close`
-- [ ] T203 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_poll` readiness of listeners, readable connections and connecting handles over loopback
-- [ ] T204 [US2-shim] Implement `cc_net_listen` and `cc_net_accept` (non-blocking sockets, `TCP_NODELAY`, outcomes of shim-abi §3, other failures through `cc_fatal`) in `shim/src/cc_net.c` and add it to `shim/Makefile`
-- [ ] T205 [US2-shim] Implement `cc_net_connect` and `cc_net_status` in `shim/src/cc_net.c`
-- [ ] T206 [US2-shim] Implement `cc_net_send`, `cc_net_recv` and `cc_net_close` in `shim/src/cc_net.c`
-- [ ] T207 [US2-shim] Implement `cc_net_poll` for handles (`include_console` is added in US15) in `shim/src/cc_net.c`
-- [ ] T208 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_deflate` in modes `CC_ZLIB` (header `789c`), `CC_GZIP` (magic `1f8b`) and `CC_RAW`, and `CC_SMALL` on a short output buffer (shim-abi §5)
-- [ ] T209 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_inflate` round trips in the three modes, `CC_SMALL` and `CC_BADDATA` on corrupt input
-- [ ] T210 [US2-shim] Implement `cc_deflate` (level 6, three wrapper modes) in `shim/src/cc_zlib.c`
-- [ ] T211 [US2-shim] Implement `cc_inflate` (three wrapper modes) in `shim/src/cc_zlib.c`
-- [ ] T212 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_open` (hidden window) and `cc_win_close` (shim-abi §8)
-- [ ] T213 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_size` (framebuffer ≥ window size)
-- [ ] T214 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_capture_cursor` (on and off)
-- [ ] T215 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_poll` (0 events or well-formed 24-byte records)
-- [ ] T216 [US2-shim] Implement `cc_win_open` (`glfwInitVulkanLoader(vkGetInstanceProcAddr)` before `glfwInit`, research R3; no-client-API window) in `shim/src/cc_win.c`
-- [ ] T217 [US2-shim] Implement the GLFW key, character, mouse button, cursor (position, or accumulated delta when captured), scroll, resize and close callbacks queuing the 24-byte records of shim-abi §8, and `cc_win_poll`, in `shim/src/cc_win.c`
-- [ ] T218 [US2-shim] Implement `cc_win_size` in `shim/src/cc_win.c`
-- [ ] T219 [US2-shim] Implement `cc_win_capture_cursor` in `shim/src/cc_win.c`
-- [ ] T220 [US2-shim] Implement `cc_win_close` in `shim/src/cc_win.c`
-- [ ] T221 [P] [US2-shim] Write implementation test `shim/tests/test_cc_win_events.c` that injects events through the registered GLFW callbacks and asserts each record kind 1 to 9 of shim-abi §8, including a non-ASCII code point for kind 3
-- [ ] T222 [P] [US2-shim] Write the world vertex shader `shim/shaders/world.vert` (vertex x, y, z, u, v, brightness, alpha; mat4 push constant) (research R4)
-- [ ] T223 [P] [US2-shim] Write the world fragment shader `shim/shaders/world.frag` (NEAREST-sampled atlas; colour = texel × brightness, alpha × multiplier)
-- [ ] T224 [P] [US2-shim] Write the UI vertex shader `shim/shaders/ui.vert` (same vertex layout, orthographic matrix)
-- [ ] T225 [P] [US2-shim] Write the UI fragment shader `shim/shaders/ui.frag` (texel × alpha multiplier, no depth)
-- [ ] T226 [US2-shim] Add to `shim/Makefile` the generation of `build/shim/gen/spirv.h` (byte arrays of the four `build/shaders/*.spv`; generated code, excluded from coverage)
-- [ ] T227 [US2-shim] Make the `lint` target of `shim/Makefile` call `tools/lint.py` for `shim/shaders/*` (its GLSL check: `glslangValidator -V`, `spirv-val`)
-- [ ] T228 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_init` on a hidden window (shim-abi §9)
-- [ ] T229 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_texture` for texture ids 0 to 3
-- [ ] T230 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_mesh` create, replace and free
-- [ ] T231 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_frame_begin`, `cc_vk_draw` and `cc_vk_frame_end` with each of the three pipelines
-- [ ] T232 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_shutdown`
-- [ ] T233 [US2-shim] Implement instance creation (`VK_KHR_portability_enumeration` and the portability flag, API 1.2) and the surface on the `cc_win` window in `cc_vk_init` in `shim/src/cc_vk.c` (research R3)
-- [ ] T234 [US2-shim] Implement device creation (`VK_KHR_swapchain`, `VK_KHR_portability_subset` when reported) in `cc_vk_init` in `shim/src/cc_vk.c`
-- [ ] T235 [US2-shim] Implement the FIFO swapchain on the first surface format at framebuffer extent and the `D32_SFLOAT` depth buffer in `cc_vk_init` in `shim/src/cc_vk.c`
-- [ ] T236 [US2-shim] Implement the opaque, translucent and UI pipelines from `spirv.h` in `cc_vk_init` in `shim/src/cc_vk.c` (research R4)
-- [ ] T237 [US2-shim] Implement `cc_vk_texture` (RGBA8, NEAREST, clamp-to-edge, texture ids 0 to 3) in `shim/src/cc_vk.c`
-- [ ] T238 [US2-shim] Implement `cc_vk_mesh` (create, replace, free vertex buffer slots 1 to 65535, 28-byte vertices) in `shim/src/cc_vk.c`
-- [ ] T239 [US2-shim] Implement `cc_vk_frame_begin` (acquire, swapchain recreation after a resize, `CC_AGAIN` when minimised) in `shim/src/cc_vk.c`
-- [ ] T240 [US2-shim] Implement `cc_vk_draw` (push-constant matrix, column-major) in `shim/src/cc_vk.c`
-- [ ] T241 [US2-shim] Implement `cc_vk_frame_end` (submit, FIFO present) in `shim/src/cc_vk.c`
-- [ ] T242 [US2-shim] Implement `cc_vk_shutdown` (wait idle, destroy everything) in `shim/src/cc_vk.c`
-- [ ] T243 [P] [US2-shim] Write implementation test `shim/tests/test_cc_vk_pixels.c`: draws one textured quad with each pipeline into a hidden window, reads back the image and asserts the centre texel colour and the clear colour (as `spikes/spike_pipeline.c` did)
-- [ ] T244 [US2-shim] Write implementation test `shim/tests/test_cc_net.c` covering every line of `shim/src/cc_net.c` the contract tests leave unexecuted (partial sends), and add it to `TESTS` in `shim/Makefile`
-- [ ] T245 [US2-shim] Write implementation test `shim/tests/test_cc_zlib.c` covering every line of `shim/src/cc_zlib.c` left unexecuted (`CC_SMALL` retries), and add it to `TESTS`
-- [ ] T246 [US2-shim] Write implementation test `shim/tests/test_cc_vk_resize.c` covering swapchain recreation and every other line of `shim/src/cc_vk.c` and `shim/src/cc_win.c` left unexecuted, and add it to `TESTS`
-- [ ] T247 Gate: run `make gate-shim` (root `Makefile`) and record the command and its real output (lint incl. GLSL, build, tests, 100 % coverage of `shim/src`)
+- [X] T198 [P] [US2-shim] Write `contract_shim_provider.c` cases for `cc_fatal` as a fatal-path test program `shim/tests/contract_shim_fatal.c` with `shim/tests/contract_shim_fatal.expect` (exit status 1, stderr `FATAL probe: detail`) (shim-abi §1, §2)
+- [X] T199 [US2-shim] Implement `cc_fatal` in `shim/src/cc_fatal.c` (write `FATAL <what>: <detail>` to standard error, exit 1) and add it to `SRC` in `shim/Makefile`
+- [X] T200 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_listen` (port 0 returns the actual port; a second listen on the same port returns `CC_ADDR_IN_USE`) and `cc_net_accept` (`CC_AGAIN` with no pending client, a handle after a loopback connect) (shim-abi §3)
+- [X] T201 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_connect` (started on loopback, `CC_UNRESOLVED` for an unresolvable host) and `cc_net_status` (`CC_AGAIN` while connecting, 0 connected, `CC_CLOSED` when refused)
+- [X] T202 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_send`, `cc_net_recv` (`CC_AGAIN` with no data, data, `CC_CLOSED` after peer close) and `cc_net_close`
+- [X] T203 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_net_poll` readiness of listeners, readable connections and connecting handles over loopback
+- [X] T204 [US2-shim] Implement `cc_net_listen` and `cc_net_accept` (non-blocking sockets, `TCP_NODELAY`, outcomes of shim-abi §3, other failures through `cc_fatal`) in `shim/src/cc_net.c` and add it to `shim/Makefile`
+- [X] T205 [US2-shim] Implement `cc_net_connect` and `cc_net_status` in `shim/src/cc_net.c`
+- [X] T206 [US2-shim] Implement `cc_net_send`, `cc_net_recv` and `cc_net_close` in `shim/src/cc_net.c`
+- [X] T207 [US2-shim] Implement `cc_net_poll` for handles (`include_console` is added in US15) in `shim/src/cc_net.c`
+- [X] T208 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_deflate` in modes `CC_ZLIB` (header `789c`), `CC_GZIP` (magic `1f8b`) and `CC_RAW`, and `CC_SMALL` on a short output buffer (shim-abi §5)
+- [X] T209 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_inflate` round trips in the three modes, `CC_SMALL` and `CC_BADDATA` on corrupt input
+- [X] T210 [US2-shim] Implement `cc_deflate` (level 6, three wrapper modes) in `shim/src/cc_zlib.c`
+- [X] T211 [US2-shim] Implement `cc_inflate` (three wrapper modes) in `shim/src/cc_zlib.c`
+- [X] T212 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_open` (hidden window) and `cc_win_close` (shim-abi §8)
+- [X] T213 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_size` (framebuffer ≥ window size)
+- [X] T214 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_capture_cursor` (on and off)
+- [X] T215 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_win_poll` (0 events or well-formed 24-byte records)
+- [X] T216 [US2-shim] Implement `cc_win_open` (`glfwInitVulkanLoader(vkGetInstanceProcAddr)` before `glfwInit`, research R3; no-client-API window) in `shim/src/cc_win.c`
+- [X] T217 [US2-shim] Implement the GLFW key, character, mouse button, cursor (position, or accumulated delta when captured), scroll, resize and close callbacks queuing the 24-byte records of shim-abi §8, and `cc_win_poll`, in `shim/src/cc_win.c`
+- [X] T218 [US2-shim] Implement `cc_win_size` in `shim/src/cc_win.c`
+- [X] T219 [US2-shim] Implement `cc_win_capture_cursor` in `shim/src/cc_win.c`
+- [X] T220 [US2-shim] Implement `cc_win_close` in `shim/src/cc_win.c`
+- [X] T221 [P] [US2-shim] Write implementation test `shim/tests/test_cc_win_events.c` that injects events through the registered GLFW callbacks and asserts each record kind 1 to 9 of shim-abi §8, including a non-ASCII code point for kind 3
+- [X] T222 [P] [US2-shim] Write the world vertex shader `shim/shaders/world.vert` (vertex x, y, z, u, v, brightness, alpha; mat4 push constant) (research R4)
+- [X] T223 [P] [US2-shim] Write the world fragment shader `shim/shaders/world.frag` (NEAREST-sampled atlas; colour = texel × brightness, alpha × multiplier)
+- [X] T224 [P] [US2-shim] Write the UI vertex shader `shim/shaders/ui.vert` (same vertex layout, orthographic matrix)
+- [X] T225 [P] [US2-shim] Write the UI fragment shader `shim/shaders/ui.frag` (texel × alpha multiplier, no depth)
+- [X] T226 [US2-shim] Add to `shim/Makefile` the generation of `build/shim/gen/spirv.h` (byte arrays of the four `build/shaders/*.spv`; generated code, excluded from coverage)
+- [X] T227 [US2-shim] Make the `lint` target of `shim/Makefile` call `tools/lint.py` for `shim/shaders/*` (its GLSL check: `glslangValidator -V`, `spirv-val`)
+- [X] T228 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_init` on a hidden window (shim-abi §9)
+- [X] T229 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_texture` for texture ids 0 to 3
+- [X] T230 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_mesh` create, replace and free
+- [X] T231 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_frame_begin`, `cc_vk_draw` and `cc_vk_frame_end` with each of the three pipelines
+- [X] T232 [P] [US2-shim] Write `shim/tests/contract_shim_provider.c` cases for `cc_vk_shutdown`
+- [X] T233 [US2-shim] Implement instance creation (`VK_KHR_portability_enumeration` and the portability flag, API 1.2) and the surface on the `cc_win` window in `cc_vk_init` in `shim/src/cc_vk.c` (research R3)
+- [X] T234 [US2-shim] Implement device creation (`VK_KHR_swapchain`, `VK_KHR_portability_subset` when reported) in `cc_vk_init` in `shim/src/cc_vk.c`
+- [X] T235 [US2-shim] Implement the FIFO swapchain on the first surface format at framebuffer extent and the `D32_SFLOAT` depth buffer in `cc_vk_init` in `shim/src/cc_vk.c`
+- [X] T236 [US2-shim] Implement the opaque, translucent and UI pipelines from `spirv.h` in `cc_vk_init` in `shim/src/cc_vk.c` (research R4)
+- [X] T237 [US2-shim] Implement `cc_vk_texture` (RGBA8, NEAREST, clamp-to-edge, texture ids 0 to 3) in `shim/src/cc_vk.c`
+- [X] T238 [US2-shim] Implement `cc_vk_mesh` (create, replace, free vertex buffer slots 1 to 65535, 28-byte vertices) in `shim/src/cc_vk.c`
+- [X] T239 [US2-shim] Implement `cc_vk_frame_begin` (acquire, swapchain recreation after a resize, `CC_AGAIN` when minimised) in `shim/src/cc_vk.c`
+- [X] T240 [US2-shim] Implement `cc_vk_draw` (push-constant matrix, column-major) in `shim/src/cc_vk.c`
+- [X] T241 [US2-shim] Implement `cc_vk_frame_end` (submit, FIFO present) in `shim/src/cc_vk.c`
+- [X] T242 [US2-shim] Implement `cc_vk_shutdown` (wait idle, destroy everything) in `shim/src/cc_vk.c`
+- [X] T243 [P] [US2-shim] Write implementation test `shim/tests/test_cc_vk_pixels.c`: draws one textured quad with each pipeline into a hidden window, reads back the image and asserts the centre texel colour and the clear colour (as `spikes/spike_pipeline.c` did)
+- [X] T244 [US2-shim] Write implementation test `shim/tests/test_cc_net.c` covering every line of `shim/src/cc_net.c` the contract tests leave unexecuted (partial sends), and add it to `TESTS` in `shim/Makefile`
+- [X] T245 [US2-shim] Write implementation test `shim/tests/test_cc_zlib.c` covering every line of `shim/src/cc_zlib.c` left unexecuted (`CC_SMALL` retries), and add it to `TESTS`
+- [X] T246 [US2-shim] Write implementation test `shim/tests/test_cc_vk_resize.c` covering swapchain recreation and every other line of `shim/src/cc_vk.c` and `shim/src/cc_win.c` left unexecuted, and add it to `TESTS`
+- [X] T247 Gate: run `make gate-shim` (root `Makefile`) and record the command and its real output (lint incl. GLSL, build, tests, 100 % coverage of `shim/src`)
 
 #### Phase 4: US15-shim — console input
 

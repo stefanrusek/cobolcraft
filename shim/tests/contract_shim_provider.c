@@ -1,0 +1,261 @@
+/* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §8 cc_win, §9 cc_vk):
+ * every function against the real libraries (loopback sockets, real zlib, a hidden GLFW window,
+ * MoltenVK), asserting the return codes and outputs the contract states. cc_fatal (§2) is the
+ * fatal-path program contract_shim_fatal.c. */
+#include <string.h>
+#include <unistd.h>
+
+#include "cc_internal.h"
+#include "ccshim.h"
+#include "testlib.h"
+
+/* Polls `h` (up to 2 s) until cc_net_poll reports it ready; returns the ready flag. */
+static int wait_ready(int32_t h) {
+    uint8_t ready = 0;
+    for (int i = 0; i < 20 && !ready; i++) cc_net_poll(100, &h, 1, 0, &ready);
+    return ready;
+}
+
+/* A connected pair over loopback: *client from cc_net_connect, *server from cc_net_accept. */
+static void connected_pair(int32_t listener, int32_t port, int32_t *client, int32_t *server) {
+    cc_net_connect("127.0.0.1", port, client);
+    wait_ready(*client);
+    wait_ready(listener);
+    cc_net_accept(listener, server);
+}
+
+static void net_listen_accept(void) {
+    int32_t listener = 0, port = 0, again = 0, other = 0, client = 0, server = 0;
+    int32_t rc = cc_net_listen(0, &listener, &port);
+    tl_int("contract shim cc_net_listen port 0 returns 0", 0, rc);
+    tl_int("contract shim cc_net_listen port 0 returns a positive handle", 1, listener > 0);
+    tl_int("contract shim cc_net_listen port 0 reports the actual port", 1, port > 0 && port < 65536);
+    rc = cc_net_listen(port, &other, &again);
+    tl_int("contract shim cc_net_listen on a port in use returns CC_ADDR_IN_USE", CC_ADDR_IN_USE, rc);
+    rc = cc_net_accept(listener, &server);
+    tl_int("contract shim cc_net_accept with no pending client returns CC_AGAIN", CC_AGAIN, rc);
+    cc_net_connect("127.0.0.1", port, &client);
+    wait_ready(listener);
+    rc = cc_net_accept(listener, &server);
+    tl_int("contract shim cc_net_accept after a loopback connect returns 0", 0, rc);
+    tl_int("contract shim cc_net_accept returns a positive handle", 1, server > 0);
+    cc_net_close(server);
+    cc_net_close(client);
+    cc_net_close(listener);
+}
+
+static void net_connect_status(void) {
+    int32_t listener = 0, port = 0, client = 0, server = 0, h = 0;
+    cc_net_listen(0, &listener, &port);
+    int32_t rc = cc_net_connect("127.0.0.1", port, &client);
+    tl_int("contract shim cc_net_connect on loopback returns 0 (started)", 0, rc);
+    tl_int("contract shim cc_net_connect returns a positive handle", 1, client > 0);
+    wait_ready(client);
+    tl_int("contract shim cc_net_status of a completed loopback connect returns 0", 0, cc_net_status(client));
+    wait_ready(listener);
+    cc_net_accept(listener, &server);
+    cc_net_close(server);
+    cc_net_close(client);
+    cc_net_close(listener);
+
+    rc = cc_net_connect("no-such-host.invalid", 25565, &h);
+    tl_int("contract shim cc_net_connect to an unresolvable host returns CC_UNRESOLVED", CC_UNRESOLVED, rc);
+
+    /* A port nobody listens on: the listener is closed before connecting. */
+    cc_net_listen(0, &listener, &port);
+    cc_net_close(listener);
+    cc_net_connect("127.0.0.1", port, &client);
+    wait_ready(client);
+    tl_int("contract shim cc_net_status of a refused connect returns CC_CLOSED", CC_CLOSED, cc_net_status(client));
+    cc_net_close(client);
+
+    /* Still connecting: 127.0.0.2 is on the loopback network but not assigned to lo0 on macOS, so the
+     * connection attempt gets no answer and stays in progress. */
+    cc_net_connect("127.0.0.2", 25565, &h);
+    tl_int("contract shim cc_net_status while connecting returns CC_AGAIN", CC_AGAIN, cc_net_status(h));
+    cc_net_close(h);
+}
+
+static void net_send_recv_close(void) {
+    int32_t listener = 0, port = 0, client = 0, server = 0, sent = -1, got = -1;
+    uint8_t buffer[64];
+    cc_net_listen(0, &listener, &port);
+    connected_pair(listener, port, &client, &server);
+
+    int32_t rc = cc_net_recv(server, buffer, sizeof buffer, &got);
+    tl_int("contract shim cc_net_recv with no data returns CC_AGAIN", CC_AGAIN, rc);
+    rc = cc_net_send(client, (const uint8_t *)"hello", 5, &sent);
+    tl_int("contract shim cc_net_send returns 0", 0, rc);
+    tl_int("contract shim cc_net_send reports the bytes sent", 5, sent);
+    wait_ready(server);
+    rc = cc_net_recv(server, buffer, sizeof buffer, &got);
+    tl_int("contract shim cc_net_recv with data returns 0", 0, rc);
+    tl_bytes("contract shim cc_net_recv delivers the bytes sent", "hello", 5, buffer, (size_t)got);
+
+    cc_net_close(client);
+    wait_ready(server);
+    rc = cc_net_recv(server, buffer, sizeof buffer, &got);
+    tl_int("contract shim cc_net_recv after the peer closed returns CC_CLOSED", CC_CLOSED, rc);
+    rc = 0;
+    for (int i = 0; i < 50 && rc == 0; i++) {
+        rc = cc_net_send(server, (const uint8_t *)"x", 1, &sent);
+        usleep(10000);
+    }
+    tl_int("contract shim cc_net_send to a closed peer returns CC_CLOSED", CC_CLOSED, rc);
+    cc_net_close(server);
+    cc_net_close(listener);
+    rc = cc_net_listen(port, &listener, &port);
+    tl_int("contract shim cc_net_close releases the listener's port", 0, rc);
+    cc_net_close(listener);
+}
+
+static void net_poll(void) {
+    int32_t listener = 0, port = 0, client = 0, server = 0, sent = 0;
+    uint8_t ready[3] = {9, 9, 9};
+    cc_net_listen(0, &listener, &port);
+    int32_t rc = cc_net_poll(0, &listener, 1, 0, ready);
+    tl_int("contract shim cc_net_poll returns 0", 0, rc);
+    tl_int("contract shim cc_net_poll idle listener is not ready", 0, ready[0]);
+    cc_net_connect("127.0.0.1", port, &client);
+    tl_int("contract shim cc_net_poll connecting handle is ready when connected", 1, wait_ready(client));
+    tl_int("contract shim cc_net_poll listener with a pending client is ready", 1, wait_ready(listener));
+    cc_net_status(client);
+    cc_net_accept(listener, &server);
+    int32_t handles[3] = {listener, server, client};
+    cc_net_poll(0, handles, 3, 0, ready);
+    tl_int("contract shim cc_net_poll connection without data is not ready", 0, ready[1]);
+    cc_net_send(client, (const uint8_t *)"ping", 4, &sent);
+    tl_int("contract shim cc_net_poll readable connection is ready", 1, wait_ready(server));
+    cc_net_poll(0, handles, 3, 0, ready);
+    tl_int("contract shim cc_net_poll marks each listed handle", 1, ready[0] == 0 && ready[1] == 1 && ready[2] == 0);
+    cc_net_close(server);
+    cc_net_close(client);
+    cc_net_close(listener);
+}
+
+static const char *TEXT = "CobolCraft compresses this text, CobolCraft compresses this text, again and again.";
+
+static void zlib_deflate(void) {
+    uint8_t out[256];
+    int32_t length = 0;
+    int32_t inlen = (int32_t)strlen(TEXT);
+    int32_t rc = cc_deflate(CC_ZLIB, (const uint8_t *)TEXT, inlen, out, sizeof out, &length);
+    tl_int("contract shim cc_deflate CC_ZLIB returns 0", 0, rc);
+    tl_bytes("contract shim cc_deflate CC_ZLIB starts with the level-6 zlib header 789c", "\x78\x9c", 2, out, 2);
+    rc = cc_deflate(CC_GZIP, (const uint8_t *)TEXT, inlen, out, sizeof out, &length);
+    tl_int("contract shim cc_deflate CC_GZIP returns 0", 0, rc);
+    tl_bytes("contract shim cc_deflate CC_GZIP starts with the gzip magic 1f8b", "\x1f\x8b", 2, out, 2);
+    rc = cc_deflate(CC_RAW, (const uint8_t *)TEXT, inlen, out, sizeof out, &length);
+    tl_int("contract shim cc_deflate CC_RAW returns 0", 0, rc);
+    tl_int("contract shim cc_deflate CC_RAW output has no zlib or gzip header", 1,
+           length > 0 && !(out[0] == 0x78 && out[1] == 0x9c) && !(out[0] == 0x1f && out[1] == 0x8b));
+    rc = cc_deflate(CC_ZLIB, (const uint8_t *)TEXT, inlen, out, 4, &length);
+    tl_int("contract shim cc_deflate on a short output buffer returns CC_SMALL", CC_SMALL, rc);
+}
+
+static void zlib_inflate(void) {
+    static const char *names[] = {"CC_ZLIB", "CC_GZIP", "CC_RAW"};
+    uint8_t packed[256], plain[256];
+    int32_t packed_length = 0, plain_length = 0;
+    int32_t inlen = (int32_t)strlen(TEXT);
+    char name[128];
+    for (int32_t mode = CC_ZLIB; mode <= CC_RAW; mode++) {
+        cc_deflate(mode, (const uint8_t *)TEXT, inlen, packed, sizeof packed, &packed_length);
+        int32_t rc = cc_inflate(mode, packed, packed_length, plain, sizeof plain, &plain_length);
+        snprintf(name, sizeof name, "contract shim cc_inflate %s round trip returns 0", names[mode]);
+        tl_int(name, 0, rc);
+        snprintf(name, sizeof name, "contract shim cc_inflate %s round trip restores the input", names[mode]);
+        tl_bytes(name, TEXT, (size_t)inlen, plain, (size_t)plain_length);
+    }
+    cc_deflate(CC_ZLIB, (const uint8_t *)TEXT, inlen, packed, sizeof packed, &packed_length);
+    int32_t rc = cc_inflate(CC_ZLIB, packed, packed_length, plain, 10, &plain_length);
+    tl_int("contract shim cc_inflate on a short output buffer returns CC_SMALL", CC_SMALL, rc);
+    packed[2] ^= 0xff;
+    packed[3] ^= 0xff;
+    rc = cc_inflate(CC_ZLIB, packed, packed_length, plain, sizeof plain, &plain_length);
+    tl_int("contract shim cc_inflate on corrupt input returns CC_BADDATA", CC_BADDATA, rc);
+}
+
+static void window(void) {
+    int32_t rc = cc_win_open(320, 240, "contract_shim_provider", 0);
+    tl_int("contract shim cc_win_open hidden window returns 0", 0, rc);
+    tl_int("contract shim cc_win_open creates a window", 1, cc_win_window != NULL);
+
+    int32_t win_w = 0, win_h = 0, fb_w = 0, fb_h = 0;
+    cc_win_size(&win_w, &win_h, &fb_w, &fb_h);
+    tl_int("contract shim cc_win_size reports the window size", 1, win_w == 320 && win_h == 240);
+    tl_int("contract shim cc_win_size framebuffer is at least the window size", 1, fb_w >= win_w && fb_h >= win_h);
+
+    cc_win_capture_cursor(1);
+    tl_int("contract shim cc_win_capture_cursor 1 hides and locks the cursor", GLFW_CURSOR_DISABLED,
+           glfwGetInputMode(cc_win_window, GLFW_CURSOR));
+    cc_win_capture_cursor(0);
+    tl_int("contract shim cc_win_capture_cursor 0 releases the cursor", GLFW_CURSOR_NORMAL,
+           glfwGetInputMode(cc_win_window, GLFW_CURSOR));
+
+    uint8_t events[24 * 64];
+    int32_t count = -1;
+    rc = cc_win_poll(events, sizeof events, &count);
+    tl_int("contract shim cc_win_poll returns 0", 0, rc);
+    int well_formed = count >= 0 && count <= 64;
+    for (int32_t i = 0; i < count && well_formed; i++) {
+        cc_event e;
+        memcpy(&e, events + 24 * i, sizeof e);
+        well_formed = e.kind >= CC_EV_KEY_DOWN && e.kind <= CC_EV_CLOSE_REQUEST;
+    }
+    tl_int("contract shim cc_win_poll returns 0 events or well-formed 24-byte records", 1, well_formed);
+}
+
+/* One textured quad (two triangles) covering the clip-space square [-0.5, 0.5]. */
+static const float QUAD[6 * 7] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1,
+};
+static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+
+static void vulkan(void) {
+    int32_t rc = cc_vk_init();
+    tl_int("contract shim cc_vk_init on a hidden window returns 0", 0, rc);
+
+    uint8_t rgba[4 * 4 * 4];
+    memset(rgba, 0x80, sizeof rgba);
+    char name[128];
+    for (int32_t id = CC_TEX_BLOCKS; id <= CC_TEX_ENVIRONMENT; id++) {
+        snprintf(name, sizeof name, "contract shim cc_vk_texture id %d returns 0", (int)id);
+        tl_int(name, 0, cc_vk_texture(id, 4, 4, rgba));
+    }
+    tl_int("contract shim cc_vk_texture replacing a texture returns 0", 0, cc_vk_texture(CC_TEX_BLOCKS, 4, 4, rgba));
+
+    tl_int("contract shim cc_vk_mesh create returns 0", 0, cc_vk_mesh(1, QUAD, 6));
+    tl_int("contract shim cc_vk_mesh replace returns 0", 0, cc_vk_mesh(1, QUAD, 3));
+    tl_int("contract shim cc_vk_mesh free returns 0", 0, cc_vk_mesh(1, NULL, 0));
+    tl_int("contract shim cc_vk_mesh highest slot returns 0", 0, cc_vk_mesh(CC_MESH_SLOT_MAX, QUAD, 6));
+
+    static const char *pipes[] = {"opaque", "translucent", "ui"};
+    const float clear[4] = {0, 0, 0, 1};
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_UI; p++) {
+        rc = cc_vk_frame_begin(clear);
+        snprintf(name, sizeof name, "contract shim cc_vk_frame_begin returns 0 (%s frame)", pipes[p]);
+        tl_int(name, 0, rc);
+        cc_vk_draw(CC_MESH_SLOT_MAX, p, CC_TEX_BLOCKS, IDENTITY);
+        cc_vk_frame_end();
+        snprintf(name, sizeof name, "contract shim cc_vk_draw and cc_vk_frame_end with the %s pipeline complete", pipes[p]);
+        tl_int(name, 1, 1);
+    }
+    cc_vk_shutdown();
+    tl_int("contract shim cc_vk_shutdown completes", 1, 1);
+}
+
+int main(void) {
+    net_listen_accept();
+    net_connect_status();
+    net_send_recv_close();
+    net_poll();
+    zlib_deflate();
+    zlib_inflate();
+    window();
+    vulkan();
+    cc_win_close();
+    tl_int("contract shim cc_win_close destroys the window", 1, cc_win_window == NULL);
+    return 0;
+}
