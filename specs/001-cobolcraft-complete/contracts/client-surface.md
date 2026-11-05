@@ -32,6 +32,7 @@
 | Control | Binding |
 |---|---|
 | Move forward / back / left / right | W / S / A / D |
+| Run (sprint) | Hold Left Control while moving forward (survival and creative); sends Player Command start sprinting, and stop sprinting on release or when forward movement stops (operator decision G1) |
 | Jump; fly up (creative, flying) | Space |
 | Fly toggle (creative) | Space pressed twice within 0.3 s |
 | Descend (flying) | Left Shift |

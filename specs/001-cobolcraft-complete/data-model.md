@@ -19,7 +19,8 @@ authoritative copy.
 | spawn point | dimension, x, y, z, yaw | New world: standin-content §5.2; set by command (FR-016) |
 | players (stored) | map offline UUID → Player record | Every player who has been in the world (US13-4, US17-5) |
 | operators, bans, allow-list | lists of offline identity | FR-016; console always has operator permission |
-| settings | Server configuration | Not persisted in the world (US13 edge case: new settings apply to the old world) |
+| allow-list enforced | flag | Seeded when the world is created (server: the `allow-list` setting; single-player: 0), then world-owned: changed only by the allow-list on/off commands and saved in `access.dat` (operator decision A2) |
+| settings | Server configuration | Not persisted in the world (US13 edge case: new settings apply to the old world), except that `allow-list` only seeds the world-owned allow-list flag of a new world |
 
 ## 2. Dimension (owner: core)
 
@@ -101,7 +102,8 @@ the next player is checked.
 | flying | flag | Creative only (US3-3) |
 | health | 0 to maximum (extension) | Survival only; creative takes no damage (US7-6) |
 | food level | 0 to maximum (extension) | Survival only (US8-6) |
-| exhaustion | accumulator | Raised by walking, running, jumping, attacking, breaking (US8-2, rates from extension) |
+| sprinting | flag | Set and cleared by Player Command start/stop sprinting (05c 0x2A); "running" in US8-2 |
+| exhaustion | accumulator | Raised by walking, running (sprinting), jumping, attacking, breaking (US8-2, rates from extension) |
 | eating | item, start tick | Completes after eating time unless released (US8 edge case) |
 | inventory | Inventory | |
 | operator status | flag | Granted/revoked by command (US14-5) |

@@ -30,11 +30,13 @@ output.
 | shim | `build/shim/libccshim.a` | — |
 | proto | `build/proto/libproto.a` | — |
 | core | `build/core/libcore.a` | — |
-| server | `build/server/libserver.a`: every `SRC` source except `src/main.cob` (callable programs such as `SV-START`, `SV-ITERATE`, `SV-SHUTDOWN`; no main) | `build/bin/cobolcraft-server` (`src/main.cob` + `libserver.a`) |
-| client | `build/client/libclient.a`: every `SRC` source except `src/main.cob` (callable programs such as `CL-STEP`, `CL-RUN`; no main) | `build/bin/cobolcraft` (`src/main.cob` + `libclient.a`) |
+| server | `build/server/libserver.a`: every `SRC` source except `src/main.cob` (callable programs such as `SV-MAIN`, `SV-START`, `SV-ITERATE`, `SV-SHUTDOWN`; no main) | `build/bin/cobolcraft-server` (`src/main.cob`, a single `CALL "SV-MAIN"`, + `libserver.a`) |
+| client | `build/client/libclient.a`: every `SRC` source except `src/main.cob` (callable programs such as `CL-MAIN`, `CL-STEP`, `CL-RUN`; no main) | `build/bin/cobolcraft` (`src/main.cob`, a single `CALL "CL-MAIN"`, + `libclient.a`) |
 
 The server and client `lib` outputs exist so that `tests/convergence/` links the programs' callable entry
-points in-process (plan "Execution mode", Convergence).
+points in-process (plan "Execution mode", Convergence). `SV-MAIN` and `CL-MAIN` never return: they end the
+run with the program's exit status, so each `main.cob` is one executable line, covered by the Convergence test
+that runs the instrumented binaries (constitution 4.2, no exclusion).
 
 ## 3. Test program output protocol
 

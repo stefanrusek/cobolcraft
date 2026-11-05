@@ -105,7 +105,7 @@ distance up to 32 chunks.
 | 3.6 Execution mode | Pass | Package-parallel; workspace bootstrap command `make bootstrap` is defined in the constitution. |
 | 3.8 Debt survey | Pass | "Technical debt survey" below. |
 | 4.1 Test-first, ladder, BDD/CDD, doubles | Pass | "Test strategy" below. No test doubles: every external dependency is used for real in tests. |
-| 4.2 Coverage | Pass | gcov 100 % for COBOL and C production sources (R9); exclusions only tests, tools, specs. |
+| 4.2 Coverage | Pass | gcov 100 % for COBOL and C production sources (R9); exclusions only tests, tools, specs. Both program entry files are in scope with no exclusion: `server/src/main.cob` and `client/src/main.cob` each consist of a single `CALL` of `SV-MAIN` / `CL-MAIN` (library entry points in `libserver.a` / `libclient.a`, covered by their packages' tests), and that one line is executed under coverage by the Convergence test that runs the instrumented binaries. |
 | 4.3 E2E | Pass | Inventory empty, none proposed (R16). |
 | 5.6 Error handling | Pass | Only defined outcomes are handled; everything else fatal or non-fatal per FR-012 and R14, with `-debug` loud failure. |
 
@@ -156,11 +156,11 @@ core/                       # package: COBOL game core → build/core/libcore.a
 │          persistence)
 └── tests/
 server/                     # package: COBOL server program → build/server/libserver.a (callable programs) + build/bin/cobolcraft-server
-├── src/  (main, loop (SV-START, SV-ITERATE, SV-SHUTDOWN), config-file, console, tcp-host)
+├── src/  (main (single CALL of SV-MAIN), loop (SV-MAIN, SV-START, SV-ITERATE, SV-SHUTDOWN), config-file, console, tcp-host)
 └── tests/
 client/                     # package: COBOL client program → build/client/libclient.a (callable programs) + build/bin/cobolcraft
 ├── copy/  (CLSTATE: per-instance client state passed BY REFERENCE; CLCONST)
-├── src/  (main, args, loop (CL-STEP, CL-RUN), submit, input, controls, screens/*, net-client,
+├── src/  (main (single CALL of CL-MAIN), args, loop (CL-MAIN, CL-STEP, CL-RUN), submit, input, controls, screens/*, net-client,
 │          protocol-client, world-replica, inventory-replica, entities-replica, physics, raycast, sky,
 │          weather-render, packs/*, json, png, zip, http, atlas, models, mesher, entities-render,
 │          ui-render, render-list, sp-host, game-dir)

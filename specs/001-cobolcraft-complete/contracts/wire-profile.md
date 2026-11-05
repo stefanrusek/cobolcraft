@@ -72,6 +72,7 @@ dimensions) are those of the extended `docs/design/standin-content.md`; this pro
 | Health (US7) | S→C | Set Health 0x6A (health, food, saturation = 0); Damage Event 0x19 and Hurt Animation 0x2B (seen as hurt); Player Combat Kill 0x45 (death screen text = cause); Respawn 0x54 (after PERFORM_RESPAWN) | Health display, hurt feedback, death screen, respawn at world spawn in the main dimension. |
 | | C→S | Attack 0x01 (on a player or mob entity id); Client Command 0x0C action 0 | Attack (US7-5, US9-4); respawn (US7-4). |
 | Hunger (US8) | S→C | Set Health 0x6A food field; Entity Event 0x22 eating-finished event | Food display; meal completed. |
+| | C→S | Player Command 0x2A action 1 `START_SPRINTING` / 2 `STOP_SPRINTING` (entity id = the player's own, data 0) | Running: the server tells running from walking and applies the standin-content §11 sprint exhaustion rate (US8-2). |
 | | C→S | Use Item 0x43 (start eating); Player Action 6 `RELEASE_USE_ITEM` (stop early, nothing eaten) | Eat control (US8-3, US8 edge case). |
 | Mobs (US9) | S→C | Add Entity (mob type ids from the extension), Move Entity 0x36/0x37/0x39, Rotate Head, Teleport Entity, Hurt Animation, Remove Entities | Mob appearance, movement, attack feedback, defeat. |
 | Crafting (US10) | S→C | Recipe Book Add 0x4B (`Replace` = true) with one entry per recipe: display = ingredients and result; `craftable` flag computed per player and re-sent when the inventory changes | Recipe list and craftable marking (US10-1). |
