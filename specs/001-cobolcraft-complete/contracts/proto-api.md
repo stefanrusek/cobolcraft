@@ -54,7 +54,7 @@ frames.
 
 ## 5. Entry point parameters
 
-Recorded with the US2 and US3 implementations of `proto` so that `core` and `client` call it the same way. It adds
+Recorded with the US2, US3 and US10 implementations of `proto` so that `core` and `client` call it the same way. It adds
 no record shape: `PROTO.cpy` is unchanged. Every program is called `CALL "<name>" USING …` with every
 argument by reference. Integers are `BINARY-LONG` unless stated. An *area* is any caller item at least as
 long as the count passed with it; a *table* is a caller table of the stated item type (the callee addresses
@@ -88,6 +88,8 @@ identifier, bit outside a fixed set, unsendable frame) sets `PB-ERROR` and appen
 | `PB-PUT-` / `PB-GET-TEXT` | `PB-BUFFER`, `PB-TEXT` (network NBT root, 09 §1 fixed form) |
 | `PB-PUT-` / `PB-GET-ITEMSTACK` | `PB-BUFFER`, `PB-ITEMSTACK` |
 | `PB-PUT-` / `PB-GET-ENTITY-METADATA` | `PB-BUFFER`, `PB-METADATA-ENTRY` (one entry, or the 0xFF terminator when `PB-MD-INDEX` = `PB-MD-END`; serializers other than those of `PROTO.cpy` set `PB-ERROR`; a read clears the value fields the serializer does not use) |
+| `PB-PUT-` / `PB-GET-SLOT-DISPLAY` | `PB-BUFFER`, `PB-SLOT-DISPLAY` (types `empty`, `item`, `item_stack` with an empty DataComponentPatch; another type, or a read stack with components, sets `PB-ERROR`; a read clears the fields the type does not use) |
+| `PB-PUT-` / `PB-GET-RECIPE-DISPLAY` | `PB-BUFFER`, `PB-RECIPE-DISPLAY` (one RecipeDisplayEntry: display id, RecipeDisplay `crafting_shapeless` or `crafting_shaped`, group, category, optional requirements each written and read as HolderSet selector 2 + one item id; the Recipe Book Add entry flags byte is the caller's; another type, a count above `PB-RECIPE-MAX-SLOTS` or another SlotDisplay type sets `PB-ERROR`) |
 | `NBT-WRITE-BYTE`, `-SHORT`, `-INT` | `PB-BUFFER`, name area, name length, value (`BINARY-LONG`) |
 | `NBT-WRITE-LONG`, `-FLOAT`, `-DOUBLE` | `PB-BUFFER`, name area, name length, value (`BINARY-DOUBLE`, `FLOAT-SHORT`, `FLOAT-LONG`) |
 | `NBT-WRITE-STRING` | `PB-BUFFER`, name area, name length, text area (UTF-8), byte length |
