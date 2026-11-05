@@ -1,0 +1,75 @@
+*> Implementation test of the entity metadata code of proto/src/composites.cob (00 §13.1): entries
+*> the writer cannot encode (an index outside 0 to 254, a serializer outside PROTO.cpy) append
+*> nothing and set PB-ERROR; a failed read leaves PB-POS where it was and yields an all-zero entry.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COMPOSITES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-HEX                 PIC X(1024).
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 3 TO PB-MD-INDEX
+     MOVE 16 TO PB-MD-SERIALIZER
+     MOVE 5 TO PB-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA put of serializer 16 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-MD-INDEX
+     MOVE PB-MDS-INT TO PB-MD-SERIALIZER
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA put of index -1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 300 TO PB-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA put of index 300 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 254 TO PB-MD-INDEX
+     MOVE PB-MDS-BOOLEAN TO PB-MD-SERIALIZER
+     MOVE 0 TO PB-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA put of index 254 BOOLEAN false is fe 08 00" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "fe0800" TO TL-EXPECTED
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An item stack with a data component (AddedCount 1) is malformed for CobolCraft.
+     MOVE "00 07 01 04 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA get of a stack with components sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-GET-ERROR
+     MOVE "02 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ENTITY-METADATA" USING PB-BUFFER PB-METADATA-ENTRY
+     MOVE "test composites ENTITY-METADATA get of an entry without its value sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-GET-ERROR
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+
+ FILL.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER.
+
+*> PB-ERROR 1 and nothing appended; the buffer is reset for the next case.
+ CHECK-PUT-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 10 + PB-LENGTH
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER.
+
+*> PB-ERROR 1, PB-POS back at 0, every field of the entry 0.
+ CHECK-GET-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 1000 + PB-POS * 100 + PB-MD-INDEX + PB-MD-SERIALIZER
+         + PB-MD-INT + PB-MD-FLOAT + PB-MD-IS-COUNT + PB-MD-IS-ITEM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-COMPOSITES.
+ COPY PROTOTEST.

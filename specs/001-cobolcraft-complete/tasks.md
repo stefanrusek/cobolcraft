@@ -491,15 +491,15 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 
 **Goal**: codecs for entity movement and metadata packets (US3, US5). **Independent Test**: `make gate-proto`.
 
-- [ ] T327 [P] [US3-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `ANGLE` (1/256 turn, 00)
-- [ ] T328 [US3-proto] Implement `PB-PUT-ANGLE` and `PB-GET-ANGLE` in `proto/src/scalars.cob`
-- [ ] T329 [P] [US3-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LPVEC3` (00 low-precision vector examples, zero-vector form)
-- [ ] T330 [US3-proto] Implement `PB-PUT-LPVEC3` and `PB-GET-LPVEC3` in `proto/src/scalars.cob`
-- [ ] T331 [P] [US3-proto] Write `contract_proto_primitives.cob` cases for `ENTITY-METADATA` entries used by `docs/protocol/09-cobolcraft-profile.md` (item-stack entry of `loose_item`, terminator 0xFF) against `contract/fixtures/wire/play-s2c-65-set-entity-data-item.hex`
-- [ ] T332 [US3-proto] Implement `PB-PUT-ENTITY-METADATA` and `PB-GET-ENTITY-METADATA` in `proto/src/composites.cob`
-- [ ] T333 [US3-proto] Extend `proto/tests/test_scalars.cob` to 100 % coverage of the `ANGLE` and `LPVEC3` code
-- [ ] T334 [US3-proto] Write implementation test `proto/tests/test_composites.cob` to 100 % coverage of the entity metadata code
-- [ ] T335 Gate: run `make gate-proto` and record the command and its real output
+- [X] T327 [P] [US3-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `ANGLE` (1/256 turn, 00)
+- [X] T328 [US3-proto] Implement `PB-PUT-ANGLE` and `PB-GET-ANGLE` in `proto/src/scalars.cob`
+- [X] T329 [P] [US3-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `LPVEC3` (00 low-precision vector examples, zero-vector form)
+- [X] T330 [US3-proto] Implement `PB-PUT-LPVEC3` and `PB-GET-LPVEC3` in `proto/src/scalars.cob`
+- [X] T331 [P] [US3-proto] Write `contract_proto_primitives.cob` cases for `ENTITY-METADATA` entries used by `docs/protocol/09-cobolcraft-profile.md` (item-stack entry of `loose_item`, terminator 0xFF) against `contract/fixtures/wire/play-s2c-65-set-entity-data-item.hex`
+- [X] T332 [US3-proto] Implement `PB-PUT-ENTITY-METADATA` and `PB-GET-ENTITY-METADATA` in `proto/src/composites.cob`
+- [X] T333 [US3-proto] Extend `proto/tests/test_scalars.cob` to 100 % coverage of the `ANGLE` and `LPVEC3` code
+- [X] T334 [US3-proto] Write implementation test `proto/tests/test_composites.cob` to 100 % coverage of the entity metadata code
+- [X] T335 Gate: run `make gate-proto` and record the command and its real output
 
 #### Phase 10: US10-proto — recipe displays
 

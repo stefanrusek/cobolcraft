@@ -1,4 +1,4 @@
-*> Composite codecs (docs/protocol/00-data-types.md §9, §12; contracts/proto-api.md §2 "Composite"),
+*> Composite codecs (docs/protocol/00-data-types.md §9, §12, §13; contracts/proto-api.md §2 "Composite"),
 *> on the records of contract/copy/PROTO.cpy.
 
  IDENTIFICATION DIVISION.
@@ -162,3 +162,89 @@
      END-IF
      GOBACK.
  END PROGRAM PB-GET-ITEMSTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-ENTITY-METADATA.
+*> USING PB-BUFFER, PB-METADATA-ENTRY: one 00 §13.1 entry (UByte index, VarInt serializer, value),
+*> or the terminator byte 0xFF when PB-MD-INDEX is PB-MD-END. Only the serializers of PROTO.cpy
+*> (BYTE, INT, FLOAT, ITEM_STACK, BOOLEAN, POSE) are encoded; another serializer or an index outside
+*> 0 to 254 sets PB-ERROR and appends nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-SERIALIZER          BINARY-LONG.
+    88 WS-SUPPORTED        VALUES 0 1 3 7 8 20.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-METADATA-ENTRY.
+     MOVE PB-MD-SERIALIZER TO WS-SERIALIZER
+     EVALUATE TRUE
+         WHEN PB-MD-INDEX = PB-MD-END
+             CALL "PB-PUT-UBYTE" USING PB-BUFFER PB-MD-INDEX
+         WHEN PB-MD-INDEX < 0 OR PB-MD-INDEX > 254 OR NOT WS-SUPPORTED
+             MOVE 1 TO PB-ERROR
+         WHEN OTHER
+             CALL "PB-PUT-UBYTE" USING PB-BUFFER PB-MD-INDEX
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-MD-SERIALIZER
+             EVALUATE PB-MD-SERIALIZER
+                 WHEN PB-MDS-BYTE
+                     CALL "PB-PUT-BYTE" USING PB-BUFFER PB-MD-INT
+                 WHEN PB-MDS-INT
+                 WHEN PB-MDS-POSE
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER PB-MD-INT
+                 WHEN PB-MDS-FLOAT
+                     CALL "PB-PUT-FLOAT" USING PB-BUFFER PB-MD-FLOAT
+                 WHEN PB-MDS-ITEM-STACK
+                     MOVE PB-MD-IS-COUNT TO WS-IS-COUNT
+                     MOVE PB-MD-IS-ITEM TO WS-IS-ITEM
+                     CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
+                 WHEN PB-MDS-BOOLEAN
+                     CALL "PB-PUT-BOOL" USING PB-BUFFER PB-MD-INT
+             END-EVALUATE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PB-PUT-ENTITY-METADATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-ENTITY-METADATA.
+*> USING PB-BUFFER, PB-METADATA-ENTRY out: one 00 §13.1 entry; PB-MD-INDEX = PB-MD-END for the
+*> terminator (nothing else read). Value fields the serializer does not use are 0. A serializer
+*> outside PROTO.cpy, a short read or a stack with data components sets PB-ERROR, leaves PB-POS
+*> where it was and yields an all-zero entry.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-METADATA-ENTRY.
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO PB-MD-SERIALIZER PB-MD-INT PB-MD-FLOAT PB-MD-IS-COUNT PB-MD-IS-ITEM
+     CALL "PB-GET-UBYTE" USING PB-BUFFER PB-MD-INDEX
+     IF PB-MD-INDEX NOT = PB-MD-END
+         CALL "PB-GET-VARINT" USING PB-BUFFER PB-MD-SERIALIZER
+         EVALUATE PB-MD-SERIALIZER
+             WHEN PB-MDS-BYTE
+                 CALL "PB-GET-BYTE" USING PB-BUFFER PB-MD-INT
+             WHEN PB-MDS-INT
+             WHEN PB-MDS-POSE
+                 CALL "PB-GET-VARINT" USING PB-BUFFER PB-MD-INT
+             WHEN PB-MDS-FLOAT
+                 CALL "PB-GET-FLOAT" USING PB-BUFFER PB-MD-FLOAT
+             WHEN PB-MDS-ITEM-STACK
+                 CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
+                 MOVE WS-IS-COUNT TO PB-MD-IS-COUNT
+                 MOVE WS-IS-ITEM TO PB-MD-IS-ITEM
+             WHEN PB-MDS-BOOLEAN
+                 CALL "PB-GET-BOOL" USING PB-BUFFER PB-MD-INT
+             WHEN OTHER
+                 MOVE 1 TO PB-ERROR
+         END-EVALUATE
+     END-IF
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO PB-MD-INDEX PB-MD-SERIALIZER PB-MD-INT PB-MD-FLOAT PB-MD-IS-COUNT
+             PB-MD-IS-ITEM
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-ENTITY-METADATA.

@@ -1,6 +1,7 @@
 *> Implementation test of proto/src/scalars.cob and proto/src/buffer.cob: truncation of out-of-range
 *> writer inputs, dropped high VarInt bits (00 §2.1), field limits of 00 §4.1, identifier edge cases
-*> (00 §3.2), capacity checks and the sticky PB-ERROR.
+*> (00 §3.2), capacity checks, the sticky PB-ERROR, and the LpVec3 (00 §4.6) sanitizing of NaN and
+*> infinite components, the 5-byte VarInt of the largest scale and the clamping of a 32767 field.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-SCALARS.
  DATA DIVISION.
@@ -23,6 +24,16 @@
  01 WS-EDIT                PIC -(19)9.
  01 WS-PTR                 BINARY-LONG.
  01 WS-NUM                 BINARY-DOUBLE.
+*> IEEE-754 binary64 bit patterns, little-endian (NaN 7ff8..., +infinity 7ff0..., -infinity fff0...).
+ 01 WS-NAN-BYTES           PIC X(8).
+ 01 WS-NAN REDEFINES WS-NAN-BYTES FLOAT-LONG.
+ 01 WS-INF-BYTES           PIC X(8).
+ 01 WS-INF REDEFINES WS-INF-BYTES FLOAT-LONG.
+ 01 WS-NEG-INF-BYTES       PIC X(8).
+ 01 WS-NEG-INF REDEFINES WS-NEG-INF-BYTES FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
 *>   Writers keep the low bits of out-of-range values; BOOL writes 1 for any non-zero value.
@@ -133,8 +144,44 @@
      MOVE 10 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = PB-ERROR * 10 + PB-POS + WS-INT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   00 §4.6: NaN becomes 0 and infinities clamp to ±17179869183, so scale is 17179869183 =
+*>   (3 | 4) + (2^32 - 1) << 2: low byte ff (flags 7, qX 16383 low bits), VarInt ffffffff0f.
+*>   qX 16383, qY 32766, qZ 0: packed 0x0001fff9ffff.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE FUNCTION HEX-TO-CHAR("000000000000f87f") TO WS-NAN-BYTES
+     MOVE FUNCTION HEX-TO-CHAR("000000000000f07f") TO WS-INF-BYTES
+     MOVE FUNCTION HEX-TO-CHAR("000000000000f0ff") TO WS-NEG-INF-BYTES
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-NAN WS-INF WS-NEG-INF
+     MOVE "test scalars LPVEC3 put (NaN +inf -inf) is (0 17179869183 -17179869183) with a 5-byte VarInt"
+         TO TL-CASE
+     MOVE "ffff0001fff9ffffffff0f" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-X WS-Y WS-Z
+     MOVE "test scalars LPVEC3 get ffff0001fff9ffffffff0f is (0 17179869183 -17179869183)" TO TL-CASE
+     MOVE "0 17179869183 -17179869183 11" TO TL-EXPECTED
+     PERFORM LPVEC3-TEXT
+*>   A 15-bit field of 32767 reads as 32766 (00 §4.6 step 5): qX 0x7fff, qY 0, qZ 0, scale 1.
+     MOVE "f9 ff 00000003" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-X WS-Y WS-Z
+     MOVE "test scalars LPVEC3 get f9ff00000003 clamps qX 32767 to 32766: (1 -1 -1)" TO TL-CASE
+     MOVE "1 -1 -1 6" TO TL-EXPECTED
+     PERFORM LPVEC3-TEXT
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
+
+*> WS-X, WS-Y, WS-Z rounded to integers, then PB-POS.
+ LPVEC3-TEXT.
+     PERFORM START-TEXT
+     COMPUTE WS-NUM ROUNDED = WS-X
+     PERFORM ADD-NUMBER
+     COMPUTE WS-NUM ROUNDED = WS-Y
+     PERFORM ADD-NUMBER
+     COMPUTE WS-NUM ROUNDED = WS-Z
+     PERFORM ADD-NUMBER
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  FILL.
      CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER.
