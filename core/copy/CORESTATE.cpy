@@ -56,6 +56,12 @@
     05 CW-SPAWN-YAW          FLOAT-SHORT.
     05 CW-DIM-COUNT          BINARY-LONG.        *> enabled dimensions, in Login order
     05 CW-DIM                BINARY-LONG OCCURS 2 TIMES.   *> row of the DIMENSIONS.cpy table
+*>  Weather per dimension (standin §14.3; data-model §9; core/src/weather.cob), indexed by the
+*>  DIMENSIONS.cpy row: the kind (WEATHER.cpy WK-*; 0 for a dimension without weather) and the
+*>  remaining ticks (WEATHER-UNTIL-CHANGED, -1, = no countdown).
+    05 CW-WEATHER OCCURS 2 TIMES.
+       10 CW-WEATHER-KIND    BINARY-LONG.
+       10 CW-WEATHER-LEFT    BINARY-LONG.
     05 CW-RUN-STATE          PIC 9.              *> CST-RUN-STATE
     05 CW-NEXT-ENTITY-ID     BINARY-LONG.
     05 CW-NEXT-ENTER         BINARY-LONG.        *> entering order of the next player (PL-ENTERED)

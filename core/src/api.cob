@@ -6,7 +6,8 @@
 *> USING world folder path (z-string), CORE-SETTINGS, created-flag out (BINARY-LONG). Stores the
 *> settings and empties every table (a world already open in this process is closed first). A
 *> folder without level.dat becomes a new in-memory world: the cobolcraft:main dimension, its spawn
-*> point (standin-content §5.2) and time 0 (§4.8); created-flag 1. Extra dimensions are added by
+*> point (standin-content §5.2), time 0 (§4.8) and the starting weather (§14.3, WEATHER-INIT);
+*> created-flag 1. Extra dimensions are added by
 *> US12-core and reading an existing world by US13-core.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -48,6 +49,7 @@
      MOVE 1 TO CW-NEXT-ENTITY-ID
      MOVE 1 TO CW-DIM-COUNT
      MOVE DIM-MAIN TO CW-DIM(1)
+     CALL "WEATHER-INIT"
      COMPUTE CW-SPAWN-X = SPAWN-X10 / 10
      COMPUTE CW-SPAWN-Y = SPAWN-Y10 / 10
      COMPUTE CW-SPAWN-Z = SPAWN-Z10 / 10
@@ -117,8 +119,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-TICK.
 *> One 50 ms game tick (research R6): the tick counter, the time of day and its Set Time cadence
-*> (WORLD-TIME-TICK), break progress (BLOCKS-TICK), the player survival and hunger rules
-*> (HEALTH-TICK, step 4 of standin §9.5), mob spawning (MOBS-SPAWN-TICK, step 5), the mobs
+*> (WORLD-TIME-TICK), the weather (WEATHER-TICK, step 3 of standin §9.5), break progress
+*> (BLOCKS-TICK), the player survival and hunger rules (HEALTH-TICK, step 4), mob spawning (MOBS-SPAWN-TICK, step 5), the mobs
 *> (MOBS-TICK, step 6), ground items (GROUND-ITEMS-TICK, step 7, last of the game rules), the
 *> recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL) and the
 *> connections' keep-alives.
@@ -128,6 +130,7 @@
  PROCEDURE DIVISION.
      ADD 1 TO CW-TICKS
      CALL "WORLD-TIME-TICK"
+     CALL "WEATHER-TICK"
      CALL "BLOCKS-TICK"
      CALL "HEALTH-TICK"
      CALL "MOBS-SPAWN-TICK"

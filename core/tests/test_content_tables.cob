@@ -4,7 +4,7 @@
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
 *> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
 *> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy), the mob rules of §12 (MOBS.cpy), the
-*> recipes of §13 (RECIPES.cpy),
+*> recipes of §13 (RECIPES.cpy), the weather of §14 (WEATHER.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -22,6 +22,7 @@
  COPY REGISTRY.
  COPY MOBS.
  COPY RECIPES.
+ COPY WEATHER.
  01 WS-ROW                 PIC X(400).
  01 WS-J                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
@@ -127,6 +128,15 @@
         "8 2xcobolcraft:cardstack 2xcobolcraft:lucite -> 1xcobolcraft:dump_shard".
  01 WS-RECIPE-EXPECT REDEFINES WS-RECIPE-ROWS.
     05 WS-RECIPE-ROW       PIC X(120) OCCURS 9 TIMES.
+*> Weather kind rows (§14.1, §14.3, §14.6): kind number, key, English name, rain level and thunder
+*> level in thousandths, gameplay effect (0 none, 1 hail), duration base and span in ticks (the
+*> remaining time after a change is base + ((r div 100) mod span)).
+ 01 WS-WEATHER-ROWS.
+    05 FILLER PIC X(80) VALUE "1 cobolcraft:clear Clear 0 0 0 6000 6001".
+    05 FILLER PIC X(80) VALUE "2 cobolcraft:drizzle Drizzle 1000 0 0 2400 2401".
+    05 FILLER PIC X(80) VALUE "3 cobolcraft:hailstorm Hailstorm 1000 1000 1 1200 1201".
+ 01 WS-WEATHER-EXPECT REDEFINES WS-WEATHER-ROWS.
+    05 WS-WEATHER-ROW      PIC X(80) OCCURS 3 TIMES.
 *> Registry rows (§4.2 summary): registry number, key, entries sent.
  01 WS-REG-ROWS.
     05 FILLER PIC X(60) VALUE "0 minecraft:worldgen/biome 3".
@@ -565,6 +575,46 @@
          STRING "x" IT-KEY(WS-F + 1)(1:IT-KEY-LENGTH(WS-F + 1)) DELIMITED BY SIZE
              INTO WS-ROW WITH POINTER WS-PTR
          MOVE WS-RECIPE-ROW(WS-I) TO TL-EXPECTED
+         PERFORM ASSERT-ROW
+     END-PERFORM
+
+*>   Weather (§14): the constants, then one case per kind.
+     MOVE "test content tables weather constants (§14.1 kinds, §14.3 start kind and time, until "
+         & "changed, drizzle chance of 100, §14.4 Game Event numbers, §14.6 hail interval)"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE WEATHER-KIND-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE WK-CLEAR TO WS-NUM PERFORM ADD-NUM
+     MOVE WK-DRIZZLE TO WS-NUM PERFORM ADD-NUM
+     MOVE WK-HAILSTORM TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-START-KIND TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-START-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-UNTIL-CHANGED TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-DRIZZLE-CHANCE TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-CHANCE-RANGE TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-EVENT-START TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-EVENT-STOP TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-EVENT-RAIN TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-EVENT-THUNDER TO WS-NUM PERFORM ADD-NUM
+     MOVE WEATHER-HAIL-INTERVAL TO WS-NUM PERFORM ADD-NUM
+     MOVE "3 1 2 3 1 6000 -1 70 100 1 2 7 8 80" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WEATHER-KIND-COUNT
+         MOVE SPACES TO TL-CASE
+         STRING "test content tables weather kind " DELIMITED BY SIZE
+             WK-KEY(WS-I)(1:WK-KEY-LENGTH(WS-I)) DELIMITED BY SIZE INTO TL-CASE
+         PERFORM START-ROW
+         MOVE WS-I TO WS-NUM PERFORM ADD-NUM
+         PERFORM ADD-SPACE
+         STRING WK-KEY(WS-I)(1:WK-KEY-LENGTH(WS-I)) " "
+             FUNCTION TRIM(WK-NAME(WS-I)) DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
+         MOVE WK-RAIN-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WK-THUNDER-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WK-EFFECT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WK-DURATION-BASE(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WK-DURATION-SPAN(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE WS-WEATHER-ROW(WS-I) TO TL-EXPECTED
          PERFORM ASSERT-ROW
      END-PERFORM
 

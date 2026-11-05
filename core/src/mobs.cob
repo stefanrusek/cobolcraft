@@ -10,7 +10,7 @@
 *>
 *> Per tick (CORE-TICK): MOBS-SPAWN-TICK is step 5 of standin §9.5 (spawning, §12.4), MOBS-TICK
 *> step 6 (the hostile-mobs removal, then each mob in ascending entity id order: hurt cooldown, AI
-*> §12.3, physics §12.2). Damage from player attacks is HEALTH-MOB-DAMAGE (core/src/health.cob),
+*> §12.3, physics §12.2, hail §14.6). Damage from player attacks is HEALTH-MOB-DAMAGE (core/src/health.cob),
 *> which ends in MOB-DEFEAT at 0 health. AI state is not saved (§12.3).
 *>
 *> Entry points:
@@ -603,8 +603,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-STEP.
 *> USING tracker row (BINARY-LONG) of a mob whose chunk is loaded (otherwise nothing happens): step
-*> 6 of standin §9.5 for one mob: the hurt cooldown decreases (§10.2), then the AI (MOB-AI) and the
-*> physics (MOB-PHYSICS).
+*> 6 of standin §9.5 for one mob: the hurt cooldown decreases (§10.2), then the AI (MOB-AI), the
+*> physics (MOB-PHYSICS) and hail (WEATHER-HAIL-MOB, core/src/weather.cob, §14.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -631,6 +631,7 @@
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      CALL "MOB-AI" USING WS-ROW WS-HX WS-HZ WS-YAW
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
+     CALL "WEATHER-HAIL-MOB" USING WS-ROW
      GOBACK.
  END PROGRAM MOB-STEP.
 

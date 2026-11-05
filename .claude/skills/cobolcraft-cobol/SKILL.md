@@ -112,6 +112,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   Respawn and Player Position, `|`-separated), `TEST-USE-ITEM`, `TEST-PLAYER-COMMAND`,
   `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), `TEST-PLACE-RECIPE`,
   `TEST-DRAIN-CRAFT` (Recipe Book Add as `book <n> craftable <ids> replace <r>` and Container Set Slot,
+  `|`-separated), `TEST-DRAIN-WEATHER` (weather Game Events 1, 2, 7, 8 as `<event> <value>`,
   `|`-separated), fixture loading and comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
@@ -119,6 +120,11 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   play packet and each tick). `TEST-DRAIN-BLOCKS` and `TEST-DRAIN-ENTITIES` leave it out (like Set Time);
   `TEST-DRAIN-IDS` lists it (id 75). A test that edits `PL-SLOT` directly gets a book on the next packet
   or tick; call `CRAFT-REFRESH-ALL` and drain first when that matters.
+- **The join sequence carries the weather pair** (standin §14.4: Game Events 2, 7, 8 for a clear
+  world, after Set Time and before Game Event 13), so `TEST-DRAIN-IDS` shows `39x4` there. A new world
+  is clear with 6000 ticks left; tests that need a kind set `CW-WEATHER-KIND(dim)` and
+  `CW-WEATHER-LEFT(dim)` directly. Hail (§14.6) strikes exposed survival players and mobs on ticks with
+  Time mod 80 = 0 only during a hailstorm, so it never acts in a test that does not set one.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
   mod 100 = 0 by day). A test that runs many ticks and does not test mobs keeps them out with
   `MOVE 0 TO CS-HOSTILE-MOBS` before opening the world and `MOVE 16001 TO CW-TIME` after it (night, when

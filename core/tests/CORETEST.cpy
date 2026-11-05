@@ -80,6 +80,9 @@
 *>     its crafting packets separated by " | ": Recipe Book Add "book <entries> craftable <display
 *>     ids with crafting requirements, space-separated> replace <0|1>" and Container Set Slot
 *>     "slot <s>=<item>x<count>"; other packets are left out.
+*>   TEST-DRAIN-WEATHER USING connection id, text out (PIC X(4096)): drains the connection and lists
+*>     its weather Game Events (events 1, 2, 7 and 8) separated by " | " as "<event> <value>" (one
+*>     decimal); other packets, and other Game Events, are left out.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -1430,3 +1433,50 @@
          STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
      END-IF.
  END PROGRAM TEST-DRAIN-CRAFT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-WEATHER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(5)9.9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 39
+             CALL "PB-GET-UBYTE" USING PK-BUFFER WS-EVENT
+             CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+             IF WS-EVENT = 1 OR WS-EVENT = 2 OR WS-EVENT = 7 OR WS-EVENT = 8
+                 IF WS-PTR > 1
+                     STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 END-IF
+                 MOVE WS-EVENT TO WS-E1
+                 COMPUTE WS-E2 ROUNDED = WS-FLOAT
+                 STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2)
+                     DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-WEATHER.

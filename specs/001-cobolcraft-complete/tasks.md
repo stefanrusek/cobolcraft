@@ -801,20 +801,20 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §14 weather per dimension. **Independent Test**: `make gate-core`.
 
-- [ ] T557 [US11-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the weather table of standin-content §14 (test first, constitution 5.1 rule 3)
-- [ ] T558 [US11-core] Create `core/copy/WEATHER.cpy` (kinds, wire pairs, applicability, frequency and duration, effects of standin-content §14)
-- [ ] T559 [P] [US11-core] Write `contract_wire_server.cob` cases: Game Event 1, 2, 7, 8 equal their fixtures
-- [ ] T560 [P] [US11-core] Write acceptance test `core/tests/acc_us11_cycle.cob`: case "acceptance US11-1 given a dimension with weather when its remaining time ends then the next kind and duration follow §14 and every player in that dimension is sent the kind's pair"; case "acceptance US11-2 two players in the same dimension receive the same pair at the same tick"; the pair is also sent on join
-- [ ] T561 [US11-core] Implement per-dimension weather state and change selection (§14 rules via `core/src/rng.cob`) in `core/src/weather.cob`
-- [ ] T562 [US11-core] Implement the Game Event pair broadcast on change, on join and on dimension change in `core/src/weather.cob`
-- [ ] T563 [P] [US11-core] Write acceptance test `core/tests/acc_us11_effect.cob`: case "acceptance US11-3 given a kind with a §14 gameplay effect when it is active then it applies to players and mobs in the biomes where it applies"
-- [ ] T564 [US11-core] Implement weather gameplay effects in `core/src/weather.cob`
-- [ ] T565 [P] [US11-core] Write acceptance test `core/tests/acc_us11_changes_off.cob`: case "acceptance US11-4 given weather-changes off when time passes then the weather stays as it is"
-- [ ] T566 [US11-core] Implement the weather-changes setting in `core/src/weather.cob`
-- [ ] T567 [P] [US11-core] Write acceptance test `core/tests/acc_us11_no_weather.cob`: case "US11 edge given a dimension without weather then its players are always sent STOP_RAINING whatever the weather elsewhere"
-- [ ] T568 [US11-core] Implement the no-weather dimension rule in `core/src/weather.cob`
-- [ ] T569 [US11-core] Extend the core implementation tests to 100 % coverage of `core/src/weather.cob`
-- [ ] T570 Gate: run `make gate-core` and record the command and its real output
+- [X] T557 [US11-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the weather table of standin-content §14 (test first, constitution 5.1 rule 3)
+- [X] T558 [US11-core] Create `core/copy/WEATHER.cpy` (kinds, wire pairs, applicability, frequency and duration, effects of standin-content §14)
+- [X] T559 [P] [US11-core] Write `contract_wire_server.cob` cases: Game Event 1, 2, 7, 8 equal their fixtures
+- [X] T560 [P] [US11-core] Write acceptance test `core/tests/acc_us11_cycle.cob`: case "acceptance US11-1 given a dimension with weather when its remaining time ends then the next kind and duration follow §14 and every player in that dimension is sent the kind's pair"; case "acceptance US11-2 two players in the same dimension receive the same pair at the same tick"; the pair is also sent on join
+- [X] T561 [US11-core] Implement per-dimension weather state and change selection (§14 rules via `core/src/rng.cob`) in `core/src/weather.cob`
+- [X] T562 [US11-core] Implement the Game Event pair broadcast on change, on join and on dimension change in `core/src/weather.cob`
+- [X] T563 [P] [US11-core] Write acceptance test `core/tests/acc_us11_effect.cob`: case "acceptance US11-3 given a kind with a §14 gameplay effect when it is active then it applies to players and mobs in the biomes where it applies"
+- [X] T564 [US11-core] Implement weather gameplay effects in `core/src/weather.cob`
+- [X] T565 [P] [US11-core] Write acceptance test `core/tests/acc_us11_changes_off.cob`: case "acceptance US11-4 given weather-changes off when time passes then the weather stays as it is"
+- [X] T566 [US11-core] Implement the weather-changes setting in `core/src/weather.cob`
+- [X] T567 [P] [US11-core] Write acceptance test `core/tests/acc_us11_no_weather.cob`: case "US11 edge given a dimension without weather then its players are always sent STOP_RAINING whatever the weather elsewhere"
+- [X] T568 [US11-core] Implement the no-weather dimension rule in `core/src/weather.cob`
+- [X] T569 [US11-core] Extend the core implementation tests to 100 % coverage of `core/src/weather.cob`
+- [X] T570 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 22: US12-core — extra dimensions and travel
 

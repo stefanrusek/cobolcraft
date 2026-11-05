@@ -3,7 +3,7 @@
 *>
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph, restricted to the packets this phase has (Commands
-*> and weather events are added by later phases at their places in that list):
+*> are added by a later phase at its place in that list):
 *>   1. Login (0x32), then Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
@@ -11,7 +11,9 @@
 *>      raised by one first (as every send of the container's content does)
 *>   5. PLAY-ARRIVE, the part of the sequence a respawn repeats (core/src/health.cob):
 *>      Set Health (0x6A, survival players only, 09 §3.3), Set Default Spawn Position (0x63),
-*>      Set Time (0x73), Game Event 13 LEVEL_CHUNKS_LOAD_START (0x27) before the first chunk batch,
+*>      Set Time (0x73), the weather pair of the player's dimension (WEATHER-SEND, Game Event
+*>      1 or 2, 7, 8; core/src/weather.cob), Game Event 13 LEVEL_CHUNKS_LOAD_START (0x27)
+*>      before the first chunk batch,
 *>      CHUNKS-INITIAL-BATCH (Set Chunk Cache Center, Chunk Batch Start, the chunks, Chunk Batch
 *>      Finished), Player Position (0x49) with the next teleport id of the connection (counting up
 *>      from 1)
@@ -131,6 +133,7 @@
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-TIME-BUILD" USING CW-TIME PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "WEATHER-SEND" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-GAME-EVENT-BUILD" USING WS-EVENT WS-VALUE PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER

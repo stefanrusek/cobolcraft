@@ -18,16 +18,18 @@
 *> item's attack damage (ITEMS.cpy IT-ATTACK, the bare hand 1), to a player only when
 *> `player-combat` is on. A ground item, an unknown entity or a target out of reach is not hit.
 *>
-*> Mob damage (HEALTH-MOB-DAMAGE, §10.2, US9-4): a mob whose hurt cooldown is 0 loses the amount
-*> (never below 0) and the cooldown becomes 12 ticks; its viewers are sent Damage Event
-*> (player_attack, source id = attacker entity id + 1) and Hurt Animation; a mob that can flee
-*> (MOBS.cpy MB-FLEE-MILLI above 0: the sodgrazer) flees from the attacker for 40 ticks (§12.3); at
-*> 0 health it is defeated (MOB-DEFEAT, core/src/mobs.cob).
+*> Mob damage (HEALTH-MOB-DAMAGE, §10.2, US9-4, §14.6): a mob whose hurt cooldown is 0 loses the
+*> amount (never below 0) and the cooldown becomes 12 ticks; its viewers are sent Damage Event (the
+*> cause's damage type: player_attack for a player's hit, hail for hail; source id = attacker entity
+*> id + 1, or 0 without an attacker) and Hurt Animation; a mob that can flee (MOBS.cpy MB-FLEE-MILLI
+*> above 0: the sodgrazer) flees from an attacker for 40 ticks (§12.3); at 0 health it is defeated
+*> (MOB-DEFEAT, core/src/mobs.cob).
 *>
 *> Recovery (HEALTH-TICK, step 4 of §9.5): every tick the hurt cooldown of each alive player
 *> decreases, then the hunger rules run (HUNGER-TICK, core/src/hunger.cob: eating, exhaustion from
 *> time, starvation); while an alive survival player's food is at least 20 and health below 30,
-*> every 50th consecutive tick gives 1 health, sends Set Health and adds 2.5 exhaustion (§10.5).
+*> every 50th consecutive tick gives 1 health, sends Set Health and adds 2.5 exhaustion (§10.5);
+*> last, hail (WEATHER-HAIL-PLAYER, core/src/weather.cob, §14.6).
 *> A hit adds 0.15 exhaustion to the attacker (§11.2).
 *>
 *> Death (HEALTH-DIE, §10.6): the player is dead (PS-DEAD, PL-DEATH-CAUSE); a survival break in
@@ -51,7 +53,8 @@
 *>     attacker player row (0 none)                       (BINARY-LONG each)
 *>   HEALTH-DIE USING player row, cause, attacker player row (0 none)
 *>   HEALTH-ATTACK USING connection id, PLAY-SERVERBOUND  Attack
-*>   HEALTH-MOB-DAMAGE USING mob tracker row, amount, attacker player row (BINARY-LONG each)
+*>   HEALTH-MOB-DAMAGE USING mob tracker row, amount, cause, attacker player row (0 none)
+*>     (BINARY-LONG each)
 *>   HEALTH-RESPAWN USING connection id, PLAY-SERVERBOUND Client Command
 *>   HEALTH-TICK                                          the per-tick rules (CORE-TICK)
 *>   HEALTH-SEND USING player row                         Set Health to the player
@@ -366,7 +369,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-MOB-DAMAGE.
-*> USING mob tracker row, amount, attacker player row (BINARY-LONG each): the mob damage rules above.
+*> USING mob tracker row, amount, cause (RULES.cpy CAUSE-*), attacker player row (0 = none)
+*> (BINARY-LONG each): the mob damage rules above.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -379,24 +383,28 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
  01 L-ATTACKER             BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-AMOUNT L-ATTACKER.
+ PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
      IF EN-HURT(WS-ROW) > 0
          GOBACK
      END-IF
      COMPUTE EN-HEALTH(WS-ROW) = FUNCTION MAX(0, EN-HEALTH(WS-ROW) - L-AMOUNT)
      MOVE RULE-HURT-COOLDOWN TO EN-HURT(WS-ROW)
-     COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
+     MOVE 0 TO WS-SOURCE
+     IF L-ATTACKER > 0
+         COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
+     END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) RULE-CAUSE-TYPE(CAUSE-PLAYER) WS-SOURCE
+     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) RULE-CAUSE-TYPE(L-CAUSE) WS-SOURCE
          PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
      CALL "PB-RESET" USING PB-BUFFER
      CALL "HURT-ANIMATION-BUILD" USING EN-ID(WS-ROW) PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
-     IF MB-FLEE-MILLI(EN-TYPE(WS-ROW) - MOB-FIRST-TYPE + 1) > 0
+     IF L-ATTACKER > 0 AND MB-FLEE-MILLI(EN-TYPE(WS-ROW) - MOB-FIRST-TYPE + 1) > 0
          MOVE MOB-FLEE-TICKS TO EN-FLEE(WS-ROW)
          MOVE L-ATTACKER TO EN-FLEE-PLAYER(WS-ROW)
          MOVE PL-ENTITY-ID(L-ATTACKER) TO EN-FLEE-ID(WS-ROW)
@@ -491,7 +499,8 @@
      END-IF
      MOVE IT-ATTACK(WS-ITEM + 1) TO WS-AMOUNT
      IF WS-TARGET = 0
-         CALL "HEALTH-MOB-DAMAGE" USING WS-ENTITY WS-AMOUNT WS-ROW
+         MOVE CAUSE-PLAYER TO WS-CAUSE
+         CALL "HEALTH-MOB-DAMAGE" USING WS-ENTITY WS-AMOUNT WS-CAUSE WS-ROW
          GOBACK
      END-IF
      IF CS-PLAYER-COMBAT NOT = 1
@@ -587,6 +596,9 @@
              ELSE
                  MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
              END-IF
+         END-IF
+         IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
+             CALL "WEATHER-HAIL-PLAYER" USING WS-ROW
          END-IF
      END-PERFORM
      GOBACK.
