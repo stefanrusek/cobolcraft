@@ -1,0 +1,22 @@
+-Wall -Werror:
+exit=0
+-Wall -Wextra -Werror:
+spike_lint_truncate.cob:9: error: some digits may be truncated [-Werror=possible-truncate]
+    7 |        01 WS-B PIC 9(4) VALUE 1234.
+    8 |        PROCEDURE DIVISION.
+    9 >            MOVE WS-B TO WS-A
+   10 |            STOP RUN.
+   11 | <EOF>
+spike_lint_truncate.cob:7: note: 'WS-B' defined here as PIC 9(4) [-Werror=possible-truncate]
+    5 |        WORKING-STORAGE SECTION.
+    6 |        01 WS-A PIC 9(2).
+    7 >        01 WS-B PIC 9(4) VALUE 1234.
+    8 |        PROCEDURE DIVISION.
+    9 |            MOVE WS-B TO WS-A
+spike_lint_truncate.cob:6: note: 'WS-A' defined here as PIC 9(2) [-Werror=possible-truncate]
+    4 |        DATA DIVISION.
+    5 |        WORKING-STORAGE SECTION.
+    6 >        01 WS-A PIC 9(2).
+    7 |        01 WS-B PIC 9(4) VALUE 1234.
+    8 |        PROCEDURE DIVISION.
+exit=1
