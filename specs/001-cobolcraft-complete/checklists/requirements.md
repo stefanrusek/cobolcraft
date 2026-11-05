@@ -45,3 +45,8 @@
   command set brought into scope (US6-US8, US10-US12; FR-014 to FR-017); sounds stay out of scope. FR-015
   requires docs/design/standin-content.md to be extended with the original content first. Re-validated: all
   items pass except the open markers.
+- Revision 2026-11-05 (operator change request): hunger, ground items, weather, extra dimensions and opening a
+  single-player world to others brought into scope (new US5, US8, US11, US12, US17; stories renumbered to US1-US18).
+  Every yield (survival block breaks, mob defeats) now drops as a ground item, superseding standin-content §1.3.
+  FR-002, FR-007-FR-009, FR-013-FR-017 updated; SC-011-SC-013 added. Sounds remain out of scope. Re-validated:
+  all items pass except the three open markers (no new markers added).
