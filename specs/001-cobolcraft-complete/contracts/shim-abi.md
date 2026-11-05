@@ -1,13 +1,30 @@
-# Contract: C platform shim ABI (`shim` ↔ `core`, `server`, `client`)
+# Contract: C glue ABI (`shim` ↔ `proto`, `core`, `server`, `client`)
 
 **Status**: frozen at plan time (constitution 3.3). Changing a signature or a semantic below is a plan-level
 decision. **Materialized** in the Foundational phase as `contract/include/ccshim.h` (C prototypes and
 constants) and `contract/copy/CCSHIM.cpy` (COBOL constants and record layouts). Both are produced from this
 document and are the only artifacts lanes compile against.
 
-**Scope** (constitution Principle I, research R5): the shim contains no game logic. Modules `cc_win`,
-`cc_fs` and `cc_con` exist only if the operator accepts plan.md **Q1**; the rest of this contract does not
-depend on that decision.
+**Scope** (constitution Principle I, v1.2.0; research R5): COBOL calls C libraries directly wherever the
+call can be expressed cleanly. The `shim` package holds only glue for calls that cannot, and contains no game
+or protocol logic. Each module and its reason:
+
+| Module | Wraps | Why COBOL cannot call it cleanly |
+|---|---|---|
+| `cc_fatal` | `fputs`/`exit` from glue code | Glue modules need a fatal path in C; also callable from COBOL so every program has one fatal-exit format. |
+| `cc_net` | BSD sockets, `getaddrinfo`, `fcntl`, `poll`, `errno`, `getifaddrs` | `struct sockaddr*`/`addrinfo`/`ifaddrs`/`pollfd` platform layouts, variadic `fcntl`, `errno` is a macro. |
+| `cc_con` | `read` on standard input after `poll` | Non-blocking readiness needs `pollfd`; line assembly across partial reads stays byte-level (no logic). |
+| `cc_zlib` | `deflateInit2`/`inflateInit2`/`deflate`/`inflate` | `z_stream` struct layout; `*Init2` are macros over versioned functions. |
+| `cc_tls` | OpenSSL `SSL_*` | `SSL_set_tlsext_host_name` and friends are macros over `SSL_ctrl`; non-blocking handshake needs `errno`/`SSL_get_error` mapping. |
+| `cc_fs` | `opendir`/`readdir`/`closedir` | `struct dirent` platform layout (GnuCOBOL 3.2 has no `C$LIST-DIRECTORY`, `spike_fileio.out.txt`). |
+| `cc_win` | GLFW | Keyboard, character (layout-aware Unicode text, so non-US layouts work), mouse button, cursor and scroll input arrive only through C callbacks; `glfwInitVulkanLoader` takes a function pointer. |
+| `cc_vk` | Vulkan | Every call takes nested platform structs (`Vk*CreateInfo`); the module only submits COBOL-built geometry. |
+
+Called **directly from COBOL** (no glue): OpenSSL `EVP_sha1`, `EVP_md5`, `EVP_Digest` (one-shot digest:
+`CALL STATIC "EVP_Digest" USING BY REFERENCE data BY VALUE length(BINARY-DOUBLE UNSIGNED) BY REFERENCE
+digest BY REFERENCE digest-length BY VALUE algorithm-pointer BY VALUE NULL`; proved by
+`spikes/spike_direct_openssl.out.txt`), GnuCOBOL `CBL_*` file routines, and `DISPLAY` for console output.
+A new direct call needs no contract change; a new glue function does.
 
 ## 1. Conventions
 
@@ -25,12 +42,13 @@ depend on that decision.
   single fatal-exit path of every program.
 - Strings crossing the boundary are NUL-terminated byte strings (`z-string`), UTF-8.
 
-## 2. `cc_log` — console
+## 2. `cc_fatal` — fatal exit
 
 | Function | Behaviour |
 |---|---|
-| `void cc_log(const char *line)` | Writes `line` plus newline to standard output and flushes. Used for every console line of the server (US13-3, US15) and every logged failure (FR-012). |
 | `void cc_fatal(const char *what)` | See §1. Does not return. |
+
+Console output (server console lines US13-3, US15; logged failures FR-012) is COBOL `DISPLAY`, not glue.
 
 ## 3. `cc_net` — TCP sockets (non-blocking)
 
@@ -48,7 +66,7 @@ depend on that decision.
 
 TCP_NODELAY is set on every connection.
 
-## 4. `cc_con` — console input (Q1)
+## 4. `cc_con` — console input
 
 | Function | Behaviour |
 |---|---|
@@ -64,17 +82,15 @@ TCP_NODELAY is set on every connection.
 | `int32_t cc_deflate(int32_t mode, const uint8_t *in, int32_t inlen, uint8_t *out, int32_t cap, int32_t *outlen)` | Level 6. 0, or `CC_SMALL = 5` if `cap` is too small (caller enlarges and retries). |
 | `int32_t cc_inflate(int32_t mode, const uint8_t *in, int32_t inlen, uint8_t *out, int32_t cap, int32_t *outlen)` | 0, `CC_SMALL = 5`, or `CC_BADDATA = 6` (corrupt input: a defined outcome because 01 §3.3, 08 §2.3 and §9 define what the caller does). |
 
-## 6. `cc_crypto` and `cc_tls` — cryptography
+## 6. `cc_tls` — TLS
 
 | Function | Behaviour |
 |---|---|
-| `void cc_sha1(const uint8_t *in, int32_t len, uint8_t out[20])` | SHA-1 (08 §9.3). |
-| `void cc_md5(const uint8_t *in, int32_t len, uint8_t out[16])` | MD5 (02 offline UUID; version/variant bits are set by the caller). |
 | `int32_t cc_tls_connect(const char *host, int32_t port, int32_t *handle_out)` | Non-blocking TCP connect plus TLS 1.2+ client handshake with system trust and host-name verification (OpenSSL default verify paths; honours the standard `SSL_CERT_FILE`). 0 = started, `CC_UNRESOLVED = 3`. |
 | `int32_t cc_tls_status(int32_t h)` | 0 ready, `CC_AGAIN = 1` handshaking, `CC_CLOSED = 4` failed (connect, handshake or verification). |
 | `int32_t cc_tls_send(...)`, `cc_tls_recv(...)`, `void cc_tls_close(int32_t h)` | Same signatures and outcomes as `cc_net_send/recv/close`. TLS handles are accepted by `cc_net_poll`. |
 
-## 7. `cc_fs` — directory enumeration (Q1)
+## 7. `cc_fs` — directory enumeration
 
 | Function | Behaviour |
 |---|---|
@@ -83,7 +99,7 @@ TCP_NODELAY is set on every connection.
 Everything else on files (create, read, write, delete, rename, make directory) is COBOL `CBL_*` routines
 (research R2).
 
-## 8. `cc_win` — window and input (Q1)
+## 8. `cc_win` — window and input
 
 | Function | Behaviour |
 |---|---|
@@ -100,7 +116,7 @@ Event record (24 bytes, little-endian): `int32 kind`, `int32 a`, `int32 b`, `int
 |---|---|---|---|---|---|
 | 1 | key down | key code (GLFW key code) | modifiers | repeat flag | — |
 | 2 | key up | key code | modifiers | 0 | — |
-| 3 | text character | Unicode code point | 0 | 0 | — |
+| 3 | text character | Unicode code point after the OS keyboard layout and input method (any layout) | 0 | 0 | — |
 | 4 | mouse button down | button (0 left, 1 right, 2 middle) | modifiers | 0 | cursor position |
 | 5 | mouse button up | button | modifiers | 0 | cursor position |
 | 6 | cursor moved | 0 | 0 | 0 | position (free cursor) or accumulated delta (captured) |

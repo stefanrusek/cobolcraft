@@ -58,7 +58,7 @@ Connection kinds: `CORE-CONN-NETWORK = 0` (compression enabled per 01 §3 and `w
 | `CORE-CONN-CLOSED` | connection id | The transport closed (peer or error). The player, if any, leaves (US13-3 console line). |
 | `CORE-TICK` | — | Runs exactly one 50 ms game tick (R6): connection timeouts and keep-alives (01 §7.5), movement, block breaking timers, entities, health, hunger, weather, time of day, chunk streaming. The host calls it once per elapsed 50 ms (and not while a single-player pause is in effect, US16-4). |
 | `CORE-CONSOLE` | line (z-string) | Runs a console command with operator permission (US15, FR-016). |
-| `CORE-CONSOLE-DRAIN` | `CORE-BUFFER` | Moves pending console lines (`\n`-separated, UTF-8) into the buffer; the host prints them (server: `cc_log`; client: terminal). Covers join/leave/death/dimension/chat lines (US13-3), command results (US15-1), ready line (US13-1, produced by the host itself), and non-fatal failure lines (FR-012). |
+| `CORE-CONSOLE-DRAIN` | `CORE-BUFFER` | Moves pending console lines (`\n`-separated, UTF-8) into the buffer; the host prints them with `DISPLAY` (server console; client: its terminal). Covers join/leave/death/dimension/chat lines (US13-3), command results (US15-1), ready line (US13-1, produced by the host itself), and non-fatal failure lines (FR-012). |
 | `CORE-STATUS-GET` | OUT `CORE-STATUS` | Run state and online count. The server host exits after `CST-RUN-STATE` = 2. |
 | `CORE-SAVE` | — | Writes the whole world (FR-014) to its folder. |
 | `CORE-STOP` | reason (z-string) | Saves the world, queues a disconnect with `reason` to every connection, sets run state 2. Used by the stop command (via run state 1, which the host turns into `CORE-STOP` with the "server is stopping" text, US15-2) and by the single-player host on quit (US16-5, US17-4 with the "host closed the world" text). |
@@ -66,8 +66,9 @@ Connection kinds: `CORE-CONN-NETWORK = 0` (compression enabled per 01 §3 and `w
 
 ## 3. Guarantees
 
-- The core never blocks and never calls `cc_net_*`, `cc_win_*` or `cc_vk_*`. It calls `cc_deflate`,
-  `cc_inflate`, `cc_md5`, `cc_sha1` and `cc_fatal` only, and COBOL file routines for the world folder.
+- The core never blocks and never calls `cc_net_*`, `cc_win_*` or `cc_vk_*`. Its only C calls are the
+  glue functions `cc_deflate`, `cc_inflate` and `cc_fatal`, OpenSSL's `EVP_md5`/`EVP_Digest` called
+  directly (offline UUID), and COBOL file routines for the world folder.
 - Bytes produced for a connection are exactly the protocol of `docs/protocol/` 00 to 07 and
   `docs/protocol/09-cobolcraft-profile.md` (from `wire-profile.md`).
 - Connection ids are reused only after `CORE-CONN-CLOSED` or a close-flag hand-back.

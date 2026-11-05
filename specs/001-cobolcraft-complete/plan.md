@@ -10,50 +10,39 @@
 verification), [data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md),
 [spikes/](spikes/).
 
-## Open decisions for the operator
+## Operator decisions (recorded)
 
-The tasks phase MUST NOT run while these markers remain (constitution 1.3). Each states the recommended
-answer; the rest of this plan is written so that the recommended answer needs no further plan change.
+The plan phase raised three questions; the operator answered them in constitution v1.2.0 (commit `a2fbe0e`).
+No clarification marker remains in this feature's artifacts.
 
-1. **Q1 — Shim boundary for windowing, input, directory listing and console input.**
-   `[NEEDS CLARIFICATION]` Constitution Principle I limits the C shim to "Vulkan, sockets, zlib, and
-   cryptography". The spec needs four more capabilities that COBOL cannot reach without C (research R5):
-   a window with its Vulkan surface and keyboard/mouse/text/scroll input (every on-screen story), directory
-   enumeration (US16 world list, US18 packs folder; `C$LIST-DIRECTORY` is absent from GnuCOBOL 3.2, see
-   `spikes/spike_fileio.out.txt`), non-blocking console line input (US15) and local network addresses
-   (US17-1). Options:
-   - **A (recommended)**: amend Principle I (PATCH or MINOR, by pull request per the constitution's
-     Governance) to list "windowing and input (the window Vulkan presents into), directory enumeration and
-     console input" as shim capabilities, reading local addresses as part of "sockets". Shim modules
-     `cc_win`, `cc_fs`, `cc_con` of `contracts/shim-abi.md` then stand as designed.
-   - **B**: no amendment; COBOL calls GLFW and libc directly with polling only. Consequences: no typed-text
-     events (chat entry limited to a fixed US keyboard mapping), no scroll wheel for the hotbar, and
-     platform-specific `struct dirent`/`ifaddrs` layouts in COBOL, which conflicts with FR-011's
-     narrow-boundary rule.
-   - **C**: the operator rules these are already within "Vulkan" and "sockets" as written (no amendment).
-2. **Q2 — Workspace bootstrap command (constitution 5.2).** `[NEEDS CLARIFICATION]` This plan declares
-   package-parallel mode, which requires the constitution to define the workspace bootstrap command; it does
-   not. Recommended: amend the constitution's Development Workflow section to name `make bootstrap`
-   (`contracts/test-harness.md` §1: checks the R1 prerequisites and compiles shaders; it starts no shared
-   test infrastructure). Alternative: the operator directs standard mode instead (see "Execution mode").
-3. **Q3 — Deferred-work tracking mechanism (constitution 1.4).** `[NEEDS CLARIFICATION]` The repository has
-   no remote, no issue tracker and no debt log (research R15). No discovery needs deferral now, but an
-   implement phase that meets one must halt without a mechanism. Recommended: a version-controlled log
-   `docs/deferred-work.md` (one entry per item: date, discovering phase, description, why deferred under 1.4
-   case (a) or (b), link to the spec/plan section), established by the operator; or a GitHub repository with
-   Issues once a remote exists.
+1. **C boundary (constitution Principle I, v1.2.0).** COBOL MAY call any C library directly; a thin C glue
+   layer is allowed wherever a call cannot be expressed cleanly from COBOL (callbacks, platform struct
+   layouts, variadic functions or macros, ABI mismatches), with no fixed subsystem list, and the glue contains
+   no game or protocol logic. This plan therefore puts in the `shim` package only the calls that need glue,
+   each justified in `contracts/shim-abi.md` §1 table: window, input (keyboard, mouse buttons, cursor,
+   scroll wheel, layout-aware Unicode text through GLFW's character callback, so non-US layouts work), Vulkan
+   submission, sockets with readiness polling, non-blocking console input, local network addresses, directory
+   listing, zlib streams and TLS. Everything COBOL can call cleanly it calls directly; at present that is
+   OpenSSL's one-shot `EVP_Digest` with `EVP_sha1`/`EVP_md5` (`spikes/spike_direct_openssl.out.txt`), plus
+   GnuCOBOL's own `CBL_*` file routines and `DISPLAY` for console output (research R5).
+2. **Workspace bootstrap command (constitution Development Workflow, SDD 5.2):** `make bootstrap`
+   (`contracts/test-harness.md` §1). Package-parallel mode is kept.
+3. **Deferred-work tracker (constitution Development Workflow, SDD 1.4):** Spile tickets in `tickets/`,
+   prefix `CC`, one `CC-NNNN-slug.md` file per item in `draft` status, the directory created with the first
+   deferred item (research R15). Nothing is deferred by this plan.
 
 No external-dependency risk is open: every probe in research R1 to R11 succeeded.
 
 ## Summary
 
-Build the CobolCraft game client and game server in GnuCOBOL 3.2 with a minimal C shim, playing the original
+Build the CobolCraft game client and game server in GnuCOBOL 3.2, calling C libraries directly from COBOL with a thin C glue layer where needed, playing the original
 stand-in content over protocol 777, rendering only with Vulkan (MoltenVK on macOS arm64), with single-player,
 open-to-others, health, hunger, ground items, mobs, crafting, weather, extra dimensions, a full command set,
 persistence and resource packs.
 
-Technical approach (research R2 to R13): five code packages plus test tooling. `shim` (C) is the only code
-touching the operating system and third-party libraries. `proto` (COBOL) encodes and decodes the protocol's
+Technical approach (research R2 to R13): five code packages plus test tooling. `shim` (C) is the thin glue layer for
+the library calls COBOL cannot express cleanly (callbacks, struct layouts, macros); COBOL calls every other C
+function directly. `proto` (COBOL) encodes and decodes the protocol's
 data types, frames, NBT and chunks. `core` (COBOL) is the whole game: world, rules, persistence, commands and
 the server side of the protocol, operating on byte streams. `server` (COBOL) is a thin program hosting `core`
 on TCP with a configuration file and console. `client` (COBOL) is the game window: menus, input, the client
@@ -88,7 +77,7 @@ one repository with independently buildable and testable packages.
 **Performance Goals**: none (spec Assumptions; constitution 2.7). Game-content timings (tick rate 20 per
 second, break times, day length, hunger rates, despawn times, weather durations) are content, not targets.
 
-**Constraints**: COBOL for all game logic, shim minimal and logic-free (Principle I); implementation works
+**Constraints**: COBOL for all program logic; C only as logic-free glue where a call cannot be expressed cleanly (Principle I); implementation works
 only from `docs/protocol/` and `docs/design/` (Principle II); offline identity only (FR-010); failures handled
 only as FR-012 and research R14 state; single-threaded programs (research R6).
 
@@ -101,11 +90,11 @@ distance up to 32 chunks.
 
 | Principle | Status | Evidence |
 |---|---|---|
-| I. COBOL-first, minimal shim | **Pass, pending Q1** | All game logic in `proto`/`core`/`server`/`client` (COBOL). `shim` holds only the library and OS calls of `contracts/shim-abi.md`; Vulkan module submits COBOL-built geometry (R4). The four capabilities outside the listed shim set are raised as Q1, not assumed. |
+| I. COBOL-first, thin C glue (v1.2.0) | Pass | All program logic in `proto`/`core`/`server`/`client` (COBOL): protocol, world, rules, geometry, UI layout. `shim` contains only adaptation code, and every module is justified by a reason Principle I names (`contracts/shim-abi.md` §1). Clean calls (OpenSSL digests, `CBL_*`, `DISPLAY`) are made from COBOL without glue. The Vulkan module submits COBOL-built geometry and decides nothing (R4). |
 | II. Spec is the source of truth | Pass | Every protocol, storage and content gap is written into `docs/` in the Foundational phase before code uses it (R8, R12, R13); contracts that touch the wire or disk are transcribed into `docs/protocol/` (07 §9, new 09). No implementer reads the jar. |
 | 1.1 Artifact completeness | Pass | This plan and its companions carry every decision; nothing depends on session context. |
-| 1.3 Clarification markers | **Open: Q1, Q2, Q3** | Tasks gate blocked until the operator decides. |
-| 1.4 Deferred work | **Open: Q3** | Mechanism identified as absent (R15); no deferral made. |
+| 1.3 Clarification markers | Pass | All three plan questions decided by the operator (constitution v1.2.0); none remain. |
+| 1.4 Deferred work | Pass | Mechanism: Spile tickets in `tickets/`, prefix `CC` (constitution Development Workflow); no deferral made (R15). |
 | 2.5 Dependency-aware sequencing | Pass | Lane phases follow the spec's story order US1 → US18. |
 | 2.6 Handoff consumed | Pass | All 16 handoff items recorded confirmed/refuted/superseded (research "Plan-Phase Handoff verification record"). |
 | 3.1 External dependencies probed | Pass | GnuCOBOL, GLFW, Vulkan loader, MoltenVK, glslang, zlib, OpenSSL (hashes, TLS, trust override), BSD sockets: `spikes/`, research R1 to R11. |
@@ -113,15 +102,15 @@ distance up to 32 chunks.
 | 3.3 Package boundaries and contracts | Pass | "Package boundary declaration" below; seven contracts in `contracts/`, materialized in Foundational before any consumer task. |
 | 3.4 Test infrastructure | Pass (gap documented) | Nothing exists; setup tasks precede all feature tasks ("Infrastructure setup"). |
 | 3.5 Sequence diagrams | Pass | One per story below. |
-| 3.6 Execution mode | **Declared: package-parallel, pending Q2** | "Execution mode" below. |
+| 3.6 Execution mode | Pass | Package-parallel; workspace bootstrap command `make bootstrap` is defined in the constitution. |
 | 3.8 Debt survey | Pass | "Technical debt survey" below. |
 | 4.1 Test-first, ladder, BDD/CDD, doubles | Pass | "Test strategy" below. No test doubles: every external dependency is used for real in tests. |
 | 4.2 Coverage | Pass | gcov 100 % for COBOL and C production sources (R9); exclusions only tests, tools, specs. |
 | 4.3 E2E | Pass | Inventory empty, none proposed (R16). |
 | 5.6 Error handling | Pass | Only defined outcomes are handled; everything else fatal or non-fatal per FR-012 and R14, with `-debug` loud failure. |
 
-Post-design re-check (after Phase 1 artifacts): unchanged. The contracts introduced no new shim capability
-beyond those already in Q1, and no behaviour without an acceptance criterion: the console line formats,
+Post-design re-check (after Phase 1 artifacts): unchanged after the v1.2.0 revision. Every `shim` function
+is glue for a call COBOL cannot express cleanly, with its reason recorded, and the design adds no behaviour without an acceptance criterion: the console line formats,
 configuration keys, game directory layout and controls are the plan's realisation of FR-009, US13, US15,
 US2-1, US16-1, US18-2 and the stories' controls.
 
@@ -152,8 +141,8 @@ contract/                   # frozen shared contract surface (Foundational only;
 ├── include/ccshim.h
 ├── copy/CCSHIM.cpy  COREAPI.cpy  PROTO.cpy
 └── fixtures/wire/*.hex
-shim/                       # package: C platform shim → build/shim/libccshim.a
-├── src/cc_log.c cc_net.c cc_con.c cc_zlib.c cc_crypto.c cc_tls.c cc_fs.c cc_win.c cc_vk.c
+shim/                       # package: thin C glue (Principle I) → build/shim/libccshim.a
+├── src/cc_fatal.c cc_net.c cc_con.c cc_zlib.c cc_tls.c cc_fs.c cc_win.c cc_vk.c
 ├── shaders/world.vert world.frag ui.vert ui.frag
 └── tests/
 proto/                      # package: COBOL protocol codec → build/proto/libproto.a
@@ -193,7 +182,7 @@ by their own `Makefile` (independently buildable/testable units, constitution 3.
 | Story | Packages touched | Kind |
 |---|---|---|
 | US1 Build and test | tools, shim, proto, core, server, client (per-package Makefile skeletons), root Makefile, README | multi (realised in Setup) |
-| US2 Join | shim (log, net, zlib, md5, win, vk), proto, core, server, client | multi |
+| US2 Join | shim (fatal, net, zlib, win, vk), proto, core (direct `EVP_md5`), server, client | multi |
 | US3 Move, stream | proto (movement/entity packets), core, client | multi |
 | US4 Break/place | core, client | multi |
 | US5 Ground items | core, client | multi |
@@ -209,7 +198,7 @@ by their own `Makefile` (independently buildable/testable units, constitution 3.
 | US15 Console commands | shim (con), core, server | multi |
 | US16 Single-player | shim (fs), client | multi |
 | US17 Open to others | shim (local addresses), core, client | multi |
-| US18 Resource packs | shim (tls, sha1, fs), core (pack offer), server (pack config keys), client | multi |
+| US18 Resource packs | shim (tls, fs), core (pack offer), server (pack config keys), client | multi |
 
 **Contracts** (all in [contracts/](contracts/); fixed before any task that consumes them):
 
@@ -226,7 +215,8 @@ by their own `Makefile` (independently buildable/testable units, constitution 3.
 
 ## Execution mode (constitution 3.6)
 
-**Declared: package-parallel** (pending Q2). Justification: all 17 feature stories after US1 cross package
+**Declared: package-parallel.** Workspace bootstrap command: `make bootstrap` (constitution Development
+Workflow). Justification: all 17 feature stories after US1 cross package
 boundaries, and the per-package work is large and disjoint (core and client each carry every gameplay story;
 shim, proto and server carry several), so concurrent lanes repay their overhead; the frozen contracts above
 license the split. Fast pass is excluded (contracts, far more than three files); standard would serialize
@@ -243,7 +233,8 @@ Shape for the tasks phase (constitution 5.2):
 | Polish | README completion, quickstart walk-through review, final debt check of touched files | `make gate` |
 
 Lane notes: the `shim` lane's US2 slice delivers every module except `cc_con` (US15), `cc_fs` (US16/US18),
-local addresses (US17) and `cc_tls`/`cc_sha1` (US18). The `server` lane has slices for US2, US13, US15, US18.
+local addresses (US17) and `cc_tls` (US18). SHA-1 for packs is a direct COBOL call to OpenSSL in the
+`client` lane. The `server` lane has slices for US2, US13, US15, US18.
 The `proto` lane has slices for US2, US3, US10, US14.
 
 ## Infrastructure setup (constitution 3.4)
@@ -292,7 +283,7 @@ in-process against `contract/` artifacts by every lane gate.
 | P2 | shim | GLFW cannot find Homebrew's Vulkan loader without `glfwInitVulkanLoader`. | HIGH | Confirmed by reading `spikes/spike_vulkan_glfw.out.txt` ("without handoff": `vulkanSupported=0`, surface `-3`). Resolved: shim-abi §8. |
 | P3 | shim | `pkg-config openssl` picks OpenSSL 4 when both are installed. | MEDIUM | Confirmed by reading the spike build warning (`openssl@4/4.1.0/include`, R1). Resolved: pin. |
 | P4 | shim/client | Framebuffer size differs from window size on Retina. | MEDIUM | Confirmed by `spike_vulkan_glfw.out.txt` (`extent=640x480` for a 320 x 240 window). Resolved: `cc_win_size`. |
-| P5 | core/client (COBOL) | No directory listing in GnuCOBOL 3.2. | HIGH | Confirmed by `spikes/spike_fileio.out.txt` (`C$LIST-DIRECTORY NOT AVAILABLE`). Routed to Q1. |
+| P5 | core/client (COBOL) | No directory listing in GnuCOBOL 3.2. | HIGH | Confirmed by `spikes/spike_fileio.out.txt` (`C$LIST-DIRECTORY NOT AVAILABLE`). Resolved: glue `cc_fs_list` (constitution v1.2.0 Principle I). |
 | P6 | core/client (COBOL) | Fixed-format column-72 limit breaks long statements. | LOW | Confirmed by the `spike_fileio.cob` compile error (R2). Resolved: free format. |
 | P7 | docs (consumed by core, client) | standin-content lacks every FR-015 section; §1.3 and §3 conflict with FR-002's ground-item rule. | CRITICAL | Confirmed by reading `docs/design/standin-content.md` §1.3 ("No drops in the stand-in"), §3 (`loose_item` "Optional"), headings §0 to §8. Resolved: Foundational docs tasks (R13). |
 | P8 | docs | 08 marks fonts "later" and has no entity, weather or font assets; Open questions 4 and 6 unresolved. | HIGH | Confirmed by reading 08 §8 table and "Open questions". Resolved: R13. |
@@ -312,13 +303,13 @@ in-process against `contract/` artifacts by every lane gate.
 | operator-surface, client-surface, test-harness | Single-sided contracts (person ↔ package). | No producer/consumer mismatch possible beyond the package's own tests. |
 
 **Rollup**: P1 (HIGH, structural: all new), P7 (CRITICAL, resolved by Foundational docs), P2/P3/P4/P6
-(resolved in contracts/research), P5 (routed to Q1), P8/P9/P10 (resolved by Foundational docs). No suspected
+(resolved in contracts/research), P5 (resolved by `cc_fs_list`), P8/P9/P10 (resolved by Foundational docs). No suspected
 finding remains unconfirmed.
 
 **Coverage critic**: every declared package (shim, proto, core, server, client, tools) has at least one
 package-pass row (P1 covers all); every contract has a seam-pass row.
 
-**Routing**: P5 → Q1 (operator); all others fixed in this plan.
+**Routing**: P5 was routed to the operator and decided (constitution v1.2.0); all others fixed in this plan.
 
 ## Technical debt survey (constitution 3.8)
 
@@ -734,7 +725,7 @@ sequenceDiagram
     alt cached under downloads/uuid/sha1
         CL->>CL: cache hit
     else
-        CL->>SH: cc_net_connect / cc_tls_connect, HTTP GET, cc_sha1
+        CL->>SH: cc_net_connect / cc_tls_connect, HTTP GET; EVP_Digest(sha1) direct
     end
     CL->>CO: 4 downloaded, then 0 successfully loaded (or 2 / 6 / 7)
     alt required and declined
@@ -749,13 +740,13 @@ sequenceDiagram
 | Content authoring volume in Foundational (mobs, recipes, weather, dimensions, commands, font) is large and blocks every lane. | Schedule | Each FR-015 section is its own document task with its own review; lanes start only after all are reviewed (constitution 5.2 narrow Foundational). |
 | GPU tests need a logged-in macOS session; no CI. | Verification only runs locally | Matches the spec's verification surface (US1, SC-001); recorded in R16. |
 | COBOL code size for JSON, PNG, zip, HTTP and meshing in the client. | Effort | Each is a separate client module with its own implementation tests; no performance target. |
-| Q1 answered B. | Shim modules `cc_win`, `cc_fs`, `cc_con` replaced by COBOL calls to GLFW/libc; text input and scroll lost. | Plan return required; isolated by module so only those modules and their consumers change. |
+| Text input on non-US keyboard layouts. | Chat and command entry | GLFW's character callback delivers layout-resolved Unicode code points; `cc_win` queues them as kind-3 events (`shim-abi.md` §8); client tests feed such events. |
 
 ## Deferred work
 
-None. Every discovery of this phase is incorporated (gap analysis routing). Mechanism: Q3.
+None. Every discovery of this phase is incorporated (gap analysis routing). Mechanism for later phases:
+Spile tickets in `tickets/`, prefix `CC` (constitution Development Workflow).
 
 ## Complexity Tracking
 
-No constitution violation is planned. Q1 is an open question about Principle I's scope, not a deviation:
-no `cc_win`, `cc_fs` or `cc_con` code is written until the operator decides.
+No constitution violation is planned.

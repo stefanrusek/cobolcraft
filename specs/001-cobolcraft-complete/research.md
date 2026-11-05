@@ -2,8 +2,8 @@
 
 **Feature**: `001-cobolcraft-complete` | **Plan**: [plan.md](plan.md) | **Spec**: [spec.md](spec.md)
 
-Phase 0 output. Every decision below is binding on the tasks and implement phases unless plan.md marks it
-`[NEEDS CLARIFICATION]`. Probe code and its captured output live in [spikes/](spikes/); `spikes/spike_run.sh`
+Phase 0 output. Every decision below is binding on the tasks and implement phases. Revised 2026-11-05 for constitution
+v1.2.0 (operator decisions on the C boundary, bootstrap command and deferred-work tracker). Probe code and its captured output live in [spikes/](spikes/); `spikes/spike_run.sh`
 re-runs every probe and rewrites the `*.out.txt` evidence files. Spikes are excluded from coverage and from
 the build.
 
@@ -21,12 +21,13 @@ other dependency is part of macOS itself.
 |---|---|---|---|
 | GnuCOBOL (`cobc`, `libcob`) | 3.2.0 | All game logic (constitution Principle I) | `brew install gnucobol` |
 | Apple clang (Xcode CLT) | system | The C shim, and the C compiler `cobc` drives | `xcode-select --install` |
-| GLFW | 3.5.1 (3.4 or later required, R3) | Window, input, Vulkan surface (Q1 in plan.md) | `brew install glfw` |
+| GLFW | 3.5.1 (3.4 or later required, R3) | Window, input, Vulkan surface (through `cc_win` glue, R5) | `brew install glfw` |
 | Vulkan loader + headers | 1.4.363 | Vulkan API entry points | `brew install vulkan-loader vulkan-headers` |
 | MoltenVK | 1.4.2 | Vulkan driver (ICD) over Metal | `brew install molten-vk` |
 | glslang (`glslangValidator`), SPIRV-Tools (`spirv-val`) | 16.6.0 / 1.4.363 | Build-time GLSL to SPIR-V; shader validation in lint | `brew install glslang` |
 | zlib | 1.2.12 (macOS SDK `libz`) | Compression (01 §3, 07 §5, 08 §1.1 zip) | system |
 | OpenSSL | 3.6.4 (`openssl@3`, **pinned**, see below) | SHA-1, MD5, TLS for HTTPS pack downloads | `brew install openssl@3` |
+| OpenSSL digests called from COBOL | same `libcrypto` | `EVP_Digest`, `EVP_sha1`, `EVP_md5` without glue (R11) | — |
 | Python 3 | 3.14 (stdlib only) | Test runner, coverage and lint drivers (test infrastructure) | system/pyenv |
 | gcov (llvm-cov gcov) | system | Line coverage of COBOL and C | system |
 | vulkan-tools (`vulkaninfo`) | 1.4.363 | Contributor diagnostics only | `brew install vulkan-tools` |
@@ -73,13 +74,13 @@ FR-011); system `libz` is kept because it is ABI-stable and present everywhere.
   `CBL_GC_NANOSLEEP` returned.
 - `spikes/spike_fileio.out.txt`: write of 8 bytes at offset 8192 then read back `0102030405060708`;
   unwritten region reads as zeros; size query `8200`; directory create/delete return 0.
-  **`C$LIST-DIRECTORY NOT AVAILABLE`**: GnuCOBOL 3.2 has no directory enumeration (feeds Q1 in plan.md).
+  **`C$LIST-DIRECTORY NOT AVAILABLE`**: GnuCOBOL 3.2 has no directory enumeration (resolved by glue `cc_fs_list`, R5).
 - `spikes/spike_modules.out.txt`: two COBOL modules linked statically into one executable with a 98,304-entry
   `BINARY-SHORT UNSIGNED` table passed through `LINKAGE`; 100 passes in about 0.07 s user time
   (informational only; no performance target exists).
 
-**Alternatives considered**: fixed format (rejected above); calling GLFW and libc directly from COBOL
-without C (rejected in R5); COBOL `ACCEPT` for console input (blocks the whole single-threaded server; R6).
+**Alternatives considered**: fixed format (rejected above); calling GLFW's callback API and libc's
+struct-returning functions directly from COBOL (rejected in R5); COBOL `ACCEPT` for console input (blocks the whole single-threaded server; R6).
 
 ---
 
@@ -154,28 +155,36 @@ real GPU.
 
 ---
 
-## R5. Platform boundary for windowing, input, directory listing and console input
+## R5. The C boundary: direct calls and thin glue (constitution v1.2.0 Principle I)
 
-**Finding**: Principle I lists the shim capabilities as "Vulkan, sockets, zlib, and cryptography". Four
-capabilities the spec requires are not on that list and cannot be reached from COBOL without C:
+**Operator decision** (constitution v1.2.0): COBOL MAY call any C library directly; a thin C glue layer is
+allowed wherever a call cannot be expressed cleanly (callbacks, platform struct layouts, variadic functions,
+ABI mismatches), with no fixed subsystem list; the glue holds no game or protocol logic.
 
-| Capability | Needed by | Why COBOL cannot reach it directly |
-|---|---|---|
-| A window, its Vulkan surface, keyboard/mouse/scroll/text input, cursor capture | US2 to US18 (every on-screen story) | GLFW delivers typed text, scroll and key events only through C callbacks; a Vulkan surface needs a native window. |
-| Directory enumeration | US16 (world list, delete world), US18 (packs folder) | `C$LIST-DIRECTORY` is not in GnuCOBOL 3.2 (`spike_fileio.out.txt`); `opendir`/`readdir` return a platform-specific `struct dirent` layout. |
-| Non-blocking console line input | US15 (server console while serving players) | `ACCEPT` blocks the single-threaded server loop. |
-| Local network addresses | US17 ("the game shows the address others can join at") | `getifaddrs` returns linked C structures. |
+**Decision**: each C facility the spec needs is classified once, by whether a COBOL `CALL STATIC` can express
+it cleanly (research R2 calling conventions):
 
-**Decision (pending operator)**: plan.md raises this as open decision **Q1**. The design in
-`contracts/shim-abi.md` assumes the recommended option (amend Principle I to list "windowing and input",
-"directory enumeration" and "console input" as shim capabilities, and read "local addresses" as part of
-"sockets"); every such function is isolated in its own shim module (`cc_win`, `cc_fs`, `cc_con`, `cc_net`) so
-the decision changes only which modules are allowed, not the COBOL design.
+| Capability | Needed by | Route | Reason |
+|---|---|---|---|
+| Window, Vulkan surface, keyboard, mouse buttons, cursor (captured for mouse-look), scroll wheel, typed text on any keyboard layout | US2 to US18 | Glue `cc_win` (GLFW) | GLFW delivers key, character, button, cursor and scroll input only through C callbacks; the character callback gives layout-resolved Unicode code points, so non-US layouts and input methods work; `glfwInitVulkanLoader` takes a function pointer (R3). |
+| Vulkan submission | US2 to US18 | Glue `cc_vk` | Every call takes nested `Vk*CreateInfo` structs. |
+| TCP sockets, readiness polling | US2, US13, US17 | Glue `cc_net` | `sockaddr`/`addrinfo`/`pollfd` layouts, variadic `fcntl`, `errno` macro. |
+| Local network addresses | US17-1 | Glue `cc_net_local_addresses` | `getifaddrs` returns a linked list of platform structs. |
+| Non-blocking console line input | US15 | Glue `cc_con` (with `cc_net_poll`) | `ACCEPT` blocks the single-threaded loop; readiness needs `poll`. |
+| Directory listing | US16, US18 | Glue `cc_fs` | `C$LIST-DIRECTORY` is absent from GnuCOBOL 3.2 (`spike_fileio.out.txt`); `struct dirent` is platform-specific. |
+| Compression | 01 §3, 07 §5, 08 §1.1 | Glue `cc_zlib` | `z_stream` layout; `inflateInit2`/`deflateInit2` are macros. |
+| TLS | US18 (HTTPS) | Glue `cc_tls` | `SSL_set_tlsext_host_name` is a macro over `SSL_ctrl`; non-blocking error mapping. |
+| SHA-1, MD5 | US18 (pack hash), offline UUID | **Direct** COBOL calls to `EVP_sha1`, `EVP_md5`, `EVP_Digest` | Plain pointers and integers; proved by `spikes/spike_direct_openssl.out.txt` (`SHA1(abc)` = `A9993E36…D89D`; `MD5(OfflinePlayer:Notch)` = `B50AD385829DA141…` before the version bits, R11). |
+| Files, directories create/delete, console output | everywhere | **Direct**: GnuCOBOL `CBL_*` routines, `DISPLAY` | R2. |
 
-**Alternatives considered** (listed in Q1): COBOL calling GLFW and libc directly, polling keys without
-callbacks (loses typed text for chat and scroll for the hotbar, and puts platform struct layouts in COBOL,
-contrary to FR-011's narrow-boundary rule); writing helper processes in another language (not allowed:
-"build scripts and test harnesses MAY use any language" does not cover shipped programs).
+Every glue function is in `contracts/shim-abi.md`; adding glue is a contract change, adding a direct call is
+not. The glue stays isolated in `shim` so porting (FR-011) touches only that package and the libraries it
+links.
+
+**Alternatives considered**: calling GLFW directly from COBOL with key polling and no callbacks (loses typed
+text on non-US layouts and the scroll wheel); reading `struct dirent`/`ifaddrs` fields by offset from COBOL
+(platform layouts in COBOL, contrary to FR-011's narrow-boundary rule); putting the OpenSSL digests in glue
+(unneeded: the direct call is clean, so glue would only add a contract surface).
 
 ---
 
@@ -289,27 +298,29 @@ tests, forbidden by 3.4).
 **Decision**: the client implements an HTTP/1.1 GET client in COBOL (request line, the headers of 08 §9.3,
 `Content-Length` and `Transfer-Encoding: chunked` responses, status 200 only is success) over `cc_net_*`
 for `http` URLs and over `cc_tls_*` (OpenSSL, system trust store via `SSL_CTX_set_default_verify_paths`,
-TLS 1.2 minimum, host name verification) for `https` URLs. SHA-1 via `cc_sha1`. Cache per 08 §9.4.
+TLS 1.2 minimum, host name verification) for `https` URLs. SHA-1 via a direct COBOL call to
+`EVP_Digest` with `EVP_sha1` (R5). Cache per 08 §9.4.
 Redirects: 08 does not state redirect behaviour; a non-200 status is a failed download (08 §9.2 "HTTP
 error"). The size limit (08 §9.3) is checked against `Content-Length` and while streaming.
 
 **Evidence**: `spikes/spike_libs.out.txt`: TLS 1.3 handshake, verification `ok`, `HTTP/1.1 200 OK` from
 `example.com:443`; SHA-1 of `abc` = `a9993e36...d89d` (the published test vector).
 
-**Constitution fit**: TLS is cryptography (Principle I list); HTTP itself is plain COBOL over sockets.
-**Handoff item superseded**: "neither HTTP nor TLS is on the constitution's shim list" — HTTP needs no
-shim; TLS falls under "cryptography".
+**Constitution fit** (v1.2.0): HTTP is plain COBOL over `cc_net`; TLS is glue because of OpenSSL's macros
+(R5). **Handoff item superseded**: "neither HTTP nor TLS is on the constitution's shim list" — the list no
+longer exists; HTTP needs no glue and TLS has a glue module.
 
 ---
 
 ## R11. Offline identity and crypto primitives
 
-**Decision**: the offline UUID (02, Offline mode) is computed with `cc_md5` over `"OfflinePlayer:" + name`
+**Decision**: the offline UUID (02, Offline mode) is computed by a direct COBOL call to `EVP_Digest` with `EVP_md5` over `"OfflinePlayer:" + name`
 (UTF-8), then the version-3 and variant bits are set in COBOL. No encryption, no compression on in-memory
 connections, compression on network connections per 01 §3 with the server's threshold (decided in
 `contracts/wire-profile.md`: threshold 256).
 
-**Evidence**: `spikes/spike_libs.out.txt`: `offline-uuid(Notch)=b50ad385829d3141a2167e7d7539ba7f`, which
+**Evidence**: `spikes/spike_direct_openssl.out.txt` (the direct COBOL call returns `B50AD385829DA141…`;
+setting the version nibble gives `…3141…`), and `spikes/spike_libs.out.txt`: `offline-uuid(Notch)=b50ad385829d3141a2167e7d7539ba7f`, which
 is the well-known offline UUID for that name (b50ad385-829d-3141-a216-7e7d7539ba7f), so MD5 plus bit setting
 is correct. zlib-wrapped deflate (`header=789c`), raw inflate (zip entries) and gzip (`magic=1f8b`, 07 §5.1)
 all round-trip.
@@ -393,12 +404,14 @@ program can go on. Pack-related failures are excluded because 08 §2.3 and §9 d
 
 ## R15. Deferred-work tracking mechanism (constitution 1.4)
 
-**Finding**: the repository has no git remote (`git remote -v` is empty), therefore no issue tracker, and
-no debt log or equivalent file exists. No discovery made in this plan phase needs deferral: every gap found
-is incorporated into this feature (R5 via Q1, R8, R12, R13). Because later phases of an 18-story feature are
-likely to meet a discovery that must be deferred (a fix that changes specified behaviour), plan.md raises
-open decision **Q3** so the operator establishes the mechanism before implementation, rather than
-an implement phase halting mid-run (constitution 1.4: the plan phase must not invent a convention).
+**Decision** (operator, constitution v1.2.0 Development Workflow): deferred work is recorded as Spile
+tickets in the repository's `tickets/` project directory (spec: https://sugarmaple.ai/spile.md). The root
+`tickets/README.md` holds the prefix `CC` and the last-allocated id; each item is `tickets/CC-NNNN-slug.md`
+with Spile front matter, starting in `draft` status; `tickets/views/` is the generated view. The directory is
+created with the first deferred item.
+
+**Finding**: no discovery made in this plan phase needs deferral; every gap found is incorporated into this
+feature (R5, R8, R12, R13), so `tickets/` is not created now.
 
 ---
 
@@ -423,7 +436,7 @@ a test. Empty inventory: no E2E environment is stood up (constitution 4.3 "Execu
 
 | # | Handoff item (spec.md "Plan-Phase Handoff") | Outcome | Where |
 |---|---|---|---|
-| 1 | Windowing and input vs the shim boundary, possibly a constitution question | **Confirmed**; raised as Q1 | R5, plan.md Q1 |
+| 1 | Windowing and input vs the shim boundary, possibly a constitution question | **Confirmed**; operator amended Principle I (v1.2.0); glue `cc_win` | R5 |
 | 2 | macOS Vulkan through MoltenVK; keep loading and surface creation portable | **Confirmed**, with the GLFW loader handoff and portability flags | R3 |
 | 3 | Chat and commands unsigned with offline identity | **Confirmed** (05c Chat Command 0x07, "Signed chat") | R12 |
 | 4 | Command suggestions map onto Commands / Command Suggestions | **Confirmed**; parser subset chosen | R12, contracts/wire-profile.md |
@@ -437,5 +450,5 @@ a test. Empty inventory: no E2E environment is stood up (constitution 4.3 "Execu
 | 12 | `world_clock` doubted; FR-002 keeps it | **Confirmed** (kept, no action) | R13 |
 | 13 | Renderer needs a per-face brightness policy | **Confirmed**; decided | R13, data-model.md |
 | 14 | 08 Open questions 4 and 6 affect model baking | **Confirmed**; resolved docs-first with CobolCraft's own rule | R13 |
-| 15 | Pack download needs HTTP and HTTPS; neither on the shim list | **Superseded**: HTTP is COBOL over sockets; TLS is cryptography | R10 |
+| 15 | Pack download needs HTTP and HTTPS; neither on the shim list | **Superseded**: HTTP is COBOL over `cc_net`; TLS is glue `cc_tls` under v1.2.0 | R10 |
 | 16 | Sounds would need `sounds.json` and audio output | **Confirmed out of scope** (spec Assumptions); no action | — |

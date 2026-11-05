@@ -26,3 +26,7 @@ T3=$(mktemp -d)
 { glslangValidator -V spike_pipeline.vert -o "$T3/v.spv" && glslangValidator -V spike_pipeline.frag -o "$T3/f.spv" &&
   clang -std=c11 -Wall -o "$T3/p" spike_pipeline.c $(pkg-config --cflags --libs vulkan) && "$T3/p" "$T3/v.spv" "$T3/f.spv"; } > spike_pipeline.out.txt 2>&1
 rm -rf "$T3"
+# COBOL calling libcrypto directly, no glue (research R11, constitution v1.2.0)
+T4=$(mktemp -d)
+{ cobc -x -Wall -o "$T4/d" spike_direct_openssl.cob $(pkg-config --libs openssl) && "$T4/d"; } > spike_direct_openssl.out.txt 2>&1
+rm -rf "$T4"

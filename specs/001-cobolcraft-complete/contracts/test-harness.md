@@ -7,7 +7,7 @@ build must offer to the top-level commands.
 
 | Command | Effect |
 |---|---|
-| `make bootstrap` | Checks every prerequisite of research R1 is installed (prints the missing ones and the `brew install` line, exit 1), then compiles the GLSL shaders to SPIR-V. Proposed as the constitution's workspace bootstrap command (plan.md Q2). |
+| `make bootstrap` | Checks every prerequisite of research R1 is installed (prints the missing ones and the `brew install` line, exit 1), then creates the `build/` directories and compiles the GLSL shaders to SPIR-V. It starts no shared test infrastructure. This is the constitution's workspace bootstrap command (Development Workflow; SDD 5.2). |
 | `make` / `make build` | Builds `build/bin/cobolcraft` (client) and `build/bin/cobolcraft-server` (US1-1). |
 | `make test` | Builds and runs every test program of every package; prints failing cases with expected and observed values and `passed <n> failed <m>`; exit 0 only if `m` = 0 and every test program exited 0 (US1-2, US1-3). |
 | `make lint` | Lint of research R9 over every package. |
