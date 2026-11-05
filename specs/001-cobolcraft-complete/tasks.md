@@ -828,6 +828,8 @@ with every `core/tests/acc_us4_*.cob` passing.
 - [ ] T576 [US12-core] Implement the §15 generator(s) in `core/src/worldgen.cob`, selected by dimension
 - [ ] T577 [P] [US12-core] Write implementation test `core/tests/test_light_extra.cob`: the §15 light policy of every extra dimension
 - [ ] T578 [US12-core] Implement per-dimension light policy selection in `core/src/light.cob`
+- [ ] T1070 [P] [US12-core] Write implementation test `core/tests/test_mob_spawn_extra.cob` (added after Phase 19; constitution 5.7): mobs spawn in every extra dimension only by that dimension's §12/§15 spawn rule (in `cobolcraft:subroutine`, abends on slag; no sodgrazers), with expected columns computed from the §1.4.1 hash independently of the code
+- [ ] T1071 [US12-core] Make `core/src/mobs.cob` spawning use each dimension's rule from `core/copy/MOBS.cpy` (if T1070 already passes once the dimension exists, record that and mark this done without code changes)
 - [ ] T579 [P] [US12-core] Write `contract_wire_server.cob` cases: Respawn for every extra dimension equals its fixture; Login with every enabled dimension equals `play-s2c-32-login-all-dimensions.hex`
 - [ ] T580 [P] [US12-core] Write acceptance test `core/tests/acc_us12_travel.cob`: case "acceptance US12-1 given the §15 means of travel when used then the player is at the §15 arrival point of the target dimension with the same inventory, health, food and game mode, and receives Respawn, Player Position, that dimension's chunks and weather pair" (each direction)
 - [ ] T581 [US12-core] Implement the §15 travel trigger (Use Item On the travel block, or moving into it) in `core/src/dimensions.cob`
