@@ -25,7 +25,7 @@ and uses them.
 | `hostile-mobs` | `true`, `false` | `true` | hostile mobs |
 | `weather-changes` | `true`, `false` | `true` | weather changes on its own |
 | `extra-dimensions` | `true`, `false` | `true` | travel to extra dimensions |
-| `allow-list` | `true`, `false` | `false` | allow-list enforced |
+| `allow-list` | `true`, `false` | `false` | allow-list enforced: seeds the enforcement flag of a newly created world only; an existing world keeps the flag stored in its `access.dat`, which the allow-list on/off commands change (operator decision A2; world-folder.md §2) |
 | `pack-url` | `http://…` or `https://…`, or empty | empty | pack offer: download address (empty = no offer) |
 | `pack-sha1` | 40 hex digits, or empty | empty | integrity hash |
 | `pack-id` | UUID text, or empty | empty | stable identifier |
@@ -38,7 +38,9 @@ console shows `FATAL configuration: <key>: <problem>` and the server exits with 
 ## 3. Console output (US13-1, US13-3, US15)
 
 Every line is prefixed with `[HH:MM:SS] `. Lines whose text is defined by the command set or the extension's
-messages use that text. Fixed lines of the program itself:
+messages use that text; messages the server sends as `translate` components (wire-profile.md §1 message
+rule) are printed as the `en_us` text of their key with the arguments filled in. Fixed lines of the program
+itself:
 
 | Event | Line |
 |---|---|

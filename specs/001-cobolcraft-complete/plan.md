@@ -3,7 +3,7 @@
 **Branch**: `001-cobolcraft-complete` | **Date**: 2026-11-05 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/001-cobolcraft-complete/spec.md`; constitution
-`.specify/memory/constitution.md` (project v1.1.0 with SDD amendment v6.3.0); personas
+`.specify/memory/constitution.md` (project v1.2.0 with SDD amendment v6.3.0); personas
 `.specify/memory/personas.md`.
 
 **Companion artifacts**: [research.md](research.md) (decisions R1 to R16, spike evidence, handoff
@@ -99,7 +99,7 @@ distance up to 32 chunks.
 | 2.6 Handoff consumed | Pass | All 16 handoff items recorded confirmed/refuted/superseded (research "Plan-Phase Handoff verification record"). |
 | 3.1 External dependencies probed | Pass | GnuCOBOL, GLFW, Vulkan loader, MoltenVK, glslang, zlib, OpenSSL (hashes, TLS, trust override), BSD sockets: `spikes/`, research R1 to R11. |
 | 3.2 Gap analysis | Pass | "Empirical gap analysis" below. |
-| 3.3 Package boundaries and contracts | Pass | "Package boundary declaration" below; seven contracts in `contracts/`, materialized in Foundational before any consumer task. |
+| 3.3 Package boundaries and contracts | Pass | "Package boundary declaration" below; eight contracts in `contracts/`, materialized in Foundational before any consumer task. |
 | 3.4 Test infrastructure | Pass (gap documented) | Nothing exists; setup tasks precede all feature tasks ("Infrastructure setup"). |
 | 3.5 Sequence diagrams | Pass | One per story below. |
 | 3.6 Execution mode | Pass | Package-parallel; workspace bootstrap command `make bootstrap` is defined in the constitution. |
@@ -146,27 +146,31 @@ shim/                       # package: thin C glue (Principle I) → build/shim/
 ├── shaders/world.vert world.frag ui.vert ui.frag
 └── tests/
 proto/                      # package: COBOL protocol codec → build/proto/libproto.a
-├── src/  (buffer, scalars, composites, nbt, frame, chunk)
+├── src/  (buffer, scalars, composites, nbt, nbtfile (gzip NBT files shared by core and client), frame, chunk)
 └── tests/
 core/                       # package: COBOL game core → build/core/libcore.a
 ├── copy/                   # content tables from docs/design/standin-content.md (as extended)
-├── src/  (api, session, login, config-phase, registries, play, world, worldgen, light, chunks-stream,
-│          players, inventory, blocks, ground-items, health, hunger, mobs, crafting, weather,
-│          dimensions, commands, persistence)
+├── src/  (api, session, status, login, config-phase, registries, play, world, worldgen, light,
+│          chunks-stream, players, movement, entities, inventory, blocks, ground-items, chat, health,
+│          hunger, mobs, rng, crafting, weather, dimensions, commands, access, console, region,
+│          persistence)
 └── tests/
-server/                     # package: COBOL server program → build/bin/cobolcraft-server
-├── src/  (main, config-file, console, tcp-host)
+server/                     # package: COBOL server program → build/server/libserver.a (callable programs) + build/bin/cobolcraft-server
+├── src/  (main, loop (SV-START, SV-ITERATE, SV-SHUTDOWN), config-file, console, tcp-host)
 └── tests/
-client/                     # package: COBOL client program → build/bin/cobolcraft
-├── src/  (main, args, loop, input, screens/*, net-client, protocol-client, world-replica, physics,
-│          packs/*, json, png, zip, http, atlas, models, mesher, entities-render, ui-render, render-list,
-│          sp-host, game-dir)
-└── tests/
+client/                     # package: COBOL client program → build/client/libclient.a (callable programs) + build/bin/cobolcraft
+├── copy/  (CLSTATE: per-instance client state passed BY REFERENCE; CLCONST)
+├── src/  (main, args, loop (CL-STEP, CL-RUN), submit, input, controls, screens/*, net-client,
+│          protocol-client, world-replica, inventory-replica, entities-replica, physics, raycast, sky,
+│          weather-render, packs/*, json, png, zip, http, atlas, models, mesher, entities-render,
+│          ui-render, render-list, sp-host, game-dir)
+└── tests/  (fixtures/gen_textures.py → fixtures/textures/*.rgba: reference RGBA from an independent
+             Python implementation of the recipes; test infrastructure)
 tools/                      # test and build infrastructure (excluded from coverage)
 ├── runtests.py coverage.py lint.py bootstrap.sh
 ├── testlib/TESTLIB.cpy testassert.cob testlib.h
 ├── testsrv/                # loopback HTTP/HTTPS server + throwaway test CA
-├── fixtures/textures/      # reference RGBA from an independent Python implementation of the recipes
+├── probe/                  # contract probe programs (make gate-contract)
 └── tests/                  # acc_us1_* (build and test command behaviour)
 tests/convergence/          # cross-package in-process acceptance tests (Convergence phase only)
 docs/protocol/  docs/design/  # extended in Foundational (FR-005, FR-015)
@@ -227,7 +231,7 @@ Shape for the tasks phase (constitution 5.2):
 | Phase | Content | Gate command |
 |---|---|---|
 | Setup | US1: `tools/` (runner, coverage, lint, testlib, bootstrap), root `Makefile`, every package's `Makefile` skeleton, `README.md`, `acc_us1_*` tests | `make gate-tools` |
-| Foundational | (1) docs-first: FR-015 extension of `docs/design/standin-content.md` (sections listed in research R13, including the bitmap font), 08 additions, 07 §9, new 09; (2) contract materialization: `contract/include/ccshim.h`, `contract/copy/*.cpy`, every wire fixture; (3) shared test infrastructure: `tools/testsrv/`, `tools/fixtures/textures/` generator. Documents are verified by review tasks (constitution 4.1). | `make gate-contract` (compiles every copybook and header in a probe program, checks every fixture parses as hex; lint) |
+| Foundational | (1) docs-first: FR-015 extension of `docs/design/standin-content.md` (sections listed in research R13, including the bitmap font), 08 additions, 07 §9, new 09; (2) contract materialization: `contract/include/ccshim.h`, `contract/copy/*.cpy`, every wire fixture; (3) shared test infrastructure: `tools/testsrv/` (the texture reference generator is client-only and lives in the client lane, `client/tests/fixtures/`). Documents are verified by review tasks (constitution 4.1). | `make gate-contract` (compiles every copybook and header in a probe program, checks every fixture parses as hex; lint) |
 | PARALLEL GROUP | Lanes `shim`, `proto`, `core`, `server`, `client`; each lane runs its stories' slices in spec order; story tags `US<n>-<pkg>` | `make gate-<pkg>` per lane phase |
 | Convergence | `tests/convergence/acc_us<n>_*.cob`: each story's acceptance scenarios that need more than one package, run in-process through the client's single-player host (client + core over a memory connection) and, for network-only behaviour, the core TCP host on loopback; no E2E (empty inventory) | `make gate` |
 | Polish | README completion, quickstart walk-through review, final debt check of touched files | `make gate` |
@@ -261,7 +265,7 @@ in-process against `contract/` artifacts by every lane gate.
     US16-2, US17-2) → `tests/convergence/` in the Convergence phase, two in-process clients against one core.
   - US1 → `tools/tests/acc_us1_*.py` (they run the real `make` targets in a scratch copy of the repository).
   - Client outcomes are asserted on the screen model and render list (data-model §13); texture outcomes on
-    atlas bytes against `tools/fixtures/textures/`; GPU submission is covered by shim tests against the real
+    atlas bytes against `client/tests/fixtures/textures/`; GPU submission is covered by shim tests against the real
     GPU.
 - **Contract tests**: both sides of every contract in the table above (`contract_*` files named in each
   contract document), lane-resident.

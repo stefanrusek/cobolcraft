@@ -28,7 +28,7 @@ files (07 §5.1) with an unnamed root compound. Every root carries `DataVersion`
 | Key | Type | Meaning |
 |---|---|---|
 | `LevelName` | String | World name (single-player list, US16-1) |
-| `GameMode` | Int | Single-player chosen mode (US16-1); dedicated servers ignore it and use configuration |
+| `GameMode` | Int | Single-player chosen mode (US16-1). It is the game mode of new players when the world is hosted by the client (core-host-api `CS-HOST-KIND` 1, and 2 for the host; guests get the guest mode chosen when opening, US17-1); a dedicated server (`CS-HOST-KIND` 0) ignores it and uses `default-game-mode` |
 | `Time` | Long | Time of day in ticks (US13-4) |
 | `Spawn` | Compound | `Dimension` String, `X` `Y` `Z` Double, `Yaw` Float (US13-4, set by command) |
 | `Weather` | Compound | One entry per dimension key: Compound `Kind` String (weather kind key), `Remaining` Int ticks (FR-014) |
@@ -36,8 +36,10 @@ files (07 §5.1) with an unnamed root compound. Every root carries `DataVersion`
 Network entity ids are assigned per run and are not stored.
 
 `access.dat`: `Operators`, `Bans`, `AllowList`: each a List of Compound `{Name: String, UUID: IntArray(4)}`
-(FR-010 offline identity, FR-016, US13-4). Allow-list enforcement itself is a configuration setting (FR-009),
-not stored here.
+(FR-010 offline identity, FR-016, US13-4); and `AllowListEnforced` (Byte, 0 or 1): whether the allow-list is
+enforced in this world. A new world takes it from the `allow-list` configuration setting (server) or off
+(single-player); afterwards only the allow-list on/off commands change it and the setting no longer applies
+(operator decision A2). Single-player worlds behave the same way.
 
 `players/<uuid>.dat`:
 
@@ -78,5 +80,6 @@ of standin-content §4.3 (as extended); no block entities; `LastUpdate` = world 
 
 - A world folder without `level.dat` is created new (US13-1) with all enabled dimensions; chunks are
   generated on first use and saved when changed or when an entity is in them at save.
-- Save writes every changed chunk, every chunk holding entities, every online player's file, `level.dat`
+- Save writes every changed chunk, every chunk holding entities, the file of every online player and of every
+  player who left since the previous save (US13 independent test), `level.dat`
   and `access.dat`.

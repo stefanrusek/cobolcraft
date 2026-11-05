@@ -28,8 +28,9 @@ disconnect behaviour the protocol defines, 01).
 |---|---|
 | Buffer | `PB-INIT` (capacity), `PB-FREE`, `PB-RESET`, `PB-APPEND-BYTES` |
 | Scalars (00 §1 to §6) | `PB-PUT-` / `PB-GET-`: `BOOL`, `BYTE`, `UBYTE`, `SHORT`, `USHORT`, `INT`, `LONG`, `FLOAT`, `DOUBLE`, `VARINT`, `VARLONG`, `STRING` (with max length), `IDENTIFIER`, `UUID`, `POSITION`, `ANGLE`, `LPVEC3`, `BITSET`, `FIXED-BITSET` |
-| Composite (00 §7 to §12) | `PB-PUT-` / `PB-GET-`: `ITEMSTACK` (no components, standin-content §2), `TEXT` (text component as network NBT: plain string or `{"text":…}` / `{"translate":…,"with":[…]}`), `ENTITY-METADATA` entries used by `wire-profile.md` |
+| Composite (00 §7 to §12) | `PB-PUT-` / `PB-GET-`: `ITEMSTACK` (no components, standin-content §2), `TEXT` (text component as network NBT: plain string or `{"text":…}` / `{"translate":…,"with":[…]}`), `ENTITY-METADATA` entries used by `wire-profile.md`, `SLOT-DISPLAY` and `RECIPE-DISPLAY` (05b Recipe Book Add), `COMMAND-NODE` (05a Commands) |
 | NBT (07 §1 to §3) | `NBT-WRITE-*` (compound begin/end, list begin/end, each tag type), `NBT-READ-*` (tree walk with path lookup), network root and file root framing |
+| NBT files (07 §5.1) | `NBT-FILE-WRITE` / `NBT-FILE-READ`: a gzip-compressed NBT file with a named empty root, through GnuCOBOL `CBL_*` routines and `cc_deflate`/`cc_inflate` mode `CC_GZIP`; read outcome 0 ok, 1 unreadable or corrupt (the caller applies research R14). The one gzip NBT file path for `core` (world folder) and `client` (`servers.dat`, `options.dat`, reading `level.dat`) |
 | Framing (01 §2, §3) | `PB-FRAME-ENCODE` (packet id + body → length-prefixed frame, compressed when threshold ≥ 0 and body ≥ threshold), `PB-FRAME-DECODE` (accumulating stream → next complete packet id + body, or "need more") |
 | Chunk (06) | `CHUNK-SECTION-ENCODE` / `-DECODE` (paletted containers, single-value and linear palettes, biome container), `LIGHT-ENCODE` / `-DECODE` |
 

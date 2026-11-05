@@ -44,3 +44,13 @@
 | Throw one / throw stack | Q / Ctrl+Q |
 | Chat / command | T / `/` (opens chat with `/` typed) |
 | Pause menu (disconnect, open to others, quit world) | Escape |
+
+## 4. Chat area (US6-2)
+
+- While chat is closed, the chat area shows at most the **10** most recent messages, each for **10 seconds**
+  after it arrived; older or expired messages are hidden.
+- While chat is open, the chat area shows the most recent 10 messages regardless of age, and the Player
+  scrolls back (scroll wheel) through a history of the last **100** messages received this session; older
+  messages are discarded.
+- Messages are shown in the order received; `translate` components are rendered through the active packs'
+  lang (wire-profile.md §1).

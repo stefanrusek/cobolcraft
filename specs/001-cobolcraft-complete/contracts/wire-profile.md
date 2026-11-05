@@ -20,6 +20,13 @@ dimensions) are those of the extended `docs/design/standin-content.md`; this pro
   commands, never 0x08 or 0x0A. Login sets `Enforces secure chat` = false. The server broadcasts player chat
   as System Chat (05b 0x7C) with the text `<name> message` (standin-content §4.4 chat type keeps its role
   for registry completeness only).
+- **Message rule** (operator decision A3): every message the server composes — death messages (Player Combat
+  Kill and System Chat), command confirmations and errors, operator-status notices, and disconnect and
+  refusal reasons (Login Disconnect, configuration and play Disconnect) — is sent as a `translate` text
+  component (00 §7) whose key and arguments come from standin-content §10, §16 and §17; the text of every key
+  is in the built-in pack's `en_us` lang (08 §10.8), so a pack can change it. Only player-authored chat is
+  literal text (`<name> message`). The server console prints these messages rendered through the same
+  `en_us` texts (operator-surface §3).
 
 ## 2. Transport choices
 

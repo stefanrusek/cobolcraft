@@ -20,9 +20,21 @@ All outputs go under `build/` (`build/<pkg>/obj`, `build/<pkg>/tests`, `build/bi
 
 ## 2. Per-package build interface
 
-Each package directory has a `Makefile` with targets `lib` (or `bin`), `tests`, `lint`, and variables
-`SRC` (production sources, the coverage set) and `TESTS` (test programs). Top-level targets call them; a
-package never builds another package's sources, it links the other package's `lib` output.
+Each package directory has a `Makefile` with targets `lib`, `tests`, `lint` (and `bin` for the program
+packages), and variables `SRC` (production sources, the coverage set) and `TESTS` (test programs). Top-level
+targets call them; a package never builds another package's sources, it links the other package's `lib`
+output.
+
+| Package | `lib` output | `bin` output |
+|---|---|---|
+| shim | `build/shim/libccshim.a` | — |
+| proto | `build/proto/libproto.a` | — |
+| core | `build/core/libcore.a` | — |
+| server | `build/server/libserver.a`: every `SRC` source except `src/main.cob` (callable programs such as `SV-START`, `SV-ITERATE`, `SV-SHUTDOWN`; no main) | `build/bin/cobolcraft-server` (`src/main.cob` + `libserver.a`) |
+| client | `build/client/libclient.a`: every `SRC` source except `src/main.cob` (callable programs such as `CL-STEP`, `CL-RUN`; no main) | `build/bin/cobolcraft` (`src/main.cob` + `libclient.a`) |
+
+The server and client `lib` outputs exist so that `tests/convergence/` links the programs' callable entry
+points in-process (plan "Execution mode", Convergence).
 
 ## 3. Test program output protocol
 
