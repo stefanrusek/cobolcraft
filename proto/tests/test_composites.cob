@@ -1,6 +1,8 @@
-*> Implementation test of the entity metadata code of proto/src/composites.cob (00 §13.1): entries
-*> the writer cannot encode (an index outside 0 to 254, a serializer outside PROTO.cpy) append
-*> nothing and set PB-ERROR; a failed read leaves PB-POS where it was and yields an all-zero entry.
+*> Implementation test of the entity metadata (00 §13.1) and recipe display (05b SlotDisplay,
+*> RecipeDisplayEntry) code of proto/src/composites.cob: values the writer cannot encode (an index
+*> outside 0 to 254, a serializer, SlotDisplay or RecipeDisplay type outside PROTO.cpy, a count
+*> above PB-RECIPE-MAX-SLOTS) append nothing and set PB-ERROR; a failed read leaves PB-POS where it
+*> was and yields an all-zero value.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMPOSITES.
  DATA DIVISION.
@@ -50,6 +52,127 @@
      MOVE "test composites ENTITY-METADATA get of an entry without its value sets PB-ERROR"
          TO TL-CASE
      PERFORM CHECK-GET-ERROR
+*>   ---- SlotDisplay ----
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 6 TO PB-SD-TYPE
+     MOVE 2 TO PB-SD-ITEM
+     CALL "PB-PUT-SLOT-DISPLAY" USING PB-BUFFER PB-SLOT-DISPLAY
+     MOVE "test composites SLOT-DISPLAY put of type 6 sets PB-ERROR and appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE "05 02 01 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-SLOT-DISPLAY" USING PB-BUFFER PB-SLOT-DISPLAY
+     MOVE "test composites SLOT-DISPLAY get of an item_stack with components sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-SLOT-GET-ERROR
+     MOVE "05 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-SLOT-DISPLAY" USING PB-BUFFER PB-SLOT-DISPLAY
+     MOVE "test composites SLOT-DISPLAY get of a short item_stack sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-SLOT-GET-ERROR
+*>   ---- RecipeDisplayEntry: writer ----
+     CALL "PB-RESET" USING PB-BUFFER
+     INITIALIZE PB-RECIPE-DISPLAY
+     MOVE 2 TO PB-RD-TYPE
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of type 2 furnace sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-RECIPE-SHAPELESS TO PB-RD-TYPE
+     MOVE 10 TO PB-RD-INGREDIENT-COUNT
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of 10 ingredients sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE -1 TO PB-RD-INGREDIENT-COUNT
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of -1 ingredients sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 0 TO PB-RD-INGREDIENT-COUNT
+     MOVE 1 TO PB-RD-REQ-PRESENT
+     MOVE 10 TO PB-RD-REQ-COUNT
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of 10 requirements sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE 0 TO PB-RD-REQ-COUNT
+     MOVE 1 TO PB-RD-INGREDIENT-COUNT
+     MOVE 6 TO PB-RD-IN-TYPE(1)
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of an ingredient of type 6 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-SLOT-EMPTY TO PB-RD-IN-TYPE(1)
+     MOVE 1 TO PB-RD-RES-TYPE
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of a result of type 1 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-SLOT-EMPTY TO PB-RD-RES-TYPE
+     MOVE 10 TO PB-RD-ST-TYPE
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of a station of type 10 sets PB-ERROR and appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE PB-SLOT-EMPTY TO PB-RD-ST-TYPE
+     CALL "PB-PUT-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY put of empty slots and no requirements items is 00 00 01 00 00 00 00 00 01 00"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "00000100000000000100" TO TL-EXPECTED
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+*>   ---- RecipeDisplayEntry: reader ----
+     MOVE "00 00 0a" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of 10 ingredients sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "05 00 7f 00 00 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of 127 ingredients sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 01 05 02 01 01 00 00 00 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of an ingredient with components sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 00 00 00 00 00 01 0a" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of 10 requirements sets PB-ERROR" TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 00 00 00 00 00 01 01 00 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of a requirement that is a tag sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 00 00 00 00 00 01 01 03 02 03" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of a requirement of two items sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 00 00 00 00 00 01 01 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of a requirement without its item sets PB-ERROR"
+         TO TL-CASE
+     PERFORM CHECK-RECIPE-GET-ERROR
+     MOVE "00 00 00 00 00 00 00 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER PB-RECIPE-DISPLAY
+     MOVE "test composites RECIPE-DISPLAY get of present and empty requirements is ok" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1009 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-RD-REQ-PRESENT * 1000 + PB-RD-REQ-COUNT * 100 + PB-ERROR * 10
+         + PB-POS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
 
@@ -70,6 +193,25 @@
      MOVE 1000 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = PB-ERROR * 1000 + PB-POS * 100 + PB-MD-INDEX + PB-MD-SERIALIZER
          + PB-MD-INT + PB-MD-FLOAT + PB-MD-IS-COUNT + PB-MD-IS-ITEM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> PB-ERROR 1, PB-POS back at 0, every field of the slot display 0.
+ CHECK-SLOT-GET-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 1000 + PB-POS * 100 + PB-SD-TYPE + PB-SD-ITEM
+         + PB-SD-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> PB-ERROR 1, PB-POS back at 0, the entry all zero (every field summed).
+ CHECK-RECIPE-GET-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 1000 + PB-POS * 100 + PB-RD-DISPLAY-ID + PB-RD-TYPE
+         + PB-RD-WIDTH + PB-RD-HEIGHT + PB-RD-INGREDIENT-COUNT + PB-RD-IN-TYPE(1)
+         + PB-RD-IN-ITEM(1) + PB-RD-IN-COUNT(1) + PB-RD-RES-TYPE + PB-RD-RES-ITEM
+         + PB-RD-RES-COUNT + PB-RD-ST-TYPE + PB-RD-GROUP + PB-RD-CATEGORY + PB-RD-REQ-PRESENT
+         + PB-RD-REQ-COUNT + PB-RD-REQ-ITEM(1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM TEST-COMPOSITES.
  COPY PROTOTEST.

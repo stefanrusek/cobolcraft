@@ -506,12 +506,12 @@ libraries (loopback sockets, hidden GLFW window, MoltenVK), 100 % line coverage 
 **Goal**: codecs for the recipe display and slot display composites of Recipe Book Add (05b 0x4B).
 **Independent Test**: `make gate-proto`.
 
-- [ ] T336 [P] [US10-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `SLOT-DISPLAY` (the slot display kinds the 09 profile uses) against the recipe entries of `contract/fixtures/wire/play-s2c-4b-recipe-book-add.hex`
-- [ ] T337 [US10-proto] Implement `PB-PUT-SLOT-DISPLAY` and `PB-GET-SLOT-DISPLAY` in `proto/src/composites.cob`
-- [ ] T338 [P] [US10-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `RECIPE-DISPLAY` (ingredients and result, per the 09 profile) against the same fixture
-- [ ] T339 [US10-proto] Implement `PB-PUT-RECIPE-DISPLAY` and `PB-GET-RECIPE-DISPLAY` in `proto/src/composites.cob`
-- [ ] T340 [US10-proto] Extend `proto/tests/test_composites.cob` to 100 % coverage of the recipe display code
-- [ ] T341 Gate: run `make gate-proto` and record the command and its real output
+- [X] T336 [P] [US10-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `SLOT-DISPLAY` (the slot display kinds the 09 profile uses) against the recipe entries of `contract/fixtures/wire/play-s2c-4b-recipe-book-add.hex`
+- [X] T337 [US10-proto] Implement `PB-PUT-SLOT-DISPLAY` and `PB-GET-SLOT-DISPLAY` in `proto/src/composites.cob`
+- [X] T338 [P] [US10-proto] Write `proto/tests/contract_proto_primitives.cob` cases for `RECIPE-DISPLAY` (ingredients and result, per the 09 profile) against the same fixture
+- [X] T339 [US10-proto] Implement `PB-PUT-RECIPE-DISPLAY` and `PB-GET-RECIPE-DISPLAY` in `proto/src/composites.cob`
+- [X] T340 [US10-proto] Extend `proto/tests/test_composites.cob` to 100 % coverage of the recipe display code
+- [X] T341 Gate: run `make gate-proto` and record the command and its real output
 
 #### Phase 11: US14-proto — command tree nodes
 

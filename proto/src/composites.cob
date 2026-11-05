@@ -1,5 +1,5 @@
-*> Composite codecs (docs/protocol/00-data-types.md §9, §12, §13; contracts/proto-api.md §2 "Composite"),
-*> on the records of contract/copy/PROTO.cpy.
+*> Composite codecs (docs/protocol/00-data-types.md §9, §12, §13; 05b SlotDisplay, RecipeDisplayEntry and
+*> RecipeDisplay; contracts/proto-api.md §2 "Composite"), on the records of contract/copy/PROTO.cpy.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PB-PUT-TEXT.
@@ -248,3 +248,216 @@
      END-IF
      GOBACK.
  END PROGRAM PB-GET-ENTITY-METADATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-SLOT-DISPLAY.
+*> USING PB-BUFFER, PB-SLOT-DISPLAY: a 05b SlotDisplay of the types of PROTO.cpy: VarInt type, then
+*> nothing (empty), the item id (item), or an ItemStackTemplate of item id, count and an empty
+*> DataComponentPatch (item_stack, standin-content §2). Another type sets PB-ERROR and appends
+*> nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-SLOT-DISPLAY.
+     EVALUATE PB-SD-TYPE
+         WHEN PB-SLOT-EMPTY
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-TYPE
+         WHEN PB-SLOT-ITEM
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-TYPE
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-ITEM
+         WHEN PB-SLOT-ITEM-STACK
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-TYPE
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-ITEM
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-SD-COUNT
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         WHEN OTHER
+             MOVE 1 TO PB-ERROR
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PB-PUT-SLOT-DISPLAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-SLOT-DISPLAY.
+*> USING PB-BUFFER, PB-SLOT-DISPLAY out: one 05b SlotDisplay; fields the type does not use are 0.
+*> A type outside PROTO.cpy, an item_stack with data components or a short read sets PB-ERROR,
+*> leaves PB-POS where it was and yields an all-zero display.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-ADDED               BINARY-LONG.
+ 01 WS-REMOVED             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-SLOT-DISPLAY.
+     MOVE PB-POS TO WS-START
+     MOVE 0 TO PB-SD-ITEM PB-SD-COUNT
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-SD-TYPE
+     EVALUATE PB-SD-TYPE
+         WHEN PB-SLOT-EMPTY
+             CONTINUE
+         WHEN PB-SLOT-ITEM
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-SD-ITEM
+         WHEN PB-SLOT-ITEM-STACK
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-SD-ITEM
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-SD-COUNT
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ADDED
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-REMOVED
+             IF WS-ADDED NOT = 0 OR WS-REMOVED NOT = 0
+                 MOVE 1 TO PB-ERROR
+             END-IF
+         WHEN OTHER
+             MOVE 1 TO PB-ERROR
+     END-EVALUATE
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO PB-SD-TYPE PB-SD-ITEM PB-SD-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-SLOT-DISPLAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-RECIPE-DISPLAY.
+*> USING PB-BUFFER, PB-RECIPE-DISPLAY: a 05b RecipeDisplayEntry: VarInt display id; RecipeDisplay
+*> (VarInt type; crafting_shaped adds VarInt width and height; Prefixed Array of SlotDisplay
+*> ingredients; SlotDisplay result; SlotDisplay crafting station); OptionalVarInt group;
+*> RegistryId category; Optional crafting requirements, each a HolderSet<item> of one item
+*> (selector 2, then the item id; 09 profile). The entry flags byte of Recipe Book Add is the
+*> caller's. A type other than crafting_shapeless or crafting_shaped, an ingredient or requirement
+*> count outside 0 to PB-RECIPE-MAX-SLOTS, or a SlotDisplay type outside PROTO.cpy sets PB-ERROR and
+*> appends nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-SLOT-TYPE           BINARY-LONG.
+    88 WS-SLOT-SUPPORTED   VALUES 0 4 5.
+ 01 WS-SELECTOR            BINARY-LONG VALUE 2.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-RECIPE-DISPLAY.
+     MOVE 1 TO WS-VALID
+     IF (PB-RD-TYPE NOT = PB-RECIPE-SHAPELESS AND PB-RD-TYPE NOT = PB-RECIPE-SHAPED)
+             OR PB-RD-INGREDIENT-COUNT < 0 OR PB-RD-INGREDIENT-COUNT > PB-RECIPE-MAX-SLOTS
+             OR (PB-RD-REQ-PRESENT = 1
+                 AND (PB-RD-REQ-COUNT < 0 OR PB-RD-REQ-COUNT > PB-RECIPE-MAX-SLOTS))
+         MOVE 0 TO WS-VALID
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RD-INGREDIENT-COUNT + 2
+             EVALUATE WS-I
+                 WHEN PB-RD-INGREDIENT-COUNT + 1
+                     MOVE PB-RD-RES-TYPE TO WS-SLOT-TYPE
+                 WHEN PB-RD-INGREDIENT-COUNT + 2
+                     MOVE PB-RD-ST-TYPE TO WS-SLOT-TYPE
+                 WHEN OTHER
+                     MOVE PB-RD-IN-TYPE(WS-I) TO WS-SLOT-TYPE
+             END-EVALUATE
+             IF NOT WS-SLOT-SUPPORTED
+                 MOVE 0 TO WS-VALID
+             END-IF
+         END-PERFORM
+     END-IF
+     IF WS-VALID = 0
+         MOVE 1 TO PB-ERROR
+     ELSE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-DISPLAY-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-TYPE
+         IF PB-RD-TYPE = PB-RECIPE-SHAPED
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-WIDTH
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-HEIGHT
+         END-IF
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-INGREDIENT-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RD-INGREDIENT-COUNT
+             MOVE PB-RD-INGREDIENT(WS-I) TO WS-SLOT-DISPLAY
+             CALL "PB-PUT-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+         END-PERFORM
+         MOVE PB-RD-RESULT TO WS-SLOT-DISPLAY
+         CALL "PB-PUT-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+         MOVE PB-RD-STATION TO WS-SLOT-DISPLAY
+         CALL "PB-PUT-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-GROUP
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-CATEGORY
+         MOVE PB-RD-REQ-PRESENT TO WS-FLAG
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAG
+         IF PB-RD-REQ-PRESENT = 1
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-REQ-COUNT
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RD-REQ-COUNT
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SELECTOR
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RD-REQ-ITEM(WS-I)
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM PB-PUT-RECIPE-DISPLAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-RECIPE-DISPLAY.
+*> USING PB-BUFFER, PB-RECIPE-DISPLAY out: one 05b RecipeDisplayEntry (layout as PB-PUT-RECIPE-
+*> DISPLAY); fields the entry does not use are 0. A RecipeDisplay type other than crafting_shapeless
+*> or crafting_shaped, an ingredient or requirement count outside 0 to PB-RECIPE-MAX-SLOTS, a
+*> SlotDisplay PB-GET-SLOT-DISPLAY rejects, a requirement that is not a HolderSet of exactly one
+*> item, or a short read sets PB-ERROR, leaves PB-POS where it was and yields an all-zero entry.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-SELECTOR            BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-RECIPE-DISPLAY.
+     MOVE PB-POS TO WS-START
+     INITIALIZE PB-RECIPE-DISPLAY
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-DISPLAY-ID
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-TYPE
+     EVALUATE PB-RD-TYPE
+         WHEN PB-RECIPE-SHAPELESS
+             CONTINUE
+         WHEN PB-RECIPE-SHAPED
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-WIDTH
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-HEIGHT
+         WHEN OTHER
+             MOVE 1 TO PB-ERROR
+     END-EVALUATE
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-INGREDIENT-COUNT
+     IF PB-RD-INGREDIENT-COUNT < 0 OR PB-RD-INGREDIENT-COUNT > PB-RECIPE-MAX-SLOTS
+         MOVE 1 TO PB-ERROR
+         MOVE 0 TO PB-RD-INGREDIENT-COUNT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RD-INGREDIENT-COUNT
+         CALL "PB-GET-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+         MOVE WS-SLOT-DISPLAY TO PB-RD-INGREDIENT(WS-I)
+     END-PERFORM
+     CALL "PB-GET-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+     MOVE WS-SLOT-DISPLAY TO PB-RD-RESULT
+     CALL "PB-GET-SLOT-DISPLAY" USING PB-BUFFER WS-SLOT-DISPLAY
+     MOVE WS-SLOT-DISPLAY TO PB-RD-STATION
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-GROUP
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-CATEGORY
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-FLAG
+     MOVE WS-FLAG TO PB-RD-REQ-PRESENT
+     IF WS-FLAG = 1
+         CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-REQ-COUNT
+         IF PB-RD-REQ-COUNT < 0 OR PB-RD-REQ-COUNT > PB-RECIPE-MAX-SLOTS
+             MOVE 1 TO PB-ERROR
+             MOVE 0 TO PB-RD-REQ-COUNT
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RD-REQ-COUNT
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-SELECTOR
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-RD-REQ-ITEM(WS-I)
+             IF WS-SELECTOR NOT = 2
+                 MOVE 1 TO PB-ERROR
+             END-IF
+         END-PERFORM
+     END-IF
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         INITIALIZE PB-RECIPE-DISPLAY
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-RECIPE-DISPLAY.
