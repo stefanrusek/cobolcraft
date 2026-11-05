@@ -37,6 +37,17 @@ Foundational (docs-first, contract materialization, shared test infrastructure) 
 
 - COBOL: GnuCOBOL 3.2, free format (`-free`), `-std=default`, `-debug` in every build, comments `*>`; calls to C
   with `CALL STATIC` per research R2; shared shapes only from `contract/copy/*.cpy` (never redefined locally).
+- GnuCOBOL pitfalls found in Phase 8 (apply in every COBOL lane):
+  - Production programs keep their logic inline: trailing performed paragraphs leave `END PROGRAM` reported
+    uncovered by gcov.
+  - Under `-debug`, a LINKAGE item longer than the caller's argument aborts at run time; declare
+    variable-size areas `PIC X` and read them through a `BASED` view.
+  - Under `-Wall`, calls between programs in one source file are size-checked.
+  - Constant arithmetic in literals overflows at 64 bits (`2 ** 64` is 0); put large constants in `VALUE`
+    clauses.
+  - `X"…"` literals with bytes 0x80 or above make clang warn.
+  - Any package that links proto frame or NBT-file code must link `-lz`.
+  - Proto entry-point parameters and conventions are in contracts/proto-api.md §5.
 - C (shim only): C11, glue only, no game or protocol logic (constitution Principle I; contracts/shim-abi.md).
 - Test files: `acc_<story>_<topic>` (acceptance; case names contain `acceptance US<n>-<scenario>` and
   Given/When/Then), `contract_<seam>_<side>` (contract), `test_<unit>` (implementation); one output line per case
