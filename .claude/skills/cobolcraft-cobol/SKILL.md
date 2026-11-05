@@ -54,7 +54,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Core state** is the EXTERNAL records of `core/copy/CORESTATE.cpy`; PB-BUFFERs are kept there as
   their raw 21 bytes and moved into a local `PB-BUFFER` to use them.
 - **No `C$LIST-DIRECTORY`** in GnuCOBOL 3.2: use `cc_fs_list` (contracts/shim-abi.md §7).
-- **Reserved words as paragraph names** (`MOVE`, `SEPARATE`, …) fail with "unexpected PERFORM"
+- **Reserved words as paragraph names** (`MOVE`, `SEPARATE`, `REPORT`, …) fail with "unexpected PERFORM"
   far from the cause: give test paragraphs verb-noun names (`DO-MOVE`, `ADD-SPACE`).
 - **Nested subscripts with arithmetic inside an intrinsic's arguments** can be miscompiled:
   `FUNCTION MIN(C(R, F), MX(I(R, T) + 1) - C(R, T))` yields a wrong value with no warning. Move the
@@ -105,7 +105,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, `TEST-CHAT` (feeds unsigned
   Chat), `TEST-DRAIN-CHAT` (System Chat texts, `|`-separated), `TEST-ATTACK`, `TEST-CLIENT-COMMAND`,
   `TEST-DRAIN-HEALTH` (Set Health, Damage Event, Hurt Animation, Player Combat Kill, System Chat,
-  Respawn and Player Position, `|`-separated), fixture loading and
+  Respawn and Player Position, `|`-separated), `TEST-USE-ITEM`, `TEST-PLAYER-COMMAND`,
+  `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), fixture loading and
   comparison. Test copybooks are not make dependencies: touch the test or delete
   `build/coverage/core` after changing one.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).

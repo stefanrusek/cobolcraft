@@ -45,7 +45,10 @@
      MOVE 250 TO WS-TICKS
      CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 28 food 24 | health 29 food 24 | health 30 food 24" TO TL-EXPECTED
+*>   Each recovery adds 2.5 exhaustion (§10.5); at 5.0 a food point goes (§11.3, US8), sent as its
+*>   own Set Health.
+     MOVE "health 28 food 24 | health 28 food 23 | health 29 food 23 | health 30 food 23 | "
+         & "health 30 food 22" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-3 given a hurt survival player with food 19, below the required 20, "

@@ -19,8 +19,19 @@
 *> floor(D) >= 5 the player takes 2 x (floor(D) - 4) fall damage (HEALTH-DAMAGE, cause fall; a
 *> creative player takes none) after the move has been applied and sent.
 *>
+*> Exhaustion (standin §11.2; HUNGER-EXHAUST, core/src/hunger.cob, counts it only for an alive
+*> survival player): an accepted move with a position adds 0.02 per block of horizontal distance
+*> from the last accepted position (sqrt(dx^2 + dz^2)), 0.12 while the sprinting flag is set, and
+*> nothing while flying; a move with on-ground false after one with on-ground true and a higher feet
+*> y is a jump and adds 0.3.
+*>
+*> Sprinting (MOVE-SPRINT, Player Command 0x2A): action 1 START_SPRINTING sets the player's
+*> sprinting flag, action 2 STOP_SPRINTING clears it, other actions leave it (data-model §6). Death
+*> and respawn clear it (core/src/health.cob).
+*>
 *> Entry points:
 *>   MOVE-PLAYER USING connection id, packet id (30 to 33), PLAY-SERVERBOUND
+*>   MOVE-SPRINT USING connection id, PLAY-SERVERBOUND
 *>   MOVE-ABILITIES USING connection id, flags (BINARY-LONG)
 *>   MOVE-COLLIDES USING dim, x, y, z (FLOAT-LONG feet position), hit out (BINARY-LONG 1 or 0)
 
@@ -97,6 +108,12 @@
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-OLD-X               FLOAT-LONG.
+ 01 WS-OLD-Y               FLOAT-LONG.
+ 01 WS-OLD-Z               FLOAT-LONG.
+ 01 WS-OLD-ON-GROUND       PIC 9.
+ 01 WS-EXHAUST             FLOAT-LONG.
+ 01 WS-RATE                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -122,6 +139,9 @@
              CALL "CORE-SEND" USING L-ID PB-BUFFER
              GOBACK
          END-IF
+         MOVE PL-X(WS-ROW) TO WS-OLD-X
+         MOVE PL-Y(WS-ROW) TO WS-OLD-Y
+         MOVE PL-Z(WS-ROW) TO WS-OLD-Z
          MOVE PSB-X TO PL-X(WS-ROW)
          MOVE PSB-Y TO PL-Y(WS-ROW)
          MOVE PSB-Z TO PL-Z(WS-ROW)
@@ -131,6 +151,7 @@
          MOVE PSB-YAW TO PL-YAW(WS-ROW)
          MOVE PSB-PITCH TO PL-PITCH(WS-ROW)
      END-IF
+     MOVE PL-ON-GROUND(WS-ROW) TO WS-OLD-ON-GROUND
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO PL-ON-GROUND(WS-ROW)
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1
@@ -147,6 +168,20 @@
          MOVE PL-ON-GROUND(WS-ROW) TO WS-ON-GROUND
          CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
+     END-IF
+*>   Exhaustion of walking or running, and of a jump (§11.2).
+     IF WS-MOVED = 1 AND PL-FLYING(WS-ROW) = 0
+         MOVE RULE-EXHAUST-WALK-MILLI TO WS-RATE
+         IF PL-SPRINTING(WS-ROW) = 1
+             MOVE RULE-EXHAUST-SPRINT-MILLI TO WS-RATE
+         END-IF
+         COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
+             + (PL-Z(WS-ROW) - WS-OLD-Z) ** 2) * WS-RATE / 1000
+         CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
+         IF WS-OLD-ON-GROUND = 1 AND PL-ON-GROUND(WS-ROW) = 0 AND PL-Y(WS-ROW) > WS-OLD-Y
+             COMPUTE WS-EXHAUST = RULE-EXHAUST-JUMP-MILLI / 1000
+             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
+         END-IF
      END-IF
      IF WS-FALL > RULE-SAFE-FALL
          COMPUTE WS-AMOUNT = RULE-FALL-FACTOR * (WS-FALL - RULE-SAFE-FALL)
@@ -186,3 +221,23 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM MOVE-ABILITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-SPRINT.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
+*> sprinting flag, action 2 clears it, any other action is ignored.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     IF PSB-ACTION = 1
+         MOVE 1 TO PL-SPRINTING(CN-PLAYER(L-ID))
+     END-IF
+     IF PSB-ACTION = 2
+         MOVE 0 TO PL-SPRINTING(CN-PLAYER(L-ID))
+     END-IF
+     GOBACK.
+ END PROGRAM MOVE-SPRINT.

@@ -163,7 +163,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INV-HELD.
 *> USING connection id, slot (BINARY-LONG): Set Carried Item (05c 0x36): a hotbar slot 0 to 8 becomes
-*> the held slot; any other value is ignored.
+*> the held slot; any other value is ignored. A change of held slot stops eating (standin §11.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -172,6 +172,9 @@
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-SLOT.
      IF L-SLOT >= 0 AND L-SLOT <= 8
+         IF L-SLOT NOT = PL-HELD(CN-PLAYER(L-ID))
+             CALL "HUNGER-CANCEL" USING CN-PLAYER(L-ID)
+         END-IF
          MOVE L-SLOT TO PL-HELD(CN-PLAYER(L-ID))
      END-IF
      GOBACK.

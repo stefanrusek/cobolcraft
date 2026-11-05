@@ -10,7 +10,10 @@
     05 PSB-YAW                FLOAT-SHORT.
     05 PSB-PITCH              FLOAT-SHORT.
 *>  0x01 Attack: the target entity id (VarInt). 0x0C Client Command uses PSB-ACTION (VarInt action).
+*>  0x2A Player Command: the entity id (VarInt) in PSB-TARGET, the action (VarInt) in PSB-ACTION and
+*>  the data (VarInt) in PSB-DATA.
     05 PSB-TARGET             BINARY-LONG.
+    05 PSB-DATA               BINARY-LONG.
 *>  0x0B Chunk Batch Received
     05 PSB-CHUNK-RATE         FLOAT-SHORT.
 *>  0x0E Client Information (03 layout; only the view distance is kept)
@@ -22,7 +25,8 @@
     05 PSB-FLAGS              BINARY-LONG.
 *>  0x29 Player Action: action (VarInt), block position, face (UByte), sequence (VarInt).
 *>  0x42 Use Item On: hand (VarInt), block position, face (VarInt), cursor, inside, world border hit,
-*>  sequence. The face is reduced modulo 6 (05c: the decoders wrap).
+*>  sequence. The face is reduced modulo 6 (05c: the decoders wrap). 0x43 Use Item: hand (VarInt),
+*>  sequence (VarInt), yaw and pitch (Floats, in PSB-YAW and PSB-PITCH).
     05 PSB-ACTION             BINARY-LONG.
     05 PSB-HAND               BINARY-LONG.
     05 PSB-BX                 BINARY-LONG.

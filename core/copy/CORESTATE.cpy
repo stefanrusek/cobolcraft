@@ -104,10 +104,15 @@
        10 PL-FLYING          PIC 9.
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
-       10 PL-EXHAUSTION      FLOAT-SHORT.
+*>     Hunger (standin §11; core/src/hunger.cob): exhaustion (§11.2, not saved), the sprinting flag of
+*>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
+*>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).
+       10 PL-EXHAUSTION      FLOAT-LONG.
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
+       10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.
+       10 PL-STARVE-TICKS    BINARY-LONG.
        10 PL-OPERATOR        PIC 9.
        10 PL-HELD            BINARY-LONG.        *> hotbar slot 0 to 8
        10 PL-SLOT OCCURS 36 TIMES.               *> inventory slot n is PL-SLOT(n + 1)

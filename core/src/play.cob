@@ -33,7 +33,9 @@
 *> Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
 *> Click and Set Creative Mode Slot go to INV-HELD, INV-CLICK and INV-CREATIVE-SET
 *> (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
-*> (core/src/health.cob). A Cookie Response is
+*> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
+*> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob).
+*> A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
 *> the 09 §3 inventory that later phases handle (movement, actions, chat, containers, ...) are
 *> discarded unread, so a CobolCraft client is not dropped while those phases are developed; any
@@ -151,9 +153,9 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x07, 0x0F, 0x27, 0x2A, 0x32, 0x43).
+*> phase handles it (0x07, 0x0F, 0x27, 0x32).
  01 WS-LATER               PIC X(69) VALUE
-     "000000010000000100000000000000000000000100100000001000000000000000010".
+     "000000010000000100000000000000000000000100000000001000000000000000000".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -203,6 +205,8 @@
              CALL "MOVE-PLAYER" USING L-ID L-PACKET-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 41 AND (PSB-ACTION = 4 OR PSB-ACTION = 5)
              CALL "GI-THROW" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 41 AND PSB-ACTION = 6
+             CALL "HUNGER-CANCEL" USING WS-ROW
          WHEN L-PACKET-ID = 41
              CALL "BLOCK-ACTION" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 66
@@ -219,6 +223,10 @@
              CALL "HEALTH-ATTACK" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 12
              CALL "HEALTH-RESPAWN" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 42
+             CALL "MOVE-SPRINT" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 67
+             CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      GOBACK.
  END PROGRAM PLAY-PACKET.
@@ -241,7 +249,8 @@
 *> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
 *> of 256 raw bytes, LastSeenMessagesUpdate: VarInt offset, FixedBitSet(20), Byte checksum); the
 *> signature and the last seen messages are not checked (09 §1: secure chat is not enforced).
-*> Attack 0x01 (VarInt entity id); Client Command 0x0C (VarInt action).
+*> Attack 0x01 (VarInt entity id); Client Command 0x0C (VarInt action); Player Command 0x2A (VarInt
+*> entity id, VarInt action, VarInt data); Use Item 0x43 (VarInt hand, VarInt sequence, two Floats).
 *> Outcome 1 when a read fails or bytes are left over.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -353,6 +362,15 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
          WHEN 12
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
+         WHEN 42
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-DATA
+         WHEN 67
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-HAND
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-SEQUENCE
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
          WHEN 9
              CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
                  PSB-MESSAGE-LENGTH

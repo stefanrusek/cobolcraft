@@ -1,4 +1,4 @@
-*> Player rules (standin-content §10, §11.1), transcribed. Tested by core/tests/test_content_tables.cob.
+*> Player rules (standin-content §10, §11), transcribed. Tested by core/tests/test_content_tables.cob.
 *> Maximum health (§10.1): health is a whole number 0..30; new and respawned players have 30.
  78 RULE-MAX-HEALTH           VALUE 30.
 *> Maximum food level (§11.1): food is a whole number 0..24; new and respawned players have 24.
@@ -99,3 +99,20 @@
  78 RULE-DEATH-SPREAD-MILLI   VALUE 20.
  78 RULE-DEATH-LIFT-MILLI     VALUE 200.
  78 RULE-DEATH-DELAY          VALUE 30.
+*> Hunger and eating (§11.2, §11.3, §11.6; US8). Exhaustion amounts in THOUSANDTHS. The movement
+*> speeds of §11.4 are the client's and are not core rules.
+*> Exhaustion (§11.2): every tick 0.005; per block of horizontal distance 0.02 walking and 0.12
+*> running (sprinting), neither while flying; per jump 0.3; per hit 0.15; per completed survival
+*> break 0.025 (recovery's 2.5 is RULE-RECOVER-EXHAUST-MILLI).
+ 78 RULE-EXHAUST-TICK-MILLI   VALUE 5.
+ 78 RULE-EXHAUST-WALK-MILLI   VALUE 20.
+ 78 RULE-EXHAUST-SPRINT-MILLI VALUE 120.
+ 78 RULE-EXHAUST-JUMP-MILLI   VALUE 300.
+ 78 RULE-EXHAUST-ATTACK-MILLI VALUE 150.
+ 78 RULE-EXHAUST-BREAK-MILLI  VALUE 25.
+*> Food point removal (§11.3): whenever exhaustion is at least 5.0, 5.0 is subtracted and food
+*> (if above 0) decreases by 1.
+ 78 RULE-EXHAUST-FOOD-MILLI   VALUE 5000.
+*> Eating (§11.6): the eating time is 30 ticks; completion sends Entity Event 9 (eating finished).
+ 78 RULE-EAT-TICKS            VALUE 30.
+ 78 RULE-EAT-EVENT            VALUE 9.

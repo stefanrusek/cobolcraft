@@ -1,0 +1,64 @@
+*> Implementation test of the sprinting flag (tasks T506; data-model §6; standin-content §11.2;
+*> docs/protocol/09-cobolcraft-profile.md §3.3 rows 0x2A): Player Command 1 START_SPRINTING sets
+*> the player's sprinting flag, 2 STOP_SPRINTING clears it, another action leaves it; death clears it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SPRINTING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY RULES.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE "N" TO TL-MODE
+
+     MOVE "test sprinting a joined player is not sprinting" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK
+
+     MOVE "test sprinting Player Command 1 START_SPRINTING sets the sprinting flag" TO TL-CASE
+     MOVE 1 TO WS-ACTION
+     CALL "TEST-PLAYER-COMMAND" USING WS-ALICE WS-ACTION
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK
+
+     MOVE "test sprinting another Player Command action (3, leave bed) leaves the flag" TO TL-CASE
+     MOVE 3 TO WS-ACTION
+     CALL "TEST-PLAYER-COMMAND" USING WS-ALICE WS-ACTION
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK
+
+     MOVE "test sprinting Player Command 2 STOP_SPRINTING clears the sprinting flag" TO TL-CASE
+     MOVE 2 TO WS-ACTION
+     CALL "TEST-PLAYER-COMMAND" USING WS-ALICE WS-ACTION
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK
+
+     MOVE "test sprinting death clears the sprinting flag (standin §11.2)" TO TL-CASE
+     MOVE 1 TO WS-ACTION
+     CALL "TEST-PLAYER-COMMAND" USING WS-ALICE WS-ACTION
+     MOVE CAUSE-COMMAND TO WS-CAUSE
+     CALL "HEALTH-DIE" USING WS-ROW WS-CAUSE WS-NONE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK
+     STOP RUN.
+
+ CHECK.
+     MOVE PL-SPRINTING(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-SPRINTING.
+
+ COPY CORETEST.

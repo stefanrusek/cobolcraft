@@ -19,11 +19,13 @@
 *> target out of reach is not hit. (Mobs are US9.)
 *>
 *> Recovery (HEALTH-TICK, step 4 of §9.5): every tick the hurt cooldown of each alive player
-*> decreases; while an alive survival player's food is at least 20 and health below 30, every 50th
-*> consecutive tick gives 1 health and 2.5 exhaustion and sends Set Health (§10.5).
+*> decreases, then the hunger rules run (HUNGER-TICK, core/src/hunger.cob: eating, exhaustion from
+*> time, starvation); while an alive survival player's food is at least 20 and health below 30,
+*> every 50th consecutive tick gives 1 health, sends Set Health and adds 2.5 exhaustion (§10.5).
+*> A hit adds 0.15 exhaustion to the attacker (§11.2).
 *>
 *> Death (HEALTH-DIE, §10.6): the player is dead (PS-DEAD, PL-DEATH-CAUSE); a survival break in
-*> progress ends; the player is sent Player Combat Kill and every player in play, in any dimension,
+*> progress ends, eating stops and the sprinting flag and starvation count are cleared; the player is sent Player Combat Kill and every player in play, in any dimension,
 *> System Chat with the death message (§10.7, a `translate` component with literal arguments);
 *> every non-empty inventory slot s (ascending) becomes a ground item of its whole stack at the feet
 *> + (0, 0.5, 0) with motion (((s mod 6) x 2 - 5) x 0.02, 0.2, (((s div 6) mod 6) x 2 - 5) x 0.02)
@@ -266,6 +268,8 @@
          MOVE PL-NAME-LENGTH(L-ATTACKER) TO PL-KILLER-LENGTH(WS-ROW)
      END-IF
      CALL "BLOCK-BREAK-END" USING WS-ROW
+     CALL "HUNGER-CANCEL" USING WS-ROW
+     MOVE 0 TO PL-SPRINTING(WS-ROW) PL-STARVE-TICKS(WS-ROW)
      CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
      CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
          PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
@@ -382,6 +386,7 @@
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-REACH               FLOAT-LONG.
+ 01 WS-EXHAUST             FLOAT-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  COPY PLAYPKT.
@@ -425,6 +430,8 @@
      IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ > WS-REACH * WS-REACH
          GOBACK
      END-IF
+     COMPUTE WS-EXHAUST = RULE-EXHAUST-ATTACK-MILLI / 1000
+     CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
      IF CS-PLAYER-COMBAT NOT = 1
          GOBACK
      END-IF
@@ -465,7 +472,7 @@
      MOVE RULE-MAX-FOOD TO PL-FOOD(WS-ROW)
      MOVE 0 TO PL-EXHAUSTION(WS-ROW) PL-HURT-COOLDOWN(WS-ROW) PL-RECOVER-TICKS(WS-ROW)
          PL-DEATH-CAUSE(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PL-SPRINTING(WS-ROW)
-         PL-EATING-ITEM(WS-ROW) PL-FLYING(WS-ROW)
+         PL-EATING-ITEM(WS-ROW) PL-FLYING(WS-ROW) PL-STARVE-TICKS(WS-ROW)
      MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
      MOVE DIM-MAIN TO PL-DIM(WS-ROW)
      MOVE CW-SPAWN-X TO PL-X(WS-ROW)
@@ -499,22 +506,26 @@
  COPY CORESTATE.
  COPY RULES.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-EXHAUST             FLOAT-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
          IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
              IF PL-HURT-COOLDOWN(WS-ROW) > 0
                  SUBTRACT 1 FROM PL-HURT-COOLDOWN(WS-ROW)
              END-IF
+             CALL "HUNGER-TICK" USING WS-ROW
+         END-IF
+         IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
              IF PL-MODE(WS-ROW) = 0 AND PL-FOOD(WS-ROW) >= RULE-RECOVER-FOOD
                      AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
                  ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
                  IF PL-RECOVER-TICKS(WS-ROW) >= RULE-RECOVER-TICKS
                      COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MIN(RULE-MAX-HEALTH,
                          PL-HEALTH(WS-ROW) + RULE-RECOVER-AMOUNT)
-                     COMPUTE PL-EXHAUSTION(WS-ROW) = PL-EXHAUSTION(WS-ROW)
-                         + RULE-RECOVER-EXHAUST-MILLI / 1000
                      MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
                      CALL "HEALTH-SEND" USING WS-ROW
+                     COMPUTE WS-EXHAUST = RULE-RECOVER-EXHAUST-MILLI / 1000
+                     CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
                  END-IF
              ELSE
                  MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)

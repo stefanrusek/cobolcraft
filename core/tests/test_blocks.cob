@@ -69,8 +69,8 @@
      MOVE "4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test blocks Player Action 6 (release use item, US8) is not answered here" TO TL-CASE
-     MOVE 6 TO WS-NUM
+     MOVE "test blocks Player Action 7 (swap item with offhand) is not answered here" TO TL-CASE
+     MOVE 7 TO WS-NUM
      MOVE 3 TO WS-SEQ
      CALL "TEST-ACTION" USING WS-CONN WS-NUM WS-X WS-Y WS-Z WS-FACE WS-SEQ
      PERFORM LIST-AND-STATE

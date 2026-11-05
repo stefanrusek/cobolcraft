@@ -28,7 +28,8 @@
 *> without a break time (void, and the baseplate, which nobody may break) is never broken: Block
 *> Update of its real state to the player. Each answered action and every Use Item On end with Block
 *> Changed Ack of their sequence. A survival break leaves the block's item on the ground
-*> (GI-BLOCK-YIELD, core/src/ground-items.cob; standin §1.3); a creative break leaves nothing.
+*> (GI-BLOCK-YIELD, core/src/ground-items.cob; standin §1.3) and adds 0.025 exhaustion to the
+*> breaker (HUNGER-EXHAUST, standin §11.2); a creative break leaves nothing.
 *>
 *> Break progress (BLOCKS-TICK, every tick): while a survival break lasts, the other players who see
 *> the block get Block Destruction (the breaker's entity id, the position, stage = elapsed ticks x 10
@@ -394,6 +395,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY RULES.
  COPY BLOCKS.
  COPY ITEMS.
  01 WS-ROW                 BINARY-LONG.
@@ -403,6 +405,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-MS                  BINARY-LONG.
  01 WS-VOID                BINARY-LONG VALUE 0.
+ 01 WS-EXHAUST             FLOAT-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -446,6 +449,8 @@
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
              COMPUTE WS-BLOCK = WS-BLOCK - 1
              CALL "GI-BLOCK-YIELD" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-BLOCK
+             COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
+             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          WHEN OTHER
              CALL "BLOCK-BREAK-END" USING WS-ROW
              CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ

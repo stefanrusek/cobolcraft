@@ -2,8 +2,8 @@
 *> RULES.cpy, DIMENSIONS.cpy, REGISTRY.cpy) against docs/design/standin-content.md: blocks §1.1, block
 *> states §1.2, items §2 with food values §11.5 and attack damage §10.4, entity types §3 and §12.1, the
 *> cobolcraft:main dimension and spawn point §5.1, §5.2, maximum health §10.1 and maximum food §11.1,
-*> the health and death rules of §10.2 to §10.6 (RULES.cpy) and the death messages of §10.7
-*> (MESSAGES.cpy),
+*> the health and death rules of §10.2 to §10.6 and the hunger rules of §11.2, §11.3 and §11.6
+*> (RULES.cpy), the death messages of §10.7 (MESSAGES.cpy),
 *> every synchronized registry entry of §4 (§4.2 to §4.8) and the starting inventory of §2 (US4-8).
 *> Each table row is rendered as one line of text, fields separated by single spaces, and compared
 *> with the row transcribed from the document.
@@ -547,6 +547,29 @@
      MOVE "cobolcraft.death.fall,v cobolcraft.death.mob.abend,v cobolcraft.death.player,v,a "
          & "cobolcraft.death.starvation,v cobolcraft.death.hail,v cobolcraft.death.command,v"
          TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   Hunger and eating (§11.2, §11.3, §11.6; US8), exhaustion in thousandths. The movement speeds
+*>   of §11.4 are the client's (client-surface.md §3) and are not core rules.
+     MOVE "test content tables exhaustion (§11.2: per tick 0.005, per block walking 0.02 and "
+         & "running 0.12, per jump 0.3, per hit 0.15, per survival break 0.025)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-EXHAUST-TICK-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-WALK-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-SPRINT-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-JUMP-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-ATTACK-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-BREAK-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE "5 20 120 300 150 25" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test content tables food point removal and eating (§11.3: 5.0 exhaustion per food "
+         & "point; §11.6: eating time 30 ticks, Entity Event 9 eating finished)" TO TL-CASE
+     PERFORM START-ROW
+     MOVE RULE-EXHAUST-FOOD-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EAT-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EAT-EVENT TO WS-NUM PERFORM ADD-NUM
+     MOVE "5000 30 9" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
 *>   Ground items (§9, §1.3), lengths and factors in thousandths.

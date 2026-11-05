@@ -5,7 +5,7 @@
 *> (test infrastructure): WIRESTATUS (handshake, status, login), WIRECONFIG (registries and
 *> configuration), WIRECHUNK (chunks), WIREPLAY (play join), WIREMOVE (movement and other
 *> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIRECHAT (chat), WIREHEALTH
-*> (health, damage, death and respawn).
+*> (health, damage, death and respawn), WIREHUNGER (hunger, eating and sprinting).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
  PROCEDURE DIVISION.
@@ -18,6 +18,7 @@
      CALL "WIRE-ITEM-CASES"
      CALL "WIRE-CHAT-CASES"
      CALL "WIRE-HEALTH-CASES"
+     CALL "WIRE-HUNGER-CASES"
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-SERVER.
 
@@ -30,4 +31,5 @@
  COPY WIREITEM.
  COPY WIRECHAT.
  COPY WIREHEALTH.
+ COPY WIREHUNGER.
  COPY CORETEST.

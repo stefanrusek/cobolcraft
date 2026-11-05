@@ -731,28 +731,28 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: the standin-content §11 rules. **Independent Test**: `make gate-core` with every `acc_us8_*.cob` passing.
 
-- [ ] T502 [US8-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the remaining hunger constants of standin-content §11 (the maximum food level is in US2) (test first, constitution 5.1 rule 3)
-- [ ] T503 [US8-core] Add the remaining §11 hunger constants to `core/copy/RULES.cpy`
-- [ ] T504 [P] [US8-core] Write `contract_wire_server.cob` cases: Entity Event (eating finished) equals its fixture; Use Item and Player Action release-use-item decode
-- [ ] T505 [P] [US8-core] Write `contract_wire_server.cob` cases: Player Command start sprinting and stop sprinting decode
-- [ ] T506 [P] [US8-core] Write implementation test `core/tests/test_sprinting.cob`: Player Command start sprinting sets the player's sprinting flag and stop sprinting clears it (data-model §6)
-- [ ] T507 [US8-core] Implement Player Command start/stop sprinting (sprinting flag) in `core/src/movement.cob`
-- [ ] T508 [P] [US8-core] Write acceptance test `core/tests/acc_us8_food_falls.cob`: case "acceptance US8-2 given a survival player when time passes and they walk, run (sprinting flag set), jump, attack or break blocks then their food level falls at the §11 rates" (one case per activity; running falls faster than walking)
-- [ ] T509 [US8-core] Implement exhaustion accumulation and food decrease over time in `core/src/hunger.cob`
-- [ ] T510 [US8-core] Add the exhaustion call for walking and jumping in `core/src/movement.cob`
-- [ ] T511 [US8-core] Add the sprint exhaustion rate of §11 for movement while the sprinting flag is set in `core/src/movement.cob`
-- [ ] T512 [US8-core] Add the exhaustion call for attacking in `core/src/health.cob`
-- [ ] T513 [US8-core] Add the exhaustion call for breaking blocks in `core/src/blocks.cob`
-- [ ] T514 [P] [US8-core] Write acceptance test `core/tests/acc_us8_eat.cob`: case "acceptance US8-3 given food below full and a held food item when eat is held for the eating time then one item is used and food rises by its value up to the maximum"; case "acceptance US8-4 given full food then nothing is eaten"; case "US8 edge released before the eating time then nothing is eaten"
-- [ ] T515 [US8-core] Implement eating completion (Use Item start, after the eating time one item removed and food raised, Entity Event, Set Health, slot update) in `core/src/hunger.cob`
-- [ ] T516 [US8-core] Implement eating cancellation on release-use-item in `core/src/hunger.cob`
-- [ ] T517 [US8-core] Implement the full-food refusal in `core/src/hunger.cob`
-- [ ] T518 [P] [US8-core] Write acceptance test `core/tests/acc_us8_starvation.cob`: case "acceptance US8-5 given food at zero when time passes then starvation damage of §10/§11 is taken" (also the starvation cause of US7-2)
-- [ ] T519 [US8-core] Implement starvation damage through the damage path in `core/src/hunger.cob`
-- [ ] T520 [P] [US8-core] Write acceptance test `core/tests/acc_us8_creative.cob`: case "acceptance US8-6 given creative when time passes then food does not change"
-- [ ] T521 [US8-core] Implement the creative hunger exemption in `core/src/hunger.cob`
-- [ ] T522 [US8-core] Extend the core implementation tests to 100 % coverage of the US8 changes
-- [ ] T523 Gate: run `make gate-core` and record the command and its real output
+- [X] T502 [US8-core] Extend implementation test `core/tests/test_content_tables.cob` to assert the remaining hunger constants of standin-content §11 (the maximum food level is in US2) (test first, constitution 5.1 rule 3)
+- [X] T503 [US8-core] Add the remaining §11 hunger constants to `core/copy/RULES.cpy`
+- [X] T504 [P] [US8-core] Write `contract_wire_server.cob` cases: Entity Event (eating finished) equals its fixture; Use Item and Player Action release-use-item decode
+- [X] T505 [P] [US8-core] Write `contract_wire_server.cob` cases: Player Command start sprinting and stop sprinting decode
+- [X] T506 [P] [US8-core] Write implementation test `core/tests/test_sprinting.cob`: Player Command start sprinting sets the player's sprinting flag and stop sprinting clears it (data-model §6)
+- [X] T507 [US8-core] Implement Player Command start/stop sprinting (sprinting flag) in `core/src/movement.cob`
+- [X] T508 [P] [US8-core] Write acceptance test `core/tests/acc_us8_food_falls.cob`: case "acceptance US8-2 given a survival player when time passes and they walk, run (sprinting flag set), jump, attack or break blocks then their food level falls at the §11 rates" (one case per activity; running falls faster than walking)
+- [X] T509 [US8-core] Implement exhaustion accumulation and food decrease over time in `core/src/hunger.cob`
+- [X] T510 [US8-core] Add the exhaustion call for walking and jumping in `core/src/movement.cob`
+- [X] T511 [US8-core] Add the sprint exhaustion rate of §11 for movement while the sprinting flag is set in `core/src/movement.cob`
+- [X] T512 [US8-core] Add the exhaustion call for attacking in `core/src/health.cob`
+- [X] T513 [US8-core] Add the exhaustion call for breaking blocks in `core/src/blocks.cob`
+- [X] T514 [P] [US8-core] Write acceptance test `core/tests/acc_us8_eat.cob`: case "acceptance US8-3 given food below full and a held food item when eat is held for the eating time then one item is used and food rises by its value up to the maximum"; case "acceptance US8-4 given full food then nothing is eaten"; case "US8 edge released before the eating time then nothing is eaten"
+- [X] T515 [US8-core] Implement eating completion (Use Item start, after the eating time one item removed and food raised, Entity Event, Set Health, slot update) in `core/src/hunger.cob`
+- [X] T516 [US8-core] Implement eating cancellation on release-use-item in `core/src/hunger.cob`
+- [X] T517 [US8-core] Implement the full-food refusal in `core/src/hunger.cob`
+- [X] T518 [P] [US8-core] Write acceptance test `core/tests/acc_us8_starvation.cob`: case "acceptance US8-5 given food at zero when time passes then starvation damage of §10/§11 is taken" (also the starvation cause of US7-2)
+- [X] T519 [US8-core] Implement starvation damage through the damage path in `core/src/hunger.cob`
+- [X] T520 [P] [US8-core] Write acceptance test `core/tests/acc_us8_creative.cob`: case "acceptance US8-6 given creative when time passes then food does not change"
+- [X] T521 [US8-core] Implement the creative hunger exemption in `core/src/hunger.cob`
+- [X] T522 [US8-core] Extend the core implementation tests to 100 % coverage of the US8 changes
+- [X] T523 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 19: US9-core — mobs
 
