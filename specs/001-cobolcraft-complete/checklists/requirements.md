@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] No open clarification markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,9 +31,8 @@
 
 ## Notes
 
-- Three [NEEDS CLARIFICATION] markers remain, for the operator: FR-010 (player identity and authentication),
-  FR-011 (supported platforms), FR-012 (failure handling beyond what the reference documents define).
-  They must be resolved via `/speckit-clarify` before `/speckit-tasks` (constitution 1.3).
+- The three open questions from specify (FR-010 identity, FR-011 platforms, FR-012 failure handling) were
+  resolved in clarify on 2026-11-05; see spec.md, Clarifications.
 - "No implementation details": FR-006 (Vulkan only) and the reference-document requirements (FR-001 to FR-004)
   are kept deliberately. The input states them as binding constraints, and they are reference-artifact
   use statements under Principle 2.6. Constitution-level technology (COBOL, C shim) is left to the plan and
