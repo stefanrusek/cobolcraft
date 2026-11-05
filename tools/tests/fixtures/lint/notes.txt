@@ -1,0 +1,1 @@
+Lint fixture: a file type the lint does not check.

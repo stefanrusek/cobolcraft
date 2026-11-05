@@ -1,0 +1,11 @@
+        -:    0:Source:copy/TABLES.cpy
+        -:    0:Graph:/b/core/obj/world.gcno
+        -:    0:Data:/b/core/obj/world.gcda
+        -:    0:Runs:1
+       12:    1:     MOVE 1 TO T-A
+    #####:    2:     MOVE 2 TO T-B
+        -:    0:Source:/repo/core/src/world.cob
+        -:    0:Graph:/b/core/obj/world.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+    =====:    4:     DISPLAY "EXCEPTIONAL"

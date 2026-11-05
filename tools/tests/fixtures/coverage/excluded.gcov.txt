@@ -1,0 +1,20 @@
+        -:    0:Source:tests/test_api.cob
+        -:    0:Graph:/b/core/tests/test_api.gcno
+        -:    0:Data:/b/core/tests/test_api.gcda
+        -:    0:Runs:1
+    #####:    3:     DISPLAY "UNUSED TEST LINE"
+        -:    0:Source:/repo/tools/testlib/testassert.cob
+        -:    0:Graph:/b/core/tests/testassert.gcno
+        -:    0:Data:/b/core/tests/testassert.gcda
+        -:    0:Runs:1
+    #####:   20:     DISPLAY "UNUSED TOOL LINE"
+        -:    0:Source:/repo/specs/001-cobolcraft-complete/spikes/spike_coverage.cob
+        -:    0:Graph:/b/core/obj/spike.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+    #####:   10:     DISPLAY "UNUSED SPIKE LINE"
+        -:    0:Source:/repo/contract/copy/PROTO.cpy
+        -:    0:Graph:/b/core/obj/api.gcno
+        -:    0:Data:/b/core/obj/api.gcda
+        -:    0:Runs:1
+    #####:    5:     MOVE 0 TO P-LEN
