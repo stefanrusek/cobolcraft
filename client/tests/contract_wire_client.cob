@@ -727,6 +727,12 @@
          & "play-c2s-39-set-creative-mode-slot.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-39-set-creative-mode-slot.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CONTAINER-CLOSE" USING PB-BUFFER
+     MOVE "contract wire client Container Close (container 0) equals "
+         & "play-c2s-13-container-close.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-13-container-close.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 
 *>   ---- play, breaking, placing, hotbar and inventory (US4): decoding (the spawn chunk (0, 0)
 *>   is still in the replica) ----

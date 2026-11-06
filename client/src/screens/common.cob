@@ -19,7 +19,8 @@
 *> status again; chat opens with an empty line, scrolled to the newest message; the world list is
 *> read from saves/ again, nothing selected; the create-world screen starts with the default name
 *> and survival; the open-to-others screen starts with survival guests and no guest operators; the
-*> pack screen lists resourcepacks/ again (LOCAL-PACKS-SCAN), nothing selected.
+*> pack screen lists resourcepacks/ again (LOCAL-PACKS-SCAN), nothing selected. Leaving the
+*> inventory screen in play closes it (INVENTORY-CLOSE: the carried stack back, Container Close).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -35,6 +36,10 @@
  COPY CLSTATE.
  01 L-SCREEN               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-SCREEN.
+     IF SM-SCREEN = SCR-INVENTORY AND L-SCREEN NOT = SCR-INVENTORY
+             AND CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "INVENTORY-CLOSE" USING CLIENT-STATE
+     END-IF
      MOVE L-SCREEN TO SM-SCREEN
      MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT
      IF L-SCREEN = SCR-SERVER-LIST

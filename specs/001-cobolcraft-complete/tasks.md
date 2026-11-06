@@ -1517,7 +1517,7 @@ the window drops everything carried. The new rows in `docs/design/standin-conten
   `core/tests/test_world_path_space.cob` failed before the fix (exit 256) and passes after it; `make gate-core`, `gate-server`
   and `gate-client` pass. Also: the root `Makefile` clears package-folder `.gcda` files in `coverage` and `gate-<pkg>`, and
   `tools/package.mk` makes `tests/*.cpy` a dependency of the test programs
-- [ ] T1085 [core] Tests in `core/tests/` (Container Click, container 0, survival and creative), each seen failing first:
+- [X] T1085 [core] Tests in `core/tests/` (Container Click, container 0, survival and creative), each seen failing first:
   - mode 4 THROW button 0 on a slot holding 5 throws one item (slot left with 4; one ground item spawned as standin §9.1 Throw);
   - button 1 throws the whole slot;
   - a THROW on an empty slot does nothing;
@@ -1525,19 +1525,24 @@ the window drops everything carried. The new rows in `docs/design/standin-conten
   - button 1 throws one and leaves 6 carried;
   - slot -999 with an empty cursor does nothing;
   - Close Container while carrying puts the stack back into the inventory, and with a full inventory throws the rest.
-- [ ] T1086 [core] Implement T1085 in `core/src/inventory.cob` (INV-CLICK) using the throw path of Player Action 4/5.
+- [X] T1086 [core] Implement T1085 in `core/src/inventory.cob` (INV-CLICK) using the throw path of Player Action 4/5.
   Update the header comment (the "-999 changes nothing" and "4 THROW: nothing changes" lines) and
   `contracts/` text that repeats them. `make gate-core` passes
-- [ ] T1087 [client] Tests in `client/tests/` for the inventory screen, each seen failing first:
+- [X] T1087 [client] Tests in `client/tests/` for the inventory screen, each seen failing first:
   - Q over a slot sends Container Click mode 4 button 0, and Ctrl+Q sends button 1;
   - releasing a left drag, or left-clicking, outside the window with a carried stack sends mode 0 slot -999 button 0;
   - a right click outside sends button 1;
   - the client's predicted slot and cursor match the server rules of T1085.
-- [ ] T1088 [client] Implement T1087 in `client/src/screens/inventory.cob` (and its input mapping). Update the client-surface
+- [X] T1088 [client] Implement T1087 in `client/src/screens/inventory.cob` (and its input mapping). Update the client-surface
   controls text and README controls table ("Throw one / throw the stack": also over a slot in the inventory screen;
   dragging out of the window throws what you carry). `make gate-client` passes
-- [ ] T1089 [convergence] One case in `tests/convergence/` in which a client presses Q over an inventory slot and drags a
-  stack out of the window, and a second client sees the ground items appear. `make gate` passes
+- [X] T1089 [convergence] One case in `tests/convergence/` in which a client presses Q over an inventory slot and drags a
+  stack out of the window, and a second client sees the ground items appear. `make gate` passes.
+  Done: `core/tests/test_inventory_throw.cob`, `client/tests/test_inventory_throw.cob` and
+  `tests/convergence/acc_us5_inventory_throw.cob` each failed before their implementation. The core decodes Container
+  Close 0x13 (09 §3.2 row and `play-c2s-13-container-close.hex` added); the client sends it whenever the inventory
+  screen is left in play. A creative player's outside throw is deferred to CC-0006 (the creative cursor is the
+  client's alone)
 
 ## Dependencies & Execution Order
 

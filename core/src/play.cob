@@ -33,8 +33,8 @@
 *> to MOVE-PLAYER and Player Abilities to MOVE-ABILITIES (core/src/movement.cob); Player Action 4
 *> and 5 (throws) go to GI-THROW (core/src/ground-items.cob), the other actions to BLOCK-ACTION, and
 *> Use Item On to BLOCK-USE-ON (core/src/blocks.cob); Set Carried Item, Container
-*> Click and Set Creative Mode Slot go to INV-HELD, INV-CLICK and INV-CREATIVE-SET
-*> (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
+*> Click, Container Close and Set Creative Mode Slot go to INV-HELD, INV-CLICK, INV-CLOSE and
+*> INV-CREATIVE-SET (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
 *> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob);
 *> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
@@ -230,6 +230,8 @@
              CALL "INV-HELD" USING L-ID PSB-SLOT
          WHEN L-PACKET-ID = 18
              CALL "INV-CLICK" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 19
+             CALL "INV-CLOSE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 57
              CALL "INV-CREATIVE-SET" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 9
@@ -265,7 +267,8 @@
 *> Use Item On 0x42 (VarInt hand, Position, VarInt face, three Floats, two Booleans, VarInt
 *> sequence); Set Carried Item 0x36 (Short); Container Click 0x12 (VarInt container, VarInt state id,
 *> Short slot, Byte button, VarInt click type, a map of at most 128 Short slots to HashedStacks, the
-*> carried HashedStack); Set Creative Mode Slot 0x39 (Short, ItemStack). A HashedStack is a Boolean
+*> carried HashedStack); Container Close 0x13 (VarInt container); Set Creative Mode Slot 0x39 (Short,
+*> ItemStack). A HashedStack is a Boolean
 *> present, then VarInt item, VarInt count and the component counts (00 §12.4); CobolCraft items
 *> carry no data components (standin §2), so a stack with any is malformed, as for an ItemStack.
 *> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
@@ -378,6 +381,8 @@
                      PSB-CHANGED-AMOUNT(WS-I)
              END-PERFORM
              CALL "PLAY-GET-HASHED-STACK" USING PB-BUFFER PSB-CARRIED-ITEM PSB-CARRIED-COUNT
+         WHEN 19
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
          WHEN 57
              CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
              CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK

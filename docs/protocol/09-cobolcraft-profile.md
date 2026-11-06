@@ -171,7 +171,8 @@ Values that hold for every play row:
   is flat false; last death location absent; portal cooldown 0; sea level of the dimension.
 - **Inventory slots.** Container id 0 is the player's inventory. CobolCraft numbers its slots as the data
   model's Inventory: 0–8 hotbar, 9–35 main, 36 slots in all (Open question 5). This numbering is used by
-  Container Set Content, Container Set Slot, Set Player Inventory, Container Click and Set Creative Mode Slot.
+  Container Set Content, Container Set Slot, Set Player Inventory, Container Click, Container Close and Set
+  Creative Mode Slot.
   Item stacks never carry data components (standin §2).
 - **Entity ids** are per-run network ids (07 §9.2). The joining player's own entity id is the Login `Entity
   id`.
@@ -235,7 +236,8 @@ Values that hold for every play row:
 | C→S | 0x29 (41) | Player Action 3 `STOP_DESTROY_BLOCK` | Survival break finished after the standin §1.1 break time (divided by 4 with the matching tool, standin §2). | `play-c2s-29-player-action-stop-destroy.hex` |
 | C→S | 0x42 (66) | Use Item On | Hand 0 (main); the hit block, face (VarInt), cursor, inside, world border hit; sequence. Places the held block item (standin §1.3), toggles a `glowtube` with no block item held, or starts travel when the block is a `goto_pad` (§3.3). | `play-c2s-42-use-item-on.hex` |
 | C→S | 0x36 (54) | Set Carried Item | Hotbar slot 0–8 (Short). | `play-c2s-36-set-carried-item.hex` |
-| C→S | 0x12 (18) | Container Click | Container 0, state id, slot 0–35 (−999 outside), button, click type, changed slots, carried item (HashedStack, no components). | `play-c2s-12-container-click.hex` |
+| C→S | 0x12 (18) | Container Click | Container 0, state id, slot 0–35 (−999 outside), button, click type, changed slots, carried item (HashedStack, no components). THROW (4) on a slot and PICKUP (0) at −999 throw items (standin §9.1). | `play-c2s-12-container-click.hex` |
+| C→S | 0x13 (19) | Container Close | Container 0, sent when the inventory screen is left; the carried stack goes back into the inventory, the rest is thrown (standin §9.1). | `play-c2s-13-container-close.hex` |
 | C→S | 0x39 (57) | Set Creative Mode Slot | Slot 0–35 and stack; acted on only for a creative player. | `play-c2s-39-set-creative-mode-slot.hex` |
 | C→S | 0x09 (9) | Chat | Message (≤ 256 characters); timestamp = the client's clock in ms (not used by the server); salt 0; signature absent; last seen messages: offset 0, acknowledged `00 00 00`, checksum 0 (§1). | `play-c2s-09-chat.hex` |
 

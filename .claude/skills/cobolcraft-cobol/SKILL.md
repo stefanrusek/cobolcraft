@@ -223,6 +223,11 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   run against `tools/testsrv/testsrv.py` (`TEST-TESTSRV-START`/`-STOP` in CLTEST.cpy); use
   `127.0.0.1` URLs. The UI atlas has an icon band (`UA-ICON-Y`) between the font and the swatch
   row, so UI tests' V coordinates depend on `CL-MAX-ICONS`.
+- **Inventory-screen throws** (Phase 49; standin §9.1): core `INV-CLICK` throws on THROW (4) and on PICKUP at
+  slot -999, `INV-CLOSE` (Container Close 0x13) returns the cursor stack, both through `GI-THROW-STACK`
+  (ground-items.cob). The client's `INVENTORY-INPUT` (Q over a slot, a button released outside the window:
+  `IN-BUTTON-RELEASED`) and `INVENTORY-CLOSE` (called by `SCREEN-OPEN` when the inventory screen is left in play,
+  so every close sends 0x13). `TEST-PLAY` leaves `IN-CAPTURED` 1: set it to 0 before cursor events on a screen.
 - **Moving a table entry's bytes into a `BINARY-LONG`** with `MOVE area(pos:4) TO n` converts it as
   display digits: move the whole entry into a group with the same layout and read the field.
 - **Server console input** (`server/src/console.cob`): `TCP-POLL` asks `cc_net_poll` about standard input

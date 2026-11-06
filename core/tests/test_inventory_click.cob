@@ -74,8 +74,8 @@
      PERFORM CHECK
 
      MOVE "test inventory click PICKUP left: an empty cursor takes a slot, a cursor tops up a "
-         & "slot of its item; a click outside the window (-999) and a button other than 0 and 1 "
-         & "change nothing" TO TL-CASE
+         & "slot of its item; a click outside the window (-999) with an empty cursor and a "
+         & "button other than 0 and 1 change nothing" TO TL-CASE
      MOVE 20 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 0 TO WS-C-SLOT
@@ -129,7 +129,8 @@
      MOVE 34 TO PL-SLOT-COUNT(WS-ROW, 11)
 
      MOVE "test inventory click SWAP exchanges a slot with the hotbar slot of the button (0 to "
-         & "8; others nothing); CLONE in survival and THROW change nothing" TO TL-CASE
+         & "8; others nothing); CLONE in survival and THROW with a button other than 0 and 1 "
+         & "change nothing" TO TL-CASE
      MOVE 2 TO WS-C-TYPE
      MOVE 1 TO WS-C-BUTTON
      MOVE 10 TO WS-C-SLOT
@@ -141,7 +142,7 @@
      MOVE 0 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 4 TO WS-C-TYPE
-     MOVE 0 TO WS-C-BUTTON
+     MOVE 2 TO WS-C-BUTTON
      PERFORM CLICK
      PERFORM SHOW
      MOVE "cursor 0x0 0:3x64 1:2x34 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "

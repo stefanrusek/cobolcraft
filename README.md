@@ -154,7 +154,8 @@ join. **Single-player** lists your worlds. **Resource Packs** opens the pack scr
 | Hotbar slot | 1 to 9, scroll wheel |
 | Inventory | E |
 | Crafting | C |
-| Throw one / throw the stack | Q / Ctrl+Q |
+| Throw one / throw the stack | Q / Ctrl+Q (in the inventory screen: from the slot under the pointer) |
+| Throw what you carry (inventory screen) | Drag or click it outside the window (right click: one item) |
 | Chat / command | T / `/` (opens chat with `/` typed) |
 | Pause menu | Escape |
 

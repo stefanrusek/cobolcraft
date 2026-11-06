@@ -11,14 +11,17 @@
 *>     empty slot, tops up a slot of the same item (the rest stays on the cursor) or is swapped with a
 *>     slot of another item. Button 1 (right): an empty cursor takes half the slot (rounded up); a
 *>     full cursor puts one item on an empty slot or a non-full slot of the same item, or is swapped
-*>     with a slot of another item. A click outside the window (slot -999) changes nothing: the
-*>     ground-item sources of standin §9.1 throw only with Player Action 4 and 5.
+*>     with a slot of another item. A click outside the window (slot -999) throws from the cursor
+*>     (standin §9.1 inventory-screen throw): button 0 the whole carried stack, button 1 one item;
+*>     with an empty cursor nothing changes.
 *>   1 QUICK_MOVE: the slot's stack moves to the other part of the inventory (hotbar to main, main to
 *>     hotbar), filling stacks of the same item first, then empty slots in slot order; what does not
 *>     fit stays.
 *>   2 SWAP: the slot is swapped with hotbar slot "button" (0 to 8).
 *>   3 CLONE: creative only, with an empty cursor: the cursor gets a full stack of the slot's item.
-*>   4 THROW: nothing changes (throws are Player Action 4 and 5 only, standin §9.1).
+*>   4 THROW: button 0 (Q) throws one item of the slot, button 1 (Ctrl+Q) the whole stack (standin
+*>     §9.1, as Player Action 5 and 4 do for the held slot); an empty slot or another button
+*>     changes nothing.
 *>   5 QUICK_CRAFT (drag): button mod 4 is the stage (0 start, 1 add a slot, 2 end), button / 4 the
 *>     kind (0 split the cursor evenly, 1 one item each, 2 a full stack each, creative only). Slots
 *>     can be added when empty or holding the cursor's item below its maximum; at the end each slot
@@ -29,6 +32,11 @@
 *> echoed with Container Set Slot (container 0, the new state id, the slot, its stack). When the
 *> click's state id was not the current one, or the client's predicted carried item or a predicted
 *> slot differs from the server's, Container Set Content (with the cursor) follows to resynchronise.
+*> A thrown stack becomes a ground item (GI-THROW-STACK, core/src/ground-items.cob) before the echoes.
+*>
+*> Container Close (container 0 only): the carried stack goes back into the inventory as INV-ADD
+*> places it, what does not fit is thrown (standin §9.1), the cursor is emptied, an unfinished drag
+*> ends, and the changed slots are echoed as for a click (the state id raised once).
 *>
 *> Entry points:
 *>   INV-ADD USING player row, item, count, left out          add (matching stacks, then empty slots)
@@ -37,6 +45,7 @@
 *>   INV-MOVE USING player row, from slot, to slot             move, merge or swap
 *>   INV-HELD USING connection id, slot                        Set Carried Item (0 to 8; others ignored)
 *>   INV-CLICK USING connection id, PLAY-SERVERBOUND           Container Click
+*>   INV-CLOSE USING connection id, PLAY-SERVERBOUND           Container Close
 *>   INV-CREATIVE-SET USING connection id, PLAY-SERVERBOUND    Set Creative Mode Slot
 *>   INV-SLOT-SEND USING connection id, slot                   Container Set Slot of one slot
 *>   CONTAINER-SET-SLOT-BUILD USING container, state id, slot, PB-ITEMSTACK, PB-BUFFER
@@ -470,7 +479,29 @@
                      AND PL-SLOT-COUNT(WS-ROW, WS-S) > 0
                  MOVE PL-SLOT-ITEM(WS-ROW, WS-S) TO PL-CARRIED-ITEM(WS-ROW)
                  MOVE IT-MAX-STACK(PL-CARRIED-ITEM(WS-ROW) + 1) TO PL-CARRIED-COUNT(WS-ROW)
+             WHEN PSB-CLICK-TYPE = 4 AND PSB-BUTTON >= 0 AND PSB-BUTTON <= 1
+                     AND PL-SLOT-COUNT(WS-ROW, WS-S) > 0
+                 MOVE PL-SLOT-ITEM(WS-ROW, WS-S) TO WS-ITEM
+                 MOVE 1 TO WS-COUNT
+                 IF PSB-BUTTON = 1
+                     MOVE PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-COUNT
+                 END-IF
+                 CALL "INV-REMOVE" USING WS-ROW WS-SLOT WS-COUNT
+                 CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-COUNT
          END-EVALUATE
+     END-IF
+     IF WS-SLOT = -999 AND PSB-CLICK-TYPE = 0 AND PSB-BUTTON >= 0 AND PSB-BUTTON <= 1
+             AND PL-CARRIED-COUNT(WS-ROW) > 0
+         MOVE PL-CARRIED-ITEM(WS-ROW) TO WS-ITEM
+         MOVE PL-CARRIED-COUNT(WS-ROW) TO WS-COUNT
+         IF PSB-BUTTON = 1
+             MOVE 1 TO WS-COUNT
+         END-IF
+         SUBTRACT WS-COUNT FROM PL-CARRIED-COUNT(WS-ROW)
+         IF PL-CARRIED-COUNT(WS-ROW) = 0
+             MOVE 0 TO PL-CARRIED-ITEM(WS-ROW)
+         END-IF
+         CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-COUNT
      END-IF
      IF PSB-CLICK-TYPE = 5
          CALL "INV-CLICK-DRAG" USING WS-ROW WS-SLOT PSB-BUTTON
@@ -510,6 +541,52 @@
      END-IF
      GOBACK.
  END PROGRAM INV-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INV-CLOSE.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Container Close): the close rule above. Another
+*> container than 0 is ignored.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-BEFORE.
+    05 WS-BEFORE-SLOT OCCURS 36 TIMES.
+       10 WS-BEFORE-ITEM   BINARY-LONG.
+       10 WS-BEFORE-COUNT  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     IF PSB-CONTAINER NOT = 0 OR PL-CARRIED-COUNT(WS-ROW) = 0
+         GOBACK
+     END-IF
+     MOVE 0 TO PL-DRAG-ACTIVE(WS-ROW) PL-DRAG-COUNT(WS-ROW)
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         MOVE PL-SLOT(WS-ROW, WS-S) TO WS-BEFORE-SLOT(WS-S)
+     END-PERFORM
+     MOVE PL-CARRIED-ITEM(WS-ROW) TO WS-ITEM
+     MOVE PL-CARRIED-COUNT(WS-ROW) TO WS-COUNT
+     MOVE 0 TO PL-CARRIED-ITEM(WS-ROW) PL-CARRIED-COUNT(WS-ROW)
+     CALL "INV-ADD" USING WS-ROW WS-ITEM WS-COUNT WS-LEFT
+     IF WS-LEFT > 0
+         CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-LEFT
+     END-IF
+     COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT(WS-ROW, WS-S) NOT = WS-BEFORE-SLOT(WS-S)
+             COMPUTE WS-SLOT = WS-S - 1
+             CALL "INV-SLOT-SEND" USING L-ID WS-SLOT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM INV-CLOSE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INV-CREATIVE-SET.

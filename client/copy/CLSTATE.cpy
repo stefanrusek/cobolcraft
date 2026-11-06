@@ -31,6 +31,8 @@
        10 IN-BUTTON-DOWN     PIC 9 OCCURS 3 TIMES.     *> button + 1
        10 IN-BUTTON-PRESSED-AREA.
           15 IN-BUTTON-PRESSED PIC 9 OCCURS 3 TIMES.
+       10 IN-BUTTON-RELEASED-AREA.
+          15 IN-BUTTON-RELEASED PIC 9 OCCURS 3 TIMES. *> went up during this frame
        10 IN-CLICK-X         FLOAT-SHORT.              *> window position of the last button down
        10 IN-CLICK-Y         FLOAT-SHORT.
        10 IN-CURSOR-X        FLOAT-SHORT.

@@ -10,7 +10,8 @@
 *> (x + 0.5, y + 0.25, z + 0.5), motion 0, pickup delay 6) and a throw (GI-THROW: Player Action 5
 *> DROP_ITEM one item, 4 DROP_ALL_ITEMS the whole stack, from the held hotbar slot, any game mode;
 *> an empty slot throws nothing; at the feet + (0, 1.3, 0) with the §9.1 thrown motion and pickup
-*> delay 30; the held slot is echoed with Container Set Slot). A new item enters the tracker: every
+*> delay 30; the held slot is echoed with Container Set Slot; GI-THROW-STACK, shared with the
+*> inventory-screen throws of INV-CLICK and INV-CLOSE). A new item enters the tracker: every
 *> player who sees it gets Add Entity (movement = its motion) and Set Entity Data with its stack, then
 *> Set Entity Motion when its motion is not (0, 0, 0) (09 §3.4 rule 6).
 *>
@@ -37,6 +38,7 @@
 *> Entry points:
 *>   GI-BLOCK-YIELD USING dim, x, y, z, block id (BINARY-LONG)     yield of a survival break
 *>   GI-THROW USING connection id, PLAY-SERVERBOUND               Player Action 4 or 5
+*>   GI-THROW-STACK USING player row, item, count (BINARY-LONG)   a stack thrown by the player
 *>   GI-SPAWN USING dim, x, y, z, vx, vy, vz (FLOAT-LONG), item, count, pickup delay, row out
 *>     (BINARY-LONG)                                              a new ground item
 *>   GROUND-ITEMS-TICK                                            the per-tick rules (CORE-TICK)
@@ -307,19 +309,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY RULES.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-DELAY               BINARY-LONG.
- 01 WS-NEW                 BINARY-LONG.
- 01 WS-YAW                 FLOAT-LONG.
- 01 WS-PITCH               FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG.
- 01 WS-VY                  FLOAT-LONG.
- 01 WS-VZ                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -337,20 +330,46 @@
      CALL "INV-REMOVE" USING WS-ROW WS-SLOT WS-COUNT
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "INV-SLOT-SEND" USING L-ID WS-SLOT
-     COMPUTE WS-YAW = PL-YAW(WS-ROW) * FUNCTION PI / 180
-     COMPUTE WS-PITCH = PL-PITCH(WS-ROW) * FUNCTION PI / 180
+     CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-COUNT
+     GOBACK.
+ END PROGRAM GI-THROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GI-THROW-STACK.
+*> USING player row, item, count (BINARY-LONG): a ground item of that stack thrown by the player
+*> (standin §9.1 Throw: at the feet + (0, 1.3, 0), the thrown motion, pickup delay 30). The
+*> caller has already taken the stack from the inventory or the cursor.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ 01 WS-DELAY               BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT.
+     COMPUTE WS-YAW = PL-YAW(L-ROW) * FUNCTION PI / 180
+     COMPUTE WS-PITCH = PL-PITCH(L-ROW) * FUNCTION PI / 180
      COMPUTE WS-VX = - FUNCTION SIN(WS-YAW) * FUNCTION COS(WS-PITCH)
          * RULE-GI-THROW-SPEED-MILLI / 1000
      COMPUTE WS-VY = - FUNCTION SIN(WS-PITCH) * RULE-GI-THROW-SPEED-MILLI / 1000
          + RULE-GI-THROW-LIFT-MILLI / 1000
      COMPUTE WS-VZ = FUNCTION COS(WS-YAW) * FUNCTION COS(WS-PITCH)
          * RULE-GI-THROW-SPEED-MILLI / 1000
-     COMPUTE WS-Y = PL-Y(WS-ROW) + RULE-GI-THROW-DY-MILLI / 1000
+     COMPUTE WS-Y = PL-Y(L-ROW) + RULE-GI-THROW-DY-MILLI / 1000
      MOVE RULE-GI-THROW-DELAY TO WS-DELAY
-     CALL "GI-SPAWN" USING PL-DIM(WS-ROW) PL-X(WS-ROW) WS-Y PL-Z(WS-ROW) WS-VX WS-VY WS-VZ
-         WS-ITEM WS-COUNT WS-DELAY WS-NEW
+     CALL "GI-SPAWN" USING PL-DIM(L-ROW) PL-X(L-ROW) WS-Y PL-Z(L-ROW) WS-VX WS-VY WS-VZ
+         L-ITEM L-COUNT WS-DELAY WS-NEW
      GOBACK.
- END PROGRAM GI-THROW.
+ END PROGRAM GI-THROW-STACK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-IN-REACH.

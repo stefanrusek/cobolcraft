@@ -47,7 +47,8 @@
 | Hotbar slot | 1 to 9, scroll wheel |
 | Inventory screen | E |
 | Crafting screen | C |
-| Throw one / throw stack | Q / Ctrl+Q |
+| Throw one / throw stack | Q / Ctrl+Q (the held slot; on the inventory screen, the slot under the pointer) |
+| Throw what the cursor carries (inventory screen) | Release a left click or a drag outside the window: the whole carried stack; a right click outside: one item. Leaving the screen puts the carried stack back into the inventory |
 | Chat / command | T / `/` (opens chat with `/` typed) |
 | Pause menu (disconnect, open to others, quit world) | Escape |
 
