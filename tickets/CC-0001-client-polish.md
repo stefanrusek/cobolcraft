@@ -123,8 +123,10 @@ values, so new looks are added there first (Principle II).
   sidecar before refining.
 - Which looks are in scope: lighting (smooth lighting, ambient occlusion), sky and fog, clouds, HUD layout, font,
   screen backgrounds?
-- World generation: "Minecraft style" means the kind of terrain (caves, ores, varied height). The noise, ore list and
-  depths are original stand-in content (Principle II, FR-015), not vanilla's values.
+- World generation: how close to vanilla should it be? FR-015 of feature 001 required original stand-in values
+  (Principle II then has them written into `docs/design/standin-content.md` first). The spec of the run that takes
+  this ticket may supersede FR-015 for world generation; decide that when refining. Names, textures and the overall
+  look stay CobolCraft's own either way.
 - Crafting: 001 has a single crafting screen (US10, the C key). Does it give way to the inventory 2×2 grid plus the
   bench 3×3 grid, or stay alongside them?
 - This ticket now covers visuals, controls and gameplay. Should it split into several tickets before refining?
