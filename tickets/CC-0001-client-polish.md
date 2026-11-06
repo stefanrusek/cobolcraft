@@ -68,7 +68,7 @@ values, so new looks are added there first (Principle II).
 - Given a placed bench, when I use it, then a crafting screen with the large grid, a result slot and the recipe book
   opens, and recipes that need the large grid can be made only there.
 
-### As a Player, I want worlds with caves and ores that feel like vanilla
+### As a Player, I want worlds generated like vanilla's
 
 - Given a new world, when I explore, then the terrain is built the way vanilla builds it: climate-driven biomes,
   3D density terrain with hills, mountains, rivers and oceans, aquifers, and three kinds of caves (large caverns,
@@ -134,11 +134,9 @@ values, so new looks are added there first (Principle II).
 ## Decisions
 
 - World generation (operator, 2026-11-06): it should be nearly identical to vanilla's. The run that takes this ticket
-  supersedes feature 001's FR-015 for world generation. It starts with a clean-room spec round (Principle II): the
-  generator's techniques and their parameters are written into `docs/protocol/` or `docs/design/standin-content.md`
-  first, and implementation works only from those docs. The limit: the techniques and the feel match vanilla
-  closely, but the result is not a reproduction of Minecraft's worlds. The noise parameters are CobolCraft's own,
-  so a given seed does not produce vanilla's terrain, and block names and textures stay CobolCraft's.
+  supersedes feature 001's FR-015 for world generation. If that needs another clean-room spec update round, one is run
+  first (Principle II): the generator is written into `docs/protocol/` or `docs/design/standin-content.md`, and
+  implementation works only from those docs.
 
 ## Notes
 
