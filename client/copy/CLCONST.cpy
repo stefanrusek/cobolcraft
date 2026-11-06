@@ -60,6 +60,12 @@
  78 ACT-WORLD-MODE          VALUE 23.  *> create-world: switch survival / creative
  78 ACT-CONFIRM-DELETE      VALUE 24.  *> confirm-delete: delete the world for good
  78 ACT-QUIT-WORLD          VALUE 25.  *> pause menu: save and leave the hosted world
+ 78 ACT-OPEN-TO-OTHERS      VALUE 26.  *> pause menu: the open-to-others screen (US17)
+ 78 ACT-GUEST-MODE          VALUE 27.  *> open-to-others: switch the guest mode survival / creative
+ 78 ACT-GUEST-OPERATOR      VALUE 28.  *> open-to-others: switch whether guests may use operator
+                                       *> commands
+ 78 ACT-OPEN-WORLD          VALUE 29.  *> open-to-others: open the world to others
+ 78 ACT-PAUSE               VALUE 30.  *> open-to-others Cancel: back to the pause menu
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -112,6 +118,9 @@
 *> Limits of the client state (CLSTATE.cpy).
  78 CL-MAX-SERVERS          VALUE 32.
  78 CL-MAX-WORLDS           VALUE 32.
+ 78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
+ 78 CL-MAX-ADDRESSES        VALUE 8.   *> local addresses shown on the open-to-others screen
+ 78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
  78 CL-MAX-WIDGETS          VALUE 48.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 16.

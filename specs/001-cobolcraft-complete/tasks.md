@@ -1373,13 +1373,13 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the host's side of US17. **Independent Test**: `make gate-client`.
 
-- [ ] T982 [P] [US17-client] Write implementation test `client/tests/test_open_to_others.cob`: the pause menu's open-to-others screen takes the guest game mode and guest-operator choice, calls `CORE-OPEN-TO-OTHERS`, listens with `cc_net_listen(0)` and shows `<address>:<port>` for each address of `cc_net_local_addresses`; afterwards the pause menu no longer stops ticks
-- [ ] T983 [US17-client] Implement the open-to-others screen in `client/src/screens/open-to-others.cob`
-- [ ] T984 [US17-client] Implement the rule that an opened world no longer pauses in `client/src/sp-host.cob`
-- [ ] T985 [P] [US17-client] Write implementation test `client/tests/test_host_network.cob`: guest TCP connections are accepted, registered as network connections and pumped every frame; closing them calls `CORE-CONN-CLOSED`; quitting calls `CORE-STOP` with the §17 host-closed text and closes every guest after flushing
-- [ ] T986 [US17-client] Implement guest connection hosting in `client/src/sp-host.cob`
-- [ ] T987 [US17-client] Extend the client implementation tests to 100 % coverage of the US17 changes
-- [ ] T988 Gate: run `make gate-client` and record the command and its real output
+- [X] T982 [P] [US17-client] Write implementation test `client/tests/test_open_to_others.cob`: the pause menu's open-to-others screen takes the guest game mode and guest-operator choice, calls `CORE-OPEN-TO-OTHERS`, listens with `cc_net_listen(0)` and shows `<address>:<port>` for each address of `cc_net_local_addresses`; afterwards the pause menu no longer stops ticks
+- [X] T983 [US17-client] Implement the open-to-others screen in `client/src/screens/open-to-others.cob`
+- [X] T984 [US17-client] Implement the rule that an opened world no longer pauses in `client/src/sp-host.cob`
+- [X] T985 [P] [US17-client] Write implementation test `client/tests/test_host_network.cob`: guest TCP connections are accepted, registered as network connections and pumped every frame; closing them calls `CORE-CONN-CLOSED`; quitting calls `CORE-STOP` with the §17 host-closed text and closes every guest after flushing
+- [X] T986 [US17-client] Implement guest connection hosting in `client/src/sp-host.cob`
+- [X] T987 [US17-client] Extend the client implementation tests to 100 % coverage of the US17 changes
+- [X] T988 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 46: US18-client — resource packs
 

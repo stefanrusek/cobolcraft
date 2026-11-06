@@ -8,14 +8,15 @@
 *> the chat screen (chat.cob) from the world, / opens it with / typed (a command, US14). The death
 *> screen (death.cob) opens on Player Combat Kill and its respawn control sends Client Command.
 *> Single-player (US16): the world list (world-list.cob), the create-world and confirm-delete
-*> screens, and the pause menu's quit-world control (sp-host.cob).
+*> screens, and the pause menu's quit-world control (sp-host.cob). Opening to others (US17): the
+*> pause menu's open-to-others screen (open-to-others.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
 *> USING CLIENT-STATE, screen id (SCR-*): nothing focused; the server list asks every entry for its
 *> status again; chat opens with an empty line, scrolled to the newest message; the world list is
 *> read from saves/ again, nothing selected; the create-world screen starts with the default name
-*> and survival.
+*> and survival; the open-to-others screen starts with survival guests and no guest operators.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -51,6 +52,9 @@
          MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
          MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
          MOVE 0 TO SP-CREATE-MODE
+     END-IF
+     IF L-SCREEN = SCR-OPEN-TO-OTHERS
+         MOVE 0 TO SP-GUEST-MODE SP-GUEST-OPERATOR
      END-IF
      GOBACK.
  END PROGRAM SCREEN-OPEN.
@@ -96,6 +100,8 @@
              CALL "CREATE-WORLD-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-CONFIRM-DELETE
              CALL "CONFIRM-DELETE-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-OPEN-TO-OTHERS
+             CALL "OPEN-TO-OTHERS-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
@@ -105,7 +111,8 @@
 *> USING CLIENT-STATE: a click on a widget (not a label, an overlay or a disabled widget) focuses a
 *> field or does the widget's action; typed text
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
-*> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
+*> opens the pause menu from the world, returns to the world from it and to it from the
+*> open-to-others screen, cancels editing, and leaves
 *> the server list and the world list for the title screen, and the create-world and confirm-delete
 *> screens for the world list; typed text goes to the create-world name (create-world.cob);
 *> Escape and E close the inventory screen, E opens it from the world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
@@ -187,6 +194,8 @@
                  MOVE SCR-PAUSE TO WS-SCREEN
              WHEN SCR-PAUSE
                  MOVE SCR-WORLD TO WS-SCREEN
+             WHEN SCR-OPEN-TO-OTHERS
+                 MOVE SCR-PAUSE TO WS-SCREEN
              WHEN SCR-EDIT-SERVER
                  MOVE SCR-SERVER-LIST TO WS-SCREEN
              WHEN SCR-SERVER-LIST
@@ -327,6 +336,16 @@
              CALL "CONFIRM-DELETE-DELETE" USING CLIENT-STATE
          WHEN ACT-QUIT-WORLD
              CALL "SP-QUIT" USING CLIENT-STATE
+         WHEN ACT-OPEN-TO-OTHERS
+             MOVE SCR-OPEN-TO-OTHERS TO WS-SCREEN
+         WHEN ACT-GUEST-MODE
+             COMPUTE SP-GUEST-MODE = 1 - SP-GUEST-MODE
+         WHEN ACT-GUEST-OPERATOR
+             COMPUTE SP-GUEST-OPERATOR = 1 - SP-GUEST-OPERATOR
+         WHEN ACT-OPEN-WORLD
+             CALL "SP-OPEN-OTHERS" USING CLIENT-STATE
+         WHEN ACT-PAUSE
+             MOVE SCR-PAUSE TO WS-SCREEN
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

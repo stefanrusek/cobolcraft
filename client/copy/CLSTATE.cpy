@@ -113,6 +113,27 @@
        10 SP-FOLDER          PIC X(80).      *> the hosted world's folder under saves/
        10 SP-FOLDER-LENGTH   BINARY-LONG.
        10 SP-CREATE-MODE     BINARY-LONG.    *> create-world screen: 0 survival, 1 creative
+*>     Opening to others (US17; sp-host.cob, screens/open-to-others.cob): the screen's choices
+*>     (guest mode 0 survival or 1 creative; 1 = guests may use operator commands), the listener
+*>     (0 = not opened) and its port, the local addresses shown, and the guest connections: the
+*>     cc_net handle (0 = free slot), the core's network connection id, the close flag handed back,
+*>     and the bytes taken from CORE-CONN-OUTPUT not yet sent (GH-OUT-PENDING bytes from offset
+*>     GH-OUT-START, 1-based, of the CL-GUEST-OUT bytes at GH-OUT-ADDR, allocated on first use).
+       10 SP-GUEST-MODE      BINARY-LONG.
+       10 SP-GUEST-OPERATOR  BINARY-LONG.
+       10 SP-LISTENER        BINARY-LONG.
+       10 SP-PORT            BINARY-LONG.
+       10 SP-ADDR-COUNT      BINARY-LONG.
+       10 SP-ADDR OCCURS 8 TIMES.
+          15 SP-ADDR-TEXT    PIC X(16).      *> dotted IPv4 address
+          15 SP-ADDR-LENGTH  BINARY-LONG.
+       10 GH-GUEST OCCURS 8 TIMES.
+          15 GH-HANDLE       BINARY-LONG.
+          15 GH-CORE-ID      BINARY-LONG.
+          15 GH-CLOSING      PIC 9.
+          15 GH-OUT-ADDR     USAGE POINTER.
+          15 GH-OUT-START    BINARY-LONG.
+          15 GH-OUT-PENDING  BINARY-LONG.
        10 WL-COUNT           BINARY-LONG.    *> the world list (saves/, client-surface §2)
        10 WL-ENTRY OCCURS 32 TIMES.
           15 WL-FOLDER       PIC X(80).

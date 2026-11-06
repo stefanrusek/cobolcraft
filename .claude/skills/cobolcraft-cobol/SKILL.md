@@ -201,6 +201,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   before opening it, join the host with `TEST-JOIN` (memory), then `CORE-OPEN-TO-OTHERS` (guest mode,
   guest-operator flag; only kind 1 becomes kind 2) and join guests with `TEST-JOIN-NETWORK`. A network
   login with the host's name gets Login Disconnect `name_is_host` [name]; the memory host is never refused.
+- **Client hosting guests** (US17-client; `client/src/sp-host.cob`): `SP-OPEN-OTHERS` (the
+  open-to-others screen's choices in `SP-GUEST-MODE`/`SP-GUEST-OPERATOR`) calls `CORE-OPEN-TO-OTHERS`,
+  listens on port 0 (`SP-LISTENER`, `SP-PORT`) and keeps the local addresses; `SP-PUMP` then accepts,
+  receives from and flushes the `GH-GUEST` slots like the server's TCP host. Client tests drive guests
+  as raw loopback sockets with the wire fixtures (`test_host_network`: `TEST-SERVE` for framing, a
+  hand-built Hello for a name other than the host's Alice, its own copy of the buffer-shrinking helper).
+  The pause menu of a hosted world lists Open to Others before Save and Leave the World.
 - **Server pack offer** (US18; `config-phase.cob`): with `CS-PACK-OFFERED` 1 the configuration
   sequence sends Resource Pack Push after Update Tags (`TEST-DRAIN-IDS`: `2 1 13 15 7x18 14 9`) and
   waits (CF-STEP 3) for a terminal Resource Pack Response of that pack id before Finish
