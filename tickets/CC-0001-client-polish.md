@@ -173,6 +173,18 @@ values, so new looks are added there first (Principle II).
   first (Principle II): the generator is written into `docs/protocol/` or `docs/design/standin-content.md`, and
   implementation works only from those docs.
 
+- World scope (operator, 2026-11-06): beyond terrain, caves and ores (overworld), this ticket also includes trees,
+  vegetation and lakes, the Nether and the End, structures, and redstone and block-update rules.
+- Vanilla client (operator, 2026-11-06): a vanilla client playing on our server is a current or future goal, valuable
+  for validating and testing the implementation. Its exact scope is left to the planning agent.
+- Vanilla assets and data (operator, 2026-11-06): a tool, also written in COBOL, reads the user's vanilla 26.3 client
+  jar and creates a vanilla resource pack (models, block states, item definitions, atlases, language, textures) and
+  a vanilla data pack (recipes, loot tables, tags, registry data, worldgen JSON), which the client and the server
+  load. The documents specify the tool, the loaders and the engines that interpret the data, and do not list the
+  data rows.
+- Own world type (operator, 2026-11-06): the invented `cobolcraft:` content stays, for now unchanged, as a selectable
+  world type that can be demoed without the vanilla pack. Standard gameplay rules apply to both world types. Extending
+  the cobolcraft content to cover more of what the vanilla pack covers is future work.
 - Crafting screen (operator, 2026-11-06): feature 001's crafting screen (US10, the C key) is removed. Crafting uses the
   inventory 2x2 grid and the bench 3x3 grid.
 - Stand-in content (operator, 2026-11-06): the standard Minecraft commands, tools, weapons and mobs are the target.
