@@ -1,4 +1,4 @@
-*> Implementation test of client/src/world-replica.cob (WORLD-CHUNK-LOAD, WORLD-ROW, WORLD-ROW-NEW,
+*> Implementation test of client/src/world-replica.cob (REPLICA-CHUNK-LOAD, WORLD-ROW, WORLD-ROW-NEW,
 *> WORLD-CELL, WORLD-CLEAR; docs/protocol/06; standin-content §1.2, §5.2): chunks decoded with
 *> CHUNK-SECTION-DECODE and LIGHT-DECODE are stored per chunk position with block and light lookup;
 *> state ids the client does not know decode as void; a loaded chunk and its neighbours are marked to
@@ -58,7 +58,7 @@
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
-     CALL "WORLD-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
+     CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
      MOVE "world replica the spawn chunk (0, 0) is stored: baseplate, greystone, loam, turf, the "
          & "marker pillar cardstacks, lucite and glowtube" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -124,7 +124,7 @@
      CALL "LIGHT-ENCODE" USING PB-BUFFER WS-EIGHTEEN WS-SKY-STATES WS-ARRAYS WS-BLOCK-STATES
          WS-ARRAYS2
      MOVE 0 TO PB-POS
-     CALL "WORLD-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
+     CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
      MOVE "world replica a state id the client does not know (40) decodes as void (standin §1.2); "
          & "the neighbour chunk is marked to be meshed" TO TL-CASE
      MOVE "0/0/0 1" TO TL-EXPECTED

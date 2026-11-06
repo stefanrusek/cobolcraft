@@ -7,15 +7,23 @@
 *> it again; C opens the crafting screen (crafting.cob) from the world and closes it again; T opens
 *> the chat screen (chat.cob) from the world, / opens it with / typed (a command, US14). The death
 *> screen (death.cob) opens on Player Combat Kill and its respawn control sends Client Command.
+*> Single-player (US16): the world list (world-list.cob), the create-world and confirm-delete
+*> screens, and the pause menu's quit-world control (sp-host.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
 *> USING CLIENT-STATE, screen id (SCR-*): nothing focused; the server list asks every entry for its
-*> status again; chat opens with an empty line, scrolled to the newest message.
+*> status again; chat opens with an empty line, scrolled to the newest message; the world list is
+*> read from saves/ again, nothing selected; the create-world screen starts with the default name
+*> and survival.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(80) VALUE "cobolcraft.screen.create_world.default_name".
+ 01 WS-KEY-LENGTH          BINARY-LONG VALUE 43.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG.
  01 WS-Z1                   BINARY-LONG VALUE 0.
  01 WS-Z2                   BINARY-LONG VALUE 0.
  01 WS-Z3                   BINARY-LONG VALUE 0.
@@ -33,6 +41,16 @@
      IF L-SCREEN = SCR-CHAT
          MOVE SPACES TO CH-LINE
          MOVE 0 TO CH-LINE-LENGTH CH-SCROLL CS-COUNT CS-ANSWERS CS-ASKED-LENGTH CS-SHOWN
+     END-IF
+     IF L-SCREEN = SCR-WORLD-LIST
+         CALL "WORLDS-LIST" USING CLIENT-STATE
+         MOVE 0 TO SM-SELECTED
+     END-IF
+     IF L-SCREEN = SCR-CREATE-WORLD
+         CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+         MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
+         MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
+         MOVE 0 TO SP-CREATE-MODE
      END-IF
      GOBACK.
  END PROGRAM SCREEN-OPEN.
@@ -72,6 +90,12 @@
              CALL "CHAT-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-DEATH
              CALL "DEATH-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-WORLD-LIST
+             CALL "WORLD-LIST-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-CREATE-WORLD
+             CALL "CREATE-WORLD-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-CONFIRM-DELETE
+             CALL "CONFIRM-DELETE-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
@@ -82,8 +106,9 @@
 *> field or does the widget's action; typed text
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
-*> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
-*> world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
+*> the server list and the world list for the title screen, and the create-world and confirm-delete
+*> screens for the world list; typed text goes to the create-world name (create-world.cob);
+*> Escape and E close the inventory screen, E opens it from the world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
 *> from the world (the screen the frame began on, so the T typed with it and a line just sent do
 *> not reopen it), / opens it the same way with / typed, Escape closes chat; on the chat screen
 *> the frame's typed text, keys and wheel go to the chat line (chat.cob).
@@ -129,6 +154,9 @@
      IF SM-SCREEN = SCR-CHAT
          CALL "CHAT-INPUT" USING CLIENT-STATE
      END-IF
+     IF SM-SCREEN = SCR-CREATE-WORLD AND WS-WAS = SCR-CREATE-WORLD
+         CALL "CREATE-WORLD-INPUT" USING CLIENT-STATE
+     END-IF
      IF IN-KEY-PRESSED(CC-KEY-T + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
          MOVE SCR-CHAT TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
@@ -162,7 +190,11 @@
              WHEN SCR-EDIT-SERVER
                  MOVE SCR-SERVER-LIST TO WS-SCREEN
              WHEN SCR-SERVER-LIST
+             WHEN SCR-WORLD-LIST
                  MOVE SCR-TITLE TO WS-SCREEN
+             WHEN SCR-CREATE-WORLD
+             WHEN SCR-CONFIRM-DELETE
+                 MOVE SCR-WORLD-LIST TO WS-SCREEN
              WHEN SCR-INVENTORY
              WHEN SCR-CRAFTING
              WHEN SCR-CHAT
@@ -277,6 +309,24 @@
              CALL "DEATH-RESPAWN" USING CLIENT-STATE
          WHEN ACT-CRAFT
              CALL "CRAFTING-CRAFT" USING CLIENT-STATE L-ARG
+         WHEN ACT-SINGLE-PLAYER
+             MOVE SCR-WORLD-LIST TO WS-SCREEN
+         WHEN ACT-PLAY-WORLD
+             CALL "WORLD-PLAY" USING CLIENT-STATE
+         WHEN ACT-NEW-WORLD
+             MOVE SCR-CREATE-WORLD TO WS-SCREEN
+         WHEN ACT-DELETE-WORLD
+             IF SM-SELECTED > 0
+                 MOVE SCR-CONFIRM-DELETE TO WS-SCREEN
+             END-IF
+         WHEN ACT-CREATE-WORLD
+             CALL "CREATE-WORLD-CREATE" USING CLIENT-STATE
+         WHEN ACT-WORLD-MODE
+             COMPUTE SP-CREATE-MODE = 1 - SP-CREATE-MODE
+         WHEN ACT-CONFIRM-DELETE
+             CALL "CONFIRM-DELETE-DELETE" USING CLIENT-STATE
+         WHEN ACT-QUIT-WORLD
+             CALL "SP-QUIT" USING CLIENT-STATE
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

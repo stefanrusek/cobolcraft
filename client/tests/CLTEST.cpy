@@ -91,6 +91,15 @@
 *>     PROTO-PACKET a Game Event (0x27) of that event and value.
 *>   TEST-SET-BIOME USING CLIENT-STATE, x, y, z, biome id: sets the replica's biome of the
 *>     4 x 4 x 4 cell holding that block (its chunk loaded).
+*>   TEST-SP-START USING CLIENT-STATE, game directory (PIC X(64)), length: the directory removed,
+*>     then a started client (CL-INIT, name Alice, CL-START) whose single-player settings have view
+*>     distance 2 and no hostile mobs (quicker joins; the rest are SP-DEFAULTS).
+*>   TEST-SP-JOIN USING CLIENT-STATE, joined out: CL-STEPs 50 ms apart (at most 400) until the game
+*>     connection is in play and the player loaded (PL-LOADED of an earlier join is cleared
+*>     first); joined 1 when it is.
+*>   TEST-NBT-TAG USING path (PIC X(256)), path length, tag name (PIC X(64)), number out
+*>     (BINARY-LONG), text out (PIC X(64)): a top-level Byte or Int tag's value, or a String tag's
+*>     text, of a gzip NBT file; number -999 and text "none" when the file or the tag is missing.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -1458,3 +1467,103 @@
      MOVE L-BIOME TO RC-BIOME(WS-I)
      GOBACK.
  END PROGRAM TEST-SET-BIOME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SP-START.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COREAPI.
+ 01 WS-COMMAND             PIC X(128).
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DIR                  PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DIR L-LENGTH.
+     MOVE LOW-VALUES TO WS-COMMAND
+     STRING "rm -rf " L-DIR(1:L-LENGTH) DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE L-DIR TO CL-GAME-DIR
+     MOVE L-LENGTH TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     MOVE SP-SETTINGS TO CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     MOVE CORE-SETTINGS TO SP-SETTINGS
+     GOBACK.
+ END PROGRAM TEST-SP-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SP-JOIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-JOINED               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-JOINED.
+     MOVE 0 TO L-JOINED PL-LOADED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 400 OR L-JOINED = 1
+         CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+         IF CN-PHASE(CONN-GAME) = PH-PLAY AND PL-LOADED = 1
+             MOVE 1 TO L-JOINED
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-SP-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-NBT-TAG.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FILE-FRAMING        BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WN                     PIC X(64).
+ 01 WN-CAP                 BINARY-LONG VALUE 64.
+ 01 WL                     BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 256.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-PATH-LENGTH          BINARY-LONG.
+ 01 L-TAG                  PIC X(64).
+ 01 L-NUMBER               BINARY-LONG.
+ 01 L-TEXT                 PIC X(64).
+ PROCEDURE DIVISION USING L-PATH L-PATH-LENGTH L-TAG L-NUMBER L-TEXT.
+     MOVE -999 TO L-NUMBER
+     MOVE "none" TO L-TEXT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "NBT-FILE-READ" USING L-PATH L-PATH-LENGTH PB-BUFFER WS-OUTCOME
+     IF WS-OUTCOME = 0
+         CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FILE-FRAMING WS-TYPE
+         MOVE 1 TO WS-TYPE
+         PERFORM UNTIL WS-TYPE = 0
+             MOVE SPACES TO WN
+             CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WN-CAP WL
+             EVALUATE TRUE
+                 WHEN WS-TYPE = 0
+                     CONTINUE
+                 WHEN WN = L-TAG AND WS-TYPE = 1
+                     CALL "PB-GET-BYTE" USING PB-BUFFER L-NUMBER
+                 WHEN WN = L-TAG AND WS-TYPE = 3
+                     CALL "PB-GET-INT" USING PB-BUFFER L-NUMBER
+                 WHEN WN = L-TAG AND WS-TYPE = 8
+                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP WS-TEXT-LENGTH
+                     MOVE SPACES TO L-TEXT
+                     MOVE WS-TEXT(1:WS-TEXT-LENGTH) TO L-TEXT
+                 WHEN OTHER
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+             END-EVALUATE
+         END-PERFORM
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-NBT-TAG.

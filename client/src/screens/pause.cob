@@ -1,6 +1,6 @@
 *> The pause menu (US2-5; client-surface.md §3 Escape; 08 §10.8.6 pause texts): its title, Back to
-*> the World and Disconnect (open to others and leaving a single-player world join it with US16 and
-*> US17).
+*> the World and Disconnect; in a world this client hosts, Save and Leave the World in place of
+*> Disconnect (US16-5, sp-host.cob SP-QUIT). Open to others joins it with US17.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PAUSE-BUILD.
@@ -45,6 +45,10 @@
      MOVE ACT-DISCONNECT TO WS-ACTION
      MOVE "cobolcraft.screen.pause.disconnect" TO WS-KEY
      MOVE 34 TO WS-KEY-LENGTH
+     IF SP-ACTIVE = 1
+         MOVE ACT-QUIT-WORLD TO WS-ACTION
+         MOVE "cobolcraft.screen.pause.quit_world" TO WS-KEY
+     END-IF
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
          WS-KEY-LENGTH
      GOBACK.

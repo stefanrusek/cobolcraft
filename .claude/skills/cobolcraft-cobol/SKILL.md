@@ -262,6 +262,17 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   the loopback server only on the next CL-STEP: `TEST-STEP` before `TEST-SERVER-READ-HEX` when a
   test calls a sender directly. Game Event 3 sets `PL-ABILITIES` (creative 0x0D, survival 0 and
   flying ends).
+- **Single-player host** (US16; `client/src/sp-host.cob`): the client links the core and joins it
+  over a memory connection (`NET-OPEN-MEMORY`, `CN-MEMORY`/`CN-CORE-ID`; `CN-CORE-ID` 0 once the
+  core hands the id back with the close flag). `SP-SETTINGS` (a whole `CORE-SETTINGS`) is set by
+  `SP-DEFAULTS` in `CL-INIT`; `SP-PUMP` runs the core ticks per elapsed 50 ms of the frame clock.
+  Client tests: `TEST-SP-START` (view distance 2, no hostile mobs), `TEST-SP-JOIN` (steps until in
+  play and loaded), `TEST-NBT-TAG` (a top-level tag of a gzip NBT file). A join through the real
+  core sends Player Position after the only chunk batch, so the client sends Player Loaded on the
+  first position after a finished batch too.
+- **Program names are global across linked packages**: now that the client pulls core objects in,
+  a client program named like a core program is a duplicate symbol at link time (the client's
+  `WORLD-CHUNK-LOAD` became `REPLICA-CHUNK-LOAD`). Check `nm` of both archives when adding one.
 - **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.

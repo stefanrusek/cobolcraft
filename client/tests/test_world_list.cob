@@ -1,0 +1,246 @@
+*> Implementation test of the single-player screens (US16-1, US16-5; client/src/screens/title.cob,
+*> world-list.cob, create-world.cob, confirm-delete.cob; game-dir.cob WORLDS-LIST): the title
+*> screen's Single-player control opens the world list; saves/ is listed with cc_fs_list, each entry
+*> showing LevelName and the folder name; the create-world screen takes a name and a game mode and
+*> creates and opens the world (an erased name is the default name; Enter creates); Play opens the
+*> selected world again as it was left; Delete asks first, Cancel keeps the world, Delete removes
+*> it; Escape and Cancel lead back; Play and Delete do nothing with no world selected.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-WORLD-LIST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY TESTLIB.
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-world-list".
+ 01 WS-DIR-LENGTH          BINARY-LONG VALUE 28.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-JOINED              BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-SCREENS             PIC X(64).
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-INFO                PIC X(16).
+ 01 WS-FOLDER-PATH         PIC X(64) VALUE "build/client-test-world-list/saves/Keep".
+ PROCEDURE DIVISION.
+     CALL "TEST-SP-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "world list the title screen offers Single-player" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "CobolCraft|Single-player|Multiplayer|Quit Game" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "world list Single-player opens the world list; with no worlds it says so" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "13 Single-player Worlds|No worlds yet|Play|Create New World|Delete|Back" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Play and Delete with nothing selected; Escape to the title screen and back.
+     MOVE ACT-PLAY-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-DELETE-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE SM-SCREEN TO WS-E1
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE SM-SCREEN TO WS-E2
+     MOVE "world list Play and Delete do nothing with no world selected; Escape returns to the "
+         & "title screen" TO TL-CASE
+     MOVE "13 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The create-world screen: default name, the mode control, Escape and Cancel.
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-NEW-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "world list Create New World opens the create-world screen with the default name and "
+         & "survival" TO TL-CASE
+     MOVE "14 Create New World|World name|New World|Game mode: Survival|Create|Cancel"
+         TO TL-EXPECTED
+     MOVE SM-SCREEN TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-WORLD-MODE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE WS-TEXT(1:64) TO WS-SCREENS
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "world list the game mode control switches survival and creative" TO TL-CASE
+     MOVE "Create New World|World name|New World|Game mode: Creative|Cr / "
+         & "Create New World|World name|New World|Game mode: Survival|Cr" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-SCREENS(1:60) " / " WS-TEXT(1:60) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE SM-SCREEN TO WS-E1
+     MOVE ACT-NEW-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE SM-SCREEN TO WS-E2
+     MOVE "world list Escape and Cancel leave the create-world screen for the world list" TO TL-CASE
+     MOVE "13 13" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Create with the name erased (the default name), in creative, by Enter.
+     MOVE ACT-NEW-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-WORLD-MODE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE CC-KEY-BACKSPACE TO WS-KEY
+     PERFORM 12 TIMES
+         CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     END-PERFORM
+     MOVE SM-EDIT-NAME-LENGTH TO WS-E2
+     MOVE CC-KEY-ENTER TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE SM-SCREEN TO WS-E1
+     MOVE "acceptance US16-1 given the main menu when the Player creates a world (no name: the "
+         & "default name; creative; Enter) then it opens: the connecting screen, then play in "
+         & "creative" TO TL-CASE
+     MOVE "name 0 screen 4 Connecting to New World joined 1 mode 1" TO TL-EXPECTED
+     CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
+     MOVE WS-JOINED TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING "name " FUNCTION TRIM(WS-E2) " screen " FUNCTION TRIM(WS-E1) " "
+         FUNCTION TRIM(WS-TEXT) " joined " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE PL-MODE TO WS-E1
+     STRING FUNCTION TRIM(TL-OBSERVED) " mode " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Leave, then a survival world named Keep; the list shows both.
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE ACT-QUIT-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-NEW-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE CC-KEY-BACKSPACE TO WS-KEY
+     PERFORM 9 TIMES
+         CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     END-PERFORM
+     MOVE "Keep" TO WS-NAME
+     MOVE 4 TO WS-NAME-LENGTH
+     CALL "TEST-TYPE" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH
+     MOVE ACT-CREATE-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE ACT-QUIT-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "world list saves/ listed with cc_fs_list: each world as <LevelName> (<folder>)"
+         TO TL-CASE
+     MOVE "Single-player Worlds|Keep (Keep)|New World (New World)|Play|Create New World|Delete|"
+         & "Back" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Play the selected world again (US16-5): it opens as it was left, survival.
+     MOVE ACT-SELECT TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ONE WS-FOUND
+     MOVE ACT-PLAY-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
+     MOVE "acceptance US16-5 given the Player quit a world when they open it again from the list "
+         & "then it is as they left it (Keep, survival)" TO TL-CASE
+     MOVE "joined 1 folder Keep mode 0" TO TL-EXPECTED
+     MOVE WS-JOINED TO WS-E1
+     MOVE PL-MODE TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING "joined " FUNCTION TRIM(WS-E1) " folder " SP-FOLDER(1:SP-FOLDER-LENGTH) " mode "
+         FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE ACT-QUIT-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+
+*>   Delete after confirming: Cancel and Escape keep the world, Delete removes it.
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-SELECT TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ONE WS-FOUND
+     MOVE ACT-DELETE-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance US16-1 delete asks first: the confirm-delete screen names the world"
+         TO TL-CASE
+     MOVE "15 Delete This World?|Keep will be deleted for good|Delete|Cancel" TO TL-EXPECTED
+     MOVE SM-SCREEN TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE SM-SCREEN TO WS-E1
+     MOVE ACT-SELECT TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ONE WS-FOUND
+     MOVE ACT-DELETE-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE SM-SCREEN TO WS-E2
+     MOVE WL-COUNT TO WS-E3
+     MOVE "world list Cancel and Escape on the confirm-delete screen keep the world" TO TL-CASE
+     MOVE "13 13 worlds 2" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " worlds " FUNCTION TRIM(WS-E3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-SELECT TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ONE WS-FOUND
+     MOVE ACT-DELETE-WORLD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-CONFIRM-DELETE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance US16-1 after confirming, Delete removes the world's folder and the list "
+         & "shows the rest" TO TL-CASE
+     MOVE "gone 1 13 Single-player Worlds|New World (New World)|Play|Create New World|Delete|Back"
+         TO TL-EXPECTED
+     MOVE 0 TO WS-E1
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FOLDER-PATH WS-INFO
+     IF RETURN-CODE NOT = 0
+         MOVE 1 TO WS-E1
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     MOVE SM-SCREEN TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING "gone " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-TEXT)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-WORLD-LIST.
+ COPY CLTEST.

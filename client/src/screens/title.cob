@@ -1,5 +1,5 @@
-*> The title screen (data-model §13; 08 §10.8.6): the game's name, Multiplayer and Quit Game.
-*> Single-player and resource packs join it with US16 and US18.
+*> The title screen (data-model §13; 08 §10.8.6): the game's name, Single-player (the world list,
+*> US16-1), Multiplayer and Quit Game. Resource packs join it with US18.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TITLE-BUILD.
@@ -35,12 +35,18 @@
      COMPUTE WS-X = L-GW / 2 - 100
      MOVE 90 TO WS-Y
      MOVE WK-BUTTON TO WS-KIND
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     MOVE "cobolcraft.screen.title.single_player" TO WS-KEY
+     MOVE 37 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     MOVE 116 TO WS-Y
      MOVE ACT-MULTIPLAYER TO WS-ACTION
      MOVE "cobolcraft.screen.title.multiplayer" TO WS-KEY
      MOVE 35 TO WS-KEY-LENGTH
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
          WS-KEY-LENGTH
-     MOVE 116 TO WS-Y
+     MOVE 142 TO WS-Y
      MOVE ACT-QUIT TO WS-ACTION
      MOVE "cobolcraft.screen.title.quit" TO WS-KEY
      MOVE 28 TO WS-KEY-LENGTH

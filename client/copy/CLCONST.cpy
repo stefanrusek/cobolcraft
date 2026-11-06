@@ -51,6 +51,15 @@
  78 ACT-RESPAWN             VALUE 16.  *> death screen: Client Command PERFORM_RESPAWN
  78 ACT-CRAFT               VALUE 17.  *> crafting screen: Place Recipe; the argument is the
                                        *> recipe's display id
+ 78 ACT-SINGLE-PLAYER       VALUE 18.  *> the world list (title Single-player; Cancel of the
+                                       *> create-world and confirm-delete screens)
+ 78 ACT-PLAY-WORLD          VALUE 19.  *> world list: open the selected world
+ 78 ACT-NEW-WORLD           VALUE 20.  *> world list: the create-world screen
+ 78 ACT-DELETE-WORLD        VALUE 21.  *> world list: the confirm-delete screen of the selected world
+ 78 ACT-CREATE-WORLD        VALUE 22.  *> create-world: create and open the world
+ 78 ACT-WORLD-MODE          VALUE 23.  *> create-world: switch survival / creative
+ 78 ACT-CONFIRM-DELETE      VALUE 24.  *> confirm-delete: delete the world for good
+ 78 ACT-QUIT-WORLD          VALUE 25.  *> pause menu: save and leave the hosted world
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -102,6 +111,7 @@
 
 *> Limits of the client state (CLSTATE.cpy).
  78 CL-MAX-SERVERS          VALUE 32.
+ 78 CL-MAX-WORLDS           VALUE 32.
  78 CL-MAX-WIDGETS          VALUE 48.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 16.

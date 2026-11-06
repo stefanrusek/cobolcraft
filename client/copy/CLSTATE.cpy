@@ -4,7 +4,7 @@
 *> here by address; everything else lives in the record.
 *>
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
-*> connections, local player and world settings, world replica (chunk rows and their section
+*> connections, single-player hosting and the world list, local player and world settings, world replica (chunk rows and their section
 *> meshes), entity replica and player list, the target and block controls, chat, command tree and
 *> suggestions, recipe book, packs (stack, language, font), atlases and item icons, baked block
 *> models, sky, render list.
@@ -101,6 +101,25 @@
        10 CN-READY           PIC 9.          *> 1 once the buffers are initialised
        10 CN-IN              PIC X(21).      *> received stream
        10 CN-OUT             PIC X(21).      *> bytes not yet sent
+       10 CN-MEMORY          PIC 9.          *> 1 = a memory connection of the in-process core (US16)
+       10 CN-CORE-ID         BINARY-LONG.    *> memory: the core's connection id, 0 once handed back
+*>  ---- single-player (US16; sp-host.cob, game-dir.cob, the world list screens) ----
+    05 SP-STATE.
+       10 SP-ACTIVE          PIC 9.          *> 1 while this client hosts a world (in-process core)
+       10 SP-SETTINGS        PIC X(1707).    *> the hosted world's CORE-SETTINGS (core-host-api §1)
+       10 SP-NEXT-TICK       BINARY-DOUBLE.  *> clock of the next core tick
+       10 SP-TICKS           BINARY-DOUBLE.  *> core ticks run since the world was opened
+       10 SP-PAUSED          PIC 9.          *> 1 while the single-player pause is in effect (US16-4)
+       10 SP-FOLDER          PIC X(80).      *> the hosted world's folder under saves/
+       10 SP-FOLDER-LENGTH   BINARY-LONG.
+       10 SP-CREATE-MODE     BINARY-LONG.    *> create-world screen: 0 survival, 1 creative
+       10 WL-COUNT           BINARY-LONG.    *> the world list (saves/, client-surface §2)
+       10 WL-ENTRY OCCURS 32 TIMES.
+          15 WL-FOLDER       PIC X(80).
+          15 WL-FOLDER-LENGTH BINARY-LONG.
+          15 WL-NAME         PIC X(64).      *> level.dat LevelName (the folder name without one)
+          15 WL-NAME-LENGTH  BINARY-LONG.
+          15 WL-MODE         BINARY-LONG.    *> level.dat GameMode
 *>  ---- local player and the joined world (05a Login, 03 registries) ----
     05 PL-STATE.
        10 PL-ENTITY-ID       BINARY-LONG.

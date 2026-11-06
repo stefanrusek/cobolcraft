@@ -860,6 +860,14 @@
              MOVE PL-PITCH TO PL-SENT-PITCH
              CALL "CLP-ACCEPT-TELEPORT" USING OUT-BUFFER WS-ID PL-X PL-Y PL-Z PL-YAW PL-PITCH
              CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+*>           The first position after a finished chunk batch: the spawn area has arrived, so
+*>           Player Loaded now (05c 0x2C; CobolCraft's join sends the position after the initial
+*>           batch, which may be the only one).
+             IF PL-LOADED = 0 AND PL-BATCHES > 0
+                 MOVE 1 TO PL-LOADED
+                 MOVE 44 TO WS-ID
+                 CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
+             END-IF
          WHEN WS-PHASE = PH-PLAY AND L-ID = 65
              CALL "PB-GET-BYTE" USING L-PACKET PL-ABILITIES
              CALL "PB-GET-FLOAT" USING L-PACKET PL-FLY-SPEED
@@ -902,7 +910,7 @@
              CALL "PB-GET-POSITION" USING L-PACKET BD-X BD-Y BD-Z
              CALL "PB-GET-UBYTE" USING L-PACKET BD-PROGRESS
          WHEN WS-PHASE = PH-PLAY AND L-ID = 46
-             CALL "WORLD-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
+             CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 38
 *>           Forget Level Chunk: one Long, Z in the high Int, X in the low Int.
              CALL "PB-GET-INT" USING L-PACKET WS-VALUE

@@ -1,7 +1,7 @@
 *> The world replica (data-model §3 "replica: client"; docs/protocol/06): one row per chunk
 *> received, holding its cells as the core does (CLCELLS.cpy, the layout of the core's chunks: 65536 block state
 *> bytes, then sky light, then block light, cell index y * 256 + z * 16 + x + 1), then the biome
-*> ids of its 4 x 4 x 4 biome cells (1024 bytes), allocated once per row and kept for reuse. WORLD-CHUNK-LOAD decodes Level Chunk With Light (06 §2 to §7) with
+*> ids of its 4 x 4 x 4 biome cells (1024 bytes), allocated once per row and kept for reuse. REPLICA-CHUNK-LOAD decodes Level Chunk With Light (06 §2 to §7) with
 *> proto CHUNK-SECTION-DECODE and LIGHT-DECODE; state ids the client does not know decode as void
 *> (standin-content §1.2). Every section of the chunk and of its four neighbours is marked to be
 *> meshed again. WORLD-FORGET (Forget Level Chunk) and WORLD-CLEAR drop chunks and mark their mesh
@@ -150,7 +150,7 @@
  END PROGRAM WORLD-ROW-NEW.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WORLD-CHUNK-LOAD.
+ PROGRAM-ID. REPLICA-CHUNK-LOAD.
 *> USING CLIENT-STATE, packet (Level Chunk With Light after its id).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -264,7 +264,7 @@
      COMPUTE WS-NZ = WS-CZ + 1
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-CX WS-NZ
      GOBACK.
- END PROGRAM WORLD-CHUNK-LOAD.
+ END PROGRAM REPLICA-CHUNK-LOAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-DIRTY.

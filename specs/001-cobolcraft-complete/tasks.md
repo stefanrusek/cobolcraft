@@ -1351,23 +1351,23 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the world list, the in-process host and pausing (R7). **Independent Test**: `make gate-client`.
 
-- [ ] T965 [P] [US16-client] Write `client/tests/contract_coreapi_consumer.cob`: `COREAPI.cpy` record lengths and constants match core-host-api §1; the single-player host's call sequence (`CORE-WORLD-OPEN` with host kind 1, host name and mode; `CORE-CONN-OPEN` memory; input/output pumping; `CORE-TICK` per elapsed 50 ms; `CORE-STOP` on quit) follows core-host-api §2
-- [ ] T966 [P] [US16-client] Write implementation test `client/tests/test_sp_host.cob`: opening a world runs the in-process core over a memory connection without compression with `CS-HOST-KIND` 1 and `CS-ALLOW-LIST-ENFORCED` 0 (so a new single-player world seeds the allow-list flag as 0); ticks run once per elapsed 50 ms; no ticks while the pause menu is open and the world is not opened to others; quitting calls `CORE-STOP` and returns to the menu
-- [ ] T967 [US16-client] Implement the single-player host in `client/src/sp-host.cob`
-- [ ] T968 [US16-client] Implement the memory-connection path in `client/src/net-client.cob`
-- [ ] T969 [P] [US16-client] Write acceptance test `client/tests/acc_us16_folder_naming.cob`: case "US16 edge given a world named like an existing one when created then a new folder with ` (2)` (then ` (3)`) is used and both appear in the list"; characters outside `A-Z a-z 0-9 _ - space` become `_` (client-surface §2)
-- [ ] T970 [US16-client] Implement world folder naming in `client/src/game-dir.cob`
-- [ ] T971 [P] [US16-client] Write `client/tests/contract_world_folder_client.cob`: a `level.dat` written per `docs/protocol/07-nbt-and-anvil.md` §9 (built in the test with proto `NBT-FILE-WRITE`) is read by the client's world list with its `LevelName` and `GameMode`
-- [ ] T972 [P] [US16-client] Write implementation test `client/tests/test_world_list.cob`: `saves/` is listed with `cc_fs_list`, each entry shows `LevelName` and the folder name; create (name and mode), open and delete-after-confirm controls lead to the right screens and calls
-- [ ] T973 [US16-client] Add the single-player button to `client/src/screens/title.cob`
-- [ ] T974 [US16-client] Implement the world list screen (reading `level.dat`) in `client/src/screens/world-list.cob`
-- [ ] T975 [US16-client] Implement the create-world screen (name, game mode) in `client/src/screens/create-world.cob`
-- [ ] T976 [US16-client] Implement the confirm-delete screen in `client/src/screens/confirm-delete.cob`
-- [ ] T977 [P] [US16-client] Write implementation test `client/tests/test_delete_world.cob`: recursive deletion of a world folder with `cc_fs_list`, `CBL_DELETE_FILE` and `CBL_DELETE_DIR`
-- [ ] T978 [US16-client] Implement recursive world deletion in `client/src/game-dir.cob`
-- [ ] T979 [US16-client] Add the quit-world control (save through `CORE-STOP`, back to the menu) to `client/src/screens/pause.cob`
-- [ ] T980 [US16-client] Extend the client implementation tests to 100 % coverage of the US16 changes
-- [ ] T981 Gate: run `make gate-client` and record the command and its real output
+- [X] T965 [P] [US16-client] Write `client/tests/contract_coreapi_consumer.cob`: `COREAPI.cpy` record lengths and constants match core-host-api §1; the single-player host's call sequence (`CORE-WORLD-OPEN` with host kind 1, host name and mode; `CORE-CONN-OPEN` memory; input/output pumping; `CORE-TICK` per elapsed 50 ms; `CORE-STOP` on quit) follows core-host-api §2
+- [X] T966 [P] [US16-client] Write implementation test `client/tests/test_sp_host.cob`: opening a world runs the in-process core over a memory connection without compression with `CS-HOST-KIND` 1 and `CS-ALLOW-LIST-ENFORCED` 0 (so a new single-player world seeds the allow-list flag as 0); ticks run once per elapsed 50 ms; no ticks while the pause menu is open and the world is not opened to others; quitting calls `CORE-STOP` and returns to the menu
+- [X] T967 [US16-client] Implement the single-player host in `client/src/sp-host.cob`
+- [X] T968 [US16-client] Implement the memory-connection path in `client/src/net-client.cob`
+- [X] T969 [P] [US16-client] Write acceptance test `client/tests/acc_us16_folder_naming.cob`: case "US16 edge given a world named like an existing one when created then a new folder with ` (2)` (then ` (3)`) is used and both appear in the list"; characters outside `A-Z a-z 0-9 _ - space` become `_` (client-surface §2)
+- [X] T970 [US16-client] Implement world folder naming in `client/src/game-dir.cob`
+- [X] T971 [P] [US16-client] Write `client/tests/contract_world_folder_client.cob`: a `level.dat` written per `docs/protocol/07-nbt-and-anvil.md` §9 (built in the test with proto `NBT-FILE-WRITE`) is read by the client's world list with its `LevelName` and `GameMode`
+- [X] T972 [P] [US16-client] Write implementation test `client/tests/test_world_list.cob`: `saves/` is listed with `cc_fs_list`, each entry shows `LevelName` and the folder name; create (name and mode), open and delete-after-confirm controls lead to the right screens and calls
+- [X] T973 [US16-client] Add the single-player button to `client/src/screens/title.cob`
+- [X] T974 [US16-client] Implement the world list screen (reading `level.dat`) in `client/src/screens/world-list.cob`
+- [X] T975 [US16-client] Implement the create-world screen (name, game mode) in `client/src/screens/create-world.cob`
+- [X] T976 [US16-client] Implement the confirm-delete screen in `client/src/screens/confirm-delete.cob`
+- [X] T977 [P] [US16-client] Write implementation test `client/tests/test_delete_world.cob`: recursive deletion of a world folder with `cc_fs_list`, `CBL_DELETE_FILE` and `CBL_DELETE_DIR`
+- [X] T978 [US16-client] Implement recursive world deletion in `client/src/game-dir.cob`
+- [X] T979 [US16-client] Add the quit-world control (save through `CORE-STOP`, back to the menu) to `client/src/screens/pause.cob`
+- [X] T980 [US16-client] Extend the client implementation tests to 100 % coverage of the US16 changes
+- [X] T981 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 45: US17-client — opening the world to others
 

@@ -1,6 +1,9 @@
-*> The client's network connections (research R6, R14; contracts/shim-abi.md §3; client-surface.md
+*> The client's network connections (research R6, R7, R14; contracts/shim-abi.md §3; client-surface.md
 *> §2 server address): CONN-GAME joins a server, CONN-PING asks a server-list entry for its status.
-*> NET-OPEN parses "host" or "host:port" (default 25565) and starts a non-blocking connect; NET-PUMP
+*> NET-OPEN parses "host" or "host:port" (default 25565) and starts a non-blocking connect;
+*> NET-OPEN-MEMORY joins the world this client hosts over a memory connection of the in-process core
+*> (core-host-api §2: the same bytes through CORE-CONN-INPUT and CORE-CONN-OUTPUT, no compression,
+*> no encryption; 02 Offline mode). NET-PUMP
 *> (once per frame, never waiting) completes the connect, receives, frames packets out of the
 *> received stream for PROTO-PACKET and sends what NET-SEND queued; NET-CLOSE ends a connection.
 *> A refused connect, an unresolved host, a lost connection or a malformed frame is a non-fatal
@@ -100,6 +103,65 @@
  END PROGRAM NET-OPEN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. NET-OPEN-MEMORY.
+*> USING CLIENT-STATE, connection: a memory connection of the in-process core (CORE-CONN-OPEN
+*> memory), at once in the login phase: Intention (login) and Hello are queued.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY COREAPI.
+ 01 WS-KIND                BINARY-LONG VALUE CORE-CONN-MEMORY.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     CALL "NET-BUFFERS-INIT" USING CLIENT-STATE L-CONN
+     CALL "CORE-CONN-OPEN" USING WS-KIND CN-CORE-ID(L-CONN)
+     MOVE 1 TO CN-MEMORY(L-CONN)
+     MOVE 0 TO CN-HANDLE(L-CONN)
+     MOVE "localhost" TO CN-HOST(L-CONN)
+     MOVE 9 TO CN-HOST-LENGTH(L-CONN)
+     MOVE CL-DEFAULT-PORT TO CN-PORT(L-CONN)
+     MOVE PH-LOGIN TO CN-PHASE(L-CONN)
+     CALL "PROTO-CONNECTED" USING CLIENT-STATE L-CONN
+     GOBACK.
+ END PROGRAM NET-OPEN-MEMORY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NET-MEMORY-IN.
+*> USING CLIENT-STATE, connection, outcome out (BINARY-LONG): everything the core has queued for
+*> the memory connection is appended to the received stream; outcome CC-CLOSED once the core hands
+*> back the close flag (the id is the core's again: CN-CORE-ID 0), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ COPY COREAPI.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-AREA                PIC X(65536).
+ 01 WS-CLOSE               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-OUTCOME              BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-OUTCOME.
+     MOVE 0 TO L-OUTCOME WS-CLOSE
+     MOVE 1 TO CB-LENGTH
+     PERFORM UNTIL CB-LENGTH = 0
+         SET CB-ADDR TO ADDRESS OF WS-AREA
+         MOVE 65536 TO CB-CAPACITY
+         CALL "CORE-CONN-OUTPUT" USING CN-CORE-ID(L-CONN) CORE-BUFFER WS-CLOSE
+         MOVE CN-IN(L-CONN) TO RX-BUFFER
+         CALL "PB-APPEND-BYTES" USING RX-BUFFER WS-AREA CB-LENGTH
+         MOVE RX-BUFFER TO CN-IN(L-CONN)
+         IF WS-CLOSE = 1
+             MOVE 0 TO CN-CORE-ID(L-CONN)
+             MOVE CC-CLOSED TO L-OUTCOME
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NET-MEMORY-IN.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. NET-PUMP.
 *> USING CLIENT-STATE, connection: one non-blocking step.
  DATA DIVISION.
@@ -111,6 +173,7 @@
 *> TX-BUFFER is a view of the queued outbound bytes (CN-OUT); PB-BUFFER keeps its own memory for
 *> the packets received, so decoding them never overwrites what is queued.
  COPY PROTO REPLACING LEADING ==PB-== BY ==TX-==.
+ COPY COREAPI.
  01 WS-READY               BINARY-LONG VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 2097152.
  01 WS-RC                  BINARY-LONG.
@@ -146,7 +209,10 @@
      END-IF
 *>   Receive everything available, then hand over every complete packet.
      MOVE 0 TO WS-RC
-     PERFORM UNTIL CN-PHASE(L-CONN) < PH-STATUS OR WS-RC NOT = 0
+     IF CN-MEMORY(L-CONN) = 1
+         CALL "NET-MEMORY-IN" USING CLIENT-STATE L-CONN WS-RC
+     END-IF
+     PERFORM UNTIL CN-PHASE(L-CONN) < PH-STATUS OR WS-RC NOT = 0 OR CN-MEMORY(L-CONN) = 1
          CALL STATIC "cc_net_recv" USING BY VALUE CN-HANDLE(L-CONN) BY REFERENCE WS-AREA
              BY VALUE WS-AREA-CAP BY REFERENCE WS-GOT RETURNING WS-RC
          IF WS-RC = 0
@@ -170,7 +236,7 @@
          STRING "malformed data from " CN-HOST(L-CONN)(1:CN-HOST-LENGTH(L-CONN))
              DELIMITED BY SIZE INTO WS-DETAIL
      END-IF
-     IF WS-RC = CC-CLOSED AND WS-DETAIL = SPACES
+     IF WS-RC = CC-CLOSED AND WS-DETAIL = SPACES AND CN-PHASE(L-CONN) >= PH-STATUS
          STRING "the connection to " CN-HOST(L-CONN)(1:CN-HOST-LENGTH(L-CONN)) " was lost"
              DELIMITED BY SIZE INTO WS-DETAIL
      END-IF
@@ -179,9 +245,15 @@
      IF CN-PHASE(L-CONN) >= PH-STATUS AND TX-LENGTH > TX-POS
          SET ADDRESS OF B-OUT TO TX-ADDR
          COMPUTE WS-GOT = TX-LENGTH - TX-POS
-         CALL STATIC "cc_net_send" USING BY VALUE CN-HANDLE(L-CONN)
-             BY REFERENCE B-OUT(TX-POS + 1:WS-GOT) BY VALUE WS-GOT BY REFERENCE WS-SENT
-             RETURNING WS-RC
+         IF CN-MEMORY(L-CONN) = 1
+             SET CB-ADDR TO ADDRESS OF B-OUT(TX-POS + 1:1)
+             MOVE WS-GOT TO CB-CAPACITY CB-LENGTH WS-SENT
+             CALL "CORE-CONN-INPUT" USING CN-CORE-ID(L-CONN) CORE-BUFFER
+         ELSE
+             CALL STATIC "cc_net_send" USING BY VALUE CN-HANDLE(L-CONN)
+                 BY REFERENCE B-OUT(TX-POS + 1:WS-GOT) BY VALUE WS-GOT BY REFERENCE WS-SENT
+                 RETURNING WS-RC
+         END-IF
          ADD WS-SENT TO TX-POS
          IF TX-POS = TX-LENGTH
              CALL "PB-RESET" USING TX-BUFFER
@@ -214,7 +286,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NET-CLOSE.
-*> USING CLIENT-STATE, connection: closes the socket; the connection is free again.
+*> USING CLIENT-STATE, connection: closes the socket (a memory connection: CORE-CONN-CLOSED, unless
+*> the core has handed it back already); the connection is free again.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -225,6 +298,10 @@
      IF CN-HANDLE(L-CONN) > 0
          CALL STATIC "cc_net_close" USING BY VALUE CN-HANDLE(L-CONN)
      END-IF
+     IF CN-CORE-ID(L-CONN) > 0
+         CALL "CORE-CONN-CLOSED" USING CN-CORE-ID(L-CONN)
+     END-IF
+     MOVE 0 TO CN-MEMORY(L-CONN) CN-CORE-ID(L-CONN)
      MOVE 0 TO CN-HANDLE(L-CONN)
      MOVE PH-NONE TO CN-PHASE(L-CONN)
      GOBACK.

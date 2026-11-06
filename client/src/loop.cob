@@ -2,9 +2,10 @@
 *> CL-INIT empties a client state; CL-START prepares it without a window (game directory, server
 *> list, the pack stack, language, font and UI atlas, block and entity atlases, baked models, item
 *> icons, the title screen); CL-STEP is one frame: the frame's events, the screen's input (on the
-*> world screen also looking and the fly toggle, physics.cob), sprinting (controls.cob), the
-*> client tick (every 50 ms in play: the player's movement and its Move Player once loaded, then
-*> Client Tick End), the target block or entity (raycast.cob, world screen) and the block, use,
+*> world screen also looking and the fly toggle, physics.cob), a hosted world's core ticks and
+*> console lines (sp-host.cob SP-PUMP), sprinting (controls.cob), the client tick (every 50 ms in
+*> play, not while a single-player pause is in effect: the player's movement and its Move Player
+*> once loaded, then Client Tick End), the target block or entity (raycast.cob, world screen) and the block, use,
 *> eat, attack and hotbar controls (controls.cob), the connections pumped without waiting, the sky, meshing of changed sections,
 *> then the screen model, the UI and the render list; CL-RUN repeats frames over the window
 *> (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the command
@@ -13,7 +14,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-INIT.
 *> USING CLIENT-STATE: a new client: everything empty, the title screen, no connection
-*> (compression off), no world.
+*> (compression off), no world, the single-player settings (SP-DEFAULTS).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -28,6 +29,7 @@
      END-PERFORM
      MOVE 1000 TO SK-U
      MOVE -1 TO SK-MESHED-U
+     CALL "SP-DEFAULTS" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CL-INIT.
 
@@ -81,8 +83,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-RUN.
 *> USING CLIENT-STATE (window open, Vulkan ready): frames until the run ends (close request or the
-*> quit control); the cursor is captured while the world is shown; the connections are closed at
-*> the end.
+*> quit control); the cursor is captured while the world is shown; at the end a hosted world is
+*> stopped (saved, SP-STOP) and the connections are closed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -116,6 +118,7 @@
          END-IF
          CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
      END-PERFORM
+     CALL "SP-STOP" USING CLIENT-STATE
      PERFORM VARYING WS-CONN FROM 1 BY 1 UNTIL WS-CONN > 2
          CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN
      END-PERFORM
@@ -190,13 +193,17 @@
      IF SM-SCREEN = SCR-WORLD
          CALL "PHYS-INPUT" USING CLIENT-STATE
      END-IF
+*>   A hosted world (US16): its due core ticks, unless paused; its console lines.
+     IF SP-ACTIVE = 1
+         CALL "SP-PUMP" USING CLIENT-STATE
+     END-IF
 *>   Sprinting starts or stops before the tick that moves at its speed.
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-SPRINT" USING CLIENT-STATE
      END-IF
 *>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
 *>   then Client Tick End, and the day advances one tick.
-     IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK
+     IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK AND SP-PAUSED = 0
          MOVE CONN-GAME TO WS-CONN
          IF PL-LOADED = 1
              CALL "PHYS-TICK" USING CLIENT-STATE
