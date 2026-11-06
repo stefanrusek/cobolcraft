@@ -30,6 +30,10 @@
 *> the recipe book (RECIPE-BOOK-READ). Weather (US11): the weather Game Events set the rain and
 *> thunder levels and the kind they map to (weather-render.cob and sky.cob draw it); the biome
 *> registry's has_precipitation is kept for where it is drawn.
+*> Commands (US14): the Chat Command and Command Suggestion builders (screens/chat.cob sends them);
+*> Commands into the command tree (COMMANDS-READ), Command Suggestions into the answers to the last
+*> request (SUGGESTIONS-READ); Game Event 3 sets the game mode and the abilities that go with it
+*> (09 §3.2 Player Abilities: creative may fly, survival may not and stops flying).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -599,6 +603,44 @@
  END PROGRAM CLP-PLACE-RECIPE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CHAT-COMMAND.
+*> USING PB-BUFFER, command (PIC X(1024), UTF-8, without the leading /), byte length: Chat Command
+*> (05c 0x07), the unsigned form (09 §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 7.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-LENGTH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     GOBACK.
+ END PROGRAM CLP-CHAT-COMMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-COMMAND-SUGGESTION.
+*> USING PB-BUFFER, transaction id, text (PIC X(1024), the chat line with its leading /, 09 §5
+*> rule 5), byte length: Command Suggestion (05c 0x0F).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 15.
+ 01 WS-MAX                 BINARY-LONG VALUE 32500.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TRANSACTION          BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TRANSACTION L-TEXT L-LENGTH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TRANSACTION
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     GOBACK.
+ END PROGRAM CLP-COMMAND-SUGGESTION.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
 *> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
  DATA DIVISION.
@@ -774,6 +816,11 @@
              EVALUATE WS-VALUE
                  WHEN 3
                      MOVE WS-FLOAT TO PL-MODE
+                     IF PL-MODE = 1
+                         COMPUTE PL-ABILITIES = 13 + PL-FLYING * 2
+                     ELSE
+                         MOVE 0 TO PL-ABILITIES PL-FLYING
+                     END-IF
                  WHEN 2
                      MOVE 0 TO PL-RAIN PL-THUNDER
                  WHEN 7
@@ -904,6 +951,10 @@
              CALL "PLAY-RESPAWN-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 75
              CALL "RECIPE-BOOK-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 16
+             CALL "COMMANDS-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 15
+             CALL "SUGGESTIONS-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
@@ -1276,6 +1327,100 @@
      END-IF
      GOBACK.
  END PROGRAM RECIPE-BOOK-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMMANDS-READ.
+*> USING CLIENT-STATE, packet (Commands, 05a 0x10): the tree replaces the last one. The first
+*> CL-MAX-NODES nodes are kept with their flags, name and children (at most CL-MAX-LINKS links in
+*> all); an argument node is greedy when its parser is brigadier:string with kind 2 (greedy
+*> phrase). A malformed packet leaves no tree (no command suggestions until the next one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     MOVE 0 TO CM-COUNT CM-LINK-COUNT CM-ROOT
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER RX-COMMAND-NODE
+         IF CM-COUNT < CL-MAX-NODES
+             ADD 1 TO CM-COUNT
+             MOVE RX-CN-FLAGS TO CM-FLAGS(CM-COUNT)
+             MOVE RX-CN-NAME TO CM-NAME(CM-COUNT)
+             MOVE RX-CN-NAME-LENGTH TO CM-NAME-LENGTH(CM-COUNT)
+             MOVE 0 TO CM-GREEDY(CM-COUNT) CM-CHILDREN(CM-COUNT)
+             IF RX-CN-PARSER = RX-PARSER-STRING AND RX-CN-STRING-KIND = RX-STRING-GREEDY
+                 MOVE 1 TO CM-GREEDY(CM-COUNT)
+             END-IF
+             COMPUTE CM-FIRST(CM-COUNT) = CM-LINK-COUNT + 1
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RX-CN-CHILD-COUNT
+                     OR CM-LINK-COUNT = CL-MAX-LINKS
+                 ADD 1 TO CM-LINK-COUNT CM-CHILDREN(CM-COUNT)
+                 MOVE RX-CN-CHILD(WS-J) TO CM-LINK(CM-LINK-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     CALL "PB-GET-VARINT" USING PB-BUFFER CM-ROOT
+     IF PB-ERROR = 1
+         MOVE 0 TO CM-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM COMMANDS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SUGGESTIONS-READ.
+*> USING CLIENT-STATE, packet (Command Suggestions, 05a 0x0F): an answer to the last Command
+*> Suggestion sent (its transaction id) replaces the answers shown: the first CL-MAX-SUGGEST
+*> suggestion texts (their first 64 bytes); tooltips are not shown. An answer to an older request
+*> is dropped; a malformed packet leaves no answers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-CAP                 BINARY-LONG VALUE 1024.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+     IF WS-ID = CS-TRANSACTION
+         MOVE 0 TO CS-ANSWERS
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+             MOVE SPACES TO WS-TEXT
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX WS-TEXT WS-CAP WS-LENGTH
+             CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+             IF WS-PRESENT = 1
+                 CALL "PB-GET-TEXT" USING PB-BUFFER RX-TEXT
+             END-IF
+             IF CS-ANSWERS < CL-MAX-SUGGEST
+                 ADD 1 TO CS-ANSWERS
+                 MOVE WS-TEXT TO CS-A-TEXT(CS-ANSWERS)
+                 MOVE FUNCTION MIN(WS-LENGTH, 64) TO CS-A-LENGTH(CS-ANSWERS)
+             END-IF
+         END-PERFORM
+         IF PB-ERROR = 1
+             MOVE 0 TO CS-ANSWERS
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM SUGGESTIONS-READ.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DIMENSION-ENTER.

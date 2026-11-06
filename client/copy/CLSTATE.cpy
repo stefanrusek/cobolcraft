@@ -5,8 +5,9 @@
 *>
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
 *> connections, local player and world settings, world replica (chunk rows and their section
-*> meshes), entity replica and player list, the target and block controls, chat, packs (stack,
-*> language, font), atlases and item icons, baked block models, sky, render list.
+*> meshes), entity replica and player list, the target and block controls, chat, command tree and
+*> suggestions, recipe book, packs (stack, language, font), atlases and item icons, baked block
+*> models, sky, render list.
  01 CLIENT-STATE.
 *>  ---- start-up (client-surface §1, §2) ----
     05 CL-NAME               PIC X(16).
@@ -264,6 +265,37 @@
           15 CH-TIME         BINARY-DOUBLE.
           15 CH-LENGTH       BINARY-LONG.
           15 CH-TEXT         PIC X(256).
+*>  ---- command tree (US14; 05a 0x10 Commands; 09 §3.3 command tree; screens/chat.cob): the nodes
+*>       of the last Commands packet (node index i is row i + 1, the first CL-MAX-NODES kept):
+*>       flags, name, greedy (a brigadier:string greedy phrase argument: it takes the rest of the
+*>       line), and its children as a run of CM-LINK rows (node indices); the root's index ----
+    05 CM-STATE.
+       10 CM-COUNT           BINARY-LONG.
+       10 CM-ROOT            BINARY-LONG.
+       10 CM-NODE OCCURS 160 TIMES.
+          15 CM-FLAGS        BINARY-LONG.
+          15 CM-GREEDY       PIC 9.
+          15 CM-NAME         PIC X(32).
+          15 CM-NAME-LENGTH  BINARY-LONG.
+          15 CM-FIRST        BINARY-LONG.    *> the first child's CM-LINK row
+          15 CM-CHILDREN     BINARY-LONG.
+       10 CM-LINK-COUNT      BINARY-LONG.
+       10 CM-LINK            BINARY-LONG OCCURS 160 TIMES.
+*>     Suggestions shown under the chat line (CHAT-SUGGEST): the command names that complete the
+*>     word being typed; the last Command Suggestion sent (transaction id, the line it asked about,
+*>     0 length = none outstanding) and the texts of its answer; the rows shown in the last frame.
+       10 CS-COUNT           BINARY-LONG.
+       10 CS-ENTRY OCCURS 10 TIMES.
+          15 CS-TEXT         PIC X(32).
+          15 CS-LENGTH       BINARY-LONG.
+       10 CS-TRANSACTION     BINARY-LONG.
+       10 CS-ASKED           PIC X(1024).
+       10 CS-ASKED-LENGTH    BINARY-LONG.
+       10 CS-ANSWERS         BINARY-LONG.
+       10 CS-ANSWER OCCURS 10 TIMES.
+          15 CS-A-TEXT       PIC X(64).
+          15 CS-A-LENGTH     BINARY-LONG.
+       10 CS-SHOWN           BINARY-LONG.
 *>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
 *>       the recipes of the Recipe Book Adds received, in the order first received: display id,
 *>       craftable (crafting requirements present), ingredients (item, count) and result ----

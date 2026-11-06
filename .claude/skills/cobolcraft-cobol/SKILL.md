@@ -255,6 +255,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   are a table in `ENTITIES-MESH`. `TEST-FIGURE-FACE` and `TEST-ENTITY-DRAWS` (CLTEST.cpy) read
   the entity mesh. Adding a built-in pack file shifts the `BI-*` indexes in `CLBUILTIN.cpy` and
   the file counts in `test_builtin_files` and `test_pack_stack`.
+- **Client commands** (US14; `client/src/screens/chat.cob` CHAT-SUGGEST, `protocol-client.cob`
+  COMMANDS-READ / SUGGESTIONS-READ): `/` on the world screen opens chat with `/` typed. The tree is
+  `CM-*` in CLSTATE (node index i is row i + 1, children in `CM-LINK`); suggestions are `CS-*`
+  (names, then the answers to the last Command Suggestion, `CS-TRANSACTION`). Queued packets reach
+  the loopback server only on the next CL-STEP: `TEST-STEP` before `TEST-SERVER-READ-HEX` when a
+  test calls a sender directly. Game Event 3 sets `PL-ABILITIES` (creative 0x0D, survival 0 and
+  flying ends).
 - **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.

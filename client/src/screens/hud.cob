@@ -6,8 +6,8 @@
 *> text, arrival clock) in the history of the last 100, oldest first; CHAT-AREA-ADD adds the shown
 *> messages as labels at the left edge, one per 9 GUI pixels, in the order received, the newest at
 *> the bottom: with chat closed (the HUD, above the hotbar) at most the 10 most recent that arrived
-*> less than 10 seconds ago; with chat open (chat.cob, above the input line) the 10 ending
-*> CH-SCROLL messages before the newest, regardless of age.
+*> less than 10 seconds ago; with chat open (chat.cob, above the input line and the CS-SHOWN
+*> command suggestions) the 10 ending CH-SCROLL messages before the newest, regardless of age.
 *> Health (US7-1, US7-6; standin-content §10.1; 08 §10.8.6 cobolcraft.hud.health): in survival a
 *> label "Health <current>/<maximum>" (the last Set Health as a whole number, maximum 30) above the
 *> hotbar's left end; none in creative. The hurt indication (US7-2): while the clock is before
@@ -16,6 +16,8 @@
 *> Food (US8-1, US8-6; standin-content §11.1; 08 §10.8.6 cobolcraft.hud.food): in survival a label
 *> "Food <current>/<maximum>" (the last Set Health's food, maximum 24) beside the health label, to
 *> its right above the hotbar's right half; none in creative.
+*> Both follow the current game mode (PL-MODE: Login, Respawn, Game Event 3, US14-2): they go when
+*> it becomes creative and come back in survival with the latest Set Health's values.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUD-BUILD.
@@ -153,7 +155,7 @@
      COMPUTE WS-BASE = L-GH - CL-SLOT-SIZE - 14
      MOVE CH-COUNT TO WS-LAST
      IF L-OPEN = 1
-         COMPUTE WS-BASE = L-GH - 26
+         COMPUTE WS-BASE = L-GH - 26 - CS-SHOWN * 9
          COMPUTE WS-LAST = CH-COUNT - CH-SCROLL
      END-IF
      COMPUTE WS-FIRST = FUNCTION MAX(1, WS-LAST - CL-CHAT-SHOWN + 1)

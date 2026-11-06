@@ -1334,18 +1334,18 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US14. **Independent Test**: `make gate-client`.
 
-- [ ] T953 [P] [US14-client] Write `contract_wire_client.cob` cases: Command Suggestion and Chat Command encode equal to their fixtures; Commands and Command Suggestions decode
-- [ ] T954 [P] [US14-client] Write acceptance test `client/tests/acc_us14_suggestions.cob`: case "acceptance US14-1 client half: `/` opens chat with `/` typed; command names matching the typed prefix are suggested from the received command tree; for an `ask_server` argument the client sends Command Suggestion and shows the answers"
-- [ ] T955 [US14-client] Implement the command tree replica in `client/src/protocol-client.cob`
-- [ ] T956 [US14-client] Implement suggestion display in `client/src/screens/chat.cob`
-- [ ] T957 [P] [US14-client] Write acceptance test `client/tests/acc_us14_command_send.cob`: case "Enter on a line starting with `/` sends Chat Command without the slash and the System Chat reply appears in the chat area"
-- [ ] T958 [US14-client] Implement command sending in `client/src/screens/chat.cob`
-- [ ] T959 [P] [US14-client] Write `contract_wire_client.cob` case: Game Event 3 (`play-s2c-27-game-event-03-game-mode.hex`) decodes to the new game mode
-- [ ] T960 [P] [US14-client] Write acceptance test `client/tests/acc_us14_mode_change.cob`: case "US14-2 client half (set-mode): Game Event 3 to creative hides the health and food displays and allows flying; back to survival shows them again with the values of the latest Set Health and ends flying" (also the US7 edge "switching back restores the displays")
-- [ ] T961 [US14-client] Implement Game Event 3 handling (local game mode, abilities and the creative-only flight rule) in `client/src/protocol-client.cob`
-- [ ] T962 [US14-client] Make the health and food displays follow the current game mode in `client/src/screens/hud.cob`
-- [ ] T963 [US14-client] Extend the client implementation tests to 100 % coverage of the US14 changes
-- [ ] T964 Gate: run `make gate-client` and record the command and its real output
+- [X] T953 [P] [US14-client] Write `contract_wire_client.cob` cases: Command Suggestion and Chat Command encode equal to their fixtures; Commands and Command Suggestions decode
+- [X] T954 [P] [US14-client] Write acceptance test `client/tests/acc_us14_suggestions.cob`: case "acceptance US14-1 client half: `/` opens chat with `/` typed; command names matching the typed prefix are suggested from the received command tree; for an `ask_server` argument the client sends Command Suggestion and shows the answers"
+- [X] T955 [US14-client] Implement the command tree replica in `client/src/protocol-client.cob`
+- [X] T956 [US14-client] Implement suggestion display in `client/src/screens/chat.cob`
+- [X] T957 [P] [US14-client] Write acceptance test `client/tests/acc_us14_command_send.cob`: case "Enter on a line starting with `/` sends Chat Command without the slash and the System Chat reply appears in the chat area"
+- [X] T958 [US14-client] Implement command sending in `client/src/screens/chat.cob`
+- [X] T959 [P] [US14-client] Write `contract_wire_client.cob` case: Game Event 3 (`play-s2c-27-game-event-03-game-mode.hex`) decodes to the new game mode
+- [X] T960 [P] [US14-client] Write acceptance test `client/tests/acc_us14_mode_change.cob`: case "US14-2 client half (set-mode): Game Event 3 to creative hides the health and food displays and allows flying; back to survival shows them again with the values of the latest Set Health and ends flying" (also the US7 edge "switching back restores the displays")
+- [X] T961 [US14-client] Implement Game Event 3 handling (local game mode, abilities and the creative-only flight rule) in `client/src/protocol-client.cob`
+- [X] T962 [US14-client] Make the health and food displays follow the current game mode in `client/src/screens/hud.cob`
+- [X] T963 [US14-client] Extend the client implementation tests to 100 % coverage of the US14 changes
+- [X] T964 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 44: US16-client — single-player worlds
 

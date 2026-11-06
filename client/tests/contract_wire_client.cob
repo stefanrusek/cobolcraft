@@ -5,7 +5,7 @@
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
 *> breaking, placing, the hotbar and the inventory (US4), of ground items and throwing (US5), and
 *> of chat (US6), of health and attacking (US7), of eating and sprinting (US8), of crafting
-*> (US10), and the weather Game Events (US11).
+*> (US10), the weather Game Events (US11), and of commands and the game mode change (US14).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -104,6 +104,10 @@
  01 WS-LEVEL               FLOAT-SHORT.
  01 WS-RAIN-EDIT           PIC 9.9.
  01 WS-THUNDER-EDIT        PIC 9.9.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-CMD                 PIC X(1024).
+ 01 WS-CMD-LENGTH          BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
@@ -1042,7 +1046,149 @@
      PERFORM WEATHER-TEXT
      MOVE "rain 0.0 thunder 0.0 kind 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, commands (US14; 09 §3.3 Commands, Command Suggestion(s), Chat Command) ----
+     MOVE "/murmur Al" TO WS-CMD
+     MOVE 10 TO WS-CMD-LENGTH
+     MOVE 1 TO WS-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-COMMAND-SUGGESTION" USING PB-BUFFER WS-ID WS-CMD WS-CMD-LENGTH
+     MOVE "contract wire client Command Suggestion (transaction 1, /murmur Al) equals "
+         & "play-c2s-0f-command-suggestion.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-0f-command-suggestion.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE "promote Alice" TO WS-CMD
+     MOVE 13 TO WS-CMD-LENGTH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CHAT-COMMAND" USING PB-BUFFER WS-CMD WS-CMD-LENGTH
+     MOVE "contract wire client Chat Command (promote Alice, no leading slash) equals "
+         & "play-c2s-07-chat-command.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-07-chat-command.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-everyone.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Commands (everyone) decodes the 6-node tree: each node's name, "
+         & "flags and children, the greedy message argument, root 0" TO TL-CASE
+     PERFORM COMMANDS-TEXT
+     MOVE "6 root 0 :0>1,2,3 howto:5 roster:5 murmur:1>4 player:18>5 message:6*" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Commands (operator) decodes the 90-node tree (replacing the "
+         & "last): the root's 24 commands in standin §16.2 order" TO TL-CASE
+     PERFORM ROOT-TEXT
+     MOVE "90 root 0 howto roster murmur promote demote eject bar unbar barlist guestlist mode "
+         & "relocate supply empty vitality ration conjure sweep clock skies homestead announce "
+         & "persist shutdown" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract wire client Commands (operator) decodes the relocate subtree: player, then "
+         & "at x y z (dimension) and to target" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-NODE FROM 31 BY 1 UNTIL WS-NODE > 39
+         MOVE SPACES TO WS-TEXT
+         PERFORM NODE-TEXT
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+             INTO TL-OBSERVED
+     END-PERFORM
+     MOVE "player:18>32,37 at:1>33 x:2>34 y:2>35 z:6>36 dimension:22 to:1>38 target:22 "
+         & "supply:1>40" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 1 TO CS-TRANSACTION
+     MOVE "contract/fixtures/wire/play-s2c-0f-command-suggestions.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Command Suggestions decodes the answer to transaction 1: one "
+         & "suggestion Alice" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CS-ANSWERS TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " CS-A-TEXT(1)(1:5) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 Alice" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   ---- play, game mode (US14-2 set-mode; 09 §3.2 Game Event 3: 0.0 survival, 1.0 creative) ----
+     MOVE 3 TO WS-EVENT
+     MOVE 1.0 TO WS-LEVEL
+     CALL "TEST-GAME-EVENT" USING CLIENT-STATE WS-CONN WS-EVENT WS-LEVEL
+     MOVE "contract wire client Game Event 3 with 1.0 decodes to creative: may fly (abilities "
+         & "0x0D as the server's creative Player Abilities)" TO TL-CASE
+     PERFORM MODE-TEXT
+     MOVE "mode 1 abilities 13 flying 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PL-FLYING
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-03-game-mode.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Game Event 3 (play-s2c-27-game-event-03-game-mode.hex, 0.0) "
+         & "decodes to survival: no abilities, flying ends" TO TL-CASE
+     PERFORM MODE-TEXT
+     MOVE "mode 0 abilities 0 flying 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ COMMANDS-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CM-COUNT TO WS-EDIT
+     MOVE CM-ROOT TO WS-EDIT2
+     STRING FUNCTION TRIM(WS-EDIT) " root " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     PERFORM VARYING WS-NODE FROM 0 BY 1 UNTIL WS-NODE >= CM-COUNT
+         MOVE SPACES TO WS-TEXT
+         PERFORM NODE-TEXT
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+             INTO TL-OBSERVED
+     END-PERFORM
+     .
+
+*> WS-TEXT (spaces) gets "<name>:<flags>[><child>,...][*]" of node WS-NODE (* = greedy).
+ NODE-TEXT.
+     MOVE 1 TO WS-INDEX
+     COMPUTE WS-ROW = WS-NODE + 1
+     MOVE CM-NAME-LENGTH(WS-ROW) TO WS-K
+     IF WS-K > 0
+         STRING CM-NAME(WS-ROW)(1:WS-K) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+     END-IF
+     MOVE CM-FLAGS(WS-ROW) TO WS-EDIT
+     STRING ":" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > CM-CHILDREN(WS-ROW)
+         IF WS-J = 1
+             STRING ">" DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+         ELSE
+             STRING "," DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+         END-IF
+         COMPUTE WS-K = CM-FIRST(WS-ROW) + WS-J - 1
+         MOVE CM-LINK(WS-K) TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+     END-PERFORM
+     IF CM-GREEDY(WS-ROW) = 1
+         STRING "*" DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-INDEX
+     END-IF
+     .
+
+ ROOT-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CM-COUNT TO WS-EDIT
+     MOVE CM-ROOT TO WS-EDIT2
+     STRING FUNCTION TRIM(WS-EDIT) " root " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     COMPUTE WS-ROW = CM-ROOT + 1
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > CM-CHILDREN(WS-ROW)
+         COMPUTE WS-K = CM-FIRST(WS-ROW) + WS-J - 1
+         COMPUTE WS-NODE = CM-LINK(WS-K) + 1
+         MOVE CM-NAME-LENGTH(WS-NODE) TO WS-K
+         STRING FUNCTION TRIM(TL-OBSERVED) " " CM-NAME(WS-NODE)(1:WS-K) DELIMITED BY SIZE
+             INTO TL-OBSERVED
+     END-PERFORM
+     .
+
+ MODE-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-MODE TO WS-EDIT
+     MOVE PL-ABILITIES TO WS-EDIT2
+     STRING "mode " FUNCTION TRIM(WS-EDIT) " abilities " FUNCTION TRIM(WS-EDIT2) " flying "
+         PL-FLYING DELIMITED BY SIZE INTO TL-OBSERVED
+     .
 
  RECIPES-TEXT.
      MOVE "T" TO TL-MODE

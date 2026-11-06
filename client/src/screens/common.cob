@@ -5,8 +5,8 @@
 *> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen shows the HUD
 *> (hud.cob: crosshair, hotbar and chat area); E opens the inventory screen from the world and closes
 *> it again; C opens the crafting screen (crafting.cob) from the world and closes it again; T opens
-*> the chat screen (chat.cob) from the world. The death screen (death.cob) opens on Player Combat
-*> Kill and its respawn control sends Client Command.
+*> the chat screen (chat.cob) from the world, / opens it with / typed (a command, US14). The death
+*> screen (death.cob) opens on Player Combat Kill and its respawn control sends Client Command.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
@@ -32,7 +32,7 @@
      END-IF
      IF L-SCREEN = SCR-CHAT
          MOVE SPACES TO CH-LINE
-         MOVE 0 TO CH-LINE-LENGTH CH-SCROLL
+         MOVE 0 TO CH-LINE-LENGTH CH-SCROLL CS-COUNT CS-ANSWERS CS-ASKED-LENGTH CS-SHOWN
      END-IF
      GOBACK.
  END PROGRAM SCREEN-OPEN.
@@ -83,9 +83,10 @@
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
 *> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
-*> world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat from the world (the screen the frame began on, so the T typed with it and a
-*> line just sent do not reopen it), Escape closes chat; on the chat screen the frame's typed text,
-*> keys and wheel go to the chat line (chat.cob).
+*> world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
+*> from the world (the screen the frame began on, so the T typed with it and a line just sent do
+*> not reopen it), / opens it the same way with / typed, Escape closes chat; on the chat screen
+*> the frame's typed text, keys and wheel go to the chat line (chat.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -131,6 +132,13 @@
      IF IN-KEY-PRESSED(CC-KEY-T + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
          MOVE SCR-CHAT TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     END-IF
+     IF IN-KEY-PRESSED(CC-KEY-SLASH + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
+         MOVE SCR-CHAT TO WS-SCREEN
+         CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         MOVE "/" TO CH-LINE(1:1)
+         MOVE 1 TO CH-LINE-LENGTH
+         CALL "CHAT-SUGGEST" USING CLIENT-STATE
      END-IF
      IF IN-KEY-PRESSED(CC-KEY-C + 1) = 1 AND WS-WAS = SM-SCREEN
          MOVE 0 TO WS-SCREEN
