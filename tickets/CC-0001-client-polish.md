@@ -176,7 +176,9 @@ values, so new looks are added there first (Principle II).
 - Crafting screen (operator, 2026-11-06): feature 001's crafting screen (US10, the C key) is removed. Crafting uses the
   inventory 2x2 grid and the bench 3x3 grid.
 - Stand-in content (operator, 2026-11-06): the standard Minecraft commands, tools, weapons and mobs are the target.
-  `docs/design/standin-content.md` is replaced where it is redundant with them.
+  `docs/design/standin-content.md` is replaced where it is redundant with them. Standard trumps stand-in: where the
+  standard behaviour (`docs/protocol/` 10 to 21) and the stand-in content differ, the standard one wins, for example
+  in health, the hurt cooldown, fall damage, day length and the stand-in blocks, items and mobs.
 - Scope (operator, 2026-11-06): lighting, sky, fog and clouds move to CC-0007. This ticket is implemented as a whole,
   in one run, and is not split.
 
