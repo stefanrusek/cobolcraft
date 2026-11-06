@@ -28,7 +28,7 @@ and uses them.
 | `allow-list` | `true`, `false` | `false` | allow-list enforced: seeds the enforcement flag of a newly created world only; an existing world keeps the flag stored in its `access.dat`, which the allow-list on/off commands change (operator decision A2; world-folder.md §2) |
 | `pack-url` | `http://…` or `https://…`, or empty | empty | pack offer: download address (empty = no offer) |
 | `pack-sha1` | 40 hex digits, or empty | empty | integrity hash |
-| `pack-id` | UUID text, or empty | empty | stable identifier |
+| `pack-id` | UUID text, or empty | empty | stable identifier; required when `pack-url` is set (otherwise fatal: `pack-id: required when pack-url is set`) |
 | `pack-required` | `true`, `false` | `false` | required |
 | `pack-prompt` | text, or empty | empty | prompt message |
 
