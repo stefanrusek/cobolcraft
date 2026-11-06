@@ -294,14 +294,16 @@
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
        10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
-*>     Entity atlas (texture 1; 08 §10.11): the entity images stacked; the operator's rectangle.
+*>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
+*>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
        10 EA-W               BINARY-LONG.
        10 EA-H               BINARY-LONG.
        10 EA-ADDR            USAGE POINTER.
-       10 EA-OP-X            BINARY-LONG.
-       10 EA-OP-Y            BINARY-LONG.
-       10 EA-OP-W            BINARY-LONG.
-       10 EA-OP-H            BINARY-LONG.
+       10 EA-IMAGE OCCURS 4 TIMES.
+          15 EA-IM-X         BINARY-LONG.
+          15 EA-IM-Y         BINARY-LONG.
+          15 EA-IM-W         BINARY-LONG.
+          15 EA-IM-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.

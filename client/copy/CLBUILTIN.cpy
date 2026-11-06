@@ -1,19 +1,19 @@
 *> File table of the built-in pack (docs/protocol/08-resource-packs.md §10.9 kinds read in this
-*> version: §10.1, §10.2, §10.3 block and item textures, the operator entity texture and the font
+*> version: §10.1, §10.2, §10.3 block and item textures, the entity textures and the font
 *> image, §10.4, §10.5, §10.6, §10.7, §10.8, §10.10), transcribed for client/src/packs/builtin.cob.
 *> Row i: the file path; for a block model its parent template; the content: a texture's file
 *> stem, a block model's "textures" members, a block state file's "variants" members (JSON text),
 *> an item model's layer0 sprite, an item definition's model id.
- 78 BI-FILE-COUNT           VALUE 90.
+ 78 BI-FILE-COUNT           VALUE 92.
  78 BI-FIRST-TEXTURE        VALUE 4.
- 78 BI-LAST-TEXTURE         VALUE 26.
- 78 BI-TEMPLATE-BOX         VALUE 27.
- 78 BI-LAST-MODEL           VALUE 43.
- 78 BI-LAST-STATE           VALUE 54.
- 78 BI-LAST-ITEM-MODEL      VALUE 71.
- 78 BI-LAST-ITEM-DEF        VALUE 88.
- 78 BI-FONT                 VALUE 89.
- 78 BI-LANG-FILE            VALUE 90.
+ 78 BI-LAST-TEXTURE         VALUE 28.
+ 78 BI-TEMPLATE-BOX         VALUE 29.
+ 78 BI-LAST-MODEL           VALUE 45.
+ 78 BI-LAST-STATE           VALUE 56.
+ 78 BI-LAST-ITEM-MODEL      VALUE 73.
+ 78 BI-LAST-ITEM-DEF        VALUE 90.
+ 78 BI-FONT                 VALUE 91.
+ 78 BI-LANG-FILE            VALUE 92.
  01 BI-FILE-DATA.
     05 FILLER PIC X(64) VALUE "pack.mcmeta".
     05 FILLER PIC X(24) VALUE SPACES.
@@ -75,6 +75,12 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/entity/operator.png".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE 'operator'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/entity/sodgrazer.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'sodgrazer'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/entity/abend.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'abend'.
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/pry_bar.png".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE 'pry_bar'.
@@ -297,7 +303,7 @@
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
  01 BI-FILE-TABLE REDEFINES BI-FILE-DATA.
-    05 BI-FILE-ROW OCCURS 90 TIMES.
+    05 BI-FILE-ROW OCCURS 92 TIMES.
        10 BI-FILE            PIC X(64).
        10 BI-PARENT          PIC X(24).
        10 BI-CONTENT         PIC X(480).

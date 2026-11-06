@@ -245,6 +245,12 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `_` to a focused field (state 1), so a focused field's text must be at most 255 bytes (the chat
   line shows its last 255 bytes from a character boundary). At most 32 text events count per frame
   (`IN-TEXT`): tests type long lines over several frames.
+- **Client entity drawing** (`client/src/entities-render.cob`): the entity atlas (texture 1) stacks
+  operator (66 x 28), sodgrazer (80 x 23) and abend (72 x 12) from the top, 80 x 63 with the
+  built-in pack, so a face's u is texel x / 80 and v is (image top + strip row) / 63. Model boxes
+  are a table in `ENTITIES-MESH`. `TEST-FIGURE-FACE` and `TEST-ENTITY-DRAWS` (CLTEST.cpy) read
+  the entity mesh. Adding a built-in pack file shifts the `BI-*` indexes in `CLBUILTIN.cpy` and
+  the file counts in `test_builtin_files` and `test_pack_stack`.
 - **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.

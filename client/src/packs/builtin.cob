@@ -4,7 +4,8 @@
 *> item models and item definitions §10.7, font/default.json §10.10, lang/en_us.json §10.8),
 *> BUILTIN-IMAGE its textures as RGBA, drawn by BUILTIN-TEXTURE from the recipes of
 *> standin-content §1.4 (with the integer hash H of §1.4.1), the item icons of §2 (TEX-ICON with
-*> the §1.4.1 rectangles, lines and triangles), §3.2 and the glyphs of §18. Texts: CLLANG.cpy;
+*> the §1.4.1 rectangles, lines and triangles), the entity textures of §3.2 and §12.6 (strip layout
+*> of §3.1: TEX-ENTITY-FACE; entity noise: TEX-NOISE-VALUE) and the glyphs of §18. Texts: CLLANG.cpy;
 *> glyphs: CLGLYPHS.cpy.
 
  IDENTIFICATION DIVISION.
@@ -202,8 +203,8 @@
  PROGRAM-ID. BUILTIN-TEXTURE.
 *> USING stem (PIC X(32)), RGBA out (PIC X(24576)), width out, height out: the texture with that
 *> file stem (08 §10.3): the 15 block textures of standin-content §1.4.2 and the 6 item icons of §2
-*> (16 x 16), the operator entity texture of §3.2 (66 x 28) and the font atlas "ascii" of §18
-*> (128 x 48).
+*> (16 x 16), the entity textures operator of §3.2 (66 x 28), sodgrazer (80 x 23) and abend
+*> (72 x 12) of §12.6, and the font atlas "ascii" of §18 (128 x 48).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLGLYPHS.
@@ -223,6 +224,15 @@
  01 WS-TURF                PIC X(1024).
  01 WS-INK                 PIC X(4).
  01 WS-HEX                 PIC X(2).
+*> An entity texture's part (strip top row, w, h, d) and the face rectangle of a texel.
+ 01 WS-STRIP               BINARY-LONG.
+ 01 WS-PW                  BINARY-LONG.
+ 01 WS-PH                  BINARY-LONG.
+ 01 WS-PD                  BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG.
+ 01 WS-FC                  BINARY-LONG.
+ 01 WS-FR                  BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-STEM                 PIC X(32).
  01 L-RGBA                 PIC X(24576).
@@ -363,6 +373,75 @@
                          AND (WS-X = 2 OR WS-X = 3 OR WS-X = 7 OR WS-X = 8)
                      MOVE FUNCTION HEX-TO-CHAR("F0F0F0FF") TO L-RGBA(WS-P * 4 + 1:4)
                  END-IF
+             END-PERFORM
+         WHEN "sodgrazer"
+*>           §12.6, parts body 14 x 9 x 12 (strip rows 0 to 11), head 8 x 8 x 5 (12 to 19) and leg
+*>           3 x 3 x 3 (20 to 22): body faces noise "sodgrazer" (fill #5E7A3C; 25 % #4F6A31, 10 %
+*>           #708C4A, at the texel's place in the whole image), head faces #8A7458 with the eyes
+*>           #1C1C1C at front (1, 2) to (2, 2) and (5, 2) to (6, 2), leg faces #6B5A44.
+             MOVE 80 TO L-W
+             MOVE 23 TO L-H
+             MOVE LOW-VALUES TO L-RGBA
+             PERFORM VARYING WS-P FROM 0 BY 1 UNTIL WS-P > 1839
+                 DIVIDE WS-P BY 80 GIVING WS-Y REMAINDER WS-X
+                 EVALUATE TRUE
+                     WHEN WS-Y < 12
+                         MOVE 0 TO WS-STRIP
+                         MOVE 14 TO WS-PW
+                         MOVE 9 TO WS-PH
+                         MOVE 12 TO WS-PD
+                     WHEN WS-Y < 20
+                         MOVE 12 TO WS-STRIP
+                         MOVE 8 TO WS-PW WS-PH
+                         MOVE 5 TO WS-PD
+                     WHEN OTHER
+                         MOVE 20 TO WS-STRIP
+                         MOVE 3 TO WS-PW WS-PH WS-PD
+                 END-EVALUATE
+                 COMPUTE WS-ROW = WS-Y - WS-STRIP
+                 CALL "TEX-ENTITY-FACE" USING WS-X WS-ROW WS-PW WS-PH WS-PD WS-FACE WS-FC WS-FR
+                 CALL "TEX-NOISE-VALUE" USING L-STEM WS-X WS-Y WS-N
+                 EVALUATE TRUE
+                     WHEN WS-FACE = 0
+                         CONTINUE
+                     WHEN WS-STRIP = 0 AND WS-N < 25
+                         MOVE FUNCTION HEX-TO-CHAR("4F6A31FF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-STRIP = 0 AND WS-N < 35
+                         MOVE FUNCTION HEX-TO-CHAR("708C4AFF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-STRIP = 0
+                         MOVE FUNCTION HEX-TO-CHAR("5E7A3CFF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-STRIP = 12 AND WS-FACE = 1 AND WS-FR = 2
+                             AND (WS-FC = 1 OR WS-FC = 2 OR WS-FC = 5 OR WS-FC = 6)
+                         MOVE FUNCTION HEX-TO-CHAR("1C1C1CFF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-STRIP = 12
+                         MOVE FUNCTION HEX-TO-CHAR("8A7458FF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN OTHER
+                         MOVE FUNCTION HEX-TO-CHAR("6B5A44FF") TO L-RGBA(WS-P * 4 + 1:4)
+                 END-EVALUATE
+             END-PERFORM
+         WHEN "abend"
+*>           §12.6, one part body 12 x 12 x 12 (every face rectangle 12 x 12): noise "abend" (fill
+*>           #2E2A4F; 15 % #4A4580), then a 1-px border of each face #8F7CFF, then the eyes #E8F04A
+*>           at front (2, 3) to (4, 4) and (7, 3) to (9, 4).
+             MOVE 72 TO L-W
+             MOVE 12 TO L-H
+             MOVE LOW-VALUES TO L-RGBA
+             MOVE 12 TO WS-PW WS-PH WS-PD
+             PERFORM VARYING WS-P FROM 0 BY 1 UNTIL WS-P > 863
+                 DIVIDE WS-P BY 72 GIVING WS-Y REMAINDER WS-X
+                 CALL "TEX-ENTITY-FACE" USING WS-X WS-Y WS-PW WS-PH WS-PD WS-FACE WS-FC WS-FR
+                 CALL "TEX-NOISE-VALUE" USING L-STEM WS-X WS-Y WS-N
+                 EVALUATE TRUE
+                     WHEN WS-FACE = 1 AND (WS-FR = 3 OR WS-FR = 4)
+                             AND ((WS-FC >= 2 AND WS-FC <= 4) OR (WS-FC >= 7 AND WS-FC <= 9))
+                         MOVE FUNCTION HEX-TO-CHAR("E8F04AFF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-FC = 0 OR WS-FC = 11 OR WS-FR = 0 OR WS-FR = 11
+                         MOVE FUNCTION HEX-TO-CHAR("8F7CFFFF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN WS-N < 15
+                         MOVE FUNCTION HEX-TO-CHAR("4A4580FF") TO L-RGBA(WS-P * 4 + 1:4)
+                     WHEN OTHER
+                         MOVE FUNCTION HEX-TO-CHAR("2E2A4FFF") TO L-RGBA(WS-P * 4 + 1:4)
+                 END-EVALUATE
              END-PERFORM
          WHEN "ascii"
 *>           §18 atlas: the glyph of code c in the 8 x 8 cell at (((c - 32) mod 16) * 8,
@@ -613,6 +692,87 @@
      END-PERFORM
      GOBACK.
  END PROGRAM TEX-NOISE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEX-ENTITY-FACE.
+*> USING texel x, row in the part's strip, part w, h, d, face out (1 front, 2 back, 3 left,
+*> 4 right, 5 top, 6 bottom; 0 = in no face rectangle), column out, row out (in the face): the
+*> strip layout of standin-content §3.1: front at x 0, back at w, left at 2w, right at 2w + d (each
+*> h rows), top at 2w + 2d, bottom at 3w + 2d (each d rows).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-ROWS                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-D                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-COLUMN               BINARY-LONG.
+ 01 L-FACE-ROW             BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-ROW L-W L-H L-D L-FACE L-COLUMN L-FACE-ROW.
+     MOVE L-H TO WS-ROWS
+     EVALUATE TRUE
+         WHEN L-X < L-W
+             MOVE 1 TO L-FACE
+             MOVE 0 TO WS-START
+         WHEN L-X < 2 * L-W
+             MOVE 2 TO L-FACE
+             MOVE L-W TO WS-START
+         WHEN L-X < 2 * L-W + L-D
+             MOVE 3 TO L-FACE
+             COMPUTE WS-START = 2 * L-W
+         WHEN L-X < 2 * L-W + 2 * L-D
+             MOVE 4 TO L-FACE
+             COMPUTE WS-START = 2 * L-W + L-D
+         WHEN L-X < 3 * L-W + 2 * L-D
+             MOVE 5 TO L-FACE
+             COMPUTE WS-START = 2 * L-W + 2 * L-D
+             MOVE L-D TO WS-ROWS
+         WHEN OTHER
+             MOVE 6 TO L-FACE
+             COMPUTE WS-START = 3 * L-W + 2 * L-D
+             MOVE L-D TO WS-ROWS
+     END-EVALUATE
+     COMPUTE L-COLUMN = L-X - WS-START
+     MOVE L-ROW TO L-FACE-ROW
+     IF L-ROW >= WS-ROWS OR L-X >= 4 * L-W + 2 * L-D
+         MOVE 0 TO L-FACE
+     END-IF
+     GOBACK.
+ END PROGRAM TEX-ENTITY-FACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEX-NOISE-VALUE.
+*> USING name (PIC X(32)), x, y, n out: n = H(name bytes, x, y) mod 100 (standin-content §1.4.1;
+*> entity noise uses the texel's place in the whole image, §3.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-H                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-V                   BINARY-DOUBLE UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(32).
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-X L-Y L-N.
+     MOVE 2166136261 TO WS-H
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO WS-LENGTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LENGTH
+         COMPUTE WS-V = FUNCTION ORD(L-NAME(WS-I:1)) - 1
+         CALL "TEX-HASH-STEP" USING WS-H WS-V
+     END-PERFORM
+     MOVE L-X TO WS-V
+     CALL "TEX-HASH-STEP" USING WS-H WS-V
+     MOVE L-Y TO WS-V
+     CALL "TEX-HASH-STEP" USING WS-H WS-V
+     COMPUTE L-N = FUNCTION MOD(WS-H, 100)
+     GOBACK.
+ END PROGRAM TEX-NOISE-VALUE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEX-HASH-STEP.

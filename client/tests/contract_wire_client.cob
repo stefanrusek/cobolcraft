@@ -505,6 +505,14 @@
 
      MOVE "contract/fixtures/wire/play-s2c-01-add-entity-sodgrazer.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 20 TO WS-EID
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract wire client Add Entity (sodgrazer) decodes to entity 20 of entity type 2 "
+         & "(cobolcraft:sodgrazer, standin §3) at (12.5, 56, 3.5), yaw and head yaw 90" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "20 2 12.5000/56.0000/3.5000 90.0/0.0/90.0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract/fixtures/wire/play-s2c-36-move-entity-pos.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE 20 TO WS-EID
@@ -542,6 +550,14 @@
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract/fixtures/wire/play-s2c-01-add-entity-abend.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 21 TO WS-EID
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract wire client Add Entity (abend) decodes to entity 21 of entity type 3 "
+         & "(cobolcraft:abend, standin §3) at (-3.5, 52, -6.5), yaw and head yaw -180" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "21 3 -3.5000/52.0000/-6.5000 -180.0/0.0/-180.0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract/fixtures/wire/play-s2c-4e-remove-entities.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract wire client Remove Entities decodes: entities 10 and 21 are removed, 1 and 20 "

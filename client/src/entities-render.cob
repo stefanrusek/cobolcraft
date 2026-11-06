@@ -1,12 +1,15 @@
-*> Drawing entities (standin-content §3.1, §3.2; docs/protocol/08-resource-packs.md §10.3, §10.11):
-*> ENTITY-ATLAS-BUILD loads the entity atlas (texture 1): the operator image
-*> textures/entity/operator.png from the top-most pack that has it, or the missing-texture stripes
-*> at the stand-in size 66 x 28 when no pack has it. ENTITIES-MESH builds the frame's entity mesh,
-*> eye-relative like the sections: every operator entity of the replica as its box (-5.5, 0,
-*> -5.5) to (5.5, 28, 5.5) in model pixels (1/16 block; +y up, +z the look direction, +x the
-*> entity's left), turned about +y by -yaw and moved to the entity position. ENTITY-BOX draws one
-*> box: six faces, each seen from outside with the corners and texel orientation of standin §3.1
-*> (front +z, back -z, left +x, right -x, top +y, bottom -y; row 0 the top or -z edge), its
+*> Drawing entities (standin-content §3.1, §3.2, §12.6; docs/protocol/08-resource-packs.md §10.3,
+*> §10.11): ENTITY-ATLAS-BUILD loads the entity atlas (texture 1): the images
+*> textures/entity/operator.png, sodgrazer.png and abend.png, each from the top-most pack that has
+*> it, or the missing-texture stripes at its stand-in size (66 x 28, 80 x 23, 72 x 12) when no
+*> pack has it, stacked in that order from the top and left-aligned (the atlas is as wide as the
+*> widest image; texels right of a narrower image are transparent and never sampled).
+*> ENTITIES-MESH builds the frame's entity mesh, eye-relative like the sections: every operator,
+*> sodgrazer and abend of the replica as the boxes of its model (model pixels, 1/16 block; +y up,
+*> +z the look direction, +x the entity's left), turned about +y by -yaw and moved to the entity
+*> position; a box that no longer fits the entity vertex capacity is left out. ENTITY-BOX draws
+*> one box: six faces, each seen from outside with the corners and texel orientation of standin
+*> §3.1 (front +z, back -z, left +x, right -x, top +y, bottom -y; row 0 the top or -z edge), its
 *> rectangle in the part's strip at x = 0, w, 2w, 2w + d, 2w + 2d, 3w + 2d, mapped by fractions of
 *> the stand-in texture size onto the image's rectangle in the atlas (08 §10.11). Brightness: the
 *> face's direction factor (top 1.0, front and back 0.8, left and right 0.6, bottom 0.5, as block
@@ -26,35 +29,73 @@
 *> USING CLIENT-STATE: fills EA-* and marks texture 1 for upload.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-PATH                PIC X(256) VALUE "assets/cobolcraft/textures/entity/operator.png".
- 01 WS-PATH-LENGTH         BINARY-LONG VALUE 46.
- 01 WS-IMAGE               PIC X(1048576).
+*> Per image: entity type, path length, stand-in width and height, path.
+ 01 WS-SOURCE-DATA.
+    05 FILLER PIC X(64) VALUE "04606628assets/cobolcraft/textures/entity/operator.png".
+    05 FILLER PIC X(64) VALUE "24708023assets/cobolcraft/textures/entity/sodgrazer.png".
+    05 FILLER PIC X(64) VALUE "34307212assets/cobolcraft/textures/entity/abend.png".
+ 01 WS-SOURCE-TABLE REDEFINES WS-SOURCE-DATA.
+    05 WS-SOURCE OCCURS 3 TIMES.
+       10 WS-S-TYPE          PIC 9.
+       10 WS-S-LENGTH        PIC 99.
+       10 WS-S-W             PIC 999.
+       10 WS-S-H             PIC 99.
+       10 WS-S-PATH          PIC X(56).
+ 01 WS-PATH                PIC X(256).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-IMAGES.
+    05 WS-IMAGE            PIC X(1048576) OCCURS 3 TIMES.
  01 WS-CAPACITY            BINARY-LONG VALUE 1048576.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
- 01 B-ATLAS                PIC X(1048576) BASED.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ 01 WS-ROW-BYTES           BINARY-LONG.
+ 01 B-ATLAS                PIC X(4194304) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE WS-CAPACITY WS-W WS-H
-         WS-FOUND
-     IF WS-FOUND = 0
-         MOVE 66 TO WS-W
-         MOVE 28 TO WS-H
-         CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE
-     END-IF
-     MOVE WS-W TO EA-W EA-OP-W
-     MOVE WS-H TO EA-H EA-OP-H
-     MOVE 0 TO EA-OP-X EA-OP-Y
+     MOVE 0 TO EA-W EA-H
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         MOVE WS-S-PATH(WS-K) TO WS-PATH
+         MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
+         CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K) WS-CAPACITY
+             WS-W WS-H WS-FOUND
+         IF WS-FOUND = 0
+             MOVE WS-S-W(WS-K) TO WS-W
+             MOVE WS-S-H(WS-K) TO WS-H
+             CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE(WS-K)
+         END-IF
+         COMPUTE WS-T = WS-S-TYPE(WS-K) + 1
+         MOVE 0 TO EA-IM-X(WS-T)
+         MOVE EA-H TO EA-IM-Y(WS-T)
+         MOVE WS-W TO EA-IM-W(WS-T)
+         MOVE WS-H TO EA-IM-H(WS-T)
+         ADD WS-H TO EA-H
+         MOVE FUNCTION MAX(EA-W, WS-W) TO EA-W
+     END-PERFORM
      IF EA-ADDR NOT = NULL
          FREE EA-ADDR
      END-IF
-     COMPUTE WS-BYTES = WS-W * WS-H * 4
+     COMPUTE WS-BYTES = EA-W * EA-H * 4
      ALLOCATE WS-BYTES CHARACTERS RETURNING EA-ADDR
      SET ADDRESS OF B-ATLAS TO EA-ADDR
-     MOVE WS-IMAGE(1:WS-BYTES) TO B-ATLAS(1:WS-BYTES)
+     MOVE LOW-VALUES TO B-ATLAS(1:WS-BYTES)
+*>   Each image row r goes to atlas row (its top + r), from column 0.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         COMPUTE WS-T = WS-S-TYPE(WS-K) + 1
+         COMPUTE WS-ROW-BYTES = EA-IM-W(WS-T) * 4
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= EA-IM-H(WS-T)
+             COMPUTE WS-TO = (EA-IM-Y(WS-T) + WS-R) * EA-W * 4 + 1
+             COMPUTE WS-FROM = WS-R * WS-ROW-BYTES + 1
+             MOVE WS-IMAGE(WS-K)(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
+         END-PERFORM
+     END-PERFORM
      MOVE 1 TO AT-UPLOAD(2)
      GOBACK.
  END PROGRAM ENTITY-ATLAS-BUILD.
@@ -65,10 +106,30 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+*> The model boxes (08 §10.11; standin-content §3.2, §12.6): entity type, from x y z and to x y z
+*> in model pixels, the top row of its part's strip, the stand-in texture width and height.
+ 01 WS-BOX-DATA.
+    05 FILLER PIC X(31) VALUE "0-055+000-055+055+280+055006628".
+    05 FILLER PIC X(31) VALUE "2-070+030-060+070+120+060008023".
+    05 FILLER PIC X(31) VALUE "2-040+060+060+040+140+110128023".
+    05 FILLER PIC X(31) VALUE "2+020+000+020+050+030+050208023".
+    05 FILLER PIC X(31) VALUE "2-050+000+020-020+030+050208023".
+    05 FILLER PIC X(31) VALUE "2+020+000-050+050+030-020208023".
+    05 FILLER PIC X(31) VALUE "2-050+000-050-020+030-020208023".
+    05 FILLER PIC X(31) VALUE "3-060+000-060+060+120+060007212".
+ 01 WS-BOX-TABLE REDEFINES WS-BOX-DATA.
+    05 WS-MODEL-BOX OCCURS 8 TIMES.
+       10 WS-MB-TYPE         PIC 9.
+       10 WS-MB-CORNER       PIC S99V9 SIGN LEADING SEPARATE OCCURS 6 TIMES.
+       10 WS-MB-STRIP        PIC 99.
+       10 WS-MB-TEX-W        PIC 99.
+       10 WS-MB-TEX-H        PIC 99.
  01 WS-R                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
  01 WS-BOX.
-    05 WS-FROM             FLOAT-LONG OCCURS 3 TIMES.
-    05 WS-TO               FLOAT-LONG OCCURS 3 TIMES.
+    05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
  01 WS-SKIN.
     05 WS-STRIP-X          BINARY-LONG.
@@ -85,22 +146,25 @@
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
      MOVE 0 TO RL-EN-COUNT
-     MOVE -5.5 TO WS-FROM(1) WS-FROM(3)
-     MOVE 0 TO WS-FROM(2)
-     MOVE 5.5 TO WS-TO(1) WS-TO(3)
-     MOVE 28 TO WS-TO(2)
-     MOVE 0 TO WS-STRIP-X WS-STRIP-Y
-     MOVE 66 TO WS-TEX-W
-     MOVE 28 TO WS-TEX-H
-     MOVE EA-OP-X TO WS-RECT-X
-     MOVE EA-OP-Y TO WS-RECT-Y
-     MOVE EA-OP-W TO WS-RECT-W
-     MOVE EA-OP-H TO WS-RECT-H
+     MOVE 0 TO WS-STRIP-X
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = ET-OPERATOR
-                 AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
-             CALL "ENTITY-BOX" USING CLIENT-STATE WS-R L-EYE-TABLE WS-BOX WS-SKIN
-         END-IF
+         PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
+             IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)
+                     AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
+                 PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
+                     MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
+                 END-PERFORM
+                 MOVE WS-MB-STRIP(WS-B) TO WS-STRIP-Y
+                 MOVE WS-MB-TEX-W(WS-B) TO WS-TEX-W
+                 MOVE WS-MB-TEX-H(WS-B) TO WS-TEX-H
+                 COMPUTE WS-T = WS-MB-TYPE(WS-B) + 1
+                 MOVE EA-IM-X(WS-T) TO WS-RECT-X
+                 MOVE EA-IM-Y(WS-T) TO WS-RECT-Y
+                 MOVE EA-IM-W(WS-T) TO WS-RECT-W
+                 MOVE EA-IM-H(WS-T) TO WS-RECT-H
+                 CALL "ENTITY-BOX" USING CLIENT-STATE WS-R L-EYE-TABLE WS-BOX WS-SKIN
+             END-IF
+         END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITIES-MESH.

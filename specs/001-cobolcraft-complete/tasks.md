@@ -1289,12 +1289,12 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: mobs drawn from the pack. **Independent Test**: `make gate-client`.
 
-- [ ] T928 [P] [US9-client] Write `contract_wire_client.cob` cases: Add Entity for each mob type decodes to its entity type
-- [ ] T929 [P] [US9-client] Write acceptance test `client/tests/acc_us9_mob_render.cob`: case "acceptance US9-1 client half: each mob type is drawn with its standin-content §12 box geometry and the active pack's `textures/entity/<mob>.png`, at its position and facing, following moves"; case "SC-004 each built-in mob texture equals its `client/tests/fixtures/textures/` reference"
-- [ ] T930 [US9-client] Implement the built-in mob textures in `client/src/packs/builtin.cob`
-- [ ] T931 [US9-client] Implement mob geometry and drawing in `client/src/entities-render.cob`
-- [ ] T932 [US9-client] Extend the client implementation tests to 100 % coverage of the US9 changes
-- [ ] T933 Gate: run `make gate-client` and record the command and its real output
+- [X] T928 [P] [US9-client] Write `contract_wire_client.cob` cases: Add Entity for each mob type decodes to its entity type
+- [X] T929 [P] [US9-client] Write acceptance test `client/tests/acc_us9_mob_render.cob`: case "acceptance US9-1 client half: each mob type is drawn with its standin-content §12 box geometry and the active pack's `textures/entity/<mob>.png`, at its position and facing, following moves"; case "SC-004 each built-in mob texture equals its `client/tests/fixtures/textures/` reference"
+- [X] T930 [US9-client] Implement the built-in mob textures in `client/src/packs/builtin.cob`
+- [X] T931 [US9-client] Implement mob geometry and drawing in `client/src/entities-render.cob`
+- [X] T932 [US9-client] Extend the client implementation tests to 100 % coverage of the US9 changes
+- [X] T933 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 40: US10-client — crafting screen
 
