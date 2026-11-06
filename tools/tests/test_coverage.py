@@ -1,6 +1,8 @@
 """Implementation tests of tools/coverage.py against hand-written gcov output fixtures."""
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -22,6 +24,22 @@ def outputs():
         ("/repo/core", fixture("excluded.gcov.txt")),
         ("/repo/shim", fixture("shim-net.gcov.txt")),
     ]
+
+
+class Objects(unittest.TestCase):
+    def test_library_and_convergence_entry_objects(self):
+        build = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, build)
+        for relative in ["client/obj/loop.o", "client/obj/screens/title.o", "convergence/obj/client/main.o",
+                         "convergence/obj/server/main.o", "convergence/tests/acc_x.o", "client/obj/x.gcda"]:
+            os.makedirs(os.path.dirname(os.path.join(build, relative)), exist_ok=True)
+            open(os.path.join(build, relative), "w").close()
+        self.assertEqual(
+            coverage.objects(build, "client"),
+            sorted(os.path.join(build, r) for r in
+                   ["client/obj/loop.o", "client/obj/screens/title.o", "convergence/obj/client/main.o"]),
+        )
+        self.assertEqual(coverage.objects(build, "core"), [])
 
 
 class Parsing(unittest.TestCase):

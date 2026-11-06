@@ -47,6 +47,27 @@ class PackageSelection(unittest.TestCase):
             runtests.build_order(["server", "client"]), ["shim", "proto", "core", "server", "client"]
         )
 
+    def test_convergence_is_selected_only_by_name_and_comes_last(self):
+        self.assertNotIn("convergence", runtests.select_packages([]))
+        self.assertEqual(runtests.select_packages(["convergence", "core"]), ["core", "convergence"])
+
+    def test_convergence_builds_every_package(self):
+        self.assertEqual(runtests.build_order(["convergence"]), ["shim", "proto", "core", "server", "client"])
+
+    def test_convergence_directory_and_programs(self):
+        repo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, repo)
+        os.makedirs(os.path.join(repo, "tests", "convergence"))
+        for name in ["acc_us2_join.cob", "convharness.cob"]:
+            open(os.path.join(repo, "tests", "convergence", name), "w").close()
+        self.assertEqual(runtests.discover_tests(repo, "convergence"), ["tests/convergence/acc_us2_join.cob"])
+        self.assertEqual(
+            runtests.program_path("/b", "tests/convergence/acc_us2_join.cob"),
+            os.path.join("/b", "convergence", "tests", "acc_us2_join"),
+        )
+        self.assertEqual(runtests.package_directory("convergence"), "tests/convergence")
+        self.assertEqual(runtests.package_directory("core"), "core")
+
     def test_unknown_package_is_rejected(self):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             runtests.parse_arguments(["nosuchpackage"])

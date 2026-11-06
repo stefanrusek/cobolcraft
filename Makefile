@@ -1,10 +1,11 @@
 # Top-level commands (contracts/test-harness.md §1). Every output goes under build/.
 #   make bootstrap       check prerequisites, create build/, compile shaders
 #   make / make build    build/bin/cobolcraft and build/bin/cobolcraft-server
-#   make test            build and run every package's test programs
+#   make test            build and run every package's test programs, then the Convergence tests
+#                        (tests/convergence: cross-package acceptance tests)
 #   make lint            lint every package
 #   make coverage        instrumented test run, then fail on any never-executed production line
-#   make gate            lint + build + coverage, plus the tools package's tests
+#   make gate            lint + build + coverage (with the Convergence tests), plus the tools package's tests
 #   make gate-<pkg>      the same scoped to shim, proto, core, server, client or tools
 #   make gate-contract   wire fixtures parse, contract probes, lint of contract/
 #   make clean           remove build/
@@ -36,14 +37,17 @@ bootstrap:
 	sh tools/bootstrap.sh
 
 test:
-	$(PYTHON) tools/runtests.py --build $(BUILD) $(PKGS)
+	$(PYTHON) tools/runtests.py --build $(BUILD) $(PKGS) convergence
 
 lint:
-	status=0; $(foreach p,$(PKGS) tools,$(MAKE) -C $(p) lint || status=1;) exit $$status
+	status=0; $(foreach p,$(PKGS) tools tests/convergence,$(MAKE) -C $(p) lint || status=1;) exit $$status
 
+# The Convergence tests run with the packages' instrumented libraries, so their lines count too;
+# they also run the instrumented programs (whose src/main.cob objects live under
+# $(COVBUILD)/convergence/obj).
 coverage:
 	if [ -d $(COVBUILD) ]; then find $(COVBUILD) -name '*.gcda' -delete; fi
-	$(PYTHON) tools/runtests.py --coverage --build $(COVBUILD) $(PKGS)
+	$(PYTHON) tools/runtests.py --coverage --build $(COVBUILD) $(PKGS) convergence
 	$(PYTHON) tools/coverage.py --build $(COVBUILD) $(PKGS)
 
 gate:

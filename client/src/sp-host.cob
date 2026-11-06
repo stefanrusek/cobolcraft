@@ -6,7 +6,8 @@
 *> list shows it) and joins it (NET-OPEN-MEMORY); SP-PUMP, once per frame while hosting, runs one
 *> CORE-TICK per elapsed 50 ms (none while the pause menu is open and the world is not opened to
 *> others, US16-4), prints the core's console lines on the terminal and ends hosting when the core
-*> was told to stop (the shutdown command: the host quitting) or the connection has ended; SP-QUIT
+*> was told to stop (the shutdown command: the host quitting, after receiving what the core sent
+*> before stopping, such as the command's confirmation) or the connection has ended; SP-QUIT
 *> is the quit-world control: CORE-STOP (saves the world), the connection closed, back to the title
 *> screen (US16-5).
 *> Opening to others (US17): SP-OPEN-OTHERS switches the world to host kind 2 (CORE-OPEN-TO-OTHERS
@@ -106,6 +107,7 @@
  COPY CLCONST.
  COPY COREAPI.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -133,6 +135,8 @@
      CALL "CORE-STATUS-GET" USING CORE-STATUS
      EVALUATE TRUE
          WHEN CST-RUN-STATE = 1
+*>           What the core sent before stopping (the shutdown confirmation) is received first.
+             CALL "NET-PUMP" USING CLIENT-STATE WS-CONN
              CALL "SP-QUIT" USING CLIENT-STATE
          WHEN CN-PHASE(CONN-GAME) = PH-NONE
              CALL "SP-STOP" USING CLIENT-STATE

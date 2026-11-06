@@ -193,6 +193,7 @@
 *>   host holds operator status, so it runs; the next frame quits the world.
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
      CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
+     MOVE 0 TO CH-COUNT
      MOVE CC-KEY-SLASH TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE "shutdown" TO WS-TYPED
@@ -214,6 +215,14 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "joined " FUNCTION TRIM(WS-E1) " active " FUNCTION TRIM(WS-E2) " run "
          FUNCTION TRIM(WS-E3) " screen " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "sp host the shutdown confirmation (sent before stopping, standin-content §16 row 29) "
+         & "reaches the host's chat before the world is quit" TO TL-CASE
+     MOVE "Shutting down" TO TL-EXPECTED
+     MOVE "none" TO TL-OBSERVED
+     IF CH-COUNT > 0
+         MOVE CH-TEXT(CH-COUNT) TO TL-OBSERVED
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A connection the core ends: CORE-STOP called past the host sends Disconnect and hands the

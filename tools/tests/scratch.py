@@ -1,7 +1,7 @@
 """Scratch copies of the repository for the US1 acceptance tests (test infrastructure).
 
 A scratch copy holds everything a Contributor's checkout holds except version control data, build
-outputs and every existing test directory, so the copy's test run contains exactly the test programs
+outputs and every existing test program, so the copy's test run contains exactly the test programs
 an acceptance case adds.
 """
 import os
@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+# Test directories: their test programs (and the programs' sibling files) are left out; everything
+# else in them (fixture generators, helper copybooks) is kept, since package builds use it.
 TEST_DIRS = {
     os.path.join("shim", "tests"),
     os.path.join("proto", "tests"),
@@ -19,6 +21,7 @@ TEST_DIRS = {
     os.path.join("tools", "tests"),
     os.path.join("tests", "convergence"),
 }
+TEST_PREFIXES = ("acc_", "contract_", "test_")
 
 
 def make_copy():
@@ -30,8 +33,9 @@ def make_copy():
         relative = os.path.relpath(directory, REPO)
         skipped = []
         for name in names:
-            path = os.path.normpath(os.path.join(relative, name))
-            if name in (".git", "build", "__pycache__") or path in TEST_DIRS:
+            if name in (".git", "build", "__pycache__"):
+                skipped.append(name)
+            elif relative in TEST_DIRS and name.startswith(TEST_PREFIXES):
                 skipped.append(name)
         return skipped
 

@@ -8,6 +8,9 @@ Run after an instrumented test run (`runtests.py --coverage`, which builds with 
 runs `gcov -t` (llvm-cov gcov) from the package directory, merges the line counts of every production
 source, prints `UNCOVERED <file>:<line>` for every line never executed and exits 1 if there is one.
 
+Objects: `<build>/<package>/obj` and, when the Convergence tests built them,
+`<build>/convergence/obj/<package>` (the instrumented program entry files src/main.cob).
+
 Production sources: shim/src/*.c, proto/src/*.cob, core/src/*.cob, core/copy/*.cpy,
 server/src/*.cob, client/src/**/*.cob. Everything else (tests, tools, specs, contract, generated C,
 system headers) is ignored.
@@ -84,9 +87,13 @@ def collect(outputs, repo, packages):
 
 
 def objects(build, package):
+    """The package's instrumented objects: its library objects, and the program entry objects the
+    Convergence tests build and run (`<build>/convergence/obj/<package>`, kept apart so a package
+    gate, which does not run them, never sees them)."""
     found = []
-    for directory, _, names in os.walk(os.path.join(build, package, "obj")):
-        found.extend(os.path.join(directory, name) for name in names if name.endswith(".o"))
+    for root in (os.path.join(build, package, "obj"), os.path.join(build, "convergence", "obj", package)):
+        for directory, _, names in os.walk(root):
+            found.extend(os.path.join(directory, name) for name in names if name.endswith(".o"))
     return sorted(found)
 
 

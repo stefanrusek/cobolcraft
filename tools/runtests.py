@@ -10,7 +10,11 @@ observed=<y>` lines. It prints every failing case as `FAIL <case> expected=<x> o
 `passed <n> failed <m>`, and exits 1 if any case failed.
 
 Test programs are the sources `<package>/tests/{acc,contract,test}_*.{cob,c}`; the program built from
-`<package>/tests/<name>.<ext>` is `<build>/<package>/tests/<name>`. Sibling files of a test source:
+`<package>/tests/<name>.<ext>` is `<build>/<package>/tests/<name>`. The pseudo-package `convergence`
+(never selected by default) is `tests/convergence/` (the Convergence phase's cross-package acceptance
+tests): it depends on every package, and its programs are `<build>/convergence/tests/<name>`. Every
+test program runs with the environment variable COBOLCRAFT_BUILD set to the build root.
+Sibling files of a test source:
 - `<name>.stdin`: fed to the program as standard input (otherwise standard input is empty).
 - `<name>.expect`: line 1 the expected exit status, optional line 2 a text standard error must
   contain; the program is then one case named after it (for fatal-path tests).
@@ -24,12 +28,15 @@ import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PACKAGES = ["shim", "proto", "core", "server", "client"]
+CONVERGENCE = "convergence"
+DIRECTORIES = {CONVERGENCE: "tests/convergence"}
 DEPENDENCIES = {
     "shim": [],
     "proto": ["shim"],
     "core": ["shim", "proto"],
     "server": ["shim", "proto", "core"],
     "client": ["shim", "proto", "core"],
+    CONVERGENCE: list(PACKAGES),
 }
 TEST_PREFIXES = ("acc_", "contract_", "test_")
 TEST_EXTENSIONS = (".cob", ".c")
@@ -52,8 +59,14 @@ def parse_line(line):
 
 
 def select_packages(names):
-    """The named packages (all when none are named) in dependency order."""
-    return [p for p in PACKAGES if not names or p in names]
+    """The named packages (every real package when none are named) in dependency order; the
+    convergence pseudo-package, when named, comes last."""
+    return [p for p in PACKAGES if not names or p in names] + [p for p in [CONVERGENCE] if p in names]
+
+
+def package_directory(package):
+    """The package's directory, relative to the repository root."""
+    return DIRECTORIES.get(package, package)
 
 
 def build_order(selected):
@@ -66,18 +79,20 @@ def build_order(selected):
 
 def discover_tests(repo, package):
     """Repository-relative paths of the package's test program sources, sorted."""
-    directory = os.path.join(repo, package, "tests")
+    relative = DIRECTORIES.get(package, package + "/tests")
+    directory = os.path.join(repo, relative)
     if not os.path.isdir(directory):
         return []
     return [
-        package + "/tests/" + name
+        relative + "/" + name
         for name in sorted(os.listdir(directory))
         if name.startswith(TEST_PREFIXES) and name.endswith(TEST_EXTENSIONS)
     ]
 
 
 def program_path(build, source):
-    package, _, name = source.split("/")
+    directory, _, name = source.rpartition("/")
+    package = next((p for p, d in DIRECTORIES.items() if d == directory), directory.split("/")[0])
     return os.path.join(build, package, "tests", os.path.splitext(name)[0])
 
 
@@ -135,7 +150,7 @@ def report(results):
 
 
 def make(package, target, build, coverage):
-    command = ["make", "-C", os.path.join(REPO, package), target, "BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
+    command = ["make", "-C", os.path.join(REPO, package_directory(package)), target, "BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
     returncode = subprocess.run(command).returncode
     if returncode != 0:
         print("ERROR build: %s exited %d" % (" ".join(command), returncode))
@@ -146,7 +161,9 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser(description="Build and run the test programs of the selected packages.")
     parser.add_argument("--build", default=os.path.join(REPO, "build"), help="build output root")
     parser.add_argument("--coverage", action="store_true", help="build with coverage instrumentation")
-    parser.add_argument("packages", nargs="*", choices=PACKAGES, metavar="PACKAGE", help=" ".join(PACKAGES))
+    parser.add_argument(
+        "packages", nargs="*", choices=PACKAGES + [CONVERGENCE], metavar="PACKAGE", help=" ".join(PACKAGES + [CONVERGENCE])
+    )
     return parser.parse_args(argv)
 
 
@@ -154,6 +171,7 @@ def main(argv):
     arguments = parse_arguments(argv)
     build = os.path.abspath(arguments.build)
     selected = select_packages(arguments.packages)
+    os.environ["COBOLCRAFT_BUILD"] = build
     for package in build_order(selected):
         if not make(package, "lib", build, arguments.coverage):
             return 1
