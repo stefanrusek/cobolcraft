@@ -22,6 +22,31 @@ There are three roles, and each runs in its own fresh subagent. One agent never 
 Implementers (speckit-implement phases, other agents) only ever see the committed docs. Briefs to implementers
 cite doc sections and never repeat artifact findings that are not in the docs.
 
+## Recalled knowledge is not evidence
+
+Observed in the first rounds (operator, 2026-11-06): although the game is closed source, the models that run the
+reader and reviewer roles carry Minecraft source code from their training data, and almost certainly the Minecraft
+wiki as well. Such recall is useful for knowing where to look, and it is unreliable as a source: it may describe an
+older version (26.3's worldgen, spawning, lighting and environment code differ from the 1.18 to 1.21 code in many
+places), a mod or a different edition, or a plausible guess. It is also itself a contamination path, since it is
+source or wiki text that no one has checked against this artifact. Constitution 1.1 already says agent memory MUST NOT
+serve as an input to any phase; this section applies that rule here.
+
+- **Evidence is the artifact.** A value, formula, ordering or behaviour goes into the docs only if it was read from the
+  artifact in this round. A value that merely agrees with what the agent remembers is still read before it is written.
+- **Recall steers, it never fills.** Remembered names, constants and structures are hypotheses to look up. Where the
+  artifact differs from recall, the artifact wins and the difference is worth a note in the doc.
+- **Mark what was not read.** A statement taken from recall, a wiki-style "well-known value" or "as in earlier
+  versions", or an illustration that was not read, is marked "(recalled, not verified)", and it is listed in the
+  document's Open questions. Marked values never stand in for the numbers an implementer needs.
+- **No transcribed recall.** Prose that reproduces the structure or wording of remembered source code or wiki pages is
+  contamination, like pasted decompiled code. It is rewritten in the doc's own terms from what was read.
+- **Reviewers test for it.** The reviewer treats a claim with no visible trace to the artifact as suspect: typical
+  signs are round or "textbook" numbers, behaviour that matches an older version, wiki phrasing, and values given
+  without a class or data file to cite. Each such claim is verified against the artifact, and the report says which
+  ones matched, which differed, and which could not be traced. A matching value does not clear a doc that reads like
+  recall.
+
 ## Procedure
 
 1. **Scope.** Write down what behaviour is needed and why: the ticket or spec item, the questions the docs must

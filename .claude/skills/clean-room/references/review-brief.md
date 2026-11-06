@@ -31,6 +31,13 @@ not read or edit repository code, and do not edit the docs.
 5. **House style.** The text should match 00 to 09: prose and tables, numbered sections, and cross-references in the
    form "07 §9.1".
 
+6. **Recall.** The reader may have written from memory of Minecraft's source or wiki rather than from the artifact
+   (see "Recalled knowledge is not evidence" in the skill). Flag every claim with no visible trace to the artifact:
+   round or textbook numbers, behaviour that matches an older version, wiki phrasing, values with no class or data
+   file cited, and anything marked "illustrative" or "well known". Verify each flagged claim against the artifact and
+   report whether it matched, differed, or could not be traced. Also flag prose that reads as transcribed remembered
+   code. Unmarked recall is a finding even when the value turns out right.
+
 ## Report
 
 - **Verdict:** `CLEAN` or `CHANGES NEEDED`.
