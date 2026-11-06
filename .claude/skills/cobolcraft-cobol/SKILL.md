@@ -171,6 +171,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   status by putting its offline UUID on the operator list (`ACCESS-ADD` with `ACCESS-OPERATORS`)
   before it joins. `TEST-HELLO` stops after Hello (for Login Disconnect refusals); the name
   `TEST-LOGIN` is taken by `test_login.cob`.
+- **Console commands and stopping** (US15): `CORE-CONSOLE` takes a z-string line (sender 0, replies
+  drained with `CORE-CONSOLE-DRAIN`). `CORE-STOP` takes a z-string §17 translate key, saves, sends each
+  connection not already closing the disconnect of its phase and sets run state 2. Draining a
+  closed connection with `TEST-DRAIN` releases it, so the player leaves after the save.
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time

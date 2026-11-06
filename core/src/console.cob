@@ -112,3 +112,33 @@
      MOVE PB-BUFFER TO CW-CONSOLE
      GOBACK.
  END PROGRAM CORE-LOG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONSOLE-RUN.
+*> USING command line (z-string, without a leading `/`, operator-surface §4): the console sender
+*> runs it (CMD-RUN with sender 0: operator permission, FR-016; every reply is queued as a console
+*> line through CMD-TELL and CONSOLE-TEXT). At most 768 bytes before the NUL are taken.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CONSOLE             BINARY-LONG VALUE 0.
+ 01 WS-LINE                PIC X(768).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-LINE                 PIC X(768) BASED.
+ LINKAGE SECTION.
+ 01 L-LINE                 PIC X.
+ PROCEDURE DIVISION USING L-LINE.
+     SET ADDRESS OF B-LINE TO ADDRESS OF L-LINE
+     MOVE 768 TO WS-LENGTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LENGTH
+         IF B-LINE(WS-I:1) = X"00"
+             COMPUTE WS-LENGTH = WS-I - 1
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO WS-LINE
+     IF WS-LENGTH > 0
+         MOVE B-LINE(1:WS-LENGTH) TO WS-LINE(1:WS-LENGTH)
+     END-IF
+     CALL "CMD-RUN" USING WS-CONSOLE WS-LINE WS-LENGTH
+     GOBACK.
+ END PROGRAM CONSOLE-RUN.

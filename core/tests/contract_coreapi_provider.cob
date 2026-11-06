@@ -1,7 +1,8 @@
 *> Contract test, provider side of the game core host API (contracts/core-host-api.md §1, §2, §4), US2
 *> entry points: CORE-WORLD-OPEN, CORE-CONN-OPEN, CORE-CONN-INPUT, CORE-CONN-OUTPUT, CORE-CONN-CLOSED,
 *> CORE-TICK, CORE-CONSOLE-DRAIN and CORE-STATUS-GET with the record layouts of COREAPI.cpy; US13:
-*> CORE-SAVE and CORE-WORLD-OPEN of an existing world folder.
+*> CORE-SAVE and CORE-WORLD-OPEN of an existing world folder; US15: CORE-CONSOLE, CORE-STOP and the
+*> CORE-STATUS-GET run states 0, 1 and 2.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-COREAPI-PROVIDER.
  DATA DIVISION.
@@ -34,6 +35,9 @@
  01 WS-LINE-LENGTH         BINARY-LONG VALUE 14.
  01 WS-EDIT                PIC -(9)9.
  01 WS-FIXTURE             PIC X(256).
+ 01 WS-CONSOLE-LINE        PIC X(64).
+ 01 WS-REASON              PIC X(64) VALUE Z"cobolcraft.disconnect.shutdown".
+ 01 WS-LINES               PIC X(256).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE "contract coreapi provider record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 CORE-STATUS 5"
@@ -263,7 +267,64 @@
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = CST-RUN-STATE * 10 + CST-PLAYERS-ONLINE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONSOLE (US15): a z-string command line, run with operator permission; its reply is a
+*>   console line.
+     MOVE Z"clock 1000" TO WS-CONSOLE-LINE
+     CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
+     PERFORM DRAIN-LINES
+     MOVE "contract coreapi provider CORE-CONSOLE runs an operator command line and its reply is "
+         & "drained as a console line" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "1000|The clock now reads 1000" TO TL-EXPECTED
+     MOVE CW-TIME TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) "|" WS-LINES DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-STATUS-GET run states: 0 running, 1 after the stop command, 2 after CORE-STOP.
+     MOVE Z"shutdown" TO WS-CONSOLE-LINE
+     CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
+     PERFORM DRAIN-LINES
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract coreapi provider CORE-STATUS-GET run state 1 after the stop command" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE CST-RUN-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     CALL "CORE-STOP" USING WS-REASON
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract coreapi provider CORE-STOP sets run state 2 (CORE-STATUS-GET)" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE CST-RUN-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 64 TO CB-CAPACITY
+     CALL "CORE-CONN-OUTPUT" USING WS-ID CORE-BUFFER WS-CLOSE
+     MOVE "contract coreapi provider CORE-STOP raises the close flag of every connection" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-CLOSE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider CORE-STOP saves the world (level.dat written)" TO TL-CASE
+     MOVE "build/core-test-world/level.dat" TO WS-OLD-LEVEL
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-LEVEL WS-FILE-INFO
+     MOVE RETURN-CODE TO TL-OBSERVED-N
+     MOVE 0 TO RETURN-CODE
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+*> WS-LINES: the console lines drained now, separated by "|".
+ DRAIN-LINES.
+     MOVE SPACES TO WS-LINES
+     SET CB-ADDR TO ADDRESS OF WS-LINES
+     MOVE 256 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     IF CB-LENGTH > 0
+         MOVE SPACES TO WS-LINES(CB-LENGTH:1)
+     END-IF
+     INSPECT WS-LINES REPLACING ALL X"0A" BY "|".
 
  APPEND-EDIT.
      STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE

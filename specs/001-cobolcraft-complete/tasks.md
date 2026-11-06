@@ -973,14 +973,14 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: `CORE-CONSOLE` and `CORE-STOP` (core-host-api §2). **Independent Test**: `make gate-core`.
 
-- [ ] T703 [P] [US15-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONSOLE`, `CORE-STOP` and `CORE-STATUS-GET` run states 0, 1, 2
-- [ ] T704 [P] [US15-core] Write acceptance test `core/tests/acc_us15_console.cob`: case "acceptance US15-1 given a running world when a command line is passed to `CORE-CONSOLE` then it runs with operator permission and its result is drained as console lines"; case "acceptance US15-3 an unknown command or bad arguments drains the §16 error and help hint"
-- [ ] T705 [US15-core] Implement the `CORE-CONSOLE` entry point in `core/src/api.cob`
-- [ ] T706 [US15-core] Implement the console sender (operator permission, replies to the console queue) in `core/src/console.cob`
-- [ ] T707 [P] [US15-core] Write acceptance test `core/tests/acc_us15_stop.cob`: case "acceptance US15-2 given players and changes when `CORE-STOP` is called with the stopping text then the world is saved, every connection is queued a Disconnect with that text and the run state becomes 2"
-- [ ] T708 [US15-core] Implement `CORE-STOP` in `core/src/api.cob`
-- [ ] T709 [US15-core] Extend the core implementation tests to 100 % coverage of the US15 changes
-- [ ] T710 Gate: run `make gate-core` and record the command and its real output
+- [X] T703 [P] [US15-core] Write `core/tests/contract_coreapi_provider.cob` cases for `CORE-CONSOLE`, `CORE-STOP` and `CORE-STATUS-GET` run states 0, 1, 2
+- [X] T704 [P] [US15-core] Write acceptance test `core/tests/acc_us15_console.cob`: case "acceptance US15-1 given a running world when a command line is passed to `CORE-CONSOLE` then it runs with operator permission and its result is drained as console lines"; case "acceptance US15-3 an unknown command or bad arguments drains the §16 error and help hint"
+- [X] T705 [US15-core] Implement the `CORE-CONSOLE` entry point in `core/src/api.cob`
+- [X] T706 [US15-core] Implement the console sender (operator permission, replies to the console queue) in `core/src/console.cob`
+- [X] T707 [P] [US15-core] Write acceptance test `core/tests/acc_us15_stop.cob`: case "acceptance US15-2 given players and changes when `CORE-STOP` is called with the stopping text then the world is saved, every connection is queued a Disconnect with that text and the run state becomes 2"
+- [X] T708 [US15-core] Implement `CORE-STOP` in `core/src/api.cob`
+- [X] T709 [US15-core] Extend the core implementation tests to 100 % coverage of the US15 changes
+- [X] T710 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 26: US17-core — opening a single-player world to others
 

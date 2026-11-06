@@ -187,3 +187,54 @@
      CALL "PLAYERS-ONLINE" USING CST-PLAYERS-ONLINE
      GOBACK.
  END PROGRAM CORE-STATUS-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CORE-CONSOLE.
+*> USING command line (z-string, without a leading `/`): runs it as the console, with operator
+*> permission (US15-1, FR-016; CONSOLE-RUN); its result or error is queued as console lines for
+*> CORE-CONSOLE-DRAIN (US15-3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LINE                 PIC X.
+ PROCEDURE DIVISION USING L-LINE.
+     CALL "CONSOLE-RUN" USING L-LINE
+     GOBACK.
+ END PROGRAM CORE-CONSOLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CORE-STOP.
+*> USING reason (z-string: a standin-content §17 translate key, e.g. cobolcraft.disconnect.shutdown
+*> for the stopping server, US15-2, or cobolcraft.disconnect.host_closed, US17-4; at most 1024 bytes
+*> before the NUL): saves the world (WORLD-SAVE, FR-014), queues every connection not already closing
+*> the disconnect of its phase with that key and no arguments (CORE-SEND-DISCONNECT: play Disconnect
+*> 0x20, configuration 0x02, Login Disconnect; handshake and status only the close flag) and sets
+*> run state 2 (stopped, CORE-STATUS-GET).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-REASON               PIC X(1024) BASED.
+ LINKAGE SECTION.
+ 01 L-REASON               PIC X.
+ PROCEDURE DIVISION USING L-REASON.
+     CALL "WORLD-SAVE"
+     INITIALIZE PB-TEXT
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     SET ADDRESS OF B-REASON TO ADDRESS OF L-REASON
+     MOVE 1024 TO PB-TX-LENGTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-TX-LENGTH
+         IF B-REASON(WS-I:1) = X"00"
+             COMPUTE PB-TX-LENGTH = WS-I - 1
+         END-IF
+     END-PERFORM
+     MOVE B-REASON(1:PB-TX-LENGTH) TO PB-TX-VALUE
+     PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
+         IF CN-USED(WS-ID) = 1 AND CN-CLOSE(WS-ID) = 0
+             CALL "CORE-SEND-DISCONNECT" USING WS-ID PB-TEXT
+         END-IF
+     END-PERFORM
+     MOVE 2 TO CW-RUN-STATE
+     GOBACK.
+ END PROGRAM CORE-STOP.
