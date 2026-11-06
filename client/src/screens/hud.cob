@@ -13,6 +13,9 @@
 *> hotbar's left end; none in creative. The hurt indication (US7-2): while the clock is before
 *> PL-HURT-UNTIL, the first widget is an overlay over the whole screen on the hurt swatch (a red
 *> tint, drawn under the rest of the HUD).
+*> Food (US8-1, US8-6; standin-content §11.1; 08 §10.8.6 cobolcraft.hud.food): in survival a label
+*> "Food <current>/<maximum>" (the last Set Health's food, maximum 24) beside the health label, to
+*> its right above the hotbar's right half; none in creative.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUD-BUILD.
@@ -40,6 +43,8 @@
  01 WS-H                   BINARY-LONG VALUE 9.
  01 WS-HKEY                PIC X(80) VALUE "cobolcraft.hud.health".
  01 WS-HKEY-LENGTH         BINARY-LONG VALUE 21.
+ 01 WS-FKEY                PIC X(80) VALUE "cobolcraft.hud.food".
+ 01 WS-FKEY-LENGTH         BINARY-LONG VALUE 19.
  01 WS-EDIT                PIC Z(9)9.
  01 WS-TEXT                PIC X(512).
  01 WS-LENGTH              BINARY-LONG.
@@ -75,6 +80,17 @@
              WS-LENGTH
          COMPUTE WS-X = L-GW / 2 - 90
          COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 12
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-LENGTH WS-STATE
+         MOVE PL-FOOD TO WS-EDIT
+         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(1)
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(1)
+         MOVE CL-MAX-FOOD TO WS-EDIT
+         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(2)
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(2)
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-FKEY WS-FKEY-LENGTH LANG-ARGS WS-TEXT
+             WS-LENGTH
+         COMPUTE WS-X = L-GW / 2
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H
              WS-TEXT WS-LENGTH WS-STATE
      END-IF

@@ -22,6 +22,10 @@
 *> the local player start the hurt indication, Player Combat Kill for the local player opens the
 *> death screen with its message, Respawn enters the dimension it names (as Login does: the replica
 *> emptied, the world screen shown; the server sends the world again).
+*> Hunger (US8): the Use Item, release-use-item Player Action and Player Command builders
+*> (controls.cob sends them; the food level is the Set Health field the HUD shows); Entity Event 9
+*> (eating finished) for the local player ends its eating. Entering a dimension (Login, Respawn)
+*> ends sprinting and eating: the server clears both on death, respawn and travel.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -318,9 +322,9 @@
  END PROGRAM CLP-PLAYER-ACTION.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CLP-DROP.
-*> USING PB-BUFFER, action (5 drop item, 4 drop all items): the throw's Player Action (05c 0x29;
-*> 09 §3.3 fixes location (0, 0, 0), face 0 and sequence 0).
+ PROGRAM-ID. CLP-ITEM-ACTION.
+*> USING PB-BUFFER, action (5 drop item, 4 drop all items, 6 release use item): a Player Action on
+*> the held item, not a block (05c 0x29; 09 §3.3 fixes location (0, 0, 0), face 0 and sequence 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -335,7 +339,48 @@
      CALL "CLP-PLAYER-ACTION" USING PB-BUFFER L-ACTION WS-ZERO WS-ZERO-Y WS-ZERO-Z WS-FACE
          WS-SEQUENCE
      GOBACK.
- END PROGRAM CLP-DROP.
+ END PROGRAM CLP-ITEM-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-USE-ITEM.
+*> USING PB-BUFFER, sequence, yaw, pitch (FLOAT-SHORT): Use Item (05c 0x43) with the main hand.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 67.
+ 01 WS-HAND                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SEQUENCE             BINARY-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING PB-BUFFER L-SEQUENCE L-YAW L-PITCH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HAND
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     GOBACK.
+ END PROGRAM CLP-USE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLAYER-COMMAND.
+*> USING PB-BUFFER, entity id (the player's own), action (1 start, 2 stop sprinting): Player
+*> Command (05c 0x2A) with data 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 42.
+ 01 WS-DATA                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-ACTION.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-DATA
+     GOBACK.
+ END PROGRAM CLP-PLAYER-COMMAND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-USE-ITEM-ON.
@@ -795,6 +840,14 @@
              IF WS-ID = PL-ENTITY-ID
                  COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
              END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 34
+*>           Entity Event (an Int entity id, a Byte event): 9 for the local player is eating
+*>           finished (standin §11.6).
+             CALL "PB-GET-INT" USING L-PACKET WS-ID
+             CALL "PB-GET-BYTE" USING L-PACKET WS-VALUE
+             IF WS-ID = PL-ENTITY-ID AND WS-VALUE = 9
+                 MOVE 0 TO PL-EATING
+             END-IF
          WHEN WS-PHASE = PH-PLAY AND L-ID = 69
 *>           Player Combat Kill: the death screen shows the message (standin §10.6).
              CALL "PB-GET-VARINT" USING L-PACKET WS-ID
@@ -1077,7 +1130,8 @@
  PROGRAM-ID. DIMENSION-ENTER.
 *> USING CLIENT-STATE (PL-DIM-TYPE set): the type's height range and sky light from the
 *> dimension_type registry (else 0, 256 and sky light), not loaded or positioned yet, no fall
-*> under way, no hurt indication; the replica is emptied and the world screen shown.
+*> under way, no hurt indication, not sprinting or eating; the replica is emptied and the world
+*> screen shown.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -1087,6 +1141,7 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO PL-MIN-Y PL-LOADED PL-POSITIONED PL-BATCHES PL-VY PL-HURT-UNTIL
+     MOVE 0 TO PL-SPRINTING PL-EATING
      MOVE 256 TO PL-HEIGHT
      MOVE 1 TO PL-HAS-SKY
      COMPUTE WS-D = PL-DIM-TYPE + 1

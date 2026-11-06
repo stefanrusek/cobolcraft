@@ -2,10 +2,10 @@
 *> CL-INIT empties a client state; CL-START prepares it without a window (game directory, server
 *> list, the pack stack, language, font and UI atlas, block and entity atlases, baked models, item
 *> icons, the title screen); CL-STEP is one frame: the frame's events, the screen's input (on the
-*> world screen also looking and the fly toggle, physics.cob), the client tick (every 50 ms in
-*> play: the player's movement and its Move Player once loaded, then Client Tick End), the target
-*> block or entity (raycast.cob, world screen) and the block, attack and hotbar controls
-*> (controls.cob), the connections pumped without waiting, the sky, meshing of changed sections,
+*> world screen also looking and the fly toggle, physics.cob), sprinting (controls.cob), the
+*> client tick (every 50 ms in play: the player's movement and its Move Player once loaded, then
+*> Client Tick End), the target block or entity (raycast.cob, world screen) and the block, use,
+*> eat, attack and hotbar controls (controls.cob), the connections pumped without waiting, the sky, meshing of changed sections,
 *> then the screen model, the UI and the render list; CL-RUN repeats frames over the window
 *> (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the command
 *> line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
@@ -187,6 +187,10 @@
      CALL "SCREEN-INPUT" USING CLIENT-STATE
      IF SM-SCREEN = SCR-WORLD
          CALL "PHYS-INPUT" USING CLIENT-STATE
+     END-IF
+*>   Sprinting starts or stops before the tick that moves at its speed.
+     IF CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "CONTROLS-SPRINT" USING CLIENT-STATE
      END-IF
 *>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
 *>   then Client Tick End, and the day advances one tick.

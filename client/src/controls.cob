@@ -15,6 +15,17 @@
 *>   - the left button pressed while a player or mob is the target (RAYCAST's entity target, which
 *>     leaves no target block) sends Attack with its entity id (US7-5; standin-content §10.4, in
 *>     either game mode); the server decides the hit and the damage.
+*>   - eating (US8-3; standin-content §11.5, §11.6; 09 §3.3 Use Item 0x43, Player Action 6): the
+*>     right button pressed on the world screen with a food item held, when it uses no block,
+*>     sends Use Item (the next sequence number, the facing) and the Player is eating; releasing
+*>     the button before the eating time (1.5 s) has passed sends release use item (nothing is
+*>     eaten); a later release, or Entity Event 9 for the Player first, ends it with nothing sent.
+*>     The server decides whether eating starts (food below 24, survival).
+*>   CONTROLS-SPRINT (every frame in play, before the client tick; US8-2; client-surface §3;
+*>   09 §3.3 Player Command 0x2A): the Player sprints while, on the world screen, Left Control is
+*>   held and the Player moves forward (W without S); start sprinting is sent when that begins and
+*>   stop sprinting when it ends (Left Control or W released, S pressed, the world screen left).
+*>   physics.cob moves a sprinting Player at the sprint speed.
 *>   CONTROLS-HOTBAR (world and inventory screens): keys 1 to 9 hold hotbar slot 0 to 8, the wheel
 *>   moves the held slot (up: the previous slot, down: the next, wrapping); a change is sent.
 *>   CONTROLS-THROW (world screen; US5-3; standin-content §9.1; 09 §3.3 Player Action actions 5
@@ -37,6 +48,7 @@
  01 WS-SAME                BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
  01 WS-START               BINARY-LONG.
+ 01 WS-ACTION6             BINARY-LONG VALUE 6.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -48,11 +60,23 @@
      IF TG-HIT = 1
          CALL "WORLD-CELL" USING CLIENT-STATE TG-X TG-Y TG-Z WS-STATE WS-SKY WS-BLOCK
      END-IF
-*>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used.
-     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
-             AND (CL-IT-STATE(WS-ITEM + 1) > 0 OR WS-STATE = 13 OR WS-STATE = 14
-             OR WS-STATE = 16)
-         CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+*>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used; otherwise
+*>   a food item held on the world screen is eaten.
+     EVALUATE TRUE
+         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
+                 AND (CL-IT-STATE(WS-ITEM + 1) > 0 OR WS-STATE = 13 OR WS-STATE = 14
+                 OR WS-STATE = 16)
+             CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
+                 AND CL-IT-FOOD(WS-ITEM + 1) > 0 AND PL-EATING = 0
+             CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE
+     END-EVALUATE
+*>   Eating ends when the button is released; early, the server is told.
+     IF PL-EATING = 1 AND IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0
+         MOVE 0 TO PL-EATING
+         IF CL-NOW-MS - PL-EAT-START < CL-EAT-MS
+             CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION6
+         END-IF
      END-IF
 *>   Attack: the entity aimed at.
      IF IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 1 AND TG-ENTITY-HIT = 1
@@ -192,6 +216,58 @@
  END PROGRAM CONTROLS-SEND-USE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SEND-EAT.
+*> USING CLIENT-STATE: Use Item with the next sequence number and the facing; the Player is eating
+*> from now.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     ADD 1 TO CT-SEQUENCE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-USE-ITEM" USING PB-BUFFER CT-SEQUENCE PL-YAW PL-PITCH
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     MOVE 1 TO PL-EATING
+     MOVE CL-NOW-MS TO PL-EAT-START
+     GOBACK.
+ END PROGRAM CONTROLS-SEND-EAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SEND-ITEM-ACTION.
+*> USING CLIENT-STATE, action (4 drop all items, 5 drop item, 6 release use item): the Player
+*> Action on the held item.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ACTION.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-ITEM-ACTION" USING PB-BUFFER L-ACTION
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CONTROLS-SEND-ITEM-ACTION.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-SEND-ATTACK.
 *> USING CLIENT-STATE: Attack on the entity target.
  DATA DIVISION.
@@ -262,28 +338,53 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY CCSHIM.
- COPY PROTO.
- 01 WS-READY               BINARY-LONG VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-ACTION              BINARY-LONG.
  01 WS-MODS                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      IF IN-KEY-PRESSED(CC-KEY-Q + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
-         IF WS-READY = 0
-             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-             MOVE 1 TO WS-READY
-         END-IF
          COMPUTE WS-MODS = IN-MODS / CC-MOD-CONTROL
          MOVE 5 TO WS-ACTION
          IF FUNCTION MOD(WS-MODS, 2) = 1
              MOVE 4 TO WS-ACTION
          END-IF
-         CALL "PB-RESET" USING PB-BUFFER
-         CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
-         CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-THROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SPRINT.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO WS-WANT
+     IF SM-SCREEN = SCR-WORLD AND IN-KEY-DOWN(CC-KEY-LEFT-CONTROL + 1) = 1
+             AND IN-KEY-DOWN(CC-KEY-W + 1) = 1 AND IN-KEY-DOWN(CC-KEY-S + 1) = 0
+         MOVE 1 TO WS-WANT
+     END-IF
+     IF WS-WANT NOT = PL-SPRINTING
+         IF WS-READY = 0
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             MOVE 1 TO WS-READY
+         END-IF
+         MOVE WS-WANT TO PL-SPRINTING
+         COMPUTE WS-ACTION = 2 - WS-WANT
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-PLAYER-COMMAND" USING PB-BUFFER PL-ENTITY-ID WS-ACTION
+         CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-SPRINT.

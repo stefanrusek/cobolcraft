@@ -44,7 +44,7 @@
 *>     cursor captured, the player loaded at (0.5, 10, 0.5) facing +Z (yaw 0, pitch 0, on the
 *>     ground, that position already sent) on a flat floor: chunks -1 to 1 by -1 to 1 hold
 *>     greystone (state 2) at y 0 to 9 and sky light 15 above; Time 6000; survival with health 30
-*>     (as after Login).
+*>     and food 24 (as after Login).
 *>   TEST-ENTITY USING CLIENT-STATE, entity id, text (PIC X(1024), appended): " <id> <type>
 *>     <x>/<y>/<z> <yaw>/<pitch>/<head yaw> <on ground>" (4 and 1 decimals) of the replica's entity,
 *>     or " <id> none".
@@ -80,6 +80,8 @@
 *>     <count>x<item> <vx>/<vy>/<vz>" (4 decimals) of the replica's entity, or " <id> none".
 *>   TEST-SYSTEM-CHAT USING CLIENT-STATE, connection, text (PIC X(64)), length: hands PROTO-PACKET
 *>     a System Chat (0x7C) of that plain string text, overlay false.
+*>   TEST-SET-HEALTH USING CLIENT-STATE, connection, health (FLOAT-SHORT), food: hands
+*>     PROTO-PACKET a Set Health (0x6A) with saturation 0.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -753,6 +755,7 @@
      MOVE 3 TO RG-BIOMES
      MOVE 6000 TO PL-TIME
      MOVE 30 TO PL-HEALTH
+     MOVE 24 TO PL-FOOD
      PERFORM VARYING WS-X FROM -16 BY 1 UNTIL WS-X > 31
          PERFORM VARYING WS-Z FROM -16 BY 1 UNTIL WS-Z > 31
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 9
@@ -1269,3 +1272,33 @@
      CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
      GOBACK.
  END PROGRAM TEST-SYSTEM-CHAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SET-HEALTH.
+*> USING CLIENT-STATE, connection, health (FLOAT-SHORT), food: hands PROTO-PACKET a Set Health
+*> (0x6A) with saturation 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 106.
+ 01 WS-ZERO                FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-HEALTH               FLOAT-SHORT.
+ 01 L-FOOD                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-HEALTH L-FOOD.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-HEALTH
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-FOOD
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-SET-HEALTH.

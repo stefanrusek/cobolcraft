@@ -4,7 +4,7 @@
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
 *> breaking, placing, the hotbar and the inventory (US4), of ground items and throwing (US5), and
-*> of chat (US6).
+*> of chat (US6), of health and attacking (US7), and of eating and sprinting (US8).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -733,14 +733,14 @@
 *>   ---- play, ground items and throwing (US5) ----
      MOVE 5 TO WS-ACTION
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
+     CALL "CLP-ITEM-ACTION" USING PB-BUFFER WS-ACTION
      MOVE "contract wire client Player Action 5 drop item equals "
          & "play-c2s-29-player-action-drop-item.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-29-player-action-drop-item.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
      MOVE 4 TO WS-ACTION
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
+     CALL "CLP-ITEM-ACTION" USING PB-BUFFER WS-ACTION
      MOVE "contract wire client Player Action 4 drop all items equals "
          & "play-c2s-29-player-action-drop-all-items.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-29-player-action-drop-all-items.hex" TO WS-PATH
@@ -886,6 +886,55 @@
          & "the world screen" TO TL-CASE
      PERFORM RESPAWN-TEXT
      MOVE "cobolcraft:main 0 1 0 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, eating and sprinting (US8) ----
+     MOVE 5 TO WS-SEQ
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-USE-ITEM" USING PB-BUFFER WS-SEQ WS-YAW WS-PITCH
+     MOVE "contract wire client Use Item (main hand, sequence 5, yaw -90, pitch 0) equals "
+         & "play-c2s-43-use-item.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-43-use-item.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 6 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-ITEM-ACTION" USING PB-BUFFER WS-ACTION
+     MOVE "contract wire client Player Action 6 release use item equals "
+         & "play-c2s-29-player-action-release-use-item.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-29-player-action-release-use-item.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 1 TO WS-EID
+     MOVE 1 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-PLAYER-COMMAND" USING PB-BUFFER WS-EID WS-ACTION
+     MOVE "contract wire client Player Command 1 start sprinting (entity 1, data 0) equals "
+         & "play-c2s-2a-player-command-start-sprinting.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2a-player-command-start-sprinting.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 2 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-PLAYER-COMMAND" USING PB-BUFFER WS-EID WS-ACTION
+     MOVE "contract wire client Player Command 2 stop sprinting (entity 1, data 0) equals "
+         & "play-c2s-2a-player-command-stop-sprinting.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2a-player-command-stop-sprinting.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+     MOVE 1 TO PL-ENTITY-ID
+     MOVE 1 TO PL-EATING
+     MOVE "contract/fixtures/wire/play-s2c-22-entity-event-eating-finished.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Entity Event decodes: entity 1, the local player, event 9 eating "
+         & "finished (the client stops eating)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-EATING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO PL-ENTITY-ID
+     MOVE 1 TO PL-EATING
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Entity Event decodes: entity 1 is another player here, so the local "
+         & "player goes on eating" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-EATING TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

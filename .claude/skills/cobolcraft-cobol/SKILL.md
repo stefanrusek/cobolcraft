@@ -280,6 +280,12 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   is timed from the clock. `RAYCAST` also finds the entity target (`TG-ENTITY-HIT`, `TG-ENTITY`),
   which clears `TG-HIT` when it is nearer than the block. Respawn (`PLAY-RESPAWN-READ`) and Login
   share `DIMENSION-ENTER`; Respawn keeps the player list (`ENTITIES-FORGET`).
+- **Client US8 state**: the survival HUD adds `Food <f>/24` after the health label (`TEST-PLAY`
+  sets food 24; `TEST-SET-HEALTH` in `CLTEST.cpy` feeds Set Health). `CONTROLS-SPRINT` runs every
+  frame in play before the client tick (`PL-SPRINTING`; Left Control + W, no S, world screen), so
+  the tick that starts sprinting already moves at 0.28. Eating (`PL-EATING`, `PL-EAT-START`) starts
+  on a right press with a food item (`CL-IT-FOOD` > 0) that uses no block; `DIMENSION-ENTER` clears
+  both. Item-level Player Actions (drop 5/4, release use 6) go through `CLP-ITEM-ACTION`.
 - **Calls with a refmod or an oversized area into a one-byte `PIC X` LINKAGE item of the same
   file** can still fail `-Werror=repository-checks` ("does not conform"); inline the work or pass a
   field of the callee's exact shape.

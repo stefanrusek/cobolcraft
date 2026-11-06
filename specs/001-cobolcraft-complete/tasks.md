@@ -1274,16 +1274,16 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US8. **Independent Test**: `make gate-client`.
 
-- [ ] T918 [P] [US8-client] Write `contract_wire_client.cob` cases: Use Item, Player Action release-use-item and Player Command start/stop sprinting encode equal to their fixtures; Entity Event decodes
-- [ ] T919 [P] [US8-client] Write acceptance test `client/tests/acc_us8_sprint.cob`: case "US8-2 client half: holding Left Control while moving forward sends Player Command start sprinting and moves at the §11 sprint speed; releasing it or stopping forward movement sends stop sprinting" (client-surface §3)
-- [ ] T920 [US8-client] Implement the sprint control (Player Command start/stop sprinting) in `client/src/controls.cob`
-- [ ] T921 [US8-client] Implement the §11 sprint movement speed in `client/src/physics.cob`
-- [ ] T922 [P] [US8-client] Write acceptance test `client/tests/acc_us8_food_hud.cob`: case "acceptance US8-1 given survival then the food level is shown beside health"; case "acceptance US8-6 given creative then it is not shown"
-- [ ] T923 [US8-client] Implement the food display in `client/src/screens/hud.cob`
-- [ ] T924 [P] [US8-client] Write acceptance test `client/tests/acc_us8_eat_control.cob`: case "acceptance US8-3 client half: holding the right button with a food item sends Use Item"; case "US8 edge releasing early sends release-use-item"
-- [ ] T925 [US8-client] Implement the eat control in `client/src/controls.cob`
-- [ ] T926 [US8-client] Extend the client implementation tests to 100 % coverage of the US8 changes
-- [ ] T927 Gate: run `make gate-client` and record the command and its real output
+- [X] T918 [P] [US8-client] Write `contract_wire_client.cob` cases: Use Item, Player Action release-use-item and Player Command start/stop sprinting encode equal to their fixtures; Entity Event decodes
+- [X] T919 [P] [US8-client] Write acceptance test `client/tests/acc_us8_sprint.cob`: case "US8-2 client half: holding Left Control while moving forward sends Player Command start sprinting and moves at the §11 sprint speed; releasing it or stopping forward movement sends stop sprinting" (client-surface §3)
+- [X] T920 [US8-client] Implement the sprint control (Player Command start/stop sprinting) in `client/src/controls.cob`
+- [X] T921 [US8-client] Implement the §11 sprint movement speed in `client/src/physics.cob`
+- [X] T922 [P] [US8-client] Write acceptance test `client/tests/acc_us8_food_hud.cob`: case "acceptance US8-1 given survival then the food level is shown beside health"; case "acceptance US8-6 given creative then it is not shown"
+- [X] T923 [US8-client] Implement the food display in `client/src/screens/hud.cob`
+- [X] T924 [P] [US8-client] Write acceptance test `client/tests/acc_us8_eat_control.cob`: case "acceptance US8-3 client half: holding the right button with a food item sends Use Item"; case "US8 edge releasing early sends release-use-item"
+- [X] T925 [US8-client] Implement the eat control in `client/src/controls.cob`
+- [X] T926 [US8-client] Extend the client implementation tests to 100 % coverage of the US8 changes
+- [X] T927 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 39: US9-client — mobs
 

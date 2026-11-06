@@ -139,6 +139,12 @@
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
+*>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
+*>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
+*>     released or Entity Event 9 (eating finished) for the local player; the clock of that Use Item.
+       10 PL-SPRINTING       PIC 9.
+       10 PL-EATING          PIC 9.
+       10 PL-EAT-START       BINARY-DOUBLE.
 *>     Movement (client-surface §3; client/src/physics.cob): vertical speed in blocks per tick,
 *>     ground and horizontal-collision flags of the last tick, flying, a Space press not yet
 *>     used by a tick, the clock of the last Space press (fly toggle; 0 none), and what the

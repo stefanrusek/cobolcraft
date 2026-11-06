@@ -1,5 +1,5 @@
 *> The local player's controls and physics (client-surface §3; standin-content §3 operator box,
-*> §11.4 walking speed; plan "client: physics"). PHYS-INPUT runs every frame on the world screen:
+*> §11.4 walking and sprint speeds; plan "client: physics"). PHYS-INPUT runs every frame on the world screen:
 *> the captured cursor's delta turns (yaw += 0.15 x dx) and looks (pitch += 0.15 x dy, from -90 up
 *> to 90 down) in degrees per pixel; a Space press is kept for the next tick (jump), and two Space
 *> presses within 0.3 s toggle flying when the server's abilities allow flying (0x04), telling
@@ -7,7 +7,8 @@
 *> loaded:
 *>   - wanted horizontal velocity: forward (W) and back (S) along the facing, left (A) and right
 *>     (D) across it (yaw 0 faces +Z, its left is +X), normalised, times 0.2 blocks per tick
-*>     walking (standin §11.4) or 0.5 flying; keys count only on the world screen;
+*>     walking (standin §11.4), 0.28 sprinting (§11.4; controls.cob CONTROLS-SPRINT) or 0.5
+*>     flying; keys count only on the world screen;
 *>   - vertical: flying, 0.375 blocks per tick up while Space is held and down while Left Shift
 *>     is; otherwise a jump (Space on the ground) sets 0.42, the player moves by the vertical
 *>     speed, then the speed becomes (speed - 0.08) x 0.98 (gravity and drag);
@@ -90,10 +91,14 @@
          MOVE 0 TO WS-JUMP
      END-IF
 *>   Horizontal velocity.
-     MOVE 0.2 TO WS-SPEED
-     IF PL-FLYING = 1
-         MOVE 0.5 TO WS-SPEED
-     END-IF
+     EVALUATE TRUE
+         WHEN PL-FLYING = 1
+             MOVE 0.5 TO WS-SPEED
+         WHEN PL-SPRINTING = 1
+             MOVE 0.28 TO WS-SPEED
+         WHEN OTHER
+             MOVE 0.2 TO WS-SPEED
+     END-EVALUATE
      MOVE 0 TO WS-HX WS-HZ
      COMPUTE WS-LENGTH = FUNCTION SQRT(WS-FORWARD ** 2 + WS-LEFT ** 2)
      IF WS-LENGTH > 0

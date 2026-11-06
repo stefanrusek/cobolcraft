@@ -131,6 +131,9 @@
  78 CL-MAX-HEALTH           VALUE 30.
  78 CL-ATTACK-REACH         VALUE 4.
  78 CL-HURT-MS              VALUE 500.
+*> Hunger (standin-content §11.1 maximum food; §11.6 eating time, 30 ticks, in milliseconds).
+ 78 CL-MAX-FOOD             VALUE 24.
+ 78 CL-EAT-MS               VALUE 1500.
 
 *> Entity types (standin-content §3).
  78 ET-OPERATOR             VALUE 0.
@@ -164,32 +167,34 @@
 *> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
 *> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack
 *> places its default state's block with the axis of the clicked face, §1.3), and the tool class
-*> it speeds up ("H" hard, "S" soft, §2 pry_bar and trowel).
+*> it speeds up ("H" hard, "S" soft, §2 pry_bar and trowel), and its food value (§11.5; 0 = not
+*> food).
  01 CL-ITEM-DATA.
-    05 FILLER PIC X(21) VALUE "nothing         0000 ".
-    05 FILLER PIC X(21) VALUE "baseplate       6401 ".
-    05 FILLER PIC X(21) VALUE "greystone       6402 ".
-    05 FILLER PIC X(21) VALUE "loam            6403 ".
-    05 FILLER PIC X(21) VALUE "turf            6404 ".
-    05 FILLER PIC X(21) VALUE "grit            6405 ".
-    05 FILLER PIC X(21) VALUE "cardstack       6409 ".
-    05 FILLER PIC X(21) VALUE "lucite          6412 ".
-    05 FILLER PIC X(21) VALUE "glowtube        6413 ".
-    05 FILLER PIC X(21) VALUE "ledger_tile     6415 ".
-    05 FILLER PIC X(21) VALUE "pry_bar         0100H".
-    05 FILLER PIC X(21) VALUE "trowel          0100S".
-    05 FILLER PIC X(21) VALUE "grazer_flank    3200 ".
-    05 FILLER PIC X(21) VALUE "seared_flank    3200 ".
-    05 FILLER PIC X(21) VALUE "sod_cake        1600 ".
-    05 FILLER PIC X(21) VALUE "dump_shard      6400 ".
-    05 FILLER PIC X(21) VALUE "goto_pad        1616 ".
-    05 FILLER PIC X(21) VALUE "slag            6417 ".
+    05 FILLER PIC X(22) VALUE "nothing         0000 0".
+    05 FILLER PIC X(22) VALUE "baseplate       6401 0".
+    05 FILLER PIC X(22) VALUE "greystone       6402 0".
+    05 FILLER PIC X(22) VALUE "loam            6403 0".
+    05 FILLER PIC X(22) VALUE "turf            6404 0".
+    05 FILLER PIC X(22) VALUE "grit            6405 0".
+    05 FILLER PIC X(22) VALUE "cardstack       6409 0".
+    05 FILLER PIC X(22) VALUE "lucite          6412 0".
+    05 FILLER PIC X(22) VALUE "glowtube        6413 0".
+    05 FILLER PIC X(22) VALUE "ledger_tile     6415 0".
+    05 FILLER PIC X(22) VALUE "pry_bar         0100H0".
+    05 FILLER PIC X(22) VALUE "trowel          0100S0".
+    05 FILLER PIC X(22) VALUE "grazer_flank    3200 3".
+    05 FILLER PIC X(22) VALUE "seared_flank    3200 8".
+    05 FILLER PIC X(22) VALUE "sod_cake        1600 2".
+    05 FILLER PIC X(22) VALUE "dump_shard      6400 0".
+    05 FILLER PIC X(22) VALUE "goto_pad        1616 0".
+    05 FILLER PIC X(22) VALUE "slag            6417 0".
  01 CL-ITEMS REDEFINES CL-ITEM-DATA.
     05 CL-IT OCCURS 18 TIMES.
        10 CL-IT-KEY         PIC X(16).
        10 CL-IT-MAX         PIC 99.
        10 CL-IT-STATE       PIC 99.
        10 CL-IT-TOOL        PIC X.
+       10 CL-IT-FOOD        PIC 9.
 
 *> Blocks (standin-content §1.1, §2): for block id b, row b + 1: hand break time in milliseconds
 *> (99999 = unbreakable, baseplate) and its class ("H" hard, "S" soft, space none).
