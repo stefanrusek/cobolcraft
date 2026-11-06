@@ -1,0 +1,652 @@
+*> Test helpers of the server package (test infrastructure, excluded from coverage). COPY this after
+*> the END PROGRAM of a test program; it adds these programs to the test executable. The client side
+*> of every test is a real loopback TCP connection made through cc_net_* (no test doubles).
+*>   SVT-LOAD-HEX USING path (PIC X(256)), PB-BUFFER: replaces the buffer content with the bytes of
+*>     a hex fixture (contracts/proto-api.md §3: whitespace-separated hex, "#" comments).
+*>   SVT-SCRATCH USING directory (PIC X(256), repository-relative, two levels deep such as
+*>     build/server-test-x): removes it, creates it and makes it the current directory; fixture paths
+*>     are then resolved from the repository root through SVT-ROOT ("../../").
+*>   SVT-CONNECT USING port, handle out: a loopback client connection to 127.0.0.1:port, connected
+*>     (cc_net_connect, then cc_net_poll / cc_net_status until it is no longer connecting).
+*>   SVT-SEND USING handle, packet PB-BUFFER (id + body), threshold (-1 = uncompressed, 256 once the
+*>     server sent Set Compression): frames the packet as the client does and sends all of it.
+*>   SVT-SEND-FIXTURE USING handle, fixture path (PIC X(256), repository-relative), threshold.
+*>   SVT-CONFIGURE USING handle: sends, compressed at 256, Login Acknowledged, the client's brand,
+*>     Client Information, Select Known Packs and Finish Configuration (the client's side of
+*>     configuration after Login Finished).
+*>   SVT-RECV USING handle, stream PB-BUFFER (appended to), wait ms, closed out: waits up to that
+*>     long for the connection to be readable, then receives until nothing is available; closed = 1
+*>     when cc_net_recv answered CC_CLOSED.
+*>   SVT-NEXT-PACKET USING stream PB-BUFFER, packet PB-BUFFER (initialised), threshold, packet id
+*>     out, outcome out: the next packet of a received stream (PB-FRAME-DECODE without validation,
+*>     into the reset packet buffer);
+*>     outcome 0 packet, 1 none left, 2 malformed.
+*>   SVT-SAME-AS-FIXTURE USING packet PB-BUFFER, fixture path, TESTLIB-ASSERT (TL-CASE set): asserts
+*>     the packet bytes equal the fixture bytes.
+*>   SVT-NOW-MS USING milliseconds out (BINARY-DOUBLE): the test's own wall clock.
+*>   SVT-SLEEP-MS USING milliseconds (BINARY-LONG).
+*>   SVT-SHRINK-BUFFERS USING server port: every connected socket of this process on that port
+*>     (found with getpeername / getsockname, called directly from the C library) gets 4096-byte
+*>     buffers: the client side a receive buffer, the server side a send buffer. A server that sends
+*>     to a client that does not read then fills its socket and has to send partially (macOS
+*>     otherwise grows loopback socket buffers to several megabytes).
+*>   SVT-CAPTURE-START USING file (PIC X(256)): from now on standard output goes to that file.
+*>   SVT-CAPTURE-STOP USING file, text out (PIC X(4096)): standard output is restored; the text is
+*>     the file's lines joined by " | ". No TEST line may be printed between start and stop.
+*>   SVT-UNSTAMP USING text (PIC X(4096)): removes every console time stamp "[HH:MM:SS] "
+*>     (operator-surface §3) from captured text, so a test can compare the lines themselves.
+*>   SVT-HOME: makes the repository root the current directory again (after SVT-SCRATCH).
+*>   SVT-WRITE-CONF USING text (PIC X(4096)): writes ./cobolcraft-server.conf with that text, "|"
+*>     separating lines (trailing spaces of the text dropped, a newline after the last line).
+*>   SVT-READ-LINES USING file (PIC X(256)), text out (PIC X(4096)): the file's lines joined by
+*>     " | " (spaces when the file cannot be opened).
+*>   SVT-FORK USING pid out (BINARY-LONG): flushes standard output, then forks; the child (pid 0)
+*>     has its standard error going to ./stderr.txt and must end with STOP RUN. A fatal path runs
+*>     in the child so the test program itself goes on (operator-surface §2 sub-cases).
+*>   SVT-WAIT USING pid, exit status out (BINARY-LONG), standard error out (PIC X(4096)): waits for
+*>     that child and returns its exit status and its standard error lines joined by " | ".
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-LOAD-HEX.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT HEX-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD HEX-FILE.
+ 01 HEX-LINE               PIC X(4096).
+ WORKING-STORAGE SECTION.
+ 01 SVT-ROOT               PIC X(64) EXTERNAL.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BYTE                PIC X.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING L-PATH PB-BUFFER.
+     MOVE SPACES TO WS-PATH
+     STRING SVT-ROOT DELIMITED BY SPACE L-PATH DELIMITED BY SPACE INTO WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     OPEN INPUT HEX-FILE
+     IF WS-STATUS NOT = "00"
+         DISPLAY "SVT-LOAD-HEX cannot open " FUNCTION TRIM(WS-PATH) " status " WS-STATUS
+         STOP RUN RETURNING 2
+     END-IF
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO HEX-LINE
+         READ HEX-FILE
+         IF WS-STATUS = "00"
+             MOVE 4096 TO WS-END
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4096
+                 IF HEX-LINE(WS-I:1) = "#" AND WS-END = 4096
+                     COMPUTE WS-END = WS-I - 1
+                 END-IF
+             END-PERFORM
+             MOVE 1 TO WS-I
+             PERFORM UNTIL WS-I > WS-END
+                 IF HEX-LINE(WS-I:1) = SPACE OR HEX-LINE(WS-I:1) = X"09"
+                     ADD 1 TO WS-I
+                 ELSE
+                     MOVE FUNCTION HEX-TO-CHAR(HEX-LINE(WS-I:2)) TO WS-BYTE
+                     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BYTE WS-ONE
+                     ADD 2 TO WS-I
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     CLOSE HEX-FILE
+     GOBACK.
+ END PROGRAM SVT-LOAD-HEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SCRATCH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 SVT-ROOT               PIC X(64) EXTERNAL.
+ 01 WS-COMMAND             PIC X(600).
+ 01 WS-DIR                 PIC X(257).
+ LINKAGE SECTION.
+ 01 L-DIR                  PIC X(256).
+ PROCEDURE DIVISION USING L-DIR.
+     MOVE SPACES TO WS-COMMAND
+     STRING "rm -rf " DELIMITED BY SIZE L-DIR DELIMITED BY SPACE " && mkdir -p " DELIMITED BY SIZE
+         L-DIR DELIMITED BY SPACE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     MOVE LOW-VALUES TO WS-DIR
+     STRING L-DIR DELIMITED BY SPACE INTO WS-DIR
+     CALL "CBL_CHANGE_DIR" USING WS-DIR
+     MOVE "../../" TO SVT-ROOT
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-SCRATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-CONNECT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-HOST                PIC X(16) VALUE Z"127.0.0.1".
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-TRIES               BINARY-LONG.
+ 01 WS-WAIT                BINARY-LONG VALUE 20.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HANDLES.
+    05 WS-HANDLE           BINARY-LONG.
+ 01 WS-READY               PIC X(2).
+ LINKAGE SECTION.
+ 01 L-PORT                 BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PORT L-HANDLE.
+     CALL STATIC "cc_net_connect" USING BY REFERENCE WS-HOST BY VALUE L-PORT
+         BY REFERENCE L-HANDLE RETURNING WS-RC
+     MOVE L-HANDLE TO WS-HANDLE
+     MOVE CC-AGAIN TO WS-RC
+     PERFORM VARYING WS-TRIES FROM 1 BY 1 UNTIL WS-RC NOT = CC-AGAIN OR WS-TRIES > 100
+         CALL STATIC "cc_net_poll" USING BY VALUE WS-WAIT BY REFERENCE WS-HANDLES
+             BY VALUE WS-ONE BY VALUE WS-ZERO BY REFERENCE WS-READY RETURNING WS-RC
+         CALL STATIC "cc_net_status" USING BY VALUE L-HANDLE RETURNING WS-RC
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SVT-CONNECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SEND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==FR-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-SENT                BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PTR                 USAGE POINTER.
+ 01 B-AREA                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-THRESHOLD            BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE PB-BUFFER L-THRESHOLD.
+     CALL "PB-INIT" USING FR-BUFFER WS-CAPACITY
+     CALL "PB-FRAME-ENCODE" USING FR-BUFFER PB-BUFFER L-THRESHOLD
+     SET ADDRESS OF B-AREA TO FR-ADDR
+     MOVE 1 TO WS-AT
+     MOVE FR-LENGTH TO WS-LEFT
+     MOVE 0 TO WS-RC
+     PERFORM UNTIL WS-LEFT = 0 OR WS-RC NOT = 0
+         SET WS-PTR TO ADDRESS OF B-AREA(WS-AT:1)
+         CALL STATIC "cc_net_send" USING BY VALUE L-HANDLE BY VALUE WS-PTR BY VALUE WS-LEFT
+             BY REFERENCE WS-SENT RETURNING WS-RC
+         ADD WS-SENT TO WS-AT
+         SUBTRACT WS-SENT FROM WS-LEFT
+     END-PERFORM
+     CALL "PB-FREE" USING FR-BUFFER
+     GOBACK.
+ END PROGRAM SVT-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SEND-FIXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-PATH                 PIC X(256).
+ 01 L-THRESHOLD            BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-PATH L-THRESHOLD.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "SVT-LOAD-HEX" USING L-PATH PB-BUFFER
+     CALL "SVT-SEND" USING L-HANDLE PB-BUFFER L-THRESHOLD
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM SVT-SEND-FIXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-CONFIGURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-THRESHOLD           BINARY-LONG VALUE 256.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE.
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-PATH
+     CALL "SVT-SEND-FIXTURE" USING L-HANDLE WS-PATH WS-THRESHOLD
+     MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
+     CALL "SVT-SEND-FIXTURE" USING L-HANDLE WS-PATH WS-THRESHOLD
+     MOVE "contract/fixtures/wire/config-c2s-00-client-information.hex" TO WS-PATH
+     CALL "SVT-SEND-FIXTURE" USING L-HANDLE WS-PATH WS-THRESHOLD
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "SVT-SEND-FIXTURE" USING L-HANDLE WS-PATH WS-THRESHOLD
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "SVT-SEND-FIXTURE" USING L-HANDLE WS-PATH WS-THRESHOLD
+     GOBACK.
+ END PROGRAM SVT-CONFIGURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-RECV.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-AREA                PIC X(65536).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-GOT                 BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HANDLES.
+    05 WS-HANDLE           BINARY-LONG.
+ 01 WS-READY               PIC X(2).
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-WAIT                 BINARY-LONG.
+ 01 L-CLOSED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE PB-BUFFER L-WAIT L-CLOSED.
+     MOVE 0 TO L-CLOSED
+     MOVE L-HANDLE TO WS-HANDLE
+     CALL STATIC "cc_net_poll" USING BY VALUE L-WAIT BY REFERENCE WS-HANDLES
+         BY VALUE WS-ONE BY VALUE WS-ZERO BY REFERENCE WS-READY RETURNING WS-RC
+     MOVE 0 TO WS-RC
+     PERFORM UNTIL WS-RC NOT = 0
+         CALL STATIC "cc_net_recv" USING BY VALUE L-HANDLE BY REFERENCE WS-AREA
+             BY VALUE WS-CAPACITY BY REFERENCE WS-GOT RETURNING WS-RC
+         IF WS-RC = 0
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-AREA WS-GOT
+         END-IF
+     END-PERFORM
+     IF WS-RC = CC-CLOSED
+         MOVE 1 TO L-CLOSED
+     END-IF
+     GOBACK.
+ END PROGRAM SVT-RECV.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-NEXT-PACKET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-VALIDATE            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 L-THRESHOLD            BINARY-LONG.
+ 01 L-PACKET-ID            BINARY-LONG.
+ 01 L-OUTCOME              BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER PK-BUFFER L-THRESHOLD L-PACKET-ID L-OUTCOME.
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-FRAME-DECODE" USING PB-BUFFER PK-BUFFER L-THRESHOLD WS-VALIDATE L-PACKET-ID
+         L-OUTCOME
+     GOBACK.
+ END PROGRAM SVT-NEXT-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SAME-AS-FIXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==FX-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-EDIT                PIC Z(8)9.
+ 01 WS-EDIT2               PIC Z(8)9.
+ 01 B-GOT                  PIC X(1073741824) BASED.
+ 01 B-WANT                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING PB-BUFFER L-PATH TESTLIB-ASSERT.
+     CALL "PB-INIT" USING FX-BUFFER WS-CAPACITY
+     CALL "SVT-LOAD-HEX" USING L-PATH FX-BUFFER
+     SET ADDRESS OF B-GOT TO PB-ADDR
+     SET ADDRESS OF B-WANT TO FX-ADDR
+     MOVE 0 TO WS-DIFF
+     PERFORM VARYING WS-I FROM 1 BY 1
+             UNTIL WS-I > PB-LENGTH OR WS-I > FX-LENGTH OR WS-DIFF > 0
+         IF B-GOT(WS-I:1) NOT = B-WANT(WS-I:1)
+             MOVE WS-I TO WS-DIFF
+         END-IF
+     END-PERFORM
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     MOVE FX-LENGTH TO WS-EDIT
+     STRING "equal to " FUNCTION TRIM(L-PATH) " (" FUNCTION TRIM(WS-EDIT) " bytes)"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     EVALUATE TRUE
+         WHEN WS-DIFF > 0
+             COMPUTE WS-EDIT = WS-DIFF - 1
+             STRING "differs at offset " FUNCTION TRIM(WS-EDIT) ": fixture "
+                 FUNCTION LOWER-CASE(FUNCTION HEX-OF(B-WANT(WS-DIFF:1))) " observed "
+                 FUNCTION LOWER-CASE(FUNCTION HEX-OF(B-GOT(WS-DIFF:1)))
+                 DELIMITED BY SIZE INTO TL-OBSERVED
+         WHEN PB-LENGTH NOT = FX-LENGTH
+             MOVE PB-LENGTH TO WS-EDIT2
+             STRING "length " FUNCTION TRIM(WS-EDIT2) " (fixture " FUNCTION TRIM(WS-EDIT) ")"
+                 DELIMITED BY SIZE INTO TL-OBSERVED
+         WHEN OTHER
+             MOVE TL-EXPECTED TO TL-OBSERVED
+     END-EVALUATE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-FREE" USING FX-BUFFER
+     GOBACK.
+ END PROGRAM SVT-SAME-AS-FIXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-NOW-MS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NOW                 PIC X(21).
+ LINKAGE SECTION.
+ 01 L-MS                   BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-MS.
+     MOVE FUNCTION CURRENT-DATE TO WS-NOW
+     COMPUTE L-MS = (FUNCTION INTEGER-OF-DATE(FUNCTION NUMVAL(WS-NOW(1:8))) * 86400
+         + FUNCTION NUMVAL(WS-NOW(9:2)) * 3600 + FUNCTION NUMVAL(WS-NOW(11:2)) * 60
+         + FUNCTION NUMVAL(WS-NOW(13:2))) * 1000 + FUNCTION NUMVAL(WS-NOW(15:2)) * 10
+     GOBACK.
+ END PROGRAM SVT-NOW-MS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SLEEP-MS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MICROSECONDS        BINARY-LONG UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-MS                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-MS.
+     COMPUTE WS-MICROSECONDS = L-MS * 1000
+     CALL STATIC "usleep" USING BY VALUE WS-MICROSECONDS
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-SLEEP-MS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-SHRINK-BUFFERS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PEER-PORT           BINARY-LONG.
+ 01 WS-OWN-PORT            BINARY-LONG.
+ 01 WS-ADDRESS.
+    05 WS-SIN-LEN          PIC X.
+    05 WS-SIN-FAMILY       PIC X.
+    05 WS-SIN-PORT         PIC X(2).
+    05 FILLER              PIC X(12).
+ 01 WS-ADDRESS-LENGTH      BINARY-LONG UNSIGNED.
+ 01 WS-SOL-SOCKET          BINARY-LONG VALUE 65535.
+ 01 WS-SO-SNDBUF           BINARY-LONG VALUE 4097.
+ 01 WS-SO-RCVBUF           BINARY-LONG VALUE 4098.
+ 01 WS-SIZE                BINARY-LONG VALUE 4096.
+ 01 WS-SIZE-LENGTH         BINARY-LONG UNSIGNED VALUE 4.
+ LINKAGE SECTION.
+ 01 L-PORT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PORT.
+     PERFORM VARYING WS-FD FROM 3 BY 1 UNTIL WS-FD > 1024
+         MOVE -1 TO WS-PEER-PORT WS-OWN-PORT
+         MOVE 16 TO WS-ADDRESS-LENGTH
+         CALL STATIC "getpeername" USING BY VALUE WS-FD BY REFERENCE WS-ADDRESS
+             BY REFERENCE WS-ADDRESS-LENGTH RETURNING WS-RC
+*>       sin_port is in network byte order (big-endian).
+         IF WS-RC = 0
+             COMPUTE WS-PEER-PORT = (FUNCTION ORD(WS-SIN-PORT(1:1)) - 1) * 256
+                 + FUNCTION ORD(WS-SIN-PORT(2:1)) - 1
+             MOVE 16 TO WS-ADDRESS-LENGTH
+             CALL STATIC "getsockname" USING BY VALUE WS-FD BY REFERENCE WS-ADDRESS
+                 BY REFERENCE WS-ADDRESS-LENGTH RETURNING WS-RC
+             COMPUTE WS-OWN-PORT = (FUNCTION ORD(WS-SIN-PORT(1:1)) - 1) * 256
+                 + FUNCTION ORD(WS-SIN-PORT(2:1)) - 1
+         END-IF
+         IF WS-PEER-PORT = L-PORT
+             CALL STATIC "setsockopt" USING BY VALUE WS-FD BY VALUE WS-SOL-SOCKET
+                 BY VALUE WS-SO-RCVBUF BY REFERENCE WS-SIZE BY VALUE WS-SIZE-LENGTH
+                 RETURNING WS-RC
+         END-IF
+         IF WS-OWN-PORT = L-PORT
+             CALL STATIC "setsockopt" USING BY VALUE WS-FD BY VALUE WS-SOL-SOCKET
+                 BY VALUE WS-SO-SNDBUF BY REFERENCE WS-SIZE BY VALUE WS-SIZE-LENGTH
+                 RETURNING WS-RC
+         END-IF
+     END-PERFORM
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-SHRINK-BUFFERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-CAPTURE-START.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 SVT-SAVED-FD           BINARY-LONG EXTERNAL.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-STDOUT              BINARY-LONG VALUE 1.
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(257).
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE LOW-VALUES TO WS-PATH
+     STRING L-PATH DELIMITED BY SPACE INTO WS-PATH
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "dup" USING BY VALUE WS-STDOUT RETURNING SVT-SAVED-FD
+     CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+     CALL STATIC "dup2" USING BY VALUE WS-FD BY VALUE WS-STDOUT RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-CAPTURE-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-CAPTURE-STOP.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT OUT-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD OUT-FILE.
+ 01 OUT-LINE               PIC X(1024).
+ WORKING-STORAGE SECTION.
+ 01 SVT-SAVED-FD           BINARY-LONG EXTERNAL.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-STDOUT              BINARY-LONG VALUE 1.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PATH L-TEXT.
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "dup2" USING BY VALUE SVT-SAVED-FD BY VALUE WS-STDOUT RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE SVT-SAVED-FD RETURNING WS-RC
+     MOVE L-PATH TO WS-PATH
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-AT
+     OPEN INPUT OUT-FILE
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO OUT-LINE
+         READ OUT-FILE
+         IF WS-STATUS = "00"
+             IF WS-AT > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-AT
+             END-IF
+             STRING FUNCTION TRIM(OUT-LINE TRAILING) DELIMITED BY SIZE INTO L-TEXT
+                 WITH POINTER WS-AT
+         END-IF
+     END-PERFORM
+     CLOSE OUT-FILE
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-CAPTURE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-HOME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 SVT-ROOT               PIC X(64) EXTERNAL.
+ 01 WS-DIR                 PIC X(65).
+ PROCEDURE DIVISION.
+     MOVE LOW-VALUES TO WS-DIR
+     STRING SVT-ROOT DELIMITED BY SPACE INTO WS-DIR
+     CALL "CBL_CHANGE_DIR" USING WS-DIR
+     MOVE SPACES TO SVT-ROOT
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-HOME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-WRITE-CONF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(32) VALUE Z"cobolcraft-server.conf".
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-TEXT                PIC X(4097).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE L-TEXT TO WS-TEXT
+     MOVE 4096 TO WS-LENGTH
+     PERFORM UNTIL WS-LENGTH = 0 OR WS-TEXT(WS-LENGTH:1) NOT = SPACE
+         SUBTRACT 1 FROM WS-LENGTH
+     END-PERFORM
+     INSPECT WS-TEXT(1:4096) CONVERTING "|" TO X"0A"
+     ADD 1 TO WS-LENGTH
+     MOVE X"0A" TO WS-TEXT(WS-LENGTH:1)
+     MOVE WS-LENGTH TO WS-SIZE
+     CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+     CALL STATIC "write" USING BY VALUE WS-FD BY REFERENCE WS-TEXT BY VALUE WS-SIZE
+         RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-WRITE-CONF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-READ-LINES.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT IN-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD IN-FILE.
+ 01 IN-LINE                PIC X(1024).
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PATH L-TEXT.
+     MOVE L-PATH TO WS-PATH
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-AT
+     OPEN INPUT IN-FILE
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO IN-LINE
+         READ IN-FILE
+         IF WS-STATUS = "00"
+             IF WS-AT > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-AT
+             END-IF
+             STRING FUNCTION TRIM(IN-LINE TRAILING) DELIMITED BY SIZE INTO L-TEXT
+                 WITH POINTER WS-AT
+         END-IF
+     END-PERFORM
+     CLOSE IN-FILE
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-READ-LINES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-FORK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-PATH                PIC X(16) VALUE Z"stderr.txt".
+ 01 WS-STDERR              BINARY-LONG VALUE 2.
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PID                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PID.
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "fork" RETURNING L-PID
+     IF L-PID = 0
+         CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+         CALL STATIC "dup2" USING BY VALUE WS-FD BY VALUE WS-STDERR RETURNING WS-RC
+         CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-FORK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-WAIT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(256) VALUE "stderr.txt".
+ LINKAGE SECTION.
+ 01 L-PID                  BINARY-LONG.
+ 01 L-EXIT                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PID L-EXIT L-TEXT.
+     CALL STATIC "waitpid" USING BY VALUE L-PID BY REFERENCE WS-STATUS BY VALUE WS-ZERO
+         RETURNING WS-RC
+     COMPUTE WS-STATUS = WS-STATUS / 256
+     COMPUTE L-EXIT = FUNCTION MOD(WS-STATUS, 256)
+     CALL "SVT-READ-LINES" USING WS-PATH L-TEXT
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-WAIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-UNSTAMP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-I WS-AT
+     PERFORM UNTIL WS-I > 4096
+         IF WS-I <= 4086 AND L-TEXT(WS-I:1) = "[" AND L-TEXT(WS-I + 3:1) = ":"
+                 AND L-TEXT(WS-I + 6:1) = ":" AND L-TEXT(WS-I + 9:2) = "] "
+                 AND L-TEXT(WS-I + 1:2) IS NUMERIC AND L-TEXT(WS-I + 4:2) IS NUMERIC
+                 AND L-TEXT(WS-I + 7:2) IS NUMERIC
+             ADD 11 TO WS-I
+         ELSE
+             MOVE L-TEXT(WS-I:1) TO WS-TEXT(WS-AT:1)
+             ADD 1 TO WS-I WS-AT
+         END-IF
+     END-PERFORM
+     MOVE WS-TEXT TO L-TEXT
+     GOBACK.
+ END PROGRAM SVT-UNSTAMP.

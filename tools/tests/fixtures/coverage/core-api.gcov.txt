@@ -1,0 +1,25 @@
+        -:    0:Source:/var/folders/xx/T/cob1_0.c
+        -:    0:Graph:/b/core/obj/api.gcno
+        -:    0:Data:/b/core/obj/api.gcda
+        -:    0:Runs:1
+    #####:   12:static int generated (void)
+        -:    0:Source:src/api.cob
+        -:    0:Graph:/b/core/obj/api.gcno
+        -:    0:Data:/b/core/obj/api.gcda
+        -:    0:Runs:1
+        -:    1: IDENTIFICATION DIVISION.
+        -:    2: PROGRAM-ID. API.
+        1:    3: PROCEDURE DIVISION.
+        1:    4:     IF X = 1
+        1:    5:        DISPLAY "TAKEN"
+        -:    6:     ELSE
+    #####:    7:        DISPLAY "NOT TAKEN"
+        -:    8:     END-IF
+    #####:    9:     PERFORM UNUSED
+        1:   10:     GOBACK.
+        -:    0:Source:copy/TABLES.cpy
+        -:    0:Graph:/b/core/obj/api.gcno
+        -:    0:Data:/b/core/obj/api.gcda
+        -:    0:Runs:1
+    #####:    1:     MOVE 1 TO T-A
+    #####:    2:     MOVE 2 TO T-B

@@ -1,0 +1,24 @@
+# Fixture: play-s2c-54-respawn-subroutine.hex
+# Respawn (ClientboundRespawnPacket), travel to cobolcraft:subroutine
+# Phase: play. Direction: clientbound (S->C). Packet id 0x54 (84).
+# Task T164. 09 §3.3 row: Respawn (to cobolcraft:subroutine): type 1, sea level 32, data to keep 0x03.
+# Doc refs: 05b 0x54 (CommonPlayerSpawnInfo, Byte data to keep); 05b CommonPlayerSpawnInfo; 00 §3.2 Identifier.
+# Content: standin-content §4.6, §5.1, §15.1, §15.5.
+# Stated inputs: spawn info: dimension type 1 (cobolcraft:sunless), dimension cobolcraft:subroutine, hashed seed 0, game mode 0 survival,
+#   previous game mode absent, is debug false, is flat false, last death location absent, portal cooldown 0,
+#   sea level 32; data to keep 0x03 (travel).
+
+54                                                            # packet id: VarInt 0x54 (84) Respawn (play, clientbound)
+# ---- Spawn info: CommonPlayerSpawnInfo (05a/05b composite types) ----
+  01                                                          # Spawn info.Dimension type: RegistryId<dimension_type> VarInt 1 (cobolcraft:sunless)
+  15 63 6f 62 6f 6c 63 72 61 66 74 3a 73 75 62 72 6f 75 74 69 6e 65  # Spawn info.Dimension: Identifier (String) "cobolcraft:subroutine" (VarInt length 21 + UTF-8)
+  00 00 00 00 00 00 00 00                                     # Spawn info.Hashed seed: Long 0
+  00                                                          # Spawn info.Game mode: VarInt 0 (survival)
+  00                                                          # Spawn info.Previous game mode: OptionalVarInt 0 (absent)
+  00                                                          # Spawn info.Is debug: Boolean false
+  00                                                          # Spawn info.Is flat: Boolean false
+  00                                                          # Spawn info.Last death location: Optional GlobalPos, present Boolean false (absent)
+  00                                                          # Spawn info.Portal cooldown: VarInt 0
+  20                                                          # Spawn info.Sea level: VarInt 32
+# ---- end of spawn info ----
+03                                                            # Data to keep: Byte 0x03 (KEEP_ALL_DATA: attribute modifiers | entity data)

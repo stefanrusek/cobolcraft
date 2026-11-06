@@ -1,0 +1,197 @@
+*> Implementation test of proto/src/frame.cob: the size limits of 01 §2 and §3.2, multi-byte Data
+*> length VarInts, and the decoder paths the contract test leaves unexecuted (01 §3.3).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FRAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PQ-==.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-ZEROS               PIC X(65536) VALUE LOW-VALUES.
+ 01 WS-CHUNK               BINARY-LONG VALUE 65536.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG.
+ 01 WS-VALIDATE            BINARY-LONG.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-DATA-LENGTH         BINARY-LONG.
+ 01 WS-FRAME-LENGTH        BINARY-LONG.
+ 01 WS-EDIT                PIC -(19)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-NUM                 BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PQ-BUFFER WS-CAPACITY
+*>   01 §3.2: a packet above 8 388 608 bytes cannot be sent even compressed.
+     MOVE 8388609 TO WS-COUNT
+     PERFORM BUILD-ZERO-PACKET
+     MOVE 0 TO WS-THRESHOLD
+     CALL "PB-FRAME-ENCODE" USING PB-BUFFER PK-BUFFER WS-THRESHOLD
+     MOVE "test frame packet of 8388609 bytes sets PB-ERROR of the frame buffer, appends nothing"
+         TO TL-CASE
+     MOVE "1 0" TO TL-EXPECTED
+     PERFORM ERROR-AND-LENGTH
+*>   01 §2: an uncompressed frame body above 2 097 151 bytes cannot be sent.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 2097152 TO WS-COUNT
+     PERFORM BUILD-ZERO-PACKET
+     MOVE -1 TO WS-THRESHOLD
+     CALL "PB-FRAME-ENCODE" USING PB-BUFFER PK-BUFFER WS-THRESHOLD
+     MOVE "test frame uncompressed body of 2097152 bytes sets PB-ERROR" TO TL-CASE
+     MOVE "1 0" TO TL-EXPECTED
+     PERFORM ERROR-AND-LENGTH
+*>   The same packet compresses well: Data length 2097152 takes a 4-byte VarInt, and it decodes.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 256 TO WS-THRESHOLD
+     CALL "PB-FRAME-ENCODE" USING PB-BUFFER PK-BUFFER WS-THRESHOLD
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-FRAME-LENGTH
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-DATA-LENGTH
+     MOVE "test frame compressed packet of 2097152 bytes: Data length VarInt 80808001" TO TL-CASE
+     MOVE "0 2097152 80808001" TO TL-EXPECTED
+     PERFORM START-TEXT
+     MOVE PB-ERROR TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-DATA-LENGTH TO WS-NUM
+     PERFORM ADD-NUMBER
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE 4 TO WS-COUNT
+     COMPUTE WS-OFFSET = PB-POS - 4
+     CALL "TEST-BUFFER-SLICE-HEX" USING PB-BUFFER WS-OFFSET WS-COUNT WS-HEX
+     STRING WS-HEX(1:8) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-VALIDATE
+     CALL "PB-FRAME-DECODE" USING PB-BUFFER PQ-BUFFER WS-THRESHOLD WS-VALIDATE WS-PACKET-ID
+         WS-OUTCOME
+     MOVE "test frame compressed packet of 2097152 bytes decodes back" TO TL-CASE
+     MOVE "0 0 2097152" TO TL-EXPECTED
+     PERFORM START-TEXT
+     MOVE WS-OUTCOME TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-PACKET-ID TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-LENGTH TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Decoder: a Data length above 8 388 608, a declared size the stream does not match, and a
+*>   compressed packet below the threshold accepted when not validating (client side, 01 §3.3).
+     MOVE "05 8180808004 00" TO WS-HEX
+     MOVE 256 TO WS-THRESHOLD
+     MOVE 0 TO WS-VALIDATE
+     MOVE "test frame Data length 8388609 is malformed" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+     MOVE "0c 04 789c636060000000030001" TO WS-HEX
+     MOVE "test frame zlib stream shorter than its Data length is malformed" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+     MOVE "0c 03 789c636060000000030001" TO WS-HEX
+     MOVE "test frame without validation accepts a compressed packet below the threshold"
+         TO TL-CASE
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+     MOVE "ff ff" TO WS-HEX
+     MOVE "test frame two Length bytes with continuation bits need more" TO TL-CASE
+     MOVE "1 0" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+     MOVE "02 00 80" TO WS-HEX
+     MOVE "test frame compressed frame with a truncated packet id is malformed" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+*>   proto-api §2, §5: with a threshold >= 0 an uncompressed packet (Data length 0) decodes to
+*>   exactly id + body, bytes 1 to PB-LENGTH, with PB-POS after the id.
+     MOVE "04 00 01 aa bb" TO WS-HEX
+     MOVE 256 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 packet buffer holds exactly id and body" TO TL-CASE
+     MOVE "0 1 3 1 01aabb" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "05 00 81 01 cc dd" TO WS-HEX
+     MOVE 0 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 with a two-byte packet id at threshold 0" TO TL-CASE
+     MOVE "0 129 4 2 8101ccdd" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "03 00 7f ee" TO WS-HEX
+     MOVE -1 TO WS-THRESHOLD
+     MOVE "test frame without compression the packet buffer is the whole frame body" TO TL-CASE
+     MOVE "0 0 3 1 007fee" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "01 00" TO WS-HEX
+     MOVE 256 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 with no packet id is malformed" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     PERFORM DECODE-HEX
+     CALL "PB-FREE" USING PQ-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+
+*> PK-BUFFER := WS-COUNT zero bytes (packet id 0).
+ BUILD-ZERO-PACKET.
+     CALL "PB-RESET" USING PK-BUFFER
+     PERFORM UNTIL PK-LENGTH >= WS-COUNT
+         COMPUTE WS-CHUNK = FUNCTION MIN(65536, WS-COUNT - PK-LENGTH)
+         CALL "PB-APPEND-BYTES" USING PK-BUFFER WS-ZEROS WS-CHUNK
+     END-PERFORM.
+
+*> Decodes WS-HEX; TL-EXPECTED is "outcome" or, for outcomes 0 and 1, "outcome packet-id".
+ DECODE-HEX.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     CALL "PB-FRAME-DECODE" USING PB-BUFFER PQ-BUFFER WS-THRESHOLD WS-VALIDATE WS-PACKET-ID
+         WS-OUTCOME
+     PERFORM START-TEXT
+     MOVE WS-OUTCOME TO WS-NUM
+     PERFORM ADD-NUMBER
+     IF WS-OUTCOME < 2
+         MOVE WS-PACKET-ID TO WS-NUM
+         PERFORM ADD-NUMBER
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Decodes WS-HEX; observed is "outcome packet-id length pos hex-of-packet-buffer".
+ DECODE-WHOLE-HEX.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     CALL "PB-FRAME-DECODE" USING PB-BUFFER PQ-BUFFER WS-THRESHOLD WS-VALIDATE WS-PACKET-ID
+         WS-OUTCOME
+     PERFORM START-TEXT
+     MOVE WS-OUTCOME TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-PACKET-ID TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-LENGTH TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-LENGTH TO WS-COUNT
+     MOVE 0 TO WS-OFFSET
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-BUFFER-SLICE-HEX" USING PQ-BUFFER WS-OFFSET WS-COUNT WS-HEX
+     STRING " " DELIMITED BY SIZE FUNCTION TRIM(WS-HEX) DELIMITED BY SIZE
+         INTO TL-OBSERVED WITH POINTER WS-PTR
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ERROR-AND-LENGTH.
+     PERFORM START-TEXT
+     MOVE PB-ERROR TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PB-LENGTH TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ START-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUMBER.
+     MOVE WS-NUM TO WS-EDIT
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+ END PROGRAM TEST-FRAME.
+ COPY PROTOTEST.

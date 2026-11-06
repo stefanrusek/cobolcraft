@@ -1,0 +1,7 @@
+build/
+*.gcda
+*.gcno
+*.gcov
+__pycache__/
+client/tests/fixtures/textures/
+client/tests/fixtures/packs/

@@ -1,0 +1,23 @@
+# Resource Pack Push (ClientboundResourcePackPushPacket) -- configuration phase, clientbound (S->C), packet id 0x09
+# Variant: optional (Required false, Prompt absent).
+# Docs: 09 §3.1 row "Resource Pack Push (optional)"; 08 §9; 03 "0x09 (9) Clientbound Resource Pack Push";
+#       00 §5 UUID, §3.1 String, §2 Boolean, §6.6 Optional; prompt literal per 09 §1 (network NBT bare String tag,
+#       00 §8 / §9.1, 07 §1 id 8).
+# Stated inputs (operator-surface pack-* settings): pack-id 00112233-4455-6677-8899-aabbccddeeff; pack-url "http://127.0.0.1:8080/pack.zip";
+#   pack-sha1 "da39a3ee5e6b4b0d3255bfef95601890afd80709" (the SHA-1 of the empty byte string, used as a sample hash);
+#   pack-required false; pack-prompt empty (Prompt absent).
+
+09                                               # packet id: VarInt 0x09 (Resource Pack Push)
+00 11 22 33 44 55 66 77                          # pack id, most significant Long (UUID 00112233-4455-6677-8899-aabbccddeeff)
+88 99 aa bb cc dd ee ff                          # pack id, least significant Long
+1e                                               # URL length: VarInt 30 (UTF-8 bytes)
+# URL: "http://127.0.0.1:8080/pack.zip"
+68 74 74 70 3a 2f 2f 31 32 37 2e 30 2e 30 2e 31
+3a 38 30 38 30 2f 70 61 63 6b 2e 7a 69 70
+28                                               # hash (String(40)) length: VarInt 40 (UTF-8 bytes)
+# hash (String(40)): "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+64 61 33 39 61 33 65 65 35 65 36 62 34 62 30 64
+33 32 35 35 62 66 65 66 39 35 36 30 31 38 39 30
+61 66 64 38 30 37 30 39
+00                                               # required: Boolean false
+00                                               # prompt present: Boolean false (Optional absent, nothing follows)

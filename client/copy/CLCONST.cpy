@@ -1,0 +1,309 @@
+*> Constants of the client program (data-model §13; contracts/shim-abi.md §9; client-surface.md).
+*> Package-private: screen ids, widget kinds and actions of the screen model, the mesh slots, pipeline
+*> and texture ids the client uses, face directions, and the block state table the renderer needs
+*> (standin-content §1.1, §1.2: block key, properties of each state, opaque flag), transcribed.
+
+*> Screens of the screen model (data-model §13).
+ 78 SCR-TITLE               VALUE 1.
+ 78 SCR-SERVER-LIST         VALUE 2.
+ 78 SCR-EDIT-SERVER         VALUE 3.
+ 78 SCR-CONNECTING          VALUE 4.
+ 78 SCR-WORLD               VALUE 5.
+ 78 SCR-INVENTORY           VALUE 6.
+ 78 SCR-CRAFTING            VALUE 7.
+ 78 SCR-CHAT                VALUE 8.
+ 78 SCR-PAUSE               VALUE 9.
+ 78 SCR-DEATH               VALUE 10.
+ 78 SCR-PACKS               VALUE 11.
+ 78 SCR-PACK-CONFIRM        VALUE 12.
+ 78 SCR-WORLD-LIST          VALUE 13.
+ 78 SCR-CREATE-WORLD        VALUE 14.
+ 78 SCR-CONFIRM-DELETE      VALUE 15.
+ 78 SCR-OPEN-TO-OTHERS      VALUE 16.
+ 78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
+
+*> Widget kinds.
+ 78 WK-LABEL                VALUE 1.
+ 78 WK-BUTTON               VALUE 2.
+ 78 WK-FIELD                VALUE 3.   *> text field
+ 78 WK-ENTRY                VALUE 4.   *> list entry (selectable)
+ 78 WK-SLOT                 VALUE 5.   *> item slot: argument the slot 0 to 35 (36 = the stack on
+                                       *> the cursor), state 1 = the held hotbar slot, text the count
+ 78 WK-OVERLAY              VALUE 6.   *> a tint over its rectangle on the swatch its argument
+                                       *> names (the hurt indication); never clicked
+ 78 WK-ICON                 VALUE 7.   *> a pack icon: argument the icon cell (1 to CL-MAX-ICONS)
+                                       *> of the UI atlas (pack-select.cob); never clicked
+
+*> Widget actions (what a click on the widget does).
+ 78 ACT-NONE                VALUE 0.
+ 78 ACT-MULTIPLAYER         VALUE 1.
+ 78 ACT-QUIT                VALUE 2.
+ 78 ACT-JOIN                VALUE 3.
+ 78 ACT-ADD                 VALUE 4.
+ 78 ACT-EDIT                VALUE 5.
+ 78 ACT-REMOVE              VALUE 6.
+ 78 ACT-BACK                VALUE 7.
+ 78 ACT-SELECT              VALUE 8.   *> list entry; the widget's argument is the entry index
+ 78 ACT-DONE                VALUE 9.
+ 78 ACT-CANCEL              VALUE 10.
+ 78 ACT-FIELD-NAME          VALUE 11.  *> focus the name field
+ 78 ACT-FIELD-ADDRESS       VALUE 12.  *> focus the address field
+ 78 ACT-RESUME              VALUE 13.
+ 78 ACT-DISCONNECT          VALUE 14.
+ 78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot
+ 78 ACT-RESPAWN             VALUE 16.  *> death screen: Client Command PERFORM_RESPAWN
+ 78 ACT-CRAFT               VALUE 17.  *> crafting screen: Place Recipe; the argument is the
+                                       *> recipe's display id
+ 78 ACT-SINGLE-PLAYER       VALUE 18.  *> the world list (title Single-player; Cancel of the
+                                       *> create-world and confirm-delete screens)
+ 78 ACT-PLAY-WORLD          VALUE 19.  *> world list: open the selected world
+ 78 ACT-NEW-WORLD           VALUE 20.  *> world list: the create-world screen
+ 78 ACT-DELETE-WORLD        VALUE 21.  *> world list: the confirm-delete screen of the selected world
+ 78 ACT-CREATE-WORLD        VALUE 22.  *> create-world: create and open the world
+ 78 ACT-WORLD-MODE          VALUE 23.  *> create-world: switch survival / creative
+ 78 ACT-CONFIRM-DELETE      VALUE 24.  *> confirm-delete: delete the world for good
+ 78 ACT-QUIT-WORLD          VALUE 25.  *> pause menu: save and leave the hosted world
+ 78 ACT-OPEN-TO-OTHERS      VALUE 26.  *> pause menu: the open-to-others screen (US17)
+ 78 ACT-GUEST-MODE          VALUE 27.  *> open-to-others: switch the guest mode survival / creative
+ 78 ACT-GUEST-OPERATOR      VALUE 28.  *> open-to-others: switch whether guests may use operator
+                                       *> commands
+ 78 ACT-OPEN-WORLD          VALUE 29.  *> open-to-others: open the world to others
+ 78 ACT-PAUSE               VALUE 30.  *> open-to-others Cancel: back to the pause menu
+ 78 ACT-PACKS               VALUE 31.  *> title: the pack selection screen (US18)
+ 78 ACT-PACK-ENABLE         VALUE 32.  *> pack screen: enable the selected pack (on top)
+ 78 ACT-PACK-DISABLE        VALUE 33.  *> pack screen: disable the selected pack
+ 78 ACT-PACK-UP             VALUE 34.  *> pack screen: move the selected pack one up
+ 78 ACT-PACK-DOWN           VALUE 35.  *> pack screen: move the selected pack one down
+ 78 ACT-PACK-CONFIRM        VALUE 36.  *> pack confirmation: enable the incompatible pack anyway
+ 78 ACT-PACK-ACCEPT         VALUE 37.  *> pack prompt: accept the server's packs
+ 78 ACT-PACK-DECLINE        VALUE 38.  *> pack prompt: decline the server's packs
+ 78 ACT-PACKS-DONE          VALUE 39.  *> pack screen: save the choice, reload, the title screen
+
+*> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
+ 78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
+ 78 RPS-DOWNLOAD            VALUE 2.   *> accepted: to be fetched (RP-HTTP while fetching)
+ 78 RPS-READY               VALUE 3.   *> downloaded: applied once no pack is fetched any more
+ 78 RPS-ACTIVE              VALUE 4.   *> on the stack
+
+*> Connections: the game connection and the server-list status ping.
+ 78 CONN-GAME               VALUE 1.
+ 78 CONN-PING               VALUE 2.
+*> Connection phases.
+ 78 PH-NONE                 VALUE 0.
+ 78 PH-CONNECTING           VALUE 1.
+ 78 PH-STATUS               VALUE 2.
+ 78 PH-LOGIN                VALUE 3.
+ 78 PH-CONFIG               VALUE 4.
+ 78 PH-PLAY                 VALUE 5.
+
+*> Server-list entry status.
+ 78 SLS-NONE                VALUE 0.   *> not asked yet
+ 78 SLS-PINGING             VALUE 1.
+ 78 SLS-ANSWERED            VALUE 2.
+ 78 SLS-UNREACHABLE         VALUE 3.
+
+*> Mesh slots (cc_vk_mesh 1 to 65535): slot 1 is the user interface; each section of each replica
+*> chunk row has an opaque and a translucent slot (MESH-SLOT-BASE + ((row - 1) * 16 + section) * 2,
+*> + 1 for the translucent one).
+ 78 MESH-SLOT-UI            VALUE 1.
+ 78 MESH-SLOT-BASE          VALUE 2.
+*> The entity figures of the frame (one mesh, eye-relative): above every section slot.
+ 78 MESH-SLOT-ENTITIES      VALUE 65000.
+*> The item icons of the frame's slot widgets (texture 0), the slot counts drawn over them (texture 2)
+*> and the target highlight outline (eye-relative, texture 2).
+ 78 MESH-SLOT-ICONS         VALUE 65001.
+ 78 MESH-SLOT-UI-TOP        VALUE 65002.
+ 78 MESH-SLOT-HIGHLIGHT     VALUE 65003.
+*> The ground items of the frame (one mesh of item-icon billboards, eye-relative, texture 0).
+ 78 MESH-SLOT-GROUND-ITEMS  VALUE 65004.
+*> The weather quads of the frame (one mesh, eye-relative, texture 3).
+ 78 MESH-SLOT-WEATHER       VALUE 65005.
+
+*> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
+ 78 WX-CLEAR                VALUE 0.
+ 78 WX-DRIZZLE              VALUE 1.
+ 78 WX-HAILSTORM            VALUE 2.
+
+*> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
+ 78 DIR-NONE                VALUE 0.
+ 78 DIR-DOWN                VALUE 1.
+ 78 DIR-UP                  VALUE 2.
+ 78 DIR-NORTH               VALUE 3.
+ 78 DIR-SOUTH               VALUE 4.
+ 78 DIR-WEST                VALUE 5.
+ 78 DIR-EAST                VALUE 6.
+
+*> Limits of the client state (CLSTATE.cpy).
+ 78 CL-MAX-SERVERS          VALUE 32.
+ 78 CL-MAX-WORLDS           VALUE 32.
+ 78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
+ 78 CL-MAX-ADDRESSES        VALUE 8.   *> local addresses shown on the open-to-others screen
+ 78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
+ 78 CL-MAX-WIDGETS          VALUE 48.
+ 78 CL-MAX-CHUNKS           VALUE 1089.
+ 78 CL-MAX-SECTIONS         VALUE 16.
+ 78 CL-MAX-LANG             VALUE 640.
+ 78 CL-MAX-SPRITES          VALUE 128.
+ 78 CL-MAX-STATES           VALUE 18.
+ 78 CL-MAX-QUADS            VALUE 24.
+ 78 CL-MAX-DRAWS            VALUE 8192.
+ 78 CL-MAX-UPLOADS          VALUE 4096.
+*> Uploads and draws every frame may list after the section meshes: entities, ground items, weather,
+*> highlight, UI, icons and UI text (RENDER-LIST-BUILD keeps this many entries of each list free).
+ 78 CL-UPLOAD-RESERVE       VALUE 7.
+ 78 CL-DRAW-RESERVE         VALUE 7.
+ 78 CL-MAX-DIM-TYPES        VALUE 8.
+ 78 CL-MAX-LEVELS           VALUE 8.
+ 78 CL-MAX-NODES            VALUE 160.
+ 78 CL-MAX-LINKS            VALUE 160.
+ 78 CL-MAX-SUGGEST          VALUE 10.
+ 78 CL-MAX-PACKS            VALUE 16.
+ 78 CL-MAX-LOCAL-PACKS      VALUE 32.  *> packs listed from resourcepacks/ (US18-1)
+ 78 CL-MAX-SERVER-PACKS     VALUE 8.   *> server-pushed packs of one connection (08 §9)
+ 78 CL-MAX-ICONS            VALUE 16.  *> pack icon cells of the UI atlas (16 x 16 each)
+ 78 CL-MAX-PACK-ERRORS      VALUE 8.   *> pack errors kept from the last reload (US18-5)
+ 78 CL-MAX-PACK-FILES       VALUE 8192. *> files of one local or server pack
+ 78 CL-PACK-SIZE-LIMIT      VALUE 262144000.  *> server pack download limit (08 §9.3)
+ 78 CL-MAX-UI-VERTICES      VALUE 24576.
+ 78 CL-MAX-ENTITIES         VALUE 256.
+ 78 CL-MAX-PLAYER-INFO      VALUE 64.
+ 78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
+ 78 CL-MAX-GI-VERTICES      VALUE 1536.
+ 78 CL-MAX-RECIPES          VALUE 16.
+ 78 CL-MAX-BIOMES           VALUE 8.
+*> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
+ 78 CL-MAX-WX-VERTICES      VALUE 3468.
+ 78 CL-PROTOCOL             VALUE 777.
+ 78 CL-DEFAULT-PORT         VALUE 25565.
+ 78 CL-GUI-SCALE            VALUE 2.
+ 78 CL-TICK-MS              VALUE 50.
+ 78 CL-MAX-ICON-VERTICES    VALUE 1536.
+ 78 CL-MAX-TOP-VERTICES     VALUE 1536.
+ 78 CL-MAX-HL-VERTICES      VALUE 144.
+ 78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
+ 78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
+*> Chat (client-surface §4; 05c Chat Message String(max 256)): messages kept, messages shown, how
+*> long a message shows while chat is closed, the longest line in UTF-16 code units.
+ 78 CL-MAX-CHAT             VALUE 100.
+ 78 CL-CHAT-SHOWN           VALUE 10.
+ 78 CL-CHAT-MS              VALUE 10000.
+ 78 CL-CHAT-UNITS           VALUE 256.
+*> Block reach of the target ray, in blocks from the eye (standin-content §11.4).
+ 78 CL-REACH                VALUE 5.
+*> Health (standin-content §10.1 maximum health; §10.4 attack reach in blocks from the eye) and how
+*> long the hurt indication shows, in milliseconds (a client choice).
+ 78 CL-MAX-HEALTH           VALUE 30.
+ 78 CL-ATTACK-REACH         VALUE 4.
+ 78 CL-HURT-MS              VALUE 500.
+*> Hunger (standin-content §11.1 maximum food; §11.6 eating time, 30 ticks, in milliseconds).
+ 78 CL-MAX-FOOD             VALUE 24.
+ 78 CL-EAT-MS               VALUE 1500.
+
+*> Entity types (standin-content §3).
+ 78 ET-OPERATOR             VALUE 0.
+ 78 ET-LOOSE-ITEM           VALUE 1.
+ 78 ET-SODGRAZER            VALUE 2.
+ 78 ET-ABEND                VALUE 3.
+
+*> Entity types (standin-content §3), for type t row t + 1: 1 = a player or mob (attacked by the
+*> left button, §10.4), the collision box's half width and its height in blocks.
+ 01 CL-ENTITY-DATA.
+    05 FILLER PIC X(8) VALUE "10350175".
+    05 FILLER PIC X(8) VALUE "00150030".
+    05 FILLER PIC X(8) VALUE "10450090".
+    05 FILLER PIC X(8) VALUE "10375075".
+ 01 CL-ENTITIES REDEFINES CL-ENTITY-DATA.
+    05 CL-ET OCCURS 4 TIMES.
+       10 CL-ET-ATTACK      PIC 9.
+       10 CL-ET-HALF        PIC 9V999.
+       10 CL-ET-HEIGHT      PIC 9V99.
+
+*> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
+ 78 SW-WHITE                VALUE 0.
+ 78 SW-MISSING-GLYPH        VALUE 1.
+ 78 SW-PANEL                VALUE 2.
+ 78 SW-BUTTON               VALUE 3.
+ 78 SW-SELECTED             VALUE 4.
+ 78 SW-FIELD                VALUE 5.
+ 78 SW-HURT                 VALUE 6.
+ 78 SW-COUNT                VALUE 7.
+
+*> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
+*> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack
+*> places its default state's block with the axis of the clicked face, §1.3), and the tool class
+*> it speeds up ("H" hard, "S" soft, §2 pry_bar and trowel), and its food value (§11.5; 0 = not
+*> food).
+ 01 CL-ITEM-DATA.
+    05 FILLER PIC X(22) VALUE "nothing         0000 0".
+    05 FILLER PIC X(22) VALUE "baseplate       6401 0".
+    05 FILLER PIC X(22) VALUE "greystone       6402 0".
+    05 FILLER PIC X(22) VALUE "loam            6403 0".
+    05 FILLER PIC X(22) VALUE "turf            6404 0".
+    05 FILLER PIC X(22) VALUE "grit            6405 0".
+    05 FILLER PIC X(22) VALUE "cardstack       6409 0".
+    05 FILLER PIC X(22) VALUE "lucite          6412 0".
+    05 FILLER PIC X(22) VALUE "glowtube        6413 0".
+    05 FILLER PIC X(22) VALUE "ledger_tile     6415 0".
+    05 FILLER PIC X(22) VALUE "pry_bar         0100H0".
+    05 FILLER PIC X(22) VALUE "trowel          0100S0".
+    05 FILLER PIC X(22) VALUE "grazer_flank    3200 3".
+    05 FILLER PIC X(22) VALUE "seared_flank    3200 8".
+    05 FILLER PIC X(22) VALUE "sod_cake        1600 2".
+    05 FILLER PIC X(22) VALUE "dump_shard      6400 0".
+    05 FILLER PIC X(22) VALUE "goto_pad        1616 0".
+    05 FILLER PIC X(22) VALUE "slag            6417 0".
+ 01 CL-ITEMS REDEFINES CL-ITEM-DATA.
+    05 CL-IT OCCURS 18 TIMES.
+       10 CL-IT-KEY         PIC X(16).
+       10 CL-IT-MAX         PIC 99.
+       10 CL-IT-STATE       PIC 99.
+       10 CL-IT-TOOL        PIC X.
+       10 CL-IT-FOOD        PIC 9.
+
+*> Blocks (standin-content §1.1, §2): for block id b, row b + 1: hand break time in milliseconds
+*> (99999 = unbreakable, baseplate) and its class ("H" hard, "S" soft, space none).
+ 01 CL-BLOCK-DATA.
+    05 FILLER PIC X(6) VALUE "00000 ".
+    05 FILLER PIC X(6) VALUE "99999 ".
+    05 FILLER PIC X(6) VALUE "01500H".
+    05 FILLER PIC X(6) VALUE "00600S".
+    05 FILLER PIC X(6) VALUE "00700S".
+    05 FILLER PIC X(6) VALUE "00500S".
+    05 FILLER PIC X(6) VALUE "01000H".
+    05 FILLER PIC X(6) VALUE "00400 ".
+    05 FILLER PIC X(6) VALUE "00300 ".
+    05 FILLER PIC X(6) VALUE "01200H".
+    05 FILLER PIC X(6) VALUE "02000 ".
+    05 FILLER PIC X(6) VALUE "01200H".
+ 01 CL-BLOCKS REDEFINES CL-BLOCK-DATA.
+    05 CL-BK OCCURS 12 TIMES.
+       10 CL-BK-BREAK-MS    PIC 9(5).
+       10 CL-BK-CLASS       PIC X.
+
+*> Block states (standin-content §1.2): for state id s, row s + 1: block key path (the block state
+*> file name, 08 §10.6), the state's properties as a variant key (sorted by name, 08 §4.2), and
+*> whether the block is opaque (§1.1: occludes faces, blocks light). Block id: §1.1.
+ 01 CL-BLOCK-STATE-DATA.
+    05 FILLER PIC X(64) VALUE "00void".
+    05 FILLER PIC X(64) VALUE "11baseplate".
+    05 FILLER PIC X(64) VALUE "21greystone".
+    05 FILLER PIC X(64) VALUE "31loam".
+    05 FILLER PIC X(64) VALUE "41turf".
+    05 FILLER PIC X(64) VALUE "51grit".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=x,punched=true".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=x,punched=false".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=y,punched=true".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=y,punched=false".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=z,punched=true".
+    05 FILLER PIC X(64) VALUE "61cardstack axis=z,punched=false".
+    05 FILLER PIC X(64) VALUE "70lucite".
+    05 FILLER PIC X(64) VALUE "81glowtube lit=true".
+    05 FILLER PIC X(64) VALUE "81glowtube lit=false".
+    05 FILLER PIC X(64) VALUE "91ledger_tile".
+    05 FILLER PIC X(64) VALUE "A1goto_pad".
+    05 FILLER PIC X(64) VALUE "B1slag".
+ 01 CL-BLOCK-STATES REDEFINES CL-BLOCK-STATE-DATA.
+    05 CL-BS OCCURS 18 TIMES.
+       10 CL-BS-BLOCK       PIC X.       *> block id in hex (0 to B)
+       10 CL-BS-OPAQUE      PIC 9.
+       10 CL-BS-TEXT        PIC X(62).   *> "<block path>[ <variant key>]"

@@ -1,0 +1,23 @@
+# Fixture: play-s2c-01-add-entity-sodgrazer.hex
+# Add Entity (ClientboundAddEntityPacket), cobolcraft:sodgrazer
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Task T141. 09 §3.3 row: Add Entity (cobolcraft:sodgrazer): type 2, UUID as for ground items, movement (0, 0, 0), pitch 0, yaw = head yaw = the mob's yaw.
+# Doc refs: 05a 0x01 Add Entity; 00 §5 UUID, §2 Double, §4.6 LpVec3, §4.4 Angle (floor(deg * 256 / 360) mod 256).
+# Content: standin-content §3 entity type ids.
+# Scenario: a sodgrazer standing on the turf of column (12, 3) (h 55, standin §5.2). Entity id 20 is also used by
+#   move-entity-pos, move-entity-pos-rot, move-entity-rot and rotate-head.
+# Stated inputs: entity id 20; entity UUID 00000000-0000-0000-0000-000000000014 (msb 0, lsb 20 = entity id); entity type 2 (cobolcraft:sodgrazer); position (12.5, 56.0, 3.5);
+#   movement (0.0, 0.0, 0.0); pitch 0.0, yaw 90.0, head yaw 90.0 (degrees); data 0.
+
+01                                                            # packet id: VarInt 0x01 (1) Add Entity (play, clientbound)
+14                                                            # Entity id: VarInt 20
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 14               # Entity UUID: UUID 00000000-0000-0000-0000-000000000014 (msb 0, lsb 20 = entity id)
+02                                                            # Entity type: VarInt 2 (cobolcraft:sodgrazer)
+40 29 00 00 00 00 00 00                                       # X: Double 12.5 (IEEE-754 binary64 4029000000000000)
+40 4c 00 00 00 00 00 00                                       # Y: Double 56.0 (IEEE-754 binary64 404c000000000000)
+40 0c 00 00 00 00 00 00                                       # Z: Double 3.5 (IEEE-754 binary64 400c000000000000)
+00                                                            # Movement: LpVec3 (0.0, 0.0, 0.0) -> single 0x00 byte (zero vector)
+00                                                            # Pitch: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+40                                                            # Yaw: Angle 90.0 deg -> floor(90.0 * 256 / 360) = 64 -> byte 0x40
+40                                                            # Head yaw: Angle 90.0 deg -> floor(90.0 * 256 / 360) = 64 -> byte 0x40
+00                                                            # Data: VarInt 0

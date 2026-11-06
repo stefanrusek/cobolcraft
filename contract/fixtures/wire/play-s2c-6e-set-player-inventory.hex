@@ -1,0 +1,10 @@
+# Fixture: play-s2c-6e-set-player-inventory.hex
+# Set Player Inventory (ClientboundSetPlayerInventoryPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x6E (110).
+# Task T132. 09 §3.2 row: Set Player Inventory (one slot 0-35 and its stack; 09 §3.2 slot numbering).
+# Doc refs: 05b 0x6E (VarInt slot, ItemStack); 00 §12.1 ItemStack (no components, standin-content §2).
+# Stated inputs: slot 0; stack 63 x item 2 cobolcraft:greystone (the starting stack after one block was placed).
+
+6e                                                            # packet id: VarInt 0x6e (110) Set Player Inventory (play, clientbound)
+00                                                            # Slot: VarInt 0
+3f 02 00 00                                                   # Contents: ItemStack Count 63, Item RegistryId 2 (cobolcraft:greystone), DataComponentPatch AddedCount 0, RemovedCount 0

@@ -1,0 +1,257 @@
+*> Implementation test of other players' presence (core/src/play.cob OTHERS-JOIN, OTHERS-LEAVE, with
+*> the entity tracker and chunk following; tasks T423; US3-5; 09 §3.2 Player Info Update/Remove,
+*> Add Entity (cobolcraft:operator), Move Entity, Teleport Entity and Remove Entities rows). View
+*> distance 2, so a 5 x 5 chunk square: a chunk change far away forgets 25 chunks and sends 25.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-OTHER-PLAYERS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-ALICE               PIC X(16) VALUE "Alice".
+ 01 WS-BOB                 PIC X(16) VALUE "Bob".
+ 01 WS-CAROL               PIC X(16) VALUE "Carol".
+ 01 WS-FIVE                BINARY-LONG VALUE 5.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-BROW                BINARY-LONG.
+ 01 WS-PACKET              BINARY-LONG VALUE 30.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG VALUE 8.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 0.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-AFTER               PIC 9.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-REAL                FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-SAVED-UUID          PIC X(16).
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 16.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT-REAL           PIC -(6)9.99.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-ALICE WS-FIVE WS-A
+     CALL "TEST-JOIN-UNDRAINED" USING WS-BOB WS-THREE WS-B
+     MOVE CN-PLAYER(WS-B) TO WS-BROW
+
+     MOVE "test other players (US3-5): when Bob joins near Alice, Alice is sent Player Info "
+         & "Update for Bob (actions 0x01, 1 entry, his UUID, name), then Add Entity "
+         & "cobolcraft:operator with his entity id 2, UUID, position and facing, and nothing else"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-A PB-BUFFER WS-CLOSE
+     PERFORM NEXT-PACKET
+     PERFORM ADD-ID
+     CALL "PB-GET-UBYTE" USING PK-BUFFER WS-NUM
+     PERFORM ADD-NUM
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-NUM
+     PERFORM ADD-NUM
+     CALL "PB-GET-UUID" USING PK-BUFFER WS-UUID
+     PERFORM ADD-UUID-CHECK
+     MOVE SPACES TO WS-NAME
+     CALL "PB-GET-STRING" USING PK-BUFFER WS-MAX WS-NAME WS-NAME-CAPACITY WS-NAME-LENGTH
+     PERFORM ADD-SPACE
+     STRING WS-NAME(1:WS-NAME-LENGTH) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     PERFORM NEXT-PACKET
+     PERFORM ADD-ID
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-NUM
+     PERFORM ADD-NUM
+     CALL "PB-GET-UUID" USING PK-BUFFER WS-UUID
+     PERFORM ADD-UUID-CHECK
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-NUM
+     PERFORM ADD-NUM
+     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-REAL
+     PERFORM ADD-REAL
+     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-REAL
+     PERFORM ADD-REAL
+     CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-REAL
+     PERFORM ADD-REAL
+     CALL "PB-GET-LPVEC3" USING PK-BUFFER WS-VX WS-VY WS-VZ
+     CALL "PB-GET-ANGLE" USING PK-BUFFER WS-FLOAT
+     MOVE WS-FLOAT TO WS-REAL
+     PERFORM ADD-REAL
+     CALL "PB-GET-ANGLE" USING PK-BUFFER WS-FLOAT
+     MOVE WS-FLOAT TO WS-REAL
+     PERFORM ADD-REAL
+     PERFORM NEXT-PACKET
+     MOVE WS-OUTCOME TO WS-NUM
+     PERFORM ADD-NUM
+     MOVE "71 1 1 uuid Bob 1 2 uuid 0 4.50 54.00 8.50 0.00 -90.00 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: after the Player Position of Bob's join he is sent Player Info "
+         & "Update for himself and for Alice, then Add Entity for Alice" TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-B PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME WS-AFTER
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         PERFORM NEXT-PACKET
+         IF WS-OUTCOME = 0 AND WS-AFTER = 1
+             PERFORM ADD-ID
+         END-IF
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 73
+             MOVE 1 TO WS-AFTER
+         END-IF
+     END-PERFORM
+     MOVE "71 71 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: Bob's moves reach Alice: a step is Move Entity Pos, a turn Move "
+         & "Entity Rot and Rotate Head" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 5.5 TO WS-X
+     MOVE 54.0 TO WS-Y
+     PERFORM BOB-MOVES
+     MOVE 31 TO WS-PACKET
+     MOVE 90 TO WS-YAW
+     PERFORM BOB-MOVES
+     MOVE 30 TO WS-PACKET
+     MOVE "[54] [57 85]" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: Bob walking out of view distance is moved, then removed from "
+         & "Alice's client, and Alice from his; walking back adds both again" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 100.0 TO WS-Y
+     MOVE 100.5 TO WS-X
+     PERFORM BOB-MOVES
+     CALL "TEST-DRAIN-IDS" USING WS-B WS-IDS
+     PERFORM ADD-IDS
+     MOVE 5.5 TO WS-X
+     PERFORM BOB-MOVES
+     CALL "TEST-DRAIN-IDS" USING WS-B WS-IDS
+     PERFORM ADD-IDS
+     MOVE "[128 78] [96 38x25 12 46x25 11 78] [1] [96 38x25 12 46x25 11 1]" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: Alice moving her chunk view away from Bob removes him from her "
+         & "client, and her from his" TO TL-CASE
+     PERFORM START-ROW
+     MOVE -100.5 TO WS-X
+     CALL "TEST-MOVE" USING WS-A WS-PACKET WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-IDS" USING WS-A WS-IDS
+     PERFORM ADD-IDS
+     CALL "TEST-DRAIN-IDS" USING WS-B WS-IDS
+     PERFORM ADD-IDS
+     MOVE "[96 38x25 12 46x25 11 78] [128 78]" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: when Bob disconnects, Alice (out of view) is sent Player Info "
+         & "Remove only, Carol (in view) Remove Entities and Player Info Remove" TO TL-CASE
+     CALL "TEST-JOIN" USING WS-CAROL WS-FIVE WS-C
+     CALL "TEST-DRAIN-IDS" USING WS-A WS-IDS
+     CALL "TEST-DRAIN-IDS" USING WS-B WS-IDS
+     CALL "CORE-CONN-CLOSED" USING WS-B
+     PERFORM START-ROW
+     CALL "TEST-DRAIN-IDS" USING WS-A WS-IDS
+     PERFORM ADD-IDS
+     CALL "TEST-DRAIN-IDS" USING WS-C WS-IDS
+     PERFORM ADD-IDS
+     CALL "PLAYERS-ONLINE" USING WS-NUM
+     PERFORM ADD-NUM
+     MOVE "[70] [78 70] 2" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test other players: when Carol disconnects, Alice's Player Info Remove carries "
+         & "Carol's UUID" TO TL-CASE
+     MOVE PL-UUID(CN-PLAYER(WS-C)) TO WS-SAVED-UUID
+     CALL "CORE-CONN-CLOSED" USING WS-C
+     PERFORM START-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-A PB-BUFFER WS-CLOSE
+     PERFORM NEXT-PACKET
+     PERFORM ADD-ID
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-NUM
+     PERFORM ADD-NUM
+     CALL "PB-GET-UUID" USING PK-BUFFER WS-UUID
+     PERFORM ADD-SPACE
+     IF WS-UUID = WS-SAVED-UUID
+         STRING "carol" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     ELSE
+         STRING "other" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     END-IF
+     MOVE "70 1 carol" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     STOP RUN.
+
+*> Bob moves; the packet ids Alice's client is sent are added to the row.
+ BOB-MOVES.
+     CALL "TEST-MOVE" USING WS-B WS-PACKET WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-IDS" USING WS-A WS-IDS
+     PERFORM ADD-IDS.
+
+ NEXT-PACKET.
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME.
+
+ ADD-ID.
+     MOVE WS-PACKET-ID TO WS-NUM
+     PERFORM ADD-NUM.
+
+ ADD-UUID-CHECK.
+     IF WS-UUID = PL-UUID(WS-BROW)
+         MOVE "uuid" TO WS-NAME
+     ELSE
+         MOVE "other-uuid" TO WS-NAME
+     END-IF
+     PERFORM ADD-SPACE
+     STRING FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ADD-IDS.
+     PERFORM ADD-SPACE
+     STRING "[" FUNCTION TRIM(WS-IDS) "]" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ADD-SPACE.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     END-IF.
+
+ ADD-NUM.
+     PERFORM ADD-SPACE
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ADD-REAL.
+     PERFORM ADD-SPACE
+     MOVE WS-REAL TO WS-EDIT-REAL
+     STRING FUNCTION TRIM(WS-EDIT-REAL) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-OTHER-PLAYERS.
+
+ COPY CORETEST.

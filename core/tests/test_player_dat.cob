@@ -1,0 +1,201 @@
+*> Implementation test of the player files (core/src/persistence.cob PLAYER-DAT-WRITE and PLAYER-DAT-READ,
+*> core/src/players.cob; docs/protocol/07-nbt-and-anvil.md §9.1, §9.2): a world save writes
+*> players/<offline uuid, hyphenated lower-case>.dat for every online player and for every player
+*> who left since the last save, with DataVersion, Name, Dimension, Pos, Rotation, GameMode, Health,
+*> Food, Inventory (one {Slot, id, count} per non-empty slot) and HeldSlot; after the world is
+*> reopened, each player's next join loads the file and restores dimension, position, rotation,
+*> game mode, health, food, inventory and held slot.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PLAYER-DAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY ITEMS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-WORLD               PIC X(64) VALUE Z"build/core-test-world".
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
+ 01 WS-LENGTH-5            BINARY-LONG VALUE 5.
+ 01 WS-LENGTH-3            BINARY-LONG VALUE 3.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FILE                PIC X(256).
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-PATH                PIC X(128).
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-OBSERVED            PIC X(8192).
+ 01 WS-EXPECTED            PIC X(8192).
+ 01 WS-SAVED               PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FEDIT               PIC -(5)9.999.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-AREA                PIC X(512).
+ 01 WS-SIXTEEN             BINARY-LONG VALUE 16.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE CS-HOSTILE-MOBS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE 3.5 TO PL-X(WS-ROW)
+     MOVE 55 TO PL-Y(WS-ROW)
+     MOVE -7.25 TO PL-Z(WS-ROW)
+     MOVE 30 TO PL-YAW(WS-ROW)
+     MOVE -10 TO PL-PITCH(WS-ROW)
+     MOVE 17.5 TO PL-HEALTH(WS-ROW)
+     MOVE 12 TO PL-FOOD(WS-ROW)
+     MOVE 4 TO PL-HELD(WS-ROW)
+     MOVE 13 TO PL-SLOT-ITEM(WS-ROW, 21)
+     MOVE 5 TO PL-SLOT-COUNT(WS-ROW, 21)
+     MOVE 0 TO PL-SLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO PL-SLOT-ITEM(WS-ROW, 2)
+     CALL "CORE-SAVE"
+
+     MOVE "test player dat a save writes players/<uuid>.dat of an online player: DataVersion, "
+         & "Name, Dimension, Pos, Rotation, GameMode, Health, Food, the non-empty slots, HeldSlot"
+         TO TL-CASE
+     PERFORM PLAYER-FILE
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "DataVersion" TO WS-PATH PERFORM ADD-GET
+     MOVE "Name" TO WS-PATH PERFORM ADD-GET
+     MOVE "Dimension" TO WS-PATH PERFORM ADD-GET
+     MOVE "Pos" TO WS-PATH PERFORM ADD-GET
+     MOVE "Rotation" TO WS-PATH PERFORM ADD-GET
+     MOVE "GameMode" TO WS-PATH PERFORM ADD-GET
+     MOVE "Health" TO WS-PATH PERFORM ADD-GET
+     MOVE "Food" TO WS-PATH PERFORM ADD-GET
+     MOVE "Inventory" TO WS-PATH PERFORM ADD-GET
+     MOVE "HeldSlot" TO WS-PATH PERFORM ADD-GET
+     PERFORM INVENTORY-TEXT
+     MOVE SPACES TO WS-EXPECTED
+     STRING "5023 Alice cobolcraft:main [3.500,55.000,-7.250] [30.000,-10.000] 0 17.500 12 "
+         FUNCTION TRIM(WS-TEXT) " 4" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM DESCRIBE-PLAYER
+     MOVE WS-OBSERVED TO WS-SAVED
+
+*>   Bob joins after that save, travels nowhere but changes, and leaves before the next save.
+     MOVE "test player dat a player who left since the last save has his file written by the next "
+         & "save" TO TL-CASE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     MOVE CN-PLAYER(WS-BOB) TO WS-ROW
+     MOVE DIM-SUBROUTINE TO PL-DIM(WS-ROW)
+     MOVE 40.5 TO PL-X(WS-ROW)
+     MOVE 41 TO PL-Y(WS-ROW)
+     MOVE 42.5 TO PL-Z(WS-ROW)
+     MOVE 1 TO PL-MODE(WS-ROW)
+     MOVE 9 TO PL-FOOD(WS-ROW)
+     MOVE 8 TO PL-HELD(WS-ROW)
+     PERFORM DESCRIBE-PLAYER
+     MOVE WS-OBSERVED TO WS-EXPECTED
+     PERFORM PLAYER-FILE
+     CALL "CORE-CONN-CLOSED" USING WS-BOB
+     CALL "CORE-SAVE"
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "Name" TO WS-PATH PERFORM ADD-GET
+     MOVE "Dimension" TO WS-PATH PERFORM ADD-GET
+     MOVE "Pos" TO WS-PATH PERFORM ADD-GET
+     MOVE "GameMode" TO WS-PATH PERFORM ADD-GET
+     MOVE "Food" TO WS-PATH PERFORM ADD-GET
+     MOVE "HeldSlot" TO WS-PATH PERFORM ADD-GET
+     MOVE "Bob cobolcraft:subroutine [40.500,41.000,42.500] 1 9 8" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test player dat after the world is reopened, Bob's next join loads his file and he is "
+         & "as he left" TO TL-CASE
+     CALL "CORE-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     MOVE CN-PLAYER(WS-BOB) TO WS-ROW
+     PERFORM DESCRIBE-PLAYER
+     MOVE WS-EXPECTED TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test player dat after the world is reopened, Alice's next join loads her file and she "
+         & "is as she was saved" TO TL-CASE
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     PERFORM DESCRIBE-PLAYER
+     MOVE WS-SAVED TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+*> WS-FILE: build/core-test-world/players/<uuid>.dat of the player of WS-ROW.
+ PLAYER-FILE.
+     MOVE PL-UUID(WS-ROW) TO WS-AREA
+     CALL "TEST-HEX-OF" USING WS-AREA WS-SIXTEEN WS-HEX
+     MOVE SPACES TO WS-FILE
+     STRING "build/core-test-world/players/" WS-HEX(1:8) "-" WS-HEX(9:4) "-" WS-HEX(13:4) "-"
+         WS-HEX(17:4) "-" WS-HEX(21:12) ".dat" DELIMITED BY SIZE INTO WS-FILE.
+
+*> The expected Inventory rendering of the player of WS-ROW, from its slots.
+ INVENTORY-TEXT.
+     MOVE SPACES TO WS-TEXT
+     MOVE "[" TO WS-TEXT
+     MOVE 2 TO WS-PTR
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT-COUNT(WS-ROW, WS-S) > 0
+             IF WS-PTR > 2
+                 STRING "," DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+             END-IF
+             COMPUTE WS-EDIT = WS-S - 1
+             STRING "{Slot:" FUNCTION TRIM(WS-EDIT) ",id:"
+                 IT-KEY(PL-SLOT-ITEM(WS-ROW, WS-S) + 1)
+                 (1:IT-KEY-LENGTH(PL-SLOT-ITEM(WS-ROW, WS-S) + 1)) ",count:" DELIMITED BY SIZE
+                 INTO WS-TEXT POINTER WS-PTR
+             MOVE PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-EDIT
+             STRING FUNCTION TRIM(WS-EDIT) "}" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     STRING "]" DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+*> Everything a player file restores, as text in WS-OBSERVED.
+ DESCRIBE-PLAYER.
+     MOVE SPACES TO WS-OBSERVED
+     MOVE PL-DIM(WS-ROW) TO WS-EDIT
+     STRING "dim " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OBSERVED
+     COMPUTE WS-FEDIT ROUNDED = PL-X(WS-ROW) PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = PL-Y(WS-ROW) PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = PL-Z(WS-ROW) PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = PL-YAW(WS-ROW) PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = PL-PITCH(WS-ROW) PERFORM ADD-FEDIT
+     MOVE PL-MODE(WS-ROW) TO WS-EDIT PERFORM ADD-EDIT
+     COMPUTE WS-FEDIT ROUNDED = PL-HEALTH(WS-ROW) PERFORM ADD-FEDIT
+     MOVE PL-FOOD(WS-ROW) TO WS-EDIT PERFORM ADD-EDIT
+     MOVE PL-HELD(WS-ROW) TO WS-EDIT PERFORM ADD-EDIT
+     PERFORM INVENTORY-TEXT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ ADD-FEDIT.
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ ADD-EDIT.
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ ADD-GET.
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE FUNCTION TRIM(WS-OBSERVED) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PLAYER-DAT.
+
+ COPY CORETEST.

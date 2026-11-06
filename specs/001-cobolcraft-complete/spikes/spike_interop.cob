@@ -1,0 +1,44 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. SPIKE-INTEROP.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-A        BINARY-LONG VALUE 40.
+       01 WS-B        BINARY-LONG VALUE 2.
+       01 WS-R        BINARY-LONG.
+       01 WS-BUF      PIC X(8).
+       01 WS-BUF-R REDEFINES WS-BUF.
+          05 WS-BYTE  PIC X OCCURS 8.
+       01 WS-LEN      BINARY-LONG VALUE 8.
+       01 WS-D        FLOAT-LONG.
+       01 WS-D-BYTES REDEFINES WS-D PIC X(8).
+       01 WS-OUT      PIC X(32).
+       01 WS-OUTLEN   BINARY-LONG VALUE 32.
+       01 WS-NS       BINARY-DOUBLE VALUE 1000000.
+       01 WS-SIN      FLOAT-LONG.
+       01 WS-T1       PIC X(21).
+       01 WS-T2       PIC X(21).
+       01 WS-I        BINARY-LONG.
+       01 WS-BE       PIC X(8).
+       PROCEDURE DIVISION.
+           CALL STATIC "spk_add" USING BY VALUE WS-A BY VALUE WS-B
+                RETURNING WS-R
+           DISPLAY "ADD=" WS-R
+           CALL STATIC "spk_fill" USING BY REFERENCE WS-BUF
+                BY VALUE WS-LEN RETURNING WS-R
+           DISPLAY "FILL-RET=" WS-R " BYTE8=" FUNCTION ORD(WS-BYTE(8))
+           COMPUTE WS-D = 1.5
+           CALL STATIC "spk_read_double" USING BY REFERENCE WS-D
+                BY REFERENCE WS-OUT BY VALUE WS-OUTLEN
+           DISPLAY "DOUBLE-SEEN-BY-C=" WS-OUT(1:8)
+      *    big-endian wire form of 1.5 is 3FF8000000000000
+           PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+              MOVE WS-D-BYTES(9 - WS-I:1) TO WS-BE(WS-I:1)
+           END-PERFORM
+           DISPLAY "BE-HEX=" FUNCTION HEX-OF(WS-BE)
+           COMPUTE WS-SIN = FUNCTION SIN(1.0)
+           DISPLAY "SIN1=" WS-SIN
+           MOVE FUNCTION CURRENT-DATE TO WS-T1
+           CALL "CBL_GC_NANOSLEEP" USING WS-NS
+           MOVE FUNCTION CURRENT-DATE TO WS-T2
+           DISPLAY "T1=" WS-T1 " T2=" WS-T2
+           STOP RUN.

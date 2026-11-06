@@ -1,0 +1,6 @@
+# Player Loaded
+# Phase play, serverbound (C->S), packet id 0x2C (44)
+# Docs: 09 §3.2 row 0x2C; 05c 0x2C
+# Stated inputs: none (no fields).
+
+2c                                                 # packet id 0x2C (VarInt)

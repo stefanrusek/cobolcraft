@@ -1,0 +1,10 @@
+# Fixture: play-s2c-27-game-event-03-game-mode.hex
+# Game Event (ClientboundGameEventPacket), event 3 CHANGE_GAME_MODE
+# Phase: play. Direction: clientbound (S->C). Packet id 0x27 (39).
+# Task T119. 09 §3.2 row: Game Event 3, value 0.0 survival / 1.0 creative. Fixture: survival.
+# Doc refs: 05a 0x27 Game Event (UByte event, Float value); 00 §2 (UByte, Float).
+# Stated inputs: event 3 (CHANGE_GAME_MODE), value 0.0.
+
+27                                                            # packet id: VarInt 0x27 (39) Game Event (play, clientbound)
+03                                                            # Event: UByte 3 (CHANGE_GAME_MODE)
+00 00 00 00                                                   # Value: Float 0.0 (IEEE-754 binary32 00000000)

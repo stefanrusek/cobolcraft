@@ -1,0 +1,12 @@
+# Fixture: play-s2c-27-game-event-08-thunder-level.hex
+# Game Event (ClientboundGameEventPacket), event 8 THUNDER_LEVEL_CHANGE
+# Phase: play. Direction: clientbound (S->C). Packet id 0x27 (39).
+# Task T120. 09 §3.3 row: Game Event 8 THUNDER_LEVEL_CHANGE. Fixture: hailstorm, 1.0.
+# Doc refs: 05a 0x27 Game Event (UByte event, Float value); 00 §2 (UByte, Float).
+# Content: standin-content §14.1/§14.4; 09 §3.3 weather table. Fixture pair: cobolcraft:hailstorm (rain 1.0, thunder 1.0),
+#   whose sequence is 1 (0.0), 7 (1.0), 8 (1.0); event 2 (0.0) is the first event of the clear sequence.
+# Stated inputs: event 8 (THUNDER_LEVEL_CHANGE), value 1.0.
+
+27                                                            # packet id: VarInt 0x27 (39) Game Event (play, clientbound)
+08                                                            # Event: UByte 8 (THUNDER_LEVEL_CHANGE)
+3f 80 00 00                                                   # Value: Float 1.0 (IEEE-754 binary32 3f800000)

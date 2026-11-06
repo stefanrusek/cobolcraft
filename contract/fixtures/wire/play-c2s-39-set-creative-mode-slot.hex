@@ -1,0 +1,11 @@
+# Set Creative Mode Slot
+# Phase play, serverbound (C->S), packet id 0x39 (57)
+# Docs: 09 §3.2 row 0x39; 05c 0x39; 00 §12.1 UntrustedItemStack, §12.3 DelimitedDataComponentPatch
+# Stated inputs: slot 9 set to 64 `lucite` (item 7), no components.
+
+39                                                 # packet id 0x39 (VarInt)
+00 09                                              # Slot: Short 9
+40                                                 # Item Count: VarInt 64
+07                                                 # Item: VarInt 7 (lucite)
+00                                                 # Components AddedCount: VarInt 0
+00                                                 # Components RemovedCount: VarInt 0

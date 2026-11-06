@@ -1,0 +1,13 @@
+        -:    0:Source:src/cc_net.c
+        -:    0:Graph:/b/shim/obj/cc_net.gcno
+        -:    0:Data:/b/shim/obj/cc_net.gcda
+        -:    0:Runs:1
+        3:    1:int cc_net_open(int a) {
+    #####:    2:    if (a) return 1;
+        3:    3:    return 2;
+        -:    4:}
+        -:    0:Source:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/stdio.h
+        -:    0:Graph:/b/shim/obj/cc_net.gcno
+        -:    0:Data:/b/shim/obj/cc_net.gcda
+        -:    0:Runs:1
+    #####:   99:static inline int header_line(void)

@@ -1,0 +1,311 @@
+# Fixture: config-s2c-07-registry-data-damage-type.hex
+# Registry Data (minecraft:damage_type)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data minecraft:damage_type (32 entries: ids 0-2 ours, 3-27 the 25 compat keys, 28-31 ours)
+# Content: docs/design/standin-content.md §4.7
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): standin §4.7 table column order: message_id (String), scaling (String), exhaustion (Float).
+#   effects and death_message_type absent (defaults).
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:damage_type, 32 entries in id order, each scaling "never", exhaustion 0.0f:
+#   ids 0-2: cobolcraft:generic, cobolcraft:impact, cobolcraft:below_world (message_id cobolcraft.<path>)
+#   ids 3-27: minecraft:in_fire, minecraft:campfire, minecraft:lightning_bolt, minecraft:on_fire, minecraft:lava, minecraft:hot_floor, minecraft:in_wall, minecraft:cramming,
+#     minecraft:drown, minecraft:starve, minecraft:cactus, minecraft:fall, minecraft:ender_pearl, minecraft:fly_into_wall, minecraft:fell_out_of_world, minecraft:generic,
+#     minecraft:magic, minecraft:wither, minecraft:dragon_breath, minecraft:dry_out, minecraft:sweet_berry_bush, minecraft:freeze, minecraft:stalagmite, minecraft:outside_border, minecraft:generic_kill (message_id cobolcraft.compat)
+#   ids 28-31: cobolcraft:mob_attack, cobolcraft:player_attack, cobolcraft:starvation, cobolcraft:hail (message_id cobolcraft.<path>)
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+15 6d 69 6e 65 63 72 61 66 74 3a 64 61 6d 61 67 65 5f 74 79 70 65  # Registry: Identifier (String) "minecraft:damage_type" (VarInt length 21 + UTF-8)
+20                                                            # Entries: VarInt count 32
+
+# ---- entry 0 (id 0): cobolcraft:generic ----
+12 63 6f 62 6f 6c 63 72 61 66 74 3a 67 65 6e 65 72 69 63      # Entry[0].Id: Identifier (String) "cobolcraft:generic" (VarInt length 18 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 12 63 6f 62 6f 6c 63 72 61 66 74 2e 67 65 6e 65 72 69 63  # NBT String (type 08) name "message_id" = String "cobolcraft.generic"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 1 (id 1): cobolcraft:impact ----
+11 63 6f 62 6f 6c 63 72 61 66 74 3a 69 6d 70 61 63 74         # Entry[1].Id: Identifier (String) "cobolcraft:impact" (VarInt length 17 + UTF-8)
+01                                                            # Entry[1].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 69 6d 70 61 63 74  # NBT String (type 08) name "message_id" = String "cobolcraft.impact"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 2 (id 2): cobolcraft:below_world ----
+16 63 6f 62 6f 6c 63 72 61 66 74 3a 62 65 6c 6f 77 5f 77 6f 72 6c 64  # Entry[2].Id: Identifier (String) "cobolcraft:below_world" (VarInt length 22 + UTF-8)
+01                                                            # Entry[2].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 16 63 6f 62 6f 6c 63 72 61 66 74 2e 62 65 6c 6f 77 5f 77 6f 72 6c 64  # NBT String (type 08) name "message_id" = String "cobolcraft.below_world"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 3 (id 3): minecraft:in_fire ----
+11 6d 69 6e 65 63 72 61 66 74 3a 69 6e 5f 66 69 72 65         # Entry[3].Id: Identifier (String) "minecraft:in_fire" (VarInt length 17 + UTF-8)
+01                                                            # Entry[3].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 4 (id 4): minecraft:campfire ----
+12 6d 69 6e 65 63 72 61 66 74 3a 63 61 6d 70 66 69 72 65      # Entry[4].Id: Identifier (String) "minecraft:campfire" (VarInt length 18 + UTF-8)
+01                                                            # Entry[4].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 5 (id 5): minecraft:lightning_bolt ----
+18 6d 69 6e 65 63 72 61 66 74 3a 6c 69 67 68 74 6e 69 6e 67 5f 62 6f 6c 74  # Entry[5].Id: Identifier (String) "minecraft:lightning_bolt" (VarInt length 24 + UTF-8)
+01                                                            # Entry[5].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 6 (id 6): minecraft:on_fire ----
+11 6d 69 6e 65 63 72 61 66 74 3a 6f 6e 5f 66 69 72 65         # Entry[6].Id: Identifier (String) "minecraft:on_fire" (VarInt length 17 + UTF-8)
+01                                                            # Entry[6].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 7 (id 7): minecraft:lava ----
+0e 6d 69 6e 65 63 72 61 66 74 3a 6c 61 76 61                  # Entry[7].Id: Identifier (String) "minecraft:lava" (VarInt length 14 + UTF-8)
+01                                                            # Entry[7].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 8 (id 8): minecraft:hot_floor ----
+13 6d 69 6e 65 63 72 61 66 74 3a 68 6f 74 5f 66 6c 6f 6f 72   # Entry[8].Id: Identifier (String) "minecraft:hot_floor" (VarInt length 19 + UTF-8)
+01                                                            # Entry[8].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 9 (id 9): minecraft:in_wall ----
+11 6d 69 6e 65 63 72 61 66 74 3a 69 6e 5f 77 61 6c 6c         # Entry[9].Id: Identifier (String) "minecraft:in_wall" (VarInt length 17 + UTF-8)
+01                                                            # Entry[9].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 10 (id 10): minecraft:cramming ----
+12 6d 69 6e 65 63 72 61 66 74 3a 63 72 61 6d 6d 69 6e 67      # Entry[10].Id: Identifier (String) "minecraft:cramming" (VarInt length 18 + UTF-8)
+01                                                            # Entry[10].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 11 (id 11): minecraft:drown ----
+0f 6d 69 6e 65 63 72 61 66 74 3a 64 72 6f 77 6e               # Entry[11].Id: Identifier (String) "minecraft:drown" (VarInt length 15 + UTF-8)
+01                                                            # Entry[11].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 12 (id 12): minecraft:starve ----
+10 6d 69 6e 65 63 72 61 66 74 3a 73 74 61 72 76 65            # Entry[12].Id: Identifier (String) "minecraft:starve" (VarInt length 16 + UTF-8)
+01                                                            # Entry[12].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 13 (id 13): minecraft:cactus ----
+10 6d 69 6e 65 63 72 61 66 74 3a 63 61 63 74 75 73            # Entry[13].Id: Identifier (String) "minecraft:cactus" (VarInt length 16 + UTF-8)
+01                                                            # Entry[13].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 14 (id 14): minecraft:fall ----
+0e 6d 69 6e 65 63 72 61 66 74 3a 66 61 6c 6c                  # Entry[14].Id: Identifier (String) "minecraft:fall" (VarInt length 14 + UTF-8)
+01                                                            # Entry[14].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 15 (id 15): minecraft:ender_pearl ----
+15 6d 69 6e 65 63 72 61 66 74 3a 65 6e 64 65 72 5f 70 65 61 72 6c  # Entry[15].Id: Identifier (String) "minecraft:ender_pearl" (VarInt length 21 + UTF-8)
+01                                                            # Entry[15].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 16 (id 16): minecraft:fly_into_wall ----
+17 6d 69 6e 65 63 72 61 66 74 3a 66 6c 79 5f 69 6e 74 6f 5f 77 61 6c 6c  # Entry[16].Id: Identifier (String) "minecraft:fly_into_wall" (VarInt length 23 + UTF-8)
+01                                                            # Entry[16].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 17 (id 17): minecraft:fell_out_of_world ----
+1b 6d 69 6e 65 63 72 61 66 74 3a 66 65 6c 6c 5f 6f 75 74 5f 6f 66 5f 77 6f 72 6c 64  # Entry[17].Id: Identifier (String) "minecraft:fell_out_of_world" (VarInt length 27 + UTF-8)
+01                                                            # Entry[17].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 18 (id 18): minecraft:generic ----
+11 6d 69 6e 65 63 72 61 66 74 3a 67 65 6e 65 72 69 63         # Entry[18].Id: Identifier (String) "minecraft:generic" (VarInt length 17 + UTF-8)
+01                                                            # Entry[18].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 19 (id 19): minecraft:magic ----
+0f 6d 69 6e 65 63 72 61 66 74 3a 6d 61 67 69 63               # Entry[19].Id: Identifier (String) "minecraft:magic" (VarInt length 15 + UTF-8)
+01                                                            # Entry[19].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 20 (id 20): minecraft:wither ----
+10 6d 69 6e 65 63 72 61 66 74 3a 77 69 74 68 65 72            # Entry[20].Id: Identifier (String) "minecraft:wither" (VarInt length 16 + UTF-8)
+01                                                            # Entry[20].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 21 (id 21): minecraft:dragon_breath ----
+17 6d 69 6e 65 63 72 61 66 74 3a 64 72 61 67 6f 6e 5f 62 72 65 61 74 68  # Entry[21].Id: Identifier (String) "minecraft:dragon_breath" (VarInt length 23 + UTF-8)
+01                                                            # Entry[21].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 22 (id 22): minecraft:dry_out ----
+11 6d 69 6e 65 63 72 61 66 74 3a 64 72 79 5f 6f 75 74         # Entry[22].Id: Identifier (String) "minecraft:dry_out" (VarInt length 17 + UTF-8)
+01                                                            # Entry[22].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 23 (id 23): minecraft:sweet_berry_bush ----
+1a 6d 69 6e 65 63 72 61 66 74 3a 73 77 65 65 74 5f 62 65 72 72 79 5f 62 75 73 68  # Entry[23].Id: Identifier (String) "minecraft:sweet_berry_bush" (VarInt length 26 + UTF-8)
+01                                                            # Entry[23].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 24 (id 24): minecraft:freeze ----
+10 6d 69 6e 65 63 72 61 66 74 3a 66 72 65 65 7a 65            # Entry[24].Id: Identifier (String) "minecraft:freeze" (VarInt length 16 + UTF-8)
+01                                                            # Entry[24].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 25 (id 25): minecraft:stalagmite ----
+14 6d 69 6e 65 63 72 61 66 74 3a 73 74 61 6c 61 67 6d 69 74 65  # Entry[25].Id: Identifier (String) "minecraft:stalagmite" (VarInt length 20 + UTF-8)
+01                                                            # Entry[25].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 26 (id 26): minecraft:outside_border ----
+18 6d 69 6e 65 63 72 61 66 74 3a 6f 75 74 73 69 64 65 5f 62 6f 72 64 65 72  # Entry[26].Id: Identifier (String) "minecraft:outside_border" (VarInt length 24 + UTF-8)
+01                                                            # Entry[26].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 27 (id 27): minecraft:generic_kill ----
+16 6d 69 6e 65 63 72 61 66 74 3a 67 65 6e 65 72 69 63 5f 6b 69 6c 6c  # Entry[27].Id: Identifier (String) "minecraft:generic_kill" (VarInt length 22 + UTF-8)
+01                                                            # Entry[27].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 11 63 6f 62 6f 6c 63 72 61 66 74 2e 63 6f 6d 70 61 74  # NBT String (type 08) name "message_id" = String "cobolcraft.compat"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 28 (id 28): cobolcraft:mob_attack ----
+15 63 6f 62 6f 6c 63 72 61 66 74 3a 6d 6f 62 5f 61 74 74 61 63 6b  # Entry[28].Id: Identifier (String) "cobolcraft:mob_attack" (VarInt length 21 + UTF-8)
+01                                                            # Entry[28].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 15 63 6f 62 6f 6c 63 72 61 66 74 2e 6d 6f 62 5f 61 74 74 61 63 6b  # NBT String (type 08) name "message_id" = String "cobolcraft.mob_attack"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 29 (id 29): cobolcraft:player_attack ----
+18 63 6f 62 6f 6c 63 72 61 66 74 3a 70 6c 61 79 65 72 5f 61 74 74 61 63 6b  # Entry[29].Id: Identifier (String) "cobolcraft:player_attack" (VarInt length 24 + UTF-8)
+01                                                            # Entry[29].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 18 63 6f 62 6f 6c 63 72 61 66 74 2e 70 6c 61 79 65 72 5f 61 74 74 61 63 6b  # NBT String (type 08) name "message_id" = String "cobolcraft.player_attack"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 30 (id 30): cobolcraft:starvation ----
+15 63 6f 62 6f 6c 63 72 61 66 74 3a 73 74 61 72 76 61 74 69 6f 6e  # Entry[30].Id: Identifier (String) "cobolcraft:starvation" (VarInt length 21 + UTF-8)
+01                                                            # Entry[30].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 15 63 6f 62 6f 6c 63 72 61 66 74 2e 73 74 61 72 76 61 74 69 6f 6e  # NBT String (type 08) name "message_id" = String "cobolcraft.starvation"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 31 (id 31): cobolcraft:hail ----
+0f 63 6f 62 6f 6c 63 72 61 66 74 3a 68 61 69 6c               # Entry[31].Id: Identifier (String) "cobolcraft:hail" (VarInt length 15 + UTF-8)
+01                                                            # Entry[31].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  08 00 0a 6d 65 73 73 61 67 65 5f 69 64 00 0f 63 6f 62 6f 6c 63 72 61 66 74 2e 68 61 69 6c  # NBT String (type 08) name "message_id" = String "cobolcraft.hail"
+  08 00 07 73 63 61 6c 69 6e 67 00 05 6e 65 76 65 72          # NBT String (type 08) name "scaling" = String "never"
+  05 00 0a 65 78 68 61 75 73 74 69 6f 6e 00 00 00 00          # NBT Float (type 05) name "exhaustion" = Float 0.0 (IEEE single 00000000)
+00                                                            # NBT End (type 00): end of compound root

@@ -1,0 +1,11 @@
+# Fixture: play-s2c-7f-take-item-entity.hex
+# Take Item Entity (ClientboundTakeItemEntityPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x7F (127).
+# Task T159. 09 §3.3 row: Take Item Entity (collected = the item, collector = the player, amount = items taken).
+# Doc refs: 05b 0x7F (VarInt collected, VarInt collector, VarInt amount); standin-content §9.3.
+# Stated inputs: collected entity id 10 (the loose_item, 1 x turf); collector entity id 1 (Alice); amount 1.
+
+7f                                                            # packet id: VarInt 0x7f (127) Take Item Entity (play, clientbound)
+0a                                                            # Collected entity id: VarInt 10 (loose_item)
+01                                                            # Collector entity id: VarInt 1 (Alice)
+01                                                            # Amount: VarInt 1

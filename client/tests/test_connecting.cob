@@ -1,0 +1,141 @@
+*> Implementation test of client/src/screens/connecting.cob and the join flow (US2-3 client half;
+*> 08 §10.8.6 connecting texts): joining a server-list entry opens the connecting screen naming the
+*> address; it says "Joining the world" once logged in, and is replaced by the world after the play
+*> Login; by the server list with the message on a disconnect, or on a connection failure.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CONNECTING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY TESTLIB.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-WAIT                BINARY-LONG VALUE 20.
+ 01 WS-LISTENER            BINARY-LONG.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-PORT                BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HANDLES.
+    05 WS-HANDLE           BINARY-LONG.
+ 01 WS-READY               PIC X(2).
+ 01 WS-EDIT                PIC Z(5)9.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-TEXTS               PIC X(1024).
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-ADDRESS             PIC X(32).
+ PROCEDURE DIVISION.
+     CALL "SYSTEM" USING "rm -rf build/client-test-connecting"
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE "build/client-test-connecting" TO CL-GAME-DIR
+     MOVE 28 TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE WS-LISTENER
+         BY REFERENCE WS-PORT RETURNING WS-RC
+     MOVE WS-PORT TO WS-EDIT
+     MOVE SPACES TO WS-ADDRESS
+     STRING "127.0.0.1:" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-ADDRESS
+     MOVE 1 TO SL-COUNT
+     MOVE "Local" TO SL-NAME(1)
+     MOVE 5 TO SL-NAME-LENGTH(1)
+     MOVE WS-ADDRESS TO SL-ADDR(1)
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ADDRESS)) TO SL-ADDR-LENGTH(1)
+*>   The entry counts as answered so the screen does not ping it.
+     MOVE SLS-ANSWERED TO SL-STATUS(1)
+     MOVE SCR-SERVER-LIST TO WS-I
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-I
+     MOVE SLS-ANSWERED TO SL-STATUS(1)
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 1 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-JOIN TO WS-ACTION
+     MOVE 0 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE "connecting joining an entry opens the connecting screen naming its address" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "4 Connecting to " FUNCTION TRIM(WS-ADDRESS) DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION CHAR(SM-SCREEN + 49) " " FUNCTION TRIM(WS-TEXTS) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     PERFORM ACCEPT-CLIENT
+     MOVE "contract/fixtures/wire/login-s2c-02-login-finished.hex" TO WS-PATH
+     CALL "TEST-SERVE" USING WS-SERVER WS-PATH WS-THRESHOLD
+     PERFORM STEPS
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE "connecting once logged in the connecting screen says Joining the world" TO TL-CASE
+     MOVE "Joining the world" TO TL-EXPECTED
+     MOVE WS-TEXTS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/config-s2c-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-SERVE" USING WS-SERVER WS-PATH WS-THRESHOLD
+     MOVE "contract/fixtures/wire/play-s2c-32-login-main.hex" TO WS-PATH
+     CALL "TEST-SERVE" USING WS-SERVER WS-PATH WS-THRESHOLD
+     PERFORM STEPS
+     MOVE "connecting the play Login replaces the connecting screen by the world" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-20-disconnect-kicked.hex" TO WS-PATH
+     CALL "TEST-SERVE" USING WS-SERVER WS-PATH WS-THRESHOLD
+     PERFORM STEPS
+     CALL STATIC "cc_net_close" USING BY VALUE WS-SERVER
+     MOVE "connecting a disconnect returns to the server list with its message" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION CHAR(SM-SCREEN + 49) " " SM-MESSAGE(1:SM-MESSAGE-LENGTH) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "2 You were ejected: griefing" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A connection failure: nothing listens any more.
+     CALL STATIC "cc_net_close" USING BY VALUE WS-LISTENER
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 1 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-JOIN TO WS-ACTION
+     MOVE 0 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     PERFORM STEPS
+     MOVE "connecting a refused connection returns to the server list with connecting.failed"
+         TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED TL-EXPECTED
+     STRING FUNCTION CHAR(SM-SCREEN + 49) " " SM-MESSAGE(1:SM-MESSAGE-LENGTH) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     STRING "2 Could not connect to " FUNCTION TRIM(WS-ADDRESS) DELIMITED BY SIZE
+         INTO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ ACCEPT-CLIENT.
+     MOVE WS-LISTENER TO WS-HANDLE
+     MOVE LOW-VALUES TO WS-READY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-READY(1:1) = X"01" OR WS-I > 200
+         CALL "TEST-STEP" USING CLIENT-STATE
+         CALL STATIC "cc_net_poll" USING BY VALUE WS-WAIT BY REFERENCE WS-HANDLES
+             BY VALUE WS-ONE BY VALUE WS-ZERO BY REFERENCE WS-READY RETURNING WS-RC
+     END-PERFORM
+     CALL STATIC "cc_net_accept" USING BY VALUE WS-LISTENER BY REFERENCE WS-SERVER
+         RETURNING WS-RC
+     PERFORM STEPS
+     CALL "TEST-SERVER-READ" USING WS-SERVER WS-TEXT WS-THRESHOLD.
+
+ STEPS.
+     PERFORM 20 TIMES
+         CALL "TEST-STEP" USING CLIENT-STATE
+         CALL "TEST-SLEEP"
+     END-PERFORM.
+ END PROGRAM TEST-CONNECTING.
+ COPY CLTEST.

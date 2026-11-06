@@ -1,0 +1,11 @@
+# Player Action 0 START_DESTROY_BLOCK
+# Phase play, serverbound (C->S), packet id 0x29 (41)
+# Docs: 09 §3.2 row 0x29 action 0; 05c 0x29; 00 §4.1 Position
+# Stated inputs: break start on the turf block under the spawn feet, block (4, 53, 8), top face (1 up),
+#   sequence 1.
+
+29                                                 # packet id 0x29 (VarInt)
+00                                                 # Action: VarInt 0 START_DESTROY_BLOCK
+00 00 01 00 00 00 80 35                            # Location: Position (4, 53, 8) packed Long
+01                                                 # Face: UByte 1 (up)
+01                                                 # Sequence: VarInt 1

@@ -1,0 +1,531 @@
+*> Implementation test of core/src/registries.cob and core/src/config-phase.cob (T409): the Registry
+*> Data builders for every registry of core/copy/REGISTRY.cpy (standin §4.2: 18 packets, 52 entries,
+*> no packet for an empty registry) and the configuration sequence on a memory connection (03
+*> "Configuration sequence", 09 §3.1): CONFIG-START sends brand, Update Enabled Features and Select
+*> Known Packs; the client's Select Known Packs gets the 18 Registry Data packets, Update Tags and
+*> Finish Configuration; the client's Finish Configuration moves the connection to play. Also the
+*> serverbound packets the phase accepts or refuses (01 §5, 09 §4).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-REGISTRIES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY REGISTRY.
+ COPY CONFIGPKT.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-UUID                PIC X(16) VALUE ALL "U".
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ENTRIES             BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-FIRST-BAD           PIC X(256).
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-BIG                 PIC X(32768) VALUE ALL "x".
+ 01 WS-BIG-LENGTH          BINARY-LONG.
+ 01 WS-IDS                 PIC X(200).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+*> Registry Data fixtures in sending order (standin §4.2, 09 §3.1).
+ 01 WS-REGISTRY-ROWS.
+    05 FILLER PIC X(32) VALUE "worldgen-biome".
+    05 FILLER PIC X(32) VALUE "chat-type".
+    05 FILLER PIC X(32) VALUE "wolf-variant".
+    05 FILLER PIC X(32) VALUE "wolf-sound-variant".
+    05 FILLER PIC X(32) VALUE "pig-variant".
+    05 FILLER PIC X(32) VALUE "pig-sound-variant".
+    05 FILLER PIC X(32) VALUE "frog-variant".
+    05 FILLER PIC X(32) VALUE "cat-variant".
+    05 FILLER PIC X(32) VALUE "cat-sound-variant".
+    05 FILLER PIC X(32) VALUE "cow-sound-variant".
+    05 FILLER PIC X(32) VALUE "cow-variant".
+    05 FILLER PIC X(32) VALUE "chicken-sound-variant".
+    05 FILLER PIC X(32) VALUE "chicken-variant".
+    05 FILLER PIC X(32) VALUE "zombie-nautilus-variant".
+    05 FILLER PIC X(32) VALUE "painting-variant".
+    05 FILLER PIC X(32) VALUE "dimension-type".
+    05 FILLER PIC X(32) VALUE "damage-type".
+    05 FILLER PIC X(32) VALUE "world-clock".
+ 01 WS-REGISTRY-TABLE REDEFINES WS-REGISTRY-ROWS.
+    05 WS-REGISTRY-NAME    PIC X(32) OCCURS 18 TIMES.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+
+*>   ---- Registry Data builders --------------------------------------------------------------
+     MOVE "test registries 18 Registry Data packets with 52 entries over the 32 registries"
+         TO TL-CASE
+     MOVE 0 TO WS-COUNT WS-ENTRIES
+     PERFORM VARYING WS-N FROM 0 BY 1 UNTIL WS-N >= REG-COUNT
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
+         IF PB-LENGTH > 0
+             ADD 1 TO WS-COUNT
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+             CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-CAPACITY WS-TEXT-LENGTH
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+             ADD WS-VALUE TO WS-ENTRIES
+         END-IF
+     END-PERFORM
+     MOVE "18 52" TO TL-EXPECTED
+     PERFORM START-ROW
+     MOVE WS-COUNT TO WS-N PERFORM ADD-NUM
+     MOVE WS-ENTRIES TO WS-N PERFORM ADD-NUM
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries no packet for the 14 empty registries" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > REG-COUNT
+         IF RG-KIND(WS-I) = RGK-EMPTY
+             CALL "PB-RESET" USING PB-BUFFER
+             COMPUTE WS-N = WS-I - 1
+             CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
+             PERFORM ADD-NUM
+             MOVE PB-LENGTH TO WS-N PERFORM ADD-NUM
+         END-IF
+     END-PERFORM
+     MOVE "2 0 3 0 17 0 20 0 21 0 22 0 23 0 24 0 25 0 26 0 28 0 29 0 30 0 31 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries no packet for a registry number outside 0 to 31" TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE -1 TO WS-N
+     CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
+     MOVE PB-LENGTH TO WS-N PERFORM ADD-NUM
+     MOVE 32 TO WS-N
+     CALL "REGISTRY-PACKET-BUILD" USING WS-N PB-BUFFER
+     MOVE PB-LENGTH TO WS-N PERFORM ADD-NUM
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+*>   ---- Configuration sequence --------------------------------------------------------------
+     PERFORM OPEN-CONFIG
+     MOVE "test registries CONFIG-START sends brand, Update Enabled Features, Select Known Packs"
+         TO TL-CASE
+     PERFORM DRAIN-IDS
+     MOVE "1 13 15" TO TL-EXPECTED
+     PERFORM ASSERT-IDS
+
+     MOVE "test registries CONFIG-START packets equal their fixtures" TO TL-CASE
+     PERFORM DRAIN
+     MOVE 0 TO WS-BAD
+     MOVE "contract/fixtures/wire/config-s2c-01-custom-payload-brand.hex" TO WS-PATH
+     PERFORM CHECK-NEXT
+     MOVE "contract/fixtures/wire/config-s2c-0d-update-enabled-features.hex" TO WS-PATH
+     PERFORM CHECK-NEXT
+     MOVE "contract/fixtures/wire/config-s2c-0f-select-known-packs.hex" TO WS-PATH
+     PERFORM CHECK-NEXT
+     PERFORM ASSERT-NO-BAD
+
+     MOVE "test registries brand and Client Information get no answer; view distance stored"
+         TO TL-CASE
+     PERFORM OPEN-CONFIG
+     PERFORM DRAIN
+     MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+*>   Client Information as in the fixture, view distance 12.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 0 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "en_us" TO WS-TEXT MOVE 5 TO WS-TEXT-LENGTH MOVE 16 TO WS-N
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-N
+     MOVE 12 TO WS-N CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     PERFORM PUT-CLIENT-INFO-TAIL
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM START-ROW
+     MOVE PL-VIEW-DISTANCE(CN-PLAYER(WS-ID)) TO WS-N PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     PERFORM DRAIN
+     MOVE ST-LENGTH TO WS-N PERFORM ADD-NUM
+     MOVE "12 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries Select Known Packs gets 18 Registry Data, Update Tags, Finish"
+         TO TL-CASE
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     PERFORM DRAIN
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         MOVE SPACES TO WS-PATH
+         STRING "contract/fixtures/wire/config-s2c-07-registry-data-" DELIMITED BY SIZE
+             FUNCTION TRIM(WS-REGISTRY-NAME(WS-I)) ".hex" DELIMITED BY SIZE INTO WS-PATH
+         PERFORM CHECK-NEXT
+     END-PERFORM
+     MOVE "contract/fixtures/wire/config-s2c-0e-update-tags.hex" TO WS-PATH
+     PERFORM CHECK-NEXT
+     MOVE "contract/fixtures/wire/config-s2c-03-finish-configuration.hex" TO WS-PATH
+     PERFORM CHECK-NEXT
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     IF WS-OUTCOME NOT = 1
+         ADD 1 TO WS-BAD
+     END-IF
+     PERFORM ASSERT-NO-BAD
+
+     MOVE "test registries configuration Keep Alive answer clears the pending Keep Alive"
+         TO TL-CASE
+     MOVE 1 TO CN-KA-PENDING(WS-ID)
+     MOVE 123456789 TO CN-KA-ID(WS-ID)
+     MOVE "contract/fixtures/wire/config-c2s-04-keep-alive.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     PERFORM START-ROW
+     MOVE CN-KA-PENDING(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries Resource Pack Responses 0 to 7 are ignored, the connection stays"
+         TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 7
+         MOVE SPACES TO WS-PATH
+         MOVE WS-I TO WS-EDIT
+         STRING "contract/fixtures/wire/config-c2s-06-resource-pack-response-" DELIMITED BY SIZE
+             FUNCTION TRIM(WS-EDIT) ".hex" DELIMITED BY SIZE INTO WS-PATH
+         CALL "TEST-FEED" USING WS-ID WS-PATH
+         MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     END-PERFORM
+     PERFORM DRAIN
+     MOVE ST-LENGTH TO WS-N PERFORM ADD-NUM
+     MOVE "0 0 0 0 0 0 0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries client Finish Configuration moves the connection to play" TO TL-CASE
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     PERFORM START-ROW
+     MOVE CN-PHASE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE "4 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+*>   ---- Refused packets: each closes the connection (01 §5, 09 §4) ----------------------------
+     MOVE "test registries Finish Configuration before the server's closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries a second Select Known Packs closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Select Known Packs with one pack is accepted" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 7 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 1 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "minecraft" TO WS-TEXT MOVE 9 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-MAX
+     MOVE "core" TO WS-TEXT MOVE 4 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-MAX
+     MOVE "26.3" TO WS-TEXT MOVE 4 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-MAX
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE "0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+     MOVE "test registries Select Known Packs with 65 packs closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 7 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 65 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Client Information with a byte left over closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 0 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "en_us" TO WS-TEXT MOVE 5 TO WS-TEXT-LENGTH MOVE 16 TO WS-N
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-N
+     MOVE 8 TO WS-N CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     PERFORM PUT-CLIENT-INFO-TAIL
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Client Information without a player row is accepted" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     MOVE CN-PLAYER(WS-ID) TO WS-ROW
+     CALL "PLAYER-LEAVE" USING WS-ROW
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 0 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "en_us" TO WS-TEXT MOVE 5 TO WS-TEXT-LENGTH MOVE 16 TO WS-N
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-N
+     MOVE 8 TO WS-N CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     PERFORM PUT-CLIENT-INFO-TAIL
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE "0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+     MOVE "test registries Custom Payload on another channel is accepted" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 2 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "cobolcraft:other" TO WS-TEXT MOVE 16 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH
+     MOVE 32767 TO WS-BIG-LENGTH
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BIG WS-BIG-LENGTH
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-ID) TO WS-N PERFORM ADD-NUM
+     MOVE "0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+     MOVE "test registries Custom Payload data over 32767 bytes closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 2 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "cobolcraft:other" TO WS-TEXT MOVE 16 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH
+     MOVE 32768 TO WS-BIG-LENGTH
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BIG WS-BIG-LENGTH
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Resource Pack Response action 8 closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 6 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     MOVE 8 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Keep Alive with a byte left over closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 4 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 0 TO WS-LONG CALL "PB-PUT-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Pong (not in the profile) closes" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 5 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 1 TO WS-N CALL "PB-PUT-INT" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     PERFORM ASSERT-CLOSED
+
+     MOVE "test registries Cookie Response gets Disconnect unexpected_query_response" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     PERFORM DRAIN
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 1 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "cobolcraft:cookie" TO WS-TEXT MOVE 17 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH
+     MOVE 0 TO WS-N CALL "PB-PUT-BOOL" USING PB-BUFFER WS-N
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER
+     MOVE CN-CLOSE(WS-ID) TO WS-CLOSE
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-OUTCOME
+     PERFORM START-ROW
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE WS-PACKET-ID TO WS-N PERFORM ADD-NUM
+     CALL "PB-GET-TEXT" USING PK-BUFFER PB-TEXT
+     MOVE PB-TX-KIND TO WS-N PERFORM ADD-NUM
+     PERFORM ADD-SPACE
+     STRING PB-TX-VALUE(1:PB-TX-LENGTH) DELIMITED BY SIZE INTO WS-IDS WITH POINTER WS-PTR
+     MOVE WS-CLOSE TO WS-N PERFORM ADD-NUM
+     MOVE "2 2 multiplayer.disconnect.unexpected_query_response 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries CONFIG-DECODE clears the fields of other packets" TO TL-CASE
+     MOVE ALL "z" TO CONFIG-SERVERBOUND
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 3 TO WS-PACKET-ID
+     CALL "CONFIG-DECODE" USING WS-PACKET-ID PB-BUFFER CONFIG-SERVERBOUND WS-OUTCOME
+     PERFORM START-ROW
+     MOVE WS-OUTCOME TO WS-N PERFORM ADD-NUM
+     MOVE CSB-VIEW-DISTANCE TO WS-N PERFORM ADD-NUM
+     MOVE CSB-BRAND-LENGTH TO WS-N PERFORM ADD-NUM
+     MOVE "0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test registries CONFIG-DECODE of an unknown packet id is outcome 2" TO TL-CASE
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 9 TO WS-PACKET-ID
+     CALL "CONFIG-DECODE" USING WS-PACKET-ID PB-BUFFER CONFIG-SERVERBOUND WS-OUTCOME
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-OUTCOME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING ST-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     STOP RUN.
+
+*> A new memory connection in the configuration phase with a player row, as login leaves it, after
+*> CONFIG-START.
+ OPEN-CONFIG.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE PH-LOGIN TO CN-PHASE(WS-ID)
+     CALL "PLAYER-CREATE" USING WS-ID WS-NAME WS-NAME-LENGTH WS-UUID WS-ROW
+     MOVE PH-CONFIG TO WS-PHASE
+     CALL "CORE-SET-PHASE" USING WS-ID WS-PHASE
+     CALL "CONFIG-START" USING WS-ID.
+
+*> Client Information after the view distance: chat visibility 0, colors true, model 0, main hand 1,
+*> filtering false, listing true, particles 0 (packet built in PB-BUFFER).
+ PUT-CLIENT-INFO-TAIL.
+     MOVE 0 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 1 TO WS-N CALL "PB-PUT-BOOL" USING PB-BUFFER WS-N
+     MOVE 0 TO WS-N CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-N
+     MOVE 1 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE 0 TO WS-N CALL "PB-PUT-BOOL" USING PB-BUFFER WS-N
+     MOVE 1 TO WS-N CALL "PB-PUT-BOOL" USING PB-BUFFER WS-N
+     MOVE 0 TO WS-N CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N.
+
+*> Everything queued for the connection into ST-BUFFER (from offset 0). TEST-DRAIN's close flag is
+*> not used: its last call finds the row already released, so cases read CN-CLOSE before draining.
+ DRAIN.
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE.
+
+*> The packet ids of everything queued, as a row.
+ DRAIN-IDS.
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     PERFORM START-ROW
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0
+             MOVE WS-PACKET-ID TO WS-N PERFORM ADD-NUM
+         END-IF
+     END-PERFORM.
+
+ ASSERT-IDS.
+     PERFORM ASSERT-ROW
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+     PERFORM OPEN-CONFIG.
+
+*> The next packet of ST-BUFFER against the fixture WS-PATH; a difference counts in WS-BAD and is
+*> shown as the case's observed text.
+ CHECK-NEXT.
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     CALL "TEST-SAME-AS-FIXTURE-QUIET" USING PK-BUFFER WS-PATH WS-BAD WS-FIRST-BAD.
+
+*> Text case: "all equal", or the number of differing packets and the first differing fixture.
+ ASSERT-NO-BAD.
+     MOVE "T" TO TL-MODE
+     MOVE "all equal" TO TL-EXPECTED
+     IF WS-BAD = 0
+         MOVE "all equal" TO TL-OBSERVED
+     ELSE
+         MOVE SPACES TO TL-OBSERVED
+         MOVE WS-BAD TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) " differ, first " FUNCTION TRIM(WS-FIRST-BAD)
+             DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> The connection's close flag is up; draining then releases the row.
+ ASSERT-CLOSED.
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE CN-CLOSE(WS-ID) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM DRAIN.
+
+ START-ROW.
+     MOVE SPACES TO WS-IDS
+     MOVE 1 TO WS-PTR.
+
+ ADD-SPACE.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO WS-IDS WITH POINTER WS-PTR
+     END-IF.
+
+ ADD-NUM.
+     PERFORM ADD-SPACE
+     MOVE WS-N TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-IDS WITH POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-IDS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-REGISTRIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SAME-AS-FIXTURE-QUIET.
+*> USING packet PB-BUFFER, fixture path, bad count, first bad path (PIC X(256)): adds 1 to the
+*> count when the packet bytes differ from the fixture bytes; the first such fixture is kept.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==FX-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 B-GOT                  PIC X(1073741824) BASED.
+ 01 B-WANT                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PATH                 PIC X(256).
+ 01 L-BAD                  BINARY-LONG.
+ 01 L-FIRST                PIC X(256).
+ PROCEDURE DIVISION USING PB-BUFFER L-PATH L-BAD L-FIRST.
+     CALL "PB-INIT" USING FX-BUFFER WS-CAPACITY
+     CALL "TEST-LOAD-HEX" USING L-PATH FX-BUFFER
+     SET ADDRESS OF B-GOT TO PB-ADDR
+     SET ADDRESS OF B-WANT TO FX-ADDR
+     MOVE 0 TO WS-DIFF
+     IF PB-LENGTH NOT = FX-LENGTH
+         MOVE 1 TO WS-DIFF
+     ELSE
+         IF PB-LENGTH > 0
+             IF B-GOT(1:PB-LENGTH) NOT = B-WANT(1:FX-LENGTH)
+                 MOVE 1 TO WS-DIFF
+             END-IF
+         END-IF
+     END-IF
+     IF WS-DIFF = 1
+         IF L-BAD = 0
+             MOVE L-PATH TO L-FIRST
+         END-IF
+         ADD 1 TO L-BAD
+     END-IF
+     CALL "PB-FREE" USING FX-BUFFER
+     GOBACK.
+ END PROGRAM TEST-SAME-AS-FIXTURE-QUIET.
+
+ COPY CORETEST.

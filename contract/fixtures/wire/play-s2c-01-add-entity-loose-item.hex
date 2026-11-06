@@ -1,0 +1,24 @@
+# Fixture: play-s2c-01-add-entity-loose-item.hex
+# Add Entity (ClientboundAddEntityPacket), cobolcraft:loose_item
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Task T141. 09 §3.3 row: Add Entity (cobolcraft:loose_item): type 1, UUID msb 0 / lsb = entity id, movement = initial motion, angles 0, data 0.
+# Doc refs: 05a 0x01 Add Entity; 00 §5 UUID, §2 Double, §4.6 LpVec3, §4.4 Angle (floor(deg * 256 / 360) mod 256).
+# Content: standin-content §3 entity type ids.
+# Scenario: Alice breaks the turf at (5, 53, 8) in survival; the yield is a ground item at (x + 0.5, y + 0.25, z + 0.5)
+#   with motion (0, 0, 0) (standin §1.3, §9.1). This entity id 10 is the same item as in set-entity-data-item,
+#   take-item-entity and remove-entities.
+# Stated inputs: entity id 10; entity UUID 00000000-0000-0000-0000-00000000000a (msb 0, lsb 10 = entity id); entity type 1 (cobolcraft:loose_item); position (5.5, 53.25, 8.5);
+#   movement (0.0, 0.0, 0.0); pitch 0.0, yaw 0.0, head yaw 0.0 (degrees); data 0.
+
+01                                                            # packet id: VarInt 0x01 (1) Add Entity (play, clientbound)
+0a                                                            # Entity id: VarInt 10
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0a               # Entity UUID: UUID 00000000-0000-0000-0000-00000000000a (msb 0, lsb 10 = entity id)
+01                                                            # Entity type: VarInt 1 (cobolcraft:loose_item)
+40 16 00 00 00 00 00 00                                       # X: Double 5.5 (IEEE-754 binary64 4016000000000000)
+40 4a a0 00 00 00 00 00                                       # Y: Double 53.25 (IEEE-754 binary64 404aa00000000000)
+40 21 00 00 00 00 00 00                                       # Z: Double 8.5 (IEEE-754 binary64 4021000000000000)
+00                                                            # Movement: LpVec3 (0.0, 0.0, 0.0) -> single 0x00 byte (zero vector)
+00                                                            # Pitch: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+00                                                            # Yaw: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+00                                                            # Head yaw: Angle 0.0 deg -> floor(0.0 * 256 / 360) = 0 -> byte 0x00
+00                                                            # Data: VarInt 0

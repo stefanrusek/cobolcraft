@@ -1,0 +1,18 @@
+glfw 3.5.1 Cocoa NSGL Null EGL OSMesa monotonic dynamic vulkanSupported=1
+glfw-required-ext VK_KHR_surface
+glfw-required-ext VK_EXT_metal_surface
+createInstance without portability flag -> -9
+device Apple M4 Pro api 1.2.357
+device has VK_KHR_portability_subset=1
+surface created
+queue0 graphics=1 present=1
+surface format0=44 minImages=2 extent=640x480
+swapchain images=2
+present -> 0
+OK frame cleared and presented
+--- without loader handoff:
+glfw 3.5.1 Cocoa NSGL Null EGL OSMesa monotonic dynamic vulkanSupported=0
+createInstance without portability flag -> -9
+device Apple M4 Pro api 1.2.357
+device has VK_KHR_portability_subset=1
+FAIL glfwCreateWindowSurface(inst, win, NULL, &surf) -> -3

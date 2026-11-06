@@ -1,0 +1,67 @@
+# Fixture: config-s2c-07-registry-data-dimension-type.hex
+# Registry Data (minecraft:dimension_type)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data minecraft:dimension_type (2 entries: cobolcraft:surface id 0, cobolcraft:sunless id 1)
+# Content: docs/design/standin-content.md §4.6
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): standin §4.6 field table row order: has_fixed_time, has_skylight, has_ceiling, has_ender_dragon_fight,
+#   coordinate_scale (Double), min_y, height, logical_height (Int), infiniburn (empty List, element type 00
+#   End, count 0, per 07 §1.1 writer rule), ambient_light (Float), monster_spawn_light_level (Int, constant
+#   IntProvider form), monster_spawn_block_light_limit (Int), skybox (String), default_clock (String).
+#   Rows marked absent are skipped: surface has no has_fixed_time and no skybox; sunless has no
+#   default_clock; cardinal_light, attributes, timelines absent in both.
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:dimension_type, 2 entries in id order:
+#   id 0 cobolcraft:surface: has_skylight 1, has_ceiling 0, has_ender_dragon_fight 0, coordinate_scale 1.0d, min_y 0,
+#     height 256, logical_height 256, infiniburn [], ambient_light 0.0f, monster_spawn_light_level 0,
+#     monster_spawn_block_light_limit 0, default_clock "cobolcraft:daylight"
+#   id 1 cobolcraft:sunless: has_fixed_time 1, has_skylight 0, has_ceiling 0, has_ender_dragon_fight 0, coordinate_scale 1.0d,
+#     min_y 0, height 128, logical_height 128, infiniburn [], ambient_light 0.0f, monster_spawn_light_level 0,
+#     monster_spawn_block_light_limit 0, skybox "none"
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+18 6d 69 6e 65 63 72 61 66 74 3a 64 69 6d 65 6e 73 69 6f 6e 5f 74 79 70 65  # Registry: Identifier (String) "minecraft:dimension_type" (VarInt length 24 + UTF-8)
+02                                                            # Entries: VarInt count 2
+
+# ---- entry 0 (id 0): cobolcraft:surface ----
+12 63 6f 62 6f 6c 63 72 61 66 74 3a 73 75 72 66 61 63 65      # Entry[0].Id: Identifier (String) "cobolcraft:surface" (VarInt length 18 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  01 00 0c 68 61 73 5f 73 6b 79 6c 69 67 68 74 01             # NBT Byte (type 01) name "has_skylight" = Byte 1
+  01 00 0b 68 61 73 5f 63 65 69 6c 69 6e 67 00                # NBT Byte (type 01) name "has_ceiling" = Byte 0
+  01 00 16 68 61 73 5f 65 6e 64 65 72 5f 64 72 61 67 6f 6e 5f 66 69 67 68 74 00  # NBT Byte (type 01) name "has_ender_dragon_fight" = Byte 0
+  06 00 10 63 6f 6f 72 64 69 6e 61 74 65 5f 73 63 61 6c 65 3f f0 00 00 00 00 00 00  # NBT Double (type 06) name "coordinate_scale" = Double 1.0 (IEEE double 3ff0000000000000)
+  03 00 05 6d 69 6e 5f 79 00 00 00 00                         # NBT Int (type 03) name "min_y" = Int 0
+  03 00 06 68 65 69 67 68 74 00 00 01 00                      # NBT Int (type 03) name "height" = Int 256
+  03 00 0e 6c 6f 67 69 63 61 6c 5f 68 65 69 67 68 74 00 00 01 00  # NBT Int (type 03) name "logical_height" = Int 256
+  09 00 0a 69 6e 66 69 6e 69 62 75 72 6e                      # NBT List (type 09) name "infiniburn"
+  00 00 00 00 00                                              #   list element type 00 (End), count 0
+  05 00 0d 61 6d 62 69 65 6e 74 5f 6c 69 67 68 74 00 00 00 00  # NBT Float (type 05) name "ambient_light" = Float 0.0 (IEEE single 00000000)
+  03 00 19 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e 5f 6c 69 67 68 74 5f 6c 65 76 65 6c 00 00 00 00  # NBT Int (type 03) name "monster_spawn_light_level" = Int 0
+  03 00 1f 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e 5f 62 6c 6f 63 6b 5f 6c 69 67 68 74 5f 6c 69 6d 69 74 00 00 00 00  # NBT Int (type 03) name "monster_spawn_block_light_limit" = Int 0
+  08 00 0d 64 65 66 61 75 6c 74 5f 63 6c 6f 63 6b 00 13 63 6f 62 6f 6c 63 72 61 66 74 3a 64 61 79 6c 69 67 68 74  # NBT String (type 08) name "default_clock" = String "cobolcraft:daylight"
+00                                                            # NBT End (type 00): end of compound root
+
+# ---- entry 1 (id 1): cobolcraft:sunless ----
+12 63 6f 62 6f 6c 63 72 61 66 74 3a 73 75 6e 6c 65 73 73      # Entry[1].Id: Identifier (String) "cobolcraft:sunless" (VarInt length 18 + UTF-8)
+01                                                            # Entry[1].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network)
+  01 00 0e 68 61 73 5f 66 69 78 65 64 5f 74 69 6d 65 01       # NBT Byte (type 01) name "has_fixed_time" = Byte 1
+  01 00 0c 68 61 73 5f 73 6b 79 6c 69 67 68 74 00             # NBT Byte (type 01) name "has_skylight" = Byte 0
+  01 00 0b 68 61 73 5f 63 65 69 6c 69 6e 67 00                # NBT Byte (type 01) name "has_ceiling" = Byte 0
+  01 00 16 68 61 73 5f 65 6e 64 65 72 5f 64 72 61 67 6f 6e 5f 66 69 67 68 74 00  # NBT Byte (type 01) name "has_ender_dragon_fight" = Byte 0
+  06 00 10 63 6f 6f 72 64 69 6e 61 74 65 5f 73 63 61 6c 65 3f f0 00 00 00 00 00 00  # NBT Double (type 06) name "coordinate_scale" = Double 1.0 (IEEE double 3ff0000000000000)
+  03 00 05 6d 69 6e 5f 79 00 00 00 00                         # NBT Int (type 03) name "min_y" = Int 0
+  03 00 06 68 65 69 67 68 74 00 00 00 80                      # NBT Int (type 03) name "height" = Int 128
+  03 00 0e 6c 6f 67 69 63 61 6c 5f 68 65 69 67 68 74 00 00 00 80  # NBT Int (type 03) name "logical_height" = Int 128
+  09 00 0a 69 6e 66 69 6e 69 62 75 72 6e                      # NBT List (type 09) name "infiniburn"
+  00 00 00 00 00                                              #   list element type 00 (End), count 0
+  05 00 0d 61 6d 62 69 65 6e 74 5f 6c 69 67 68 74 00 00 00 00  # NBT Float (type 05) name "ambient_light" = Float 0.0 (IEEE single 00000000)
+  03 00 19 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e 5f 6c 69 67 68 74 5f 6c 65 76 65 6c 00 00 00 00  # NBT Int (type 03) name "monster_spawn_light_level" = Int 0
+  03 00 1f 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e 5f 62 6c 6f 63 6b 5f 6c 69 67 68 74 5f 6c 69 6d 69 74 00 00 00 00  # NBT Int (type 03) name "monster_spawn_block_light_limit" = Int 0
+  08 00 06 73 6b 79 62 6f 78 00 04 6e 6f 6e 65                # NBT String (type 08) name "skybox" = String "none"
+00                                                            # NBT End (type 00): end of compound root

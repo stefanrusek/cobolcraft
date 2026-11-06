@@ -1,0 +1,177 @@
+*> Implementation test of level.dat (core/src/persistence.cob LEVEL-DAT-WRITE and LEVEL-DAT-READ;
+*> docs/protocol/07-nbt-and-anvil.md §9.1, §9.2): the gzip NBT file in the world folder holds
+*> DataVersion, LevelName, GameMode, Time, Spawn {Dimension, X, Y, Z, Yaw} and Weather (one entry per
+*> enabled dimension that has weather: Kind and Remaining, -1 = until changed), and reading it back
+*> restores each of them. A new world's GameMode is the settings' game mode. The stored GameMode is
+*> the game mode of new players only when the world is hosted by the client (host kinds 1 and 2,
+*> the host; guests of kind 2 get the guest mode); a dedicated server (kind 0) uses its setting.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LEVEL-DAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY WEATHER.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-FILE                PIC X(256) VALUE "build/core-test-world/level.dat".
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-PATH                PIC X(128).
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-OBSERVED            PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FEDIT               PIC -(5)9.999.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
+ 01 WS-LENGTH-5            BINARY-LONG VALUE 5.
+ 01 WS-LENGTH-3            BINARY-LONG VALUE 3.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE "Level Test" TO CS-NEW-WORLD-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+
+     MOVE "test level dat a new world's GameMode is the settings' game mode" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE CW-GAME-MODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 1 TO CW-GAME-MODE
+     MOVE 12345 TO CW-TIME
+     MOVE 10.5 TO CW-SPAWN-X
+     MOVE 60 TO CW-SPAWN-Y
+     MOVE -3.5 TO CW-SPAWN-Z
+     MOVE 45 TO CW-SPAWN-YAW
+     MOVE WK-DRIZZLE TO CW-WEATHER-KIND(DIM-MAIN)
+     MOVE 1500 TO CW-WEATHER-LEFT(DIM-MAIN)
+     CALL "LEVEL-DAT-WRITE"
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE "test level dat keys: DataVersion 5023, LevelName, GameMode, Time, Spawn, Weather of "
+         & "cobolcraft:main only (cobolcraft:subroutine has no weather)" TO TL-CASE
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "DataVersion" TO WS-PATH PERFORM ADD-GET
+     MOVE "LevelName" TO WS-PATH PERFORM ADD-GET
+     MOVE "GameMode" TO WS-PATH PERFORM ADD-GET
+     MOVE "Time" TO WS-PATH PERFORM ADD-GET
+     MOVE "Spawn" TO WS-PATH PERFORM ADD-GET
+     MOVE "Weather" TO WS-PATH PERFORM ADD-GET
+     MOVE "5023 Level Test 1 12345 {Dimension:cobolcraft:main,X:10.500,Y:60.000,Z:-3.500,"
+         & "Yaw:45.000} {cobolcraft:main:{Kind:cobolcraft:drizzle,Remaining:1500}}" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test level dat read back restores name, game mode, time, spawn and weather" TO TL-CASE
+     MOVE "changed" TO CW-NAME
+     MOVE 0 TO CW-GAME-MODE CW-TIME CW-SPAWN-X CW-SPAWN-Y CW-SPAWN-Z CW-SPAWN-YAW
+     MOVE WK-CLEAR TO CW-WEATHER-KIND(DIM-MAIN)
+     MOVE 7 TO CW-WEATHER-LEFT(DIM-MAIN)
+     CALL "LEVEL-DAT-READ"
+     PERFORM DESCRIBE-WORLD
+     MOVE "Level Test 1 12345 10.500 60.000 -3.500 45.000 2 1500" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test level dat weather until changed is stored as Remaining -1 and read back as -1"
+         TO TL-CASE
+     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(DIM-MAIN)
+     MOVE WEATHER-UNTIL-CHANGED TO CW-WEATHER-LEFT(DIM-MAIN)
+     CALL "LEVEL-DAT-WRITE"
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "Weather" TO WS-PATH PERFORM ADD-GET
+     MOVE 0 TO CW-WEATHER-LEFT(DIM-MAIN)
+     CALL "LEVEL-DAT-READ"
+     MOVE CW-WEATHER-KIND(DIM-MAIN) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     MOVE CW-WEATHER-LEFT(DIM-MAIN) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     MOVE "{cobolcraft:main:{Kind:cobolcraft:hailstorm,Remaining:-1}} 3 -1" TO TL-EXPECTED
+     PERFORM CHECK
+
+*>   GameMode and new players: the stored mode is survival (0), the setting creative (1).
+     MOVE "test level dat a dedicated server (host kind 0) gives new players its default-game-mode "
+         & "setting, not GameMode" TO TL-CASE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-DEFAULT-MODE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 0 TO CW-GAME-MODE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-MODE(CN-PLAYER(WS-BOB)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test level dat a single-player world (host kind 1) gives its host the stored GameMode"
+         TO TL-CASE
+     MOVE 1 TO CS-HOST-KIND
+     MOVE "Alice" TO CS-HOST-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 0 TO CW-GAME-MODE
+     CALL "LEVEL-DAT-WRITE"
+     MOVE 1 TO CW-GAME-MODE
+     CALL "LEVEL-DAT-READ"
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-MODE(CN-PLAYER(WS-ALICE)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test level dat a world opened to others (host kind 2): the host gets GameMode, a guest "
+         & "the guest mode" TO TL-CASE
+     MOVE 2 TO CS-HOST-KIND
+     MOVE 1 TO CS-GUEST-MODE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 0 TO CW-GAME-MODE
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-LENGTH-3 WS-BOB
+     MOVE "T" TO TL-MODE
+     MOVE "0 1" TO TL-EXPECTED
+     MOVE SPACES TO WS-OBSERVED
+     MOVE PL-MODE(CN-PLAYER(WS-ALICE)) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OBSERVED
+     MOVE PL-MODE(CN-PLAYER(WS-BOB)) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     PERFORM CHECK
+     STOP RUN.
+
+ DESCRIBE-WORLD.
+     MOVE SPACES TO WS-OBSERVED
+     MOVE CW-GAME-MODE TO WS-EDIT
+     STRING FUNCTION TRIM(CW-NAME) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OBSERVED
+     MOVE CW-TIME TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-X PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Y PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Z PERFORM ADD-FEDIT
+     COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-YAW PERFORM ADD-FEDIT
+     MOVE CW-WEATHER-KIND(DIM-MAIN) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     MOVE CW-WEATHER-LEFT(DIM-MAIN) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ ADD-FEDIT.
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-FEDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ ADD-GET.
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+         INTO WS-OBSERVED.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE FUNCTION TRIM(WS-OBSERVED) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-LEVEL-DAT.
+
+ COPY CORETEST.

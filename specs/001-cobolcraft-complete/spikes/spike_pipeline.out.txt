@@ -1,0 +1,6 @@
+spike_pipeline.vert
+spike_pipeline.frag
+maxPushConstantsSize=4096
+pipeline created
+centre pixel=7D7F86FF corner pixel=000000FF
+OK textured triangle rendered and read back

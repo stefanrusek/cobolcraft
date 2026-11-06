@@ -1,0 +1,15 @@
+# Login Disconnect (ClientboundLoginDisconnectPacket) -- login phase, clientbound (S->C), packet id 0x00
+# Variant: name in use by the host (standin §17 name_is_host key, argument = the name).
+# Docs: 09 §1 message rule + text encoding (JSON column: Login Disconnect), 09 §3.1 row "Login Disconnect";
+#       02 "0x00 (0) Clientbound Login Disconnect" (JSON String(262144), not NBT); 00 §9.2, §3.1.
+# Stated inputs: translate key "cobolcraft.disconnect.name_is_host", arguments ["Alice" (literal)].
+#   JSON (no whitespace, keys in 09 §1 order): {"translate":"cobolcraft.disconnect.name_is_host","with":["Alice"]}
+
+00                                               # packet id: VarInt 0x00 (Login Disconnect)
+43                                               # reason JSON length: VarInt 67 (UTF-8 bytes)
+# reason JSON (UTF-8): {"translate":"cobolcraft.disconnect.name_is_host","with":["Alice"]}
+7b 22 74 72 61 6e 73 6c 61 74 65 22 3a 22 63 6f
+62 6f 6c 63 72 61 66 74 2e 64 69 73 63 6f 6e 6e
+65 63 74 2e 6e 61 6d 65 5f 69 73 5f 68 6f 73 74
+22 2c 22 77 69 74 68 22 3a 5b 22 41 6c 69 63 65
+22 5d 7d

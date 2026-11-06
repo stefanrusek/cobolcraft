@@ -1,0 +1,12 @@
+# Fixture: play-s2c-39-move-entity-rot.hex
+# Move Entity Rot (ClientboundMoveEntityPacket$Rot)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x39 (57).
+# Task T144. 09 §3.2 row: Move Entity Rot (only the yaw or pitch changed).
+# Doc refs: 05a 0x39 (VarInt entity id, Boolean on ground, Angle yaw, Angle pitch; on-ground comes first); 00 §4.4 Angle.
+# Stated inputs: entity id 20 (the sodgrazer); on ground true; yaw -90.0; pitch 0.0.
+
+39                                                            # packet id: VarInt 0x39 (57) Move Entity Rot (play, clientbound)
+14                                                            # Entity id: VarInt 20
+01                                                            # On ground: Boolean true
+c0                                                            # Yaw: Angle -90.0 deg -> floor(-64.0) = -64 -> byte 0xc0
+00                                                            # Pitch: Angle 0.0 deg -> byte 0x00

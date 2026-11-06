@@ -1,0 +1,41 @@
+# Commands (everyone)
+# Phase play, clientbound (S->C), packet id 0x10 (16)
+# Docs: 09 §3.3 row 0x10 (everyone) and 'Command tree' (node order depth-first pre-order,
+#   no redirects, flag 0x20 never set, argument parser table); 05a 0x10 CommandNode, flags,
+#   parser registry and NumberRange; standin §16.2, §16.3
+# Stated inputs: the receiving player has no operator status: root with `howto`, `roster`,
+#   `murmur` and their subtrees, 6 nodes.
+# Node annotation: [index] type, flags, children, name, parser/properties, suggestions.
+# Flags: 0x00 root, 0x01 literal, 0x02 argument, |0x04 executable, |0x10 custom suggestions.
+
+10                                                 # packet id 0x10 (VarInt)
+06                                                 # Nodes: Prefixed Array count 6
+# [0] (root)
+  00                                                 # flags 0x00
+  03 01 02 03                                        # children: count 3 -> 1, 2, 3
+# [1] literal `howto` *exec*
+  05                                                 # flags 0x05
+  00                                                 # children: count 0
+  05 68 6f 77 74 6f                                  # name: String "howto"
+# [2] literal `roster` *exec*
+  05                                                 # flags 0x05
+  00                                                 # children: count 0
+  06 72 6f 73 74 65 72                               # name: String "roster"
+# [3] literal `murmur`
+  01                                                 # flags 0x01
+  01 04                                              # children: count 1 -> 4
+  06 6d 75 72 6d 75 72                               # name: String "murmur"
+# [4] argument `<player>`
+  12                                                 # flags 0x12
+  01 05                                              # children: count 1 -> 5
+  06 70 6c 61 79 65 72                               # name: String "player"
+  07                                                 # parser 7 game_profile, properties none
+  14 6d 69 6e 65 63 72 61 66 74 3a 61 73 6b 5f 73    # suggestions type: Identifier "minecraft:ask_server"
+  65 72 76 65 72                                     # (cont.)
+# [5] argument `<message>` *exec*
+  06                                                 # flags 0x06
+  00                                                 # children: count 0
+  07 6d 65 73 73 61 67 65                            # name: String "message"
+  05 02                                              # parser 5 brigadier:string, kind VarInt 2 GREEDY_PHRASE
+  # (no suggestions type: flag 0x10 clear)
+00                                                 # Root index: VarInt 0

@@ -1,0 +1,16 @@
+# Fixture: play-s2c-73-set-time.hex
+# Set Time (ClientboundSetTimePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x73 (115).
+# Task T130. 09 §3.2 row: Set Time (game time = Time; one clock update: world_clock id 0, total ticks = Time,
+#   partial tick 0.0, rate 1.0).
+# Doc refs: 05b 0x73 Set Time, ClockNetworkState; 00 §2 (Long, VarInt, VarLong, Float).
+# Content: standin-content §4.8 (world_clock id 0 cobolcraft:daylight, Time 0..29999).
+# Stated inputs: Time 6000; clock cobolcraft:daylight (registry id 0); total ticks 6000; partial tick 0.0; rate 1.0.
+
+73                                                            # packet id: VarInt 0x73 (115) Set Time (play, clientbound)
+00 00 00 00 00 00 17 70                                       # Game time: Long 6000 (= Time)
+01                                                            # Clock updates: map count VarInt 1
+  00                                                          # Clock updates[0].Key: RegistryId<world_clock> VarInt 0 (cobolcraft:daylight)
+  f0 2e                                                       # Clock updates[0].Total ticks: VarLong 6000
+  00 00 00 00                                                 # Clock updates[0].Partial tick: Float 0.0 (IEEE-754 binary32 00000000)
+  3f 80 00 00                                                 # Clock updates[0].Rate: Float 1.0 (IEEE-754 binary32 3f800000)

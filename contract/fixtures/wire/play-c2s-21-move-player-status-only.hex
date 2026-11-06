@@ -1,0 +1,7 @@
+# Move Player Status Only
+# Phase play, serverbound (C->S), packet id 0x21 (33)
+# Docs: 09 §3.2 row 0x21; 05c 0x21, MoveFlags
+# Stated inputs: on ground and horizontal collision (MoveFlags 0x03).
+
+21                                                 # packet id 0x21 (VarInt)
+03                                                 # Flags: UByte 0x03 (0x01 on ground | 0x02 horizontal collision)

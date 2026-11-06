@@ -1,0 +1,1646 @@
+*> The client side of the protocol (docs/protocol/02, 03, 04, 05a/05b/05c; 09-cobolcraft-profile.md
+*> §1 to §3.2): packet builders (CLP-*), PROTO-CONNECTED (what is sent once a connection is up),
+*> PROTO-PACKET (every packet received, by phase), CLIENT-DISCONNECT and the text renderers.
+*> Status: Intention (status), Status Request; Status Response fills the server-list entry
+*> (description, online and maximum players, version; a protocol other than 777 is incompatible),
+*> Ping Request, and Pong ends the exchange. Login: Intention (login), Hello with the offline UUID;
+*> Set Compression, Login Finished (Login Acknowledged, brand, Client Information), Login Disconnect.
+*> Configuration: registries kept (dimension types, biome count), Select Known Packs answered with
+*> an empty list, Keep Alive echoed, Finish Configuration answered. Play: Login, Player Position
+*> (accepted; a correction of the local player's position), abilities (flying), spawn, time, held
+*> slot, inventory, chunks into the replica and forgotten, the chunk cache centre, Chunk Batch
+*> Received after each batch, Player Loaded once, Keep Alive echoed, Disconnect; entities and the
+*> player list into the entity replica (entities-replica.cob). Moving: Move Player (CLP-MOVE-SEND
+*> each client tick) and Player Abilities (the fly toggle). Blocks and inventory (US4): Player
+*> Action, Use Item On, Set Carried Item, Container Click and Set Creative Mode Slot builders
+*> (controls.cob and the inventory screen send them); Block Update, Section Blocks Update and Light
+*> Update into the replica (world-replica.cob), Block Changed Ack and Block Destruction kept, the
+*> inventory packets into the inventory replica (inventory-replica.cob). Chat (US6): the Chat
+*> builder (screens/chat.cob sends it); System Chat into the chat history (screens/hud.cob).
+*> Health (US7): the Attack builder (controls.cob sends it) and the Client Command builder (the
+*> death screen's respawn control); Set Health kept for the HUD, Damage Event and Hurt Animation for
+*> the local player start the hurt indication, Player Combat Kill for the local player opens the
+*> death screen with its message, Respawn enters the dimension it names (as Login does: the replica
+*> emptied, the world screen shown; the server sends the world again).
+*> Hunger (US8): the Use Item, release-use-item Player Action and Player Command builders
+*> (controls.cob sends them; the food level is the Set Health field the HUD shows); Entity Event 9
+*> (eating finished) for the local player ends its eating. Entering a dimension (Login, Respawn)
+*> ends sprinting and eating: the server clears both on death, respawn and travel.
+*> Crafting (US10): the Place Recipe builder (screens/crafting.cob sends it); Recipe Book Add into
+*> the recipe book (RECIPE-BOOK-READ). Weather (US11): the weather Game Events set the rain and
+*> thunder levels and the kind they map to (weather-render.cob and sky.cob draw it); the biome
+*> registry's has_precipitation is kept for where it is drawn.
+*> Commands (US14): the Chat Command and Command Suggestion builders (screens/chat.cob sends them);
+*> Commands into the command tree (COMMANDS-READ), Command Suggestions into the answers to the last
+*> request (SUGGESTIONS-READ); Game Event 3 sets the game mode and the abilities that go with it
+*> (09 §3.2 Player Abilities: creative may fly, survival may not and stops flying).
+*> Server packs (US18): Resource Pack Push and Pop, configuration and play, go to packs/download.cob
+*> (PACK-PUSH, PACK-POP), which answers with Resource Pack Response.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SIMPLE.
+*> USING PB-BUFFER, packet id: a packet without fields (Status Request 0x00, Login Acknowledged and
+*> Finish Configuration 0x03, Client Tick End 0x0D, Player Loaded 0x2C).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ID.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     GOBACK.
+ END PROGRAM CLP-SIMPLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-INTENTION.
+*> USING PB-BUFFER, host (PIC X(256)), host length, port, intent (1 status, 2 login): Intention.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-PROTOCOL            BINARY-LONG VALUE CL-PROTOCOL.
+ 01 WS-MAX                 BINARY-LONG VALUE 255.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-HOST                 PIC X(256).
+ 01 L-HOST-LENGTH          BINARY-LONG.
+ 01 L-PORT                 BINARY-LONG.
+ 01 L-INTENT               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-HOST L-HOST-LENGTH L-PORT L-INTENT.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PROTOCOL
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-HOST L-HOST-LENGTH WS-MAX
+     CALL "PB-PUT-USHORT" USING PB-BUFFER L-PORT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-INTENT
+     GOBACK.
+ END PROGRAM CLP-INTENTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PING-REQUEST.
+*> USING PB-BUFFER, time (BINARY-DOUBLE): Ping Request.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TIME                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING PB-BUFFER L-TIME.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-LONG" USING PB-BUFFER L-TIME
+     GOBACK.
+ END PROGRAM CLP-PING-REQUEST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-HELLO.
+*> USING PB-BUFFER, name (PIC X(16)), name length: Hello with the offline UUID of the name
+*> (CLP-OFFLINE-UUID).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-UUID                PIC X(16).
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NAME                 PIC X(16).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-NAME L-LENGTH.
+     CALL "CLP-OFFLINE-UUID" USING L-NAME L-LENGTH WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-NAME L-LENGTH WS-MAX
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     GOBACK.
+ END PROGRAM CLP-HELLO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-OFFLINE-UUID.
+*> USING name (PIC X(16)), name length, UUID out (PIC X(16)): the offline UUID of the name (MD5 of
+*> "OfflinePlayer:<name>", version 3, IETF variant; 02 Offline mode).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DATA                PIC X(64).
+ 01 WS-DATA-LENGTH         BINARY-DOUBLE UNSIGNED.
+ 01 WS-DIGEST              PIC X(64).
+ 01 WS-DIGEST-LENGTH       BINARY-LONG UNSIGNED.
+ 01 WS-ALGORITHM           USAGE POINTER.
+ 01 WS-ENGINE              USAGE POINTER VALUE NULL.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-UUID                 PIC X(16).
+ PROCEDURE DIVISION USING L-NAME L-LENGTH L-UUID.
+     MOVE "OfflinePlayer:" TO WS-DATA
+     MOVE L-NAME(1:L-LENGTH) TO WS-DATA(15:L-LENGTH)
+     COMPUTE WS-DATA-LENGTH = 14 + L-LENGTH
+     CALL STATIC "EVP_md5" RETURNING WS-ALGORITHM
+     CALL STATIC "EVP_Digest" USING BY REFERENCE WS-DATA BY VALUE WS-DATA-LENGTH
+         BY REFERENCE WS-DIGEST BY REFERENCE WS-DIGEST-LENGTH BY VALUE WS-ALGORITHM
+         BY VALUE WS-ENGINE RETURNING WS-RC
+     MOVE WS-DIGEST(1:16) TO L-UUID
+     COMPUTE WS-BYTE = FUNCTION MOD(FUNCTION ORD(L-UUID(7:1)) - 1, 16) + 48
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO L-UUID(7:1)
+     COMPUTE WS-BYTE = FUNCTION MOD(FUNCTION ORD(L-UUID(9:1)) - 1, 64) + 128
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO L-UUID(9:1)
+     GOBACK.
+ END PROGRAM CLP-OFFLINE-UUID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-KEEP-ALIVE.
+*> USING PB-BUFFER, packet id (configuration 0x04, play 0x1C), id (BINARY-DOUBLE): Keep Alive.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PACKET               BINARY-LONG.
+ 01 L-ID                   BINARY-DOUBLE.
+ PROCEDURE DIVISION USING PB-BUFFER L-PACKET L-ID.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-PACKET
+     CALL "PB-PUT-LONG" USING PB-BUFFER L-ID
+     GOBACK.
+ END PROGRAM CLP-KEEP-ALIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ACCEPT-TELEPORT.
+*> USING PB-BUFFER, teleport id, x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT): Accept
+*> Teleportation with the position applied (09 §3.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TELEPORT             BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING PB-BUFFER L-TELEPORT L-X L-Y L-Z L-YAW L-PITCH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TELEPORT
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     GOBACK.
+ END PROGRAM CLP-ACCEPT-TELEPORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-BATCH-RECEIVED.
+*> USING PB-BUFFER, desired chunks per tick (FLOAT-SHORT): Chunk Batch Received.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 11.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-RATE                 FLOAT-SHORT.
+ PROCEDURE DIVISION USING PB-BUFFER L-RATE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-RATE
+     GOBACK.
+ END PROGRAM CLP-BATCH-RECEIVED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MOVE.
+*> USING PB-BUFFER, packet id (30 Pos, 31 Pos Rot, 32 Rot, 33 Status Only), feet x, y, z
+*> (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), MoveFlags (0x01 on ground, 0x02 horizontal collision):
+*> Move Player with the fields of its variant (05c 0x1E to 0x21).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ID L-X L-Y L-Z L-YAW L-PITCH L-FLAGS.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     IF L-ID = 30 OR L-ID = 31
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     END-IF
+     IF L-ID = 31 OR L-ID = 32
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     END-IF
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FLAGS
+     GOBACK.
+ END PROGRAM CLP-MOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ABILITIES.
+*> USING PB-BUFFER, flags (0x02 flying): Player Abilities (05c 0x28).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 40.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-FLAGS.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-FLAGS
+     GOBACK.
+ END PROGRAM CLP-ABILITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SEND-ABILITIES.
+*> USING CLIENT-STATE, connection: Player Abilities with the flying flag of the local player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-FLAGS               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     COMPUTE WS-FLAGS = PL-FLYING * 2
+     CALL "CLP-ABILITIES" USING PB-BUFFER WS-FLAGS
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CLP-SEND-ABILITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MOVE-SEND.
+*> USING CLIENT-STATE, connection: the Move Player variant for what changed since the server last
+*> heard (PL-SENT-*): position and rotation Pos Rot, position Pos, rotation Rot, only the
+*> MoveFlags Status Only; nothing when nothing changed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-TURNED              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     COMPUTE WS-FLAGS = PL-ON-GROUND + PL-COLLIDED * 2
+     MOVE 0 TO WS-MOVED WS-TURNED WS-ID
+     IF PL-X NOT = PL-SENT-X OR PL-Y NOT = PL-SENT-Y OR PL-Z NOT = PL-SENT-Z
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF PL-YAW NOT = PL-SENT-YAW OR PL-PITCH NOT = PL-SENT-PITCH
+         MOVE 1 TO WS-TURNED
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-MOVED = 1 AND WS-TURNED = 1
+             MOVE 31 TO WS-ID
+         WHEN WS-MOVED = 1
+             MOVE 30 TO WS-ID
+         WHEN WS-TURNED = 1
+             MOVE 32 TO WS-ID
+         WHEN WS-FLAGS NOT = PL-SENT-FLAGS
+             MOVE 33 TO WS-ID
+     END-EVALUATE
+     IF WS-ID > 0
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-MOVE" USING PB-BUFFER WS-ID PL-X PL-Y PL-Z PL-YAW PL-PITCH WS-FLAGS
+         CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+         MOVE PL-X TO PL-SENT-X
+         MOVE PL-Y TO PL-SENT-Y
+         MOVE PL-Z TO PL-SENT-Z
+         MOVE PL-YAW TO PL-SENT-YAW
+         MOVE PL-PITCH TO PL-SENT-PITCH
+         MOVE WS-FLAGS TO PL-SENT-FLAGS
+     END-IF
+     GOBACK.
+ END PROGRAM CLP-MOVE-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLAYER-ACTION.
+*> USING PB-BUFFER, action (0 start, 2 abort, 3 stop destroy), block x, y, z, face (05c Direction),
+*> sequence: Player Action (05c 0x29; the face a UByte).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 41.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION L-X L-Y L-Z L-FACE L-SEQUENCE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-PLAYER-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ITEM-ACTION.
+*> USING PB-BUFFER, action (5 drop item, 4 drop all items, 6 release use item): a Player Action on
+*> the held item, not a block (05c 0x29; 09 §3.3 fixes location (0, 0, 0), face 0 and sequence 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO-Y              BINARY-LONG VALUE 0.
+ 01 WS-ZERO-Z              BINARY-LONG VALUE 0.
+ 01 WS-FACE                BINARY-LONG VALUE 0.
+ 01 WS-SEQUENCE            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION.
+     CALL "CLP-PLAYER-ACTION" USING PB-BUFFER L-ACTION WS-ZERO WS-ZERO-Y WS-ZERO-Z WS-FACE
+         WS-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-ITEM-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-USE-ITEM.
+*> USING PB-BUFFER, sequence, yaw, pitch (FLOAT-SHORT): Use Item (05c 0x43) with the main hand.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 67.
+ 01 WS-HAND                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SEQUENCE             BINARY-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING PB-BUFFER L-SEQUENCE L-YAW L-PITCH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HAND
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     GOBACK.
+ END PROGRAM CLP-USE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLAYER-COMMAND.
+*> USING PB-BUFFER, entity id (the player's own), action (1 start, 2 stop sprinting): Player
+*> Command (05c 0x2A) with data 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 42.
+ 01 WS-DATA                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-ACTION.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-DATA
+     GOBACK.
+ END PROGRAM CLP-PLAYER-COMMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-USE-ITEM-ON.
+*> USING PB-BUFFER, block x, y, z, face (05c Direction), cursor x, y, z (FLOAT-SHORT, the hit point
+*> within the block), sequence: Use Item On (05c 0x42) with the main hand, not inside the block,
+*> no world border hit (the face a VarInt).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 66.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ 01 WS-FALSE2              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-CX                   FLOAT-SHORT.
+ 01 L-CY                   FLOAT-SHORT.
+ 01 L-CZ                   FLOAT-SHORT.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-X L-Y L-Z L-FACE L-CX L-CY L-CZ L-SEQUENCE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CX
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CY
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CZ
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE2
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-USE-ITEM-ON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SET-CARRIED.
+*> USING PB-BUFFER, hotbar slot (0 to 8): Set Carried Item (05c 0x36; a Short).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 54.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLOT.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     GOBACK.
+ END PROGRAM CLP-SET-CARRIED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CONTAINER-CLICK.
+*> USING PB-BUFFER, state id, slot, the slot's new count and item, the cursor's new count and item:
+*> Container Click (05c 0x12) of container 0, button 0, click type 0 PICKUP, with the one changed
+*> slot and the cursor as HashedStacks without components (00 §12.4; 09 §3.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-PICKUP              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-SLOT-COUNT           BINARY-LONG.
+ 01 L-SLOT-ITEM            BINARY-LONG.
+ 01 L-CARRIED-COUNT        BINARY-LONG.
+ 01 L-CARRIED-ITEM         BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-STATE-ID L-SLOT L-SLOT-COUNT L-SLOT-ITEM L-CARRIED-COUNT
+         L-CARRIED-ITEM.
+     CALL "CLP-CONTAINER-CLICK-AS" USING PB-BUFFER L-STATE-ID L-SLOT WS-ZERO WS-PICKUP WS-ONE
+         L-SLOT-COUNT L-SLOT-ITEM L-CARRIED-COUNT L-CARRIED-ITEM
+     GOBACK.
+ END PROGRAM CLP-CONTAINER-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CONTAINER-CLICK-AS.
+*> USING PB-BUFFER, state id, slot (-999 outside the window), button, click type, changed (1: the
+*> slot is listed as changed with its new count and item; 0: no changed slots), the slot's new
+*> count and item, the cursor's new count and item: Container Click (05c 0x12) of container 0
+*> (09 §3.2; standin §9.1 inventory-screen throws: THROW 4, PICKUP 0 at -999).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 18.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-BUTTON               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ 01 L-SLOT-COUNT           BINARY-LONG.
+ 01 L-SLOT-ITEM            BINARY-LONG.
+ 01 L-CARRIED-COUNT        BINARY-LONG.
+ 01 L-CARRIED-ITEM         BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-STATE-ID L-SLOT L-BUTTON L-TYPE L-CHANGED L-SLOT-COUNT
+         L-SLOT-ITEM L-CARRIED-COUNT L-CARRIED-ITEM.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-BUTTON
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CHANGED
+     IF L-CHANGED = 1
+         CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+         CALL "CLP-HASHED-STACK" USING PB-BUFFER L-SLOT-COUNT L-SLOT-ITEM
+     END-IF
+     CALL "CLP-HASHED-STACK" USING PB-BUFFER L-CARRIED-COUNT L-CARRIED-ITEM
+     GOBACK.
+ END PROGRAM CLP-CONTAINER-CLICK-AS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CONTAINER-CLOSE.
+*> USING PB-BUFFER: Container Close (05c 0x13) of container 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 19.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     GOBACK.
+ END PROGRAM CLP-CONTAINER-CLOSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-HASHED-STACK.
+*> USING PB-BUFFER, count, item: a HashedStack (00 §12.4): Present false for an empty stack, else
+*> Present true, the item, the count and an empty HashedPatchMap.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-COUNT L-ITEM.
+     COMPUTE WS-PRESENT = FUNCTION MIN(L-COUNT, 1)
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-PRESENT
+     IF WS-PRESENT = 1
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     END-IF
+     GOBACK.
+ END PROGRAM CLP-HASHED-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CREATIVE-SLOT.
+*> USING PB-BUFFER, slot (0 to 35), count, item: Set Creative Mode Slot (05c 0x39): the slot (a
+*> Short) and the stack as an ItemStack without components.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 57.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLOT L-COUNT L-ITEM.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     MOVE L-COUNT TO WS-IS-COUNT
+     MOVE L-ITEM TO WS-IS-ITEM
+     CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
+     GOBACK.
+ END PROGRAM CLP-CREATIVE-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CHAT.
+*> USING PB-BUFFER, message (PIC X(1024), UTF-8), byte length, timestamp (BINARY-DOUBLE, ms since
+*> the Unix epoch): Chat (05c 0x09), unsigned (09 §1): the message (at most 256 UTF-16 code units),
+*> the timestamp, salt 0, no signature, last seen messages offset 0, none acknowledged (a 20-bit
+*> FixedBitSet), checksum 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 9.
+ 01 WS-MAX                 BINARY-LONG VALUE 256.
+ 01 WS-SALT                BINARY-DOUBLE VALUE 0.
+ 01 WS-ABSENT              BINARY-LONG VALUE 0.
+ 01 WS-OFFSET              BINARY-LONG VALUE 0.
+ 01 WS-BITS                BINARY-LONG VALUE 20.
+ 01 WS-ACKED               PIC X(3) VALUE LOW-VALUES.
+ 01 WS-CHECKSUM            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-TIME                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-LENGTH L-TIME.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     CALL "PB-PUT-LONG" USING PB-BUFFER L-TIME
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SALT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ABSENT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-OFFSET
+     CALL "PB-PUT-FIXED-BITSET" USING PB-BUFFER WS-BITS WS-ACKED
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-CHECKSUM
+     GOBACK.
+ END PROGRAM CLP-CHAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ATTACK.
+*> USING PB-BUFFER, entity id: Attack (05c 0x01).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     GOBACK.
+ END PROGRAM CLP-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CLIENT-COMMAND.
+*> USING PB-BUFFER, action (0 PERFORM_RESPAWN): Client Command (05c 0x0C).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 12.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     GOBACK.
+ END PROGRAM CLP-CLIENT-COMMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLACE-RECIPE.
+*> USING PB-BUFFER, recipe display id: Place Recipe (05c 0x27) of container 0, use max items false
+*> (09 §3.3: craft one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 39.
+ 01 WS-CONTAINER           BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-RECIPE               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-RECIPE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RECIPE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-MAX
+     GOBACK.
+ END PROGRAM CLP-PLACE-RECIPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CHAT-COMMAND.
+*> USING PB-BUFFER, command (PIC X(1024), UTF-8, without the leading /), byte length: Chat Command
+*> (05c 0x07), the unsigned form (09 §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 7.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-LENGTH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     GOBACK.
+ END PROGRAM CLP-CHAT-COMMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-COMMAND-SUGGESTION.
+*> USING PB-BUFFER, transaction id, text (PIC X(1024), the chat line with its leading /, 09 §5
+*> rule 5), byte length: Command Suggestion (05c 0x0F).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 15.
+ 01 WS-MAX                 BINARY-LONG VALUE 32500.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TRANSACTION          BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-TRANSACTION L-TEXT L-LENGTH.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TRANSACTION
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     GOBACK.
+ END PROGRAM CLP-COMMAND-SUGGESTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SEND-SIMPLE.
+*> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-ID.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-SIMPLE" USING PB-BUFFER L-ID
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CLP-SEND-SIMPLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PROTO-CONNECTED.
+*> USING CLIENT-STATE, connection: the connection is up and in CN-PHASE: a status connection sends
+*> Intention (status) and Status Request, a login connection Intention (login) and Hello.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-INTENT              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE 1 TO WS-INTENT
+     IF CN-PHASE(L-CONN) = PH-LOGIN
+         MOVE 2 TO WS-INTENT
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-INTENTION" USING PB-BUFFER CN-HOST(L-CONN) CN-HOST-LENGTH(L-CONN) CN-PORT(L-CONN)
+         WS-INTENT
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     CALL "PB-RESET" USING PB-BUFFER
+     IF WS-INTENT = 1
+         CALL "CLP-SIMPLE" USING PB-BUFFER WS-ZERO
+     ELSE
+         CALL "CLP-HELLO" USING PB-BUFFER CL-NAME CL-NAME-LENGTH
+     END-IF
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM PROTO-CONNECTED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PROTO-PACKET.
+*> USING CLIENT-STATE, connection, packet PB-BUFFER (PB-POS after the id), packet id. Packets the
+*> client does not use are ignored.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==OUT-==.
+ COPY JSONDOC.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-JSON                PIC X(32767).
+ 01 WS-JSON-MAX            BINARY-LONG VALUE 32767.
+ 01 WS-JSON-CAP            BINARY-LONG VALUE 32767.
+ 01 WS-JSON-LENGTH         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-RATE                FLOAT-SHORT VALUE 9.0.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-BIT                 BINARY-LONG.
+ 01 WS-DIM                 PIC X(64).
+ 01 WS-DIM-CAP             BINARY-LONG VALUE 64.
+ 01 WS-DIM-LENGTH          BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-DOUBLE              FLOAT-LONG.
+ 01 WS-PACKET              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-PACKET.
+    05 L-ADDR              USAGE POINTER.
+    05 L-CAPACITY          BINARY-LONG.
+    05 L-LENGTH            BINARY-LONG.
+    05 L-POS               BINARY-LONG.
+    05 L-ERROR             PIC 9.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-PACKET L-ID.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING OUT-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING OUT-BUFFER
+     MOVE CN-PHASE(L-CONN) TO WS-PHASE
+     EVALUATE TRUE
+*>       ---- status (02) ----
+         WHEN WS-PHASE = PH-STATUS AND L-ID = 0
+             CALL "PB-GET-STRING" USING L-PACKET WS-JSON-MAX WS-JSON WS-JSON-CAP WS-JSON-LENGTH
+             CALL "JSON-PARSE" USING JSON-DOC WS-JSON WS-JSON-LENGTH
+             CALL "STATUS-READ" USING CLIENT-STATE JSON-DOC CN-ENTRY(L-CONN)
+             CALL "CLP-PING-REQUEST" USING OUT-BUFFER CL-NOW-MS
+             CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+         WHEN WS-PHASE = PH-STATUS AND L-ID = 1
+             MOVE SLS-ANSWERED TO SL-STATUS(CN-ENTRY(L-CONN))
+             CALL "NET-CLOSE" USING CLIENT-STATE L-CONN
+*>       ---- login (02) ----
+         WHEN WS-PHASE = PH-LOGIN AND L-ID = 0
+             CALL "PB-GET-STRING" USING L-PACKET WS-JSON-MAX WS-JSON WS-JSON-CAP WS-JSON-LENGTH
+             CALL "JSON-PARSE" USING JSON-DOC WS-JSON WS-JSON-LENGTH
+             MOVE 1 TO WS-NODE
+             CALL "JSON-TEXT-RENDER" USING CLIENT-STATE JSON-DOC WS-NODE WS-TEXT WS-LENGTH
+             CALL "CLIENT-DISCONNECT" USING CLIENT-STATE L-CONN WS-TEXT WS-LENGTH
+         WHEN WS-PHASE = PH-LOGIN AND L-ID = 2
+             MOVE 3 TO WS-ID
+             CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
+             MOVE PH-CONFIG TO CN-PHASE(L-CONN)
+             CALL "CLP-CONFIG-START" USING CLIENT-STATE L-CONN
+         WHEN WS-PHASE = PH-LOGIN AND L-ID = 3
+             CALL "PB-GET-VARINT" USING L-PACKET CN-THRESHOLD(L-CONN)
+*>       ---- configuration (03, 04) ----
+         WHEN (WS-PHASE = PH-CONFIG AND L-ID = 2) OR (WS-PHASE = PH-PLAY AND L-ID = 32)
+             CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
+             CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT WS-TEXT WS-LENGTH
+             CALL "CLIENT-DISCONNECT" USING CLIENT-STATE L-CONN WS-TEXT WS-LENGTH
+         WHEN WS-PHASE = PH-CONFIG AND L-ID = 3
+             MOVE 3 TO WS-ID
+             CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
+             MOVE PH-PLAY TO CN-PHASE(L-CONN)
+         WHEN (WS-PHASE = PH-CONFIG AND L-ID = 4) OR (WS-PHASE = PH-PLAY AND L-ID = 45)
+             CALL "PB-GET-LONG" USING L-PACKET WS-LONG
+             MOVE 4 TO WS-PACKET
+             IF WS-PHASE = PH-PLAY
+                 MOVE 28 TO WS-PACKET
+             END-IF
+             CALL "CLP-KEEP-ALIVE" USING OUT-BUFFER WS-PACKET WS-LONG
+             CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+         WHEN WS-PHASE = PH-CONFIG AND L-ID = 7
+             CALL "REGISTRY-READ" USING CLIENT-STATE L-PACKET
+*>       ---- server packs (03 Resource Pack Push and Pop, configuration and play; 08 §9) ----
+         WHEN (WS-PHASE = PH-CONFIG AND L-ID = 9) OR (WS-PHASE = PH-PLAY AND L-ID = 82)
+             CALL "PACK-PUSH" USING CLIENT-STATE L-PACKET
+         WHEN (WS-PHASE = PH-CONFIG AND L-ID = 8) OR (WS-PHASE = PH-PLAY AND L-ID = 81)
+             CALL "PACK-POP" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-CONFIG AND L-ID = 15
+             MOVE 7 TO WS-ID
+             MOVE 0 TO WS-VALUE
+             CALL "PB-PUT-VARINT" USING OUT-BUFFER WS-ID
+             CALL "PB-PUT-VARINT" USING OUT-BUFFER WS-VALUE
+             CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+*>       ---- play (05a, 05b) ----
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 50
+             CALL "PLAY-LOGIN-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 39
+*>           Game Event: 3 is a game mode change; 2, 7 and 8 the weather (standin §14.4: 2 stops
+*>           the rain, 7 and 8 carry the rain and thunder levels; 1 changes nothing by itself).
+             CALL "PB-GET-UBYTE" USING L-PACKET WS-VALUE
+             CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+             EVALUATE WS-VALUE
+                 WHEN 3
+                     MOVE WS-FLOAT TO PL-MODE
+                     IF PL-MODE = 1
+                         COMPUTE PL-ABILITIES = 13 + PL-FLYING * 2
+                     ELSE
+                         MOVE 0 TO PL-ABILITIES PL-FLYING
+                     END-IF
+                 WHEN 2
+                     MOVE 0 TO PL-RAIN PL-THUNDER
+                 WHEN 7
+                     MOVE WS-FLOAT TO PL-RAIN
+                 WHEN 8
+                     MOVE WS-FLOAT TO PL-THUNDER
+             END-EVALUATE
+*>           The kind from the pair (standin §14.1): rain below 0.5 clear; else thunder below 0.5
+*>           drizzle; else a hailstorm.
+             EVALUATE TRUE
+                 WHEN PL-RAIN < 0.5
+                     MOVE WX-CLEAR TO PL-WEATHER
+                 WHEN PL-THUNDER < 0.5
+                     MOVE WX-DRIZZLE TO PL-WEATHER
+                 WHEN OTHER
+                     MOVE WX-HAILSTORM TO PL-WEATHER
+             END-EVALUATE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 73
+*>           Player Position: CobolCraft's server sends absolute values only (relative flags 0,
+*>           09 §3.2); the position is taken and accepted.
+             CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+             CALL "PB-GET-DOUBLE" USING L-PACKET PL-X
+             CALL "PB-GET-DOUBLE" USING L-PACKET PL-Y
+             CALL "PB-GET-DOUBLE" USING L-PACKET PL-Z
+             PERFORM 3 TIMES
+                 CALL "PB-GET-DOUBLE" USING L-PACKET WS-DOUBLE
+             END-PERFORM
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-YAW
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-PITCH
+             MOVE 1 TO PL-POSITIONED
+*>           A correction: the fall stops and the server already has this position.
+             MOVE 0 TO PL-VY
+             MOVE PL-X TO PL-SENT-X
+             MOVE PL-Y TO PL-SENT-Y
+             MOVE PL-Z TO PL-SENT-Z
+             MOVE PL-YAW TO PL-SENT-YAW
+             MOVE PL-PITCH TO PL-SENT-PITCH
+             CALL "CLP-ACCEPT-TELEPORT" USING OUT-BUFFER WS-ID PL-X PL-Y PL-Z PL-YAW PL-PITCH
+             CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+*>           The first position after a finished chunk batch: the spawn area has arrived, so
+*>           Player Loaded now (05c 0x2C; CobolCraft's join sends the position after the initial
+*>           batch, which may be the only one).
+             IF PL-LOADED = 0 AND PL-BATCHES > 0
+                 MOVE 1 TO PL-LOADED
+                 MOVE 44 TO WS-ID
+                 CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 65
+             CALL "PB-GET-BYTE" USING L-PACKET PL-ABILITIES
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-FLY-SPEED
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-WALK-SPEED
+*>           Flags: 0x02 flying (the server's word on it), 0x04 may fly.
+             COMPUTE WS-BIT = PL-ABILITIES / 2
+             COMPUTE PL-FLYING = FUNCTION MOD(WS-BIT, 2)
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 99
+             CALL "PB-GET-IDENTIFIER" USING L-PACKET WS-DIM WS-DIM-CAP WS-DIM-LENGTH
+             CALL "PB-GET-POSITION" USING L-PACKET PL-SPAWN-X PL-SPAWN-Y PL-SPAWN-Z
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 115
+*>           Set Time: the daylight clock's total ticks (else the game time) modulo the day.
+             CALL "PB-GET-LONG" USING L-PACKET PL-TIME
+             CALL "PB-GET-VARINT" USING L-PACKET WS-COUNT
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+                 CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+                 CALL "PB-GET-VARLONG" USING L-PACKET WS-LONG
+                 CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+                 CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+                 IF WS-ID = 0
+                     MOVE WS-LONG TO PL-TIME
+                 END-IF
+             END-PERFORM
+             COMPUTE PL-TIME = FUNCTION MOD(PL-TIME, 30000)
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 18 OR L-ID = 20 OR L-ID = 107 OR L-ID = 110)
+             CALL "INVENTORY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 8
+             CALL "PB-GET-POSITION" USING L-PACKET WS-BX WS-BY WS-BZ
+             CALL "PB-GET-VARINT" USING L-PACKET WS-VALUE
+             CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-VALUE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 86
+             CALL "WORLD-SECTION-BLOCKS" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 49
+             CALL "WORLD-LIGHT-UPDATE" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 4
+             CALL "PB-GET-VARINT" USING L-PACKET CT-ACK
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 5
+*>           Block Destruction: another player's break progress (kept; nothing is drawn for it).
+             CALL "PB-GET-VARINT" USING L-PACKET BD-ENTITY
+             CALL "PB-GET-POSITION" USING L-PACKET BD-X BD-Y BD-Z
+             CALL "PB-GET-UBYTE" USING L-PACKET BD-PROGRESS
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 46
+             CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 38
+*>           Forget Level Chunk: one Long, Z in the high Int, X in the low Int.
+             CALL "PB-GET-INT" USING L-PACKET WS-VALUE
+             CALL "PB-GET-INT" USING L-PACKET WS-COUNT
+             CALL "WORLD-FORGET" USING CLIENT-STATE WS-COUNT WS-VALUE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 96
+             CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CX
+             CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CZ
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 1 OR L-ID = 54 OR L-ID = 55 OR L-ID = 57
+                 OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 101
+                 OR L-ID = 103 OR L-ID = 127 OR L-ID = 128)
+             CALL "ENTITY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 124
+*>           System Chat (09 §1: the overlay flag is always false): into the chat history.
+             CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
+             CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT WS-TEXT WS-LENGTH
+             CALL "CHAT-MESSAGE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 106
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-HEALTH
+             CALL "PB-GET-VARINT" USING L-PACKET PL-FOOD
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 25 OR L-ID = 43)
+*>           Damage Event or Hurt Animation: both start with the damaged entity's id.
+             CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+             IF WS-ID = PL-ENTITY-ID
+                 COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 34
+*>           Entity Event (an Int entity id, a Byte event): 9 for the local player is eating
+*>           finished (standin §11.6).
+             CALL "PB-GET-INT" USING L-PACKET WS-ID
+             CALL "PB-GET-BYTE" USING L-PACKET WS-VALUE
+             IF WS-ID = PL-ENTITY-ID AND WS-VALUE = 9
+                 MOVE 0 TO PL-EATING
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 69
+*>           Player Combat Kill: the death screen shows the message (standin §10.6).
+             CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+             CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
+             IF WS-ID = PL-ENTITY-ID
+                 CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT SM-DEATH-CAUSE
+                     SM-DEATH-CAUSE-LENGTH
+                 MOVE SCR-DEATH TO WS-ID
+                 CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ID
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 84
+             CALL "PLAY-RESPAWN-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 75
+             CALL "RECIPE-BOOK-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 16
+             CALL "COMMANDS-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 15
+             CALL "SUGGESTIONS-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 11
+             ADD 1 TO PL-BATCHES
+             CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
+             CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
+             IF PL-LOADED = 0 AND PL-POSITIONED = 1
+                 MOVE 1 TO PL-LOADED
+                 MOVE 44 TO WS-ID
+                 CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE L-CONN WS-ID
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PROTO-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CONFIG-START.
+*> USING CLIENT-STATE, connection: the client's opening of configuration: brand "cobolcraft" and
+*> Client Information (en_us, view distance 8, full chat, colours, right hand, listing allowed).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-CHANNEL             PIC X(15) VALUE "minecraft:brand".
+ 01 WS-CHANNEL-LENGTH      BINARY-LONG VALUE 15.
+ 01 WS-BRAND               PIC X(10) VALUE "cobolcraft".
+ 01 WS-BRAND-LENGTH        BINARY-LONG VALUE 10.
+ 01 WS-LANGUAGE            PIC X(5) VALUE "en_us".
+ 01 WS-LANGUAGE-LENGTH     BINARY-LONG VALUE 5.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-MAX16               BINARY-LONG VALUE 16.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 2 TO WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-CHANNEL WS-CHANNEL-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-BRAND WS-BRAND-LENGTH WS-MAX
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-LANGUAGE WS-LANGUAGE-LENGTH WS-MAX16
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-EIGHT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CLP-CONFIG-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STATUS-READ.
+*> USING CLIENT-STATE, JSON-DOC (the status JSON, 09 §2), server-list entry: description (a text
+*> component), players online and maximum, version name; a protocol other than 777 marks the entry
+*> incompatible (US2 edge case).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-PATH                PIC X(32).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY JSONDOC.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE JSON-DOC L-ENTRY.
+     MOVE "version.protocol" TO WS-PATH
+     MOVE 16 TO WS-PATH-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+     MOVE 1 TO SL-INCOMPATIBLE(L-ENTRY)
+     IF WS-NODE > 0
+         IF JN-NUM(WS-NODE) = CL-PROTOCOL
+             MOVE 0 TO SL-INCOMPATIBLE(L-ENTRY)
+         END-IF
+     END-IF
+     MOVE "version.name" TO WS-PATH
+     MOVE 12 TO WS-PATH-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+     MOVE SPACES TO SL-VERSION(L-ENTRY)
+     CALL "JSON-STRING" USING JSON-DOC WS-NODE SL-VERSION(L-ENTRY) WS-CAP
+         SL-VERSION-LENGTH(L-ENTRY)
+     MOVE "players.online" TO WS-PATH
+     MOVE 14 TO WS-PATH-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+     MOVE 0 TO SL-ONLINE(L-ENTRY) SL-MAX(L-ENTRY)
+     IF WS-NODE > 0
+         MOVE JN-NUM(WS-NODE) TO SL-ONLINE(L-ENTRY)
+     END-IF
+     MOVE "players.max" TO WS-PATH
+     MOVE 11 TO WS-PATH-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+     IF WS-NODE > 0
+         MOVE JN-NUM(WS-NODE) TO SL-MAX(L-ENTRY)
+     END-IF
+     MOVE "description" TO WS-PATH
+     MOVE 11 TO WS-PATH-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+     CALL "JSON-TEXT-RENDER" USING CLIENT-STATE JSON-DOC WS-NODE WS-TEXT WS-LENGTH
+     MOVE WS-TEXT TO SL-DESC(L-ENTRY)
+     MOVE FUNCTION MIN(WS-LENGTH, 256) TO SL-DESC-LENGTH(L-ENTRY)
+     GOBACK.
+ END PROGRAM STATUS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. REGISTRY-READ.
+*> USING CLIENT-STATE, packet (Registry Data, 04): counts the packet; keeps the entries of
+*> minecraft:dimension_type (name, min_y, height, has_skylight), the number of
+*> minecraft:worldgen/biome entries and each biome's has_precipitation (an entry without data has
+*> none); every other entry's data is skipped.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-REGISTRY            PIC X(64).
+ 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-REGISTRY-LENGTH     BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 0.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WN                     PIC X(64).
+ 01 WL                     BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     ADD 1 TO RG-REGISTRIES
+     MOVE SPACES TO WS-REGISTRY
+     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-REGISTRY WS-CAP WS-REGISTRY-LENGTH
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     IF WS-REGISTRY = "minecraft:worldgen/biome"
+         MOVE WS-COUNT TO RG-BIOMES
+     END-IF
+     IF WS-REGISTRY = "minecraft:dimension_type"
+         MOVE 0 TO RG-DIM-COUNT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         MOVE SPACES TO WS-NAME
+         CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-NAME-LENGTH
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+         MOVE 0 TO WS-D WS-B
+         IF WS-REGISTRY = "minecraft:dimension_type" AND RG-DIM-COUNT < CL-MAX-DIM-TYPES
+             ADD 1 TO RG-DIM-COUNT
+             MOVE RG-DIM-COUNT TO WS-D
+             INITIALIZE RG-DIM(WS-D)
+             MOVE WS-NAME TO RG-DIM-NAME(WS-D)
+         END-IF
+         IF WS-REGISTRY = "minecraft:worldgen/biome" AND WS-I <= CL-MAX-BIOMES
+             MOVE WS-I TO WS-B
+             MOVE 0 TO RG-BIOME-PRECIP(WS-B)
+         END-IF
+         IF WS-PRESENT = 1
+             CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+             EVALUATE TRUE
+                 WHEN WS-B > 0
+*>                   A biome: has_precipitation (Byte); the other fields are skipped.
+                     MOVE 1 TO WS-TYPE
+                     PERFORM UNTIL WS-TYPE = 0
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
+                         EVALUATE TRUE
+                             WHEN WS-TYPE = 0
+                                 CONTINUE
+                             WHEN WN = "has_precipitation"
+                                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
+                                 MOVE WS-VALUE TO RG-BIOME-PRECIP(WS-B)
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+                 WHEN WS-D = 0
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 WHEN OTHER
+                     MOVE 1 TO WS-TYPE
+                     PERFORM UNTIL WS-TYPE = 0
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
+                         EVALUATE TRUE
+                             WHEN WS-TYPE = 0
+                                 CONTINUE
+                             WHEN WN = "min_y" OR WN = "height"
+                                 CALL "PB-GET-INT" USING PB-BUFFER WS-VALUE
+                                 IF WN = "min_y"
+                                     MOVE WS-VALUE TO RG-DIM-MIN-Y(WS-D)
+                                 ELSE
+                                     MOVE WS-VALUE TO RG-DIM-HEIGHT(WS-D)
+                                 END-IF
+                             WHEN WN = "has_skylight"
+                                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
+                                 MOVE WS-VALUE TO RG-DIM-HAS-SKY(WS-D)
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM REGISTRY-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-LOGIN-READ.
+*> USING CLIENT-STATE, packet (play Login, 05a 0x32): the player's entity id, the dimension names
+*> (every dimension the server has, the first CL-MAX-LEVELS kept), view distance, the
+*> dimension and its type's height range and sky light (from the dimension_type registry), the game
+*> mode (health 30 until Set Health); the dimension is entered (DIMENSION-ENTER) and the entity
+*> replica and player list emptied.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-INT" USING PB-BUFFER PL-ENTITY-ID
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     MOVE 0 TO PL-LEVEL-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE SPACES TO WS-NAME
+         CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-LENGTH
+         IF PL-LEVEL-COUNT < CL-MAX-LEVELS
+             ADD 1 TO PL-LEVEL-COUNT
+             MOVE WS-NAME TO PL-LEVEL(PL-LEVEL-COUNT)
+         END-IF
+     END-PERFORM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-VIEW-DISTANCE
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+     PERFORM 3 TIMES
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
+     END-PERFORM
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-DIM-TYPE
+     MOVE SPACES TO PL-DIM-NAME
+     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PL-DIM-NAME WS-CAP WS-LENGTH
+     CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
+     MOVE 30 TO PL-HEALTH
+     CALL "DIMENSION-ENTER" USING CLIENT-STATE
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PLAY-LOGIN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-RESPAWN-READ.
+*> USING CLIENT-STATE, packet (Respawn, 05b 0x54: CommonPlayerSpawnInfo, data to keep): the
+*> dimension, its type and the game mode; the dimension is entered (a respawn after death and
+*> travel alike: the old dimension's replica and meshes are dropped, the new type's height range
+*> and sky light taken) and the entities seen are forgotten (the server adds them again; the
+*> player list stays). Inventory, health and food are kept until the server says otherwise
+*> (standin-content §15.5: travel keeps them).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-DIM-TYPE
+     MOVE SPACES TO PL-DIM-NAME
+     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PL-DIM-NAME WS-CAP WS-LENGTH
+     CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
+     CALL "DIMENSION-ENTER" USING CLIENT-STATE
+     CALL "ENTITIES-FORGET" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PLAY-RESPAWN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-BOOK-READ.
+*> USING CLIENT-STATE, packet (Recipe Book Add, 05b 0x4B; 09 §3.3): each entry's display id,
+*> ingredients and result (an item_stack's count, else 1) and its craftable flag (crafting
+*> requirements present, 09 open question 3); the entry flags are not used. Replace (after the
+*> entries) empties the book first; an entry whose display id the book holds replaces it, any other
+*> is appended while there is room (CL-MAX-RECIPES; the rest are read and dropped). A malformed
+*> packet changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-REPLACE             BINARY-LONG.
+ 01 WS-NEW-AREA.
+    05 NW-RECIPE OCCURS 16 TIMES.
+       10 NW-ID              BINARY-LONG.
+       10 NW-CRAFTABLE       PIC 9.
+       10 NW-IN-COUNT        BINARY-LONG.
+       10 NW-IN OCCURS 9 TIMES.
+          15 NW-IN-ITEM      BINARY-LONG.
+          15 NW-IN-AMOUNT    BINARY-LONG.
+       10 NW-RES-ITEM        BINARY-LONG.
+       10 NW-RES-AMOUNT      BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     MOVE 0 TO WS-N
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER RX-RECIPE-DISPLAY
+         CALL "PB-GET-BYTE" USING PB-BUFFER WS-FLAGS
+         IF WS-N < CL-MAX-RECIPES
+             ADD 1 TO WS-N
+             MOVE RX-RD-DISPLAY-ID TO NW-ID(WS-N)
+             MOVE RX-RD-REQ-PRESENT TO NW-CRAFTABLE(WS-N)
+             MOVE RX-RD-INGREDIENT-COUNT TO NW-IN-COUNT(WS-N)
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RX-RD-INGREDIENT-COUNT
+                 MOVE RX-RD-IN-ITEM(WS-J) TO NW-IN-ITEM(WS-N, WS-J)
+                 COMPUTE NW-IN-AMOUNT(WS-N, WS-J) = FUNCTION MAX(1, RX-RD-IN-COUNT(WS-J))
+             END-PERFORM
+             MOVE RX-RD-RES-ITEM TO NW-RES-ITEM(WS-N)
+             COMPUTE NW-RES-AMOUNT(WS-N) = FUNCTION MAX(1, RX-RD-RES-COUNT)
+         END-IF
+     END-PERFORM
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-REPLACE
+     IF PB-ERROR = 0
+         IF WS-REPLACE = 1
+             MOVE 0 TO RB-COUNT
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             MOVE 0 TO WS-ROW
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RB-COUNT
+                 IF RB-ID(WS-J) = NW-ID(WS-I)
+                     MOVE WS-J TO WS-ROW
+                 END-IF
+             END-PERFORM
+             IF WS-ROW = 0 AND RB-COUNT < CL-MAX-RECIPES
+                 ADD 1 TO RB-COUNT
+                 MOVE RB-COUNT TO WS-ROW
+             END-IF
+             IF WS-ROW > 0
+                 MOVE NW-RECIPE(WS-I) TO RB-RECIPE(WS-ROW)
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM RECIPE-BOOK-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMMANDS-READ.
+*> USING CLIENT-STATE, packet (Commands, 05a 0x10): the tree replaces the last one. The first
+*> CL-MAX-NODES nodes are kept with their flags, name and children (at most CL-MAX-LINKS links in
+*> all); an argument node is greedy when its parser is brigadier:string with kind 2 (greedy
+*> phrase). A malformed packet leaves no tree (no command suggestions until the next one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     MOVE 0 TO CM-COUNT CM-LINK-COUNT CM-ROOT
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER RX-COMMAND-NODE
+         IF CM-COUNT < CL-MAX-NODES
+             ADD 1 TO CM-COUNT
+             MOVE RX-CN-FLAGS TO CM-FLAGS(CM-COUNT)
+             MOVE RX-CN-NAME TO CM-NAME(CM-COUNT)
+             MOVE RX-CN-NAME-LENGTH TO CM-NAME-LENGTH(CM-COUNT)
+             MOVE 0 TO CM-GREEDY(CM-COUNT) CM-CHILDREN(CM-COUNT)
+             IF RX-CN-PARSER = RX-PARSER-STRING AND RX-CN-STRING-KIND = RX-STRING-GREEDY
+                 MOVE 1 TO CM-GREEDY(CM-COUNT)
+             END-IF
+             COMPUTE CM-FIRST(CM-COUNT) = CM-LINK-COUNT + 1
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RX-CN-CHILD-COUNT
+                     OR CM-LINK-COUNT = CL-MAX-LINKS
+                 ADD 1 TO CM-LINK-COUNT CM-CHILDREN(CM-COUNT)
+                 MOVE RX-CN-CHILD(WS-J) TO CM-LINK(CM-LINK-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     CALL "PB-GET-VARINT" USING PB-BUFFER CM-ROOT
+     IF PB-ERROR = 1
+         MOVE 0 TO CM-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM COMMANDS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SUGGESTIONS-READ.
+*> USING CLIENT-STATE, packet (Command Suggestions, 05a 0x0F): an answer to the last Command
+*> Suggestion sent (its transaction id) replaces the answers shown: the first CL-MAX-SUGGEST
+*> suggestion texts (their first 64 bytes); tooltips are not shown. An answer to an older request
+*> is dropped; a malformed packet leaves no answers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-CAP                 BINARY-LONG VALUE 1024.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+     IF WS-ID = CS-TRANSACTION
+         MOVE 0 TO CS-ANSWERS
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+             MOVE SPACES TO WS-TEXT
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX WS-TEXT WS-CAP WS-LENGTH
+             CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+             IF WS-PRESENT = 1
+                 CALL "PB-GET-TEXT" USING PB-BUFFER RX-TEXT
+             END-IF
+             IF CS-ANSWERS < CL-MAX-SUGGEST
+                 ADD 1 TO CS-ANSWERS
+                 MOVE WS-TEXT TO CS-A-TEXT(CS-ANSWERS)
+                 MOVE FUNCTION MIN(WS-LENGTH, 64) TO CS-A-LENGTH(CS-ANSWERS)
+             END-IF
+         END-PERFORM
+         IF PB-ERROR = 1
+             MOVE 0 TO CS-ANSWERS
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM SUGGESTIONS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DIMENSION-ENTER.
+*> USING CLIENT-STATE (PL-DIM-TYPE set): the type's height range and sky light from the
+*> dimension_type registry (else 0, 256 and sky light), not loaded or positioned yet, no fall
+*> under way, no hurt indication, not sprinting or eating; the replica is emptied and the world
+*> screen shown.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO PL-MIN-Y PL-LOADED PL-POSITIONED PL-BATCHES PL-VY PL-HURT-UNTIL
+     MOVE 0 TO PL-SPRINTING PL-EATING
+     MOVE 256 TO PL-HEIGHT
+     MOVE 1 TO PL-HAS-SKY
+     COMPUTE WS-D = PL-DIM-TYPE + 1
+     IF WS-D >= 1 AND WS-D <= RG-DIM-COUNT
+         MOVE RG-DIM-MIN-Y(WS-D) TO PL-MIN-Y
+         MOVE RG-DIM-HEIGHT(WS-D) TO PL-HEIGHT
+         MOVE RG-DIM-HAS-SKY(WS-D) TO PL-HAS-SKY
+     END-IF
+     CALL "WORLD-CLEAR" USING CLIENT-STATE
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     GOBACK.
+ END PROGRAM DIMENSION-ENTER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLIENT-DISCONNECT.
+*> USING CLIENT-STATE, connection, message (PIC X(512)), length: the connection ends. The game
+*> connection returns the Player to the server list showing the message (the world is emptied);
+*> a status connection marks its entry unreachable.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-SCREEN              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(512).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-TEXT L-LENGTH.
+     CALL "NET-CLOSE" USING CLIENT-STATE L-CONN
+     IF L-CONN = CONN-GAME
+         MOVE L-TEXT TO SM-MESSAGE
+         MOVE L-LENGTH TO SM-MESSAGE-LENGTH
+         CALL "WORLD-CLEAR" USING CLIENT-STATE
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         MOVE SCR-SERVER-LIST TO WS-SCREEN
+         CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     ELSE
+         MOVE SLS-UNREACHABLE TO SL-STATUS(CN-ENTRY(L-CONN))
+     END-IF
+     GOBACK.
+ END PROGRAM CLIENT-DISCONNECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEXT-RENDER.
+*> USING CLIENT-STATE, PB-TEXT, text out (PIC X(512)), length out: plain and literal texts as they
+*> are; a translate component through the language with its arguments (wire-profile §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLARGS.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X(512).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-TEXT L-TEXT L-LENGTH.
+     MOVE SPACES TO L-TEXT
+     MOVE PB-TX-VALUE(1:512) TO L-TEXT
+     MOVE FUNCTION MIN(PB-TX-LENGTH, 512) TO L-LENGTH
+     IF PB-TX-KIND = PB-TEXT-TRANSLATE
+         MOVE PB-TX-ARG-COUNT TO LA-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-TX-ARG-COUNT
+             MOVE PB-TX-ARG-VALUE(WS-I) TO LA-TEXT(WS-I)
+             MOVE FUNCTION MIN(PB-TX-ARG-LENGTH(WS-I), 256) TO LA-LENGTH(WS-I)
+         END-PERFORM
+         MOVE FUNCTION MIN(PB-TX-LENGTH, 80) TO WS-KEY-LENGTH
+         MOVE SPACES TO WS-KEY
+         MOVE PB-TX-VALUE(1:WS-KEY-LENGTH) TO WS-KEY
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS L-TEXT L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM TEXT-RENDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. JSON-TEXT-RENDER.
+*> USING CLIENT-STATE, JSON-DOC, node (a JSON text component, 00 §9.2), text out (PIC X(512)),
+*> length out: a string as it is; an object's "translate" through the language with the strings of
+*> "with" as arguments, else its "text".
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLARGS.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-CAP                 BINARY-LONG VALUE 512.
+ 01 WS-ARG-CAP             BINARY-LONG VALUE 256.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-CAP             BINARY-LONG VALUE 80.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(512).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE JSON-DOC L-NODE L-TEXT L-LENGTH.
+     MOVE SPACES TO L-TEXT
+     CALL "JSON-STRING" USING JSON-DOC L-NODE L-TEXT WS-CAP L-LENGTH
+     MOVE "text" TO WS-NAME
+     MOVE 4 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC L-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-FIELD > 0
+         CALL "JSON-STRING" USING JSON-DOC WS-FIELD L-TEXT WS-CAP L-LENGTH
+     END-IF
+     MOVE "translate" TO WS-NAME
+     MOVE 9 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC L-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-FIELD > 0
+         MOVE SPACES TO WS-KEY
+         CALL "JSON-STRING" USING JSON-DOC WS-FIELD WS-KEY WS-KEY-CAP WS-KEY-LENGTH
+         MOVE "with" TO WS-NAME
+         MOVE 4 TO WS-NAME-LENGTH
+         CALL "JSON-MEMBER" USING JSON-DOC L-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+         MOVE 0 TO LA-COUNT WS-ARG
+         IF WS-FIELD > 0
+             MOVE JN-FIRST(WS-FIELD) TO WS-ARG
+         END-IF
+         PERFORM UNTIL WS-ARG = 0 OR LA-COUNT = 8
+             ADD 1 TO LA-COUNT
+             MOVE SPACES TO LA-TEXT(LA-COUNT)
+             CALL "JSON-STRING" USING JSON-DOC WS-ARG LA-TEXT(LA-COUNT) WS-ARG-CAP
+                 LA-LENGTH(LA-COUNT)
+             MOVE JN-NEXT(WS-ARG) TO WS-ARG
+         END-PERFORM
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS L-TEXT L-LENGTH
+     END-IF
+     GOBACK.
+ END PROGRAM JSON-TEXT-RENDER.

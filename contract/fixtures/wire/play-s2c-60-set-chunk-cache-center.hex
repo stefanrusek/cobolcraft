@@ -1,0 +1,13 @@
+# Clientbound Set Chunk Cache Center (ClientboundSetChunkCacheCenterPacket)
+# phase: play   direction: S->C (clientbound)   packet id 0x60 (96)
+# refs: 09 §3 row "0x60 Set Chunk Cache Center" (the chunk of the player's feet; re-sent on entering
+#       another chunk, US3-4); 05b 0x60 (Chunk X VarInt, Chunk Z VarInt); 00 VarInt.
+#
+# STATED INPUTS
+#   the re-send case: the player's feet moved into block (-3.5, 54.0, 40.5) -> chunk X = floor(-3.5) >> 4 = -1,
+#   chunk Z = 40 >> 4 = 2 (chosen so the fixture exercises a negative VarInt; the join-time value for the
+#   spawn (4.5, 54.0, 8.5) would be chunk (0, 0), bytes 60 00 00)
+#
+60    # packet id 0x60 (96)
+ff ff ff ff 0f    # chunk X: VarInt -1 (5 bytes, two's complement 0xFFFFFFFF)
+02    # chunk Z: VarInt 2

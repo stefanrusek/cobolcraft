@@ -1,0 +1,23 @@
+TAKEN
+USED
+        -:    0:Source:spike_coverage.cob
+        -:    0:Graph:spike_coverage.gcno
+        -:    0:Data:spike_coverage.gcda
+        -:    0:Runs:1
+        -:    1:       IDENTIFICATION DIVISION.
+        -:    2:       PROGRAM-ID. SPIKE-COVERAGE.
+        -:    3:       DATA DIVISION.
+        -:    4:       WORKING-STORAGE SECTION.
+        1:    5:       01 WS-X BINARY-LONG VALUE 1.
+        -:    6:       PROCEDURE DIVISION.
+        1:    7:           IF WS-X = 1
+        1:    8:              DISPLAY "TAKEN"
+        -:    9:           ELSE
+    #####:   10:              DISPLAY "NOT-TAKEN-LINE"
+        -:   11:           END-IF
+        1:   12:           PERFORM PARA-USED
+        1:   13:           STOP RUN.
+        1:   14:       PARA-USED.
+        1:   15:           DISPLAY "USED".
+    #####:   16:       PARA-UNUSED.
+    #####:   17:           DISPLAY "UNUSED".

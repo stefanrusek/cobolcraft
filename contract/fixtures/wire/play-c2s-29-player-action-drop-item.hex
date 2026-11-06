@@ -1,0 +1,10 @@
+# Player Action 5 DROP_ITEM
+# Phase play, serverbound (C->S), packet id 0x29 (41)
+# Docs: 09 §3.3 row 0x29 action 5; 05c 0x29; 00 §4.1 Position
+# Stated inputs: throw one item; location (0, 0, 0), face 0, sequence 0 (fixed by 09).
+
+29                                                 # packet id 0x29 (VarInt)
+05                                                 # Action: VarInt 5 DROP_ITEM
+00 00 00 00 00 00 00 00                            # Location: Position (0, 0, 0) packed Long
+00                                                 # Face: UByte 0 (down)
+00                                                 # Sequence: VarInt 0

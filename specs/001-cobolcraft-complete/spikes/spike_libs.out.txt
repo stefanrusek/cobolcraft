@@ -1,0 +1,17 @@
+zlib 1.2.12 roundtrip=1 in=43 deflated=22 header=789c
+raw-inflate rc=1 out=43
+gzip magic=1f8b len=34
+openssl OpenSSL 3.6.4 25 Aug 2026
+sha1(abc)=a9993e364706816aba3e25717850c26c9cd0d89d
+offline-uuid(Notch)=b50ad385829d3141a2167e7d7539ba7f
+nb-connect rc=-1 errno=Operation now in progress
+accepted=1
+sent=2 recv=2
+recv-empty rc=-1 errno=Resource temporarily unavailable
+recv-after-peer-close=0
+tls default_verify_paths=1 handshake=1 verify=0 (ok) version=TLSv1.3
+http-status-line=HTTP/1.1 200 OK
+
+# SSL_CERT_FILE=/dev/null (OpenSSL env override of the default trust store):
+tls default_verify_paths=1 handshake=-1 verify=20 (unable to get local issuer certificate) version=TLSv1.3
+80DE5FFB01000000:error:0A000086:SSL routines:tls_post_process_server_certificate:certificate verify failed:ssl/statem/statem_clnt.c:2126:

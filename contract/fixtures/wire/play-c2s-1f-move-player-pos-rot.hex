@@ -1,0 +1,12 @@
+# Move Player Pos Rot
+# Phase play, serverbound (C->S), packet id 0x1F (31)
+# Docs: 09 §3.2 row 0x1F; 05c 0x1F, MoveFlags
+# Stated inputs: feet position (5.25, 54.0, 8.5), yaw 45.0, pitch 30.0, on ground (MoveFlags 0x01).
+
+1f                                                 # packet id 0x1F (VarInt)
+40 15 00 00 00 00 00 00                            # X: Double 5.25
+40 4b 00 00 00 00 00 00                            # Y: Double 54.0
+40 21 00 00 00 00 00 00                            # Z: Double 8.5
+42 34 00 00                                        # Yaw: Float 45.0
+41 f0 00 00                                        # Pitch: Float 30.0
+01                                                 # Flags: UByte 0x01 (on ground)

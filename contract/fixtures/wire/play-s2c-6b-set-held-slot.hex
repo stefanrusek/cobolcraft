@@ -1,0 +1,9 @@
+# Fixture: play-s2c-6b-set-held-slot.hex
+# Set Held Slot (ClientboundSetHeldSlotPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x6B (107).
+# Task T131. 09 §3.2 row: Set Held Slot (held hotbar slot 0-8).
+# Doc refs: 05b 0x6B (VarInt slot).
+# Stated inputs: slot 0 (the held slot of a new player, standin-content §2).
+
+6b                                                            # packet id: VarInt 0x6b (107) Set Held Slot (play, clientbound)
+00                                                            # Slot: VarInt 0

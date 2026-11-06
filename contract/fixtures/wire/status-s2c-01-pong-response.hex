@@ -1,0 +1,6 @@
+# Pong Response (ClientboundPongResponsePacket) -- status phase, clientbound (S->C), packet id 0x01
+# Docs: 09 §3.1 row "Pong Response"; 02 "0x01 (1) Clientbound Pong Response"; 00 §2 Long (signed 64-bit big-endian).
+# Stated inputs: time = 1762300800000 (Long; 0x0000019a51502c00), the echo of status-c2s-01-ping-request.hex.
+
+01                                               # packet id: VarInt 0x01 (Pong Response)
+00 00 01 9a 51 50 2c 00                          # time: Long 1762300800000

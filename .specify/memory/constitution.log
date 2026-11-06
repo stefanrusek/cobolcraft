@@ -59,3 +59,14 @@ Amendment headings demoted one level under "## Spec-Driven Development Amendment
 amendment "Governance" renamed "Amendment Governance"; project Principles I-II and Governance retained.
 Follow-ups: personas.md missing (Principle 2.2); workspace bootstrap command undefined (Principle 5.2).
 No presets-src or installed sdd-constitution preset found.
+
+=== 2026-11-05 amendment mode ===
+/speckit-constitution skill not available in this session (Unknown skill); amendment integrated manually.
+Input: operator-approved amendment (1.1.0 -> 1.2.0 MINOR): (1) Principle I relaxed C boundary to thin glue layer;
+(2) workspace bootstrap command = `make bootstrap`; (3) deferred-work tracker = Spile tickets (`tickets/`, prefix CC).
+Edits: Principle I rewritten (retitled "COBOL-First, Thin C Glue Where Needed"); Technology Constraints C bullet updated;
+Development Workflow gained bootstrap + tracker bullets; footer version 1.2.0, Last Amended 2026-11-05.
+SDD amendment text and its 6.3.0 stamp line left unchanged.
+Resulting Principle I:
+  COBOL (GnuCOBOL 3.x) is the implementation language for all program logic... COBOL MAY call any C library directly...
+  thin C glue layer permitted for callbacks, struct layouts, variadics, ABI mismatches; no logic in glue.

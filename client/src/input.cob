@@ -1,0 +1,79 @@
+*> Input decoding (contracts/shim-abi.md §8): INPUT-BEGIN-FRAME clears what belongs to one frame;
+*> INPUT-EVENT applies one 24-byte event record to the input state of CLSTATE.cpy. Keys are
+*> GLFW key codes; codes outside 0 to 399 are ignored. While the cursor is captured, cursor events
+*> carry a look delta that accumulates over the frame; otherwise they carry the position.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INPUT-BEGIN-FRAME.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE ALL "0" TO IN-KEY-PRESSED-AREA
+     MOVE "000" TO IN-BUTTON-PRESSED-AREA IN-BUTTON-RELEASED-AREA
+     MOVE 0 TO IN-TEXT-COUNT IN-DELTA-X IN-DELTA-Y IN-SCROLL-X IN-SCROLL-Y IN-RESIZED
+     GOBACK.
+ END PROGRAM INPUT-BEGIN-FRAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INPUT-EVENT.
+*> USING CLIENT-STATE, CC-EVENT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM REPLACING ==CC-EVENT== BY ==WS-UNUSED-EVENT==
+     ==CC-VERTEX== BY ==WS-UNUSED-VERTEX==.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-BUTTON              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EVENT.
+    05 L-KIND              BINARY-LONG.
+    05 L-A                 BINARY-LONG.
+    05 L-B                 BINARY-LONG.
+    05 L-C                 BINARY-LONG.
+    05 L-X                 FLOAT-SHORT.
+    05 L-Y                 FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EVENT.
+     COMPUTE WS-KEY = L-A + 1
+     COMPUTE WS-BUTTON = FUNCTION MIN(FUNCTION MAX(L-A, 0), 2) + 1
+     EVALUATE TRUE
+         WHEN (L-KIND = CC-EV-KEY-DOWN OR L-KIND = CC-EV-KEY-UP)
+                 AND (WS-KEY < 1 OR WS-KEY > 400)
+             CONTINUE
+         WHEN L-KIND = CC-EV-KEY-DOWN
+             MOVE 1 TO IN-KEY-DOWN(WS-KEY) IN-KEY-PRESSED(WS-KEY)
+             MOVE L-B TO IN-MODS
+         WHEN L-KIND = CC-EV-KEY-UP
+             MOVE 0 TO IN-KEY-DOWN(WS-KEY)
+             MOVE L-B TO IN-MODS
+         WHEN L-KIND = CC-EV-TEXT AND IN-TEXT-COUNT < 32
+             ADD 1 TO IN-TEXT-COUNT
+             MOVE L-A TO IN-TEXT(IN-TEXT-COUNT)
+         WHEN L-KIND = CC-EV-BUTTON-DOWN
+             MOVE 1 TO IN-BUTTON-DOWN(WS-BUTTON) IN-BUTTON-PRESSED(WS-BUTTON)
+             MOVE L-X TO IN-CLICK-X IN-CURSOR-X
+             MOVE L-Y TO IN-CLICK-Y IN-CURSOR-Y
+         WHEN L-KIND = CC-EV-BUTTON-UP
+             MOVE 0 TO IN-BUTTON-DOWN(WS-BUTTON)
+             MOVE 1 TO IN-BUTTON-RELEASED(WS-BUTTON)
+             MOVE L-X TO IN-CURSOR-X
+             MOVE L-Y TO IN-CURSOR-Y
+         WHEN L-KIND = CC-EV-CURSOR AND IN-CAPTURED = 1
+             ADD L-X TO IN-DELTA-X
+             ADD L-Y TO IN-DELTA-Y
+         WHEN L-KIND = CC-EV-CURSOR
+             MOVE L-X TO IN-CURSOR-X
+             MOVE L-Y TO IN-CURSOR-Y
+         WHEN L-KIND = CC-EV-SCROLL
+             ADD L-X TO IN-SCROLL-X
+             ADD L-Y TO IN-SCROLL-Y
+         WHEN L-KIND = CC-EV-RESIZE
+             MOVE L-A TO IN-WIN-W
+             MOVE L-B TO IN-WIN-H
+             MOVE 1 TO IN-RESIZED
+         WHEN L-KIND = CC-EV-CLOSE-REQUEST
+             MOVE 1 TO IN-CLOSE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM INPUT-EVENT.

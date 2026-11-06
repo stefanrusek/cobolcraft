@@ -1,0 +1,1 @@
+ 01 LC-VALUE PIC X(4) VALUE "ok".

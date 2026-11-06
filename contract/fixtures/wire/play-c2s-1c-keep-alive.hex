@@ -1,0 +1,8 @@
+# Keep Alive
+# Phase play, serverbound (C->S), packet id 0x1C (28)
+# Docs: 09 §3.2 row 0x1C, §2; 05c 0x1C -> 03 0x04 Serverbound Keep Alive
+# Stated inputs: echoed id 0x0123456789ABCDEF (81985529216486895), the Long of the server's Keep Alive
+#   play-s2c-2d-keep-alive.hex.
+
+1c                                                 # packet id 0x1C (VarInt)
+01 23 45 67 89 ab cd ef                            # Id: Long 0x0123456789abcdef (81985529216486895)

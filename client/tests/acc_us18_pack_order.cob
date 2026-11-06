@@ -1,0 +1,165 @@
+*> Acceptance test US18-2 (spec.md User Story 18 and its edge case "a local pack contains only some
+*> files"; 08 §3.1, §3.2; client-surface §2 options.dat; client/src/screens/pack-select.cob,
+*> packs/stack.cob): packs enabled and ordered on the pack screen stack in that order, a higher
+*> pack's file wins, the built-in pack stays at the bottom, the choice and order are kept after a
+*> restart, and a pack's missing files come from the packs below.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US18-PACK-ORDER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY TESTLIB.
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-pack-order".
+ 01 WS-DIR-LENGTH          BINARY-LONG VALUE 28.
+ 01 WS-NAMES               PIC X(256) VALUE "alpha beta.zip".
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-ANY                 BINARY-LONG VALUE 0.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-GREY                PIC X(80) VALUE "cobolcraft:block/greystone".
+ 01 WS-GREY-LENGTH         BINARY-LONG VALUE 26.
+ 01 WS-LOAM                PIC X(80) VALUE "cobolcraft:block/loam".
+ 01 WS-LOAM-LENGTH         BINARY-LONG VALUE 21.
+ 01 WS-PIXEL               PIC X(32).
+ 01 WS-PIXEL2              PIC X(32).
+ 01 WS-LOAM-BEFORE         PIC X(32).
+ 01 WS-E1                  PIC Z9.
+ PROCEDURE DIVISION.
+     CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-LOAM-BEFORE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE ACT-PACKS TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+
+*>   Enable alpha, then beta.zip (each goes on top).
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 1 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-PACK-ENABLE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 2 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-PACK-ENABLE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE "acceptance US18-2 Given two packs When the Pack creator enables one then the other "
+         & "Then both are selected, the later one on top, above the built-in pack" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "Resource Packs|Selected|beta.zip|Beta pack|Compatible|alpha||Alpha pack|Compatible|"
+         & "Built-in pack|Available|Enable|Disable|Move Up|Move Down|Done" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE ACT-PACKS-DONE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     MOVE "acceptance US18-2 Given two enabled packs with the same file When the game is shown "
+         & "Then the higher pack's file wins and the built-in pack is at the bottom" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE WS-PIXEL DELIMITED BY SPACE " "
+         DELIMITED BY SIZE
+         PK-ID(3)(1:PK-ID-LENGTH(3)) " " PK-ID(2)(1:PK-ID-LENGTH(2)) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE PK-KIND(1) TO WS-E1
+     MOVE SPACES TO WS-TEXT
+     STRING TL-OBSERVED DELIMITED BY "  " " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+         INTO WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "1 10,10,200,255 file/beta.zip file/alpha 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-PIXEL2
+     MOVE "acceptance US18 edge Given a pack with only some files When it is enabled Then its "
+         & "file is used (greystone) and every file it does not contain comes from the packs below"
+         & " (loam)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     STRING "10,10,200,255 " WS-LOAM-BEFORE DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING WS-PIXEL DELIMITED BY SPACE " " WS-PIXEL2 DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Reorder: beta.zip down, up, down (alpha on top); Move Up and Move Down at the ends do nothing;
+*>   Escape
+*>   leaves the screen as Done does.
+     MOVE ACT-PACKS TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 2 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-PACK-UP TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACK-DOWN TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACK-UP TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACK-DOWN TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     MOVE "acceptance US18-2 Given two enabled packs When the Pack creator moves the top one down "
+         & "Then the other one's file wins" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE WS-PIXEL DELIMITED BY SPACE " "
+         DELIMITED BY SIZE
+         PK-ID(3)(1:PK-ID-LENGTH(3)) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 10,200,10,255 file/alpha" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A restart keeps the choice and the order.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE WS-DIR TO CL-GAME-DIR
+     MOVE WS-DIR-LENGTH TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     MOVE "acceptance US18-2 Given enabled and ordered packs When the game starts again Then the "
+         & "choice and the order are kept" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PK-COUNT TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " PK-ID(2)(1:PK-ID-LENGTH(2)) " "
+         PK-ID(3)(1:PK-ID-LENGTH(3)) " " WS-PIXEL DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3 file/beta.zip file/alpha 10,200,10,255" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Disable the top pack: beta.zip's file wins again; Disable without a selection does nothing.
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE ACT-PACKS TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACK-DISABLE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 1 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-PACK-DISABLE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACK-ENABLE TO WS-ACTION
+     MOVE ACT-SELECT TO WS-ACTION
+     MOVE 2 TO WS-ARG
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-PACK-ENABLE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE ACT-PACKS-DONE TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     MOVE "acceptance US18-2 Given an enabled pack When the Pack creator disables it Then the "
+         & "pack below it shows again (enabling an enabled pack changes nothing)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PK-COUNT TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " PK-ID(2)(1:PK-ID-LENGTH(2)) " " WS-PIXEL
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2 file/beta.zip 10,10,200,255" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US18-PACK-ORDER.
+ COPY CLTEST.
+ COPY PACKTEST.

@@ -1,0 +1,10 @@
+# Intention (ClientIntentionPacket) -- handshake phase, serverbound (C->S), packet id 0x00
+# Docs: 09 §3.1 row "Intention" (intent 1, status); 02 "0x00 (0) Serverbound Intention"; 00 §2.1 VarInt, §3.1 String, §2 UShort.
+# Stated inputs: protocol version 777, host name "localhost", port 25565, intent 1 (status).
+
+00                                               # packet id: VarInt 0x00 (Intention)
+89 06                                            # protocol version: VarInt 777
+09                                               # host name length: VarInt 9 (UTF-8 bytes)
+6c 6f 63 61 6c 68 6f 73 74                       # host name: "localhost"
+63 dd                                            # port: UShort 25565
+01                                               # intent: VarInt 1 (status)

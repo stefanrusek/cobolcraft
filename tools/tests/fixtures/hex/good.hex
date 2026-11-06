@@ -1,0 +1,5 @@
+# good fixture
+00          # packet id
+0A ff 7f    # bytes
+
+# trailing comment only

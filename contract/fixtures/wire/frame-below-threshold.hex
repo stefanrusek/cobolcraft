@@ -1,0 +1,10 @@
+# Frame, compression on, packet below threshold -- full frame per 01 §2 + §3.1 (Data length 0).
+# Docs: 01 §2, §3.1, §3.2 (n < threshold -> VarInt 0 then the packet unchanged), §3.4; 09 §2 threshold 256.
+# Stated inputs: threshold 256; inner packet = the configuration Keep Alive of config-s2c-04-keep-alive.hex
+#   (id 0x04, Long 123456789), 9 bytes < 256.
+
+0a                                               # frame length: VarInt 10 (Data length VarInt + packet)
+00                                               # data length: VarInt 0 (uncompressed, below threshold)
+# packet (9 bytes, identical to config-s2c-04-keep-alive.hex):
+04                                               #   packet id: VarInt 0x04 (Keep Alive)
+00 00 00 00 07 5b cd 15                          #   id: Long 123456789

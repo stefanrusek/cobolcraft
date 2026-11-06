@@ -1,0 +1,19 @@
+# Disconnect (ClientboundDisconnectPacket) -- configuration phase, clientbound (S->C), packet id 0x02
+# Variant: pack required (player declined a required server pack, 08 §9.7 / §9.8).
+# Docs: 09 §1 message rule + text encoding (network NBT column: configuration Disconnect),
+#       09 §3.1 row "Disconnect (pack required)"; standin-content §17; 03 "0x02 (2) Clientbound Disconnect"
+#       (ContextFreeTextComponent); 00 §8 network NBT (no root name), §9.1; 07 §1 (ids 8, 10), §2.
+# Stated inputs: translate key "cobolcraft.disconnect.pack_required", no arguments.
+#   NBT: Compound { translate: String "cobolcraft.disconnect.pack_required" }.
+
+02                                               # packet id: VarInt 0x02 (Disconnect)
+0a                                               # reason: network NBT root tag type 10 (Compound), no root name
+08                                               #   entry tag type 8 (String)
+00 09                                            #   entry name length: UShort 9
+74 72 61 6e 73 6c 61 74 65                       #   entry name: "translate"
+00 23                                            #   entry value length: UShort 35
+#   entry value: "cobolcraft.disconnect.pack_required"
+63 6f 62 6f 6c 63 72 61 66 74 2e 64 69 73 63 6f
+6e 6e 65 63 74 2e 70 61 63 6b 5f 72 65 71 75 69
+72 65 64
+00                                               #   End tag (end of Compound)

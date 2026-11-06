@@ -1,0 +1,7 @@
+# Container Close
+# Phase play, serverbound (C->S), packet id 0x13 (19)
+# Docs: 09 §3.2 row 0x13; 05c 0x13; standin-content §9.1 "Inventory screen closed while carrying"
+# Stated inputs: container 0 (player inventory), sent when the client leaves its inventory screen.
+
+13                                                 # packet id 0x13 (VarInt)
+00                                                 # Container id: VarInt 0

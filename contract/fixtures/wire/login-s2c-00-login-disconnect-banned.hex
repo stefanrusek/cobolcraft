@@ -1,0 +1,13 @@
+# Login Disconnect (ClientboundLoginDisconnectPacket) -- login phase, clientbound (S->C), packet id 0x00
+# Variant: banned (standin §17 barred key).
+# Docs: 09 §1 message rule + text encoding (JSON column: Login Disconnect), 09 §3.1 row "Login Disconnect";
+#       02 "0x00 (0) Clientbound Login Disconnect" (JSON String(262144), not NBT); 00 §9.2, §3.1.
+# Stated inputs: translate key "cobolcraft.disconnect.barred", arguments none.
+#   JSON (no whitespace, keys in 09 §1 order): {"translate":"cobolcraft.disconnect.barred"}
+
+00                                               # packet id: VarInt 0x00 (Login Disconnect)
+2c                                               # reason JSON length: VarInt 44 (UTF-8 bytes)
+# reason JSON (UTF-8): {"translate":"cobolcraft.disconnect.barred"}
+7b 22 74 72 61 6e 73 6c 61 74 65 22 3a 22 63 6f
+62 6f 6c 63 72 61 66 74 2e 64 69 73 63 6f 6e 6e
+65 63 74 2e 62 61 72 72 65 64 22 7d

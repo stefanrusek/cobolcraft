@@ -1,0 +1,10 @@
+# Fixture: play-s2c-22-entity-event-eating-finished.hex
+# Entity Event (ClientboundEntityEventPacket), eating finished
+# Phase: play. Direction: clientbound (S->C). Packet id 0x22 (34).
+# Task T165. 09 §3.3 row: Entity Event (eating finished): entity id (Int) = the eater; event id 9 (standin §11.6).
+# Doc refs: 05a 0x22 (Int entity id, Byte event id).
+# Stated inputs: entity id 1 (Alice); event id 9.
+
+22                                                            # packet id: VarInt 0x22 (34) Entity Event (play, clientbound)
+00 00 00 01                                                   # Entity id: Int 1 (Alice; fixed 4-byte Int)
+09                                                            # Event id: Byte 9 (eating finished)

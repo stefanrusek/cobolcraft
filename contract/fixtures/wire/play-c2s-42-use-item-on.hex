@@ -1,0 +1,17 @@
+# Use Item On
+# Phase play, serverbound (C->S), packet id 0x42 (66)
+# Docs: 09 §3.2 row 0x42 (and §3.3 goto_pad row, same layout); 05c 0x42, BlockHitResult; 00 §4.1
+# Stated inputs: main hand (0); hit block (4, 53, 8) (the turf under the spawn feet; NOT a goto_pad: generated
+#   terrain holds no goto_pad, standin §5.2/§15.5, so this is the block-placing use of §3.2), top face
+#   (VarInt 1 up), cursor (0.5, 1.0, 0.5), inside false, world border hit false, sequence 4.
+
+42                                                 # packet id 0x42 (VarInt)
+00                                                 # Hand: VarInt 0 (main)
+00 00 01 00 00 00 80 35                            # Block: Position (4, 53, 8) packed Long
+01                                                 # Face: VarInt 1 (up)
+3f 00 00 00                                        # Cursor X: Float 0.5
+3f 80 00 00                                        # Cursor Y: Float 1.0
+3f 00 00 00                                        # Cursor Z: Float 0.5
+00                                                 # Inside: Boolean false
+00                                                 # World border hit: Boolean false
+04                                                 # Sequence: VarInt 4

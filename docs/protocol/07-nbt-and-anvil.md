@@ -314,6 +314,127 @@ Both use the region container (§6) and the same compression ids. Each chunk pay
 
 ---
 
+## 9. CobolCraft world folder
+
+Sections 1 to 8 describe the vanilla formats. This section is **CobolCraft's own** world folder. It reuses those formats,
+but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it and CobolCraft does not open vanilla saves.
+Server worlds and single-player worlds use this one format (FR-004). The folder holds all of a world's dimensions and is
+copied as a unit. Everything FR-014 lists as world state is saved here and nowhere else.
+
+### 9.1 Layout
+
+```text
+<world>/
+  level.dat
+  access.dat
+  players/<offline-uuid>.dat              one per player who has been in the world
+  dimensions/<namespace>/<path>/
+    region/r.<rx>.<rz>.mca                chunks (§6 region files, §7 chunk NBT, values in §9.4)
+    entities/r.<rx>.<rz>.mca              mobs and ground items (§6 region files, §8, schema in §9.3)
+```
+
+| Item | Value |
+|---|---|
+| `<offline-uuid>` | The offline UUID of 02-handshake-status-login.md "Offline mode", written hyphenated and lower-case |
+| `<namespace>/<path>` | The dimension key split at the colon: `cobolcraft/main` for the main dimension ([../design/standin-content.md](../design/standin-content.md) §5.1) and one folder for each extra dimension |
+| Region file names | As §6.1, in each dimension's `region/` and `entities/` folders |
+| `poi/` | Not written. CobolCraft has no points of interest. |
+| `.dat` files | gzip-compressed NBT files (§5.1, `writeCompressed` / `readCompressed`). The root is a Compound in the file framing of §3 (type byte, empty name, payload). The world-folder contract's "unnamed root compound" means this empty name; it is not the network "unnamed root" of §3. |
+| `DataVersion` | Every `.dat` root and every region chunk payload carries `DataVersion` (Int) = 5023, the value of §7 |
+
+### 9.2 `.dat` schemas
+
+`level.dat`:
+
+| Key | NBT type | Meaning |
+|---|---|---|
+| `DataVersion` | Int | 5023 |
+| `LevelName` | String | World name, shown in the single-player world list |
+| `GameMode` | Int | The game mode chosen when a single-player world is created. When the world is hosted by the client (core-host-api `CS-HOST-KIND` 1, and 2 for the host) it is the game mode of new players; guests get the guest mode chosen when the world is opened to others. A dedicated server (`CS-HOST-KIND` 0) ignores it and uses its `default-game-mode` setting. |
+| `Time` | Long | Time of day in ticks |
+| `Spawn` | Compound | `Dimension` (String, dimension key), `X`, `Y`, `Z` (Double), `Yaw` (Float). Changed by command. |
+| `Weather` | Compound | One entry per dimension that has weather, named by the dimension key. A dimension without weather (`cobolcraft:subroutine`, standin-content §14.2) has no entry. Each value is a Compound: `Kind` (String, weather kind key) and `Remaining` (Int, ticks left, or −1 meaning "until changed": no countdown, standin-content §14.3). |
+
+Network entity ids are assigned per run and are not stored anywhere in the folder.
+
+`access.dat`:
+
+| Key | NBT type | Meaning |
+|---|---|---|
+| `DataVersion` | Int | 5023 |
+| `Operators` | List of Compound | Players with operator status |
+| `Bans` | List of Compound | Banned players |
+| `AllowList` | List of Compound | Allow-listed players |
+| `AllowListEnforced` | Byte | 1 if the allow-list is enforced in this world, otherwise 0 |
+
+Each entry of the three lists is an offline identity `{Name: String, UUID: Int Array (4)}`. The UUID is the same offline UUID
+as the player file name, stored as four Ints, most significant first (inferred: the vanilla `UUIDUtil` int-array form).
+
+A new world takes `AllowListEnforced` from the `allow-list` configuration setting (dedicated server) or 0 (single-player).
+After that, only the allow-list on/off commands change it, and the setting no longer applies to that world. Single-player
+worlds behave the same way.
+
+`players/<offline-uuid>.dat`:
+
+| Key | NBT type | Meaning |
+|---|---|---|
+| `DataVersion` | Int | 5023 |
+| `Name` | String | Offline name |
+| `Dimension` | String | Dimension key |
+| `Pos` | List of 3 Double | Feet position X, Y, Z |
+| `Rotation` | List of 2 Float | Yaw, pitch |
+| `GameMode` | Int | 0 survival, 1 creative |
+| `Health` | Float | Current health |
+| `Food` | Int | Food level |
+| `Inventory` | List of Compound | One `{Slot: Byte, id: String, count: Int}` per **non-empty** slot. Slots are numbered 0 to 8 (hotbar) and 9 to 35 (main), as in the data model's Inventory. `id` is an item key. |
+| `HeldSlot` | Int | Selected hotbar slot, 0 to 8 |
+
+### 9.3 Entity storage (`entities/`)
+
+Each chunk payload is the §8 `entities/` compound, stored as in §6.3 with compression id 2 (zlib, §5.2):
+
+| Key | NBT type | Notes |
+|---|---|---|
+| `DataVersion` | Int | 5023 |
+| `Position` | Int Array (2) | `[chunkX, chunkZ]`. CobolCraft fixes the Int Array form that §8 marks as inferred. |
+| `Entities` | List of Compound | One compound per entity in the chunk, as below |
+
+Entity compound:
+
+| Key | NBT type | Applies to | Meaning |
+|---|---|---|---|
+| `id` | String | all | Entity type key: `cobolcraft:loose_item` for a ground item, or a mob type key of standin-content §3 (as extended) |
+| `Pos` | List of 3 Double | all | Position |
+| `Motion` | List of 3 Double | all | Velocity |
+| `Rotation` | List of 2 Float | all | Yaw, pitch |
+| `Health` | Float | mobs | Current health |
+| `Item` | Compound | ground items | The stack: `{id: String, count: Int}` |
+| `Age` | Int | ground items | Ticks the despawn timer has run. Remaining time = despawn time − `Age`. The timer runs only near players. |
+
+Players are not stored here. They live in `players/` (§9.2).
+
+### 9.4 Chunk storage (`region/`)
+
+Chunk payloads follow §7 as written, with these CobolCraft values:
+
+| Item | Value |
+|---|---|
+| Compression | Id 2 (zlib, the §5.2 default), as for `entities/` (§9.3) |
+| `Status` | `minecraft:full` |
+| Block-state palette entries (§7.3) | The block keys and properties of standin-content §1 (as extended) |
+| Biome palette entries (§7.3) | The biome keys of standin-content §4.3 (as extended) |
+| `block_entities` | No block entities, so the list is empty |
+| `LastUpdate` | World time at save: the `level.dat` `Time` value written by the same save (inferred: the world keeps no game-time counter separate from time of day) |
+
+### 9.5 Behaviour
+
+- A world folder without `level.dat` is created new, with all enabled dimensions. Chunks are generated on first use. A
+  chunk is saved when it has changed, or when an entity is in it at save time.
+- A save writes every changed chunk, every chunk holding entities, the file of every online player and of every player who
+  left since the previous save, `level.dat`, and `access.dat`.
+
+---
+
 ## Composite types introduced here
 
 None beyond those defined inline above. This file describes byte formats, not packet fields.
@@ -330,3 +451,10 @@ None beyond those defined inline above. This file describes byte formats, not pa
    inside `lambda$parse$3/$5`. That code was only partly read. An error is reported through `ChunkReadException` or the logger (inferred).
 6. The sector allocation strategy for new writes (`RegionBitmap.allocate`, presumably first-fit) does not affect readers and was not documented in detail.
 7. The DataVersion constant was taken from the brief (5023) and not re-read from `SharedConstants` / the `version.json` inside the jar.
+8. §9.2: the world-folder contract gives the `UUID` entries as an Int Array of 4 but does not fix the Int order. Most
+   significant first (vanilla `UUIDUtil`) is assumed.
+9. §9.4: "§7 as written" makes CobolCraft write every key §7 marks "Always" (`Heightmaps`, `PostProcessing`, `block_ticks`,
+   `fluid_ticks`, `structures`, `InhabitedTime`, `yPos`, and so on). The contract does not give CobolCraft values for them
+   beyond those in §9.4. Empty lists and compounds (`structures` = `{starts: {}, References: {}}`, `PostProcessing` = one empty list per
+   section), `InhabitedTime` 0, and heightmaps computed as in 06-chunk-format.md §3.1 are
+   assumed.

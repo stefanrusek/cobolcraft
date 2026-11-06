@@ -2,13 +2,17 @@
 
 ## Core Principles
 
-### I. COBOL-First, Pragmatic Native Shim
-Game logic MUST be written in COBOL (GnuCOBOL 3.x). A thin C shim is permitted only where COBOL
-cannot reach the capability directly: Vulkan, sockets, zlib, and cryptography. The shim MUST stay
-minimal and MUST NOT contain game logic. Build scripts and test harnesses MAY use any language.
+### I. COBOL-First, Thin C Glue Where Needed
+COBOL (GnuCOBOL 3.x) is the implementation language for all program logic: game rules, protocol
+encoding/decoding, world storage, rendering geometry, and UI layout. COBOL MAY call any C library
+directly (for example GLFW, libc, Vulkan, zlib, OpenSSL). A thin C glue layer is permitted wherever
+calling a C library from COBOL cannot be expressed cleanly — callbacks, platform-specific struct
+layouts, variadic functions, or similar ABI mismatches — with no fixed list of allowed subsystems.
+The glue layer MUST contain no game or protocol logic; it adapts calls only. Build scripts and test
+harnesses MAY use any language.
 
-Rationale: the project exists to be a COBOL implementation; the shim boundary keeps that true while
-acknowledging platform facilities COBOL cannot call.
+Rationale: the project is a COBOL program; the C boundary exists so it never limits functionality,
+while all program logic stays in COBOL.
 
 ### II. Spec Is the Source of Truth
 Implementation MUST work from `docs/protocol/` only. Implementers MUST NOT read the shipped
@@ -21,7 +25,7 @@ work separated from the reverse-engineering that produced the spec.
 ## Technology Constraints
 
 - Language and compiler: GnuCOBOL 3.x for all game logic (Principle I).
-- C is allowed only for the shim described in Principle I.
+- C is allowed only as the thin glue layer described in Principle I (adaptation only, no logic).
 - Build scripts and test harnesses are not restricted in language.
 
 ## Development Workflow
@@ -30,6 +34,14 @@ work separated from the reverse-engineering that produced the spec.
   `docs/protocol/` update (Principle II).
 - Testing gates and verification requirements are defined by the SDD amendment applied to this
   project, not by this constitution.
+- **Workspace bootstrap command** (SDD Principle 5.2): `make bootstrap` — sets up a fresh workspace
+  (toolchain checks, generated headers/copybooks, build dirs) so each package can be built and
+  tested independently.
+- **Deferred-work tracker** (SDD Principle 1.4): Spile tickets in the repository (spec at
+  https://sugarmaple.ai/spile.md) — a `tickets/` project directory whose root `README.md` holds the
+  ticket prefix `CC` and the last-allocated-ID counter; one markdown ticket file per item named
+  `CC-NNNN-slug.md` with Spile front matter; the generated view at `tickets/views/`. Deferred items
+  start in `draft` status. The directory is created when the first item is deferred.
 
 ## Spec-Driven Development Amendment (v6.3.0)
 
@@ -1579,4 +1591,4 @@ backward-incompatible principle removals or redefinitions, MINOR for new princip
 expanded guidance, PATCH for clarifications and wording fixes. Reviewers MUST verify compliance
 with this constitution on every PR.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-04 | **Last Amended**: 2026-11-04
+**Version**: 1.2.0 | **Ratified**: 2026-11-04 | **Last Amended**: 2026-11-05

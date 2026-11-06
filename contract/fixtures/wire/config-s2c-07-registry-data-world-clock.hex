@@ -1,0 +1,23 @@
+# Fixture: config-s2c-07-registry-data-world-clock.hex
+# Registry Data (minecraft:world_clock)
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# 09 §3.1 row: Registry Data minecraft:world_clock (1 entry cobolcraft:daylight, empty Compound)
+# Content: docs/design/standin-content.md §4.8
+# Doc refs: 04 'Clientbound Registry Data' (PackedRegistryEntry: Identifier, Boolean present, network NBT)
+#   and 04 §6 (entry codec field names and NBT types); 07 §1 (tag types), §1.1 (lists), §2 (strings),
+#   §3 (network root: type byte then payload, no root name); 00 §2.1 VarInt, §3 String/Identifier.
+# Known packs: none (Select Known Packs empty, standin §4.1), so every entry has Data present.
+# NBT field order rule (the core encoder follows it): no fields (04 world_clock: MapCodec.unitCodec), so the entry is an empty Compound.
+# Optional fields that standin leaves absent / default are NOT written.
+# Stated inputs:
+#   registry minecraft:world_clock, 1 entry: id 0 cobolcraft:daylight, Data = empty Compound (0a 00)
+
+07                                                            # packet id: VarInt 0x07 (Registry Data, configuration, clientbound)
+15 6d 69 6e 65 63 72 61 66 74 3a 77 6f 72 6c 64 5f 63 6c 6f 63 6b  # Registry: Identifier (String) "minecraft:world_clock" (VarInt length 21 + UTF-8)
+01                                                            # Entries: VarInt count 1
+
+# ---- entry 0 (id 0): cobolcraft:daylight ----
+13 63 6f 62 6f 6c 63 72 61 66 74 3a 64 61 79 6c 69 67 68 74   # Entry[0].Id: Identifier (String) "cobolcraft:daylight" (VarInt length 19 + UTF-8)
+01                                                            # Entry[0].Data present: Boolean true
+0a                                                            # NBT Compound (type 0a) root (unnamed, 07 §3 network), no entries
+00                                                            # NBT End (type 00): end of compound root

@@ -1,0 +1,23 @@
+# Fixture: play-s2c-67-set-entity-motion.hex
+# Set Entity Motion (ClientboundSetEntityMotionPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x67 (103).
+# Task T158. 09 §3.3 row: Set Entity Motion (entity id; motion as LpVec3).
+# Doc refs: 05b 0x67 (VarInt entity id, LpVec3); 00 §4.6 LpVec3 writing rules.
+# When sent (09 §3.4 rule 6): once, right after Add Entity and Set Entity Data, for a ground item spawned with
+#   non-zero initial motion (a thrown item or a death drop, standin §9.1, §10.6).
+# Stated inputs: entity id 11 (a loose_item Alice threw with Player Action 5 DROP_ITEM while facing yaw -90.0,
+#   pitch 0.0); motion (0.25, 0.12, 0.0) blocks per tick (the standin §9.1 thrown motion for that yaw and pitch,
+#   with mz written as exactly 0.0).
+# Decoded by the 00 §4.6 read rule: (0.2500152597204419, 0.12000244155527073, 0.0) (each component within
+#   1/32766 of the stated value).
+# LpVec3 derivation (00 §4.6): m = 0.25, scale = ceil(0.25) = 1 (fits in 2 bits, no continuation);
+#   qX = round((0.25 / 1 * 0.5 + 0.5) * 32766) = round(20478.75) = 20479;
+#   qY = round((0.12 * 0.5 + 0.5) * 32766) = round(18348.96) = 18349;
+#   qZ = round((0.0 * 0.5 + 0.5) * 32766) = 16383;
+#   packed = 1 | qX << 3 | qY << 18 | qZ << 33 = 0x7fff1eb67ff9.
+
+67                                                            # packet id: VarInt 0x67 (103) Set Entity Motion (play, clientbound)
+0b                                                            # Entity id: VarInt 11
+f9                                                            # Velocity: LpVec3 byte 0 = packed bits 0-7 (scale 1 in bits 0-1, no continuation bit 2)
+7f                                                            # Velocity: LpVec3 byte 1 = packed bits 8-15
+7f ff 1e b6                                                   # Velocity: LpVec3 Int = packed bits 16-47 (big-endian)

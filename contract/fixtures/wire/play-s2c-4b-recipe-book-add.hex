@@ -1,0 +1,125 @@
+# Recipe Book Add
+# Phase play, clientbound (S->C), packet id 0x4B (75)
+# Docs: 09 §3.3 row 0x4B and the 'Recipe Book Add fixture' note; 05b 0x4B, RecipeDisplayEntry,
+#   RecipeDisplay, SlotDisplay, ItemStackTemplate; 00 §2.2 OptionalVarInt, §6.6 Optional, §10.3
+#   HolderSet, §12.2 DataComponentPatch; standin §2 item ids, §13 recipes
+# Stated inputs: the player's inventory holds only 4 `greystone` (item 2) in one slot, nothing else.
+#   All nine standin §13 recipes, display ids 0-8 in order. Craftable (crafting requirements present)
+#   only for display id 0 (4 greystone -> 2 ledger_tile); absent for 1-8. Every entry: RecipeDisplay
+#   type 0 crafting_shapeless, one SlotDisplay type 5 item_stack per ingredient line (item, count,
+#   empty patch), result SlotDisplay type 5, crafting station SlotDisplay type 0 empty, group 0
+#   (none), category 0, entry flags 0x00. Replace = true.
+# Item ids (standin §2): greystone 2, loam 3, turf 4, grit 5, cardstack 6, lucite 7, glowtube 8, ledger_tile 9, pry_bar 10, trowel 11, grazer_flank 12, seared_flank 13, sod_cake 14, dump_shard 15, goto_pad 16
+
+4b                                                 # packet id 0x4B (VarInt)
+09                                                 # Entries: Prefixed Array count 9
+# --- entry 0: 4 greystone -> 2 ledger_tile ---
+  00                                                 # Display id: VarInt 0
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  01                                                 # ingredients: Prefixed Array count 1
+    05 02 04 00 00                                     # SlotDisplay type 5 item_stack: item 2 (greystone), count 4, patch added 0 removed 0
+  05 09 02 00 00                                     # result: SlotDisplay type 5 item_stack: item 9 (ledger_tile), count 2, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  01                                                 # Crafting requirements: Optional present (craftable for this player)
+  01                                                 # Prefixed Array of Ingredient count 1
+    02 02                                              # Ingredient HolderSet<item>: selector 2 (explicit list of 1), item 2 (greystone)
+  00                                                 # Flags: Byte 0x00
+# --- entry 1: 4 grit -> 2 lucite ---
+  01                                                 # Display id: VarInt 1
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  01                                                 # ingredients: Prefixed Array count 1
+    05 05 04 00 00                                     # SlotDisplay type 5 item_stack: item 5 (grit), count 4, patch added 0 removed 0
+  05 07 02 00 00                                     # result: SlotDisplay type 5 item_stack: item 7 (lucite), count 2, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 2: 3 greystone + 1 cardstack -> 1 pry_bar ---
+  02                                                 # Display id: VarInt 2
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 02 03 00 00                                     # SlotDisplay type 5 item_stack: item 2 (greystone), count 3, patch added 0 removed 0
+    05 06 01 00 00                                     # SlotDisplay type 5 item_stack: item 6 (cardstack), count 1, patch added 0 removed 0
+  05 0a 01 00 00                                     # result: SlotDisplay type 5 item_stack: item 10 (pry_bar), count 1, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 3: 2 greystone + 1 cardstack -> 1 trowel ---
+  03                                                 # Display id: VarInt 3
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 02 02 00 00                                     # SlotDisplay type 5 item_stack: item 2 (greystone), count 2, patch added 0 removed 0
+    05 06 01 00 00                                     # SlotDisplay type 5 item_stack: item 6 (cardstack), count 1, patch added 0 removed 0
+  05 0b 01 00 00                                     # result: SlotDisplay type 5 item_stack: item 11 (trowel), count 1, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 4: 1 lucite + 1 dump_shard -> 2 glowtube ---
+  04                                                 # Display id: VarInt 4
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 07 01 00 00                                     # SlotDisplay type 5 item_stack: item 7 (lucite), count 1, patch added 0 removed 0
+    05 0f 01 00 00                                     # SlotDisplay type 5 item_stack: item 15 (dump_shard), count 1, patch added 0 removed 0
+  05 08 02 00 00                                     # result: SlotDisplay type 5 item_stack: item 8 (glowtube), count 2, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 5: 4 turf + 1 loam -> 1 sod_cake ---
+  05                                                 # Display id: VarInt 5
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 04 04 00 00                                     # SlotDisplay type 5 item_stack: item 4 (turf), count 4, patch added 0 removed 0
+    05 03 01 00 00                                     # SlotDisplay type 5 item_stack: item 3 (loam), count 1, patch added 0 removed 0
+  05 0e 01 00 00                                     # result: SlotDisplay type 5 item_stack: item 14 (sod_cake), count 1, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 6: 2 grazer_flank + 1 glowtube -> 2 seared_flank ---
+  06                                                 # Display id: VarInt 6
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 0c 02 00 00                                     # SlotDisplay type 5 item_stack: item 12 (grazer_flank), count 2, patch added 0 removed 0
+    05 08 01 00 00                                     # SlotDisplay type 5 item_stack: item 8 (glowtube), count 1, patch added 0 removed 0
+  05 0d 02 00 00                                     # result: SlotDisplay type 5 item_stack: item 13 (seared_flank), count 2, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 7: 4 ledger_tile + 2 dump_shard + 1 glowtube -> 1 goto_pad ---
+  07                                                 # Display id: VarInt 7
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  03                                                 # ingredients: Prefixed Array count 3
+    05 09 04 00 00                                     # SlotDisplay type 5 item_stack: item 9 (ledger_tile), count 4, patch added 0 removed 0
+    05 0f 02 00 00                                     # SlotDisplay type 5 item_stack: item 15 (dump_shard), count 2, patch added 0 removed 0
+    05 08 01 00 00                                     # SlotDisplay type 5 item_stack: item 8 (glowtube), count 1, patch added 0 removed 0
+  05 10 01 00 00                                     # result: SlotDisplay type 5 item_stack: item 16 (goto_pad), count 1, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+# --- entry 8: 2 cardstack + 2 lucite -> 1 dump_shard ---
+  08                                                 # Display id: VarInt 8
+  00                                                 # RecipeDisplay type: VarInt 0 crafting_shapeless
+  02                                                 # ingredients: Prefixed Array count 2
+    05 06 02 00 00                                     # SlotDisplay type 5 item_stack: item 6 (cardstack), count 2, patch added 0 removed 0
+    05 07 02 00 00                                     # SlotDisplay type 5 item_stack: item 7 (lucite), count 2, patch added 0 removed 0
+  05 0f 01 00 00                                     # result: SlotDisplay type 5 item_stack: item 15 (dump_shard), count 1, patch 0 0
+  00                                                 # crafting station: SlotDisplay type 0 empty
+  00                                                 # Group: OptionalVarInt 0 (no group)
+  00                                                 # Category: RegistryId<recipe_book_category> 0
+  00                                                 # Crafting requirements: Optional absent (not craftable)
+  00                                                 # Flags: Byte 0x00
+01                                                 # Replace: Boolean true

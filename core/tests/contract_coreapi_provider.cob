@@ -1,0 +1,370 @@
+*> Contract test, provider side of the game core host API (contracts/core-host-api.md §1, §2, §4), US2
+*> entry points: CORE-WORLD-OPEN, CORE-CONN-OPEN, CORE-CONN-INPUT, CORE-CONN-OUTPUT, CORE-CONN-CLOSED,
+*> CORE-TICK, CORE-CONSOLE-DRAIN and CORE-STATUS-GET with the record layouts of COREAPI.cpy; US13:
+*> CORE-SAVE and CORE-WORLD-OPEN of an existing world folder; US15: CORE-CONSOLE, CORE-STOP and the
+*> CORE-STATUS-GET run states 0, 1 and 2; US17: CORE-OPEN-TO-OTHERS (guest mode, guest-operator flag).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTRACT-COREAPI-PROVIDER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COREAPI.
+ COPY CORESTATE.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ COPY TESTLIB.
+ 01 WS-NEW-PATH            PIC X(64) VALUE Z"build/core-test-world-new".
+ 01 WS-OLD-PATH            PIC X(64) VALUE Z"build/core-test-world-old".
+ 01 WS-OLD-LEVEL           PIC X(64) VALUE "build/core-test-world-old/level.dat".
+ 01 WS-OLD-ACCESS          PIC X(64) VALUE "build/core-test-world-old/access.dat".
+ 01 WS-RM-OLD              PIC X(64) VALUE "rm -rf build/core-test-world-old build/core-test-world-new".
+ 01 WS-FILE-INFO           PIC X(16).
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ID2                 BINARY-LONG.
+ 01 WS-ID3                 BINARY-LONG.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-AREA                PIC X(64).
+ 01 WS-LINE                PIC X(16) VALUE "core test line".
+ 01 WS-LINE-LENGTH         BINARY-LONG VALUE 14.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-FIXTURE             PIC X(256).
+ 01 WS-CONSOLE-LINE        PIC X(64).
+ 01 WS-REASON              PIC X(64) VALUE Z"cobolcraft.disconnect.shutdown".
+ 01 WS-LINES               PIC X(256).
+ 01 WS-GUEST-MODE          BINARY-LONG VALUE 1.
+ 01 WS-GUEST-OPERATOR      BINARY-LONG VALUE 1.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE "contract coreapi provider record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 CORE-STATUS 5"
+         TO TL-CASE
+     MOVE 1707016005 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = LENGTH OF CORE-SETTINGS * 1000000 + LENGTH OF CORE-BUFFER * 1000
+         + LENGTH OF CORE-STATUS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider connection kinds network 0 memory 1" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CORE-CONN-NETWORK * 10 + CORE-CONN-MEMORY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-WORLD-OPEN (core-host-api §2; US13-1, standin-content §5).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "A different description" TO CS-DESCRIPTION
+     CALL "SYSTEM" USING WS-RM-OLD
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN folder without level.dat creates a world (flag 1)"
+         TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-CREATED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider CORE-WORLD-OPEN keeps the settings it was given" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE CORE-SETTINGS TO TL-EXPECTED
+     MOVE CW-SETTINGS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider new world: main dimension only, spawn (4.5 54 8.5) yaw -90, time 0"
+         TO TL-CASE
+     MOVE "1 1 45 540 85 -90 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CW-DIM-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CW-DIM(1) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     COMPUTE WS-EDIT = CW-SPAWN-X * 10
+     PERFORM APPEND-EDIT
+     COMPUTE WS-EDIT = CW-SPAWN-Y * 10
+     PERFORM APPEND-EDIT
+     COMPUTE WS-EDIT = CW-SPAWN-Z * 10
+     PERFORM APPEND-EDIT
+     MOVE CW-SPAWN-YAW TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE CW-TIME TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   US12 (standin-content §15.1): with extra-dimensions on, a new world has every enabled extra
+*>   dimension too, in Login order: cobolcraft:main (row 1), cobolcraft:subroutine (row 2).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-EXTRA-DIMENSIONS
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN of a new world with extra-dimensions on creates "
+         & "every enabled extra dimension" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "2 1 2" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CW-DIM-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CW-DIM(1) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE CW-DIM(2) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+
+*>   CORE-SAVE (no parameters) writes the world folder of 07 §9: level.dat, access.dat and a
+*>   players/ folder; CORE-WORLD-OPEN of that folder opens the existing world (created flag 0).
+     CALL "SYSTEM" USING WS-RM-OLD
+     CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
+     MOVE 12345 TO CW-TIME
+     CALL "CORE-SAVE"
+     MOVE "contract coreapi provider CORE-SAVE writes level.dat and access.dat into the world folder"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "level.dat access.dat" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-LEVEL WS-FILE-INFO
+     IF RETURN-CODE = 0
+         STRING "level.dat" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-ACCESS WS-FILE-INFO
+     IF RETURN-CODE = 0
+         STRING FUNCTION TRIM(TL-OBSERVED) " access.dat" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CW-TIME
+     CALL "CORE-WORLD-OPEN" USING WS-OLD-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN folder with level.dat opens that world (flag "
+         & "0, its time 12345)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 12345 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-CREATED * 1000000 + CW-TIME
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONN-OPEN: ids, reuse only after close (core-host-api §3).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID2
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID3
+     MOVE "contract coreapi provider CORE-CONN-OPEN memory kind returns ids 1 2 3 in the handshake phase"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "1 2 3 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-ID TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE WS-ID2 TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE WS-ID3 TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE CN-PHASE(WS-ID3) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CORE-CONN-CLOSED" USING WS-ID2
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "contract coreapi provider CORE-CONN-OPEN reuses an id only after CORE-CONN-CLOSED" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONN-INPUT / CORE-CONN-OUTPUT: handshake and login fixtures give Login Finished.
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     MOVE "contract/fixtures/wire/login-c2s-00-hello.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-FOUND
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0 OR WS-FOUND = 1
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 2
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     MOVE "contract coreapi provider CORE-CONN-INPUT handshake and hello, CORE-CONN-OUTPUT holds Login Finished"
+         TO TL-CASE
+     MOVE "contract/fixtures/wire/login-s2c-02-login-finished.hex" TO WS-FIXTURE
+     CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-FIXTURE TESTLIB-ASSERT
+     MOVE "contract coreapi provider CORE-CONN-OUTPUT close flag 0 while the connection goes on" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-CLOSE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONN-OUTPUT moves at most CB-CAPACITY bytes.
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-FIXTURE
+     CALL "TEST-FEED" USING WS-ID WS-FIXTURE
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 3 TO CB-CAPACITY
+     CALL "CORE-CONN-OUTPUT" USING WS-ID CORE-BUFFER WS-CLOSE
+     MOVE "contract coreapi provider CORE-CONN-OUTPUT moves no more than the capacity" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE CB-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONN-CLOSED: the player leaves, the id is free, later calls on it do nothing.
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+     CALL "CORE-CONN-OUTPUT" USING WS-ID CORE-BUFFER WS-CLOSE
+     MOVE "contract coreapi provider CORE-CONN-CLOSED frees the connection and its player" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "0 0 0 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CN-USED(WS-ID) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE PL-USED(1) TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE CB-LENGTH TO WS-EDIT
+     PERFORM APPEND-EDIT
+     MOVE WS-CLOSE TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-TICK: one tick advances the tick count and the time of day (wrapping at 30000).
+     MOVE 29999 TO CW-TIME
+     MOVE 7 TO CW-TICKS
+     CALL "CORE-TICK"
+     MOVE "contract coreapi provider CORE-TICK runs one tick (time of day wraps 29999 to 0)" TO TL-CASE
+     MOVE "8 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CW-TICKS TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CW-TIME TO WS-EDIT
+     PERFORM APPEND-EDIT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONSOLE-DRAIN: queued lines, newline-separated, up to the capacity.
+     CALL "CORE-LOG" USING WS-LINE WS-LINE-LENGTH
+     MOVE SPACES TO WS-AREA
+     MOVE 10 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     SET CB-ADDR TO ADDRESS OF WS-AREA(11:1)
+     MOVE 54 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE "contract coreapi provider CORE-CONSOLE-DRAIN moves lines in pieces up to the capacity" TO TL-CASE
+     MOVE "core test line|5" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-AREA(1:14) "|" DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CB-LENGTH TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider CORE-CONSOLE-DRAIN ends each line with a line feed" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION ORD(WS-AREA(15:1)) - 1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE "contract coreapi provider CORE-CONSOLE-DRAIN with nothing queued moves 0 bytes" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE CB-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-STATUS-GET.
+     MOVE 9 TO CST-RUN-STATE
+     MOVE 9 TO CST-PLAYERS-ONLINE
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract coreapi provider CORE-STATUS-GET running with no players" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CST-RUN-STATE * 10 + CST-PLAYERS-ONLINE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-CONSOLE (US15): a z-string command line, run with operator permission; its reply is a
+*>   console line.
+     MOVE Z"clock 1000" TO WS-CONSOLE-LINE
+     CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
+     PERFORM DRAIN-LINES
+     MOVE "contract coreapi provider CORE-CONSOLE runs an operator command line and its reply is "
+         & "drained as a console line" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "1000|The clock now reads 1000" TO TL-EXPECTED
+     MOVE CW-TIME TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) "|" WS-LINES DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-STATUS-GET run states: 0 running, 1 after the stop command, 2 after CORE-STOP.
+     MOVE Z"shutdown" TO WS-CONSOLE-LINE
+     CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
+     PERFORM DRAIN-LINES
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract coreapi provider CORE-STATUS-GET run state 1 after the stop command" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE CST-RUN-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     CALL "CORE-STOP" USING WS-REASON
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract coreapi provider CORE-STOP sets run state 2 (CORE-STATUS-GET)" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE CST-RUN-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 64 TO CB-CAPACITY
+     CALL "CORE-CONN-OUTPUT" USING WS-ID CORE-BUFFER WS-CLOSE
+     MOVE "contract coreapi provider CORE-STOP raises the close flag of every connection" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-CLOSE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract coreapi provider CORE-STOP saves the world (level.dat written)" TO TL-CASE
+     MOVE "build/core-test-world/level.dat" TO WS-OLD-LEVEL
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-OLD-LEVEL WS-FILE-INFO
+     MOVE RETURN-CODE TO TL-OBSERVED-N
+     MOVE 0 TO RETURN-CODE
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-OPEN-TO-OTHERS (US17, FR-017): a single-player world (host kind 1) becomes host kind 2
+*>   with the guest mode and guest-operator flag, and a network connection logs in (Set Compression
+*>   first, 09 §2).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-HOST-KIND
+     MOVE "Hosty" TO CS-HOST-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "CORE-OPEN-TO-OTHERS" USING WS-GUEST-MODE WS-GUEST-OPERATOR
+     MOVE CW-SETTINGS TO CORE-SETTINGS
+     MOVE "contract coreapi provider CORE-OPEN-TO-OTHERS sets host kind 2, the guest mode and the "
+         & "guest-operator flag" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 211 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CS-HOST-KIND * 100 + CS-GUEST-MODE * 10 + CS-GUEST-OPERATOR
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CORE-CONN-NETWORK TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     MOVE "contract/fixtures/wire/login-c2s-00-hello.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID PB-BUFFER WS-CLOSE
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE "contract coreapi provider CORE-OPEN-TO-OTHERS: a network connection is accepted (Set "
+         & "Compression, id 3, not closed)" TO TL-CASE
+     MOVE 30 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUTCOME * 100 + WS-PACKET-ID * 10 + WS-CLOSE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     STOP RUN.
+
+*> WS-LINES: the console lines drained now, separated by "|".
+ DRAIN-LINES.
+     MOVE SPACES TO WS-LINES
+     SET CB-ADDR TO ADDRESS OF WS-LINES
+     MOVE 256 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     IF CB-LENGTH > 0
+         MOVE SPACES TO WS-LINES(CB-LENGTH:1)
+     END-IF
+     INSPECT WS-LINES REPLACING ALL X"0A" BY "|".
+
+ APPEND-EDIT.
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO TL-OBSERVED.
+ END PROGRAM CONTRACT-COREAPI-PROVIDER.
+
+ COPY CORETEST.

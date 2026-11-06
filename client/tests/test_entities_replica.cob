@@ -1,0 +1,288 @@
+*> Implementation test of client/src/entities-replica.cob (ENTITY-PACKET, ENTITY-FIND, ENTITY-NAME,
+*> ENTITIES-CLEAR; 05a 0x01, 0x36, 0x37, 0x39, 0x46, 0x47, 0x55, 05b 0x4E, 0x80, VecDelta): entities
+*> are added (an id added again is replaced), moved by deltas (linear and stepped VecDelta) and
+*> teleported, turned (body and head), and removed; packets for unknown entities are ignored;
+*> player names come from Player Info Update (properties skipped; a known UUID renamed in place,
+*> a free row reused) and leave with Player Info Remove; clearing empties the replica and the player list.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITIES-REPLICA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-EID                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-SHORT               BINARY-LONG.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-STR                 PIC X(16).
+ 01 WS-STR-LENGTH          BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "NET-BUFFERS-INIT" USING CLIENT-STATE WS-CONN
+     MOVE PH-PLAY TO CN-PHASE(WS-CONN)
+
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-sodgrazer.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-sodgrazer.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-operator.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "entities replica add: the same id added twice is one entity; two entities in all"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         ADD EN-USED(WS-ROW) TO TL-OBSERVED-N
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Stepped VecDelta (step count 2): +4096 x then +2048 y, with tick counts.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 20 TO WS-EID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-EID
+     MOVE 4 TO WS-VALUE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-VALUE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     MOVE 4096 TO WS-SHORT
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-SHORT
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     MOVE 2048 TO WS-SHORT
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-SHORT
+     CALL "PB-PUT-SHORT" USING PB-BUFFER WS-ZERO
+     MOVE 54 TO WS-ID
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     MOVE "entities replica Move Entity Pos with a stepped delta (two steps) moves by each step: "
+         & "(12.5, 56, 3.5) to (13.5, 56.5, 3.5), not on the ground" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "20 2 13.5000/56.5000/3.5000 90.0/0.0/90.0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Packets about an entity the client does not have (id 99) change nothing.
+     MOVE 99 TO WS-EID
+     PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > 5
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-EID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         PERFORM 70 TIMES
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         END-PERFORM
+         EVALUATE WS-ID
+             WHEN 1
+                 MOVE 54 TO WS-VALUE
+             WHEN 2
+                 MOVE 55 TO WS-VALUE
+             WHEN 3
+                 MOVE 57 TO WS-VALUE
+             WHEN 4
+                 MOVE 85 TO WS-VALUE
+             WHEN 5
+                 MOVE 128 TO WS-VALUE
+         END-EVALUATE
+         CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-VALUE
+     END-PERFORM
+     MOVE "entities replica moves, rotations and teleports of an unknown entity are ignored"
+         TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE 20 TO WS-EID
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "99 none 20 2 13.5000/56.5000/3.5000 90.0/0.0/90.0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Player Info Update with one property (and its signature), then a second update with a
+*>   different action set that the client does not read.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     MOVE ALL X"07" TO WS-UUID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     MOVE "Bob" TO WS-STR
+     MOVE 3 TO WS-STR-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-STR WS-STR-LENGTH WS-MAX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     MOVE "textures" TO WS-STR
+     MOVE 8 TO WS-STR-LENGTH
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-STR WS-STR-LENGTH WS-MAX
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-STR WS-STR-LENGTH WS-MAX
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-STR WS-STR-LENGTH WS-MAX
+     MOVE 71 TO WS-ID
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-TWO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+*>   An operator entity with that UUID.
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-operator.hex" TO WS-PATH
+     CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+     MOVE ALL X"07" TO WS-UUID
+     CALL "TEST-PATCH-UUID" USING PB-BUFFER WS-UUID
+     MOVE 1 TO WS-ID
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     MOVE 1 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     MOVE SPACES TO WS-NAME
+     CALL "ENTITY-NAME" USING CLIENT-STATE WS-ROW WS-NAME WS-NAME-LENGTH
+     MOVE "entities replica Player Info Update names a player (its properties skipped; other "
+         & "action sets ignored) and an entity with that UUID has that name" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "Bob" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-NAME(1:WS-NAME-LENGTH) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-80-teleport-entity.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-EID
+     MOVE 78 TO WS-ID
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     MOVE "entities replica a teleported entity then removed is gone; the other remains" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE 20 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION CHAR(FUNCTION MIN(WS-ROW, 1) + 49)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 none 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A new entity takes the free row; a name unknown to the player list is empty.
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-abend.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 21 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     MOVE 5 TO WS-NAME-LENGTH
+     CALL "ENTITY-NAME" USING CLIENT-STATE WS-ROW WS-NAME WS-NAME-LENGTH
+     MOVE "entities replica a new entity reuses a free row; an entity whose UUID is not in the "
+         & "player list has no name" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 220 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ROW * 100 + EN-COUNT * 10 + WS-NAME-LENGTH
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The player list: an update for a known UUID renames it in place; after a removal a new
+*>   profile takes the free row.
+     MOVE ALL X"07" TO WS-UUID
+     MOVE "Robert" TO WS-STR
+     MOVE 6 TO WS-STR-LENGTH
+     CALL "TEST-PROFILE" USING CLIENT-STATE PB-BUFFER WS-UUID WS-STR WS-STR-LENGTH
+     MOVE "contract/fixtures/wire/play-s2c-46-player-info-remove.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-47-player-info-update.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     MOVE 70 TO WS-ID
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     MOVE ALL X"09" TO WS-UUID
+     MOVE "Carol" TO WS-STR
+     MOVE 5 TO WS-STR-LENGTH
+     CALL "TEST-PROFILE" USING CLIENT-STATE PB-BUFFER WS-UUID WS-STR WS-STR-LENGTH
+     MOVE "entities replica player list: a known UUID is renamed in place (Robert); after Robert "
+         & "leaves, Carol takes his free row; Alice keeps hers" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PI-COUNT TO WS-NAME-LENGTH
+     STRING FUNCTION TRIM(PI-NAME(1)) " " FUNCTION TRIM(PI-NAME(2)) " "
+         FUNCTION CHAR(WS-NAME-LENGTH + 49) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "Carol Alice 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "entities replica clearing removes every entity and every player name" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE 20 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     COMPUTE TL-OBSERVED-N = WS-ROW + PI-USED(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ENTITIES-REPLICA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PACKET.
+*> USING CLIENT-STATE, packet PB-BUFFER (body from the start, or PB-POS already after the id),
+*> packet id: hands it to PROTO-PACKET as received in play on connection 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER L-ID.
+     IF L-ID NOT = 1
+         MOVE 0 TO PB-POS
+     END-IF
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER L-ID
+     GOBACK.
+ END PROGRAM TEST-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PROFILE.
+*> USING CLIENT-STATE, PB-BUFFER, UUID, name (PIC X(16)), length: feeds a Player Info Update
+*> (ADD_PLAYER) of one profile without properties.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-ID                  BINARY-LONG VALUE 71.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ 01 L-UUID                 PIC X(16).
+ 01 L-NAME                 PIC X(16).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER L-UUID L-NAME L-LENGTH.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER L-UUID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-NAME L-LENGTH WS-MAX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "TEST-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
+     GOBACK.
+ END PROGRAM TEST-PROFILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PATCH-UUID.
+*> USING PB-BUFFER (an Add Entity, PB-POS after the packet id), UUID: replaces the entity UUID
+*> (after the one-byte entity id).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 B-BYTES                PIC X(65536) BASED.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-UUID                 PIC X(16).
+ PROCEDURE DIVISION USING PB-BUFFER L-UUID.
+     SET ADDRESS OF B-BYTES TO PB-ADDR
+     MOVE L-UUID TO B-BYTES(PB-POS + 2:16)
+     GOBACK.
+ END PROGRAM TEST-PATCH-UUID.
+ COPY CLTEST.

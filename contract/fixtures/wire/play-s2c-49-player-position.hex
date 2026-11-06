@@ -1,0 +1,20 @@
+# Fixture: play-s2c-49-player-position.hex
+# Player Position (ClientboundPlayerPositionPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x49 (73).
+# Task T127. 09 §3.2 row: Player Position (teleport id counting up from 1, velocity 0, relative flags 0).
+# Doc refs: 05b 0x49 Player Position; 05b PositionMoveRotation, TeleportFlags; 00 §2 (VarInt, Double, Float, Int).
+# Content: standin-content §5.2 spawn point.
+# Stated inputs: teleport id 1 (first of the connection); position (4.5, 54.0, 8.5); velocity (0.0, 0.0, 0.0);
+#   yaw -90.0 (facing east, +X); pitch 0.0; relative flags 0 (all absolute).
+
+49                                                            # packet id: VarInt 0x49 (73) Player Position (play, clientbound)
+01                                                            # Teleport id: VarInt 1
+40 12 00 00 00 00 00 00                                       # Change.X: Double 4.5 (IEEE-754 binary64 4012000000000000)
+40 4b 00 00 00 00 00 00                                       # Change.Y: Double 54.0 (IEEE-754 binary64 404b000000000000)
+40 21 00 00 00 00 00 00                                       # Change.Z: Double 8.5 (IEEE-754 binary64 4021000000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity X: Double 0.0 (IEEE-754 binary64 0000000000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity Y: Double 0.0 (IEEE-754 binary64 0000000000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity Z: Double 0.0 (IEEE-754 binary64 0000000000000000)
+c2 b4 00 00                                                   # Change.Yaw: Float -90.0 (IEEE-754 binary32 c2b40000)
+00 00 00 00                                                   # Change.Pitch: Float 0.0 (IEEE-754 binary32 00000000)
+00 00 00 00                                                   # Relative flags: TeleportFlags Int 0x00000000 (all absolute)

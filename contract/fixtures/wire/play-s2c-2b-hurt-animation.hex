@@ -1,0 +1,10 @@
+# Fixture: play-s2c-2b-hurt-animation.hex
+# Hurt Animation (ClientboundHurtAnimationPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x2B (43).
+# Task T162. 09 §3.3 row: Hurt Animation (damaged entity id; yaw 0.0).
+# Doc refs: 05a 0x2B (VarInt entity id, Float yaw).
+# Stated inputs: entity id 1 (Alice); yaw 0.0.
+
+2b                                                            # packet id: VarInt 0x2b (43) Hurt Animation (play, clientbound)
+01                                                            # Entity id: VarInt 1 (Alice)
+00 00 00 00                                                   # Yaw: Float 0.0 (IEEE-754 binary32 00000000)

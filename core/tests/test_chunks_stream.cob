@@ -1,0 +1,491 @@
+*> Implementation test of core/src/chunks-stream.cob (and, appended by the play module, of
+*> core/src/play.cob; tasks T410). Chunk payloads are checked by decoding them with the proto
+*> decoders (heightmap entry, section states, light states) after a player change; the builders by
+*> their bytes; the initial batch over a memory connection by its packet sequence.
+*> Structure: the main program PERFORMs one paragraph per group of cases; further groups are added
+*> as paragraphs and PERFORM statements at the marked place.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHUNKS-STREAM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-RING                BINARY-LONG.
+ 01 WS-LAST-RING           BINARY-LONG.
+ 01 WS-ORDERED             BINARY-LONG.
+ 01 WS-DISTINCT            BINARY-LONG.
+ 01 WS-FIRST-IDS           PIC X(40).
+ 01 WS-LAST-ID             BINARY-LONG.
+ 01 WS-FINISHED            BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-NON-EMPTY           BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-BLOCK-BITS          BINARY-LONG VALUE 5.
+ 01 WS-BIOME-BITS          BINARY-LONG VALUE 2.
+ 01 WS-STATES.
+    05 WS-ST               BINARY-LONG OCCURS 4096 TIMES.
+ 01 WS-BIOMES.
+    05 WS-BIOME            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-SECTION-12          PIC X(40).
+ 01 WS-LIGHTS              BINARY-LONG VALUE 18.
+ 01 WS-SKY-STATES.
+    05 WS-SKY-STATE        BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-BLOCK-STATES.
+    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-SKY-ARRAYS.
+    05 WS-SKY-ARRAY        PIC X(2048) OCCURS 18 TIMES.
+ 01 WS-BLOCK-ARRAYS.
+    05 WS-BLOCK-ARRAY      PIC X(2048) OCCURS 18 TIMES.
+ 01 WS-SEEN.
+    05 WS-SEEN-X           BINARY-LONG OCCURS 289 TIMES.
+    05 WS-SEEN-Z           BINARY-LONG OCCURS 289 TIMES.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-BYTE                PIC X.
+*> Play cases (core/src/play.cob, T410).
+ 01 WS-PLAY-ROW            BINARY-LONG VALUE 3.
+ 01 WS-MODE                PIC 9.
+ 01 WS-FLYING              PIC 9.
+ 01 WS-REAL                FLOAT-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-LANGUAGE            PIC X(5) VALUE "en_us".
+ 01 WS-LANGUAGE-LENGTH     BINARY-LONG VALUE 5.
+ 01 WS-LANGUAGE-MAX        BINARY-LONG VALUE 16.
+ 01 WS-KA-ID               BINARY-DOUBLE VALUE 81985529216486895.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     PERFORM CHUNK-PACKET-CASES
+     PERFORM BUILDER-CASES
+     PERFORM INITIAL-BATCH-CASES
+*>   Cases of further modules (play.cob, T410) are PERFORMed here.
+     PERFORM PLAY-BUILDER-CASES
+     PERFORM PLAY-PACKET-CASES
+     PERFORM PLAY-REFUSED-CASES
+     STOP RUN.
+
+*> ---------------------------------------------------------------------------------------------
+*> CHUNK-PACKET-BUILD: chunk (-1, -1) after a ledger_tile is placed at (-8, 200, -8), decoded.
+ CHUNK-PACKET-CASES.
+     MOVE -8 TO WS-X MOVE 200 TO WS-Y MOVE -8 TO WS-Z
+     MOVE 15 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE -1 TO WS-CX WS-CZ
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-PACKET-BUILD" USING WS-DIM WS-CX WS-CZ PB-BUFFER
+
+     MOVE "test chunks stream chunk packet header: id 46, chunk x -1, chunk z -1, 3 heightmaps"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     CALL "PB-GET-INT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     CALL "PB-GET-INT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     MOVE "46 -1 -1 3" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test chunks stream heightmaps: types 1 4 5, 37 Longs, column (8, 8) holds 201" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM 3 TIMES
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-N
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+*>           Entry 136 = x 8 + 16 * z 8: Long 19 (from 0), slot 3, bits 27 to 35.
+             IF WS-K = 20
+                 COMPUTE WS-HEIGHT = FUNCTION MOD(WS-LONG / 134217728, 512)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE WS-N TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-HEIGHT TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 4 5 37 201" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test chunks stream sections: 16 decode, section 12 holds the ledger_tile alone" TO TL-CASE
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-LENGTH
+     COMPUTE WS-LENGTH = WS-LENGTH + PB-POS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+         CALL "CHUNK-SECTION-DECODE" USING PB-BUFFER WS-BLOCK-BITS WS-BIOME-BITS WS-NON-EMPTY
+             WS-FLUID WS-STATES WS-BIOMES
+         IF WS-I = 12
+             PERFORM START-ROW
+             MOVE WS-NON-EMPTY TO WS-NUM PERFORM ADD-NUM
+             MOVE WS-ST(8 * 256 + 8 * 16 + 8 + 1) TO WS-NUM PERFORM ADD-NUM
+             MOVE WS-BIOME(1) TO WS-NUM PERFORM ADD-NUM
+             MOVE WS-TEXT TO WS-SECTION-12
+         END-IF
+     END-PERFORM
+     PERFORM START-ROW
+     STRING WS-SECTION-12 DELIMITED BY "  " INTO WS-TEXT POINTER WS-PTR
+     MOVE " " TO WS-TEXT(WS-PTR:1)
+     ADD 1 TO WS-PTR
+     COMPUTE WS-NUM = PB-POS - WS-LENGTH PERFORM ADD-NUM
+     MOVE PB-ERROR TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 15 0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test chunks stream light: no block entities, sky and block states of indices 0 to 17"
+         TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-NUM PERFORM ADD-NUM
+     CALL "LIGHT-DECODE" USING PB-BUFFER WS-LIGHTS WS-SKY-STATES WS-SKY-ARRAYS WS-BLOCK-STATES
+         WS-BLOCK-ARRAYS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         MOVE WS-SKY-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         MOVE WS-BLOCK-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
+     END-PERFORM
+     COMPUTE WS-NUM = PB-LENGTH - PB-POS PERFORM ADD-NUM
+     MOVE "0 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0"
+         TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test chunks stream light: sky of (8, 9) beside and below the block 0 and 15, above it 15" TO TL-CASE
+     PERFORM START-ROW
+*>   Section Y 12 = index 14; cells (8, 199 and 201, 8) are 7 * 256 + 136 and 9 * 256 + 136.
+     COMPUTE WS-I = (7 * 256 + 136) / 2 + 1
+     MOVE FUNCTION ORD(WS-SKY-ARRAY(14)(WS-I:1)) TO WS-NUM
+     SUBTRACT 1 FROM WS-NUM PERFORM ADD-NUM
+     COMPUTE WS-I = (9 * 256 + 136) / 2 + 1
+     MOVE FUNCTION ORD(WS-SKY-ARRAY(14)(WS-I:1)) TO WS-NUM
+     SUBTRACT 1 FROM WS-NUM PERFORM ADD-NUM
+     MOVE "240 255" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+*> ---------------------------------------------------------------------------------------------
+*> Batch and cache-center builders, by their bytes.
+ BUILDER-CASES.
+     MOVE "test chunks stream builders: batch start, batch finished 300, cache center (0, -3)"
+         TO TL-CASE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
+     MOVE 300 TO WS-N
+     CALL "CHUNK-BATCH-FINISHED-BUILD" USING WS-N PB-BUFFER
+     MOVE 0 TO WS-CX
+     MOVE -3 TO WS-CZ
+     CALL "CHUNK-CACHE-CENTER-BUILD" USING WS-CX WS-CZ PB-BUFFER
+     PERFORM HEX-OF-BUFFER
+     MOVE "0c0bac026000fdffffff0f" TO TL-EXPECTED
+     MOVE "T" TO TL-MODE
+     MOVE WS-HEX TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ HEX-OF-BUFFER.
+     MOVE SPACES TO WS-HEX
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= PB-LENGTH
+         CALL "PB-GET-UBYTE" USING PB-BUFFER WS-NUM
+         MOVE FUNCTION CHAR(WS-NUM + 1) TO WS-BYTE
+         MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-BYTE)) TO WS-HEX(WS-I * 2 + 1:2)
+     END-PERFORM.
+
+*> ---------------------------------------------------------------------------------------------
+*> CHUNKS-INITIAL-BATCH over a memory connection: player at (-20.5, 70, 40.0) in chunk (-2, 2),
+*> view distance 2: center, batch start, 25 chunks ring by ring, batch finished 25.
+ INITIAL-BATCH-CASES.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     MOVE 1 TO PL-USED(1)
+     MOVE WS-CONN TO PL-CONN(1)
+     MOVE 1 TO PL-DIM(1)
+     MOVE -20.5 TO PL-X(1)
+     MOVE 70 TO PL-Y(1)
+     MOVE 40.0 TO PL-Z(1)
+     MOVE 0 TO PL-BATCH-PENDING(1)
+     MOVE 1 TO CN-PLAYER(WS-CONN)
+     CALL "CHUNKS-INITIAL-BATCH" USING WS-CONN
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-CONN PB-BUFFER WS-CLOSE
+     MOVE SPACES TO WS-FIRST-IDS
+     MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-COUNT WS-LAST-RING
+     MOVE 1 TO WS-ORDERED WS-DISTINCT
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0
+             MOVE WS-PACKET-ID TO WS-LAST-ID
+             EVALUATE WS-PACKET-ID
+                 WHEN 96
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-CX
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-CZ
+                     PERFORM ADD-FIRST-ID
+                 WHEN 12
+                     PERFORM ADD-FIRST-ID
+                 WHEN 46
+                     PERFORM CHECK-CHUNK
+                 WHEN 11
+                     CALL "PB-GET-VARINT" USING PK-BUFFER WS-FINISHED
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+
+     MOVE "test chunks stream initial batch: center first, then batch start, 25 chunks ring by "
+         & "ring, batch finished 25" TO TL-CASE
+     PERFORM START-ROW
+     STRING WS-FIRST-IDS DELIMITED BY "  " INTO WS-TEXT POINTER WS-PTR
+     MOVE " " TO WS-TEXT(WS-PTR:1)
+     ADD 1 TO WS-PTR
+     MOVE WS-CX TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-CZ TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-COUNT TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-ORDERED TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-DISTINCT TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-LAST-ID TO WS-NUM PERFORM ADD-NUM
+     MOVE WS-FINISHED TO WS-NUM PERFORM ADD-NUM
+     MOVE "96 12 -2 2 25 1 1 11 25" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test chunks stream initial batch sets the player's chunk center and pending batches"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE PL-CENTER-X(1) TO WS-NUM PERFORM ADD-NUM
+     MOVE PL-CENTER-Z(1) TO WS-NUM PERFORM ADD-NUM
+     MOVE PL-BATCH-PENDING(1) TO WS-NUM PERFORM ADD-NUM
+     MOVE "-2 2 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW.
+
+ ADD-FIRST-ID.
+     MOVE WS-PACKET-ID TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-FIRST-IDS POINTER WS-PTR.
+
+*> One Level Chunk With Light of the batch: its ring around (-2, 2) never decreases and no chunk
+*> comes twice.
+ CHECK-CHUNK.
+     CALL "PB-GET-INT" USING PK-BUFFER WS-X
+     CALL "PB-GET-INT" USING PK-BUFFER WS-Z
+     ADD 1 TO WS-COUNT
+     COMPUTE WS-RING = FUNCTION MAX(FUNCTION ABS(WS-X + 2), FUNCTION ABS(WS-Z - 2))
+     IF WS-RING < WS-LAST-RING OR WS-RING > 2
+         MOVE 0 TO WS-ORDERED
+     END-IF
+     MOVE WS-RING TO WS-LAST-RING
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K >= WS-COUNT
+         IF WS-SEEN-X(WS-K) = WS-X AND WS-SEEN-Z(WS-K) = WS-Z
+             MOVE 0 TO WS-DISTINCT
+         END-IF
+     END-PERFORM
+     MOVE WS-X TO WS-SEEN-X(WS-COUNT)
+     MOVE WS-Z TO WS-SEEN-Z(WS-COUNT).
+
+*> ---------------------------------------------------------------------------------------------
+*> play.cob builders not covered by the wire fixtures.
+ PLAY-BUILDER-CASES.
+     MOVE "test play abilities of a flying creative player: flags 0x0f" TO TL-CASE
+     MOVE 1 TO WS-MODE WS-FLYING
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PLAY-ABILITIES-BUILD" USING WS-MODE WS-FLYING PB-BUFFER
+     PERFORM HEX-OF-BUFFER
+     MOVE "410f3d4ccccd3dcccccd" TO TL-EXPECTED
+     MOVE "T" TO TL-MODE
+     MOVE WS-HEX TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> PLAY-PACKET on a memory connection in play with a player (row WS-PLAY-ROW).
+ PLAY-PACKET-CASES.
+     PERFORM PLAY-OPEN
+
+     MOVE "test play packet Accept Teleportation: another id is ignored, the awaited id is "
+         & "accepted" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 1 TO CN-TELEPORT-ID(WS-CONN)
+     MOVE 0 TO CN-TELEPORT-ACKED(WS-CONN)
+     MOVE 5 TO WS-N
+     PERFORM FEED-TELEPORT
+     MOVE CN-TELEPORT-ACKED(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE 1 TO WS-N
+     PERFORM FEED-TELEPORT
+     MOVE CN-TELEPORT-ACKED(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 1 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test play packet Chunk Batch Received: one pending batch is acknowledged, never below 0"
+         TO TL-CASE
+     PERFORM START-ROW
+     MOVE 1 TO PL-BATCH-PENDING(WS-PLAY-ROW)
+     MOVE "contract/fixtures/wire/play-c2s-0b-chunk-batch-received.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     MOVE PL-BATCH-PENDING(WS-PLAY-ROW) TO WS-NUM PERFORM ADD-NUM
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     MOVE PL-BATCH-PENDING(WS-PLAY-ROW) TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test play packet Client Information (0x0E) stores the view distance 5; Client Tick End "
+         & "changes nothing" TO TL-CASE
+     PERFORM START-ROW
+     CALL "PB-RESET" USING PK-BUFFER
+     MOVE 14 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     CALL "PB-PUT-STRING" USING PK-BUFFER WS-LANGUAGE WS-LANGUAGE-LENGTH WS-LANGUAGE-MAX
+     MOVE 5 TO WS-NUM
+     CALL "PB-PUT-BYTE" USING PK-BUFFER WS-NUM
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     MOVE 1 TO WS-NUM
+     CALL "PB-PUT-BOOL" USING PK-BUFFER WS-NUM
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-NUM
+     MOVE 1 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-BOOL" USING PK-BUFFER WS-NUM
+     MOVE 1 TO WS-NUM
+     CALL "PB-PUT-BOOL" USING PK-BUFFER WS-NUM
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PK-BUFFER
+     MOVE "contract/fixtures/wire/play-c2s-0d-client-tick-end.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     MOVE PL-VIEW-DISTANCE(WS-PLAY-ROW) TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "5 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test play packet Keep Alive with the pending id clears the pending flag" TO TL-CASE
+     PERFORM START-ROW
+     MOVE 1 TO CN-KA-PENDING(WS-CONN)
+     MOVE WS-KA-ID TO CN-KA-ID(WS-CONN)
+     MOVE "contract/fixtures/wire/play-c2s-1c-keep-alive.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     MOVE CN-KA-PENDING(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test play packet Move Player Pos is taken and the connection stays open" TO TL-CASE
+     PERFORM START-ROW
+     MOVE "contract/fixtures/wire/play-c2s-1e-move-player-pos.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-CONN PB-BUFFER WS-CLOSE
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE PB-LENGTH TO WS-NUM PERFORM ADD-NUM
+     MOVE "0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     MOVE 1 TO CN-CLOSE(WS-CONN)
+     PERFORM PLAY-CLOSE.
+
+*> Packets that end the connection (09 §4, 01 §5).
+ PLAY-REFUSED-CASES.
+     MOVE "test play packet Cookie Response is unsolicited: Disconnect 0x20 then close" TO TL-CASE
+     PERFORM PLAY-OPEN
+     CALL "PB-RESET" USING PK-BUFFER
+     MOVE 21 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PK-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-CONN PB-BUFFER WS-CLOSE
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE WS-PACKET-ID TO WS-NUM PERFORM ADD-NUM
+     MOVE "1 32" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test play packet Player Loaded with a byte left over closes the connection" TO TL-CASE
+     MOVE 44 TO WS-N
+     PERFORM FEED-REFUSED
+
+     MOVE "test play packet Player Input (0x2B, outside the 09 inventory) closes the connection"
+         TO TL-CASE
+     MOVE 43 TO WS-N
+     PERFORM FEED-REFUSED
+
+     MOVE "test play packet id 69 (no serverbound play packet) closes the connection" TO TL-CASE
+     MOVE 69 TO WS-N
+     PERFORM FEED-REFUSED.
+
+*> A packet of id WS-N with one zero byte as body on a fresh play connection; asserts the close.
+ FEED-REFUSED.
+     PERFORM PLAY-OPEN
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-N
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-BYTE" USING PK-BUFFER WS-NUM
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PK-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     PERFORM PLAY-CLOSE.
+
+ FEED-TELEPORT.
+     CALL "PB-RESET" USING PK-BUFFER
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-NUM
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-N
+     MOVE 4.5 TO WS-REAL
+     CALL "PB-PUT-DOUBLE" USING PK-BUFFER WS-REAL
+     CALL "PB-PUT-DOUBLE" USING PK-BUFFER WS-REAL
+     CALL "PB-PUT-DOUBLE" USING PK-BUFFER WS-REAL
+     MOVE 0 TO WS-FLOAT
+     CALL "PB-PUT-FLOAT" USING PK-BUFFER WS-FLOAT
+     CALL "PB-PUT-FLOAT" USING PK-BUFFER WS-FLOAT
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PK-BUFFER.
+
+*> A memory connection in play whose player is row WS-PLAY-ROW.
+ PLAY-OPEN.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-CONN
+     MOVE PH-PLAY TO CN-PHASE(WS-CONN)
+     INITIALIZE PL-ENTRY(WS-PLAY-ROW)
+     MOVE 1 TO PL-USED(WS-PLAY-ROW) PL-DIM(WS-PLAY-ROW)
+     MOVE WS-CONN TO PL-CONN(WS-PLAY-ROW)
+     MOVE WS-PLAY-ROW TO CN-PLAYER(WS-CONN).
+
+*> Drains the closed connection, which releases it.
+ PLAY-CLOSE.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "TEST-DRAIN" USING WS-CONN PB-BUFFER WS-CLOSE.
+
+*> ---------------------------------------------------------------------------------------------
+ START-ROW.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-CHUNKS-STREAM.
+
+ COPY CORETEST.

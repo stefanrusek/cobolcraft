@@ -1,0 +1,6 @@
+# Client Tick End
+# Phase play, serverbound (C->S), packet id 0x0D (13)
+# Docs: 09 §3.2 row 0x0D; 05c 0x0D
+# Stated inputs: none (no fields).
+
+0d                                                 # packet id 0x0D (VarInt)

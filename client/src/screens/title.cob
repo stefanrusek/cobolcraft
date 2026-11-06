@@ -1,0 +1,62 @@
+*> The title screen (data-model §13; 08 §10.8.6): the game's name, Single-player (the world list,
+*> US16-1), Multiplayer, Resource Packs (the pack selection screen, US18) and Quit Game.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TITLE-BUILD.
+*> USING CLIENT-STATE, GUI width, GUI height.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG VALUE 200.
+ 01 WS-H                   BINARY-LONG VALUE 20.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-Z1                   BINARY-LONG VALUE 0.
+ 01 WS-Z2                   BINARY-LONG VALUE 0.
+ 01 WS-Z3                   BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GW                   BINARY-LONG.
+ 01 L-GH                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     COMPUTE WS-X = L-GW / 2 - 40
+     MOVE 40 TO WS-Y
+     MOVE WK-LABEL TO WS-KIND
+     MOVE "cobolcraft.screen.title.name" TO WS-KEY
+     MOVE 28 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
+         WS-KEY-LENGTH
+     COMPUTE WS-X = L-GW / 2 - 100
+     MOVE 90 TO WS-Y
+     MOVE WK-BUTTON TO WS-KIND
+     MOVE ACT-SINGLE-PLAYER TO WS-ACTION
+     MOVE "cobolcraft.screen.title.single_player" TO WS-KEY
+     MOVE 37 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     MOVE 116 TO WS-Y
+     MOVE ACT-MULTIPLAYER TO WS-ACTION
+     MOVE "cobolcraft.screen.title.multiplayer" TO WS-KEY
+     MOVE 35 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     MOVE 142 TO WS-Y
+     MOVE ACT-PACKS TO WS-ACTION
+     MOVE "cobolcraft.screen.title.packs" TO WS-KEY
+     MOVE 29 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     MOVE 168 TO WS-Y
+     MOVE ACT-QUIT TO WS-ACTION
+     MOVE "cobolcraft.screen.title.quit" TO WS-KEY
+     MOVE 28 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     GOBACK.
+ END PROGRAM TITLE-BUILD.

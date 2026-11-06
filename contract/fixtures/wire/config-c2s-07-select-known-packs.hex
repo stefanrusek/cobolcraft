@@ -1,0 +1,6 @@
+# Select Known Packs (ServerboundSelectKnownPacks) -- configuration phase, serverbound (C->S), packet id 0x07
+# Docs: 09 §3.1 row "Select Known Packs" (C->S); standin-content §4.1; 03 "0x07 (7) Serverbound Select Known Packs"; 00 §6.4.
+# Stated inputs: known packs = [] (empty list).
+
+07                                               # packet id: VarInt 0x07 (Select Known Packs)
+00                                               # known packs count: VarInt 0 (no KnownPack entries)

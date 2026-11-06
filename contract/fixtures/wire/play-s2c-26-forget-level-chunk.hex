@@ -1,0 +1,11 @@
+# Clientbound Forget Level Chunk (ClientboundForgetLevelChunkPacket)
+# phase: play   direction: S->C (clientbound)   packet id 0x26 (38)
+# refs: 09 §3 row "0x26 Forget Level Chunk" (a chunk that left view distance); 05a 0x26; 06 §10;
+#       00 §4.2 ChunkPos (Long: low 32 bits chunk X, high 32 bits chunk Z).
+#
+# STATED INPUTS
+#   chunk X = -9, chunk Z = 3 (chosen value: a chunk that left view distance; e.g. with a square radius
+#   of 8 it leaves when the player's chunk moves from (-1, 3) to (0, 3)); ChunkPos.pack = (-9 & 0xFFFFFFFF) | (3 << 32) = 0x00000003FFFFFFF7
+#
+26    # packet id 0x26 (38)
+00 00 00 03 ff ff ff f7    # chunk position: Long 0x00000003FFFFFFF7 = X -9 (low Int 0xFFFFFFF7), Z 3 (high Int 0x00000003)

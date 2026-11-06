@@ -1,0 +1,9 @@
+# Fixture: play-s2c-2d-keep-alive.hex
+# Keep Alive (ClientboundKeepAlivePacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x2D (45).
+# Task T156. 09 §3.2 row: Keep Alive (any Long, 09 §2).
+# Doc refs: 05a 0x2D (shared common packet) -> 03 'Clientbound Keep Alive' (Long id); 00 §2 Long.
+# Stated inputs: id 0x0123456789ABCDEF (81985529216486895).
+
+2d                                                            # packet id: VarInt 0x2d (45) Keep Alive (play, clientbound)
+01 23 45 67 89 ab cd ef                                       # Id: Long 0x0123456789abcdef (81985529216486895)

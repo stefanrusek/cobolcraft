@@ -1,0 +1,220 @@
+*> Implementation test of the cobolcraft:main generator (core/src/worldgen.cob; standin-content §5.2):
+*> surface height of sample columns (expected values computed with IEEE 754 double sin/cos and
+*> rounding halves away from zero), the extremes 46 and 58, the layers of a column, grit on low
+*> ground, the marker pillar of marker chunks and the biome of each 4 x 4 x 4 cell.
+*> A column is rendered as runs "<state>x<count>" from y 0 upward.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-WORLDGEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-MIN                 BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MARKER              BINARY-LONG.
+ 01 WS-PREV                BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-ROW                 PIC X(1024).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-AREA                PIC X(196608).
+ 01 WS-AREA-TABLE REDEFINES WS-AREA.
+    05 WS-CELL             BINARY-CHAR UNSIGNED OCCURS 196608 TIMES.
+ 01 WS-BIOMES.
+    05 WS-BIOME            BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-SAMPLES.
+    05 FILLER BINARY-LONG VALUE 8.
+    05 FILLER BINARY-LONG VALUE 8.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -36.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 36.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -100.
+    05 FILLER BINARY-LONG VALUE 57.
+    05 FILLER BINARY-LONG VALUE 1000.
+    05 FILLER BINARY-LONG VALUE -777.
+    05 FILLER BINARY-LONG VALUE 17.
+    05 FILLER BINARY-LONG VALUE 8.
+    05 FILLER BINARY-LONG VALUE 12.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -20.
+    05 FILLER BINARY-LONG VALUE -20.
+    05 FILLER BINARY-LONG VALUE 123456.
+    05 FILLER BINARY-LONG VALUE -654321.
+ 01 WS-SAMPLE-TABLE REDEFINES WS-SAMPLES.
+    05 WS-SAMPLE OCCURS 10 TIMES.
+       10 WS-SAMPLE-X      BINARY-LONG.
+       10 WS-SAMPLE-Z      BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "test worldgen surface height of column (4, 8) is 53" TO TL-CASE
+     MOVE 4 TO WS-X
+     MOVE 8 TO WS-Z
+     CALL "WORLDGEN-HEIGHT" USING WS-X WS-Z WS-H
+     MOVE "N" TO TL-MODE
+     MOVE 53 TO TL-EXPECTED-N
+     MOVE WS-H TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test worldgen surface height of sample columns" TO TL-CASE
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         CALL "WORLDGEN-HEIGHT" USING WS-SAMPLE-X(WS-I) WS-SAMPLE-Z(WS-I) WS-H
+         MOVE WS-H TO WS-NUM
+         PERFORM ADD-NUM
+     END-PERFORM
+     MOVE "54 52 46 58 51 49 56 55 48 50" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen surface height extremes are 46 and 58" TO TL-CASE
+     MOVE 999 TO WS-MIN
+     MOVE -999 TO WS-MAX
+     PERFORM VARYING WS-X FROM -150 BY 1 UNTIL WS-X > 150
+         PERFORM VARYING WS-Z FROM -100 BY 97 UNTIL WS-Z > 100
+             CALL "WORLDGEN-HEIGHT" USING WS-X WS-Z WS-H
+             IF WS-H < WS-MIN
+                 MOVE WS-H TO WS-MIN
+             END-IF
+             IF WS-H > WS-MAX
+                 MOVE WS-H TO WS-MAX
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     PERFORM START-ROW
+     MOVE WS-MIN TO WS-NUM
+     PERFORM ADD-NUM
+     MOVE WS-MAX TO WS-NUM
+     PERFORM ADD-NUM
+     MOVE "46 58" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen column layers of (4, 8): baseplate, greystone, loam, turf, void" TO TL-CASE
+     MOVE 0 TO WS-CX WS-CZ
+     CALL "WORLDGEN-CHUNK" USING WS-CX WS-CZ WS-AREA WS-MARKER
+     MOVE 4 TO WS-LX
+     MOVE 8 TO WS-LZ
+     PERFORM COLUMN-RUNS
+     MOVE "1x1 2x49 3x3 4x1 0x202" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen marker pillar at chunk (0, 0) local (8, 8)" TO TL-CASE
+     MOVE 8 TO WS-LX
+     MOVE 8 TO WS-LZ
+     PERFORM COLUMN-RUNS
+     MOVE "1x1 2x50 3x3 4x1 9x2 8x1 12x1 13x1 0x196" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen marker glowtube y of chunk (0, 0)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 59 TO TL-EXPECTED-N
+     MOVE WS-MARKER TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test worldgen low column (-36, 0) has grit on top" TO TL-CASE
+     MOVE -3 TO WS-CX
+     MOVE 0 TO WS-CZ
+     CALL "WORLDGEN-CHUNK" USING WS-CX WS-CZ WS-AREA WS-MARKER
+     MOVE 12 TO WS-LX
+     MOVE 0 TO WS-LZ
+     PERFORM COLUMN-RUNS
+     MOVE "1x1 2x42 3x3 5x1 0x209" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen chunk (1, 0) has no marker" TO TL-CASE
+     MOVE 1 TO WS-CX
+     MOVE 0 TO WS-CZ
+     CALL "WORLDGEN-CHUNK" USING WS-CX WS-CZ WS-AREA WS-MARKER
+     MOVE 8 TO WS-LX
+     MOVE 8 TO WS-LZ
+     PERFORM COLUMN-RUNS
+     MOVE WS-MARKER TO WS-NUM
+     PERFORM ADD-NUM
+     MOVE "1x1 2x53 3x3 4x1 0x198 -1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen chunk (-4, -4) is a marker chunk" TO TL-CASE
+     MOVE -4 TO WS-CX
+     MOVE -4 TO WS-CZ
+     CALL "WORLDGEN-CHUNK" USING WS-CX WS-CZ WS-AREA WS-MARKER
+     MOVE 8 TO WS-LX
+     MOVE 8 TO WS-LZ
+     PERFORM COLUMN-RUNS
+     MOVE WS-MARKER TO WS-NUM
+     PERFORM ADD-NUM
+     MOVE "1x1 2x49 3x3 4x1 9x2 8x1 12x1 13x1 0x197 58" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen biome per 4 x 4 x 4 cell of chunk (0, 0)" TO TL-CASE
+     MOVE 0 TO WS-CX WS-CZ
+     PERFORM BIOME-ROW
+     MOVE "0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen biome per 4 x 4 x 4 cell of chunk (2, 0) is all upland" TO TL-CASE
+     MOVE 2 TO WS-CX
+     MOVE 0 TO WS-CZ
+     PERFORM BIOME-ROW
+     MOVE "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+
+     MOVE "test worldgen biome per 4 x 4 x 4 cell of chunk (-4, -4) is all lowland" TO TL-CASE
+     MOVE -4 TO WS-CX
+     MOVE -4 TO WS-CZ
+     PERFORM BIOME-ROW
+     MOVE "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     STOP RUN.
+
+ BIOME-ROW.
+     CALL "WORLDGEN-BIOMES" USING WS-CX WS-CZ WS-BIOMES
+     PERFORM START-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE WS-BIOME(WS-I) TO WS-NUM
+         PERFORM ADD-NUM
+     END-PERFORM.
+
+ COLUMN-RUNS.
+     PERFORM START-ROW
+     MOVE -1 TO WS-PREV
+     MOVE 0 TO WS-RUN
+     PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 255
+         MOVE WS-CELL(WS-Y * 256 + WS-LZ * 16 + WS-LX + 1) TO WS-STATE
+         IF WS-STATE NOT = WS-PREV AND WS-RUN > 0
+             PERFORM ADD-RUN
+             MOVE 0 TO WS-RUN
+         END-IF
+         MOVE WS-STATE TO WS-PREV
+         ADD 1 TO WS-RUN
+     END-PERFORM
+     PERFORM ADD-RUN.
+
+ ADD-RUN.
+     MOVE WS-PREV TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) "x" DELIMITED BY SIZE INTO WS-ROW POINTER WS-PTR
+     MOVE WS-RUN TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-ROW POINTER WS-PTR.
+
+ START-ROW.
+     MOVE SPACES TO WS-ROW
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     MOVE WS-NUM TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-ROW POINTER WS-PTR.
+
+ ASSERT-ROW.
+     MOVE "T" TO TL-MODE
+     MOVE WS-ROW TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-WORLDGEN.

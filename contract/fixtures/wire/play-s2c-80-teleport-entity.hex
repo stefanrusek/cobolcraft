@@ -1,0 +1,21 @@
+# Fixture: play-s2c-80-teleport-entity.hex
+# Teleport Entity (ClientboundTeleportEntityPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x80 (128).
+# Task T146. 09 §3.2 row: Teleport Entity (PositionMoveRotation, relative flags 0, on-ground).
+# Doc refs: 05b 0x80 (VarInt entity id, PositionMoveRotation, TeleportFlags Int, Boolean on ground);
+#   05b PositionMoveRotation, TeleportFlags; 00 §2.1 VarInt (id 128 takes 2 bytes).
+# Stated inputs: entity id 1 (Alice, seen by another player after the relocate command); position (100.5, 70.0, -20.5);
+#   current motion (0.0, 0.0, 0.0); yaw -90.0; pitch 0.0; relative flags 0; on ground false.
+
+80 01                                                         # packet id: VarInt 0x80 (128) Teleport Entity (play, clientbound): 2-byte VarInt 80 01
+01                                                            # Entity id: VarInt 1 (Alice)
+40 59 20 00 00 00 00 00                                       # Change.X: Double 100.5 (IEEE-754 binary64 4059200000000000)
+40 51 80 00 00 00 00 00                                       # Change.Y: Double 70.0 (IEEE-754 binary64 4051800000000000)
+c0 34 80 00 00 00 00 00                                       # Change.Z: Double -20.5 (IEEE-754 binary64 c034800000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity X: Double 0.0 (IEEE-754 binary64 0000000000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity Y: Double 0.0 (IEEE-754 binary64 0000000000000000)
+00 00 00 00 00 00 00 00                                       # Change.Velocity Z: Double 0.0 (IEEE-754 binary64 0000000000000000)
+c2 b4 00 00                                                   # Change.Yaw: Float -90.0 (IEEE-754 binary32 c2b40000)
+00 00 00 00                                                   # Change.Pitch: Float 0.0 (IEEE-754 binary32 00000000)
+00 00 00 00                                                   # Relative flags: TeleportFlags Int 0x00000000 (all absolute)
+00                                                            # On ground: Boolean false
