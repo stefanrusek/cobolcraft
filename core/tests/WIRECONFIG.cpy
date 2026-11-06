@@ -162,7 +162,7 @@
 *> values the packet carries, separated by single spaces. Client Information: language, view
 *> distance, chat visibility, chat colors, model customisation, main hand, text filtering, allows
 *> listing, particle status. Custom Payload: channel, brand. Keep Alive: id. Select Known Packs:
-*> count. Resource Pack Response: action.
+*> count. Resource Pack Response: pack id (hex), action.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PTR                 BINARY-LONG.
@@ -207,6 +207,8 @@
              MOVE CSB-KEEPALIVE TO WS-EDIT
              STRING " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
          WHEN 6
+             STRING " " FUNCTION LOWER-CASE(FUNCTION HEX-OF(CSB-PACK-ID)) DELIMITED BY SIZE
+                 INTO L-TEXT WITH POINTER WS-PTR
              MOVE CSB-PACK-ACTION TO WS-EDIT
              STRING " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
          WHEN 7

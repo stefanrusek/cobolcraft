@@ -4,14 +4,20 @@
 *>      sends, as 03's startConfiguration does: Custom Payload minecraft:brand, Update Enabled
 *>      Features, then Select Known Packs, which opens the synchronize_registries task.
 *>   2. The client's Select Known Packs completes that task: one Registry Data per registry with
-*>      entries (18, standin §4.2), then Update Tags. No code of conduct and (in US2) no resource
-*>      pack task follow, and spawn preparation has nothing on the wire, so the join_world task
-*>      sends Finish Configuration at once.
+*>      entries (18, standin §4.2), then Update Tags. No code of conduct follows. When the
+*>      settings offer a pack (CS-PACK-OFFERED, FR-009), the server_resource_pack task sends
+*>      Resource Pack Push (CONFIG-PACK-PUSH-BUILD) and waits for the client's Resource Pack
+*>      Response for that pack id with a terminal action (03; 08 §9.2, §9.7: 0, 1, 2, 5, 6, 7; 3
+*>      accepted and 4 downloaded only report progress). Declining (1) a required pack sends the
+*>      configuration Disconnect cobolcraft.disconnect.pack_required (08 §9.8, standin §17);
+*>      every other terminal action completes the task. Spawn preparation has nothing on the
+*>      wire, so the join_world task then sends Finish Configuration (at once when no pack is
+*>      offered).
 *>   3. The client's Finish Configuration moves the connection to play (PLAY-JOIN).
 *> The client's brand and Client Information may arrive at any time; Client Information stores the
 *> view distance in the player's row. Keep Alive answers go to CORE-KEEPALIVE-ANSWER. A Resource
-*> Pack Response (US18 owns the pack task) is decoded and otherwise ignored: no pack was offered,
-*> so it changes nothing, and a well-behaved client is not disconnected for it. A Cookie Response
+*> Pack Response while no pack task waits, or for another pack id, is decoded and otherwise
+*> ignored: a well-behaved client is not disconnected for it. A Cookie Response
 *> is unsolicited (CobolCraft never asks for cookies): Disconnect
 *> multiplayer.disconnect.unexpected_query_response (09 §4, 02). A Select Known Packs outside the
 *> negotiation (03: an error), a Finish Configuration before the server's, a malformed packet or
@@ -25,9 +31,12 @@
 *>     packet the phase decodes)
 *>   CONFIG-BRAND-BUILD, CONFIG-FEATURES-BUILD, CONFIG-KNOWN-PACKS-BUILD, CONFIG-TAGS-BUILD,
 *>   CONFIG-FINISH-BUILD USING PB-BUFFER (appended to): the clientbound packets (id + body)
+*>   CONFIG-PACK-PUSH-BUILD USING CORE-SETTINGS, PB-BUFFER (appended to): Resource Pack Push 0x09
+*>   CONFIG-PACK-UUID USING UUID text (PIC X(36), hyphenated hex), UUID out (PIC X(16))
 *>
 *> The step of each connection within the sequence is kept in CONFIG-STEPS (EXTERNAL, this module's
-*> own): 1 = waiting for the client's Select Known Packs, 2 = Finish Configuration sent.
+*> own): 1 = waiting for the client's Select Known Packs, 2 = Finish Configuration sent, 3 =
+*> Resource Pack Push sent, waiting for a terminal Resource Pack Response.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONFIG-START.
@@ -63,6 +72,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CONFIGPKT.
+ COPY MESSAGES.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 CONFIG-STEPS EXTERNAL.
     05 CF-STEP               PIC 9 OCCURS 64 TIMES.
@@ -70,11 +80,15 @@
  01 WS-PHASE               BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
  01 WS-NUMBER              BINARY-LONG.
+ 01 WS-MSG                 BINARY-LONG.
+ 01 WS-PACK-UUID           PIC X(16).
  LINKAGE SECTION.
  COPY PROTO.
+ COPY COREAPI.
  01 L-ID                   BINARY-LONG.
  01 L-PACKET-ID            BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-PACKET-ID PB-BUFFER.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      IF L-PACKET-ID = 1
          INITIALIZE PK-TEXT
          MOVE PK-TEXT-TRANSLATE TO PK-TX-KIND
@@ -110,10 +124,33 @@
                  CALL "CONFIG-TAGS-BUILD" USING PK-BUFFER
                  CALL "CORE-SEND" USING L-ID PK-BUFFER
                  CALL "PB-RESET" USING PK-BUFFER
-                 CALL "CONFIG-FINISH-BUILD" USING PK-BUFFER
+                 IF CS-PACK-OFFERED = 1
+                     MOVE 3 TO CF-STEP(L-ID)
+                     CALL "CONFIG-PACK-PUSH-BUILD" USING CORE-SETTINGS PK-BUFFER
+                 ELSE
+                     CALL "CONFIG-FINISH-BUILD" USING PK-BUFFER
+                 END-IF
                  CALL "CORE-SEND" USING L-ID PK-BUFFER
                  CALL "PB-FREE" USING PK-BUFFER
              END-IF
+         WHEN L-PACKET-ID = 6
+             CALL "CONFIG-PACK-UUID" USING CS-PACK-ID WS-PACK-UUID
+             EVALUATE TRUE
+                 WHEN CF-STEP(L-ID) NOT = 3 OR CSB-PACK-ID NOT = WS-PACK-UUID
+                         OR CSB-PACK-ACTION = 3 OR CSB-PACK-ACTION = 4
+                     CONTINUE
+                 WHEN CSB-PACK-ACTION = 1 AND CS-PACK-REQUIRED = 1
+                     MOVE 0 TO CF-STEP(L-ID)
+                     MOVE MK-DC-PACK-REQUIRED TO WS-MSG
+                     CALL "CMD-TEXT-KEY" USING PK-TEXT WS-MSG
+                     CALL "CORE-SEND-DISCONNECT" USING L-ID PK-TEXT
+                 WHEN OTHER
+                     MOVE 2 TO CF-STEP(L-ID)
+                     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+                     CALL "CONFIG-FINISH-BUILD" USING PK-BUFFER
+                     CALL "CORE-SEND" USING L-ID PK-BUFFER
+                     CALL "PB-FREE" USING PK-BUFFER
+             END-EVALUATE
          WHEN L-PACKET-ID = 3
              IF CF-STEP(L-ID) NOT = 2
                  CALL "CORE-BAD-PACKET" USING L-ID
@@ -295,3 +332,100 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      GOBACK.
  END PROGRAM CONFIG-FINISH-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONFIG-PACK-PUSH-BUILD.
+*> USING CORE-SETTINGS, PB-BUFFER: Resource Pack Push 0x09 (03; 09 §3.1 rows 0x09; 08 §9.7): pack
+*> id CS-PACK-ID, URL CS-PACK-URL and hash CS-PACK-SHA1 (each without trailing spaces; an empty
+*> hash is sent empty), Required CS-PACK-REQUIRED, Prompt present only when CS-PACK-PROMPT is not
+*> empty, as a plain string text (network NBT String tag, 09 §1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 9.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-URL-MAX             BINARY-LONG VALUE 32767.
+ 01 WS-HASH-MAX            BINARY-LONG VALUE 40.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-SPACES              BINARY-LONG.
+ 01 WS-URL-REVERSED        PIC X(1024).
+ 01 WS-HASH-REVERSED       PIC X(40).
+ 01 WS-PROMPT-REVERSED     PIC X(256).
+ LINKAGE SECTION.
+ COPY COREAPI.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CORE-SETTINGS PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "CONFIG-PACK-UUID" USING CS-PACK-ID WS-UUID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     MOVE FUNCTION REVERSE(CS-PACK-URL) TO WS-URL-REVERSED
+     MOVE 0 TO WS-SPACES
+     INSPECT WS-URL-REVERSED TALLYING WS-SPACES FOR LEADING SPACES
+     COMPUTE WS-LENGTH = 1024 - WS-SPACES
+     CALL "PB-PUT-STRING" USING PB-BUFFER CS-PACK-URL WS-LENGTH WS-URL-MAX
+     MOVE FUNCTION REVERSE(CS-PACK-SHA1) TO WS-HASH-REVERSED
+     MOVE 0 TO WS-SPACES
+     INSPECT WS-HASH-REVERSED TALLYING WS-SPACES FOR LEADING SPACES
+     COMPUTE WS-LENGTH = 40 - WS-SPACES
+     CALL "PB-PUT-STRING" USING PB-BUFFER CS-PACK-SHA1 WS-LENGTH WS-HASH-MAX
+     MOVE CS-PACK-REQUIRED TO WS-FLAG
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAG
+     MOVE FUNCTION REVERSE(CS-PACK-PROMPT) TO WS-PROMPT-REVERSED
+     MOVE 0 TO WS-SPACES
+     INSPECT WS-PROMPT-REVERSED TALLYING WS-SPACES FOR LEADING SPACES
+     COMPUTE WS-LENGTH = 256 - WS-SPACES
+     MOVE 0 TO WS-FLAG
+     IF WS-LENGTH > 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAG
+     IF WS-FLAG = 1
+         INITIALIZE PK-TEXT
+         MOVE PK-TEXT-PLAIN TO PK-TX-KIND
+         MOVE CS-PACK-PROMPT TO PK-TX-VALUE
+         MOVE WS-LENGTH TO PK-TX-LENGTH
+         CALL "PB-PUT-TEXT" USING PB-BUFFER PK-TEXT
+     END-IF
+     GOBACK.
+ END PROGRAM CONFIG-PACK-PUSH-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONFIG-PACK-UUID.
+*> USING UUID text (PIC X(36): 32 hex digits, either case, hyphens skipped; the server's settings
+*> parser checks the form), UUID out (PIC X(16)):
+*> the 16 bytes, most significant first (00 §5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(36).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(36).
+ 01 L-UUID                 PIC X(16).
+ PROCEDURE DIVISION USING L-TEXT L-UUID.
+     MOVE FUNCTION LOWER-CASE(L-TEXT) TO WS-TEXT
+     MOVE LOW-VALUES TO L-UUID
+     MOVE 1 TO WS-OUT
+     MOVE 0 TO WS-VALUE WS-HALF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36 OR WS-OUT > 16
+         IF WS-TEXT(WS-I:1) NOT = "-"
+             IF WS-TEXT(WS-I:1) >= "a"
+                 COMPUTE WS-D = FUNCTION ORD(WS-TEXT(WS-I:1)) - FUNCTION ORD("a") + 10
+             ELSE
+                 COMPUTE WS-D = FUNCTION ORD(WS-TEXT(WS-I:1)) - FUNCTION ORD("0")
+             END-IF
+             COMPUTE WS-VALUE = WS-VALUE * 16 + WS-D
+             ADD 1 TO WS-HALF
+             IF WS-HALF = 2
+                 MOVE FUNCTION CHAR(WS-VALUE + 1) TO L-UUID(WS-OUT:1)
+                 ADD 1 TO WS-OUT
+                 MOVE 0 TO WS-VALUE WS-HALF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CONFIG-PACK-UUID.

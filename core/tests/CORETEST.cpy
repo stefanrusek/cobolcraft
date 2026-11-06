@@ -114,6 +114,11 @@
 *>     drains the connection; the first packet with that id (id + body) is copied into the buffer.
 *>   TEST-HELLO USING name (PIC X(16)), name length, connection id out: a memory connection that
 *>     sends Intention (login) and Hello with that name, and nothing more.
+*>   TEST-CONFIGURE USING name (PIC X(16)), name length, connection id out: TEST-HELLO, then Login
+*>     Acknowledged, the client's brand, Client Information and Select Known Packs (nothing drained;
+*>     configuration stops where the server waits for the client next).
+*>   TEST-PACK-RESPONSE USING connection id, action (0 to 7): feeds the configuration Resource
+*>     Pack Response fixture of that action (pack id 00112233-4455-6677-8899-aabbccddeeff).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -2075,3 +2080,43 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM TEST-HELLO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CONFIGURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-ID.
+     CALL "TEST-HELLO" USING L-NAME L-NAME-LENGTH L-ID
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-00-client-information.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     GOBACK.
+ END PROGRAM TEST-CONFIGURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PACK-RESPONSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-EDIT                PIC 9.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ACTION.
+     MOVE L-ACTION TO WS-EDIT
+     MOVE SPACES TO WS-PATH
+     STRING "contract/fixtures/wire/config-c2s-06-resource-pack-response-" WS-EDIT ".hex"
+         DELIMITED BY SIZE INTO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     GOBACK.
+ END PROGRAM TEST-PACK-RESPONSE.

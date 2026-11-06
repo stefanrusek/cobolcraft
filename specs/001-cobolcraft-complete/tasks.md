@@ -1000,13 +1000,13 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: Resource Pack Push and the response handling of 08 §9.7. **Independent Test**: `make gate-core`.
 
-- [ ] T720 [P] [US18-core] Write `contract_wire_server.cob` cases: configuration Resource Pack Push (optional and required with prompt) equals its fixtures from settings; every configuration Resource Pack Response decodes; the pack-required configuration Disconnect equals its fixture
-- [ ] T721 [P] [US18-core] Write acceptance test `core/tests/acc_us18_offer.cob`: case "acceptance US18-6 given a configured pack when a player configures then Resource Pack Push carries the URL, hash, id, required flag and prompt, and configuration continues after a terminal response"
-- [ ] T722 [US18-core] Implement the pack offer and response wait in `core/src/config-phase.cob`
-- [ ] T723 [P] [US18-core] Write acceptance test `core/tests/acc_us18_required_declined.cob`: case "acceptance US18-7 given a required pack when the player declines then they are disconnected with the §17 required-pack text"
-- [ ] T724 [US18-core] Implement the required-pack disconnect in `core/src/config-phase.cob`
-- [ ] T725 [US18-core] Extend the core implementation tests to 100 % coverage of the US18 changes
-- [ ] T726 Gate: run `make gate-core` and record the command and its real output
+- [X] T720 [P] [US18-core] Write `contract_wire_server.cob` cases: configuration Resource Pack Push (optional and required with prompt) equals its fixtures from settings; every configuration Resource Pack Response decodes; the pack-required configuration Disconnect equals its fixture
+- [X] T721 [P] [US18-core] Write acceptance test `core/tests/acc_us18_offer.cob`: case "acceptance US18-6 given a configured pack when a player configures then Resource Pack Push carries the URL, hash, id, required flag and prompt, and configuration continues after a terminal response"
+- [X] T722 [US18-core] Implement the pack offer and response wait in `core/src/config-phase.cob`
+- [X] T723 [P] [US18-core] Write acceptance test `core/tests/acc_us18_required_declined.cob`: case "acceptance US18-7 given a required pack when the player declines then they are disconnected with the §17 required-pack text"
+- [X] T724 [US18-core] Implement the required-pack disconnect in `core/src/config-phase.cob`
+- [X] T725 [US18-core] Extend the core implementation tests to 100 % coverage of the US18 changes
+- [X] T726 Gate: run `make gate-core` and record the command and its real output
 
 ### Lane: server
 

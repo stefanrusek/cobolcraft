@@ -181,6 +181,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   before opening it, join the host with `TEST-JOIN` (memory), then `CORE-OPEN-TO-OTHERS` (guest mode,
   guest-operator flag; only kind 1 becomes kind 2) and join guests with `TEST-JOIN-NETWORK`. A network
   login with the host's name gets Login Disconnect `name_is_host` [name]; the memory host is never refused.
+- **Server pack offer** (US18; `config-phase.cob`): with `CS-PACK-OFFERED` 1 the configuration
+  sequence sends Resource Pack Push after Update Tags (`TEST-DRAIN-IDS`: `2 1 13 15 7x18 14 9`) and
+  waits (CF-STEP 3) for a terminal Resource Pack Response of that pack id before Finish
+  Configuration; declining a required pack gets the configuration Disconnect `pack_required`.
+  `TEST-CONFIGURE` stops after the client's Select Known Packs; `TEST-PACK-RESPONSE` feeds the
+  response fixture of an action (pack id `00112233-4455-6677-8899-aabbccddeeff`).
+  `CONFIG-PACK-PUSH-BUILD` takes the settings record, so contract tests need no open world.
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
