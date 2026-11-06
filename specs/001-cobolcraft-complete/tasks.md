@@ -1021,19 +1021,19 @@ tests comes from a `<test>.stdin` file (runner feature, Phase 1).
 **Independent Test**: `make gate-server` — a loopback client connected through `cc_net_*` completes status and
 login against `SV-START`/`SV-ITERATE`.
 
-- [ ] T727 [P] [US2-server] Write `server/tests/contract_coreapi_consumer.cob`: `CORE-SETTINGS`, `CORE-BUFFER`, `CORE-STATUS` lengths and constants from `COREAPI.cpy` match core-host-api §1; the host's start sequence (`CORE-WORLD-OPEN` then listen), per-connection pump (`CORE-CONN-OPEN` network, `-INPUT`, `-OUTPUT`, close flag, `-CLOSED`) and tick cadence (one `CORE-TICK` per elapsed 50 ms) follow core-host-api §2
-- [ ] T728 [P] [US2-server] Write `server/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant the server uses has its shim-abi value and each `cc_net_*` call links and returns a defined outcome on a minimal loopback call
-- [ ] T729 [P] [US2-server] Write implementation test `server/tests/test_tcp_host.cob`: accepted loopback connections are registered as network connections; received bytes reach `CORE-CONN-INPUT`; `CORE-CONN-OUTPUT` bytes are sent including partial sends; the transport closes after a close-flag hand-back is flushed; a peer close calls `CORE-CONN-CLOSED`; a socket error on one connection logs `ERROR connection: <detail>` and serving continues (research R14)
-- [ ] T730 [US2-server] Implement the listener and accept loop (new connections registered with `CORE-CONN-OPEN` network) in `server/src/tcp-host.cob` and add the server sources to `SRC` in `server/Makefile`
-- [ ] T731 [US2-server] Implement the inbound pump (`cc_net_recv` → `CORE-CONN-INPUT`; peer close → `CORE-CONN-CLOSED`) in `server/src/tcp-host.cob`
-- [ ] T732 [US2-server] Implement the outbound pump (`CORE-CONN-OUTPUT` → `cc_net_send` with partial sends; close after a close-flag hand-back is flushed) in `server/src/tcp-host.cob`
-- [ ] T733 [US2-server] Implement the non-fatal socket error path (`ERROR connection: <detail>`, that connection closed, serving continues; research R14) in `server/src/tcp-host.cob`
-- [ ] T734 [P] [US2-server] Write implementation test `server/tests/test_main_loop.cob`: `SV-START` with default `CORE-SETTINGS` (operator-surface §2 defaults) opens `./world` in a scratch directory and listens on the port; `SV-ITERATE` waits on `cc_net_poll` no longer than the time to the next tick, runs every due tick and displays drained console lines
-- [ ] T735 [US2-server] Implement `SV-START` (settings, `CORE-WORLD-OPEN` of `./world`, listen) in `server/src/loop.cob`
-- [ ] T736 [US2-server] Implement `SV-ITERATE` (poll up to the next tick, accept, pump, due ticks, display drained console lines) in `server/src/loop.cob`
-- [ ] T737 [US2-server] Implement `SV-SHUTDOWN` in `server/src/loop.cob`
-- [ ] T738 [US2-server] Extend the server implementation tests to 100 % coverage of `server/src` and list every test in `TESTS` of `server/Makefile`
-- [ ] T739 Gate: run `make gate-server` (root `Makefile`) and record the command and its real output
+- [X] T727 [P] [US2-server] Write `server/tests/contract_coreapi_consumer.cob`: `CORE-SETTINGS`, `CORE-BUFFER`, `CORE-STATUS` lengths and constants from `COREAPI.cpy` match core-host-api §1; the host's start sequence (`CORE-WORLD-OPEN` then listen), per-connection pump (`CORE-CONN-OPEN` network, `-INPUT`, `-OUTPUT`, close flag, `-CLOSED`) and tick cadence (one `CORE-TICK` per elapsed 50 ms) follow core-host-api §2
+- [X] T728 [P] [US2-server] Write `server/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant the server uses has its shim-abi value and each `cc_net_*` call links and returns a defined outcome on a minimal loopback call
+- [X] T729 [P] [US2-server] Write implementation test `server/tests/test_tcp_host.cob`: accepted loopback connections are registered as network connections; received bytes reach `CORE-CONN-INPUT`; `CORE-CONN-OUTPUT` bytes are sent including partial sends; the transport closes after a close-flag hand-back is flushed; a peer close calls `CORE-CONN-CLOSED`; a socket error on one connection logs `ERROR connection: <detail>` and serving continues (research R14)
+- [X] T730 [US2-server] Implement the listener and accept loop (new connections registered with `CORE-CONN-OPEN` network) in `server/src/tcp-host.cob` and add the server sources to `SRC` in `server/Makefile`
+- [X] T731 [US2-server] Implement the inbound pump (`cc_net_recv` → `CORE-CONN-INPUT`; peer close → `CORE-CONN-CLOSED`) in `server/src/tcp-host.cob`
+- [X] T732 [US2-server] Implement the outbound pump (`CORE-CONN-OUTPUT` → `cc_net_send` with partial sends; close after a close-flag hand-back is flushed) in `server/src/tcp-host.cob`
+- [X] T733 [US2-server] Implement the non-fatal socket error path (`ERROR connection: <detail>`, that connection closed, serving continues; research R14) in `server/src/tcp-host.cob`
+- [X] T734 [P] [US2-server] Write implementation test `server/tests/test_main_loop.cob`: `SV-START` with default `CORE-SETTINGS` (operator-surface §2 defaults) opens `./world` in a scratch directory and listens on the port; `SV-ITERATE` waits on `cc_net_poll` no longer than the time to the next tick, runs every due tick and displays drained console lines
+- [X] T735 [US2-server] Implement `SV-START` (settings, `CORE-WORLD-OPEN` of `./world`, listen) in `server/src/loop.cob`
+- [X] T736 [US2-server] Implement `SV-ITERATE` (poll up to the next tick, accept, pump, due ticks, display drained console lines) in `server/src/loop.cob`
+- [X] T737 [US2-server] Implement `SV-SHUTDOWN` in `server/src/loop.cob`
+- [X] T738 [US2-server] Extend the server implementation tests to 100 % coverage of `server/src` and list every test in `TESTS` of `server/Makefile`
+- [X] T739 Gate: run `make gate-server` (root `Makefile`) and record the command and its real output
 
 #### Phase 29: US13-server — configuration file, ready line, console format
 

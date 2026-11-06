@@ -83,6 +83,11 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   "does not conform to the parameter definition" under `-Wall`: copy the slice into a fixed-size
   field, call, copy it back.
 - **Free-format literals cannot use `-` continuation lines**: build long text with `MOVE "a" & "b"`.
+- **`BINARY-SHORT`/`BINARY-LONG` are native byte order** (little-endian on arm64), unlike `PIC 9 BINARY`:
+  read a network-order field of a C struct (`sin_port`) from `PIC X(2)` bytes.
+- **`PB-FRAME-DECODE` with a threshold ≥ 0** leaves the Data length 0 of an uncompressed packet in
+  front of the id in the packet buffer (`PK-POS` is past both); strip it before comparing the packet
+  with a fixture (server `SVT-NEXT-PACKET` does).
 - **Reading NBT compounds**: `MOVE SPACES TO WN` before each `NBT-READ-COMPOUND-NEXT` and compare
   the whole field (`WN = "Pos"`); the wrapper name `""` of a mixed list (07 §1.1) leaves it spaces.
   Never reference-modify a name by a length that can be 0.
@@ -196,6 +201,15 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   the only cobolcraft:main candidate is the abend, refused while hostile mobs are off). Mob tests set the
   Time just before the tick they test and place mobs with `MOB-SPAWN`. Expected spawn columns and wander
   decisions come from the §1.4.1 hash (`core/src/rng.cob`), computed independently from the doc.
+
+- **Server tests** (`server/tests/SVTEST.cpy`, COPY after the test program) drive the host with a real
+  loopback client: `SVT-CONNECT`, `SVT-SEND-FIXTURE` (threshold -1, or 256 after Set Compression),
+  `SVT-CONFIGURE`, `SVT-RECV`, `SVT-NEXT-PACKET`, `SVT-SAME-AS-FIXTURE`. `SVT-SCRATCH` makes
+  `build/<dir>` the current directory (the server works in `.`; fixtures then resolve through
+  `SVT-ROOT` "../../"). `SVT-CAPTURE-START`/`-STOP` redirect standard output to a file to assert
+  console lines (no TEST line in between). macOS grows loopback socket buffers to megabytes:
+  `SVT-SHRINK-BUFFERS` (4096-byte buffers) makes a partial send happen. The host state is
+  `server/copy/SVSTATE.cpy` (slots, pending output, tick clock, `SV-TICKS`).
 
 ## Failure handling (FR-012)
 
