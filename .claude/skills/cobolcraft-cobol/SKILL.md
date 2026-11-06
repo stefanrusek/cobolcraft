@@ -215,6 +215,19 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-CONFIGURE` stops after the client's Select Known Packs; `TEST-PACK-RESPONSE` feeds the
   response fixture of an action (pack id `00112233-4455-6677-8899-aabbccddeeff`).
   `CONFIG-PACK-PUSH-BUILD` takes the settings record, so contract tests need no open world.
+- **Resource packs** (US18; `client/src/packs/`, `zip.cob`, `png.cob`, `http.cob`, `regex.cob`): the
+  stack is `PK-PACK` (kind 0 built-in, 1 folder, 2 zip; `PK-META` a `CLMCMETA.cpy` record, `PK-FILES`
+  the file table after overlays and filters). `PACKS-RELOAD` rebuilds the stack from `OP-ENABLED`
+  (options.dat, top first) and the active server packs (`RP-PACK`), then reloads everything drawn
+  from it. Client tests use `client/tests/PACKTEST.cpy` (COPY after CLTEST): `TEST-PACK-START`
+  copies fixture packs of `tests/fixtures/packs` (gen_packs.py, gitignored, made by `make fixtures`)
+  into `resourcepacks/`, `TEST-PACK-ENABLE`, `TEST-PIXEL` (a sprite's top-left pixel; a missing
+  sprite is the stripes), `TEST-DIGEST`/`-DIFF` (what changed), `TEST-PUSH`/`TEST-POP`. Downloads
+  run against `tools/testsrv/testsrv.py` (`TEST-TESTSRV-START`/`-STOP` in CLTEST.cpy); use
+  `127.0.0.1` URLs. The UI atlas has an icon band (`UA-ICON-Y`) between the font and the swatch
+  row, so UI tests' V coordinates depend on `CL-MAX-ICONS`.
+- **Moving a table entry's bytes into a `BINARY-LONG`** with `MOVE area(pos:4) TO n` converts it as
+  display digits: move the whole entry into a group with the same layout and read the field.
 - **Server console input** (`server/src/console.cob`): `TCP-POLL` asks `cc_net_poll` about standard input
   only while `SV-CONSOLE-OPEN` is 1 (set by `SV-START`, 0 at end of input). Server tests without a
   `.stdin` get an empty input, so the console closes on the first poll. A test that needs a player in

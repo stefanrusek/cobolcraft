@@ -6,7 +6,8 @@
 *> console lines (sp-host.cob SP-PUMP), sprinting (controls.cob), the client tick (every 50 ms in
 *> play, not while a single-player pause is in effect: the player's movement and its Move Player
 *> once loaded, then Client Tick End), the target block or entity (raycast.cob, world screen) and the block, use,
-*> eat, attack and hotbar controls (controls.cob), the connections pumped without waiting, the sky, meshing of changed sections,
+*> eat, attack and hotbar controls (controls.cob), the connections pumped without waiting, the
+*> server packs fetched and applied (packs/download.cob), the sky, meshing of changed sections,
 *> then the screen model, the UI and the render list; CL-RUN repeats frames over the window
 *> (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the command
 *> line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
@@ -36,7 +37,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
 *> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
-*> (game directory, server list, packs, language, font, block, entity and environment atlases,
+*> (game directory, server list, the enabled packs of options.dat, the download cache trimmed,
+*> the local packs, the pack
+*> stack, language, font, block, entity and environment atlases,
 *> models).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -47,7 +50,10 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
      CALL "GAME-DIR-SETUP" USING CLIENT-STATE
      CALL "SERVERS-LOAD" USING CLIENT-STATE
-     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     CALL "OPTIONS-LOAD" USING CLIENT-STATE
+     CALL "PACK-CACHE-VACUUM" USING CLIENT-STATE
+     CALL "LOCAL-PACKS-SCAN" USING CLIENT-STATE
+     CALL "PACK-STACK-BUILD" USING CLIENT-STATE
      CALL "LANG-LOAD" USING CLIENT-STATE
      CALL "FONT-LOAD" USING CLIENT-STATE
      CALL "ATLAS-BUILD" USING CLIENT-STATE
@@ -240,6 +246,7 @@
              CALL "NET-PUMP" USING CLIENT-STATE WS-CONN
          END-IF
      END-PERFORM
+     CALL "PACKS-PUMP" USING CLIENT-STATE
 *>   Daylight changes the brightness baked into the meshes: every section is meshed again.
      CALL "SKY-UPDATE" USING CLIENT-STATE
      IF SK-U NOT = SK-MESHED-U

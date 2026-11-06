@@ -45,9 +45,10 @@
      MOVE 2 TO SM-W-LENGTH(1)
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE "ui a label is one quad per character: 'A' at window (20, 40) to (36, 56) with the cell "
-         & "(8, 16)-(16, 24) of the 128 x 56 UI atlas; 'b' 12 pixels further" TO TL-CASE
+         & "(8, 16)-(16, 24) of the 128 x 88 UI atlas (font, icon cells, swatches); 'b' 12 "
+         & "pixels further" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "12.00 20.00 40.00 0.06 0.29 36.00 56.00 0.13 0.43 1.00 1.00 32.00" TO TL-EXPECTED
+     MOVE "12.00 20.00 40.00 0.06 0.18 36.00 56.00 0.13 0.27 1.00 1.00 32.00" TO TL-EXPECTED
      MOVE SPACES TO WS-OUT
      MOVE 1 TO WS-PTR
      MOVE RL-UI-COUNT TO WS-E
@@ -105,8 +106,8 @@
      MOVE 37 TO WS-VERTEX
      CALL "TEST-UI-VERTEX" USING CLIENT-STATE WS-VERTEX WS-OUT WS-PTR
      MOVE WS-OUT TO TL-OBSERVED
-     MOVE "48.00 0.00 0.00 0.22 0.93 200.00 40.00 0.22 0.93 88.00 0.00 100.00 0.34 0.93"
-         & " 0.00 200.00 0.28 0.93" TO TL-EXPECTED
+     MOVE "48.00 0.00 0.00 0.22 0.95 200.00 40.00 0.22 0.95 88.00 0.00 100.00 0.34 0.95"
+         & " 0.00 200.00 0.28 0.95" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-UI-RENDER.

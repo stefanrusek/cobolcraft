@@ -3,7 +3,9 @@
 # (contracts/test-harness.md §2). Shared rules: tools/package.mk. copy/ holds the client state
 # CLSTATE.cpy and constants CLCONST.cpy; tests/ is an include directory for the test helper
 # copybook CLTEST.cpy. The tests need the reference textures of tests/fixtures/textures, written by
-# the independent generator tests/fixtures/gen_textures.py (test infrastructure, research R9).
+# the independent generator tests/fixtures/gen_textures.py (test infrastructure, research R9), the
+# zip archives of tests/fixtures/zips (gen_zips.py), the PNG files of tests/fixtures/png
+# (gen_png.py) and the resource packs of tests/fixtures/packs (gen_packs.py, US18).
 PKG      := client
 LIBNAME  := libclient.a
 SRC      := $(shell find src -name '*.cob' 2>/dev/null | sort)
@@ -31,3 +33,6 @@ $(PROGRAM): $(OBJ)/main.o $(LIB) $(DEPLIBS)
 tests: fixtures
 fixtures:
 	python3 tests/fixtures/gen_textures.py
+	python3 tests/fixtures/gen_zips.py
+	python3 tests/fixtures/gen_png.py
+	python3 tests/fixtures/gen_packs.py

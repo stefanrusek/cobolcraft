@@ -1387,48 +1387,48 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 `make gate-client` with every `acc_us18_*.cob` passing (downloads against `tools/testsrv/testsrv.py`, HTTPS with
 `SSL_CERT_FILE` set to the test CA).
 
-- [ ] T989 [P] [US18-client] Write implementation test `client/tests/test_zip.cob`: central directory reading, stored and deflated entries (`cc_inflate` mode `CC_RAW`), a corrupt archive reported as unreadable (08 §1.1)
-- [ ] T990 [US18-client] Implement zip reading in `client/src/zip.cob`
-- [ ] T991 [P] [US18-client] Write implementation test `client/tests/test_png.cob`: decoding of every PNG colour type and bit depth 08 §7.1 accepts, all five filter types, interlacing as 08 states, and rejection of an unreadable file
-- [ ] T992 [US18-client] Implement PNG decoding in `client/src/png.cob`
-- [ ] T993 [P] [US18-client] Write implementation test `client/tests/test_mcmeta.cob`: `pack.mcmeta` `pack` section, version compatibility (compatible, too old, too new, unknown; 08 §2.1 to §2.3), overlays (§1.5, §2.4), `filter` (§3.3), `language` (§2.5), `features` (§2.6)
-- [ ] T994 [US18-client] Implement `pack.mcmeta` parsing and compatibility in `client/src/packs/mcmeta.cob`
-- [ ] T995 [P] [US18-client] Write implementation test `client/tests/test_local_packs.cob`: `resourcepacks/` zips and folders listed with id `file/<name>`; folder and zip sources serve their files; `options.dat` `EnabledPacks` round-trips
-- [ ] T996 [US18-client] Implement local pack discovery (`resourcepacks/` zips and folders, ids `file/<name>`) in `client/src/packs/local.cob`
-- [ ] T997 [US18-client] Implement folder and zip pack sources in `client/src/packs/source.cob`
-- [ ] T998 [US18-client] Implement `options.dat` load and save in `client/src/game-dir.cob`
-- [ ] T999 [P] [US18-client] Write acceptance test `client/tests/acc_us18_pack_list.cob`: case "acceptance US18-1 given packs in the packs folder when the pack screen opens then each is listed with description, icon if present, and compatible, too old, too new or unknown"
-- [ ] T1000 [US18-client] Implement the pack selection screen listing in `client/src/screens/pack-select.cob`
-- [ ] T1001 [US18-client] Add the packs button to `client/src/screens/title.cob`
-- [ ] T1002 [P] [US18-client] Write acceptance test `client/tests/acc_us18_pack_order.cob`: case "acceptance US18-2 given several enabled packs in an order then a higher pack's file wins, the built-in pack stays at the bottom, and the choice and order are kept after a restart"; case "US18 edge a pack with only some files falls through to the packs below for the rest"
-- [ ] T1003 [US18-client] Implement enabling, disabling and ordering on `client/src/screens/pack-select.cob`
-- [ ] T1004 [US18-client] Implement stack ordering (server packs newest first, enabled local packs in user order, built-in fixed at the bottom) in `client/src/packs/stack.cob`
-- [ ] T1005 [P] [US18-client] Write implementation test `client/tests/test_pack_stack_overlays_filter.cob`: overlay directories selected by format range replace base files (08 §1.5, §2.4); a `filter` section hides matching paths of the packs below (08 §3.3)
-- [ ] T1006 [US18-client] Implement overlays (08 §1.5, §2.4) in `client/src/packs/stack.cob`
-- [ ] T1007 [US18-client] Implement `filter` sections (08 §3.3) in `client/src/packs/stack.cob`
-- [ ] T1008 [P] [US18-client] Write acceptance test `client/tests/acc_us18_override.cob`: case "acceptance US18-3 given a pack replacing one block state file, model, item definition, texture or lang entry then only what that file affects changes"; case "SC-005 replacing exactly one texture changes exactly the blocks, items, mobs or weather that use it"
-- [ ] T1009 [US18-client] Implement full reload (atlases, models, item definitions, entity and environment textures, font, lang) when the stack changes in `client/src/packs/stack.cob`
-- [ ] T1010 [P] [US18-client] Write acceptance test `client/tests/acc_us18_incompatible.cob`: case "acceptance US18-4 enabling a too old, too new or unknown pack asks for confirmation and enables it on confirm"
-- [ ] T1011 [US18-client] Implement the confirmation screen in `client/src/screens/pack-confirm.cob`
-- [ ] T1012 [P] [US18-client] Write acceptance test `client/tests/acc_us18_invalid.cob`: case "acceptance US18-5 a pack with invalid metadata or an unreadable file shows an error naming the pack and the problem, and anything unresolvable is drawn with the missing-texture stripes"
-- [ ] T1013 [US18-client] Implement pack error reporting (08 §2.3 validation, pack name and problem) in `client/src/packs/stack.cob`
-- [ ] T1014 [US18-client] Implement the display of pack errors in `client/src/screens/pack-select.cob`
-- [ ] T1015 [P] [US18-client] Write implementation test `client/tests/test_http.cob` against `tools/testsrv/testsrv.py`: GET over `cc_net_*` (http) and `cc_tls_*` (https), the request headers of 08 §9.3, `Content-Length` and chunked bodies, non-200 as failure, the size limit by header and while streaming (research R10)
-- [ ] T1016 [US18-client] Implement the non-blocking HTTP/1.1 client in `client/src/http.cob`
-- [ ] T1017 [P] [US18-client] Write `contract_wire_client.cob` cases: Resource Pack Response (configuration and play) encodes equal to its fixtures for every action; Resource Pack Push (configuration and play) decodes
-- [ ] T1018 [P] [US18-client] Write acceptance test `client/tests/acc_us18_server_pack.cob`: case "acceptance US18-6 client half: a pushed pack prompts (unless the entry's policy is always or never), on accept is downloaded, its SHA-1 checked (direct `EVP_Digest` with `EVP_sha1`), responses accepted, downloaded, successfully loaded are sent in order, and it is on top of local packs until disconnect"; case "US18 edge two pushed packs: the last offered is on top"; cases for failed download, failed hash and failed reload sending the 08 §9.2 responses and not applying the pack
-- [ ] T1019 [US18-client] Implement the pack prompt screen with the always/never choice saved in `servers.dat` in `client/src/screens/pack-prompt.cob`
-- [ ] T1020 [US18-client] Implement the server pack download through `client/src/http.cob` in `client/src/packs/download.cob`
-- [ ] T1021 [US18-client] Implement the SHA-1 check (direct `EVP_Digest` with `EVP_sha1`) in `client/src/packs/download.cob`
-- [ ] T1022 [US18-client] Implement the 08 §9.2 response sequence in `client/src/packs/download.cob`
-- [ ] T1023 [US18-client] Implement placing server packs above local packs (last offered on top) in `client/src/packs/download.cob`
-- [ ] T1024 [US18-client] Implement removing server packs at disconnect in `client/src/packs/download.cob`
-- [ ] T1025 [P] [US18-client] Write acceptance test `client/tests/acc_us18_required_decline.cob`: case "acceptance US18-7 client half: declining a required pack sends declined and returns to the server list with the §17 required-pack message (rendered from its `translate` key)"
-- [ ] T1026 [US18-client] Implement required-pack decline handling in `client/src/packs/download.cob`
-- [ ] T1027 [P] [US18-client] Write acceptance test `client/tests/acc_us18_cache.cob`: case "acceptance US18-8 an unchanged pack offered again is applied from `downloads/` without a second download" (08 §9.4)
-- [ ] T1028 [US18-client] Implement the download cache in `client/src/packs/cache.cob`
-- [ ] T1029 [US18-client] Extend the client implementation tests to 100 % coverage of the US18 changes
-- [ ] T1030 Gate: run `make gate-client` and record the command and its real output
+- [X] T989 [P] [US18-client] Write implementation test `client/tests/test_zip.cob`: central directory reading, stored and deflated entries (`cc_inflate` mode `CC_RAW`), a corrupt archive reported as unreadable (08 §1.1)
+- [X] T990 [US18-client] Implement zip reading in `client/src/zip.cob`
+- [X] T991 [P] [US18-client] Write implementation test `client/tests/test_png.cob`: decoding of every PNG colour type and bit depth 08 §7.1 accepts, all five filter types, interlacing as 08 states, and rejection of an unreadable file
+- [X] T992 [US18-client] Implement PNG decoding in `client/src/png.cob`
+- [X] T993 [P] [US18-client] Write implementation test `client/tests/test_mcmeta.cob`: `pack.mcmeta` `pack` section, version compatibility (compatible, too old, too new, unknown; 08 §2.1 to §2.3), overlays (§1.5, §2.4), `filter` (§3.3), `language` (§2.5), `features` (§2.6)
+- [X] T994 [US18-client] Implement `pack.mcmeta` parsing and compatibility in `client/src/packs/mcmeta.cob`
+- [X] T995 [P] [US18-client] Write implementation test `client/tests/test_local_packs.cob`: `resourcepacks/` zips and folders listed with id `file/<name>`; folder and zip sources serve their files; `options.dat` `EnabledPacks` round-trips
+- [X] T996 [US18-client] Implement local pack discovery (`resourcepacks/` zips and folders, ids `file/<name>`) in `client/src/packs/local.cob`
+- [X] T997 [US18-client] Implement folder and zip pack sources in `client/src/packs/source.cob`
+- [X] T998 [US18-client] Implement `options.dat` load and save in `client/src/game-dir.cob`
+- [X] T999 [P] [US18-client] Write acceptance test `client/tests/acc_us18_pack_list.cob`: case "acceptance US18-1 given packs in the packs folder when the pack screen opens then each is listed with description, icon if present, and compatible, too old, too new or unknown"
+- [X] T1000 [US18-client] Implement the pack selection screen listing in `client/src/screens/pack-select.cob`
+- [X] T1001 [US18-client] Add the packs button to `client/src/screens/title.cob`
+- [X] T1002 [P] [US18-client] Write acceptance test `client/tests/acc_us18_pack_order.cob`: case "acceptance US18-2 given several enabled packs in an order then a higher pack's file wins, the built-in pack stays at the bottom, and the choice and order are kept after a restart"; case "US18 edge a pack with only some files falls through to the packs below for the rest"
+- [X] T1003 [US18-client] Implement enabling, disabling and ordering on `client/src/screens/pack-select.cob`
+- [X] T1004 [US18-client] Implement stack ordering (server packs newest first, enabled local packs in user order, built-in fixed at the bottom) in `client/src/packs/stack.cob`
+- [X] T1005 [P] [US18-client] Write implementation test `client/tests/test_pack_stack_overlays_filter.cob`: overlay directories selected by format range replace base files (08 §1.5, §2.4); a `filter` section hides matching paths of the packs below (08 §3.3)
+- [X] T1006 [US18-client] Implement overlays (08 §1.5, §2.4) in `client/src/packs/stack.cob`
+- [X] T1007 [US18-client] Implement `filter` sections (08 §3.3) in `client/src/packs/stack.cob`
+- [X] T1008 [P] [US18-client] Write acceptance test `client/tests/acc_us18_override.cob`: case "acceptance US18-3 given a pack replacing one block state file, model, item definition, texture or lang entry then only what that file affects changes"; case "SC-005 replacing exactly one texture changes exactly the blocks, items, mobs or weather that use it"
+- [X] T1009 [US18-client] Implement full reload (atlases, models, item definitions, entity and environment textures, font, lang) when the stack changes in `client/src/packs/stack.cob`
+- [X] T1010 [P] [US18-client] Write acceptance test `client/tests/acc_us18_incompatible.cob`: case "acceptance US18-4 enabling a too old, too new or unknown pack asks for confirmation and enables it on confirm"
+- [X] T1011 [US18-client] Implement the confirmation screen in `client/src/screens/pack-confirm.cob`
+- [X] T1012 [P] [US18-client] Write acceptance test `client/tests/acc_us18_invalid.cob`: case "acceptance US18-5 a pack with invalid metadata or an unreadable file shows an error naming the pack and the problem, and anything unresolvable is drawn with the missing-texture stripes"
+- [X] T1013 [US18-client] Implement pack error reporting (08 §2.3 validation, pack name and problem) in `client/src/packs/stack.cob`
+- [X] T1014 [US18-client] Implement the display of pack errors in `client/src/screens/pack-select.cob`
+- [X] T1015 [P] [US18-client] Write implementation test `client/tests/test_http.cob` against `tools/testsrv/testsrv.py`: GET over `cc_net_*` (http) and `cc_tls_*` (https), the request headers of 08 §9.3, `Content-Length` and chunked bodies, non-200 as failure, the size limit by header and while streaming (research R10)
+- [X] T1016 [US18-client] Implement the non-blocking HTTP/1.1 client in `client/src/http.cob`
+- [X] T1017 [P] [US18-client] Write `contract_wire_client.cob` cases: Resource Pack Response (configuration and play) encodes equal to its fixtures for every action; Resource Pack Push (configuration and play) decodes
+- [X] T1018 [P] [US18-client] Write acceptance test `client/tests/acc_us18_server_pack.cob`: case "acceptance US18-6 client half: a pushed pack prompts (unless the entry's policy is always or never), on accept is downloaded, its SHA-1 checked (direct `EVP_Digest` with `EVP_sha1`), responses accepted, downloaded, successfully loaded are sent in order, and it is on top of local packs until disconnect"; case "US18 edge two pushed packs: the last offered is on top"; cases for failed download, failed hash and failed reload sending the 08 §9.2 responses and not applying the pack
+- [X] T1019 [US18-client] Implement the pack prompt screen with the always/never choice saved in `servers.dat` in `client/src/screens/pack-prompt.cob`
+- [X] T1020 [US18-client] Implement the server pack download through `client/src/http.cob` in `client/src/packs/download.cob`
+- [X] T1021 [US18-client] Implement the SHA-1 check (direct `EVP_Digest` with `EVP_sha1`) in `client/src/packs/download.cob`
+- [X] T1022 [US18-client] Implement the 08 §9.2 response sequence in `client/src/packs/download.cob`
+- [X] T1023 [US18-client] Implement placing server packs above local packs (last offered on top) in `client/src/packs/download.cob`
+- [X] T1024 [US18-client] Implement removing server packs at disconnect in `client/src/packs/download.cob`
+- [X] T1025 [P] [US18-client] Write acceptance test `client/tests/acc_us18_required_decline.cob`: case "acceptance US18-7 client half: declining a required pack sends declined and returns to the server list with the §17 required-pack message (rendered from its `translate` key)"
+- [X] T1026 [US18-client] Implement required-pack decline handling in `client/src/packs/download.cob`
+- [X] T1027 [P] [US18-client] Write acceptance test `client/tests/acc_us18_cache.cob`: case "acceptance US18-8 an unchanged pack offered again is applied from `downloads/` without a second download" (08 §9.4)
+- [X] T1028 [US18-client] Implement the download cache in `client/src/packs/cache.cob`
+- [X] T1029 [US18-client] Extend the client implementation tests to 100 % coverage of the US18 changes
+- [X] T1030 Gate: run `make gate-client` and record the command and its real output
 
 ---
 

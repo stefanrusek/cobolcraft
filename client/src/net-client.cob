@@ -287,7 +287,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NET-CLOSE.
 *> USING CLIENT-STATE, connection: closes the socket (a memory connection: CORE-CONN-CLOSED, unless
-*> the core has handed it back already); the connection is free again.
+*> the core has handed it back already); the connection is free again. Closing the game connection
+*> removes the server's packs (08 §9.5).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -304,6 +305,9 @@
      MOVE 0 TO CN-MEMORY(L-CONN) CN-CORE-ID(L-CONN)
      MOVE 0 TO CN-HANDLE(L-CONN)
      MOVE PH-NONE TO CN-PHASE(L-CONN)
+     IF L-CONN = CONN-GAME
+         CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
+     END-IF
      GOBACK.
  END PROGRAM NET-CLOSE.
 

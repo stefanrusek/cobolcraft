@@ -9,14 +9,17 @@
 *> screen (death.cob) opens on Player Combat Kill and its respawn control sends Client Command.
 *> Single-player (US16): the world list (world-list.cob), the create-world and confirm-delete
 *> screens, and the pause menu's quit-world control (sp-host.cob). Opening to others (US17): the
-*> pause menu's open-to-others screen (open-to-others.cob).
+*> pause menu's open-to-others screen (open-to-others.cob). Packs (US18): the title screen's
+*> Resource Packs opens the pack selection screen (pack-select.cob) and its confirmation screen
+*> (pack-confirm.cob); a server's pack offer opens the pack prompt (pack-prompt.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
 *> USING CLIENT-STATE, screen id (SCR-*): nothing focused; the server list asks every entry for its
 *> status again; chat opens with an empty line, scrolled to the newest message; the world list is
 *> read from saves/ again, nothing selected; the create-world screen starts with the default name
-*> and survival; the open-to-others screen starts with survival guests and no guest operators.
+*> and survival; the open-to-others screen starts with survival guests and no guest operators; the
+*> pack screen lists resourcepacks/ again (LOCAL-PACKS-SCAN), nothing selected.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -55,6 +58,10 @@
      END-IF
      IF L-SCREEN = SCR-OPEN-TO-OTHERS
          MOVE 0 TO SP-GUEST-MODE SP-GUEST-OPERATOR
+     END-IF
+     IF L-SCREEN = SCR-PACKS
+         CALL "LOCAL-PACKS-SCAN" USING CLIENT-STATE
+         MOVE 0 TO SM-SELECTED
      END-IF
      GOBACK.
  END PROGRAM SCREEN-OPEN.
@@ -102,6 +109,12 @@
              CALL "CONFIRM-DELETE-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-OPEN-TO-OTHERS
              CALL "OPEN-TO-OTHERS-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-PACKS
+             CALL "PACK-SELECT-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-PACK-CONFIRM
+             CALL "PACK-CONFIRM-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-PACK-PROMPT
+             CALL "PACK-PROMPT-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
@@ -115,6 +128,7 @@
 *> open-to-others screen, cancels editing, and leaves
 *> the server list and the world list for the title screen, and the create-world and confirm-delete
 *> screens for the world list; typed text goes to the create-world name (create-world.cob);
+*> Escape leaves the pack screen as Done does and the pack confirmation for the pack screen;
 *> Escape and E close the inventory screen, E opens it from the world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
 *> from the world (the screen the frame began on, so the T typed with it and a line just sent do
 *> not reopen it), / opens it the same way with / typed, Escape closes chat; on the chat screen
@@ -196,6 +210,11 @@
                  MOVE SCR-WORLD TO WS-SCREEN
              WHEN SCR-OPEN-TO-OTHERS
                  MOVE SCR-PAUSE TO WS-SCREEN
+             WHEN SCR-PACK-CONFIRM
+                 MOVE SCR-PACKS TO WS-SCREEN
+             WHEN SCR-PACKS
+                 MOVE ACT-PACKS-DONE TO WS-ACTION
+                 CALL "PACK-SELECT-ACTION" USING CLIENT-STATE WS-ACTION
              WHEN SCR-EDIT-SERVER
                  MOVE SCR-SERVER-LIST TO WS-SCREEN
              WHEN SCR-SERVER-LIST
@@ -299,6 +318,7 @@
              MOVE 2 TO SM-FOCUS
          WHEN ACT-JOIN
              IF SM-SELECTED > 0
+                 MOVE SM-SELECTED TO RP-ENTRY-JOINED
                  MOVE SL-ADDR(SM-SELECTED) TO SM-CONNECT-ADDR
                  MOVE SL-ADDR-LENGTH(SM-SELECTED) TO SM-CONNECT-ADDR-LENGTH
                  MOVE 0 TO SM-MESSAGE-LENGTH
@@ -346,6 +366,19 @@
              CALL "SP-OPEN-OTHERS" USING CLIENT-STATE
          WHEN ACT-PAUSE
              MOVE SCR-PAUSE TO WS-SCREEN
+         WHEN ACT-PACKS
+             MOVE SCR-PACKS TO WS-SCREEN
+         WHEN ACT-PACK-ENABLE
+         WHEN ACT-PACK-DISABLE
+         WHEN ACT-PACK-UP
+         WHEN ACT-PACK-DOWN
+         WHEN ACT-PACK-CONFIRM
+         WHEN ACT-PACKS-DONE
+             CALL "PACK-SELECT-ACTION" USING CLIENT-STATE L-ACTION
+         WHEN ACT-PACK-ACCEPT
+         WHEN ACT-PACK-DECLINE
+             COMPUTE WS-I = ACT-PACK-DECLINE - L-ACTION
+             CALL "PACK-PROMPT-ANSWER" USING CLIENT-STATE WS-I
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

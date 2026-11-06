@@ -113,9 +113,13 @@
          COMPUTE FN-CELL-W = WS-IW / FUNCTION MAX(WS-COLS, 1)
          COMPUTE FN-CELL-H = WS-IH / FUNCTION MAX(WS-ROWS, 1)
      END-IF
-*>   The UI atlas: the font image, then the swatch row.
+*>   The UI atlas: the font image, then the pack icon cells (CL-MAX-ICONS cells of 16 x 16, as
+*>   many to a row as fit; local.cob), then the swatch row.
      COMPUTE UA-W = FUNCTION MAX(WS-IW, SW-COUNT * 8)
-     COMPUTE UA-H = WS-IH + 8
+     MOVE WS-IH TO UA-ICON-Y
+     COMPUTE WS-BYTES = UA-W / 16
+     COMPUTE WS-BYTES = (CL-MAX-ICONS + WS-BYTES - 1) / WS-BYTES
+     COMPUTE UA-H = WS-IH + WS-BYTES * 16 + 8
      IF UA-ADDR NOT = NULL
          FREE UA-ADDR
      END-IF
@@ -128,7 +132,7 @@
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= SW-COUNT
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 7
              PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > 7
-                 COMPUTE WS-POS = ((WS-IH + WS-Y) * UA-W + WS-I * 8 + WS-X) * 4 + 1
+                 COMPUTE WS-POS = ((UA-H - 8 + WS-Y) * UA-W + WS-I * 8 + WS-X) * 4 + 1
                  MOVE FUNCTION HEX-TO-CHAR(WS-SWATCHES(WS-I * 8 + 1:8)) TO B-ATLAS(WS-POS:4)
                  IF WS-I = SW-MISSING-GLYPH
                      MOVE FUNCTION ORD(FUNCTION HEX-TO-CHAR(WS-BOX(WS-Y * 2 + 1:2))) TO WS-BITS

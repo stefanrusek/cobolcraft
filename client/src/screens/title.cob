@@ -1,5 +1,5 @@
 *> The title screen (data-model §13; 08 §10.8.6): the game's name, Single-player (the world list,
-*> US16-1), Multiplayer and Quit Game. Resource packs join it with US18.
+*> US16-1), Multiplayer, Resource Packs (the pack selection screen, US18) and Quit Game.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TITLE-BUILD.
@@ -47,6 +47,12 @@
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
          WS-KEY-LENGTH
      MOVE 142 TO WS-Y
+     MOVE ACT-PACKS TO WS-ACTION
+     MOVE "cobolcraft.screen.title.packs" TO WS-KEY
+     MOVE 29 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     MOVE 168 TO WS-Y
      MOVE ACT-QUIT TO WS-ACTION
      MOVE "cobolcraft.screen.title.quit" TO WS-KEY
      MOVE 28 TO WS-KEY-LENGTH

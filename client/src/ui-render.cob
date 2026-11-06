@@ -10,7 +10,8 @@
 *> item's icon sprite in the block-and-item atlas: the icon layer, texture 0) and its count in the
 *> bottom-right corner on the layer drawn over the icons (RL-UI-LAYER 1). UI-QUAD writes to the
 *> layer RL-UI-LAYER names: 0 the UI, 1 over the icons, 2 the icons. An overlay (the hurt
-*> indication) is a quad over its rectangle on the swatch its argument names.
+*> indication) is a quad over its rectangle on the swatch its argument names. A pack icon is a quad
+*> over its rectangle on its 16 x 16 icon cell of the UI atlas (local.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-RENDER.
@@ -53,6 +54,8 @@
                  MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-OVERLAY
                  MOVE SM-W-ARG(WS-W) TO WS-SWATCH
+             WHEN SM-W-KIND(WS-W) = WK-ICON
+                 CALL "UI-ICON-QUAD" USING CLIENT-STATE WS-W
          END-EVALUATE
          IF WS-SWATCH >= 0
              CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(WS-W) SM-W-Y(WS-W) SM-W-W(WS-W)
@@ -331,3 +334,41 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM UI-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-ICON-QUAD.
+*> USING CLIENT-STATE, widget (a pack icon): a quad over the widget's rectangle on its icon cell
+*> (the argument: cells of 16 x 16 from row UA-ICON-Y, as many to a row as fit).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-PER                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-W                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-W.
+     COMPUTE WS-PER = UA-W / 16
+     COMPUTE WS-CX = FUNCTION MOD(SM-W-ARG(L-W) - 1, WS-PER) * 16
+     COMPUTE WS-CY = (SM-W-ARG(L-W) - 1) / WS-PER
+     COMPUTE WS-CY = UA-ICON-Y + WS-CY * 16
+     COMPUTE WS-X0 = SM-W-X(L-W) * CL-GUI-SCALE
+     COMPUTE WS-Y0 = SM-W-Y(L-W) * CL-GUI-SCALE
+     COMPUTE WS-X1 = (SM-W-X(L-W) + SM-W-W(L-W)) * CL-GUI-SCALE
+     COMPUTE WS-Y1 = (SM-W-Y(L-W) + SM-W-H(L-W)) * CL-GUI-SCALE
+     COMPUTE WS-U0 = WS-CX / UA-W
+     COMPUTE WS-V0 = WS-CY / UA-H
+     COMPUTE WS-U1 = (WS-CX + 16) / UA-W
+     COMPUTE WS-V1 = (WS-CY + 16) / UA-H
+     CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+     GOBACK.
+ END PROGRAM UI-ICON-QUAD.

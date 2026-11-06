@@ -100,6 +100,16 @@
 *>   TEST-NBT-TAG USING path (PIC X(256)), path length, tag name (PIC X(64)), number out
 *>     (BINARY-LONG), text out (PIC X(64)): a top-level Byte or Int tag's value, or a String tag's
 *>     text, of a gzip NBT file; number -999 and text "none" when the file or the tag is missing.
+*>   TEST-TESTSRV-START USING directory (PIC X(256)), options (PIC X(256): further testsrv.py
+*>     options such as "--chunked", "--status 404", "--oversize 5000", "--request-log <file>", or
+*>     spaces), http port out, https port out (BINARY-LONG): runs tools/testsrv/testsrv.py serving
+*>     that directory over HTTP and HTTPS on free 127.0.0.1 ports and waits until it listens. The
+*>     test CA is created with tools/testsrv/make-ca.sh when build/testsrv/ca.pem is absent, and
+*>     SSL_CERT_FILE is set to it (absolute), so cc_tls trusts the server (research R10; the shim
+*>     tests do the same through shim/tests/tls_testsrv.h). One server at a time: a server still
+*>     running is stopped first. Ends the test program (status 2) when the server does not start.
+*>   TEST-TESTSRV-STOP: stops the server of TEST-TESTSRV-START (SIGTERM, waits until it has gone);
+*>     nothing when none runs. Call it before the test program ends.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -1567,3 +1577,106 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM TEST-NBT-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-TESTSRV-START.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 TEST-TESTSRV-PID       BINARY-LONG EXTERNAL.
+ 01 WS-SELF                BINARY-LONG.
+ 01 WS-SELF-TEXT           PIC 9(9).
+ 01 WS-CA                  PIC X(64) VALUE Z"build/testsrv/ca.pem".
+ 01 WS-CA-ABS              PIC X(1024).
+ 01 WS-CA-PTR              USAGE POINTER.
+ 01 WS-READY               PIC X(256).
+ 01 WS-PID-FILE            PIC X(256).
+ 01 WS-COMMAND             PIC X(2048).
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-TEXT-1 REDEFINES WS-TEXT PIC X.
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 256.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-TRIES               BINARY-LONG.
+ 01 WS-MICROS              BINARY-LONG VALUE 50000.
+ 01 WS-WORDS.
+    05 WS-WORD             PIC X(32) OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ 01 L-DIR                  PIC X(256).
+ 01 L-OPTIONS              PIC X(256).
+ 01 L-HTTP                 BINARY-LONG.
+ 01 L-HTTPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-OPTIONS L-HTTP L-HTTPS.
+     CALL "TEST-TESTSRV-STOP"
+     CALL "SYSTEM" USING "mkdir -p build/testsrv && (test -f build/testsrv/ca.pem"
+         & " || sh tools/testsrv/make-ca.sh >/dev/null)"
+     IF RETURN-CODE NOT = 0
+         DISPLAY "TEST-TESTSRV-START: make-ca.sh failed"
+         STOP RUN RETURNING 2
+     END-IF
+     MOVE LOW-VALUES TO WS-CA-ABS
+     CALL STATIC "realpath" USING BY REFERENCE WS-CA BY REFERENCE WS-CA-ABS
+         RETURNING WS-CA-PTR
+     MOVE 0 TO WS-LENGTH
+     INSPECT WS-CA-ABS TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL LOW-VALUE
+     SET ENVIRONMENT "SSL_CERT_FILE" TO WS-CA-ABS(1:WS-LENGTH)
+     CALL STATIC "getpid" RETURNING WS-SELF
+     MOVE WS-SELF TO WS-SELF-TEXT
+     MOVE SPACES TO WS-READY WS-PID-FILE WS-COMMAND
+     STRING "build/testsrv/ready-" WS-SELF-TEXT DELIMITED BY SIZE INTO WS-READY
+     STRING "build/testsrv/pid-" WS-SELF-TEXT DELIMITED BY SIZE INTO WS-PID-FILE
+     STRING "rm -f " FUNCTION TRIM(WS-READY) " " FUNCTION TRIM(WS-PID-FILE)
+         "; python3 tools/testsrv/testsrv.py --dir " FUNCTION TRIM(L-DIR)
+         " --http-port 0 --https-port 0 " FUNCTION TRIM(L-OPTIONS)
+         " --ready-file " FUNCTION TRIM(WS-READY) " >/dev/null 2>&1 & echo $! > "
+         FUNCTION TRIM(WS-PID-FILE) DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     MOVE -1 TO WS-LENGTH
+     PERFORM VARYING WS-TRIES FROM 1 BY 1 UNTIL WS-TRIES > 200 OR WS-LENGTH > 0
+         CALL STATIC "usleep" USING BY VALUE WS-MICROS
+         MOVE SPACES TO WS-TEXT
+         CALL "TEST-READ-FILE" USING WS-READY WS-TEXT-1 WS-TEXT-CAP WS-LENGTH
+     END-PERFORM
+     MOVE SPACES TO WS-WORDS
+     IF WS-LENGTH > 0
+         UNSTRING WS-TEXT DELIMITED BY "=" OR " " OR X"0A"
+             INTO WS-WORD(1) WS-WORD(2) WS-WORD(3) WS-WORD(4)
+     END-IF
+     MOVE FUNCTION NUMVAL(WS-WORD(2)) TO L-HTTP
+     MOVE FUNCTION NUMVAL(WS-WORD(4)) TO L-HTTPS
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-READ-FILE" USING WS-PID-FILE WS-TEXT-1 WS-TEXT-CAP WS-LENGTH
+     MOVE FUNCTION NUMVAL(WS-TEXT) TO TEST-TESTSRV-PID
+     MOVE SPACES TO WS-COMMAND
+     STRING "rm -f " FUNCTION TRIM(WS-READY) " " FUNCTION TRIM(WS-PID-FILE)
+         DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     IF L-HTTP = 0 OR L-HTTPS = 0
+         DISPLAY "TEST-TESTSRV-START: testsrv.py did not start"
+         CALL "TEST-TESTSRV-STOP"
+         STOP RUN RETURNING 2
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-TESTSRV-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-TESTSRV-STOP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 TEST-TESTSRV-PID       BINARY-LONG EXTERNAL.
+ 01 WS-TERM                BINARY-LONG VALUE 15.
+ 01 WS-PROBE               BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-TRIES               BINARY-LONG.
+ 01 WS-MICROS              BINARY-LONG VALUE 50000.
+ PROCEDURE DIVISION.
+     IF TEST-TESTSRV-PID > 0
+         CALL STATIC "kill" USING BY VALUE TEST-TESTSRV-PID BY VALUE WS-TERM RETURNING WS-RC
+         MOVE 0 TO WS-RC
+         PERFORM VARYING WS-TRIES FROM 1 BY 1 UNTIL WS-TRIES > 100 OR WS-RC NOT = 0
+             CALL STATIC "usleep" USING BY VALUE WS-MICROS
+             CALL STATIC "kill" USING BY VALUE TEST-TESTSRV-PID BY VALUE WS-PROBE
+                 RETURNING WS-RC
+         END-PERFORM
+         MOVE 0 TO TEST-TESTSRV-PID
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-TESTSRV-STOP.

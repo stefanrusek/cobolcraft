@@ -20,6 +20,7 @@
  78 SCR-CREATE-WORLD        VALUE 14.
  78 SCR-CONFIRM-DELETE      VALUE 15.
  78 SCR-OPEN-TO-OTHERS      VALUE 16.
+ 78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
  78 WK-LABEL                VALUE 1.
@@ -30,6 +31,8 @@
                                        *> the cursor), state 1 = the held hotbar slot, text the count
  78 WK-OVERLAY              VALUE 6.   *> a tint over its rectangle on the swatch its argument
                                        *> names (the hurt indication); never clicked
+ 78 WK-ICON                 VALUE 7.   *> a pack icon: argument the icon cell (1 to CL-MAX-ICONS)
+                                       *> of the UI atlas (pack-select.cob); never clicked
 
 *> Widget actions (what a click on the widget does).
  78 ACT-NONE                VALUE 0.
@@ -66,6 +69,21 @@
                                        *> commands
  78 ACT-OPEN-WORLD          VALUE 29.  *> open-to-others: open the world to others
  78 ACT-PAUSE               VALUE 30.  *> open-to-others Cancel: back to the pause menu
+ 78 ACT-PACKS               VALUE 31.  *> title: the pack selection screen (US18)
+ 78 ACT-PACK-ENABLE         VALUE 32.  *> pack screen: enable the selected pack (on top)
+ 78 ACT-PACK-DISABLE        VALUE 33.  *> pack screen: disable the selected pack
+ 78 ACT-PACK-UP             VALUE 34.  *> pack screen: move the selected pack one up
+ 78 ACT-PACK-DOWN           VALUE 35.  *> pack screen: move the selected pack one down
+ 78 ACT-PACK-CONFIRM        VALUE 36.  *> pack confirmation: enable the incompatible pack anyway
+ 78 ACT-PACK-ACCEPT         VALUE 37.  *> pack prompt: accept the server's packs
+ 78 ACT-PACK-DECLINE        VALUE 38.  *> pack prompt: decline the server's packs
+ 78 ACT-PACKS-DONE          VALUE 39.  *> pack screen: save the choice, reload, the title screen
+
+*> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
+ 78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
+ 78 RPS-DOWNLOAD            VALUE 2.   *> accepted: to be fetched (RP-HTTP while fetching)
+ 78 RPS-READY               VALUE 3.   *> downloaded: applied once no pack is fetched any more
+ 78 RPS-ACTIVE              VALUE 4.   *> on the stack
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -136,6 +154,12 @@
  78 CL-MAX-LINKS            VALUE 160.
  78 CL-MAX-SUGGEST          VALUE 10.
  78 CL-MAX-PACKS            VALUE 16.
+ 78 CL-MAX-LOCAL-PACKS      VALUE 32.  *> packs listed from resourcepacks/ (US18-1)
+ 78 CL-MAX-SERVER-PACKS     VALUE 8.   *> server-pushed packs of one connection (08 §9)
+ 78 CL-MAX-ICONS            VALUE 16.  *> pack icon cells of the UI atlas (16 x 16 each)
+ 78 CL-MAX-PACK-ERRORS      VALUE 8.   *> pack errors kept from the last reload (US18-5)
+ 78 CL-MAX-PACK-FILES       VALUE 8192. *> files of one local or server pack
+ 78 CL-PACK-SIZE-LIMIT      VALUE 262144000.  *> server pack download limit (08 §9.3)
  78 CL-MAX-UI-VERTICES      VALUE 24576.
  78 CL-MAX-ENTITIES         VALUE 256.
  78 CL-MAX-PLAYER-INFO      VALUE 64.

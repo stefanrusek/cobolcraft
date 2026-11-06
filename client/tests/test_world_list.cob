@@ -36,7 +36,7 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "world list the title screen offers Single-player" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "CobolCraft|Single-player|Multiplayer|Quit Game" TO TL-EXPECTED
+     MOVE "CobolCraft|Single-player|Multiplayer|Resource Packs|Quit Game" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -6,7 +6,8 @@
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
 *> connections, single-player hosting and the world list, local player and world settings, world replica (chunk rows and their section
 *> meshes), entity replica and player list, the target and block controls, chat, command tree and
-*> suggestions, recipe book, packs (stack, language, font), atlases and item icons, baked block
+*> suggestions, recipe book, packs (stack, language, font), local packs and options.dat, server
+*> packs, atlases and item icons, baked block
 *> models, sky, render list.
  01 CLIENT-STATE.
 *>  ---- start-up (client-surface §1, §2) ----
@@ -351,10 +352,29 @@
           15 RB-RES-ITEM     BINARY-LONG.
           15 RB-RES-AMOUNT   BINARY-LONG.
 *>  ---- packs (08 §3, §10): stack, language, font ----
+*>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
+*>  the enabled local packs (user order), then the server packs (newest on top). A local or server
+*>  pack is a folder (kind 1) or a zip (kind 2: PK-ZIP, zip.cob) at PK-ROOT; PK-META holds its
+*>  PACK-META (CLMCMETA.cpy: overlays, filter) and PK-FILES its file table (source.cob: the paths it
+*>  serves after overlays, without those the filters of the packs above hide), all allocated.
     05 PK-STATE.
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
        10 PK-PACK OCCURS 16 TIMES.
-          15 PK-KIND         BINARY-LONG.    *> 0 built-in
+          15 PK-KIND         BINARY-LONG.    *> 0 built-in, 1 folder, 2 zip
+          15 PK-SERVER       BINARY-LONG.    *> server pack: its RP-PACK row, else 0
+          15 PK-ID           PIC X(80).      *> file/<name>, server/<8 hex>/<uuid>
+          15 PK-ID-LENGTH    BINARY-LONG.
+          15 PK-ROOT         PIC X(1024).    *> the folder or the zip file
+          15 PK-ROOT-LENGTH  BINARY-LONG.
+          15 PK-ZIP          USAGE POINTER.
+          15 PK-META         USAGE POINTER.
+          15 PK-FILES        USAGE POINTER.
+          15 PK-FILE-COUNT   BINARY-LONG.
+*>     Pack errors of the last stack build (US18-5): rendered "%s cannot be used: %s" texts.
+       10 PK-ERROR-COUNT     BINARY-LONG.
+       10 PK-ERROR OCCURS 8 TIMES.
+          15 PK-ERROR-TEXT   PIC X(256).
+          15 PK-ERROR-LENGTH BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
        10 LG-ENTRY OCCURS 640 TIMES.
           15 LG-KEY          PIC X(80).
@@ -370,6 +390,53 @@
           15 FN-X            BINARY-LONG.    *> cell top-left in the UI atlas
           15 FN-Y            BINARY-LONG.
           15 FN-ADVANCE      BINARY-LONG.    *> in drawn pixels (height FN-HEIGHT)
+*>  ---- local packs (US18-1, US18-2; local.cob, screens/pack-select.cob): the packs of
+*>       resourcepacks/ (byte order), their metadata and icon cell; the enabled pack ids of
+*>       options.dat, top first; the pack awaiting confirmation (US18-4); the pack screen's
+*>       selected entry is SM-SELECTED ----
+    05 LP-STATE.
+       10 LP-COUNT           BINARY-LONG.
+       10 LP-ENTRY OCCURS 32 TIMES.
+          15 LP-NAME         PIC X(64).      *> file or folder name
+          15 LP-NAME-LENGTH  BINARY-LONG.
+          15 LP-ID           PIC X(80).      *> file/<name>
+          15 LP-ID-LENGTH    BINARY-LONG.
+          15 LP-KIND         BINARY-LONG.    *> 1 folder, 2 zip
+          15 LP-VALID        PIC 9.          *> 0 = cannot be used (LP-PROBLEM)
+          15 LP-PROBLEM      PIC X(256).     *> rendered problem text
+          15 LP-PROBLEM-LENGTH BINARY-LONG.
+          15 LP-DESC         PIC X(256).     *> rendered description
+          15 LP-DESC-LENGTH  BINARY-LONG.
+          15 LP-COMPAT       BINARY-LONG.    *> PM-COMPAT: 0 compatible, 1 too old, 2 too new, 3 unknown
+          15 LP-ICON         BINARY-LONG.    *> icon cell of the UI atlas, 0 = none
+       10 OP-COUNT           BINARY-LONG.
+       10 OP-ENABLED OCCURS 32 TIMES.
+          15 OP-ID           PIC X(80).
+          15 OP-ID-LENGTH    BINARY-LONG.
+       10 LP-CONFIRM         BINARY-LONG.    *> pack confirmation: the LP-ENTRY to enable
+       10 LP-ICON-COUNT      BINARY-LONG.    *> icon cells in use
+*>  ---- server packs (US18-6 to US18-8; 08 §9; packs/download.cob, packs/cache.cob,
+*>       screens/pack-prompt.cob): the packs pushed on the game connection in push order; the
+*>       server-list entry joined (its PackPolicy) and this connection's answer ----
+    05 RP-STATE.
+       10 RP-ENTRY-JOINED    BINARY-LONG.    *> SL-ENTRY of the game connection, 0 = none
+       10 RP-DECISION        BINARY-LONG.    *> 0 not asked, 1 allowed, 2 declined
+       10 RP-RETURN-SCREEN   BINARY-LONG.    *> screen shown again after the prompt
+       10 RP-PUSHES          BINARY-LONG.    *> pushes numbered so far (server/<8 hex> ids)
+       10 RP-COUNT           BINARY-LONG.
+       10 RP-PACK OCCURS 8 TIMES.
+          15 RP-UUID         PIC X(16).
+          15 RP-URL          PIC X(1024).
+          15 RP-URL-LENGTH   BINARY-LONG.
+          15 RP-HASH         PIC X(40).      *> lowercase expected SHA-1, spaces = none
+          15 RP-REQUIRED     PIC 9.
+          15 RP-PROMPT       PIC X(256).     *> rendered prompt text
+          15 RP-PROMPT-LENGTH BINARY-LONG.
+          15 RP-STEP         BINARY-LONG.    *> RPS-* (CLCONST.cpy)
+          15 RP-NUMBER       BINARY-LONG.    *> push number
+          15 RP-HTTP         USAGE POINTER.  *> allocated HTTP-REQUEST while downloading
+          15 RP-FILE         PIC X(1100).    *> the cached zip
+          15 RP-FILE-LENGTH  BINARY-LONG.
 *>  ---- atlases: block atlas (texture 0), UI atlas (texture 2), entity and environment atlases ----
     05 AT-STATE.
        10 AT-W               BINARY-LONG.
@@ -387,6 +454,7 @@
        10 UA-W               BINARY-LONG.
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
+       10 UA-ICON-Y          BINARY-LONG.    *> first row of the pack icon cells (16 x 16 each)
        10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).

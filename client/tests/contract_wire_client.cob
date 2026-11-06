@@ -27,6 +27,10 @@
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-VIEW                BINARY-LONG VALUE 8.
  01 WS-CONN                BINARY-LONG VALUE 1.
+ 01 WS-PACK-UUID           PIC X(16).
+ 01 WS-PACK-ACTION         BINARY-LONG.
+ 01 WS-PACK-PACKET         BINARY-LONG.
+ 01 WS-SAVED-SCREEN        BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
@@ -232,6 +236,50 @@
          & "packs.hex; brand and features need no answer" TO TL-CASE
      MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+
+*>   ---- server packs (03 Resource Pack Push, Response; 08 §9) ----
+     MOVE FUNCTION HEX-TO-CHAR("00112233445566778899aabbccddeeff") TO WS-PACK-UUID
+     MOVE 6 TO WS-PACK-PACKET
+     PERFORM VARYING WS-PACK-ACTION FROM 0 BY 1 UNTIL WS-PACK-ACTION > 7
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-PACK-RESPONSE" USING PB-BUFFER WS-PACK-PACKET WS-PACK-UUID WS-PACK-ACTION
+         MOVE WS-PACK-ACTION TO WS-EDIT
+         MOVE SPACES TO TL-CASE WS-PATH
+         STRING "contract wire client Resource Pack Response (configuration) action "
+             FUNCTION TRIM(WS-EDIT) " equals config-c2s-06-resource-pack-response-"
+             FUNCTION TRIM(WS-EDIT) ".hex" DELIMITED BY SIZE INTO TL-CASE
+         STRING "contract/fixtures/wire/config-c2s-06-resource-pack-response-"
+             FUNCTION TRIM(WS-EDIT) ".hex" DELIMITED BY SIZE INTO WS-PATH
+         CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     END-PERFORM
+     MOVE 50 TO WS-PACK-PACKET
+     MOVE 0 TO WS-PACK-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-PACK-RESPONSE" USING PB-BUFFER WS-PACK-PACKET WS-PACK-UUID WS-PACK-ACTION
+     MOVE "contract wire client Resource Pack Response (play) action 0 equals play-c2s-32-resource"
+         & "-pack-response.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-32-resource-pack-response.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE SM-SCREEN TO WS-SAVED-SCREEN
+     MOVE "contract/fixtures/wire/config-s2c-09-resource-pack-push-required-prompt.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Resource Pack Push (configuration, required, prompt) decodes: id, "
+         & "URL, hash, required, prompt; it waits for the prompt" TO TL-CASE
+     PERFORM PACK-TEXT
+     MOVE "1 00112233445566778899aabbccddeeff http://127.0.0.1:8080/pack.zip da39a3ee5e6b4b0d3255"
+         & "bfef95601890afd80709 1 Please accept the CobolCraft pack  step 1 screen 17" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/config-s2c-09-resource-pack-push-optional.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Resource Pack Push (configuration, optional) decodes and replaces "
+         & "the pack with the same id" TO TL-CASE
+     PERFORM PACK-TEXT
+     MOVE "1 00112233445566778899aabbccddeeff http://127.0.0.1:8080/pack.zip da39a3ee5e6b4b0d3255"
+         & "bfef95601890afd80709 0  step 1 screen 17" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
+     MOVE WS-SAVED-SCREEN TO SM-SCREEN
      CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
          MOVE SPACES TO WS-PATH
@@ -1122,7 +1170,44 @@
      PERFORM MODE-TEXT
      MOVE "mode 0 abilities 0 flying 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO RP-ENTRY-JOINED
+     MOVE 1 TO SL-POLICY(1)
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+     MOVE "contract/fixtures/wire/play-s2c-52-resource-pack-push.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Resource Pack Push (play) decodes; with the server's packs always "
+         & "accepted it is answered accepted (0x32) at once" TO TL-CASE
+     PERFORM PACK-TEXT
+     CALL "TEST-SENT-IDS" USING CLIENT-STATE WS-CONN WS-TEXT
+     STRING TL-OBSERVED DELIMITED BY "   " " sent " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE
+         INTO WS-PATH
+     MOVE WS-PATH TO TL-OBSERVED
+     MOVE "1 00112233445566778899aabbccddeeff http://127.0.0.1:8080/pack.zip da39a3ee5e6b4b0d3255"
+         & "bfef95601890afd80709 0  step 2 screen 5 sent 32" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
      STOP RUN.
+
+ PACK-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RP-COUNT TO WS-EDIT
+     MOVE RP-STEP(1) TO WS-EDIT2
+     MOVE SM-SCREEN TO WS-EDIT3
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION LOWER-CASE(FUNCTION HEX-OF(RP-UUID(1))) " "
+         RP-URL(1)(1:RP-URL-LENGTH(1)) " " RP-HASH(1) " " RP-REQUIRED(1) " " DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     IF RP-PROMPT-LENGTH(1) > 0
+         STRING TL-OBSERVED DELIMITED BY "  " " " RP-PROMPT(1)(1:RP-PROMPT-LENGTH(1))
+             DELIMITED BY SIZE INTO WS-PATH
+         MOVE WS-PATH TO TL-OBSERVED
+     END-IF
+     MOVE SPACES TO WS-PATH
+     STRING TL-OBSERVED DELIMITED BY "  " "  step " FUNCTION TRIM(WS-EDIT2) " screen "
+         FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-PATH
+     MOVE WS-PATH TO TL-OBSERVED
+     MOVE SPACES TO WS-PATH
+     .
 
  COMMANDS-TEXT.
      MOVE "T" TO TL-MODE

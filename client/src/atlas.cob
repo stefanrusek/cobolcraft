@@ -152,6 +152,10 @@
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
              WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND
+*>       A texture that cannot be decoded is drawn as the missing texture (US18-5).
+         IF WS-FOUND = 0
+             MOVE 16 TO AT-SW(WS-S) AT-SH(WS-S)
+         END-IF
          MOVE FUNCTION MAX(AT-W, AT-SW(WS-S)) TO AT-W
      END-PERFORM
      MOVE 0 TO WS-X WS-Y WS-ROW-H
@@ -177,6 +181,9 @@
          IF WS-S > 1
              CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S)
                  WS-SPRITE-PATH-LENGTH(WS-S) WS-IMAGE WS-IMAGE-CAP WS-W WS-H WS-FOUND
+             IF WS-FOUND = 0
+                 CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
+             END-IF
          END-IF
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
              COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
