@@ -5,7 +5,7 @@
 *>
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
 *> connections, local player and world settings, world replica (chunk rows and their section
-*> meshes), entity replica and player list, the target and block controls, packs (stack,
+*> meshes), entity replica and player list, the target and block controls, chat, packs (stack,
 *> language, font), atlases and item icons, baked block models, sky, render list.
  01 CLIENT-STATE.
 *>  ---- start-up (client-surface §1, §2) ----
@@ -229,6 +229,18 @@
           15 PI-UUID         PIC X(16).
           15 PI-NAME         PIC X(16).
           15 PI-NAME-LENGTH  BINARY-LONG.
+*>  ---- chat (US6; client-surface §4; screens/chat.cob, screens/hud.cob): the line being typed
+*>       (UTF-8), the messages scrolled back while chat is open, and the messages received this
+*>       session, oldest first (the clock when each arrived, its rendered text) ----
+    05 CH-STATE.
+       10 CH-LINE            PIC X(1024).
+       10 CH-LINE-LENGTH     BINARY-LONG.
+       10 CH-SCROLL          BINARY-LONG.
+       10 CH-COUNT           BINARY-LONG.
+       10 CH-MESSAGE OCCURS 100 TIMES.
+          15 CH-TIME         BINARY-DOUBLE.
+          15 CH-LENGTH       BINARY-LONG.
+          15 CH-TEXT         PIC X(256).
 *>  ---- packs (08 §3, §10): stack, language, font ----
     05 PK-STATE.
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first

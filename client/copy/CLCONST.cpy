@@ -115,6 +115,12 @@
  78 CL-MAX-HL-VERTICES      VALUE 144.
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
  78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
+*> Chat (client-surface §4; 05c Chat Message String(max 256)): messages kept, messages shown, how
+*> long a message shows while chat is closed, the longest line in UTF-16 code units.
+ 78 CL-MAX-CHAT             VALUE 100.
+ 78 CL-CHAT-SHOWN           VALUE 10.
+ 78 CL-CHAT-MS              VALUE 10000.
+ 78 CL-CHAT-UNITS           VALUE 256.
 *> Block reach of the target ray, in blocks from the eye (standin-content §11.4).
  78 CL-REACH                VALUE 5.
 

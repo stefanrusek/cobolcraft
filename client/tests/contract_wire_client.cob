@@ -3,7 +3,8 @@
 *> status, login, configuration and the play join equals what the client's builders (or its
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
-*> breaking, placing, the hotbar and the inventory (US4), and of ground items and throwing (US5).
+*> breaking, placing, the hotbar and the inventory (US4), of ground items and throwing (US5), and
+*> of chat (US6).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -94,6 +95,9 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT2              BINARY-LONG.
  01 WS-ITEM2               BINARY-LONG.
+ 01 WS-CHAT                PIC X(1024) VALUE "hello".
+ 01 WS-CHAT-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CHAT-TIME           BINARY-DOUBLE VALUE 1700000000000.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
@@ -777,6 +781,32 @@
      MOVE 11 TO WS-GI-ID
      CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
      MOVE "10 none 11 1x2 0.2500/0.1200/0.0000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, chat (US6) ----
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CHAT" USING PB-BUFFER WS-CHAT WS-CHAT-LENGTH WS-CHAT-TIME
+     MOVE "contract wire client Chat (hello, timestamp 1700000000000, no signature) equals "
+         & "play-c2s-09-chat.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-09-chat.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-chat.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-command-feedback.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-death.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client System Chat decodes: the literal player chat, the translated "
+         & "command feedback and death message, in order, into the chat history" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CH-COUNT
+         MOVE CH-LENGTH(WS-I) TO WS-COUNT
+         STRING "|" CH-TEXT(WS-I)(1:WS-COUNT) DELIMITED BY SIZE INTO TL-OBSERVED
+             WITH POINTER WS-INDEX
+     END-PERFORM
+     MOVE "|<Alice> hello|Alice now holds operator status|Alice misjudged the drop"
+         TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-CLIENT.

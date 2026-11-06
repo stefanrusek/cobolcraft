@@ -135,7 +135,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-B                   BINARY-LONG.
- 01 B-TEXT                 PIC X(256) BASED.
+ 01 B-TEXT                 PIC X(1024) BASED.
  LINKAGE SECTION.
  01 L-TEXT                 PIC X.
  01 L-LENGTH               BINARY-LONG.

@@ -15,7 +15,8 @@
 *> Action, Use Item On, Set Carried Item, Container Click and Set Creative Mode Slot builders
 *> (controls.cob and the inventory screen send them); Block Update, Section Blocks Update and Light
 *> Update into the replica (world-replica.cob), Block Changed Ack and Block Destruction kept, the
-*> inventory packets into the inventory replica (inventory-replica.cob).
+*> inventory packets into the inventory replica (inventory-replica.cob). Chat (US6): the Chat
+*> builder (screens/chat.cob sends it); System Chat into the chat history (screens/hud.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -461,6 +462,39 @@
  END PROGRAM CLP-CREATIVE-SLOT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CHAT.
+*> USING PB-BUFFER, message (PIC X(1024), UTF-8), byte length, timestamp (BINARY-DOUBLE, ms since
+*> the Unix epoch): Chat (05c 0x09), unsigned (09 §1): the message (at most 256 UTF-16 code units),
+*> the timestamp, salt 0, no signature, last seen messages offset 0, none acknowledged (a 20-bit
+*> FixedBitSet), checksum 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 9.
+ 01 WS-MAX                 BINARY-LONG VALUE 256.
+ 01 WS-SALT                BINARY-DOUBLE VALUE 0.
+ 01 WS-ABSENT              BINARY-LONG VALUE 0.
+ 01 WS-OFFSET              BINARY-LONG VALUE 0.
+ 01 WS-BITS                BINARY-LONG VALUE 20.
+ 01 WS-ACKED               PIC X(3) VALUE LOW-VALUES.
+ 01 WS-CHECKSUM            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-TIME                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING PB-BUFFER L-TEXT L-LENGTH L-TIME.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-TEXT L-LENGTH WS-MAX
+     CALL "PB-PUT-LONG" USING PB-BUFFER L-TIME
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SALT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ABSENT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-OFFSET
+     CALL "PB-PUT-FIXED-BITSET" USING PB-BUFFER WS-BITS WS-ACKED
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-CHECKSUM
+     GOBACK.
+ END PROGRAM CLP-CHAT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
 *> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
  DATA DIVISION.
@@ -712,6 +746,11 @@
                  OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 101
                  OR L-ID = 103 OR L-ID = 127 OR L-ID = 128)
              CALL "ENTITY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 124
+*>           System Chat (09 §1: the overlay flag is always false): into the chat history.
+             CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
+             CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT WS-TEXT WS-LENGTH
+             CALL "CHAT-MESSAGE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE

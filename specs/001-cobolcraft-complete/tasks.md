@@ -1243,14 +1243,14 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: typing and reading chat (US6). **Independent Test**: `make gate-client`.
 
-- [ ] T897 [P] [US6-client] Write `contract_wire_client.cob` cases: Chat encodes equal to `play-c2s-09-chat.hex` (no signature); System Chat decodes
-- [ ] T898 [P] [US6-client] Write acceptance test `client/tests/acc_us6_chat_send.cob`: case "acceptance US6-1 client half: T opens chat, typed characters (kind 3 events, including a non-ASCII letter) build the line, Enter sends Chat and closes chat"
-- [ ] T899 [US6-client] Implement the chat input screen in `client/src/screens/chat.cob`
-- [ ] T900 [P] [US6-client] Write acceptance test `client/tests/acc_us6_chat_area.cob`: case "acceptance US6-2 given received messages then the chat area shows recent ones in order and, with chat open, the Player scrolls back through earlier ones"
-- [ ] T901 [US6-client] Implement the chat area (recent messages per client-surface §4) in `client/src/screens/hud.cob`
-- [ ] T902 [US6-client] Implement scroll-back through the chat history while chat is open in `client/src/screens/chat.cob`
-- [ ] T903 [US6-client] Extend the client implementation tests to 100 % coverage of the US6 changes
-- [ ] T904 Gate: run `make gate-client` and record the command and its real output
+- [X] T897 [P] [US6-client] Write `contract_wire_client.cob` cases: Chat encodes equal to `play-c2s-09-chat.hex` (no signature); System Chat decodes
+- [X] T898 [P] [US6-client] Write acceptance test `client/tests/acc_us6_chat_send.cob`: case "acceptance US6-1 client half: T opens chat, typed characters (kind 3 events, including a non-ASCII letter) build the line, Enter sends Chat and closes chat"
+- [X] T899 [US6-client] Implement the chat input screen in `client/src/screens/chat.cob`
+- [X] T900 [P] [US6-client] Write acceptance test `client/tests/acc_us6_chat_area.cob`: case "acceptance US6-2 given received messages then the chat area shows recent ones in order and, with chat open, the Player scrolls back through earlier ones"
+- [X] T901 [US6-client] Implement the chat area (recent messages per client-surface §4) in `client/src/screens/hud.cob`
+- [X] T902 [US6-client] Implement scroll-back through the chat history while chat is open in `client/src/screens/chat.cob`
+- [X] T903 [US6-client] Extend the client implementation tests to 100 % coverage of the US6 changes
+- [X] T904 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 37: US7-client — health display, hurt feedback, death screen, attacking
 

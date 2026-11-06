@@ -3,12 +3,13 @@
 *> window divided by CL-GUI-SCALE); SCREEN-INPUT routes the frame's clicks, typed text and keys to
 *> the current screen; SCREEN-ACTION carries out what a widget does; WIDGET-ADD and WIDGET-ADD-KEY
 *> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen shows the HUD
-*> (hud.cob: crosshair and hotbar); E opens the inventory screen from the world and closes it again.
+*> (hud.cob: crosshair, hotbar and chat area); E opens the inventory screen from the world and closes
+*> it again; T opens the chat screen (chat.cob) from the world.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
 *> USING CLIENT-STATE, screen id (SCR-*): nothing focused; the server list asks every entry for its
-*> status again.
+*> status again; chat opens with an empty line, scrolled to the newest message.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -26,6 +27,10 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-COUNT
              MOVE SLS-NONE TO SL-STATUS(WS-I)
          END-PERFORM
+     END-IF
+     IF L-SCREEN = SCR-CHAT
+         MOVE SPACES TO CH-LINE
+         MOVE 0 TO CH-LINE-LENGTH CH-SCROLL
      END-IF
      GOBACK.
  END PROGRAM SCREEN-OPEN.
@@ -59,6 +64,8 @@
              CALL "HUD-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-INVENTORY
              CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-CHAT
+             CALL "CHAT-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
@@ -69,7 +76,9 @@
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
 *> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
-*> world.
+*> world; T opens chat from the world (the screen the frame began on, so the T typed with it and a
+*> line just sent do not reopen it), Escape closes chat; on the chat screen the frame's typed text,
+*> keys and wheel go to the chat line (chat.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -81,6 +90,7 @@
  01 WS-ACTION              BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-SCREEN              BINARY-LONG.
+ 01 WS-WAS                 BINARY-LONG.
  01 WS-Z1                   BINARY-LONG VALUE 0.
  01 WS-Z2                   BINARY-LONG VALUE 0.
  01 WS-Z3                   BINARY-LONG VALUE 0.
@@ -102,8 +112,16 @@
              CALL "SCREEN-ACTION" USING CLIENT-STATE SM-W-ACTION(WS-HIT) SM-W-ARG(WS-HIT)
          END-IF
      END-IF
+     MOVE SM-SCREEN TO WS-WAS
      IF SM-SCREEN = SCR-EDIT-SERVER
          CALL "EDIT-SERVER-INPUT" USING CLIENT-STATE
+     END-IF
+     IF SM-SCREEN = SCR-CHAT
+         CALL "CHAT-INPUT" USING CLIENT-STATE
+     END-IF
+     IF IN-KEY-PRESSED(CC-KEY-T + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
+         MOVE SCR-CHAT TO WS-SCREEN
+         CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      END-IF
      IF IN-KEY-PRESSED(CC-KEY-ESCAPE + 1) = 1
          MOVE 0 TO WS-SCREEN
@@ -117,6 +135,7 @@
              WHEN SCR-SERVER-LIST
                  MOVE SCR-TITLE TO WS-SCREEN
              WHEN SCR-INVENTORY
+             WHEN SCR-CHAT
                  MOVE SCR-WORLD TO WS-SCREEN
          END-EVALUATE
          IF WS-SCREEN > 0

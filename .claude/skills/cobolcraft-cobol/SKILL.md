@@ -241,6 +241,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   one test program: `SVT-FORK` (child's stderr to `./stderr.txt`; the child ends with `STOP RUN`)
   and `SVT-WAIT` (exit status and stderr text); the last fatal sub-case runs in the program itself
   for its `.expect`.
+- **Client text widgets**: `WIDGET-ADD` keeps 256 bytes of text, and `UI-RENDER` appends the caret
+  `_` to a focused field (state 1), so a focused field's text must be at most 255 bytes (the chat
+  line shows its last 255 bytes from a character boundary). At most 32 text events count per frame
+  (`IN-TEXT`): tests type long lines over several frames.
 - **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.
