@@ -5,6 +5,11 @@
 *> <problem>", exit 1; research R14). When the file is absent it is written with the defaults, each
 *> key preceded by a one-line comment. Keys are trimmed of spaces; a value is the text after the
 *> first "=" up to the end of the line (trailing spaces and a carriage return dropped).
+*> The pack keys (US18-6): pack-url empty or http:// or https:// with an address (up to 1024
+*> characters, CS-PACK-URL); pack-sha1 empty or 40 hex digits (either case); pack-id empty or UUID
+*> text 8-4-4-4-12 hex digits; pack-required a boolean; pack-prompt up to 256 characters. A
+*> non-empty pack-url sets CS-PACK-OFFERED and needs a pack-id (the Resource Pack Push carries the
+*> pack UUID); without one the configuration is fatal ("pack-id: required when pack-url is set").
 *> The description limit of 256 is counted in bytes: CS-DESCRIPTION holds 256 bytes of UTF-8.
 
  IDENTIFICATION DIVISION.
@@ -74,6 +79,15 @@
  01 WS-TEXT-PROBLEM        PIC X(64) VALUE "longer than 256 characters".
  01 WS-BOOLEAN-PROBLEM     PIC X(64) VALUE "must be true or false".
  01 WS-UNKNOWN-PROBLEM     PIC X(64) VALUE "unknown key".
+ 01 WS-URL-LENGTH-PROBLEM  PIC X(64) VALUE "longer than 1024 characters".
+ 01 WS-URL-PROBLEM         PIC X(64) VALUE "must be empty or an http:// or https:// URL".
+ 01 WS-SHA1-PROBLEM        PIC X(64) VALUE "must be empty or 40 hex digits".
+ 01 WS-ID-PROBLEM          PIC X(64) VALUE "must be empty or a UUID (8-4-4-4-12 hex digits)".
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HEX                 BINARY-LONG.
+ 01 WS-DASHES              BINARY-LONG.
+ 01 WS-CHAR                PIC X.
+    88 WS-HEX-DIGIT        VALUES "0" THRU "9" "a" THRU "f" "A" THRU "F".
  LINKAGE SECTION.
  01 L-LINE                 PIC X(4096).
  COPY COREAPI.
@@ -114,6 +128,17 @@
              MOVE 2 TO WS-FLAG
      END-EVALUATE
      CALL "SV-CONFIG-NUMBER" USING WS-VALUE WS-VALUE-LENGTH WS-NUMBER WS-VALID
+*>   Hex digits among the first 40 characters, and hyphens where UUID text has them (8-4-4-4-12).
+     MOVE 0 TO WS-HEX WS-DASHES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-VALUE-LENGTH OR WS-I > 40
+         MOVE WS-VALUE(WS-I:1) TO WS-CHAR
+         EVALUATE TRUE
+             WHEN WS-HEX-DIGIT
+                 ADD 1 TO WS-HEX
+             WHEN WS-CHAR = "-" AND (WS-I = 9 OR WS-I = 14 OR WS-I = 19 OR WS-I = 24)
+                 ADD 1 TO WS-DASHES
+         END-EVALUATE
+     END-PERFORM
      EVALUATE WS-KEY
          WHEN "port"
              IF WS-VALID = 0 OR WS-NUMBER < 1 OR WS-NUMBER > 65535
@@ -139,11 +164,38 @@
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-VIEW-PROBLEM
              END-IF
              MOVE WS-NUMBER TO CS-VIEW-DISTANCE
+         WHEN "pack-url"
+             IF WS-VALUE-LENGTH > 1024
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-URL-LENGTH-PROBLEM
+             END-IF
+             IF WS-VALUE-LENGTH > 0
+                     AND NOT (WS-VALUE(1:7) = "http://" AND WS-VALUE-LENGTH > 7)
+                     AND NOT (WS-VALUE(1:8) = "https://" AND WS-VALUE-LENGTH > 8)
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-URL-PROBLEM
+             END-IF
+             MOVE WS-VALUE TO CS-PACK-URL
+         WHEN "pack-sha1"
+             IF WS-VALUE-LENGTH > 0 AND (WS-VALUE-LENGTH NOT = 40 OR WS-HEX NOT = 40)
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-SHA1-PROBLEM
+             END-IF
+             MOVE WS-VALUE TO CS-PACK-SHA1
+         WHEN "pack-id"
+             IF WS-VALUE-LENGTH > 0
+                     AND (WS-VALUE-LENGTH NOT = 36 OR WS-HEX NOT = 32 OR WS-DASHES NOT = 4)
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-ID-PROBLEM
+             END-IF
+             MOVE WS-VALUE TO CS-PACK-ID
+         WHEN "pack-prompt"
+             IF WS-VALUE-LENGTH > 256
+                 CALL "SV-CONFIG-FATAL" USING WS-KEY WS-TEXT-PROBLEM
+             END-IF
+             MOVE WS-VALUE TO CS-PACK-PROMPT
          WHEN "player-combat"
          WHEN "hostile-mobs"
          WHEN "weather-changes"
          WHEN "extra-dimensions"
          WHEN "allow-list"
+         WHEN "pack-required"
              IF WS-FLAG = 2
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-BOOLEAN-PROBLEM
              END-IF
@@ -156,6 +208,8 @@
                      MOVE WS-FLAG TO CS-WEATHER-CHANGES
                  WHEN "extra-dimensions"
                      MOVE WS-FLAG TO CS-EXTRA-DIMENSIONS
+                 WHEN "pack-required"
+                     MOVE WS-FLAG TO CS-PACK-REQUIRED
                  WHEN OTHER
                      MOVE WS-FLAG TO CS-ALLOW-LIST-ENFORCED
              END-EVALUATE
@@ -208,8 +262,19 @@
     05 FILLER PIC X(128) VALUE "# Allow-list enforced in a newly created world (an existing world keeps it"
         & "s own): true or false".
     05 FILLER PIC X(128) VALUE "allow-list=false".
+    05 FILLER PIC X(128) VALUE "# Resource pack offered to players: its http:// or https:// address, empty"
+        & " for no offer".
+    05 FILLER PIC X(128) VALUE "pack-url=".
+    05 FILLER PIC X(128) VALUE "# SHA-1 hash of the pack zip, 40 hex digits, or empty".
+    05 FILLER PIC X(128) VALUE "pack-sha1=".
+    05 FILLER PIC X(128) VALUE "# Stable identifier of the pack, a UUID (needed when pack-url is set)".
+    05 FILLER PIC X(128) VALUE "pack-id=".
+    05 FILLER PIC X(128) VALUE "# Players who decline the pack are disconnected: true or false".
+    05 FILLER PIC X(128) VALUE "pack-required=false".
+    05 FILLER PIC X(128) VALUE "# Message shown when the pack is offered, up to 256 characters, or empty".
+    05 FILLER PIC X(128) VALUE "pack-prompt=".
  01 WS-DEFAULT-TABLE REDEFINES WS-DEFAULTS.
-    05 WS-DEFAULT          PIC X(128) OCCURS 18 TIMES.
+    05 WS-DEFAULT          PIC X(128) OCCURS 28 TIMES.
  PROCEDURE DIVISION.
      OPEN OUTPUT CONF-FILE
      IF WS-STATUS NOT = "00"
@@ -217,7 +282,7 @@
          CALL "SV-PRINT" USING WS-PTR WS-ERROR-LENGTH
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
          WRITE CONF-LINE FROM WS-DEFAULT(WS-I)
      END-PERFORM
      CLOSE CONF-FILE
@@ -246,6 +311,8 @@
  01 WS-STATUS              PIC XX.
  01 WS-KEY                 PIC X(256) VALUE "cobolcraft-server.conf".
  01 WS-PROBLEM             PIC X(64).
+ 01 WS-ID-KEY              PIC X(256) VALUE "pack-id".
+ 01 WS-ID-PROBLEM          PIC X(64) VALUE "required when pack-url is set".
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-PORT                 BINARY-LONG.
@@ -279,5 +346,12 @@
          END-IF
      END-PERFORM
      CLOSE CONF-FILE
+*>   A non-empty pack-url is the offer; Resource Pack Push needs its pack UUID (09 §3.1).
+     IF CS-PACK-URL NOT = SPACES
+         MOVE 1 TO CS-PACK-OFFERED
+         IF CS-PACK-ID = SPACES
+             CALL "SV-CONFIG-FATAL" USING WS-ID-KEY WS-ID-PROBLEM
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM SV-CONFIG-LOAD.

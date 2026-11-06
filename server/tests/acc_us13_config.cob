@@ -109,7 +109,8 @@
      MOVE "T" TO TL-MODE
      MOVE "port=25565 | default-game-mode=creative | description=A CobolCraft server | view-dis"
          & "tance=8 | player-combat=true | hostile-mobs=true | weather-changes=true | extra-dimen"
-         & "sions=true | allow-list=false lines 18 uncommented 0" TO TL-EXPECTED
+         & "sions=true | allow-list=false | pack-url= | pack-sha1= | pack-id= | pack-required=false"
+         & " | pack-prompt= lines 28 uncommented 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-LINE-NO TO WS-COUNT
      STRING FUNCTION TRIM(WS-PAIRS) " lines " FUNCTION TRIM(WS-COUNT) DELIMITED BY SIZE

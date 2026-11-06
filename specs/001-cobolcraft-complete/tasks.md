@@ -1072,12 +1072,12 @@ login against `SV-START`/`SV-ITERATE`.
 
 **Goal**: the `pack-*` keys of operator-surface §2. **Independent Test**: `make gate-server`.
 
-- [ ] T763 [P] [US18-server] Write acceptance test `server/tests/acc_us18_pack_config.cob`: case "acceptance US18-6 given `pack-url`, `pack-sha1`, `pack-id`, `pack-required` and `pack-prompt` when the server starts then `CORE-SETTINGS` offers that pack"; case "an empty `pack-url` means no offer"; case "the default file lists the pack keys"
-- [ ] T764 [P] [US18-server] Write fatal-path test `server/tests/test_config_bad_pack.cob` with its `.expect` file: a non-http(s) URL, a hash that is not 40 hex digits and an invalid UUID are each fatal (one sub-case per key)
-- [ ] T765 [US18-server] Implement parsing and validation of the `pack-*` keys into `CORE-SETTINGS` in `server/src/config-file.cob`
-- [ ] T766 [US18-server] Add the `pack-*` keys to the default configuration file written in `server/src/config-file.cob`
-- [ ] T767 [US18-server] Extend the server implementation tests to 100 % coverage of the US18 changes
-- [ ] T768 Gate: run `make gate-server` and record the command and its real output
+- [X] T763 [P] [US18-server] Write acceptance test `server/tests/acc_us18_pack_config.cob`: case "acceptance US18-6 given `pack-url`, `pack-sha1`, `pack-id`, `pack-required` and `pack-prompt` when the server starts then `CORE-SETTINGS` offers that pack"; case "an empty `pack-url` means no offer"; case "the default file lists the pack keys"
+- [X] T764 [P] [US18-server] Write fatal-path test `server/tests/test_config_bad_pack.cob` with its `.expect` file: a non-http(s) URL, a hash that is not 40 hex digits and an invalid UUID are each fatal (one sub-case per key)
+- [X] T765 [US18-server] Implement parsing and validation of the `pack-*` keys into `CORE-SETTINGS` in `server/src/config-file.cob`
+- [X] T766 [US18-server] Add the `pack-*` keys to the default configuration file written in `server/src/config-file.cob`
+- [X] T767 [US18-server] Extend the server implementation tests to 100 % coverage of the US18 changes
+- [X] T768 Gate: run `make gate-server` and record the command and its real output
 
 ### Lane: client
 

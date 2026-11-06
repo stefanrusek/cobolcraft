@@ -1,0 +1,2 @@
+1
+FATAL configuration: pack-id: must be empty or a UUID (8-4-4-4-12 hex digits)
