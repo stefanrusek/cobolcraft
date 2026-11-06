@@ -87,6 +87,10 @@
 *>     with that centre (u and v of its top-left corner), or " <label> none".
 *>   TEST-ENTITY-DRAWS USING CLIENT-STATE, text (appended): " <entity vertices> <draws on texture
 *>     1> <empty uploads of the entity slot>" of the last render list.
+*>   TEST-GAME-EVENT USING CLIENT-STATE, connection, event, value (FLOAT-SHORT): hands
+*>     PROTO-PACKET a Game Event (0x27) of that event and value.
+*>   TEST-SET-BIOME USING CLIENT-STATE, x, y, z, biome id: sets the replica's biome of the
+*>     4 x 4 x 4 cell holding that block (its chunk loaded).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOAD-HEX.
@@ -1393,3 +1397,64 @@
      MOVE FUNCTION TRIM(L-TEXT) TO L-TEXT
      GOBACK.
  END PROGRAM TEST-ENTITY-DRAWS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GAME-EVENT.
+*> USING CLIENT-STATE, connection, event, value (FLOAT-SHORT): hands PROTO-PACKET a Game Event
+*> (0x27): UByte event, Float value.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG VALUE 39.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-VALUE                FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-EVENT L-VALUE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-EVENT
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-VALUE
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-GAME-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SET-BIOME.
+*> USING CLIENT-STATE, x, y, z (block coordinates in a loaded chunk), biome id: sets the replica's
+*> biome of the 4 x 4 x 4 cell holding that block.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCELLS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-BIOME                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-BIOME.
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z / 16)
+     CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
+     COMPUTE WS-LX = (L-X - WS-CX * 16) / 4
+     COMPUTE WS-LZ = (L-Z - WS-CZ * 16) / 4
+     COMPUTE WS-LY = (L-Y - PL-MIN-Y) / 4
+     COMPUTE WS-I = WS-LY * 16 + WS-LZ * 4 + WS-LX + 1
+     MOVE L-BIOME TO RC-BIOME(WS-I)
+     GOBACK.
+ END PROGRAM TEST-SET-BIOME.

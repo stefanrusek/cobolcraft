@@ -292,6 +292,12 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   the tick that starts sprinting already moves at 0.28. Eating (`PL-EATING`, `PL-EAT-START`) starts
   on a right press with a food item (`CL-IT-FOOD` > 0) that uses no block; `DIMENSION-ENTER` clears
   both. Item-level Player Actions (drop 5/4, release use 6) go through `CLP-ITEM-ACTION`.
+- **Client US11 state**: Game Events 2, 7 and 8 set `PL-RAIN`/`PL-THUNDER` and the kind
+  `PL-WEATHER` (`WX-*`); `TEST-GAME-EVENT` (CLTEST.cpy) feeds one. Weather quads need the biome's
+  `RG-BIOME-PRECIP` (filled only by `REGISTRY-READ` from the biome registry, so `TEST-PLAY` worlds
+  draw none) and the replica biome `RC-BIOME` (CLCELLS.cpy; `TEST-SET-BIOME`). The environment
+  atlas (texture 3) repeats each image 25 times downward because the shim samples clamp-to-edge.
+  The built-in pack has 94 files.
 - **Calls with a refmod or an oversized area into a one-byte `PIC X` LINKAGE item of the same
   file** can still fail `-Werror=repository-checks` ("does not conform"); inline the work or pass a
   field of the callee's exact shape.

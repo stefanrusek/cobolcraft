@@ -1,7 +1,7 @@
 *> The world replica (data-model §3 "replica: client"; docs/protocol/06): one row per chunk
 *> received, holding its cells as the core does (CLCELLS.cpy, the layout of the core's chunks: 65536 block state
-*> bytes, then sky light, then block light, cell index y * 256 + z * 16 + x + 1), allocated once per
-*> row and kept for reuse. WORLD-CHUNK-LOAD decodes Level Chunk With Light (06 §2 to §7) with
+*> bytes, then sky light, then block light, cell index y * 256 + z * 16 + x + 1), then the biome
+*> ids of its 4 x 4 x 4 biome cells (1024 bytes), allocated once per row and kept for reuse. WORLD-CHUNK-LOAD decodes Level Chunk With Light (06 §2 to §7) with
 *> proto CHUNK-SECTION-DECODE and LIGHT-DECODE; state ids the client does not know decode as void
 *> (standin-content §1.2). Every section of the chunk and of its four neighbours is marked to be
 *> meshed again. WORLD-FORGET (Forget Level Chunk) and WORLD-CLEAR drop chunks and mark their mesh
@@ -87,17 +87,17 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-ROW-NEW.
 *> USING CLIENT-STATE, chunk x, chunk z, row out: the chunk's row, or a free row taken for it
-*> (cells all void and dark); with every row in use, the row of the chunk farthest from the player.
+*> (cells all void and dark, biome 0); with every row in use, the row of the chunk farthest from the player.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-R                   BINARY-LONG.
- 01 WS-BYTES               BINARY-LONG VALUE 196608.
+ 01 WS-BYTES               BINARY-LONG VALUE 197632.
  01 WS-PCX                 BINARY-LONG.
  01 WS-PCZ                 BINARY-LONG.
  01 WS-DISTANCE            BINARY-LONG.
  01 WS-FARTHEST            BINARY-LONG.
- 01 B-CELLS                PIC X(196608) BASED.
+ 01 B-CELLS                PIC X(197632) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-CX                   BINARY-LONG.
@@ -213,6 +213,11 @@
              IF WS-STATE(WS-I) >= CL-MAX-STATES OR WS-STATE(WS-I) < 0
                  MOVE 0 TO RC-STATE(WS-BASE + WS-I)
              END-IF
+         END-PERFORM
+*>       Biome ids above the registry's (and every id past 255) are kept as 255: no biome known.
+         COMPUTE WS-BASE = WS-S * 64
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+             MOVE FUNCTION MIN(WS-BIOME(WS-I), 255) TO RC-BIOME(WS-BASE + WS-I)
          END-PERFORM
      END-PERFORM
 *>   Block entities: CobolCraft's content has none (standin-content §5.2), the count is 0.

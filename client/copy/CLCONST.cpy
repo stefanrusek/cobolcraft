@@ -83,6 +83,13 @@
  78 MESH-SLOT-HIGHLIGHT     VALUE 65003.
 *> The ground items of the frame (one mesh of item-icon billboards, eye-relative, texture 0).
  78 MESH-SLOT-GROUND-ITEMS  VALUE 65004.
+*> The weather quads of the frame (one mesh, eye-relative, texture 3).
+ 78 MESH-SLOT-WEATHER       VALUE 65005.
+
+*> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
+ 78 WX-CLEAR                VALUE 0.
+ 78 WX-DRIZZLE              VALUE 1.
+ 78 WX-HAILSTORM            VALUE 2.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
  78 DIR-NONE                VALUE 0.
@@ -112,6 +119,12 @@
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-MAX-RECIPES          VALUE 16.
+ 78 CL-MAX-BIOMES           VALUE 8.
+*> Weather quads (standin-content §14.5): 17 x 17 columns of two quads; each environment image is
+*> repeated 25 times down the environment atlas, so a quad up to 24 blocks tall plus a scroll below
+*> 1 samples it without wrapping (the shim samples clamp-to-edge, shim-abi §9).
+ 78 CL-MAX-WX-VERTICES      VALUE 3468.
+ 78 CL-WX-REPEAT            VALUE 25.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.

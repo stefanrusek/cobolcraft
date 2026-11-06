@@ -27,7 +27,9 @@
 *> (eating finished) for the local player ends its eating. Entering a dimension (Login, Respawn)
 *> ends sprinting and eating: the server clears both on death, respawn and travel.
 *> Crafting (US10): the Place Recipe builder (screens/crafting.cob sends it); Recipe Book Add into
-*> the recipe book (RECIPE-BOOK-READ).
+*> the recipe book (RECIPE-BOOK-READ). Weather (US11): the weather Game Events set the rain and
+*> thunder levels and the kind they map to (weather-render.cob and sky.cob draw it); the biome
+*> registry's has_precipitation is kept for where it is drawn.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -765,12 +767,30 @@
          WHEN WS-PHASE = PH-PLAY AND L-ID = 50
              CALL "PLAY-LOGIN-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 39
-*>           Game Event: 3 is a game mode change; the weather events belong to US11.
+*>           Game Event: 3 is a game mode change; 2, 7 and 8 the weather (standin §14.4: 2 stops
+*>           the rain, 7 and 8 carry the rain and thunder levels; 1 changes nothing by itself).
              CALL "PB-GET-UBYTE" USING L-PACKET WS-VALUE
              CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
-             IF WS-VALUE = 3
-                 MOVE WS-FLOAT TO PL-MODE
-             END-IF
+             EVALUATE WS-VALUE
+                 WHEN 3
+                     MOVE WS-FLOAT TO PL-MODE
+                 WHEN 2
+                     MOVE 0 TO PL-RAIN PL-THUNDER
+                 WHEN 7
+                     MOVE WS-FLOAT TO PL-RAIN
+                 WHEN 8
+                     MOVE WS-FLOAT TO PL-THUNDER
+             END-EVALUATE
+*>           The kind from the pair (standin §14.1): rain below 0.5 clear; else thunder below 0.5
+*>           drizzle; else a hailstorm.
+             EVALUATE TRUE
+                 WHEN PL-RAIN < 0.5
+                     MOVE WX-CLEAR TO PL-WEATHER
+                 WHEN PL-THUNDER < 0.5
+                     MOVE WX-DRIZZLE TO PL-WEATHER
+                 WHEN OTHER
+                     MOVE WX-HAILSTORM TO PL-WEATHER
+             END-EVALUATE
          WHEN WS-PHASE = PH-PLAY AND L-ID = 73
 *>           Player Position: CobolCraft's server sends absolute values only (relative flags 0,
 *>           09 §3.2); the position is taken and accepted.
@@ -1006,8 +1026,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. REGISTRY-READ.
 *> USING CLIENT-STATE, packet (Registry Data, 04): counts the packet; keeps the entries of
-*> minecraft:dimension_type (name, min_y, height, has_skylight) and the number of
-*> minecraft:worldgen/biome entries; every other entry's data is skipped.
+*> minecraft:dimension_type (name, min_y, height, has_skylight), the number of
+*> minecraft:worldgen/biome entries and each biome's has_precipitation (an entry without data has
+*> none); every other entry's data is skipped.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -1022,6 +1043,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-FRAMING             BINARY-LONG VALUE 0.
  01 WS-D                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
  01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
@@ -1043,40 +1065,61 @@
          MOVE SPACES TO WS-NAME
          CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-NAME-LENGTH
          CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
-         MOVE 0 TO WS-D
+         MOVE 0 TO WS-D WS-B
          IF WS-REGISTRY = "minecraft:dimension_type" AND RG-DIM-COUNT < CL-MAX-DIM-TYPES
              ADD 1 TO RG-DIM-COUNT
              MOVE RG-DIM-COUNT TO WS-D
              INITIALIZE RG-DIM(WS-D)
              MOVE WS-NAME TO RG-DIM-NAME(WS-D)
          END-IF
+         IF WS-REGISTRY = "minecraft:worldgen/biome" AND WS-I <= CL-MAX-BIOMES
+             MOVE WS-I TO WS-B
+             MOVE 0 TO RG-BIOME-PRECIP(WS-B)
+         END-IF
          IF WS-PRESENT = 1
              CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
-             IF WS-D = 0
-                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-             ELSE
-                 MOVE 1 TO WS-TYPE
-                 PERFORM UNTIL WS-TYPE = 0
-                     MOVE SPACES TO WN
-                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
-                     EVALUATE TRUE
-                         WHEN WS-TYPE = 0
-                             CONTINUE
-                         WHEN WN = "min_y" OR WN = "height"
-                             CALL "PB-GET-INT" USING PB-BUFFER WS-VALUE
-                             IF WN = "min_y"
-                                 MOVE WS-VALUE TO RG-DIM-MIN-Y(WS-D)
-                             ELSE
-                                 MOVE WS-VALUE TO RG-DIM-HEIGHT(WS-D)
-                             END-IF
-                         WHEN WN = "has_skylight"
-                             CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
-                             MOVE WS-VALUE TO RG-DIM-HAS-SKY(WS-D)
-                         WHEN OTHER
-                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
-                     END-EVALUATE
-                 END-PERFORM
-             END-IF
+             EVALUATE TRUE
+                 WHEN WS-B > 0
+*>                   A biome: has_precipitation (Byte); the other fields are skipped.
+                     MOVE 1 TO WS-TYPE
+                     PERFORM UNTIL WS-TYPE = 0
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
+                         EVALUATE TRUE
+                             WHEN WS-TYPE = 0
+                                 CONTINUE
+                             WHEN WN = "has_precipitation"
+                                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
+                                 MOVE WS-VALUE TO RG-BIOME-PRECIP(WS-B)
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+                 WHEN WS-D = 0
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 WHEN OTHER
+                     MOVE 1 TO WS-TYPE
+                     PERFORM UNTIL WS-TYPE = 0
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
+                         EVALUATE TRUE
+                             WHEN WS-TYPE = 0
+                                 CONTINUE
+                             WHEN WN = "min_y" OR WN = "height"
+                                 CALL "PB-GET-INT" USING PB-BUFFER WS-VALUE
+                                 IF WN = "min_y"
+                                     MOVE WS-VALUE TO RG-DIM-MIN-Y(WS-D)
+                                 ELSE
+                                     MOVE WS-VALUE TO RG-DIM-HEIGHT(WS-D)
+                                 END-IF
+                             WHEN WN = "has_skylight"
+                                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
+                                 MOVE WS-VALUE TO RG-DIM-HAS-SKY(WS-D)
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+             END-EVALUATE
          END-IF
      END-PERFORM
      GOBACK.

@@ -1,19 +1,19 @@
 *> File table of the built-in pack (docs/protocol/08-resource-packs.md §10.9 kinds read in this
-*> version: §10.1, §10.2, §10.3 block and item textures, the entity textures and the font
-*> image, §10.4, §10.5, §10.6, §10.7, §10.8, §10.10), transcribed for client/src/packs/builtin.cob.
+*> version: §10.1, §10.2, §10.3 block and item textures, the entity and environment
+*> textures and the font image, §10.4, §10.5, §10.6, §10.7, §10.8, §10.10), transcribed for client/src/packs/builtin.cob.
 *> Row i: the file path; for a block model its parent template; the content: a texture's file
 *> stem, a block model's "textures" members, a block state file's "variants" members (JSON text),
 *> an item model's layer0 sprite, an item definition's model id.
- 78 BI-FILE-COUNT           VALUE 92.
+ 78 BI-FILE-COUNT           VALUE 94.
  78 BI-FIRST-TEXTURE        VALUE 4.
- 78 BI-LAST-TEXTURE         VALUE 28.
- 78 BI-TEMPLATE-BOX         VALUE 29.
- 78 BI-LAST-MODEL           VALUE 45.
- 78 BI-LAST-STATE           VALUE 56.
- 78 BI-LAST-ITEM-MODEL      VALUE 73.
- 78 BI-LAST-ITEM-DEF        VALUE 90.
- 78 BI-FONT                 VALUE 91.
- 78 BI-LANG-FILE            VALUE 92.
+ 78 BI-LAST-TEXTURE         VALUE 30.
+ 78 BI-TEMPLATE-BOX         VALUE 31.
+ 78 BI-LAST-MODEL           VALUE 47.
+ 78 BI-LAST-STATE           VALUE 58.
+ 78 BI-LAST-ITEM-MODEL      VALUE 75.
+ 78 BI-LAST-ITEM-DEF        VALUE 92.
+ 78 BI-FONT                 VALUE 93.
+ 78 BI-LANG-FILE            VALUE 94.
  01 BI-FILE-DATA.
     05 FILLER PIC X(64) VALUE "pack.mcmeta".
     05 FILLER PIC X(24) VALUE SPACES.
@@ -99,6 +99,12 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/dump_shard.png".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE 'dump_shard'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/environment/drizzle.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'drizzle'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/environment/hailstorm.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'hailstorm'.
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/block/template_box.json".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
@@ -303,7 +309,7 @@
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
  01 BI-FILE-TABLE REDEFINES BI-FILE-DATA.
-    05 BI-FILE-ROW OCCURS 92 TIMES.
+    05 BI-FILE-ROW OCCURS 94 TIMES.
        10 BI-FILE            PIC X(64).
        10 BI-PARENT          PIC X(24).
        10 BI-CONTENT         PIC X(480).

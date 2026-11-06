@@ -4,8 +4,8 @@
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
 *> breaking, placing, the hotbar and the inventory (US4), of ground items and throwing (US5), and
-*> of chat (US6), of health and attacking (US7), of eating and sprinting (US8), and of crafting
-*> (US10).
+*> of chat (US6), of health and attacking (US7), of eating and sprinting (US8), of crafting
+*> (US10), and the weather Game Events (US11).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -100,6 +100,10 @@
  01 WS-CHAT                PIC X(1024) VALUE "hello".
  01 WS-CHAT-LENGTH         BINARY-LONG VALUE 5.
  01 WS-CHAT-TIME           BINARY-DOUBLE VALUE 1700000000000.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-LEVEL               FLOAT-SHORT.
+ 01 WS-RAIN-EDIT           PIC 9.9.
+ 01 WS-THUNDER-EDIT        PIC 9.9.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
@@ -978,6 +982,52 @@
          & "same nine recipes again, not eighteen)" TO TL-CASE
      PERFORM RECIPES-TEXT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, weather (US11; standin §14.1, §14.4; 09 §3.3 weather values) ----
+*>   Hailstorm: 1 (0.0), 7 (1.0), 8 (1.0), all three from their fixtures.
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-01-start-raining.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-07-rain-level.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-08-thunder-level.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Game Events 1, 7 (1.0) and 8 (1.0) from their fixtures decode to "
+         & "the pair (1.0, 1.0): cobolcraft:hailstorm" TO TL-CASE
+     PERFORM WEATHER-TEXT
+     MOVE "rain 1.0 thunder 1.0 kind 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Clear: 2 (0.0) from its fixture; then 7 and 8 with 0.0.
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-02-stop-raining.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 0 TO WS-LEVEL
+     MOVE 7 TO WS-EVENT
+     CALL "TEST-GAME-EVENT" USING CLIENT-STATE WS-CONN WS-EVENT WS-LEVEL
+     MOVE 8 TO WS-EVENT
+     CALL "TEST-GAME-EVENT" USING CLIENT-STATE WS-CONN WS-EVENT WS-LEVEL
+     MOVE "contract wire client Game Events 2 (from its fixture), 7 (0.0) and 8 (0.0) decode to "
+         & "the pair (0.0, 0.0): cobolcraft:clear" TO TL-CASE
+     PERFORM WEATHER-TEXT
+     MOVE "rain 0.0 thunder 0.0 kind 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Drizzle: 1 and 7 (1.0) from their fixtures, 8 with 0.0.
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-01-start-raining.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-07-rain-level.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 8 TO WS-EVENT
+     CALL "TEST-GAME-EVENT" USING CLIENT-STATE WS-CONN WS-EVENT WS-LEVEL
+     MOVE "contract wire client Game Events 1, 7 (1.0) and 8 (0.0) decode to the pair (1.0, 0.0): "
+         & "cobolcraft:drizzle" TO TL-CASE
+     PERFORM WEATHER-TEXT
+     MOVE "rain 1.0 thunder 0.0 kind 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Event 2 alone stops the rain: (0.0, 0.0) whatever came before.
+     MOVE "contract/fixtures/wire/play-s2c-27-game-event-02-stop-raining.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Game Event 2 (from its fixture) after drizzle decodes to "
+         & "cobolcraft:clear" TO TL-CASE
+     PERFORM WEATHER-TEXT
+     MOVE "rain 0.0 thunder 0.0 kind 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  RECIPES-TEXT.
@@ -1004,6 +1054,16 @@
          STRING ">" FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) ":" RB-CRAFTABLE(WS-I)
              DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
      END-PERFORM
+     .
+
+ WEATHER-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-RAIN-EDIT ROUNDED = PL-RAIN
+     COMPUTE WS-THUNDER-EDIT ROUNDED = PL-THUNDER
+     MOVE PL-WEATHER TO WS-EDIT3
+     STRING "rain " WS-RAIN-EDIT " thunder " WS-THUNDER-EDIT " kind " FUNCTION TRIM(WS-EDIT3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
      .
 
  RESPAWN-TEXT.

@@ -145,6 +145,11 @@
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING          PIC 9.
        10 PL-EAT-START       BINARY-DOUBLE.
+*>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
+*>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
+       10 PL-RAIN            FLOAT-SHORT.
+       10 PL-THUNDER         FLOAT-SHORT.
+       10 PL-WEATHER         BINARY-LONG.
 *>     Movement (client-surface §3; client/src/physics.cob): vertical speed in blocks per tick,
 *>     ground and horizontal-collision flags of the last tick, flying, a Space press not yet
 *>     used by a tick, the clock of the last Space press (fly toggle; 0 none), and what the
@@ -169,6 +174,7 @@
           15 RG-DIM-HAS-SKY  PIC 9.
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
+       10 RG-BIOME-PRECIP    PIC 9 OCCURS 8 TIMES.   *> biome id + 1: has_precipitation
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -290,7 +296,7 @@
           15 FN-X            BINARY-LONG.    *> cell top-left in the UI atlas
           15 FN-Y            BINARY-LONG.
           15 FN-ADVANCE      BINARY-LONG.    *> in drawn pixels (height FN-HEIGHT)
-*>  ---- atlases: block atlas (texture 0) and UI atlas (texture 2) ----
+*>  ---- atlases: block atlas (texture 0), UI atlas (texture 2), entity and environment atlases ----
     05 AT-STATE.
        10 AT-W               BINARY-LONG.
        10 AT-H               BINARY-LONG.
@@ -318,6 +324,16 @@
           15 EA-IM-Y         BINARY-LONG.
           15 EA-IM-W         BINARY-LONG.
           15 EA-IM-H         BINARY-LONG.
+*>     Environment atlas (texture 3; 08 §10.11; weather-render.cob): row k (1 drizzle,
+*>     2 hailstorm) is its image's rectangle (left-aligned, top row, size); the image is repeated
+*>     CL-WX-REPEAT times downward from that row.
+       10 XA-W               BINARY-LONG.
+       10 XA-H               BINARY-LONG.
+       10 XA-ADDR            USAGE POINTER.
+       10 XA-IMAGE OCCURS 2 TIMES.
+          15 XA-IM-Y         BINARY-LONG.
+          15 XA-IM-W         BINARY-LONG.
+          15 XA-IM-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
@@ -412,6 +428,17 @@
           15 RL-GI-V         FLOAT-SHORT.
           15 RL-GI-B         FLOAT-SHORT.
           15 RL-GI-A         FLOAT-SHORT.
+*>     The weather quads (eye-relative, texture 3; weather-render.cob).
+       10 RL-WX-COUNT        BINARY-LONG.
+       10 RL-WX-UPLOADED     BINARY-LONG.
+       10 RL-WX-VERTEX OCCURS 3468 TIMES.
+          15 RL-WX-X         FLOAT-SHORT.
+          15 RL-WX-Y         FLOAT-SHORT.
+          15 RL-WX-Z         FLOAT-SHORT.
+          15 RL-WX-U         FLOAT-SHORT.
+          15 RL-WX-V         FLOAT-SHORT.
+          15 RL-WX-B         FLOAT-SHORT.
+          15 RL-WX-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.

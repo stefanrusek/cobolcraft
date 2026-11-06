@@ -1311,13 +1311,13 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US11. **Independent Test**: `make gate-client`.
 
-- [ ] T940 [P] [US11-client] Write `contract_wire_client.cob` cases: Game Event 1, 2, 7, 8 decode to the weather kind of each §14 pair
-- [ ] T941 [P] [US11-client] Write acceptance test `client/tests/acc_us11_weather_render.cob`: case "acceptance US11-1 client half: each kind is drawn as §14 describes (sky tint and weather geometry with its environment texture) only in biomes where it applies"; case "US11 edge in a dimension without weather nothing is drawn"; case "SC-004 each built-in environment texture equals its reference"
-- [ ] T942 [US11-client] Implement the built-in environment textures in `client/src/packs/builtin.cob`
-- [ ] T943 [US11-client] Implement weather state from the Game Event pair in `client/src/protocol-client.cob`
-- [ ] T944 [US11-client] Implement weather drawing on texture 3 in `client/src/weather-render.cob`
-- [ ] T945 [US11-client] Extend the client implementation tests to 100 % coverage of the US11 changes
-- [ ] T946 Gate: run `make gate-client` and record the command and its real output
+- [X] T940 [P] [US11-client] Write `contract_wire_client.cob` cases: Game Event 1, 2, 7, 8 decode to the weather kind of each §14 pair
+- [X] T941 [P] [US11-client] Write acceptance test `client/tests/acc_us11_weather_render.cob`: case "acceptance US11-1 client half: each kind is drawn as §14 describes (sky tint and weather geometry with its environment texture) only in biomes where it applies"; case "US11 edge in a dimension without weather nothing is drawn"; case "SC-004 each built-in environment texture equals its reference"
+- [X] T942 [US11-client] Implement the built-in environment textures in `client/src/packs/builtin.cob`
+- [X] T943 [US11-client] Implement weather state from the Game Event pair in `client/src/protocol-client.cob`
+- [X] T944 [US11-client] Implement weather drawing on texture 3 in `client/src/weather-render.cob`
+- [X] T945 [US11-client] Extend the client implementation tests to 100 % coverage of the US11 changes
+- [X] T946 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 42: US12-client — changing dimension
 

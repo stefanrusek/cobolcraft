@@ -5,7 +5,8 @@
 *> BUILTIN-IMAGE its textures as RGBA, drawn by BUILTIN-TEXTURE from the recipes of
 *> standin-content §1.4 (with the integer hash H of §1.4.1), the item icons of §2 (TEX-ICON with
 *> the §1.4.1 rectangles, lines and triangles), the entity textures of §3.2 and §12.6 (strip layout
-*> of §3.1: TEX-ENTITY-FACE; entity noise: TEX-NOISE-VALUE) and the glyphs of §18. Texts: CLLANG.cpy;
+*> of §3.1: TEX-ENTITY-FACE; entity noise: TEX-NOISE-VALUE), the environment textures of §14.5 and
+*> the glyphs of §18. Texts: CLLANG.cpy;
 *> glyphs: CLGLYPHS.cpy.
 
  IDENTIFICATION DIVISION.
@@ -204,7 +205,8 @@
 *> USING stem (PIC X(32)), RGBA out (PIC X(24576)), width out, height out: the texture with that
 *> file stem (08 §10.3): the 15 block textures of standin-content §1.4.2 and the 6 item icons of §2
 *> (16 x 16), the entity textures operator of §3.2 (66 x 28), sodgrazer (80 x 23) and abend
-*> (72 x 12) of §12.6, and the font atlas "ascii" of §18 (128 x 48).
+*> (72 x 12) of §12.6, the environment textures drizzle and hailstorm of §14.5 (16 x 16), and the
+*> font atlas "ascii" of §18 (128 x 48).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLGLYPHS.
@@ -233,6 +235,8 @@
  01 WS-FC                  BINARY-LONG.
  01 WS-FR                  BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-HASH                BINARY-DOUBLE UNSIGNED.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-STEM                 PIC X(32).
  01 L-RGBA                 PIC X(24576).
@@ -356,6 +360,33 @@
          WHEN "sod_cake"
          WHEN "dump_shard"
              CALL "TEX-ICON" USING L-STEM L-RGBA
+         WHEN "drizzle"
+*>           §14.5: for each column x in {1, 5, 9, 13}, with s = (x x 7) mod 16, the five pixels
+*>           (x, (s + k) mod 16), k = 0 to 4, are #A7C1DC at alpha 66 % (168); the rest transparent.
+             PERFORM VARYING WS-X FROM 1 BY 4 UNTIL WS-X > 13
+                 PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 4
+                     COMPUTE WS-Y = FUNCTION MOD(FUNCTION MOD(WS-X * 7, 16) + WS-K, 16)
+                     COMPUTE WS-P = WS-Y * 16 + WS-X
+                     MOVE FUNCTION HEX-TO-CHAR("A7C1DCA8") TO L-RGBA(WS-P * 4 + 1:4)
+                 END-PERFORM
+             END-PERFORM
+         WHEN "hailstorm"
+*>           §14.5: in each 4 x 4 cell (cx, cy), with r = H("hailstorm" bytes, cx, cy), the 2 x 2
+*>           pellet R(4cx + ox, 4cy + oy, 4cx + ox + 1, 4cy + oy + 1), ox = r mod 3,
+*>           oy = (r div 3) mod 3, is #EEF2F7 at alpha 92 % (235); the rest transparent.
+             PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
+                 PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3
+                     CALL "TEX-NAME-HASH" USING L-STEM WS-C WS-R WS-HASH
+                     COMPUTE WS-X = WS-C * 4 + FUNCTION MOD(WS-HASH, 3)
+                     DIVIDE WS-HASH BY 3 GIVING WS-HASH
+                     COMPUTE WS-Y = WS-R * 4 + FUNCTION MOD(WS-HASH, 3)
+                     COMPUTE WS-P = WS-Y * 16 + WS-X
+                     PERFORM 2 TIMES
+                         MOVE FUNCTION HEX-TO-CHAR("EEF2F7EBEEF2F7EB") TO L-RGBA(WS-P * 4 + 1:8)
+                         ADD 16 TO WS-P
+                     END-PERFORM
+                 END-PERFORM
+             END-PERFORM
          WHEN "operator"
 *>           §3.2 (strip layout of §3.1, one part 11 x 28 x 11): every face rectangle #3A5A9A
 *>           (front, back, left, right x 0 to 43 rows 0 to 27; top and bottom x 44 to 65 rows 0
@@ -750,29 +781,45 @@
 *> entity noise uses the texel's place in the whole image, §3.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-I                   BINARY-LONG.
- 01 WS-LENGTH              BINARY-LONG.
  01 WS-H                   BINARY-DOUBLE UNSIGNED.
- 01 WS-V                   BINARY-DOUBLE UNSIGNED.
  LINKAGE SECTION.
  01 L-NAME                 PIC X(32).
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-N                    BINARY-LONG.
  PROCEDURE DIVISION USING L-NAME L-X L-Y L-N.
-     MOVE 2166136261 TO WS-H
-     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO WS-LENGTH
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LENGTH
-         COMPUTE WS-V = FUNCTION ORD(L-NAME(WS-I:1)) - 1
-         CALL "TEX-HASH-STEP" USING WS-H WS-V
-     END-PERFORM
-     MOVE L-X TO WS-V
-     CALL "TEX-HASH-STEP" USING WS-H WS-V
-     MOVE L-Y TO WS-V
-     CALL "TEX-HASH-STEP" USING WS-H WS-V
+     CALL "TEX-NAME-HASH" USING L-NAME L-X L-Y WS-H
      COMPUTE L-N = FUNCTION MOD(WS-H, 100)
      GOBACK.
  END PROGRAM TEX-NOISE-VALUE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEX-NAME-HASH.
+*> USING name (PIC X(32)), x, y (non-negative), h out (BINARY-DOUBLE UNSIGNED): H(name bytes, x, y)
+*> of standin-content §1.4.1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-V                   BINARY-DOUBLE UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(32).
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-H                    BINARY-DOUBLE UNSIGNED.
+ PROCEDURE DIVISION USING L-NAME L-X L-Y L-H.
+     MOVE 2166136261 TO L-H
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO WS-LENGTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LENGTH
+         COMPUTE WS-V = FUNCTION ORD(L-NAME(WS-I:1)) - 1
+         CALL "TEX-HASH-STEP" USING L-H WS-V
+     END-PERFORM
+     MOVE L-X TO WS-V
+     CALL "TEX-HASH-STEP" USING L-H WS-V
+     MOVE L-Y TO WS-V
+     CALL "TEX-HASH-STEP" USING L-H WS-V
+     GOBACK.
+ END PROGRAM TEX-NAME-HASH.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEX-HASH-STEP.

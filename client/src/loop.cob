@@ -34,7 +34,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
 *> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
-*> (game directory, server list, packs, language, font, block and entity atlases, models).
+*> (game directory, server list, packs, language, font, block, entity and environment atlases,
+*> models).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -49,6 +50,7 @@
      CALL "FONT-LOAD" USING CLIENT-STATE
      CALL "ATLAS-BUILD" USING CLIENT-STATE
      CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     CALL "ENVIRONMENT-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
      CALL "ITEMDEFS-LOAD" USING CLIENT-STATE
      MOVE 854 TO IN-WIN-W
