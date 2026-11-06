@@ -20,6 +20,9 @@
 *>   TEST-SERVE USING server handle, path (PIC X(256)), threshold: sends the fixture packet framed
 *>     as the server does (compression format when the threshold is 0 or more).
 *>   TEST-SERVE-BYTES USING server handle, area, count: sends raw bytes.
+*>   TEST-SERVER-READ-HEX USING server handle, text out (PIC X(1024)), threshold: like
+*>     TEST-SERVER-READ, but each complete packet other than Client Tick End (0x0D) and Move
+*>     Player (0x1E to 0x21) as the lowercase hex of its id and body, space-separated.
 *>   TEST-SERVER-READ USING server handle, text out (PIC X(1024)), threshold: waits up to a second
 *>     for data, then lists the ids of the complete packets received as two hex digits each
 *>     ("closed" when the client has closed the connection).
@@ -487,6 +490,79 @@
      MOVE FUNCTION TRIM(L-TEXT) TO L-TEXT
      GOBACK.
  END PROGRAM TEST-SERVER-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SERVER-READ-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
+ 01 WS-READY-INIT          BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-WAIT                BINARY-LONG VALUE 1000.
+ 01 WS-HANDLES.
+    05 WS-HANDLE           BINARY-LONG.
+ 01 WS-READY               PIC X(2).
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-GOT                 BINARY-LONG.
+ 01 WS-AREA                PIC X(65536).
+ 01 WS-AREA-CAP            BINARY-LONG VALUE 65536.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-REST                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-BYTE                PIC X.
+ 01 B-AREA                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ 01 L-THRESHOLD            BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-TEXT L-THRESHOLD.
+     IF WS-READY-INIT = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY-INIT
+     END-IF
+     MOVE SPACES TO L-TEXT
+     MOVE L-SERVER TO WS-HANDLE
+     CALL STATIC "cc_net_poll" USING BY VALUE WS-WAIT BY REFERENCE WS-HANDLES BY VALUE WS-ONE
+         BY VALUE WS-ZERO BY REFERENCE WS-READY RETURNING WS-RC
+     CALL "PB-RESET" USING ST-BUFFER
+     MOVE 0 TO WS-RC
+     PERFORM UNTIL WS-RC NOT = 0
+         CALL STATIC "cc_net_recv" USING BY VALUE L-SERVER BY REFERENCE WS-AREA
+             BY VALUE WS-AREA-CAP BY REFERENCE WS-GOT RETURNING WS-RC
+         IF WS-RC = 0
+             CALL "PB-APPEND-BYTES" USING ST-BUFFER WS-AREA WS-GOT
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "PB-FRAME-DECODE" USING ST-BUFFER PB-BUFFER L-THRESHOLD WS-ZERO WS-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-ID NOT = 13 AND (WS-ID < 30 OR WS-ID > 33)
+             MOVE FUNCTION CHAR(WS-ID + 1) TO WS-BYTE
+             STRING FUNCTION TRIM(L-TEXT) " " FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-BYTE))
+                 DELIMITED BY SIZE INTO L-TEXT
+             COMPUTE WS-REST = PB-LENGTH - PB-POS
+             IF WS-REST > 0
+                 SET ADDRESS OF B-AREA TO PB-ADDR
+                 MOVE SPACES TO WS-HEX
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-REST OR WS-I > 512
+                     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(B-AREA(PB-POS + WS-I:1)))
+                         TO WS-HEX(WS-I * 2 - 1:2)
+                 END-PERFORM
+                 STRING FUNCTION TRIM(L-TEXT) FUNCTION TRIM(WS-HEX) DELIMITED BY SIZE
+                     INTO L-TEXT
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE FUNCTION TRIM(L-TEXT) TO L-TEXT
+     GOBACK.
+ END PROGRAM TEST-SERVER-READ-HEX.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-SERVE-BYTES.

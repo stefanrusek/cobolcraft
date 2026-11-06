@@ -1,16 +1,19 @@
 *> File table of the built-in pack (docs/protocol/08-resource-packs.md §10.9 kinds read in this
-*> version: §10.1, §10.2, §10.3 block textures, the operator entity texture and the font image, §10.4, §10.5, §10.6, §10.8, §10.10),
-*> transcribed for client/src/packs/builtin.cob. Row i: the file path; for a model its parent
-*> template; the content: a texture's file stem, a model's "textures" members, a block state
-*> file's "variants" members (JSON text).
- 78 BI-FILE-COUNT           VALUE 50.
+*> version: §10.1, §10.2, §10.3 block and item textures, the operator entity texture and the font
+*> image, §10.4, §10.5, §10.6, §10.7, §10.8, §10.10), transcribed for client/src/packs/builtin.cob.
+*> Row i: the file path; for a block model its parent template; the content: a texture's file
+*> stem, a block model's "textures" members, a block state file's "variants" members (JSON text),
+*> an item model's layer0 sprite, an item definition's model id.
+ 78 BI-FILE-COUNT           VALUE 90.
  78 BI-FIRST-TEXTURE        VALUE 4.
- 78 BI-LAST-TEXTURE         VALUE 20.
- 78 BI-TEMPLATE-BOX         VALUE 21.
- 78 BI-LAST-MODEL           VALUE 37.
- 78 BI-LAST-STATE           VALUE 48.
- 78 BI-FONT                 VALUE 49.
- 78 BI-LANG-FILE            VALUE 50.
+ 78 BI-LAST-TEXTURE         VALUE 26.
+ 78 BI-TEMPLATE-BOX         VALUE 27.
+ 78 BI-LAST-MODEL           VALUE 43.
+ 78 BI-LAST-STATE           VALUE 54.
+ 78 BI-LAST-ITEM-MODEL      VALUE 71.
+ 78 BI-LAST-ITEM-DEF        VALUE 88.
+ 78 BI-FONT                 VALUE 89.
+ 78 BI-LANG-FILE            VALUE 90.
  01 BI-FILE-DATA.
     05 FILLER PIC X(64) VALUE "pack.mcmeta".
     05 FILLER PIC X(24) VALUE SPACES.
@@ -72,6 +75,24 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/entity/operator.png".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE 'operator'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/pry_bar.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'pry_bar'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/trowel.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'trowel'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/grazer_flank.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'grazer_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/seared_flank.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'seared_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/sod_cake.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'sod_cake'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/item/dump_shard.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'dump_shard'.
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/block/template_box.json".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
@@ -167,6 +188,108 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/blockstates/slag.json".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE '"":{"model":"cobolcraft:block/slag"}'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/baseplate.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/baseplate'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/greystone.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/greystone'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/loam.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/loam'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/turf.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/turf_top'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/grit.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/grit'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/cardstack.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/cardstack_end'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/lucite.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/lucite'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/glowtube.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/glowtube_lit'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/ledger_tile.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/ledger_tile'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/pry_bar.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/pry_bar'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/trowel.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/trowel'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/grazer_flank.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/grazer_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/seared_flank.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/seared_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/sod_cake.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/sod_cake'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/dump_shard.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/dump_shard'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/goto_pad.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/goto_pad'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/item/slag.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:block/slag'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/baseplate.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/baseplate'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/greystone.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/greystone'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/loam.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/loam'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/turf.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/turf'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/grit.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/grit'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/cardstack.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/cardstack'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/lucite.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/lucite'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/glowtube.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/glowtube'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/ledger_tile.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/ledger_tile'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/pry_bar.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/pry_bar'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/trowel.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/trowel'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/grazer_flank.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/grazer_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/seared_flank.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/seared_flank'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/sod_cake.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/sod_cake'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/dump_shard.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/dump_shard'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/goto_pad.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/goto_pad'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/items/slag.json".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'cobolcraft:item/slag'.
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/font/default.json".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
@@ -174,7 +297,7 @@
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
  01 BI-FILE-TABLE REDEFINES BI-FILE-DATA.
-    05 BI-FILE-ROW OCCURS 50 TIMES.
+    05 BI-FILE-ROW OCCURS 90 TIMES.
        10 BI-FILE            PIC X(64).
        10 BI-PARENT          PIC X(24).
        10 BI-CONTENT         PIC X(480).

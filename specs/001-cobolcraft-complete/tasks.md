@@ -1205,26 +1205,26 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the US4 controls, block updates and the inventory screen. **Independent Test**: `make gate-client`.
 
-- [ ] T869 [P] [US4-client] Write `contract_wire_client.cob` cases: Player Action start/abort/stop destroy, Use Item On, Set Carried Item, Container Click and Set Creative Mode Slot encode equal to their fixtures; Block Update, Section Blocks Update, Block Changed Ack, Block Destruction, Container Set Content, Container Set Slot, Set Player Inventory, Set Held Slot and Light Update decode
-- [ ] T870 [P] [US4-client] Write acceptance test `client/tests/acc_us4_highlight.cob`: case "acceptance US4-1 given the Player looks at a block within reach then that block is highlighted in the render list and the targeted face is known"
-- [ ] T871 [US4-client] Implement block ray-casting (target block and face within reach) in `client/src/raycast.cob`
-- [ ] T872 [US4-client] Implement the target highlight draw in `client/src/render-list.cob`
-- [ ] T873 [P] [US4-client] Write acceptance test `client/tests/acc_us4_controls.cob`: case "US4-2 client half: right button on a face with a block item sends Use Item On with that face"; case "US4-3/US4-4 client half: holding the left button sends start destroy and, in survival, stop destroy after the break time (abort when released early)"; case "US4-5 client half: right button on a glowtube without a block item sends Use Item On"
-- [ ] T874 [US4-client] Implement the break, place and use controls in `client/src/controls.cob`
-- [ ] T875 [P] [US4-client] Write acceptance test `client/tests/acc_us4_block_updates.cob`: case "US4-7 client half: Block Update, Section Blocks Update and Light Update change the replica and the affected sections are re-meshed"
-- [ ] T876 [US4-client] Implement block and light updates in `client/src/world-replica.cob`
-- [ ] T877 [P] [US4-client] Write implementation test `client/tests/test_inventory_replica.cob`: Container Set Content, Container Set Slot, Set Player Inventory and Set Held Slot keep the 36 slots and the held slot
-- [ ] T878 [US4-client] Implement the inventory replica in `client/src/inventory-replica.cob`
-- [ ] T879 [P] [US4-client] Write implementation test `client/tests/test_itemdefs.cob`: item model definitions of 08 §6 and the generated item model of 08 §5.7 give each item its icon sprite; block items use the block texture of standin-content §2
-- [ ] T880 [US4-client] Implement item definitions and the item atlas in `client/src/packs/itemdefs.cob`
-- [ ] T881 [P] [US4-client] Write acceptance test `client/tests/acc_us4_item_icons.cob`: case "SC-004 every built-in item icon equals `client/tests/fixtures/textures/item_<name>.rgba`"
-- [ ] T882 [US4-client] Implement the built-in item icons (standin-content §2, §11, §13, §15 recipes) in `client/src/packs/builtin.cob`
-- [ ] T883 [US4-client] Implement the built-in item models and item definitions (08 §10.7) in `client/src/packs/builtin.cob`
-- [ ] T884 [P] [US4-client] Write acceptance test `client/tests/acc_us4_inventory_screen.cob`: case "acceptance US4-6 given an inventory when E opens the inventory screen then items and counts are shown; keys 1–9 and the scroll wheel choose the held hotbar slot (Set Carried Item); clicking slots moves items (Container Click)"
-- [ ] T885 [US4-client] Implement the hotbar and crosshair in `client/src/screens/hud.cob`
-- [ ] T886 [US4-client] Implement the inventory screen in `client/src/screens/inventory.cob`
-- [ ] T887 [US4-client] Extend the client implementation tests to 100 % coverage of the US4 changes
-- [ ] T888 Gate: run `make gate-client` and record the command and its real output
+- [X] T869 [P] [US4-client] Write `contract_wire_client.cob` cases: Player Action start/abort/stop destroy, Use Item On, Set Carried Item, Container Click and Set Creative Mode Slot encode equal to their fixtures; Block Update, Section Blocks Update, Block Changed Ack, Block Destruction, Container Set Content, Container Set Slot, Set Player Inventory, Set Held Slot and Light Update decode
+- [X] T870 [P] [US4-client] Write acceptance test `client/tests/acc_us4_highlight.cob`: case "acceptance US4-1 given the Player looks at a block within reach then that block is highlighted in the render list and the targeted face is known"
+- [X] T871 [US4-client] Implement block ray-casting (target block and face within reach) in `client/src/raycast.cob`
+- [X] T872 [US4-client] Implement the target highlight draw in `client/src/render-list.cob`
+- [X] T873 [P] [US4-client] Write acceptance test `client/tests/acc_us4_controls.cob`: case "US4-2 client half: right button on a face with a block item sends Use Item On with that face"; case "US4-3/US4-4 client half: holding the left button sends start destroy and, in survival, stop destroy after the break time (abort when released early)"; case "US4-5 client half: right button on a glowtube without a block item sends Use Item On"
+- [X] T874 [US4-client] Implement the break, place and use controls in `client/src/controls.cob`
+- [X] T875 [P] [US4-client] Write acceptance test `client/tests/acc_us4_block_updates.cob`: case "US4-7 client half: Block Update, Section Blocks Update and Light Update change the replica and the affected sections are re-meshed"
+- [X] T876 [US4-client] Implement block and light updates in `client/src/world-replica.cob`
+- [X] T877 [P] [US4-client] Write implementation test `client/tests/test_inventory_replica.cob`: Container Set Content, Container Set Slot, Set Player Inventory and Set Held Slot keep the 36 slots and the held slot
+- [X] T878 [US4-client] Implement the inventory replica in `client/src/inventory-replica.cob`
+- [X] T879 [P] [US4-client] Write implementation test `client/tests/test_itemdefs.cob`: item model definitions of 08 §6 and the generated item model of 08 §5.7 give each item its icon sprite; block items use the block texture of standin-content §2
+- [X] T880 [US4-client] Implement item definitions and the item atlas in `client/src/packs/itemdefs.cob`
+- [X] T881 [P] [US4-client] Write acceptance test `client/tests/acc_us4_item_icons.cob`: case "SC-004 every built-in item icon equals `client/tests/fixtures/textures/item_<name>.rgba`"
+- [X] T882 [US4-client] Implement the built-in item icons (standin-content §2, §11, §13, §15 recipes) in `client/src/packs/builtin.cob`
+- [X] T883 [US4-client] Implement the built-in item models and item definitions (08 §10.7) in `client/src/packs/builtin.cob`
+- [X] T884 [P] [US4-client] Write acceptance test `client/tests/acc_us4_inventory_screen.cob`: case "acceptance US4-6 given an inventory when E opens the inventory screen then items and counts are shown; keys 1–9 and the scroll wheel choose the held hotbar slot (Set Carried Item); clicking slots moves items (Container Click)"
+- [X] T885 [US4-client] Implement the hotbar and crosshair in `client/src/screens/hud.cob`
+- [X] T886 [US4-client] Implement the inventory screen in `client/src/screens/inventory.cob`
+- [X] T887 [US4-client] Extend the client implementation tests to 100 % coverage of the US4 changes
+- [X] T888 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 35: US5-client — ground items and throwing
 

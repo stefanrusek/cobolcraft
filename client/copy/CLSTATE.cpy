@@ -5,7 +5,8 @@
 *>
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
 *> connections, local player and world settings, world replica (chunk rows and their section
-*> meshes), entity replica and player list, packs (stack, language, font), atlases, baked block models, sky, render list.
+*> meshes), entity replica and player list, the target and block controls, packs (stack,
+*> language, font), atlases and item icons, baked block models, sky, render list.
  01 CLIENT-STATE.
 *>  ---- start-up (client-surface §1, §2) ----
     05 CL-NAME               PIC X(16).
@@ -110,6 +111,9 @@
        10 PL-SLOT OCCURS 36 TIMES.
           15 PL-SLOT-COUNT   BINARY-LONG.
           15 PL-SLOT-ITEM    BINARY-LONG.
+       10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
+       10 PL-CARRIED-ITEM    BINARY-LONG.
+       10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
        10 PL-ABILITIES       BINARY-LONG.
        10 PL-FLY-SPEED       FLOAT-SHORT.
        10 PL-WALK-SPEED      FLOAT-SHORT.
@@ -152,6 +156,34 @@
           15 RG-DIM-HAS-SKY  PIC 9.
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
+*>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
+    05 CT-STATE.
+       10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
+       10 TG-X               BINARY-LONG.
+       10 TG-Y               BINARY-LONG.
+       10 TG-Z               BINARY-LONG.
+       10 TG-FACE            BINARY-LONG.    *> 05c Direction: 0 down 1 up 2 north 3 south 4 west 5 east
+       10 TG-CX              FLOAT-SHORT.    *> the hit point within the block (0 to 1 each)
+       10 TG-CY              FLOAT-SHORT.
+       10 TG-CZ              FLOAT-SHORT.
+       10 CT-SEQUENCE        BINARY-LONG.    *> the last block-change sequence number sent
+       10 CT-ACK             BINARY-LONG.    *> the last Block Changed Ack sequence received
+       10 CT-BREAKING        PIC 9.          *> 1 = a survival break is in progress
+       10 CT-BREAK-X         BINARY-LONG.
+       10 CT-BREAK-Y         BINARY-LONG.
+       10 CT-BREAK-Z         BINARY-LONG.
+       10 CT-BREAK-FACE      BINARY-LONG.
+       10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
+       10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
+       10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
+       10 CT-DONE-X          BINARY-LONG.
+       10 CT-DONE-Y          BINARY-LONG.
+       10 CT-DONE-Z          BINARY-LONG.
+       10 BD-ENTITY          BINARY-LONG.    *> the last Block Destruction (another player's break)
+       10 BD-X               BINARY-LONG.
+       10 BD-Y               BINARY-LONG.
+       10 BD-Z               BINARY-LONG.
+       10 BD-PROGRESS        BINARY-LONG.
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
@@ -236,6 +268,9 @@
        10 EA-OP-Y            BINARY-LONG.
        10 EA-OP-W            BINARY-LONG.
        10 EA-OP-H            BINARY-LONG.
+*>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
+*>     atlas sprite of its icon (1 = the missing texture).
+       10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 18 TIMES.
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -282,6 +317,40 @@
           15 RL-EN-V         FLOAT-SHORT.
           15 RL-EN-B         FLOAT-SHORT.
           15 RL-EN-A         FLOAT-SHORT.
+*>     Item icons of the slot widgets (texture 0), the UI drawn over them (the slot counts,
+*>     texture 2; UI-QUAD writes there while RL-UI-LAYER is 1) and the target highlight
+*>     (eye-relative, texture 2); each with the vertex count last uploaded.
+       10 RL-IC-COUNT        BINARY-LONG.
+       10 RL-IC-UPLOADED     BINARY-LONG.
+       10 RL-IC-VERTEX OCCURS 1536 TIMES.
+          15 RL-IC-X         FLOAT-SHORT.
+          15 RL-IC-Y         FLOAT-SHORT.
+          15 RL-IC-Z         FLOAT-SHORT.
+          15 RL-IC-U         FLOAT-SHORT.
+          15 RL-IC-V         FLOAT-SHORT.
+          15 RL-IC-B         FLOAT-SHORT.
+          15 RL-IC-A         FLOAT-SHORT.
+       10 RL-UI-LAYER        PIC 9.
+       10 RL-UT-COUNT        BINARY-LONG.
+       10 RL-UT-UPLOADED     BINARY-LONG.
+       10 RL-UT-VERTEX OCCURS 1536 TIMES.
+          15 RL-UT-X         FLOAT-SHORT.
+          15 RL-UT-Y         FLOAT-SHORT.
+          15 RL-UT-Z         FLOAT-SHORT.
+          15 RL-UT-U         FLOAT-SHORT.
+          15 RL-UT-V         FLOAT-SHORT.
+          15 RL-UT-B         FLOAT-SHORT.
+          15 RL-UT-A         FLOAT-SHORT.
+       10 RL-HL-COUNT        BINARY-LONG.
+       10 RL-HL-UPLOADED     BINARY-LONG.
+       10 RL-HL-VERTEX OCCURS 144 TIMES.
+          15 RL-HL-X         FLOAT-SHORT.
+          15 RL-HL-Y         FLOAT-SHORT.
+          15 RL-HL-Z         FLOAT-SHORT.
+          15 RL-HL-U         FLOAT-SHORT.
+          15 RL-HL-V         FLOAT-SHORT.
+          15 RL-HL-B         FLOAT-SHORT.
+          15 RL-HL-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.

@@ -3,7 +3,9 @@
 *> CHUNK-SECTION-DECODE and LIGHT-DECODE are stored per chunk position with block and light lookup;
 *> state ids the client does not know decode as void; a loaded chunk and its neighbours are marked to
 *> be meshed; cells outside the loaded chunks are void under full sky light, below the world void
-*> and dark; when every row is taken the row farthest from the player is reused.
+*> and dark; when every row is taken the row farthest from the player is reused. Changes (US4-7):
+*> Section Blocks Update of a section at negative coordinates sets its cells (an unknown state
+*> becomes void); Light Update takes an empty-mask section as all 0 and an array section's nibbles.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-WORLD-REPLICA.
  DATA DIVISION.
@@ -44,6 +46,11 @@
  01 WS-ARRAYS              PIC X(2048).
  01 WS-ARRAYS2             PIC X(2048).
  01 WS-DIRTY               PIC X(16).
+ 01 WS-LONG                BINARY-DOUBLE VALUE -1048577.
+ 01 WS-ENTRY               BINARY-DOUBLE VALUE 82775.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-LIGHT-ARRAYS        PIC X(4096).
+ 01 WS-E                   PIC -(5)9.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE 256 TO PL-HEIGHT
@@ -153,6 +160,62 @@
          TO TL-CASE
      MOVE CL-MAX-CHUNKS TO TL-EXPECTED-N
      MOVE WS-ROW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Section (-1, -1, -2) of a dimension from y -16: one entry, state 20 (unknown) at local
+*>   (3, 7, 5), the block (-13, -9, -27), which held greystone.
+     MOVE -16 TO PL-MIN-Y
+     MOVE -1 TO WS-CX
+     MOVE -2 TO WS-CZ
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+     MOVE -13 TO WS-X
+     MOVE -9 TO WS-Y
+     MOVE -27 TO WS-Z
+     MOVE 2 TO WS-STATE
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLOCK
+     MOVE WS-STATE TO WS-E
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARLONG" USING PB-BUFFER WS-ENTRY
+     MOVE 0 TO PB-POS
+     CALL "WORLD-SECTION-BLOCKS" USING CLIENT-STATE PB-BUFFER
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLOCK
+     MOVE WS-STATE TO WS-E
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-E) " " WR-DIRTY(WS-ROW, 1)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "world replica Section Blocks Update of section (-1, -1, -2) sets (-13, -9, -27): greystone "
+         & "becomes void (state 20 is unknown) and section 1 is to be meshed" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "2 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Light Update of chunk (-1, -2): section 0 (index 2) an empty sky mask and a block array of
+*>   bytes 0x5A (nibbles 10, 5).
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-CX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-CZ
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         MOVE 0 TO WS-SKY-STATE(WS-I) WS-BLOCK-STATE(WS-I)
+     END-PERFORM
+     MOVE 1 TO WS-SKY-STATE(2)
+     MOVE 2 TO WS-BLOCK-STATE(2)
+     MOVE ALL "Z" TO WS-LIGHT-ARRAYS
+     CALL "LIGHT-ENCODE" USING PB-BUFFER WS-EIGHTEEN WS-SKY-STATES WS-ARRAYS WS-BLOCK-STATES
+         WS-LIGHT-ARRAYS
+     MOVE 0 TO PB-POS
+     CALL "WORLD-LIGHT-UPDATE" USING CLIENT-STATE PB-BUFFER
+     MOVE SPACES TO TL-OBSERVED
+     MOVE -16 TO WS-X WS-Y
+     MOVE -32 TO WS-Z
+     CALL "TEST-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z TL-OBSERVED
+     MOVE -15 TO WS-X
+     CALL "TEST-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z TL-OBSERVED
+     MOVE "world replica Light Update: an empty sky mask clears the section's sky light, a block "
+         & "array sets the block light of each cell from its nibble (low nibble first)" TO TL-CASE
+     MOVE "0/0/10 0/0/5" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-WORLD-REPLICA.

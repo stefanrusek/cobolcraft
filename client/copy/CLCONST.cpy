@@ -26,6 +26,8 @@
  78 WK-BUTTON               VALUE 2.
  78 WK-FIELD                VALUE 3.   *> text field
  78 WK-ENTRY                VALUE 4.   *> list entry (selectable)
+ 78 WK-SLOT                 VALUE 5.   *> item slot: argument the slot 0 to 35 (36 = the stack on
+                                       *> the cursor), state 1 = the held hotbar slot, text the count
 
 *> Widget actions (what a click on the widget does).
  78 ACT-NONE                VALUE 0.
@@ -43,6 +45,7 @@
  78 ACT-FIELD-ADDRESS       VALUE 12.  *> focus the address field
  78 ACT-RESUME              VALUE 13.
  78 ACT-DISCONNECT          VALUE 14.
+ 78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -68,6 +71,11 @@
  78 MESH-SLOT-BASE          VALUE 2.
 *> The entity figures of the frame (one mesh, eye-relative): above every section slot.
  78 MESH-SLOT-ENTITIES      VALUE 65000.
+*> The item icons of the frame's slot widgets (texture 0), the slot counts drawn over them (texture 2)
+*> and the target highlight outline (eye-relative, texture 2).
+ 78 MESH-SLOT-ICONS         VALUE 65001.
+ 78 MESH-SLOT-UI-TOP        VALUE 65002.
+ 78 MESH-SLOT-HIGHLIGHT     VALUE 65003.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
  78 DIR-NONE                VALUE 0.
@@ -99,6 +107,13 @@
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.
  78 CL-TICK-MS              VALUE 50.
+ 78 CL-MAX-ICON-VERTICES    VALUE 1536.
+ 78 CL-MAX-TOP-VERTICES     VALUE 1536.
+ 78 CL-MAX-HL-VERTICES      VALUE 144.
+ 78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
+ 78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
+*> Block reach of the target ray, in blocks from the eye (standin-content §11.4).
+ 78 CL-REACH                VALUE 5.
 
 *> Entity types (standin-content §3).
  78 ET-OPERATOR             VALUE 0.
@@ -114,6 +129,56 @@
  78 SW-SELECTED             VALUE 4.
  78 SW-FIELD                VALUE 5.
  78 SW-COUNT                VALUE 6.
+
+*> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
+*> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack
+*> places its default state's block with the axis of the clicked face, §1.3), and the tool class
+*> it speeds up ("H" hard, "S" soft, §2 pry_bar and trowel).
+ 01 CL-ITEM-DATA.
+    05 FILLER PIC X(21) VALUE "nothing         0000 ".
+    05 FILLER PIC X(21) VALUE "baseplate       6401 ".
+    05 FILLER PIC X(21) VALUE "greystone       6402 ".
+    05 FILLER PIC X(21) VALUE "loam            6403 ".
+    05 FILLER PIC X(21) VALUE "turf            6404 ".
+    05 FILLER PIC X(21) VALUE "grit            6405 ".
+    05 FILLER PIC X(21) VALUE "cardstack       6409 ".
+    05 FILLER PIC X(21) VALUE "lucite          6412 ".
+    05 FILLER PIC X(21) VALUE "glowtube        6413 ".
+    05 FILLER PIC X(21) VALUE "ledger_tile     6415 ".
+    05 FILLER PIC X(21) VALUE "pry_bar         0100H".
+    05 FILLER PIC X(21) VALUE "trowel          0100S".
+    05 FILLER PIC X(21) VALUE "grazer_flank    3200 ".
+    05 FILLER PIC X(21) VALUE "seared_flank    3200 ".
+    05 FILLER PIC X(21) VALUE "sod_cake        1600 ".
+    05 FILLER PIC X(21) VALUE "dump_shard      6400 ".
+    05 FILLER PIC X(21) VALUE "goto_pad        1616 ".
+    05 FILLER PIC X(21) VALUE "slag            6417 ".
+ 01 CL-ITEMS REDEFINES CL-ITEM-DATA.
+    05 CL-IT OCCURS 18 TIMES.
+       10 CL-IT-KEY         PIC X(16).
+       10 CL-IT-MAX         PIC 99.
+       10 CL-IT-STATE       PIC 99.
+       10 CL-IT-TOOL        PIC X.
+
+*> Blocks (standin-content §1.1, §2): for block id b, row b + 1: hand break time in milliseconds
+*> (99999 = unbreakable, baseplate) and its class ("H" hard, "S" soft, space none).
+ 01 CL-BLOCK-DATA.
+    05 FILLER PIC X(6) VALUE "00000 ".
+    05 FILLER PIC X(6) VALUE "99999 ".
+    05 FILLER PIC X(6) VALUE "01500H".
+    05 FILLER PIC X(6) VALUE "00600S".
+    05 FILLER PIC X(6) VALUE "00700S".
+    05 FILLER PIC X(6) VALUE "00500S".
+    05 FILLER PIC X(6) VALUE "01000H".
+    05 FILLER PIC X(6) VALUE "00400 ".
+    05 FILLER PIC X(6) VALUE "00300 ".
+    05 FILLER PIC X(6) VALUE "01200H".
+    05 FILLER PIC X(6) VALUE "02000 ".
+    05 FILLER PIC X(6) VALUE "01200H".
+ 01 CL-BLOCKS REDEFINES CL-BLOCK-DATA.
+    05 CL-BK OCCURS 12 TIMES.
+       10 CL-BK-BREAK-MS    PIC 9(5).
+       10 CL-BK-CLASS       PIC X.
 
 *> Block states (standin-content §1.2): for state id s, row s + 1: block key path (the block state
 *> file name, 08 §10.6), the state's properties as a variant key (sorted by name, 08 §4.2), and

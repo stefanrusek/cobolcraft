@@ -2,8 +2,8 @@
 *> shows a screen; SCREEN-BUILD writes the current screen's widgets each frame (GUI pixels: the
 *> window divided by CL-GUI-SCALE); SCREEN-INPUT routes the frame's clicks, typed text and keys to
 *> the current screen; SCREEN-ACTION carries out what a widget does; WIDGET-ADD and WIDGET-ADD-KEY
-*> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen's HUD is the
-*> crosshair.
+*> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen shows the HUD
+*> (hud.cob: crosshair and hotbar); E opens the inventory screen from the world and closes it again.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
@@ -38,15 +38,6 @@
  COPY CLCONST.
  01 WS-GW                  BINARY-LONG.
  01 WS-GH                  BINARY-LONG.
- 01 WS-X                   BINARY-LONG.
- 01 WS-Y                   BINARY-LONG.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-KIND                BINARY-LONG VALUE 1.
- 01 WS-KEY                 PIC X(80) VALUE "cobolcraft.hud.crosshair".
- 01 WS-KEY-LENGTH          BINARY-LONG VALUE 24.
- 01 WS-Z1                   BINARY-LONG VALUE 0.
- 01 WS-Z2                   BINARY-LONG VALUE 0.
- 01 WS-Z3                   BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -65,10 +56,9 @@
          WHEN SCR-PAUSE
              CALL "PAUSE-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-WORLD
-             COMPUTE WS-X = WS-GW / 2 - 3
-             COMPUTE WS-Y = WS-GH / 2 - 4
-             CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3
-                 WS-KEY WS-KEY-LENGTH
+             CALL "HUD-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-INVENTORY
+             CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
@@ -78,7 +68,8 @@
 *> USING CLIENT-STATE: a click on a widget focuses a field or does the widget's action; typed text
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
-*> the server list for the title screen.
+*> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
+*> world.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -125,6 +116,20 @@
                  MOVE SCR-SERVER-LIST TO WS-SCREEN
              WHEN SCR-SERVER-LIST
                  MOVE SCR-TITLE TO WS-SCREEN
+             WHEN SCR-INVENTORY
+                 MOVE SCR-WORLD TO WS-SCREEN
+         END-EVALUATE
+         IF WS-SCREEN > 0
+             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         END-IF
+     END-IF
+     IF IN-KEY-PRESSED(CC-KEY-E + 1) = 1
+         MOVE 0 TO WS-SCREEN
+         EVALUATE SM-SCREEN
+             WHEN SCR-WORLD
+                 MOVE SCR-INVENTORY TO WS-SCREEN
+             WHEN SCR-INVENTORY
+                 MOVE SCR-WORLD TO WS-SCREEN
          END-EVALUATE
          IF WS-SCREEN > 0
              CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
@@ -217,6 +222,8 @@
              END-IF
          WHEN ACT-RESUME
              MOVE SCR-WORLD TO WS-SCREEN
+         WHEN ACT-SLOT
+             CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

@@ -11,7 +11,11 @@
 *> slot, inventory, chunks into the replica and forgotten, the chunk cache centre, Chunk Batch
 *> Received after each batch, Player Loaded once, Keep Alive echoed, Disconnect; entities and the
 *> player list into the entity replica (entities-replica.cob). Moving: Move Player (CLP-MOVE-SEND
-*> each client tick) and Player Abilities (the fly toggle).
+*> each client tick) and Player Abilities (the fly toggle). Blocks and inventory (US4): Player
+*> Action, Use Item On, Set Carried Item, Container Click and Set Creative Mode Slot builders
+*> (controls.cob and the inventory screen send them); Block Update, Section Blocks Update and Light
+*> Update into the replica (world-replica.cob), Block Changed Ack and Block Destruction kept, the
+*> inventory packets into the inventory replica (inventory-replica.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -284,6 +288,159 @@
  END PROGRAM CLP-MOVE-SEND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLAYER-ACTION.
+*> USING PB-BUFFER, action (0 start, 2 abort, 3 stop destroy), block x, y, z, face (05c Direction),
+*> sequence: Player Action (05c 0x29; the face a UByte).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 41.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION L-X L-Y L-Z L-FACE L-SEQUENCE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-PLAYER-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-USE-ITEM-ON.
+*> USING PB-BUFFER, block x, y, z, face (05c Direction), cursor x, y, z (FLOAT-SHORT, the hit point
+*> within the block), sequence: Use Item On (05c 0x42) with the main hand, not inside the block,
+*> no world border hit (the face a VarInt).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 66.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ 01 WS-FALSE2              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-CX                   FLOAT-SHORT.
+ 01 L-CY                   FLOAT-SHORT.
+ 01 L-CZ                   FLOAT-SHORT.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-X L-Y L-Z L-FACE L-CX L-CY L-CZ L-SEQUENCE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CX
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CY
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-CZ
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE2
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-USE-ITEM-ON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SET-CARRIED.
+*> USING PB-BUFFER, hotbar slot (0 to 8): Set Carried Item (05c 0x36; a Short).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 54.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLOT.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     GOBACK.
+ END PROGRAM CLP-SET-CARRIED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CONTAINER-CLICK.
+*> USING PB-BUFFER, state id, slot, the slot's new count and item, the cursor's new count and item:
+*> Container Click (05c 0x12) of container 0, button 0, click type 0 PICKUP, with the one changed
+*> slot and the cursor as HashedStacks without components (00 §12.4; 09 §3.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 18.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-SLOT-COUNT           BINARY-LONG.
+ 01 L-SLOT-ITEM            BINARY-LONG.
+ 01 L-CARRIED-COUNT        BINARY-LONG.
+ 01 L-CARRIED-ITEM         BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-STATE-ID L-SLOT L-SLOT-COUNT L-SLOT-ITEM L-CARRIED-COUNT
+         L-CARRIED-ITEM.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "CLP-HASHED-STACK" USING PB-BUFFER L-SLOT-COUNT L-SLOT-ITEM
+     CALL "CLP-HASHED-STACK" USING PB-BUFFER L-CARRIED-COUNT L-CARRIED-ITEM
+     GOBACK.
+ END PROGRAM CLP-CONTAINER-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-HASHED-STACK.
+*> USING PB-BUFFER, count, item: a HashedStack (00 §12.4): Present false for an empty stack, else
+*> Present true, the item, the count and an empty HashedPatchMap.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-COUNT L-ITEM.
+     COMPUTE WS-PRESENT = FUNCTION MIN(L-COUNT, 1)
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-PRESENT
+     IF WS-PRESENT = 1
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     END-IF
+     GOBACK.
+ END PROGRAM CLP-HASHED-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CREATIVE-SLOT.
+*> USING PB-BUFFER, slot (0 to 35), count, item: Set Creative Mode Slot (05c 0x39): the slot (a
+*> Short) and the stack as an ItemStack without components.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 57.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-SLOT L-COUNT L-ITEM.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     MOVE L-COUNT TO WS-IS-COUNT
+     MOVE L-ITEM TO WS-IS-ITEM
+     CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
+     GOBACK.
+ END PROGRAM CLP-CREATIVE-SLOT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
 *> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
  DATA DIVISION.
@@ -376,8 +533,9 @@
  01 WS-DIM                 PIC X(64).
  01 WS-DIM-CAP             BINARY-LONG VALUE 64.
  01 WS-DIM-LENGTH          BINARY-LONG.
- 01 WS-CONTAINER           BINARY-LONG.
- 01 WS-SLOT                BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
  01 WS-DOUBLE              FLOAT-LONG.
  01 WS-PACKET              BINARY-LONG.
  LINKAGE SECTION.
@@ -503,24 +661,23 @@
                  END-IF
              END-PERFORM
              COMPUTE PL-TIME = FUNCTION MOD(PL-TIME, 30000)
-         WHEN WS-PHASE = PH-PLAY AND L-ID = 107
-             CALL "PB-GET-VARINT" USING L-PACKET PL-HELD
-         WHEN WS-PHASE = PH-PLAY AND L-ID = 18
-             CALL "PB-GET-VARINT" USING L-PACKET WS-CONTAINER
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 18 OR L-ID = 20 OR L-ID = 107 OR L-ID = 110)
+             CALL "INVENTORY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 8
+             CALL "PB-GET-POSITION" USING L-PACKET WS-BX WS-BY WS-BZ
              CALL "PB-GET-VARINT" USING L-PACKET WS-VALUE
-             CALL "PB-GET-VARINT" USING L-PACKET WS-COUNT
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
-                 CALL "PB-GET-ITEMSTACK" USING L-PACKET OUT-ITEMSTACK
-                 IF WS-CONTAINER = 0 AND WS-I <= 36
-                     MOVE OUT-IS-COUNT TO PL-SLOT-COUNT(WS-I)
-                     MOVE OUT-IS-ITEM TO PL-SLOT-ITEM(WS-I)
-                 END-IF
-             END-PERFORM
-         WHEN WS-PHASE = PH-PLAY AND L-ID = 110
-             CALL "PB-GET-VARINT" USING L-PACKET WS-SLOT
-             CALL "PB-GET-ITEMSTACK" USING L-PACKET OUT-ITEMSTACK
-             MOVE OUT-IS-COUNT TO PL-SLOT-COUNT(WS-SLOT + 1)
-             MOVE OUT-IS-ITEM TO PL-SLOT-ITEM(WS-SLOT + 1)
+             CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-VALUE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 86
+             CALL "WORLD-SECTION-BLOCKS" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 49
+             CALL "WORLD-LIGHT-UPDATE" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 4
+             CALL "PB-GET-VARINT" USING L-PACKET CT-ACK
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 5
+*>           Block Destruction: another player's break progress (kept; nothing is drawn for it).
+             CALL "PB-GET-VARINT" USING L-PACKET BD-ENTITY
+             CALL "PB-GET-POSITION" USING L-PACKET BD-X BD-Y BD-Z
+             CALL "PB-GET-UBYTE" USING L-PACKET BD-PROGRESS
          WHEN WS-PHASE = PH-PLAY AND L-ID = 46
              CALL "WORLD-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 38

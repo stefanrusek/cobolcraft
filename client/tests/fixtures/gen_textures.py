@@ -449,10 +449,28 @@ def textures():
     ]
 
 
+# Item icons (standin-content §2): a block item shows its block's texture (the top face for turf,
+# the end face for cardstack, the lit texture for glowtube); the other items their own icons. Written
+# as item_<item key path>.rgba for the item icon acceptance test.
+ITEM_ICONS = [
+    ("baseplate", "baseplate"), ("greystone", "greystone"), ("loam", "loam"), ("turf", "turf_top"),
+    ("grit", "grit"), ("cardstack", "cardstack_end"), ("lucite", "lucite"), ("glowtube", "glowtube_lit"),
+    ("ledger_tile", "ledger_tile"), ("pry_bar", "pry_bar"), ("trowel", "trowel"),
+    ("grazer_flank", "grazer_flank"), ("seared_flank", "seared_flank"), ("sod_cake", "sod_cake"),
+    ("dump_shard", "dump_shard"), ("goto_pad", "goto_pad"), ("slag", "slag"),
+]
+
+
+def item_icons(images):
+    by_name = dict(images)
+    return [("item_" + item, by_name[texture]) for item, texture in ITEM_ICONS]
+
+
 def main(argv):
     outdir = argv[1] if len(argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "textures")
     os.makedirs(outdir, exist_ok=True)
-    for name, img in textures():
+    images = textures()
+    for name, img in images + item_icons(images):
         data = img.to_bytes()
         path = os.path.join(outdir, name + ".rgba")
         if os.path.isfile(path):

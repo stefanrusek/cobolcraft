@@ -1003,6 +1003,9 @@ sees their effect only through the positions it is sent, for example the fall st
 - **Gravity and drag (not flying):** after each tick's move, vertical speed ← (speed − 0.08) × 0.98.
 - **Flying toggle:** two Space presses within 0.3 s, only when the server's abilities allow flying.
 - **Mouse look:** 0.15 degrees per pixel of cursor movement; pitch held between −90 and 90.
+- **Block reach (recorded after Phase 34):** the target ray runs at most 5 blocks from the eye (1.6 above the
+  feet, §3) along the look direction, in survival and creative; the first non-void cell it enters is the
+  target and the face it enters through is the clicked face.
 
 ### 11.5 Food items
 

@@ -2,7 +2,8 @@
 *> §3; docs/protocol/09-cobolcraft-profile.md): every serverbound fixture the client sends in
 *> status, login, configuration and the play join equals what the client's builders (or its
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
-*> decodes to the stated values; then the play packets of moving and of other players (US3).
+*> decodes to the stated values; then the play packets of moving and of other players (US3), and of
+*> breaking, placing, the hotbar and the inventory (US4).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -73,6 +74,20 @@
  01 WS-REGISTRY-TABLE REDEFINES WS-REGISTRIES.
     05 WS-REGISTRY         PIC X(40) OCCURS 18 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG VALUE 4.
+ 01 WS-BY                  BINARY-LONG VALUE 53.
+ 01 WS-BZ                  BINARY-LONG VALUE 8.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG.
+ 01 WS-HX                  FLOAT-SHORT VALUE 0.5.
+ 01 WS-HY                  FLOAT-SHORT VALUE 1.0.
+ 01 WS-HZ                  FLOAT-SHORT VALUE 0.5.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT2              BINARY-LONG.
+ 01 WS-ITEM2               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
@@ -552,6 +567,158 @@
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3)
          DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "0 -1 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, breaking, placing, hotbar and inventory (US4): builders ----
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE 0 TO WS-ACTION
+                 MOVE 1 TO WS-SEQ
+                 MOVE "contract/fixtures/wire/play-c2s-29-player-action-start-destroy.hex"
+                     TO WS-PATH
+             WHEN 2
+                 MOVE 2 TO WS-ACTION
+                 MOVE 2 TO WS-SEQ
+                 MOVE "contract/fixtures/wire/play-c2s-29-player-action-abort-destroy.hex"
+                     TO WS-PATH
+             WHEN OTHER
+                 MOVE 3 TO WS-ACTION
+                 MOVE 3 TO WS-SEQ
+                 MOVE "contract/fixtures/wire/play-c2s-29-player-action-stop-destroy.hex"
+                     TO WS-PATH
+         END-EVALUATE
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-PLAYER-ACTION" USING PB-BUFFER WS-ACTION WS-BX WS-BY WS-BZ WS-FACE WS-SEQ
+         MOVE SPACES TO TL-CASE
+         STRING "contract wire client Player Action " FUNCTION CHAR(WS-ACTION + 49)
+             " ((4, 53, 8), up) equals " FUNCTION TRIM(WS-PATH(24:)) DELIMITED BY SIZE
+             INTO TL-CASE
+         CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     END-PERFORM
+     MOVE 4 TO WS-SEQ
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-USE-ITEM-ON" USING PB-BUFFER WS-BX WS-BY WS-BZ WS-FACE WS-HX WS-HY WS-HZ WS-SEQ
+     MOVE "contract wire client Use Item On ((4, 53, 8), up, cursor (0.5, 1, 0.5), sequence 4) "
+         & "equals play-c2s-42-use-item-on.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-42-use-item-on.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 3 TO WS-SLOT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-SET-CARRIED" USING PB-BUFFER WS-SLOT
+     MOVE "contract wire client Set Carried Item (slot 3) equals play-c2s-36-set-carried-item.hex"
+         TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-36-set-carried-item.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 1 TO WS-STATE
+     MOVE 0 TO WS-SLOT WS-COUNT WS-ITEM
+     MOVE 64 TO WS-COUNT2
+     MOVE 2 TO WS-ITEM2
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CONTAINER-CLICK" USING PB-BUFFER WS-STATE WS-SLOT WS-COUNT WS-ITEM WS-COUNT2
+         WS-ITEM2
+     MOVE "contract wire client Container Click (state 1, left pickup of slot 0: slot 0 empty, "
+         & "64 greystone carried) equals play-c2s-12-container-click.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-12-container-click.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 9 TO WS-SLOT
+     MOVE 64 TO WS-COUNT
+     MOVE 7 TO WS-ITEM
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-SLOT WS-COUNT WS-ITEM
+     MOVE "contract wire client Set Creative Mode Slot (slot 9, 64 lucite) equals "
+         & "play-c2s-39-set-creative-mode-slot.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-39-set-creative-mode-slot.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+*>   ---- play, breaking, placing, hotbar and inventory (US4): decoding (the spawn chunk (0, 0)
+*>   is still in the replica) ----
+     MOVE "contract/fixtures/wire/play-s2c-08-block-update.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Block Update decodes: (8, 59, 8) becomes state 14 (glowtube "
+         & "lit=false) in the replica" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 8 TO WS-CX
+     MOVE 59 TO WS-CY
+     MOVE 8 TO WS-CZ
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE TL-OBSERVED(1:3) TO WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "14/" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-31-light-update.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Light Update decodes: block light of sections Y 3 and Y 4 of chunk "
+         & "(0, 0) is cleared, sky light kept" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 8 TO WS-CX
+     MOVE 59 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE 4 TO WS-CX
+     MOVE 54 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE "14/0/0 0/15/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-56-section-blocks-update.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Section Blocks Update decodes: section (0, 3, 0) changes (9, 55, "
+         & "8) to 15 and (8, 60, 8) to 11" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 9 TO WS-CX
+     MOVE 55 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE 8 TO WS-CX
+     MOVE 60 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE "15/15/0 11/15/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-04-block-changed-ack.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-05-block-destruction.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Block Changed Ack decodes to sequence 7; Block Destruction to "
+         & "breaker 1, (5, 53, 8), progress 3" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 71553083 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CT-ACK * 10000000 + BD-ENTITY * 1000000 + BD-X * 100000
+         + BD-Y * 1000 + BD-Z * 10 + BD-PROGRESS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO PL-CARRIED-COUNT
+     MOVE 3 TO PL-CARRIED-ITEM
+     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Content decodes: state id 1, slot 8 one pry_bar, slot "
+         & "10 empty, the cursor empty" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-INV-STATE-ID TO WS-EDIT
+     COMPUTE WS-EDIT2 = PL-SLOT-COUNT(9) * 100 + PL-SLOT-ITEM(9)
+     COMPUTE WS-EDIT3 = PL-SLOT-COUNT(11) * 100 + PL-SLOT-ITEM(11)
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     COMPUTE WS-EDIT = PL-CARRIED-COUNT * 100 + PL-CARRIED-ITEM
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "1 110 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Slot decodes: state id 2, slot 0 holds 63 greystone"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 26302 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-INV-STATE-ID * 10000 + PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO PL-HELD
+     MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     MOVE "contract/fixtures/wire/play-s2c-6e-set-player-inventory.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Set Held Slot decodes to slot 0 and Set Player Inventory to 63 "
+         & "greystone in slot 0" TO TL-CASE
+     MOVE 6302 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-HELD * 10000 + PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-CLIENT.

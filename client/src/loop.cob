@@ -1,9 +1,10 @@
 *> The client's main loop (research R6; contracts/test-harness.md §2; client-surface.md §1, §2):
 *> CL-INIT empties a client state; CL-START prepares it without a window (game directory, server
-*> list, the pack stack, language, font and UI atlas, block and entity atlases, baked models, the
-*> title screen); CL-STEP is one frame: the frame's events, the screen's input (on the world screen
-*> also looking and the fly toggle, physics.cob), the client tick (every 50 ms in play: the
-*> player's movement and its Move Player once loaded, then Client Tick End), the connections
+*> list, the pack stack, language, font and UI atlas, block and entity atlases, baked models, item
+*> icons, the title screen); CL-STEP is one frame: the frame's events, the screen's input (on the
+*> world screen also looking and the fly toggle, physics.cob), the client tick (every 50 ms in
+*> play: the player's movement and its Move Player once loaded, then Client Tick End), the target
+*> block (raycast.cob, world screen) and the block and hotbar controls (controls.cob), the connections
 *> pumped without waiting, the sky, meshing of changed sections, then the screen model, the UI and the render list; CL-RUN repeats frames over the
 *> window (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the
 *> command line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
@@ -48,6 +49,7 @@
      CALL "ATLAS-BUILD" USING CLIENT-STATE
      CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
+     CALL "ITEMDEFS-LOAD" USING CLIENT-STATE
      MOVE 854 TO IN-WIN-W
      MOVE 480 TO IN-WIN-H
      MOVE SCR-TITLE TO WS-SCREEN
@@ -198,6 +200,18 @@
          ADD CL-TICK-MS TO CL-NEXT-TICK
          IF CL-NEXT-TICK <= L-NOW
              COMPUTE CL-NEXT-TICK = L-NOW + CL-TICK-MS
+         END-IF
+     END-IF
+*>   The target (world screen only) and, in play, the block controls (which abort a break once the
+*>   world is left) and the hotbar (world and inventory screens).
+     MOVE 0 TO TG-HIT
+     IF SM-SCREEN = SCR-WORLD
+         CALL "RAYCAST" USING CLIENT-STATE
+     END-IF
+     IF CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "CONTROLS-INPUT" USING CLIENT-STATE
+         IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-INVENTORY
+             CALL "CONTROLS-HOTBAR" USING CLIENT-STATE
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).

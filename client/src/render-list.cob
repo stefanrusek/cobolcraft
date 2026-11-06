@@ -6,10 +6,13 @@
 *> (y down, depth 0 to 1, near 0.05, far 512). Each section mesh is drawn with projection x view x
 *> its offset from the eye (camera-relative, so float positions stay small): every opaque mesh,
 *> then the entity figures (texture 1, built eye-relative by ENTITIES-MESH), then the translucent
-*> meshes back to front by section centre, then the UI mesh (texture 2) with an orthographic
-*> window-pixel matrix. Meshes changed since the last frame, the entity mesh and the UI mesh are
-*> listed as uploads; the slots of a forgotten chunk's row are listed once with no vertices, which
-*> frees them (shim-abi §9).
+*> meshes back to front by section centre, then the target highlight (an outline around the
+*> targeted block, eye-relative, translucent on texture 2), then the UI mesh (texture 2) with an
+*> orthographic window-pixel matrix, the item icons over it (texture 0) and the UI drawn over the
+*> icons (the slot counts, texture 2), with the same matrix. Meshes changed since the last frame,
+*> the entity, highlight, icon and UI meshes are listed as uploads (the frame-built ones while they
+*> have vertices, and once more when they no longer have, which frees them); the slots of a
+*> forgotten chunk's row are listed once with no vertices, which frees them (shim-abi §9).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RENDER-LIST-BUILD.
@@ -25,6 +28,8 @@
  01 WS-K                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-PIPE                BINARY-LONG.
+ 01 WS-TEX                 BINARY-LONG.
  01 WS-WORLD               BINARY-LONG.
  01 WS-F                   FLOAT-LONG.
  01 WS-ASPECT              FLOAT-LONG.
@@ -216,6 +221,16 @@
          MOVE WS-TSEC(WS-I) TO WS-S
          CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE WS-R WS-S
      END-PERFORM
+*>   The target highlight (world screen), after the translucent sections.
+     MOVE 0 TO RL-HL-COUNT
+     IF SM-SCREEN = SCR-WORLD AND TG-HIT = 1
+         CALL "HIGHLIGHT-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-IF
+     MOVE MESH-SLOT-HIGHLIGHT TO WS-SLOT
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HL-VERTEX(1) RL-HL-COUNT RL-HL-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
      ADD 1 TO RL-UPLOAD-COUNT
      MOVE MESH-SLOT-UI TO RL-U-SLOT(RL-UPLOAD-COUNT)
@@ -232,6 +247,19 @@
      COMPUTE RL-D-MATRIX(RL-DRAW-COUNT, 6) = 2 / FUNCTION MAX(IN-WIN-H, 1)
      MOVE 1 TO RL-D-MATRIX(RL-DRAW-COUNT, 11) RL-D-MATRIX(RL-DRAW-COUNT, 16)
      MOVE -1 TO RL-D-MATRIX(RL-DRAW-COUNT, 13) RL-D-MATRIX(RL-DRAW-COUNT, 14)
+*>   The item icons and the UI over them, with the UI's matrix.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE RL-D-MATRIX(RL-DRAW-COUNT, WS-I) TO WS-PV(WS-I)
+     END-PERFORM
+     MOVE MESH-SLOT-ICONS TO WS-SLOT
+     MOVE CC-PIPE-UI TO WS-PIPE
+     MOVE CC-TEX-BLOCKS TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-IC-VERTEX(1) RL-IC-COUNT RL-IC-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
+     MOVE MESH-SLOT-UI-TOP TO WS-SLOT
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-UT-VERTEX(1) RL-UT-COUNT RL-UT-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
      GOBACK.
 
  END PROGRAM RENDER-LIST-BUILD.
@@ -267,3 +295,127 @@
      END-PERFORM
      GOBACK.
  END PROGRAM SECTION-MATRIX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RENDER-MESH-ADD.
+*> USING CLIENT-STATE, slot, first vertex, vertex count, count last uploaded (updated), pipeline,
+*> texture, matrix (16 FLOAT-LONG): a mesh built this frame is uploaded while it has vertices and
+*> once more when it no longer has (freed), and drawn while it has vertices.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-VERTICES             PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-UPLOADED             BINARY-LONG.
+ 01 L-PIPE                 BINARY-LONG.
+ 01 L-TEX                  BINARY-LONG.
+ 01 L-MATRIX-TABLE.
+    05 L-MATRIX            FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-SLOT L-VERTICES L-COUNT L-UPLOADED L-PIPE L-TEX
+         L-MATRIX-TABLE.
+     IF L-COUNT > 0 OR L-UPLOADED > 0
+         ADD 1 TO RL-UPLOAD-COUNT
+         MOVE L-SLOT TO RL-U-SLOT(RL-UPLOAD-COUNT)
+         SET RL-U-ADDR(RL-UPLOAD-COUNT) TO ADDRESS OF L-VERTICES
+         MOVE L-COUNT TO RL-U-COUNT(RL-UPLOAD-COUNT)
+         MOVE L-COUNT TO L-UPLOADED
+     END-IF
+     IF L-COUNT > 0
+         ADD 1 TO RL-DRAW-COUNT
+         MOVE L-SLOT TO RL-D-SLOT(RL-DRAW-COUNT)
+         MOVE L-PIPE TO RL-D-PIPELINE(RL-DRAW-COUNT)
+         MOVE L-TEX TO RL-D-TEX(RL-DRAW-COUNT)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             MOVE L-MATRIX(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM RENDER-MESH-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HIGHLIGHT-MESH.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): the target's outline (08 §10.8.6): on each of the six
+*> faces of the block's cube, grown by 0.002 so it is not hidden by the faces themselves, four
+*> strips 1/32 block wide along its edges: 24 quads, 144 vertices, eye-relative, on the white
+*> swatch of the UI atlas at brightness 0 (black) and alpha 0.6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-E                   FLOAT-LONG VALUE 0.002.
+ 01 WS-W                   FLOAT-LONG VALUE 0.03125.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
+ 01 WS-STRIP               BINARY-LONG.
+ 01 WS-U-AXIS              BINARY-LONG.
+ 01 WS-V-AXIS              BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-U0                  FLOAT-LONG.
+ 01 WS-U1                  FLOAT-LONG.
+ 01 WS-V0                  FLOAT-LONG.
+ 01 WS-V1                  FLOAT-LONG.
+ 01 WS-BLOCK               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-P                   FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-CORNERS             PIC X(6) VALUE "123134".
+ 01 WS-TU                  FLOAT-SHORT.
+ 01 WS-TV                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
+     MOVE TG-X TO WS-BLOCK(1)
+     MOVE TG-Y TO WS-BLOCK(2)
+     MOVE TG-Z TO WS-BLOCK(3)
+     COMPUTE WS-TU = 4 / UA-W
+     COMPUTE WS-TV = (UA-H - 4) / UA-H
+     COMPUTE WS-LO = 0 - WS-E
+     COMPUTE WS-HI = 1 + WS-E
+     MOVE 0 TO RL-HL-COUNT
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+         COMPUTE WS-U-AXIS = FUNCTION MOD(WS-A, 3) + 1
+         COMPUTE WS-V-AXIS = FUNCTION MOD(WS-A + 1, 3) + 1
+         PERFORM VARYING WS-SIDE FROM 0 BY 1 UNTIL WS-SIDE > 1
+             PERFORM VARYING WS-STRIP FROM 1 BY 1 UNTIL WS-STRIP > 4
+*>               The strip's rectangle in the face's two other axes.
+                 MOVE WS-LO TO WS-U0 WS-V0
+                 MOVE WS-HI TO WS-U1 WS-V1
+                 EVALUATE WS-STRIP
+                     WHEN 1
+                         COMPUTE WS-U1 = WS-LO + WS-W
+                     WHEN 2
+                         COMPUTE WS-U0 = WS-HI - WS-W
+                     WHEN 3
+                         COMPUTE WS-V1 = WS-LO + WS-W
+                     WHEN 4
+                         COMPUTE WS-V0 = WS-HI - WS-W
+                 END-EVALUATE
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                     MOVE FUNCTION NUMVAL(WS-CORNERS(WS-K:1)) TO WS-C
+                     COMPUTE WS-P(WS-A) = WS-LO + WS-SIDE * (WS-HI - WS-LO)
+                     MOVE WS-U0 TO WS-P(WS-U-AXIS)
+                     IF WS-C = 2 OR WS-C = 3
+                         MOVE WS-U1 TO WS-P(WS-U-AXIS)
+                     END-IF
+                     MOVE WS-V0 TO WS-P(WS-V-AXIS)
+                     IF WS-C >= 3
+                         MOVE WS-V1 TO WS-P(WS-V-AXIS)
+                     END-IF
+                     ADD 1 TO RL-HL-COUNT
+                     COMPUTE RL-HL-X(RL-HL-COUNT) = WS-BLOCK(1) + WS-P(1) - L-EYE(1)
+                     COMPUTE RL-HL-Y(RL-HL-COUNT) = WS-BLOCK(2) + WS-P(2) - L-EYE(2)
+                     COMPUTE RL-HL-Z(RL-HL-COUNT) = WS-BLOCK(3) + WS-P(3) - L-EYE(3)
+                     MOVE WS-TU TO RL-HL-U(RL-HL-COUNT)
+                     MOVE WS-TV TO RL-HL-V(RL-HL-COUNT)
+                     MOVE 0 TO RL-HL-B(RL-HL-COUNT)
+                     MOVE 0.6 TO RL-HL-A(RL-HL-COUNT)
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM HIGHLIGHT-MESH.

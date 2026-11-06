@@ -259,7 +259,19 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   at (0.5, 10, 0.5) facing +Z, loaded and captured), `TEST-SET-BLOCK`, `TEST-TICKS` and
   `TEST-KEY-TICK` (50 ms steps, one client tick each), `TEST-EVENTS-MS` (every stepping helper
   shares its clock), `TEST-POSITION`, `TEST-ANGLES` and `TEST-ENTITY`. CLTEST.cpy calls production
-  entry points (`ENTITY-FIND`), so until they exist every client test fails to link.
+  entry points (`ENTITY-FIND`), so until they exist every client test fails to link. US4 added
+  `TEST-SERVER-READ-HEX` (each packet the server side received as hex of id + body, Client Tick End
+  and Move Player left out), the way to assert what a control sent.
+- **Client US4 state**: the world screen's HUD holds the crosshair and nine hotbar slot widgets
+  (`WK-SLOT`, argument the slot, 36 = the cursor stack), so world-screen widget and UI vertex counts
+  include them. `CL-STEP` runs `RAYCAST` (world screen) and `CONTROLS-INPUT` (in play) after the tick;
+  every Player Action and Use Item On takes the next `CT-SEQUENCE`. A test that sets `PL-SLOT` and
+  `PL-HELD` directly controls what the controls see as held. Item icons (`IT-SPRITE`) need
+  `ATLAS-BUILD` before `ITEMDEFS-LOAD` (`CL-START` does both). `UI-QUAD` writes to the layer
+  `RL-UI-LAYER` names (0 UI, 1 over the icons, 2 the icons): reset it to 0 after use.
+- **Calls with a refmod or an oversized area into a one-byte `PIC X` LINKAGE item of the same
+  file** can still fail `-Werror=repository-checks` ("does not conform"); inline the work or pass a
+  field of the callee's exact shape.
 - **Client tick order** (`CL-STEP`): input, the client tick (physics, Move Player, Client Tick End),
   then `NET-PUMP`, so what a tick queues goes out in the same frame and a server reply read after
   one step sees it. `NET-PUMP` keeps its own `PB-BUFFER` for received packets and views `CN-OUT`
