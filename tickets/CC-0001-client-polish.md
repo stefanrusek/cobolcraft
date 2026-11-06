@@ -21,7 +21,7 @@ implementation: []
 The first manual run of the finished client (feature 001, 2026-11-06) worked but looked disappointing. This ticket is
 the input for the second SDD run's polish work. The world, the HUD and the screens should look deliberate and
 finished, not like a debug renderer. The operator's first play session (2026-11-06) also added missing controls
-and gameplay: survival flight, a break indicator, inventory and bench crafting with a recipe book, cave and ore
+and gameplay: creative-only flight with no endless climb in survival, a break indicator, inventory and bench crafting with a recipe book, cave and ore
 world generation, game options, a resource-pack folder button, the F3 overlay, F5 camera modes, the off-hand swap
 and a visible held item. The stand-in content (`docs/design/standin-content.md`) stays the source of the
 values, so new looks are added there first (Principle II).
@@ -41,12 +41,12 @@ values, so new looks are added there first (Principle II).
   spaced and readable at the window's size.
 - Given a stack of 1 item, when its slot is drawn, then no count is shown. Counts appear only from 2 up.
 
-### As a Player in survival, I want a double jump to start flying, not an endless climb
+### As a Player, I want double Space to fly only in creative, and no endless climb in survival
 
-- Given I am in survival, when I press Space twice quickly, then I enter flying mode, as the creative double-Space
-  toggle does.
-- Given I am in survival and not flying, when I press Space repeatedly in the air, then I do not rise above the height
-  of one jump: no jump starts while I am off the ground.
+- Given I am in creative, when I press Space twice quickly, then flying turns on, or off if I was flying.
+- Given I am in survival, when I press Space twice quickly, then I do not fly. Flight is allowed only in creative mode.
+- Given I am in survival and in the air, when I press Space again, then no new jump starts. I never rise above the
+  height of one jump from the ground.
 
 ### As a Player in survival, I want to see a block breaking
 
@@ -123,8 +123,6 @@ values, so new looks are added there first (Principle II).
   sidecar before refining.
 - Which looks are in scope: lighting (smooth lighting, ambient occlusion), sky and fog, clouds, HUD layout, font,
   screen backgrounds?
-- Survival flight: should double Space give survival players flight always, or only when the server or world allows
-  it (the 001 spec allows flight only in creative)? The endless jump in the air is a bug either way.
 - World generation: "Minecraft style" means the kind of terrain (caves, ores, varied height). The noise, ore list and
   depths are original stand-in content (Principle II, FR-015), not vanilla's values.
 - Crafting: 001 has a single crafting screen (US10, the C key). Does it give way to the inventory 2×2 grid plus the
