@@ -5,3 +5,5 @@ build/
 __pycache__/
 client/tests/fixtures/textures/
 client/tests/fixtures/packs/
+
+/tmp/
