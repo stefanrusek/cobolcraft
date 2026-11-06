@@ -986,15 +986,15 @@ with every `core/tests/acc_us4_*.cob` passing.
 
 **Goal**: host kind 2 behaviour (FR-016, FR-017). **Independent Test**: `make gate-core`.
 
-- [ ] T711 [P] [US17-core] Write `core/tests/contract_coreapi_provider.cob` case for `CORE-OPEN-TO-OTHERS` (host kind becomes 2; network connections accepted)
-- [ ] T712 [P] [US17-core] Write acceptance test `core/tests/acc_us17_guests.cob`: case "acceptance US17-1/US17-2 given a world opened with a guest mode and guest-operator choice when a guest joins over a network connection then they get that mode, the host holds operator status and the guest holds it only if allowed"
-- [ ] T713 [US17-core] Implement `CORE-OPEN-TO-OTHERS` (host kind 2 for the rest of the session) in `core/src/api.cob`
-- [ ] T714 [US17-core] Implement the guest game mode for new players of an opened world in `core/src/players.cob`
-- [ ] T715 [P] [US17-core] Write acceptance test `core/tests/acc_us17_host_name.cob`: case "US17 edge given a guest with the host's name when they log in then Login Disconnect carries the §17 name-in-use text and the host stays"
-- [ ] T716 [US17-core] Implement the host-name refusal in `core/src/login.cob`
-- [ ] T717 [P] [US17-core] Write acceptance test `core/tests/acc_us17_host_quit.cob`: case "acceptance US17-4 given guests when `CORE-STOP` is called with the host-closed text then the world is saved and every guest is sent that Disconnect"; case "acceptance US17-5 a guest who rejoins after reopening finds position, dimension, inventory, health and food as left"
-- [ ] T718 [US17-core] Extend the core implementation tests to 100 % coverage of the US17 changes
-- [ ] T719 Gate: run `make gate-core` and record the command and its real output
+- [X] T711 [P] [US17-core] Write `core/tests/contract_coreapi_provider.cob` case for `CORE-OPEN-TO-OTHERS` (host kind becomes 2; network connections accepted)
+- [X] T712 [P] [US17-core] Write acceptance test `core/tests/acc_us17_guests.cob`: case "acceptance US17-1/US17-2 given a world opened with a guest mode and guest-operator choice when a guest joins over a network connection then they get that mode, the host holds operator status and the guest holds it only if allowed"
+- [X] T713 [US17-core] Implement `CORE-OPEN-TO-OTHERS` (host kind 2 for the rest of the session) in `core/src/api.cob`
+- [X] T714 [US17-core] Implement the guest game mode for new players of an opened world in `core/src/players.cob`
+- [X] T715 [P] [US17-core] Write acceptance test `core/tests/acc_us17_host_name.cob`: case "US17 edge given a guest with the host's name when they log in then Login Disconnect carries the §17 name-in-use text and the host stays"
+- [X] T716 [US17-core] Implement the host-name refusal in `core/src/login.cob`
+- [X] T717 [P] [US17-core] Write acceptance test `core/tests/acc_us17_host_quit.cob`: case "acceptance US17-4 given guests when `CORE-STOP` is called with the host-closed text then the world is saved and every guest is sent that Disconnect"; case "acceptance US17-5 a guest who rejoins after reopening finds position, dimension, inventory, health and food as left"
+- [X] T718 [US17-core] Extend the core implementation tests to 100 % coverage of the US17 changes
+- [X] T719 Gate: run `make gate-core` and record the command and its real output
 
 #### Phase 27: US18-core — server pack offer
 

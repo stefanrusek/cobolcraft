@@ -2,7 +2,7 @@
 *> entry points: CORE-WORLD-OPEN, CORE-CONN-OPEN, CORE-CONN-INPUT, CORE-CONN-OUTPUT, CORE-CONN-CLOSED,
 *> CORE-TICK, CORE-CONSOLE-DRAIN and CORE-STATUS-GET with the record layouts of COREAPI.cpy; US13:
 *> CORE-SAVE and CORE-WORLD-OPEN of an existing world folder; US15: CORE-CONSOLE, CORE-STOP and the
-*> CORE-STATUS-GET run states 0, 1 and 2.
+*> CORE-STATUS-GET run states 0, 1 and 2; US17: CORE-OPEN-TO-OTHERS (guest mode, guest-operator flag).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-COREAPI-PROVIDER.
  DATA DIVISION.
@@ -38,6 +38,9 @@
  01 WS-CONSOLE-LINE        PIC X(64).
  01 WS-REASON              PIC X(64) VALUE Z"cobolcraft.disconnect.shutdown".
  01 WS-LINES               PIC X(256).
+ 01 WS-GUEST-MODE          BINARY-LONG VALUE 1.
+ 01 WS-GUEST-OPERATOR      BINARY-LONG VALUE 1.
+ 01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE "contract coreapi provider record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 CORE-STATUS 5"
@@ -171,8 +174,8 @@
      CALL "TEST-FEED" USING WS-ID WS-FIXTURE
      MOVE "contract/fixtures/wire/login-c2s-00-hello.hex" TO WS-FIXTURE
      CALL "TEST-FEED" USING WS-ID WS-FIXTURE
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-RESET" USING PK-BUFFER
      CALL "TEST-DRAIN" USING WS-ID PB-BUFFER WS-CLOSE
      MOVE 0 TO WS-FOUND
      MOVE 0 TO WS-OUTCOME
@@ -313,6 +316,39 @@
      MOVE 0 TO RETURN-CODE
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CORE-OPEN-TO-OTHERS (US17, FR-017): a single-player world (host kind 1) becomes host kind 2
+*>   with the guest mode and guest-operator flag, and a network connection logs in (Set Compression
+*>   first, 09 §2).
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 1 TO CS-HOST-KIND
+     MOVE "Hosty" TO CS-HOST-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "CORE-OPEN-TO-OTHERS" USING WS-GUEST-MODE WS-GUEST-OPERATOR
+     MOVE CW-SETTINGS TO CORE-SETTINGS
+     MOVE "contract coreapi provider CORE-OPEN-TO-OTHERS sets host kind 2, the guest mode and the "
+         & "guest-operator flag" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 211 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CS-HOST-KIND * 100 + CS-GUEST-MODE * 10 + CS-GUEST-OPERATOR
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CORE-CONN-NETWORK TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     MOVE "contract/fixtures/wire/login-c2s-00-hello.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-ID WS-PATH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID PB-BUFFER WS-CLOSE
+     CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE "contract coreapi provider CORE-OPEN-TO-OTHERS: a network connection is accepted (Set "
+         & "Compression, id 3, not closed)" TO TL-CASE
+     MOVE 30 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUTCOME * 100 + WS-PACKET-ID * 10 + WS-CLOSE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
      STOP RUN.
 
 *> WS-LINES: the console lines drained now, separated by "|".

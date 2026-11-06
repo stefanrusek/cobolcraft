@@ -117,6 +117,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   optionally on line 2 text that stderr must contain.
 - Core test helpers live in `core/tests/CORETEST.cpy` (COPY it after the test program):
   `TEST-JOIN` (a memory connection that logs in, configures and loads), `TEST-MOVE`,
+  `TEST-JOIN-NETWORK` (the same join over a network connection: Set Compression, then compressed
+  frames, so drain it with threshold 256 and drop the leading Data length 0 of small packets),
   `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), `TEST-USE-ON`,
   `TEST-ACTION`, `TEST-HELD`, `TEST-CLICK`, `TEST-TICKS`, `TEST-DRAIN-BLOCKS` (block, ack, slot and
   light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, `TEST-CHAT` (feeds unsigned
@@ -175,6 +177,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   drained with `CORE-CONSOLE-DRAIN`). `CORE-STOP` takes a z-string §17 translate key, saves, sends each
   connection not already closing the disconnect of its phase and sets run state 2. Draining a
   closed connection with `TEST-DRAIN` releases it, so the player leaves after the save.
+- **Opening to others** (US17): a test world is host kind 0; set `CS-HOST-KIND` 1 and `CS-HOST-NAME`
+  before opening it, join the host with `TEST-JOIN` (memory), then `CORE-OPEN-TO-OTHERS` (guest mode,
+  guest-operator flag; only kind 1 becomes kind 2) and join guests with `TEST-JOIN-NETWORK`. A network
+  login with the host's name gets Login Disconnect `name_is_host` [name]; the memory host is never refused.
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time

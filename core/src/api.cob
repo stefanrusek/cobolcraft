@@ -238,3 +238,28 @@
      MOVE 2 TO CW-RUN-STATE
      GOBACK.
  END PROGRAM CORE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CORE-OPEN-TO-OTHERS.
+*> USING guest mode (BINARY-LONG, 0 survival or 1 creative), guest-operator flag (BINARY-LONG, 1 =
+*> guests may use operator commands): a single-player world (host kind 1) becomes a world opened to
+*> others (host kind 2) for the rest of the session (FR-017), so guests joining over network
+*> connections get that mode (PLAYER-CREATE) and operator status only when the flag is 1
+*> (ACCESS-OPERATOR-STATUS). Any other host kind is left as it is: a dedicated server is not
+*> opened, and a world already opened keeps its first choice.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-GUEST-MODE           BINARY-LONG.
+ 01 L-GUEST-OPERATOR       BINARY-LONG.
+ PROCEDURE DIVISION USING L-GUEST-MODE L-GUEST-OPERATOR.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     IF CS-HOST-KIND = 1
+         MOVE 2 TO CS-HOST-KIND
+         MOVE L-GUEST-MODE TO CS-GUEST-MODE
+         MOVE L-GUEST-OPERATOR TO CS-GUEST-OPERATOR
+     END-IF
+     GOBACK.
+ END PROGRAM CORE-OPEN-TO-OTHERS.

@@ -143,7 +143,9 @@
 *> A banned identity (offline UUID on the ban list) is refused with Login Disconnect
 *> cobolcraft.disconnect.barred; while the world's allow-list enforcement flag is on, an identity
 *> not on the allow-list is refused with cobolcraft.disconnect.not_on_guestlist (standin §17,
-*> FR-010, FR-016; the connection closes and no player is created).
+*> FR-010, FR-016; the connection closes and no player is created). In a world opened to others
+*> (host kind 2), a network login with the host's name is refused first with
+*> cobolcraft.disconnect.name_is_host [name] (US17 edge case): the host stays.
 *> A player already online with that name (the same offline UUID) is replaced first: its connection
 *> gets Disconnect cobolcraft.disconnect.replaced (standin §17, 09 §3.1) and its player leaves, so
 *> the name is free. Then the player is created with the offline UUID; a network connection gets
@@ -152,7 +154,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY MESSAGES.
- COPY COREAPI.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-ROW                 BINARY-LONG.
@@ -165,10 +166,12 @@
  01 WS-LIST                BINARY-LONG.
  01 WS-MSG                 BINARY-LONG.
  LINKAGE SECTION.
+ COPY COREAPI.
  01 L-ID                   BINARY-LONG.
  01 L-NAME                 PIC X(16).
  01 L-NAME-LENGTH          BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-NAME L-NAME-LENGTH.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      CALL "LOGIN-OFFLINE-UUID" USING L-NAME L-NAME-LENGTH WS-UUID
      MOVE ACCESS-BANS TO WS-LIST
      CALL "ACCESS-FIND" USING WS-LIST WS-UUID WS-ROW
@@ -182,8 +185,14 @@
              MOVE MK-DC-NOT-ON-GUESTLIST TO WS-MSG
          END-IF
      END-IF
+     IF CS-HOST-KIND = 2 AND CN-KIND(L-ID) = CORE-CONN-NETWORK AND L-NAME = CS-HOST-NAME
+         MOVE MK-DC-NAME-IS-HOST TO WS-MSG
+     END-IF
      IF WS-MSG > 0
          CALL "CMD-TEXT-KEY" USING PB-TEXT WS-MSG
+         IF WS-MSG = MK-DC-NAME-IS-HOST
+             CALL "CMD-TEXT-ARG" USING PB-TEXT L-NAME L-NAME-LENGTH
+         END-IF
          CALL "CORE-SEND-DISCONNECT" USING L-ID PB-TEXT
          GOBACK
      END-IF
