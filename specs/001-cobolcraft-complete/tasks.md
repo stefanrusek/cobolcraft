@@ -1481,6 +1481,8 @@ contract is never edited here except by escalation (constitution 3.6).
 **Purpose**: documentation completion, the quickstart walk-through, the terminal debt check and the terminal
 gate.
 
+- [ ] T1072 [proto] Test (finding from Phase 28): extend `proto/tests/` frame-decode cases so that with a threshold ≥ 0, an uncompressed packet (Data length 0) decodes to a packet buffer holding exactly id + body, bytes 1 to PB-LENGTH, as `contracts/proto-api.md` §2 and §5 state; see the new cases fail against the current `PB-FRAME-DECODE`, which leaves the Data length byte in front of the id
+- [ ] T1073 [proto] Make `PB-FRAME-DECODE` (`proto/src/frame.cob`) drop the Data length of an uncompressed packet so T1072 passes; remove the stripping workarounds in `core/tests/CORETEST.cpy` and `server/tests/SVTEST.cpy` (`SVT-NEXT-PACKET`) and the matching pitfall in `.claude/skills/cobolcraft-cobol/SKILL.md`; `make gate-proto`, `make gate-core` and `make gate-server` pass
 - [ ] T1060 Complete `README.md`: running the server (operator-surface §1 to §4), running the client (client-surface §1 to §3, controls table), single-player and opening to others, resource packs folder, failure lines (FR-012) and a pointer to `specs/001-cobolcraft-complete/quickstart.md`
 - [ ] T1061 Review `README.md` against SC-001, operator-surface.md and client-surface.md (verification-only)
 - [ ] T1062 Verify SC-001: in a fresh clone in a scratch directory, follow only `README.md` (`make bootstrap`, `make`, `make test`) and record the commands and real output (verification-only)
