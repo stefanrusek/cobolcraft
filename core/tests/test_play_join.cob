@@ -82,9 +82,9 @@
 *> ---------------------------------------------------------------------------------------------
 *> The packet ids of the play stream, a run of equal ids written as <id>x<count>.
  SEQUENCE-CASE.
-     MOVE "test play join: after Finish Configuration the play stream is Login, Recipe Book Add, "
-         & "abilities, held slot, inventory, spawn position, time, weather, Game Event 13, chunk "
-         & "cache center, batch of 25 chunks, Player Position, Player Info Update" TO TL-CASE
+     MOVE "test play join: after Finish Configuration the play stream is Login, Commands, Recipe "
+         & "Book Add, abilities, held slot, inventory, spawn position, time, weather, Game Event 13, "
+         & "chunk cache center, 25 chunks, Player Position, Player Info" TO TL-CASE
      PERFORM START-ROW
      PERFORM RESTART-STREAM
      MOVE 0 TO WS-OUTCOME WS-RUN
@@ -102,7 +102,7 @@
              MOVE 1 TO WS-RUN
          END-IF
      END-PERFORM
-     MOVE "50 75 65 107 18 99 115 39x4 96 12 46x25 11 73 71" TO TL-EXPECTED
+     MOVE "50 16 75 65 107 18 99 115 39x4 96 12 46x25 11 73 71" TO TL-EXPECTED
      PERFORM ASSERT-ROW.
 
  WRITE-RUN.

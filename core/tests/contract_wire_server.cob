@@ -6,7 +6,8 @@
 *> configuration), WIRECHUNK (chunks), WIREPLAY (play join), WIREMOVE (movement and other
 *> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIRECHAT (chat), WIREHEALTH
 *> (health, damage, death and respawn), WIREHUNGER (hunger, eating and sprinting), WIREMOB (mobs),
-*> WIRECRAFT (crafting), WIREWEATHER (weather), WIREDIM (dimensions and travel).
+*> WIRECRAFT (crafting), WIREWEATHER (weather), WIREDIM (dimensions and travel), WIRECMD
+*> (commands).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
  PROCEDURE DIVISION.
@@ -24,6 +25,7 @@
      CALL "WIRE-CRAFT-CASES"
      CALL "WIRE-WEATHER-CASES"
      CALL "WIRE-DIM-CASES"
+     CALL "WIRE-CMD-CASES"
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-SERVER.
 
@@ -41,4 +43,5 @@
  COPY WIRECRAFT.
  COPY WIREWEATHER.
  COPY WIREDIM.
+ COPY WIRECMD.
  COPY CORETEST.

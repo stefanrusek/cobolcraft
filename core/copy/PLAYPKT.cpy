@@ -62,6 +62,9 @@
 *>  0x39 Set Creative Mode Slot: the stack (count 0 = empty).
     05 PSB-STACK-ITEM         BINARY-LONG.
     05 PSB-STACK-COUNT        BINARY-LONG.
+*>  0x0F Command Suggestion: the transaction id (VarInt); its text is in PSB-MESSAGE. 0x07 Chat
+*>  Command: the command text (without the leading `/`) is in PSB-MESSAGE.
+    05 PSB-TRANSACTION        BINARY-LONG.
 *>  0x09 Chat (unsigned; 09 §1): the message (String, at most 256 UTF-16 code units, so at most 768
 *>  UTF-8 bytes) and its byte length. Timestamp, salt, signature and last seen messages are read and
 *>  not kept.

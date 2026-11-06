@@ -1,4 +1,4 @@
-*> Access lists of the world (FR-010, FR-016, US13-4; CORESTATE.cpy CORE-ACCESS; saved in access.dat by
+*> Access lists of the world (FR-010, FR-016, US13-4, US14; CORESTATE.cpy CORE-ACCESS; saved in access.dat by
 *> core/src/persistence.cob): the operator, ban and allow lists of offline identities (name and
 *> offline UUID, 02 Offline mode), and whether the allow-list is enforced in this world (operator
 *> decision A2). A list is chosen by ACCESS-OPERATORS, ACCESS-BANS or ACCESS-ALLOW; identities are
@@ -100,3 +100,34 @@
      END-IF
      GOBACK.
  END PROGRAM ACCESS-REMOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACCESS-OPERATOR-STATUS.
+*> USING player row (BINARY-LONG): whether the player holds operator status (PL-OPERATOR; FR-016,
+*> FR-017, standin §16.1): a player on the operator list; the host of a single-player world or of a
+*> world opened to others (host kinds 1 and 2, the host's name); a guest of an opened world when the
+*> host allowed guests operator commands (CS-GUEST-OPERATOR 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-LIST                BINARY-LONG VALUE 1.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     MOVE ACCESS-OPERATORS TO WS-LIST
+     CALL "ACCESS-FIND" USING WS-LIST PL-UUID(L-ROW) WS-ROW
+     MOVE 0 TO PL-OPERATOR(L-ROW)
+     IF WS-ROW > 0
+         MOVE 1 TO PL-OPERATOR(L-ROW)
+     END-IF
+     IF CS-HOST-KIND > 0 AND PL-NAME(L-ROW) = CS-HOST-NAME
+         MOVE 1 TO PL-OPERATOR(L-ROW)
+     END-IF
+     IF CS-HOST-KIND = 2 AND CS-GUEST-OPERATOR = 1
+         MOVE 1 TO PL-OPERATOR(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM ACCESS-OPERATOR-STATUS.

@@ -7,8 +7,8 @@
 *> (BINARY-LONG; 0 when the table is full). A new player: the world spawn point facing its yaw
 *> (standin §5.2), the game mode of the settings (FR-007, FR-009; a guest of a world opened to
 *> others gets the guest mode, FR-017), full health and food (§10.1, §11.1), a new entity id, held
-*> slot 0, an empty inventory, state Joining. Operator status: the host of a single-player or
-*> opened world, and guests when guests may use operator commands (FR-016, FR-017). In a world
+*> slot 0, an empty inventory, state Joining. Operator status: ACCESS-OPERATOR-STATUS
+*> (core/src/access.cob: the operator list, the host, allowed guests). In a world
 *> hosted by the client (host kinds 1 and 2) new players get the world's GameMode (CW-GAME-MODE,
 *> level.dat; guests the guest mode). A UUID not yet known is looked up in the world's player
 *> files (PLAYER-DAT-READ: load on join). A known player whose state is stored (KN-STORED) gets back
@@ -69,11 +69,8 @@
          END-IF
          IF CS-HOST-KIND = 2 AND WS-HOST = 0
              MOVE CS-GUEST-MODE TO PL-MODE(L-ROW)
-             MOVE CS-GUEST-OPERATOR TO PL-OPERATOR(L-ROW)
          END-IF
-         IF WS-HOST = 1
-             MOVE 1 TO PL-OPERATOR(L-ROW)
-         END-IF
+         CALL "ACCESS-OPERATOR-STATUS" USING L-ROW
          MOVE RULE-MAX-HEALTH TO PL-HEALTH(L-ROW)
          MOVE RULE-MAX-FOOD TO PL-FOOD(L-ROW)
          MOVE CS-VIEW-DISTANCE TO PL-VIEW-DISTANCE(L-ROW)

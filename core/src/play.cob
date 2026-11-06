@@ -2,9 +2,9 @@
 *> 05c; 09 §3.2, §4).
 *>
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
-*> order is the 09 §3.2 "Join sequence" paragraph, restricted to the packets this phase has (Commands
-*> are added by a later phase at its place in that list):
-*>   1. Login (0x32), then Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
+*> order is the 09 §3.2 "Join sequence" paragraph:
+*>   1. Login (0x32), then Commands (0x10, the tree the player may use, CMD-TREE-SEND,
+*>      core/src/commands.cob) and Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
@@ -37,7 +37,8 @@
 *> (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
 *> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob);
-*> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob). After every packet CRAFT-REFRESH-ALL
+*> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
+*> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
 *> A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
@@ -91,6 +92,7 @@
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "CMD-TREE-SEND" USING WS-ROW
      CALL "CRAFT-BOOK-SEND" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-ABILITIES-BUILD" USING PL-MODE(WS-ROW) PL-FLYING(WS-ROW) PB-BUFFER
@@ -166,9 +168,9 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x07, 0x0F, 0x32).
+*> phase handles it (0x32).
  01 WS-LATER               PIC X(69) VALUE
-     "000000010000000100000000000000000000000000000000001000000000000000000".
+     "000000000000000000000000000000000000000000000000001000000000000000000".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -242,6 +244,10 @@
              CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 39
              CALL "CRAFT-PLACE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 15
+             CALL "CMD-SUGGEST" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 7
+             CALL "CMD-RUN-PACKET" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      CALL "CRAFT-REFRESH-ALL"
      GOBACK.
@@ -277,6 +283,8 @@
  01 WS-CONFIG-OUTCOME      BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-MAX-MESSAGE         BINARY-LONG VALUE 256.
+ 01 WS-MAX-COMMAND         BINARY-LONG VALUE 32767.
+ 01 WS-MAX-SUGGESTION      BINARY-LONG VALUE 32500.
  01 WS-MESSAGE-CAPACITY    BINARY-LONG VALUE 768.
  01 WS-LONG                BINARY-DOUBLE.
  01 WS-PRESENT             BINARY-LONG.
@@ -392,6 +400,13 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-RECIPE
              CALL "PB-GET-BOOL" USING PB-BUFFER PSB-USE-MAX
+         WHEN 7
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-COMMAND PSB-MESSAGE WS-MESSAGE-CAPACITY
+                 PSB-MESSAGE-LENGTH
+         WHEN 15
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TRANSACTION
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-SUGGESTION PSB-MESSAGE
+                 WS-MESSAGE-CAPACITY PSB-MESSAGE-LENGTH
          WHEN 9
              CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
                  PSB-MESSAGE-LENGTH

@@ -140,6 +140,10 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOGIN-ACCEPT.
 *> USING id, name (PIC X(16)), name length: the offline login of a valid Hello (02 Offline mode).
+*> A banned identity (offline UUID on the ban list) is refused with Login Disconnect
+*> cobolcraft.disconnect.barred; while the world's allow-list enforcement flag is on, an identity
+*> not on the allow-list is refused with cobolcraft.disconnect.not_on_guestlist (standin §17,
+*> FR-010, FR-016; the connection closes and no player is created).
 *> A player already online with that name (the same offline UUID) is replaced first: its connection
 *> gets Disconnect cobolcraft.disconnect.replaced (standin §17, 09 §3.1) and its player leaves, so
 *> the name is free. Then the player is created with the offline UUID; a network connection gets
@@ -147,6 +151,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY MESSAGES.
  COPY COREAPI.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
@@ -157,11 +162,31 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-FULL                PIC X(39) VALUE "ERROR login: the player table is full".
  01 WS-FULL-LENGTH         BINARY-LONG VALUE 37.
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-MSG                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-NAME                 PIC X(16).
  01 L-NAME-LENGTH          BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-NAME L-NAME-LENGTH.
+     CALL "LOGIN-OFFLINE-UUID" USING L-NAME L-NAME-LENGTH WS-UUID
+     MOVE ACCESS-BANS TO WS-LIST
+     CALL "ACCESS-FIND" USING WS-LIST WS-UUID WS-ROW
+     MOVE 0 TO WS-MSG
+     IF WS-ROW > 0
+         MOVE MK-DC-BARRED TO WS-MSG
+     ELSE
+         MOVE ACCESS-ALLOW TO WS-LIST
+         CALL "ACCESS-FIND" USING WS-LIST WS-UUID WS-ROW
+         IF AC-ENFORCED = 1 AND WS-ROW = 0
+             MOVE MK-DC-NOT-ON-GUESTLIST TO WS-MSG
+         END-IF
+     END-IF
+     IF WS-MSG > 0
+         CALL "CMD-TEXT-KEY" USING PB-TEXT WS-MSG
+         CALL "CORE-SEND-DISCONNECT" USING L-ID PB-TEXT
+         GOBACK
+     END-IF
      CALL "PLAYER-FIND-NAME" USING L-NAME L-NAME-LENGTH WS-ROW
      IF WS-ROW > 0
          MOVE PL-CONN(WS-ROW) TO WS-OLD
@@ -172,7 +197,6 @@
          CALL "CORE-SEND-DISCONNECT" USING WS-OLD PB-TEXT
          CALL "PLAYER-LEAVE" USING WS-ROW
      END-IF
-     CALL "LOGIN-OFFLINE-UUID" USING L-NAME L-NAME-LENGTH WS-UUID
      CALL "PLAYER-CREATE" USING L-ID L-NAME L-NAME-LENGTH WS-UUID WS-ROW
      IF WS-ROW = 0
          CALL "CORE-LOG" USING WS-FULL WS-FULL-LENGTH

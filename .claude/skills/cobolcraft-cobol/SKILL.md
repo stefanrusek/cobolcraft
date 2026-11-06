@@ -59,6 +59,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Nested subscripts with arithmetic inside an intrinsic's arguments** can be miscompiled:
   `FUNCTION MIN(C(R, F), MX(I(R, T) + 1) - C(R, T))` yields a wrong value with no warning. Move the
   inner subscript or the difference into a field first, then call the function.
+- **Reference modification by a subscripted item** is miscompiled in comparisons and DISPLAY:
+  `IF CD-NAME(I)(1:CD-NAME-LENGTH(I)) = X(1:CD-NAME-LENGTH(I))` compares the length's digits, and
+  `CQ-LINE(CQ-WORD-START(T):N)` reads the wrong bytes, with no warning. Move every refmod offset
+  and length that is a table element into a plain field first.
 - **`PERFORM VARYING … FROM a - b`** is a syntax error: compute the start into a field first.
 - **Division inside an intrinsic is not truncated**: `FUNCTION MOD(R / 1681, 8)` takes the MOD of a
   fraction. Compute the integer quotient into a binary field first (`COMPUTE Q = R / 1681`), then MOD.
@@ -158,6 +162,15 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Console lines**: joining, leaving, dying, changing dimension and chatting each queue a console
   line (`CORE-LOG`, `CONSOLE-TEXT` renders `translate` texts through `CONSOLELANG.cpy`); a test that
   drains the console sees them.
+- **Commands** (US14; `core/src/commands.cob`, `COMMANDS.cpy`, `CMDPARSE.cpy`, `MESSAGES.cpy` MK-*):
+  the join sequence now sends Commands (0x10) right after Login (`TEST-DRAIN-IDS`: `50 16 75 ...`).
+  `TEST-COMMAND` / `TEST-CHAT-COMMAND` feed Chat Command (no leading `/`), `TEST-SUGGEST` and
+  `TEST-DRAIN-SUGGESTIONS` drive Command Suggestion, `TEST-DRAIN-CHAT` shows replies as
+  `key(arg,arg)`. The console is sender 0: `CALL "CMD-RUN" USING sender line length` and drain
+  `CORE-CONSOLE-DRAIN` (drain it first: joins queue console lines). A test player gets operator
+  status by putting its offline UUID on the operator list (`ACCESS-ADD` with `ACCESS-OPERATORS`)
+  before it joins. `TEST-HELLO` stops after Hello (for Login Disconnect refusals); the name
+  `TEST-LOGIN` is taken by `test_login.cob`.
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time
