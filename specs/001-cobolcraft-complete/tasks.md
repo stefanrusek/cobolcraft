@@ -1506,6 +1506,39 @@ gate.
 
 ---
 
+## Phase 49: Manual-test findings
+
+**Purpose**: fixes for what the operator's first manual run found (2026-11-06). The world-path fix (T1084) is done.
+The inventory-screen throws (T1085 to T1089) follow the operator's rule: Q drops an item, and dragging a stack out of
+the window drops everything carried. The new rows in `docs/design/standin-content.md` §9.1 hold these rules.
+
+- [X] T1084 [core] A world folder whose name contains a space (the client's default "New World") was cut at the space by
+  `PERSIST-DIM-DIR`/`PERSIST-DIRS` in `core/src/persistence.cob`, so the first single-player save failed fatally.
+  `core/tests/test_world_path_space.cob` failed before the fix (exit 256) and passes after it; `make gate-core`, `gate-server`
+  and `gate-client` pass. Also: the root `Makefile` clears package-folder `.gcda` files in `coverage` and `gate-<pkg>`, and
+  `tools/package.mk` makes `tests/*.cpy` a dependency of the test programs
+- [ ] T1085 [core] Tests in `core/tests/` (Container Click, container 0, survival and creative), each seen failing first:
+  - mode 4 THROW button 0 on a slot holding 5 throws one item (slot left with 4; one ground item spawned as standin §9.1 Throw);
+  - button 1 throws the whole slot;
+  - a THROW on an empty slot does nothing;
+  - mode 0 PICKUP slot -999 button 0 with a carried stack of 7 throws all 7 and empties the cursor;
+  - button 1 throws one and leaves 6 carried;
+  - slot -999 with an empty cursor does nothing;
+  - Close Container while carrying puts the stack back into the inventory, and with a full inventory throws the rest.
+- [ ] T1086 [core] Implement T1085 in `core/src/inventory.cob` (INV-CLICK) using the throw path of Player Action 4/5.
+  Update the header comment (the "-999 changes nothing" and "4 THROW: nothing changes" lines) and
+  `contracts/` text that repeats them. `make gate-core` passes
+- [ ] T1087 [client] Tests in `client/tests/` for the inventory screen, each seen failing first:
+  - Q over a slot sends Container Click mode 4 button 0, and Ctrl+Q sends button 1;
+  - releasing a left drag, or left-clicking, outside the window with a carried stack sends mode 0 slot -999 button 0;
+  - a right click outside sends button 1;
+  - the client's predicted slot and cursor match the server rules of T1085.
+- [ ] T1088 [client] Implement T1087 in `client/src/screens/inventory.cob` (and its input mapping). Update the client-surface
+  controls text and README controls table ("Throw one / throw the stack": also over a slot in the inventory screen;
+  dragging out of the window throws what you carry). `make gate-client` passes
+- [ ] T1089 [convergence] One case in `tests/convergence/` in which a client presses Q over an inventory slot and drags a
+  stack out of the window, and a second client sees the ground items appear. `make gate` passes
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies

@@ -45,8 +45,11 @@ lint:
 # The Convergence tests run with the packages' instrumented libraries, so their lines count too;
 # they also run the instrumented programs (whose src/main.cob objects live under
 # $(COVBUILD)/convergence/obj).
+# An instrumented test program also writes its own .gcda into the package folder it ran from; a stale
+# one makes the forked children of a changed test print gcov merge errors, so both are cleared.
 coverage:
 	if [ -d $(COVBUILD) ]; then find $(COVBUILD) -name '*.gcda' -delete; fi
+	find $(PKGS) tests/convergence -maxdepth 1 -name '*.gcda' -delete
 	$(PYTHON) tools/runtests.py --coverage --build $(COVBUILD) $(PKGS) convergence
 	$(PYTHON) tools/coverage.py --build $(COVBUILD) $(PKGS)
 
@@ -64,6 +67,7 @@ gate-$(1):
 	$$(foreach d,$$(DEPS_$(1)),$$(MAKE) -C $$(d) lib BUILD=$$(BUILD) &&) true
 	$$(MAKE) -C $(1) $$(TARGETS_$(1)) BUILD=$$(BUILD)
 	if [ -d $$(COVBUILD)/$(1) ]; then find $$(COVBUILD)/$(1) -name '*.gcda' -delete; fi
+	find $(1) -maxdepth 1 -name '*.gcda' -delete
 	$$(PYTHON) tools/runtests.py --coverage --build $$(COVBUILD) $(1)
 	$$(PYTHON) tools/coverage.py --build $$(COVBUILD) $(1)
 endef

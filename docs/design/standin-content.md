@@ -775,6 +775,8 @@ Rules for `cobolcraft:loose_item` (§3; data-model §5). A ground item holds one
 | Survival block break (§1.3) | (x + 0.5, y + 0.25, z + 0.5) of the broken block | (0, 0, 0) | 6 ticks |
 | Mob defeat (§12.5) | the mob's position | (0, 0, 0) | 6 ticks |
 | Throw (Player Action 5 `DROP_ITEM`: one item; 4 `DROP_ALL_ITEMS`: the whole stack, from the held hotbar slot; any game mode) | the thrower's feet + (0, 1.3, 0) | see below | 30 ticks |
+| Inventory-screen throw (Container Click, container 0, any game mode): mode 4 `THROW` on a slot, button 0 (Q) one item, button 1 (Ctrl+Q) the whole stack, from that slot; mode 0 `PICKUP` with slot −999 (a click or drag release outside the window), button 0 the whole carried stack, button 1 one carried item | as Throw | as Throw | 30 ticks |
+| Inventory screen closed while carrying (Close Container, container 0) | the carried stack goes back into the inventory as INV-ADD places it; only what does not fit is thrown, as Throw | as Throw | 30 ticks |
 | Death drop (§10.6) | the dead player's feet + (0, 0.5, 0) | see §10.6 | 30 ticks |
 
 **Thrown motion.** With the thrower's yaw Y and pitch P in degrees (protocol convention: yaw 0 faces +Z,

@@ -34,6 +34,7 @@ OBJS        := $(patsubst src/%,$(OBJ)/%.o,$(basename $(LIB_SRC)))
 TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
 TESTASSERT  := $(TOUT)/testassert.o
 COPYBOOKS   := $(wildcard $(REPO)/contract/copy/*.cpy copy/*.cpy)
+TESTCOPY    := $(wildcard tests/*.cpy)
 HEADERS     := $(wildcard $(REPO)/contract/include/*.h)
 
 .PHONY: lib tests lint
@@ -64,7 +65,7 @@ $(TESTASSERT): $(TESTLIB)/testassert.cob $(TESTLIB)/TESTLIB.cpy
 	@mkdir -p $(dir $@)
 	cobc -c $(COBFLAGS) -I $(TESTLIB) -o $@ $<
 
-$(TOUT)/%: tests/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS)
+$(TOUT)/%: tests/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
 	@mkdir -p $(dir $@)
 	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
 
