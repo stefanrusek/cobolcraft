@@ -1,6 +1,6 @@
 *> Render-list submission (research R4; shim-abi.md §9): SUBMIT-FRAME uploads the atlases marked
-*> for upload (texture 0 the block atlas, texture 2 the UI atlas) with cc_vk_texture and the
-*> render list's meshes with cc_vk_mesh, then records the draws in render-list order between
+*> for upload (texture 0 the block atlas, texture 1 the entity atlas, texture 2 the UI atlas) with
+*> cc_vk_texture and the render list's meshes with cc_vk_mesh, then records the draws in render-list order between
 *> cc_vk_frame_begin (the clear colour) and cc_vk_frame_end. A minimised window skips the frame.
 
  IDENTIFICATION DIVISION.
@@ -22,6 +22,12 @@
          CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE AT-W BY VALUE AT-H
              BY VALUE AT-ADDR RETURNING WS-RC
          MOVE 0 TO AT-UPLOAD(1)
+     END-IF
+     IF AT-UPLOAD(2) = 1
+         MOVE CC-TEX-ENTITIES TO WS-TEX
+         CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE EA-W BY VALUE EA-H
+             BY VALUE EA-ADDR RETURNING WS-RC
+         MOVE 0 TO AT-UPLOAD(2)
      END-IF
      IF AT-UPLOAD(3) = 1
          MOVE CC-TEX-UI TO WS-TEX

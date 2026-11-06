@@ -7,8 +7,11 @@
 *> Set Compression, Login Finished (Login Acknowledged, brand, Client Information), Login Disconnect.
 *> Configuration: registries kept (dimension types, biome count), Select Known Packs answered with
 *> an empty list, Keep Alive echoed, Finish Configuration answered. Play: Login, Player Position
-*> (accepted), abilities, spawn, time, held slot, inventory, chunks into the replica, Chunk Batch
-*> Received after each batch, Player Loaded once, Keep Alive echoed, Disconnect.
+*> (accepted; a correction of the local player's position), abilities (flying), spawn, time, held
+*> slot, inventory, chunks into the replica and forgotten, the chunk cache centre, Chunk Batch
+*> Received after each batch, Player Loaded once, Keep Alive echoed, Disconnect; entities and the
+*> player list into the entity replica (entities-replica.cob). Moving: Move Player (CLP-MOVE-SEND
+*> each client tick) and Player Abilities (the fly toggle).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -156,6 +159,129 @@
      CALL "PB-PUT-FLOAT" USING PB-BUFFER L-RATE
      GOBACK.
  END PROGRAM CLP-BATCH-RECEIVED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MOVE.
+*> USING PB-BUFFER, packet id (30 Pos, 31 Pos Rot, 32 Rot, 33 Status Only), feet x, y, z
+*> (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), MoveFlags (0x01 on ground, 0x02 horizontal collision):
+*> Move Player with the fields of its variant (05c 0x1E to 0x21).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ID L-X L-Y L-Z L-YAW L-PITCH L-FLAGS.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     IF L-ID = 30 OR L-ID = 31
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     END-IF
+     IF L-ID = 31 OR L-ID = 32
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-YAW
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-PITCH
+     END-IF
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FLAGS
+     GOBACK.
+ END PROGRAM CLP-MOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ABILITIES.
+*> USING PB-BUFFER, flags (0x02 flying): Player Abilities (05c 0x28).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 40.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-FLAGS.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-FLAGS
+     GOBACK.
+ END PROGRAM CLP-ABILITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-SEND-ABILITIES.
+*> USING CLIENT-STATE, connection: Player Abilities with the flying flag of the local player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-FLAGS               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     COMPUTE WS-FLAGS = PL-FLYING * 2
+     CALL "CLP-ABILITIES" USING PB-BUFFER WS-FLAGS
+     CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CLP-SEND-ABILITIES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MOVE-SEND.
+*> USING CLIENT-STATE, connection: the Move Player variant for what changed since the server last
+*> heard (PL-SENT-*): position and rotation Pos Rot, position Pos, rotation Rot, only the
+*> MoveFlags Status Only; nothing when nothing changed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-TURNED              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     COMPUTE WS-FLAGS = PL-ON-GROUND + PL-COLLIDED * 2
+     MOVE 0 TO WS-MOVED WS-TURNED WS-ID
+     IF PL-X NOT = PL-SENT-X OR PL-Y NOT = PL-SENT-Y OR PL-Z NOT = PL-SENT-Z
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF PL-YAW NOT = PL-SENT-YAW OR PL-PITCH NOT = PL-SENT-PITCH
+         MOVE 1 TO WS-TURNED
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-MOVED = 1 AND WS-TURNED = 1
+             MOVE 31 TO WS-ID
+         WHEN WS-MOVED = 1
+             MOVE 30 TO WS-ID
+         WHEN WS-TURNED = 1
+             MOVE 32 TO WS-ID
+         WHEN WS-FLAGS NOT = PL-SENT-FLAGS
+             MOVE 33 TO WS-ID
+     END-EVALUATE
+     IF WS-ID > 0
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-MOVE" USING PB-BUFFER WS-ID PL-X PL-Y PL-Z PL-YAW PL-PITCH WS-FLAGS
+         CALL "NET-SEND" USING CLIENT-STATE L-CONN PB-BUFFER
+         MOVE PL-X TO PL-SENT-X
+         MOVE PL-Y TO PL-SENT-Y
+         MOVE PL-Z TO PL-SENT-Z
+         MOVE PL-YAW TO PL-SENT-YAW
+         MOVE PL-PITCH TO PL-SENT-PITCH
+         MOVE WS-FLAGS TO PL-SENT-FLAGS
+     END-IF
+     GOBACK.
+ END PROGRAM CLP-MOVE-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
@@ -344,12 +470,22 @@
              CALL "PB-GET-FLOAT" USING L-PACKET PL-YAW
              CALL "PB-GET-FLOAT" USING L-PACKET PL-PITCH
              MOVE 1 TO PL-POSITIONED
+*>           A correction: the fall stops and the server already has this position.
+             MOVE 0 TO PL-VY
+             MOVE PL-X TO PL-SENT-X
+             MOVE PL-Y TO PL-SENT-Y
+             MOVE PL-Z TO PL-SENT-Z
+             MOVE PL-YAW TO PL-SENT-YAW
+             MOVE PL-PITCH TO PL-SENT-PITCH
              CALL "CLP-ACCEPT-TELEPORT" USING OUT-BUFFER WS-ID PL-X PL-Y PL-Z PL-YAW PL-PITCH
              CALL "NET-SEND" USING CLIENT-STATE L-CONN OUT-BUFFER
          WHEN WS-PHASE = PH-PLAY AND L-ID = 65
              CALL "PB-GET-BYTE" USING L-PACKET PL-ABILITIES
              CALL "PB-GET-FLOAT" USING L-PACKET PL-FLY-SPEED
              CALL "PB-GET-FLOAT" USING L-PACKET PL-WALK-SPEED
+*>           Flags: 0x02 flying (the server's word on it), 0x04 may fly.
+             COMPUTE WS-BIT = PL-ABILITIES / 2
+             COMPUTE PL-FLYING = FUNCTION MOD(WS-BIT, 2)
          WHEN WS-PHASE = PH-PLAY AND L-ID = 99
              CALL "PB-GET-IDENTIFIER" USING L-PACKET WS-DIM WS-DIM-CAP WS-DIM-LENGTH
              CALL "PB-GET-POSITION" USING L-PACKET PL-SPAWN-X PL-SPAWN-Y PL-SPAWN-Z
@@ -387,6 +523,17 @@
              MOVE OUT-IS-ITEM TO PL-SLOT-ITEM(WS-SLOT + 1)
          WHEN WS-PHASE = PH-PLAY AND L-ID = 46
              CALL "WORLD-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 38
+*>           Forget Level Chunk: one Long, Z in the high Int, X in the low Int.
+             CALL "PB-GET-INT" USING L-PACKET WS-VALUE
+             CALL "PB-GET-INT" USING L-PACKET WS-COUNT
+             CALL "WORLD-FORGET" USING CLIENT-STATE WS-COUNT WS-VALUE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 96
+             CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CX
+             CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CZ
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 1 OR L-ID = 54 OR L-ID = 55 OR L-ID = 57
+                 OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 128)
+             CALL "ENTITY-PACKET" USING CLIENT-STATE L-PACKET L-ID
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
@@ -632,6 +779,7 @@
          MOVE RG-DIM-HAS-SKY(WS-D) TO PL-HAS-SKY
      END-IF
      CALL "WORLD-CLEAR" USING CLIENT-STATE
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE SCR-WORLD TO SM-SCREEN
      GOBACK.
  END PROGRAM PLAY-LOGIN-READ.
@@ -656,6 +804,7 @@
          MOVE L-TEXT TO SM-MESSAGE
          MOVE L-LENGTH TO SM-MESSAGE-LENGTH
          CALL "WORLD-CLEAR" USING CLIENT-STATE
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
          MOVE SCR-SERVER-LIST TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      ELSE

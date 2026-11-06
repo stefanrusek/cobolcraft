@@ -3,7 +3,7 @@
 *> definitions §10.2, the template and block models §10.4, §10.5, the block state files §10.6,
 *> font/default.json §10.10, lang/en_us.json §10.8), BUILTIN-IMAGE its textures as RGBA, drawn by
 *> BUILTIN-TEXTURE from the recipes of standin-content §1.4 (with the integer hash H of §1.4.1) and
-*> the glyphs of §18. Texts: CLLANG.cpy; glyphs: CLGLYPHS.cpy.
+*> §3.2 and the glyphs of §18. Texts: CLLANG.cpy; glyphs: CLGLYPHS.cpy.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-PATH.
@@ -189,8 +189,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-TEXTURE.
 *> USING stem (PIC X(32)), RGBA out (PIC X(24576)), width out, height out: the texture with that
-*> file stem (08 §10.3): the 15 block textures of standin-content §1.4.2 (16 x 16) and the font
-*> atlas "ascii" of §18 (128 x 48).
+*> file stem (08 §10.3): the 15 block textures of standin-content §1.4.2 (16 x 16), the operator
+*> entity texture of §3.2 (66 x 28) and the font atlas "ascii" of §18 (128 x 48).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLGLYPHS.
@@ -325,6 +325,24 @@
                      WHEN OTHER
                          MOVE FUNCTION HEX-TO-CHAR("6A4FB3FF") TO L-RGBA(WS-P * 4 + 1:4)
                  END-EVALUATE
+             END-PERFORM
+         WHEN "operator"
+*>           §3.2 (strip layout of §3.1, one part 11 x 28 x 11): every face rectangle #3A5A9A
+*>           (front, back, left, right x 0 to 43 rows 0 to 27; top and bottom x 44 to 65 rows 0
+*>           to 10), the rest transparent; the eyes #F0F0F0 at front (2, 4) to (3, 5) and (7, 4)
+*>           to (8, 5).
+             MOVE 66 TO L-W
+             MOVE 28 TO L-H
+             MOVE LOW-VALUES TO L-RGBA
+             PERFORM VARYING WS-P FROM 0 BY 1 UNTIL WS-P > 1847
+                 DIVIDE WS-P BY 66 GIVING WS-Y REMAINDER WS-X
+                 IF WS-X < 44 OR WS-Y < 11
+                     MOVE FUNCTION HEX-TO-CHAR("3A5A9AFF") TO L-RGBA(WS-P * 4 + 1:4)
+                 END-IF
+                 IF WS-Y >= 4 AND WS-Y <= 5
+                         AND (WS-X = 2 OR WS-X = 3 OR WS-X = 7 OR WS-X = 8)
+                     MOVE FUNCTION HEX-TO-CHAR("F0F0F0FF") TO L-RGBA(WS-P * 4 + 1:4)
+                 END-IF
              END-PERFORM
          WHEN "ascii"
 *>           §18 atlas: the glyph of code c in the 8 x 8 cell at (((c - 32) mod 16) * 8,

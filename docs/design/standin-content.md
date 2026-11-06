@@ -995,6 +995,15 @@ These are the client's horizontal ground speeds (nothing else in the documents f
 - **Sprint speed: 0.28 blocks per tick** (5.6 blocks per second), used while the client is sprinting
   (client-surface.md §3: Left Control held while moving forward).
 
+The client's other movement numbers (recorded after Phase 33; the client is their only user, and the server
+sees their effect only through the positions it is sent, for example the fall start of §10):
+
+- **Flying speed:** 0.5 blocks per tick horizontally; 0.375 blocks per tick up (Space held) or down (Left Shift held).
+- **Jump:** vertical speed 0.42 blocks per tick when Space is pressed on the ground.
+- **Gravity and drag (not flying):** after each tick's move, vertical speed ← (speed − 0.08) × 0.98.
+- **Flying toggle:** two Space presses within 0.3 s, only when the server's abilities allow flying.
+- **Mouse look:** 0.15 degrees per pixel of cursor movement; pitch held between −90 and 90.
+
 ### 11.5 Food items
 
 | Item id | Key | English name | Food value | How it is obtained (SC-008) |

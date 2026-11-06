@@ -1,9 +1,10 @@
 *> The client's main loop (research R6; contracts/test-harness.md §2; client-surface.md §1, §2):
 *> CL-INIT empties a client state; CL-START prepares it without a window (game directory, server
-*> list, the pack stack, language, font and UI atlas, block atlas, baked models, the title screen);
-*> CL-STEP is one frame: the frame's events, the screen's input, the connections pumped without
-*> waiting, the client ticks (Client Tick End every 50 ms in play), the sky, meshing of changed
-*> sections, then the screen model, the UI and the render list; CL-RUN repeats frames over the
+*> list, the pack stack, language, font and UI atlas, block and entity atlases, baked models, the
+*> title screen); CL-STEP is one frame: the frame's events, the screen's input (on the world screen
+*> also looking and the fly toggle, physics.cob), the client tick (every 50 ms in play: the
+*> player's movement and its Move Player once loaded, then Client Tick End), the connections
+*> pumped without waiting, the sky, meshing of changed sections, then the screen model, the UI and the render list; CL-RUN repeats frames over the
 *> window (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the
 *> command line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
 
@@ -30,7 +31,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
-*> USING CLIENT-STATE (name and game directory set): everything a run needs except the window.
+*> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
+*> (game directory, server list, packs, language, font, block and entity atlases, models).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -44,6 +46,7 @@
      CALL "LANG-LOAD" USING CLIENT-STATE
      CALL "FONT-LOAD" USING CLIENT-STATE
      CALL "ATLAS-BUILD" USING CLIENT-STATE
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
      MOVE 854 TO IN-WIN-W
      MOVE 480 TO IN-WIN-H
@@ -179,7 +182,25 @@
          MOVE 1 TO CL-QUIT
      END-IF
      CALL "SCREEN-INPUT" USING CLIENT-STATE
-*>   The connections, never waiting.
+     IF SM-SCREEN = SCR-WORLD
+         CALL "PHYS-INPUT" USING CLIENT-STATE
+     END-IF
+*>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
+*>   then Client Tick End, and the day advances one tick.
+     IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK
+         MOVE CONN-GAME TO WS-CONN
+         IF PL-LOADED = 1
+             CALL "PHYS-TICK" USING CLIENT-STATE
+             CALL "CLP-MOVE-SEND" USING CLIENT-STATE WS-CONN
+         END-IF
+         CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE WS-CONN WS-ID
+         COMPUTE PL-TIME = FUNCTION MOD(PL-TIME + 1, 30000)
+         ADD CL-TICK-MS TO CL-NEXT-TICK
+         IF CL-NEXT-TICK <= L-NOW
+             COMPUTE CL-NEXT-TICK = L-NOW + CL-TICK-MS
+         END-IF
+     END-IF
+*>   The connections, never waiting (what this frame queued goes out now).
      IF SM-SCREEN = SCR-SERVER-LIST
          CALL "SERVER-LIST-PING" USING CLIENT-STATE
      END-IF
@@ -188,16 +209,6 @@
              CALL "NET-PUMP" USING CLIENT-STATE WS-CONN
          END-IF
      END-PERFORM
-*>   A client tick every 50 ms in play: Client Tick End, and the day advances one tick.
-     IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK
-         MOVE CONN-GAME TO WS-CONN
-         CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE WS-CONN WS-ID
-         COMPUTE PL-TIME = FUNCTION MOD(PL-TIME + 1, 30000)
-         ADD CL-TICK-MS TO CL-NEXT-TICK
-         IF CL-NEXT-TICK <= L-NOW
-             COMPUTE CL-NEXT-TICK = L-NOW + CL-TICK-MS
-         END-IF
-     END-IF
 *>   Daylight changes the brightness baked into the meshes: every section is meshed again.
      CALL "SKY-UPDATE" USING CLIENT-STATE
      IF SK-U NOT = SK-MESHED-U

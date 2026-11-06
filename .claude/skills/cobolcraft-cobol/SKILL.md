@@ -255,6 +255,17 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-KEY`, `TEST-SCREEN-TEXTS`, `TEST-MESH-FACE` (a quad of a section mesh by its centre),
   `TEST-READ-FILE`, `TEST-SLEEP` and `TEST-CLOSE-REQUEST` (queues the window's close-requested event
   by calling the close callback the shim registered, found with `dlsym` of `cc_win_window`).
+  US3 added `TEST-PLAY` (a started client in play over loopback on a flat greystone floor, player
+  at (0.5, 10, 0.5) facing +Z, loaded and captured), `TEST-SET-BLOCK`, `TEST-TICKS` and
+  `TEST-KEY-TICK` (50 ms steps, one client tick each), `TEST-EVENTS-MS` (every stepping helper
+  shares its clock), `TEST-POSITION`, `TEST-ANGLES` and `TEST-ENTITY`. CLTEST.cpy calls production
+  entry points (`ENTITY-FIND`), so until they exist every client test fails to link.
+- **Client tick order** (`CL-STEP`): input, the client tick (physics, Move Player, Client Tick End),
+  then `NET-PUMP`, so what a tick queues goes out in the same frame and a server reply read after
+  one step sees it. `NET-PUMP` keeps its own `PB-BUFFER` for received packets and views `CN-OUT`
+  through `TX-BUFFER`: never `MOVE CN-OUT TO` a buffer that also receives (it overwrote queued bytes).
+- **TL-CASE is PIC X(240)**: lint (`-Werror=truncate`) rejects a longer case literal; keep case names
+  short.
 - **Client state** is one `CLIENT-STATE` record (client/copy/CLSTATE.cpy) passed BY REFERENCE to
   every client program (two clients can share a process); a program that needs `CL-ARGS` or
   `LANG-ARGS` in WORKING-STORAGE copies client/copy/CLARGS.cpy. `CL-START` prepares a client without

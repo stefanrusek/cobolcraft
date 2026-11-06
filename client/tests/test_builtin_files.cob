@@ -385,9 +385,9 @@
              ADD 1 TO WS-COUNT
          END-IF
      END-PERFORM
-     MOVE "builtin pack lists 49 files (08 §10.9 kinds read in this version)" TO TL-CASE
+     MOVE "builtin pack lists 50 files (08 §10.9 kinds read in this version)" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 49 TO TL-EXPECTED-N
+     MOVE 50 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

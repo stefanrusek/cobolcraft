@@ -1,16 +1,16 @@
 *> File table of the built-in pack (docs/protocol/08-resource-packs.md §10.9 kinds read in this
-*> version: §10.1, §10.2, §10.3 block textures and the font image, §10.4, §10.5, §10.6, §10.8, §10.10),
+*> version: §10.1, §10.2, §10.3 block textures, the operator entity texture and the font image, §10.4, §10.5, §10.6, §10.8, §10.10),
 *> transcribed for client/src/packs/builtin.cob. Row i: the file path; for a model its parent
 *> template; the content: a texture's file stem, a model's "textures" members, a block state
 *> file's "variants" members (JSON text).
- 78 BI-FILE-COUNT           VALUE 49.
+ 78 BI-FILE-COUNT           VALUE 50.
  78 BI-FIRST-TEXTURE        VALUE 4.
- 78 BI-LAST-TEXTURE         VALUE 19.
- 78 BI-TEMPLATE-BOX         VALUE 20.
- 78 BI-LAST-MODEL           VALUE 36.
- 78 BI-LAST-STATE           VALUE 47.
- 78 BI-FONT                 VALUE 48.
- 78 BI-LANG-FILE            VALUE 49.
+ 78 BI-LAST-TEXTURE         VALUE 20.
+ 78 BI-TEMPLATE-BOX         VALUE 21.
+ 78 BI-LAST-MODEL           VALUE 37.
+ 78 BI-LAST-STATE           VALUE 48.
+ 78 BI-FONT                 VALUE 49.
+ 78 BI-LANG-FILE            VALUE 50.
  01 BI-FILE-DATA.
     05 FILLER PIC X(64) VALUE "pack.mcmeta".
     05 FILLER PIC X(24) VALUE SPACES.
@@ -69,6 +69,9 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/font/ascii.png".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE 'ascii'.
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/textures/entity/operator.png".
+    05 FILLER PIC X(24) VALUE SPACES.
+    05 FILLER PIC X(480) VALUE 'operator'.
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/models/block/template_box.json".
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
@@ -171,7 +174,7 @@
     05 FILLER PIC X(24) VALUE SPACES.
     05 FILLER PIC X(480) VALUE SPACES.
  01 BI-FILE-TABLE REDEFINES BI-FILE-DATA.
-    05 BI-FILE-ROW OCCURS 49 TIMES.
+    05 BI-FILE-ROW OCCURS 50 TIMES.
        10 BI-FILE            PIC X(64).
        10 BI-PARENT          PIC X(24).
        10 BI-CONTENT         PIC X(480).

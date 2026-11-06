@@ -1180,26 +1180,26 @@ built-in pack with shading, transparency and light. **Independent Test**: `make 
 **Goal**: controls and physics of client-surface §3, chunk loading and forgetting, other players as operator
 figures, the day cycle. **Independent Test**: `make gate-client` with every `acc_us3_*.cob` passing.
 
-- [ ] T849 [P] [US3-client] Write `contract_wire_client.cob` cases: Move Player Pos/PosRot/Rot/Status Only and Player Abilities encode equal to their fixtures; Add Entity (operator), Player Info Update/Remove, Move Entity Pos/PosRot/Rot, Rotate Head, Teleport Entity, Remove Entities, Forget Level Chunk and Set Chunk Cache Center decode
-- [ ] T850 [P] [US3-client] Write acceptance test `client/tests/acc_us3_movement.cob`: case "acceptance US3-1 given the Player in the world when W, S, A, D, mouse movement and Space are used then they walk forward, back and sideways, turn, look up and down and jump"
-- [ ] T851 [US3-client] Implement walking, looking and jumping in `client/src/physics.cob`
-- [ ] T852 [P] [US3-client] Write acceptance test `client/tests/acc_us3_collision.cob`: case "acceptance US3-2 given a solid block ahead when walking into it then the Player does not pass through"; case "with no block beneath then they fall until they land"
-- [ ] T853 [US3-client] Implement collision against the replica and gravity in `client/src/physics.cob`
-- [ ] T854 [P] [US3-client] Write acceptance test `client/tests/acc_us3_fly.cob`: case "acceptance US3-3 given creative when Space is pressed twice within 0.3 s then they fly, Space rises, Left Shift descends, and the same double press stops flying" (Player Abilities sent)
-- [ ] T855 [US3-client] Implement flying in `client/src/physics.cob`
-- [ ] T856 [P] [US3-client] Write implementation test `client/tests/test_movement_packets.cob`: each tick the client sends the Move Player variant matching what changed, and applies server Player Position corrections with Accept Teleportation
-- [ ] T857 [US3-client] Implement movement packet sending and corrections in `client/src/protocol-client.cob`
-- [ ] T858 [P] [US3-client] Write acceptance test `client/tests/acc_us3_view_distance.cob`: case "acceptance US3-4 client half: chunks received are meshed and drawn and chunks forgotten are no longer drawn and their mesh slots are freed"
-- [ ] T859 [US3-client] Implement chunk forgetting in `client/src/world-replica.cob`
-- [ ] T860 [US3-client] Implement mesh slot release for forgotten chunks in `client/src/render-list.cob`
-- [ ] T861 [P] [US3-client] Write implementation test `client/tests/test_entities_replica.cob`: add, move (delta and teleport), rotate head and remove of entities; player names from Player Info
-- [ ] T862 [US3-client] Implement the entity replica in `client/src/entities-replica.cob`
-- [ ] T863 [P] [US3-client] Write acceptance test `client/tests/acc_us3_other_players.cob`: case "acceptance US3-5 client half: an added operator entity is drawn as the standin-content §3 figure at its position facing its yaw, follows moves, and disappears when removed"; and the operator texture equals `client/tests/fixtures/textures/operator.rgba` (SC-004)
-- [ ] T864 [US3-client] Implement the built-in operator entity texture in `client/src/packs/builtin.cob`
-- [ ] T865 [US3-client] Implement drawing of the operator figure on texture 1 (08 §10 entity section) in `client/src/entities-render.cob`
-- [ ] T866 [P] [US3-client] Write acceptance test `client/tests/acc_us3_sky.cob`: case "acceptance US3-6 given Set Time over a full §4.8 day length then the sky goes through day and night and the daylight factor follows"
-- [ ] T867 [US3-client] Extend the client implementation tests to 100 % coverage of the US3 changes
-- [ ] T868 Gate: run `make gate-client` and record the command and its real output
+- [X] T849 [P] [US3-client] Write `contract_wire_client.cob` cases: Move Player Pos/PosRot/Rot/Status Only and Player Abilities encode equal to their fixtures; Add Entity (operator), Player Info Update/Remove, Move Entity Pos/PosRot/Rot, Rotate Head, Teleport Entity, Remove Entities, Forget Level Chunk and Set Chunk Cache Center decode
+- [X] T850 [P] [US3-client] Write acceptance test `client/tests/acc_us3_movement.cob`: case "acceptance US3-1 given the Player in the world when W, S, A, D, mouse movement and Space are used then they walk forward, back and sideways, turn, look up and down and jump"
+- [X] T851 [US3-client] Implement walking, looking and jumping in `client/src/physics.cob`
+- [X] T852 [P] [US3-client] Write acceptance test `client/tests/acc_us3_collision.cob`: case "acceptance US3-2 given a solid block ahead when walking into it then the Player does not pass through"; case "with no block beneath then they fall until they land"
+- [X] T853 [US3-client] Implement collision against the replica and gravity in `client/src/physics.cob`
+- [X] T854 [P] [US3-client] Write acceptance test `client/tests/acc_us3_fly.cob`: case "acceptance US3-3 given creative when Space is pressed twice within 0.3 s then they fly, Space rises, Left Shift descends, and the same double press stops flying" (Player Abilities sent)
+- [X] T855 [US3-client] Implement flying in `client/src/physics.cob`
+- [X] T856 [P] [US3-client] Write implementation test `client/tests/test_movement_packets.cob`: each tick the client sends the Move Player variant matching what changed, and applies server Player Position corrections with Accept Teleportation
+- [X] T857 [US3-client] Implement movement packet sending and corrections in `client/src/protocol-client.cob`
+- [X] T858 [P] [US3-client] Write acceptance test `client/tests/acc_us3_view_distance.cob`: case "acceptance US3-4 client half: chunks received are meshed and drawn and chunks forgotten are no longer drawn and their mesh slots are freed"
+- [X] T859 [US3-client] Implement chunk forgetting in `client/src/world-replica.cob`
+- [X] T860 [US3-client] Implement mesh slot release for forgotten chunks in `client/src/render-list.cob`
+- [X] T861 [P] [US3-client] Write implementation test `client/tests/test_entities_replica.cob`: add, move (delta and teleport), rotate head and remove of entities; player names from Player Info
+- [X] T862 [US3-client] Implement the entity replica in `client/src/entities-replica.cob`
+- [X] T863 [P] [US3-client] Write acceptance test `client/tests/acc_us3_other_players.cob`: case "acceptance US3-5 client half: an added operator entity is drawn as the standin-content §3 figure at its position facing its yaw, follows moves, and disappears when removed"; and the operator texture equals `client/tests/fixtures/textures/operator.rgba` (SC-004)
+- [X] T864 [US3-client] Implement the built-in operator entity texture in `client/src/packs/builtin.cob`
+- [X] T865 [US3-client] Implement drawing of the operator figure on texture 1 (08 §10 entity section) in `client/src/entities-render.cob`
+- [X] T866 [P] [US3-client] Write acceptance test `client/tests/acc_us3_sky.cob`: case "acceptance US3-6 given Set Time over a full §4.8 day length then the sky goes through day and night and the daylight factor follows"
+- [X] T867 [US3-client] Extend the client implementation tests to 100 % coverage of the US3 changes
+- [X] T868 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 34: US4-client — aiming, placing, breaking, hotbar and inventory
 

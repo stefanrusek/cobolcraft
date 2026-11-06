@@ -4,12 +4,14 @@
 *> row and kept for reuse. WORLD-CHUNK-LOAD decodes Level Chunk With Light (06 §2 to §7) with
 *> proto CHUNK-SECTION-DECODE and LIGHT-DECODE; state ids the client does not know decode as void
 *> (standin-content §1.2). Every section of the chunk and of its four neighbours is marked to be
-*> meshed again. WORLD-CELL looks a cell up: outside the loaded chunks it is void under full sky
+*> meshed again. WORLD-FORGET (Forget Level Chunk) and WORLD-CLEAR drop chunks and mark their mesh
+*> slots to be freed. WORLD-CELL looks a cell up: outside the loaded chunks it is void under full sky
 *> light; below the world it is void and dark.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-CLEAR.
-*> USING CLIENT-STATE: forgets every chunk (the rows' memory is kept for reuse).
+*> USING CLIENT-STATE: forgets every chunk (the rows' memory is kept for reuse; the mesh slots of
+*> the chunks that were loaded are to be freed).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-R                   BINARY-LONG.
@@ -17,10 +19,44 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
+         IF WR-USED(WS-R) = 1
+             MOVE 1 TO WR-RELEASE(WS-R)
+         END-IF
          MOVE 0 TO WR-USED(WS-R)
      END-PERFORM
      GOBACK.
  END PROGRAM WORLD-CLEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-FORGET.
+*> USING CLIENT-STATE, chunk x, chunk z (Forget Level Chunk): the chunk leaves the replica, its
+*> mesh slots are to be freed (RENDER-LIST-BUILD) and its four neighbours are meshed again (their
+*> faces toward it are now drawn).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CX L-CZ.
+     CALL "WORLD-ROW" USING CLIENT-STATE L-CX L-CZ WS-ROW
+     IF WS-ROW > 0
+         MOVE 0 TO WR-USED(WS-ROW)
+         MOVE 1 TO WR-RELEASE(WS-ROW)
+         COMPUTE WS-NX = L-CX - 1
+         CALL "WORLD-DIRTY" USING CLIENT-STATE WS-NX L-CZ
+         COMPUTE WS-NX = L-CX + 1
+         CALL "WORLD-DIRTY" USING CLIENT-STATE WS-NX L-CZ
+         COMPUTE WS-NZ = L-CZ - 1
+         CALL "WORLD-DIRTY" USING CLIENT-STATE L-CX WS-NZ
+         COMPUTE WS-NZ = L-CZ + 1
+         CALL "WORLD-DIRTY" USING CLIENT-STATE L-CX WS-NZ
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-FORGET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-ROW.
@@ -89,6 +125,7 @@
          END-PERFORM
      END-IF
      MOVE 1 TO WR-USED(L-ROW)
+     MOVE 0 TO WR-RELEASE(L-ROW)
      MOVE L-CX TO WR-CX(L-ROW)
      MOVE L-CZ TO WR-CZ(L-ROW)
      SET ADDRESS OF B-CELLS TO WR-ADDR(L-ROW)

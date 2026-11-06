@@ -66,6 +66,8 @@
 *> + 1 for the translucent one).
  78 MESH-SLOT-UI            VALUE 1.
  78 MESH-SLOT-BASE          VALUE 2.
+*> The entity figures of the frame (one mesh, eye-relative): above every section slot.
+ 78 MESH-SLOT-ENTITIES      VALUE 65000.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
  78 DIR-NONE                VALUE 0.
@@ -90,10 +92,19 @@
  78 CL-MAX-DIM-TYPES        VALUE 8.
  78 CL-MAX-PACKS            VALUE 16.
  78 CL-MAX-UI-VERTICES      VALUE 24576.
+ 78 CL-MAX-ENTITIES         VALUE 256.
+ 78 CL-MAX-PLAYER-INFO      VALUE 64.
+ 78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.
  78 CL-TICK-MS              VALUE 50.
+
+*> Entity types (standin-content §3).
+ 78 ET-OPERATOR             VALUE 0.
+ 78 ET-LOOSE-ITEM           VALUE 1.
+ 78 ET-SODGRAZER            VALUE 2.
+ 78 ET-ABEND                VALUE 3.
 
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.

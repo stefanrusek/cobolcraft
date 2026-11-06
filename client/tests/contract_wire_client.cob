@@ -2,7 +2,7 @@
 *> §3; docs/protocol/09-cobolcraft-profile.md): every serverbound fixture the client sends in
 *> status, login, configuration and the play join equals what the client's builders (or its
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
-*> decodes to the stated values.
+*> decodes to the stated values; then the play packets of moving and of other players (US3).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -41,6 +41,16 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
+ 01 WS-MX                  FLOAT-LONG VALUE 5.25.
+ 01 WS-MY                  FLOAT-LONG VALUE 54.0.
+ 01 WS-MZ                  FLOAT-LONG VALUE 8.5.
+ 01 WS-MYAW                FLOAT-SHORT VALUE 45.0.
+ 01 WS-MPITCH              FLOAT-SHORT VALUE 30.0.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-EID                 BINARY-LONG.
+ 01 WS-NAME-OUT            PIC X(16).
+ 01 WS-NAME-OUT-LENGTH     BINARY-LONG.
  01 WS-REGISTRIES.
     05 FILLER PIC X(40) VALUE "cat-sound-variant".
     05 FILLER PIC X(40) VALUE "cat-variant".
@@ -397,6 +407,152 @@
      MOVE "contract wire client play Keep Alive is echoed as play-c2s-1c-keep-alive.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-1c-keep-alive.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+*>   ---- play, moving and other players (US3): builders ----
+     MOVE 30 TO WS-ID
+     MOVE 1 TO WS-FLAGS
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-MOVE" USING PB-BUFFER WS-ID WS-MX WS-MY WS-MZ WS-MYAW WS-MPITCH WS-FLAGS
+     MOVE "contract wire client Move Player Pos ((5.25, 54, 8.5), on ground) equals "
+         & "play-c2s-1e-move-player-pos.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-1e-move-player-pos.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 31 TO WS-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-MOVE" USING PB-BUFFER WS-ID WS-MX WS-MY WS-MZ WS-MYAW WS-MPITCH WS-FLAGS
+     MOVE "contract wire client Move Player Pos Rot (yaw 45, pitch 30) equals "
+         & "play-c2s-1f-move-player-pos-rot.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-1f-move-player-pos-rot.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 32 TO WS-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-MOVE" USING PB-BUFFER WS-ID WS-MX WS-MY WS-MZ WS-MYAW WS-MPITCH WS-FLAGS
+     MOVE "contract wire client Move Player Rot equals play-c2s-20-move-player-rot.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-20-move-player-rot.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 33 TO WS-ID
+     MOVE 3 TO WS-FLAGS
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-MOVE" USING PB-BUFFER WS-ID WS-MX WS-MY WS-MZ WS-MYAW WS-MPITCH WS-FLAGS
+     MOVE "contract wire client Move Player Status Only (on ground, horizontal collision) equals "
+         & "play-c2s-21-move-player-status-only.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-21-move-player-status-only.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 2 TO WS-FLAGS
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-ABILITIES" USING PB-BUFFER WS-FLAGS
+     MOVE "contract wire client Player Abilities (flying) equals play-c2s-28-player-abilities.hex"
+         TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-28-player-abilities.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+*>   ---- play, moving and other players (US3): decoding ----
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-operator.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-47-player-info-update.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 1 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     MOVE SPACES TO WS-NAME-OUT
+     MOVE 0 TO WS-NAME-OUT-LENGTH
+     IF WS-ROW > 0
+         CALL "ENTITY-NAME" USING CLIENT-STATE WS-ROW WS-NAME-OUT WS-NAME-OUT-LENGTH
+     END-IF
+     MOVE "contract wire client Add Entity (operator) decodes to entity 1, type 0 at (4.5, 54, "
+         & "8.5), pitch 0, yaw and head yaw -90, and Player Info Update names its UUID Alice"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     STRING FUNCTION TRIM(TL-OBSERVED) " " WS-NAME-OUT(1:WS-NAME-OUT-LENGTH) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "1 0 4.5000/54.0000/8.5000 -90.0/0.0/-90.0 0 Alice" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-46-player-info-remove.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 0 TO WS-NAME-OUT-LENGTH
+     CALL "ENTITY-NAME" USING CLIENT-STATE WS-ROW WS-NAME-OUT WS-NAME-OUT-LENGTH
+     MOVE "contract wire client Player Info Remove removes Alice from the player list" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-NAME-OUT-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-sodgrazer.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-36-move-entity-pos.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 20 TO WS-EID
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract/fixtures/wire/play-s2c-37-move-entity-pos-rot.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract/fixtures/wire/play-s2c-39-move-entity-rot.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract/fixtures/wire/play-s2c-55-rotate-head.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract wire client Move Entity Pos, Pos Rot and Rot and Rotate Head decode against "
+         & "the sodgrazer added at (12.5, 56, 3.5) facing 90: x + 256/4096, then z - 256/4096 with yaw "
+         & "-180, then yaw -90, then head yaw -90" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "20 2 12.5625/56.0000/3.5000 90.0/0.0/90.0 1 20 2 12.5625/56.0000/3.4375 -180.0/0.0/"
+         & "90.0 1 20 2 12.5625/56.0000/3.4375 -90.0/0.0/90.0 1 20 2 12.5625/56.0000/3.4375 "
+         & "-90.0/0.0/-90.0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-80-teleport-entity.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 1 TO WS-EID
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE "contract wire client Teleport Entity decodes: entity 1 at (100.5, 70, -20.5), yaw -90, "
+         & "pitch 0, not on the ground" TO TL-CASE
+     MOVE "1 0 100.5000/70.0000/-20.5000 -90.0/0.0/-90.0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-loose-item.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-abend.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-4e-remove-entities.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Remove Entities decodes: entities 10 and 21 are removed, 1 and 20 "
+         & "remain" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 10 TO WS-EID
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE 21 TO WS-EID
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-EID TL-OBSERVED
+     MOVE 1 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-ROW
+     MOVE 20 TO WS-EID
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-EID WS-INDEX
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION CHAR(FUNCTION MIN(WS-ROW, 1) + 49)
+         FUNCTION CHAR(FUNCTION MIN(WS-INDEX, 1) + 49) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "10 none 21 none 11" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE -9 TO WS-CX
+     MOVE 3 TO WS-CZ
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+     MOVE "contract/fixtures/wire/play-s2c-26-forget-level-chunk.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+     MOVE "contract/fixtures/wire/play-s2c-60-set-chunk-cache-center.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Forget Level Chunk decodes to chunk (-9, 3), which leaves the "
+         & "replica; Set Chunk Cache Center decodes to (-1, 2)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-ROW TO WS-EDIT
+     MOVE PL-CENTER-CX TO WS-EDIT2
+     MOVE PL-CENTER-CZ TO WS-EDIT3
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 -1 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-CLIENT.
 

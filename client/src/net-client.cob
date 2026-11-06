@@ -108,6 +108,9 @@
  COPY CCSHIM.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+*> TX-BUFFER is a view of the queued outbound bytes (CN-OUT); PB-BUFFER keeps its own memory for
+*> the packets received, so decoding them never overwrites what is queued.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==TX-==.
  01 WS-READY               BINARY-LONG VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 2097152.
  01 WS-RC                  BINARY-LONG.
@@ -172,18 +175,18 @@
              DELIMITED BY SIZE INTO WS-DETAIL
      END-IF
 *>   Send what is queued; a partial send keeps the rest for the next frame.
-     MOVE CN-OUT(L-CONN) TO PB-BUFFER
-     IF CN-PHASE(L-CONN) >= PH-STATUS AND PB-LENGTH > PB-POS
-         SET ADDRESS OF B-OUT TO PB-ADDR
-         COMPUTE WS-GOT = PB-LENGTH - PB-POS
+     MOVE CN-OUT(L-CONN) TO TX-BUFFER
+     IF CN-PHASE(L-CONN) >= PH-STATUS AND TX-LENGTH > TX-POS
+         SET ADDRESS OF B-OUT TO TX-ADDR
+         COMPUTE WS-GOT = TX-LENGTH - TX-POS
          CALL STATIC "cc_net_send" USING BY VALUE CN-HANDLE(L-CONN)
-             BY REFERENCE B-OUT(PB-POS + 1:WS-GOT) BY VALUE WS-GOT BY REFERENCE WS-SENT
+             BY REFERENCE B-OUT(TX-POS + 1:WS-GOT) BY VALUE WS-GOT BY REFERENCE WS-SENT
              RETURNING WS-RC
-         ADD WS-SENT TO PB-POS
-         IF PB-POS = PB-LENGTH
-             CALL "PB-RESET" USING PB-BUFFER
+         ADD WS-SENT TO TX-POS
+         IF TX-POS = TX-LENGTH
+             CALL "PB-RESET" USING TX-BUFFER
          END-IF
-         MOVE PB-BUFFER TO CN-OUT(L-CONN)
+         MOVE TX-BUFFER TO CN-OUT(L-CONN)
      END-IF
      IF WS-DETAIL NOT = SPACES
          CALL "NET-FAIL" USING CLIENT-STATE L-CONN WS-DETAIL

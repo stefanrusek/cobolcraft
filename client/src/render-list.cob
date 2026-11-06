@@ -5,9 +5,11 @@
 *> (positive looks down); the projection is a 70 degree vertical perspective into Vulkan clip space
 *> (y down, depth 0 to 1, near 0.05, far 512). Each section mesh is drawn with projection x view x
 *> its offset from the eye (camera-relative, so float positions stay small): every opaque mesh,
-*> then the translucent meshes back to front by section centre, then the UI mesh (texture 2) with
-*> an orthographic window-pixel matrix. Meshes changed since the last frame, and the UI mesh, are
-*> listed as uploads.
+*> then the entity figures (texture 1, built eye-relative by ENTITIES-MESH), then the translucent
+*> meshes back to front by section centre, then the UI mesh (texture 2) with an orthographic
+*> window-pixel matrix. Meshes changed since the last frame, the entity mesh and the UI mesh are
+*> listed as uploads; the slots of a forgotten chunk's row are listed once with no vertices, which
+*> frees them (shim-abi §9).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RENDER-LIST-BUILD.
@@ -109,6 +111,23 @@
 *>   Uploads of changed meshes; opaque draws; translucent candidates.
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
+*>       A forgotten chunk: every mesh slot of its row is freed (an upload with no vertices).
+         IF WR-RELEASE(WS-R) = 1 AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - 34
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
+                 COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
+                 MOVE 0 TO WR-OP-COUNT(WS-R, WS-S) WR-TR-COUNT(WS-R, WS-S)
+                     WR-UPLOAD(WS-R, WS-S)
+                 ADD 1 TO RL-UPLOAD-COUNT
+                 MOVE WS-SLOT TO RL-U-SLOT(RL-UPLOAD-COUNT)
+                 SET RL-U-ADDR(RL-UPLOAD-COUNT) TO NULL
+                 MOVE 0 TO RL-U-COUNT(RL-UPLOAD-COUNT)
+                 ADD 1 TO RL-UPLOAD-COUNT
+                 COMPUTE RL-U-SLOT(RL-UPLOAD-COUNT) = WS-SLOT + 1
+                 SET RL-U-ADDR(RL-UPLOAD-COUNT) TO NULL
+                 MOVE 0 TO RL-U-COUNT(RL-UPLOAD-COUNT)
+             END-PERFORM
+             MOVE 0 TO WR-RELEASE(WS-R)
+         END-IF
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
              COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
              IF WR-UPLOAD(WS-R, WS-S) = 1 AND RL-UPLOAD-COUNT < CL-MAX-UPLOADS - 2
@@ -143,6 +162,29 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   The entity figures (eye-relative, so drawn with projection x view alone), after the opaque
+*>   sections; the slot is uploaded while it has vertices and once more when it no longer has
+*>   (freed).
+     MOVE 0 TO RL-EN-COUNT
+     IF WS-WORLD = 1
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-IF
+     IF RL-EN-COUNT > 0 OR RL-EN-UPLOADED > 0
+         ADD 1 TO RL-UPLOAD-COUNT
+         MOVE MESH-SLOT-ENTITIES TO RL-U-SLOT(RL-UPLOAD-COUNT)
+         SET RL-U-ADDR(RL-UPLOAD-COUNT) TO ADDRESS OF RL-EN-VERTEX(1)
+         MOVE RL-EN-COUNT TO RL-U-COUNT(RL-UPLOAD-COUNT)
+         MOVE RL-EN-COUNT TO RL-EN-UPLOADED
+     END-IF
+     IF RL-EN-COUNT > 0
+         ADD 1 TO RL-DRAW-COUNT
+         MOVE MESH-SLOT-ENTITIES TO RL-D-SLOT(RL-DRAW-COUNT)
+         MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
+         MOVE CC-TEX-ENTITIES TO RL-D-TEX(RL-DRAW-COUNT)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             MOVE WS-PV(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
+         END-PERFORM
+     END-IF
 *>   Translucent sections back to front (insertion sort, farthest first).
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-TCOUNT
          MOVE WS-TSLOT(WS-I) TO WS-SWAP-SLOT

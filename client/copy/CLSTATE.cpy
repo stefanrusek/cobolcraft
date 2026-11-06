@@ -5,7 +5,7 @@
 *>
 *> Groups: start-up (name, game directory), run control, input state, screen model, server list,
 *> connections, local player and world settings, world replica (chunk rows and their section
-*> meshes), packs (stack, language, font), atlases, baked block models, sky, render list.
+*> meshes), entity replica and player list, packs (stack, language, font), atlases, baked block models, sky, render list.
  01 CLIENT-STATE.
 *>  ---- start-up (client-surface §1, §2) ----
     05 CL-NAME               PIC X(16).
@@ -126,6 +126,24 @@
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
        10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
+       10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
+       10 PL-CENTER-CZ       BINARY-LONG.
+*>     Movement (client-surface §3; client/src/physics.cob): vertical speed in blocks per tick,
+*>     ground and horizontal-collision flags of the last tick, flying, a Space press not yet
+*>     used by a tick, the clock of the last Space press (fly toggle; 0 none), and what the
+*>     server last got (Move Player or the accepted Player Position).
+       10 PL-VY              FLOAT-LONG.
+       10 PL-ON-GROUND       PIC 9.
+       10 PL-COLLIDED        PIC 9.
+       10 PL-FLYING          PIC 9.
+       10 PL-JUMP            PIC 9.
+       10 PL-SPACE-MS        BINARY-DOUBLE.
+       10 PL-SENT-X          FLOAT-LONG.
+       10 PL-SENT-Y          FLOAT-LONG.
+       10 PL-SENT-Z          FLOAT-LONG.
+       10 PL-SENT-YAW        FLOAT-SHORT.
+       10 PL-SENT-PITCH      FLOAT-SHORT.
+       10 PL-SENT-FLAGS      BINARY-LONG.
        10 RG-DIM-COUNT       BINARY-LONG.    *> dimension_type registry entries received
        10 RG-DIM OCCURS 8 TIMES.
           15 RG-DIM-NAME     PIC X(64).
@@ -142,6 +160,7 @@
           15 WR-CX           BINARY-LONG.
           15 WR-CZ           BINARY-LONG.
           15 WR-ADDR         USAGE POINTER.  *> 3 x 65536 cells: states, sky light, block light
+          15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
           15 WR-SECTION OCCURS 16 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
@@ -149,6 +168,28 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+*>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
+*>       the player list (Player Info Update / Remove) ----
+    05 EN-STATE.
+       10 EN-COUNT           BINARY-LONG.    *> rows ever used
+       10 EN-ENTITY OCCURS 256 TIMES.
+          15 EN-USED         PIC 9.
+          15 EN-ID           BINARY-LONG.
+          15 EN-TYPE         BINARY-LONG.    *> standin-content §3 entity type id
+          15 EN-UUID         PIC X(16).
+          15 EN-X            FLOAT-LONG.
+          15 EN-Y            FLOAT-LONG.
+          15 EN-Z            FLOAT-LONG.
+          15 EN-YAW          FLOAT-SHORT.
+          15 EN-PITCH        FLOAT-SHORT.
+          15 EN-HEAD-YAW     FLOAT-SHORT.
+          15 EN-ON-GROUND    PIC 9.
+       10 PI-COUNT           BINARY-LONG.    *> rows ever used
+       10 PI-ENTRY OCCURS 64 TIMES.
+          15 PI-USED         PIC 9.
+          15 PI-UUID         PIC X(16).
+          15 PI-NAME         PIC X(16).
+          15 PI-NAME-LENGTH  BINARY-LONG.
 *>  ---- packs (08 §3, §10): stack, language, font ----
     05 PK-STATE.
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
@@ -187,6 +228,14 @@
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
        10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
+*>     Entity atlas (texture 1; 08 §10.11): the entity images stacked; the operator's rectangle.
+       10 EA-W               BINARY-LONG.
+       10 EA-H               BINARY-LONG.
+       10 EA-ADDR            USAGE POINTER.
+       10 EA-OP-X            BINARY-LONG.
+       10 EA-OP-Y            BINARY-LONG.
+       10 EA-OP-W            BINARY-LONG.
+       10 EA-OP-H            BINARY-LONG.
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 18 TIMES.
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -223,6 +272,16 @@
           15 RL-U-SLOT       BINARY-LONG.
           15 RL-U-ADDR       USAGE POINTER.
           15 RL-U-COUNT      BINARY-LONG.
+       10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
+       10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
+       10 RL-EN-VERTEX OCCURS 9216 TIMES.
+          15 RL-EN-X         FLOAT-SHORT.
+          15 RL-EN-Y         FLOAT-SHORT.
+          15 RL-EN-Z         FLOAT-SHORT.
+          15 RL-EN-U         FLOAT-SHORT.
+          15 RL-EN-V         FLOAT-SHORT.
+          15 RL-EN-B         FLOAT-SHORT.
+          15 RL-EN-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.

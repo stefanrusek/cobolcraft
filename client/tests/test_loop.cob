@@ -1,8 +1,8 @@
 *> Implementation test of client/src/loop.cob (CL-START, CL-STEP; research R6): CL-STEP routes the
 *> frame's events (a close request ends the run), pumps the game connection without waiting (a
-*> Keep Alive the server sends is echoed within the frame), sends Client Tick End once per 50 ms
-*> client tick in play, re-meshes the replica's changed sections, and produces the screen model and
-*> the render list every frame.
+*> Keep Alive the server sends is echoed within the frame, after the frame's tick), sends Client
+*> Tick End once per 50 ms client tick in play, re-meshes the replica's changed sections, and
+*> produces the screen model and the render list every frame.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-LOOP.
  DATA DIVISION.
@@ -88,9 +88,9 @@
      CALL "TEST-SLEEP"
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SERVER-READ" USING WS-SERVER WS-TEXT WS-THRESHOLD
-     MOVE "loop the connection is pumped every frame: a Keep Alive is echoed in the same frame"
-         TO TL-CASE
-     MOVE "1c" TO TL-EXPECTED
+     MOVE "loop the connection is pumped every frame after the tick: a Keep Alive is echoed in "
+         & "the same frame, after that frame's Client Tick End" TO TL-CASE
+     MOVE "0d 1c" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
