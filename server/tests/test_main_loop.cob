@@ -180,6 +180,7 @@
      CALL "SVT-CAPTURE-START" USING WS-CAPTURE
      CALL "SV-ITERATE"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test main loop SV-ITERATE displays the drained console lines" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "Unknown command nosuchcommand (howto lists the commands)" TO TL-EXPECTED

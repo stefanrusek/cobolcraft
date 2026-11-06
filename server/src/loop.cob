@@ -22,10 +22,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-START.
-*> Empties the host state, takes the settings (the operator-surface §2 defaults: creative,
-*> "A CobolCraft server", view distance 8, player combat, hostile mobs, weather changes and extra
-*> dimensions on, allow-list off, no pack offer, port 25565), opens ./world with CORE-WORLD-OPEN
-*> (a dedicated server, host kind 0), listens on the port and starts the tick clock.
+*> Empties the host state, takes the settings and the port from ./cobolcraft-server.conf
+*> (SV-CONFIG-LOAD: the operator-surface §2 defaults for missing keys, the file written when absent),
+*> opens ./world with CORE-WORLD-OPEN (a dedicated server, host kind 0; "Created new world in
+*> ./world" when it had none), listens on the port ("Ready: accepting players on 0.0.0.0:<port>",
+*> operator-surface §3, US13-1) and starts the tick clock.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY SVSTATE.
@@ -34,23 +35,33 @@
  01 WS-CREATED             BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-NOW                 BINARY-DOUBLE.
+ 01 WS-LINE                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-EDIT                PIC Z(9)9.
+ 01 WS-PTR                 USAGE POINTER.
  PROCEDURE DIVISION.
+     SET WS-PTR TO ADDRESS OF WS-LINE
      MOVE 0 TO SV-LISTENER SV-BOUND-PORT SV-TICKS
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SV-MAX-CONNS
          MOVE 0 TO SV-HANDLE(WS-I) SV-CORE-ID(WS-I) SV-CLOSING(WS-I) SV-OUT-PENDING(WS-I)
          MOVE 1 TO SV-OUT-START(WS-I)
      END-PERFORM
-     INITIALIZE CORE-SETTINGS
-     MOVE 25565 TO SV-PORT
-     MOVE 1 TO CS-DEFAULT-MODE
-     MOVE "A CobolCraft server" TO CS-DESCRIPTION
-     MOVE 8 TO CS-VIEW-DISTANCE
-     MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
-     MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
-     MOVE "world" TO CS-NEW-WORLD-NAME
+     CALL "SV-CONFIG-LOAD" USING CORE-SETTINGS SV-PORT
      MOVE CORE-SETTINGS TO SV-SETTINGS
      CALL "CORE-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
+     IF WS-CREATED = 1
+         MOVE "Created new world in ./world" TO WS-LINE
+         MOVE 28 TO WS-LENGTH
+         CALL "SV-PRINT" USING WS-PTR WS-LENGTH
+     END-IF
      CALL "TCP-LISTEN" USING SV-PORT
+*>   The ready line (US13-1): the listener binds 0.0.0.0, every interface.
+     MOVE SV-BOUND-PORT TO WS-EDIT
+     MOVE SPACES TO WS-LINE
+     STRING "Ready: accepting players on 0.0.0.0:" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-LINE
+     COMPUTE WS-LENGTH = 36 + FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT))
+     CALL "SV-PRINT" USING WS-PTR WS-LENGTH
      CALL "SV-NOW-MS" USING WS-NOW
      COMPUTE SV-NEXT-TICK = WS-NOW + SV-TICK-MS
      GOBACK.
@@ -116,15 +127,17 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-PRINT.
 *> USING text address (POINTER), length (BINARY-LONG, > 0): displays that text as one console line
-*> (operator-surface §3).
+*> prefixed with the local time as "[HH:MM:SS] " (operator-surface §3, US13-3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-NOW                 PIC X(21).
  01 B-TEXT                 PIC X(65536) BASED.
  LINKAGE SECTION.
  01 L-PTR                  USAGE POINTER.
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING L-PTR L-LENGTH.
      SET ADDRESS OF B-TEXT TO L-PTR
-     DISPLAY B-TEXT(1:L-LENGTH)
+     MOVE FUNCTION CURRENT-DATE TO WS-NOW
+     DISPLAY "[" WS-NOW(9:2) ":" WS-NOW(11:2) ":" WS-NOW(13:2) "] " B-TEXT(1:L-LENGTH)
      GOBACK.
  END PROGRAM SV-PRINT.

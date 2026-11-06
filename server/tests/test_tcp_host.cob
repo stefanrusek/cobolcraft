@@ -236,6 +236,7 @@
      CALL "SVT-CAPTURE-START" USING WS-CAPTURE
      CALL "TCP-PUMP-OUT" USING WS-SLOT
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test tcp host a socket error on one connection logs one ERROR connection line" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "ERROR connection: send failed: closed or reset by the peer" TO TL-EXPECTED
@@ -294,6 +295,7 @@
          CALL "TCP-POLL" USING WS-POLL
      END-PERFORM
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test tcp host a connection the core has no room for logs one ERROR connection line"
          TO TL-CASE
      MOVE "T" TO TL-MODE

@@ -33,6 +33,18 @@
 *>   SVT-CAPTURE-START USING file (PIC X(256)): from now on standard output goes to that file.
 *>   SVT-CAPTURE-STOP USING file, text out (PIC X(4096)): standard output is restored; the text is
 *>     the file's lines joined by " | ". No TEST line may be printed between start and stop.
+*>   SVT-UNSTAMP USING text (PIC X(4096)): removes every console time stamp "[HH:MM:SS] "
+*>     (operator-surface §3) from captured text, so a test can compare the lines themselves.
+*>   SVT-HOME: makes the repository root the current directory again (after SVT-SCRATCH).
+*>   SVT-WRITE-CONF USING text (PIC X(4096)): writes ./cobolcraft-server.conf with that text, "|"
+*>     separating lines (trailing spaces of the text dropped, a newline after the last line).
+*>   SVT-READ-LINES USING file (PIC X(256)), text out (PIC X(4096)): the file's lines joined by
+*>     " | " (spaces when the file cannot be opened).
+*>   SVT-FORK USING pid out (BINARY-LONG): flushes standard output, then forks; the child (pid 0)
+*>     has its standard error going to ./stderr.txt and must end with STOP RUN. A fatal path runs
+*>     in the child so the test program itself goes on (operator-surface §2 sub-cases).
+*>   SVT-WAIT USING pid, exit status out (BINARY-LONG), standard error out (PIC X(4096)): waits for
+*>     that child and returns its exit status and its standard error lines joined by " | ".
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SVT-LOAD-HEX.
@@ -501,3 +513,162 @@
      MOVE 0 TO RETURN-CODE
      GOBACK.
  END PROGRAM SVT-CAPTURE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-HOME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 SVT-ROOT               PIC X(64) EXTERNAL.
+ 01 WS-DIR                 PIC X(65).
+ PROCEDURE DIVISION.
+     MOVE LOW-VALUES TO WS-DIR
+     STRING SVT-ROOT DELIMITED BY SPACE INTO WS-DIR
+     CALL "CBL_CHANGE_DIR" USING WS-DIR
+     MOVE SPACES TO SVT-ROOT
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-HOME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-WRITE-CONF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(32) VALUE Z"cobolcraft-server.conf".
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-TEXT                PIC X(4097).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE L-TEXT TO WS-TEXT
+     MOVE 4096 TO WS-LENGTH
+     PERFORM UNTIL WS-LENGTH = 0 OR WS-TEXT(WS-LENGTH:1) NOT = SPACE
+         SUBTRACT 1 FROM WS-LENGTH
+     END-PERFORM
+     INSPECT WS-TEXT(1:4096) CONVERTING "|" TO X"0A"
+     ADD 1 TO WS-LENGTH
+     MOVE X"0A" TO WS-TEXT(WS-LENGTH:1)
+     MOVE WS-LENGTH TO WS-SIZE
+     CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+     CALL STATIC "write" USING BY VALUE WS-FD BY REFERENCE WS-TEXT BY VALUE WS-SIZE
+         RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-WRITE-CONF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-READ-LINES.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT IN-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD IN-FILE.
+ 01 IN-LINE                PIC X(1024).
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PATH L-TEXT.
+     MOVE L-PATH TO WS-PATH
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-AT
+     OPEN INPUT IN-FILE
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO IN-LINE
+         READ IN-FILE
+         IF WS-STATUS = "00"
+             IF WS-AT > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-AT
+             END-IF
+             STRING FUNCTION TRIM(IN-LINE TRAILING) DELIMITED BY SIZE INTO L-TEXT
+                 WITH POINTER WS-AT
+         END-IF
+     END-PERFORM
+     CLOSE IN-FILE
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-READ-LINES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-FORK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-PATH                PIC X(16) VALUE Z"stderr.txt".
+ 01 WS-STDERR              BINARY-LONG VALUE 2.
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PID                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PID.
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "fork" RETURNING L-PID
+     IF L-PID = 0
+         CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+         CALL STATIC "dup2" USING BY VALUE WS-FD BY VALUE WS-STDERR RETURNING WS-RC
+         CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-FORK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-WAIT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(256) VALUE "stderr.txt".
+ LINKAGE SECTION.
+ 01 L-PID                  BINARY-LONG.
+ 01 L-EXIT                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PID L-EXIT L-TEXT.
+     CALL STATIC "waitpid" USING BY VALUE L-PID BY REFERENCE WS-STATUS BY VALUE WS-ZERO
+         RETURNING WS-RC
+     COMPUTE WS-STATUS = WS-STATUS / 256
+     COMPUTE L-EXIT = FUNCTION MOD(WS-STATUS, 256)
+     CALL "SVT-READ-LINES" USING WS-PATH L-TEXT
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM SVT-WAIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-UNSTAMP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-I WS-AT
+     PERFORM UNTIL WS-I > 4096
+         IF WS-I <= 4086 AND L-TEXT(WS-I:1) = "[" AND L-TEXT(WS-I + 3:1) = ":"
+                 AND L-TEXT(WS-I + 6:1) = ":" AND L-TEXT(WS-I + 9:2) = "] "
+                 AND L-TEXT(WS-I + 1:2) IS NUMERIC AND L-TEXT(WS-I + 4:2) IS NUMERIC
+                 AND L-TEXT(WS-I + 7:2) IS NUMERIC
+             ADD 11 TO WS-I
+         ELSE
+             MOVE L-TEXT(WS-I:1) TO WS-TEXT(WS-AT:1)
+             ADD 1 TO WS-I WS-AT
+         END-IF
+     END-PERFORM
+     MOVE WS-TEXT TO L-TEXT
+     GOBACK.
+ END PROGRAM SVT-UNSTAMP.

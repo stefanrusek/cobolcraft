@@ -210,6 +210,16 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   console lines (no TEST line in between). macOS grows loopback socket buffers to megabytes:
   `SVT-SHRINK-BUFFERS` (4096-byte buffers) makes a partial send happen. The host state is
   `server/copy/SVSTATE.cpy` (slots, pending output, tick clock, `SV-TICKS`).
+  Every console line `SV-PRINT` displays starts with `[HH:MM:SS] `: pass captured text through
+  `SVT-UNSTAMP` before comparing it. `SV-START` reads `./cobolcraft-server.conf` (`SV-CONFIG-LOAD`,
+  written with the defaults when absent): `SVT-WRITE-CONF` writes one ("|" separates lines) and
+  `SVT-HOME` returns to the repository root before the next `SVT-SCRATCH`. Several fatal paths in
+  one test program: `SVT-FORK` (child's stderr to `./stderr.txt`; the child ends with `STOP RUN`)
+  and `SVT-WAIT` (exit status and stderr text); the last fatal sub-case runs in the program itself
+  for its `.expect`.
+- **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
+  phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
+  own `DELIMITED BY SIZE`.
 
 ## Failure handling (FR-012)
 

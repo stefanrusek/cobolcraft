@@ -1039,19 +1039,19 @@ login against `SV-START`/`SV-ITERATE`.
 
 **Goal**: operator-surface §2 and §3. **Independent Test**: `make gate-server` with `acc_us13_*.cob` passing.
 
-- [ ] T740 [P] [US13-server] Write acceptance test `server/tests/acc_us13_config.cob`: case "acceptance US13-2 given a configuration file when the server starts then it uses its settings"; case "given none then it writes `cobolcraft-server.conf` with every non-pack key's default, each preceded by a one-line comment, and uses them"; case "a missing key takes its default"; comment and blank lines ignored; case "`allow-list` seeds the enforcement flag of a newly created world only" (operator decision A2)
-- [ ] T741 [P] [US13-server] Write fatal-path test `server/tests/test_config_unknown_key.cob` with its `.expect` file: `FATAL configuration: <key>: unknown key`, exit 1 (operator-surface §2, research R14)
-- [ ] T742 [P] [US13-server] Write fatal-path test `server/tests/test_config_bad_value.cob` with its `.expect` file: an invalid value is fatal (`FATAL configuration: <key>: <problem>`, exit 1); the test program runs one sub-case per key type (port range, game mode, text length, view distance 2–32, boolean) through the runner's `.expect` mechanism
-- [ ] T743 [US13-server] Implement the configuration parser (`key=value` lines, `#` comments, blank lines, unknown key fatal) in `server/src/config-file.cob`
-- [ ] T744 [US13-server] Implement validation and conversion of `port`, `default-game-mode`, `description` and `view-distance` into `CORE-SETTINGS` in `server/src/config-file.cob`
-- [ ] T745 [US13-server] Implement validation and conversion of the boolean keys `player-combat`, `hostile-mobs`, `weather-changes`, `extra-dimensions` and `allow-list` into `CORE-SETTINGS` in `server/src/config-file.cob`
-- [ ] T746 [US13-server] Implement writing the default `cobolcraft-server.conf` (each key preceded by a one-line comment) when the file is absent in `server/src/config-file.cob`
-- [ ] T747 [P] [US13-server] Write acceptance test `server/tests/acc_us13_ready.cob`: case "acceptance US13-1 given no world folder when the server starts then the console shows `Created new world in ./world` and `Ready: accepting players on 0.0.0.0:<port>`"
-- [ ] T748 [US13-server] Implement the created-world and ready lines in `server/src/loop.cob`
-- [ ] T749 [P] [US13-server] Write acceptance test `server/tests/acc_us13_console_format.cob`: case "acceptance US13-3 drained console lines are printed with the `[HH:MM:SS] ` prefix"
-- [ ] T750 [US13-server] Implement the time-stamped console printing in `server/src/loop.cob`
-- [ ] T751 [US13-server] Extend the server implementation tests to 100 % coverage of the US13 changes
-- [ ] T752 Gate: run `make gate-server` and record the command and its real output
+- [X] T740 [P] [US13-server] Write acceptance test `server/tests/acc_us13_config.cob`: case "acceptance US13-2 given a configuration file when the server starts then it uses its settings"; case "given none then it writes `cobolcraft-server.conf` with every non-pack key's default, each preceded by a one-line comment, and uses them"; case "a missing key takes its default"; comment and blank lines ignored; case "`allow-list` seeds the enforcement flag of a newly created world only" (operator decision A2)
+- [X] T741 [P] [US13-server] Write fatal-path test `server/tests/test_config_unknown_key.cob` with its `.expect` file: `FATAL configuration: <key>: unknown key`, exit 1 (operator-surface §2, research R14)
+- [X] T742 [P] [US13-server] Write fatal-path test `server/tests/test_config_bad_value.cob` with its `.expect` file: an invalid value is fatal (`FATAL configuration: <key>: <problem>`, exit 1); the test program runs one sub-case per key type (port range, game mode, text length, view distance 2–32, boolean) through the runner's `.expect` mechanism
+- [X] T743 [US13-server] Implement the configuration parser (`key=value` lines, `#` comments, blank lines, unknown key fatal) in `server/src/config-file.cob`
+- [X] T744 [US13-server] Implement validation and conversion of `port`, `default-game-mode`, `description` and `view-distance` into `CORE-SETTINGS` in `server/src/config-file.cob`
+- [X] T745 [US13-server] Implement validation and conversion of the boolean keys `player-combat`, `hostile-mobs`, `weather-changes`, `extra-dimensions` and `allow-list` into `CORE-SETTINGS` in `server/src/config-file.cob`
+- [X] T746 [US13-server] Implement writing the default `cobolcraft-server.conf` (each key preceded by a one-line comment) when the file is absent in `server/src/config-file.cob`
+- [X] T747 [P] [US13-server] Write acceptance test `server/tests/acc_us13_ready.cob`: case "acceptance US13-1 given no world folder when the server starts then the console shows `Created new world in ./world` and `Ready: accepting players on 0.0.0.0:<port>`"
+- [X] T748 [US13-server] Implement the created-world and ready lines in `server/src/loop.cob`
+- [X] T749 [P] [US13-server] Write acceptance test `server/tests/acc_us13_console_format.cob`: case "acceptance US13-3 drained console lines are printed with the `[HH:MM:SS] ` prefix"
+- [X] T750 [US13-server] Implement the time-stamped console printing in `server/src/loop.cob`
+- [X] T751 [US13-server] Extend the server implementation tests to 100 % coverage of the US13 changes
+- [X] T752 Gate: run `make gate-server` and record the command and its real output
 
 #### Phase 30: US15-server — console commands and stop
 
