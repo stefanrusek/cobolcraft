@@ -148,6 +148,10 @@
  78 CL-MAX-QUADS            VALUE 24.
  78 CL-MAX-DRAWS            VALUE 8192.
  78 CL-MAX-UPLOADS          VALUE 4096.
+*> Uploads and draws every frame may list after the section meshes: entities, ground items, weather,
+*> highlight, UI, icons and UI text (RENDER-LIST-BUILD keeps this many entries of each list free).
+ 78 CL-UPLOAD-RESERVE       VALUE 7.
+ 78 CL-DRAW-RESERVE         VALUE 7.
  78 CL-MAX-DIM-TYPES        VALUE 8.
  78 CL-MAX-LEVELS           VALUE 8.
  78 CL-MAX-NODES            VALUE 160.

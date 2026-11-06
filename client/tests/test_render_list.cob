@@ -204,6 +204,63 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A dimension change: 200 forgotten rows and every section of them changed in one frame, with
+*>   every fixed mesh (entities, ground items, weather, highlight, UI, icons, UI text) pending too.
+*>   The section uploads stop short so the fixed ones still fit; the rest wait for later frames.
+     MOVE 200 TO WR-COUNT
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 200
+         MOVE 0 TO WR-USED(WS-R)
+         MOVE 1 TO WR-RELEASE(WS-R)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             MOVE 1 TO WR-UPLOAD(WS-R, WS-I)
+         END-PERFORM
+     END-PERFORM
+     MOVE 1 TO RL-EN-UPLOADED RL-GI-UPLOADED RL-WX-UPLOADED RL-HL-UPLOADED RL-IC-UPLOADED
+         RL-UT-UPLOADED
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list a frame with more changed sections than uploads fit still lists every "
+         & "fixed mesh and stays within the upload limit" TO TL-CASE
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UPLOAD-COUNT
+         IF RL-U-SLOT(WS-I) < MESH-SLOT-BASE OR RL-U-SLOT(WS-I) >= MESH-SLOT-ENTITIES
+             ADD 1 TO WS-K
+         END-IF
+     END-PERFORM
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-UPLOAD-COUNT <= CL-MAX-UPLOADS AND RL-UPLOAD-COUNT > CL-MAX-UPLOADS - 40 AND WS-K = 7
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A large view distance: 600 rows of 16 opaque sections (more draws than the list holds) and a
+*>   block aimed at. The section draws stop short so the highlight and the UI draws still fit.
+     MOVE 600 TO WR-COUNT
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 600
+         MOVE 1 TO WR-USED(WS-R)
+         MOVE 0 TO WR-RELEASE(WS-R)
+         MOVE FUNCTION MOD(WS-R, 33) TO WR-CX(WS-R)
+         COMPUTE WR-CZ(WS-R) = WS-R / 33
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             MOVE 0 TO WR-UPLOAD(WS-R, WS-I) WR-TR-COUNT(WS-R, WS-I)
+             MOVE 6 TO WR-OP-COUNT(WS-R, WS-I)
+         END-PERFORM
+     END-PERFORM
+     MOVE 1 TO TG-HIT
+     MOVE 0 TO TG-X TG-Z
+     MOVE 60 TO TG-Y
+     MOVE 1 TO TG-FACE
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list a frame with more section draws than the list holds still draws the "
+         & "highlight and the UI last, within the draw limit" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-DRAW-COUNT <= CL-MAX-DRAWS AND RL-D-SLOT(RL-DRAW-COUNT) = MESH-SLOT-UI
+             AND RL-D-SLOT(RL-DRAW-COUNT - 1) = MESH-SLOT-HIGHLIGHT
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-RENDER-LIST.
 

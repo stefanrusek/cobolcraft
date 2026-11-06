@@ -119,7 +119,8 @@
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
 *>       A forgotten chunk: every mesh slot of its row is freed (an upload with no vertices).
-         IF WR-RELEASE(WS-R) = 1 AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - 34
+         IF WR-RELEASE(WS-R) = 1
+                 AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - CL-UPLOAD-RESERVE - 32
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
                  COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
                  MOVE 0 TO WR-OP-COUNT(WS-R, WS-S) WR-TR-COUNT(WS-R, WS-S)
@@ -137,7 +138,8 @@
          END-IF
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
              COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
-             IF WR-UPLOAD(WS-R, WS-S) = 1 AND RL-UPLOAD-COUNT < CL-MAX-UPLOADS - 2
+             IF WR-UPLOAD(WS-R, WS-S) = 1
+                     AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - CL-UPLOAD-RESERVE - 2
                  ADD 1 TO RL-UPLOAD-COUNT
                  MOVE WS-SLOT TO RL-U-SLOT(RL-UPLOAD-COUNT)
                  SET RL-U-ADDR(RL-UPLOAD-COUNT) TO WR-OP-ADDR(WS-R, WS-S)
@@ -149,7 +151,8 @@
                  MOVE 0 TO WR-UPLOAD(WS-R, WS-S)
              END-IF
              IF WS-WORLD = 1 AND WR-USED(WS-R) = 1
-                 IF WR-OP-COUNT(WS-R, WS-S) > 0 AND RL-DRAW-COUNT < CL-MAX-DRAWS - 1
+                 IF WR-OP-COUNT(WS-R, WS-S) > 0
+                         AND RL-DRAW-COUNT < CL-MAX-DRAWS - CL-DRAW-RESERVE
                      ADD 1 TO RL-DRAW-COUNT
                      MOVE WS-SLOT TO RL-D-SLOT(RL-DRAW-COUNT)
                      MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
@@ -214,7 +217,8 @@
          MOVE WS-SWAP-SEC TO WS-TSEC(WS-J + 1)
          MOVE WS-SWAP-DIST TO WS-TDIST(WS-J + 1)
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TCOUNT OR RL-DRAW-COUNT >= CL-MAX-DRAWS - 1
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TCOUNT
+             OR RL-DRAW-COUNT >= CL-MAX-DRAWS - CL-DRAW-RESERVE
          ADD 1 TO RL-DRAW-COUNT
          MOVE WS-TSLOT(WS-I) TO RL-D-SLOT(RL-DRAW-COUNT)
          MOVE CC-PIPE-TRANSLUCENT TO RL-D-PIPELINE(RL-DRAW-COUNT)
