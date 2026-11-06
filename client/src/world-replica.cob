@@ -88,10 +88,14 @@
  PROGRAM-ID. WORLD-ROW-NEW.
 *> USING CLIENT-STATE, chunk x, chunk z, row out: the chunk's row, or a free row taken for it
 *> (cells all void and dark, biome 0); with every row in use, the row of the chunk farthest from the player.
+*> A row taken from another chunk (one forgotten whose mesh slots the render list has not freed yet,
+*> as after a change of dimension, or the farthest one) drops that chunk's meshes: every section
+*> has no vertices and is uploaded so, which frees its slots; nothing of the old chunk is drawn.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-R                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  01 WS-BYTES               BINARY-LONG VALUE 197632.
  01 WS-PCX                 BINARY-LONG.
  01 WS-PCZ                 BINARY-LONG.
@@ -127,6 +131,13 @@
                  MOVE WS-DISTANCE TO WS-FARTHEST
                  MOVE WS-R TO L-ROW
              END-IF
+         END-PERFORM
+     END-IF
+     IF WR-RELEASE(L-ROW) = 1
+             OR (WR-USED(L-ROW) = 1 AND (WR-CX(L-ROW) NOT = L-CX OR WR-CZ(L-ROW) NOT = L-CZ))
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
+             MOVE 0 TO WR-OP-COUNT(L-ROW, WS-S) WR-TR-COUNT(L-ROW, WS-S)
+             MOVE 1 TO WR-UPLOAD(L-ROW, WS-S)
          END-PERFORM
      END-IF
      MOVE 1 TO WR-USED(L-ROW)

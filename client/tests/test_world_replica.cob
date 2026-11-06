@@ -153,6 +153,14 @@
          MOVE WS-I TO WS-CZ
          CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
      END-PERFORM
+*>   The farthest chunk has a mesh in section 3; the chunk asked for again keeps its own.
+     MOVE 5 TO WR-OP-COUNT(CL-MAX-CHUNKS, 3)
+     MOVE 0 TO WR-UPLOAD(CL-MAX-CHUNKS, 3)
+     MOVE 7 TO WR-TR-COUNT(2, 3)
+     MOVE 0 TO WR-UPLOAD(2, 3)
+     MOVE 42 TO WS-CX
+     MOVE 2 TO WS-CZ
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW2
      MOVE 1 TO WS-CX
      MOVE 2 TO WS-CZ
      CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
@@ -160,6 +168,20 @@
          TO TL-CASE
      MOVE CL-MAX-CHUNKS TO TL-EXPECTED-N
      MOVE WS-ROW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "world replica a row taken from the farthest chunk drops its meshes (no vertices, "
+         & "uploaded so); a chunk asked for again keeps its row and meshes" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WR-OP-COUNT(WS-ROW, 3) TO WS-E
+     STRING FUNCTION TRIM(WS-E) " " WR-UPLOAD(WS-ROW, 3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE WS-ROW2 TO WS-E
+     STRING FUNCTION TRIM(TL-OBSERVED) " row " FUNCTION TRIM(WS-E) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE WR-TR-COUNT(2, 3) TO WS-E
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-E) " " WR-UPLOAD(2, 3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 1 row 2 7 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Section (-1, -1, -2) of a dimension from y -16: one entry, state 20 (unknown) at local
 *>   (3, 7, 5), the block (-13, -9, -27), which held greystone.

@@ -322,6 +322,20 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "1 8 cobolcraft:main 256 0 5" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract wire client Login (extra dimensions off) keeps its one dimension name"
+         TO TL-CASE
+     PERFORM LEVELS-TEXT
+     MOVE "1 cobolcraft:main" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-32-login-all-dimensions.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Login (all dimensions) decodes every dimension name: "
+         & "cobolcraft:main and cobolcraft:subroutine; it enters cobolcraft:main" TO TL-CASE
+     PERFORM LEVELS-TEXT
+     STRING FUNCTION TRIM(TL-OBSERVED) " in " FUNCTION TRIM(PL-DIM-NAME) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "2 cobolcraft:main cobolcraft:subroutine in cobolcraft:main" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 1 TO PL-MODE
      MOVE "contract/fixtures/wire/play-s2c-27-game-event-03-game-mode.hex" TO WS-PATH
@@ -898,16 +912,16 @@
      MOVE "contract/fixtures/wire/play-s2c-54-respawn-subroutine.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract wire client Respawn decodes: cobolcraft:subroutine of type 1 (no sky light, "
-         & "from the registry), survival; the world screen" TO TL-CASE
+         & "y 0 to 127, from the registry), survival; the world screen" TO TL-CASE
      PERFORM RESPAWN-TEXT
-     MOVE "cobolcraft:subroutine 1 0 0 5" TO TL-EXPECTED
+     MOVE "cobolcraft:subroutine 1 0 0 5 0/128" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract/fixtures/wire/play-s2c-54-respawn-main.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Respawn decodes: cobolcraft:main of type 0 (sky light), survival; "
-         & "the world screen" TO TL-CASE
+     MOVE "contract wire client Respawn decodes: cobolcraft:main of type 0 (sky light, y 0 to "
+         & "255), survival; the world screen" TO TL-CASE
      PERFORM RESPAWN-TEXT
-     MOVE "cobolcraft:main 0 1 0 5" TO TL-EXPECTED
+     MOVE "cobolcraft:main 0 1 0 5 0/256" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   ---- play, eating and sprinting (US8) ----
      MOVE 5 TO WS-SEQ
@@ -1073,6 +1087,21 @@
      MOVE SM-SCREEN TO WS-EDIT3
      STRING FUNCTION TRIM(PL-DIM-NAME) " " FUNCTION TRIM(WS-EDIT) " " PL-HAS-SKY " "
          FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE PL-MIN-Y TO WS-EDIT
+     MOVE PL-HEIGHT TO WS-EDIT2
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     .
+
+ LEVELS-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-LEVEL-COUNT TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     PERFORM VARYING WS-COUNT FROM 1 BY 1 UNTIL WS-COUNT > PL-LEVEL-COUNT
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(PL-LEVEL(WS-COUNT))
+             DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
      .
  END PROGRAM CONTRACT-WIRE-CLIENT.
 

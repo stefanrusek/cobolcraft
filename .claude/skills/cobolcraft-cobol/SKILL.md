@@ -217,6 +217,10 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   (`acc_us15_stop`), or uses a `.expect` file (`test_sv_main`). EXTERNAL `SVSTATE` fields that tests
   may read before `SV-START` are `BINARY-LONG`, never `PIC 9` (all-zero bytes are not numeric
   `DISPLAY` data).
+- **Client dimension change** (US12-client): Login keeps the dimension names (`PL-LEVEL-COUNT`,
+  `PL-LEVEL`); Respawn empties the replica (`WORLD-CLEAR`), and a row taken by another chunk before
+  the next frame drops its meshes in `WORLD-ROW-NEW`. No fixture holds a Subroutine chunk: client
+  tests build one with the proto encoders (`TEST-SUB-CHUNK` in `acc_us12_dimension_change.cob`).
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time

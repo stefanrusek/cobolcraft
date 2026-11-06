@@ -123,6 +123,8 @@
        10 PL-SPAWN-Y         BINARY-LONG.
        10 PL-SPAWN-Z         BINARY-LONG.
        10 PL-VIEW-DISTANCE   BINARY-LONG.
+       10 PL-LEVEL-COUNT     BINARY-LONG.    *> Login's dimension names: every dimension the server has
+       10 PL-LEVEL           PIC X(64) OCCURS 8 TIMES.
        10 PL-DIM-NAME        PIC X(64).
        10 PL-DIM-TYPE        BINARY-LONG.
        10 PL-MIN-Y           BINARY-LONG.

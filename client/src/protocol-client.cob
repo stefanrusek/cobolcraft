@@ -1127,7 +1127,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-LOGIN-READ.
-*> USING CLIENT-STATE, packet (play Login, 05a 0x32): the player's entity id, view distance, the
+*> USING CLIENT-STATE, packet (play Login, 05a 0x32): the player's entity id, the dimension names
+*> (every dimension the server has, the first CL-MAX-LEVELS kept), view distance, the
 *> dimension and its type's height range and sky light (from the dimension_type registry), the game
 *> mode (health 30 until Set Health); the dimension is entered (DIMENSION-ENTER) and the entity
 *> replica and player list emptied.
@@ -1148,8 +1149,14 @@
      CALL "PB-GET-INT" USING PB-BUFFER PL-ENTITY-ID
      CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     MOVE 0 TO PL-LEVEL-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE SPACES TO WS-NAME
          CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-LENGTH
+         IF PL-LEVEL-COUNT < CL-MAX-LEVELS
+             ADD 1 TO PL-LEVEL-COUNT
+             MOVE WS-NAME TO PL-LEVEL(PL-LEVEL-COUNT)
+         END-IF
      END-PERFORM
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
      CALL "PB-GET-VARINT" USING PB-BUFFER PL-VIEW-DISTANCE
@@ -1172,8 +1179,10 @@
  PROGRAM-ID. PLAY-RESPAWN-READ.
 *> USING CLIENT-STATE, packet (Respawn, 05b 0x54: CommonPlayerSpawnInfo, data to keep): the
 *> dimension, its type and the game mode; the dimension is entered (a respawn after death and
-*> travel alike) and the entities seen are forgotten (the server adds them again; the player list
-*> stays).
+*> travel alike: the old dimension's replica and meshes are dropped, the new type's height range
+*> and sky light taken) and the entities seen are forgotten (the server adds them again; the
+*> player list stays). Inventory, health and food are kept until the server says otherwise
+*> (standin-content §15.5: travel keeps them).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-CAP                 BINARY-LONG VALUE 64.

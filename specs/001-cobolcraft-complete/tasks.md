@@ -1323,12 +1323,12 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US12. **Independent Test**: `make gate-client`.
 
-- [ ] T947 [P] [US12-client] Write `contract_wire_client.cob` cases: Respawn for every extra dimension decodes with its dimension type; Login `play-s2c-32-login-all-dimensions.hex` decodes every dimension name
-- [ ] T948 [P] [US12-client] Write acceptance test `client/tests/acc_us12_dimension_change.cob`: case "acceptance US12-1 client half: Respawn into another dimension drops the old replica and its meshes, adopts the new dimension type's height range, light and sky, and keeps inventory, health, food and mode on screen"
-- [ ] T949 [US12-client] Implement Respawn into another dimension (new dimension type, keep inventory, health, food, mode) in `client/src/protocol-client.cob`
-- [ ] T950 [US12-client] Implement dropping the old dimension's replica and meshes in `client/src/world-replica.cob`
-- [ ] T951 [US12-client] Extend the client implementation tests to 100 % coverage of the US12 changes
-- [ ] T952 Gate: run `make gate-client` and record the command and its real output
+- [X] T947 [P] [US12-client] Write `contract_wire_client.cob` cases: Respawn for every extra dimension decodes with its dimension type; Login `play-s2c-32-login-all-dimensions.hex` decodes every dimension name
+- [X] T948 [P] [US12-client] Write acceptance test `client/tests/acc_us12_dimension_change.cob`: case "acceptance US12-1 client half: Respawn into another dimension drops the old replica and its meshes, adopts the new dimension type's height range, light and sky, and keeps inventory, health, food and mode on screen"
+- [X] T949 [US12-client] Implement Respawn into another dimension (new dimension type, keep inventory, health, food, mode) in `client/src/protocol-client.cob`
+- [X] T950 [US12-client] Implement dropping the old dimension's replica and meshes in `client/src/world-replica.cob`
+- [X] T951 [US12-client] Extend the client implementation tests to 100 % coverage of the US12 changes
+- [X] T952 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 43: US14-client — commands from the chat line
 
