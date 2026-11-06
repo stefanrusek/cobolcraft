@@ -203,7 +203,7 @@
          END-IF
      END-IF
 *>   The target (world screen only) and, in play, the block controls (which abort a break once the
-*>   world is left) and the hotbar (world and inventory screens).
+*>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen).
      MOVE 0 TO TG-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
@@ -212,6 +212,9 @@
          CALL "CONTROLS-INPUT" USING CLIENT-STATE
          IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-INVENTORY
              CALL "CONTROLS-HOTBAR" USING CLIENT-STATE
+         END-IF
+         IF SM-SCREEN = SCR-WORLD
+             CALL "CONTROLS-THROW" USING CLIENT-STATE
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).

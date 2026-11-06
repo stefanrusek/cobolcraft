@@ -76,6 +76,8 @@
  78 MESH-SLOT-ICONS         VALUE 65001.
  78 MESH-SLOT-UI-TOP        VALUE 65002.
  78 MESH-SLOT-HIGHLIGHT     VALUE 65003.
+*> The ground items of the frame (one mesh of item-icon billboards, eye-relative, texture 0).
+ 78 MESH-SLOT-GROUND-ITEMS  VALUE 65004.
 
 *> Face directions (08 §5.4 names, block model axes of 08 §5.4.1: +x east, +y up, +z south).
  78 DIR-NONE                VALUE 0.
@@ -103,6 +105,7 @@
  78 CL-MAX-ENTITIES         VALUE 256.
  78 CL-MAX-PLAYER-INFO      VALUE 64.
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
+ 78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.

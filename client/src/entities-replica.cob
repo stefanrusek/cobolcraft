@@ -9,6 +9,13 @@
 *> CobolCraft sends) keeps each profile's UUID and name (properties skipped); other action sets
 *> are ignored. Player Info Remove forgets the profiles. ENTITY-FIND looks an id up, ENTITY-NAME
 *> gives the player-list name of an entity's UUID, ENTITIES-CLEAR empties both.
+*> Ground items (US5; standin-content §3, §9; 09 §3.3; 05b 0x65, 0x67, 0x7F): Add Entity keeps the
+*> initial motion and starts with an empty stack; Set Entity Data keeps the stack of entry index 0
+*> with serializer 7 (ITEM_STACK, the loose_item's only metadata) and skips the other entries it can
+*> read (a serializer proto does not know ends the list); Set Entity Motion keeps the motion
+*> (the server moves the item with Teleport Entity each tick it moves, so the client only stores
+*> it); Take Item Entity takes the amount from the collected item's stack and frees the row once
+*> nothing is left (a partial pickup leaves the item, standin §9.3).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITIES-CLEAR.
@@ -68,7 +75,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-PACKET.
 *> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (1, 54, 55, 57, 70, 71,
-*> 78, 85 or 128).
+*> 78, 85, 101, 103, 127 or 128).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -110,6 +117,9 @@
  01 WS-TEXT-LENGTH         BINARY-LONG.
  01 WS-MAX-NAME            BINARY-LONG VALUE 16.
  01 WS-MAX-TEXT            BINARY-LONG VALUE 32767.
+ 01 WS-COLLECTOR           BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -151,6 +161,43 @@
                  MOVE WS-YAW TO EN-YAW(WS-ROW)
                  MOVE WS-PITCH TO EN-PITCH(WS-ROW)
                  MOVE WS-HEAD TO EN-HEAD-YAW(WS-ROW)
+                 MOVE WS-VX TO EN-VX(WS-ROW)
+                 MOVE WS-VY TO EN-VY(WS-ROW)
+                 MOVE WS-VZ TO EN-VZ(WS-ROW)
+                 MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW)
+             END-IF
+         WHEN 101
+*>           Set Entity Data: entries until the 0xFF terminator.
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+             CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+             MOVE 0 TO MD-MD-INDEX
+             PERFORM UNTIL MD-MD-INDEX = PB-MD-END OR PB-ERROR = 1
+                 CALL "PB-GET-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
+                     MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
+                     MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
+                 END-IF
+             END-PERFORM
+         WHEN 103
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+             CALL "PB-GET-LPVEC3" USING PB-BUFFER WS-VX WS-VY WS-VZ
+             CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+             IF WS-ROW > 0
+                 MOVE WS-VX TO EN-VX(WS-ROW)
+                 MOVE WS-VY TO EN-VY(WS-ROW)
+                 MOVE WS-VZ TO EN-VZ(WS-ROW)
+             END-IF
+         WHEN 127
+*>           Take Item Entity: collected, collector, amount.
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-COLLECTOR
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-AMOUNT
+             CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+             IF WS-ROW > 0
+                 SUBTRACT WS-AMOUNT FROM EN-STACK-COUNT(WS-ROW)
+             END-IF
+             IF WS-ROW > 0 AND EN-STACK-COUNT(WS-ROW) <= 0
+                 MOVE 0 TO EN-USED(WS-ROW)
              END-IF
          WHEN 54
          WHEN 55

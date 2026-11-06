@@ -11,6 +11,15 @@
 *> the stand-in texture size onto the image's rectangle in the atlas (08 §10.11). Brightness: the
 *> face's direction factor (top 1.0, front and back 0.8, left and right 0.6, bottom 0.5, as block
 *> faces) times max(sky light x daylight, block light) / 15 of the entity's cell, at least 0.1.
+*> GROUND-ITEMS-MESH builds the frame's ground-item mesh (standin-content §3.3), eye-relative: every
+*> loose_item of the replica holding a stack is its item's icon (IT-SPRITE, the block and item
+*> atlas, texture 0; an item id outside the registry shows the missing texture) on a 0.3 x 0.3 quad,
+*> bottom edge at the entity's y, centred on it horizontally, in the vertical plane across the
+*> camera's horizontal look direction (yaw Y looks along (-sin Y, 0, cos Y); the camera's right is
+*> (-cos Y, 0, -sin Y)), so it faces the camera. Corners top-left (left of the camera), top-right,
+*> bottom-right, bottom-left, with the icon's top-left texel at the top-left corner; brightness
+*> max(sky light x daylight, block light) / 15 of the entity's cell, at least 0.1; alpha 1 (the
+*> icon's own alpha shows through the translucent pipeline).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-ATLAS-BUILD.
@@ -250,3 +259,94 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITY-BOX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GROUND-ITEMS-MESH.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): RL-GI-VERTEX and RL-GI-COUNT for this frame.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-RX                  FLOAT-LONG.
+ 01 WS-RZ                  FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-U16                 FLOAT-SHORT.
+ 01 WS-V16                 FLOAT-SHORT.
+ 01 WS-CORNERS.
+    05 WS-C OCCURS 4 TIMES.
+       10 WS-C-X             FLOAT-SHORT.
+       10 WS-C-Y             FLOAT-SHORT.
+       10 WS-C-Z             FLOAT-SHORT.
+       10 WS-C-U             FLOAT-SHORT.
+       10 WS-C-V             FLOAT-SHORT.
+*> The six vertices of the quad: corners 1, 2, 3, 1, 3, 4.
+ 01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
+ 01 WS-ORDER REDEFINES WS-ORDER-DATA.
+    05 WS-ORD              PIC 9 OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
+     MOVE 0 TO RL-GI-COUNT
+     COMPUTE WS-RX = - FUNCTION COS(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-RZ = - FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND EN-TYPE(WS-R) = ET-LOOSE-ITEM AND EN-STACK-COUNT(WS-R) > 0
+                 AND RL-GI-COUNT + 6 <= CL-MAX-GI-VERTICES
+             MOVE 1 TO WS-SPRITE
+             IF EN-STACK-ITEM(WS-R) >= 0 AND EN-STACK-ITEM(WS-R) < CL-ITEM-COUNT
+                 MOVE IT-SPRITE(EN-STACK-ITEM(WS-R) + 1) TO WS-SPRITE
+             END-IF
+             COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-R))
+             COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(WS-R))
+             COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-R))
+             CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
+             COMPUTE WS-LIGHT = FUNCTION MAX(FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15,
+                 0.1)
+*>           Corner k: left (-0.15 along the right) for 1 and 4, right (+0.15) for 2 and 3; top
+*>           (y + 0.3) for 1 and 2, bottom for 3 and 4.
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 MOVE -0.15 TO WS-SIDE
+                 MOVE 0 TO WS-U16
+                 IF WS-K = 2 OR WS-K = 3
+                     MOVE 0.15 TO WS-SIDE
+                     MOVE 16 TO WS-U16
+                 END-IF
+                 COMPUTE WS-C-X(WS-K) = EN-X(WS-R) - L-EYE(1) + WS-SIDE * WS-RX
+                 COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2) + 0.3
+                 MOVE 0 TO WS-V16
+                 IF WS-K >= 3
+                     COMPUTE WS-C-Y(WS-K) = EN-Y(WS-R) - L-EYE(2)
+                     MOVE 16 TO WS-V16
+                 END-IF
+                 COMPUTE WS-C-Z(WS-K) = EN-Z(WS-R) - L-EYE(3) + WS-SIDE * WS-RZ
+                 CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16 WS-V16 WS-C-U(WS-K)
+                     WS-C-V(WS-K)
+             END-PERFORM
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+                 MOVE WS-ORD(WS-I) TO WS-N
+                 ADD 1 TO RL-GI-COUNT
+                 MOVE WS-C-X(WS-N) TO RL-GI-X(RL-GI-COUNT)
+                 MOVE WS-C-Y(WS-N) TO RL-GI-Y(RL-GI-COUNT)
+                 MOVE WS-C-Z(WS-N) TO RL-GI-Z(RL-GI-COUNT)
+                 MOVE WS-C-U(WS-N) TO RL-GI-U(RL-GI-COUNT)
+                 MOVE WS-C-V(WS-N) TO RL-GI-V(RL-GI-COUNT)
+                 MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GROUND-ITEMS-MESH.

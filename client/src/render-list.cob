@@ -6,11 +6,12 @@
 *> (y down, depth 0 to 1, near 0.05, far 512). Each section mesh is drawn with projection x view x
 *> its offset from the eye (camera-relative, so float positions stay small): every opaque mesh,
 *> then the entity figures (texture 1, built eye-relative by ENTITIES-MESH), then the translucent
-*> meshes back to front by section centre, then the target highlight (an outline around the
-*> targeted block, eye-relative, translucent on texture 2), then the UI mesh (texture 2) with an
-*> orthographic window-pixel matrix, the item icons over it (texture 0) and the UI drawn over the
-*> icons (the slot counts, texture 2), with the same matrix. Meshes changed since the last frame,
-*> the entity, highlight, icon and UI meshes are listed as uploads (the frame-built ones while they
+*> meshes back to front by section centre, then the ground items (item-icon billboards built
+*> eye-relative by GROUND-ITEMS-MESH, translucent on texture 0), then the target highlight (an
+*> outline around the targeted block, eye-relative, translucent on texture 2), then the UI mesh
+*> (texture 2) with an orthographic window-pixel matrix, the item icons over it (texture 0) and the
+*> UI drawn over the icons (the slot counts, texture 2), with the same matrix. Meshes changed since
+*> the last frame, the entity, ground-item, highlight, icon and UI meshes are listed as uploads (the frame-built ones while they
 *> have vertices, and once more when they no longer have, which frees them); the slots of a
 *> forgotten chunk's row are listed once with no vertices, which frees them (shim-abi §9).
 
@@ -221,6 +222,17 @@
          MOVE WS-TSEC(WS-I) TO WS-S
          CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-TABLE WS-EYE-TABLE WS-R WS-S
      END-PERFORM
+*>   The ground items (item-icon billboards, eye-relative, texture 0), after the translucent
+*>   sections.
+     MOVE 0 TO RL-GI-COUNT
+     IF WS-WORLD = 1
+         CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-IF
+     MOVE MESH-SLOT-GROUND-ITEMS TO WS-SLOT
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
+     MOVE CC-TEX-BLOCKS TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GI-VERTEX(1) RL-GI-COUNT RL-GI-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The target highlight (world screen), after the translucent sections.
      MOVE 0 TO RL-HL-COUNT
      IF SM-SCREEN = SCR-WORLD AND TG-HIT = 1

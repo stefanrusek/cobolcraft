@@ -1230,14 +1230,14 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: ground items drawn as item icons; the throw controls. **Independent Test**: `make gate-client`.
 
-- [ ] T889 [P] [US5-client] Write `contract_wire_client.cob` cases: Player Action drop item and drop all items encode equal to their fixtures; Add Entity (loose_item), Set Entity Data (item), Set Entity Motion and Take Item Entity decode
-- [ ] T890 [P] [US5-client] Write acceptance test `client/tests/acc_us5_ground_item.cob`: case "acceptance US5-1 client half: a loose_item is drawn as its item's icon billboard at its position and follows its motion until it rests; Take Item Entity and Remove Entities remove it"
-- [ ] T891 [US5-client] Implement ground items (add, metadata, motion, take, remove) in `client/src/entities-replica.cob`
-- [ ] T892 [US5-client] Implement ground-item billboard drawing in `client/src/entities-render.cob`
-- [ ] T893 [P] [US5-client] Write acceptance test `client/tests/acc_us5_throw.cob`: case "acceptance US5-3 client half: Q sends drop item and Ctrl+Q sends drop all items for the held slot"
-- [ ] T894 [US5-client] Implement the throw controls in `client/src/controls.cob`
-- [ ] T895 [US5-client] Extend the client implementation tests to 100 % coverage of the US5 changes
-- [ ] T896 Gate: run `make gate-client` and record the command and its real output
+- [X] T889 [P] [US5-client] Write `contract_wire_client.cob` cases: Player Action drop item and drop all items encode equal to their fixtures; Add Entity (loose_item), Set Entity Data (item), Set Entity Motion and Take Item Entity decode
+- [X] T890 [P] [US5-client] Write acceptance test `client/tests/acc_us5_ground_item.cob`: case "acceptance US5-1 client half: a loose_item is drawn as its item's icon billboard at its position and follows its motion until it rests; Take Item Entity and Remove Entities remove it"
+- [X] T891 [US5-client] Implement ground items (add, metadata, motion, take, remove) in `client/src/entities-replica.cob`
+- [X] T892 [US5-client] Implement ground-item billboard drawing in `client/src/entities-render.cob`
+- [X] T893 [P] [US5-client] Write acceptance test `client/tests/acc_us5_throw.cob`: case "acceptance US5-3 client half: Q sends drop item and Ctrl+Q sends drop all items for the held slot"
+- [X] T894 [US5-client] Implement the throw controls in `client/src/controls.cob`
+- [X] T895 [US5-client] Extend the client implementation tests to 100 % coverage of the US5 changes
+- [X] T896 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 36: US6-client — chat
 

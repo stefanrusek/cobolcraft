@@ -14,6 +14,10 @@
 *>     (the one behind, once the server has broken this one) is started without a new press.
 *>   CONTROLS-HOTBAR (world and inventory screens): keys 1 to 9 hold hotbar slot 0 to 8, the wheel
 *>   moves the held slot (up: the previous slot, down: the next, wrapping); a change is sent.
+*>   CONTROLS-THROW (world screen; US5-3; standin-content §9.1; 09 §3.3 Player Action actions 5
+*>   and 4): Q pressed sends drop item (one item of the held slot), with Control held (the modifier
+*>   bits of the frame's last key event) drop all items (the whole stack); nothing while the held
+*>   slot is empty. The server throws and sends the inventory change.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-INPUT.
@@ -220,3 +224,36 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-HOTBAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-THROW.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-MODS                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF IN-KEY-PRESSED(CC-KEY-Q + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+         IF WS-READY = 0
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             MOVE 1 TO WS-READY
+         END-IF
+         COMPUTE WS-MODS = IN-MODS / CC-MOD-CONTROL
+         MOVE 5 TO WS-ACTION
+         IF FUNCTION MOD(WS-MODS, 2) = 1
+             MOVE 4 TO WS-ACTION
+         END-IF
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
+         CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-THROW.

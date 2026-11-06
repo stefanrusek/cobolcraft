@@ -3,7 +3,7 @@
 *> status, login, configuration and the play join equals what the client's builders (or its
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
-*> breaking, placing, the hotbar and the inventory (US4).
+*> breaking, placing, the hotbar and the inventory (US4), and of ground items and throwing (US5).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -75,6 +75,12 @@
     05 WS-REGISTRY         PIC X(40) OCCURS 18 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
+ 01 WS-GI-ID               BINARY-LONG.
+ 01 WS-GI-COUNT            BINARY-LONG.
+ 01 WS-GI-ITEM             BINARY-LONG.
+ 01 WS-GI-X                FLOAT-LONG VALUE 1.5.
+ 01 WS-GI-Y                FLOAT-LONG VALUE 54.0.
+ 01 WS-GI-Z                FLOAT-LONG VALUE 1.5.
  01 WS-BX                  BINARY-LONG VALUE 4.
  01 WS-BY                  BINARY-LONG VALUE 53.
  01 WS-BZ                  BINARY-LONG VALUE 8.
@@ -719,6 +725,58 @@
          & "greystone in slot 0" TO TL-CASE
      MOVE 6302 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = PL-HELD * 10000 + PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, ground items and throwing (US5) ----
+     MOVE 5 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
+     MOVE "contract wire client Player Action 5 drop item equals "
+         & "play-c2s-29-player-action-drop-item.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-29-player-action-drop-item.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 4 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-DROP" USING PB-BUFFER WS-ACTION
+     MOVE "contract wire client Player Action 4 drop all items equals "
+         & "play-c2s-29-player-action-drop-all-items.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-29-player-action-drop-all-items.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-01-add-entity-loose-item.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-65-set-entity-data-item.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Add Entity (loose_item) and Set Entity Data (item) decode: entity "
+         & "10 of type 1 at (5.5, 53.25, 8.5), motion 0, holding 1 turf (item 4)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 10 TO WS-GI-ID
+     CALL "TEST-ENTITY" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
+     CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
+     MOVE "10 1 5.5000/53.2500/8.5000 0.0/0.0/0.0 0 10 1x4 0.0000/0.0000/0.0000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 11 TO WS-GI-ID
+     MOVE 1 TO WS-GI-COUNT
+     MOVE 2 TO WS-GI-ITEM
+     CALL "TEST-ADD-ITEM" USING CLIENT-STATE WS-CONN WS-GI-ID WS-GI-X WS-GI-Y WS-GI-Z
+         WS-GI-COUNT WS-GI-ITEM
+     MOVE "contract/fixtures/wire/play-s2c-67-set-entity-motion.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Set Entity Motion decodes: entity 11 moves (0.25, 0.12, 0) blocks "
+         & "per tick (within the LpVec3 step)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
+     MOVE "11 1x2 0.2500/0.1200/0.0000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-7f-take-item-entity.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Take Item Entity decodes: entity 1 takes the 1 item of entity 10, "
+         & "which leaves the replica; entity 11 stays" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 10 TO WS-GI-ID
+     CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
+     MOVE 11 TO WS-GI-ID
+     CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
+     MOVE "10 none 11 1x2 0.2500/0.1200/0.0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM CONTRACT-WIRE-CLIENT.

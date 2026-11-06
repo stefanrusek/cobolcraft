@@ -312,6 +312,26 @@
  END PROGRAM CLP-PLAYER-ACTION.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-DROP.
+*> USING PB-BUFFER, action (5 drop item, 4 drop all items): the throw's Player Action (05c 0x29;
+*> 09 §3.3 fixes location (0, 0, 0), face 0 and sequence 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO-Y              BINARY-LONG VALUE 0.
+ 01 WS-ZERO-Z              BINARY-LONG VALUE 0.
+ 01 WS-FACE                BINARY-LONG VALUE 0.
+ 01 WS-SEQUENCE            BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION.
+     CALL "CLP-PLAYER-ACTION" USING PB-BUFFER L-ACTION WS-ZERO WS-ZERO-Y WS-ZERO-Z WS-FACE
+         WS-SEQUENCE
+     GOBACK.
+ END PROGRAM CLP-DROP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-USE-ITEM-ON.
 *> USING PB-BUFFER, block x, y, z, face (05c Direction), cursor x, y, z (FLOAT-SHORT, the hit point
 *> within the block), sequence: Use Item On (05c 0x42) with the main hand, not inside the block,
@@ -689,7 +709,8 @@
              CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CX
              CALL "PB-GET-VARINT" USING L-PACKET PL-CENTER-CZ
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 1 OR L-ID = 54 OR L-ID = 55 OR L-ID = 57
-                 OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 128)
+                 OR L-ID = 70 OR L-ID = 71 OR L-ID = 78 OR L-ID = 85 OR L-ID = 101
+                 OR L-ID = 103 OR L-ID = 127 OR L-ID = 128)
              CALL "ENTITY-PACKET" USING CLIENT-STATE L-PACKET L-ID
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES

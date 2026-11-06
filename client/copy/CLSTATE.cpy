@@ -216,6 +216,13 @@
           15 EN-PITCH        FLOAT-SHORT.
           15 EN-HEAD-YAW     FLOAT-SHORT.
           15 EN-ON-GROUND    PIC 9.
+*>        A loose_item (US5): its motion (Add Entity, Set Entity Motion; blocks per tick) and the
+*>        stack of its Set Entity Data (count 0 until then).
+          15 EN-VX           FLOAT-LONG.
+          15 EN-VY           FLOAT-LONG.
+          15 EN-VZ           FLOAT-LONG.
+          15 EN-STACK-COUNT  BINARY-LONG.
+          15 EN-STACK-ITEM   BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -351,6 +358,17 @@
           15 RL-HL-V         FLOAT-SHORT.
           15 RL-HL-B         FLOAT-SHORT.
           15 RL-HL-A         FLOAT-SHORT.
+*>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
+       10 RL-GI-COUNT        BINARY-LONG.
+       10 RL-GI-UPLOADED     BINARY-LONG.
+       10 RL-GI-VERTEX OCCURS 1536 TIMES.
+          15 RL-GI-X         FLOAT-SHORT.
+          15 RL-GI-Y         FLOAT-SHORT.
+          15 RL-GI-Z         FLOAT-SHORT.
+          15 RL-GI-U         FLOAT-SHORT.
+          15 RL-GI-V         FLOAT-SHORT.
+          15 RL-GI-B         FLOAT-SHORT.
+          15 RL-GI-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
