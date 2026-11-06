@@ -2,9 +2,9 @@
 *> §2, research R14): an invalid value ends the server with "FATAL configuration: <key>: <problem>"
 *> and exit status 1. Sub-cases: a URL that is not http(s) or is longer than CS-PACK-URL, a hash
 *> that is not 40 hex digits, a pack id that is not UUID text, a non-boolean pack-required, a
-*> prompt longer than CS-PACK-PROMPT, and a pack-url without a pack-id (the Resource Pack Push needs
-*> a pack UUID, 09 §3.1). Each runs in a forked child (SVT-FORK) whose exit status and standard
-*> error are checked; the last sub-case (an invalid UUID) runs in the program itself, for the
+*> prompt longer than CS-PACK-PROMPT; a pack-url without a pack-id is not fatal (the pack id is
+*> derived from pack-url and pack-sha1, operator-surface §2). Each runs in a forked child
+*> (SVT-FORK) whose exit status and standard error are checked; the last sub-case (an invalid UUID) runs in the program itself, for the
 *> runner's .expect mechanism (test_config_bad_pack.expect).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CONFIG-BAD-PACK.
@@ -71,8 +71,8 @@
     05 FILLER PIC X(64) VALUE "pack-prompt".
     05 FILLER PIC X(64) VALUE "longer than 256 characters".
     05 FILLER PIC X(64) VALUE "pack-url=http://packs.example.test/p.zip".
-    05 FILLER PIC X(64) VALUE "pack-id".
-    05 FILLER PIC X(64) VALUE "required when pack-url is set".
+    05 FILLER PIC X(64) VALUE SPACES.
+    05 FILLER PIC X(64) VALUE SPACES.
  01 WS-CASE-TABLE REDEFINES WS-CASES.
     05 WS-CASE OCCURS 16 TIMES.
        10 WS-LINE          PIC X(64).
@@ -117,11 +117,16 @@
              WHEN "pack-prompt="
                  MOVE "test config bad pack a pack-prompt of 257 characters is fatal" TO TL-CASE
              WHEN "pack-url=http://packs.example.test/p.zip"
-                 MOVE "test config bad pack a pack-url without a pack-id is fatal" TO TL-CASE
+                 MOVE "test config bad pack a pack-url without a pack-id is not fatal (the id is "
+                     & "derived)" TO TL-CASE
          END-EVALUATE
          MOVE "T" TO TL-MODE
-         STRING "exit 1 FATAL configuration: " FUNCTION TRIM(WS-KEY(WS-I)) ": "
-             FUNCTION TRIM(WS-PROBLEM(WS-I)) DELIMITED BY SIZE INTO TL-EXPECTED
+         IF WS-KEY(WS-I) = SPACES
+             MOVE "exit 0" TO TL-EXPECTED
+         ELSE
+             STRING "exit 1 FATAL configuration: " FUNCTION TRIM(WS-KEY(WS-I)) ": "
+                 FUNCTION TRIM(WS-PROBLEM(WS-I)) DELIMITED BY SIZE INTO TL-EXPECTED
+         END-IF
          MOVE WS-EXIT TO WS-EDIT
          STRING "exit " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-STDERR) DELIMITED BY SIZE
              INTO TL-OBSERVED

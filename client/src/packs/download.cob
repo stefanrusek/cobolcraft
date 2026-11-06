@@ -1,7 +1,8 @@
 *> Server-pushed packs (US18-6 to US18-8; 08 §9.1 to §9.8; 03 Resource Pack Push, Pop, Response):
 *> PACK-PUSH handles a Resource Pack Push of the game connection: a URL that is not http or https
 *> gets 5 invalid URL at once; the hash is used when it is 40 hex digits; a pack with the same id
-*> replaces the earlier one; then the decision: once the Player answered for this connection, or
+*> replaces the earlier one; a new pack beyond the 8 pending ones (CL-MAX-SERVER-PACKS) is dropped
+*> with one console line naming its id (FR-012 non-fatal); then the decision: once the Player answered for this connection, or
 *> when the joined server's PackPolicy is always (1) or never (2), the pack is accepted (3
 *> accepted) or declined (1 declined) at once; otherwise the prompt screen asks (pack-prompt.cob,
 *> PACK-PROMPT-ANSWER keeps the answer in servers.dat). A required pack declined is only answered
@@ -75,6 +76,8 @@
  COPY CLCONST.
  COPY PROTO.
  01 WS-UUID                PIC X(16).
+ 01 WS-UUID-HEX            PIC X(32).
+ 01 WS-EDIT                PIC Z(3)9.
  01 WS-URL                 PIC X(32767).
  01 WS-URL-MAX             BINARY-LONG VALUE 32767.
  01 WS-URL-CAP             BINARY-LONG VALUE 32767.
@@ -146,6 +149,12 @@
          CALL "PACK-ROW-REMOVE" USING CLIENT-STATE WS-ROW
      END-IF
      IF RP-COUNT >= CL-MAX-SERVER-PACKS
+*>       No room: dropped with one console line (FR-012 non-fatal).
+         MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-UUID)) TO WS-UUID-HEX
+         MOVE CL-MAX-SERVER-PACKS TO WS-EDIT
+         DISPLAY "ERROR server pack: " WS-UUID-HEX(1:8) "-" WS-UUID-HEX(9:4) "-"
+             WS-UUID-HEX(13:4) "-" WS-UUID-HEX(17:4) "-" WS-UUID-HEX(21:12) " dropped, "
+             FUNCTION TRIM(WS-EDIT) " packs already pending"
          GOBACK
      END-IF
      ADD 1 TO RP-COUNT RP-PUSHES

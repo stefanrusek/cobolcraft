@@ -94,6 +94,8 @@
  01 WS-BYTE                BINARY-LONG.
  01 WS-FACTOR              BINARY-LONG.
  01 WS-FRAME-LENGTH        BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  01 WS-DATA-LENGTH         BINARY-LONG.
  01 WS-MALFORMED           BINARY-LONG.
  01 WS-MODE                BINARY-LONG VALUE CC-ZLIB.
@@ -147,6 +149,7 @@
              CALL "PB-RESET" USING PK-BUFFER
              CALL "PB-APPEND-BYTES" USING PK-BUFFER B-STREAM(PB-POS + WS-K + 1:WS-FRAME-LENGTH)
                  WS-FRAME-LENGTH
+             COMPUTE WS-START = PB-POS + WS-K
              COMPUTE PB-POS = PB-POS + WS-K + WS-FRAME-LENGTH
              MOVE 0 TO WS-MALFORMED WS-DATA-LENGTH
              IF L-THRESHOLD >= 0
@@ -174,6 +177,14 @@
                          CALL "PB-APPEND-BYTES" USING PK-BUFFER B-OUT WS-DATA-LENGTH
                      END-IF
                      FREE WS-OUT-ADDR
+                 WHEN L-THRESHOLD >= 0
+*>                   Data length 0: the packet buffer keeps only id + body (proto-api §2, §5).
+                     COMPUTE WS-N = WS-FRAME-LENGTH - PK-POS
+                     COMPUTE WS-START = WS-START + PK-POS + 1
+                     CALL "PB-RESET" USING PK-BUFFER
+                     IF WS-N > 0
+                         CALL "PB-APPEND-BYTES" USING PK-BUFFER B-STREAM(WS-START:WS-N) WS-N
+                     END-IF
              END-EVALUATE
              CALL "PB-GET-VARINT" USING PK-BUFFER L-PACKET-ID
              IF WS-MALFORMED = 1 OR PK-ERROR = 1

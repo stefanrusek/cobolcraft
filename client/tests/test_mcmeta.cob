@@ -3,7 +3,8 @@
 *> range in every form of 08 §2.1 to §2.3 with the compatibility against the running 97.1
 *> (compatible, too old, too new, unknown after the fallback reading), overlays (directory names,
 *> activity, the formats-required rule, the broken-entry skip), filter patterns and the find
-*> matching of MCMETA-FILTERS, languages, features, and invalid metadata (malformed JSON, no pack
+*> matching of MCMETA-FILTERS, languages, features, the first 8 of a longer overlays or filter
+*> section with MCMETA-REPORT's console line, and invalid metadata (malformed JSON, no pack
 *> section, no description, broken optional sections) reported with a problem text.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-MCMETA.
@@ -24,6 +25,10 @@
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-HIDDEN              BINARY-LONG.
+ 01 WS-CAPTURE             PIC X(256) VALUE "build/client-test-mcmeta-console.txt".
+ 01 WS-CAPTURED            PIC X(4096).
+ 01 WS-PACK-ID             PIC X(80) VALUE "file/many".
+ 01 WS-PACK-ID-LENGTH      BINARY-LONG VALUE 9.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
@@ -385,9 +390,13 @@
          & '{"directory":"a8","min_format":97,"max_format":97},'
          & '{"directory":"a9","min_format":97,"max_format":97}]}}' TO WS-JSON
      PERFORM DO-PARSE
-     MOVE "mcmeta overlays: more than 8 entries is invalid" TO TL-CASE
-     MOVE "valid=0 overlays=0 error=too many overlays" TO TL-EXPECTED
+     MOVE "mcmeta overlays: with 9 entries the pack loads using the first 8" TO TL-CASE
+     MOVE "valid=1 overlays=8 a1:1 a2:1 a3:1 a4:1 a5:1 a6:1 a7:1 a8:1" TO TL-EXPECTED
      PERFORM SUM-OVERLAYS
+     MOVE "mcmeta overlays: with 9 entries one console line names the pack (FR-012 non-fatal)"
+         TO TL-CASE
+     MOVE "ERROR pack: file/many: more than 8 overlays, the first 8 are used" TO TL-EXPECTED
+     PERFORM REPORT-CAPTURED
      MOVE '{"pack":{"description":"d","min_format":97,"max_format":97},"overlays":{"entries":['
          & '{"directory":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",'
          & '"min_format":97,"max_format":97}]}}' TO WS-JSON
@@ -486,9 +495,21 @@
      MOVE '{"pack":{"description":"d","min_format":97,"max_format":97},"filter":{"block":['
          & '{},{},{},{},{},{},{},{},{}]}}' TO WS-JSON
      PERFORM DO-PARSE
-     MOVE "mcmeta filter: more than 8 patterns is invalid" TO TL-CASE
-     MOVE "valid=0 filters=0 error=too many filter patterns" TO TL-EXPECTED
+     MOVE "mcmeta filter: with 9 patterns the pack loads using the first 8" TO TL-CASE
+     MOVE "valid=1 filters=8 ns=* path=* | ns=* path=* | ns=* path=* | ns=* path=* | ns=* path=* "
+         & "| ns=* path=* | ns=* path=* | ns=* path=*" TO TL-EXPECTED
      PERFORM SUM-FILTERS
+     MOVE "mcmeta filter: with 9 patterns one console line names the pack (FR-012 non-fatal)"
+         TO TL-CASE
+     MOVE "ERROR pack: file/many: more than 8 filter patterns, the first 8 are used"
+         TO TL-EXPECTED
+     PERFORM REPORT-CAPTURED
+     MOVE '{"pack":{"description":"d","min_format":97,"max_format":97},"filter":{"block":['
+         & '{}]}}' TO WS-JSON
+     PERFORM DO-PARSE
+     MOVE "mcmeta filter: a pack within the limits prints no console line" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     PERFORM REPORT-CAPTURED
 
 *>   Languages (08 §2.5).
      MOVE '{"pack":{"description":"d","min_format":97,"max_format":97},"language":{'
@@ -600,6 +621,15 @@
      MOVE "valid=0 features=0 error=too many features" TO TL-EXPECTED
      PERFORM SUM-FEATURES
      STOP RUN.
+
+*> MCMETA-REPORT of the last parse for the pack "file/many", its console output captured.
+ REPORT-CAPTURED.
+     CALL "TEST-CAPTURE-START" USING WS-CAPTURE
+     CALL "MCMETA-REPORT" USING WS-PACK-ID WS-PACK-ID-LENGTH PACK-META
+     CALL "TEST-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     MOVE "T" TO TL-MODE
+     MOVE WS-CAPTURED TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  DO-PARSE.
      MOVE 4000 TO WS-JSON-LENGTH
@@ -740,3 +770,4 @@
      PERFORM ADD-ERROR
      PERFORM ASSERT-SUM.
  END PROGRAM TEST-MCMETA.
+ COPY CLTEST.

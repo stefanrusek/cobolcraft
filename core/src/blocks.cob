@@ -20,8 +20,8 @@
 *> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
 *>
-*> Player Action (BLOCK-ACTION; actions 0, 2, 3; the others belong to later phases and are not
-*> answered here). Creative: START breaks at once (no item appears, FR-007). Survival: START records
+*> Player Action (BLOCK-ACTION; actions 0, 2, 3; play.cob sends 4 and 5 to GI-THROW and 6 to
+*> HUNGER-CANCEL, and BLOCK-ACTION ignores the others). Creative: START breaks at once (no item appears, FR-007). Survival: START records
 *> the break (position, start tick, the number of ticks it takes: the §1.1 hand break time, divided
 *> by 4 when the held item is the tool of the block's class (§2), at 50 ms per tick rounded down);
 *> STOP breaks the block when the same position has been broken for at least that many ticks, and

@@ -38,6 +38,8 @@
  01 WS-BAD-HASH            PIC X(40) VALUE ALL "0".
  01 WS-REQUIRED            BINARY-LONG VALUE 0.
  01 WS-PROMPT              PIC X(64).
+ 01 WS-CAPTURE             PIC X(256) VALUE "build/client-test-server-pack-console.txt".
+ 01 WS-CAPTURED            PIC X(4096).
  01 WS-PROMPT-LENGTH       BINARY-LONG.
  01 WS-NO-PROMPT           PIC X(64) VALUE SPACES.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -277,11 +279,21 @@
 *>   at most 8 wait; Decline answers each one.
      MOVE 0 TO RP-ENTRY-JOINED RP-DECISION
      MOVE WS-NO-HASH TO WS-HASH
+*>   The ninth push finds no room: dropped with one console line naming its id (FR-012).
+     CALL "TEST-CAPTURE-START" USING WS-CAPTURE
      PERFORM VARYING WS-LAST FROM 12 BY 1 UNTIL WS-LAST > 20
          PERFORM MAKE-URL
          CALL "TEST-PUSH" USING CLIENT-STATE WS-CONN WS-PLAY-PUSH WS-LAST WS-URL WS-URL-LENGTH
              WS-HASH WS-REQUIRED WS-NO-PROMPT WS-ZERO
      END-PERFORM
+     CALL "TEST-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     MOVE "acceptance US18-6 Given 8 server packs waiting When a ninth is pushed Then it is "
+         & "dropped with one console line naming its id" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "ERROR server pack: 00112233-4455-6677-8899-aabbccddee14 dropped, 8 packs already "
+         & "pending" TO TL-EXPECTED
+     MOVE WS-CAPTURED TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "acceptance US18-6 pushes while the prompt is open share it (at most 8 wait; no server "

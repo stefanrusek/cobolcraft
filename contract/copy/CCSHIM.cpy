@@ -28,6 +28,10 @@
  78 CC-TEX-UI               VALUE 2.   *> font and UI atlas
  78 CC-TEX-ENVIRONMENT      VALUE 3.   *> environment atlas
 
+*> Texture wrap modes of cc_vk_texture_wrap (§9).
+ 78 CC-WRAP-CLAMP           VALUE 0.   *> clamp-to-edge (the default)
+ 78 CC-WRAP-REPEAT          VALUE 1.   *> repeat
+
 *> Vertex buffer slots of cc_vk_mesh (§9).
  78 CC-MESH-SLOT-MIN        VALUE 1.
  78 CC-MESH-SLOT-MAX        VALUE 65535.

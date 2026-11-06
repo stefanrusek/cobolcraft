@@ -36,6 +36,7 @@ SIGNATURE(cc_win_capture_cursor, void (*)(int32_t));
 SIGNATURE(cc_win_close, void (*)(void));
 SIGNATURE(cc_vk_init, int32_t (*)(void));
 SIGNATURE(cc_vk_texture, int32_t (*)(int32_t, int32_t, int32_t, const uint8_t *));
+SIGNATURE(cc_vk_texture_wrap, int32_t (*)(int32_t, int32_t));
 SIGNATURE(cc_vk_mesh, int32_t (*)(int32_t, const float *, int32_t));
 SIGNATURE(cc_vk_frame_begin, int32_t (*)(const float *));
 SIGNATURE(cc_vk_draw, void (*)(int32_t, int32_t, int32_t, const float *));
@@ -79,6 +80,8 @@ int main(void) {
     tl_int("contract ccshim CC_TEX_ENTITIES", 1, CC_TEX_ENTITIES);
     tl_int("contract ccshim CC_TEX_UI", 2, CC_TEX_UI);
     tl_int("contract ccshim CC_TEX_ENVIRONMENT", 3, CC_TEX_ENVIRONMENT);
+    tl_int("contract ccshim CC_WRAP_CLAMP", 0, CC_WRAP_CLAMP);
+    tl_int("contract ccshim CC_WRAP_REPEAT", 1, CC_WRAP_REPEAT);
     tl_int("contract ccshim CC_EV_KEY_DOWN", 1, CC_EV_KEY_DOWN);
     tl_int("contract ccshim CC_EV_CLOSE_REQUEST", 9, CC_EV_CLOSE_REQUEST);
     tl_int("contract ccshim CC_MESH_SLOT_MAX", 65535, CC_MESH_SLOT_MAX);

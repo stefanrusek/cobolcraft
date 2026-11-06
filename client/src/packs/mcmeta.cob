@@ -15,7 +15,9 @@
 *> regular expressions; Java rejects a pattern that does not compile) and, since we cannot
 *> evaluate it, a pattern outside the subset REGEX-FIND supports (client/src/regex.cob): the
 *> player sees the problem rather than a pack whose filter silently does nothing. Tables hold 8
-*> entries (CLMCMETA.cpy); a section with more is reported as invalid too.
+*> entries (CLMCMETA.cpy, a CobolCraft limit, not one of 08): an overlays or filter section with
+*> more uses its first 8 and sets PM-WARNING, which MCMETA-REPORT prints as one console line
+*> naming the pack (FR-012 non-fatal); a language or features section with more is invalid.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MCMETA-PARSE.
@@ -452,6 +454,7 @@
  01 WS-PROBLEM             PIC X(128).
  01 WS-LOWEST              BINARY-LONG.
  01 WS-WITHOUT-RANGE       BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
@@ -466,10 +469,11 @@
      MOVE 2147483647 TO WS-LOWEST
      MOVE 0 TO WS-WITHOUT-RANGE
      IF WS-COUNT > PM-MAX-ENTRIES
-         MOVE "too many overlays" TO L-PROBLEM
-         MOVE 0 TO WS-EL
+         MOVE "more than 8 overlays, the first 8 are used" TO PM-WARNING
      END-IF
-     PERFORM UNTIL WS-EL = 0 OR WS-BAD = 1
+     MOVE 0 TO WS-SEEN
+     PERFORM UNTIL WS-EL = 0 OR WS-BAD = 1 OR WS-SEEN = PM-MAX-ENTRIES
+         ADD 1 TO WS-SEEN
          MOVE 0 TO WS-LENGTH WS-PRESENT
          IF JN-TYPE(WS-EL) = JT-OBJECT
              MOVE "directory" TO WS-KEY
@@ -594,10 +598,9 @@
          WHEN WS-OK = 0
              MOVE "invalid filter section" TO L-PROBLEM
          WHEN WS-COUNT > PM-MAX-ENTRIES
-             MOVE "too many filter patterns" TO L-PROBLEM
-             MOVE 0 TO WS-EL
+             MOVE "more than 8 filter patterns, the first 8 are used" TO PM-WARNING
      END-EVALUATE
-     PERFORM UNTIL WS-EL = 0 OR L-PROBLEM NOT = SPACES
+     PERFORM UNTIL WS-EL = 0 OR L-PROBLEM NOT = SPACES OR PM-FILTER-COUNT = PM-MAX-ENTRIES
          IF JN-TYPE(WS-EL) = JT-OBJECT
              ADD 1 TO PM-FILTER-COUNT
              MOVE PM-FILTER-COUNT TO WS-N
@@ -820,3 +823,19 @@
      END-PERFORM
      GOBACK.
  END PROGRAM MCMETA-FILTERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MCMETA-REPORT.
+*> USING pack id (PIC X(80)), its length, PACK-META: a pack.mcmeta that was read with a limit
+*> (PM-WARNING) gets one console line "ERROR pack: <pack id>: <warning>" (FR-012 non-fatal).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ID                   PIC X(80).
+ 01 L-ID-LENGTH            BINARY-LONG.
+ COPY CLMCMETA.
+ PROCEDURE DIVISION USING L-ID L-ID-LENGTH PACK-META.
+     IF PM-WARNING NOT = SPACES
+         DISPLAY "ERROR pack: " L-ID(1:L-ID-LENGTH) ": " FUNCTION TRIM(PM-WARNING)
+     END-IF
+     GOBACK.
+ END PROGRAM MCMETA-REPORT.

@@ -446,6 +446,9 @@ static void vulkan(void) {
         tl_int(name, 0, cc_vk_texture(id, 4, 4, rgba));
     }
     tl_int("contract shim cc_vk_texture replacing a texture returns 0", 0, cc_vk_texture(CC_TEX_BLOCKS, 4, 4, rgba));
+    tl_int("contract shim cc_vk_texture_wrap repeat returns 0", 0, cc_vk_texture_wrap(CC_TEX_ENVIRONMENT, CC_WRAP_REPEAT));
+    tl_int("contract shim cc_vk_texture after repeat wrap returns 0", 0, cc_vk_texture(CC_TEX_ENVIRONMENT, 4, 4, rgba));
+    tl_int("contract shim cc_vk_texture_wrap clamp returns 0", 0, cc_vk_texture_wrap(CC_TEX_ENVIRONMENT, CC_WRAP_CLAMP));
 
     tl_int("contract shim cc_vk_mesh create returns 0", 0, cc_vk_mesh(1, QUAD, 6));
     tl_int("contract shim cc_vk_mesh replace returns 0", 0, cc_vk_mesh(1, QUAD, 3));

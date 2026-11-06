@@ -45,13 +45,14 @@
      PERFORM 7 TIMES
          CALL "DO-TYPE-CODE" USING CLIENT-STATE WS-CODE WS-COUNT
      END-PERFORM
-     MOVE "test chat a line longer than 255 bytes shows its last 255 bytes from a character "
-         & "boundary (the e-acute's second byte is skipped)" TO TL-CASE
+     MOVE "test chat a line longer than 256 bytes shows its last 256 bytes from a character "
+         & "boundary (the e-acute and 254 letters a)" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
-     MOVE ALL "a" TO TL-EXPECTED(1:254)
+     MOVE FUNCTION HEX-TO-CHAR("c3a9") TO TL-EXPECTED(1:2)
+     MOVE ALL "a" TO TL-EXPECTED(3:254)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 98 TO WS-CODE
@@ -119,6 +120,30 @@
      MOVE SPACES TO TL-EXPECTED
      STRING FUNCTION TRIM(WS-E) "|        |" DELIMITED BY SIZE INTO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   86 euro signs (3 bytes each, 258 bytes): the last 256 bytes start inside the first one, so the
+*>   input line shows the last 85 from the next character boundary.
+     MOVE CC-KEY-T TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE 8364 TO WS-CODE
+     MOVE 32 TO WS-COUNT
+     CALL "DO-TYPE-CODE" USING CLIENT-STATE WS-CODE WS-COUNT
+     CALL "DO-TYPE-CODE" USING CLIENT-STATE WS-CODE WS-COUNT
+     MOVE 22 TO WS-COUNT
+     CALL "DO-TYPE-CODE" USING CLIENT-STATE WS-CODE WS-COUNT
+     MOVE "test chat a 258-byte line whose last 256 bytes start inside a character shows the "
+         & "255 bytes from the next character boundary" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 84
+         MOVE FUNCTION HEX-TO-CHAR("e282ac") TO TL-EXPECTED(WS-I * 3 + 1:3)
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE 1 TO WS-COUNT
 
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 105
          MOVE WS-I TO WS-E

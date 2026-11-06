@@ -3,7 +3,9 @@
 A block-building game client and game server written in COBOL, with a thin C layer for the
 operating system, windowing, Vulkan graphics, networking and compression.
 
-This document is for Contributors: how to build both programs and run their tests from a terminal.
+This document is for Contributors (how to build both programs and run their tests from a terminal),
+Server operators (running the server) and Players (running the client). For a full end-to-end walk
+through every feature, see [`specs/001-cobolcraft-complete/quickstart.md`](specs/001-cobolcraft-complete/quickstart.md).
 
 ## Supported platform
 
@@ -55,6 +57,148 @@ make bootstrap
 make
 make test
 ```
+
+## Running the server
+
+`build/bin/cobolcraft-server` takes no arguments and works in the current directory: it reads
+`./cobolcraft-server.conf` and keeps its world in `./world/`, so start it from the directory the
+server should live in:
+
+```sh
+mkdir -p ~/cobolcraft-server && cd ~/cobolcraft-server
+<repo>/build/bin/cobolcraft-server
+```
+
+The first start creates the world and prints `Created new world in ./world`; once it listens it prints
+`Ready: accepting players on 0.0.0.0:25565`. Every console line starts with the time, `[HH:MM:SS] `.
+
+### Configuration
+
+When `cobolcraft-server.conf` is missing the server writes it with the defaults, each key after a one-line
+comment. One `key=value` per line; `#` starts a comment; a missing key takes its default.
+
+| Key | Values | Default |
+|---|---|---|
+| `port` | 1 to 65535 | `25565` |
+| `default-game-mode` | `creative`, `survival` | `creative` |
+| `description` | text, up to 256 characters (shown in the server list) | `A CobolCraft server` |
+| `view-distance` | 2 to 32 chunks | `8` |
+| `player-combat` | `true`, `false` | `true` |
+| `hostile-mobs` | `true`, `false` | `true` |
+| `weather-changes` | `true`, `false` | `true` |
+| `extra-dimensions` | `true`, `false` | `true` |
+| `allow-list` | `true`, `false`: enforcement for a newly created world (an existing world keeps its own setting, changed with the `guestlist` command) | `false` |
+| `pack-url` | `http://…` or `https://…` address of a resource pack zip to offer, or empty for no offer | empty |
+| `pack-sha1` | the zip's SHA-1, 40 hex digits (`shasum -a 1 pack.zip`), or empty | empty |
+| `pack-id` | a UUID, or empty: then it is derived from `pack-url` and `pack-sha1`, so a new pack version gets a new id | empty |
+| `pack-required` | `true`, `false`: players who decline the pack are disconnected | `false` |
+| `pack-prompt` | message shown with the offer, or empty | empty |
+
+An unknown key or an invalid value stops the server at once with
+`FATAL configuration: <key>: <problem>` and exit status 1.
+
+### Console
+
+The console shows players joining (`<name> joined`), leaving (`<name> left`), changing dimension, dying and
+chatting. Every line typed at the console is a command, without a leading `/`, run with operator
+permission; its answer is printed. `howto` lists all commands; a few common ones:
+
+| Command | Effect |
+|---|---|
+| `roster` | Lists the players online |
+| `promote <player>` / `demote <player>` | Grants or revokes operator status |
+| `mode <player> survival` / `mode <player> creative` | Sets a player's game mode |
+| `eject <player> [<reason>]`, `bar <player>`, `unbar <player>` | Disconnects or bans a player |
+| `guestlist on` / `off` / `add <player>` / `remove <player>` / `show` | The allow-list |
+| `skies <dimension> clear\|drizzle\|hailstorm [<seconds>]` | Sets the weather |
+| `persist` | Saves the world now |
+| `shutdown` | Saves, disconnects every player with the stopping message, prints `Stopped` and exits 0 |
+
+The complete command set, with who may use each command, is §16 of
+[`docs/design/standin-content.md`](docs/design/standin-content.md). End of input on the console
+does not stop the server; use `shutdown`.
+
+## Running the client
+
+```sh
+build/bin/cobolcraft --name <name> [--gamedir <path>]
+```
+
+`--name` is required: your player name, 1 to 16 letters, digits or `_`. `--gamedir` is where the client
+keeps its data (default `~/.cobolcraft`, created if absent):
+
+| Path | Contents |
+|---|---|
+| `servers.dat` | the server list |
+| `options.dat` | the enabled resource packs, in order |
+| `resourcepacks/` | your resource packs: `<name>.zip` files and `<name>/` folders |
+| `saves/<folder>/` | single-player worlds |
+| `downloads/` | resource packs downloaded from servers (a cache) |
+
+From the title screen, **Multiplayer** opens the server list: add a server by its address (`host` or
+`host:port`, default port 25565); each entry shows its description and players online; select one and
+join. **Single-player** lists your worlds. **Resource Packs** opens the pack screen.
+
+### Controls
+
+| Control | Binding |
+|---|---|
+| Move forward / back / left / right | W / S / A / D |
+| Sprint | Hold Left Control while moving forward |
+| Jump; fly up (creative, flying) | Space |
+| Fly on or off (creative) | Space twice within 0.3 s |
+| Descend (flying) | Left Shift |
+| Look | Mouse |
+| Break / attack | Left mouse button (hold to break in survival) |
+| Place / use / toggle a glowtube / eat (hold) | Right mouse button |
+| Hotbar slot | 1 to 9, scroll wheel |
+| Inventory | E |
+| Crafting | C |
+| Throw one / throw the stack | Q / Ctrl+Q |
+| Chat / command | T / `/` (opens chat with `/` typed) |
+| Pause menu | Escape |
+
+While chat is closed, the 10 most recent messages show for 10 seconds each; with chat open, the scroll
+wheel moves back through the last 100.
+
+### Single-player and opening to others
+
+**Single-player** on the title screen lists your worlds: create one (name, survival or creative), open
+it, or delete it after confirming. A single-player world is the same game as a server with the default
+settings, and you may use every command in it. Escape pauses it; **Save and Leave the World** saves it and
+returns to the title screen, and it opens again as you left it.
+
+**Open to Others** on the pause menu lets other players join your world over the network: choose the
+guest game mode and whether guests may use operator commands, then **Open the World**. The screen shows
+`Others can join at <address>:<port>`; another player adds that address to their server list and joins.
+Pausing no longer pauses the world while it is open. When you leave the world it is saved and every guest
+is disconnected.
+
+A single-player world folder (`saves/<folder>`) can be copied to a server directory as `world/` and served,
+and a server's `world/` can be copied into `saves/` and played: the format is the same.
+
+### Resource packs
+
+Put a pack in `<gamedir>/resourcepacks/`, as a folder or a `.zip`, with a `pack.mcmeta` at its top
+(format 97). The **Resource Packs** screen lists the packs; enable them and order them there (the top
+pack wins). A pack replaces textures, models, fonts and texts by path; anything it leaves out comes from
+the packs below it and the built-in pack. A pack that cannot be used is listed with the reason.
+
+When a server offers a pack you are asked whether to use it (or the server list entry's choice applies);
+an accepted pack is downloaded, checked against its hash, cached in `downloads/`, and applied above your
+own packs until you disconnect. Declining a required pack disconnects you with the server's message.
+
+## Failures
+
+Both programs report problems on their console:
+
+- `ERROR <what>: <detail>`: something failed but the program carries on (for example a lost connection,
+  after which the client returns to the server list, or a resource pack the client could not fully use).
+- `FATAL <what>: <detail>`: the program cannot go on and exits with status 1 (for example
+  `FATAL arguments: …` for a missing or invalid `--name`, or `FATAL configuration: …` for a bad server
+  configuration value).
+
+Nothing else is retried or recovered.
 
 ## Reading test output
 

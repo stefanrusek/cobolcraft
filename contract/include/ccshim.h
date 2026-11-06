@@ -57,11 +57,15 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_PIPE_TRANSLUCENT 1 /* depth test, no write, alpha blend */
 #define CC_PIPE_UI          2 /* no depth, alpha blend */
 
-/* Texture ids (§9). RGBA8, sampled NEAREST, clamp-to-edge. */
+/* Texture ids (§9). RGBA8, sampled NEAREST, clamp-to-edge unless cc_vk_texture_wrap set repeat. */
 #define CC_TEX_BLOCKS      0 /* block and item atlas */
 #define CC_TEX_ENTITIES    1 /* entity atlas */
 #define CC_TEX_UI          2 /* font and UI atlas */
 #define CC_TEX_ENVIRONMENT 3 /* environment atlas */
+
+/* Texture wrap modes of cc_vk_texture_wrap (§9). */
+#define CC_WRAP_CLAMP  0 /* clamp-to-edge (the default) */
+#define CC_WRAP_REPEAT 1 /* repeat */
 
 /* Vertex buffer slots of cc_vk_mesh (§9). */
 #define CC_MESH_SLOT_MIN 1
@@ -125,6 +129,7 @@ void cc_win_close(void);
 /* §9 cc_vk: Vulkan submission. Matrices are column-major. */
 int32_t cc_vk_init(void);
 int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba);
+int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap);
 int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count);
 int32_t cc_vk_frame_begin(const float clear_rgba[4]);
 void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16]);

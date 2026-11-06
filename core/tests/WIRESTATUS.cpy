@@ -35,8 +35,6 @@
  01 WS-EDIT2               PIC -(9)9.
  01 WS-EDIT3               PIC -(9)9.
  01 WS-THRESHOLD-256       BINARY-LONG VALUE 256.
- 01 WS-REST                BINARY-LONG.
- 01 B-BYTES                PIC X(1073741824) BASED.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
@@ -238,17 +236,10 @@
      CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-PATH TESTLIB-ASSERT
      MOVE 256 TO WS-THRESHOLD
      PERFORM NEXT-PACKET
-*>   In the compressed layout PB-FRAME-DECODE keeps the Data length VarInt (0 for a short packet)
-*>   in front of the id; the packet is rebuilt as id + body for the comparison.
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     SET ADDRESS OF B-BYTES TO PK-ADDR
-     COMPUTE WS-REST = PK-LENGTH - PK-POS
-     CALL "PB-APPEND-BYTES" USING PB-BUFFER B-BYTES(PK-POS + 1:1) WS-REST
      MOVE "contract wire server network connection: then login-s2c-02-login-finished in the "
          & "compressed frame layout" TO TL-CASE
      MOVE "login-s2c-02-login-finished.hex" TO WS-PATH(24:)
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-PATH TESTLIB-ASSERT
      MOVE "login-c2s-03-login-acknowledged.hex" TO WS-PATH(24:)
      PERFORM FEED
      MOVE "contract wire server network connection: compressed login-c2s-03-login-acknowledged "

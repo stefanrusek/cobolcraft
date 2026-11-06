@@ -6,10 +6,11 @@
 *> registry fixture), the camera at (8.5, 56.6, 8.5): block column (8, 8), block y 56, so the
 *> columns x and z 0 to 16 count and the 16 x 16 of them in the loaded chunk get quads from
 *> top + 1 to 72. Time 6001 (day, u 1000): the drizzle scroll is (6001 x 0.25) mod 1 = 0.25, the
-*> hail scroll (6001 x 0.5) mod 1 = 0.5. The environment atlas (texture 3) holds drizzle.png 25
-*> times from row 0 and hailstorm.png 25 times from row 400 (16 x 800), so a quad's v is (kind top
-*> + (scroll + block y - y0) x 16) / 800: at its top-left corner (y = 72) scroll + n, at its
-*> bottom-right corner (y = y0) the scroll; u runs from 0 to 1 across the quad.
+*> hail scroll (6001 x 0.5) mod 1 = 0.5. The environment atlas (texture 3, repeat wrapping, shim-abi
+*> §9) holds drizzle.png at columns 0 to 15 and hailstorm.png at columns 16 to 31 (32 x 16), so a
+*> quad's v is scroll + block y - y0 images: at its top-left corner (y = 72) scroll + n, at its
+*> bottom-right corner (y = y0) the scroll; u runs across the kind's half (0 to 0.5 drizzle, 0.5
+*> to 1 hail).
 *> Sky (day colour #8FB8E6): drizzle (c x 60 + t x 40) div 100 with t #7A7F88 gives
 *> (134, 161, 192) and daylight u' = 850; hailstorm (c x 45 + t x 55) div 100 with t #5A5E68 gives
 *> (113, 134, 160) and u' = 700.
@@ -93,8 +94,8 @@
          & "daylight 850, and each loaded column gets two crossed quads on texture 3 with "
          & "drizzle.png scrolled by 0.25: column (3, 5) from y 54 to 72" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "sky 134/161/192 u 850 z-quad 0.0000/0.3650 1.0000/0.0050 1.00/1.00 x-quad "
-         & "0.0000/0.3650 1.0000/0.0050 1.00/1.00 3072 1 0" TO TL-EXPECTED
+     MOVE "sky 134/161/192 u 850 z-quad 0.0000/18.2500 0.5000/0.2500 1.00/1.00 x-quad "
+         & "0.0000/18.2500 0.5000/0.2500 1.00/1.00 3072 1 0" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -117,7 +118,7 @@
      MOVE "acceptance US11-1 client half: given drizzle when the biome at a column's top + 1 has "
          & "no precipitation (ash_flats) then that column gets no quads: the 16 columns of the "
          & "cell x 0 to 3, z 4 to 7 are left out, column (7, 5) beside it is drawn" TO TL-CASE
-     MOVE "z-quad none near none beside 0.0000/0.3450 1.0000/0.0050 1.00/1.00 2880 1 0"
+     MOVE "z-quad none near none beside 0.0000/17.2500 0.5000/0.2500 1.00/1.00 2880 1 0"
          TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -137,9 +138,9 @@
      CALL "TEST-WEATHER-QUAD" USING CLIENT-STATE WS-SPEC WS-TEXT
      CALL "TEST-WEATHER-DRAWS" USING CLIENT-STATE WS-TEXT
      MOVE "acceptance US11-1 client half: given a hailstorm at day then the sky is (113, 134, "
-         & "160), daylight 700, and the quads use hailstorm.png (atlas rows 400 on) scrolled by "
+         & "160), daylight 700, and the quads use hailstorm.png (atlas columns 16 on) scrolled by "
          & "0.5: column (10, 2) from y 56 to 72" TO TL-CASE
-     MOVE "sky 113/134/160 u 700 z-quad 0.0000/0.8300 1.0000/0.5100 1.00/1.00 2880 1 0"
+     MOVE "sky 113/134/160 u 700 z-quad 0.5000/16.5000 1.0000/0.5000 1.00/1.00 2880 1 0"
          TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -153,7 +154,7 @@
      MOVE "acceptance US11-1 client half: given a hailstorm when Time advances by one tick then "
          & "the texture scrolls down by 0.5 block (v at the top 16.0 instead of 16.5 images)"
          TO TL-CASE
-     MOVE "z-quad 0.0000/0.8200 1.0000/0.5000 1.00/1.00" TO TL-EXPECTED
+     MOVE "z-quad 0.5000/16.0000 1.0000/0.0000 1.00/1.00" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -245,24 +246,24 @@
      END-PERFORM
 
      MOVE 0 TO WS-ROWS
-     IF XA-W = 16 AND XA-H = 800
+     IF XA-W = 32 AND XA-H = 16
          SET ADDRESS OF B-ATLAS TO XA-ADDR
-         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 399
-             COMPUTE WS-K = FUNCTION MOD(WS-R, 16) * 64 + 1
-             IF B-ATLAS(WS-R * 64 + 1:64) = WS-IMAGE(1)(WS-K:64)
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 15
+             COMPUTE WS-K = WS-R * 64 + 1
+             IF B-ATLAS(WS-R * 128 + 1:64) = WS-IMAGE(1)(WS-K:64)
                  ADD 1 TO WS-ROWS
              END-IF
-             IF B-ATLAS((400 + WS-R) * 64 + 1:64) = WS-IMAGE(2)(WS-K:64)
+             IF B-ATLAS(WS-R * 128 + 65:64) = WS-IMAGE(2)(WS-K:64)
                  ADD 1 TO WS-ROWS
              END-IF
          END-PERFORM
      END-IF
      MOVE WS-ROWS TO WS-EDIT
      MOVE AT-UPLOAD(4) TO WS-EDIT2
-     MOVE "acceptance US11-1 client half: the environment atlas (texture 3) is 16 x 800 and holds "
-         & "the active pack's drizzle.png 25 times from row 0 and hailstorm.png 25 times from row "
-         & "400, marked for upload" TO TL-CASE
-     MOVE "rows 800 upload 1" TO TL-EXPECTED
+     MOVE "acceptance US11-1 client half: the environment atlas (texture 3) is 32 x 16 and holds "
+         & "the active pack's drizzle.png at columns 0 to 15 and hailstorm.png at columns 16 to "
+         & "31, once each (repeat wrapping), marked for upload" TO TL-CASE
+     MOVE "rows 32 upload 1" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING "rows " FUNCTION TRIM(WS-EDIT) " upload " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
          INTO TL-OBSERVED
@@ -311,9 +312,9 @@
  01 WS-POS                 BINARY-LONG.
  01 WS-WORD                PIC X(12).
  01 WS-EU1                 PIC 9.9999.
- 01 WS-EV1                 PIC 9.9999.
+ 01 WS-EV1                 PIC Z9.9999.
  01 WS-EU2                 PIC 9.9999.
- 01 WS-EV2                 PIC 9.9999.
+ 01 WS-EV2                 PIC Z9.9999.
  01 WS-EB                  PIC 9.99.
  01 WS-EA                  PIC 9.99.
  LINKAGE SECTION.
@@ -345,8 +346,9 @@
          END-IF
      END-PERFORM
      IF WS-FOUND = 1
-         STRING FUNCTION TRIM(L-TEXT) " " FUNCTION TRIM(WS-LABEL) " " WS-EU1 "/" WS-EV1 " "
-             WS-EU2 "/" WS-EV2 " " WS-EB "/" WS-EA DELIMITED BY SIZE INTO L-TEXT
+         STRING FUNCTION TRIM(L-TEXT) " " FUNCTION TRIM(WS-LABEL) " " WS-EU1 "/"
+             FUNCTION TRIM(WS-EV1) " " WS-EU2 "/" FUNCTION TRIM(WS-EV2) " " WS-EB "/" WS-EA
+             DELIMITED BY SIZE INTO L-TEXT
      ELSE
          STRING FUNCTION TRIM(L-TEXT) " " FUNCTION TRIM(WS-LABEL) " none" DELIMITED BY SIZE
              INTO L-TEXT

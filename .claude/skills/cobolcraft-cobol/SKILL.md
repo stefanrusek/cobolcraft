@@ -85,9 +85,6 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Free-format literals cannot use `-` continuation lines**: build long text with `MOVE "a" & "b"`.
 - **`BINARY-SHORT`/`BINARY-LONG` are native byte order** (little-endian on arm64), unlike `PIC 9 BINARY`:
   read a network-order field of a C struct (`sin_port`) from `PIC X(2)` bytes.
-- **`PB-FRAME-DECODE` with a threshold ≥ 0** leaves the Data length 0 of an uncompressed packet in
-  front of the id in the packet buffer (`PK-POS` is past both); strip it before comparing the packet
-  with a fixture (server `SVT-NEXT-PACKET` does).
 - **Reading NBT compounds**: `MOVE SPACES TO WN` before each `NBT-READ-COMPOUND-NEXT` and compare
   the whole field (`WN = "Pos"`); the wrapper name `""` of a mixed list (07 §1.1) leaves it spaces.
   Never reference-modify a name by a length that can be 0.
@@ -138,7 +135,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - Core test helpers live in `core/tests/CORETEST.cpy` (COPY it after the test program):
   `TEST-JOIN` (a memory connection that logs in, configures and loads), `TEST-MOVE`,
   `TEST-JOIN-NETWORK` (the same join over a network connection: Set Compression, then compressed
-  frames, so drain it with threshold 256 and drop the leading Data length 0 of small packets),
+  frames, so drain it with threshold 256),
   `TEST-ACCEPT-TELEPORT`, `TEST-DRAIN-IDS` (packet ids as `<id>x<n>` runs), `TEST-USE-ON`,
   `TEST-ACTION`, `TEST-HELD`, `TEST-CLICK`, `TEST-TICKS`, `TEST-DRAIN-BLOCKS` (block, ack, slot and
   light packets with their fields; Set Time left out), `TEST-BLOCK-AT`, `TEST-CHAT` (feeds unsigned
@@ -265,9 +262,9 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   one test program: `SVT-FORK` (child's stderr to `./stderr.txt`; the child ends with `STOP RUN`)
   and `SVT-WAIT` (exit status and stderr text); the last fatal sub-case runs in the program itself
   for its `.expect`.
-- **Client text widgets**: `WIDGET-ADD` keeps 256 bytes of text, and `UI-RENDER` appends the caret
-  `_` to a focused field (state 1), so a focused field's text must be at most 255 bytes (the chat
-  line shows its last 255 bytes from a character boundary). At most 32 text events count per frame
+- **Client text widgets**: `WIDGET-ADD` keeps 256 bytes of text; `UI-RENDER` draws the caret `_` of
+  a focused field (state 1) as its own quad after the text, so a field may hold all 256 bytes (the
+  chat line shows its last 256 bytes from a character boundary). At most 32 text events count per frame
   (`IN-TEXT`): tests type long lines over several frames.
 - **Client entity drawing** (`client/src/entities-render.cob`): the entity atlas (texture 1) stacks
   operator (66 x 28), sodgrazer (80 x 23) and abend (72 x 12) from the top, 80 x 63 with the
@@ -300,7 +297,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program; touch the tests
   after changing it): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
   packet into `PROTO-PACKET` on a connection), `TEST-SENT` / `TEST-SENT-IDS` / `TEST-CLEAR-SENT`
-  (what the client queued in `CN-OUT`; strips the uncompressed Data length byte until T1073),
+  (what the client queued in `CN-OUT`, decoded as id + body),
   `TEST-LOOPBACK` (a real loopback connection for a client connection), `TEST-SERVE`,
   `TEST-SERVE-BYTES`, `TEST-SERVER-READ` (the server side of it), `TEST-STEP`, `TEST-EVENTS`,
   `TEST-CLICK` (clicks a widget of the screen model by action through `CL-STEP`), `TEST-TYPE`,
@@ -338,7 +335,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `PL-WEATHER` (`WX-*`); `TEST-GAME-EVENT` (CLTEST.cpy) feeds one. Weather quads need the biome's
   `RG-BIOME-PRECIP` (filled only by `REGISTRY-READ` from the biome registry, so `TEST-PLAY` worlds
   draw none) and the replica biome `RC-BIOME` (CLCELLS.cpy; `TEST-SET-BIOME`). The environment
-  atlas (texture 3) repeats each image 25 times downward because the shim samples clamp-to-edge.
+  atlas (texture 3) holds the two images side by side, as tall as the least common multiple of their
+  heights, and is uploaded with repeat wrapping (`cc_vk_texture_wrap`), so v counts images.
   The built-in pack has 94 files.
 - **Calls with a refmod or an oversized area into a one-byte `PIC X` LINKAGE item of the same
   file** can still fail `-Werror=repository-checks` ("does not conform"); inline the work or pass a

@@ -1,10 +1,10 @@
 *> Drawing the weather (standin-content §14.2, §14.5; docs/protocol/08-resource-packs.md §10.3,
 *> §10.11): ENVIRONMENT-ATLAS-BUILD loads the environment atlas (texture 3): the images
 *> textures/environment/drizzle.png and hailstorm.png, each from the top-most pack that has it, or
-*> the missing-texture stripes at its stand-in size (16 x 16) when no pack has it, stacked in that
-*> order from the top and left-aligned, each repeated CL-WX-REPEAT times downward. The shim samples
-*> clamp-to-edge (shim-abi §9), so the repetition stands in for the repeat wrapping of 08 §10.11: a
-*> quad samples one run of copies without wrapping.
+*> the missing-texture stripes at its stand-in size (16 x 16) when no pack has it, side by side in
+*> that order from the left. The atlas is as tall as the least common multiple of the two heights,
+*> each image repeated down its columns, and is sampled with repeat wrapping (cc_vk_texture_wrap,
+*> shim-abi §9), so a v running over several images wraps seamlessly (08 §10.11).
 *> WEATHER-MESH builds the frame's weather mesh, eye-relative, in drizzle and in a hailstorm (clear
 *> draws nothing): with the camera in block column (cx, cz) at block y cy, every column (x, z) with
 *> |x - cx| <= 8 and |z - cz| <= 8 in a loaded chunk whose biome at (x, top + 1, z) has
@@ -12,8 +12,9 @@
 *> taken at most at the world's last layer) gets two vertical quads 1 block wide, crossing at the
 *> column centre (one in the plane z + 0.5 from x to x + 1, one in the plane x + 0.5 from z to
 *> z + 1), from y0 = max(top + 1, cy - 8) to y1 = cy + 16 (none when y1 <= y0). u runs from 0 to 1
-*> across a quad; v is the block y above y0 plus the downward scroll (Time x fall speed) mod 1, fall
-*> speed 0.25 blocks per tick for drizzle and 0.5 for hail, in images of the kind's run in the atlas.
+*> across a quad over the kind's columns; v is the block y above y0 plus the downward scroll (Time x
+*> fall speed) mod 1, fall speed 0.25 blocks per tick for drizzle and 0.5 for hail, in images of
+*> the kind (beyond the atlas height the sampler wraps).
 *> Corners top-left, top-right, bottom-right, bottom-left; unlit (brightness 1), alpha 1 (the
 *> texture's alpha shows through the translucent pipeline). A dimension without weather has the
 *> biome ash_flats, without precipitation, so nothing is drawn there.
@@ -46,6 +47,9 @@
  01 WS-FROM                BINARY-LONG.
  01 WS-TO                  BINARY-LONG.
  01 WS-ROW-BYTES           BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-REST                BINARY-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -60,12 +64,21 @@
              MOVE 16 TO WS-W WS-H
              CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE(WS-K)
          END-IF
-         MOVE XA-H TO XA-IM-Y(WS-K)
+         MOVE XA-W TO XA-IM-X(WS-K)
          MOVE WS-W TO XA-IM-W(WS-K)
          MOVE WS-H TO XA-IM-H(WS-K)
-         COMPUTE XA-H = XA-H + WS-H * CL-WX-REPEAT
-         MOVE FUNCTION MAX(XA-W, WS-W) TO XA-W
+         ADD WS-W TO XA-W
      END-PERFORM
+*>   The height: the least common multiple of the two image heights (Euclid's algorithm).
+     MOVE XA-IM-H(1) TO WS-A
+     MOVE XA-IM-H(2) TO WS-B
+     PERFORM UNTIL WS-B = 0
+         MOVE FUNCTION MOD(WS-A, WS-B) TO WS-REST
+         MOVE WS-B TO WS-A
+         MOVE WS-REST TO WS-B
+     END-PERFORM
+     DIVIDE XA-IM-H(1) BY WS-A GIVING XA-H
+     MULTIPLY XA-IM-H(2) BY XA-H
      IF XA-ADDR NOT = NULL
          FREE XA-ADDR
      END-IF
@@ -73,11 +86,11 @@
      ALLOCATE WS-BYTES CHARACTERS RETURNING XA-ADDR
      SET ADDRESS OF B-ATLAS TO XA-ADDR
      MOVE LOW-VALUES TO B-ATLAS(1:WS-BYTES)
-*>   Atlas row (its top + r), r from 0 to repeats x height - 1, is image row r mod height.
+*>   Atlas row r of an image's columns is image row r mod its height.
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
          COMPUTE WS-ROW-BYTES = XA-IM-W(WS-K) * 4
-         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= XA-IM-H(WS-K) * CL-WX-REPEAT
-             COMPUTE WS-TO = (XA-IM-Y(WS-K) + WS-R) * XA-W * 4 + 1
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= XA-H
+             COMPUTE WS-TO = (WS-R * XA-W + XA-IM-X(WS-K)) * 4 + 1
              COMPUTE WS-FROM = FUNCTION MOD(WS-R, XA-IM-H(WS-K)) * WS-ROW-BYTES + 1
              MOVE WS-IMAGE(WS-K)(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
          END-PERFORM
@@ -219,9 +232,10 @@
                                      COMPUTE WS-C-Z(WS-I) = WS-Z + WS-T - L-EYE(3)
                                  END-IF
                                  COMPUTE WS-C-Y(WS-I) = WS-Y - L-EYE(2)
-                                 COMPUTE WS-C-U(WS-I) = WS-T * XA-IM-W(WS-K) / XA-W
-                                 COMPUTE WS-C-V(WS-I) = (XA-IM-Y(WS-K)
-                                     + (WS-SCROLL + WS-Y - WS-Y0) * XA-IM-H(WS-K)) / XA-H
+                                 COMPUTE WS-C-U(WS-I) = (XA-IM-X(WS-K) + WS-T * XA-IM-W(WS-K))
+                                     / XA-W
+                                 COMPUTE WS-C-V(WS-I) = (WS-SCROLL + WS-Y - WS-Y0) * XA-IM-H(WS-K)
+                                     / XA-H
                              END-PERFORM
                              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
                                  MOVE WS-ORD(WS-I) TO WS-N

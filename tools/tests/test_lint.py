@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import lint  # noqa: E402
+import lint
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures", "lint")
 

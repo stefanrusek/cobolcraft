@@ -1,7 +1,7 @@
 *> Implementation test of client/src/weather-render.cob (ENVIRONMENT-ATLAS-BUILD, WEATHER-MESH):
 *> with no pack supplying the environment textures the environment atlas holds the missing-texture
-*> stripes at the stand-in size 16 x 16, 25 times for each kind (16 x 800), built again without
-*> leaking the old image. Drizzle over chunk (0, 0) holding one block at (0, 10, 0) and a pillar top
+*> stripes at the stand-in size 16 x 16, once for each kind side by side (32 x 16; the shim
+*> repeats it, shim-abi §9), built again without leaking the old image. Drizzle over chunk (0, 0) holding one block at (0, 10, 0) and a pillar top
 *> at (1, 70, 0), the camera at (0.5, 50.6, 0.5) (column (0, 0), block y 50): a column whose top
 *> lies below cy - 8 gets quads from 42 to 66, an all-void column too, the pillar column (top 70 at
 *> or above cy + 16) none, and the columns of the unloaded chunks around none; a biome id past the
@@ -29,7 +29,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-EDIT                PIC ZZZ9.
- 01 WS-EV                  PIC 9.9999.
+ 01 WS-EV                  PIC 99.9999.
  01 B-ATLAS                PIC X(51200) BASED.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
@@ -38,21 +38,23 @@
      CALL "ENVIRONMENT-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MISSING-TEXTURE" USING WS-W WS-H WS-STRIPES
      MOVE 0 TO WS-ROWS
-     IF XA-W = 16 AND XA-H = 800
+     IF XA-W = 32 AND XA-H = 16
          SET ADDRESS OF B-ATLAS TO XA-ADDR
-         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 799
-             COMPUTE WS-K = FUNCTION MOD(WS-R, 16) * 64 + 1
+*>       Half row r (64 bytes) of the 128-byte atlas rows is row r / 2 of the stripes.
+         PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 31
+             DIVIDE WS-R BY 2 GIVING WS-K
+             COMPUTE WS-K = WS-K * 64 + 1
              IF B-ATLAS(WS-R * 64 + 1:64) = WS-STRIPES(WS-K:64)
                  ADD 1 TO WS-ROWS
              END-IF
          END-PERFORM
      END-IF
      MOVE WS-ROWS TO WS-EDIT
-     MOVE "weather render with no pack supplying the environment textures the 16 x 800 "
-         & "environment atlas holds the 16 x 16 missing texture 50 times (800 rows), marked for "
-         & "upload" TO TL-CASE
+     MOVE "weather render with no pack supplying the environment textures the 32 x 16 "
+         & "environment atlas holds the 16 x 16 missing texture twice side by side (32 half "
+         & "rows), marked for upload" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "rows 800 upload 1" TO TL-EXPECTED
+     MOVE "rows 32 upload 1" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING "rows " FUNCTION TRIM(WS-EDIT) " upload " AT-UPLOAD(4) DELIMITED BY SIZE
          INTO TL-OBSERVED
@@ -89,7 +91,7 @@
      MOVE "weather render drizzle with the camera at block y 50: 80 of the 81 loaded columns get "
          & "quads from y 42 (cy - 8: below their tops' + 1) to 66, 24 images tall; the pillar "
          & "column (top 70, at or above cy + 16) gets none" TO TL-CASE
-     MOVE "960 0.4800 0.4800 none" TO TL-EXPECTED
+     MOVE "960 24.0000 24.0000 none" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 2 TO WS-X WS-Z

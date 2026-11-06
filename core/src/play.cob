@@ -41,11 +41,11 @@
 *> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
 *> A Cookie Response is
-*> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Packets of
-*> the 09 §3 inventory that later phases handle (movement, actions, chat, containers, ...) are
-*> discarded unread, so a CobolCraft client is not dropped while those phases are developed; any
-*> packet id outside the inventory, a malformed packet or one with bytes left over closes the
-*> connection (09 §4, 01 §5: CORE-BAD-PACKET).
+*> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Resource
+*> Pack Response (0x32) is in the 09 §3 inventory but means nothing in play (a pack is offered only
+*> during configuration, config-phase.cob), so it is discarded unread; any other packet id this
+*> module does not decode, a malformed packet or one with bytes left over closes the connection
+*> (09 §4, 01 §5: CORE-BAD-PACKET).
 *>
 *> Entry points:
 *>   PLAY-JOIN USING connection id
@@ -167,8 +167,8 @@
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
-*> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and a later
-*> phase handles it (0x32).
+*> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
+*> discarded unread in play (0x32 Resource Pack Response).
  01 WS-LATER               PIC X(69) VALUE
      "000000000000000000000000000000000000000000000000001000000000000000000".
  LINKAGE SECTION.

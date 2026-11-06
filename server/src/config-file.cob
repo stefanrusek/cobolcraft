@@ -8,8 +8,9 @@
 *> The pack keys (US18-6): pack-url empty or http:// or https:// with an address (up to 1024
 *> characters, CS-PACK-URL); pack-sha1 empty or 40 hex digits (either case); pack-id empty or UUID
 *> text 8-4-4-4-12 hex digits; pack-required a boolean; pack-prompt up to 256 characters. A
-*> non-empty pack-url sets CS-PACK-OFFERED and needs a pack-id (the Resource Pack Push carries the
-*> pack UUID); without one the configuration is fatal ("pack-id: required when pack-url is set").
+*> non-empty pack-url sets CS-PACK-OFFERED; the Resource Pack Push carries a pack UUID, so with an
+*> empty pack-id it is derived from pack-url and pack-sha1 (SV-PACK-ID-DERIVE: a new pack version
+*> gets a new id).
 *> The description limit of 256 is counted in bytes: CS-DESCRIPTION holds 256 bytes of UTF-8.
 
  IDENTIFICATION DIVISION.
@@ -267,7 +268,8 @@
     05 FILLER PIC X(128) VALUE "pack-url=".
     05 FILLER PIC X(128) VALUE "# SHA-1 hash of the pack zip, 40 hex digits, or empty".
     05 FILLER PIC X(128) VALUE "pack-sha1=".
-    05 FILLER PIC X(128) VALUE "# Stable identifier of the pack, a UUID (needed when pack-url is set)".
+    05 FILLER PIC X(128) VALUE "# Stable identifier of the pack, a UUID, or empty to derive one from pack-url"
+        & " and pack-sha1".
     05 FILLER PIC X(128) VALUE "pack-id=".
     05 FILLER PIC X(128) VALUE "# Players who decline the pack are disconnected: true or false".
     05 FILLER PIC X(128) VALUE "pack-required=false".
@@ -311,8 +313,6 @@
  01 WS-STATUS              PIC XX.
  01 WS-KEY                 PIC X(256) VALUE "cobolcraft-server.conf".
  01 WS-PROBLEM             PIC X(64).
- 01 WS-ID-KEY              PIC X(256) VALUE "pack-id".
- 01 WS-ID-PROBLEM          PIC X(64) VALUE "required when pack-url is set".
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-PORT                 BINARY-LONG.
@@ -350,8 +350,58 @@
      IF CS-PACK-URL NOT = SPACES
          MOVE 1 TO CS-PACK-OFFERED
          IF CS-PACK-ID = SPACES
-             CALL "SV-CONFIG-FATAL" USING WS-ID-KEY WS-ID-PROBLEM
+             CALL "SV-PACK-ID-DERIVE" USING CS-PACK-URL CS-PACK-SHA1 CS-PACK-ID
          END-IF
      END-IF
      GOBACK.
  END PROGRAM SV-CONFIG-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SV-PACK-ID-DERIVE.
+*> USING pack-url (PIC X(1024)), pack-sha1 (PIC X(40)), pack id out (PIC X(36), UUID text): the
+*> name-based version 3 UUID of RFC 4122 §4.3 (operator-surface §2) in the URL namespace
+*> 6ba7b811-9dad-11d1-80b4-00c04fd430c8 over the name "<pack-url> <pack-sha1 in lower case>": the
+*> MD5 of namespace bytes and name by a direct OpenSSL call, then byte 7 gets version 3 (high nibble
+*> 0011) and byte 9 the IETF variant (high bits 10); written as lower-case 8-4-4-4-12 hex digits.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DATA                PIC X(1088).
+ 01 WS-DATA-LENGTH         BINARY-DOUBLE UNSIGNED.
+ 01 WS-URL-LENGTH          BINARY-LONG.
+ 01 WS-SHA1-LENGTH         BINARY-LONG.
+ 01 WS-DIGEST              PIC X(64).
+ 01 WS-DIGEST-LENGTH       BINARY-LONG UNSIGNED.
+ 01 WS-ALGORITHM           USAGE POINTER.
+ 01 WS-ENGINE              USAGE POINTER VALUE NULL.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-HEX                 PIC X(32).
+ LINKAGE SECTION.
+ 01 L-URL                  PIC X(1024).
+ 01 L-SHA1                 PIC X(40).
+ 01 L-ID                   PIC X(36).
+ PROCEDURE DIVISION USING L-URL L-SHA1 L-ID.
+     MOVE FUNCTION HEX-TO-CHAR("6ba7b8119dad11d180b400c04fd430c8") TO WS-DATA(1:16)
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-URL TRAILING)) TO WS-URL-LENGTH
+     MOVE L-URL(1:WS-URL-LENGTH) TO WS-DATA(17:WS-URL-LENGTH)
+     MOVE " " TO WS-DATA(17 + WS-URL-LENGTH:1)
+     COMPUTE WS-DATA-LENGTH = 17 + WS-URL-LENGTH
+     IF L-SHA1 NOT = SPACES
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(L-SHA1 TRAILING)) TO WS-SHA1-LENGTH
+         MOVE FUNCTION LOWER-CASE(L-SHA1(1:WS-SHA1-LENGTH))
+             TO WS-DATA(18 + WS-URL-LENGTH:WS-SHA1-LENGTH)
+         ADD WS-SHA1-LENGTH TO WS-DATA-LENGTH
+     END-IF
+     CALL STATIC "EVP_md5" RETURNING WS-ALGORITHM
+     CALL STATIC "EVP_Digest" USING BY REFERENCE WS-DATA BY VALUE WS-DATA-LENGTH
+         BY REFERENCE WS-DIGEST BY REFERENCE WS-DIGEST-LENGTH BY VALUE WS-ALGORITHM
+         BY VALUE WS-ENGINE RETURNING WS-RC
+     COMPUTE WS-BYTE = FUNCTION MOD(FUNCTION ORD(WS-DIGEST(7:1)) - 1, 16) + 48
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-DIGEST(7:1)
+     COMPUTE WS-BYTE = FUNCTION MOD(FUNCTION ORD(WS-DIGEST(9:1)) - 1, 64) + 128
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-DIGEST(9:1)
+     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-DIGEST(1:16))) TO WS-HEX
+     STRING WS-HEX(1:8) "-" WS-HEX(9:4) "-" WS-HEX(13:4) "-" WS-HEX(17:4) "-" WS-HEX(21:12)
+         DELIMITED BY SIZE INTO L-ID
+     GOBACK.
+ END PROGRAM SV-PACK-ID-DERIVE.

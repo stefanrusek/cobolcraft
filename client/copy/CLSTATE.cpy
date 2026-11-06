@@ -466,14 +466,14 @@
           15 EA-IM-Y         BINARY-LONG.
           15 EA-IM-W         BINARY-LONG.
           15 EA-IM-H         BINARY-LONG.
-*>     Environment atlas (texture 3; 08 §10.11; weather-render.cob): row k (1 drizzle,
-*>     2 hailstorm) is its image's rectangle (left-aligned, top row, size); the image is repeated
-*>     CL-WX-REPEAT times downward from that row.
+*>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
+*>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
+*>     down its columns over the whole atlas height.
        10 XA-W               BINARY-LONG.
        10 XA-H               BINARY-LONG.
        10 XA-ADDR            USAGE POINTER.
        10 XA-IMAGE OCCURS 2 TIMES.
-          15 XA-IM-Y         BINARY-LONG.
+          15 XA-IM-X         BINARY-LONG.
           15 XA-IM-W         BINARY-LONG.
           15 XA-IM-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item

@@ -19,6 +19,9 @@
  01 WS-PTR                 BINARY-LONG.
  01 WS-OUT                 PIC X(1024).
  01 WS-VERTEX              BINARY-LONG.
+ 01 WS-GW                  BINARY-LONG.
+ 01 WS-GH                  BINARY-LONG.
+ 01 WS-UNFOCUSED           BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
@@ -108,6 +111,29 @@
      MOVE WS-OUT TO TL-OBSERVED
      MOVE "48.00 0.00 0.00 0.22 0.95 200.00 40.00 0.22 0.95 88.00 0.00 100.00 0.34 0.95"
          & " 0.00 200.00 0.28 0.95" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The edit-server screen with the address field holding its full 256 bytes: focused, the field
+*>   renders its text and one caret quad more than unfocused (the caret must not overrun the text).
+     MOVE ALL "a" TO SM-EDIT-ADDR
+     MOVE 256 TO SM-EDIT-ADDR-LENGTH
+     MOVE "n" TO SM-EDIT-NAME
+     MOVE 1 TO SM-EDIT-NAME-LENGTH
+     MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT
+     MOVE 400 TO WS-GW
+     MOVE 300 TO WS-GH
+     CALL "EDIT-SERVER-BUILD" USING CLIENT-STATE WS-GW WS-GH
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE RL-UI-COUNT TO WS-UNFOCUSED
+     MOVE 2 TO SM-FOCUS
+     MOVE 0 TO SM-WIDGET-COUNT
+     CALL "EDIT-SERVER-BUILD" USING CLIENT-STATE WS-GW WS-GH
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "ui the edit-server screen with a focused address field of 256 bytes renders a frame "
+         & "with one caret quad (6 vertices) more than unfocused" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 6 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = RL-UI-COUNT - WS-UNFOCUSED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-UI-RENDER.

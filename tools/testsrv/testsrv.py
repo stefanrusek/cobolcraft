@@ -39,7 +39,7 @@ def make_handler(options):
     class Handler(http.server.BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
-        def log_message(self, format, *args):  # noqa: A002 (stdlib signature)
+        def log_message(self, format, *args):
             pass
 
         def record_request(self):
@@ -79,7 +79,7 @@ def make_handler(options):
                 self.wfile.write(body)
             self.close_connection = True
 
-        def do_GET(self):  # noqa: N802 (stdlib naming)
+        def do_GET(self):
             self.record_request()
             if options.status is not None:
                 text = ("status %d\n" % options.status).encode("ascii")

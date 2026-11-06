@@ -5,7 +5,9 @@
 *> the running resource version 97.1 (08 §2.3). When the format fields failed the rules of 08
 *> §2.3 the fallback reading applies: PM-COMPAT is PM-UNKNOWN, the range is the single format
 *> 2147483647.0 and PM-ERROR holds the format problem. A max format written without a minor
-*> (N or [N]) has PM-MAX-MINOR 2147483647 (N.*). At most 8 entries per table; more is invalid.
+*> (N or [N]) has PM-MAX-MINOR 2147483647 (N.*). At most 8 entries per table: an overlays or
+*> filter section with more keeps its first 8 and PM-WARNING says so (MCMETA-REPORT prints it); a
+*> language or features section with more is invalid.
  78 PM-COMPATIBLE           VALUE 0.
  78 PM-TOO-OLD              VALUE 1.
  78 PM-TOO-NEW              VALUE 2.
@@ -54,3 +56,5 @@
     05 PM-FEATURE OCCURS 8 TIMES.
        10 PM-FEATURE-ID     PIC X(80).
        10 PM-FEATURE-ID-LENGTH BINARY-LONG.
+*>  A limit applied while reading (spaces when none): the console text of MCMETA-REPORT.
+    05 PM-WARNING           PIC X(128).

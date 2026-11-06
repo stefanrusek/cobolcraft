@@ -25,6 +25,11 @@
   `_`; if the folder exists, ` (2)`, ` (3)`, … is appended (US16 edge case). The world list shows the
   `LevelName` and the folder name.
 - Local pack ids are `file/<name>` (08 §3.1).
+- Pack limits (CobolCraft's record sizes, not 08's): a `pack.mcmeta` overlays or filter section with more
+  than 8 entries is read with its first 8 and the console gets one line `ERROR pack: <pack id>: more than 8
+  overlays|filter patterns, the first 8 are used`; a language or features section with more than 8 makes
+  the metadata invalid. At most 8 server packs are pending per connection: a further pushed pack is dropped
+  with `ERROR server pack: <uuid> dropped, 8 packs already pending` (FR-012 non-fatal).
 - Server address text: `host` or `host:port`, default port 25565.
 
 ## 3. Controls (Player vantage; the in-game controls screen is not specified, these are fixed)

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import contract_check  # noqa: E402
+import contract_check
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures", "hex")
 

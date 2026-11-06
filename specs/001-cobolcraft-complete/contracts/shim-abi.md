@@ -131,12 +131,14 @@ GLFW headers.
 
 Pipelines: `CC_PIPE_OPAQUE = 0` (depth test+write, no blend), `CC_PIPE_TRANSLUCENT = 1` (depth test, no
 write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend). Vertex: 7 x `float32` = 28 bytes
-(x, y, z, u, v, brightness, alpha) (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge.
+(x, y, z, u, v, brightness, alpha) (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
+unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`, `CC_WRAP_REPEAT = 1`).
 
 | Function | Behaviour |
 |---|---|
 | `int32_t cc_vk_init(void)` | Instance (portability enumeration), surface on the `cc_win` window, device (swapchain + portability subset), swapchain, depth buffer, pipelines from the build's SPIR-V. 0. |
 | `int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)` | Creates or replaces texture `tex_id` (0 = block/item atlas, 1 = entity atlas, 2 = font and UI atlas, 3 = environment atlas). 0. |
+| `int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap)` | Sets the wrap mode (`CC_WRAP_CLAMP` or `CC_WRAP_REPEAT`, both axes) used by the next `cc_vk_texture` of `tex_id`; a texture already uploaded keeps its mode until replaced. Default clamp-to-edge, and `cc_vk_shutdown` resets every id to it. 0; an invalid id or mode is fatal. |
 | `int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count)` | Creates, replaces or (with `vertex_count` = 0) frees vertex buffer `slot` (1 to 65535). 0. |
 | `int32_t cc_vk_frame_begin(const float clear_rgba[4])` | Acquires the next image (recreating the swapchain after a resize) and begins recording. 0, or `CC_AGAIN = 1` when the window is minimised (frame skipped). |
 | `void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16])` | Records a draw of the slot's triangles with the matrix as push constant (column-major). |

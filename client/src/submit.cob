@@ -1,8 +1,8 @@
 *> Render-list submission (research R4; shim-abi.md §9): SUBMIT-FRAME uploads the atlases marked
 *> for upload (texture 0 the block atlas, texture 1 the entity atlas, texture 2 the UI atlas,
-*> texture 3 the environment atlas) with cc_vk_texture and the render list's meshes with
-*> cc_vk_mesh, then records the draws in render-list order between cc_vk_frame_begin (the clear
-*> colour) and cc_vk_frame_end. A minimised window skips the frame.
+*> texture 3 the environment atlas, with repeat wrapping) with cc_vk_texture and the render list's
+*> meshes with cc_vk_mesh, then records the draws in render-list order between cc_vk_frame_begin
+*> (the clear colour) and cc_vk_frame_end. A minimised window skips the frame.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SUBMIT-FRAME.
@@ -13,6 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
+ 01 WS-WRAP                BINARY-LONG.
  01 WS-CLEAR               FLOAT-SHORT OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -38,6 +39,8 @@
      END-IF
      IF AT-UPLOAD(4) = 1
          MOVE CC-TEX-ENVIRONMENT TO WS-TEX
+         MOVE CC-WRAP-REPEAT TO WS-WRAP
+         CALL STATIC "cc_vk_texture_wrap" USING BY VALUE WS-TEX BY VALUE WS-WRAP RETURNING WS-RC
          CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE XA-W BY VALUE XA-H
              BY VALUE XA-ADDR RETURNING WS-RC
          MOVE 0 TO AT-UPLOAD(4)

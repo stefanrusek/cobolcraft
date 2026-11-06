@@ -2,7 +2,7 @@
 *> docs/protocol/09-cobolcraft-profile.md §1 chat is unsigned, §3.2 Chat 0x09). T on the world screen
 *> opens it with an empty line (common.cob); the chat area (hud.cob) shows the 10 most recent messages
 *> regardless of age above the input line, which shows the line being typed (its end, when it is
-*> longer than 255 bytes) or the hint while it is empty. Typed characters (any keyboard layout)
+*> longer than 256 bytes) or the hint while it is empty. Typed characters (any keyboard layout)
 *> are appended as UTF-8 while the line stays within 256 UTF-16 code units (05c Chat Message);
 *> Backspace deletes the last character; the scroll wheel moves back (up) and forward (down) through
 *> the history, at most to its oldest message; Enter sends a non-empty line as Chat and closes chat;
@@ -52,10 +52,10 @@
      MOVE 0 TO WS-STATE
      CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
      IF CH-LINE-LENGTH > 0
-*>       The end of the line: at most 255 bytes (a widget text holds 256, the caret takes one),
-*>       starting on a character.
+*>       The end of the line: at most 256 bytes (a widget text holds 256; the caret is drawn
+*>       apart), starting on a character.
          MOVE 1 TO WS-STATE
-         COMPUTE WS-START = FUNCTION MAX(1, CH-LINE-LENGTH - 254)
+         COMPUTE WS-START = FUNCTION MAX(1, CH-LINE-LENGTH - 255)
          COMPUTE WS-B = FUNCTION ORD(CH-LINE(WS-START:1)) - 1
          PERFORM UNTIL WS-B < 128 OR WS-B >= 192
              ADD 1 TO WS-START

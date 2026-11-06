@@ -386,8 +386,7 @@
      MOVE "0 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test play packet a packet of the 09 inventory handled by a later phase (Move Player "
-         & "Pos) is discarded and the connection stays open" TO TL-CASE
+     MOVE "test play packet Move Player Pos is taken and the connection stays open" TO TL-CASE
      PERFORM START-ROW
      MOVE "contract/fixtures/wire/play-c2s-1e-move-player-pos.hex" TO WS-PATH
      CALL "TEST-FEED" USING WS-CONN WS-PATH

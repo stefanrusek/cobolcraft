@@ -167,11 +167,8 @@
  78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-MAX-RECIPES          VALUE 16.
  78 CL-MAX-BIOMES           VALUE 8.
-*> Weather quads (standin-content §14.5): 17 x 17 columns of two quads; each environment image is
-*> repeated 25 times down the environment atlas, so a quad up to 24 blocks tall plus a scroll below
-*> 1 samples it without wrapping (the shim samples clamp-to-edge, shim-abi §9).
+*> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
  78 CL-MAX-WX-VERTICES      VALUE 3468.
- 78 CL-WX-REPEAT            VALUE 25.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.

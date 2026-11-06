@@ -25,6 +25,9 @@
  01 WS-PACK-AT             BINARY-LONG.
  01 WS-UNCOMMENTED         BINARY-LONG.
  01 WS-COUNT               PIC Z(7)9.
+ 01 WS-URL                 PIC X(64).
+ 01 WS-SHA1                PIC X(40).
+ 01 WS-ID                  PIC X(36).
  PROCEDURE DIVISION.
 *>   The operator-surface §2 defaults, written out from the table.
      INITIALIZE CORE-SETTINGS
@@ -73,6 +76,35 @@
      PERFORM COMPARE-SETTINGS
      CALL "SV-SHUTDOWN"
 
+*>   T1074: a pack-url with an empty pack-id is offered with a name-based (version 3) UUID of
+*>   pack-url and pack-sha1 (operator-surface §2): RFC 4122 §4.3 in the URL namespace over
+*>   "<pack-url> <pack-sha1 in lower case>". Expected ids computed independently (Python uuid.uuid3).
+     MOVE "https://packs.example.test/cobolcraft/test.zip" TO WS-URL
+     MOVE "0123456789abcdef0123456789abcdef01234567" TO WS-SHA1
+     MOVE "71e28e56-66b6-33ed-a7ba-cc2a68bbaae4" TO WS-ID
+     MOVE "acceptance US18-6 given pack-url and pack-sha1 with an empty pack-id when the server "
+         & "starts then it offers the pack with the UUID derived from both" TO TL-CASE
+     PERFORM DERIVED-CASE
+     MOVE "0123456789ABCDEF0123456789ABCDEF01234567" TO WS-SHA1
+     MOVE "acceptance US18-6 given the same pack-url and pack-sha1 in upper case then the derived "
+         & "pack id is the same" TO TL-CASE
+     PERFORM DERIVED-CASE
+     MOVE "https://packs.example.test/cobolcraft/test2.zip" TO WS-URL
+     MOVE "0123456789abcdef0123456789abcdef01234567" TO WS-SHA1
+     MOVE "7e45d60b-6292-3f2b-bcb1-9a2805852a38" TO WS-ID
+     MOVE "acceptance US18-6 given a changed pack-url then the derived pack id is new" TO TL-CASE
+     PERFORM DERIVED-CASE
+     MOVE "https://packs.example.test/cobolcraft/test.zip" TO WS-URL
+     MOVE "fedcba9876543210fedcba9876543210fedcba98" TO WS-SHA1
+     MOVE "f9738de1-c4c1-3d26-92be-dd152ecb3008" TO WS-ID
+     MOVE "acceptance US18-6 given a changed pack-sha1 then the derived pack id is new" TO TL-CASE
+     PERFORM DERIVED-CASE
+     MOVE SPACES TO WS-SHA1
+     MOVE "10c12bff-cbaa-38ff-923c-00c6e334cdaf" TO WS-ID
+     MOVE "acceptance US18-6 given pack-url without pack-sha1 or pack-id then the pack is offered "
+         & "with the UUID derived from the URL and an empty hash" TO TL-CASE
+     PERFORM DERIVED-CASE
+
 *>   The default file lists the pack keys, each after a comment line.
      CALL "SVT-HOME"
      MOVE "build/server-test-pack-config-default" TO WS-SCRATCH
@@ -120,6 +152,26 @@
      CALL "SV-SHUTDOWN"
      CALL "SVT-HOME"
      STOP RUN.
+
+*> Starts a server with pack-url WS-URL, pack-sha1 WS-SHA1 and no pack-id; expects the offer with
+*> pack id WS-ID.
+ DERIVED-CASE.
+     CALL "SVT-HOME"
+     MOVE "build/server-test-pack-config-derived" TO WS-SCRATCH
+     CALL "SVT-SCRATCH" USING WS-SCRATCH
+     MOVE SPACES TO WS-CONF
+     STRING "port=25579|pack-url=" FUNCTION TRIM(WS-URL) "|pack-sha1=" DELIMITED BY SIZE
+         WS-SHA1 DELIMITED BY SPACE INTO WS-CONF
+     CALL "SVT-WRITE-CONF" USING WS-CONF
+     MOVE 1 TO CS-PACK-OFFERED
+     MOVE WS-URL TO CS-PACK-URL
+     MOVE WS-SHA1 TO CS-PACK-SHA1
+     MOVE WS-ID TO CS-PACK-ID
+     MOVE CORE-SETTINGS TO WS-EXPECTED
+     MOVE WS-DEFAULTS TO CORE-SETTINGS
+     CALL "SV-START"
+     PERFORM COMPARE-SETTINGS
+     CALL "SV-SHUTDOWN".
 
  COMPARE-SETTINGS.
      MOVE "T" TO TL-MODE

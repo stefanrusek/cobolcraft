@@ -4,7 +4,8 @@
 *> centre texel of their swatch (button, or panel when disabled; field; entry, or selected when
 *> selected), then the widget's text: one quad per non-space character from the pack font, advancing by the glyph's
 *> advance (missing glyph for characters the font lacks). A button's text is centred, a field's or
-*> entry's starts 4 GUI pixels in, both centred vertically; a focused field ends with a caret "_".
+*> entry's starts 4 GUI pixels in, both centred vertically; a focused field ends with a caret "_"
+*> (a quad of its own after the text, so a field at its full 256 bytes keeps its caret).
 *> An item slot (08 §10.8.6 hotbar; 10.11 item icons) gets a background quad (selected when it is
 *> the held slot; none for the stack on the cursor), its stack's icon 2 GUI pixels in (16 x 16, the
 *> item's icon sprite in the block-and-item atlas: the icon layer, texture 0) and its count in the
@@ -26,6 +27,9 @@
  01 WS-WIDTH               BINARY-LONG.
  01 WS-TEXT                PIC X(256).
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-CARET               BINARY-LONG.
+ 01 WS-CARET-TEXT          PIC X(256) VALUE "_".
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -33,6 +37,7 @@
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
          MOVE SM-W-LENGTH(WS-W) TO WS-LENGTH
+         MOVE 0 TO WS-CARET
          MOVE -1 TO WS-SWATCH
          EVALUATE TRUE
              WHEN SM-W-KIND(WS-W) = WK-BUTTON AND SM-W-STATE(WS-W) = 2
@@ -41,10 +46,7 @@
                  MOVE SW-BUTTON TO WS-SWATCH
              WHEN SM-W-KIND(WS-W) = WK-FIELD
                  MOVE SW-FIELD TO WS-SWATCH
-                 IF SM-W-STATE(WS-W) = 1
-                     ADD 1 TO WS-LENGTH
-                     MOVE "_" TO WS-TEXT(WS-LENGTH:1)
-                 END-IF
+                 MOVE SM-W-STATE(WS-W) TO WS-CARET
              WHEN SM-W-KIND(WS-W) = WK-ENTRY AND SM-W-STATE(WS-W) = 1
                  MOVE SW-SELECTED TO WS-SWATCH
              WHEN SM-W-KIND(WS-W) = WK-ENTRY
@@ -72,6 +74,11 @@
              COMPUTE WS-X = SM-W-X(WS-W) + (SM-W-W(WS-W) - WS-WIDTH) / 2
          END-IF
          CALL "UI-TEXT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y
+         IF WS-CARET = 1
+             CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
+             ADD WS-WIDTH TO WS-X
+             CALL "UI-TEXT" USING CLIENT-STATE WS-CARET-TEXT WS-ONE WS-X WS-Y
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM UI-RENDER.

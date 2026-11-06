@@ -418,6 +418,8 @@ static void create_layouts(void) {
         .addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
     };
     check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.sampler), "cc_vk_init: vkCreateSampler failed");
+    sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.repeat_sampler), "cc_vk_init: vkCreateSampler failed");
 }
 
 /* Pipeline `p`: opaque (depth test + write, no blend), translucent (depth test, no write, alpha blend)
@@ -583,7 +585,8 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
         .pSetLayouts = &cc_vk_state.set_layout,
     };
     check(vkAllocateDescriptorSets(cc_vk_state.device, &alloc, &t.set), "cc_vk_texture: vkAllocateDescriptorSets failed");
-    VkDescriptorImageInfo image = {cc_vk_state.sampler, t.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    VkSampler s = cc_vk_state.wrap[tex_id] == CC_WRAP_REPEAT ? cc_vk_state.repeat_sampler : cc_vk_state.sampler;
+    VkDescriptorImageInfo image = {s, t.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     VkWriteDescriptorSet write = {
         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet = t.set,
@@ -596,6 +599,13 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
     texture_t *old = &cc_vk_state.textures[tex_id];
     discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set});
     *old = t;
+    return 0;
+}
+
+/* The wrap mode of texture `tex_id` for its next cc_vk_texture upload (§9). */
+int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap) {
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_ENVIRONMENT || wrap < CC_WRAP_CLAMP || wrap > CC_WRAP_REPEAT) cc_fatal("cc_vk_texture_wrap: invalid texture or mode");
+    cc_vk_state.wrap[tex_id] = wrap;
     return 0;
 }
 
@@ -707,6 +717,7 @@ void cc_vk_shutdown(void) {
     vkDestroyDescriptorPool(cc_vk_state.device, cc_vk_state.pool, NULL);
     vkDestroyDescriptorSetLayout(cc_vk_state.device, cc_vk_state.set_layout, NULL);
     vkDestroySampler(cc_vk_state.device, cc_vk_state.sampler, NULL);
+    vkDestroySampler(cc_vk_state.device, cc_vk_state.repeat_sampler, NULL);
     vkDestroySemaphore(cc_vk_state.device, cc_vk_state.acquired, NULL);
     vkDestroyFence(cc_vk_state.device, cc_vk_state.done, NULL);
     vkDestroyCommandPool(cc_vk_state.device, cc_vk_state.commands, NULL);

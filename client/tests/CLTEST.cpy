@@ -3,6 +3,10 @@
 *>   TEST-LOAD-HEX USING path (PIC X(256)), PB-BUFFER: replaces the buffer content with the bytes
 *>     of a hex fixture (contracts/proto-api.md §3: whitespace-separated hex, "#" comments).
 *>   TEST-HEX-OF USING area, count (at most 512), hex out (PIC X(1024)): lowercase hex.
+*>   TEST-CAPTURE-START USING path (PIC X(256)): standard output goes to that file (no TEST line
+*>     may be printed until TEST-CAPTURE-STOP).
+*>   TEST-CAPTURE-STOP USING path, text out (PIC X(4096)): standard output restored; the captured
+*>     lines, " | "-separated.
 *>   TEST-SAME-AS-FIXTURE USING packet PB-BUFFER (id + body, from byte 1), path, TESTLIB-ASSERT
 *>     (TL-CASE set): asserts the packet bytes equal the fixture bytes; on a difference the
 *>     observed text names the first differing offset and both bytes, or both lengths.
@@ -318,7 +322,6 @@
     05 WS-OUT-POS          BINARY-LONG.
     05 WS-OUT-ERROR        PIC 9.
  01 B-OUT                  PIC X(1073741824) BASED.
- 01 WS-REST                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
@@ -347,20 +350,10 @@
          CALL "PB-FRAME-DECODE" USING ST-BUFFER PB-BUFFER CN-THRESHOLD(L-CONN) WS-ZERO WS-ID
              WS-OUTCOME
      END-PERFORM
-*>   The decoded buffer may start with the Data length of a compressed-format frame: rebuild it
-*>   as id + body.
+*>   Callers read the packet from its first byte, the id: PB-POS 0.
      IF WS-OUTCOME = 0
          MOVE 1 TO L-FOUND
-         CALL "PB-RESET" USING ST-BUFFER
-         CALL "PB-PUT-VARINT" USING ST-BUFFER WS-ID
-         SET ADDRESS OF B-OUT TO PB-ADDR
-         COMPUTE WS-REST = PB-LENGTH - PB-POS
-         IF WS-REST > 0
-             CALL "PB-APPEND-BYTES" USING ST-BUFFER B-OUT(PB-POS + 1:WS-REST) WS-REST
-         END-IF
-         CALL "PB-RESET" USING PB-BUFFER
-         SET ADDRESS OF B-OUT TO ST-ADDR
-         CALL "PB-APPEND-BYTES" USING PB-BUFFER B-OUT ST-LENGTH
+         MOVE 0 TO PB-POS
      END-IF
      GOBACK.
  END PROGRAM TEST-SENT.
@@ -1680,3 +1673,75 @@
      END-IF
      GOBACK.
  END PROGRAM TEST-TESTSRV-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CAPTURE-START.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 CLT-SAVED-FD           BINARY-LONG EXTERNAL.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-STDOUT              BINARY-LONG VALUE 1.
+ 01 WS-MODE                BINARY-LONG VALUE 420.
+ 01 WS-FD                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(257).
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE LOW-VALUES TO WS-PATH
+     STRING L-PATH DELIMITED BY SPACE INTO WS-PATH
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "dup" USING BY VALUE WS-STDOUT RETURNING CLT-SAVED-FD
+     CALL STATIC "creat" USING BY REFERENCE WS-PATH BY VALUE WS-MODE RETURNING WS-FD
+     CALL STATIC "dup2" USING BY VALUE WS-FD BY VALUE WS-STDOUT RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE WS-FD RETURNING WS-RC
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM TEST-CAPTURE-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CAPTURE-STOP.
+ ENVIRONMENT DIVISION.
+ INPUT-OUTPUT SECTION.
+ FILE-CONTROL.
+     SELECT OUT-FILE ASSIGN TO WS-PATH
+         ORGANIZATION LINE SEQUENTIAL
+         FILE STATUS WS-STATUS.
+ DATA DIVISION.
+ FILE SECTION.
+ FD OUT-FILE.
+ 01 OUT-LINE               PIC X(1024).
+ WORKING-STORAGE SECTION.
+ 01 CLT-SAVED-FD           BINARY-LONG EXTERNAL.
+ 01 WS-NULL                USAGE POINTER VALUE NULL.
+ 01 WS-STDOUT              BINARY-LONG VALUE 1.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-STATUS              PIC XX.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-PATH L-TEXT.
+     CALL STATIC "fflush" USING BY VALUE WS-NULL RETURNING WS-RC
+     CALL STATIC "dup2" USING BY VALUE CLT-SAVED-FD BY VALUE WS-STDOUT RETURNING WS-RC
+     CALL STATIC "close" USING BY VALUE CLT-SAVED-FD RETURNING WS-RC
+     MOVE L-PATH TO WS-PATH
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-AT
+     OPEN INPUT OUT-FILE
+     PERFORM UNTIL WS-STATUS NOT = "00"
+         MOVE SPACES TO OUT-LINE
+         READ OUT-FILE
+         IF WS-STATUS = "00"
+             IF WS-AT > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-AT
+             END-IF
+             STRING FUNCTION TRIM(OUT-LINE TRAILING) DELIMITED BY SIZE INTO L-TEXT
+                 WITH POINTER WS-AT
+         END-IF
+     END-PERFORM
+     CLOSE OUT-FILE
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM TEST-CAPTURE-STOP.

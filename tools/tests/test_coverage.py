@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import coverage  # noqa: E402
+import coverage
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures", "coverage")
 

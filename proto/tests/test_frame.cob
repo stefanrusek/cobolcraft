@@ -103,6 +103,28 @@
      MOVE "test frame compressed frame with a truncated packet id is malformed" TO TL-CASE
      MOVE "2" TO TL-EXPECTED
      PERFORM DECODE-HEX
+*>   proto-api §2, §5: with a threshold >= 0 an uncompressed packet (Data length 0) decodes to
+*>   exactly id + body, bytes 1 to PB-LENGTH, with PB-POS after the id.
+     MOVE "04 00 01 aa bb" TO WS-HEX
+     MOVE 256 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 packet buffer holds exactly id and body" TO TL-CASE
+     MOVE "0 1 3 1 01aabb" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "05 00 81 01 cc dd" TO WS-HEX
+     MOVE 0 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 with a two-byte packet id at threshold 0" TO TL-CASE
+     MOVE "0 129 4 2 8101ccdd" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "03 00 7f ee" TO WS-HEX
+     MOVE -1 TO WS-THRESHOLD
+     MOVE "test frame without compression the packet buffer is the whole frame body" TO TL-CASE
+     MOVE "0 0 3 1 007fee" TO TL-EXPECTED
+     PERFORM DECODE-WHOLE-HEX
+     MOVE "01 00" TO WS-HEX
+     MOVE 256 TO WS-THRESHOLD
+     MOVE "test frame Data length 0 with no packet id is malformed" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     PERFORM DECODE-HEX
      CALL "PB-FREE" USING PQ-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
@@ -128,6 +150,28 @@
          MOVE WS-PACKET-ID TO WS-NUM
          PERFORM ADD-NUMBER
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Decodes WS-HEX; observed is "outcome packet-id length pos hex-of-packet-buffer".
+ DECODE-WHOLE-HEX.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     CALL "PB-FRAME-DECODE" USING PB-BUFFER PQ-BUFFER WS-THRESHOLD WS-VALIDATE WS-PACKET-ID
+         WS-OUTCOME
+     PERFORM START-TEXT
+     MOVE WS-OUTCOME TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE WS-PACKET-ID TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-LENGTH TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     MOVE PQ-LENGTH TO WS-COUNT
+     MOVE 0 TO WS-OFFSET
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-BUFFER-SLICE-HEX" USING PQ-BUFFER WS-OFFSET WS-COUNT WS-HEX
+     STRING " " DELIMITED BY SIZE FUNCTION TRIM(WS-HEX) DELIMITED BY SIZE
+         INTO TL-OBSERVED WITH POINTER WS-PTR
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ERROR-AND-LENGTH.
