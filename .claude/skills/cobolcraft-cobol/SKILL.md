@@ -91,6 +91,21 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Reading NBT compounds**: `MOVE SPACES TO WN` before each `NBT-READ-COMPOUND-NEXT` and compare
   the whole field (`WN = "Pos"`); the wrapper name `""` of a mixed list (07 §1.1) leaves it spaces.
   Never reference-modify a name by a length that can be 0.
+- **A run that ends inside a program skews gcov**: when a test ends through `cc_fatal` (C `exit`)
+  in the middle of a program, gcov's derived line counts of that program come out wrong (lines
+  run by other tests can drop to `#####`). Keep each fatal call in a small check program
+  (`IF outcome NOT = 0 ... CALL STATIC "cc_fatal"`, e.g. `GAME-DATA-CHECK` in `client/src/game-dir.cob`).
+- **Numeric literals passed BY REFERENCE** arrive as binary items (`CALL "X" USING 01` hands over a
+  2-byte binary 1), so a `PIC 99` LINKAGE item reads garbage. Pass a WORKING-STORAGE field, or an
+  alphanumeric literal (`"01 05 02"`) that the callee splits.
+- **`FUNCTION CHAR(n)`** is the character of ordinal n, i.e. code n - 1: the digit d is
+  `FUNCTION CHAR(d + 49)`.
+- **`COMPUTE x = a / 4 + b / 4`** truncates only the final result (3/4 + 1/4 = 1); integer
+  division needs `DIVIDE ... GIVING` first (texture recipes with `x div 4`).
+- **REPLACING LEADING ==PB-== BY ==IN-==** in a client program redefines `IN-TEXT` of CLSTATE.cpy:
+  choose prefixes that do not collide with the client state (`RX-`, `OUT-`, `FR-`).
+- **A program whose output parameter may be its input** (`JSON-MEMBER USING doc node key len node`)
+  must copy the input to WORKING-STORAGE before it clears the output.
 
 ## Interfaces
 
@@ -229,6 +244,27 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **`STRING … DELIMITED BY SPACE`** applies to every source before it that has no own `DELIMITED`
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.
+
+- **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program; touch the tests
+  after changing it): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
+  packet into `PROTO-PACKET` on a connection), `TEST-SENT` / `TEST-SENT-IDS` / `TEST-CLEAR-SENT`
+  (what the client queued in `CN-OUT`; strips the uncompressed Data length byte until T1073),
+  `TEST-LOOPBACK` (a real loopback connection for a client connection), `TEST-SERVE`,
+  `TEST-SERVE-BYTES`, `TEST-SERVER-READ` (the server side of it), `TEST-STEP`, `TEST-EVENTS`,
+  `TEST-CLICK` (clicks a widget of the screen model by action through `CL-STEP`), `TEST-TYPE`,
+  `TEST-KEY`, `TEST-SCREEN-TEXTS`, `TEST-MESH-FACE` (a quad of a section mesh by its centre),
+  `TEST-READ-FILE`, `TEST-SLEEP` and `TEST-CLOSE-REQUEST` (queues the window's close-requested event
+  by calling the close callback the shim registered, found with `dlsym` of `cc_win_window`).
+- **Client state** is one `CLIENT-STATE` record (client/copy/CLSTATE.cpy) passed BY REFERENCE to
+  every client program (two clients can share a process); a program that needs `CL-ARGS` or
+  `LANG-ARGS` in WORKING-STORAGE copies client/copy/CLARGS.cpy. `CL-START` prepares a client without
+  a window; tests drive it with `CL-STEP` and assert on the screen model and the render list.
+- **Texture references** come from `client/tests/fixtures/gen_textures.py` (independent stdlib
+  Python, checked against the standin-content §1.5 SHA-256 values), written by the client Makefile's
+  `fixtures` target before the tests.
+- **Programs that never return in a test**: a test runs itself again with arguments through
+  `CALL "SYSTEM"` (`FUNCTION MODULE-PATH`; the status is `RETURN-CODE / 256`), and a SIGALRM handler
+  (`SET proc-pointer TO ENTRY "..."`, `signal`, `alarm`) can end a window run (`test_cl_main_run`).
 
 ## Failure handling (FR-012)
 

@@ -3,3 +3,4 @@ build/
 *.gcno
 *.gcov
 __pycache__/
+client/tests/fixtures/textures/

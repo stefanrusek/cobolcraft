@@ -1,0 +1,96 @@
+*> Implementation test of client/src/screens/common.cob and edit-server.cob keys and controls
+*> (client-surface.md §3; data-model §13): Escape cancels editing and leaves the server list for the
+*> title screen; Backspace edits the focused address field (a whole multi-byte character at a time);
+*> Enter is Done; Back returns to the title screen; Quit Game ends the run.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SCREEN-KEYS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY TESTLIB.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG VALUE 0.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-SCREENS             PIC X(16).
+ 01 WS-EVENTS.
+    05 WS-EVENT OCCURS 2 TIMES.
+       10 WS-KIND          BINARY-LONG.
+       10 WS-A             BINARY-LONG.
+       10 FILLER           PIC X(16).
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ PROCEDURE DIVISION.
+     CALL "SYSTEM" USING "rm -rf build/client-test-screen-keys"
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE "build/client-test-screen-keys" TO CL-GAME-DIR
+     MOVE 29 TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE ACT-MULTIPLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-ADD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE FUNCTION CHAR(SM-SCREEN + 49) TO WS-SCREENS(1:1)
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE FUNCTION CHAR(SM-SCREEN + 49) TO WS-SCREENS(2:1)
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE FUNCTION CHAR(SM-SCREEN + 49) TO WS-SCREENS(3:1)
+     MOVE "screen keys Escape on the edit screen returns to the server list, on the server list to "
+         & "the title screen" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "321" TO TL-EXPECTED
+     MOVE WS-SCREENS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An address typed with a two-byte character, one Backspace, then Enter.
+     MOVE ACT-MULTIPLAYER TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-ADD TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE ACT-FIELD-ADDRESS TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE "host" TO WS-TEXT
+     MOVE 4 TO WS-LENGTH
+     CALL "TEST-TYPE" USING CLIENT-STATE WS-TEXT WS-LENGTH
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 120 TO WS-A(1)
+     MOVE 233 TO WS-A(2)
+     CALL "TEST-EVENTS" USING CLIENT-STATE WS-EVENTS WS-TWO
+     MOVE CC-KEY-BACKSPACE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE "screen keys Backspace in the focused address field removes its last character (two "
+         & "bytes for a non-ASCII one)" TO TL-CASE
+     MOVE "hostx" TO TL-EXPECTED
+     MOVE SM-EDIT-ADDR(1:SM-EDIT-ADDR-LENGTH) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CC-KEY-ENTER TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE "screen keys Enter on the edit screen is Done: the entry is added, the server list shown"
+         TO TL-CASE
+     MOVE "2 hostx" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION CHAR(SM-SCREEN + 49) " " SL-ADDR(1)(1:SL-ADDR-LENGTH(1)) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE ACT-BACK TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE FUNCTION CHAR(SM-SCREEN + 49) TO WS-SCREENS(1:1)
+     MOVE ACT-QUIT TO WS-ACTION
+     CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
+     MOVE "screen keys Back returns to the title screen; Quit Game ends the run" TO TL-CASE
+     MOVE "1 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-SCREENS(1:1) " " FUNCTION CHAR(CL-QUIT + 49) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-SCREEN-KEYS.
+ COPY CLTEST.

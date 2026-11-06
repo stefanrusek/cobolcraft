@@ -1,0 +1,53 @@
+*> Implementation test of client/src/args.cob (ARGS-PARSE; contracts/client-surface.md §1): --name
+*> is taken as the offline name, --gamedir as the game directory, which defaults to
+*> $HOME/.cobolcraft; the order of the options does not matter and other words are ignored.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ARGS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLARGS.
+ COPY TESTLIB.
+ 01 WS-HOME                PIC X(1024).
+ PROCEDURE DIVISION.
+     ACCEPT WS-HOME FROM ENVIRONMENT "HOME"
+     CALL "CL-INIT" USING CLIENT-STATE
+     INITIALIZE CL-ARGS
+     MOVE 2 TO AR-COUNT
+     MOVE "--name" TO AR-TEXT(1)
+     MOVE 6 TO AR-LENGTH(1)
+     MOVE "Alice" TO AR-TEXT(2)
+     MOVE 5 TO AR-LENGTH(2)
+     CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
+     MOVE "args --name Alice gives the name Alice and the game directory $HOME/.cobolcraft"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     STRING "Alice|" FUNCTION TRIM(WS-HOME) "/.cobolcraft" DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING CL-NAME(1:CL-NAME-LENGTH) "|" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "CL-INIT" USING CLIENT-STATE
+     INITIALIZE CL-ARGS
+     MOVE 5 TO AR-COUNT
+     MOVE "--gamedir" TO AR-TEXT(1)
+     MOVE 9 TO AR-LENGTH(1)
+     MOVE "build/client-test-dir" TO AR-TEXT(2)
+     MOVE 21 TO AR-LENGTH(2)
+     MOVE "extra" TO AR-TEXT(3)
+     MOVE 5 TO AR-LENGTH(3)
+     MOVE "--name" TO AR-TEXT(4)
+     MOVE 6 TO AR-LENGTH(4)
+     MOVE "Zz_0123456789abc" TO AR-TEXT(5)
+     MOVE 16 TO AR-LENGTH(5)
+     CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
+     MOVE "args --gamedir before --name: both taken, a 16-character name of letters, digits and _"
+         TO TL-CASE
+     MOVE "Zz_0123456789abc|build/client-test-dir" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING CL-NAME(1:CL-NAME-LENGTH) "|" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ARGS.

@@ -1,0 +1,101 @@
+*> Implementation test of client/src/game-dir.cob (SERVERS-SAVE, SERVERS-LOAD; client-surface.md §2):
+*> the servers.dat List "Servers" of {Name, Address, PackPolicy} round-trips through a new client
+*> state; a game directory without servers.dat gives an empty list.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SERVERS-DAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY TESTLIB.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-EDIT                PIC 9.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WN                     PIC X(16).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-STRING-TYPE         BINARY-LONG VALUE 8.
+ 01 WS-COMPOUND            BINARY-LONG VALUE 10.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FIVE                BINARY-LONG VALUE 5.
+ 01 WS-PATH                PIC X(64) VALUE "build/client-test-servers/servers.dat".
+ 01 WS-PATH-LENGTH         BINARY-LONG VALUE 37.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-V                   PIC X VALUE "N".
+ PROCEDURE DIVISION.
+     CALL "SYSTEM" USING "rm -rf build/client-test-servers"
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "build/client-test-servers" TO CL-GAME-DIR
+     MOVE 25 TO CL-GAME-DIR-LENGTH
+     CALL "GAME-DIR-SETUP" USING CLIENT-STATE
+     MOVE 7 TO SL-COUNT
+     CALL "SERVERS-LOAD" USING CLIENT-STATE
+     MOVE "servers.dat absent gives an empty server list" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE SL-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 2 TO SL-COUNT
+     MOVE "Home" TO SL-NAME(1)
+     MOVE 4 TO SL-NAME-LENGTH(1)
+     MOVE "localhost" TO SL-ADDR(1)
+     MOVE 9 TO SL-ADDR-LENGTH(1)
+     MOVE 0 TO SL-POLICY(1)
+     MOVE "Caf" & X"C3A9" TO SL-NAME(2)
+     MOVE 5 TO SL-NAME-LENGTH(2)
+     MOVE "example.org:25570" TO SL-ADDR(2)
+     MOVE 17 TO SL-ADDR-LENGTH(2)
+     MOVE 2 TO SL-POLICY(2)
+     CALL "SERVERS-SAVE" USING CLIENT-STATE
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "build/client-test-servers" TO CL-GAME-DIR
+     MOVE 25 TO CL-GAME-DIR-LENGTH
+     CALL "SERVERS-LOAD" USING CLIENT-STATE
+     MOVE "servers.dat round-trips Name, Address and PackPolicy of every entry in order"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "Home|localhost|0|Caf" & X"C3A9" & "|example.org:25570|2|" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-COUNT
+         MOVE SL-POLICY(WS-I) TO WS-EDIT
+         STRING FUNCTION TRIM(TL-OBSERVED) SL-NAME(WS-I)(1:SL-NAME-LENGTH(WS-I)) "|"
+             SL-ADDR(WS-I)(1:SL-ADDR-LENGTH(WS-I)) "|" WS-EDIT "|"
+             DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Tags other than those of client-surface §2 are skipped: a root Int, a Servers list of strings
+*>   (not compounds), and an entry tag Icon.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "Other" TO WN
+     MOVE 5 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-FIVE
+     MOVE "Servers" TO WN
+     MOVE 7 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-STRING-TYPE WS-ONE
+     MOVE "x" TO WN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT WS-V WS-ONE
+     MOVE "Servers" TO WN
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-COMPOUND WS-ONE
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+     MOVE "Name" TO WN
+     MOVE 4 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-V WS-ONE
+     MOVE "Icon" TO WN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-V WS-ONE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-FILE-WRITE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER WS-OUTCOME
+     CALL "SERVERS-LOAD" USING CLIENT-STATE
+     MOVE "servers.dat tags of other names or types are skipped" TO TL-CASE
+     MOVE "1 N" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SL-COUNT TO WS-EDIT
+     STRING WS-EDIT " " SL-NAME(1)(1:SL-NAME-LENGTH(1)) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-SERVERS-DAT.

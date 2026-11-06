@@ -1,0 +1,235 @@
+*> Per-instance state of the client program (data-model §13; plan "Project Structure": passed BY
+*> REFERENCE to every client program, so two clients can run in one process, Convergence). Constants
+*> and limits: CLCONST.cpy. Large areas (chunk cells, meshes, atlas pixels) are ALLOCATEd and held
+*> here by address; everything else lives in the record.
+*>
+*> Groups: start-up (name, game directory), run control, input state, screen model, server list,
+*> connections, local player and world settings, world replica (chunk rows and their section
+*> meshes), packs (stack, language, font), atlases, baked block models, sky, render list.
+ 01 CLIENT-STATE.
+*>  ---- start-up (client-surface §1, §2) ----
+    05 CL-NAME               PIC X(16).
+    05 CL-NAME-LENGTH        BINARY-LONG.
+    05 CL-GAME-DIR           PIC X(1024).
+    05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+*>  ---- run control ----
+    05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
+    05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
+    05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
+    05 CL-FRAMES             BINARY-DOUBLE.
+*>  ---- input state (shim-abi §8 events) ----
+    05 IN-STATE.
+       10 IN-KEY-DOWN        PIC 9 OCCURS 400 TIMES.   *> GLFW key code + 1
+       10 IN-KEY-PRESSED-AREA.
+          15 IN-KEY-PRESSED  PIC 9 OCCURS 400 TIMES.   *> went down during this frame
+       10 IN-MODS            BINARY-LONG.
+       10 IN-TEXT-COUNT      BINARY-LONG.
+       10 IN-TEXT            BINARY-LONG OCCURS 32 TIMES.   *> code points typed this frame
+       10 IN-BUTTON-DOWN     PIC 9 OCCURS 3 TIMES.     *> button + 1
+       10 IN-BUTTON-PRESSED-AREA.
+          15 IN-BUTTON-PRESSED PIC 9 OCCURS 3 TIMES.
+       10 IN-CLICK-X         FLOAT-SHORT.              *> window position of the last button down
+       10 IN-CLICK-Y         FLOAT-SHORT.
+       10 IN-CURSOR-X        FLOAT-SHORT.
+       10 IN-CURSOR-Y        FLOAT-SHORT.
+       10 IN-DELTA-X         FLOAT-SHORT.              *> accumulated look delta (captured cursor)
+       10 IN-DELTA-Y         FLOAT-SHORT.
+       10 IN-SCROLL-X        FLOAT-SHORT.
+       10 IN-SCROLL-Y        FLOAT-SHORT.
+       10 IN-CAPTURED        PIC 9.                    *> 1 while the cursor is captured
+       10 IN-WIN-W           BINARY-LONG.
+       10 IN-WIN-H           BINARY-LONG.
+       10 IN-RESIZED         PIC 9.
+       10 IN-CLOSE           PIC 9.
+*>  ---- screen model (data-model §13): the UI layer writes it each frame ----
+    05 SM-STATE.
+       10 SM-SCREEN          BINARY-LONG.
+       10 SM-WIDGET-COUNT    BINARY-LONG.
+       10 SM-WIDGET OCCURS 48 TIMES.
+          15 SM-W-KIND       BINARY-LONG.
+          15 SM-W-ACTION     BINARY-LONG.
+          15 SM-W-ARG        BINARY-LONG.
+          15 SM-W-X          BINARY-LONG.    *> GUI pixels (window / CL-GUI-SCALE), top-left
+          15 SM-W-Y          BINARY-LONG.
+          15 SM-W-W          BINARY-LONG.
+          15 SM-W-H          BINARY-LONG.
+          15 SM-W-STATE      BINARY-LONG.    *> 0 normal, 1 selected or focused, 2 disabled
+          15 SM-W-LENGTH     BINARY-LONG.
+          15 SM-W-TEXT       PIC X(256).
+       10 SM-SELECTED        BINARY-LONG.    *> server list: selected entry, 0 none
+       10 SM-FOCUS           BINARY-LONG.    *> edit server: 1 name field, 2 address field
+       10 SM-EDIT-INDEX      BINARY-LONG.    *> edit server: entry edited, 0 = a new entry
+       10 SM-EDIT-NAME       PIC X(64).
+       10 SM-EDIT-NAME-LENGTH BINARY-LONG.
+       10 SM-EDIT-ADDR       PIC X(256).
+       10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
+       10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
+       10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
+       10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
+       10 SM-MESSAGE-LENGTH  BINARY-LONG.
+*>  ---- server list (client-surface §2 servers.dat; US2-1, US2-2) ----
+    05 SL-STATE.
+       10 SL-COUNT           BINARY-LONG.
+       10 SL-ENTRY OCCURS 32 TIMES.
+          15 SL-NAME         PIC X(64).
+          15 SL-NAME-LENGTH  BINARY-LONG.
+          15 SL-ADDR         PIC X(256).
+          15 SL-ADDR-LENGTH  BINARY-LONG.
+          15 SL-POLICY       BINARY-LONG.    *> PackPolicy 0 prompt, 1 enabled, 2 disabled
+          15 SL-STATUS       BINARY-LONG.    *> SLS-*
+          15 SL-INCOMPATIBLE PIC 9.
+          15 SL-ONLINE       BINARY-LONG.
+          15 SL-MAX          BINARY-LONG.
+          15 SL-DESC         PIC X(256).
+          15 SL-DESC-LENGTH  BINARY-LONG.
+          15 SL-VERSION      PIC X(64).
+          15 SL-VERSION-LENGTH BINARY-LONG.
+*>  ---- connections (CONN-GAME, CONN-PING); buffers are PB-BUFFERs kept as their raw 21 bytes ----
+    05 CN-CONN OCCURS 2 TIMES.
+       10 CN-HANDLE          BINARY-LONG.    *> cc_net handle, 0 = none
+       10 CN-PHASE           BINARY-LONG.    *> PH-*
+       10 CN-NEXT            BINARY-LONG.    *> phase after connecting: PH-STATUS or PH-LOGIN
+       10 CN-ENTRY           BINARY-LONG.    *> ping: the server-list entry
+       10 CN-THRESHOLD       BINARY-LONG.    *> compression threshold, -1 = off
+       10 CN-HOST            PIC X(256).
+       10 CN-HOST-LENGTH     BINARY-LONG.
+       10 CN-PORT            BINARY-LONG.
+       10 CN-READY           PIC 9.          *> 1 once the buffers are initialised
+       10 CN-IN              PIC X(21).      *> received stream
+       10 CN-OUT             PIC X(21).      *> bytes not yet sent
+*>  ---- local player and the joined world (05a Login, 03 registries) ----
+    05 PL-STATE.
+       10 PL-ENTITY-ID       BINARY-LONG.
+       10 PL-X               FLOAT-LONG.
+       10 PL-Y               FLOAT-LONG.
+       10 PL-Z               FLOAT-LONG.
+       10 PL-YAW             FLOAT-SHORT.
+       10 PL-PITCH           FLOAT-SHORT.
+       10 PL-MODE            BINARY-LONG.
+       10 PL-HELD            BINARY-LONG.
+       10 PL-SLOT OCCURS 36 TIMES.
+          15 PL-SLOT-COUNT   BINARY-LONG.
+          15 PL-SLOT-ITEM    BINARY-LONG.
+       10 PL-ABILITIES       BINARY-LONG.
+       10 PL-FLY-SPEED       FLOAT-SHORT.
+       10 PL-WALK-SPEED      FLOAT-SHORT.
+       10 PL-SPAWN-X         BINARY-LONG.
+       10 PL-SPAWN-Y         BINARY-LONG.
+       10 PL-SPAWN-Z         BINARY-LONG.
+       10 PL-VIEW-DISTANCE   BINARY-LONG.
+       10 PL-DIM-NAME        PIC X(64).
+       10 PL-DIM-TYPE        BINARY-LONG.
+       10 PL-MIN-Y           BINARY-LONG.
+       10 PL-HEIGHT          BINARY-LONG.
+       10 PL-HAS-SKY         PIC 9.
+       10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
+       10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
+       10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
+       10 RG-DIM-COUNT       BINARY-LONG.    *> dimension_type registry entries received
+       10 RG-DIM OCCURS 8 TIMES.
+          15 RG-DIM-NAME     PIC X(64).
+          15 RG-DIM-MIN-Y    BINARY-LONG.
+          15 RG-DIM-HEIGHT   BINARY-LONG.
+          15 RG-DIM-HAS-SKY  PIC 9.
+       10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
+       10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
+*>  ---- world replica (data-model §3 replica): one row per chunk ----
+    05 WR-STATE.
+       10 WR-COUNT           BINARY-LONG.    *> rows in use
+       10 WR-CHUNK OCCURS 1089 TIMES.
+          15 WR-USED         PIC 9.
+          15 WR-CX           BINARY-LONG.
+          15 WR-CZ           BINARY-LONG.
+          15 WR-ADDR         USAGE POINTER.  *> 3 x 65536 cells: states, sky light, block light
+          15 WR-SECTION OCCURS 16 TIMES.
+             20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
+             20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
+             20 WR-OP-COUNT  BINARY-LONG.
+             20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
+             20 WR-TR-COUNT  BINARY-LONG.
+             20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+*>  ---- packs (08 §3, §10): stack, language, font ----
+    05 PK-STATE.
+       10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
+       10 PK-PACK OCCURS 16 TIMES.
+          15 PK-KIND         BINARY-LONG.    *> 0 built-in
+       10 LG-COUNT           BINARY-LONG.
+       10 LG-ENTRY OCCURS 640 TIMES.
+          15 LG-KEY          PIC X(80).
+          15 LG-KEY-LENGTH   BINARY-LONG.
+          15 LG-TEXT         PIC X(200).
+          15 LG-TEXT-LENGTH  BINARY-LONG.
+       10 FN-CELL-W          BINARY-LONG.    *> glyph cell of the font image
+       10 FN-CELL-H          BINARY-LONG.
+       10 FN-HEIGHT          BINARY-LONG.    *> provider height (drawn glyph height)
+       10 FN-GLYPH-AREA.
+        12 FN-GLYPH OCCURS 96 TIMES.         *> code point 32 + index - 1 (32 to 127)
+          15 FN-PRESENT      PIC 9.
+          15 FN-X            BINARY-LONG.    *> cell top-left in the UI atlas
+          15 FN-Y            BINARY-LONG.
+          15 FN-ADVANCE      BINARY-LONG.    *> in drawn pixels (height FN-HEIGHT)
+*>  ---- atlases: block atlas (texture 0) and UI atlas (texture 2) ----
+    05 AT-STATE.
+       10 AT-W               BINARY-LONG.
+       10 AT-H               BINARY-LONG.
+       10 AT-ADDR            USAGE POINTER.  *> RGBA pixels, rows top to bottom
+       10 AT-SPRITE-COUNT    BINARY-LONG.    *> sprite 1 is the missing texture
+       10 AT-SPRITE OCCURS 128 TIMES.
+          15 AT-NAME         PIC X(80).      *> sprite id, e.g. cobolcraft:block/greystone
+          15 AT-NAME-LENGTH  BINARY-LONG.
+          15 AT-X            BINARY-LONG.
+          15 AT-Y            BINARY-LONG.
+          15 AT-SW           BINARY-LONG.
+          15 AT-SH           BINARY-LONG.
+          15 AT-TRANSLUCENT  PIC 9.          *> 1 = some pixel has alpha below 255 (08 §5.3)
+       10 UA-W               BINARY-LONG.
+       10 UA-H               BINARY-LONG.
+       10 UA-ADDR            USAGE POINTER.
+       10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
+*>  ---- baked block models (08 §4, §5): quads per block state ----
+    05 BM-STATE OCCURS 18 TIMES.
+       10 BM-QUAD-COUNT      BINARY-LONG.
+       10 BM-QUAD OCCURS 24 TIMES.
+          15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE
+          15 BM-SHADE        BINARY-LONG.    *> DIR-* the face is shaded and lit as
+          15 BM-SPRITE       BINARY-LONG.
+          15 BM-CORNER OCCURS 4 TIMES.       *> top-left, top-right, bottom-right, bottom-left
+             20 BM-X         FLOAT-SHORT.    *> block units 0 to 1
+             20 BM-Y         FLOAT-SHORT.
+             20 BM-Z         FLOAT-SHORT.
+             20 BM-U         FLOAT-SHORT.    *> sprite units 0 to 16
+             20 BM-V         FLOAT-SHORT.
+*>  ---- sky (standin-content §4.8) ----
+    05 SK-STATE.
+       10 SK-U               BINARY-LONG.    *> daylight in thousandths
+       10 SK-MESHED-U        BINARY-LONG.    *> daylight the meshes were built with
+       10 SK-R               FLOAT-SHORT.    *> clear colour
+       10 SK-G               FLOAT-SHORT.
+       10 SK-B               FLOAT-SHORT.
+*>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
+    05 RL-STATE.
+       10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
+       10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
+       10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
+       10 RL-DRAW-COUNT      BINARY-LONG.
+       10 RL-DRAW OCCURS 8192 TIMES.
+          15 RL-D-SLOT       BINARY-LONG.
+          15 RL-D-PIPELINE   BINARY-LONG.
+          15 RL-D-TEX        BINARY-LONG.
+          15 RL-D-MATRIX OCCURS 16 TIMES FLOAT-SHORT.
+       10 RL-UPLOAD-COUNT    BINARY-LONG.
+       10 RL-UPLOAD OCCURS 4096 TIMES.
+          15 RL-U-SLOT       BINARY-LONG.
+          15 RL-U-ADDR       USAGE POINTER.
+          15 RL-U-COUNT      BINARY-LONG.
+       10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
+       10 RL-UI-VERTEX OCCURS 24576 TIMES.
+          15 RL-UI-X         FLOAT-SHORT.
+          15 RL-UI-Y         FLOAT-SHORT.
+          15 RL-UI-Z         FLOAT-SHORT.
+          15 RL-UI-U         FLOAT-SHORT.
+          15 RL-UI-V         FLOAT-SHORT.
+          15 RL-UI-B         FLOAT-SHORT.
+          15 RL-UI-A         FLOAT-SHORT.
+

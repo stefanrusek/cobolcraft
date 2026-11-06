@@ -1,0 +1,112 @@
+*> Implementation test of client/src/packs/source.cob and stack.cob (PACK-STACK-INIT, PACK-RESOLVE,
+*> PACK-READ, PACK-IMAGE, PACK-SOURCE-PATH; 08 §3.1, §3.2): with only the built-in pack every
+*> built-in path resolves to it and an absent path is missing; a path is resolved from the top-most
+*> pack that has it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PACK-STACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY TESTLIB.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PACK                BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-AREA                PIC X(32768).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32768.
+ 01 WS-SMALL               BINARY-LONG VALUE 20.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     MOVE 0 TO WS-COUNT WS-BAD
+     MOVE 1 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-FOUND = 0
+         CALL "PACK-SOURCE-PATH" USING CLIENT-STATE WS-ONE WS-I WS-PATH WS-PATH-LENGTH WS-FOUND
+         IF WS-FOUND = 1
+             ADD 1 TO WS-COUNT
+             CALL "PACK-RESOLVE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-PACK
+             IF WS-PACK NOT = 1
+                 ADD 1 TO WS-BAD
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE "pack stack with only the built-in pack: each of its 49 paths resolves to pack 1"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "49 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-COUNT TO WS-LENGTH
+     CALL "TEST-PAIR" USING WS-LENGTH WS-BAD TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "assets/cobolcraft/textures/block/nothing.png" TO WS-PATH
+     MOVE 44 TO WS-PATH-LENGTH
+     CALL "PACK-RESOLVE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-PACK
+     CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-AREA WS-CAPACITY WS-W WS-H
+         WS-FOUND
+     CALL "PACK-READ" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-AREA WS-CAPACITY WS-LENGTH
+         WS-I
+     MOVE "pack stack an absent path is missing: resolves to 0, no image, no file" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-PACK * 100 + WS-FOUND * 10 + WS-I
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "pack.mcmeta" TO WS-PATH
+     MOVE 11 TO WS-PATH-LENGTH
+     CALL "PACK-READ" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-AREA WS-SMALL WS-LENGTH
+         WS-FOUND
+     MOVE "pack stack reads pack.mcmeta from the built-in pack, at most the capacity" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE '1 {"pack":{"descriptio' TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-FOUND = 1 AND WS-LENGTH = 20
+         STRING "1 " WS-AREA(1:20) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "assets/cobolcraft/textures/block/loam.png" TO WS-PATH
+     MOVE 41 TO WS-PATH-LENGTH
+     CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-AREA WS-CAPACITY WS-W WS-H
+         WS-FOUND
+     MOVE "pack stack reads a texture as a 16 x 16 image" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 11616 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FOUND * 10000 + WS-W * 100 + WS-H
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Two packs (the built-in source twice): the top-most one wins.
+     MOVE 2 TO PK-COUNT
+     MOVE 0 TO PK-KIND(2)
+     CALL "PACK-RESOLVE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-PACK
+     MOVE "pack stack a path held by two packs resolves to the top-most one" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-PACK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-PACK-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PAIR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ 01 L-OUT                  PIC X(1024).
+ PROCEDURE DIVISION USING L-A L-B L-OUT.
+     MOVE L-A TO WS-EDIT
+     MOVE L-B TO WS-EDIT2
+     MOVE SPACES TO L-OUT
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO L-OUT
+     GOBACK.
+ END PROGRAM TEST-PAIR.

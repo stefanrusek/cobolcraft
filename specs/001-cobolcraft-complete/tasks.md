@@ -1094,86 +1094,86 @@ on those, never on the GPU (research R9). `client/src/main.cob` and `client/src/
 built-in pack with shading, transparency and light. **Independent Test**: `make gate-client` with
 `acc_us2_server_list.cob`, `acc_us2_render.cob` and `acc_us2_textures.cob` passing.
 
-- [ ] T769 [US2-client] Create `client/copy/CLSTATE.cpy` (screen model, input state, connection state, world replica, local player, packs, atlases, render list; data-model §13)
-- [ ] T770 [US2-client] Create `client/copy/CLCONST.cpy` (screen ids, pipeline and texture ids used by the client)
-- [ ] T771 [P] [US2-client] Write `client/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant, the 24-byte event record and the 28-byte vertex have their shim-abi values and lengths; `cc_net_*`, `cc_deflate`, `cc_inflate` link and return defined outcomes on minimal calls (window and Vulkan calls are covered by `client/tests/test_submit.cob`)
-- [ ] T772 [P] [US2-client] Write `client/tests/contract_proto_consumer.cob`: `PB-BUFFER` and every `PROTO.cpy` record the client uses have the lengths and layout of contracts/proto-api.md §1, and each `PB-*`/`NBT-*` program the client calls links and returns on a minimal valid call
-- [ ] T773 [P] [US2-client] Write implementation test `client/tests/test_args.cob` for `--name` and `--gamedir` (default `$HOME/.cobolcraft`) (client-surface §1)
-- [ ] T774 [P] [US2-client] Write fatal-path test `client/tests/test_args_missing.cob` with its `.expect` file (`FATAL arguments: …`, exit 1; research R14)
-- [ ] T775 [P] [US2-client] Write fatal-path test `client/tests/test_args_invalid.cob` with its `.expect` file (name outside 1–16 of `A-Z a-z 0-9 _`)
-- [ ] T776 [US2-client] Implement argument parsing in `client/src/args.cob` and add the client sources to `SRC` in `client/Makefile`
-- [ ] T777 [P] [US2-client] Write implementation test `client/tests/test_game_dir.cob`: the game directory and `resourcepacks/`, `saves/`, `downloads/` are created when absent (client-surface §2)
-- [ ] T778 [US2-client] Implement game directory set-up in `client/src/game-dir.cob`
-- [ ] T779 [P] [US2-client] Write fatal-path test `client/tests/test_data_unreadable.cob` with its `.expect` file: an unreadable `servers.dat` is fatal (research R14)
-- [ ] T780 [US2-client] Route an unreadable client data file (outcome 1 of proto `NBT-FILE-READ`) to `cc_fatal` in `client/src/game-dir.cob`
-- [ ] T781 [P] [US2-client] Write implementation test `client/tests/test_servers_dat.cob`: `servers.dat` `Servers` list of `{Name, Address, PackPolicy}` round-trips (client-surface §2)
-- [ ] T782 [US2-client] Implement `servers.dat` load and save through proto `NBT-FILE-READ`/`NBT-FILE-WRITE` in `client/src/game-dir.cob`
-- [ ] T783 [P] [US2-client] Write implementation test `client/tests/test_input.cob`: event records of every kind 1 to 9 update the input state (keys held, text code points including non-ASCII, buttons, cursor delta while captured, scroll, resize, close)
-- [ ] T784 [US2-client] Implement input decoding in `client/src/input.cob`
-- [ ] T785 [P] [US2-client] Write implementation test `client/tests/test_json.cob`: objects, arrays, strings with escapes and `\u` (surrogate pairs), numbers, booleans, null, path lookup, malformed input reported as an error value
-- [ ] T786 [US2-client] Implement the JSON parser in `client/src/json.cob`
-- [ ] T787 [P] [US2-client] Create the texture reference generator `client/tests/fixtures/gen_textures.py` (test infrastructure, excluded from coverage): an independent stdlib-Python implementation of every procedural recipe of the extended standin-content (§1.4, §2, §11 to §15 icons and textures, §18 font atlas) writing `client/tests/fixtures/textures/<name>.rgba` (research R9)
-- [ ] T788 [US2-client] Add a `fixtures` prerequisite of the `tests` target in `client/Makefile` that runs `client/tests/fixtures/gen_textures.py`
-- [ ] T789 [P] [US2-client] Write acceptance test `client/tests/acc_us2_textures.cob`: case "SC-004 every built-in block texture and the font atlas equal `client/tests/fixtures/textures/<name>.rgba` pixel for pixel"
-- [ ] T790 [US2-client] Implement the built-in block texture generator (standin-content §1.4 recipes with the exact noise hash) in `client/src/packs/builtin.cob`
-- [ ] T791 [US2-client] Implement the built-in font atlas (standin-content §18 glyphs) in `client/src/packs/builtin.cob`
-- [ ] T792 [P] [US2-client] Write implementation test `client/tests/test_builtin_files.cob`: the built-in pack serves `pack.mcmeta`, the atlas definitions, template and block models, block state files, `font/default.json` and `lang/en_us.json` with the contents of 08 §10
-- [ ] T793 [US2-client] Implement the built-in pack's JSON files (08 §10.1, §10.2, §10.4 to §10.6, font, lang) in `client/src/packs/builtin.cob`
-- [ ] T794 [P] [US2-client] Write implementation test `client/tests/test_pack_stack.cob`: a path is resolved from the top-most pack that has it; with only the built-in pack every built-in path resolves and an absent path is "missing"
-- [ ] T795 [US2-client] Implement the pack source abstraction with the built-in source in `client/src/packs/source.cob`
-- [ ] T796 [US2-client] Implement stack resolution (top-most pack with the path wins; otherwise missing) in `client/src/packs/stack.cob`
-- [ ] T797 [P] [US2-client] Write implementation test `client/tests/test_lang.cob`: lang keys resolve to `en_us` text; a missing key shows the key itself as 08 §10.8 states
-- [ ] T798 [US2-client] Implement language loading in `client/src/packs/lang.cob`
-- [ ] T799 [P] [US2-client] Write implementation test `client/tests/test_font.cob`: the `bitmap` provider maps code points 32–126 to glyph cells and advances; other code points use the §18 missing-glyph rule
-- [ ] T800 [US2-client] Implement the bitmap font provider in `client/src/packs/font.cob`
-- [ ] T801 [P] [US2-client] Write implementation test `client/tests/test_blockstates.cob`: variant keys and multipart cases of 08 §4 select models and rotations for every block state of standin-content §1.2
-- [ ] T802 [US2-client] Implement block state file resolution in `client/src/packs/blockstates.cob`
-- [ ] T803 [P] [US2-client] Write implementation test `client/tests/test_models.cob`: parent resolution (08 §5.2), `#` texture references (§5.3), elements and faces (§5.4, §5.5), the element rotation rule and default UV formula of 08's answered Open questions 4 and 6, baked into quads per block state
-- [ ] T804 [US2-client] Implement model loading and baking in `client/src/models.cob`
-- [ ] T805 [P] [US2-client] Write implementation test `client/tests/test_atlas.cob`: sprites are stitched into the block atlas with UV lookup by sprite id; the missing-texture stripes sprite is generated by the client (standin-content §1.4) and used for every unresolved sprite
-- [ ] T806 [US2-client] Implement atlas stitching and the missing-texture sprite in `client/src/atlas.cob`
-- [ ] T807 [P] [US2-client] Write `client/tests/contract_wire_client.cob` status and login cases: Intention, Status Request, Ping Request, Hello and Login Acknowledged encode equal to their fixtures; Status Response, Pong, Set Compression, Login Finished and Login Disconnect decode to the stated values
-- [ ] T808 [US2-client] Implement the client status ping and login in `client/src/protocol-client.cob` (name from `--name`, compression after Set Compression)
-- [ ] T809 [P] [US2-client] Write `contract_wire_client.cob` configuration cases: brand, Client Information, Select Known Packs, Finish Configuration and Keep Alive encode equal to their fixtures; every configuration clientbound fixture including each Registry Data decodes
-- [ ] T810 [US2-client] Implement configuration handling (registry storage, known packs answer, tags, keep-alive echo, finish) in `client/src/protocol-client.cob`
-- [ ] T811 [P] [US2-client] Write `contract_wire_client.cob` play-join cases: Accept Teleportation, Chunk Batch Received, Player Loaded, Client Tick End and Keep Alive encode equal to their fixtures; Login (`play-s2c-32-login-main.hex`), Game Event 13, Player Position, Player Abilities, spawn position, Set Time, held slot, inventory, chunk batch and Level Chunk With Light decode
-- [ ] T812 [US2-client] Implement play join handling (Accept Teleportation, Chunk Batch Received, Player Loaded, Client Tick End each tick) in `client/src/protocol-client.cob`
-- [ ] T813 [P] [US2-client] Write implementation test `client/tests/test_disconnect.cob`: a login Disconnect (`login-s2c-00-login-disconnect-banned.hex`) and a play Disconnect (`play-s2c-20-disconnect-stopping.hex`) each close the connection, return to the server list and show the message rendered from its `translate` key through the `en_us` lang; the server list keeps showing that last disconnect message
-- [ ] T814 [US2-client] Implement disconnect packet handling (return to the server list with the message rendered from its `translate` component through the lang) in `client/src/protocol-client.cob`
-- [ ] T815 [P] [US2-client] Write implementation test `client/tests/test_net_client.cob` against a loopback listener opened by the test with `cc_net_*` that serves fixture bytes: address parsing (`host`, `host:port`, default 25565), non-blocking connect and pump, a refused connection or unresolved host logs `ERROR connection: <detail>` and returns to the server list (research R14)
-- [ ] T816 [US2-client] Implement the network connection in `client/src/net-client.cob`
-- [ ] T817 [P] [US2-client] Write implementation test `client/tests/test_world_replica.cob`: chunks decoded with `CHUNK-SECTION-DECODE`/`LIGHT-DECODE` are stored per position; block and light lookup; unknown state ids decode as void (standin-content §1.2)
-- [ ] T818 [US2-client] Implement the world replica in `client/src/world-replica.cob`
-- [ ] T819 [P] [US2-client] Write implementation test `client/tests/test_mesher.cob`: faces against opaque neighbours are culled; lucite–lucite faces culled and lucite against opaque drawn on the lucite side only (standin-content §1.1); per-face brightness top 1.0, north/south 0.8, east/west 0.6, bottom 0.5 × max(sky × daylight, block light)/15 with floor 0.1 (data-model §13); translucent faces in a separate mesh
-- [ ] T820 [US2-client] Implement section meshing in `client/src/mesher.cob`
-- [ ] T821 [P] [US2-client] Write implementation test `client/tests/test_sky.cob`: sky colour and daylight factor as a function of the time of day over the §4.8 day length (as the extension or 08 states)
-- [ ] T822 [US2-client] Implement sky colour and daylight factor in `client/src/sky.cob`
-- [ ] T823 [P] [US2-client] Write implementation test `client/tests/test_render_list.cob`: perspective and view matrices from the local player's position, yaw and pitch; opaque draws then translucent draws back to front by section; changed meshes listed as uploads; UI draws last; clear colour from the sky
-- [ ] T824 [US2-client] Implement the render list builder in `client/src/render-list.cob`
-- [ ] T825 [P] [US2-client] Write implementation test `client/tests/test_ui_render.cob`: text from the pack font and lang, buttons, text fields and lists of the screen model become UI-pipeline vertices on texture 2
-- [ ] T826 [US2-client] Implement the 2-D UI renderer in `client/src/ui-render.cob`
-- [ ] T827 [P] [US2-client] Write acceptance test `client/tests/acc_us2_server_list.cob`: case "acceptance US2-1 given the client started when the Player adds, edits and removes server entries then the list shows them and after a restart (new `CLIENT-STATE`, same game directory) the entries are still there"
-- [ ] T828 [US2-client] Implement the title screen (multiplayer and quit) in `client/src/screens/title.cob`
-- [ ] T829 [US2-client] Implement the server list screen (entries, add, remove, join) in `client/src/screens/server-list.cob`
-- [ ] T830 [US2-client] Implement the edit-server screen (name and address) in `client/src/screens/edit-server.cob`
-- [ ] T831 [P] [US2-client] Write acceptance test `client/tests/acc_us2_server_list_status.cob`: case "acceptance US2-2 client half: a Status Response (`status-s2c-00-status-response.hex`) for an entry puts its description and online count in the screen model"; case "US2 edge a Status Response with a protocol other than 777 marks the entry incompatible"
-- [ ] T832 [US2-client] Implement the status ping per server-list entry showing description, online count and an incompatible-protocol mark in `client/src/screens/server-list.cob`
-- [ ] T833 [US2-client] Implement showing the last disconnect message on the server list in `client/src/screens/server-list.cob`
-- [ ] T834 [P] [US2-client] Write implementation test `client/tests/test_connecting.cob`: joining an entry opens the connecting screen naming the address; it is replaced by the world after Login, by the server list (with the message) on a disconnect or connection failure
-- [ ] T835 [US2-client] Implement the connecting screen in `client/src/screens/connecting.cob`
-- [ ] T836 [P] [US2-client] Write acceptance test `client/tests/acc_us2_render.cob`: given the replica holds `play-s2c-2e-level-chunk-with-light-spawn.hex` and the player at the spawn: case "acceptance US2-4 every visible block face is drawn with its built-in sprite and per-face shading"; case "lucite faces are in the translucent draw and blocks behind it are drawn"; case "faces near the lit glowtube are brighter than the same faces far from it"
-- [ ] T837 [P] [US2-client] Write implementation test `client/tests/test_pause.cob`: Escape in the world opens the pause menu; its disconnect control closes the connection and returns to the server list (US2-5 client half)
-- [ ] T838 [US2-client] Implement the pause menu with the disconnect control in `client/src/screens/pause.cob`
-- [ ] T839 [P] [US2-client] Write implementation test `client/tests/test_loop.cob`: `CL-STEP` routes events to the current screen or to world controls, pumps the connection without waiting, re-meshes changed sections and produces the screen model and render list each frame
-- [ ] T840 [P] [US2-client] Write implementation test `client/tests/test_submit.cob` against the real window and MoltenVK (no test double, research R9): atlases uploaded through `cc_vk_texture`, meshes through `cc_vk_mesh`, draws in render-list order, and a run of `CL-RUN` ending through the window's close-requested event
-- [ ] T841 [P] [US2-client] Write test `client/tests/test_cl_main.cob` with `client/tests/test_cl_main.expect` (exit 1): `CL-MAIN` without `--name` ends the run through the fatal arguments path; and `client/tests/test_cl_main_run.cob` with its `.expect` (exit 0): `CL-MAIN` with `--name` and a scratch `--gamedir` opens the window, runs `CL-RUN` and ends with exit 0 through the close-requested event
-- [ ] T842 [US2-client] Implement `CL-STEP` in `client/src/loop.cob`
-- [ ] T843 [US2-client] Implement `CL-RUN` (frame loop over `cc_win_poll`, `CL-STEP`, submission, until close or quit) in `client/src/loop.cob`
-- [ ] T844 [US2-client] Implement render-list submission (`cc_vk_texture`, `cc_vk_mesh`, frame begin, draws, frame end) in `client/src/submit.cob`
-- [ ] T845 [US2-client] Implement `CL-MAIN` (arguments, game directory, window, Vulkan, `CL-RUN`, `STOP RUN` with the exit status; never returns) in `client/src/loop.cob` so it is part of `libclient.a`
-- [ ] T846 [US2-client] Implement `client/src/main.cob` (`cobolcraft`) as a single `CALL "CL-MAIN"` (contracts/test-harness.md §2)
-- [ ] T847 [US2-client] Extend the client implementation tests to 100 % coverage of the US2 client sources and list every test in `TESTS` of `client/Makefile`
-- [ ] T848 Gate: run `make gate-client` (root `Makefile`) and record the command and its real output
+- [X] T769 [US2-client] Create `client/copy/CLSTATE.cpy` (screen model, input state, connection state, world replica, local player, packs, atlases, render list; data-model §13)
+- [X] T770 [US2-client] Create `client/copy/CLCONST.cpy` (screen ids, pipeline and texture ids used by the client)
+- [X] T771 [P] [US2-client] Write `client/tests/contract_shim_consumer.cob`: every `CCSHIM.cpy` constant, the 24-byte event record and the 28-byte vertex have their shim-abi values and lengths; `cc_net_*`, `cc_deflate`, `cc_inflate` link and return defined outcomes on minimal calls (window and Vulkan calls are covered by `client/tests/test_submit.cob`)
+- [X] T772 [P] [US2-client] Write `client/tests/contract_proto_consumer.cob`: `PB-BUFFER` and every `PROTO.cpy` record the client uses have the lengths and layout of contracts/proto-api.md §1, and each `PB-*`/`NBT-*` program the client calls links and returns on a minimal valid call
+- [X] T773 [P] [US2-client] Write implementation test `client/tests/test_args.cob` for `--name` and `--gamedir` (default `$HOME/.cobolcraft`) (client-surface §1)
+- [X] T774 [P] [US2-client] Write fatal-path test `client/tests/test_args_missing.cob` with its `.expect` file (`FATAL arguments: …`, exit 1; research R14)
+- [X] T775 [P] [US2-client] Write fatal-path test `client/tests/test_args_invalid.cob` with its `.expect` file (name outside 1–16 of `A-Z a-z 0-9 _`)
+- [X] T776 [US2-client] Implement argument parsing in `client/src/args.cob` and add the client sources to `SRC` in `client/Makefile`
+- [X] T777 [P] [US2-client] Write implementation test `client/tests/test_game_dir.cob`: the game directory and `resourcepacks/`, `saves/`, `downloads/` are created when absent (client-surface §2)
+- [X] T778 [US2-client] Implement game directory set-up in `client/src/game-dir.cob`
+- [X] T779 [P] [US2-client] Write fatal-path test `client/tests/test_data_unreadable.cob` with its `.expect` file: an unreadable `servers.dat` is fatal (research R14)
+- [X] T780 [US2-client] Route an unreadable client data file (outcome 1 of proto `NBT-FILE-READ`) to `cc_fatal` in `client/src/game-dir.cob`
+- [X] T781 [P] [US2-client] Write implementation test `client/tests/test_servers_dat.cob`: `servers.dat` `Servers` list of `{Name, Address, PackPolicy}` round-trips (client-surface §2)
+- [X] T782 [US2-client] Implement `servers.dat` load and save through proto `NBT-FILE-READ`/`NBT-FILE-WRITE` in `client/src/game-dir.cob`
+- [X] T783 [P] [US2-client] Write implementation test `client/tests/test_input.cob`: event records of every kind 1 to 9 update the input state (keys held, text code points including non-ASCII, buttons, cursor delta while captured, scroll, resize, close)
+- [X] T784 [US2-client] Implement input decoding in `client/src/input.cob`
+- [X] T785 [P] [US2-client] Write implementation test `client/tests/test_json.cob`: objects, arrays, strings with escapes and `\u` (surrogate pairs), numbers, booleans, null, path lookup, malformed input reported as an error value
+- [X] T786 [US2-client] Implement the JSON parser in `client/src/json.cob`
+- [X] T787 [P] [US2-client] Create the texture reference generator `client/tests/fixtures/gen_textures.py` (test infrastructure, excluded from coverage): an independent stdlib-Python implementation of every procedural recipe of the extended standin-content (§1.4, §2, §11 to §15 icons and textures, §18 font atlas) writing `client/tests/fixtures/textures/<name>.rgba` (research R9)
+- [X] T788 [US2-client] Add a `fixtures` prerequisite of the `tests` target in `client/Makefile` that runs `client/tests/fixtures/gen_textures.py`
+- [X] T789 [P] [US2-client] Write acceptance test `client/tests/acc_us2_textures.cob`: case "SC-004 every built-in block texture and the font atlas equal `client/tests/fixtures/textures/<name>.rgba` pixel for pixel"
+- [X] T790 [US2-client] Implement the built-in block texture generator (standin-content §1.4 recipes with the exact noise hash) in `client/src/packs/builtin.cob`
+- [X] T791 [US2-client] Implement the built-in font atlas (standin-content §18 glyphs) in `client/src/packs/builtin.cob`
+- [X] T792 [P] [US2-client] Write implementation test `client/tests/test_builtin_files.cob`: the built-in pack serves `pack.mcmeta`, the atlas definitions, template and block models, block state files, `font/default.json` and `lang/en_us.json` with the contents of 08 §10
+- [X] T793 [US2-client] Implement the built-in pack's JSON files (08 §10.1, §10.2, §10.4 to §10.6, font, lang) in `client/src/packs/builtin.cob`
+- [X] T794 [P] [US2-client] Write implementation test `client/tests/test_pack_stack.cob`: a path is resolved from the top-most pack that has it; with only the built-in pack every built-in path resolves and an absent path is "missing"
+- [X] T795 [US2-client] Implement the pack source abstraction with the built-in source in `client/src/packs/source.cob`
+- [X] T796 [US2-client] Implement stack resolution (top-most pack with the path wins; otherwise missing) in `client/src/packs/stack.cob`
+- [X] T797 [P] [US2-client] Write implementation test `client/tests/test_lang.cob`: lang keys resolve to `en_us` text; a missing key shows the key itself as 08 §10.8 states
+- [X] T798 [US2-client] Implement language loading in `client/src/packs/lang.cob`
+- [X] T799 [P] [US2-client] Write implementation test `client/tests/test_font.cob`: the `bitmap` provider maps code points 32–126 to glyph cells and advances; other code points use the §18 missing-glyph rule
+- [X] T800 [US2-client] Implement the bitmap font provider in `client/src/packs/font.cob`
+- [X] T801 [P] [US2-client] Write implementation test `client/tests/test_blockstates.cob`: variant keys and multipart cases of 08 §4 select models and rotations for every block state of standin-content §1.2
+- [X] T802 [US2-client] Implement block state file resolution in `client/src/packs/blockstates.cob`
+- [X] T803 [P] [US2-client] Write implementation test `client/tests/test_models.cob`: parent resolution (08 §5.2), `#` texture references (§5.3), elements and faces (§5.4, §5.5), the element rotation rule and default UV formula of 08's answered Open questions 4 and 6, baked into quads per block state
+- [X] T804 [US2-client] Implement model loading and baking in `client/src/models.cob`
+- [X] T805 [P] [US2-client] Write implementation test `client/tests/test_atlas.cob`: sprites are stitched into the block atlas with UV lookup by sprite id; the missing-texture stripes sprite is generated by the client (standin-content §1.4) and used for every unresolved sprite
+- [X] T806 [US2-client] Implement atlas stitching and the missing-texture sprite in `client/src/atlas.cob`
+- [X] T807 [P] [US2-client] Write `client/tests/contract_wire_client.cob` status and login cases: Intention, Status Request, Ping Request, Hello and Login Acknowledged encode equal to their fixtures; Status Response, Pong, Set Compression, Login Finished and Login Disconnect decode to the stated values
+- [X] T808 [US2-client] Implement the client status ping and login in `client/src/protocol-client.cob` (name from `--name`, compression after Set Compression)
+- [X] T809 [P] [US2-client] Write `contract_wire_client.cob` configuration cases: brand, Client Information, Select Known Packs, Finish Configuration and Keep Alive encode equal to their fixtures; every configuration clientbound fixture including each Registry Data decodes
+- [X] T810 [US2-client] Implement configuration handling (registry storage, known packs answer, tags, keep-alive echo, finish) in `client/src/protocol-client.cob`
+- [X] T811 [P] [US2-client] Write `contract_wire_client.cob` play-join cases: Accept Teleportation, Chunk Batch Received, Player Loaded, Client Tick End and Keep Alive encode equal to their fixtures; Login (`play-s2c-32-login-main.hex`), Game Event 13, Player Position, Player Abilities, spawn position, Set Time, held slot, inventory, chunk batch and Level Chunk With Light decode
+- [X] T812 [US2-client] Implement play join handling (Accept Teleportation, Chunk Batch Received, Player Loaded, Client Tick End each tick) in `client/src/protocol-client.cob`
+- [X] T813 [P] [US2-client] Write implementation test `client/tests/test_disconnect.cob`: a login Disconnect (`login-s2c-00-login-disconnect-banned.hex`) and a play Disconnect (`play-s2c-20-disconnect-stopping.hex`) each close the connection, return to the server list and show the message rendered from its `translate` key through the `en_us` lang; the server list keeps showing that last disconnect message
+- [X] T814 [US2-client] Implement disconnect packet handling (return to the server list with the message rendered from its `translate` component through the lang) in `client/src/protocol-client.cob`
+- [X] T815 [P] [US2-client] Write implementation test `client/tests/test_net_client.cob` against a loopback listener opened by the test with `cc_net_*` that serves fixture bytes: address parsing (`host`, `host:port`, default 25565), non-blocking connect and pump, a refused connection or unresolved host logs `ERROR connection: <detail>` and returns to the server list (research R14)
+- [X] T816 [US2-client] Implement the network connection in `client/src/net-client.cob`
+- [X] T817 [P] [US2-client] Write implementation test `client/tests/test_world_replica.cob`: chunks decoded with `CHUNK-SECTION-DECODE`/`LIGHT-DECODE` are stored per position; block and light lookup; unknown state ids decode as void (standin-content §1.2)
+- [X] T818 [US2-client] Implement the world replica in `client/src/world-replica.cob`
+- [X] T819 [P] [US2-client] Write implementation test `client/tests/test_mesher.cob`: faces against opaque neighbours are culled; lucite–lucite faces culled and lucite against opaque drawn on the lucite side only (standin-content §1.1); per-face brightness top 1.0, north/south 0.8, east/west 0.6, bottom 0.5 × max(sky × daylight, block light)/15 with floor 0.1 (data-model §13); translucent faces in a separate mesh
+- [X] T820 [US2-client] Implement section meshing in `client/src/mesher.cob`
+- [X] T821 [P] [US2-client] Write implementation test `client/tests/test_sky.cob`: sky colour and daylight factor as a function of the time of day over the §4.8 day length (as the extension or 08 states)
+- [X] T822 [US2-client] Implement sky colour and daylight factor in `client/src/sky.cob`
+- [X] T823 [P] [US2-client] Write implementation test `client/tests/test_render_list.cob`: perspective and view matrices from the local player's position, yaw and pitch; opaque draws then translucent draws back to front by section; changed meshes listed as uploads; UI draws last; clear colour from the sky
+- [X] T824 [US2-client] Implement the render list builder in `client/src/render-list.cob`
+- [X] T825 [P] [US2-client] Write implementation test `client/tests/test_ui_render.cob`: text from the pack font and lang, buttons, text fields and lists of the screen model become UI-pipeline vertices on texture 2
+- [X] T826 [US2-client] Implement the 2-D UI renderer in `client/src/ui-render.cob`
+- [X] T827 [P] [US2-client] Write acceptance test `client/tests/acc_us2_server_list.cob`: case "acceptance US2-1 given the client started when the Player adds, edits and removes server entries then the list shows them and after a restart (new `CLIENT-STATE`, same game directory) the entries are still there"
+- [X] T828 [US2-client] Implement the title screen (multiplayer and quit) in `client/src/screens/title.cob`
+- [X] T829 [US2-client] Implement the server list screen (entries, add, remove, join) in `client/src/screens/server-list.cob`
+- [X] T830 [US2-client] Implement the edit-server screen (name and address) in `client/src/screens/edit-server.cob`
+- [X] T831 [P] [US2-client] Write acceptance test `client/tests/acc_us2_server_list_status.cob`: case "acceptance US2-2 client half: a Status Response (`status-s2c-00-status-response.hex`) for an entry puts its description and online count in the screen model"; case "US2 edge a Status Response with a protocol other than 777 marks the entry incompatible"
+- [X] T832 [US2-client] Implement the status ping per server-list entry showing description, online count and an incompatible-protocol mark in `client/src/screens/server-list.cob`
+- [X] T833 [US2-client] Implement showing the last disconnect message on the server list in `client/src/screens/server-list.cob`
+- [X] T834 [P] [US2-client] Write implementation test `client/tests/test_connecting.cob`: joining an entry opens the connecting screen naming the address; it is replaced by the world after Login, by the server list (with the message) on a disconnect or connection failure
+- [X] T835 [US2-client] Implement the connecting screen in `client/src/screens/connecting.cob`
+- [X] T836 [P] [US2-client] Write acceptance test `client/tests/acc_us2_render.cob`: given the replica holds `play-s2c-2e-level-chunk-with-light-spawn.hex` and the player at the spawn: case "acceptance US2-4 every visible block face is drawn with its built-in sprite and per-face shading"; case "lucite faces are in the translucent draw and blocks behind it are drawn"; case "faces near the lit glowtube are brighter than the same faces far from it"
+- [X] T837 [P] [US2-client] Write implementation test `client/tests/test_pause.cob`: Escape in the world opens the pause menu; its disconnect control closes the connection and returns to the server list (US2-5 client half)
+- [X] T838 [US2-client] Implement the pause menu with the disconnect control in `client/src/screens/pause.cob`
+- [X] T839 [P] [US2-client] Write implementation test `client/tests/test_loop.cob`: `CL-STEP` routes events to the current screen or to world controls, pumps the connection without waiting, re-meshes changed sections and produces the screen model and render list each frame
+- [X] T840 [P] [US2-client] Write implementation test `client/tests/test_submit.cob` against the real window and MoltenVK (no test double, research R9): atlases uploaded through `cc_vk_texture`, meshes through `cc_vk_mesh`, draws in render-list order, and a run of `CL-RUN` ending through the window's close-requested event
+- [X] T841 [P] [US2-client] Write test `client/tests/test_cl_main.cob` with `client/tests/test_cl_main.expect` (exit 1): `CL-MAIN` without `--name` ends the run through the fatal arguments path; and `client/tests/test_cl_main_run.cob` with its `.expect` (exit 0): `CL-MAIN` with `--name` and a scratch `--gamedir` opens the window, runs `CL-RUN` and ends with exit 0 through the close-requested event
+- [X] T842 [US2-client] Implement `CL-STEP` in `client/src/loop.cob`
+- [X] T843 [US2-client] Implement `CL-RUN` (frame loop over `cc_win_poll`, `CL-STEP`, submission, until close or quit) in `client/src/loop.cob`
+- [X] T844 [US2-client] Implement render-list submission (`cc_vk_texture`, `cc_vk_mesh`, frame begin, draws, frame end) in `client/src/submit.cob`
+- [X] T845 [US2-client] Implement `CL-MAIN` (arguments, game directory, window, Vulkan, `CL-RUN`, `STOP RUN` with the exit status; never returns) in `client/src/loop.cob` so it is part of `libclient.a`
+- [X] T846 [US2-client] Implement `client/src/main.cob` (`cobolcraft`) as a single `CALL "CL-MAIN"` (contracts/test-harness.md §2)
+- [X] T847 [US2-client] Extend the client implementation tests to 100 % coverage of the US2 client sources and list every test in `TESTS` of `client/Makefile`
+- [X] T848 Gate: run `make gate-client` (root `Makefile`) and record the command and its real output
 
 #### Phase 33: US3-client — moving, looking, streaming, other players, day and night
 
