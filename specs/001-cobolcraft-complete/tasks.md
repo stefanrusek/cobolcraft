@@ -1300,12 +1300,12 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US10. **Independent Test**: `make gate-client`.
 
-- [ ] T934 [P] [US10-client] Write `contract_wire_client.cob` cases: Place Recipe encodes equal to its fixture; Recipe Book Add decodes every recipe with its craftable flag
-- [ ] T935 [P] [US10-client] Write acceptance test `client/tests/acc_us10_crafting_screen.cob`: case "acceptance US10-1 client half: C opens the crafting screen listing every recipe with ingredients and result, craftable ones marked"; case "US10-2 client half: choosing a craftable recipe sends Place Recipe with its display id"
-- [ ] T936 [US10-client] Implement the recipe book replica in `client/src/protocol-client.cob`
-- [ ] T937 [US10-client] Implement the crafting screen in `client/src/screens/crafting.cob`
-- [ ] T938 [US10-client] Extend the client implementation tests to 100 % coverage of the US10 changes
-- [ ] T939 Gate: run `make gate-client` and record the command and its real output
+- [X] T934 [P] [US10-client] Write `contract_wire_client.cob` cases: Place Recipe encodes equal to its fixture; Recipe Book Add decodes every recipe with its craftable flag
+- [X] T935 [P] [US10-client] Write acceptance test `client/tests/acc_us10_crafting_screen.cob`: case "acceptance US10-1 client half: C opens the crafting screen listing every recipe with ingredients and result, craftable ones marked"; case "US10-2 client half: choosing a craftable recipe sends Place Recipe with its display id"
+- [X] T936 [US10-client] Implement the recipe book replica in `client/src/protocol-client.cob`
+- [X] T937 [US10-client] Implement the crafting screen in `client/src/screens/crafting.cob`
+- [X] T938 [US10-client] Extend the client implementation tests to 100 % coverage of the US10 changes
+- [X] T939 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 41: US11-client — weather drawing
 

@@ -4,8 +4,9 @@
 *> the current screen; SCREEN-ACTION carries out what a widget does; WIDGET-ADD and WIDGET-ADD-KEY
 *> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen shows the HUD
 *> (hud.cob: crosshair, hotbar and chat area); E opens the inventory screen from the world and closes
-*> it again; T opens the chat screen (chat.cob) from the world. The death screen (death.cob) opens on
-*> Player Combat Kill and its respawn control sends Client Command.
+*> it again; C opens the crafting screen (crafting.cob) from the world and closes it again; T opens
+*> the chat screen (chat.cob) from the world. The death screen (death.cob) opens on Player Combat
+*> Kill and its respawn control sends Client Command.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
@@ -65,6 +66,8 @@
              CALL "HUD-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-INVENTORY
              CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-CRAFTING
+             CALL "CRAFTING-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-CHAT
              CALL "CHAT-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-DEATH
@@ -75,12 +78,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-INPUT.
-*> USING CLIENT-STATE: a click on a widget (not a label or an overlay) focuses a field or does the
-*> widget's action; typed text
+*> USING CLIENT-STATE: a click on a widget (not a label, an overlay or a disabled widget) focuses a
+*> field or does the widget's action; typed text
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
 *> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
-*> world; T opens chat from the world (the screen the frame began on, so the T typed with it and a
+*> world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat from the world (the screen the frame began on, so the T typed with it and a
 *> line just sent do not reopen it), Escape closes chat; on the chat screen the frame's typed text,
 *> keys and wheel go to the chat line (chat.cob).
  DATA DIVISION.
@@ -107,6 +110,7 @@
          MOVE 0 TO WS-HIT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT OR WS-HIT > 0
              IF SM-W-KIND(WS-I) NOT = WK-LABEL AND SM-W-KIND(WS-I) NOT = WK-OVERLAY
+                     AND SM-W-STATE(WS-I) NOT = 2
                      AND WS-X >= SM-W-X(WS-I)
                      AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I) AND WS-Y >= SM-W-Y(WS-I)
                      AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
@@ -128,6 +132,18 @@
          MOVE SCR-CHAT TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      END-IF
+     IF IN-KEY-PRESSED(CC-KEY-C + 1) = 1 AND WS-WAS = SM-SCREEN
+         MOVE 0 TO WS-SCREEN
+         EVALUATE SM-SCREEN
+             WHEN SCR-WORLD
+                 MOVE SCR-CRAFTING TO WS-SCREEN
+             WHEN SCR-CRAFTING
+                 MOVE SCR-WORLD TO WS-SCREEN
+         END-EVALUATE
+         IF WS-SCREEN > 0
+             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         END-IF
+     END-IF
      IF IN-KEY-PRESSED(CC-KEY-ESCAPE + 1) = 1
          MOVE 0 TO WS-SCREEN
          EVALUATE SM-SCREEN
@@ -140,6 +156,7 @@
              WHEN SCR-SERVER-LIST
                  MOVE SCR-TITLE TO WS-SCREEN
              WHEN SCR-INVENTORY
+             WHEN SCR-CRAFTING
              WHEN SCR-CHAT
                  MOVE SCR-WORLD TO WS-SCREEN
          END-EVALUATE
@@ -250,6 +267,8 @@
              CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
          WHEN ACT-RESPAWN
              CALL "DEATH-RESPAWN" USING CLIENT-STATE
+         WHEN ACT-CRAFT
+             CALL "CRAFTING-CRAFT" USING CLIENT-STATE L-ARG
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

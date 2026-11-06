@@ -49,6 +49,8 @@
  78 ACT-DISCONNECT          VALUE 14.
  78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot
  78 ACT-RESPAWN             VALUE 16.  *> death screen: Client Command PERFORM_RESPAWN
+ 78 ACT-CRAFT               VALUE 17.  *> crafting screen: Place Recipe; the argument is the
+                                       *> recipe's display id
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -109,6 +111,7 @@
  78 CL-MAX-PLAYER-INFO      VALUE 64.
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
+ 78 CL-MAX-RECIPES          VALUE 16.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
  78 CL-GUI-SCALE            VALUE 2.

@@ -1,8 +1,8 @@
 *> The 2-D user interface (research R4; data-model §13; 08 §10.10 text rules): UI-RENDER turns the
 *> screen model into UI-pipeline vertices on texture 2 (the UI atlas of FONT-LOAD), in window pixels
 *> (GUI pixels x CL-GUI-SCALE): buttons, text fields and list entries get a background quad on the
-*> centre texel of their swatch (button; field; entry, or selected when selected), then the
-*> widget's text: one quad per non-space character from the pack font, advancing by the glyph's
+*> centre texel of their swatch (button, or panel when disabled; field; entry, or selected when
+*> selected), then the widget's text: one quad per non-space character from the pack font, advancing by the glyph's
 *> advance (missing glyph for characters the font lacks). A button's text is centred, a field's or
 *> entry's starts 4 GUI pixels in, both centred vertically; a focused field ends with a caret "_".
 *> An item slot (08 §10.8.6 hotbar; 10.11 item icons) gets a background quad (selected when it is
@@ -34,6 +34,8 @@
          MOVE SM-W-LENGTH(WS-W) TO WS-LENGTH
          MOVE -1 TO WS-SWATCH
          EVALUATE TRUE
+             WHEN SM-W-KIND(WS-W) = WK-BUTTON AND SM-W-STATE(WS-W) = 2
+                 MOVE SW-PANEL TO WS-SWATCH
              WHEN SM-W-KIND(WS-W) = WK-BUTTON
                  MOVE SW-BUTTON TO WS-SWATCH
              WHEN SM-W-KIND(WS-W) = WK-FIELD

@@ -26,6 +26,8 @@
 *> (controls.cob sends them; the food level is the Set Health field the HUD shows); Entity Event 9
 *> (eating finished) for the local player ends its eating. Entering a dimension (Login, Respawn)
 *> ends sprinting and eating: the server clears both on death, respawn and travel.
+*> Crafting (US10): the Place Recipe builder (screens/crafting.cob sends it); Recipe Book Add into
+*> the recipe book (RECIPE-BOOK-READ).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -575,6 +577,26 @@
  END PROGRAM CLP-CLIENT-COMMAND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-PLACE-RECIPE.
+*> USING PB-BUFFER, recipe display id: Place Recipe (05c 0x27) of container 0, use max items false
+*> (09 §3.3: craft one).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 39.
+ 01 WS-CONTAINER           BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-RECIPE               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-RECIPE.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RECIPE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-MAX
+     GOBACK.
+ END PROGRAM CLP-PLACE-RECIPE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
 *> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
  DATA DIVISION.
@@ -860,6 +882,8 @@
              END-IF
          WHEN WS-PHASE = PH-PLAY AND L-ID = 84
              CALL "PLAY-RESPAWN-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 75
+             CALL "RECIPE-BOOK-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
@@ -1125,6 +1149,81 @@
      CALL "ENTITIES-FORGET" USING CLIENT-STATE
      GOBACK.
  END PROGRAM PLAY-RESPAWN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-BOOK-READ.
+*> USING CLIENT-STATE, packet (Recipe Book Add, 05b 0x4B; 09 §3.3): each entry's display id,
+*> ingredients and result (an item_stack's count, else 1) and its craftable flag (crafting
+*> requirements present, 09 open question 3); the entry flags are not used. Replace (after the
+*> entries) empties the book first; an entry whose display id the book holds replaces it, any other
+*> is appended while there is room (CL-MAX-RECIPES; the rest are read and dropped). A malformed
+*> packet changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-REPLACE             BINARY-LONG.
+ 01 WS-NEW-AREA.
+    05 NW-RECIPE OCCURS 16 TIMES.
+       10 NW-ID              BINARY-LONG.
+       10 NW-CRAFTABLE       PIC 9.
+       10 NW-IN-COUNT        BINARY-LONG.
+       10 NW-IN OCCURS 9 TIMES.
+          15 NW-IN-ITEM      BINARY-LONG.
+          15 NW-IN-AMOUNT    BINARY-LONG.
+       10 NW-RES-ITEM        BINARY-LONG.
+       10 NW-RES-AMOUNT      BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     MOVE 0 TO WS-N
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER RX-RECIPE-DISPLAY
+         CALL "PB-GET-BYTE" USING PB-BUFFER WS-FLAGS
+         IF WS-N < CL-MAX-RECIPES
+             ADD 1 TO WS-N
+             MOVE RX-RD-DISPLAY-ID TO NW-ID(WS-N)
+             MOVE RX-RD-REQ-PRESENT TO NW-CRAFTABLE(WS-N)
+             MOVE RX-RD-INGREDIENT-COUNT TO NW-IN-COUNT(WS-N)
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RX-RD-INGREDIENT-COUNT
+                 MOVE RX-RD-IN-ITEM(WS-J) TO NW-IN-ITEM(WS-N, WS-J)
+                 COMPUTE NW-IN-AMOUNT(WS-N, WS-J) = FUNCTION MAX(1, RX-RD-IN-COUNT(WS-J))
+             END-PERFORM
+             MOVE RX-RD-RES-ITEM TO NW-RES-ITEM(WS-N)
+             COMPUTE NW-RES-AMOUNT(WS-N) = FUNCTION MAX(1, RX-RD-RES-COUNT)
+         END-IF
+     END-PERFORM
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-REPLACE
+     IF PB-ERROR = 0
+         IF WS-REPLACE = 1
+             MOVE 0 TO RB-COUNT
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             MOVE 0 TO WS-ROW
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RB-COUNT
+                 IF RB-ID(WS-J) = NW-ID(WS-I)
+                     MOVE WS-J TO WS-ROW
+                 END-IF
+             END-PERFORM
+             IF WS-ROW = 0 AND RB-COUNT < CL-MAX-RECIPES
+                 ADD 1 TO RB-COUNT
+                 MOVE RB-COUNT TO WS-ROW
+             END-IF
+             IF WS-ROW > 0
+                 MOVE NW-RECIPE(WS-I) TO RB-RECIPE(WS-ROW)
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM RECIPE-BOOK-READ.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DIMENSION-ENTER.

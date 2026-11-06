@@ -256,6 +256,20 @@
           15 CH-TIME         BINARY-DOUBLE.
           15 CH-LENGTH       BINARY-LONG.
           15 CH-TEXT         PIC X(256).
+*>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
+*>       the recipes of the Recipe Book Adds received, in the order first received: display id,
+*>       craftable (crafting requirements present), ingredients (item, count) and result ----
+    05 RB-STATE.
+       10 RB-COUNT           BINARY-LONG.
+       10 RB-RECIPE OCCURS 16 TIMES.
+          15 RB-ID           BINARY-LONG.
+          15 RB-CRAFTABLE    PIC 9.
+          15 RB-IN-COUNT     BINARY-LONG.
+          15 RB-IN OCCURS 9 TIMES.
+             20 RB-IN-ITEM   BINARY-LONG.
+             20 RB-IN-AMOUNT BINARY-LONG.
+          15 RB-RES-ITEM     BINARY-LONG.
+          15 RB-RES-AMOUNT   BINARY-LONG.
 *>  ---- packs (08 §3, §10): stack, language, font ----
     05 PK-STATE.
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first

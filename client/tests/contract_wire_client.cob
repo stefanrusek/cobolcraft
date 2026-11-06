@@ -4,7 +4,8 @@
 *> replies) produce for the fixture's stated inputs, and every clientbound fixture of those phases
 *> decodes to the stated values; then the play packets of moving and of other players (US3), and of
 *> breaking, placing, the hotbar and the inventory (US4), of ground items and throwing (US5), and
-*> of chat (US6), of health and attacking (US7), and of eating and sprinting (US8).
+*> of chat (US6), of health and attacking (US7), of eating and sprinting (US8), and of crafting
+*> (US10).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-CLIENT.
  DATA DIVISION.
@@ -75,6 +76,7 @@
  01 WS-REGISTRY-TABLE REDEFINES WS-REGISTRIES.
     05 WS-REGISTRY         PIC X(40) OCCURS 18 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-GI-ID               BINARY-LONG.
  01 WS-GI-COUNT            BINARY-LONG.
@@ -952,7 +954,57 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE PL-EATING TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, crafting (US10) ----
+     MOVE 0 TO WS-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID
+     MOVE "contract wire client Place Recipe (container 0, display id 0, use max items false) "
+         & "equals play-c2s-27-place-recipe.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-27-place-recipe.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-4b-recipe-book-add.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Recipe Book Add decodes every standin §13 recipe (display id, "
+         & "ingredients, result) with its craftable flag: requirements present only for 0"
+         TO TL-CASE
+     PERFORM RECIPES-TEXT
+     MOVE "9 0:4x2>2x9:1 1:4x5>2x7:0 2:3x2+1x6>1x10:0 3:2x2+1x6>1x11:0 4:1x7+1x15>2x8:0 "
+         & "5:4x4+1x3>1x14:0 6:2x12+1x8>2x13:0 7:4x9+2x15+1x8>1x16:0 8:2x6+2x7>1x15:0"
+         TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Recipe Book Add with Replace true replaces the recipe book (the "
+         & "same nine recipes again, not eighteen)" TO TL-CASE
+     PERFORM RECIPES-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ RECIPES-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-INDEX
+     MOVE RB-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RB-COUNT
+         MOVE RB-ID(WS-I) TO WS-EDIT
+         STRING " " FUNCTION TRIM(WS-EDIT) ":" DELIMITED BY SIZE INTO TL-OBSERVED
+             WITH POINTER WS-INDEX
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RB-IN-COUNT(WS-I)
+             IF WS-J > 1
+                 STRING "+" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+             END-IF
+             MOVE RB-IN-AMOUNT(WS-I, WS-J) TO WS-EDIT
+             MOVE RB-IN-ITEM(WS-I, WS-J) TO WS-EDIT2
+             STRING FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+                 INTO TL-OBSERVED WITH POINTER WS-INDEX
+         END-PERFORM
+         MOVE RB-RES-AMOUNT(WS-I) TO WS-EDIT
+         MOVE RB-RES-ITEM(WS-I) TO WS-EDIT2
+         STRING ">" FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) ":" RB-CRAFTABLE(WS-I)
+             DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+     END-PERFORM
+     .
 
  RESPAWN-TEXT.
      MOVE SPACES TO TL-OBSERVED
