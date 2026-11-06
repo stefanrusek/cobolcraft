@@ -68,10 +68,14 @@ values, so new looks are added there first (Principle II).
 - Given a placed bench, when I use it, then a crafting screen with the large grid, a result slot and the recipe book
   opens, and recipes that need the large grid can be made only there.
 
-### As a Player, I want worlds with caves and ores
+### As a Player, I want worlds with caves and ores that feel like vanilla
 
-- Given a new world, when I explore and dig, then the terrain has hills and valleys, caves that run underground, and ore
-  blocks set in the stone at depths set by the stand-in content.
+- Given a new world, when I explore, then the terrain is built the way vanilla builds it: climate-driven biomes,
+  3D density terrain with hills, mountains, rivers and oceans, aquifers, and three kinds of caves (large caverns,
+  long winding tunnels and thin noodle passages).
+- Given ores, when I dig, then each ore is spread through its depth range the way vanilla spreads its ores: uniform or
+  triangle-shaped height distributions, a vein size and a count per chunk. Some ores occur only at certain depths or in
+  certain biomes.
 - Given ore blocks, when I break them in survival, then they drop their items as other blocks do.
 
 ### As a Player, I want to configure the game
@@ -123,13 +127,18 @@ values, so new looks are added there first (Principle II).
   sidecar before refining.
 - Which looks are in scope: lighting (smooth lighting, ambient occlusion), sky and fog, clouds, HUD layout, font,
   screen backgrounds?
-- World generation: how close to vanilla should it be? FR-015 of feature 001 required original stand-in values
-  (Principle II then has them written into `docs/design/standin-content.md` first). The spec of the run that takes
-  this ticket may supersede FR-015 for world generation; decide that when refining. Names, textures and the overall
-  look stay CobolCraft's own either way.
 - Crafting: 001 has a single crafting screen (US10, the C key). Does it give way to the inventory 2×2 grid plus the
   bench 3×3 grid, or stay alongside them?
 - This ticket now covers visuals, controls and gameplay. Should it split into several tickets before refining?
+
+## Decisions
+
+- World generation (operator, 2026-11-06): it should be nearly identical to vanilla's. The run that takes this ticket
+  supersedes feature 001's FR-015 for world generation. It starts with a clean-room spec round (Principle II): the
+  generator's techniques and their parameters are written into `docs/protocol/` or `docs/design/standin-content.md`
+  first, and implementation works only from those docs. The limit: the techniques and the feel match vanilla
+  closely, but the result is not a reproduction of Minecraft's worlds. The noise parameters are CobolCraft's own,
+  so a given seed does not produce vanilla's terrain, and block names and textures stay CobolCraft's.
 
 ## Notes
 
