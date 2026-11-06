@@ -70,14 +70,20 @@
          & "|Single-player|Multiplayer|Texture Packs|Quit Game" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Disabling everything restores the built-in appearance.
+*>   All five enabled change all of it; disabling everything restores the built-in appearance.
+     MOVE "file/ov_texture file/ov_blockstate file/ov_model file/ov_itemdef file/ov_lang"
+         TO WS-IDS
+     PERFORM COMPARE
+     MOVE WS-TEXT TO WS-SCREEN-TEXT
      CALL "TEST-PACK-ENABLE" USING CLIENT-STATE WS-NONE
      CALL "TEST-DIGEST" USING CLIENT-STATE WS-AFTER
      CALL "TEST-DIGEST-DIFF" USING WS-BEFORE WS-AFTER WS-TEXT
-     MOVE "acceptance US18-3 Given no enabled pack any more When the game is shown Then it looks "
-         & "as before" TO TL-CASE
-     MOVE "sprites - states - items - entities - lang -" TO TL-EXPECTED
-     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "acceptance US18-3 Given all five packs enabled, then none any more When the game is "
+         & "shown Then it first shows every change together, then looks as before" TO TL-CASE
+     MOVE "sprites cobolcraft:block/greystone states 2 3 5 items 2 11 entities - lang cobolcraft"
+         & ".screen.title.packs / sprites - states - items - entities - lang -" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-SCREEN-TEXT DELIMITED BY "  " " / " WS-TEXT DELIMITED BY "  " INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

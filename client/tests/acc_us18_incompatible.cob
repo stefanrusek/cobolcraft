@@ -18,6 +18,7 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-KEY                 BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
+ 01 WS-TEXT2               PIC X(1024).
  01 WS-E1                  PIC Z9.
  01 WS-E2                  PIC Z9.
  PROCEDURE DIVISION.
@@ -38,13 +39,19 @@
 
      MOVE ACT-PACKS TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
-     MOVE "acceptance US18-4 Given the confirmation When the Pack creator cancels Then the pack "
-         & "stays disabled" TO TL-CASE
+     MOVE "acceptance US18-4 Given the confirmation for old.zip When the Pack creator cancels Then"
+         & " the pack screen returns and the pack stays disabled" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE SM-SCREEN TO WS-E1
      MOVE OP-COUNT TO WS-E2
-     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "11 0" TO TL-EXPECTED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     IF LP-CONFIRM > 0
+         MOVE LP-NAME(LP-CONFIRM) TO WS-TEXT
+         STRING TL-OBSERVED DELIMITED BY "  " " " DELIMITED BY SIZE WS-TEXT DELIMITED BY SPACE
+             INTO WS-TEXT2
+         MOVE WS-TEXT2 TO TL-OBSERVED
+     END-IF
+     MOVE "11 0 old.zip" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 3 TO WS-ARG

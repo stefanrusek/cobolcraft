@@ -24,6 +24,7 @@
  01 WS-PIXEL3              PIC X(32).
  01 WS-E1                  PIC Z9.
  01 WS-POS                 BINARY-LONG.
+ 01 WS-OP-BEFORE           BINARY-LONG.
  01 WS-COMMAND             PIC X(256).
  PROCEDURE DIVISION.
      CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
@@ -53,12 +54,7 @@
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      MOVE ACT-PACK-ENABLE TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
-     MOVE "acceptance US18-5 a pack that cannot be used is not enabled" TO TL-CASE
-     MOVE "N" TO TL-MODE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE OP-COUNT TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "T" TO TL-MODE
+     MOVE OP-COUNT TO WS-OP-BEFORE
 
 *>   badtex: its greystone.png is broken, its loam.png empty, its grit.png and lang file cannot be
 *>   opened, its slag.png (600 x 600) is too large for an atlas sprite.
@@ -67,6 +63,19 @@
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      MOVE ACT-PACK-ENABLE TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
+     MOVE "acceptance US18-5 a pack that cannot be used is not enabled; a usable one is"
+         TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-OP-BEFORE TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO TL-OBSERVED
+     IF OP-COUNT > 0
+         MOVE SPACES TO WS-TEXT
+         STRING TL-OBSERVED DELIMITED BY "  " " " OP-ID(1)(1:OP-ID-LENGTH(1))
+             DELIMITED BY SIZE INTO WS-TEXT
+         MOVE WS-TEXT TO TL-OBSERVED
+     END-IF
+     MOVE "0 file/badtex" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE ACT-PACKS-DONE TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
      MOVE "cobolcraft:block/greystone" TO WS-SPRITE
@@ -96,7 +105,8 @@
      MOVE SPACES TO TL-OBSERVED
      MOVE 0 TO WS-POS
      INSPECT WS-TEXT TALLYING WS-POS FOR CHARACTERS BEFORE INITIAL "|Done|"
-     MOVE WS-TEXT(WS-POS + 2:) TO TL-OBSERVED
+     MOVE FUNCTION MIN(WS-POS + 2, 1024) TO WS-POS
+     MOVE WS-TEXT(WS-POS:) TO TL-OBSERVED
      MOVE "Done|badtex cannot be used: assets/cobolcraft/lang/en_us.json cannot be read|badtex "
          & "cannot be used: assets/cobolcraft/textures/block/greystone.png cannot be read|badtex "
          & "cannot be used: assets/cobolcraft/textures/block/loam.png cannot be read|badtex cannot "

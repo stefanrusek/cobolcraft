@@ -25,6 +25,7 @@
  01 WS-LOAM                PIC X(80) VALUE "cobolcraft:block/loam".
  01 WS-LOAM-LENGTH         BINARY-LONG VALUE 21.
  01 WS-PIXEL               PIC X(32).
+ 01 WS-PIXEL2              PIC X(32).
  01 WS-LOAM-BEFORE         PIC X(32).
  01 WS-E1                  PIC Z9.
  PROCEDURE DIVISION.
@@ -73,11 +74,14 @@
      MOVE "1 10,10,200,255 file/beta.zip file/alpha 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-PIXEL
-     MOVE "acceptance US18 edge Given a pack with only some files When it is enabled Then every "
-         & "file it does not contain comes from the packs below" TO TL-CASE
-     MOVE WS-LOAM-BEFORE TO TL-EXPECTED
-     MOVE WS-PIXEL TO TL-OBSERVED
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-GREY WS-GREY-LENGTH WS-PIXEL
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-PIXEL2
+     MOVE "acceptance US18 edge Given a pack with only some files When it is enabled Then its "
+         & "file is used (greystone) and every file it does not contain comes from the packs below"
+         & " (loam)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     STRING "10,10,200,255 " WS-LOAM-BEFORE DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING WS-PIXEL DELIMITED BY SPACE " " WS-PIXEL2 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Reorder: beta.zip down, up, down (alpha on top); Move Up and Move Down at the ends do nothing;
