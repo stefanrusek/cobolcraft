@@ -193,6 +193,15 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-CONFIGURE` stops after the client's Select Known Packs; `TEST-PACK-RESPONSE` feeds the
   response fixture of an action (pack id `00112233-4455-6677-8899-aabbccddeeff`).
   `CONFIG-PACK-PUSH-BUILD` takes the settings record, so contract tests need no open world.
+- **Server console input** (`server/src/console.cob`): `TCP-POLL` asks `cc_net_poll` about standard input
+  only while `SV-CONSOLE-OPEN` is 1 (set by `SV-START`, 0 at end of input). Server tests without a
+  `.stdin` get an empty input, so the console closes on the first poll. A test that needs a player in
+  play before its `.stdin` command runs sets `SV-CONSOLE-OPEN` to 0 while joining, then 1. A test that
+  must see the run end (`SV-RUN`/`SV-MAIN` never return) forks with `SVT-FORK` and runs `SV-RUN` in the
+  child, after `SV-SHUTDOWN` in the parent drops the parent's copies of the sockets
+  (`acc_us15_stop`), or uses a `.expect` file (`test_sv_main`). EXTERNAL `SVSTATE` fields that tests
+  may read before `SV-START` are `BINARY-LONG`, never `PIC 9` (all-zero bytes are not numeric
+  `DISPLAY` data).
 - An entity changing dimension goes through `ENTITY-CHANGE-DIM` (Remove to the old viewers, Add at the
   new position to the new ones), never `ENTITY-MOVE`.
 - **Mobs spawn in every test world** (standin §12.4: a sodgrazer near each alive player on ticks with Time

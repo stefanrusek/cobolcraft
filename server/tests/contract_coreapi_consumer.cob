@@ -35,6 +35,11 @@
  01 WS-TICKS               BINARY-DOUBLE.
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
+ 01 WS-SHUTDOWN            PIC X(16) VALUE Z"shutdown".
+ 01 WS-STATE-BEFORE        BINARY-LONG.
+ 01 WS-LEVEL-DAT           PIC X(32) VALUE "world/level.dat".
+ 01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
+ 01 WS-CAPTURED            PIC X(4096).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
@@ -195,6 +200,39 @@
      IF WS-TICKS >= 18 AND WS-TICKS <= 22
          MOVE "in range" TO TL-OBSERVED
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Stop handling (core-host-api §2): the stop command sets run state 1; the next SV-ITERATE turns
+*>   it into CORE-STOP with the stopping text (the world saved, run state 2), flushes, and prints
+*>   the Stopping and Stopped lines; the host exits after run state 2 (SV-RUN, test_sv_main).
+*>   level.dat is removed first, so finding it afterwards shows the save.
+     CALL "CBL_DELETE_FILE" USING WS-LEVEL-DAT
+     CALL "CORE-CONSOLE" USING WS-SHUTDOWN
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE CST-RUN-STATE TO WS-STATE-BEFORE
+     CALL "SVT-CAPTURE-START" USING WS-CAPTURE
+     CALL "SV-ITERATE"
+     CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
+     CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "CORE-STATUS-GET" USING CORE-STATUS
+     MOVE "contract server coreapi consumer stop handling: run state 1, then SV-ITERATE calls "
+         & "CORE-STOP (run state 2, level.dat saved) between the Stopping and Stopped lines"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "run 1 then 2 saved | Shutting down | Stopping: saving world and disconnecting players | "
+         & "Stopped" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-STATE-BEFORE TO WS-EDIT
+     MOVE CST-RUN-STATE TO WS-EDIT2
+     STRING "run " FUNCTION TRIM(WS-EDIT) " then " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-LEVEL-DAT WS-FILE-INFO
+     IF RETURN-CODE = 0
+         STRING FUNCTION TRIM(TL-OBSERVED) " saved" DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     STRING FUNCTION TRIM(TL-OBSERVED) " | " FUNCTION TRIM(WS-CAPTURED) DELIMITED BY SIZE
+         INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SV-SHUTDOWN"
      STOP RUN.

@@ -1057,16 +1057,16 @@ login against `SV-START`/`SV-ITERATE`.
 
 **Goal**: operator-surface §4 and the stop sequence. **Independent Test**: `make gate-server`.
 
-- [ ] T753 [P] [US15-server] Write acceptance test `server/tests/acc_us15_console.cob` with `server/tests/acc_us15_console.stdin` (the §16 player-list command, an unknown command, then end of input): case "acceptance US15-1 a typed command runs with operator permission and its result is printed"; case "acceptance US15-3 an unknown command prints the error and help hint"; case "end of input has no effect on the running server"
-- [ ] T754 [US15-server] Implement console input (`cc_con_readline` when `cc_net_poll` reports the console ready, line passed to `CORE-CONSOLE`) in `server/src/console.cob`
-- [ ] T755 [P] [US15-server] Write acceptance test `server/tests/acc_us15_stop.cob` with `server/tests/acc_us15_stop.stdin` (the §16 stop command): case "acceptance US15-2 given a connected loopback player when stop is typed then the console shows `Stopping: saving world and disconnecting players`, the player receives the stopping Disconnect, the world files exist, `Stopped` is printed and the loop ends with exit status 0"
-- [ ] T756 [P] [US15-server] Extend `server/tests/contract_coreapi_consumer.cob` with the stop handling of core-host-api §2 (run state 1 → `CORE-STOP` → flush → exit after run state 2)
-- [ ] T757 [US15-server] Implement the stop sequence in `server/src/loop.cob`
-- [ ] T758 [P] [US15-server] Write test `server/tests/test_sv_main.cob` with `server/tests/test_sv_main.stdin` (the §16 stop-server command) and `server/tests/test_sv_main.expect` (exit 0): `SV-MAIN` in a scratch directory starts, iterates until the run state reaches 2, shuts down and ends the run with exit status 0
-- [ ] T759 [US15-server] Implement `SV-MAIN` (start, iterate until stopped, shutdown, `STOP RUN` with the exit status; never returns) in `server/src/loop.cob` so it is part of `libserver.a`
-- [ ] T760 [US15-server] Implement `server/src/main.cob` (`cobolcraft-server`) as a single `CALL "SV-MAIN"` (contracts/test-harness.md §2)
-- [ ] T761 [US15-server] Extend the server implementation tests to 100 % coverage of the US15 changes
-- [ ] T762 Gate: run `make gate-server` and record the command and its real output
+- [X] T753 [P] [US15-server] Write acceptance test `server/tests/acc_us15_console.cob` with `server/tests/acc_us15_console.stdin` (the §16 player-list command, an unknown command, then end of input): case "acceptance US15-1 a typed command runs with operator permission and its result is printed"; case "acceptance US15-3 an unknown command prints the error and help hint"; case "end of input has no effect on the running server"
+- [X] T754 [US15-server] Implement console input (`cc_con_readline` when `cc_net_poll` reports the console ready, line passed to `CORE-CONSOLE`) in `server/src/console.cob`
+- [X] T755 [P] [US15-server] Write acceptance test `server/tests/acc_us15_stop.cob` with `server/tests/acc_us15_stop.stdin` (the §16 stop command): case "acceptance US15-2 given a connected loopback player when stop is typed then the console shows `Stopping: saving world and disconnecting players`, the player receives the stopping Disconnect, the world files exist, `Stopped` is printed and the loop ends with exit status 0"
+- [X] T756 [P] [US15-server] Extend `server/tests/contract_coreapi_consumer.cob` with the stop handling of core-host-api §2 (run state 1 → `CORE-STOP` → flush → exit after run state 2)
+- [X] T757 [US15-server] Implement the stop sequence in `server/src/loop.cob`
+- [X] T758 [P] [US15-server] Write test `server/tests/test_sv_main.cob` with `server/tests/test_sv_main.stdin` (the §16 stop-server command) and `server/tests/test_sv_main.expect` (exit 0): `SV-MAIN` in a scratch directory starts, iterates until the run state reaches 2, shuts down and ends the run with exit status 0
+- [X] T759 [US15-server] Implement `SV-MAIN` (start, iterate until stopped, shutdown, `STOP RUN` with the exit status; never returns) in `server/src/loop.cob` so it is part of `libserver.a`
+- [X] T760 [US15-server] Implement `server/src/main.cob` (`cobolcraft-server`) as a single `CALL "SV-MAIN"` (contracts/test-harness.md §2)
+- [X] T761 [US15-server] Extend the server implementation tests to 100 % coverage of the US15 changes
+- [X] T762 Gate: run `make gate-server` and record the command and its real output
 
 #### Phase 31: US18-server — pack offer configuration
 

@@ -203,8 +203,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TCP-POLL.
-*> USING timeout (BINARY-LONG, milliseconds): waits up to that long for the listener or a connection
-*> to become readable (cc_net_poll), then accepts new connections and receives on the ready ones.
+*> USING timeout (BINARY-LONG, milliseconds): waits up to that long for the listener, a connection or,
+*> while it is open (SV-CONSOLE-OPEN), the console to become readable (cc_net_poll), then receives on
+*> the ready connections, accepts new ones and reads the console lines (SV-CONSOLE-READ).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY SVSTATE.
@@ -216,7 +217,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-CONSOLE             BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-TIMEOUT              BINARY-LONG.
@@ -231,8 +232,9 @@
          END-IF
      END-PERFORM
      MOVE LOW-VALUES TO WS-READY
+     MOVE SV-CONSOLE-OPEN TO WS-CONSOLE
      CALL STATIC "cc_net_poll" USING BY VALUE L-TIMEOUT BY REFERENCE WS-HANDLES
-         BY VALUE WS-COUNT BY VALUE WS-ZERO BY REFERENCE WS-READY RETURNING WS-RC
+         BY VALUE WS-COUNT BY VALUE WS-CONSOLE BY REFERENCE WS-READY RETURNING WS-RC
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-COUNT
          IF WS-READY(WS-I:1) NOT = LOW-VALUE
              MOVE WS-SLOT-OF(WS-I) TO WS-SLOT
@@ -241,6 +243,9 @@
      END-PERFORM
      IF WS-READY(1:1) NOT = LOW-VALUE
          CALL "TCP-ACCEPT"
+     END-IF
+     IF WS-READY(WS-COUNT + 1:1) NOT = LOW-VALUE
+         CALL "SV-CONSOLE-READ"
      END-IF
      GOBACK.
  END PROGRAM TCP-POLL.
