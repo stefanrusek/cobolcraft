@@ -4,7 +4,8 @@
 *> the current screen; SCREEN-ACTION carries out what a widget does; WIDGET-ADD and WIDGET-ADD-KEY
 *> append widgets (WIDGET-ADD-KEY takes its text from the language). The world screen shows the HUD
 *> (hud.cob: crosshair, hotbar and chat area); E opens the inventory screen from the world and closes
-*> it again; T opens the chat screen (chat.cob) from the world.
+*> it again; T opens the chat screen (chat.cob) from the world. The death screen (death.cob) opens on
+*> Player Combat Kill and its respawn control sends Client Command.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-OPEN.
@@ -66,13 +67,16 @@
              CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-CHAT
              CALL "CHAT-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-DEATH
+             CALL "DEATH-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
      GOBACK.
  END PROGRAM SCREEN-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-INPUT.
-*> USING CLIENT-STATE: a click on a widget focuses a field or does the widget's action; typed text
+*> USING CLIENT-STATE: a click on a widget (not a label or an overlay) focuses a field or does the
+*> widget's action; typed text
 *> goes into the focused field, Backspace deletes its last character and Enter confirms; Escape
 *> opens the pause menu from the world, returns to the world from it, cancels editing, and leaves
 *> the server list for the title screen; Escape and E close the inventory screen, E opens it from the
@@ -102,7 +106,8 @@
          COMPUTE WS-Y = IN-CLICK-Y / CL-GUI-SCALE
          MOVE 0 TO WS-HIT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT OR WS-HIT > 0
-             IF SM-W-KIND(WS-I) NOT = WK-LABEL AND WS-X >= SM-W-X(WS-I)
+             IF SM-W-KIND(WS-I) NOT = WK-LABEL AND SM-W-KIND(WS-I) NOT = WK-OVERLAY
+                     AND WS-X >= SM-W-X(WS-I)
                      AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I) AND WS-Y >= SM-W-Y(WS-I)
                      AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
                  MOVE WS-I TO WS-HIT
@@ -243,6 +248,8 @@
              MOVE SCR-WORLD TO WS-SCREEN
          WHEN ACT-SLOT
              CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
+         WHEN ACT-RESPAWN
+             CALL "DEATH-RESPAWN" USING CLIENT-STATE
          WHEN ACT-DISCONNECT
              MOVE CONN-GAME TO WS-CONN
              CALL "NET-CLOSE" USING CLIENT-STATE WS-CONN

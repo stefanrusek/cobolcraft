@@ -9,7 +9,8 @@
 *> the held slot; none for the stack on the cursor), its stack's icon 2 GUI pixels in (16 x 16, the
 *> item's icon sprite in the block-and-item atlas: the icon layer, texture 0) and its count in the
 *> bottom-right corner on the layer drawn over the icons (RL-UI-LAYER 1). UI-QUAD writes to the
-*> layer RL-UI-LAYER names: 0 the UI, 1 over the icons, 2 the icons.
+*> layer RL-UI-LAYER names: 0 the UI, 1 over the icons, 2 the icons. An overlay (the hurt
+*> indication) is a quad over its rectangle on the swatch its argument names.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-RENDER.
@@ -48,6 +49,8 @@
              WHEN SM-W-KIND(WS-W) = WK-SLOT
                  CALL "UI-SLOT" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-OVERLAY
+                 MOVE SM-W-ARG(WS-W) TO WS-SWATCH
          END-EVALUATE
          IF WS-SWATCH >= 0
              CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(WS-W) SM-W-Y(WS-W) SM-W-W(WS-W)

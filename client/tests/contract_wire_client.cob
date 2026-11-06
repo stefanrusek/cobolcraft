@@ -808,7 +808,95 @@
      MOVE "|<Alice> hello|Alice now holds operator status|Alice misjudged the drop"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, health, damage, death and attacking (US7) ----
+     MOVE 21 TO WS-EID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-ATTACK" USING PB-BUFFER WS-EID
+     MOVE "contract wire client Attack (entity 21) equals play-c2s-01-attack.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-01-attack.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 0 TO WS-ACTION
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-CLIENT-COMMAND" USING PB-BUFFER WS-ACTION
+     MOVE "contract wire client Client Command (action 0 PERFORM_RESPAWN) equals "
+         & "play-c2s-0c-client-command-respawn.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-0c-client-command-respawn.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+     MOVE 0 TO PL-FOOD
+     MOVE 0 TO PL-HEALTH
+     MOVE "contract/fixtures/wire/play-s2c-6a-set-health.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Set Health decodes: health 30, food 24" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-HEALTH
+     MOVE PL-FOOD TO WS-EDIT2
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "30 24" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE "contract/fixtures/wire/play-s2c-19-damage-event.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Damage Event decodes: entity 1, the local player, was hurt (the "
+         & "hurt indication runs)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-HURT-UNTIL > CL-NOW-MS
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE "contract/fixtures/wire/play-s2c-2b-hurt-animation.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Hurt Animation decodes: entity 1, the local player, was hurt (the "
+         & "hurt indication runs)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-HURT-UNTIL > CL-NOW-MS
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-45-player-combat-kill.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Player Combat Kill decodes: player 1 died, the death screen shows "
+         & "the translated message" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-EDIT
+     MOVE SM-DEATH-CAUSE-LENGTH TO WS-COUNT
+     STRING FUNCTION TRIM(WS-EDIT) " " SM-DEATH-CAUSE(1:WS-COUNT) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     MOVE "10 Alice was halted by an Abend" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "contract/fixtures/wire/play-s2c-54-respawn-subroutine.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Respawn decodes: cobolcraft:subroutine of type 1 (no sky light, "
+         & "from the registry), survival; the world screen" TO TL-CASE
+     PERFORM RESPAWN-TEXT
+     MOVE "cobolcraft:subroutine 1 0 0 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-54-respawn-main.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Respawn decodes: cobolcraft:main of type 0 (sky light), survival; "
+         & "the world screen" TO TL-CASE
+     PERFORM RESPAWN-TEXT
+     MOVE "cobolcraft:main 0 1 0 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ RESPAWN-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-DIM-TYPE TO WS-EDIT
+     MOVE PL-MODE TO WS-EDIT2
+     MOVE SM-SCREEN TO WS-EDIT3
+     STRING FUNCTION TRIM(PL-DIM-NAME) " " FUNCTION TRIM(WS-EDIT) " " PL-HAS-SKY " "
+         FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     .
  END PROGRAM CONTRACT-WIRE-CLIENT.
 
  IDENTIFICATION DIVISION.

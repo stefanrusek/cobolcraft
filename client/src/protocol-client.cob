@@ -17,6 +17,11 @@
 *> Update into the replica (world-replica.cob), Block Changed Ack and Block Destruction kept, the
 *> inventory packets into the inventory replica (inventory-replica.cob). Chat (US6): the Chat
 *> builder (screens/chat.cob sends it); System Chat into the chat history (screens/hud.cob).
+*> Health (US7): the Attack builder (controls.cob sends it) and the Client Command builder (the
+*> death screen's respawn control); Set Health kept for the HUD, Damage Event and Hurt Animation for
+*> the local player start the hurt indication, Player Combat Kill for the local player opens the
+*> death screen with its message, Respawn enters the dimension it names (as Login does: the replica
+*> emptied, the world screen shown; the server sends the world again).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SIMPLE.
@@ -495,6 +500,36 @@
  END PROGRAM CLP-CHAT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-ATTACK.
+*> USING PB-BUFFER, entity id: Attack (05c 0x01).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     GOBACK.
+ END PROGRAM CLP-ATTACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CLIENT-COMMAND.
+*> USING PB-BUFFER, action (0 PERFORM_RESPAWN): Client Command (05c 0x0C).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 12.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ACTION.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ACTION
+     GOBACK.
+ END PROGRAM CLP-CLIENT-COMMAND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-SEND-SIMPLE.
 *> USING CLIENT-STATE, connection, packet id: builds a packet without fields and queues it.
  DATA DIVISION.
@@ -751,6 +786,27 @@
              CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
              CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT WS-TEXT WS-LENGTH
              CALL "CHAT-MESSAGE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 106
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-HEALTH
+             CALL "PB-GET-VARINT" USING L-PACKET PL-FOOD
+         WHEN WS-PHASE = PH-PLAY AND (L-ID = 25 OR L-ID = 43)
+*>           Damage Event or Hurt Animation: both start with the damaged entity's id.
+             CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+             IF WS-ID = PL-ENTITY-ID
+                 COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 69
+*>           Player Combat Kill: the death screen shows the message (standin §10.6).
+             CALL "PB-GET-VARINT" USING L-PACKET WS-ID
+             CALL "PB-GET-TEXT" USING L-PACKET OUT-TEXT
+             IF WS-ID = PL-ENTITY-ID
+                 CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT SM-DEATH-CAUSE
+                     SM-DEATH-CAUSE-LENGTH
+                 MOVE SCR-DEATH TO WS-ID
+                 CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ID
+             END-IF
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 84
+             CALL "PLAY-RESPAWN-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 11
              ADD 1 TO PL-BATCHES
              CALL "CLP-BATCH-RECEIVED" USING OUT-BUFFER WS-RATE
@@ -953,7 +1009,8 @@
  PROGRAM-ID. PLAY-LOGIN-READ.
 *> USING CLIENT-STATE, packet (play Login, 05a 0x32): the player's entity id, view distance, the
 *> dimension and its type's height range and sky light (from the dimension_type registry), the game
-*> mode; the replica is emptied and the world screen shown.
+*> mode (health 30 until Set Health); the dimension is entered (DIMENSION-ENTER) and the entity
+*> replica and player list emptied.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -964,7 +1021,6 @@
  01 WS-CAP                 BINARY-LONG VALUE 64.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
- 01 WS-D                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -986,7 +1042,51 @@
      CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PL-DIM-NAME WS-CAP WS-LENGTH
      CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
      CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
-     MOVE 0 TO PL-MIN-Y PL-LOADED PL-POSITIONED PL-BATCHES
+     MOVE 30 TO PL-HEALTH
+     CALL "DIMENSION-ENTER" USING CLIENT-STATE
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PLAY-LOGIN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-RESPAWN-READ.
+*> USING CLIENT-STATE, packet (Respawn, 05b 0x54: CommonPlayerSpawnInfo, data to keep): the
+*> dimension, its type and the game mode; the dimension is entered (a respawn after death and
+*> travel alike) and the entities seen are forgotten (the server adds them again; the player list
+*> stays).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CAP                 BINARY-LONG VALUE 64.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-DIM-TYPE
+     MOVE SPACES TO PL-DIM-NAME
+     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PL-DIM-NAME WS-CAP WS-LENGTH
+     CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+     CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
+     CALL "DIMENSION-ENTER" USING CLIENT-STATE
+     CALL "ENTITIES-FORGET" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PLAY-RESPAWN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DIMENSION-ENTER.
+*> USING CLIENT-STATE (PL-DIM-TYPE set): the type's height range and sky light from the
+*> dimension_type registry (else 0, 256 and sky light), not loaded or positioned yet, no fall
+*> under way, no hurt indication; the replica is emptied and the world screen shown.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 0 TO PL-MIN-Y PL-LOADED PL-POSITIONED PL-BATCHES PL-VY PL-HURT-UNTIL
      MOVE 256 TO PL-HEIGHT
      MOVE 1 TO PL-HAS-SKY
      COMPUTE WS-D = PL-DIM-TYPE + 1
@@ -996,10 +1096,9 @@
          MOVE RG-DIM-HAS-SKY(WS-D) TO PL-HAS-SKY
      END-IF
      CALL "WORLD-CLEAR" USING CLIENT-STATE
-     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
-     MOVE SCR-WORLD TO SM-SCREEN
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      GOBACK.
- END PROGRAM PLAY-LOGIN-READ.
+ END PROGRAM DIMENSION-ENTER.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLIENT-DISCONNECT.

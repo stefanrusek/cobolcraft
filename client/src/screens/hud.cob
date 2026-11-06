@@ -8,6 +8,11 @@
 *> the bottom: with chat closed (the HUD, above the hotbar) at most the 10 most recent that arrived
 *> less than 10 seconds ago; with chat open (chat.cob, above the input line) the 10 ending
 *> CH-SCROLL messages before the newest, regardless of age.
+*> Health (US7-1, US7-6; standin-content §10.1; 08 §10.8.6 cobolcraft.hud.health): in survival a
+*> label "Health <current>/<maximum>" (the last Set Health as a whole number, maximum 30) above the
+*> hotbar's left end; none in creative. The hurt indication (US7-2): while the clock is before
+*> PL-HURT-UNTIL, the first widget is an overlay over the whole screen on the hurt swatch (a red
+*> tint, drawn under the rest of the HUD).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUD-BUILD.
@@ -15,6 +20,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLARGS.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
@@ -26,11 +32,27 @@
  01 WS-Z2                  BINARY-LONG VALUE 0.
  01 WS-Z3                  BINARY-LONG VALUE 0.
  01 WS-CLOSED              BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-OVERLAY             BINARY-LONG VALUE WK-OVERLAY.
+ 01 WS-HURT                BINARY-LONG VALUE SW-HURT.
+ 01 WS-LABEL               BINARY-LONG VALUE WK-LABEL.
+ 01 WS-W                   BINARY-LONG VALUE 90.
+ 01 WS-H                   BINARY-LONG VALUE 9.
+ 01 WS-HKEY                PIC X(80) VALUE "cobolcraft.hud.health".
+ 01 WS-HKEY-LENGTH         BINARY-LONG VALUE 21.
+ 01 WS-EDIT                PIC Z(9)9.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
  01 L-GH                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     IF CL-NOW-MS < PL-HURT-UNTIL
+         MOVE SPACES TO WS-TEXT
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-OVERLAY WS-ACTION WS-HURT WS-Z1 WS-Z2 L-GW L-GH
+             WS-TEXT WS-Z3 WS-STATE
+     END-IF
      COMPUTE WS-X = L-GW / 2 - 3
      COMPUTE WS-Y = L-GH / 2 - 4
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
@@ -40,6 +62,22 @@
          COMPUTE WS-X = L-GW / 2 - 90 + WS-C * CL-SLOT-SIZE
          CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
      END-PERFORM
+     IF PL-MODE = 0
+         MOVE 2 TO LA-COUNT
+         COMPUTE WS-C ROUNDED = PL-HEALTH
+         MOVE WS-C TO WS-EDIT
+         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(1)
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(1)
+         MOVE CL-MAX-HEALTH TO WS-EDIT
+         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(2)
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(2)
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-HKEY WS-HKEY-LENGTH LANG-ARGS WS-TEXT
+             WS-LENGTH
+         COMPUTE WS-X = L-GW / 2 - 90
+         COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 12
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-LENGTH WS-STATE
+     END-IF
      CALL "CHAT-AREA-ADD" USING CLIENT-STATE L-GW L-GH WS-CLOSED
      GOBACK.
  END PROGRAM HUD-BUILD.

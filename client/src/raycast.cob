@@ -7,6 +7,12 @@
 *> towards +y the bottom 0, towards -y the top 1, towards +z the north face 2, towards -z the south
 *> face 3), and the point where it enters, relative to the block's lowest corner, is the cursor of
 *> Use Item On. The eye's own cell is never the target.
+*> The entity target (US7-5; standin-content §3 sizes, §10.4 attack reach): the nearest player or mob
+*> entity of the replica whose collision box (centred on its position horizontally, from its y up)
+*> the same ray enters within CL-ATTACK-REACH blocks and before the target block (slab test: the
+*> ray's entry distance is the largest of the three axes' near-plane distances, its exit the
+*> smallest far one; an axis the ray does not move along must hold the eye between the planes).
+*> An entity target replaces the target block (it is in front of it): TG-HIT becomes 0.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RAYCAST.
@@ -34,10 +40,21 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-HIT                 FLOAT-LONG.
+ 01 WS-BLOCK-T             FLOAT-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-ET                  BINARY-LONG.
+ 01 WS-LO                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HI                  FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-T1                  FLOAT-LONG.
+ 01 WS-T2                  FLOAT-LONG.
+ 01 WS-NEAR                FLOAT-LONG.
+ 01 WS-FAR                 FLOAT-LONG.
+ 01 WS-BEST                FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO TG-HIT
+     MOVE 0 TO TG-HIT TG-ENTITY-HIT
+     MOVE 1.0E30 TO WS-BLOCK-T
      COMPUTE WS-YAW = PL-YAW * FUNCTION PI / 180
      COMPUTE WS-PITCH = PL-PITCH * FUNCTION PI / 180
      COMPUTE WS-DIR(1) = 0 - FUNCTION SIN(WS-YAW) * FUNCTION COS(WS-PITCH)
@@ -83,6 +100,7 @@
          CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
          IF WS-STATE NOT = 0
              MOVE 1 TO TG-HIT
+             MOVE WS-T TO WS-BLOCK-T
              MOVE WS-CX TO TG-X
              MOVE WS-CY TO TG-Y
              MOVE WS-CZ TO TG-Z
@@ -94,6 +112,41 @@
              COMPUTE TG-CY = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
              COMPUTE WS-HIT = WS-EYE(3) + WS-DIR(3) * WS-T - TG-Z
              COMPUTE TG-CZ = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
+         END-IF
+     END-PERFORM
+*>   The entity target: nearer than the block and within attack reach.
+     COMPUTE WS-BEST = FUNCTION MIN(WS-BLOCK-T, CL-ATTACK-REACH)
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         COMPUTE WS-ET = EN-TYPE(WS-R) + 1
+         IF EN-USED(WS-R) = 1 AND WS-ET >= 1 AND WS-ET <= 4
+             IF CL-ET-ATTACK(WS-ET) = 1
+                 COMPUTE WS-LO(1) = EN-X(WS-R) - CL-ET-HALF(WS-ET)
+                 COMPUTE WS-HI(1) = EN-X(WS-R) + CL-ET-HALF(WS-ET)
+                 MOVE EN-Y(WS-R) TO WS-LO(2)
+                 COMPUTE WS-HI(2) = EN-Y(WS-R) + CL-ET-HEIGHT(WS-ET)
+                 COMPUTE WS-LO(3) = EN-Z(WS-R) - CL-ET-HALF(WS-ET)
+                 COMPUTE WS-HI(3) = EN-Z(WS-R) + CL-ET-HALF(WS-ET)
+                 MOVE 0 TO WS-NEAR
+                 MOVE WS-BEST TO WS-FAR
+                 PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                     IF WS-STEP(WS-A) = 0
+                         IF WS-EYE(WS-A) < WS-LO(WS-A) OR WS-EYE(WS-A) > WS-HI(WS-A)
+                             MOVE -1 TO WS-FAR
+                         END-IF
+                     ELSE
+                         COMPUTE WS-T1 = (WS-LO(WS-A) - WS-EYE(WS-A)) / WS-DIR(WS-A)
+                         COMPUTE WS-T2 = (WS-HI(WS-A) - WS-EYE(WS-A)) / WS-DIR(WS-A)
+                         COMPUTE WS-NEAR = FUNCTION MAX(WS-NEAR, FUNCTION MIN(WS-T1, WS-T2))
+                         COMPUTE WS-FAR = FUNCTION MIN(WS-FAR, FUNCTION MAX(WS-T1, WS-T2))
+                     END-IF
+                 END-PERFORM
+                 IF WS-NEAR <= WS-FAR AND WS-NEAR < WS-BEST
+                     MOVE WS-NEAR TO WS-BEST
+                     MOVE 1 TO TG-ENTITY-HIT
+                     MOVE EN-ID(WS-R) TO TG-ENTITY
+                     MOVE 0 TO TG-HIT
+                 END-IF
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

@@ -273,6 +273,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `PL-HELD` directly controls what the controls see as held. Item icons (`IT-SPRITE`) need
   `ATLAS-BUILD` before `ITEMDEFS-LOAD` (`CL-START` does both). `UI-QUAD` writes to the layer
   `RL-UI-LAYER` names (0 UI, 1 over the icons, 2 the icons): reset it to 0 after use.
+- **Client US7 state**: in survival (`PL-MODE` 0) the HUD adds a `Health <h>/30` label after the
+  hotbar slots (`TEST-PLAY` sets health 30, as Login does); the hurt indication is a `WK-OVERLAY`
+  first widget while `CL-NOW-MS < PL-HURT-UNTIL`. `CL-NOW-MS` is 0 until the first `CL-STEP` and the
+  stepping helpers' clock starts far later, so `TEST-STEP` once before feeding a packet whose effect
+  is timed from the clock. `RAYCAST` also finds the entity target (`TG-ENTITY-HIT`, `TG-ENTITY`),
+  which clears `TG-HIT` when it is nearer than the block. Respawn (`PLAY-RESPAWN-READ`) and Login
+  share `DIMENSION-ENTER`; Respawn keeps the player list (`ENTITIES-FORGET`).
 - **Calls with a refmod or an oversized area into a one-byte `PIC X` LINKAGE item of the same
   file** can still fail `-Werror=repository-checks` ("does not conform"); inline the work or pass a
   field of the callee's exact shape.

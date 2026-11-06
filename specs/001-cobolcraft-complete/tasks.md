@@ -1256,19 +1256,19 @@ figures, the day cycle. **Independent Test**: `make gate-client` with every `acc
 
 **Goal**: the Player's side of US7. **Independent Test**: `make gate-client`.
 
-- [ ] T905 [P] [US7-client] Write `contract_wire_client.cob` cases: Attack and Client Command (respawn) encode equal to their fixtures; Set Health, Damage Event, Hurt Animation, Player Combat Kill and Respawn decode
-- [ ] T906 [P] [US7-client] Write acceptance test `client/tests/acc_us7_health_hud.cob`: case "acceptance US7-1 given survival then current and maximum health are shown"; case "acceptance US7-6 given creative then no health is shown"
-- [ ] T907 [US7-client] Implement the health display in `client/src/screens/hud.cob`
-- [ ] T908 [P] [US7-client] Write acceptance test `client/tests/acc_us7_hurt.cob`: case "acceptance US7-2 client half: Damage Event or Hurt Animation for the local player shows the hurt indication in the screen model"
-- [ ] T909 [US7-client] Implement the hurt indication in `client/src/screens/hud.cob`
-- [ ] T910 [P] [US7-client] Write acceptance test `client/tests/acc_us7_death_screen.cob`: case "acceptance US7-4 client half: Player Combat Kill opens the death screen with the cause; the respawn control sends Client Command action 0; Respawn returns to the world"
-- [ ] T911 [US7-client] Implement the death screen (cause, respawn control sending Client Command action 0) in `client/src/screens/death.cob`
-- [ ] T912 [US7-client] Implement Respawn handling (back to the world) in `client/src/protocol-client.cob`
-- [ ] T913 [P] [US7-client] Write acceptance test `client/tests/acc_us7_attack.cob`: case "acceptance US7-5 client half: the left button aimed at a player or mob entity within reach sends Attack with its entity id"
-- [ ] T914 [US7-client] Implement entity ray-casting in `client/src/raycast.cob`
-- [ ] T915 [US7-client] Implement the attack control in `client/src/controls.cob`
-- [ ] T916 [US7-client] Extend the client implementation tests to 100 % coverage of the US7 changes
-- [ ] T917 Gate: run `make gate-client` and record the command and its real output
+- [X] T905 [P] [US7-client] Write `contract_wire_client.cob` cases: Attack and Client Command (respawn) encode equal to their fixtures; Set Health, Damage Event, Hurt Animation, Player Combat Kill and Respawn decode
+- [X] T906 [P] [US7-client] Write acceptance test `client/tests/acc_us7_health_hud.cob`: case "acceptance US7-1 given survival then current and maximum health are shown"; case "acceptance US7-6 given creative then no health is shown"
+- [X] T907 [US7-client] Implement the health display in `client/src/screens/hud.cob`
+- [X] T908 [P] [US7-client] Write acceptance test `client/tests/acc_us7_hurt.cob`: case "acceptance US7-2 client half: Damage Event or Hurt Animation for the local player shows the hurt indication in the screen model"
+- [X] T909 [US7-client] Implement the hurt indication in `client/src/screens/hud.cob`
+- [X] T910 [P] [US7-client] Write acceptance test `client/tests/acc_us7_death_screen.cob`: case "acceptance US7-4 client half: Player Combat Kill opens the death screen with the cause; the respawn control sends Client Command action 0; Respawn returns to the world"
+- [X] T911 [US7-client] Implement the death screen (cause, respawn control sending Client Command action 0) in `client/src/screens/death.cob`
+- [X] T912 [US7-client] Implement Respawn handling (back to the world) in `client/src/protocol-client.cob`
+- [X] T913 [P] [US7-client] Write acceptance test `client/tests/acc_us7_attack.cob`: case "acceptance US7-5 client half: the left button aimed at a player or mob entity within reach sends Attack with its entity id"
+- [X] T914 [US7-client] Implement entity ray-casting in `client/src/raycast.cob`
+- [X] T915 [US7-client] Implement the attack control in `client/src/controls.cob`
+- [X] T916 [US7-client] Extend the client implementation tests to 100 % coverage of the US7 changes
+- [X] T917 Gate: run `make gate-client` and record the command and its real output
 
 #### Phase 38: US8-client — food display and eating
 

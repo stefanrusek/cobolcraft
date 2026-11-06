@@ -68,6 +68,8 @@
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
        10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
+       10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
+       10 SM-DEATH-CAUSE-LENGTH BINARY-LONG.
 *>  ---- server list (client-surface §2 servers.dat; US2-1, US2-2) ----
     05 SL-STATE.
        10 SL-COUNT           BINARY-LONG.
@@ -132,6 +134,11 @@
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
        10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
        10 PL-CENTER-CZ       BINARY-LONG.
+*>     Health (US7; standin-content §10): the last Set Health (health, food) and the clock until
+*>     which the hurt indication shows (Damage Event or Hurt Animation for the local player).
+       10 PL-HEALTH          FLOAT-SHORT.
+       10 PL-FOOD            BINARY-LONG.
+       10 PL-HURT-UNTIL      BINARY-DOUBLE.
 *>     Movement (client-surface §3; client/src/physics.cob): vertical speed in blocks per tick,
 *>     ground and horizontal-collision flags of the last tick, flying, a Space press not yet
 *>     used by a tick, the clock of the last Space press (fly toggle; 0 none), and what the
@@ -166,6 +173,8 @@
        10 TG-CX              FLOAT-SHORT.    *> the hit point within the block (0 to 1 each)
        10 TG-CY              FLOAT-SHORT.
        10 TG-CZ              FLOAT-SHORT.
+       10 TG-ENTITY-HIT      PIC 9.          *> 1 = a player or mob within attack reach is aimed at
+       10 TG-ENTITY          BINARY-LONG.    *> (nearer than the block target, which is then none)
        10 CT-SEQUENCE        BINARY-LONG.    *> the last block-change sequence number sent
        10 CT-ACK             BINARY-LONG.    *> the last Block Changed Ack sequence received
        10 CT-BREAKING        PIC 9.          *> 1 = a survival break is in progress

@@ -8,7 +8,8 @@
 *> not have are read and ignored. Player Info Update with the action set ADD_PLAYER only (the one
 *> CobolCraft sends) keeps each profile's UUID and name (properties skipped); other action sets
 *> are ignored. Player Info Remove forgets the profiles. ENTITY-FIND looks an id up, ENTITY-NAME
-*> gives the player-list name of an entity's UUID, ENTITIES-CLEAR empties both.
+*> gives the player-list name of an entity's UUID, ENTITIES-CLEAR empties both, ENTITIES-FORGET
+*> only the entities (Respawn: the player list stays).
 *> Ground items (US5; standin-content §3, §9; 09 §3.3; 05b 0x65, 0x67, 0x7F): Add Entity keeps the
 *> initial motion and starts with an empty stack; Set Entity Data keeps the stack of entry index 0
 *> with serializer 7 (ITEM_STACK, the loose_item's only metadata) and skips the other entries it can
@@ -27,6 +28,22 @@
      INITIALIZE EN-STATE
      GOBACK.
  END PROGRAM ENTITIES-CLEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITIES-FORGET.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         INITIALIZE EN-ENTITY(WS-R)
+     END-PERFORM
+     MOVE 0 TO EN-COUNT
+     GOBACK.
+ END PROGRAM ENTITIES-FORGET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-FIND.

@@ -28,6 +28,8 @@
  78 WK-ENTRY                VALUE 4.   *> list entry (selectable)
  78 WK-SLOT                 VALUE 5.   *> item slot: argument the slot 0 to 35 (36 = the stack on
                                        *> the cursor), state 1 = the held hotbar slot, text the count
+ 78 WK-OVERLAY              VALUE 6.   *> a tint over its rectangle on the swatch its argument
+                                       *> names (the hurt indication); never clicked
 
 *> Widget actions (what a click on the widget does).
  78 ACT-NONE                VALUE 0.
@@ -46,6 +48,7 @@
  78 ACT-RESUME              VALUE 13.
  78 ACT-DISCONNECT          VALUE 14.
  78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot
+ 78 ACT-RESPAWN             VALUE 16.  *> death screen: Client Command PERFORM_RESPAWN
 
 *> Connections: the game connection and the server-list status ping.
  78 CONN-GAME               VALUE 1.
@@ -123,12 +126,30 @@
  78 CL-CHAT-UNITS           VALUE 256.
 *> Block reach of the target ray, in blocks from the eye (standin-content §11.4).
  78 CL-REACH                VALUE 5.
+*> Health (standin-content §10.1 maximum health; §10.4 attack reach in blocks from the eye) and how
+*> long the hurt indication shows, in milliseconds (a client choice).
+ 78 CL-MAX-HEALTH           VALUE 30.
+ 78 CL-ATTACK-REACH         VALUE 4.
+ 78 CL-HURT-MS              VALUE 500.
 
 *> Entity types (standin-content §3).
  78 ET-OPERATOR             VALUE 0.
  78 ET-LOOSE-ITEM           VALUE 1.
  78 ET-SODGRAZER            VALUE 2.
  78 ET-ABEND                VALUE 3.
+
+*> Entity types (standin-content §3), for type t row t + 1: 1 = a player or mob (attacked by the
+*> left button, §10.4), the collision box's half width and its height in blocks.
+ 01 CL-ENTITY-DATA.
+    05 FILLER PIC X(8) VALUE "10350175".
+    05 FILLER PIC X(8) VALUE "00150030".
+    05 FILLER PIC X(8) VALUE "10450090".
+    05 FILLER PIC X(8) VALUE "10375075".
+ 01 CL-ENTITIES REDEFINES CL-ENTITY-DATA.
+    05 CL-ET OCCURS 4 TIMES.
+       10 CL-ET-ATTACK      PIC 9.
+       10 CL-ET-HALF        PIC 9V999.
+       10 CL-ET-HEIGHT      PIC 9V99.
 
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.
@@ -137,7 +158,8 @@
  78 SW-BUTTON               VALUE 3.
  78 SW-SELECTED             VALUE 4.
  78 SW-FIELD                VALUE 5.
- 78 SW-COUNT                VALUE 6.
+ 78 SW-HURT                 VALUE 6.
+ 78 SW-COUNT                VALUE 7.
 
 *> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
 *> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack

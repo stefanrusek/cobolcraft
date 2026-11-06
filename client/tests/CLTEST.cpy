@@ -43,7 +43,8 @@
 *>     build/client-test-play) in play on the world screen over a real loopback connection, the
 *>     cursor captured, the player loaded at (0.5, 10, 0.5) facing +Z (yaw 0, pitch 0, on the
 *>     ground, that position already sent) on a flat floor: chunks -1 to 1 by -1 to 1 hold
-*>     greystone (state 2) at y 0 to 9 and sky light 15 above; Time 6000.
+*>     greystone (state 2) at y 0 to 9 and sky light 15 above; Time 6000; survival with health 30
+*>     (as after Login).
 *>   TEST-ENTITY USING CLIENT-STATE, entity id, text (PIC X(1024), appended): " <id> <type>
 *>     <x>/<y>/<z> <yaw>/<pitch>/<head yaw> <on ground>" (4 and 1 decimals) of the replica's entity,
 *>     or " <id> none".
@@ -751,6 +752,7 @@
      MOVE 1 TO PL-HAS-SKY PL-LOADED PL-POSITIONED IN-CAPTURED PL-ON-GROUND PL-SENT-FLAGS
      MOVE 3 TO RG-BIOMES
      MOVE 6000 TO PL-TIME
+     MOVE 30 TO PL-HEALTH
      PERFORM VARYING WS-X FROM -16 BY 1 UNTIL WS-X > 31
          PERFORM VARYING WS-Z FROM -16 BY 1 UNTIL WS-Z > 31
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 9

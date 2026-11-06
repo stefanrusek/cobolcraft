@@ -4,10 +4,11 @@
 *> icons, the title screen); CL-STEP is one frame: the frame's events, the screen's input (on the
 *> world screen also looking and the fly toggle, physics.cob), the client tick (every 50 ms in
 *> play: the player's movement and its Move Player once loaded, then Client Tick End), the target
-*> block (raycast.cob, world screen) and the block and hotbar controls (controls.cob), the connections
-*> pumped without waiting, the sky, meshing of changed sections, then the screen model, the UI and the render list; CL-RUN repeats frames over the
-*> window (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the
-*> command line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
+*> block or entity (raycast.cob, world screen) and the block, attack and hotbar controls
+*> (controls.cob), the connections pumped without waiting, the sky, meshing of changed sections,
+*> then the screen model, the UI and the render list; CL-RUN repeats frames over the window
+*> (cc_win_poll, CL-STEP, SUBMIT-FRAME) until the run ends; CL-MAIN is the program: the command
+*> line, CL-START, the window and Vulkan, CL-RUN, exit status 0. One thread throughout.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-INIT.
@@ -204,7 +205,7 @@
      END-IF
 *>   The target (world screen only) and, in play, the block controls (which abort a break once the
 *>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen).
-     MOVE 0 TO TG-HIT
+     MOVE 0 TO TG-HIT TG-ENTITY-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
      END-IF

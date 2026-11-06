@@ -12,6 +12,9 @@
 *>     button is held on the same block, abort destroy when the button is released or the target
 *>     changes first. While the button stays held after a finished break, the next block aimed at
 *>     (the one behind, once the server has broken this one) is started without a new press.
+*>   - the left button pressed while a player or mob is the target (RAYCAST's entity target, which
+*>     leaves no target block) sends Attack with its entity id (US7-5; standin-content §10.4, in
+*>     either game mode); the server decides the hit and the damage.
 *>   CONTROLS-HOTBAR (world and inventory screens): keys 1 to 9 hold hotbar slot 0 to 8, the wheel
 *>   moves the held slot (up: the previous slot, down: the next, wrapping); a change is sent.
 *>   CONTROLS-THROW (world screen; US5-3; standin-content §9.1; 09 §3.3 Player Action actions 5
@@ -50,6 +53,10 @@
              AND (CL-IT-STATE(WS-ITEM + 1) > 0 OR WS-STATE = 13 OR WS-STATE = 14
              OR WS-STATE = 16)
          CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+     END-IF
+*>   Attack: the entity aimed at.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 1 AND TG-ENTITY-HIT = 1
+         CALL "CONTROLS-SEND-ATTACK" USING CLIENT-STATE
      END-IF
 *>   A survival break in progress: aborted, or finished once its time has passed.
      MOVE 0 TO WS-SAME
@@ -183,6 +190,29 @@
      CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
      GOBACK.
  END PROGRAM CONTROLS-SEND-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SEND-ATTACK.
+*> USING CLIENT-STATE: Attack on the entity target.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-ATTACK" USING PB-BUFFER TG-ENTITY
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     GOBACK.
+ END PROGRAM CONTROLS-SEND-ATTACK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-HOTBAR.

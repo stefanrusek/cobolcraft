@@ -39,12 +39,13 @@
      END-PERFORM
 
      MOVE "acceptance US6-2 given 12 received messages when the Player looks at the chat area "
-         & "then the 10 most recent are shown in the order received (below the crosshair and the "
-         & "hotbar widgets)" TO TL-CASE
+         & "then the 10 most recent are shown in the order received (after the crosshair, the "
+         & "hotbar and the health widgets)" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||message 3|message 4|message 5|message 6|message 7|message 8|message 9|"
+     MOVE "+||||||||||Health 30/30|message 3|message 4|message 5|message 6|message 7|"
+         & "message 8|message 9|"
          & "message 10|message 11|message 12" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -55,7 +56,7 @@
          & "hidden" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+|||||||||" TO TL-EXPECTED
+     MOVE "+||||||||||Health 30/30" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE CC-KEY-T TO WS-KEY
