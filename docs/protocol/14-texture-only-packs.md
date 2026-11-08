@@ -4,7 +4,8 @@ This document specifies how the 26.3 client resolves **textures**: which files i
 atlases collect them, how texture size differences, animation, GUI scaling, colormaps and fonts are
 handled, and what a pack that ships only PNG files (and `.mcmeta` files) must therefore provide. It adds to
 [08-resource-packs.md](08-resource-packs.md) (pack container, stacking, atlas definition format) and does not
-repeat it. The mapping of our stand-in content onto a particular pack is a design matter and lives in
+repeat it. The pack stack order, how a pack such as Faithful layers on the generated and built-in packs, and the optional skin
+that points the cobolcraft world type's content at it are a design matter and live in
 [../design/faithful-pack-mapping.md](../design/faithful-pack-mapping.md).
 
 | Item | Value |
@@ -258,9 +259,9 @@ transcribing the `Cube` constructor):
 
 The strip is `2d + 2w` wide and `d + h` tall. The orientation of each face (which edge is up) follows the usual
 convention; an implementation that needs pixel-exact orientation must compare against a reference render
-(Open question 4). Our stand-in entities do **not** use this layout (08 10.11 uses its own strips).
+(Open question 4).
 
-### 5.4 Model constants of the three vanilla-equivalent models used by the stand-in mapping
+### 5.4 Model constants of the three standard models (player, cow, slime)
 
 Read from the model classes. Units are model texels; boxes are given as origin (x, y, z) and size (w, h, d); texture offsets (u, v).
 

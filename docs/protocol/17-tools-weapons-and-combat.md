@@ -12,10 +12,11 @@ Read first: [00](00-data-types.md) §12 (item stacks and data component patches)
 [09](09-cobolcraft-profile.md), [11](11-world-generation-caves-and-ores.md) §9 (ore drops, Fortune, experience), and
 [13](13-client-gameplay-and-controls.md) (cited as "13 §n"; movement, the block-break progress formula in 13 §2.1, the
 hardness and tier table in 13 §2.6, crafting). None of those is repeated here. [../design/standin-content.md](../design/standin-content.md)
-is CobolCraft's own placeholder content (cited "standin-content §n"). This document is the vanilla reference
-for the behaviour the ticket asks for; where standin-content gives a different number (for example its maximum
-health 30, hurt cooldown 12 and fall rule in standin-content §10), the vanilla rule below is what "works like
-Minecraft" means, and which side a CobolCraft build follows is a **decision point for the operator** (to be recorded in `docs/design/`); this document does not decide it.
+is the content of the cobolcraft world type (cited "standin-content §n"). This document is the vanilla reference
+for the behaviour the ticket asks for. The rules below apply in both world types: the standard world type and the
+cobolcraft world type share them (docs/design/README.md Part 0, R2), and the stand-in numbers for these rules (its
+maximum health 30, hurt cooldown 12 and fall rule in standin-content §10) are retired. Only content (blocks, items,
+mobs, recipes) differs between the world types.
 
 Conventions: "tick" is 1/20 s. `float` values are IEEE single precision unless said otherwise; the artifact computes
 most combat arithmetic in `float`, so implementations that need bit-exact results use single precision and the
@@ -195,7 +196,7 @@ Read from `Attributes.<clinit>` (default; range min..max) and `Player.createAttr
 
 | Attribute | Default | Range | Notes |
 |---|---|---|---|
-| `max_health` | 20 | 1..1024 | the player uses 20 (standin-content §10.1 differs) |
+| `max_health` | 20 | 1..1024 | the player uses 20 in both world types |
 | `attack_damage` | 2 (generic); **player base 1.0** | 0..2048 | `Player.createAttributes` overrides the base to 1.0 |
 | `attack_speed` | 4.0 | 0..1024 | the player's base is the default |
 | `attack_knockback` | 0 | 0..5 | |
@@ -714,7 +715,7 @@ State per living entity: `invulnerableTime` (called `damageCooldownTime`), `last
 - On an accepted hit while `invulnerableTime <= 10`: lastHurt = amount, invulnerableTime = 20, actuallyHurt(amount), hurtDuration = 10, hurtTime = 10. The hurt animation and the red flash last `hurtDuration` ticks.
 - A hit while `invulnerableTime > 10` (the first 10 ticks after the previous hit) and the type not in `bypasses_cooldown` (the tag is empty in this version): if amount <= lastHurt the hit is **ignored (returns false)**; else only the difference is applied: actuallyHurt(amount - lastHurt), lastHurt = amount, and no new window starts and no new hurt animation is sent.
 - `invulnerableTime` decreases by 1 each tick to 0. So a victim can be damaged at full strength every 10 ticks (twice a second), with a stronger hit within the first 10 ticks adding only its excess.
-- This differs from standin-content §10.2 (hurt cooldown 12, all hits ignored while it runs).
+- This rule applies in both world types; the stand-in hurt cooldown 12 is retired.
 
 ### 4.8 Mace smash, wind burst, density, breach
 
@@ -1017,7 +1018,7 @@ Protection points of one hit P = the sum over every worn item of the matching `d
 5. **Sweep**: iron sword, Sweeping Edge II, full strength, on the ground, standing still, not sprinting: base 6; ratio 2/3; sweepDamage = 1 + 4 = 5.0 to each other living entity within 3 blocks of the target (x s = 1).
 6. **Mace smash**: mace attack_damage 6, full strength, fall h = 10 blocks, Density III, falling and not sprinting: base 6; bonus 22 + (10 - 8) = 24; Density 0.5 x 3 x 10 = 15 (the density term is part of `getAttackDamageBonus`); base = 6 + 39 = 45; crit x 1.5 = 67.5; enchantment part E = 0. Shockwave on an entity 1.0 block from the attacker with fall > 5: (3.5 - 1.0) x 0.7 x 2 = 3.5 (times 1 - knockback resistance).
 7. **Bow**: full draw (t >= 20): p = 1.0, velocity 3.0, crit. Damage = ceil(3.0 x 2.0) = 6; crit adds nextInt(6 / 2 + 2 = 5) = 0..4: 6..10. Power V: base 2.0 + (1 + 0.5 x 4 = 3.0) = 5.0: ceil(3.0 x 5.0) = 15, crit + nextInt(15 / 2 + 2 = 9) = 0..8: 15..23. Half draw (t = 10): p = (0.25 + 1.0) / 3 = 0.4167, velocity 1.25, damage ceil(2.5) = 3, no crit.
-8. **Break time with enchantments** (13 §2.1 and 13 §9 formulas): iron pickaxe, Efficiency III, stone (hardness 1.5, correct tool): speed 6 + (9 + 1) = 16; progress 16 / 1.5 / 30 = 0.3556; ticks = ceil(1 / 0.3556) = 3. Diamond axe on an oak log (2.0): 8 / 2 / 30 = 0.1333, 8 ticks; Efficiency V: (8 + 26) / 2 / 30 = 0.5667, 2 ticks. Shears on white wool (0.8; wool needs no tool): 5 / 0.8 / 30 = 0.2083, 5 ticks. Sword on cobweb: 15 / hardness / 30 (hardness from 13 §2.6 / standin).
+8. **Break time with enchantments** (13 §2.1 and 13 §9 formulas): iron pickaxe, Efficiency III, stone (hardness 1.5, correct tool): speed 6 + (9 + 1) = 16; progress 16 / 1.5 / 30 = 0.3556; ticks = ceil(1 / 0.3556) = 3. Diamond axe on an oak log (2.0): 8 / 2 / 30 = 0.1333, 8 ticks; Efficiency V: (8 + 26) / 2 / 30 = 0.5667, 2 ticks. Shears on white wool (0.8; wool needs no tool): 5 / 0.8 / 30 = 0.2083, 5 ticks. Sword on cobweb: 15 / hardness / 30 (hardness from 13 §2.6 / the block registry).
 9. **Anvil**: two iron pickaxes, left damage 100 of 250, right damage 200 of 250: a = 150, b = 50, bonus 250 x 12 / 100 = 30; remaining 230; damage 20. Repair with iron ingots: u = min(100, 250 / 4 = 62) = 62 per ingot: one ingot -> damage 38, cost +1; a second -> u = 38 -> damage 0, cost +2 total (repair_cost 0). Result `repair_cost` becomes 2 x 0 + 1 = 1 (when stored).
 10. **Crafting-grid repair**: two iron pickaxes damage 100 and 200: 150 + 50 + 250 x 5 / 100 = 12 -> 212 remaining, damage 38; no enchantments except curses.
 11. **Fall damage**: 10 blocks: floor(10 + 0.000001 - 3.0) = 7; with Feather Falling IV: P = 12, x (1 - 12/25) = 0.52 -> 3.64 (health damage is applied as float after `calculateFallDamage` int 7: 7 x 0.52 = 3.64). Armor does not apply (fall is in `bypasses_armor`).

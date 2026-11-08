@@ -13,7 +13,7 @@ The wire side of these features is already specified and is not repeated here. S
 RecipeDisplayEntry), [05c](05c-play-serverbound.md) (Container Click 0x12, Place Recipe 0x27, Player Abilities 0x28,
 Player Action 0x29, Player Input 0x2B, Recipe Book Change Settings 0x2F, Recipe Book Seen Recipe 0x30),
 [09](09-cobolcraft-profile.md) (which of these CobolCraft sends) and
-[../design/standin-content.md](../design/standin-content.md) (cited below as "standin-content §n": CobolCraft's own content; its break times (standin-content §1.1 and §2) and recipes (standin-content §13) override the vanilla values given here). This document says what the client does with them.
+[../design/standin-content.md](../design/standin-content.md) (cited below as "standin-content §n": CobolCraft's own content). This document says what the client does with them.
 
 Conventions: "tick" is 1/20 s. Class names in backticks say where a fact was read. "(inferred)" marks a value
 deduced rather than read. Floating-point values are IEEE single precision (`float`) where the source used `float`
@@ -352,8 +352,7 @@ Tool-kind speeds are the material speeds in 2.1 (a tool of the right kind gets t
 its `mineable` tag, and the base 1.0 elsewhere; a pickaxe on dirt is speed 1.0). The `incorrect_for_*_tool` tags (the "denies drops" list of each material, all read): wooden = needs_stone + needs_iron
 + needs_diamond; gold = the same three as wooden; stone = needs_iron + needs_diamond; copper = needs_iron +
 needs_diamond; iron = needs_diamond; diamond and netherite = empty. The tier lists in the jar include many more blocks than the table
-(copper variants, raw blocks, netherite and so on); CobolCraft's own block set and break classes (standin-content §1.1
-and §2) are what the server uses.
+(copper variants, raw blocks, netherite and so on).
 
 ---
 

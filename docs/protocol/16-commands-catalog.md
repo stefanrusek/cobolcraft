@@ -441,7 +441,7 @@ Calls `MinecraftServer.setWeatherParameters(clearTime, rainTime, raining, thunde
 | `commands.weather.set.rain` | Set the weather to rain | **B** |
 | `commands.weather.set.thunder` | Set the weather to rain and thunder | **B** |
 
-The setter works on the single server-level `WeatherData` (`MinecraftServer.setWeatherParameters`), not per level. The `advance_weather` rule is read in `ServerLevel` (2 sites) and `MinecraftServer` (1 site); its exact effect there was not traced. `ClientboundGameEventPacket` (05a 0x27) is referenced from `ServerLevel` and `PlayerList`. CobolCraft's own kinds `clear/drizzle/hailstorm` (standin §14) are CobolCraft design; the vanilla set is clear/rain/thunder.
+The setter works on the single server-level `WeatherData` (`MinecraftServer.setWeatherParameters`), not per level. The `advance_weather` rule is read in `ServerLevel` (2 sites) and `MinecraftServer` (1 site); its exact effect there was not traced. `ClientboundGameEventPacket` (05a 0x27) is referenced from `ServerLevel` and `PlayerList`. The `weather` command takes the standard kinds `clear`, `rain` and `thunder` only.
 
 ### 4.11 `worldborder`
 
@@ -639,7 +639,7 @@ Applies `amount` damage of the given type to the target; `at`, `by` and `from` s
 | `commands.damage.success` | amount, target display name | Applied %s damage to %s | **B** |
 | `commands.damage.invulnerable` | | Target is invulnerable to the given damage type | error (the target ignored the damage) |
 
-Damage types available are the 51 files in `data/minecraft/damage_type/` (cross-ref standin §4.7 for the synchronized registry). Damage resolution is outside this document (see 17).
+Damage types available are the 51 files in `data/minecraft/damage_type/` (17 §4.12 is the damage-type document). Damage resolution is outside this document (see 17).
 
 ### 5.8 `summon`
 

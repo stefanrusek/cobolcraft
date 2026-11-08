@@ -9,7 +9,7 @@ text says "the reference client" it is describing the artifact and not requiring
 |---|---|
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3. This is the artifact already recorded in [README.md](README.md). |
 | Method | Static reading of the shipped bytecode (`javap`), and of the text assets in the same jar (GLSL shaders under `assets/minecraft/shaders`, JSON under `data/minecraft` and `assets/minecraft`), with no execution |
-| Related | [08-resource-packs.md](08-resource-packs.md) (pack format, models, atlases, block states), [06-chunk-format.md](06-chunk-format.md) (light data), [05a-play-clientbound-00-71.md](05a-play-clientbound-00-71.md) (Block Destruction), [../design/standin-content.md](../design/standin-content.md) |
+| Related | [08-resource-packs.md](08-resource-packs.md) (pack format, models, atlases, block states), [06-chunk-format.md](06-chunk-format.md) (light data), [05a-play-clientbound-00-71.md](05a-play-clientbound-00-71.md) (Block Destruction), [04-registry-sync.md](04-registry-sync.md) (registries and ids), [18-mob-framework.md](18-mob-framework.md) (ground items), [../design/standin-content.md](../design/standin-content.md) (content of the cobolcraft world type only) |
 
 Conventions in this document:
 
@@ -23,49 +23,29 @@ Conventions in this document:
   the form the 26.3 data files give them. A CobolCraft server decides what it sends; a CobolCraft client decides what
   it implements. Section 3.1 says which attributes exist and how they combine so either side can choose its own values.
 
-Sections: 0 Relation to the CobolCraft stand-in. 1 Block lighting. 2 Texture atlas sampling. 3 Sky, fog and clouds. 4 Block-break crack overlay.
+Sections: 0 Resolved: the rules apply to both world types. 1 Block lighting. 2 Texture atlas sampling. 3 Sky, fog and clouds. 4 Block-break crack overlay.
 5 The GUI. 6 First-person hand and item. 7 Third-person camera and the player model. 8 Item and block-in-hand
 rendering. 9 Validation. 10 Open questions.
 
 ---
 
-## 0. Relation to the CobolCraft stand-in (decision points for the operator)
+## 0. Resolved: the rules apply to both world types
 
-This document describes the reference client. It does not decide which parts CobolCraft's own client must follow.
-[standin-content.md](../design/standin-content.md) already fixes some simplified client behaviour, and three of its statements
-conflict with what the reference client does. They are listed here as decisions; nothing in this document resolves them.
+This document describes the reference client. The game has two world types (the standard world type and the cobolcraft
+world type; see [../design/README.md](../design/README.md), rules R1 and R2). The rendering rules of this document are
+shared standard rules and apply in **both** world types: the world type selects the content set (blocks, items, mobs,
+textures), not how light, sky, fog and the GUI are computed. Earlier drafts listed four decision points against
+[standin-content.md](../design/standin-content.md); they are resolved as follows.
 
-What standin-content says (read from the document, not from code):
-
-| standin-content | Statement |
+| Decision | Resolution |
 |---|---|
-| §4.8 sky | The daylight factor u runs 1000 to 200 (day full until time 15000, ramp 15000–16000, night 16000–29000, ramp 29000–30000) and the clear colour is a linear mix of day `#8FB8E6` and night `#0E1222`. |
-| §4.8 day | 30,000 ticks per day. |
-| §4.9 | The `timeline` registry is "no packet sent". `dimension_type` `attributes` and `timelines` are sent empty or absent (§4.6). |
-| §1.4.2 note after the texture table | The renderer's own fixed per-face brightness: top 1.0, north and south 0.8, east and west 0.6, bottom 0.5. |
-| §15.3 (subroutine) | Fixed sky colour `#100C12`, no sun, moon or weather, no sky light. |
-| §4.6 | Brightness floor of 0.1 in the client's own render list. |
+| D1 light map | Adopt the formula of §1.8. The per-face directional factors of §1.1 (top 1.0, north and south 0.8, east and west 0.6, bottom 0.5) are the same numbers as the fixed table that standin-content §1.4.2 gave, so they agree; §1.2 to §1.7 (smooth lighting, shade of a block) refine them. |
+| D2 sky model | Adopt §3: the sky, fog and clouds come from the environment attributes and the timeline of the dimension type (04, EnvironmentAttributeMap and the `timeline` registry). The simplified sky colours of standin-content §4.8 are retired. |
+| D3 day length | The day is 24000 ticks, the `period_ticks` of the reference timeline (3.2, 3.2c), in both world types. |
+| D4 night definition | The reference tracks of 3.2 apply: the sky darkens between about 11270 and 13140, stays dark until 22860 and brightens again until 24730 (730 of the next day), in a 24000-tick cycle. |
 
-Where it agrees or does not conflict:
-
-| Section of this document | Relation |
-|---|---|
-| §1.1 directional factors | Agrees with the stand-in's fixed table (the `default` column of 1.1 is the same numbers). |
-| §1.2–1.7 smooth lighting (vertex AO) and flat lighting | Not covered by standin-content. Optional refinement of the fixed per-face rule. |
-| §1.8 light map | Conflicts with the stand-in's "daylight factor u × sky light, floor 0.1" rule. **Decision D1**: keep the stand-in rule, or adopt the §1.8 formula. |
-| §2 textures, §4 crack overlay, §5 GUI, §6 first-person hand, §7 camera and model, §8 items | Not covered by standin-content. A CobolCraft client is expected to follow these when it implements the corresponding feature (ticket CC-0001 items), subject to its own pack rules in 08 and 14. |
-| §3 sky, fog, clouds | Conflicts with standin-content §4.8 (simplified sky colour, no sun, moon, stars or clouds, no timeline sent). **Decision D2**: keep the §4.8 simplified sky, or adopt §3. |
-
-Decisions, to be taken by the operator:
-
-- **D1 and D2 (sky and light model).** The reference sky and light depend on environment attributes and timelines delivered
-  through `dimension_type` (04, EnvironmentAttributeMap) and the `timeline` registry. Adopting §3 or §1.8 means standin-content would need to
-  amend: §4.9 (send at least one `timeline` entry and reference it from the surface dimension type's `timelines`), §4.6 (`attributes` for sky, fog, cloud and light colours,
-  currently absent), and §4.8 (the clear colour formula and the daylight factor would be replaced by the timeline tracks of 3.2). Keeping §4.8 means the CobolCraft client never reads those attributes and the whole of §3 and §1.8 stays unused.
-- **D3 (day length).** See 3.2c: a 30000-tick day against a 24000-tick timeline period.
-- **D4 (night definition).** standin-content §4.8 puts the night at 16000–29000 with a one-thousand-tick ramp at each end; the reference tracks
-  (3.2) darken between about 11270 and 13140, stay dark until 22860 and brighten again until 24730 (730 of the next day), in a 24000-tick cycle. The two shapes
-  differ; the server's night rule (standin-content §12.4: night is 16000 ≤ Time < 29000) is a separate server matter.
+Sections that standin-content did not cover (§2 textures, §4 crack overlay, §5 GUI, §6 first-person hand, §7 camera and
+model, §8 items) apply when a client implements the corresponding feature, subject to the pack rules in 08 and 14.
 
 ---
 
@@ -285,7 +265,7 @@ format: levels 0..15 exactly.
 
 `BlockState.getShadeBrightness` returns **0.2** if the block's collision shape is a full block, else **1.0** (`Block.getShadeBrightness`).
 Overrides read (a search of every class in the jar that defines `getShadeBrightness`; this list is complete): `TransparentBlock` 1.0 (inherited by its subclasses, among them `StainedGlassBlock`, `TintedGlassBlock` and `WaterloggedTransparentBlock`), `LightBlock` 1.0, `BarrierBlock` 1.0, `StructureVoidBlock` 1.0,
-`MudBlock` 0.2, `SoulSandBlock` 0.2, and `SnowLayerBlock`: 0.2 when its `layers` property equals 8, else 1.0. Which block uses which class is part of the block registry (08, standin-content §1); the lighter only calls the method. The shade of an air cell is 1.0 (`Block` default: not a full collision shape).
+`MudBlock` 0.2, `SoulSandBlock` 0.2, and `SnowLayerBlock`: 0.2 when its `layers` property equals 8, else 1.0. Which block uses which class is part of the block registry (04 §5; the block registry is GAP-1 of ../design/README.md, and standin-content §1 for the cobolcraft world type); the lighter only calls the method. The shade of an air cell is 1.0 (`Block` default: not a full collision shape).
 
 ### 1.8 The light map texture
 
@@ -523,10 +503,6 @@ The strings are `#aarrggbb`: the entry `#e9e07233` has alpha 0xe9, red 0xe0, gre
 
 The timeline uses the dimension type's `default_clock` (a `world_clock` registry entry, 04) and its total ticks, which the
 server updates with Set Time (05b). The reference `minecraft:overworld` timeline has `period_ticks` 24000.
-
-CobolCraft's own clock (standin-content §4.8) wraps at 30000. If a client ran the reference tracks against a 30000-tick day,
-the tracks would repeat every 24000 ticks: the sky cycle would be 20 % shorter than the server's day (24000 / 30000 = 0.8). Seen from the sky, the curves advance 30000 / 24000 = 1.25 times as fast as the server's day, that is 25 % too fast. Whether to rescale the keyframes (multiply each tick by 30000 / 24000, set `period_ticks` 30000), to change the server day to 24000, or to keep the §4.8 simplified sky is decision **D3** of §0. This
-document does not choose. Note also that the standin-content §4.9 says the `timeline` registry sends no packet, so sending a rescaled timeline is a change to standin-content (§0, D1/D2).
 
 ### 3.3 Fog (`FogRenderer`)
 
@@ -1058,7 +1034,7 @@ The texture coordinates are transformed (`TextureTransform.setupGlintTexturing(s
 
 ### 8.4 Items in the world (summary)
 
-Dropped items and items in item frames use the `ground` and `fixed` display transforms. Their motion rules belong to standin-content §9.
+Dropped items and items in item frames use the `ground` and `fixed` display transforms. Their lifetime, pickup delay and merge rules are in 18 §6.11; their motion and pickup box are not yet specified (GAP-26 of ../design/README.md).
 
 ---
 

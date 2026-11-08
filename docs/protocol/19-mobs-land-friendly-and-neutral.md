@@ -8,7 +8,7 @@ This document specifies the behaviour, parameters, data and spawning of the land
 | Method | Static reading of the shipped bytecode (`javap`), with no execution, and of the data files under `data/minecraft/` in the same jar |
 | Read classes | `net.minecraft.world.entity.animal.**`, `net.minecraft.world.entity.npc.**`, `net.minecraft.world.item.trading.*`, `net.minecraft.world.entity.ai.gossip.*`, `ai.village.poi.PoiTypes`, `ai.behavior.VillagerGoalPackages`, `SpawnPlacements`, `EntityTypes`, `EntityDimensions`, `ai.attributes.Attributes` and the data registries (loot tables, tags, biomes, variants, timelines, trade sets, villager trades) |
 | Evidence rule | Every value is read from the artifact in this round. Items that were deduced from the shape of read code are marked "(inferred)"; items that could not be read are marked "(recalled, not verified)" or listed in section 27 |
-| Dependencies | 00 §13 (entity metadata and serializer ids), 04 (registry and tag ids), 05a/05b (entity packets), 09, 13 and the standin-content design document for the game's own placeholder content |
+| Dependencies | 00 §13 (entity metadata and serializer ids), 04 (registry and tag ids), 05a/05b (entity packets), 09, 13 |
 
 ## Contents
 
