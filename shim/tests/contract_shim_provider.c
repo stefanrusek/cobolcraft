@@ -1,5 +1,5 @@
 /* Contract test, provider side of contracts/shim-abi.md (§3 cc_net, §5 cc_zlib, §6 cc_tls, §7 cc_fs,
- * §8 cc_win, §9 cc_vk):
+ * §8 cc_win, §9 cc_vk, §10 cc_f64):
  * every function against the real libraries (loopback sockets, real zlib, OpenSSL against
  * tools/testsrv/testsrv.py over HTTPS with SSL_CERT_FILE at its test CA, a hidden GLFW window,
  * MoltenVK), asserting the return codes and outputs the contract states. cc_fatal (§2) is the
@@ -11,6 +11,7 @@
 
 #include "cc_internal.h"
 #include "ccshim.h"
+#include "f64_vectors.h"
 #include "testlib.h"
 #include "tls_testsrv.h"
 
@@ -482,7 +483,22 @@ static void open_path(void) {
            cc_open_path("/nonexistent/opener", "/tmp"));
 }
 
+/* §10 cc_f64: every function, operands and result by reference, against the IEEE vectors of
+ * f64_vectors.txt computed independently (Python struct and math); the call shapes of the contract. */
+static void f64(void) {
+    double a = 0.1, b = 0.2, r = 0;
+    cc_f64_add(&a, &b, &r);
+    tl_int("contract shim cc_f64_add 0.1 + 0.2 is 3FD3333333333334", 0x3FD3333333333334LL, (long long)f64_bits_of(r));
+    cc_f64_from_text("0.1", &a);
+    cc_f64_from_text("0.2", &b);
+    cc_f64_add(&a, &b, &r);
+    tl_int("contract shim cc_f64_from_text operands add to the IEEE sum", 0x3FD3333333333334LL, (long long)f64_bits_of(r));
+    f64_run_group(G_ARITH);
+    f64_run_group(G_LIBM);
+}
+
 int main(void) {
+    f64();
     net_listen_accept();
     net_connect_status();
     net_send_recv_close();
