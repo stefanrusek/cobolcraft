@@ -785,6 +785,17 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
     vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
 }
 
+/* Clears the depth attachment inside the open render pass (the hand pass of 12 §6 draws over the world). */
+void cc_vk_clear_depth(void) {
+    VkClearAttachment depth = {
+        .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+        .colorAttachment = 0,
+        .clearValue.depthStencil = {1.0f, 0},
+    };
+    VkClearRect area = {.rect = {{0, 0}, cc_vk_state.extent}, .baseArrayLayer = 0, .layerCount = 1};
+    vkCmdClearAttachments(cc_vk_state.cmd, 1, &depth, 1, &area);
+}
+
 void cc_vk_submit(void) {
     vkCmdEndRenderPass(cc_vk_state.cmd);
     check(vkEndCommandBuffer(cc_vk_state.cmd), "cc_vk_frame_end: vkEndCommandBuffer failed");
