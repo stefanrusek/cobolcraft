@@ -94,7 +94,8 @@
 *> not have, the value blank; CT-NOT-OPEN). max_stack_size is the stack size column of the row (blank column:
 *> not found); max_damage is the damage column (blank column: not found);
 *> every other name is looked up among the entries of the row's summary, separated by ", ", each the name, a
-*> space and the value (everything after the first space).
+*> space and the value (everything after the first space); a name the summary lacks is derived from the item's kind and
+*> material by ITEM-DEFAULT-COMPONENT (item-components.cob: the tool, weapon, attribute, armor and enchantable defaults).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -157,6 +158,9 @@
                      MOVE CT-OK TO L-STATUS
                  END-IF
              END-PERFORM
+             IF L-STATUS NOT = CT-OK
+                 CALL "ITEM-DEFAULT-COMPONENT" USING WS-ROW L-NAME L-VALUE L-STATUS
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM CONTENT-ITEM-COMPONENT.

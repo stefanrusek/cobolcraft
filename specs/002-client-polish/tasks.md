@@ -502,11 +502,11 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 25: US14-content — item components
 
-- [ ] T0283 [US14-content] Write test `content/tests/test_item_components.cob`: `CONTENT-ITEM-COMPONENT` returns tool rules, weapon damage, armor, durability, enchantable and attribute components for the tools and armors of `docs/protocol/17-tools-weapons-and-combat.md` §1 (standard set) and for the cobolcraft items
-- [ ] T0284 [US14-content] Implement the component defaults in `content/src/item-components.cob`
-- [ ] T0285 [US14-content] Write test `content/tests/test_enchantment_load.cob`: enchantment, damage type and equipment registries load (28)
-- [ ] T0286 [US14-content] Implement the enchantment and damage type loaders in `content/src/enchantments.cob`
-- [ ] T0287 [US14-content] Gate: run `make gate-content` and record the command and real output
+- [X] T0283 [US14-content] Write test `content/tests/test_item_components.cob`: `CONTENT-ITEM-COMPONENT` returns tool rules, weapon damage, armor, durability, enchantable and attribute components for the tools and armors of `docs/protocol/17-tools-weapons-and-combat.md` §1 (standard set) and for the cobolcraft items
+- [X] T0284 [US14-content] Implement the component defaults in `content/src/item-components.cob`
+- [X] T0285 [US14-content] Write test `content/tests/test_enchantment_load.cob`: enchantment, damage type and equipment registries load (28)
+- [X] T0286 [US14-content] Implement the enchantment and damage type loaders in `content/src/enchantments.cob`
+- [X] T0287 [US14-content] Gate: run `make gate-content` and record the command and real output
 
 #### Phase 26: US15-content — entity types, loot, spawn data
 
