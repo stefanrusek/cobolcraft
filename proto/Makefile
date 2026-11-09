@@ -1,6 +1,7 @@
 # Package proto: COBOL protocol codec → build/proto/libproto.a (contracts/test-harness.md §2).
 # Shared rules: tools/package.mk. tests/ is an include directory for the test helper copybook
-# PROTOTEST.cpy (test infrastructure); copy/ holds PBLEVEL.cpy, the records of src/level-events.cob.
+# PROTOTEST.cpy (test infrastructure); copy/ holds PBLEVEL.cpy and PBCHAT.cpy, the records of
+# src/level-events.cob and src/chat-commands.cob.
 PKG      := proto
 LIBNAME  := libproto.a
 SRC      := $(wildcard src/*.cob)
