@@ -38,7 +38,7 @@ test) are the markers Q-1 and Q-2. No spike mutated external state.
   and the world-type content sets. `extract` is the program `cobolcraft-extract` (22). Dependencies:
   `formats -> shim`; `content -> formats, proto, shim`; `core -> content, formats, proto, shim`;
   `server -> core, content, formats, proto, shim`; `client -> core, content, formats, proto, shim`;
-  `extract -> formats, shim`.
+  `extract -> content, formats, proto, shim`.
 - **Rationale.** Today the client owns the only zip, JSON, PNG and regex code (read: `client/src/zip.cob` has
   `ZIP-OPEN/CLOSE/COUNT/NAME/FIND/SIZE/READ`, `client/src/json.cob` has `JSON-PARSE` and friends), while the
   extraction tool, the server (data packs, 22 §8.3, §8.4) and the client all need them. Leaving them in `client`

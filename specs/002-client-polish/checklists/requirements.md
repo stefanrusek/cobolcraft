@@ -31,5 +31,5 @@
 
 ## Notes
 
-- The three markers are operator decisions the documents leave open (world-types Open questions 1, 16, 17). They block task generation (constitution Principle 1.3) until answered via /speckit-clarify.
+- The three operator decisions the documents left open (world-types Open questions 1, 16, 17) were answered in the spec's Clarifications session 2026-11-09 (FR-003, FR-005, FR-027); no marker remains. The plan's Q-1 and Q-2 are likewise recorded as decided.
 - Document references are requirements sources (Principle II), not implementation detail.

@@ -21,8 +21,8 @@ The adopted defaults of `docs/design/README.md` Part 7 stand (spec Assumptions).
 settles the two process questions: workspace bootstrap is `make bootstrap`, deferred work is Spile tickets
 (`tickets/`, prefix `CC`).
 
-Two decisions the plan phase has no authority to make remain open. The tasks phase MUST NOT start until both are
-recorded (constitution 1.3).
+Two decisions the plan phase had no authority to make were put to the operator and are recorded below as decided
+(constitution 1.3); the tasks phase proceeded.
 
 - Q-1 (operator accepted the manual run, 2026-11-09) Vanilla-client verification (spec US21, FR-039, SC-013). The plan sets the scope as
   (a) automated byte-level conformance tests of the standard server's configuration phase, Login and chunk data
@@ -101,7 +101,7 @@ largest family, 24 to 25, is 1.9 MB of tables); every standard command, tool and
 | I. COBOL-first, thin C glue | Pass | All logic (extraction, loaders, registries, engines, UI) is COBOL. The only new glue (`contracts/shim-delta.md`) is ABI and platform adaptation: by-reference double arithmetic (COBOL cannot receive a C double return: spike `spike_fma_calls` returned 0), Vulkan mip/sub-update/depth-clear, a process spawn. OpenSSL digests, `CBL_*` file and directory routines are called directly (spike `spike_jar_digest`). The table generator and drift gate are build tooling (any language). |
 | II. Spec is the source of truth | Pass | Every behaviour value is read from a named document; open questions that bear on slices are closed by clean-room rounds in Foundational ("Docs-first obligations"); a gap found later stops its slice and goes back to a round. The registry tables are generated from the documents, not retyped. |
 | 1.1 Artifact completeness | Pass | This plan plus companions carry every decision. |
-| 1.3 Clarification markers / tasks gate | Open (2) | Q-1 and Q-2 above; tasks generation is blocked until recorded. |
+| 1.3 Clarification markers / tasks gate | Pass | Q-1 and Q-2 above are recorded operator decisions (accepted manual run; sanctioned test double); no marker remains, tasks generation proceeded. |
 | 1.4 Deferred work | Pass | Spile tickets; CC-0003, CC-0005, CC-0006 incorporated, CC-0002 and CC-0004 stay recorded (research R15); nothing new is deferred. |
 | 2.5 Dependency-aware sequencing | Pass | Lane phases follow the spec's story order US1 to US21; cross-lane edges are listed ("Lane notes"). |
 | 2.6 Handoff consumed | Pass | research "Handoff verification record". |
@@ -112,7 +112,7 @@ largest family, 24 to 25, is 1.9 MB of tables); every standard command, tool and
 | 3.5 Sequence diagrams | Pass | One per story below. |
 | 3.6 Execution mode | Pass | Package-parallel; `make bootstrap` is defined in the constitution. |
 | 3.8 Debt survey | Pass | "Technical debt survey" below. |
-| 4.1 Test-first, ladder, BDD, contract tests, doubles | Pass, one double pending | "Test strategy". The only double proposed is Q-2; none else. |
+| 4.1 Test-first, ladder, BDD, contract tests, doubles | Pass, one double sanctioned (Q-2) | "Test strategy". The only double proposed is Q-2; none else. |
 | 4.2 Coverage | Pass | gcov 100 % of every COBOL and C production source; excluded: generated copybooks `content/copy/gen/` (data, produced by `tools/gen`), tests, `tools/`. |
 | 4.3 E2E | Pass | Inventory empty, none proposed ("E2E inventory"). |
 | 5.6 Error handling | Pass | Only defined outcomes are handled: the CCX codes of 22 §7.4, the packs status words, pack errors (08), the WT-23 foreign-key case, options defaults; everything else stays fatal under `-debug`. |
@@ -138,7 +138,7 @@ specs/002-client-polish/
 │                           #   wire-delta, client-surface-delta, test-harness-delta
 ├── spikes/                 # spike_* probes and *.out.txt evidence
 ├── checklists/requirements.md
-└── tasks.md                # Phase 2 (/speckit-tasks), blocked by Q-1 and Q-2
+└── tasks.md                # Phase 2 (/speckit-tasks)
 ```
 
 ### Source code (repository root; new or changed packages marked)
@@ -169,7 +169,7 @@ docs/protocol/  docs/design/  # extended by the Foundational clean-room rounds
 
 **Structure decision.** Dependencies: `shim`; `formats -> shim`; `proto -> shim`; `content -> formats, proto, shim`;
 `core -> content, formats, proto, shim`; `server -> core, content, formats, proto, shim`; `client -> core, content,
-formats, proto, shim`; `extract -> formats, shim`. Packages link each other's `lib` outputs and compile only
+formats, proto, shim`; `extract -> content, formats, proto, shim` (the accepted-jar row and `CONTENT-PACKS-CHECK` come from `content`; canonical package order everywhere: `shim`, `formats`, `proto`, `content`, `extract`, `core`, `server`, `client`). Packages link each other's `lib` outputs and compile only
 against `contract/` for shared shapes (001 rule kept).
 
 ## Package boundary declaration (constitution 3.3)
@@ -182,7 +182,7 @@ against `contract/` for shared shapes (001 rule kept).
 | US4 Open Pack Folder | shim, client | multi |
 | US5 Seamless textures | shim, client | multi |
 | US6 HUD and screens | client | package-local |
-| US7 Creative-only flight | client (core confirms survival abilities) | package-local, escalates if the survival climb has a core cause (P-client-5) |
+| US7 Creative-only flight | client (fix), core (acceptance test confirming survival abilities) | multi: the fix is client-local, the core slice is one confirming test; escalates if the survival climb has a core cause (P-client-5) |
 | US8 Break overlay | proto, core, client | multi |
 | US9 Inventory crafting, recipe book | proto, content, core, client | multi |
 | US10 Crafting bench | content, core, client | multi |
@@ -214,7 +214,7 @@ against `contract/` for shared shapes (001 rule kept).
 ## Execution mode (constitution 3.6)
 
 **Declared: package-parallel.** Workspace bootstrap command: `make bootstrap` (constitution Development
-Workflow). Justification: 16 of the 21 stories cross package boundaries (five are package-local: US6, US7, US16, US17, US18), the work per package is large and disjoint
+Workflow). Justification: 17 of the 21 stories cross package boundaries (four are package-local: US6, US16, US17, US18), the work per package is large and disjoint
 (the core lane alone carries the engines of documents 10 to 45), and the frozen contracts license the split. Fast
 pass and standard are excluded (contract changes, hundreds of files; standard would serialize every disjoint
 package task).
@@ -311,7 +311,7 @@ package's `tests/`, run by every lane gate) is kept.
   with the 21,490-file generated directory.
 - **Document deliverables** (the clean-room rounds' document edits, the design-document records of FR-012 and
   FR-027, README) are verified by review tasks, not tests (4.1).
-- **Test doubles**: none, except Q-2 pending. Real MoltenVK and GLFW windows, loopback sockets, real zlib and
+- **Test doubles**: none, except the Q-2 double the operator sanctioned. Real MoltenVK and GLFW windows, loopback sockets, real zlib and
   OpenSSL, the real jar and pack.
 - **Performance of the suite.** `acc_us3_streaming` already takes about 3 minutes (CC-0002). New engines must
   not make `make gate` unrunnable: tests generate and mesh few chunks; Risk R-M records the budget concern.
@@ -441,9 +441,8 @@ the Plan Summary as a judgement call; it adds no behaviour beyond what FR-031, F
 
 1. FR-009 lists "sky" among surfaces drawn with pack textures while FR-043 excludes sky: pack textures reach the
    sky only where the 001 renderer already draws one; no new sky work.
-2. `checklists/requirements.md` still says three markers remain although the Clarifications record the answers;
-   it also contains the literal marker token, which the mechanical tasks-gate check (constitution 1.3) would
-   count. The spec phase should reword that checklist line; the plan phase does not edit the spec's files.
+2. `checklists/requirements.md` Notes were reworded after the Clarifications session so the artifacts carry no
+   open marker and no literal marker token (resolved).
 3. FR-016 names creative and spectator, US7 only creative: FR-016 governs (13 §1.4); the plan follows the
    document.
 4. FR-041 "standard wins" over the hurt cooldown and day length is the reason the 001 constants are deleted, not

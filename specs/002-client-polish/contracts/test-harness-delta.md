@@ -4,7 +4,7 @@
 
 | Command | Addition |
 |---|---|
-| `make` / `make build` | also builds `build/bin/cobolcraft-extract` and the libraries of `formats`, `content`, `extract`. `PKGS` becomes `shim formats proto content core server client extract`; `DEPS_` and `TARGETS_` per plan "Project structure". |
+| `make` / `make build` | also builds `build/bin/cobolcraft-extract` and the libraries of `formats`, `content`, `extract`. `PKGS` becomes `shim formats proto content extract core server client`; `DEPS_` and `TARGETS_` per plan "Project structure". |
 | `make gate-<pkg>` | exists for `formats`, `content` and `extract` too (same recipe as every package: lint, dependencies' libs, build, instrumented tests, coverage of the package's production sources). |
 | `make gate-tables` | `python3 tools/gen/gen_tables.py --check`: regenerate the registry copybooks into a scratch directory, fail on any byte difference with `content/copy/gen/`, and fail when a generated count differs from the count the documents state (data-model §2). Part of `make gate-tools` and `make gate-contract`. |
 | `make gate-contract` | also compiles the new contract copybooks (`CONTENT.cpy`, `FORMATS.cpy`) in the probe program and parses every new wire fixture. |
