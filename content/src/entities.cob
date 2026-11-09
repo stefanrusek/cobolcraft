@@ -98,8 +98,8 @@
  01 WS-REGISTRY            PIC X(48).
  01 WS-KEY                 PIC X(64).
  01 WS-REST                PIC X(64).
- 01 WS-BLOCK-ROW           PIC X(684).
- 01 WS-ITEM-ROW            PIC X(208).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-ITEM-ROW            PIC X(270).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-ROW-REGISTRY        PIC X(48).
  01 WS-ROW-KEY             PIC X(64).

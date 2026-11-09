@@ -23,8 +23,8 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-RESULT              BINARY-LONG.
- 01 WS-BLOCK-ROW           PIC X(684).
- 01 WS-ITEM-ROW            PIC X(208).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-ITEM-ROW            PIC X(270).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-TAG-REGISTRY        PIC X(48).
  01 WS-IDS.

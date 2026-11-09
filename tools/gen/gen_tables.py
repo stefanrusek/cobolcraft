@@ -27,6 +27,12 @@ DEFAULT_DOCS = os.path.join(REPO, "docs", "protocol")
 # Files that live in the generated directory without being generated.
 KEEP = {".gitkeep"}
 CHUNK = 400
+# Widths of the contract copybook (contract/copy/CONTENT.cpy) that a generated column must fit.
+PROPS_WIDTH = 288
+COMPONENTS_WIDTH = 160
+MAXDAMAGE_WIDTH = 4
+BLOCK_WIDTHS = [4, 35, 32, PROPS_WIDTH, 4, 5, 5, 21, 9, 3, 41, 50, 150, 10, 15, 147]
+ITEM_WIDTHS = [4, 38, 24, 4, 2, MAXDAMAGE_WIDTH, 34, COMPONENTS_WIDTH]
 DYES = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan",
         "purple", "blue", "brown", "green", "red", "black"]
 # Key suffix of a dye collection field of 24 part 8 Appendix A (the field name when absent).
@@ -92,9 +98,10 @@ def first_int(text):
 
 # ---------------------------------------------------------------- fixed-width emitter
 
-def emit(prefix, comment, columns, rows, extra=()):
-    """Copybook text for a table. `columns` is a list of names; `rows` are lists of strings."""
-    widths = [max([len(r[i]) for r in rows] + [1]) for i in range(len(columns))]
+def emit(prefix, comment, columns, rows, extra=(), minimum=None):
+    """Copybook text for a table. `columns` is a list of names; `rows` are lists of strings. `minimum` gives the
+    widths of the contract copybook (contract/copy/CONTENT.cpy), which a column keeps when its content is shorter."""
+    widths = [max([len(r[i]) for r in rows] + [(minimum or [1] * len(columns))[i]]) for i in range(len(columns))]
     width = sum(widths)
     text = "".join("".join(v.ljust(w) for v, w in zip(r, widths)) for r in rows)
     pad = (-len(text)) % CHUNK
@@ -323,6 +330,344 @@ def table_raw(path, table, row):
     return row[0]
 
 
+# ---------------------------------------------------------------- block families: property lists and defaults
+#
+# The documents give the state layout of a block by its class, not by its key: 24 part 2 section 4 (layout and
+# default index), part 3 section 7, part 4 section 3 and 6, part 5 sections 7 and 8, part 6 sections 5 and 7.1
+# (explicit value lists and default index), part 7 sections 3 and 6 to 14 and part 8 section 4 (class tables
+# "properties and default"). Each family below is one such statement: the properties with their value lists
+# in the documents' order and the default value of each property. The generator sorts the properties by name
+# (24 part 1 section 3 item 2: natural string order, the first slowest), checks that the product of the value
+# counts equals the state count of Appendix A of every block it is applied to, and gives the default state id
+# FIRST + sum of (position of the default value x stride). A block whose class has no family, or whose list
+# would not fit the PROPS_WIDTH columns of the contract copybook, is listed in gaps.txt and stays blank.
+H4 = "north/south/west/east"
+D6 = "north/east/south/west/up/down"
+STAIR_SHAPES = "straight/inner_left/inner_right/outer_left/outer_right"
+FAMILIES = {
+    # 24 part 2 section 4, part 6 section 5, part 7 section 3, part 8 section 4.3
+    "stairs": ("facing=%s half=top/bottom shape=%s waterlogged=bool" % (H4, STAIR_SHAPES),
+               "facing=north half=bottom shape=straight waterlogged=false"),
+    "slab": ("type=top/bottom/double waterlogged=bool", "type=bottom waterlogged=false"),
+    "wall": ("east=none/low/tall north=none/low/tall south=none/low/tall up=bool waterlogged=bool west=none/low/tall",
+             "east=none north=none south=none up=true waterlogged=false west=none"),
+    "fence": ("east=bool north=bool south=bool waterlogged=bool west=bool",
+              "east=false north=false south=false waterlogged=false west=false"),
+    "fencegate": ("facing=%s in_wall=bool open=bool powered=bool" % H4,
+                  "facing=north in_wall=false open=false powered=false"),
+    "door": ("facing=%s half=upper/lower hinge=left/right open=bool powered=bool" % H4,
+             "facing=north half=lower hinge=left open=false powered=false"),
+    "trapdoor": ("facing=%s half=top/bottom open=bool powered=bool waterlogged=bool" % H4,
+                 "facing=north half=bottom open=false powered=false waterlogged=false"),
+    # 24 part 3 section 7.5: face, facing, powered; default face wall, facing north, powered false
+    "attached": ("face=floor/wall/ceiling facing=%s powered=bool" % H4, "face=wall facing=north powered=false"),
+    "plate": ("powered=bool", "powered=false"),
+    "weighted": ("power=0..15", "power=0"),
+    # 24 part 2 section 4 (standing signs: rotation 8), part 3 section 7.4
+    "standingsign": ("rotation=0..15 waterlogged=bool", "rotation=8 waterlogged=false"),
+    "wallsign": ("facing=%s waterlogged=bool" % H4, "facing=north waterlogged=false"),
+    "ceilingsign": ("attached=bool rotation=0..15 waterlogged=bool", "attached=false rotation=8 waterlogged=false"),
+    "shelf": ("facing=%s powered=bool side_chain=unconnected/right/center/left waterlogged=bool" % H4,
+              "facing=north powered=false side_chain=unconnected waterlogged=false"),
+    "bed": ("facing=%s occupied=bool part=head/foot" % H4, "facing=north occupied=false part=foot"),
+    "banner": ("rotation=0..15", "rotation=8"),
+    "facing4": ("facing=%s" % H4, "facing=north"),
+    "candle": ("candles=1..4 lit=bool waterlogged=bool", "candles=1 lit=false waterlogged=false"),
+    "lit": ("lit=bool", "lit=false"),
+    "litdefaulttrue": ("lit=bool", "lit=true"),
+    "chain": ("axis=x/y/z waterlogged=bool", "axis=y waterlogged=false"),
+    "pillar": ("axis=x/y/z", "axis=y"),
+    "bamboo": ("age=0..1 leaves=none/small/large stage=0..1", "age=0 leaves=none stage=0"),
+    "leaves": ("distance=1..7 persistent=bool waterlogged=bool", "distance=7 persistent=false waterlogged=false"),
+    "age2": ("age=0..1", "age=0"), "age4": ("age=0..3", "age=0"),
+    "age6": ("age=0..5", "age=0"), "age8": ("age=0..7", "age=0"), "age16": ("age=0..15", "age=0"),
+    "age26": ("age=0..25", "age=0"),
+    "moisture": ("moisture=0..7", "moisture=0"),
+    "shelfmushroom": ("age=0..1 facing=%s" % H4, "age=0 facing=north"),
+    "pitcher": ("age=0..4 half=upper/lower", "age=0 half=lower"),
+    "doubleplant": ("half=upper/lower", "half=lower"),
+    # 24 part 6 section 7.1: the coral plants, fans and the conduit default to waterlogged (index 0 is true)
+    "wet": ("waterlogged=bool", "waterlogged=true"),
+    "dry": ("waterlogged=bool", "waterlogged=false"),
+    "wallfan": ("facing=%s waterlogged=bool" % H4, "facing=north waterlogged=true"),
+    "pickle": ("pickles=1..4 waterlogged=bool", "pickles=1 waterlogged=true"),
+    "brewing": ("has_bottle_0=bool has_bottle_1=bool has_bottle_2=bool",
+                "has_bottle_0=false has_bottle_1=false has_bottle_2=false"),
+    "dusted": ("dusted=0..3", "dusted=0"),
+    "chest": ("facing=%s type=single/left/right waterlogged=bool" % H4,
+              "facing=north type=single waterlogged=false"),
+    "bookshelf": ("facing=%s slot_0_occupied=bool slot_1_occupied=bool slot_2_occupied=bool slot_3_occupied=bool "
+                  "slot_4_occupied=bool slot_5_occupied=bool" % H4,
+                  "facing=north slot_0_occupied=false slot_1_occupied=false slot_2_occupied=false "
+                  "slot_3_occupied=false slot_4_occupied=false slot_5_occupied=false"),
+    "sixsides": ("down=bool east=bool north=bool south=bool up=bool west=bool",
+                 "down=false east=false north=false south=false up=false west=false"),
+    "sixsidestrue": ("down=bool east=bool north=bool south=bool up=bool west=bool",
+                     "down=true east=true north=true south=true up=true west=true"),
+    "cocoa": ("age=0..2 facing=%s" % H4, "age=0 facing=north"),
+    "command": ("conditional=bool facing=%s" % D6, "conditional=false facing=north"),
+    "level8": ("level=0..8", "level=0"),
+    "creaking": ("axis=x/y/z creaking_heart_state=uprooted/dormant/awake natural=bool",
+                 "axis=y creaking_heart_state=uprooted natural=false"),
+    "daylight": ("inverted=bool power=0..15", "inverted=false power=0"),
+    "dispenser": ("facing=%s triggered=bool" % D6, "facing=north triggered=false"),
+    "ghast": ("facing=%s hydration=0..3 waterlogged=bool" % H4, "facing=north hydration=0 waterlogged=false"),
+    "portalframe": ("eye=bool facing=%s" % H4, "eye=false facing=north"),
+    "facing6up": ("facing=%s" % D6, "facing=up"),
+    "enderchest": ("facing=%s waterlogged=bool" % H4, "facing=north waterlogged=false"),
+    "fire": ("age=0..15 east=bool north=bool south=bool up=bool west=bool",
+             "age=0 east=false north=false south=false up=false west=false"),
+    "furnace": ("facing=%s lit=bool" % H4, "facing=north lit=false"),
+    "multiface": ("down=bool east=bool north=bool south=bool up=bool waterlogged=bool west=bool",
+                  "down=false east=false north=false south=false up=false waterlogged=false west=false"),
+    "hopper": ("enabled=bool facing=down/north/south/west/east", "enabled=true facing=down"),
+    "jukebox": ("has_record=bool", "has_record=false"),
+    "cauldron": ("level=1..3", "level=1"),
+    "light": ("level=0..15 waterlogged=bool", "level=15 waterlogged=false"),
+    "liquid": ("level=0..15", "level=0"),
+    "movingpiston": ("facing=%s type=normal/sticky" % D6, "facing=north type=normal"),
+    "pistonhead": ("facing=%s short=bool type=normal/sticky" % D6, "facing=north short=false type=normal"),
+    "pistonbase": ("extended=bool facing=%s" % D6, "extended=false facing=north"),
+    "snowy": ("snowy=bool", "snowy=false"),
+    "portalaxis": ("axis=x/z", "axis=x"),
+    "note": ("instrument=harp/basedrum/snare/hat/bass/flute/bell/guitar/chime/xylophone/iron_xylophone/cow_bell/"
+             "didgeridoo/bit/banjo/pling/trumpet/trumpet_exposed/trumpet_oxidized/trumpet_weathered/zombie/skeleton/"
+             "creeper/dragon/wither_skeleton/piglin/custom_head note=0..24 powered=bool",
+             "instrument=harp note=0 powered=false"),
+    "observer": ("facing=%s powered=bool" % D6, "facing=south powered=false"),
+    "skull": ("powered=bool rotation=0..15", "powered=false rotation=0"),
+    "wallskull": ("facing=%s powered=bool" % H4, "facing=north powered=false"),
+    "poweredrail": ("powered=bool shape=north_south/east_west/ascending_east/ascending_west/ascending_north/"
+                    "ascending_south waterlogged=bool", "powered=false shape=north_south waterlogged=false"),
+    "rail": ("shape=north_south/east_west/ascending_east/ascending_west/ascending_north/ascending_south/south_east/"
+             "south_west/north_west/north_east waterlogged=bool", "shape=north_south waterlogged=false"),
+    "redstonewalltorch": ("facing=%s lit=bool" % H4, "facing=north lit=true"),
+    "wire": ("east=up/side/none north=up/side/none power=0..15 south=up/side/none west=up/side/none",
+             "east=none north=none power=0 south=none west=none"),
+    "repeater": ("delay=1..4 facing=%s locked=bool powered=bool" % H4, "delay=1 facing=north locked=false powered=false"),
+    "comparator": ("facing=%s mode=compare/subtract powered=bool" % H4, "facing=north mode=compare powered=false"),
+    "anchor": ("charges=0..4", "charges=0"),
+    "stage": ("stage=0..1", "stage=0"),
+    "hatch": ("hatch=0..2", "hatch=0"),
+    "turtleegg": ("eggs=1..4 hatch=0..2", "eggs=1 hatch=0"),
+    "power": ("power=0..15", "power=0"),
+    "unstable": ("unstable=bool", "unstable=false"),
+    "tripwire": ("attached=bool disarmed=bool east=bool north=bool powered=bool south=bool west=bool",
+                 "attached=false disarmed=false east=false north=false powered=false south=false west=false"),
+    "tripwirehook": ("attached=bool facing=%s powered=bool" % H4, "attached=false facing=north powered=false"),
+    "vine": ("east=bool north=bool south=bool up=bool west=bool", "east=false north=false south=false up=false west=false"),
+    "layers": ("layers=1..8", "layers=1"),
+    "bites": ("bites=0..6", "bites=0"),
+    "lantern": ("hanging=bool waterlogged=bool", "hanging=false waterlogged=false"),
+    "bulb": ("lit=bool powered=bool", "lit=false powered=false"),
+    "statue": ("copper_golem_pose=standing/sitting/running/star facing=%s waterlogged=bool" % H4,
+               "copper_golem_pose=standing facing=north waterlogged=false"),
+    "rod": ("facing=%s powered=bool waterlogged=bool" % D6, "facing=up powered=false waterlogged=false"),
+}
+# Class (24 part 1 section 14 and the row tables of parts 2 to 8) to family.
+CLASS_FAMILY = {}
+for _family, _classes in (
+        ("stairs", "StairBlock WeatheringCopperStairBlock"), ("slab", "SlabBlock WeatheringCopperSlabBlock"),
+        ("wall", "WallBlock"),
+        ("fence", "FenceBlock IronBarsBlock StainedGlassPaneBlock WeatheringCopperBarsBlock"),
+        ("fencegate", "FenceGateBlock"), ("door", "DoorBlock WeatheringCopperDoorBlock"),
+        ("trapdoor", "TrapDoorBlock WeatheringCopperTrapDoorBlock"), ("attached", "ButtonBlock LeverBlock"),
+        ("plate", "PressurePlateBlock"), ("weighted", "WeightedPressurePlateBlock"),
+        ("standingsign", "StandingSignBlock"),
+        ("wallsign", "WallSignBlock WallHangingSignBlock LadderBlock"),
+        ("ceilingsign", "CeilingHangingSignBlock"), ("shelf", "ShelfBlock"), ("bed", "BedBlock StrawBedBlock"),
+        ("banner", "BannerBlock"),
+        ("facing4", "AnvilBlock AttachedStemBlock CarvedPumpkinBlock WallBannerBlock WallTorchBlock "
+                    "GlazedTerracottaBlock"),
+        ("candle", "CandleBlock"), ("lit", "CandleCakeBlock RedStoneOreBlock RedstoneLampBlock"),
+        ("litdefaulttrue", "RedstoneTorchBlock"), ("chain", "ChainBlock WeatheringCopperChainBlock"),
+        ("pillar", "RotatedPillarBlock HayBlock"), ("bamboo", "BambooStalkBlock"),
+        ("leaves", "LeavesBlock TintedParticleLeavesBlock UntintedParticleLeavesBlock MangroveLeavesBlock"),
+        ("age2", "TorchflowerCropBlock"),
+        ("age4", "BeetrootBlock NetherWartBlock FrostedIceBlock SweetBerryBushBlock"),
+        ("age6", "ChorusFlowerBlock"), ("age8", "CropBlock CarrotBlock PotatoBlock StemBlock"),
+        ("age16", "CactusBlock SugarCaneBlock"), ("age26", "KelpBlock WeepingVinesBlock TwistingVinesBlock"),
+        ("moisture", "FarmlandBlock"), ("shelfmushroom", "ShelfMushroomBlock"), ("pitcher", "PitcherCropBlock"),
+        ("doubleplant", "DoublePlantBlock TallFlowerBlock TallSeagrassBlock"),
+        ("wet", "BaseCoralPlantBlock CoralPlantBlock BaseCoralFanBlock CoralFanBlock ConduitBlock"),
+        ("dry", "BarrierBlock"), ("wallfan", "BaseCoralWallFanBlock CoralWallFanBlock"),
+        ("pickle", "SeaPickleBlock"), ("brewing", "BrewingStandBlock"), ("dusted", "BrushableBlock"),
+        ("chest", "ChestBlock TrappedChestBlock WeatheringCopperChestBlock"),
+        ("bookshelf", "ChiseledBookShelfBlock"), ("sixsides", "ChorusPlantBlock"),
+        ("sixsidestrue", "HugeMushroomBlock"), ("cocoa", "CocoaBlock"), ("command", "CommandBlock"),
+        ("level8", "ComposterBlock"), ("creaking", "CreakingHeartBlock"), ("daylight", "DaylightDetectorBlock"),
+        ("dispenser", "DispenserBlock DropperBlock"), ("ghast", "DriedGhastBlock"),
+        ("portalframe", "EndPortalFrameBlock"), ("facing6up", "EndRodBlock ShulkerBoxBlock"),
+        ("enderchest", "EnderChestBlock"), ("fire", "FireBlock"),
+        ("furnace", "FurnaceBlock SmokerBlock BlastFurnaceBlock"),
+        ("multiface", "GlowLichenBlock MultifaceBlock SculkVeinBlock"), ("hopper", "HopperBlock"),
+        ("jukebox", "JukeboxBlock"), ("cauldron", "LayeredCauldronBlock"), ("light", "LightBlock"),
+        ("liquid", "LiquidBlock"), ("movingpiston", "MovingPistonBlock"), ("pistonhead", "PistonHeadBlock"),
+        ("pistonbase", "PistonBaseBlock"), ("snowy", "MyceliumBlock"), ("portalaxis", "NetherPortalBlock"),
+        ("note", "NoteBlock"), ("observer", "ObserverBlock"),
+        ("skull", "SkullBlock WitherSkullBlock PlayerHeadBlock"),
+        ("wallskull", "WallSkullBlock WitherWallSkullBlock PiglinWallSkullBlock PlayerWallHeadBlock"),
+        ("poweredrail", "PoweredRailBlock DetectorRailBlock"), ("rail", "RailBlock"),
+        ("redstonewalltorch", "RedstoneWallTorchBlock"), ("wire", "RedstoneWireBlock"),
+        ("repeater", "RepeaterBlock"), ("comparator", "ComparatorBlock"), ("anchor", "RespawnAnchorBlock"),
+        ("stage", "SaplingBlock"), ("hatch", "SnifferEggBlock"), ("turtleegg", "TurtleEggBlock"),
+        ("power", "TargetBlock"), ("unstable", "TntBlock"), ("tripwire", "TripWireBlock"),
+        ("tripwirehook", "TripWireHookBlock"), ("vine", "VineBlock"), ("layers", "SnowLayerBlock"),
+        ("bites", "CakeBlock"), ("lantern", "WeatheringLanternBlock LanternBlock"),
+        ("dry", "WeatheringCopperGrateBlock"), ("bulb", "WeatheringCopperBulbBlock"),
+        ("statue", "WeatheringCopperGolemStatueBlock"),
+        ("rod", "WeatheringLightningRodBlock LightningRodBlock")):
+    for _name in _classes.split():
+        CLASS_FAMILY[_name] = _family
+# Blocks of a collection whose class column is blank in the documents' row tables (24 part 2 section 3: beds,
+# wool slabs and stairs; part 6 section 7.1 fields 572 to 576: shulker boxes, glazed terracotta, concrete stairs
+# and slabs, whose rows are written once for the sixteen colours).
+KEY_CLASS = [(r"[a-z_]+_bed", "BedBlock"), (r"[a-z_]+_stairs", "StairBlock"), (r"[a-z_]+_slab", "SlabBlock"),
+             (r"[a-z_]+_glazed_terracotta", "GlazedTerracottaBlock"), (r"[a-z_]+_shulker_box", "ShulkerBoxBlock")]
+
+
+def parse_family(spec):
+    """[(name, values)] of a family property text (name=a/b/c, name=lo..hi, name=bool), sorted by name."""
+    out = []
+    for token in spec.split():
+        name, body = token.split("=", 1)
+        if body == "bool":
+            values = ["true", "false"]
+        elif ".." in body:
+            low, high = body.split("..")
+            values = [str(n) for n in range(int(low), int(high) + 1)]
+        else:
+            values = body.split("/")
+        out.append((name, values))
+    return sorted(out)
+
+
+def family_text(props):
+    """The PROPS column text of a parsed family: name[a/b/c], name[lo..hi] or name[bool], separated by spaces."""
+    parts = []
+    for name, values in props:
+        if values == ["true", "false"]:
+            body = "bool"
+        elif all(re.fullmatch(r"-?\d+", v) for v in values) and \
+                [int(v) for v in values] == list(range(int(values[0]), int(values[0]) + len(values))):
+            body = "%s..%s" % (values[0], values[-1])
+        else:
+            body = "/".join(values)
+        parts.append("%s[%s]" % (name, body))
+    return " ".join(parts)
+
+
+def default_offset(props, default):
+    """State index of the default value set: sum of value position x stride (the last property is fastest)."""
+    index, stride = 0, 1
+    for name, values in reversed(props):
+        index += values.index(default[name]) * stride
+        stride *= len(values)
+    return index
+
+
+def collect_block_classes(docs):
+    """Block key -> class from every row table of 24 parts 1 to 8 that gives a key and a class."""
+    classes = {}
+    for path in doc_files(docs, "24-"):
+        for table in parse_tables(read_lines(path)):
+            h = table["h"]
+            ki = col_index(h, "key", "registry key", "key (block)")
+            ci = next((i for i, x in enumerate(h) if x.startswith("class")), None)
+            if ki is None or ci is None:
+                continue
+            for r in table["rows"]:
+                if len(r) > max(ki, ci) and re.fullmatch(r"[A-Za-z]+", class_name(r[ci])):
+                    classes.setdefault(r[ki].replace("minecraft:", ""), class_name(r[ci]))
+    return classes
+
+
+def doc_vocabulary(docs):
+    """Property name -> set of value-list tuples that the property tables of 24 parts 1 to 8 state."""
+    vocabulary = {}
+    for name, text in property_rows(docs):
+        values = None
+        words = re.sub(r"\s+,", ",", re.sub(r"\(.*?\)", "", text)).strip().rstrip(".")
+        if "AGE_" in text:
+            for low, high in re.findall(r"(\d+)\.\.(\d+)", text):
+                vocabulary.setdefault(name, set()).add(tuple(str(n) for n in range(int(low), int(high) + 1)))
+            continue
+        if re.fullmatch(r"(?:integer )?(\d+)\s*(?:to|\.\.)\s*(\d+)", words):
+            low, high = (int(x) for x in re.findall(r"\d+", words))
+            values = [str(n) for n in range(low, high + 1)]
+        elif words in ("true, false", "boolean", "boolean true, false", "boolean: true, false"):
+            values = ["true", "false"]
+        elif re.fullmatch(r"[a-z_0-9]+(?:, [a-z_0-9]+)+", words):
+            values = words.split(", ")
+        elif "the 27 values" in words:
+            values = words.split(": ", 1)[1].split(", ")
+        if values:
+            vocabulary.setdefault(name, set()).add(tuple(values))
+    return vocabulary
+
+
+def complete_blocks(blocks, attrs, classes, docs):
+    """Fill props and default of attrs in place from the families; return (gaps, problems, verified, unverified)."""
+    gaps, problems = [], []
+    vocabulary = doc_vocabulary(docs)
+    verified, unverified = set(), set()
+    for b in blocks:
+        slot = attrs[b["id"]]
+        klass = slot.get("class") or classes.get(b["key"], "")
+        if not klass:
+            for pattern, name in KEY_CLASS:
+                if re.fullmatch(pattern, b["key"]):
+                    klass = name
+        slot["class"] = slot.get("class") or klass
+        states = b["states"]
+        if states == 1:
+            slot["props"] = ""
+            slot["default"] = str(b["first"])
+            continue
+        family = CLASS_FAMILY.get(klass)
+        existing = slot.get("props", "")
+        if family is None:
+            if not re.search(r"\[[^\]0-9]", existing):
+                gaps.append((b["key"], "properties", "class %s has no state layout in the documents" % (klass or "?")))
+            if not slot.get("default"):
+                gaps.append((b["key"], "default", "class %s gives no default state" % (klass or "?")))
+            continue
+        spec, default = FAMILIES[family]
+        props = parse_family(spec)
+        product = 1
+        for _, values in props:
+            product *= len(values)
+        if product != states:
+            problems.append("block %s: family %s lists %d states, Appendix A gives %d" % (b["key"], family, product, states))
+            continue
+        for name, values in props:
+            # Boolean properties are stated once ("booleans"); the four wall sides and rail sides share "north".
+            known = set(vocabulary.get(name, set())) | set(vocabulary.get("booleans", set()))
+            if name in ("east", "south", "west"):
+                known |= vocabulary.get("north", set())
+            (verified if tuple(values) in known else unverified).add((name, tuple(values)))
+        names = [n for n, _ in props]
+        if existing:
+            have = re.findall(r"([a-z_0-9]+)\[", existing)
+            if have != names:
+                problems.append("block %s: row lists properties %s, family %s has %s" % (b["key"], have, family, names))
+                continue
+        text = family_text(props)
+        if len(text) > PROPS_WIDTH:
+            gaps.append((b["key"], "properties", "the list needs %d columns, the contract copybook has %d"
+                         % (len(text), PROPS_WIDTH)))
+            text = ""
+        chosen = dict(token.split("=") for token in default.split())
+        index = default_offset(props, chosen)
+        if slot.get("default") and int(slot["default"]) != b["first"] + index:
+            problems.append("block %s: document default %s, family %s gives %d" %
+                            (b["key"], slot["default"], family, b["first"] + index))
+            continue
+        slot["props"] = text
+        slot["default"] = str(b["first"] + index)
+    return gaps, problems, verified, unverified
+
+
 def property_rows(docs):
     """Unique (name, value list) pairs from the property definition tables of 24 parts 1 to 8."""
     seen = {}
@@ -355,6 +700,8 @@ def build_blocks(docs):
     blocks = expand_fields(appendix, None)
     problems = assign_keys(blocks, collect_block_keys(docs), weathering_table(parts[7]))
     attrs = collect_block_attrs(docs, blocks)
+    gaps, family_problems, verified, unverified = complete_blocks(blocks, attrs, collect_block_classes(docs), docs)
+    problems.extend(family_problems)
     stated = {}
     for table in parse_tables(read_lines(parts[7])):
         if table["h"][:2] == ["quantity", "value"] and len(table["h"]) == 3:
@@ -376,6 +723,8 @@ def build_blocks(docs):
     for b in ids:
         a = attrs[b["id"]]
         for k in blanks:
+            if k == "props" and b["states"] == 1:
+                continue
             if not a.get(k):
                 blanks[k] += 1
         rows.append([str(b["id"]), b["key"], a.get("class", ""), a.get("props", ""), str(b["states"]),
@@ -386,7 +735,8 @@ def build_blocks(docs):
     cols = ["ID", "KEY", "CLASS", "PROPS", "STATES", "FIRST", "DEFAULT", "HARDNESS", "BLAST", "TOOL", "LIGHT",
             "MAPCOLOR", "SOUND", "PUSH", "INSTRUMENT", "FLAGS"]
     text = emit("BLOCK", "Blocks of docs/protocol/24-block-registry-1..8 (Appendix A spine, per-part rows). "
-                "State id of block B state index S = FIRST + S (24 part 1 section 3).", cols, rows)
+                "State id of block B state index S = FIRST + S (24 part 1 section 3).", cols, rows,
+                minimum=BLOCK_WIDTHS)
     prows = [[n, v] for n, v in property_rows(docs)]
     ptext = emit("BLOCKPROP", "Block property definitions (name, value list) of 24 parts 1 to 8; one row per distinct "
                  "(name, values) text.", ["NAME", "VALUES"], prows)
@@ -394,7 +744,11 @@ def build_blocks(docs):
         {"blocks": stats["blocks"], "block states": stats["states"], "block properties": len(prows),
          "blocks without hardness": blanks["hardness"], "blocks without default state": blanks["default"],
          "blocks without property list": blanks["props"], "blocks without map colour": blanks["map"],
-         "blocks without sound": blanks["sound"]}, {b["key"]: b["id"] for b in blocks}
+         "blocks without sound": blanks["sound"],
+         "multi-state blocks": sum(1 for b in blocks if b["states"] > 1),
+         "block properties verified against the documents": len(verified),
+         "block properties not in a document property table": len(unverified)}, \
+        {b["key"]: b["id"] for b in blocks}, [("block",) + g for g in gaps]
 
 
 # ---------------------------------------------------------------- items (25)
@@ -417,13 +771,173 @@ def item_spine(path):
 
 FLAG_COMPONENTS = ["food", "consumable", "cooking_fuel", "tool", "weapon", "equippable", "enchantable", "damage_resistant",
                    "compostable", "container", "fireworks", "unbreakable", "jukebox_playable", "repairable"]
+# Stack sizes the documents state for families of items that have no row of their own, each with its source.
+# Everything not named here and without a row, a stated stack size or a durability has stack 64: 25 part 1
+# section 10 ("64 unless a row says otherwise; 1 when it has durability"), part 2 section 2, part 5 check 2
+# and part 8 section 8.1 item 2 state the default for the ranges they cover.
+STACK_FAMILIES = [
+    # 25 part 3 section 2 item 2: stacksTo(1) on the saddle, harnesses, shulker boxes and minecarts.
+    (r"saddle|[a-z_]+_harness|minecart|[a-z_]+_minecart|shulker_box|[a-z_]+_shulker_box", 1),
+    # 25 part 7 section 8 item 4: stack 1 for all discs, trident, crossbow, suspicious_stew, the ten patterns,
+    # goat_horn and the five nautilus armors.
+    (r"music_disc_[a-z_0-9]+|trident|crossbow|suspicious_stew|[a-z_]+_banner_pattern|goat_horn|[a-z_]+_nautilus_armor", 1),
+]
+COMPONENT_SKIP = re.compile(r"(?:crafting remainder|name prefix|stack\b|max_stack_size|durability|max damage|max_damage|"
+                            r"damage \d|no |and |the |see |read|inferred|behaviour|\d+ (?:section|\?)|section|registered|extra block|"
+                            r"item-prefix|nautilus armor|speed provider|humanoidarmor|wolfarmor)", re.I)
+
+
+COMPONENT_SPELLINGS = [
+    (r"cooking[_ ]fuel\s+(?:burn[- ]time provider\s+)?(?:COOKING_TIME_|cooking/time_)([A-Za-z_]+)",
+     lambda m: "fuel " + m.group(1).lower()),
+    (r"compostable\s+(?:COMPOSTABLE_|compostable/)([A-Za-z_]+)", lambda m: "compostable " + m.group(1).lower()),
+    (r"\bfire[ _]?[rR]esistant(?: is_fire)?\b", "fire_resistant"),
+    (r" \+ default food consumable", "; consumable default food"),
+]
+
+
+def row_ids(cell):
+    """Item ids of an id cell: 7, 229 to 237, 240, 241 or 1154..1169; [] when it is not a list of numbers."""
+    cell = cell.replace("`", "").strip()
+    if re.fullmatch(r"\d+", cell):
+        return [int(cell)]
+    match = re.fullmatch(r"(\d+)\s*(?:to|\.\.)\s*(\d+)", cell)
+    if match:
+        return list(range(int(match.group(1)), int(match.group(2)) + 1))
+    if re.fullmatch(r"\d+(?:\s*(?:,|and)\s*\d+)+", cell):
+        return [int(x) for x in re.findall(r"\d+", cell)]
+    return []
+
+
+def split_top(text, separators):
+    """Split text at the separator characters that are outside braces, brackets and parentheses."""
+    pieces, depth, current = [], 0, ""
+    for ch in text:
+        if ch in "({[":
+            depth += 1
+        elif ch in ")}]":
+            depth = max(depth - 1, 0)
+        if ch in separators and depth == 0:
+            pieces.append(current)
+            current = ""
+        else:
+            current += ch
+    pieces.append(current)
+    return pieces
+
+
+def structure_components(text):
+    """Entries "name value" of the components of one row, from the document's prose (no cut, no notes)."""
+    text = ascii_text(text.replace("`", "")).replace("*", "")
+    # One spelling for the components the documents write in several ways (fuel, compost chance, fire resistance,
+    # the default food consumable); the entry names are the ones of 25 part 1 section 10.
+    for pattern, replacement in COMPONENT_SPELLINGS:
+        text = re.sub(pattern, replacement, text)
+
+    def paren(match):
+        inner = match.group(1)
+        burn = re.search(r"burn time (\S+?)(?:,|$)", inner)
+        if burn:
+            return " " + burn.group(1)
+        if re.fullmatch(r"[A-Za-z_0-9/]+", inner):
+            return " " + inner
+        return ""
+    text = re.sub(r"\(([^()]*)\)", paren, text)
+    for pattern, replacement in COMPONENT_SPELLINGS:
+        text = re.sub(pattern, replacement, text)
+    entries = []
+    for piece in split_top(text, ";,"):
+        piece = re.sub(r"\s+", " ", piece.replace("=", " ")).strip(" .")
+        piece = re.sub(r"\{\s*", "{", re.sub(r"\s*\}", "}", re.sub(r",\s*", ",", piece)))
+        if not piece or piece in ("none", "-") or COMPONENT_SKIP.match(piece):
+            continue
+        piece = re.sub(r"^(?:glint override)\b", "enchantment_glint_override", piece)
+        if piece not in entries:
+            entries.append(piece)
+    return entries
+
+
+def doc_damage(text):
+    """Max damage stated in a row's text ("max_damage 250", "durability 336", "max damage 25 x 11 = 275")."""
+    plain = text.replace("`", "")
+    match = re.search(r"=\s*(\d+)\b", plain) if re.search(r"max damage \d+ x \d+", plain) else None
+    match = match or re.search(r"max[_ ]damage\W{0,6}(\d+)", plain) or re.search(r"durability\W{0,3}(\d+)", plain)
+    return int(match.group(1)) if match else None
+
+
+def scan_item_rows(parts, spine):
+    """Attributes per item id from every row table of 25 parts 1 to 8 and x1; the first table to give a value wins."""
+    attrs = {}
+    by_key = {key: i for i, key in spine.items()}
+    for path in parts:
+        for table in parse_tables(read_lines(path)):
+            h = table["h"]
+            ki = col_index(h, "key", "keys", "registry key")
+            ii = col_index(h, "id", "ids", "registry id")
+            if ki is None or ii is None:
+                continue
+            ci = next((i for i, x in enumerate(h) if x.startswith("class") or x == "builder"), None)
+            si = col_index(h, "max stack", "stack")
+            di = next((i for i, x in enumerate(h) if x.startswith("max damage")), None)
+            fi = next((i for i, x in enumerate(h) if x.startswith("fuel")), None)
+            xi = next((i for i, x in enumerate(h) if x.startswith("components") or x in ("extra", "extra components")), None)
+            for r in table["rows"]:
+                if len(r) <= max(ki, ii):
+                    continue
+                ids = [i for i in row_ids(r[ii]) if i in spine]
+                keys = re.findall(r"([a-z_0-9<>]+)", r[ki].replace("...", " "))
+                if len(ids) == 1 and spine[ids[0]] not in keys:
+                    ids = []
+                if not ids and len(keys) == 1 and keys[0] in by_key:
+                    # Part 7 and 6 number some rows by statement: the key names the item.
+                    ids = [by_key[keys[0]]]
+                if not ids:
+                    continue
+                text = " | ".join(r)
+                stack = None
+                if si is not None and si < len(r) and re.match(r"\d+\b", r[si]):
+                    stack = int(re.match(r"\d+", r[si]).group(0))
+                else:
+                    match = (re.search(r"\bstack (\d+)\b", text) or re.search(r"max_stack_size\W{0,6}(\d+)", text)
+                             or re.search(r"stacksTo\((\d+)\)", text))
+                    stack = int(match.group(1)) if match else None
+                damage = int(re.match(r"\d+", r[di]).group(0)) if di is not None and di < len(r) and \
+                    re.match(r"\d+", r[di]) else doc_damage(text)
+                parts_text = [r[xi]] if xi is not None and xi < len(r) and r[xi] not in ("none", "-") else []
+                if fi is not None and fi < len(r) and r[fi] not in ("-", "none", ""):
+                    parts_text.append("fuel " + r[fi])
+                for i in ids:
+                    slot = attrs.setdefault(i, {})
+                    if ci is not None and ci < len(r) and r[ci]:
+                        slot.setdefault("class", class_name(r[ci].replace("`", "")))
+                    if stack is not None:
+                        slot.setdefault("stack", stack)
+                    if damage:
+                        slot.setdefault("damage", damage)
+                    if parts_text:
+                        slot.setdefault("comp", "; ".join(parts_text))
+    return attrs
+
+
+def tool_durabilities(docs):
+    """Item key -> durability from the tool, weapon and spear tables of 17 sections 2 and 3 (item, durability, ...)."""
+    out = {}
+    for path in doc_files(docs, "17-"):
+        for table in parse_tables(read_lines(path)):
+            h = table["h"]
+            if h[:2] != ["item", "durability"]:
+                continue
+            for r in table["rows"]:
+                if len(r) > 1 and re.fullmatch(r"[a-z_0-9]+", r[0]) and re.fullmatch(r"\d+", r[1]):
+                    out.setdefault(r[0], int(r[1]))
+    return out
 
 
 def build_items(docs, block_ids):
     parts = doc_files(docs, "25-")
     if len(parts) != 9:
         raise Problem("expected 9 item registry documents (parts 1 to 8 and x1), found %d" % len(parts))
-    problems = []
+    problems, gaps = [], []
     last8 = [p for p in parts if "item-registry-8" in p][0]
     spine = item_spine(last8)
     stated = None
@@ -438,48 +952,65 @@ def build_items(docs, block_ids):
         problems.append("Items (25 part 8 V2): documents state %d, generated %d" % (stated, len(spine)))
     if sorted(spine) != list(range(len(spine))):
         problems.append("item ids are not contiguous from 0")
-    attrs = {}
-    for path in parts:
-        for table in parse_tables(read_lines(path)):
-            h = table["h"]
-            ki = col_index(h, "key")
-            ii = col_index(h, "id", "registry id")
-            if ki is None or ii is None:
-                continue
-            ci = next((i for i, x in enumerate(h) if x.startswith("class") or x == "builder"), None)
-            si = col_index(h, "max stack")
-            xi = next((i for i, x in enumerate(h) if x.startswith("components") or x in ("extra", "extra components")), None)
-            for r in table["rows"]:
-                if len(r) <= max(ki, ii) or not re.fullmatch(r"\d+", r[ii]):
-                    continue
-                key = r[ki]
-                if spine.get(int(r[ii])) != key:
-                    continue
-                slot = attrs.setdefault(int(r[ii]), {})
-                if ci is not None and ci < len(r):
-                    slot.setdefault("class", class_name(r[ci]))
-                if si is not None and si < len(r) and re.fullmatch(r"\d+", r[si]):
-                    slot.setdefault("stack", r[si])
-                if xi is not None and xi < len(r) and r[xi] not in ("none", "-"):
-                    slot.setdefault("comp", r[xi])
-    rows, no_stack, no_class = [], 0, 0
+    attrs = scan_item_rows(parts, spine)
+    tools = tool_durabilities(docs)
+    for i, key in spine.items():
+        if key in tools:
+            attrs.setdefault(i, {}).setdefault("damage", tools[key])
+    rows, no_class, by_rule, defaulted, overflow = [], 0, 0, 0, 0
     for i in sorted(spine):
         a = attrs.get(i, {})
-        comp = a.get("comp", "")
-        damage = re.search(r"max_damage\W{0,12}?(\d+)", comp)
-        flags = " ".join(c for c in FLAG_COMPONENTS if re.search(r"\b%s\b" % c, comp))
-        no_stack += "stack" not in a
+        key = spine[i]
+        raw = a.get("comp", "")
+        damage = a.get("damage")
+        entries = structure_components(raw)
+        if damage:
+            entries.insert(0, "max_damage %d" % damage)
+        flags = " ".join(c for c in FLAG_COMPONENTS if re.search(r"\b%s\b" % c, raw.replace("`", "")))
+        stack = a.get("stack")
+        if stack is None and damage:
+            stack = 1
+            by_rule += 1
+        if stack is None:
+            for pattern, value in STACK_FAMILIES:
+                if re.fullmatch(pattern, key):
+                    stack, by_rule = value, by_rule + 1
+                    break
+        if stack is None:
+            stack, defaulted = 64, defaulted + 1
+        if damage and stack != 1:
+            problems.append("item %s: max damage %d with stack %d (25 part 1 section 6.2 validator)" % (key, damage, stack))
+        text = ", ".join(entries)
+        if len(text) > COMPONENTS_WIDTH:
+            # Whole entries only: the shortest entries are kept (in document order) until the width is used, the
+            # others are named in gaps.txt. An entry is never cut.
+            kept, used = set(), 0
+            for n in sorted(range(len(entries)), key=lambda n: (len(entries[n]), n)):
+                if used + len(entries[n]) + (2 if kept else 0) <= COMPONENTS_WIDTH:
+                    kept.add(n)
+                    used += len(entries[n]) + (2 if len(kept) > 1 else 0)
+            dropped = [entries[n] for n in range(len(entries)) if n not in kept]
+            gaps.append(("item", key, "components", "the entries need %d columns, the contract copybook has %d; "
+                         "not stored: %s" % (len(text), COMPONENTS_WIDTH, "; ".join(dropped))))
+            overflow += 1
+            text = ", ".join(entries[n] for n in range(len(entries)) if n in kept)
         no_class += "class" not in a
-        link = str(block_ids[spine[i]]) if spine[i] in block_ids else ""
-        rows.append([str(i), spine[i], a.get("class", ""), link, a.get("stack", ""), damage.group(1) if damage else "",
-                     flags, ascii_text(comp)[:100]])
+        link = str(block_ids[key]) if key in block_ids else ""
+        rows.append([str(i), key, a.get("class", ""), link, str(stack),
+                     str(damage) if damage else "", flags, text])
     rows = [[ascii_text(v) for v in r] for r in rows]
     cols = ["ID", "KEY", "CLASS", "BLOCK", "STACK", "MAXDAMAGE", "FLAGS", "COMPONENTS"]
     text = emit("ITEM", "Items of docs/protocol/25-item-registry-1..8 and x1 (11.6 key list spine). BLOCK is the id of "
-                "the block of the same key (24 part 4 section 3 item 3); COMPONENTS is the first 100 characters of "
-                "the components beyond the common set.", cols, rows)
-    return {"items.cpy": text}, problems, {"items": len(spine), "items without max stack": no_stack,
-                                          "items without class": no_class}
+                "the block of the same key (24 part 4 section 3 item 3); STACK is the max_stack_size (row, durability "
+                "rule or the 64 default); MAXDAMAGE is the durability when the item has one; "
+                "COMPONENTS is the entries 'name value' of the components beyond the common set, separated by ', ', "
+                "with max_damage first.", cols, rows, minimum=ITEM_WIDTHS)
+    return {"items.cpy": text}, problems, {"items": len(spine), "items without max stack": 0,
+                                          "items without class": no_class,
+                                          "items with stack from a row or statement": len(spine) - by_rule - defaulted,
+                                          "items with stack by a documented rule": by_rule,
+                                          "items with the default stack 64": defaulted,
+                                          "items with components over the width": overflow}, gaps
 
 
 # ---------------------------------------------------------------- static ids, entities, tags (46, 21, 24-1)
@@ -655,16 +1186,32 @@ def build_jar(docs):
     return {"acceptedjar.cpy": text}, problems, {"accepted jars": 1}
 
 
+# ---------------------------------------------------------------- documented gaps
+
+def gaps_text(gaps):
+    """gaps.txt: one line per value that the documents do not give (or that cannot fit the contract width)."""
+    lines = ["# GENERATED by tools/gen/gen_tables.py from docs/protocol. Do not edit by hand.",
+             "# Values that stay blank in the generated tables: kind, key, field, reason. A blank is never a guess.",
+             "# kind block: field properties or default; kind item: field stack or components."]
+    for kind, key, field, reason in sorted(gaps):
+        lines.append("%s %s %s %s" % (kind, key, field, ascii_text(reason)))
+    lines.append("# %d gaps" % len(gaps))
+    return "\n".join(lines) + "\n"
+
+
 # ---------------------------------------------------------------- driver
 
 def build(docs):
     """(files, problems, counts) for the documents in `docs`."""
     files, problems, counts = {}, [], {}
-    blocks, p, c, block_ids = build_blocks(docs)
+    blocks, p, c, block_ids, gaps = build_blocks(docs)
     files.update(blocks), problems.extend(p), counts.update(c)
-    for builder in (lambda d: build_items(d, block_ids), build_static_ids, build_entities, build_tags, build_jar):
+    f, p, c, item_gaps = build_items(docs, block_ids)
+    files.update(f), problems.extend(p), counts.update(c), gaps.extend(item_gaps)
+    for builder in (build_static_ids, build_entities, build_tags, build_jar):
         f, p, c = builder(docs)
         files.update(f), problems.extend(p), counts.update(c)
+    files["gaps.txt"] = gaps_text(gaps)
     return files, problems, counts
 
 

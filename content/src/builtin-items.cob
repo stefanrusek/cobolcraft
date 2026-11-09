@@ -10,7 +10,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-ITEM-ROW.
-*> USING item id (BINARY-LONG), row out (PIC X(208)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 17,
+*> USING item id (BINARY-LONG), row out (PIC X(270)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 17,
 *> the row left as it was), count out (BINARY-LONG: 18).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -43,12 +43,12 @@
     05 WS-B-CLASS          PIC X(24).
     05 WS-B-BLOCK          PIC X(4).
     05 WS-B-STACK          PIC X(2).
-    05 WS-B-DAMAGE         PIC X(2).
+    05 WS-B-DAMAGE         PIC X(4).
     05 WS-B-FLAGS          PIC X(34).
-    05 WS-B-COMPONENTS     PIC X(100).
+    05 WS-B-COMPONENTS     PIC X(160).
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
- 01 L-ROW                  PIC X(208).
+ 01 L-ROW                  PIC X(270).
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.

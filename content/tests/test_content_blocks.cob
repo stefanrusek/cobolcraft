@@ -17,12 +17,12 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
     05 WS-R-ID             PIC X(4).
     05 WS-R-KEY            PIC X(35).
     05 WS-R-CLASS          PIC X(32).
-    05 WS-R-PROPS          PIC X(153).
+    05 WS-R-PROPS          PIC X(288).
     05 WS-R-COUNT          PIC X(4).
     05 WS-R-FIRST          PIC X(5).
     05 WS-R-DEFAULT        PIC X(5).
@@ -284,17 +284,72 @@
      PERFORM ASSERT-TEXT
      MOVE 5463 TO WS-STATE
      PERFORM PROPS-OF
-     MOVE "blocks: oak_stairs has no property list in the table: not found" TO TL-CASE
-     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
+     MOVE "blocks: oak_stairs first state lists its four properties" TO TL-CASE
+     MOVE "facing=north,half=top,shape=straight,waterlogged=true" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE "blocks: oak_stairs props status ok" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
+*>   24 part 2 worked example 4: facing east (3), half top (0), shape outer_left (3), waterlogged true (0) is
+*>   index 3 * 20 + 0 * 10 + 3 * 2 + 0 = 66.
+     MOVE 5529 TO WS-STATE
+     PERFORM PROPS-OF
+     MOVE "blocks: oak_stairs state 66 (example 4)" TO TL-CASE
+     MOVE "facing=east,half=top,shape=outer_left,waterlogged=true" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
      MOVE 12963 TO WS-STATE
      PERFORM PROPS-OF
-     MOVE "blocks: anvil lists only a count (facing[4]): not found" TO TL-CASE
-     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
+     MOVE "blocks: anvil state 1 is facing south (values from the family rule)" TO TL-CASE
+     MOVE "facing=south" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE "blocks: anvil props status ok" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
+     MOVE 11214 TO WS-STATE
+     PERFORM PROPS-OF
+     MOVE "blocks: redstone_lamp state 11214 is lit=false" TO TL-CASE
+     MOVE "lit=false" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE "note_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     PERFORM DEFAULT-OF
+     MOVE "blocks: note_block default is its second state (24 part 2 section 4: index 1)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = FUNCTION NUMVAL(WS-R-FIRST) + 1
+     PERFORM ASSERT-STATE-ID
+     MOVE "blocks: note_block default status ok" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     PERFORM ASSERT-STATUS
+*>   The note block lists its 27 instruments, 25 notes and powered (24 part 2 section 4): state 0 is
+*>   instrument harp, note 0, powered true; the last state of the first instrument is note 24, powered false.
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-R-FIRST)
+     PERFORM PROPS-OF
+     MOVE "blocks: note_block first state lists its properties" TO TL-CASE
+     MOVE "instrument=harp,note=0,powered=true" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-R-FIRST) + 1349
+     PERFORM PROPS-OF
+     MOVE "blocks: note_block last state is the last instrument (custom_head)" TO TL-CASE
+     MOVE "instrument=custom_head,note=24,powered=false" TO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE "chiseled_bookshelf" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     PERFORM DEFAULT-OF
+     MOVE "blocks: chiseled_bookshelf default is first state + 63" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = FUNCTION NUMVAL(WS-R-FIRST) + 63
+     PERFORM ASSERT-STATE-ID
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-R-FIRST) + 63
+     PERFORM PROPS-OF
+     MOVE "blocks: chiseled_bookshelf default state lists seven properties" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,"
+         "slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false" DELIMITED BY SIZE
+         INTO TL-EXPECTED
+     PERFORM ASSERT-TEXT
+     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
      MOVE -5 TO WS-STATE
      PERFORM PROPS-OF
      MOVE "blocks: props of an unknown state" TO TL-CASE
+     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
      MOVE "blocks: unknown state props count 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
@@ -333,11 +388,28 @@
      PERFORM ASSERT-STATUS
      MOVE 445 TO WS-ID
      PERFORM DEFAULT-OF
-     MOVE "blocks: redstone_lamp default is not in the table: not found" TO TL-CASE
-     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
+     MOVE "blocks: redstone_lamp default is lit=false, the second state (11214)" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
-     MOVE "blocks: redstone_lamp not found leaves its first state (11213)" TO TL-CASE
-     MOVE 11213 TO TL-EXPECTED-N
+     MOVE 11214 TO TL-EXPECTED-N
+     PERFORM ASSERT-STATE-ID
+     MOVE "oak_stairs" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     PERFORM DEFAULT-OF
+     MOVE "blocks: oak_stairs default is first state + 11 (5474)" TO TL-CASE
+     MOVE 5474 TO TL-EXPECTED-N
+     PERFORM ASSERT-STATE-ID
+     MOVE "oak_door" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     PERFORM DEFAULT-OF
+     MOVE "blocks: oak_door default is first state + 11 (7254)" TO TL-CASE
+     MOVE 7254 TO TL-EXPECTED-N
+     PERFORM ASSERT-STATE-ID
+     MOVE "redstone_torch" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     PERFORM DEFAULT-OF
+     MOVE "blocks: redstone_torch is lit by default: its first state" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = FUNCTION NUMVAL(WS-R-FIRST)
      PERFORM ASSERT-STATE-ID
      MOVE 99999 TO WS-ID
      PERFORM DEFAULT-OF

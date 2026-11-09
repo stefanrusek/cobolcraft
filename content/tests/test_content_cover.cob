@@ -24,9 +24,9 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
-    05 FILLER              PIC X(228).
+    05 FILLER              PIC X(363).
     05 WS-R-FIRST          PIC X(5).
     05 FILLER              PIC X(451).
  01 WS-ENTITY-ROW          PIC X(66).

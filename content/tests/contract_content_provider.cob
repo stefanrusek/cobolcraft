@@ -20,16 +20,16 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-BLOCK-ROW           PIC X(684).
+ 01 WS-BLOCK-ROW           PIC X(819).
  01 WS-BLOCK-VIEW REDEFINES WS-BLOCK-ROW.
     05 WS-B-ID             PIC X(4).
     05 WS-B-KEY            PIC X(35).
-    05 FILLER              PIC X(645).
- 01 WS-ITEM-ROW            PIC X(208).
+    05 FILLER              PIC X(780).
+ 01 WS-ITEM-ROW            PIC X(270).
  01 WS-ITEM-VIEW REDEFINES WS-ITEM-ROW.
     05 WS-I-ID             PIC X(4).
     05 WS-I-KEY            PIC X(38).
-    05 FILLER              PIC X(166).
+    05 FILLER              PIC X(228).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-ENTITY-VIEW REDEFINES WS-ENTITY-ROW.
     05 WS-E-ID             PIC X(3).

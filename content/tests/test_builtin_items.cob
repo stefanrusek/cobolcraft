@@ -12,16 +12,16 @@
  01 WS-KEY                 PIC X(64).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-ROW                 PIC X(208).
+ 01 WS-ROW                 PIC X(270).
  01 WS-VIEW REDEFINES WS-ROW.
     05 WS-R-ID             PIC X(4).
     05 WS-R-KEY            PIC X(38).
     05 WS-R-CLASS          PIC X(24).
     05 WS-R-BLOCK          PIC X(4).
     05 WS-R-STACK          PIC X(2).
-    05 WS-R-DAMAGE         PIC X(2).
+    05 WS-R-DAMAGE         PIC X(4).
     05 WS-R-FLAGS          PIC X(34).
-    05 WS-R-COMPONENTS     PIC X(100).
+    05 WS-R-COMPONENTS     PIC X(160).
  01 WS-NAME                PIC X(32).
  01 WS-VALUE               PIC X(100).
  01 WS-I                   BINARY-LONG.

@@ -167,13 +167,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
-    05 FILLER              PIC X(224).
+    05 FILLER              PIC X(359).
     05 WS-R-COUNT          PIC X(4).
     05 WS-R-FIRST          PIC X(5).
     05 FILLER              PIC X(451).
- 01 WS-ITEM-ROW            PIC X(208).
+ 01 WS-ITEM-ROW            PIC X(270).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-ID                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.

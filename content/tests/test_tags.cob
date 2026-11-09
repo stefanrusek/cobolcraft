@@ -30,7 +30,7 @@
  01 WS-RESULT              BINARY-LONG.
  01 WS-KEY                 PIC X(64).
  01 WS-BLOCK-ID            BINARY-LONG.
- 01 WS-BLOCK-ROW           PIC X(684).
+ 01 WS-BLOCK-ROW           PIC X(819).
  01 WS-LOOKUP-STATUS       BINARY-LONG.
  01 WS-EXPECTED            PIC X(200).
  01 WS-OBSERVED            PIC X(200).

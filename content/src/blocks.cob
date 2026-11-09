@@ -5,25 +5,25 @@
 *> index inside the block is the difference, and the property values come from the block's property list
 *> (sorted by name, the first property varying slowest). An unknown key or id is a defined outcome
 *> (CT-NOT-FOUND, row 0, id 0), never a crash. Without an open set every lookup answers CT-NOT-OPEN.
-*> Known limit of the generated table: blocks of 24 parts 2 to 8 mostly carry no property list or only a
-*> value count, and many no default state id; CONTENT-STATE-PROPS and CONTENT-STATE-DEFAULT answer
-*> CT-NOT-FOUND for a state or block whose table row cannot give the answer, never a guess.
+*> Every generated multi-state block has a default state id and a property list with its values (up to the
+*> 288 characters of the contract copybook; content/copy/gen/gaps.txt names any block that has none, and is
+*> empty): CONTENT-STATE-PROPS answers CT-NOT-FOUND only for an unknown state.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-BLOCK-BY-KEY.
 *> USING key (PIC X(64), space padded; "minecraft:" is optional in the standard set), block id out
-*> (BINARY-LONG), row out (PIC X(684), CT-BLOCK-ROW), status out (CT-OK, CT-NOT-FOUND with id 0 and the
+*> (BINARY-LONG), row out (PIC X(819), CT-BLOCK-ROW), status out (CT-OK, CT-NOT-FOUND with id 0 and the
 *> row of block 0, CT-NOT-OPEN with the row left as it was).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  01 WS-KEY                 PIC X(64).
  01 WS-REST                PIC X(64).
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
     05 FILLER              PIC X(4).
     05 WS-R-KEY            PIC X(35).
-    05 FILLER              PIC X(645).
+    05 FILLER              PIC X(780).
  01 WS-ROW-KEY             PIC X(64).
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
@@ -31,7 +31,7 @@
  LINKAGE SECTION.
  01 L-KEY                  PIC X(64).
  01 L-ID                   BINARY-LONG.
- 01 L-ROW                  PIC X(684).
+ 01 L-ROW                  PIC X(819).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-ID L-ROW L-STATUS.
      IF CT-OPEN = 0
@@ -65,14 +65,14 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-BLOCK-OF-STATE.
 *> USING state id (BINARY-LONG), block id out, state index out (0 = the block's first state), row out
-*> (PIC X(684)), status out (CT-OK; CT-NOT-FOUND with id 0, index 0 and the row of block 0; CT-NOT-OPEN).
+*> (PIC X(819)), status out (CT-OK; CT-NOT-FOUND with id 0, index 0 and the row of block 0; CT-NOT-OPEN).
 *> A binary search over the first state ids, which ascend with the block id.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
-    05 FILLER              PIC X(224).
+    05 FILLER              PIC X(359).
     05 WS-R-COUNT          PIC X(4).
     05 WS-R-FIRST          PIC X(5).
     05 FILLER              PIC X(451).
@@ -87,7 +87,7 @@
  01 L-STATE                BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  01 L-INDEX                BINARY-LONG.
- 01 L-ROW                  PIC X(684).
+ 01 L-ROW                  PIC X(819).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-STATE L-ID L-INDEX L-ROW L-STATUS.
      MOVE 0 TO L-ID L-INDEX
@@ -123,31 +123,29 @@
  PROGRAM-ID. CONTENT-STATE-PROPS.
 *> USING state id (BINARY-LONG), CT-PROPS out (CTPROPS.cpy: count, then name and value text of each property in
 *> the block's list order), status out (CT-OK, count 0 for a state of a block with no properties;
-*> CT-NOT-FOUND, count 0, for an unknown state and for a block of several states whose row lists no
-*> properties or only a value count; CT-NOT-OPEN). The property list of a row is "name[a/b/c]",
-*> "name[lo..hi]" or "name[bool]" items separated by spaces; the index of the state is split from the
-*> last property (fastest) to the first.
+*> CT-NOT-FOUND, count 0, for an unknown state; CT-NOT-OPEN; every multi-state row lists its properties).
+*> The property list of a row is "name[a/b/c]", "name[lo..hi]" or "name[bool]" items separated by spaces, sorted by name, with every value
+*> named (the generator checks that the value counts multiply to the state count); the index of the state
+*> is split from the last property (fastest, stride 1) to the first.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  01 WS-ID                  BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
     05 FILLER              PIC X(71).
-    05 WS-R-PROPS          PIC X(153).
+    05 WS-R-PROPS          PIC X(288).
     05 WS-R-COUNT          PIC X(4).
     05 FILLER              PIC X(456).
- 01 WS-STATES              BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-POINTER             BINARY-LONG.
- 01 WS-TOKEN               PIC X(160).
+ 01 WS-TOKEN               PIC X(300).
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-OPEN                BINARY-LONG.
  01 WS-CLOSE               BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
- 01 WS-PRODUCT             BINARY-LONG.
  01 WS-REMAINDER           BINARY-LONG.
  01 WS-QUOTIENT            BINARY-LONG.
  01 WS-PICK                BINARY-LONG.
@@ -159,13 +157,11 @@
  01 WS-ITEM                PIC X(40).
  01 WS-SLASHES             BINARY-LONG.
  01 WS-DOTS                BINARY-LONG.
- 01 WS-DIGITS              BINARY-LONG.
- 01 WS-BAD                 BINARY-LONG.
  01 WS-NUMBER              PIC Z(8)9.
  01 WS-PROPERTIES.
     05 WS-PROPERTY OCCURS 16 TIMES.
        10 WS-P-NAME        PIC X(24).
-       10 WS-P-SPEC        PIC X(120).
+       10 WS-P-SPEC        PIC X(280).
        10 WS-P-KIND        PIC X.
        10 WS-P-COUNT       BINARY-LONG.
        10 WS-P-LOW         BINARY-LONG.
@@ -183,19 +179,13 @@
      IF L-STATUS NOT = CT-OK
          GOBACK
      END-IF
-     COMPUTE WS-STATES = FUNCTION NUMVAL(WS-R-COUNT)
      IF WS-R-PROPS = SPACES
-         IF WS-STATES > 1
-             MOVE CT-NOT-FOUND TO L-STATUS
-         END-IF
          GOBACK
      END-IF
 *>   Split the list into properties and classify each value spec.
      MOVE 0 TO WS-N
      MOVE 1 TO WS-POINTER
-     MOVE 0 TO WS-BAD
-     MOVE 1 TO WS-PRODUCT
-     PERFORM UNTIL WS-POINTER > 153 OR WS-BAD = 1
+     PERFORM UNTIL WS-POINTER > 288
          MOVE SPACES TO WS-TOKEN
          UNSTRING WS-R-PROPS DELIMITED BY ALL SPACE INTO WS-TOKEN WITH POINTER WS-POINTER
          IF WS-TOKEN NOT = SPACES
@@ -208,10 +198,9 @@
              MOVE SPACES TO WS-P-NAME(WS-N) WS-P-SPEC(WS-N)
              MOVE WS-TOKEN(1:WS-OPEN) TO WS-P-NAME(WS-N)
              MOVE WS-TOKEN(WS-OPEN + 2:WS-LENGTH) TO WS-P-SPEC(WS-N)
-             MOVE 0 TO WS-SLASHES WS-DOTS WS-DIGITS
+             MOVE 0 TO WS-SLASHES WS-DOTS
              INSPECT WS-P-SPEC(WS-N) TALLYING WS-SLASHES FOR ALL "/"
              INSPECT WS-P-SPEC(WS-N) TALLYING WS-DOTS FOR ALL ".."
-             INSPECT WS-P-SPEC(WS-N) TALLYING WS-DIGITS FOR ALL "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"
              EVALUATE TRUE
                  WHEN WS-SLASHES > 0
                      MOVE "L" TO WS-P-KIND(WS-N)
@@ -227,18 +216,9 @@
                  WHEN WS-P-SPEC(WS-N) = "bool"
                      MOVE "B" TO WS-P-KIND(WS-N)
                      MOVE 2 TO WS-P-COUNT(WS-N)
-                 WHEN OTHER
-        *>           A bare count, or a spec this reader does not know: the values are not in the table.
-                     MOVE 1 TO WS-BAD
-                     MOVE 1 TO WS-P-COUNT(WS-N)
              END-EVALUATE
-             COMPUTE WS-PRODUCT = WS-PRODUCT * WS-P-COUNT(WS-N)
          END-IF
      END-PERFORM
-     IF WS-BAD = 1 OR WS-PRODUCT NOT = WS-STATES
-         MOVE CT-NOT-FOUND TO L-STATUS
-         GOBACK
-     END-IF
 *>   Decode the index from the last property to the first.
      MOVE WS-INDEX TO WS-REMAINDER
      PERFORM VARYING WS-I FROM WS-N BY -1 UNTIL WS-I < 1
@@ -276,14 +256,14 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-STATE-DEFAULT.
 *> USING block id (BINARY-LONG), default state id out (BINARY-LONG), status out (CT-OK; CT-NOT-FOUND for an
-*> unknown block with state 0, and for a block of several states whose row gives no default, then with its
-*> first state id in the output; CT-NOT-OPEN). A one-state block's default is its first state.
+*> unknown block with state 0; CT-NOT-OPEN). Every generated row has a default state id; a row without one
+*> (a one-state row of the built-in layer) has its first state as its default.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
-    05 FILLER              PIC X(224).
+    05 FILLER              PIC X(359).
     05 WS-R-COUNT          PIC X(4).
     05 WS-R-FIRST          PIC X(5).
     05 WS-R-DEFAULT        PIC X(5).
@@ -311,17 +291,13 @@
      MOVE CT-OK TO L-STATUS
      IF WS-R-DEFAULT NOT = SPACES
          COMPUTE L-STATE = FUNCTION NUMVAL(WS-R-DEFAULT)
-     ELSE
-         IF FUNCTION NUMVAL(WS-R-COUNT) > 1
-             MOVE CT-NOT-FOUND TO L-STATUS
-         END-IF
      END-IF
      GOBACK.
  END PROGRAM CONTENT-STATE-DEFAULT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-ROW-AT.
-*> USING block id (BINARY-LONG), row out (PIC X(684)), status out (CT-OK, or CT-NOT-FOUND for an id outside
+*> USING block id (BINARY-LONG), row out (PIC X(819)), status out (CT-OK, or CT-NOT-FOUND for an id outside
 *> the set, the row then left as it was), count out (BINARY-LONG: the rows of the set). The set type of
 *> CT-SET chooses the rows: the generated standard table, or the built-in layer of the cobolcraft type.
  DATA DIVISION.
@@ -329,7 +305,7 @@
  COPY CONTENT.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
- 01 L-ROW                  PIC X(684).
+ 01 L-ROW                  PIC X(819).
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.
@@ -351,7 +327,7 @@
  01 WS-START               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
- 01 L-ROW                  PIC X(684).
+ 01 L-ROW                  PIC X(819).
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.

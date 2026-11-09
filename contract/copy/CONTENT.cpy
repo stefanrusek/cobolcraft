@@ -61,7 +61,7 @@
     05 CT-BR-ID              PIC X(4).
     05 CT-BR-KEY             PIC X(35).
     05 CT-BR-CLASS           PIC X(32).
-    05 CT-BR-PROPS           PIC X(153).
+    05 CT-BR-PROPS           PIC X(288).
     05 CT-BR-STATE-COUNT     PIC X(4).
     05 CT-BR-FIRST-STATE     PIC X(5).
     05 CT-BR-DEFAULT-STATE   PIC X(5).
@@ -81,9 +81,9 @@
     05 CT-IR-CLASS           PIC X(24).
     05 CT-IR-BLOCK           PIC X(4).          *> block id of a block item, else empty
     05 CT-IR-STACK-SIZE      PIC X(2).
-    05 CT-IR-MAX-DAMAGE      PIC X(2).
+    05 CT-IR-MAX-DAMAGE      PIC X(4).
     05 CT-IR-FLAGS           PIC X(34).
-    05 CT-IR-COMPONENTS      PIC X(100).        *> default components summary
+    05 CT-IR-COMPONENTS      PIC X(160).        *> default components summary
 *> Entity type row (21 section 2, 46 section 11); CT-ER-SIZE is the width and height text.
  01 CT-ENTITY-ROW.
     05 CT-ER-ID              PIC X(3).

@@ -7,7 +7,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-BLOCK-ROW.
-*> USING block id (BINARY-LONG), row out (PIC X(684)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 11,
+*> USING block id (BINARY-LONG), row out (PIC X(819)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 11,
 *> the row left as it was), count out (BINARY-LONG: 12).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -32,7 +32,7 @@
     05 WS-B-ID             PIC X(4).
     05 WS-B-KEY            PIC X(35).
     05 WS-B-CLASS          PIC X(32).
-    05 WS-B-PROPS          PIC X(153).
+    05 WS-B-PROPS          PIC X(288).
     05 WS-B-COUNT          PIC X(4).
     05 WS-B-FIRST          PIC X(5).
     05 WS-B-DEFAULT        PIC X(5).
@@ -47,7 +47,7 @@
     05 WS-B-FLAGS          PIC X(147).
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
- 01 L-ROW                  PIC X(684).
+ 01 L-ROW                  PIC X(819).
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.

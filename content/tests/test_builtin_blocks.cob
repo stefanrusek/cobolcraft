@@ -15,12 +15,12 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-ROW                 PIC X(684).
+ 01 WS-ROW                 PIC X(819).
  01 WS-VIEW REDEFINES WS-ROW.
     05 WS-R-ID             PIC X(4).
     05 WS-R-KEY            PIC X(35).
     05 WS-R-CLASS          PIC X(32).
-    05 WS-R-PROPS          PIC X(153).
+    05 WS-R-PROPS          PIC X(288).
     05 WS-R-COUNT          PIC X(4).
     05 WS-R-FIRST          PIC X(5).
     05 WS-R-DEFAULT        PIC X(5).

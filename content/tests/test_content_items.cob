@@ -1,5 +1,5 @@
 *> Test of content/src/items.cob (T0192; content-api section 2; 25 part 1 section 13 worked examples 1 to 4 and 5):
-*> CONTENT-ITEM-BY-KEY USING key (PIC X(64)), item id out, row out (PIC X(208), CT-ITEM-ROW), status;
+*> CONTENT-ITEM-BY-KEY USING key (PIC X(64)), item id out, row out (PIC X(270), CT-ITEM-ROW), status;
 *> CONTENT-ITEM-BY-ID USING item id, row out, status; CONTENT-ITEM-COMPONENT USING item id, component name
 *> (PIC X(32)), value out (PIC X(100)), status. Components are the stack size and damage columns by their
 *> component names (max_stack_size, max_damage) and the "name value" entries of the row's summary. An
@@ -13,16 +13,16 @@
  01 WS-KEY                 PIC X(64).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-ROW                 PIC X(208).
+ 01 WS-ROW                 PIC X(270).
  01 WS-VIEW REDEFINES WS-ROW.
     05 WS-R-ID             PIC X(4).
     05 WS-R-KEY            PIC X(38).
     05 WS-R-CLASS          PIC X(24).
     05 WS-R-BLOCK          PIC X(4).
     05 WS-R-STACK          PIC X(2).
-    05 WS-R-DAMAGE         PIC X(2).
+    05 WS-R-DAMAGE         PIC X(4).
     05 WS-R-FLAGS          PIC X(34).
-    05 WS-R-COMPONENTS     PIC X(100).
+    05 WS-R-COMPONENTS     PIC X(160).
  01 WS-NAME                PIC X(32).
  01 WS-VALUE               PIC X(100).
  PROCEDURE DIVISION.
@@ -212,6 +212,52 @@
      CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
      MOVE "items: brush max_damage" TO TL-CASE
      MOVE "64" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+*>   The damage column holds up to four digits (17 section 2.3: iron_pickaxe 250, diamond_pickaxe 1561), and
+*>   every durable item has stack size 1.
+     MOVE "iron_pickaxe" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "max_damage" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE "items: iron_pickaxe max_damage" TO TL-CASE
+     MOVE "250" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "items: iron_pickaxe max_damage status ok" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     PERFORM ASSERT-STATUS
+     MOVE "items: iron_pickaxe stack size is 1" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE WS-R-STACK TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "diamond_pickaxe" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "max_damage" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE "items: diamond_pickaxe max_damage has four digits" TO TL-CASE
+     MOVE "1561" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "shield" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "blocks_attacks" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE "items: shield summary entry past 100 characters is found" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     PERFORM ASSERT-STATUS
+     MOVE "honey_bottle" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "max_stack_size" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE "items: honey_bottle max_stack_size (25 part 8: 16)" TO TL-CASE
+     MOVE "16" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE "use_remainder" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE "items: honey_bottle use_remainder entry is whole" TO TL-CASE
+     MOVE "glass_bottle" TO TL-EXPECTED
      MOVE WS-VALUE TO TL-OBSERVED
      PERFORM ASSERT-TEXT
      MOVE "ancient_debris" TO WS-KEY
