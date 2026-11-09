@@ -4,7 +4,7 @@
 |---|---|
 | Covers | Round RS13 part 3: `SignBlockEntity` and `HangingSignBlockEntity` (with `SignText`, `SignTextSlot`, editing, waxing, dyeing, glow ink, click commands, update tag), `BannerBlockEntity` (with `BannerPattern`, `BannerPatternLayers`), `SkullBlockEntity` (profile, note block sound, custom name, client animation), `DecoratedPotBlockEntity` (with `PotDecorations`, `DecoratedPotPattern`, wobble event and animation, single item, loot table), `ShelfBlockEntity`, and the finding that no bed block entity exists. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`; protocol 777, data version 5023) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `BlockEntity`, `BlockEntityTypes`, `SignBlockEntity`, `HangingSignBlockEntity`, `SignText` and `SignText$Mutable`, `SignTextSlot`, `SignBlock`, `SignApplicator`, `DyeItem`, `GlowInkSacItem`, `InkSacItem`, `HoneycombItem`, `HangingSignItem`, `BannerBlockEntity`, `BannerPattern`, `BannerPatternLayers` (and `Layer`, `Builder`), `AbstractBannerBlock`, `SkullBlockEntity`, `AbstractSkullBlock`, `SkullBlock`, `ResolvableProfile` (and `Partial`, `Static`, `Dynamic`), `PlayerSkin$Patch`, `ExtraCodecs` (profile parts), `DecoratedPotBlockEntity` (and `WobbleStyle`), `PotDecorations`, `DecoratedPotPattern`, `DecoratedPotPatterns`, `DecoratedPotBlock`, `DecoratedPotRenderer`, `ItemStackTemplate`, `ShelfBlockEntity`, `ShelfBlock`, `DyeColor`, `ChatFormatting.stripFormatting`, `ServerboundSignUpdatePacket`, `ClientboundOpenSignEditorPacket`, `ClientboundBlockEntityDataPacket`, `ServerGamePacketListenerImpl` (sign update), `ServerPlayer.openTextEdit`, `ClientPacketListener` (block entity data, sign editor), `AbstractSignEditScreen`, `AbstractSignRenderer`. |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read (this revision adds `CeilingHangingSignBlock`, `WallHangingSignBlock`, `Items`, `Item$Properties`, `ByteBufCodecs` and its optional and either wrappers, and a scan of all `net/minecraft` classes for `setWaxed`): `BlockEntity`, `BlockEntityTypes`, `SignBlockEntity`, `HangingSignBlockEntity`, `SignText` and `SignText$Mutable`, `SignTextSlot`, `SignBlock`, `SignApplicator`, `DyeItem`, `GlowInkSacItem`, `InkSacItem`, `HoneycombItem`, `HangingSignItem`, `BannerBlockEntity`, `BannerPattern`, `BannerPatternLayers` (and `Layer`, `Builder`), `AbstractBannerBlock`, `SkullBlockEntity`, `AbstractSkullBlock`, `SkullBlock`, `ResolvableProfile` (and `Partial`, `Static`, `Dynamic`), `PlayerSkin$Patch`, `ExtraCodecs` (profile parts), `DecoratedPotBlockEntity` (and `WobbleStyle`), `PotDecorations`, `DecoratedPotPattern`, `DecoratedPotPatterns`, `DecoratedPotBlock`, `DecoratedPotRenderer`, `ItemStackTemplate`, `ShelfBlockEntity`, `ShelfBlock`, `DyeColor`, `ChatFormatting.stripFormatting`, `ServerboundSignUpdatePacket`, `ClientboundOpenSignEditorPacket`, `ClientboundBlockEntityDataPacket`, `ServerGamePacketListenerImpl` (sign update), `ServerPlayer.openTextEdit`, `ClientPacketListener` (block entity data, sign editor), `AbstractSignEditScreen`, `AbstractSignRenderer`. |
 | Evidence rule | Every key, constant and rule below was read in this round. "(inferred)" marks a deduction from the shape of read code. "(recalled, not verified)" marks a statement not read; each is repeated in Open questions. |
 | Scope decisions | Standard Minecraft content is the target (ticket CC-0001; design README Parts 0, 1, 4; GAP-8). Data rows are not tabulated: the 43 `banner_pattern` entries and the 23 `decorated_pot_pattern` entries are JSON in the data pack (04 section 6, 23), and sound events, models and textures come from the resource pack. Code-defined content is complete here: field schemas, defaults, interaction rules, event ids, animation formulas. The shared block entity model (ids, `x`/`y`/`z`, `components`, load and save order, `BlockEntityData` packet, setChanged) is in 31 part 1 and is not repeated; this document states only what each type adds. Chiseled bookshelf (part 2), beacon beam owner (part 5), copper golem statue and potent sulfur (part 8) are other parts. Siblings: 31 parts 1, 2, 4 to 8. |
 
@@ -35,11 +35,11 @@ Conventions: NBT notation as in 07 and 45 section 2 (`Byte`, `Int`, `String`, `L
 | `SIGN` | `SignBlockEntity` | `SignBlock` (standing, wall) | text width 90, line height 10 |
 | `HANGING_SIGN` | `HangingSignBlockEntity` | hanging sign blocks | text width 60, line height 9; extends `SignBlockEntity` |
 | `BANNER` | `BannerBlockEntity` | `AbstractBannerBlock` (standing and wall banners) | base colour is read from the block |
-| `SKULL` | `SkullBlockEntity` | `AbstractSkullBlock` (every head, floor and wall) | |
+| `SKULL` | `SkullBlockEntity` | `AbstractSkullBlock` (every head, floor and wall) | valid blocks read from the type declaration, 14: `skeleton_skull`, `skeleton_wall_skull`, `creeper_head`, `creeper_wall_head`, `dragon_head`, `dragon_wall_head`, `zombie_head`, `zombie_wall_head`, `wither_skeleton_skull`, `wither_skeleton_wall_skull`, `player_head`, `player_wall_head`, `piglin_head`, `piglin_wall_head` |
 | `DECORATED_POT` | `DecoratedPotBlockEntity` | `DecoratedPotBlock` | |
 | `SHELF` | `ShelfBlockEntity` | `ShelfBlock` | 3 slots |
 
-The registry ids (the `id` key and the VarInt in the data packet) are the registered names of these fields; the full list and its ordering are in 31 part 1 and 46. The sets of valid blocks per type are block registry data (24 parts 1 to 8) and are not read again here.
+The registry ids (the `id` key and the VarInt in the data packet) are the registered names of these fields, numbered in field declaration order (0 to 48); the full 49-row table with ids is in 31 part 1 section 3.1 (checked: it lists all 49 fields, `furnace` first and `potent_sulfur` last, id 48) and the ids are repeated in 46 section 5.4. Server tickers: `ShelfBlock`, `DecoratedPotBlock` and `AbstractBannerBlock` declare no `getTicker` method (checked with the class method lists), so `SHELF`, `DECORATED_POT` and `BANNER` never tick on the server (the base-class default was not read, presumably no ticker; inferred, Open question 17); the pot wobble and the skull animation are client state only. The sets of valid blocks per type (other than SKULL, listed above) are block registry data (24 parts 1 to 8) and are not read again here.
 
 ## 2. Signs and hanging signs
 
@@ -74,7 +74,16 @@ Saving: `filtered_messages` is written only when it differs from `messages` (lis
 
 Failure on load: a `front_text` or `back_text` that fails to decode is replaced by `SignText.EMPTY` (the read returns empty and `orElse(EMPTY)` applies), with the problem logged.
 
-Stream form (`SignText.STREAM_CODEC`, used when the text travels as an item component, not in the block entity packet): list of 4 components (fixed size, no count prefix), then an optional-wrapped list of 4 components (the filtered list, absent when equal to `messages`; the wrapper's wire form is `ByteBufCodecs` optional, inferred), then the dye colour as its `DyeColor.STREAM_CODEC` id, then a boolean. The exact wire layout of the optional wrapper was not traced (Open question 1).
+Stream form (`SignText.STREAM_CODEC`, used when the text travels as an item component, not in the block entity packet): a composite of four parts in this order:
+
+| # | Part | Wire form |
+|---|---|---|
+| 1 | `messages` | exactly 4 components, each as `ComponentSerialization.STREAM_CODEC` (00), with no count prefix (`fixedSizeList(4)`) |
+| 2 | filtered list | the same fixed list of 4, wrapped by an optional operation, taken from `filteredMessagesForSerialization` (empty when the two lists are equal, so the optional is absent) |
+| 3 | `color` | `DyeColor.STREAM_CODEC` (a VarInt id, section 8) |
+| 4 | `hasGlowingText` | boolean, one byte |
+
+The `ByteBufCodecs.optional` wrapper was read: it writes a boolean first (1 byte, true when present), then the value only when present; decoding reads the boolean and yields empty when it is false. So with equal lists part 2 is the single byte `00`; with different lists it is `01` followed by 4 components. On decode, the four parts feed the static factory `load(messages, optional filtered, color, glowing)`, which builds the text with `filtered = optional.orElse(messages)` (read; the same factory is the combiner of both the NBT record codec and the stream codec), so an absent part 2 leaves the filtered list equal to `messages`.
 
 Predicates used by interaction code:
 
@@ -95,7 +104,7 @@ Enum with ids: `BACK` = 0, `FRONT` = 1. The stream codec is `ByteBufCodecs.idMap
 
 `getSlotPlayerIsFacing(player)`: only when the block is a `SignBlock`; otherwise `FRONT`.
 
-1. Centre = block position plus `getSignHitboxCenterPosition(state)`; the default hit-box centre is (0.5, 0.5, 0.5) (a subclass may differ; not read here).
+1. Centre = block position plus `getSignHitboxCenterPosition(state)`; `SignBlock.getSignHitboxCenterPosition` returns the constant (0.5, 0.5, 0.5), and `SignBlockEntity` delegates to the block's method. Of the sign block classes (`PlainSignBlock`, `StandingSignBlock`, `WallSignBlock`, `HangingSignBlock`, `CeilingHangingSignBlock`, `WallHangingSignBlock`) only `WallSignBlock` overrides it: it returns the centre of the bounding box of its facing-indexed shape. The wall sign shape table is built from one box (x 0 to 16, y 4.5 to 12.5, z 14 to 16, in sixteenths) passed through a horizontal rotation helper, so in the base orientation the centre is (0.5, 0.53125, 0.9375); the centres for the other three facings are the rotations of that box about the block centre (inferred; the facing-to-rotation mapping was not read, Open question 18). Standing sign and all hanging sign blocks use (0.5, 0.5, 0.5).
 2. `dx = player.x - (blockX + centre.x)`, `dz = player.z - (blockZ + centre.z)`.
 3. `signYaw = getYRotationDegrees(state)` (abstract; per block class).
 4. `playerAngle = atan2(dz, dx) * 57.2957763671875 - 90` (float).
@@ -124,11 +133,13 @@ Applicators (the tinted dye comes from the item's `dye` data component, not from
 | `GlowInkSacItem` | `withGlowingText(true)`; fails when already glowing | `glow_ink_sac_use` |
 | `HoneycombItem` | `setWaxed(true)` on the block entity; fails when already waxed. On success: level event 3003 at the sign (data 0) and `honeycomb_wax_on` | `honeycomb_wax_on` |
 
+Waxing is one-way. `SignBlockEntity.setWaxed` is called from exactly one place, `HoneycombItem.tryApplyToSign`, and always with `true`: a scan of every class under `net/minecraft` in the jar found only `HoneycombItem` and the definition in `SignBlockEntity` mentioning `setWaxed`, and the jar contains no `AxeItem` class. So no code path in this artifact un-waxes a sign; only NBT (`is_waxed`), the `waxed` item component, or a block entity replacement changes it back.
+
 `updateText(op, slot)` applies `op` to the text of that side; if the result is a different object it calls `setText` (which stores and runs `markUpdated`) and returns true, else false. `markUpdated` = `setChanged()` then `sendBlockUpdated(pos, state, state, flags 3)`; flags 3 means "update clients and neighbours" and queues the update packet (05a, id 6).
 
 ### 2.6 Using a sign with an empty hand (`useWithoutItem`)
 
-Server only. In order:
+Order of checks: first, a missing or non-sign block entity gives PASS. Then, on a level that is not a `ServerLevel`, the method builds an `IllegalStateException` ("Expected to only call this on server"), passes it to `Util.pauseInIde` (a debugging hook) and returns CONSUME; the exception is not thrown. So the client result of an empty-hand click on a sign is CONSUME, and the rest of this list runs on the server only. In order:
 
 1. Run click commands of the faced side (2.7); let `ran` be its result.
 2. If the sign is waxed: play the sign's interaction-failed sound (source blocks) and return SUCCESS_SERVER.
@@ -146,16 +157,23 @@ Placing a sign: `setPlacedBy` (server, placer is a `ServerPlayer`, block is a si
 
 | Click event | If `allowOpFeatures` is true | If false |
 |---|---|---|
-| `run_command` | run the command (prefixed-command entry) with a source: no output sink, position = block centre, rotation (0, 0), permission set GAMEMASTER, display name "Sign" (or the player's name and entity when a player is present, in which case the player is the entity), in this level | nothing |
+| `run_command` | run the command (`Commands.performPrefixedCommand`) with the source of the next paragraph, in this level | nothing |
 | `show_dialog` | the player opens the dialog | nothing |
 | `custom` | the server handles the custom click action with `id` and optional `payload` | nothing |
 | any other action | ignored | ignored |
+
+Command source (`createCommandSourceStack(player, level, pos)`). Common to both cases: output sink `CommandSource.NULL` (no output), position = block centre (`Vec3.atCenterOf`), rotation `Vec2.ZERO`, permission set `LevelBasedPermissionSet.GAMEMASTER`, the given level and the server. The two cases differ only in identity:
+
+| Case | Display name | Entity |
+|---|---|---|
+| a player is given (click commands) | the player's own name | the player |
+| no player (component resolution on load, 2.7 below) | the literal "Sign" | none |
 
 The method returns true when any line had a click event of one of the three kinds above (whether or not `allowOpFeatures` let it run). After the loop, when `allowOpFeatures` is false and the result is true, the player gets the overlay message with translation key `sign.click_actions_disabled` in red. `canExecuteClickCommands(slot, player)` is true when the sign is waxed AND the side has any `run_command` event.
 
 Since nothing in the game sets `allow_op_features`, click actions on signs run only for signs whose NBT was authored with `allow_op_features: 1b` (commands, structure files, data packs).
 
-Component resolution: when `allowOpFeatures` is true, `loadAdditional` post-processes every line of both loaded sides by resolving the component (selectors, scores, NBT sources) against a command source built as above with no player, only when the level is a `ServerLevel`; a command syntax failure leaves that line unresolved. When `allowOpFeatures` is false lines are used as stored.
+Component resolution: when `allowOpFeatures` is true, `loadAdditional` post-processes every line of both loaded sides by resolving the component (selectors, scores, NBT sources) against a command source built as above with no player (display name "Sign", no entity), only when the level is a `ServerLevel` (`resolveLine` tests it and otherwise returns without resolving); the resolution context is `ResolutionContext.create(source)` and the resolver is `ComponentUtils.resolve`; a `CommandSyntaxException` is caught and the original, unresolved line component is kept. When `allowOpFeatures` is false lines are used as stored.
 
 ### 2.8 The edit packet and the text it stores
 
@@ -173,14 +191,14 @@ Server (`handleSignUpdate`):
 Message update, for each line index i of the current side:
 
 - Let `old` = the existing line component of `getMessages(filtering)`; its style is kept.
-- When `filtering` is true (inferred: the tested value is the boolean parameter): set both raw and filtered line to literal(`filteredOrEmpty`) with the old style. `filteredOrEmpty` is the string with the mask applied, or the empty string.
+- When `filtering` is true (the tested value is the boolean parameter of the edit handler, inferred from the branch layout, Open question 19): set both raw and filtered line to literal(`filteredOrEmpty`) with the old style. `filteredOrEmpty` is the string with the mask applied, or the empty string.
 - Otherwise: raw line = literal(`raw`), filtered line = literal(`filteredOrEmpty`), both with the old style.
 
 Color and glow are never changed by the edit packet.
 
 ### 2.9 Editor lock tick
 
-`SignBlockEntity.tick` (server and client tickers are registered through `SignBlock.getTicker` for the `SIGN` type; the hanging sign block is assumed to register for `HANGING_SIGN`, Open question 2): when `playerWhoMayEdit` is set, clear it if the player is not found in the level or is not within block interaction range of the sign using distance 4.0 (`isWithinBlockInteractionRange(pos, 4.0)`).
+`SignBlockEntity.tick` (the ticker is registered through `SignBlock.getTicker` for the `SIGN` type; `CeilingHangingSignBlock.getTicker` and `WallHangingSignBlock.getTicker` were read and both register the same `SignBlockEntity.tick` for `HANGING_SIGN`): when `playerWhoMayEdit` is set, clear it if the player is not found in the level or is not within block interaction range of the sign using distance 4.0 (`isWithinBlockInteractionRange(pos, 4.0)`).
 
 ### 2.10 Persistence, update tag and components
 
@@ -193,10 +211,10 @@ Color and glow are never changed by the edit packet.
 
 Only what depends on block entity state (the geometry and font belong to 12):
 
-- Each side is drawn when its `SignText` is non-null (always, for a normal sign). Four lines; each line is split to the sign's maximum line width (`getMaxTextLineWidth`) and only the first piece is drawn (an empty split gives an empty line, inferred); with filtering enabled in the client options the filtered lines are drawn.
+- Each side is drawn when its `SignText` is non-null (always, for a normal sign). Four lines; each line is split to the sign's maximum line width (`getMaxTextLineWidth`) and only the first piece is drawn (an empty split list gives `FormattedCharSequence.EMPTY`, otherwise element 0; read); with filtering enabled in the client options the filtered lines are drawn.
 - Line y offset: `i * textLineHeight - (4 * textLineHeight) / 2`; each line is centred on its own width.
 - Colour: the dye's text colour (section 8). Dark colour used for the non-glowing text outline: `DyeColor.textColor` scaled by 0.4 per channel, except black glowing text, whose dark colour is `0xFFF0EBCC` (the constant -988212).
-- Glowing text: drawn with light coordinates `15728880` (`0xF000F0`, full block and sky light) and an outline; the outline is drawn when the colour is not black or when the "outline visible" flag is true (camera within a squared-distance threshold of the sign centre, or the local player is scoping in first person). The threshold constant `OUTLINE_RENDER_DISTANCE` was not read (Open question 3).
+- Glowing text: drawn with light coordinates `15728880` (`0xF000F0`, full block and sky light) and an outline; the outline is drawn when the colour is not black or when the "outline visible" flag is true (camera within a squared-distance threshold of the sign centre, or the local player is scoping in first person). The first-person scoping case returns true first; otherwise the camera entity's `distanceToSqr` to the block centre (`Vec3.atCenterOf`) is compared as a double with `OUTLINE_RENDER_DISTANCE`, true when strictly less. `OUTLINE_RENDER_DISTANCE` is `Mth.square(16)` = 256 (a squared distance, i.e. 16 blocks), read from the static initializer. `BLACK_TEXT_OUTLINE_COLOR` -988212 and light coordinates 15728880 as above.
 
 ## 3. Banners
 
@@ -208,7 +226,7 @@ Only what depends on block entity state (the geometry and font belong to 12):
 | `patterns` | `BannerPatternLayers` | `EMPTY` (no layers) | key `patterns`, written only when not equal to `EMPTY` |
 | `name` | optional Text Component | none | key `CustomName`, written only when present (`storeNullable`) |
 
-`MAX_PATTERNS` = 6. It is used by the tooltip (at most 6 layers shown) and by the crafting stations; the codecs do not enforce it, so NBT with more layers loads and renders every layer (Open question 4 covers whether the renderer clamps).
+`MAX_PATTERNS` = 6. It is used by the tooltip (at most 6 layers shown) and by the crafting stations; the codecs do not enforce it, so NBT with more layers loads. The client `BannerRenderer` has its own private limit of 16: `submitPatterns` draws the base layer first, then loops over the layer list in list order while the index is below 16 and below the list size, so at most 16 patterns are drawn and layers after the 16th are not rendered (read). The block entity and the stored list keep all layers.
 
 The default display name (when `CustomName` is absent) is the translatable component `block.minecraft.banner`. `Nameable.getName()` returns `CustomName` when set.
 
@@ -216,12 +234,14 @@ The default display name (when `CustomName` is absent) is the translatable compo
 
 | Key | Type | Notes |
 |---|---|---|
-| `patterns` | List of Compound (layer) | layer order is draw order, first layer is drawn first (inferred from list order; the renderer was not read) |
+| `patterns` | List of Compound (layer) | layer order is draw order: the renderer draws the base, then layers in list order, first layer first, at most 16 (read, section 3.1) |
 | `CustomName` | Text Component | note the capital C and N: this key keeps the old spelling, unlike the skull's `custom_name` |
 
 Layer compound (`BannerPatternLayers.Layer.CODEC`): `pattern` (a banner pattern holder, below) and `color` (dye colour name String, required). Layers list codec: a plain list of layers (a `listOf` mapped to the record).
 
-`pattern` is a registry holder codec for the dynamic `banner_pattern` registry: either the Identifier String of a registered pattern (for example the JSON files of `data/minecraft/banner_pattern/`, 43 files, listed in the extracted data pack) or an inline compound with the direct codec (`asset_id` Identifier, `translation_key` String; see 04 section 6). An unknown id fails the layer decode; the list then fails as a whole, and `patterns` loads as `EMPTY` (the read returns empty and `orElse(EMPTY)` applies).
+`pattern` is a registry holder codec for the dynamic `banner_pattern` registry: either the Identifier String of a registered pattern (the JSON files of `data/minecraft/banner_pattern/`; 43 files, all listed below) or an inline compound with the direct codec (`asset_id` Identifier, `translation_key` String; see 04 section 6). An unknown id fails the layer decode; the list then fails as a whole, and `patterns` loads as `EMPTY` (the read returns empty and `orElse(EMPTY)` applies).
+
+The 43 registered pattern ids (file names in `data/minecraft/banner_pattern/`, counted with `unzip -Z1`; each file has `asset_id` of the same name and `translation_key` `block.minecraft.banner.<name>`, read for `stripe_bottom`): base, border, bricks, circle, creeper, cross, curly_border, diagonal_left, diagonal_right, diagonal_up_left, diagonal_up_right, flow, flower, globe, gradient, gradient_up, guster, half_horizontal, half_horizontal_bottom, half_vertical, half_vertical_right, mojang, piglin, rhombus, skull, small_stripes, square_bottom_left, square_bottom_right, square_top_left, square_top_right, straight_cross, stripe_bottom, stripe_center, stripe_downleft, stripe_downright, stripe_left, stripe_middle, stripe_right, stripe_top, triangle_bottom, triangle_top, triangles_bottom, triangles_top.
 
 Stream form: `BannerPatternLayers.STREAM_CODEC` = VarInt-prefixed list of (holder VarInt/inline, dye colour id) pairs.
 
@@ -234,7 +254,14 @@ Stream form: `BannerPatternLayers.STREAM_CODEC` = VarInt-prefixed list of (holde
 
 ### 3.4 What is not in the block entity
 
-Loom crafting, the `banner_pattern` tags used by patterns items (`pattern_item/` tag folder, 10 files: bordure_indented, creeper, field_masoned, flow, flower, globe, guster, mojang, piglin, skull) and the item tag `loom_patterns` are data and menu logic (13, RS14); shield banner decoration is the item side.
+Loom crafting and the item tag `loom_patterns` are data and menu logic (13, RS14); shield banner decoration is the item side. The tag folder `data/minecraft/tags/banner_pattern/` holds:
+
+| Tag | Content |
+|---|---|
+| `pattern_item/` folder, 10 files | one tag per patterned banner item, each listing exactly one pattern (read): `bordure_indented` lists curly_border, `field_masoned` lists bricks, and `creeper`, `flow`, `flower`, `globe`, `guster`, `mojang`, `piglin`, `skull` each list the pattern of the same name |
+| `no_item_required` | 32 patterns, read in this order: square_bottom_left, square_bottom_right, square_top_left, square_top_right, stripe_bottom, stripe_top, stripe_left, stripe_right, stripe_center, stripe_middle, stripe_downright, stripe_downleft, small_stripes, cross, straight_cross, triangle_bottom, triangle_top, triangles_bottom, triangles_top, diagonal_left, diagonal_up_right, diagonal_up_left, diagonal_right, circle, rhombus, half_vertical, half_horizontal, half_vertical_right, half_horizontal_bottom, border, gradient, gradient_up |
+
+The 32 `no_item_required` patterns and the 10 patterns of the `pattern_item/` tags do not overlap and together cover 42 of the 43; the remaining one is `base`, which is in no banner_pattern tag. How the loom uses these tags is menu logic outside this document.
 
 ## 4. Skulls
 
@@ -254,6 +281,8 @@ On load each key is read independently; a decode failure gives none for that fie
 
 A profile is a flattened compound. It has a skin patch (optional keys) merged with an identity part.
 
+Codec shape (read from `ResolvableProfile`): `FULL_CODEC` is a record whose identity part is `Codec.mapEither(ExtraCodecs.STORED_GAME_PROFILE, Partial.MAP_CODEC)` merged with `PlayerSkin.Patch.MAP_CODEC`, so the stored-profile form is tried first and the partial form second, both inside the same flat compound as the skin patch keys. `CODEC` is `FULL_CODEC` with `withAlternative` of `ExtraCodecs.PLAYER_NAME`, which gives the bare String shorthand below. `ExtraCodecs.MAX_PROPERTIES` = 16 bounds the properties list. `PLAYER_NAME` is a String with a length check (0 to 16 characters) plus a validation function (the validation predicate itself was not read, Open question 5).
+
 Identity part, one of:
 
 1. Stored profile: `id` (UUID, int-array form `UUIDUtil.CODEC`), `name` (String, 0 to 16 characters plus a validation), `properties` (optional, default empty).
@@ -265,7 +294,7 @@ Skin patch keys (all optional): `texture` (a resource texture Identifier, the bo
 
 String shorthand: a bare String decodes as an unresolved profile by name (`createUnresolved(name)`), via the alternative codec; there is also an unresolved-by-UUID form. Unresolved profiles carry only the name or id; the client or server resolves them through a profile resolver (an online lookup), which a COBOL implementation can skip: a profile with `properties` containing textures renders without any lookup, and an unresolved one draws the default skin (47).
 
-Stream form: `ResolvableProfile.STREAM_CODEC` composite of the identity part and the patch (the exact wire layout of the `Either` was not traced, Open question 5).
+Stream form: `ResolvableProfile.STREAM_CODEC` is a composite of two parts in order: (1) `ByteBufCodecs.either(GAME_PROFILE, Partial.STREAM_CODEC)` and (2) `PlayerSkin.Patch.STREAM_CODEC`. The `either` wrapper was read: it writes one boolean, then the chosen side's stream codec; decoding reads the boolean and runs the first codec when true (the game profile, left) or the second when false (the partial profile, right) (the branch assignment is inferred from the layout of the read branches). The inner layouts of `GAME_PROFILE`, `Partial.STREAM_CODEC` and `PlayerSkin.Patch.STREAM_CODEC` were not read (Open question 1).
 
 ### 4.3 Components, update tag, packet
 
@@ -310,7 +339,7 @@ Four optional entries, `back`, `left`, `right`, `front`, each an `ItemStackTempl
 
 `EMPTY` has all four absent. `allBrick(items)` gives `back = left = right = front = {id: minecraft:brick, count: 1}` (the default look of a pot made from four bricks; the recipe supplies it as data). This differs from older versions where `sherds` was a list of four item ids; the datafixer `PotDecorationsBlockEntityUnflatteningFix` exists in the jar to upgrade that old list (fix rules not specified here, Open question 7).
 
-Which sherd item draws which pattern: a decoration is the template's item; the pattern is chosen client-side from the item id by a lookup in the dynamic `decorated_pot_pattern` registry and the item (the lookup table that connects sherd items to patterns was NOT located in the classes read here; Open question 8). The 23 pattern keys declared in `DecoratedPotPatterns` are: angler, archer, arms_up, blade, brewer, burn, danger, explorer, flow, friend, guster, heart, heartbreak, howl, miner, mourner, plenty, prize, scrape, sheaf, shelter, skull, snort. Each is registered by the bootstrap with the asset id `<key>_pottery_pattern` (the suffix `_pottery_pattern` appended to the key's identifier); the textures with those names are in `assets/minecraft/textures/entity/decorated_pot/`. The `DecoratedPotPattern` direct codec is a record with one key `asset_id` (Identifier); the registry is a data registry of 23 JSON files in the jar, synced as `decorated_pot_pattern` (04 section 6).
+Which sherd item draws which pattern: the link is an item data component, `provides_pottery_pattern` (`DataComponents.PROVIDES_POTTERY_PATTERN`), whose value is a `decorated_pot_pattern` resource key. `Items` sets it on each item through `Item.Properties.potPattern(key)`; 23 items do so, and all 23 `DecoratedPotPatterns` keys are referenced there. The mapping, read from `Items`, is regular: the item named `<key>_pottery_sherd` carries the pattern key `<key>`, for every key listed below (for example `angler_pottery_sherd` carries `angler`, `arms_up_pottery_sherd` carries `arms_up`). The client renderer (`DecoratedPotRenderer.getSideSprite`) reads that component from each decoration's item; when the decoration is absent, or its item has no such component (for example the default brick), it uses the plain side sprite (`Sheets.DECORATED_POT_SIDE`). The 23 pattern keys declared in `DecoratedPotPatterns` are: angler, archer, arms_up, blade, brewer, burn, danger, explorer, flow, friend, guster, heart, heartbreak, howl, miner, mourner, plenty, prize, scrape, sheaf, shelter, skull, snort. Each is registered by the bootstrap with the asset id `<key>_pottery_pattern` (the suffix `_pottery_pattern` appended to the key's identifier); the textures with those names are in `assets/minecraft/textures/entity/decorated_pot/`. The `DecoratedPotPattern` direct codec is a record with one key `asset_id` (Identifier); the registry is a data registry of 23 JSON files in the jar, synced as `decorated_pot_pattern` (04 section 6).
 
 Stream form: four optional `ItemStackTemplate` (optional-wrapped, in order back, left, right, front).
 
@@ -321,7 +350,7 @@ Block state: `facing` (horizontal), `waterlogged`, `cracked` (04 and 24 for the 
 `useItemOn` (item in hand):
 
 1. Block entity missing: PASS. Client: SUCCESS.
-2. Let `held` = the pot's stored item (after unpacking a loot table). If the pot's item is non-empty and `held` item is... precisely: when the held stack is non-empty AND (the pot is empty OR the pot's item is the same item with the same components and its count is below its max stack size):
+2. Let `stored` be the pot's stored stack (after unpacking a loot table). The insert branch applies when the held stack is non-empty AND (the pot is empty OR the stored stack has the same item and components as the held stack and its count is below its maximum stack size):
    1. `wobble(POSITIVE)`.
    2. Award the item-used statistic.
    3. Move one item: take one from the player's stack (`consumeAndReturn(1)`); if the pot was empty, store that single item and set a "fill fraction" = `count / maxStackSize`; else grow the pot's stack by 1 and fraction = `newCount / maxStackSize`.
@@ -332,7 +361,7 @@ Block state: `facing` (horizontal), `waterlogged`, `cracked` (04 and 24 for the 
 
 `useWithoutItem` (and the fall-through from 2): block entity missing: PASS. Otherwise: play `decorated_pot_insert_fail` (blocks, volume 1, pitch 1), `wobble(NEGATIVE)`, game event `block_change`, result SUCCESS.
 
-The reading of step 2 above is by structure: the test combines "player holds an item", "pot empty or same stack with room"; the exact operand order of the condition is inferred from the branch layout (Open question 9).
+The condition of step 2 was read from the bytecode: held stack non-empty, AND (stored stack empty, OR (`isSameItemSameComponents(stored, held)` AND stored count < stored `getMaxStackSize()`)). The client returns SUCCESS before this test (the server-side check is after the `isClientSide` return), so an uninsertable item still gives client SUCCESS and only the server returns TRY_WITH_EMPTY_HAND.
 
 Breaking: `playerWillDestroy`: when the main-hand item is in the item tag `breaks_decorated_pots` AND does not carry an enchantment in the tag `prevents_decorated_pot_shattering` (silk touch is in that tag, data), the block state is set to `cracked = true` with flags 260 (no drops from the replacement, no neighbour shapes), and then the normal destruction proceeds. Drops: `getDrops` registers a dynamic drop under the id constant `SHERDS_DYNAMIC_DROP_ID`; the loot table for the pot (data) uses the `dynamic` entry with that id, which yields the sherds' items (or the pot itself when not cracked). `cracked` also changes the sound type. Pot contents drop on removal through the container removal path (`Containers.updateNeighboursAfterDestroy` in `affectNeighborsAfterRemoval`; contents drop through the standard container drop, 31 part 1). The pot is not pathfindable (`isPathfindable` false).
 
@@ -350,12 +379,12 @@ Breaking: `playerWillDestroy`: when the main-hand item is in the item tag `break
 
 ### 5.5 Wobble animation (client)
 
-`progress = (gameTime - wobbleStartedAtTick + partialTick) / lastWobbleStyle.duration`, or 0 when no wobble has started (the code stores 0 when `lastWobbleStyle` is none or the level is absent). The pot is drawn with the block's facing transform (rotation about (0.5, 0.5, 0.5) by `180 - facing yaw` degrees), then, only while `0 <= progress <= 1`:
+`progress = ((float)(gameTime - wobbleStartedAtTick) + partialTick) / (float)lastWobbleStyle.duration` (float arithmetic, computed in `extractRenderState`), or 0 when no wobble has started (the code stores 0 when `lastWobbleStyle` is none or the level is absent). The pot is drawn with the block's facing transform (rotation about (0.5, 0.5, 0.5) by `180 - facing yaw` degrees), then, only while `0 <= progress <= 1`:
 
 - POSITIVE: let `a = progress * 2π`; `rx = (-1.5 * (cos a + 0.5)) * sin(a / 2)`; `rz = sin a`. Rotate about axis X by `rx * 0.015625` radians and about axis Z by `rz * 0.015625` radians, both around the pivot (0.5, 0, 0.5), X first then Z.
 - NEGATIVE: let `r = sin(-progress * 3π) * 0.125`; rotate about axis Y by `r * (1 - progress)` radians around the pivot (0.5, 0, 0.5).
 
-(Trigonometric functions are the game's `Mth.sin` and `Mth.cos` table versions; the value tables are not read, Open question 10.) The model has parts neck, top, bottom (base texture sheet) and front, back, left, right sides (pattern texture or the plain side texture when the side has no decoration); the model geometry is 34 and the textures are data.
+(Trigonometric functions are the game's `Mth.sin` and `Mth.cos` table versions, whose signature takes a double (`sin(double)` and `cos(double)` return float), so the float arguments are widened to double; the value tables are not read, Open question 10.) The model has parts neck, top, bottom (base texture sheet) and front, back, left, right sides (pattern texture or the plain side texture when the side has no decoration); the model geometry is 34 and the textures are data.
 
 ### 5.6 Components and update tag
 
@@ -389,7 +418,7 @@ Block states: `powered`, `facing` (horizontal), `side_chain_part` (`SideChainPar
 `useItemOn` (main hand only; OFF_HAND gives PASS):
 
 1. Block entity must be a shelf, else PASS.
-2. Compute the hit slot from the hit position and the facing (`getHitSlot`, an `OptionalInt`; geometry not read, Open question 13). None: PASS.
+2. Compute the hit slot from the hit position and the facing (`getHitSlot`, an `OptionalInt`; geometry not read, Open question 12). None: PASS.
 3. Client: if the selected hotbar item is empty: PASS; else CONSUME.
 4. Server, shelf NOT powered: swap one slot with the held item:
    - `swapSingleItem`: swaps the shelf slot's stack with the selected stack (`swapItemNoUpdate`), puts the old shelf stack into the player's selected slot (creative players with infinite materials keep their stack when it was empty: the placed item is copied), `setChanged(item_interact_finish)` (or no event when the item has `use_effects` with `interact_vibrations` false), and reports success when the new shelf stack is non-empty or the old one was.
@@ -405,7 +434,7 @@ No bed block entity exists in this artifact. `BlockEntityTypes` has 49 `public s
 
 ## 8. DyeColor (values used here)
 
-Read from the `DyeColor` constructor calls: columns are `id` (also the order of the 16 stream ids; `DyeColor.STREAM_CODEC` is a continuous id map with out-of-bounds strategy ZERO, so an out-of-range id maps to `white`), serialized name (`DyeColor.CODEC` is by that name), `textColor` (sign text, opaque ARGB with 0xFF in the top byte added at load), and `textureDiffuseColor` (opaque too). The map colours and `fireworkColor` are in 43 and 17.
+Read from the `DyeColor` constructor calls: columns are `id` (also the order of the 16 stream ids; `DyeColor.STREAM_CODEC` is a continuous id map with out-of-bounds strategy ZERO, so an out-of-range id maps to `white`), serialized name (`DyeColor.CODEC` is by that name), `textColor` (sign text; the constructor passes it through `ARGB.opaque`, read, so 0xFF is set in the top byte), and `textureDiffuseColor` (opaque too). The map colours and `fireworkColor` are in 43 and 17.
 
 | id | name | textColor (RGB) | textureDiffuseColor (RGB) | fireworkColor (RGB) |
 |---|---|---|---|---|
@@ -433,7 +462,7 @@ Read from the `DyeColor` constructor calls: columns are `id` (also the order of 
 3. Waxing, then right click. Honeycomb on a sign: `setWaxed(true)`, level event 3003, sound `honeycomb_wax_on`, item consumed even for an empty sign (`canApplyToSign` true). A later empty-hand click: waxed, so the `waxed_sign_interact_fail` sound plays (hanging sign: `waxed_hanging_sign_interact_fail`) and SUCCESS_SERVER.
 4. Edit packet. Packet lines `["§aGreen", "plain", "", "x§r"]`: stripped to `["Green", "plain", "", "x"]`; with pass-through filtering and `filtering` false: raw and filtered equal; the old style of each line is kept. The editor lock is cleared and `sendBlockUpdated` is sent.
 5. Edit by a stranger. A player not equal to `playerWhoMayEdit` sends the packet: warning logged, nothing changes, lock stays.
-6. Banner NBT: `{patterns:[{pattern:"minecraft:stripe_bottom", color:"red"},{pattern:"minecraft:border", color:"white"}], CustomName:'"Flag"'}` on a blue banner block: base colour blue (from the block), two layers, name "Flag". (Only `base`, `border` and `bricks` were seen in the `data/minecraft/banner_pattern/` listing; `stripe_bottom` is an unverified example id, Open question 4.) Update tag contains `patterns`, `CustomName`, and `components`.
+6. Banner NBT: `{patterns:[{pattern:"minecraft:stripe_bottom", color:"red"},{pattern:"minecraft:border", color:"white"}], CustomName:'"Flag"'}` on a blue banner block: base colour blue (from the block), two layers, name "Flag". Both ids exist in `data/minecraft/banner_pattern/` (section 3.2). Update tag contains `patterns`, `CustomName`, and `components`.
 7. Piglin head. A piglin head on the client with `powered=true` for 30 ticks: `animationTickCount` = 30, `getAnimation(0.5)` = 30.5. Power removed: `isAnimating` false, `getAnimation(0.5)` = 30.0 and stays 30.0 (no reset). A zombie head never ticks.
 8. Pot insert. Empty pot, player holds 16 sticks (max stack 64): first right click stores 1 stick, fraction 1/64, sound pitch `0.7 + 0.5 * 1/64`; a second click grows to 2, fraction 2/64; each click sends block event (pos, id 1, data 0) and 7 `dust_plume` particles. Holding an item that differs from the stored item: `TRY_WITH_EMPTY_HAND`, then `useWithoutItem`: fail sound and `wobble(NEGATIVE)` (event data 1).
 9. Wobble. POSITIVE with `wobbleStartedAtTick = 100`, `gameTime = 103`, `partialTick = 0.5`: `progress = 3.5 / 7 = 0.5`, `a = π`, `rx = (-1.5 * (cos π + 0.5)) * sin(π/2) = (-1.5 * -0.5) * 1 = 0.75`, so about X by `0.75 * 0.015625 = 0.01171875` rad; `rz = sin π = 0` (about 0).
@@ -456,19 +485,22 @@ Read from the `DyeColor` constructor calls: columns are `id` (also the order of 
 
 ## 11. Open questions
 
-1. The optional-wrapper wire layout in `SignText.STREAM_CODEC` (item component transport), and the whole stream layout of `ResolvableProfile` (Either of stored and partial) were not traced to bytes.
-2. Whether `HangingSignBlock.getTicker` registers the tick for `HANGING_SIGN` (inferred from the class design; `SignBlock.getTicker` for `SIGN` was read).
-3. The constant `OUTLINE_RENDER_DISTANCE` used for glowing text outlines (a static initializer value, not read).
-4. Banner layer count clamp in the renderer (`MAX_PATTERNS` = 6 is read, its use in the renderer is not); the exact banner pattern ids beyond the three file names seen (`base`, `border`, `bricks`) are data and were not enumerated here (the count 43 is from the archive).
-5. See item 1 for the profile stream layout.
+1. The `SignText` stream layout is closed (section 2.2). Still open: the inner byte layouts of `ByteBufCodecs.GAME_PROFILE`, `ResolvableProfile.Partial.STREAM_CODEC` and `PlayerSkin.Patch.STREAM_CODEC`, which complete the `ResolvableProfile` stream form (section 4.2 states only the outer boolean and order). Searched: `ResolvableProfile`, `ByteBufCodecs` (`either`, `optional`).
+2. Closed: the hanging sign ticker was read (section 2.9). Number kept so references stay stable.
+3. Closed: `OUTLINE_RENDER_DISTANCE` = `Mth.square(16)` = 256 (section 2.11). Number kept so references stay stable.
+4. Closed: the renderer draws at most 16 layers (private `MAX_PATTERNS` = 16 in `BannerRenderer`); the public 6 is tooltip-only (section 3.1). The pattern id list is closed (section 3.2, 43 files).
+5. The validation predicate attached to `ExtraCodecs.PLAYER_NAME` (beyond the 0 to 16 length check) was not read; the stream layout of the profile is item 1.
 6. Skull shape heights: only the widths (8, 10, 8, 8.5) were captured here; heights are in the block registry part.
 7. The datafixer rules (`PotDecorationsBlockEntityUnflatteningFix`, `BlockEntitySignDoubleSidedEditableTextFix`, `SignTextStrictJsonFix`, `BannerPatternFormatFix`, `OminousBannerBlockEntityRenameFix`) were not specified; old-format worlds are out of scope until a datafixer round.
-8. The mapping from a sherd item to its `decorated_pot_pattern` key (and the handling of a non-sherd item in a decoration slot) was not located in the classes read.
-9. The exact boolean structure of the pot insert condition in `DecoratedPotBlock.useItemOn` (structure inferred from branch layout).
-10. Table-based `Mth.sin` and `Mth.cos` values (the wobble amplitude depends on them at the 1e-4 level).
+8. Closed: the sherd mapping is the `provides_pottery_pattern` component (section 5.2). Number kept so references stay stable.
+9. Closed: the pot insert condition was read (section 5.3). Number kept so references stay stable.
+10. Table-based `Mth.sin` and `Mth.cos` values (the wobble amplitude depends on them at the 1e-4 level); both are called with a double argument.
 11. The shelf renderer's use of `align_items_to_bottom` and the item layout in the three slots.
 12. Shelf side-chain logic (`getAllBlocksConnectedTo`, `getMaxChainLength`, `onPlace`, `neighborChanged`, comparator output), the hit slot geometry (`getHitSlot`).
-13. The Axe's wax removal and the "scrape" interactions on signs, and the lightning rod/copper wax shared code (`AxeItem`, `HoneycombItem` block maps) were not read; sign wax removal is therefore not specified (recalled, not verified: axes can remove wax in vanilla).
+13. Closed, as a fact: no code path in this jar un-waxes a sign (section 2.5; `setWaxed` is referenced only by `HoneycombItem` and `SignBlockEntity`, and there is no `AxeItem` class). The honeycomb block-to-waxed-block map used for other blocks is not part of this document.
 14. The stored `components` key of every block entity (empty map encoding in `saveWithoutMetadata`): whether an empty compound or an absent key is written was not verified; shared with 31 part 1.
 15. `ContainerSingleItem` maximum stack size and the pot's `canPlaceItem` rules (inferred 1 per insert; max from the item).
 16. The note block override that reads `note_block_sound` was not read.
+17. Whether the `EntityBlock`/`BlockBehaviour` default `getTicker` returns null (inferred: the three block classes declare none; the base class was not read).
+18. `WallSignBlock` hit-box centre for facings other than the base orientation (rotation mapping of `Shapes.rotateHorizontal` not read).
+19. Sign edit handler (section 2.8): the filtering branch is inferred to test the boolean parameter; the sign line-handling `(inferred)` marks elsewhere in 2.7 and 2.8 follow the same branch-layout reading.

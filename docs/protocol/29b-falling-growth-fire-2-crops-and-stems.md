@@ -51,11 +51,11 @@ Related documents. The behaviour record, trigger kinds, probability notation (`1
 | `farmland` | `FarmlandBlock` (base block `dirt`) | 9 |
 | `dirt_path` | `PathBlock` (base block `dirt`; there is no class named `DirtPathBlock`) | 10.1 |
 | `mud`, `rooted_dirt` | `MudBlock`, `RootedDirtBlock` | 10.2, 10.3 |
-| `oak_sapling`, `spruce_sapling`, `birch_sapling`, `jungle_sapling`, `acacia_sapling`, `cherry_sapling`, `dark_oak_sapling`, `pale_oak_sapling`, `poplar_sapling` | `SaplingBlock` with `TreeGrower` OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, CHERRY, DARK_OAK, PALE_OAK, POPLAR (read in the nine registration lambdas) | part 1 §7, here 11.3 |
+| `oak_sapling`, `spruce_sapling`, `birch_sapling`, `jungle_sapling`, `acacia_sapling`, `cherry_sapling`, `dark_oak_sapling`, `pale_oak_sapling`, `poplar_sapling` | `SaplingBlock` with `TreeGrower` OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, CHERRY, DARK_OAK, PALE_OAK, POPLAR (read in the registration lambdas, 11.3) | part 1 §7, here 11.3 |
 | `mangrove_propagule` | `MangrovePropaguleBlock extends SaplingBlock`, `TreeGrower.MANGROVE` | 11.1 |
 | `azalea`, `flowering_azalea` | `AzaleaBlock` (one class, two registrations) | 11.2 |
 
-Registration builder flags for the crop-like blocks (read in `Blocks`): wheat, carrots, potatoes, beetroots, torchflower crop and pitcher crop: map colour `PLANT`, no collision, random ticks, instabreak, sound `CROP`, push reaction `POPPED`. Pumpkin and melon stems: the same with sound `HARD_CROP`. Attached stems: map colour `PLANT`, no collision, instabreak, sound `WOOD`, `POPPED`, and NO random ticks flag. Nether wart: map colour `COLOR_RED`, no collision, random ticks, sound `NETHER_WART`, `POPPED` (no instabreak: it has the default hardness, see 24 part 4). Cocoa: strength 0.2 / 3.0, sound `WOOD`, `noOcclusion`, random ticks, `POPPED`. Sweet berry bush: random ticks, no collision, sound `SWEET_BERRY_BUSH`, `POPPED`. Farmland: map colour `DIRT`, random ticks, strength 0.6, sound `GRAVEL`, `isSuffocating` always true. Dirt path: map colour `DIRT`, strength 0.65, sound `GRASS`, `isSuffocating` always true, NO random ticks flag. Saplings and the mangrove propagule: no collision, random ticks, instabreak, push reaction `POPPED` (propagule additionally horizontal offset type XZ). Azalea blocks: force-solid-off, instabreak, `noOcclusion`, `POPPED`, no random ticks flag. The `isRandomlyTicking` override of each class is stated in its section.
+Registration builder flags for the crop-like blocks (read in `Blocks`): wheat, carrots, potatoes, beetroots, torchflower crop and pitcher crop: map colour `PLANT`, no collision, random ticks, instabreak, sound `CROP`, push reaction `POPPED`. Pumpkin and melon stems: the same with sound `HARD_CROP`. Attached stems: map colour `PLANT`, no collision, instabreak, sound `WOOD`, `POPPED`, and NO random ticks flag. Nether wart: map colour `COLOR_RED`, no collision, random ticks, sound `NETHER_WART`, `POPPED` (no instabreak: it has the default hardness, see 24 part 4). Cocoa: strength 0.2 / 3.0, sound `WOOD`, `noOcclusion`, random ticks, `POPPED`. Sweet berry bush: random ticks, no collision, sound `SWEET_BERRY_BUSH`, `POPPED`. Farmland: map colour `DIRT`, random ticks, strength 0.6, sound `GRAVEL`, `isSuffocating` always true. Dirt path: map colour `DIRT`, strength 0.65, sound `GRASS`, `isSuffocating` always true, NO random ticks flag. Saplings and the mangrove propagule: no collision, random ticks, instabreak, sound `GRASS`, push reaction `POPPED`; map colour `PLANT` for the propagule and the other saplings, but `METAL` for the poplar sapling; only the propagule has the horizontal offset type XZ (the poplar sapling has no offset type). Azalea blocks: map colour `PLANT`, force-solid-off, instabreak, `noOcclusion`, `POPPED`, no random ticks flag; sound `AZALEA` for `azalea` and `FLOWERING_AZALEA` for `flowering_azalea`. The `isRandomlyTicking` override of each class is stated in its section.
 
 ## 2. Tags and shared vocabulary
 
@@ -65,7 +65,7 @@ Registration builder flags for the crop-like blocks (read in `Blocks`): wheat, c
 |---|---|
 | `rawBrightness(pos, 0)` | `max(blockLight, skyLight)` at `pos` with no sky darkening (32 §1.2; `getRawBrightness(pos, 0)`) |
 | `maxLocalRawBrightness(pos)` | 32 §1.2, the sky term darkened by the current sky darkening |
-| `level random` | `Level.getRandom()`; bone meal methods draw from it, not from the `random` parameter (29b part 1 §5.3) |
+| `level random` | `Level.getRandom()`. Which source a bone meal method uses differs per block and is stated per block in 13 (read): `CropBlock` growth increase, `CocoaBlock.randomTick`, `AzaleaBlock` and `SaplingBlock` success tests use the level random; `StemBlock.performBonemeal` draws its `U(2, 5)` from the `random` parameter it is passed |
 | `isAir` (state) | the block state is an air block (`BlockState.isAir`); this differs from `LevelReader.isEmptyBlock` only by name in the places read, both mean "air" |
 | `solid` | `BlockState.isSolid()`, the cached legacy solid flag (24 part 1 §5.2) |
 | Update flags written | `2` (clients only) for every growth write below unless stated; `3` where "and update" is written (`setBlockAndUpdate`) |
@@ -99,13 +99,13 @@ The base behaviour (age property, `isMaxAge`, random-tick growth, growth speed, 
 | `beetroots` | `AGE_3` (0..3) | 3 | `beetroot_seeds` | width 16, height `2 + 2a` (2, 4, 6, 8) | yes, 3.3 |
 | `torchflower_crop` | `AGE_1` (0..1) | **2** | `torchflower_seeds` | width 6, height `6 + 4a` (6, 10) | yes, 3.4 |
 
-Shapes: `column(width, 0, height)` is the box of x and z extent `width` centred in the block (24 part 1 §6). Wheat uses the base shape of `CropBlock` (part 1 §6 says the heights are `2 x (age + 1)`, which holds for wheat and beetroots only: carrots and potatoes use `2 + age`, read in their static initializer lambdas). The shapes are the outline (and, with no collision, the only) shape.
+Shapes: `column(width, 0, height)` is the box of x and z extent `width` centred in the block (24 part 1 §6). Wheat uses the base shape of `CropBlock` (the lambda `column(16, 0, 2 + 2a)`, 8 shapes). 29b part 1 §6 (the shape sentence near its line 407) gives the height as `2 x (age + 1)` for every crop; that holds for wheat and beetroots only. Carrots and potatoes use `column(16, 0, 2 + a)` and the torchflower crop `column(6, 0, 6 + 4a)`, as the table states (Open question 7). The shapes are the outline (and, with no collision, the only) shape.
 
 ### 3.2 Rules inherited unchanged (restated as the numbers an implementation needs)
 
 - Random tick (`isRandomlyTicking` is true while `age < getMaxAge()`): `rawBrightness(pos, 0) >= 9`, `age < max`, `speed = getGrowthSpeed`, then `1/(int(25.0f / speed) + 1)`; success writes `getStateForAge(age + 1)` with flags 2. The `nextInt` draw is made only when the first two conditions held. Draws come from the `random` argument of the tick.
 - Survive: `rawBrightness(pos, 0) >= 8` AND the block below is in `supports_crops`. Any neighbour update re-checks it (`VegetationBlock.updateShape`): a failing crop becomes air (the replacement is a shape-update write, 29 §3.2).
-- Bone meal: valid while not max age; always succeeds; new age `min(max, age + inc)`, `inc` = `U(2, 5)` from the level random (`nextInt(4) + 2`) unless overridden; write flags 2; no random tick afterwards.
+- Bone meal: valid while not max age; always succeeds; new age `min(max, age + inc)`, `inc` = `U(2, 5)` from the level random (`Level.getRandom()` inside the increase method, read; `nextInt(4) + 2`) unless overridden; write flags 2; no random tick afterwards.
 - `entityInside`: on a server level a `Ravager` with `mob_griefing` true destroys the block with drops (`destroyBlock(pos, true, entity)`); this is also true of the pitcher crop (4.5). Nothing else happens on contact.
 
 ### 3.3 Beetroots
@@ -167,7 +167,7 @@ The age step is exactly 1 (not `U(2, 5)`). Growing from age 2 to 3 requires an a
 
 ### 4.5 Breaking
 
-`DoublePlantBlock.playerWillDestroy` (server): when the player prevents drops (creative, `preventsBlockDrops`) the lower half is removed instead through `preventDropFromBottomPart`: if the broken state is the UPPER half and the block below is the same block in its LOWER half, the lower half is replaced by water (when its fluid state is water) or air with flags 35 (1 + 2 + 32: no drops from the shape update) and level event 2001 (block break effect) with the old state id is sent; otherwise (survival) `dropResources` is called for the broken state with the tool. `playerDestroy` runs the generic destroy with the state treated as air. The loot of a pitcher crop is data (26).
+Breaking either half follows the `DoublePlantBlock` rules of 29b part 4 §9.1 (creative-mode removal of the lower half with flags 35, the water-or-air replacement and level event 2001), which this class does not override. The loot of a pitcher crop is data (26).
 
 ## 5. Stems, fruit, attached stems, pumpkin and melon
 
@@ -200,11 +200,11 @@ Age property `AGE_7`, default 0. `isRandomlyTicking` is not overridden: every st
 - `mayPlaceOn`: block below in `supports_pumpkin_stem` (pumpkin) or `supports_melon_stem` (melon); the generic `VegetationBlock` update turns the block into air when it fails.
 - `updateShape(direction, neighbourState)`: when the neighbour at `direction` is NOT the fruit block and `direction == facing`, and the stem block exists: the new state is the stem's default state with `age` set to 7 (`trySetValue`). Otherwise `VegetationBlock.updateShape`.
 - Constructor order (read): `AttachedStemBlock(stemKey, fruitKey, seedKey, supportTag, properties)`.
-- Pick-block item: the seed item. Seeds that drop are a loot table (26); for the stems the shipped table uses a binomial count with `n = 3` and a probability that rises with age (data).
+- Pick-block item: the seed item. Seeds that drop are a loot table (26); for the stems the shipped block tables (`loot_table/blocks/pumpkin_stem.json` and `melon_stem.json`, both read, same shape with their own names) give the seed count as `binomial` with `n = 3` and `p` per age 0 to 7 of 0.06666667, 0.13333334, 0.2, 0.26666668, 0.33333334, 0.4, 0.46666667, 0.53333336 (that is `(age + 1) / 15` as floats), each selected by a `match_block` age condition on the entry; `explosion_decay` is the pool-level `modifier` (a sibling of `entries` and `rolls`). The attached stem tables (`attached_pumpkin_stem`, `attached_melon_stem`, both read) are the same binomial with `n = 3`, `p = 0.53333336`, independent of any state, with the same pool-level `explosion_decay`. Binomial semantics are in 26 (`binomial`: `n` Bernoulli trials of `nextFloat() < p`).
 
 ### 5.4 `pumpkin` and `melon`
 
-`melon` is a plain `Block` (strength 1.0, sound `WOOD`, `POPPED`). `pumpkin` is `PumpkinBlock` (map colour `COLOR_ORANGE`, instrument `DIDGERIDOO`, strength 1.0, sound `WOOD`, `POPPED`). Neither has plant support rules: the fruit is placed only by 5.2 (the support condition is on the soil under the fruit cell) and, once placed, it is an ordinary block whose survival is not re-tested. Breaking a fruit makes the attached stem revert (5.3). `PumpkinBlock.useItemOn` with shears (carving) is specified in 24 part 4 §6.5; this document adds nothing to it except confirming the same numbers: result `carved_pumpkin` with flags 11, one durability, game event `shear`, item-used stat for shears, item entity at (x + 0.5 + 0.65 stepX, y + 0.1, z + 0.5 + 0.65 stepZ) with delta (0.05 stepX + 0.02 r1, 0.05, 0.05 stepZ + 0.02 r2) where r1 is drawn before r2 (`nextDouble` each), loot table `carve_pumpkin` as a block-interact table (data).
+`melon` is a plain `Block` (strength 1.0, sound `WOOD`, `POPPED`). `pumpkin` is `PumpkinBlock` (map colour `COLOR_ORANGE`, instrument `DIDGERIDOO`, strength 1.0, sound `WOOD`, `POPPED`). Neither has plant support rules: the fruit is placed only by 5.2 (the support condition is on the soil under the fruit cell) and, once placed, it is an ordinary block whose survival is not re-tested. Breaking a fruit makes the attached stem revert (5.3). `PumpkinBlock.useItemOn` with shears (carving) is specified in 24 part 4 §6.5; the numbers read here are: the held stack must be shears (otherwise the generic `useItemOn`); the block-interact loot is dropped first; sound `PUMPKIN_CARVE` (blocks category, volume 1.0, pitch 1.0, no source entity) is played at the position; the result is `carved_pumpkin` whose `FACING` is the opposite of the player's horizontal direction when the clicked face is on the Y axis, otherwise the clicked face direction; set with flags 11, one durability, game event `shear`, item-used stat for shears, item entity at (x + 0.5 + 0.65 stepX, y + 0.1, z + 0.5 + 0.65 stepZ) with delta (0.05 stepX + 0.02 r1, 0.05, 0.05 stepZ + 0.02 r2) where r1 is drawn before r2 (`nextDouble` each), loot table `carve_pumpkin` as a block-interact table (data).
 
 ## 6. Nether wart (`NetherWartBlock`)
 
@@ -216,6 +216,7 @@ Age property `AGE_7`, default 0. `isRandomlyTicking` is not overridden: every st
 | Random tick | if `age < 3` and `nextInt(10) == 0`: write `age + 1`, flags 2. One draw, no light or biome test (the class has no dimension condition) |
 | Bone meal | none: `NetherWartBlock` does not implement `BonemealableBlock` (it extends `VegetationBlock`, not `BushBlock`) |
 | Pick-block | `nether_wart` |
+| Drops (data, read in `loot_table/blocks/nether_wart.json`) | one pool, item `nether_wart`; the entry carries two modifiers, both conditioned on `age == 3`: `set_count` `U(2, 4)`, then Fortune `apply_bonus` `uniform_bonus_count` (`bonusMultiplier` 1); at any other age neither applies and the stack keeps its default count of 1; `explosion_decay` is the pool's `modifier` (sibling of `entries` and `rolls`), not on the entry. The modifier semantics are in 26 |
 
 ## 7. Cocoa (`CocoaBlock`)
 
@@ -243,7 +244,7 @@ State `age` 0..3 (default 0); outline shapes and the survive rule are in 24 part
 | `useWithoutItem` (harvest) | if `age > 1`: on a server level: (1) drop the loot of the block-interact table `harvest/sweet_berry_bush` (data) with each stack popped at the block (`popResource`); (2) play `sweet_berry_bush_pick_berries` (blocks category, volume 1.0, pitch `0.8 + level random float x 0.4`, no source entity) at the position; (3) write `age = 1`, flags 2; (4) game event `block_change` with the player as source; return SUCCESS (also on the client). If `age <= 1`: the generic default (PASS) |
 | Bone meal | valid while `age < 3`; always succeeds; write `min(3, age + 1)`, flags 2 |
 
-So bone meal can take a bush from 0 to 3 in three uses and never changes the harvest rule. The shipped harvest table gives one berry (only at age 3) plus 1 to 2 berries, so an age-3 bush yields 2 to 3 and an age-2 bush yields 1 to 2 (data, illustration).
+So bone meal can take a bush from 0 to 3 in three uses and never changes the harvest rule. The shipped harvest table (`loot_table/harvest/sweet_berry_bush.json`, block-interact) has two pools: one berry only at age 3, and `U(1, 2)` berries at any age, so a harvested age-3 bush yields 2 to 3 and an age-2 bush yields 1 to 2 (data, illustration). Breaking the bush is a different table (`loot_table/blocks/sweet_berry_bush.json`, read): at age 3 a pool sets the count to `U(2, 3)` and applies Fortune `uniform_bonus_count` (multiplier 1); at age 2 `U(1, 2)` plus the same Fortune bonus; nothing at ages 0 and 1; `explosion_decay` as the table modifier. Breaking and harvesting therefore differ (Fortune applies only to breaking); the equal 2 to 3 range at age 3 is a coincidence of the two tables, not a shared rule (both are data, 26).
 
 ## 9. Farmland (`FarmlandBlock`)
 
@@ -271,7 +272,7 @@ No random draw is made by the block itself (the random-tick selection of 33 §2.
 
 ### 9.3 Trampling (`fallOn`)
 
-Called when an entity lands on the block with its accumulated fall distance `d` (the call site is `Entity.checkFallDamage`, which calls `Block.fallOn(level, state, pos, entity, d)` when `d > 0`; call site details: Open question 1). On a server level farmland turns to dirt when ALL hold, tested in this order:
+Called when an entity lands on the block with its accumulated fall distance `d` (the call site is `Entity.checkFallDamage`, read: before anything else, when the entity is not in water and the movement-delta argument is negative, the entity's accumulated `fallDistance` field is reduced by that argument; then, only when the `onGround` argument is true and the `fallDistance` field is above 0, it calls `Block.fallOn(level, state, pos, entity, fallDistance)`, fires game event `hit_ground` and resets the fall distance. The value compared with zero is the field, not the movement argument). On a server level farmland turns to dirt when ALL hold, tested in this order:
 
 1. one draw `nextFloat()` from the level random is less than `d - 0.5` (so no trample at `d <= 0.5`; at `d >= 1.5` it is certain);
 2. the entity is a `LivingEntity` (items, minecarts, arrows never trample);
@@ -341,7 +342,7 @@ No state properties; no random ticks; shape `column(16, 8, 16)` united with `col
 
 ### 11.3 Plain saplings (recap of the facts needed here)
 
-The nine saplings share part 1 §7.1: stage 0 to 1 with flags 260, tree growth at stage 1 on a passing random tick (`maxLocalRawBrightness(pos.above()) >= 9`, then `nextInt(7) == 0`), bone meal success `P(0.45)` from the level random, bone meal valid only on a server level with `canGrow` and `pos.above(minHeight)` inside the build height. `dark_oak` and `pale_oak` saplings grow only as 2 x 2 groups (part 1 §7.4). Their constructor argument (grower) per registration was read in `Blocks`: oak, spruce, birch, jungle, acacia, cherry, dark oak, pale oak and poplar use the growers of the same names, the poplar sapling registration being the last of the series (the lambda-to-block order is (inferred), Open question 3). Shape `column(12, 0, 12)`.
+The nine saplings share part 1 §7.1: stage 0 to 1 with flags 260, tree growth at stage 1 on a passing random tick (`maxLocalRawBrightness(pos.above()) >= 9`, then `nextInt(7) == 0`), bone meal success `P(0.45)` from the level random, bone meal valid only on a server level with `canGrow` and `pos.above(minHeight)` inside the build height. `dark_oak` and `pale_oak` saplings grow only as 2 x 2 groups (part 1 §7.4). Their constructor argument (grower) per registration was read in `Blocks`. Each registration is the `BlockItemIds` constant of the registry name followed by one lambda: in order OAK_SAPLING, SPRUCE_SAPLING, BIRCH_SAPLING, JUNGLE_SAPLING, ACACIA_SAPLING, CHERRY_SAPLING, DARK_OAK_SAPLING, PALE_OAK_SAPLING, MANGROVE_PROPAGULE, POPLAR_SAPLING map to lambdas 3 to 12. Lambdas 3 to 10 construct `SaplingBlock` with `TreeGrower` OAK, SPRUCE, BIRCH, JUNGLE, ACACIA, CHERRY, DARK_OAK, PALE_OAK; lambda 11 constructs `MangrovePropaguleBlock` with `TreeGrower.MANGROVE`; lambda 12 constructs `SaplingBlock` with `TreeGrower.POPLAR`. Shape `column(12, 0, 12)`.
 
 ## 12. Can-survive rules in one table
 
@@ -364,7 +365,7 @@ The nine saplings share part 1 §7.1: stage 0 to 1 with flags 260, tree growth a
 
 ## 13. Bone meal in one table
 
-All values are for `INTERACTION` (the player). Rows list `isValidBonemealTarget`, `isBonemealSuccess` and the effect; all random draws come from the level random.
+All values are for `INTERACTION` (the player). Rows list `isValidBonemealTarget`, `isBonemealSuccess` and the effect. Random source per block (read in bytecode): crops (`CropBlock` increase), azalea and saplings (success test, `Level.getRandom().nextFloat()` ignoring the `random` parameter) use the level random; stems draw `U(2, 5)` from the `random` parameter passed to `performBonemeal` (and the follow-up random tick receives that same source). The caller (29b part 1 §5.3) passes the level's own random as that parameter, so the two coincide in the normal item flow; that the parameter equals the level random for any other caller (for example dispensers) is (inferred), not read, because the call sites were not traced here.
 
 | Block | Valid | Success | Effect |
 |---|---|---|---|
@@ -420,17 +421,19 @@ A test suite for this part can check the following, each derived from the text a
 13. Azalea: bone meal needs height `minH + 2` inside the build height and empty fluid above; success 0.45.
 14. Mangrove propagule: standing tick `1/7` with no light test; hanging tick advances age to 4 and stops; bone meal always valid unless hanging and age 4.
 
+### 15.1 Verification
+
+What was read in the artifact for this part: the farmland rules (`isNearWater` box, order of the `fallOn` tests, `turnToBaseBlock`, `canSurvive`, scheduled-tick conversion); the stem random tick; the sweet berry bush and nether wart rules; the registration flags of every block in section 1 in `Blocks` (including the sapling, propagule and azalea registrations and the ten sapling-lambda bodies); the random sources of `StemBlock`, `CropBlock`, `CocoaBlock`, `AzaleaBlock` and `SaplingBlock` (`AzaleaBlock.isBonemealSuccess` and `SaplingBlock.isBonemealSuccess` call `Level.getRandom()` and do not use their `random` parameter); the classes `PitcherCropBlock`, `DoublePlantBlock`, `MangrovePropaguleBlock`, `AzaleaBlock`, `RootedDirtBlock`, `PathBlock`, `PumpkinBlock`, `AttachedStemBlock`, `CocoaBlock`, `TorchflowerCropBlock`, `BeetrootBlock`; `Entity.checkFallDamage` and `Block.fallOn`; `DoublePlantBlock.getSeed` (it hashes the lower position; the pitcher crop registration sets no offset type, so it is unused here); the loot tables `blocks/pumpkin_stem`, `melon_stem`, `attached_pumpkin_stem`, `attached_melon_stem`, `nether_wart`, `sweet_berry_bush` and `harvest/sweet_berry_bush`.
+
+Scope notes: the behaviour of `torchflower` (the fully grown flower) and of `hanging_roots`, which this part's blocks write, is outside this document; the placement path of the pitcher pod item and of seeds is in 29 §9 and 25; the other `BonemealableBlock` implementers belong to 29b parts 1 and 3 to 7.
+
 ## 16. Open questions
 
-1. `Entity.checkFallDamage` calls `Block.fallOn` with the fall distance when the distance is above 0 (inferred from the instruction pattern read: a double compare against zero before the call); the accumulation of the fall distance and the call context (which position is passed for a feet-on-block landing) belong to 18 and were not read here.
-2. `Entity.makeStuckInBlock` (the slowdown vector application and its reset) and the frequency with which `entityInside` is called per tick are specified (or not) in 18 §2.6; only the arguments were read here.
-3. The mapping of the sapling registrations to growers was read from the lambda bodies in `Blocks` and their position in the registration series; the poplar sapling is registered after the mangrove propagule and uses the last lambda of the series (inferred by order, not by a named link).
-4. The loot tables cited (stem seed counts, wheat, nether wart, sweet berry harvest, carved pumpkin) are DATA and were read only to illustrate (26); their exact conditions are the data pack's.
-5. The behaviour of `torchflower` (the fully grown flower) and of `hanging_roots`, the blocks the engines write, is outside this document.
-6. The placement path of the pitcher pod item and of seeds (which `BlockItem` subclass and which `getStateForPlacement` call, including the `canSurvive` check) is in 29 §9 and 25; it was not re-read.
-7. The `BonemealSource.MOB` path (bees) was not read: the crop rules above are written for `INTERACTION`, and the classes read take no branch on the source, except that `MangrovePropaguleBlock` receives it (its methods read in this round make no source test) (part 1 Open question 7).
-8. Which sounds and events accompany growth (the bone meal level event 1505) is 29b part 1 §5.3 and 42; plant block sounds are 24 registry columns.
-9. The "otherwise" row of the `isSolid` cascade (24 part 1 Open question 16) decides whether farmland and paths survive under partial blocks; the value is inferred false there.
-10. `DoublePlantBlock.getSeed` (the rendering-offset seed helper, both halves hash the lower position) was read; whether the pitcher crop uses it depends on an offset type the registration does not set, so it is (inferred) unused here.
-11. `Block.pushEntitiesUp` was read to the extent given in 9.5 (the collide-up and relative teleport); the exact collision routine (`Shapes.collide`) is a physics helper not read here.
-12. Part 1 §6 lists one shape formula for all crops and the 33 table row for `FarmlandBlock.fallOn` ("non-player entities") states the volume test applies to non-player entities only; this document records that the volume test applies to players too (9.3 step 4); those statements should be reconciled when the documents are next revised.
+1. `Entity.makeStuckInBlock` (the slowdown vector application and its reset) and the frequency with which `entityInside` is called per tick are specified (or not) in 18 §2.6; only the arguments were read here.
+2. The loot table `blocks/wheat` (and the other crop tables) was not read; the tables cited elsewhere in this part are DATA read only to illustrate (26), and their exact conditions are the data pack's. 26 does not hold these per-block tables; whether it should is for its owner.
+3. The "otherwise" row of the `isSolid` cascade (24 part 1 Open question 16) decides whether farmland and paths survive under partial blocks; the value is inferred false there.
+4. `Block.pushEntitiesUp` was read to the extent given in 9.5 (the collide-up and relative teleport); the exact collision routine (`Shapes.collide`) is a physics helper not read here.
+5. The `BonemealSource.MOB` path (bees) was not read: the crop rules above are written for `INTERACTION`, and the classes read take no branch on the source, except that `MangrovePropaguleBlock` receives it (its methods read make no source test) (part 1 Open question 7).
+6. Which sounds and events accompany growth (the bone meal level event 1505) is 29b part 1 §5.3 and 42; plant block sounds are 24 registry columns.
+7. Two statements in other documents contradict this part and need correction by their owners: 29b part 1 §6 (the shape sentence near its line 407) gives one height formula `2 x (age + 1)` for every crop, but carrots and potatoes are `column(16, 0, 2 + a)` and the torchflower crop is `column(6, 0, 6 + 4a)` (3.1); and the 33 table row for `FarmlandBlock.fallOn` (near its line 597) says the 0.512 volume test applies to non-player entities only, but 9.3 step 4 applies it to players too.
+8. The call sites that supply the `random` parameter of `StemBlock.performBonemeal` (item use, dispenser) were not traced beyond 29b part 1 §5.3; that the parameter equals the level random for callers other than the item flow is inferred (13).

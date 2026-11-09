@@ -3,7 +3,7 @@
 | Item | Value |
 |---|---|
 | Covers | The 16 block predicate types (`net.minecraft.world.level.levelgen.blockpredicates.*`): codec shape, offset handling, evaluation semantics, the engine queries each one makes, and the helper constants. The 10 block state provider types (`net.minecraft.world.level.levelgen.feature.stateproviders.*`): codec shape, the exact random draws and their order, `getState` versus `getOptionalState`, the property-identity rule of `rotated`, `randomized_int` and `copy_properties`, and the shared noise setup and seeding of `noise`, `dual_noise` and `noise_threshold`. |
-| Does not cover | The features, placement modifiers, tree placers and decorators that use predicates and providers (siblings: part 1 framework and placement modifiers, part 3 tree placers, part 4 decorators and vegetation, part 5 water and surface, part 6 underground, part 7 nether, end and misc). The `RuleTest` family of ore and structure targets (`structure.templatesystem`, see section 8). Registry-file loading, tag resolution and `HolderSet` forms (23 §5, §6). The weighted-list, int-provider and height-provider engines (23 §7). The noise primitives (10 §3) and the Java LCG (10 §2.6). Data rows: the 240 configured features, 273 placed features and 8 named provider elements in the pack are extracted by the tool (22), not tabulated. |
+| Does not cover | The feature size rules (`featuresize.*`: `two_layers_feature_size`, `three_layers_feature_size`, minimum size computation, `min_clipped_height`), specified in 35-3 §3 and §2.3 with the tree feature that consumes them. The features, placement modifiers, tree placers and decorators that use predicates and providers (siblings: part 1 framework and placement modifiers, part 3 tree placers, part 4 decorators and vegetation, part 5 water and surface, part 6 underground, part 7 nether, end and misc). The `RuleTest` family of ore and structure targets (`structure.templatesystem`, see section 8). Registry-file loading, tag resolution and `HolderSet` forms (23 §5, §6). The weighted-list, int-provider and height-provider engines (23 §7). The noise primitives (10 §3) and the Java LCG (10 §2.6). Data rows: the 240 configured features, 273 placed features and 8 named provider elements in the pack are extracted by the tool (22), not tabulated. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for bootstrap methods and constant strings) and of the data files under `data/minecraft/` in the jar, with no execution. Worked examples marked "(computed)" were produced by applying this document's text with a throwaway reference script written for the round; they were not observed from the artifact. |
 | Round | RS19 (GAP-12a of [../design/README.md](../design/README.md)), scope "Part 2" |
@@ -103,7 +103,7 @@ it is a bare `TagKey` (`TagKey.codec`: an Identifier string such as `"minecraft:
 `"#minecraft:air"` there is an Identifier error. In the pack's data (feature, placed_feature, structure, template_pool and processor_list), every one of the 110 `matching_blocks`
 occurrences uses a plain id or a list of ids; the tag form (`#tag`) of `matching_blocks` does not occur in this pack's data.
 The `#minecraft:corals` and `#minecraft:wall_corals` strings that do occur are `random_block` `blocks` fields, not
-`matching_blocks`. (57 and 110 are the file counts of the two types, section 9.2.)
+`matching_blocks`. (`matching_blocks`: 57 files / 110 occurrences; `matching_block_tag`: 110 files / 160 occurrences; section 9.2.)
 
 ### 3.2 State-testing predicates (one block read at `origin + offset`)
 
@@ -217,7 +217,7 @@ Draws are given in order. `r` is the caller's random source, `nextInt(n)` etc. a
 | `random_block` | `blocks`: a block `HolderSet` (a bare id, a `#tag` or a list of ids; **block ids, not states**) | `HolderSet.getRandomElement(r)`: when the set's list is empty **no draw** and no element; otherwise **one draw** `r.nextInt(size)` into the list (declared order for a direct set; the tag's resolved order, 23 §6.4, for a tag; `Util.getRandom` = `list.get(r.nextInt(list.size()))`) and the element's **default state** (`Block.defaultBlockState`). No element: `getState` returns the state at `pos`, `getOptionalState` returns nothing. |
 | `rotated` | `state` (provider, Id-or-inline), `direction` (`Direction` serialized name, optional, no default) | 1. `d` = the given direction, or when absent **one draw** `Direction.getRandom(r)` = `VALUES[r.nextInt(6)]` with `VALUES` = `down, up, north, south, west, east` (the enum order). **This draw is made before the inner provider is asked**, and only when `direction` is absent. 2. `s` = `state.getState(level, r, pos)` (its own draws, after the direction's). 3. `s = s.trySetValue(AXIS, d.axis)`. 4. `s = s.trySetValue(FACING, d)`. 5. When `d.axis` is horizontal (x or z): `s = s.trySetValue(HORIZONTAL_FACING, d)`. Result `s`. Property lookup is by object identity, section 4.4. |
 | `copy_properties` | `source` (provider, Id-or-inline); no other field | 1. `s = source.getState(level, r, pos)` (its own draws). 2. For each property in the state definition of the block **currently at `pos`** (in definition order): `s = s.trySetValue(p, levelState.getValue(p))`. A property the source's block lacks (identity, 4.4) is skipped. The result keeps `s`'s block. The level block is read once (`level.getBlockState(pos)`). |
-| `randomized_int` | `source` (provider), `property` (String), `values` (IntProvider, 23 §7.1) | 1. `s = source.getState(level, r, pos)`. 2. Find the integer property: use the cached property when it exists and `s` has it; otherwise look through `s`'s properties for the **first** whose name equals `property` and which is an `IntegerProperty`, and cache it. 3. When none exists, return `s` **unchanged** (no sample drawn). 4. Otherwise `s.setValue(prop, values.sample(r))`: **one sample** (the draws of that IntProvider), after the source's draws. A sampled value outside the property's range throws `IllegalArgumentException` at run time; the data codec does not check the range. (The code-side constructor taking a ready property checks that every integer from `values.minInclusive` to `values.maxInclusive` is a possible value of the property, and throws otherwise.) |
+| `randomized_int` | `source` (provider), `property` (String), `values` (IntProvider, 23 §7.1) | 1. `s = source.getState(level, r, pos)`. 2. Find the integer property: use the cached property when it exists and `s` has it; otherwise look through `s`'s properties (a stream filter: name equals `property`, then is an `IntegerProperty`, taking any match) for the (only) property of that name that is an `IntegerProperty`, and cache it. A state cannot hold two properties of one name, so which match is taken does not change behaviour. 3. When none exists, return `s` **unchanged** (no sample drawn). 4. Otherwise `s.setValue(prop, values.sample(r))`: **one sample** (the draws of that IntProvider), after the source's draws. A sampled value outside the property's range throws `IllegalArgumentException` at run time; the data codec does not check the range. (The code-side constructor taking a ready property checks that every integer from `values.minInclusive` to `values.maxInclusive` is a possible value of the property, and throws otherwise.) |
 | `rule_based` | `fallback` (provider, Id-or-inline, **optional**), `rules`: list of `{"if_true": <BlockPredicate>, "then": <provider>}` | `getOptionalState`: for each rule in list order: when `if_true` is true at `(level, pos)`, ask `then.getOptionalState(level, r, pos)`; **when that is non-null return it, otherwise continue with the next rule** (a matching rule whose `then` yields nothing does not stop the scan). After the last rule: with a fallback, `fallback.getOptionalState(level, r, pos)`; with none, nothing. The predicates are evaluated at `pos` (origin = `pos`), before the matching `then` draws; predicates draw nothing. `getState` = the optional result or the block state at `pos`. |
 | `noise` | `seed` (Long), `noise` (NormalNoise parameters, section 5.1), `scale` (float, **> 0**), `states` (non-empty list of BlockState) | **No draw.** `v = noise(x*scale, y*scale, z*scale)` (5.3), index `floor(clamp((1 + v)/2, 0, 0.9999) * size)` in float arithmetic (5.4), result `states[index]`. |
 | `dual_noise` | `variety` (inclusive int range, section 4.5), `slow_noise` (NormalNoise parameters), `slow_scale` (float, > 0), and the four fields of `noise` (`seed`, `noise`, `scale`, `states`) | **No draw.** Section 5.5. |
@@ -233,10 +233,10 @@ very property. The three properties `rotated` touches are three distinct instanc
 | Constant | Name | Value set (declared order) | Notes |
 |---|---|---|---|
 | `AXIS` | `axis` | `x`, `y`, `z` (the `Direction.Axis` enum) | the blocks whose definition uses this instance (the pack's `hay_block` for one, Example 5). |
-| `HORIZONTAL_AXIS` | `axis` | `x`, `z` | **not** touched by `rotated` although it is called `axis` (a different instance). |
+| `HORIZONTAL_AXIS` | `axis` | `x`, `z` (created with these two values given explicitly) | **not** touched by `rotated` although it is called `axis` (a different instance). |
 | `FACING` | `facing` | `north`, `east`, `south`, `west`, `up`, `down` (read from the static initialiser) | the six-way instance. |
 | `FACING_HOPPER` | `facing` | `down`, `north`, `south`, `west`, `east` (created with a filter lambda whose body was read: true unless the direction is `up`, in `Direction` enum order) | **not** touched by `rotated`. |
-| `HORIZONTAL_FACING` | `facing` | the four horizontal directions (created with `EnumProperty.create("facing", Direction, <horizontal-plane filter>)`, read from the static initialiser; the set keeps `Direction` enum order `north`, `south`, `west`, `east`: (inferred) from filtering semantics, the order is not otherwise observable) | touched only when the direction is horizontal. |
+| `HORIZONTAL_FACING` | `facing` | the four horizontal directions (created over `Direction$Plane.HORIZONTAL`, read from the static initialiser; the order is that of the Plane, not of the `Direction` enum: `Direction$Plane.<clinit>` builds HORIZONTAL from `north`, `east`, `south`, `west` in that order, read; whether the property keeps that order was not read, (inferred)) | touched only when the direction is horizontal. |
 
 An implementation that stores properties by name must therefore tag each property with its value set (or a kind) and
 treat `axis` with set `{x,z}` and `facing` with sets other than the six-way and the horizontal ones as different
@@ -299,8 +299,9 @@ modifiers). The `legacy` normalization is not used by any pack file; its rule, r
 4. **Range.** The reported range is symmetric, half-width `float(sum * 1/3 * 6)`.
 
 Worked example: `n` = 1, `b` = -7, `A` = 1: start amplitude `1 * 2^0 / (2^1 - 1)` = 1; `dev` = 0.2702247831245211;
-`nf0` = 0.3333333 / (0.2702247831245211 * 1.4142136) = 0.87220. LEGACY: `E(0)` = 0.2; `p` = (0.5/3)/0.2 = 0.83333;
-`sum` = 0.83333/0.87220 = 0.95543; range half-width = 1.91087 (computed, not observed). (`createParity(b, list)` is the
+`nf0` = (1/3) / (0.2702247831245211 * 1.4142136) = 0.872245 (0.8722451644522289, as in Example 7). LEGACY: `E(0)` = 0.2;
+`p` = (0.5/3)/0.2 = 0.833333; `sum` = 0.833333/0.872245 = 0.955389 (0.955388882960065, the same value as the `base_amplitude`
+the pack's flower noises use: a cross-check); range half-width = `sum` * 1/3 * 6 = 1.910778 (computed, not observed). (`createParity(b, list)` is the
 programmatic route to the same: base amplitude = `p(1.0, size, list) / nf0(of the n-octave list built at A = 1,
 normalized)`, 1.0 when that factor is 0; code-only, not used by the pack.)
 
@@ -533,7 +534,9 @@ round and are specified with the structure processors in RS20 (Open question 6).
 The pack has 240 files under `worldgen/feature`, 273 under `worldgen/placed_feature`, 8 under
 `worldgen/block_state_provider`, 40 under `processor_list`, 245 under `template_pool`, 52 under `structure` (each counted
 with `unzip -Z1 | grep -v '/$'`). Files (and occurrences) in which a predicate type appears, counting
-`"type": "minecraft:<name>"` in `feature`, `placed_feature`, `structure`, `template_pool` and `processor_list`:
+`"type": "minecraft:<name>"` in `feature`, `placed_feature`, `structure`, `template_pool` and `processor_list`. The 8 files of
+`block_state_provider` are excluded from these counts; they contain `matching_block_tag` in 2 files (soil_beneath_tree,
+podzol_beneath_tree) and `not` in 1 (soil_beneath_tree), so the totals are not pack-wide:
 
 | Predicate type | Files | Occurrences | Predicate type | Files | Occurrences |
 |---|---|---|---|---|---|
@@ -600,3 +603,4 @@ does not appear in the data of this jar (the type exists for code and for other 
 11. **Library semantics assumed.** `Codec.xor` (both or neither decoding fails), `Codec.either` and `withAlternative` (a
     single int `n` read as `[n, n]` in 4.5) are DFU library behaviour; the jar shows only the compositions. Marked
     (recalled, not verified).
+12. **Order of `HORIZONTAL_FACING` values.** `Direction$Plane.HORIZONTAL` is read (north, east, south, west); how `EnumProperty.create` with a Plane orders the values was not read. Not observable from data.

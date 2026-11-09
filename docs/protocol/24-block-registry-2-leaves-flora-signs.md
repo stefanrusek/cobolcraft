@@ -5,7 +5,6 @@
 | Covers | The code-defined content of the block registry for registration ordinals 105 to 209 of the `Blocks` initializer, from `yellow_poplar_leaves` to `oak_wall_sign`: for every block its key, registry id, block class and constructor arguments, state properties (names, value order, defaults, state count and state-id offset), settings (hardness, resistance, tool requirement, instrument, sound type, map colour, light, flags), collision / outline / occlusion shapes, and the placement-state, survival and replaceability rules that are part of the block class. The shared rules of part 1 are cited as "24 part 1" (`24-block-registry-1-model-and-foundation.md`) and not repeated; the few base-class defaults this part needs are restated in section 2 so that it can be read alone. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for bootstrap-method arguments) with no execution. Classes read: `Blocks` (static initializer and helper methods), `BlockBehaviour$Properties`, `BlockBehaviour$BlockStateBase`, `Block`, `StateDefinition`, `BlockStateProperties`, `Shapes`, `ColorCollection`, `DyeColor`, `WoodType`, `BlockSetType`, `BlockItemIds`, `BlockIds`, `OctahedralGroup`, `Mth` and the block classes named in section 3. |
-| Status | Written for round RS4, part 2 of the 24-block-registry series (design map Part 5, GAP-1; columns of GAP-29 and GAP-30); revised after review (fixer pass: B105 conflict resolved, tint and burnable tables added, door hinge, chest partner, creaking heart, slab and stair rules read, name cross-check against 24 part 1 done). Sibling files present when written: parts 1, 2, 3, 4, 5, 6 and 8. |
 
 Class and field names in backticks say where a fact was read; they are not the design. "04 §5.2" means section 5.2 of
 `04-registry-sync.md`; "13 §2.1" means section 2.1 of document 13, and so on. Data rows (models, block-state JSON, loot
@@ -38,11 +37,9 @@ three predicates (not blocks); every later statement ends with a `register` call
 block is the number of its statement among the block statements, counting from 0 (`air` is ordinal 0). Ordinals 105 to 209
 are the 105 statements from `yellow_poplar_leaves` (105) to `oak_wall_sign` (209).
 
-The task text that defined this round lists "hanging signs for every wood type" and "chests, redstone wire, crafting
-table, crops, farmland, furnace" among the range. In this artifact the order differs: the range contains shelves, TNT,
-bookshelves, gold/iron/brick blocks, mossy cobblestone, obsidian, creaking heart, `oak_stairs`, an oak door, a ladder, a
-rail and `cobblestone_stairs`, and it contains no hanging sign (those come after ordinal 209, and belong to part 3). The
-range here is the one the artifact gives: every ordinal from 105 to 209, in registration order.
+The range contains shelves, TNT, bookshelves, gold, iron and brick blocks, mossy cobblestone, obsidian, creaking
+heart, `oak_stairs`, an oak door, a ladder, a rail and `cobblestone_stairs`, and it contains no hanging sign (those come
+after ordinal 209 and belong to 24 part 3). The range is every ordinal from 105 to 209, in registration order.
 
 ### 1.2 Ordinal, block id and state id
 
@@ -59,16 +56,7 @@ range here is the one the artifact gives: every ordinal from 105 to 209, in regi
   `StateDefinition` (properties sorted by name, first name varies slowest). This part gives, for every block, its state
   count and its **state offset**: the number of states of all blocks of this range that precede it. The absolute first
   state id of a block is `B105 + offset`, where `B105` is the total number of states of the blocks with ids 0 to 104,
-  which 24 part 1 gives: **B105 = 575** (24 part 1 section 15 row 104: first state id 547 plus 28 states; 24 part 1 section 16 item 4: "the first block of part 2 (id 105) has first state id 575"). The range holds **6 848 states** in total (offsets 0 to 6 847).
-  **Resolution of the part 1 / part 3 conflict (fixer pass).** `B105 = 575` is correct. Check: the "states" column of 24
-  part 1's table for ids 0 to 104 sums to 575; its row 104 starts at 547 and has 28 states (547 + 28 = 575); the nine leaf
-  blocks of ids 96 to 104 have 28 states each and `birch_leaves` (id 96) starts at 323, so 323 + 9 x 28 = 575. The offsets of
-  this part are therefore right and every absolute id is `575 + offset`. The values quoted in 24 part 3 are the ones that
-  are wrong: its `oak_wall_sign` first state 7163 equals 323 + 6840 (the sum stopped before the nine leaf blocks) and the
-  correct value is 575 + 6840 = **7415**; likewise `ladder` is 575 + 6732 = **7307** (part 3 gives 7055) and every later
-  block of part 3, and of any part that chains its first state id from part 3's last block, is 252 too low until corrected
-  (for example part 3's `spruce_wall_sign` 7171 becomes 7423). A reader of part 3 or of a later part must add 252 to
-  those chained values or re-derive them from `B105 = 575`.
+  which 24 part 1 gives: **B105 = 575** (24 part 1 section 15 row 104: first state id 547 plus 28 states, so 547 + 28 = 575; the nine leaf blocks of ids 96 to 104 have 28 states each and `birch_leaves`, id 96, starts at 323, so 323 + 9 x 28 = 575; 24 part 1 section 16 item 4 gives the same first state id for id 105). Every absolute state id of this part is `575 + offset`; 24 part 3 chains from it (`ladder` 7307 = 575 + 6732, `oak_wall_sign` 7415 = 575 + 6840). The range holds **6 848 states** in total (offsets 0 to 6 847).
 
 ### 1.3 Units and notation
 
@@ -143,8 +131,8 @@ one of them.
 | `instrument(i)` | note-block instrument played when this block is below a note block |
 | `isValidSpawn`, `isRedstoneConductor`, `isSuffocating`, `isViewBlocking`, `postProcess` | replace the predicate of the same name; `never` is a predicate that is false for every input, `always` true |
 | `bounceRestitution(x)`, `fallDistanceReduction(x)` | bed bounce factor and fall-distance multiplier reduction |
-| `ofLegacyCopy(b)` | a copy of b's settings: hardness, resistance, collision, random ticks, light, map colour, sound, friction, speed factor, bounce, dynamic shape, can occlude, air, ignited by lava, liquid, force solid on/off, push reaction, tool requirement, offset, terrain particles, required features (feature-flag set), emissive-rendering predicate, instrument, replaceable (read from `BlockBehaviour$Properties.ofLegacyCopy`: 28 fields). It does **not** copy jump factor, the five predicates (spawn, conductor, suffocating, view blocking, post process), loot table or description |
-| `ofFullCopy(b)` | `ofLegacyCopy(b)` plus jump factor, the five predicates, loot table and description |
+| `ofLegacyCopy(b)` | a copy of b's settings: hardness, resistance, collision, random ticks, light, map colour, sound, friction, speed factor, bounce, dynamic shape, can occlude, air, ignited by lava, liquid, force solid on/off, push reaction, tool requirement, offset, terrain particles, required features (feature-flag set), emissive-rendering predicate, instrument, replaceable (read from `BlockBehaviour$Properties.ofLegacyCopy`: 25 distinct fields). It does **not** copy jump factor, the five predicates (spawn, conductor, suffocating, view blocking, post process), loot table, description or fall-distance reduction |
+| `ofFullCopy(b)` | `ofLegacyCopy(b)` plus jump factor, the five predicates, loot table and description. Neither copy form carries `fallDistanceReduction`, so a copy never inherits it (read) |
 
 `NEAR_PLANE_INTERSECTS_OUTLINE` (view-blocking predicate of every stair and slab here) is true when at least one box of the
 state's occlusion shape, moved to the block position, intersects the box passed in. `NOT_EXTENDED_PISTON` is true when the
@@ -174,14 +162,15 @@ Helpers of `Blocks` used here:
 | visual shape | the collision shape |
 | render shape | `MODEL` |
 | use shape for light occlusion | false |
-| light dampening | 15 when the occlusion shape is a full block; else 0 if skylight propagates down, else 1 |
-| propagates skylight down | the outline shape is not a full block and the fluid state is empty |
+| light dampening | 15 when the occlusion shape is a full block; else 0 if skylight propagates down (including the class overrides in the next row), else 1 |
+| propagates skylight down | the outline shape is not a full block and the fluid state is empty. **Overridden by classes (read):** `TransparentBlock` returns true for every state (so `glass` has dampening 0 although its outline is a full block); `VegetationBlock` returns true when the fluid state is empty (flowers, `short_grass`, `fern`, `bush`, `red_shrub`, `dead_bush`, `short_dry_grass`, `tall_dry_grass`, the mushrooms, `seagrass` and `wheat` inherit it; `tall_seagrass` extends `DoublePlantBlock`, not checked); `BambooStalkBlock` returns true, and `WallBlock` and `CrossCollisionBlock` return true unless waterlogged (neither is in this range). **The list is not complete:** the classes of the `world.level.block` package that declare `propagatesSkylightDown` or `getLightDampening` in this jar (read from the method tables) are `BambooStalkBlock`, `BarrierBlock`, `CrossCollisionBlock`, `GlowLichenBlock`, `HangingMossBlock`, `LeavesBlock`, `LightBlock`, `LiquidBlock`, `MossyCarpetBlock`, `PipeBlock`, `ShulkerBoxBlock`, `TintedGlassBlock`, `TransparentBlock`, `VegetationBlock`, `VineBlock` and `WallBlock`; none of the ones not named above is a block of this range, so the per-block results of section 5.3 are unaffected. `WebBlock`, `IceBlock`, `NyliumBlock` and `SpreadingSnowyBlock` declare neither method (read) |
 | shade brightness | 0.2 when the collision shape is a full block, else 1.0 |
 | can survive | true |
 | fluid state | empty |
 | can be replaced by a fluid | the replaceable flag, or the state is not legacy solid |
 | destroy progress per tick | speed / hardness / (30 if the player has a correct tool for drops, else 100); 0 when hardness is -1 (13 §2.1) |
 | maximum horizontal / vertical offset | 0.25 / 0.2 (no block of this range overrides them) |
+| pathfindable | not tabulated for this range (Open question 11), except `farmland`, whose `isPathfindable` returns false for every computation type (read) |
 
 **Legacy solid** (used by `canSurvive` of farmland and signs; `BlockStateBase.calculateSolid`, branch results read from the
 `SolidDebugger$Reason` constants): evaluated in this order, the first matching step decides.
@@ -271,7 +260,7 @@ feature on the north side (small z) ends up on the east side, as the table assig
 face (z near 0) ends at the top face (y near 1). `BLOCK_ROT_X_90` is `ROT_90_X_NEG` (inversion of z; down). `BLOCK_ROT_Y_180` is
 `ROT_180_FACE_XZ`, `BLOCK_ROT_Y_270` is `ROT_90_Y_POS`. In `rotateHorizontal` / `rotateAll` the table entry for east is
 `BLOCK_ROT_Y_90` composed with the optional extra group, south `Y_180`, west `Y_270`, and for `rotateAll` up uses `X_270` and down `X_90`.
-All of this was read; the earlier inference is closed (Open question 13 removed).
+All of this was read.
 
 `Shapes.rotateHorizontal` and `rotateAll` return maps; the block classes look up the map with a property value
 (`facing`, or a computed direction), so each facing-authored shape below is given for facing north only.
@@ -288,8 +277,11 @@ With `seed = getSeed(x, 0, z)` and `maxH = 0.25`, `maxV = 0.2`:
 
 - `dx = clamp(((seed & 15) / 15 - 0.5) * 0.5, -maxH, maxH)`;
 - `dz = clamp((((seed >> 8) & 15) / 15 - 0.5) * 0.5, -maxH, maxH)`;
+
+Precision (read, `BlockBehaviour$Properties` offset callbacks): the masked value is converted to a 32-bit float and **divided by the float constant 15.0 in float32 arithmetic**; only then is the quotient widened to double, and the `- 0.5` and `* 0.5` steps use double constants. The clamp bounds are the float `maxH` (0.25) and `-maxH` widened to double. For `dy` the same float32 division by 15.0 is done, the result widened to double, `1.0` subtracted (double), and the product taken with the float `maxV` (0.2f, whose double widening is 0.20000000298...) widened to double. A bit-exact implementation must therefore round the quotient to float32 before the double steps. The worked numbers of section 8 agree to the digits shown.
+
 - `XZ`: offset (dx, 0, dz);
-- `XYZ`: offset (dx, dy, dz) with `dy = (((seed >> 4) & 15) / 15 - 1.0) * maxV` (so `dy` is between -0.2 and 0).
+- `XYZ`: offset (dx, dy, dz) with `dy = (((seed >> 4) & 15) / 15 - 1.0) * maxV` (float32 division as below) (so `dy` is between -0.2 and 0).
 
 Only `FlowerBlock` (the fifteen flowers of this range) applies the offset inside `getShape` (its outline box is moved by
 it). The other offset blocks (`short_grass`, `fern`, `short_dry_grass`, `tall_dry_grass`, `tall_seagrass`) do not move
@@ -628,8 +620,8 @@ Blocks are registered either by a `BlockItemId` pair (block key, item key) or, f
 | No item (registered by `BlockIds` only; read from the 104 statements after `yellow_poplar_leaves`) | `tall_seagrass`, `piston_head`, `moving_piston`, `wall_torch`, `fire`, `soul_fire`, `oak_wall_sign` |
 | Item key = block key | every other block of the range; the four collections give `<colour>_bed`, `<colour>_wool`, `<colour>_wool_stairs`, `<colour>_wool_slab` |
 
-The other two-key pairs of `BlockItemIds` (`tripwire`/`string`, `powder_snow`, `cocoa`, `carrots`, `potatoes`, ...) are outside
-this range. Loot table key: `blocks/<block key>` for every block except: `piston_head` and `moving_piston` (`noLootTable`; the
+The other two-key pairs of `BlockItemIds` (`tripwire` -> `string`, `powder_snow` -> `powder_snow_bucket`, `cocoa`, `carrots`, `potatoes`, ...) are outside
+this range (the `cocoa`, `carrots` and `potatoes` item keys are not repeated here; they belong to the parts that register those blocks). Loot table key: `blocks/<block key>` for every block except: `piston_head` and `moving_piston` (`noLootTable`; the
 data pack has no table for them); `wall_torch` (table of `torch`) and `oak_wall_sign` (table of `oak_sign`) through `wallVariant`.
 `fire` and `soul_fire` have a table in the data pack whose body is empty apart from a random-sequence name.
 
@@ -650,16 +642,17 @@ a full block and fluid empty), else 1. Results for this range:
 |---|---|---|
 | full cubes of section 6 (`sponge` ... `furnace`, wool, ores, bricks, `tnt`, `bookshelf`, `obsidian`, ...) | full block | 15 |
 | three leaves | empty (no occlusion) | 1 (class override: `LeavesBlock.getLightDampening` returns the constant 1, read) |
-| `glass` | empty | 0 (skylight propagates, section 6) |
+| `glass` | empty | 0 (`TransparentBlock` overrides propagates-skylight-down to true, section 2.3) |
 | `spawner` | empty (no occlusion) | 1 (outline is full, so skylight does not propagate) |
 | bed halves, `straw_bed`, `oak_door`, `ladder`, `moving_piston` | empty (no occlusion) | 0, or 1 when the fluid state is not empty (waterlogged ladder) |
-| all no-collision blocks (plants, flowers, mushrooms, torches, fire, rails, redstone wire, wheat, cobweb, signs) | empty (`noCollision` clears can-occlude) | 0 (`seagrass`, `tall_seagrass`: 1 because the fluid state is water; waterlogged signs and rails: 1) |
+| `cobweb` | empty (`noCollision` clears can-occlude) | 1 (outline is a full cube, `WebBlock` declares no `getShape` or `propagatesSkylightDown` override, so skylight does not propagate down by the rule of section 2.3; occlusion is empty, so not 15) |
+| all other no-collision blocks (plants, flowers, mushrooms, torches, fire, rails, redstone wire, wheat, signs) | empty (`noCollision` clears can-occlude) | 0 (`seagrass`, `tall_seagrass`: 1 because the fluid state is water; waterlogged signs and rails: 1) |
 | slabs: bottom/top | the half-block box | 0 (1 when waterlogged); double: full block, 15 |
 | stairs | the stair shape of section 6 | 0 (1 when waterlogged) |
 | `farmland`, `chest`, shelves, extended piston, `piston_head` | the outline of section 6 | 0 (1 when waterlogged or fluid present) |
 | unextended `piston`, `sticky_piston` | full block | 15 |
 
-Basis of the values. **Read:** the three leaves (constant 1 in `LeavesBlock.getLightDampening`), the default rule of section 2.3 and its inputs, and the settings that feed it (can-occlude off for `noOcclusion` / `noCollision`). **Inferred:** every other row, derived by applying the rule to the shapes of section 6 and to the `waterlogged` property; a scan of every class in the `world.level.block` package for the method name finds it only in `LeavesBlock`, `IceBlock`, `FrostedIceBlock`, `NyliumBlock`, `SpreadingSnowyBlock` and `TintedGlassBlock`, so no class of this range other than the leaves overrides it; but no per-state value was evaluated. For every block with a `waterlogged` property (rails, slabs, stairs, chest, ladder, signs, shelves, leaves) the waterlogged states have a non-empty fluid state, so skylight does not propagate down and the dampening of a state whose occlusion shape is not a full block is 1 instead of 0 (inferred from the rule; the table rows say "1 when waterlogged"). The "valid spawn" default (top face sturdy and emission below 14) of section 2.1 was read.
+Basis of the values. **Read:** the three leaves (constant 1 in `LeavesBlock.getLightDampening`), the default rule of section 2.3 and its inputs, the settings that feed it (can-occlude off for `noOcclusion` / `noCollision`) and the propagates-skylight-down overrides of section 2.3 (`TransparentBlock`, `VegetationBlock`). **Inferred:** every other row, derived by applying the rule to the shapes of section 6 and to the `waterlogged` property; among the block classes `getLightDampening` is declared only in `LeavesBlock` (constant 1) and `TintedGlassBlock`, besides the bases `BlockBehaviour` and `BlockStateBase` (read from the method tables; `IceBlock`, `FrostedIceBlock`, `NyliumBlock` and `SpreadingSnowyBlock` declare no such method; an earlier text of this document listed them, which was recall of another version and was wrong for this jar), so no class of this range other than the leaves overrides it; but no per-state value was evaluated. For every block with a `waterlogged` property (rails, slabs, stairs, chest, ladder, signs, shelves, leaves) the waterlogged states have a non-empty fluid state, so skylight does not propagate down and the dampening of a state whose occlusion shape is not a full block is 1 instead of 0 (inferred from the rule; the table rows say "1 when waterlogged"). The "valid spawn" default (top face sturdy and emission below 14) of section 2.1 was read.
 
 ### 5.4 Tags per block, and correct-tool tags
 
@@ -742,7 +735,7 @@ tool of the lowest tier. The tag set is data and can differ in another data pack
 
 The names are in the table of section 5. The numeric map-colour table (id, base colour, brightness shades) and the
 `SoundType` table (volume, pitch, five sound events) are in 24 part 1 sections 8.1 and 8.4. The cross-check was done in
-the fixer pass: all 27 map-colour names and all 24 sound-type names used in section 5 exist there (Open questions 2 and 3,
+a cross-check: all 27 map-colour names and all 24 sound-type names used in section 5 exist there (Open questions 2 and 3,
 closed). Two names worth noting because they are not in the "standard" list: `CROP` (wheat) and `RED_SHRUB` are in the
 exception table of 24 part 1 section 8.4, and the colour `NONE` is id 0 of section 8.1.
 
@@ -767,17 +760,17 @@ No block of this range has a foliage or water tint registered under its own key.
 `FireBlock.bootStrap` registers, for each listed block, two integers through `setFlammable(block, a, b)`: `a` is stored in
 the table named `igniteOdds` and `b` in the table named `burnOdds`. A block that is not registered has 0 in both. `canBurn` is
 true when the block's ignite number is above 0; and both lookups return 0 for any state whose `waterlogged` property is true.
-(What the two numbers do in fire spread and burn-out is the fire document's, RS11; they are constants here, read from the
+(What the two numbers do in fire spread and burn-out is not specified in a separate fire part of 29b (none exists); the fire constants that are documented are in 17 sections 3.3 and 3.3a and in 29b part 1, and the fire random-tick and spread engine is otherwise unspecified, see Open question 4; the numbers are constants here, read from the
 bytecode of the initialiser and of the four colour-collection callbacks.) The entries that fall in ordinals 105 to 209:
 
 | (ignite, burn) | Blocks of this range |
 |---|---|
 | (30, 60) | `yellow_poplar_leaves`, `azalea_leaves`, `flowering_azalea_leaves`, `straw_bed`, all sixteen `<colour>_wool`, all sixteen `<colour>_wool_stairs`, all sixteen `<colour>_wool_slab` (the three collections are registered by a per-colour callback, each with 30 and 60) |
-| (30, 20) | `bookshelf`, the thirteen `*_shelf` blocks |
+| (30, 20) | `bookshelf`, the eleven registered shelves: `acacia_shelf`, `bamboo_shelf`, `birch_shelf`, `cherry_shelf`, `dark_oak_shelf`, `jungle_shelf`, `mangrove_shelf`, `oak_shelf`, `pale_oak_shelf`, `poplar_shelf`, `spruce_shelf` (read in `FireBlock.bootStrap`) |
 | (15, 100) | `tnt` |
 | (60, 100) | `short_grass`, `fern`, `dead_bush`, `bush`, `red_shrub`, `short_dry_grass`, `tall_dry_grass`, and the flowers `dandelion`, `golden_dandelion`, `torchflower`, `poppy`, `blue_orchid`, `allium`, `azure_bluet`, `red_tulip`, `orange_tulip`, `white_tulip`, `pink_tulip`, `oxeye_daisy`, `cornflower`, `wither_rose`, `lily_of_the_valley` |
 | (5, 20) | `oak_stairs` |
-| not registered (0, 0) | every other block of the range, including all `<colour>_bed`, `note_block`, `chiseled_bookshelf`, `chest`, `crafting_table`, the signs, `oak_door`, `ladder`, `creaking_heart`, `redstone_wire`, `seagrass`, `tall_seagrass`, both mushrooms, `wheat`, `farmland`, `cobweb`, `fire`, `soul_fire`, `cobblestone_stairs` and every full-block stone, ore or metal block |
+| not registered (0, 0) | every other block of the range, including `crimson_shelf` and `warped_shelf` (not registered in `FireBlock.bootStrap`; both are still `ignitedByLava`), all `<colour>_bed`, `note_block`, `chiseled_bookshelf`, `chest`, `crafting_table`, the signs, `oak_door`, `ladder`, `creaking_heart`, `redstone_wire`, `seagrass`, `tall_seagrass`, both mushrooms, `wheat`, `farmland`, `cobweb`, `fire`, `soul_fire`, `cobblestone_stairs` and every full-block stone, ore or metal block |
 
 Notes. A block can be `ignitedByLava` (section 5 settings) without being registered here (for example `note_block`,
 `chest`, `crafting_table`, the beds, the signs and `oak_door`), and the reverse. Blocks outside this range that share the
@@ -810,11 +803,11 @@ for blocks with can-occlude off).
 | `brown_mushroom`, `red_mushroom` | `[5,0,5 - 11,6,11]` | empty | |
 | `torch` | `[6,0,6 - 10,10,10]` | empty | |
 | `wall_torch` | facing-authored `[5.5,3,11 - 10.5,13,16]` (`boxZ(5,3,13,11,16)`), table indexed by `facing` | empty | east: `[0,3,5.5 - 5,13,10.5]`; south: `[5.5,3,0 - 10.5,13,5]`; west: `[11,3,5.5 - 16,13,10.5]` |
-| `fire`, `soul_fire` | flat sheet `[0,0,0 - 16,1,16]` (soul fire always; fire when no side flag is set) | empty | `fire` with at least one of `north`, `east`, `south`, `west`, `up` true: the union over the true flags of one sheet each: north `[0,0,0 - 16,16,1]`, east `[15,0,0 - 16,16,16]`, south `[0,0,15 - 16,16,16]`, west `[0,0,0 - 1,16,16]`, up `[0,15,0 - 16,16,16]`; the flat sheet is not included then. `fire` ignores `age` for shape. (east, south, west follow from the Y turn of section 2.6; up from the X turn, inferred) |
+| `fire`, `soul_fire` | flat sheet `[0,0,0 - 16,1,16]` (soul fire always; fire when no side flag is set) | empty | `fire` with at least one of `north`, `east`, `south`, `west`, `up` true: the union over the true flags of one sheet each: north `[0,0,0 - 16,16,1]`, east `[15,0,0 - 16,16,16]`, south `[0,0,15 - 16,16,16]`, west `[0,0,0 - 1,16,16]`, up `[0,15,0 - 16,16,16]`; the flat sheet is not included then. `fire` ignores `age` for shape. (read: `FireBlock.makeShapes` builds one `boxZ(16, 0, 1)` piece, the north sheet, and runs it through `Shapes.rotateAll`; east, south and west are the Y turns of section 2.6 and up is the `X_270` turn; a state's shape is the union over its true flags, and the flat sheet when that union is empty) |
 | `powered_rail`, `detector_rail`, `rail` | flat: `[0,0,0 - 16,2,16]`; for shapes ascending_east/west/north/south: `[0,0,0 - 16,8,16]` | empty | one table for all three rails (`BaseRailBlock`) |
 | `piston`, `sticky_piston` | not extended: full cube. Extended: facing-authored `[0,0,4 - 16,16,16]`; the six-direction table (`rotateAll`) indexed by `facing` | same | `useShapeForLightOcclusion` is true when extended |
 | `piston_head` | facing-authored platform `[0,0,0 - 16,16,4]` plus an arm `[6,6,4 - 10,10,20]` (short false) or `[6,6,4 - 10,10,16]` (short true); six-direction table indexed by `facing` | same | the arm of the long head ends 4 units past the block boundary on the side of the piston body (z 16 to 20) |
-| `moving_piston` | empty | from the block entity (dynamic) | render shape `INVISIBLE`; not breakable |
+| `moving_piston` | empty (`getShape` returns the empty shape) | dynamic: see the rule after this table | render shape `INVISIBLE`; not breakable |
 | `slab` family: `<colour>_wool_slab` | bottom `[0,0,0 - 16,8,16]`; top `[0,8,0 - 16,16,16]`; double: full cube | same | `useShapeForLightOcclusion` true unless double |
 | stairs: `oak_stairs`, `cobblestone_stairs`, `<colour>_wool_stairs` | see below | same | `useShapeForLightOcclusion` true |
 | `chest` | type single: `[1,0,1 - 15,14,15]`. type left or right: facing-authored `[1,0,0 - 15,14,15]` looked up with the connected direction | same | connected direction = clockwise(facing) for type left, counter-clockwise(facing) for type right |
@@ -828,6 +821,18 @@ for blocks with can-occlude off).
 | `<colour>_bed` | see below | same | |
 | `straw_bed` | see below | same | |
 | `<x>_shelf` (13 blocks) | facing-authored union of `[0,0,13 - 16,16,16]`, `[0,12,11 - 16,16,13]` and `[0,0,11 - 16,4,13]`, table indexed by `facing` | same | `useShapeForLightOcclusion` true |
+
+**`moving_piston` collision rule** (read: `MovingPistonBlock.getCollisionShape`, `PistonMovingBlockEntity.getCollisionShape`, `getExtendedProgress`, `getMovementDirection`). The block's outline (`getShape`) is always empty. Its collision shape is the empty shape when the position has no moving-piston block entity; otherwise it is computed from the block entity, whose fields are `movedState` (the block being carried), `direction` (the push direction), `extending`, `isSourcePiston` and `progress` (float, 0 to 1):
+
+1. `extendedProgress = progress - 1` when `extending`, else `1 - progress` (float32).
+2. `movementDirection = direction` when `extending`, else the opposite of `direction`.
+3. Base shape: when `extending` is false **and** `isSourcePiston` is true **and** `movedState` is a piston base, the collision shape of that piston with `extended` set to true at the position; otherwise empty.
+4. Early return: when a per-thread "no-clip" direction (set by the entity-movement code while it moves an entity carried by the piston) equals `movementDirection` and `progress < 1`, the base shape of step 3 alone is the result.
+5. The carried state: when `isSourcePiston`, a `piston_head` state with `facing = direction` and `short = (extending XOR (1 - progress < 0.25))`; otherwise `movedState`.
+6. Offset per axis: the direction's step component (float) times `extendedProgress`, widened to double.
+7. Result: the union of the base shape and the carried state's collision shape moved by that offset.
+
+The no-clip thread-local and the entity push code that sets it, and the rules that create and advance the block entity (`progress` step per tick, finishing), are not specified (Open question 21).
 
 **Stairs.** Authoring (facing north, bottom half): the lower slab `[0,0,0 - 16,8,16]` plus an upper part that depends on
 the shape.
@@ -864,13 +869,17 @@ the base alone, the head half the base plus the pillow; both are turned like the
 **Door.** The shape key is `facing` when the door is closed. When open, the key is counter-clockwise(facing) if
 `hinge` is right, clockwise(facing) if `hinge` is left. The same shape is used for both halves.
 
+### 5.8 Blocks that carry the ignited-by-lava flag
+
+One list of the blocks of this range with the flag (the settings table of section 5 carries it per row; read from the builder calls). Direct `ignitedByLava()`: the three leaves (through `leavesProperties`), `note_block`, every `<colour>_bed`, `straw_bed`, `short_grass`, `fern`, `dead_bush`, `bush`, `red_shrub`, `short_dry_grass`, `tall_dry_grass`, `tnt`, `bookshelf`, `chiseled_bookshelf`, all thirteen shelves (`acacia_shelf` to `warped_shelf`, including `crimson_shelf` and `warped_shelf`), `chest`, `crafting_table`, `oak_sign` and the other standing signs, `oak_wall_sign`, `oak_door`, every `<colour>_wool`, and `oak_stairs` (copied from `oak_planks` by `ofLegacyCopy`, which copies the flag). `<colour>_wool_slab` copies the flag from its wool through `ofLegacyCopy`; `<colour>_wool_stairs` uses `ofFullCopy`, whose copied field set was not read (the flag is therefore (inferred) true for both). Not flagged: `cobweb`, the flowers, the mushrooms, `seagrass`, `tall_seagrass`, `wheat`, `farmland`, `ladder`, `creaking_heart`, `torch`, `fire`, `soul_fire`, `spawner`, `redstone_wire`, the pistons and `cobblestone_stairs`. The set differs from the burnable table of 5.7 (for example `crimson_shelf`, the beds, `note_block` and `chest` are flagged but not burnable, and the flowers are burnable but not flagged).
+
 ---
 
 ## 7. Placement state, survival, replaceability and other class rules
 
-These are the per-class rules that decide which state a placement gets (GAP-30 columns), whether a state may stay in the
+These are the per-class rules that decide which state a placement gets, whether a state may stay in the
 world, and whether another block may replace it. The engines that call them (neighbour updates, scheduled ticks) are
-specified in documents 29 to 31; the constants of the rules are here.
+specified in 29 sections 3 to 5, 29b and 31; the constants of the rules are here.
 
 ### 7.1 Replaceable blocks
 
@@ -888,14 +897,14 @@ redstone wire and crops are **not** replaceable.
 | `dispenser` | `facing` = opposite of the player's nearest looking direction (six-way); `triggered` false | none |
 | `note_block` | instrument chosen by 7.10 (note block); note 0; powered false | an update from above or below recomputes the instrument; a neighbour signal change sets `powered` |
 | Beds | `facing` = the player's horizontal direction; refused (no state) unless the block at `pos + facing` is replaceable and inside the world border | if the other half is gone (the block at the connected position is not the same block, or its `part` is not the opposite part) the block becomes air; the occupied flag is copied between halves |
-| Rails | `waterlogged` from the fluid; `shape` = east_west when the player's horizontal direction is east or west, else north_south | a rail needs a block below that supports a rigid block (top face sturdy, rigid); `shape` is recomputed by neighbour updates (rail connection, 12 / `RailState`); removed when the rail or the slope's raised neighbour loses support |
-| Pistons | `facing` = opposite of the nearest looking direction; `extended` false | extension and pushing (documents 30 and 31) |
+| Rails | `waterlogged` from the fluid; `shape` = east_west when the player's horizontal direction is east or west, else north_south | a rail needs a block below that supports a rigid block (top face sturdy, rigid); `shape` is recomputed by neighbour updates (rail connection by `RailState`: not specified in this document; see 24 part 3 Open question 5 and 29 for the neighbour-update entry points); removed when the rail or the slope's raised neighbour loses support |
+| Pistons | `facing` = opposite of the nearest looking direction; `extended` false | extension and pushing: the piston engine (`PistonStructureResolver`, `PistonMovingBlockEntity`) is not specified in any existing document (Open question 5); only the shapes (section 6), the block-event queue (33 step 9, 29 section on block events) and the move-by-piston update flag (29) exist |
 | `piston_head` | state set by the piston | survives when the block on its back side (opposite of `facing`) is the matching piston (`piston` for type normal, `sticky_piston` for sticky) with `extended` true and the same `facing`, or is a `moving_piston` with the same `facing`; otherwise it becomes air; when removed it also destroys a fitting base |
 | Plants (`VegetationBlock` subclasses) | default state | survives when the block below satisfies the class's rule (table 7.3); otherwise becomes air on the next shape update; skylight propagates down when the fluid state is empty |
 | `tall_seagrass`, other double plants | `half` lower at the clicked position; refused when the position is at the top of the world or the block above is not replaceable; `tall_seagrass` additionally needs full water above | the upper half survives only while the block below is the same block with `half` lower; the lower half follows the plant rule, and for `tall_seagrass` also needs the fluid at its position to be full water; the upper half's shape update removes it when the lower half is gone, and the lower half removes itself when its own support is lost |
 | `seagrass` | refused unless the fluid at the position is water and full | survives on a block whose top face is sturdy (full) and that is not in tag `cannot_support_seagrass`; its fluid state is always water source |
-| `wheat` | default state | survives when the block below is in tag `supports_crops` and the raw brightness at the position (sky darkening 0) is at least 8; random tick growth needs raw brightness at least 9 (growth rules: document 29 / RS11) |
-| Mushrooms | default state | survives when the block below is in tag `overrides_mushroom_light_requirement`, or the raw brightness at the position is below 13 and the block below is a solid-render block (its occlusion shape is a full block); a random tick spreads with chance 1 in 25 (RS11 for the placement search) |
+| `wheat` | default state | survives when the block below is in tag `supports_crops` and the raw brightness at the position (sky darkening 0) is at least 8; random tick growth needs raw brightness at least 9 (growth rules: 29b part 2 section 3) |
+| Mushrooms | default state | survives when the block below is in tag `overrides_mushroom_light_requirement`, or the raw brightness at the position is below 13 and the block below is a solid-render block (its occlusion shape is a full block); a random tick spreads with chance 1 in 25 (spreading: 29b part 5) |
 | Flowers | default state | block below in tag `supports_vegetation`; `wither_rose`: tag `supports_wither_rose` |
 | `dead_bush`, `short_dry_grass`, `tall_dry_grass` | default state | block below in tag `supports_dry_vegetation` |
 | `short_grass`, `fern`, `bush`, `red_shrub` | default state | block below in tag `supports_vegetation` |
@@ -906,9 +915,9 @@ redstone wire and crops are **not** replaceable.
 | `creaking_heart` | `axis` = the axis of the clicked face; `creaking_heart_state` then recomputed from the surroundings; `natural` false (rules read: 7.12) | a shape update schedules a block tick after 1 game tick; the tick recomputes the state (7.12) |
 | `chest` | `facing`, `type` and `waterlogged` as in 7.7 (read) | shape update rules in 7.7 step 5 (read) |
 | `redstone_wire` | connection state computed from the neighbours, starting from the cross state (all four sides `side`) and keeping the previous `power` | survives when the block below has a sturdy top face or is a hopper; otherwise dropped as an item; a wire with no connection and a dot shape is rewritten as a cross when the player uses it (and the reverse), subject to the player's build permission |
-| `farmland` | default state; when it could not survive at the position the placement gives `dirt`'s default state instead | survives when the block above is not legacy-solid, or is in tag `maintains_farmland`; when it cannot survive a scheduled tick turns it into `dirt`; random tick: when water is near (a fluid in tag `water` in the scan area) or rain falls on the block above, `moisture` becomes 7 if it was below 7; otherwise `moisture` decreases by 1 when above 0; otherwise (moisture 0) it turns into `dirt` unless the block above is in tag `maintains_farmland` |
+| `farmland` | default state; when it could not survive at the position the placement gives `dirt`'s default state instead | survives when the block above is not legacy-solid, or is in tag `maintains_farmland`; when it cannot survive a scheduled tick turns it into `dirt`; random tick: when water is near (a fluid in tag `water` in the box from offset (-4, 0, -4) to (4, 1, 4) around the farmland position, read in `FarmlandBlock.isNearWater`; moisture and trampling: 29b part 2 section 9, where the trampling test is a bounding-box volume above 0.512) or rain falls on the block above, `moisture` becomes 7 if it was below 7; otherwise `moisture` decreases by 1 when above 0; otherwise (moisture 0) it turns into `dirt` unless the block above is in tag `maintains_farmland` |
 | `furnace` | `facing` = opposite of the player's horizontal direction; `lit` false | none |
-| Standing signs | `rotation` = the player's yaw plus 180 degrees converted to one of 16 segments (a segment is 360/16 degrees, inferred from the 4-bit precision); `waterlogged` from the fluid | survives when the block below is legacy-solid; becomes air when that is lost |
+| Standing signs | `rotation` = `round((yaw + 180) x 16 / 360) & 15` (read: `StandingSignBlock.getStateForPlacement` calls `RotationSegment.convertToSegment` on the placement rotation plus 180.0f; that is a 4-bit `SegmentedAnglePrecision`: multiply by the float 16/360, `Math.round` (half rounds up), then AND with 15; float arithmetic); `waterlogged` from the fluid | survives when the block below is legacy-solid; becomes air when that is lost |
 | `oak_wall_sign` | tries the nearest looking horizontal directions, `facing` = the opposite; `waterlogged` from the fluid | the block at `pos + opposite(facing)` must be legacy-solid |
 | `oak_door` | refused when the position is at the top of the world or the block above is not replaceable; `facing` = the player's horizontal direction; `hinge` chosen by the rule of 7.11 (read); `powered` and `open` = whether the position or the position above has a neighbour signal; `half` lower | the lower half survives when the top face of the block below is sturdy; the upper half survives when the block below is this same door block; when one half is lost the other becomes air |
 | `ladder` | refused when the placement does not replace the clicked block and the block behind the clicked face (`clickedPos + opposite(clickedFace)`) is a ladder whose `facing` equals the clicked face; otherwise the first of the player's nearest looking directions that is horizontal and for which the ladder survives, `facing` = the opposite of that direction; refused when none | the block on the back side (`pos + opposite(facing)`) must have a sturdy full face toward the ladder |
@@ -916,7 +925,7 @@ redstone wire and crops are **not** replaceable.
 | Shelves | `facing` = opposite of the player's horizontal direction; `powered` = whether a neighbour signal exists; `waterlogged` from the fluid | none |
 | `tnt` | default state | ignites when a neighbour signal exists on placement or on a neighbour change |
 
-### 7.3 Slab placement and replacement (read: `SlabBlock.getStateForPlacement` and `canBeReplaced`, instruction by instruction, in the fixer pass)
+### 7.3 Slab placement and replacement (read: `SlabBlock.getStateForPlacement` and `canBeReplaced`, instruction by instruction)
 
 Placement of a `wool_slab` at a position that already holds the same slab block gives `type` double with `waterlogged`
 false. Otherwise the new state is `type` bottom, `waterlogged` from the fluid, and `type` top when the clicked face is
@@ -938,7 +947,7 @@ result. On placement `persistent` is true, so a placed leaf never decays until t
 
 Blocks with a `waterlogged` property (leaves, rails, stairs, slabs, chests, ladders, signs, shelves, wall and standing
 signs) report the water source fluid state when it is true, and, in their shape update, schedule a water tick when it is
-true (`Fluids.WATER` with the fluid's tick delay). The fluid engine is document 29 (RS10).
+true (`Fluids.WATER` with the fluid's tick delay). The fluid engine is in 33 (world simulation) and the neighbour-update plumbing in 29 section 3.
 
 ### 7.6 Sponge
 
@@ -954,7 +963,7 @@ category, no source entity). The 6 and 65 and the four block names are read; the
 structure (inferred: the exact order in which the three alternatives are tried was not re-read, so a block that satisfies
 two of them is treated as satisfying the first listed).
 
-### 7.7 Chest partner (read in full in the fixer pass)
+### 7.7 Chest partner (read in full)
 
 Read from `ChestBlock.getStateForPlacement`, `getChestType`, `candidatePartnerFacing`, `chestCanConnectTo`, `getConnectedDirection` and `updateShape`.
 `chestCanConnectTo(state)` is true when the state is a state of the same block (the chest block itself, not a trapped chest).
@@ -969,7 +978,6 @@ Read from `ChestBlock.getStateForPlacement`, `getChestType`, `candidatePartnerFa
    `candidatePartnerFacing(clickedPos, opposite(clicked face))`. When `partner` exists **and** its axis differs from the
    axis of the clicked face, the chest takes **that partner's facing** as its own `facing` (replacing the value of step 1),
    and `type` = `right` when counter-clockwise(that facing) equals the opposite of the clicked face, else `left`.
-   (Correction of the first version of this document, which kept the step 1 facing and stated a different comparison.)
 3. When `type` is still `single` **and** the player is not sneaking: `type` = `getChestType(clickedPos, facing)`:
    - if `candidatePartnerFacing(pos, clockwise(facing))` equals `facing`, the type is `left`;
    - otherwise, if `candidatePartnerFacing(pos, counter-clockwise(facing))` equals `facing`, the type is `right`;
@@ -991,7 +999,7 @@ Observable constants: a double chest's two halves have the same `facing` and opp
 partner lies on the clockwise side of `facing`, `right` the half whose partner lies on the counter-clockwise side (the
 connected direction of section 6). Worked example in section 8, example 13.
 
-### 7.8 Stair connection shape (read: `StairBlock.getStairsShape` and `canTakeShape` in the fixer pass)
+### 7.8 Stair connection shape (read: `StairBlock.getStairsShape` and `canTakeShape`)
 
 For a stair at p with `facing` f and `half` h, `shape` is chosen as follows (the order matters):
 
@@ -1006,7 +1014,7 @@ For a stair at p with `facing` f and `half` h, `shape` is chosen as follows (the
 `canTakeShape(p, d)` is true unless the state at `p + d` is a stair with the same `facing` and the same `half` as the stair
 at p. The shape is recomputed in the shape update when the changed neighbour is horizontal. The `half` of a placed stair:
 top when the clicked face is down, or when the clicked face is not up and the vertical fraction of the click position
-exceeds 0.5; otherwise bottom. (Step by step the rule was read from `StairBlock.getStairsShape` and `canTakeShape`; "is a stair" means the block class is `StairBlock` (not a tag). The use of `opposite(n1.facing)` in step 1 against `n2.facing` in step 2 is as the artifact shows. At placement, `facing` = the player's horizontal direction, `half` as above, `waterlogged` from the fluid, and `shape` = the result of this rule at the placed position. The sneaking/non-sneaking left/right branches of the first version were chest rules, now in 7.7.)
+exceeds 0.5; otherwise bottom. (The rule was read from `StairBlock.getStairsShape` and `canTakeShape`; "is a stair" means the block class is `StairBlock` (not a tag). The use of `opposite(n1.facing)` in step 1 against `n2.facing` in step 2 is as the artifact shows. At placement, `facing` = the player's horizontal direction, `half` as above, `waterlogged` from the fluid, and `shape` = the result of this rule at the placed position.)
 
 
 ### 7.10 Note block instrument (read)
@@ -1024,7 +1032,7 @@ Used at placement, and in the shape update when the changed neighbour is above o
 sets `powered` to whether the position has a neighbour signal, plays the note on the false-to-true change, and stores the state.
 `isTunable` is true for `BASE_BLOCK` instruments; `hasCustomSound` is true for `custom_head`. The instrument setting of each block is the Instrument column of section 5.
 
-### 7.11 Door hinge (read in the fixer pass: `DoorBlock.getHinge`)
+### 7.11 Door hinge (read: `DoorBlock.getHinge`)
 
 Inputs: the placement position `p`, the player's horizontal direction `d`, and the click position inside the block (x and
 z fractions `cx`, `cz`, 0 to 1). Let `L` = `p + counter-clockwise(d)` and `R` = `p + clockwise(d)`; `LU` and `RU` are the
@@ -1043,7 +1051,7 @@ positions one block above `L` and `R`.
 "Door block" is the block class `DoorBlock` (every wood and metal door), not a tag. Only the hinge is chosen here; `open` and
 `powered` are set from the neighbour-signal test at placement (7.2). Worked example: section 8, example 12.
 
-### 7.12 Creaking heart (read in the fixer pass: `CreakingHeartBlock`, `CreakingHeartBlockEntity.serverTick` and `updateCreakingState`)
+### 7.12 Creaking heart (read: `CreakingHeartBlock`, `CreakingHeartBlockEntity.serverTick` and `updateCreakingState`)
 
 States: `axis` (x, y, z; default y), `creaking_heart_state` (`uprooted`, `dormant`, `awake`; default `uprooted`), `natural`
 (default false; that world generation places hearts with `natural` true is (recalled, not verified) and belongs to the feature/worldgen documents).
@@ -1063,7 +1071,7 @@ States: `axis` (x, y, z; default y), `creaking_heart_state` (`uprooted`, `dorman
    becomes `uprooted`; otherwise it becomes `awake` when `creaking_active` at the position is true, else `dormant`. A changed
    state is written. This is the only place that returns a heart to `uprooted` or switches `awake` and `dormant` back and
    forth.
-6. **Protector creaking** (summarised from the instruction listing; mob rules belong to document 44): when the state is
+6. **Protector creaking** (summarised from the instruction listing; mob rules belong to 44 part 4): when the state is
    `awake` and no protector is recorded, monsters are spawnable and difficulty is not peaceful, and a player is within 32
    blocks, a protector creaking is spawned. An existing protector is removed when (`creaking_active` is false and the
    creaking does not require persistence), or the distance to it exceeds 34, or a player is stuck in it.
@@ -1071,15 +1079,16 @@ States: `axis` (x, y, z; default y), `creaking_heart_state` (`uprooted`, `dorman
    prevent block drops, is not a spectator, `natural` is true and the level is a server level, experience is dropped,
    a random integer from 20 to 24 inclusive (`nextIntBetweenInclusive(20, 24)`). The destruction also asks the block entity to
    remove its protector with a player-attack damage source.
-8. **Analog output.** The block class declares an analog output signal and the block entity computes it (method names seen); the formula was not read (Open question 9).
+6a. **Protector spawn and resin constants** (read: static constants and `spawnProtector`, `getCreakingProtector`, `creakingHurt`). Spawn: 5 attempts per spawn (`ATTEMPTS_PER_SPAWN`), searching within horizontal range 16 and vertical range 8 of the heart (`SPAWN_RANGE_XZ`, `SPAWN_RANGE_Y`), entity spawn reason `SPAWNER`, placement strategy `ON_TOP_OF_COLLIDER_NO_LEAVES` (the creaking stands on top of a collider that is not a leaf block); after a successful spawn the server broadcasts entity event 60 for the creaking. Roaming radius constant 32 (`CREAKING_ROAMING_RADIUS`). When the heart's state is `awake` at the time of a hurt of the protector, resin is spread 2 or 3 times (`nextIntBetweenInclusive(2, 3)`), each spread a breadth-first traversal from the heart with maximum depth 2 and at most 64 positions (`MAX_DEPTH`, `MAX_COUNT`); the block placed by a spread and the per-position acceptance test (`spreadResin` lambdas) were not read in detail (Open question 9). Grace: while the block entity has existed for fewer than 30 ticks (`TICKS_GRACE_PERIOD`) an unresolved stored protector UUID is kept; at 30 ticks or more it is cleared (`clearCreakingInfo`). Emitter: after a hurt the particle emitter counter is set to 100 ticks (`HURT_CALL_TOTAL_TICKS`; also constants 10 hurt calls at interval 10 and particle ticks 50) and the emitter targets the centre of the creaking's bounding box; the emitter colours are the integers 16545810 and 6250335 (open and closed eye colours are (inferred) from the names of the states only).
+8. **Analog output** (read: `CreakingHeartBlockEntity.computeAnalogOutputSignal`). The output is 0 when the block entity has no creaking information or no protector creaking is recorded. Otherwise let `d` be the distance to the protector, `r = clamp(d, 0, 32) / 32` (double division) and the output is `15 - floor(r x 15)`, so 15 at distance 0 and 0 at distance 32 or more. Other constants of the class (read): the removal distance of a protector is 34 and the player distance for spawning one is 32 (item 6); the destroy experience of item 7 is `nextIntBetweenInclusive(20, 24)`; the countdown reset of item 5 is 20 plus `nextInt(5)`.
 
-### 7.9 Tint and colour inputs (GAP-29 columns)
+### 7.9 Tint and colour inputs
 
 Which block uses which tint source (foliage, grass, water, redstone) is decided by the colour handlers (`BlockColors`),
-not by the block classes, and is the subject of RS25; this part names only what the block classes themselves define.
-The leaves classes carry a falling-leaf particle: the poplar leaves use the particle type of their own name; the two
-azalea leaves use the particle type `tinted_leaves` with the fixed colour option 0xFF70922D (ARGB, read as the signed
-integer -9399763). For `redstone_wire` the artifact defines a colour per power value (`RedstoneWireBlock` static table, read), used for the
+not by the block classes, and is specified in 43 (tint sources); this part names only what the block classes themselves define.
+The leaves classes carry a falling-leaf particle with chance 0.01 per animate tick (constructor constant, read; behaviour in 42 part 4 section 8): the poplar leaves use the particle type of their own name together with the ambient `poplar_leaves_ambient` sound, gated by tag `required_for_poplar_leaf_ambience`; the two
+azalea leaves, with no ambient sound, use the particle type `tinted_leaves` with the fixed colour option 0xFF70922D (ARGB, read as the signed
+integer -9399763). `orange_poplar_leaves` and `red_poplar_leaves` (ids 103 and 104) are not in this range. For `redstone_wire` the artifact defines a colour per power value (`RedstoneWireBlock` static table, read), used for the
 dust particles and, by the model's tint index (data), for the block: with `f = power / 15` in 32-bit floating point,
 red = `f * 0.6` plus 0.4 when `f > 0` and plus 0.3 when `f = 0`; green = `clamp(f * f * 0.7 - 0.5, 0, 1)`; blue =
 `clamp(f * f * 0.6 - 0.7, 0, 1)`; alpha 1. Each channel is converted as `floor(channel * 255)` (`ARGB.colorFromFloat`, read) and
@@ -1201,32 +1210,31 @@ The last block ends at offset 6 848 (the next block of part 3 starts there). Off
 
 Nothing was executed. Where a fact was recomposed from compact instruction listings rather than read line by line, the text
 says so ("inferred", "summarised", "recalled, not verified") at the rule itself and the item is in section 10. Rules read
-instruction by instruction in the fixer pass and marked "(read)": door hinge (7.11), chest placement and shape update
+instruction by instruction and marked "(read)": door hinge (7.11), chest placement and shape update
 (7.7), creaking heart (7.12 except the protector spawn, summarised), slab placement and replacement (7.3), stair shape and
-placement (7.8), flammability numbers (5.7), tint list (5.6). Still inferred: light dampening per block other than leaves
-(5.3), the sponge visit rule (7.6), the up-facing fire sheet (section 6), the standing-sign rotation segment size (7.2).
+placement (7.8), flammability numbers (5.7), tint list (5.6). Also read: standing-sign rotation (7.2), the up-facing fire sheet (section 6), the farmland moisture scan box (7.2), the creaking heart analog output (7.12), the propagates-skylight-down overrides (2.3) and the eleven registered shelves (5.7). Still inferred: light dampening per block other than leaves
+(5.3) and the sponge visit rule (7.6).
 
 ---
 
 ## 10. Open questions
 
-1. **Part 1 / part 3 consistency of state ids.** Closed here (section 1.2): `B105 = 575` (part 1's state counts for ids 0 to 104 sum to 575, and 323 + 9 x 28 = 575) and the offsets of this part are right; part 3's `ladder` 7055, `oak_wall_sign` 7163 and `spruce_wall_sign` 7171 imply `B105 = 323` and are 252 too low (correct 7307, 7415 and 7423). Part 3 and any later part that chains from its first state id must be corrected by the owner of those files; this part does not edit them. Where part 1 restates the base-class defaults of section 2 or the property value lists of section 2.4 and differs, one of the two is wrong.
-2. **Map colours.** Closed (fixer pass). Every one of the 27 map-colour names used in section 5 (and the colour-collection names of section 2.8) was checked against the name column of 24 part 1 section 8.1 (ids 0 to 61); none is missing. The colour values are in that table, not here.
-3. **Sound types.** Closed (fixer pass). Every one of the 24 sound-type names used in section 5 (`AZALEA_LEAVES`, `BAMBOO_WOOD`, `CHERRY_WOOD`, `CHISELED_BOOKSHELF`, `COBWEB`, `CREAKING_HEART`, `CROP`, `DEEPSLATE`, `GLASS`, `GRASS`, `GRAVEL`, `IRON`, `LADDER`, `METAL`, `POPLAR_LEAVES`, `RED_SHRUB`, `SHELF`, `SPAWNER`, `SPONGE`, `STRAW_BED`, `WET_GRASS`, `WET_SPONGE`, `WOOD`, `WOOL`, plus the default `STONE`) appears in 24 part 1 section 8.4: `CROP` and `RED_SHRUB` in its exception table, the others in its list of standard constants. The volume, pitch and events are in that table.
-4. **Fire.** The ignite and burn numbers of this range are now tabulated in section 5.7 (read from `FireBlock.bootStrap`). Not specified here, and belonging to the fire and growth document (RS11): the meaning of the two numbers in fire's random tick and spread, the `increased_fire_burnout` attribute and the age rules (tick delay 30 plus a random number below 10 is read as a constant only).
-5. **Engines named but not specified here.** Dispenser behaviours (`DispenseItemBehavior`), piston movement
+1. **Restated defaults.** Where 24 part 1 restates the base-class defaults of section 2 or the property value lists of section 2.4 and differs from this part, one of the two is wrong; no difference was found when `B105 = 575` was checked (section 1.2).
+2. **Map colours.** Closed. Every one of the 27 map-colour names used in section 5 (and the colour-collection names of section 2.8) was checked against the name column of 24 part 1 section 8.1 (ids 0 to 61); none is missing. The colour values are in that table, not here.
+3. **Sound types.** Closed. Every one of the 24 sound-type names used in section 5 (`AZALEA_LEAVES`, `BAMBOO_WOOD`, `CHERRY_WOOD`, `CHISELED_BOOKSHELF`, `COBWEB`, `CREAKING_HEART`, `CROP`, `DEEPSLATE`, `GLASS`, `GRASS`, `GRAVEL`, `IRON`, `LADDER`, `METAL`, `POPLAR_LEAVES`, `RED_SHRUB`, `SHELF`, `SPAWNER`, `SPONGE`, `STRAW_BED`, `WET_GRASS`, `WET_SPONGE`, `WOOD`, `WOOL`, plus the default `STONE`) appears in 24 part 1 section 8.4: `CROP` and `RED_SHRUB` in its exception table, the others in its list of standard constants. The volume, pitch and events are in that table.
+4. **Fire.** The ignite and burn numbers of this range are now tabulated in section 5.7 (read from `FireBlock.bootStrap`). Not specified here, and not specified in any existing document (there is no separate fire part of 29b; 17 sections 3.3 and 3.3a and 29b part 1 carry only some fire constants): the meaning of the two numbers in fire's random tick and spread, the `increased_fire_burnout` attribute and the age rules (tick delay 30 plus a random number below 10 is read as a constant only).
+5. **Engines named but not specified here.** (Closed in part as to citations: no document 30 exists, and 12 is client rendering, so none of these is cited to them any more.) Dispenser behaviours (`DispenseItemBehavior`), piston movement
    (`PistonStructureResolver`, `PistonMovingBlockEntity`), rail connection (`RailState`), redstone signal evaluation
-   (`DefaultRedstoneWireEvaluator`), note block sounds, crop growth speed, farmland moisture scan area, leaf particles and
-   ambient sounds, bed sleeping, sign editing and the block entities of dispensers, chests, furnaces, spawners, shelves,
-   chiseled bookshelves, signs and creaking hearts. They belong to RS9, RS11, RS12 and RS13 (documents 29 to 31).
+   (`DefaultRedstoneWireEvaluator`), note block sounds, crop growth speed (29b part 2), bed sleeping, sign editing and the block entities of dispensers, chests, furnaces, spawners, shelves,
+   chiseled bookshelves, signs and creaking hearts. The piston and rail engines are unspecified (searched 29, 31-block-entities-2 and 33: only update flags and the block-event queue are described); the others belong to 29, 29b and 31 where those documents cover them. Leaf particle chance and ambient sounds are in section 7.9 (constructor constants, read) and 42 part 4; the farmland moisture scan box is in 7.2.
 6. **Where the model offset is applied.** Only `FlowerBlock` moves its outline by the offset inside `getShape`. For
    `short_grass`, `fern`, `short_dry_grass`, `tall_dry_grass` and `tall_seagrass` the state carries an offset function but the
    block class does not use it; the consumer is outside the block classes (rendering, targeting). Not traced.
-7. **Note block sounds.** The instrument choice is read (7.10). The sound events of each instrument, tunable pitch (`getPitchFromNote`) and the custom-head sound lookup are RS12's and were not read here.
-8. **Chest partner search.** Closed (fixer pass): `getStateForPlacement`, `getChestType`, `candidatePartnerFacing`, `chestCanConnectTo` and `updateShape` were read in full; the rules are in 7.7. Corrected against the first version of this document: in the sneaking branch the placed chest takes the partner's `facing`, and `type` is `right` when counter-clockwise of that facing equals the opposite of the clicked face. Not read: the double-chest container combiner (`DoubleBlockCombiner`), which belongs with the block-entity document.
-9. **Creaking heart state transitions.** Mostly closed (fixer pass): 7.12 gives the block-class transitions, the block entity's periodic recomputation (including the return to `uprooted`) and the use of `natural`, all read. Not read in detail: the protector-creaking spawn conditions and the resin-spreading and analog-output code of `CreakingHeartBlockEntity` (summarised in 7.12 and left to document 44 and the block-entity documents). Searched: `CreakingHeartBlock`, `CreakingHeartBlockEntity.serverTick` and `updateCreakingState`.
-10. **Door hinge choice.** Closed (fixer pass): `DoorBlock.getHinge` was read in full; the rule is in 7.11 with a worked example (section 8, example 12).
-11. **Pathfinding flags.** `isPathfindable` overrides are not tabulated; not read in this pass. They belong with the pathfinding document (mob navigation).
+7. **Note block sounds.** The instrument choice is read (7.10). The sound events of each instrument, tunable pitch (`getPitchFromNote`) and the custom-head sound lookup were not read here.
+8. **Chest partner search.** Closed: `getStateForPlacement`, `getChestType`, `candidatePartnerFacing`, `chestCanConnectTo` and `updateShape` were read in full; the rules are in 7.7. Corrected against the first version of this document: in the sneaking branch the placed chest takes the partner's `facing`, and `type` is `right` when counter-clockwise of that facing equals the opposite of the clicked face. Not read: the double-chest container combiner (`DoubleBlockCombiner`), which belongs with the block-entity document.
+9. **Creaking heart state transitions.** Mostly closed: 7.12 gives the block-class transitions, the block entity's periodic recomputation (including the return to `uprooted`), the use of `natural` and the analog output formula, all read. The spawn constants, the resin-spread counts and the grace and emitter durations are now recorded in 7.12 item 6a. Not read in detail: the block placed by a resin spread and its acceptance test, the `SpawnUtil` placement search itself, and the particle details (left to 44 part 4 and 31 part 8). Searched: `CreakingHeartBlock`, `CreakingHeartBlockEntity.serverTick`, `updateCreakingState` and `computeAnalogOutputSignal`.
+10. **Door hinge choice.** Closed: `DoorBlock.getHinge` was read in full; the rule is in 7.11 with a worked example (section 8, example 12).
+11. **Pathfinding flags.** `isPathfindable` overrides are not tabulated (only `farmland`, false, is recorded in section 2.3); not read for the other blocks of this range. They belong with the pathfinding document (mob navigation).
 12. **Legacy solid.** Closed: section 2.3 (branches and `AABB.getSize` read).
 13. **Rotation convention.** Closed: section 2.6 (`Shapes.rotate`, `OctahedralGroup` and `SymmetricGroup3` read).
 14. **Redstone colour ramp.** Closed: section 7.9 (table initialiser read).
@@ -1236,6 +1244,7 @@ placement (7.8), flammability numbers (5.7), tint list (5.6). Still inferred: li
     parts that register those blocks.
 17. **Render shapes of block-entity blocks.** `chest`, `bed`, `sign`, `shelf` and similar blocks do not override
     `getRenderShape` in the block class (default `MODEL`); how the client draws their block entity is for document 12.
-18. **Slab and stair placement text.** Closed (fixer pass): `SlabBlock.getStateForPlacement`, `SlabBlock.canBeReplaced`, `StairBlock.getStateForPlacement`, `getStairsShape` and `canTakeShape` were read instruction by instruction, and the comparison constant 0.5 is exact (strictly greater than). Rules in 7.3 and 7.8 are marked "(read)". Not read: `updateShape` of slabs and stairs beyond the water tick and the shape recomputation, and `isPathfindable`.
+18. **Slab and stair placement text.** Closed: `SlabBlock.getStateForPlacement`, `SlabBlock.canBeReplaced`, `StairBlock.getStateForPlacement`, `getStairsShape` and `canTakeShape` were read instruction by instruction, and the comparison constant 0.5 is exact (strictly greater than). Rules in 7.3 and 7.8 are marked "(read)". Not read: `updateShape` of slabs and stairs beyond the water tick and the shape recomputation, and `isPathfindable`.
 19. **Tag data.** Section 5.4 is computed from the data files of this jar only; a data pack that replaces tags changes it.
 20. **Flower, plant and shelf class rules.** `isPathfindable`, the `FlowerBlock` suspicious-stew timing and the shelf powered-chain rule (`side_chain`) are not specified here.
+21. **Moving piston engine.** The collision rule of `moving_piston` is in section 6 (read). Not read or specified: the creation and per-tick advance of `PistonMovingBlockEntity` (`progress` step, finishing, the entity push and the no-clip direction thread-local), and `PistonStructureResolver` (push limit and blocks that move). Searched: 29, 31-block-entities-2 and 33 mention only update flag 64 and the block-event queue.

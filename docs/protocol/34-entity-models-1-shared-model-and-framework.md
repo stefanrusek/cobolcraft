@@ -137,18 +137,20 @@ Note: the strings for `BLUE_CORAL_FIRST` and `BLUE_CORAL_SECOND` are `blue_first
 
 A transformer used for per-entity-type model scale of a whole mesh (for example the illager layer: `LayerDefinitions.createRoots` applies `MeshTransformer.scaling(0.9375)` to the `IllagerModel` layer, read; the illager geometry is in part 3). Let k = 24.016 x (1 − s). The root's pose becomes `pose.scaled(s)` then `translated(0, k, 0)`. Since the root is only the container, this scales every child (the scale factor multiplies child positions through the root's scale in the matrix chain) and moves the whole model down by k so the feet stay on the ground: for s = 0.9375, k = 1.5010 pixels. `IDENTITY` returns the mesh unchanged.
 
-`LayerDefinitions.createRoots` calls `MeshTransformer.scaling` six times (read), with these factors:
+`LayerDefinitions.createRoots` calls `MeshTransformer.scaling` six times (read), once per factor below. Each transformer object is then applied to every layer listed in its row (call sites read in `createRoots` and its lambdas):
 
-| Layer(s) | Factor s | k = 24.016 (1 − s) |
+| Layers the transformer is applied to | Factor s | k = 24.016 (1 − s) |
 |---|---|---|
-| `IllagerModel` body layer | 0.9375 | 1.5010 |
-| `CAVE_SPIDER` (applied to the spider mesh held in a local variable) | 0.7 | 7.2048 |
-| `GIANT` (zombie-style body layer) | 6.0 | −120.08 |
-| `HORSE` and `HORSE_SADDLE` (the same transformer object is applied to both layers, read; the baby horse and the equine saddle layer are created before it) | 1.1 | −2.4016 |
-| `HUSK` | 1.0625 | −1.5010 |
-| `WITHER_SKELETON` | 1.2 | −4.8032 |
+| Illager-style: the 0.9375 transformer is applied to the `IllagerModel` body layer (the scaled result is shared by `EVOKER`, `ILLUSIONER`, `PILLAGER` and `VINDICATOR`), to the villager body mesh (64 x 64) giving `VILLAGER` (also reused by `WANDERING_TRADER`) and to the no-hat villager mesh giving `VILLAGER_NO_HAT`, and to `WITCH` (the `WitchModel` body layer). The baby villager layers are not given this transformer in `createRoots` (not seen applied) | 0.9375 | 1.5010 |
+| `CAVE_SPIDER`: applied to the spider body layer, the same layer definition that `SPIDER` registers unscaled | 0.7 | 7.2048 |
+| `GIANT` (zombie-style body layer) and `GIANT_ARMOR` (the zombie armor set passed through `ArmorModelSet.map`, so all of its layers are scaled) | 6.0 | −120.08 |
+| `HORSE` (adult equine body), `HORSE_ARMOR` (the equine body mesh built with `CubeDeformation(0.1)`, 64 x 64) and `HORSE_SADDLE` (the same transformer object is applied to all three; `HORSE_BABY` and the unscaled saddle definition are created before it and `HORSE_BABY` is registered without it) | 1.1 | −2.4016 |
+| `HUSK` and `HUSK_ARMOR` (armor set mapped through the transformer). `HUSK_BABY` and `HUSK_BABY_ARMOR` are registered separately (no transformer seen) | 1.0625 | −1.5010 |
+| `WITHER_SKELETON` and `WITHER_SKELETON_ARMOR` (armor set mapped through the transformer) | 1.2 | −4.8032 |
 
-The k column is computed from the formula above, not read. Husk, giant and wither skeleton are in part 2, illager in part 3, horse and saddle in part 4, and the cave spider (spider mesh scaled 0.7, 7.2048 pixel shift) in 34 part 6 section 6.
+An implementer must therefore scale the armor layers of giant, husk and wither skeleton with the same factor as their body; drawing them unscaled misplaces the armor.
+
+The k column is computed from the formula above, not read. Husk, giant and wither skeleton are in part 2, illager and villager in part 3, horse and saddle in part 4, and the cave spider (spider mesh scaled 0.7, 7.2048 pixel shift) in 34 part 6 section 6. The transformer-to-layer mapping above is read from `createRoots`; whether witch and villager shares were already described in parts 3 and 5 was not checked.
 
 ### 2.3 `BabyModelTransform` (record with seven fields)
 
@@ -233,7 +235,7 @@ All angles radians; `age` = `ageInTicks`.
 | `animateCrossbowHold`, `animateCrossbowCharge` | 12 §7.5 (rows `CROSSBOW_HOLD`, `CROSSBOW_CHARGE`); constants confirmed: hold: yRot adds ∓0.3 / ±0.6 (by hand), xRot adds −π/2 + 0.1 and −1.5; charge: holding arm yRot ∓0.8, xRot −0.97079635; the other arm lerps yRot from 0.4 to 0.85 and xRot to −π/2 with charge fraction clamp(ticksUsing, 0, max) / max |
 | `swingWeaponDown(rightArm, leftArm, mainArm, attackTime, age)` | the vindicator/pillager raised-axe swing, below |
 
-`animateZombieArms`: return immediately when either arm pose is `SPEAR`. Let `R` = true when the mob is **not** a baby, or is a baby whose main-hand item is empty. base = R ? −π / (flag ? 1.5 : 2.25) : 0 (`flag` is the boolean the zombie-like models pass; its meaning, the aggressive state, was not traced). With a = `swingAnimation` (0 to 1): s1 = (R ? 1 : −1) x sin(a π); s2 = sin((1 − (1 − a)²) π); x = base + s1 x 1.2 − s2 x 0.4; y = 0.1 − s1 x 0.6. The **right** arm (unless its pose is `THROW_TRIDENT`): xRot = x, yRot = R ? −y : y, zRot = 0. The **left** arm (unless its pose is `THROW_TRIDENT`): xRot = x, yRot = R ? y : −y, zRot = 0.
+`animateZombieArms`: return immediately when either arm pose is `SPEAR`. Let `R` = true when the mob is **not** a baby, or is a baby whose main-hand item is empty. base = R ? −π / (flag ? 1.5 : 2.25) : 0 (`flag` is `ZombieRenderState.isAggressive`, passed by `ZombieModel.setupAnim`: true selects the divisor 1.5, false selects 2.25; read). With a = `swingAnimation` (0 to 1): s1 = (R ? 1 : −1) x sin(a π); s2 = sin((1 − (1 − a)²) π); x = base + s1 x 1.2 − s2 x 0.4; y = 0.1 − s1 x 0.6. The **right** arm (unless its pose is `THROW_TRIDENT`): xRot = x, yRot = R ? −y : y, zRot = 0. The **left** arm (unless its pose is `THROW_TRIDENT`): xRot = x, yRot = R ? y : −y, zRot = 0.
 
 `swingWeaponDown`: with s1 = sin(attackTime π) and s2 = sin((1 − (1 − attackTime)²) π): right.zRot = 0, left.zRot = 0, right.yRot = 0.15707964, left.yRot = −0.15707964. The **main** arm: xRot = −1.8849558 + cos(0.09 age) x 0.15, then += s1 x 2.2 − s2 x 0.4. The **other** arm: xRot = cos(0.19 age) x 0.5, then += s1 x 1.2 − s2 x 0.4. Then `bobArms`. (Which arm receives which pair was read from the two branches of the main-arm test; the constants are exact.)
 
@@ -375,14 +377,14 @@ Extraction rules of `LivingEntityRenderer.extractRenderState`:
 
 `HumanoidRenderState` (extends `ArmedEntityRenderState`, which extends `LivingEntityRenderState`; `AvatarRenderState` and `UndeadRenderState` extend it): `swimAmount`, `speedValue`, `maxCrossbowChargeDuration`, `ticksUsingItem`, `useItemHand`, `isCrouching`, `isFallFlying`, `isVisuallySwimming`, `isPassenger`, `isUsingItem`, `elytraRotX/Y/Z`, and four equipment stacks (`headEquipment`, `chestEquipment`, `legsEquipment`, `feetEquipment`, each a **copy** of the slot's stack when it is renderable by the armor layer, else empty). Extraction (`HumanoidMobRenderer.extractHumanoidRenderState`): `speedValue` = 1; when fall flying: v = |deltaMovement|² / 0.2, then v = v x v x v, and v < 1 becomes 1; `swimAmount` = `getSwimAmount(partial)`; `ticksUsingItem` = `getTicksUsingItem(partial)`; `maxCrossbowChargeDuration` = the crossbow charge duration of the used item (as a float); elytra angles from the entity's elytra animation state. `HumanoidMobRenderer.extractRenderState` then sets `leftArmPose` and `rightArmPose` from `getArmPose` (3.6).
 
-`ArmedEntityRenderState` fields: `mainArm`, `rightArmPose`, `rightHandItemState`, `rightHandItemStack`, `leftArmPose`, `leftHandItemState`, `leftHandItemStack`, `currentSwing`, `swingAnimation`; with `ticksUsingItem(arm)`. `HoldingEntityRenderState`: `heldItem`. `UndeadRenderState` (zombie family) adds no fields in this build; `SlimeRenderState`: `squish` (float), `size` (int). `HitboxRenderState` is a record of a box (x0..z1), an offset and an RGB colour; in this build **no class in the jar creates it** (the F3+B hitbox display is the debug renderer, 7.5).
+`ArmedEntityRenderState` fields: `mainArm`, `rightArmPose`, `rightHandItemState`, `rightHandItemStack`, `leftArmPose`, `leftHandItemState`, `leftHandItemStack`, `currentSwing`, `swingAnimation`; with `ticksUsingItem(arm)`. `HoldingEntityRenderState`: `heldItem`. `UndeadRenderState` (zombie family) adds no fields in this build; its subclass `ZombieRenderState` adds two booleans, `isAggressive` (the `animateZombieArms` flag, 3.5) and `isConverting`; `SlimeRenderState`: `squish` (float), `size` (int). `HitboxRenderState` is a record of a box (x0..z1), an offset and an RGB colour; in this build **no class in the jar creates it** (the F3+B hitbox display is the debug renderer, 7.5).
 
 ### 6.4 Registration table (159 types; 2 more in 6.2)
 
 The master index in 10 shows the renderer class for every one of the 161 types. Facts shared by all rows:
 - `area_effect_cloud`, `interaction` and `marker` use `NoopRenderer` (an `EntityRenderer` that creates a bare `EntityRenderState` and draws nothing; it still gets the base `EntityRenderer.submit`, so its name tag can show).
 - `arrow` uses `TippableArrowRenderer`, `spectral_arrow` `SpectralArrowRenderer`.
-- Throwables use `ThrownItemRenderer`: `snowball`, `egg`, `ender_pearl`, `experience_bottle`, `splash_potion`, `lingering_potion` with the default constructor; `eye_of_ender` through its own lambda (no extra argument was read), `fireball` with scale 3.0, `small_fireball` with scale 0.75.
+- Throwables use `ThrownItemRenderer`: `snowball`, `egg`, `ender_pearl`, `experience_bottle`, `splash_potion`, `lingering_potion` with the default constructor; the constructor is `(context, scale, fullBright)` and the one-argument form means (1.0, false). Registrations read as (scale, fullBright): `snowball`, `egg`, `ender_pearl`, `experience_bottle`, `splash_potion`, `lingering_potion` = (1.0, false); `eye_of_ender` = (1.0, true); `fireball` = (3.0, true); `small_fireball` = (0.75, true). `fullBright` true makes `getBlockLightLevel` return 15; false uses the base rule (on fire gives 15, else the level's block brightness). `submit` pushes the pose, scales uniformly by `scale`, rotates by the camera orientation (billboard), submits the item render state (display context GROUND, extracted from the entity's `getItem`) with `lightCoords`, `NO_OVERLAY` and `outlineColor`, pops, then runs the base `EntityRenderer.submit`.
 - `giant` uses `GiantMobRenderer` with scale 6.0.
 - Boats: `BoatRenderer(layer)` for the ten wood types (`acacia`, `birch`, `cherry`, `dark_oak`, `jungle`, `mangrove`, `oak`, `pale_oak`, `poplar`, `spruce`; boat and chest boat = 20 types), `RaftRenderer(layer)` for bamboo (raft and chest raft); minecarts `MinecartRenderer(layer)` for minecart, chest, command block, furnace, hopper and spawner, `TntMinecartRenderer` for the TNT cart.
 - Mobs with an adult and a baby model carry both layer constants in the registration lambda (`llama`, `trader_llama`, `squid`, `glow_squid`, `piglin`, `piglin_brute` (the same layer for adult and baby), `zombified_piglin`, `donkey`, `mule`, and the three undead horses) or inside the renderer constructor (all others).
@@ -430,9 +432,20 @@ Pipelines read (`RenderPipelines`):
 |---|---|
 | `entityCutout` | shader `entity`; discard fragments with alpha < 0.1; **per-face lighting** (the back faces are lit with the negated light dot products); culling **off** |
 | `entityCutoutCull` | alpha cutout 0.1; culling default (on); standard lighting |
-| `entityTranslucent` | translucent blending; culling off |
-| `entity_cutout_z_offset`, `entity_cutout_dissolve`, `entity_solid_offset_forward`, `entity_solid_glint`, `entity_translucent_emissive` | exist as `RenderPipelines` fields (names read; their state was not read: Open question 9) |
-| `entityTranslucentCull`, `entitySolid`, `eyes`, `energySwirl`, `armorCutoutNoCull`(`Glint`), `armorTrim`, `trimmedArmorGlint`, `outline`, `entityShadow`, `leash` | named by the shared code; their pipeline details were not traced (Open question 9) |
+| `entityTranslucent` | alpha cutout 0.1; per-face lighting; TRANSLUCENT blend; culling off |
+| `entityTranslucentCull` | alpha cutout 0.1; TRANSLUCENT blend; no per-face lighting; culling default (on) |
+| `entity_cutout_z_offset` | same state as `entityCutout` (alpha cutout 0.1, per-face lighting, culling off) |
+| `entity_cutout_dissolve` | alpha cutout 0.1; per-face lighting; define `DISSOLVE`; second sampler for the dissolve mask |
+| `armorCutoutNoCull` and its glint variant | alpha cutout 0.1; `NO_OVERLAY`; per-face lighting; culling off (the glint variant adds the `GLINT` snippet) |
+| `eyes` | TRANSLUCENT blend; depth test GREATER_THAN_OR_EQUAL; depth write off; no lightmap snippet (`entity` no-lightmap family) |
+| `energySwirl` | ADDITIVE blend; default depth state |
+| `entity_translucent_emissive` | alpha cutout 0.1; per-face lighting; TRANSLUCENT blend; culling off; depth GREATER_THAN_OR_EQUAL; depth write off; `EMISSIVE` snippet |
+| `entityShadow` | TRANSLUCENT blend (entity-shadow snippet) |
+| `leash` | shader `core/rendertype_leash`; vertex format POSITION_COLOR_LIGHTMAP; topology TRIANGLE_STRIP; culling off; default depth |
+| `entity_solid_offset_forward`, `entity_solid_glint` | exist as `RenderPipelines` fields (names read; state not read: Open question 9) |
+| `entitySolid`, `armorTrim`, `trimmedArmorGlint`, `outline` | named by the shared code; pipeline details not read (Open question 9) |
+
+Shader defines of `entity.fsh` and `entity.vsh` (read): `ALPHA_CUTOUT = v` discards texels with alpha < v; `PER_FACE_LIGHTING` computes a front colour and a back colour in the vertex stage (the back uses the negated light terms) and the fragment stage picks by facing; without it, `NO_CARDINAL_LIGHTING` uses the vertex colour unlit by the two light directions, else the colour is mixed with the cardinal light; `NO_OVERLAY` removes the overlay mix; `EMISSIVE` removes the lightmap multiply; `DISSOLVE` discards when the vertex colour alpha is below the dissolve-mask alpha at the same texel and then forces the vertex alpha to 1 (dissolve replaces translucency); `GLINT` adds `GlintAlpha x glint texture` squared per channel to rgb after the lightmap and raises alpha to at least `GlintAlpha`; `OIT_ADDITIVE` caps texture alpha at 0.99 before the cutout test; `OIT_ACCUMULATE` converts the colour with the accumulation sampler and premultiplies the fog colour by alpha; `OIT_ALPHA_ONLY` skips colour output and only runs the alpha-only phase with the fragment depth and final alpha (the order-independent-transparency helper itself, `oit.glsl`, was not read).
 
 The entity fragment stage (`entity.fsh`): colour = texture x lighting colour x `ColorModulator`; the **overlay** mixes: rgb = mix(overlay.rgb, colour.rgb, overlay.a); then x light map; then fog. The vertex stage: `Light0_Direction` and `Light1_Direction` dot the normal, `lightAccum = min(1, (max(0, d0) + max(0, d1)) x 0.6 + 0.4)` (the same formula as 12 §1.9); the light directions per setup are in 12 §1.9.
 
@@ -622,20 +635,20 @@ Parts, regenerated from the sibling documents' Covers sections: 2 humanoid-base 
 | 37 | `donkey` | DonkeyRenderer(LT.DONKEY_SADDLE, ML.DONKEY_SADDLE, DonkeyRenderer.Type.DONKEY, DonkeyRenderer.Type.DONKEY_BABY) | 4 |
 | 38 | `dragon_fireball` | DragonFireballRenderer | 7 |
 | 39 | `drowned` | DrownedRenderer | 2 |
-| 40 | `egg` | ThrownItemRenderer | 9 |
+| 40 | `egg` | ThrownItemRenderer(1.0, false) | 9 |
 | 41 | `elder_guardian` | ElderGuardianRenderer | 6 |
 | 42 | `enderman` | EndermanRenderer | 6 |
 | 43 | `endermite` | EndermiteRenderer | 6 |
 | 44 | `ender_dragon` | EnderDragonRenderer | 7 |
-| 45 | `ender_pearl` | ThrownItemRenderer | 9 |
+| 45 | `ender_pearl` | ThrownItemRenderer(1.0, false) | 9 |
 | 46 | `end_crystal` | EndCrystalRenderer | 7 |
 | 47 | `evoker` | EvokerRenderer | 3 |
 | 48 | `evoker_fangs` | EvokerFangsRenderer | 3 |
-| 49 | `experience_bottle` | ThrownItemRenderer | 9 |
+| 49 | `experience_bottle` | ThrownItemRenderer(1.0, false) | 9 |
 | 50 | `experience_orb` | ExperienceOrbRenderer | 9 |
-| 51 | `eye_of_ender` | ThrownItemRenderer() | 9 |
+| 51 | `eye_of_ender` | ThrownItemRenderer(1.0, true) | 9 |
 | 52 | `falling_block` | FallingBlockRenderer | 9 |
-| 53 | `fireball` | ThrownItemRenderer(3.0f) | 9 |
+| 53 | `fireball` | ThrownItemRenderer(3.0, true) | 9 |
 | 54 | `firework_rocket` | FireworkEntityRenderer | 9 |
 | 55 | `fox` | FoxRenderer | 5 |
 | 56 | `frog` | FrogRenderer | 5 |
@@ -690,8 +703,8 @@ Parts, regenerated from the sibling documents' Covers sections: 2 humanoid-base 
 | 105 | `polar_bear` | PolarBearRenderer | 5 |
 | 106 | `poplar_boat` | BoatRenderer(ML.POPLAR_BOAT) | 8 |
 | 107 | `poplar_chest_boat` | BoatRenderer(ML.POPLAR_CHEST_BOAT) | 8 |
-| 108 | `splash_potion` | ThrownItemRenderer | 9 |
-| 109 | `lingering_potion` | ThrownItemRenderer | 9 |
+| 108 | `splash_potion` | ThrownItemRenderer(1.0, false) | 9 |
+| 109 | `lingering_potion` | ThrownItemRenderer(1.0, false) | 9 |
 | 110 | `pufferfish` | PufferfishRenderer | 8 |
 | 111 | `rabbit` | RabbitRenderer | 4 |
 | 112 | `ravager` | RavagerRenderer | 3 |
@@ -703,9 +716,9 @@ Parts, regenerated from the sibling documents' Covers sections: 2 humanoid-base 
 | 118 | `skeleton` | SkeletonRenderer | 2 |
 | 119 | `skeleton_horse` | UndeadHorseRenderer(LT.SKELETON_HORSE_SADDLE, ML.SKELETON_HORSE_SADDLE, UndeadHorseRenderer.Type.SKELETON, UndeadHorseRenderer.Type.SKELETON_BABY) | 4 |
 | 120 | `slime` | SlimeRenderer | 6 |
-| 121 | `small_fireball` | ThrownItemRenderer(0.75f) | 9 |
+| 121 | `small_fireball` | ThrownItemRenderer(0.75, true) | 9 |
 | 122 | `sniffer` | SnifferRenderer | 5 |
-| 123 | `snowball` | ThrownItemRenderer | 9 |
+| 123 | `snowball` | ThrownItemRenderer(1.0, false) | 9 |
 | 124 | `snow_golem` | SnowGolemRenderer | 3 |
 | 125 | `spawner_minecart` | MinecartRenderer(ML.SPAWNER_MINECART) | 9 |
 | 126 | `spectral_arrow` | SpectralArrowRenderer | 9 |
@@ -791,16 +804,16 @@ Each item can be checked by a test that needs no jar.
 3. **Rotation order of `Quaternionf.rotationZYX`** was not read (the joml library is not in the artifact); the document no longer states an order. Recollection of the library is contradictory between readers (Z first versus X first, both recalled, not verified). Only read: `ModelPart.rotateBy` pairs `rotationZYX` with `getEulerAnglesZYX`. A reference render of a part with two non-zero rotations decides.
 4. **Sibling draw order** of parts inside a model is the iteration order of a hash map; it does not matter for opaque cutout geometry but could matter for translucent overlays.
 5. **When `setupAnim` runs**: `LivingEntityRenderer.submit` calls it before the layers, and the collector is given the model and the state; the doc infers that the collector also calls it when it draws. Not traced in `ModelFeatureRenderer`.
-6. **`Entity.getLightProbePosition(partial)`** (the position whose block light and sky light give `lightCoords`) was not read (searched: not disassembled in this round). Verified around it: pack is (block << 4) | (sky << 20), `withBlock` masks 0x00FF0000, block light is forced to 15 when on fire, full bright is 15728880.
+6. **`Entity.getLightProbePosition(partial)`** is read: the base implementation returns `getEyePosition(partial)`; `EntityRenderer` takes `BlockPos.containing` of it (floor per axis) for both light lookups. Subclass overrides were not enumerated (searched: only `Entity` and `EntityRenderer`). Pack is (block << 4) | (sky << 20), `withBlock` masks 0x00FF0000, block light is forced to 15 when on fire (`ThrownItemRenderer` with `fullBright` forces 15 always), full bright is 15728880.
 7. **Per-renderer overrides** of `getFlipDegrees`, `getWhiteOverlayProgress`, `isShaking`, `getModelTint` and `scale` were not enumerated here; each sibling part lists those of its renderers, and a completeness cross-check against the final siblings is outstanding. The `getAgeScale` overrides are resolved (6.3: turtle, dolphin, camel, goat, happy ghast, armadillo).
 8. **`AnimationState`** is resolved (5.5). Nothing outstanding.
-9. **Render pipelines** of `entityTranslucentCull`, `entitySolid`, `eyes`, `energySwirl`, `armorCutoutNoCull`, `armorCutoutNoCullGlint`, `armorTrim`, `trimmedArmorGlint`, `outline`, `entityShadow` and `leash`: only `entity_cutout`, `entity_cutout_cull` and the existence of translucent variants were read (6.7).
+9. **Render pipelines** still unread: `entitySolid`, `entity_solid_offset_forward`, `entity_solid_glint`, `armorTrim`, `trimmedArmorGlint`, `outline_cull` / `outline_no_cull`; the exact snippet contents (`ENTITY_SNIPPET`, `EYES_SNIPPET`, `ENTITY_SHADOW_SNIPPET`, `ENERGY_SWIRL_SNIPPET`, `OIT_ENTITY_SNIPPET`, depth-write flags of the cutout family) and `oit.glsl` were not read. The pipelines listed in 6.7 were read in this round.
 10. **`Lightmap.getBrightness`** is resolved (7.1). `LightCoordsUtil.lightCoordsWithEmission(light, 2)` (used by the see-through name tag), `Mth.floor` rounding of negative values and `ARGB.white(float)` clamping are not specified here beyond what 12 §2 gives for light.
 11. **`Mth.rotationAroundAxis(Y_AXIS, cameraOrientation)`** (the fire billboard rotation): meaning inferred as "the camera's rotation about the Y axis".
-12. **Collector ordering**: how `SubmitNodeCollector.order(n)` sorts submissions (ties, translucent phase) was not read.
-13. **Hitbox display**: the view-direction line, the dragon sub-box style and everything after the eye-height box of `EntityHitboxDebugRenderer.showHitboxes` were not read.
+12. **Collector ordering**: how `SubmitNodeCollector.order(n)` sorts submissions (ties, translucent phase) was not read. Searched again in this round: not read.
+13. **Hitbox display**: the view-direction line, the dragon sub-box style and everything after the eye-height box of `EntityHitboxDebugRenderer.showHitboxes` were not read. Searched again in this round: not read.
 14. **`RandomSource.createThreadLocalInstance(seed)`**: the generator algorithm (needed to place stuck arrows identically) and `PlayerModel.getRandomBodyPart` were not read (player layers, 12 §7).
-15. **`animateZombieArms` flag**: the meaning of the boolean (it selects the divisor 1.5 or 2.25) was not traced to the models that pass it (part 2).
+15. **`animateZombieArms` flag**: resolved (3.5, 6.3): `ZombieRenderState.isAggressive`. Where `isAggressive` is set on extraction was not read (part 2).
 16. **Equipment asset schema** (`EquipmentClientInfo`: layers per `LayerType`, `dyeable`, `usePlayerTexture`) is DATA read by `EquipmentLayerRenderer`; its JSON schema is for the extraction document (22).
 17. **`createRoots` shapes**: the 361 layer definitions are referenced by name only; each sibling part documents its own, and a completeness check (every row of Appendix A has a documented mesh) is for the reviewer.
 18. **`SpearAnimations`** is documented in 3.8 (all six public functions read); the remaining gap is Open question 25.
@@ -810,7 +823,8 @@ Each item can be checked by a test that needs no jar.
 22. **Font rendering** of name tags (`Font.width`, `prepareText`, `SEE_THROUGH` and `POLYGON_OFFSET` display modes) is outside this document; the gap list of the design README covers the font engine.
 23. **`HumanoidModel` duck-walk and shield constants** (3.7): where `DUCK_WALK_ROTATION` and the three shield angles are applied was not read here (12 §7.5 covers the arm poses).
 24. **`Ease.inOutBack` and `Ease.inOutElastic`**: resolved (3.8), both halves read. Nothing outstanding.
-25. **`UseParams` condition mapping** (3.8): the structure (E, knock and dmg as delay plus condition value; the sway, lower and raiseBack windows; the intensity and scale formulas) was read; only the `Optional.map` lambdas (invokedynamic, not disassembled) that map each condition record to a value remain inferred as `maxDurationTicks`.
+25. **`UseParams` condition mapping** (3.8): the structure (E, knock and dmg as delay plus condition value; the sway, lower and raiseBack windows; the intensity and scale formulas) was read; only the `Optional.map` lambdas (invokedynamic, not disassembled) that map each condition record to a value remain inferred as `maxDurationTicks`. Searched again in this round: the lambda bodies were not disassembled.
+26. **Verification coverage**: a review of 2.2 found the transformer table incomplete; it was re-read in this round (illager 0.9375 is also applied to villager, villager no-hat and witch layers; cave spider 0.7 only to `CAVE_SPIDER`). The `CustomHeadLayer` constants (`ITEM_SCALE` 0.625, `SKULL_SCALE` 1.1875, translate −0.25, rotate 180 about Y, scale (0.625, −0.625, −0.625)) were spot-checked and match 6.x. Sections 6.7, 7.1 to 7.5, 8.2 to 8.5, 8.7, 3.8 and Appendix A (shadow alpha and vertex order, leash vertex pairs and 0.7 shade, fire quad geometry, `ItemInHandLayer` offsets) were not re-verified in this round.
 
 ---
 

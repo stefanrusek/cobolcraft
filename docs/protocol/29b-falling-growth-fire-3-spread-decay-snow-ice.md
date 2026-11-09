@@ -6,7 +6,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for the bootstrap table of `Blocks`), plus the tag JSON files of the jar's `data/` tree for the tag members quoted in section 1.3. No execution. Class and method names are cited to say where a fact was read; they are not a design. |
 | Round | RS11 (GAP-10b of `../design/README.md` Part 5), part 3 |
-| Data versus code | Block loot tables (leaf drops, snow drops), block tags (`snow`, `nylium`, `leaves`, `logs`, `prevents_nearby_leaf_decay`, `cannot_support_snow_layer`, `support_override_snow_layer`, `ice_melts_when_destroyed_above`), the placed and configured features used by bone meal (`grass_bonemeal`, `nylium_bonemeal`, the per-biome bone meal feature lists) and the dimension environment attribute `water_evaporates` are DATA (22, 23, 26, 35). This part specifies the engines that interpret them and the code-defined rules (constants, orderings, random draws, algorithms). Block registry rows (ids, states, hardness, light, shapes, sounds) are 24 and are not repeated. |
+| Data versus code | Block loot tables (leaf drops, snow drops), block tags (`snow`, `nylium`, `leaves`, `logs`, `prevents_nearby_leaf_decay`, `cannot_support_snow_layer`, `support_override_snow_layer`, `ice_melts_when_destroyed_above`), the features used by bone meal (the placed feature `grass_bonemeal`, the feature `nylium_bonemeal` of the `worldgen/feature` registry, the per-biome bone meal feature lists) and the dimension environment attribute `water_evaporates` are DATA (22, 23, 26, 35). This part specifies the engines that interpret them and the code-defined rules (constants, orderings, random draws, algorithms). Block registry rows (ids, states, hardness, light, shapes, sounds) are 24 and are not repeated. |
 
 "Read" means read in the artifact this round. "(inferred)" marks a value deduced from what was read. "(recalled, not verified)" marks something not read; each such item is repeated in the Open questions. Block names are registry names (24 parts 1 to 8). This part uses the behaviour record, trigger kinds, probability notation and predicate vocabulary of `29b-falling-growth-fire-1-model-gravity-bonemeal.md` §2 (trigger codes RT, ST, PL, NU, SU, EV; `1/N`, `P(p)`, `U(a,b)`); the sibling split proposed in that document's §1.2 was overruled by the round's task text, which names this file; the blocks of the proposed parts 3 and 4 are split by the round instead as stated in 1.3.
 
@@ -39,7 +39,7 @@
 | Frost Walker (`replace_disk` of `frosted_ice` age 0) and `prevents_ice_melting` | 28 (enchantment effects), 17 §6 |
 | Bone meal item flow, `BonemealableBlock` contract, `NEIGHBOR_SPREADER` particle position | 29b part 1 §5 |
 | Falling blocks, crops, saplings | 29b part 1 §3, §6, §7 |
-| Copper weathering ticks (`WeatheringCopper`), the lightning rod's weathering variants | a later 29b part (copper); only the lightning clean-up walk is here (9.3) |
+| Copper weathering ticks (`WeatheringCopper`), the lightning rod's weathering variants, and the same bolt strike and copper walk seen from the copper side | 29b part 5 §8 (it and 9.2, 9.3 here agree on every value; 9.3 here adds the `visualOnly` gate of the fire step, which 29b part 5 §8 does not mention) |
 | Block ids, state ids, shapes, light levels, sounds, map colours | 24, 46 |
 | Particle shapes (`tinted_leaves`, `cherry_leaves`, `dripping_water`, `snowflake`, `mycelium`, bone meal) | 42 parts 4 and 6 |
 | Foliage and dry-foliage tints | 43 |
@@ -88,6 +88,7 @@ The classes of the rows were read from the bootstrap-method table of `Blocks` (t
 | `cannot_support_snow_layer` | `ice`, `packed_ice`, `barrier` |
 | `support_override_snow_layer` | `honey_block`, `soul_sand`, `mud` |
 | `ice_melts_when_destroyed_above` | `#blocks_motion` |
+| `required_for_poplar_leaf_ambience` | `#overworld_natural_logs` (the satisfying-block tag of the poplar ambient sound, 5.6) |
 | `leaves` | the 14 leaves blocks of 1.3 |
 | enchantment tag `prevents_ice_melting` | `silk_touch` |
 
@@ -97,14 +98,17 @@ A reimplementation takes these from the extracted data pack (23), not from this 
 
 ### 2.1 The "light gets through" test (`getLightDampeningInto`)
 
-`LightEngine.getLightDampeningInto(from, to, dir, defaultValue)` (read; the same text as 32 §2.1): let `fromEmpty` and `toEmpty` be the engine's `isEmptyShape` of each state (true for every ordinary full block, 32 §2); when both are true the result is `defaultValue`. Otherwise the face of `from` toward `dir` (the empty shape when `fromEmpty`) and the face of `to` toward the opposite direction (empty when `toEmpty`) are merged (`Shapes.mergedFaceOccludes`, read: true at once when either face is the full square; otherwise the two faces are cut to the plane that touches the shared boundary and the test is whether together they cover the whole unit square); when they cover it the result is **16**, else `defaultValue`.
+`LightEngine.getLightDampeningInto(from, to, dir, defaultValue)` (read; the same text as 32 §2.1): let `fromEmpty` and `toEmpty` be the engine's `isEmptyShape` of each state. `isEmptyShape` is read as "the state cannot occlude, **or** it does not use its shape for light occlusion" (`!canOcclude || !useShapeForLightOcclusion`). It is therefore true for every non-occluding state (glass, leaves, ice, water, powder snow, anything built with `noOcclusion`) and also for ordinary full blocks (which occlude but do not use their shape); it is false only for an occluding state whose class asks for the shape to be used (snow layers, slabs, stairs and similar). When both are empty the result is `defaultValue`. Otherwise the face of `from` toward `dir` (the empty shape when `fromEmpty`) and the face of `to` toward the opposite direction (empty when `toEmpty`) are merged (`Shapes.mergedFaceOccludes`, read: true at once when either face is the full square; otherwise the two faces are cut to the plane that touches the shared boundary and the test is whether together they cover the whole unit square); when they cover it the result is **16**, else `defaultValue`.
 
-Both callers pass `from` = the spreader's own state, `to` = the state above, `dir` = UP and `defaultValue` = the above state's `getLightDampening()`. The result is compared with 15: "survives" is `result < 15`. Consequences (inferred from the rule and the registry dampening values of 24 §5.2):
+The shape used is the state's **occlusion shape**, which `BlockBehaviour.getOcclusionShape` returns as the state's **outline shape** (`getShape` with the empty block getter at the origin; read). No separate occlusion table exists for a block unless its class overrides that method.
 
-- Air, glass, leaves (dampening 1), water (dampening 1 and not a full fluid): survive.
+Both callers pass `from` = the spreader's own state, `to` = the state above, `dir` = UP and `defaultValue` = the above state's `getLightDampening()`. The result is compared with 15: "survives" is `result < 15`. Consequences:
+
+- Air, glass, leaves (dampening 1), water (dampening 1 and not a full fluid), powder snow (dampening 1, section 8): `toEmpty` is true and so is `fromEmpty` for a full-block spreader, so the result is the above state's own dampening (0 or 1): survive.
 - An opaque full block above (dampening 15): never survives.
-- A block above whose bottom face covers the unit square (a bottom slab, a snow layer of two or more layers): never survives (result 16).
-- A top slab above (bottom face empty, dampening by 24): survives.
+- **A snow layer above, with any `layers` value from 1 to 8, gives 16.** Read: `SnowLayerBlock.getShape` is `SHAPES[layers]`, a column 16 pixels wide from the bottom up to `2 x layers` pixels (`Block.column(16, 0, 2k)`), so for every `layers` from 1 to 8 its DOWN face is the full unit square; the registry builder for `snow` has no `noOcclusion` (read in the `Blocks` bootstrap: `replaceable`, `forceSolidOff`, random ticks, strength, tool gate, sound, view blocking, push reaction) and the class returns true from `useShapeForLightOcclusion`, so `isEmptyShape` is false for it. One layer of snow therefore blocks exactly like eight. What lets a grass block or mycelium survive one layer is only the explicit exception in 3.2 step 2; the nylium test of 4.1 has no such exception (example 10).
+- A block above whose bottom face covers the unit square (a bottom slab): never survives (result 16; (inferred) from the same rule and the slab shapes of 24).
+- A top slab above (bottom face empty, dampening by 24): survives (inferred).
 
 ### 2.2 `U(a,b)`, nextIntBetweenInclusive, list pick
 
@@ -114,7 +118,7 @@ Both callers pass `from` = the spreader's own state, `to` = the state above, `di
 
 ### 2.3 Orders
 
-`Direction.values()` is DOWN, UP, NORTH, SOUTH, WEST, EAST (the field declaration order of `Direction`; (inferred) that the values array has the declaration order). `Direction.Plane.HORIZONTAL` iterates north, east, south, west (29b part 1 §2.5). The leaves distance scan, the frosted ice neighbour counts and the sponge search all use `Direction.values()`.
+`Direction.values()` is DOWN, UP, NORTH, SOUTH, WEST, EAST (read this round: the order in which `Direction.$values` stores the six constants, indices 0 to 5). `Direction.Plane.HORIZONTAL` iterates north, east, south, west (29b part 1 §2.5). The leaves distance scan, the frosted ice neighbour counts and the sponge search all use `Direction.values()`.
 
 ### 2.4 Breadth-first traversal (`BlockPos.breadthFirstTraversal`)
 
@@ -178,8 +182,8 @@ Type `NEIGHBOR_SPREADER`. `isValidBonemealTarget`: the block above is air **and*
 
 1. `s` = the state at `p`. If `s` is `short_grass` **and** `nextFloat() < 0.1` (the draw is skipped when `s` is not short grass): if the short grass block's `isValidBonemealTarget(level, p, s, source)` holds, call its `performBonemeal(level, random, p, s, source)` (the growth of short grass is a sibling part).
 2. Continue only when `s` (the state read before step 1) is air and `p` is inside the build height; otherwise stop.
-3. Draw `nextFloat()`. If `< 0.125`: take the biome's bone meal feature list (`BiomeGenerationSettings.getBoneMealFeatures`, data); if the list is empty stop, else pick one entry with `Util.getRandom(list, random)` and place that configured feature at `p` with the level, its chunk generator, the same random and `p`.
-4. Otherwise: if the placed feature `grass_bonemeal` exists in the registry (data), place it at `p` with the chunk generator, the random and `p`.
+3. Draw `nextFloat()`. If `< 0.125`: take the biome's bone meal feature list (`BiomeGenerationSettings.getBoneMealFeatures`, data); if the list is empty stop, else pick one entry with `Util.getRandom(list, random)` and place that entry (a `Feature` object, as held by the `worldgen/feature` registry; read: the list type is `List<Feature>`) at `p` with the signature (level, chunk generator, the same random, `p`).
+4. Otherwise: if the placed feature `grass_bonemeal` exists in the `Registries.PLACED_FEATURE` registry (file `worldgen/placed_feature/grass_bonemeal.json`, data), place it at `p` with the chunk generator, the random and `p`.
 
 So of the cells that reach step 3, about 1 in 8 grows a flower of the biome (if it has bone meal flowers) and 7 in 8 place the grass patch feature; a cell that is not air does nothing. Feature placement is 35 part 1 §"features outside decoration" (the feature `place` with the live random).
 
@@ -187,13 +191,13 @@ So of the cells that reach step 3, about 1 in 8 grows a flower of the biome (if 
 
 ### 4.1 `NyliumBlock` survival and decay
 
-Helper `canBeNylium(state, level, pos)`: `above` = the state at `pos.above()`; `d = getLightDampeningInto(state, above, UP, above.getLightDampening())`; true when `d < 15` (2.1). It has **no** snow-layer exception and **no** fluid test, unlike 3.2.
+Helper `canBeNylium(state, level, pos)`: `above` = the state at `pos.above()`; `d = getLightDampeningInto(state, above, UP, above.getLightDampening())`; true when `d < 15` (2.1). It has **no** snow-layer exception and **no** fluid test, unlike 3.2. Consequence of 2.1: a snow layer of **any** height (1 to 8 layers) above nylium gives result 16, so `canBeNylium` is false (and only in 3.2 does one layer get a pass); a snow layer on nylium makes the nylium revert to netherrack on its next random tick.
 
 RT: if `canBeNylium` is false: `setBlockAndUpdate(pos, netherrack default state)`. There is no spreading in a random tick and no light threshold.
 
 ### 4.2 Nylium bone meal
 
-Type `NEIGHBOR_SPREADER`. `isValidBonemealTarget`: the block above is air and `pos.above()` is inside the build height. `isBonemealSuccess`: always true. `performBonemeal`: `above = pos.above()`; if `above` is inside the build height, place the configured feature `nylium_bonemeal` (registry `configured_feature`, data; 35 part 4 lists it among the `overlay` features) with the chunk generator, the random and `above`; if the feature is absent nothing happens.
+Type `NEIGHBOR_SPREADER`. `isValidBonemealTarget`: the block above is air and `pos.above()` is inside the build height. `isBonemealSuccess`: always true. `performBonemeal`: `above = pos.above()`; if `above` is inside the build height, place the feature `nylium_bonemeal` (looked up in `Registries.FEATURE`, registry path `worldgen/feature`, key `NetherFeatures.NYLIUM_BONEMEAL`, file `worldgen/feature/nylium_bonemeal.json`, type `overlay`, data; there is no `configured_feature` registry in this jar, see 35 part 1 §1 and its Open question 2) with the chunk generator, the random and `above`; if the feature is absent nothing happens.
 
 ### 4.3 `NetherrackBlock` bone meal
 
@@ -231,7 +235,7 @@ Properties (declaration order of `createBlockStateDefinition`): `distance` 1 to 
 
 ### 5.4 Decay
 
-`decaying(state)` is `!persistent && distance == 7`. RT: when `decaying`: `Block.dropResources(state, level, pos)` (the block's loot table with no tool; DATA, 26), then `removeBlock(pos, false)`. There is no game event. Random-tick rate: 33 §2.4 and 29b part 1 §2.4. Because the random tick only exists at `distance == 7`, a leaf block whose distance is stale (says 7 while a log is near) is corrected by the scheduled tick of 5.3 before it can decay in the common case; the random tick itself does not recompute the distance (inferred from the code: `randomTick` only tests `decaying`).
+`decaying(state)` is `!persistent && distance == 7`. RT: when `decaying`: `Block.dropResources(state, level, pos)` (the block's loot table with no tool; DATA, 26), then `removeBlock(pos, false)`. There is no game event. Worked drop (`oak_leaves` table read this round): pool 1 gives the leaves item when the tool `can_shear` or `can_silk_touch`, else `oak_sapling` with a fortune `table_bonus` (chances 0.05, 0.0625, 0.083333336, 0.1); pool 2 (only without shear or silk touch) gives 1 to 2 `stick` with chances 0.02, 0.022222223, 0.025, 0.033333335, 0.1; pool 3 (same condition) gives `apple` with chances 0.005, 0.0055555557, 0.00625, 0.008333334, 0.025. Decay has no tool, so the leaves item is never dropped and the fortune level is 0: the first chance of each list applies, i.e. 5% sapling, 2% sticks, 0.5% apple per decayed oak leaf block (read: the sapling and apple entries carry the condition `survives_explosion`; the stick entry carries the function `explosion_decay` instead; with no explosion the radius parameter is absent and both are taken as having no effect, inferred). Random-tick rate: 33 §2.4 and 29b part 1 §2.4. Because the random tick only exists at `distance == 7`, a leaf block whose distance is stale (says 7 while a log is near) is corrected by the scheduled tick of 5.3 before it can decay in the common case; the random tick itself does not recompute the distance (inferred from the code: `randomTick` only tests `decaying`).
 
 Worldgen note: feature placement writes leaves with the distance computed by the tree placer (35 part 3), not by this code path.
 
@@ -256,10 +260,12 @@ All variants share 5.1 to 5.4. Registry rows are in 24 part 1 §14 and part 2; t
 Order in `LeavesBlock.animateTick` (variants with falling particles add step 4 after it):
 1. Generic block `animateTick`.
 2. Rain drip: if it is raining at `pos.above()` (`isRainingAt`), and `nextInt(15) == 1`, and **not** (the block below `canOcclude` and its UP face is sturdy): spawn a `dripping_water` particle below the block (`ParticleUtils.spawnParticleBelow`, 42 part 4). (The draw is skipped when it is not raining.)
-3. Ambient sound (`AmbientLeavesBlockSoundPlayer.playAmbientLeavesSounds`, only when the variant has one; the player is a record of sound, `chance` 300, a satisfying-block tag, required counts 1 and 3): draw `nextInt(300)`; when 0, walk the four horizontal neighbours in order, counting `a` = neighbours in the satisfying tag (the tag `required_for_poplar_leaf_ambience` for the poplars; counts only when the tag is set) and `b` = neighbours that are the **same block**; after each neighbour, if `a == 1` and `b == 3` exactly, play the sound locally (volume 1, pitch 1, category AMBIENT) at `(x, y, z)` of the block (not centred) and stop. The test is equality, not at least. The `noAmbientSound` player does nothing.
+3. Ambient sound (`AmbientLeavesBlockSoundPlayer.playAmbientLeavesSounds`, only when the variant has one; the player is a record of sound, `chance` 300, a satisfying-block tag, required counts 1 and 3): draw `nextInt(300)`; when 0, walk the four horizontal neighbours in order, counting `a` = neighbours in the satisfying tag (the tag `required_for_poplar_leaf_ambience` for the poplars, whose content in this jar is `#overworld_natural_logs`, 1.4; counts only when the tag is set) and `b` = neighbours that are the **same block**; after each neighbour, if `a == 1` and `b == 3` exactly, play the sound locally (volume 1, pitch 1, category AMBIENT) at `(x, y, z)` of the block (not centred) and stop. The test is equality, not at least. The `noAmbientSound` player does nothing.
 4. Falling leaves (`FallingParticlesLeavesBlock`): draw `nextFloat()`; if `>= chance` stop; if the block below has a full UP collision face (`Block.isFaceFull(belowState.getCollisionShape(level, below), UP)`) stop; else spawn the variant's particle below the block.
 
 `MangroveLeavesBlock.getParticlePos` is `pos.below()` (the bone meal particle position, 5.7). These particles are client-side only and are not part of the server state or any packet.
+
+Client face culling (`LeavesBlock.skipRendering`, read this round): a static flag `cutoutLeaves` (default true, set by `setCutoutLeaves`). When the flag is false and the neighbour state is any `LeavesBlock`, the face is skipped; otherwise the generic `skipRendering` rule applies. So with cutout leaves on (the default) leaves cull like any other block.
 
 ### 5.7 Mangrove leaves bone meal
 
@@ -289,11 +295,11 @@ There is no melting by sun or by biome in this block's code: only the block-ligh
 
 ### 6.3 Snow and the snowy property
 
-`snow` in tag `snow` makes a grass block, mycelium or podzol below `snowy = true` (3.1). A one-layer snow does not kill grass (3.2 step 2); two or more layers do (2.1).
+`snow` in tag `snow` makes a grass block, mycelium or podzol below `snowy = true` (3.1). A one-layer snow does not kill grass or mycelium only because of the explicit exception of 3.2 step 2; the occlusion shape of every layer count blocks light (result 16, 2.1), so two or more layers kill them, and any layer count kills nylium (4.1).
 
 ### 6.4 Drops
 
-The loot table of `snow` (DATA) gives the layer count dependent snowballs and requires a shovel-like tool (`requiresCorrectToolForDrops` in the registry). The RT melt calls `dropResources` without a tool, so the table's tool condition decides what drops (26).
+The loot table of `snow` (`loot_table/blocks/snow.json`, DATA, read this round) is one pool whose condition is `entity_properties` on `this` with an empty predicate. Inside it two branches are tried in order. Branch one applies when the tool does **not** have silk touch (`inverted` `tool/can_silk_touch`) and gives `snowball` with count equal to `layers` (1 to 8). Branch two gives the `snow` item with count equal to `layers` for 1 to 7 and `snow_block` at 8. The table has no tool-class (shovel) condition; `requiresCorrectToolForDrops` in the registry is only the harvest gate for players. Read this round: `LootItemEntityPropertyCondition.test` reads the entity parameter named by `entity` as an optional value and, when its `predicate` field is present, calls `EntityPredicate.matches` with it; `EntityPredicate.matches` returns false at once for a null entity. `Block.dropResources(state, level, pos)` builds the loot parameters from the origin, an empty tool and an optional block entity only (no entity parameter), so the pool condition fails and the block-light melt of 6.2 RT **drops nothing**. (That the table's `"predicate": {}` decodes to a present, empty predicate and not to an absent one is inferred from the codec's field type being an optional and from the class's `entityPresent` helper, which wraps an empty entity predicate builder; the codec was not disassembled further.) A player break passes an entity, so the drops of the two branches apply there.
 
 ### 6.5 `snow_block`
 
@@ -309,17 +315,19 @@ Random-ticking. `meltsInto()` is the water default state (a source).
 |---|---|
 | RT | if `getBrightness(BLOCK, pos) > 11 - state.getLightDampening()` call `melt` (the dampening of `ice` is 1, 24 part 3 §7.10; so the test is block light above 10). Sky light never melts ice. |
 | `melt(state, level, pos)` | if the environment attribute `water_evaporates` at `pos` is true: `removeBlock(pos, false)` and stop (no event). Otherwise `setBlockAndUpdate(pos, water)`, `level.neighborChanged(pos, water block, no orientation)`, game event `block_destroy` at `pos` with the old state as context. |
-| `playerDestroy` (after the normal player destroy) | unless the tool has an enchantment in tag `prevents_ice_melting`: if `water_evaporates` at `pos`: `removeBlock(pos, false)` and stop; else with `b` = the state below: when `b` is in `ice_melts_when_destroyed_above` or `b` is a liquid (`liquid()`), `setBlockAndUpdate(pos, water)` |
+| `playerDestroy` (after the normal player destroy) | unless the tool has an enchantment in tag `prevents_ice_melting`: if `water_evaporates` at `pos`: `removeBlock(pos, false)` and stop; else with `b` = the state below: when `b` is in `ice_melts_when_destroyed_above` **or** `b` is a liquid (`liquid()`), `setBlockAndUpdate(pos, water)` (read again this round: the test is an OR of the two) |
 
-Ice has a loot table only for silk touch (24 part 3 §7.4); without silk touch it drops nothing and, when the support below blocks motion or is liquid, leaves water.
+Ice has a loot table only for silk touch (`blocks/ice.json`: a single pool conditioned on `tool/can_silk_touch` yielding `ice`; the row is in 24 part 3 §3.3, "silk touch only"); without silk touch it drops nothing and, when the support below blocks motion or is liquid, leaves water.
+
+**Discrepancy with 24 part 3 §7.10 (ice row).** That row says the block becomes water when the block below "is a liquid and not in tag `ice_melts_when_destroyed_above`". The artifact says the opposite combination (in the tag **or** a liquid), as in the table above, so this document is correct and 24 part 3 should be corrected by its owner (noted for the reader or orchestrator of 24 part 3; that file was not edited in this round).
 
 ### 7.2 `packed_ice` and `blue_ice`
 
-`packed_ice` is a plain `Block` (friction 0.98, strength 0.5), `blue_ice` is a `HalfTransparentBlock` (strength 2.8, friction 0.989). Neither random-ticks, melts, nor reacts to neighbours. `HalfTransparentBlock` only affects client face culling (a face is skipped against the same block). Friction values matter for entity movement (13 §1).
+`packed_ice` is a plain `Block` (friction 0.98, strength 0.5), `blue_ice` is a `HalfTransparentBlock` (strength 2.8, friction 0.989). Neither random-ticks, melts, nor reacts to neighbours. `HalfTransparentBlock` only affects client face culling (a face is skipped against the same block); `IceBlock` extends it too, so `ice` and `frosted_ice` inherit the culling. Friction values matter for entity movement (13 §1).
 
 ### 7.3 `FrostedIceBlock` (`frosted_ice`)
 
-Property `age` 0 to 3 (default 0; 4 states). Constants: `MAX_AGE` 3, `NEIGHBORS_TO_AGE` 4, `NEIGHBORS_TO_MELT` 2. Not random-ticking: it works by scheduled ticks. `getCloneItemStack` is empty. Light dampening and shape are those of ice.
+Property `age` 0 to 3 (default 0; 4 states). Constants: `MAX_AGE` 3, `NEIGHBORS_TO_AGE` 4, `NEIGHBORS_TO_MELT` 2. Not random-ticking: it works by scheduled ticks. `getCloneItemStack` is empty. Light dampening and shape are those of ice. Builder values (read this round from `Blocks`, agreeing with 24 part 6): friction 0.98, strength 0.5, sound glass, `noOcclusion`.
 
 `fewerNeighboursThan(level, pos, limit)`: counting, over `Direction.values()`, neighbours that are `frosted_ice`, return false as soon as the count reaches `limit`; true after the loop.
 
@@ -338,7 +346,7 @@ Reading note: ageing happens only inside `slightlyMelt` called from step 3, one 
 44 part x1 §2.2 is the specification (stuck multiplier `(0.9, 1.5, 0.9)`, snowflake particles, the `FREEZE` and `EXTINGUISH` effects and the burning-entity destruction callback, landing sound without fall damage, collision shape with the 2.5 fall-distance threshold and the 0.9 high "falling" box, walkers by tag `powder_snow_walkable_mobs` or leather boots, inside-box rule, pickup with level event 2001, `skipRendering` against the same block, `isPathfindable` true). This part re-read every one of those rows against the artifact and found no difference. Items this part adds:
 
 - Registry (24 part 4): not random-ticking, strength 0.25, `dynamicShape`, `noOcclusion`, `isRedstoneConductor` never; class `PowderSnowBlock`.
-- It is in tag `snow` (1.4), so it sets `snowy` below grass (3.1) and it cannot be an upper cover that kills grass by dampening.
+- It is in tag `snow` (1.4), so it sets `snowy` below grass (3.1). It does not kill grass by dampening (read this round): `PowderSnowBlock` overrides only the collision shape, the visual shape (empty) and the entity-inside shape, so its **outline and occlusion shape is the default full block**. Because it is built with `noOcclusion`, `isEmptyShape` is true for it (2.1) and the test of 2.1 returns the state's own dampening, which is **1** (the default rule: not solid-render, and `propagatesSkylightDown` is false for a full outline shape or a fluid-bearing state, so 1 and not 0). 1 is below 15, so grass and mycelium under powder snow survive.
 - The powder snow cauldron and its fill by snowfall are 33 §4.4 step 2.2 and 24 part 4 §6; its pickup path uses the bucket item flow (25 part 5).
 - Walking mobs: the goal that climbs on top of powder snow is 18 (mob framework).
 
@@ -352,7 +360,7 @@ Reading note: ageing happens only inside `slightlyMelt` called from step 3, one 
 | Ice, snow layer and frosted ice melting by block light | 6.2, 7.1, 7.3 |
 | Frosted ice creation (Frost Walker) | 28, 17 §6 |
 | Selection of the lightning target and bolt spawn | 33 §4.4 `tickThunder` |
-| Fire started by a bolt (`spawnFire`, difficulty gate) | 33 §4.4 and 33 section on game rules (`fire_spread_radius_around_player`) |
+| Fire started by a bolt (`spawnFire`, difficulty gate and `visualOnly` gate, 9.4) | 33 §4.4 and 33 section on game rules (`fire_spread_radius_around_player`) |
 
 ### 9.2 Lightning rod strike (`LightningRodBlock`, ticking part)
 
@@ -365,15 +373,15 @@ Constants: `ACTIVATION_TICKS` 8, `RANGE` 128 (used by the target search of 33), 
 | PL | if the old block is not this block and `powered` and no tick of this block is scheduled at `pos`: schedule a tick with delay 8 (this restores the timer after a chunk reload) |
 | removal | if the state was `powered`, `updateNeighbours` |
 | signals | signal source; `ownSignal` 15 when powered else 0; `getDirectSignal` 15 toward the direction equal to `facing` while powered, else 0 |
-| client `animateTick` | when thundering, `nextInt(200) <= gameTime mod 200` is **false** for most cells (the test is "draw <= gameTime % 200" negated: it continues only when the draw is **greater**... see below), and the block is the top block of its column (`y == WORLD_SURFACE height - 1`): spawn 1 or 2 (`UniformInt(1, 2)`) `electric_spark` particles along the axis of `facing` with spacing 0.125 |
+| client `animateTick` | only when the level is thundering: draw `nextInt(200)` from the level's own random; continue only when the draw is **at most** `gameTime mod 200` (`<=`); then continue only when the block's Y equals the `WORLD_SURFACE` height of its column minus 1 (it is the top block of the column); then spawn `UniformInt(1, 2)` `electric_spark` particles along the axis of `facing` with spacing 0.125 |
 
-The `animateTick` condition as read: when the level is thundering and `nextInt(200) <= (gameTime mod 200)` is **not** satisfied (the bytecode jumps to "return" when the draw is greater than the remainder), the method returns; so sparks appear only when the draw is **at most** the remainder of the game time modulo 200; then the top-of-column test applies. (Open question 5 asks for a second reading of this inequality.)
+The `animateTick` condition was re-read this round: the long comparison of the draw against the remainder jumps to the return when the draw is greater, so sparks need draw `<=` `gameTime mod 200`. Early in each 200-tick cycle sparks are rare, late in it they are frequent.
 
 The weathering variants (`exposed_`, `weathered_`, `oxidized_lightning_rod`) are `WeatheringLightningRodBlock`; their ticking is the copper part. Waxed variants are `LightningRodBlock`.
 
 ### 9.3 Copper clean-up on a strike (`LightningBolt.clearCopperOnLightningStrike`)
 
-Runs on the server when the bolt's life counter equals 2 (the first tick of the strike, after the optional fire step and `powerLightningRod`, before the game event `lightning_strike`); it is **not** gated on the bolt's `visualOnly` flag (the flag is only tested later, for entity damage).
+Runs on the server when the bolt's life counter equals 2 (the first tick of the strike, after the optional fire step and `powerLightningRod`, before the game event `lightning_strike`); neither `powerLightningRod` nor `clearCopperOnLightningStrike` is gated on the bolt's `visualOnly` flag (the flag gates the fire step, 9.4, and the later entity damage). The same strike and walk are described from the copper side in 29b part 5 §8; the two agree on every value (strike position, 3 to 5 walks of 1 to 8 steps, 10 candidates per step, events 3002 with data -1), so only the points that matter for this part are kept below.
 
 Strike position `strike`: the block containing `(bolt.x, bolt.y - 1.0E-6, bolt.z)` (so the bolt standing on the bottom face of a target cell strikes the block below it; for a rod target of 33 the bolt is placed on the rod's upper face and the strike block is the rod itself).
 
@@ -383,14 +391,14 @@ Strike position `strike`: the block containing `(bolt.x, bolt.y - 1.0E-6, bolt.z
    2. If `weathering`: `setBlockAndUpdate(strike, WeatheringCopper.getFirst(s))` (the unaffected variant with the same properties).
    3. `walks = 3 + nextInt(3)` (3 to 5). Repeat `walks` times: `steps = 1 + nextInt(8)` (1 to 8); `randomWalk(level, strike, steps)`.
    4. `randomWalk`: the cursor is reset to `strike`; repeat up to `steps` times: `randomStep(level, cursor)`; if it returns nothing stop this walk, else move the cursor to the returned position.
-   5. `randomStep(level, cursor)`: iterate lazily over **10** random positions in the cube `cursor +- 1` (each position draws `nextInt(3)` for x, then y, then z, `BlockPos.randomBetweenClosed`; the draws are made as positions are consumed). For each position in turn: if its block is a `WeatheringCopper`: `prev = WeatheringCopper.getPrevious(state)`; when present, `setBlockAndUpdate(position, prev)`; send level event **3002** at the position with data **-1**; return that position (even when there was no previous state). Positions that are not weathering copper are skipped. After the 10 positions return nothing.
+   5. `randomStep(level, cursor)`: iterate lazily over **10** random positions in the cube `cursor +- 1` (the helper is `BlockPos.randomInCube(random, 10, cursor, 1)`, which delegates to `randomBetweenClosed`; each position draws `nextInt(3)` for x, then y, then z; the draws are made as positions are consumed). For each position in turn: if its block is a `WeatheringCopper`: `prev = WeatheringCopper.getPrevious(state)`; when present, `setBlockAndUpdate(position, prev)`; send level event **3002** at the position with data **-1**; return that position (even when there was no previous state). Positions that are not weathering copper are skipped. After the 10 positions return nothing.
    The random source is the level's.
 
 So a strike scrapes one oxidation step off up to a few connected pieces of weathering copper around the strike block; waxed copper is never changed (a waxed struck block still starts the walks); an unwaxed struck block is reset to the unaffected variant.
 
 ### 9.4 Bolt tick order (blocks only)
 
-On the server at life 2: (a) on Normal and Hard difficulty `spawnFire(4)` (33), (b) `powerLightningRod`, (c) `clearCopperOnLightningStrike(strike)`, (d) game event `lightning_strike`. The bolt's later life steps (damage, flashes, removal) are 21 §8.6.
+On the server at life 2: (a) on Normal and Hard difficulty **and only when the bolt is not `visualOnly`** (`spawnFire` itself returns at once for a visual-only bolt, which is the skeleton-trap bolt of 33 §4.4 step 7) `spawnFire(4)` (33), (b) `powerLightningRod`, (c) `clearCopperOnLightningStrike(strike)`, (d) game event `lightning_strike`; steps (b) to (d) run for a visual-only bolt too. The bolt's later life steps (damage, flashes, removal) are 21 §8.6.
 
 ## 10. Sponge, wet sponge, magma
 
@@ -427,24 +435,24 @@ PL only: when the environment attribute `water_evaporates` at `pos` is true: `se
 
 1. **Grass bone meal walk.** Clicked grass at (0, 64, 0), air above, so `above = (0, 65, 0)`. For `i = 40`, `steps = 2`. Step 1 draws `nextInt(3) = 2` (`dx = +1`), `nextInt(3) = 0` (the factor is -1), `nextInt(3) = 2` (product -2, `dy = -1`), `nextInt(3) = 1` (`dz = 0`): `p = (1, 64, 0)`. `stopBonemealSpread`: the block below `(1, 63, 0)` must be grass, and `(1, 64, 0)` must not have a full collision shape; if it is a grass block with air at `(1, 64, 0)` the walk continues. Step 2 moves `p` again from `(1, 64, 0)`. For `i = 5` (`steps = 0`) the effect is placed at `(0, 65, 0)` itself.
 2. **Dirt spread.** Grass at `(10, 70, 10)` with sky light 15 above and air above: step 3 of 3.2. Draws `(nextInt(3), nextInt(5), nextInt(3)) = (2, 0, 0)` give `t = (11, 67, 9)`. If that cell is `dirt` with air above at `(11, 68, 9)` (dampening 0, no fluid), it becomes grass block; `snowy` is true only when the block at `(11, 68, 9)` is in tag `snow`. A podzol or coarse dirt at `t` is never converted.
-3. **Grass under cover.** A grass block with a stone above: `canStayAlive` is false on its next random tick; the block becomes dirt. With a one-layer snow above it stays grass and `snowy` is true; with a two-layer snow above it becomes dirt (2.1, (inferred) for the layer-2 case).
+3. **Grass under cover.** A grass block with a stone above: `canStayAlive` is false on its next random tick; the block becomes dirt. With a one-layer snow above it stays grass and `snowy` is true; with a two-layer snow above it becomes dirt (2.1: the occlusion shape of a snow layer has a full bottom face for every layer count, so the result is 16; only the explicit exception of 3.2 step 2 saves the one-layer case).
 4. **Leaves distance.** A log at `(0, 0, 0)`; leaves at `(1, 0, 0)`, `(2, 0, 0)` ... `(8, 0, 0)` placed by world generation with default `distance` 7 and `persistent` false. After the scheduled ticks (one block per tick) the distances are 1, 2, ..., 7 for x = 1 to 7 and 7 for x = 8 (`min(7, 6 + 1)`). The leaves at x = 7 and x = 8 are random-ticking and decay (drops by the loot table, removal); the one at x = 6 does not. A leaf player-placed at x = 8 keeps `persistent = true`, never random-ticks and never decays.
 5. **Frosted ice life.** Placed in full daylight in an open area (fewer than 4 frosted neighbours, so every tick passes the filter): first tick after `U(60, 120)` ticks, ages 0 to 1; then ticks every `U(20, 40)`: ages 1 to 2, 2 to 3, then the fourth accepted tick melts it (water, or removal when `water_evaporates`). Total: between 60 + 3 x 20 = 120 and 120 + 3 x 40 = 240 ticks. At night (raw brightness 0) the light test fails at every age (`0 > 11 - 0 - 1 = 10` is false), so it only reschedules and never melts by itself; neighbouring melts through `neighborChanged` (fewer than 2 frosted neighbours when one of them changes) still melt it.
 6. **Frosted ice in a dense disk.** A block with 4 or more frosted neighbours passes the filter only when `nextInt(3) == 0`, so it ages on about a third of its ticks; a block with at least 2 frosted neighbours is not melted by `neighborChanged`.
 7. **Snow melting.** `snow` with block light 12 at its cell: random tick drops it and removes it. Block light 11: nothing, however bright the sky. `snow_block` never melts. `ice` with block light 11: `11 > 10`, it melts (water, or removed in a dimension with `water_evaporates`); block light 10 does not melt it.
 8. **Sponge.** A sponge placed on a 1x1 pond (one water source, solid around it): the traversal accepts the sponge and the source (count 2), removes the source, the sponge becomes `wet_sponge` (flags 2) and `sponge_absorb` plays. A sponge placed in a large body of water with all neighbours water absorbs at most 64 positions: the layers around it at traversal distance 0, 1, 2, 3 hold 1, 6, 18, 38 positions (all water), cumulative 63; two positions of distance 4 are then taken and the count reaches 65, so 64 water cells are removed (the ones nearest by queue order, neighbours in the order down, up, north, south, west, east). A sponge with no water within 6 steps stays a sponge.
 9. **Wet sponge in the Nether.** Placed in a dimension with `water_evaporates`: immediately becomes `sponge`, event 2009, sound pitch between 0.7 and 0.84 (`(1 + r x 0.2) x 0.7`, r in [0, 1)).
-10. **Nylium and netherrack.** Crimson nylium with a stone block above: `canBeNylium` is false (opaque cover), it becomes netherrack on a random tick. Netherrack with air above and only crimson nylium within one block: bone meal turns it into crimson nylium; with both kinds present it picks one with `nextBoolean`.
-11. **Lightning rod.** A rod struck at game tick T: `powered` true at once, neighbours behind it updated, `ST` at T + 8 turns it off. A second strike during those 8 ticks sets `powered` again and schedules another tick; the block therefore unpowers at the first of the scheduled ticks (two ticks may be pending: Open question 6).
+10. **Nylium and netherrack.** Crimson nylium with a stone block above: `canBeNylium` is false (opaque cover), it becomes netherrack on a random tick. Netherrack with air above and only crimson nylium within one block: bone meal turns it into crimson nylium; with both kinds present it picks one with `nextBoolean`. **Nylium under snow:** crimson nylium with a **one-layer** snow above: `getLightDampeningInto` gives 16 (2.1), `canBeNylium` is false, and the nylium becomes netherrack on its next random tick, whereas a grass block under the same snow survives (3.2 step 2). The same holds for 2 to 8 layers. Powder snow above nylium leaves it alone (dampening 1, section 8).
+11. **Lightning rod.** A rod struck at game tick T: `powered` true at once, neighbours behind it updated, `ST` at T + 8 turns it off. A second strike during those 8 ticks sets `powered` again and schedules another tick; the block therefore unpowers at the first of the scheduled ticks (two ticks may be pending: Open question 4).
 
 ## 12. Validation
 
 An implementation is validated against this document when:
 
-1. Grass: a grass block with opaque cover, a full fluid source above, or a two-layer snow above reverts to dirt on its next random tick; with air, glass, leaves, water that is not a source, or a one-layer snow above it stays. With light at `pos.above()` of 8 or less it never spreads; with 9 or more each random tick makes 4 attempts with offsets x -1..1, y -3..1, z -1..1 and converts only plain `dirt` whose cover passes `canPropagate`. Mycelium follows the same rule. Podzol never changes by itself.
+1. Grass: a grass block with opaque cover, a full fluid source above, or a snow above of two or more layers reverts to dirt on its next random tick; with air, glass, leaves, water that is not a source, or a one-layer snow above it stays. With light at `pos.above()` of 8 or less it never spreads; with 9 or more each random tick makes 4 attempts with offsets x -1..1, y -3..1, z -1..1 and converts only plain `dirt` whose cover passes `canPropagate`. Mycelium follows the same rule. Podzol never changes by itself.
 2. The `snowy` property follows the block in tag `snow` above on every shape update from above and on placement.
 3. Grass bone meal: 128 attempts, walk length `i / 16`, abandon on the stop rule, short grass bonus 0.1, flower 0.125, empty flower list placing nothing.
-4. Nylium: reverts to netherrack on a random tick when covered by an opaque block; bone meal places the `nylium_bonemeal` feature; netherrack bone meal chooses the nylium type as in 4.3.
+4. Nylium: reverts to netherrack on a random tick when covered by an opaque block or by a snow layer of any height (1 to 8); bone meal places the `nylium_bonemeal` feature; netherrack bone meal chooses the nylium type as in 4.3.
 5. Leaves: 28 states; `distance` is the minimum neighbour distance plus one with logs at 0, capped at 7; placement sets `persistent`; a scheduled tick (delay 1) recomputes the distance; random ticks exist only for `distance == 7` and `persistent == false`; decay drops by loot and removes without an event; waterlogged leaves schedule a water tick on every shape update.
 6. Snow layer: collision shape height 2(layers - 1) pixels, outline 2 x layers; survival rule of 6.2; random tick melts above block light 11 with a game event; placement merges up to 8.
 7. Ice melts above block light 10 (dampening 1); frosted ice timing, age stepping and neighbour rules as 7.3; packed ice and blue ice are inert.
@@ -454,15 +462,12 @@ An implementation is validated against this document when:
 
 ## 13. Open questions
 
-1. **Data behind bone meal.** The contents of the placed feature `grass_bonemeal`, the configured feature `nylium_bonemeal` and each biome's bone meal feature list are data (35) and were not tabulated; only their use is specified.
+1. **Data behind bone meal.** The contents of the placed feature `grass_bonemeal`, the feature `nylium_bonemeal` (`worldgen/feature` registry) and each biome's bone meal feature list are data (35) and were not tabulated; only their use is specified.
 2. **Client side of sponge and leaves.** `SpongeBlock.onPlace` and `neighborChanged` take a `Level`, not a `ServerLevel`. Whether the client runs them (predictively) was not read; 29 §2 decides which side calls `onPlace` and `neighborChanged`. The server behaviour is specified.
 3. **Re-entrancy in the sponge search.** The traversal removes water with calls that notify neighbours; those notifications reach the sponge's `neighborChanged` before the sponge becomes wet, which can start a nested `tryAbsorbWater`. The net effect on how many positions are absorbed was not traced (inferred: the outer search continues; the inner search finds fewer targets because the queue positions were already emptied).
-4. **Snow layer above grass.** That a snow layer of two or more layers kills the grass below follows from the occlusion rule of 2.1 and the shapes of 6.1 (a full bottom face), not from a dedicated line; it was not read as a worked case in the artifact.
-5. **Lightning rod spark condition.** The inequality between the `nextInt(200)` draw and `gameTime mod 200` in `LightningRodBlock.animateTick` is described from a negated jump; it is client-only and cosmetic. A second reading is recommended before a client implements it.
-6. **Rod timer on a second strike.** `onLightningStrike` schedules a tick without checking for an existing one, so two ticks may be pending; whether the scheduled-tick queue deduplicates (29 §4) was not re-checked here.
-7. **`Direction.values()` order** is taken from the field declaration order of the enum class ((inferred)); the order of the derived array was not read.
-8. **Colour byte order of the azalea particle** (0xFF70922D read as ARGB) is (inferred) from the option's colour argument; 42 and 43 own the particle colour model.
-9. **Leaf drops and snow drops** depend on loot tables (26) and were not read; the claim that `dropResources` uses no tool for leaf decay is from the call with no tool argument.
-10. **Weathering copper** (`WeatheringCopper.getFirst`, `getPrevious`, the next-block map) is only used here; its ticking and the waxing map are the copper part and 24 part 4 §"weathering".
-11. **`Block.isFaceFull` and `isCollisionShapeFullBlock`** are used by name (24 part 1 §6); the exact tolerance of the full-face test was not re-read.
-12. **Sound details** (`sponge_absorb`, `wet_sponge_dries`, `poplar_leaves_ambient`) are named, not mapped to files; sounds are 08 and the extraction tool.
+4. **Rod timer on a second strike.** `onLightningStrike` schedules a tick without checking for an existing one, so two ticks may be pending; whether the scheduled-tick queue deduplicates (29 §4) was not re-checked here.
+5. **Colour byte order of the azalea particle** (0xFF70922D read as ARGB) is (inferred) from the option's colour argument; 42 and 43 own the particle colour model.
+6. **Other leaf tables.** `oak_leaves` and `snow` were read (5.4, 6.4); the other leaf blocks have their own loot tables, not read here (26 owns them). That `dropResources` passes no entity and an empty tool was read (6.4).
+7. **Weathering copper** (`WeatheringCopper.getFirst`, `getPrevious`, the next-block map) is only used here; its ticking and the waxing map are the copper part and 24 part 4 §"weathering".
+8. **Tolerance of `isShapeFullBlock`.** `Block.isFaceFull(shape, dir)` was read as exactly `isShapeFullBlock(shape.getFaceShape(dir))` (the shape's face in that direction), with the result cached; the numeric tolerance inside `isShapeFullBlock`'s computation was not read, which matters only for shapes with edges that differ from the unit square by tiny amounts. `isCollisionShapeFullBlock` is used by name (24 part 1 §6).
+9. **Sound details** (`sponge_absorb`, `wet_sponge_dries`, `poplar_leaves_ambient`) are named, not mapped to files; sounds are 08 and the extraction tool.

@@ -89,8 +89,7 @@ joined in front of the base name with an underscore (`ColorCollection.prefixWith
 strings were read from `BlockItemIds`: `terracotta`, `carpet`, `stained_glass`, `stained_glass_pane`, `shulker_box`,
 `glazed_terracotta`, `concrete`, `concrete_stairs`, `concrete_slab`, `concrete_powder`, and from `ItemIds`: `harness`. The
 single-item rows have as key the lower-case field name (checked for all 425 rows: the key read from `BlockItemIds` or
-`ItemIds` equals the lower-case field name, with the one exception `REDSTONE`, whose key is `redstone` and whose block
-is `redstone_wire`, 25-1 §4.3).
+`ItemIds` equals the lower-case field name, with the one exception `REDSTONE`: the `BlockItemIds` field is named `REDSTONE_DUST` (string `redstone`) while the `Items` field is `REDSTONE`; its block is `redstone_wire`, 25-1 §4.3. In this range `REDSTONE` is the only mismatch; mismatches exist elsewhere, for example `TRIPWIRE` giving `string`, but they are outside this range).
 
 ## 3. The construction groups (every row of the range, by family)
 
@@ -127,7 +126,7 @@ Max stack is 64 unless stated.
 | 776 to 785 | the ten coral fans: `tube`, `brain`, `bubble`, `fire`, `horn`, then the five `dead_` fans | `StandingAndWallBlockItem(fan block, matching `*_coral_wall_fan` block, DOWN)` (25-1 §5.3) | 64 | none |
 | 786 | `blue_ice` | `BlockItem` | 64 | none |
 | 787 | `conduit` | `BlockItem` | 64 | rarity uncommon |
-| 788 to 822 | 17 stairs (`polished_granite_stairs` to `deepslate_tile_stairs`) and 17 slabs (`polished_granite_slab` to `deepslate_tile_slab`) | `BlockItem` | 64 | none |
+| 788 to 822 | 18 stairs (ids 788 to 805, `polished_granite_stairs` to `deepslate_tile_stairs`, with `stone_stairs` at 794 among them) and 17 slabs (ids 806 to 822, (`polished_granite_slab` to `deepslate_tile_slab`; 35 rows in all) | `BlockItem` | 64 | none |
 | 823 | `scaffolding` | `ScaffoldingBlockItem` (25-1 §5.3) | 64 | fuel bamboo |
 | 824 | `redstone` | `BlockItem` made by `createBlockItemWithCustomItemName` over block `redstone_wire` (item prefix) | 64 | `provides_trim_material` = `redstone` (delayed holder component, section 5.5) |
 | 825 | `redstone_torch` | `StandingAndWallBlockItem(redstone_torch, redstone_wall_torch, DOWN)` | 64 | none |
@@ -192,7 +191,7 @@ that part 1 did not read.
 A `BlockItem` that overrides only `getPlacementState`: when the placing player is non-null and
 `Player.canUseGameMasterBlocks()` is false, the placement state is null (so `BlockItem.place` returns FAIL with nothing
 written, 25-1 §5.2 step 4); otherwise the normal `BlockItem` placement state is used. A null player (a dispenser or a
-command) is allowed. `Player.canUseGameMasterBlocks()` is read: it is true only when the player's abilities have `instabuild` set (creative mode) and the player's permission set has the `COMMANDS_GAMEMASTER` permission (command level `GAMEMASTERS`); the base `Player.permissions()` is the empty set, and `ServerPlayer.permissions()` returns the server's profile permissions for the player (`getProfilePermissions`; the numeric level of `GAMEMASTERS` is (recalled, not verified) 2). So a survival player, or a creative player without gamemaster rights, cannot place a command block (29 Open question 4; Open question 1).
+command) is allowed. `Player.canUseGameMasterBlocks()` is read: it is true only when the player's abilities have `instabuild` set (creative mode) and the player's permission set has the `COMMANDS_GAMEMASTER` permission (command level `GAMEMASTERS`); the base `Player.permissions()` is the empty set, and `ServerPlayer.permissions()` returns the server's profile permissions for the player (`getProfilePermissions`; the numeric level of `GAMEMASTERS` is 2, read: `PermissionLevel.<clinit>` constructs `ALL` (id 0, serialized name `all`), `MODERATORS` (1, `moderators`), `GAMEMASTERS` (2, `gamemasters`), `ADMINS` (3, `admins`), `OWNERS` (4, `owners`), and `Permissions.COMMANDS_GAMEMASTER` is built from `GAMEMASTERS`; how `getProfilePermissions` derives the level for a player is not read). So a survival player, or a creative player without gamemaster rights, cannot place a command block (29 Open question 4; Open question 1).
 
 ### 4.2 `PlaceOnWaterBlockItem` (`lily_pad`, id 497: outside this range, read here because no other part reads the class)
 
@@ -238,10 +237,10 @@ entity type of the same key). There is no `use` override; the item acts through 
 6. On the server: `addFreshEntity(minecart)`, then game event `entity_place` at the clicked position with context
    (the player, the block state **below** the clicked position).
 7. `stack.shrink(1)` on both sides. The method contains no creative-mode test; whether a creative player keeps the item is
-   decided elsewhere (13 §2.5 for the general placement rule; Open question 3).
+   decided elsewhere (the creative rule for ordinary block placement is cited in 25-1 §5.2 step 7; 29 §9.3 to §9.6 describe the placement flow; Open question 3).
 8. Return SUCCESS.
 
-The block tag `rails` holds the rail blocks (data, 26 §1). The ids 945 to 948 (`powered_rail`, `detector_rail`, `rail`,
+The block tag `rails` (read from `data/minecraft/tags/block/rails.json`) holds exactly four blocks: `rail`, `powered_rail`, `detector_rail`, `activator_rail`. The ids 945 to 948 (`powered_rail`, `detector_rail`, `rail`,
 `activator_rail`) are plain `BlockItem`s: their placement is the ordinary block placement with the shape rules of 24.
 
 ### 4.4 `FoodOnAStickItem` (ids 971, 972)
@@ -306,15 +305,15 @@ The sound keys above are the lower-case names of the `SoundEvents` constants tha
 
 Equip operations (`Equippable`, read):
 
-- **Swap with the player's slot** (`swapWithEquipmentSlot(stack, player)`), reached from right-click in air (25-1 §5.1):
+- **Swap with the player's slot** (`Equippable.swapWithEquipmentSlot(stack, player)`, bytecode read), reached from right-click in air (25-1 §5.1):
   1. If `player.canUseSlot(slot)` is false or the player's entity type is not allowed (`canBeEquippedBy`: true when
      `allowed_entities` is empty or contains the type): PASS. A player passes `canUseSlot` for every slot, so only the allowed-entity test blocks `saddle`, harness and carpet items; the elytra has no restriction and swaps.
   2. `current` = the player's stack in the slot. FAIL when (`current` has the enchantment effect `prevent_armor_change`
      and the player is not in creative mode) or the held stack is the same item with the same components as `current`.
   3. On the server, award the `item_used` statistic for the held item.
   4. If the held count is at most 1: the held item given back to the hand is the held stack itself when `current` is empty,
-     else `current` cleared out of the slot; the slot receives the held stack (a copy in creative mode, the held stack
-     itself cleared out of the hand otherwise); SUCCESS with the hand's item transformed to the given-back stack.
+     else `current` cleared out of the slot; the slot receives the held stack (a copy in creative mode, so the hand keeps the held stack and the item is duplicated; the held stack
+     itself cleared out of the hand otherwise; read in `Equippable.swapWithEquipmentSlot`: `Player.isCreative` selects `ItemStack.copy` or `copyAndClear`); SUCCESS with the hand's item transformed to the given-back stack.
   5. If the held count is more than 1: `current` is cleared from the slot; one item is split off the held stack with
      `consumeAndReturn(1, player)` and put in the slot; the removed `current` is added to the player's inventory or, when
      it does not fit, dropped (`Player.drop(stack, false, PREDICTED)`); SUCCESS with the hand holding the remaining stack.
@@ -331,19 +330,15 @@ Equip operations (`Equippable`, read):
 strings (VarInt count, then pairs; read: `PROPERTIES_STREAM_CODEC`, the string codec `STRING_UTF8` for key and value).
 `EMPTY` is the empty map. Applying it to a placed state (`BlockItem.updateBlockStateFromTag`, 25-1 §5.2 step 6, 29 §9.6):
 for every entry, look up the property by name in the placed block's state definition; entries naming no property are
-skipped; each found property is set from its string value (`updateState`; an unparsable value is not read, Open question
-5).
+skipped; each found property is set from its string value (`updateState`: the value is looked up with `Property.getValue(String)`, which returns an `Optional`; the present value is applied to the state, and when it is absent (an unparsable value) `orElse` yields the original state, so the state is left unchanged, read).
 
 The `light` item (id 578) has `block_state` = {`level`: `15`} (built with `BlockItemStateProperties.EMPTY.with(LightBlock.LEVEL, 15)`;
 the property name is `level`, 24 part 5) and rarity epic, so a freshly given light item places a level-15 light block. The
-`level` of a placed light block can then be changed by using the item again (24, block behaviour).
+`level` of a placed light block is changed by right-clicking the placed block, not by using the item again (read: `LightBlock.useWithoutItem`). On the client (`Level.isClientSide` true) or when `Player.canUseGameMasterBlocks()` is false (4.1: creative mode plus the gamemaster permission) it returns CONSUME and changes nothing. Otherwise, on the server only, it sets the next value of the `level` property (`BlockState.cycle`, which wraps from 15 to 0) with `setBlock` flags 2 and returns SUCCESS_SERVER. `LightBlock.getShape` gives a full-block hit shape only while the player holds the `light` item (`CollisionContext.isHoldingItem`), else the empty shape, so the block can only be targeted with the item in hand. Block behaviour in general: 24 part 5.
 
 ### 5.3 `container` (component 77) and shulker boxes
 
-`ItemContainerContents`: a list of at most 256 stacks. Wire (`ItemContainerContents.STREAM_CODEC`): a list of
-`ItemStackTemplate` with the length limit 256, so VarInt count followed by that many templates; a template (`ItemStackTemplate.STREAM_CODEC`) is
-the item (VarInt registry id), VarInt count, then a `DataComponentPatch` (00 §12.2). `EMPTY` is the empty list. The save
-form has a `Slot` record codec capped at 256 entries (the slot index and the stack; field names not read, Open question 6).
+`ItemContainerContents`: a list of at most 256 slots, each an optional stack (the internal list holds `Optional<ItemStackTemplate>`). Wire (`ItemContainerContents.STREAM_CODEC`, read in `<clinit>`): `ByteBufCodecs.optional` applied to `ItemStackTemplate.STREAM_CODEC`, then `ByteBufCodecs.list(256)`. So the wire is a VarInt entry count (at most 256), then that many entries, and **each entry** is a Boolean present flag followed by a template only when the flag is true. An empty slot is a single `00` byte. A template (`ItemStackTemplate.STREAM_CODEC`) is the item (VarInt registry id), VarInt count, then a `DataComponentPatch` (00 §12.2). `EMPTY` is the empty list (wire: `00`). Worked example: a container with slot 0 empty and slot 1 holding 3 of item id 5 with an empty patch is `02` (count), `00` (slot 0 absent), `01` (slot 1 present), `05` (item), `03` (count), then the empty patch (`00 00`, zero added and zero removed components): `02 00 01 05 03 00 00`. The save form: `ItemContainerContents$Slot.CODEC` has exactly two fields, named `slot` and `item`, and the list of slots is size-limited to 256 (`sizeLimitedListOf(256)`; read).
 Rows with `container` = empty in this range: `shulker_box` and the 16 coloured boxes (max stack 1), `hopper`,
 `dispenser`, `dropper`, `trapped_chest` (max stack 64). (`chest` has it too, 25-1 / part 2.) What the empty default means:
 the component exists with no content, so two empty boxes compare equal (25-1 §5.1 merge rule: same item and same
@@ -354,7 +349,7 @@ here (Open question 7).
 Shulker-box rules found in the item layer (read in `BlockItem`):
 
 - `canFitInsideContainerItems()` is false for any `BlockItem` whose block is a `ShulkerBoxBlock` (all 17 boxes), true for
-  every other `BlockItem` and for `Item`: a shulker box cannot be put into another container item (shulker box, bundle:
+  every other `BlockItem` and for `Item` (read: `Item.canFitInsideContainerItems` returns constant true): a shulker box cannot be put into another container item (shulker box, bundle:
   the check is made by those containers, 25 part 4).
 - `BlockItem.onDestroyed(itemEntity)` (an item entity destroyed by fire, lava, explosion or the void, 41): the entity's
   stack gets its `container` replaced by `EMPTY` and each non-empty item of the old contents is dropped as a new item
@@ -412,7 +407,7 @@ value 1", else a `weighted_list` of {1, 0}; weights for 1 and 0):
 | `medium` | 65 : 35 | `sunflower`, `lilac`, `rose_bush`, `peony`, `large_fern` (outside: `mushroom_stem` 463, `melon` 483, `lily_pad` 497) |
 | `medium_high` | 85 : 15 | `hay_block`, `nether_wart_block`, `warped_wart_block` (outside: the two mushroom blocks 461, 462) |
 
-The 76 rows with `cooking_fuel` (37 + 11 + 11 + 16 + 1) also carry the speed provider `cooking/speed_default` (1.0 normal, 2.0 fast cooking block,
+The 76 rows with `cooking_fuel` (37 + 11 + 11 + 16 + 1) also carry the speed provider `cooking/speed_default` (read: `data/minecraft/context_float_provider/cooking/speed_default.json` is a `conditional` on the condition `block/fast_cooking`, `on_false` = provider `cooking/normal_speed_multiplier` (value 1.0), `on_true` = provider `cooking/fast_speed_multiplier` (value 2.0); both files exist in the jar; so 1.0 normal, 2.0 fast cooking block,
 25-1 §9). Wire of the three components (`Compostable.STREAM_CODEC`, `CookingFuel.STREAM_CODEC`): a provider reference is a
 `ResolvableInt` or `ResolvableFloat`, encoded as an Either: a Boolean, true then a fixed 4-byte big-endian **INT** (ints;
 `ByteBufCodecs.INT`, not a VarInt) or **FLOAT** (floats) constant, false then the resource key as an Identifier string. So
@@ -543,6 +538,7 @@ Both are collections of 16 rows in the colour order of section 2.
 | 1219 to 1234 (statement 894) | `<colour>_bed` | `BlockItem` (`ColorCollection.registerBlockItems`, factory builds `Item$Properties` with `stacksTo(1)`) | **1** | none |
 | 1417 to 1432 (statement 1077) | `<colour>_banner` | `BannerItem(banner block, wall banner block of the same colour, props)` | **16** | fuel wood_blocks; `banner_patterns` = empty layers (`BannerPatternLayers.EMPTY`) |
 
+- A separate row `straw_bed` (`BlockItemIds.STRAW_BED` over `Blocks.STRAW_BED`, `stacksTo(16)`, compostable `medium_high`; read in `Items.<clinit>`) is registered immediately after the bed collection, so its id is 1235 if the statement order is unbroken (inferred); it is outside the colour collection and this document's id range; the part that owns id 1235 must cover it (cross-reference, Open question 9).
 - Bed placement is the plain `BlockItem` flow; the head half is written by the bed block's `setPlacedBy` hook (29 §9.6 step
   6.4, 24).
 - `BannerItem extends StandingAndWallBlockItem` with the attachment direction `DOWN` (25-1 §5.3: the wall block is tried
@@ -596,7 +592,7 @@ Both are collections of 16 rows in the colour order of section 2.
    909), `COPPER_TRAPDOOR` (924 to 931), `HARNESS` (950 to 965). Both documents compute from the same statements and the same
    expansion rule; they agree.
 3. **Keys.** For every single-item row the key string read in `BlockItemIds` or `ItemIds` equals the lower-case field name
-   (one exception, `REDSTONE`, 25-1 §4.3).
+   (one exception: `Items.REDSTONE` reads from `BlockItemIds.REDSTONE_DUST`, string `redstone`, 25-1 §4.3).
 4. **Component census of the range.** Rows with `cooking_fuel`: 76 (37 `wood_blocks`, 11 `wood_items_extra_small`, 11
    `wood_items_large`, 16 `wool_carpets`, 1 `bamboo`); rows with `container`: 21; rows with `equippable`: 34 (16 carpets,
    `saddle`, 16 harnesses, `elytra`); rows with a rarity: 8; rows with `compostable`: 9; rows with durability: 3
@@ -609,19 +605,16 @@ Both are collections of 16 rows in the colour order of section 2.
 
 ## 11. Open questions
 
-1. The numeric value of the `GAMEMASTERS` permission level and how `MinecraftServer.getProfilePermissions` derives it (operator list, singleplayer cheats) were not read (4.1). Searched: `Player.canUseGameMasterBlocks`, `Player.permissions`, `ServerPlayer.permissions`, `Permissions.<clinit>`. Same as 29 Open question 4.
-2. `EntityType.createDefaultStackConfig` (used by `AbstractMinecart.createMinecart`): which components are copied onto a
+1. How `ServerPlayer.getProfilePermissions` derives a player's permission level (operator list, singleplayer cheats) was not read (4.1). The numeric level of `GAMEMASTERS` (2) is read and no longer open. Searched: `Player.canUseGameMasterBlocks`, `Player.permissions`, `ServerPlayer.permissions`, `PermissionLevel.<clinit>`. Same as 29 Open question 4.
+2. `EntityType.createDefaultStackConfig` chains `appendDefaultStackConfig`, then `appendComponentsConfig(stack)`, then `appendCustomEntityStackConfig` (order read), but the body of each step is not read: which components are copied onto a
    spawned minecart (custom name and so on) and the permission rule of the `entity_data` merge were not read (4.3).
 3. Whether a creative-mode player's minecart stack is consumed on placement: `MinecartItem.useOn` itself calls
-   `shrink(1)` with no creative test (4.3); the creative handling in the packet layer is 13 §2.5 territory and was not
-   re-read for this item.
-4. Not read: which asset files of the resource pack (22) exist under the equipment asset keys of 5.1.
-5. `BlockItemStateProperties.updateState` behaviour for an unparsable property value was not read (5.2).
-6. The save (NBT) form of `ItemContainerContents` slot entries (`ItemContainerContents$Slot.CODEC` field names) was not
-   read (5.3); 07 may already give the form used for chests.
+   `shrink(1)` with no creative test (4.3). The section earlier cited as 13 §2.5 is the creative instant break rule and does not cover item consumption, so the creative handling (`ItemStack` consume, infinite materials; possibly 29 §9.3) was not located and is open.
+4. Partly answered: the jar has `assets/minecraft/equipment/saddle.json` and `assets/minecraft/equipment/elytra.json` (read: both have a `layers` object; the saddle file has per-entity layer lists such as `horse_saddle` using texture `minecraft:saddle`, the elytra file a `wings` layer with texture `minecraft:elytra` and `use_player_texture` true). Closed part: the jar holds 45 files under `assets/minecraft/equipment` (counted with `unzip -Z1`, files only), of which 32 are the `<colour>_carpet` and `<colour>_harness` files for all 16 dyes (names read); the rest are `saddle`, `elytra`, armor material files and `trader_llama`, `trader_llama_baby`. Their layer contents are not read here.
+5. (Closed: `updateState` leaves the state unchanged for an unparsable value, 5.2.)
+6. (Closed: `Slot.CODEC` fields are `slot` and `item`, 5.3.)
 7. How a shulker box block entity returns its contents into the dropped item's `container` component when the block is
    broken (24, loot and block entity behaviour) was not read here (5.3).
 8. Not read: whether another code path (a command, a dispenser) bypasses `Equippable.canBeEquippedBy` for a player (4.5, 5.1).
-9. Beds and banners are at ids outside 550 to 974; this document gives them in section 8, and part 4 should confirm that its range does not duplicate them with different content.
-10. The exact tag contents of `rails`, `can_equip_saddle`, `can_equip_harness` (data, 26 §1) are not tabulated by design;
-    which entity types are in them is data in the generated data pack.
+9. Beds and banners are at ids outside 550 to 974; this document gives them in section 8 (plus the `straw_bed` neighbour, whose id 1235 is inferred), and part 4 should confirm that its range does not duplicate them with different content.
+10. (Closed: `rails` is tabulated in 4.3, `can_equip_saddle` and `can_equip_harness` in 5.1.)

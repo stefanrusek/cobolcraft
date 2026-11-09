@@ -32,7 +32,7 @@ Part 1 of this series owns the base class. These are the facts this part relies 
 | Default `getUpdateTag` | an **empty** compound |
 | Default `getUpdatePacket` | none (null) |
 | Sent to clients in a chunk packet | the update tag, so a type that does not override `getUpdateTag` sends an empty compound, which the chunk packet writes as a single `TAG_End` byte (06 section 3.2) |
-| `onlyOpCanSetNbt` | true for exactly the six types `command_block`, `lectern`, `sign`, `hanging_sign`, `mob_spawner`, `trial_spawner` (the set `OP_ONLY_CUSTOM_DATA`) |
+| `onlyOpCanSetNbt` | true for exactly the six types `command_block`, `lectern`, `sign`, `hanging_sign`, `mob_spawner`, `trial_spawner` (the set `OP_ONLY_CUSTOM_DATA`; note that `EntityTypes` has a set of the same name with a different content, listed in 46, while `BlockEntityTypes` has this one, which 46 counts among the two non-registered statics of `BlockEntityTypes`) |
 | Valid block states | `BlockEntityType.isValid(state)` is membership of the state's block in the type's valid-block set; a block entity constructed for a block outside the set throws |
 
 The five types this part owns outright (`sculk_sensor`, `calibrated_sculk_sensor`, `sculk_catalyst`, `sculk_shrieker`,
@@ -213,7 +213,7 @@ Run once per server tick by the owner's block ticker (server levels only; sectio
 
 ### 3.9 Reloading the particle after a load
 
-Only while `reloadVibrationParticle` is set. If `currentVibration` is absent, clear the flag and stop. Otherwise: `from` = the info position; `to` = the user's position-source position (default `from`); `T` = the stored travel time; `total` = `user.calculateTravelTimeInTicks(info.distance)`; `f = 1.0 - T / total` (double division); send a `vibration` particle (position source, travel time `T`) at `lerp(f, from, to)` on each axis through `sendParticles` (count 1, speed 0). The flag is cleared only when the call reports at least one recipient.
+Only while `reloadVibrationParticle` is set. If `currentVibration` is absent, clear the flag and stop. Otherwise: `from` = the info position; `to` = the user's position-source position (default `from`); `T` = the stored travel time; `total` = `user.calculateTravelTimeInTicks(info.distance)`; `f = 1.0 - T / total` (double division); send a `vibration` particle (position source, travel time `T`) at `lerp(f, from, to)` on each axis through `sendParticles` (count 1, speed 0). The flag is cleared only when the call reports at least one recipient. Edge case: `total` is 0 when `info.distance < 1`. In normal play such a vibration is delivered in the tick it is selected (travel time 0) and is never persisted in flight, so this division does not occur. A stored vibration with distance below 1 and a positive `event_delay` (possible only in a hand-edited save) gives `T / total` = infinity (or NaN when `T` is 0) in double division and so non-finite position components; an implementation may deliver such a vibration at once or skip the particle, the artifact defines no other rule (Open question 15).
 
 ### 3.10 `receiveVibration`
 
@@ -431,9 +431,9 @@ The block's `STATE` ordinals are `dry` 0, `wet` 1, `dormant` 2, `erupting` 3, `c
 
 ### 9.4 Shared helpers
 
-- `findNoxiousGasSourceBlock(level, P)` (`P` the sulfur block position): scan cells `P + 1`, `P + 2`, ... while `y <= P.y + 5`. For each cell: when its fluid is a **source of water** (`FluidState.isSourceOfType(WATER)`) and its block is the water block or is geyser-passable, move up and continue; otherwise (not a water source, or a water-source cell holding some other non-passable block) the cell is the result when it is air or geyser-passable, else the scan ends with none. Running past `P.y + 5` gives none. Geyser-passable: air, the water block, or a state with an empty collision shape for a position-context at that cell's level (`CollisionContext.positionContext`). `ALLOWED_WATER_BLOCKS_ABOVE = 4` in the block corresponds to a source cell at most at `P.y + 5`.
-- Column height `h = source.y - P.y - 1`: the number of water cells below the source cell (1 to 4 when a source is found).
-- `getUnobstructedBlockCount(level, start, h)`: `limit = 6 * h`; walk `i = 0 .. limit - 1` over `start.above(i)`; return the first `i` whose state is **not** geyser-passable, else `limit`.
+- `findNoxiousGasSourceBlock(level, P)` (`P` the sulfur block position): scan cells `P + 1`, `P + 2`, ... while `y <= P.y + 5`. For each cell: when its fluid is a **source of water** (`FluidState.isSourceOfType(WATER)`) and its block is the water block or is geyser-passable, move up and continue; otherwise (not a water source, or a water-source cell holding some other non-passable block) the cell is the result when it is air or geyser-passable, else the scan ends with none. Running past `P.y + 5` gives none. Geyser-passable: air, the water block, or a state with an empty collision shape for a position context (`CollisionContext.positionContext(y)`). The context is built **once per call** and reused for every cell: in `findNoxiousGasSourceBlock` its y is `P.y` (the sulfur block's own y), and in `getUnobstructedBlockCount` it is `start.below().y`, which is also `P.y` because `start = P.above()`; it is not recomputed per cell. Only `canBeReachedByNoxiousGas` uses a different y (below). `ALLOWED_WATER_BLOCKS_ABOVE = 4` in the block corresponds to a source cell at most at `P.y + 5`.
+- Column height `h = source.y - P.y - 1`: the number of cells between the sulfur block and the source cell, 0 to 4 when a source is found. `h = 0` occurs when the cell `P + 1` is itself air or geyser-passable (and not a water source), because the scan returns it at once. The cells below the source cell need not hold the water block: any cell that is a water source and whose block is the water block or is geyser-passable counts (for example a waterlogged block).
+- `getUnobstructedBlockCount(level, start, h)` (with `h = 0` the limit is 0, so the count is 0 and the launch box of section 9.6 is `P.above()` expanded by -1 in y; context y fixed at `start.below().y`, see above): `limit = 6 * h`; walk `i = 0 .. limit - 1` over `start.above(i)`; return the first `i` whose state is **not** geyser-passable, else `limit`.
 - Applying nausea: `addEffect(MobEffectInstance(nausea, 80 ticks, amplifier 0, ambient true, visible true))`.
 - `EFFECT_PREDICATE`: not a spectator and still alive.
 - `geyserPositional(level, P)`: `new XoroshiroRandomSource(levelSeed xor GEYSER_SALT).forkPositional().at(P)` with `GEYSER_SALT = -904011478` (a signed 64-bit constant; `levelSeed xor GEYSER_SALT` is a 64-bit exclusive or); seeding, `forkPositional` and `at` are 10 sections 2.2 to 2.4. `levelSeed` is `ServerLevel.getSeed()`.
@@ -452,7 +452,7 @@ The block's `STATE` ordinals are `dry` 0, `wet` 1, `dormant` 2, `erupting` 3, `c
 3. If `waitingCountdown > 0`: decrement it by 1.
 4. If `waitingCountdown == 0`: the new state is `erupting` when the current state is `dormant`, else `dormant`; `setBlockAndUpdate(P, state with STATE = new)`; when the new state is `dormant`, post `block_deactivate` at `P` with the **previous** state as context.
 
-The unit of the countdown is therefore 20 ticks. The dormant wait is `10(h-1) + [15, 30]` units; the eruption is `(h-1) + [1, 2]` units. The countdown stays 0 after a toggle and is recomputed on the next 20-tick pass. Because `rng` is created fresh for each pass at the same position, the sequence of values for one block depends only on the level seed and `P`.
+The unit of the countdown is therefore 20 ticks. The dormant wait is `10(h-1) + [15, 30]` units (with `h = 0` that is `-10 + [15, 30]`, so 5 to 20 units, and the eruption value `-1 + [1, 2]` is 0 or 1, which step 3 reduces to 0 at once, so the `erupting` state returns to `dormant` in that same pass at step 4); the eruption is `(h-1) + [1, 2]` units. The countdown stays 0 after a toggle and is recomputed on the next 20-tick pass. Because `rng` is created fresh for each pass at the same position, the sequence of values for one block depends only on the level seed and `P`.
 
 ### 9.6 Launch entity ticker (both sides, every tick)
 
@@ -503,7 +503,7 @@ Valid blocks: `test_instance_block`. The entity renders a bounding box and a bea
 
 The registry `block_entity_type` is filled by `BlockEntityTypes` in the order of the table; the id is the position (46 section 5.4 is the id table). `BlockEntityTypes` is the only class that constructs a `BlockEntityType` (checked by a search of every class of `net/minecraft` for the supplier type). The registry-visible data of a type is the key, the factory and the valid-block set; nothing else is registered (no extra codecs or ticking data).
 
-Reading the columns. **Blocks** is the number of block entries of the valid-block set (a "collection" counts its members). **Direct keys** are the literal NBT keys read from the class's own `saveAdditional`, `loadAdditional` and related methods in this round; "inherit" means the class has none and uses its superclass; "helper" means the persistence is delegated to a helper whose keys are not literal in the class (items, loot table, lock and name keys of containers, and so on). **Update** lists which of `getUpdateTag` (T) and `getUpdatePacket` (P) the class overrides. **Family** is the grouping used to assign ownership (inferred from the class); **Coverage** names the document that specifies the type, taken from the scope lines of the sibling files that existed when this part was finished (31-1, 31-2, 31-3, 31-4 and 31-7; the files for parts 5 and 6 did not exist yet, Open question 2).
+Reading the columns. **Blocks** is the number of block entries of the valid-block set (a "collection" counts its members). **Direct keys** are the literal NBT keys read from the class's own `saveAdditional`, `loadAdditional` and related methods in this round; "inherit" means the class has none and uses its superclass; "helper" means the persistence is delegated to a helper whose keys are not literal in the class (items, loot table, lock and name keys of containers, and so on). **Update** lists which of `getUpdateTag` (T) and `getUpdatePacket` (P) the class overrides. **Family** is the grouping used to assign ownership (inferred from the class); **Coverage** names the document that specifies the type, taken from the scope lines of the sibling files that existed when this part was finished (31-1, 31-2, 31-3, 31-4, 31-6 and 31-7; 31-5 now exists and specifies the six types of ids 10, 11, 14, 15, 22 and 25, section 11.1 of this part is a pointer, Open question 2).
 
 | Id | Key | Class (extends) | Blocks | Direct keys | Update | Family | Coverage |
 |---|---|---|---|---|---|---|---|
@@ -517,28 +517,28 @@ Reading the columns. **Blocks** is the number of block entries of the valid-bloc
 | 7 | `sign` | `SignBlockEntity` | 26 (13 wood types, standing and wall) | `allow_op_features`, `front_text`, `back_text`, `is_waxed` | T, P | display | 31-3 |
 | 8 | `hanging_sign` | `HangingSignBlockEntity` (sign) | 26 (13 wood types, ceiling and wall) | inherit | T, P (inherited) | display | 31-3 |
 | 9 | `mob_spawner` | `SpawnerBlockEntity` | 1 | helper (spawner data) | T (`SpawnPotentials` kept), P | spawner | 31-7 |
-| 10 | `creaking_heart` | `CreakingHeartBlockEntity` | 1 | `creaking` | T, P | mob link | 31-5 or 31-6 (file absent), mob side 44-5 |
-| 11 | `piston` | `PistonMovingBlockEntity` (valid block `moving_piston`) | 1 | `blockState`, `facing`, `progress`, `extending`, `source` | T (`saveCustomOnly`; no packet override, closing the item left open in 31-1 section 5.2) | piston | 31-5 or 31-6 (file absent) |
+| 10 | `creaking_heart` | `CreakingHeartBlockEntity` | 1 | `creaking` | T, P | mob link | 31-5, mob side 44-5 |
+| 11 | `piston` | `PistonMovingBlockEntity` (valid block `moving_piston`) | 1 | `blockState`, `facing`, `progress`, `extending`, `source` | T (`saveCustomOnly`; no packet override, closing the item left open in 31-1 section 5.2) | piston | 31-5 |
 | 12 | `brewing_stand` | `BrewingStandBlockEntity` | 1 | `BrewTime`, `total_brew_time`, `Fuel`, `total_fuel`, `speed_multiplier` | none | cooking | 31-2 |
 | 13 | `enchanting_table` | `EnchantingTableBlockEntity` | 1 | `CustomName` | none | named | 31-4 |
-| 14 | `end_portal` | `TheEndPortalBlockEntity` | 1 | none | none | portal | 31-5 or 31-6 (file absent) |
-| 15 | `beacon` | `BeaconBlockEntity` | 1 | `primary_effect`, `secondary_effect`, `Levels` (written only), `CustomName` | T, P | effects | 31-5 or 31-6 (file absent; 31-3 names part 5 for the beam owner) |
+| 14 | `end_portal` | `TheEndPortalBlockEntity` | 1 | none | none | portal | 31-5 |
+| 15 | `beacon` | `BeaconBlockEntity` | 1 | `primary_effect`, `secondary_effect`, `Levels` (written only), `CustomName`, `lock` (literal only in `removeComponentsFromTag`; the lock itself is a helper) | T, P | effects | 31-5 (the beam owner named by 31-3) |
 | 16 | `skull` | `SkullBlockEntity` | 14 (seven head kinds, floor and wall) | `profile`, `note_block_sound`, `custom_name` | T, P | display | 31-3 |
 | 17 | `daylight_detector` | `DaylightDetectorBlockEntity` | 1 | none | none | redstone | 31-2 |
 | 18 | `hopper` | `HopperBlockEntity` | 1 | `TransferCooldown` plus helper | none | container | 31-2 |
 | 19 | `comparator` | `ComparatorBlockEntity` | 1 | `OutputSignal` | none | redstone | 31-2 |
 | 20 | `banner` | `BannerBlockEntity` | 32 (the 16 banners and 16 wall banners) | `patterns`, `CustomName` | T, P | display | 31-3 |
-| 21 | `structure_block` | `StructureBlockEntity` | 1 | `name`, `author`, `metadata`, `posX`, `posY`, `posZ`, `sizeX`, `sizeY`, `sizeZ`, `rotation`, `mirror`, `mode`, `ignoreEntities`, `strict`, `powered`, `showair`, `showboundingbox`, `integrity`, `seed` | T, P | builder | 31-5 or 31-6 (file absent) |
-| 22 | `end_gateway` | `TheEndGatewayBlockEntity` (end portal) | 1 | `Age`, `exit_portal`, `ExactTeleport` | T, P | portal | 31-5 or 31-6 (file absent) |
-| 23 | `command_block` | `CommandBlockEntity` | 3 (normal, chain, repeating) | `powered`, `conditionMet`, `auto` plus helper (command logic) | none | command | 31-5 or 31-6 (file absent) |
+| 21 | `structure_block` | `StructureBlockEntity` | 1 | `name`, `author`, `metadata`, `posX`, `posY`, `posZ`, `sizeX`, `sizeY`, `sizeZ`, `rotation`, `mirror`, `mode`, `ignoreEntities`, `strict`, `powered`, `showair`, `showboundingbox`, `integrity`, `seed` | T, P | builder | 31-6 |
+| 22 | `end_gateway` | `TheEndGatewayBlockEntity` (end portal) | 1 | `Age`, `exit_portal`, `ExactTeleport` | T, P | portal | 31-5 |
+| 23 | `command_block` | `CommandBlockEntity` | 3 (normal, chain, repeating) | `powered`, `conditionMet`, `auto` plus helper (command logic); `CustomName` is a literal only in `removeComponentsFromTag` | none | command | 31-6 |
 | 24 | `shulker_box` | `ShulkerBoxBlockEntity` | 17 (undyed plus 16 dyed) | helper | none | container | 31-1 |
-| 25 | `conduit` | `ConduitBlockEntity` | 1 | `Target` | T, P | effects | 31-5 or 31-6 (file absent) |
+| 25 | `conduit` | `ConduitBlockEntity` | 1 | `Target` | T, P | effects | 31-5 |
 | 26 | `barrel` | `BarrelBlockEntity` | 1 | helper | none | container | 31-1 |
 | 27 | `smoker` | `SmokerBlockEntity` (abstract furnace) | 1 | inherit | none | cooking | 31-2 |
 | 28 | `blast_furnace` | `BlastFurnaceBlockEntity` (abstract furnace) | 1 | inherit | none | cooking | 31-2 |
 | 29 | `lectern` | `LecternBlockEntity` | 1 | `Book`, `Page` | none | item holder | 31-4 |
 | 30 | `bell` | `BellBlockEntity` | 1 | none | none | ticking | 31-4 |
-| 31 | `jigsaw` | `JigsawBlockEntity` | 1 | `name`, `target`, `pool`, `final_state`, `joint`, `placement_priority`, `selection_priority` | T, P | builder | 31-5 or 31-6 (file absent) |
+| 31 | `jigsaw` | `JigsawBlockEntity` | 1 | `name`, `target`, `pool`, `final_state`, `joint`, `placement_priority`, `selection_priority` | T, P | builder | 31-6 |
 | 32 | `campfire` | `CampfireBlockEntity` | 2 (campfire, soul campfire) | `CookingTimes`, `CookingTotalTimes` plus items | T, P | cooking | 31-4 |
 | 33 | `beehive` | `BeehiveBlockEntity` | 2 (bee nest, beehive) | `bees`, `flower_pos` | none | mob holder | 31-4 |
 | 34 | `sculk_sensor` | `SculkSensorBlockEntity` | 1 | `last_vibration_frequency`, `listener` | none | sculk | **this part, sections 3 to 4** |
@@ -547,7 +547,7 @@ Reading the columns. **Blocks** is the number of block entries of the valid-bloc
 | 37 | `sculk_shrieker` | `SculkShriekerBlockEntity` | 1 | `warning_level`, `listener` | none | sculk | **this part, section 6**, behaviour 44-x2 section 2 |
 | 38 | `chiseled_bookshelf` | `ChiseledBookShelfBlockEntity` | 1 | `last_interacted_slot` plus items | none | item holder | 31-2 |
 | 39 | `shelf` | `ShelfBlockEntity` | 13 (one per wood type) | `align_items_to_bottom` plus items | T (`align_items_to_bottom`), P | item holder | 31-3 |
-| 40 | `brushable_block` | `BrushableBlockEntity` | 2 (suspicious sand, suspicious gravel) | `item` (save and load), `hit_direction` (literal in load and in the update tag) | T (`hit_direction`, `item`), P | archaeology | 31-4 |
+| 40 | `brushable_block` | `BrushableBlockEntity` | 2 (suspicious sand, suspicious gravel) | `item` (save and load), `hit_direction` (literal in load and in the update tag), `LootTable` and `LootTableSeed` (literal in the class's own `tryLoadLootTable` and `trySaveLootTable`) | T (`hit_direction`, `item`), P | archaeology | 31-4 |
 | 41 | `decorated_pot` | `DecoratedPotBlockEntity` | 1 | `sherds`, `item` | T, P | item holder | 31-3 |
 | 42 | `crafter` | `CrafterBlockEntity` | 1 | `crafting_ticks_remaining` (save and load), `disabled_slots` and `triggered` (literal in load only; the save side goes through a helper) plus items | none | container | 31-2 |
 | 43 | `trial_spawner` | `TrialSpawnerBlockEntity` | 1 | helper (trial spawner state) | T, P | spawner | 31-7 |
@@ -564,6 +564,18 @@ Notes on the sweep:
 - **Unused or test-only types.** Types 45 and 46 are test-only (section 10). No type in the registry is unused by a block: every one of the 49 has at least one valid block, and the registry warning for an empty valid set therefore never fires.
 - **Update overrides** (read from each class's own methods): 19 classes declare `getUpdateTag` (`sign`, `mob_spawner`, `creaking_heart`, `piston`, `beacon`, `skull`, `banner`, `structure_block`, `end_gateway`, `conduit`, `jigsaw`, `campfire`, `shelf`, `brushable_block`, `decorated_pot`, `trial_spawner`, `vault`, `test_block`, `test_instance_block`); 19 declare `getUpdatePacket` (the same list without `piston`, plus `copper_golem_statue`); `hanging_sign` inherits both from `sign`. Every other type sends an empty tag in a chunk packet and no block-entity-data packet.
 - Entities that are listeners (`GameEventListener$Provider`): exactly the four of this part (`sculk_sensor`, `calibrated_sculk_sensor`, `sculk_catalyst`, `sculk_shrieker`).
+
+### 11.1 Types specified in 31-5 (pointer, with the readings of this part)
+
+The six types `end_portal` (14), `end_gateway` (22), `beacon` (15), `conduit` (25), `piston` (11) and `creaking_heart` (10) are specified in 31-5 (the full persistence, ticker and constant tables); this part does not repeat them. In round RS13 this part read the same classes (`TheEndPortalBlockEntity`, `TheEndGatewayBlockEntity`, `BeaconBlockEntity`, `ConduitBlockEntity`, `PistonMovingBlockEntity`, `CreakingHeartBlockEntity`) independently. Where a value below differs from 31-5, the bytecode reading given here was re-checked against the artifact in the fixer pass and 31-5 should be corrected.
+
+| Type | Reading confirmed here | Note for 31-5 |
+|---|---|---|
+| `creaking_heart` hurt sound | `CREAKING_HEART_HURT` is played with volume `emitter / 2 / 100 + 0.5` (float arithmetic: `emitter` converted to float, divided by 2, divided by 100, plus 0.5; this is argument 5 of the `playSound` call) and pitch 1.0 (`fconst_1`, argument 6) | 31-5 section 6 gives volume 1 and pitch `0.5 + (emitter / 2) / 100`; the artifact passes that expression as the volume |
+| `beacon` advancement box | the `construct_beacon` recipients are the server players in the box from corner `(x, y, z)` to corner `(x, y - 4, z)` (so y from `y - 4` to `y` before inflation), inflated by 10, 5, 10: y from `y - 9` to `y + 5` | 31-5 line for the same box was compared and matches |
+| `piston` load default | the class static initialiser sets the default moved state to the default state of `Blocks.AIR`; a missing or unreadable `blockState` therefore loads as air. The other defaults: `facing` down, `progress` 0 (with the previous progress set equal), `extending` false, `source` false | 31-5 should state the air default if it still leaves it open |
+| `end_gateway` chunk search | the attempt counter of each of the two chunk loops (backwards past non-empty chunks, forwards past empty chunks) starts at 16 (`bipush 16` stored into the counter and decremented per step), next to the 1024 direction scale (`sipush 1024`) | read, not inferred |
+
 
 ---
 
@@ -597,21 +609,24 @@ A conforming implementation satisfies these checks.
 11. **Statue.** Persistence holds only `components`; the update packet carries an empty tag; the pose cycle is standing, sitting, running, star, standing.
 12. **Sulfur.** The countdown key is `countdown` and defaults to absent (-1); the nausea ticker applies an 80-tick, amplifier 0, ambient and visible nausea every 10 ticks to reachable living entities within the 2.5 box; the dormant wait is `10(h-1) + [15, 30]` and the eruption `(h-1) + [1, 2]` passes of 20 ticks, each pass seeded from the level seed xor `-904011478` and the block position.
 13. **Test blocks.** `test_block` mode default `fail`; `test_instance_block` status default `cleared`; both send the saved keys as their update tag.
+14. **Section 11.1 types.** Specified in 31-5; only the four cross-checked readings of section 11.1 are kept in this part.
 
 ---
 
 ## Open questions
 
 1. **Registry count of the brief.** The brief names 50 types; the artifact has 49 (section above and 11). If the brief counted something else (for example a type registered by a data pack at run time), that is not in the client jar.
-2. **Reconciliation with parts 5 and 6.** When this part was finished, `docs/protocol/` held 31-1, 31-2, 31-3, 31-4 and 31-7 but not the files of parts 5 and 6. The table was reconciled against the scope lines of the five that exist (31-1 also lists the 49 types, and its counts and update-hook rows agree with section 11, with the one addition about `piston`); it names "31-5 or 31-6" for the nine types of the unwritten files (`creaking_heart`, `piston`, `end_portal`, `beacon`, `structure_block`, `end_gateway`, `command_block`, `conduit`, `jigsaw`). If those parts do not claim a type, it has no owner and must be added to this part.
+2. **Reconciliation with 31-5 and 31-6.** 31-6 owns `structure_block`, `command_block` and `jigsaw`; 31-5 owns the six types of section 11.1. Searched: the `docs/protocol/` directory listing, 31-5 sections 6 (creaking heart) and open question 5. Two divergences were found and reported in the table of section 11.1 (creaking heart hurt sound volume and pitch; the gateway counter 16 marked inferred in 31-5); 31-5 is expected to follow this part's table.
 3. **`components` encoding.** For a block entity with an empty component map (the statue before `createStatue`, every type without components), whether `DataComponentMap.CODEC` writes an empty compound or omits the key was not read (it is a codec detail). Section 1 states the key is always stored (inferred from the unconditional store call).
 4. **`Level.isBlockInLine` semantics.** Section 3.6 reads the ray test as "the ray meets a block state matching the predicate"; the `ClipBlockStateContext` traversal class was not read (inferred from the name and from the use as a boolean "type == BLOCK" test).
 5. **Codec shapes.** `Vec3` (three doubles), UUID (four ints) and block position (three ints) lengths are inferred from the codec composition; the exact length validation was not read.
 6. **Level random source.** `SculkCatalystBlockEntity.serverTick` and `SculkBlock` draws use `Level.getRandom()` and the cursor `RandomSource` parameter; the concrete generator of a `ServerLevel` (its seeding and thread behaviour) belongs to 33 and was not re-read, so a bit-exact replay of live sculk growth needs that document.
 7. **Client use of level event 3006.** The data layout (level and packed facings) is given from the server side; its consumer is 42-6 section 6 and was not re-read here.
-8. **Test instance framework.** The reset, save, export, beam and error-marker logic of `TestInstanceBlockEntity` and the screens of both test blocks were not read; only the persistence is specified.
+8. **Test instance framework.** The reset, save, export, beam (cleared, running, success, required-failed, optional-failed) and error-marker logic of `TestInstanceBlockEntity`, the `test_instance_block.*` messages and the export-disabled path, and the screens of both test blocks were not read; only the persistence is specified. They are test-only and are readable in the artifact if full coverage is wanted.
 9. **Tag membership.** The tags listed in the scope note are data. Their contents (notably which game events are in `vibrations`, `ignore_vibrations_sneaking` and `shrieker_can_listen`, which blocks are in `dampens_vibrations`, `occludes_vibration_signals`, `vibration_resonators`) were not read in this round; they come from the data pack.
 10. **Order of ticker and event within a tick.** The sensor timeline (worked example 2) states both orders; which order the level tick produces for a given emitter depends on 33 section 2 (block-entity tick versus entity tick order), not re-derived here.
 11. **Experience reward and entity positions.** `getExperienceReward` per entity type and the position at which `entity_die` is posted (`Entity.gameEvent(Holder)`) are entity-document facts not re-read here.
 12. **Sculk vein sound position.** The position of the `sculk_block_spread` sound in `attemptPlaceSculk` is inferred from a local-variable slot, not from a named accessor.
 13. **`sculk_sensor` redstone neighbours.** `Level.getSignal` (used by the calibrated sensor's back signal) and the neighbour-update ordering of `updateNeighbours` belong to the redstone engine (30) and are cited, not re-specified.
+14. **Section 11.1 residue.** Not read in this part (see 31-5 for what it read): `findValidSpawnInChunk`, `findTallestBlock`, the island feature key, the piston's entity-pushing and sticky maths, and the creaking heart's `spawnProtector` and `spreadResin`. The gateway chunk-search counter 16 and the piston default state (air) were read and are no longer open.
+15. **Reload particle with zero total travel time.** Section 3.9 divides by `calculateTravelTimeInTicks(distance)`, 0 for a distance below 1. What the client does with a non-finite particle position was not read; the case needs a hand-edited save.

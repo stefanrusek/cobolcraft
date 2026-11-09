@@ -5,10 +5,10 @@
 | Covers | Part 3 of 8 of the block registry (design map GAP-1, columns of GAP-29 and GAP-30, round RS4): `Blocks` fields 210 to 314, `spruce_wall_sign` to `red_mushroom_block`, plus the four boundary blocks that the round text names (`ladder`, `rail`, `cobblestone_stairs`, `oak_wall_sign`, fields 206 to 209). For each block: registry key, block id, state properties and their value order, state count, first state id, default state, hardness, resistance, map colour, sound type, note block instrument, light, flags, collision and outline shapes, survival and placement rule, and the behaviour that the class contributes. Data rows (models, loot, tags, recipes) are not listed. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for bootstrap arguments) and of the data files of the same jar (block tags, loot table files, blockstate and model JSON) with no execution. The `Blocks` static initialiser was read in order; each block class was read for `createBlockStateDefinition`, the constructor's default state, shape constants, `canSurvive`, placement, `updateShape` and tick methods. Values that were not read are marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions. |
-| Status | Written for round RS4, part 3 |
+| Status | Written for round RS4, part 3; revised after the round RS4 review pass (signal directions, tool tiers, cross-references) |
 
-Class names in backticks say where a fact was read. They are not the design. "04 §5.2" means section 5.2 of
-`04-registry-sync.md`. Sibling documents (parts 1, 2 and 4 to 8 of the block registry) may restate shared rules; where
+Class names in backticks say where a fact was read. They are not the design. Cross-references use the form "NN section X" (for example "04 section 5.2" is section 5.2 of
+`04-registry-sync.md`; "24 part 2 section 1.2" is part 2 of this registry). Sibling documents (parts 1, 2 and 4 to 8 of the block registry) may restate shared rules; where
 they differ from this text, the sibling that owns the rule wins and the difference is an Open question.
 
 ## Contents
@@ -28,16 +28,16 @@ they differ from this text, the sibling that owns the rule wins and the differen
 
 1. **Field index** is the 0-based position among the block entries of the `Blocks` initialiser (`air` is 0). Fields 210
    to 314 are the scope. A field is one registered block, except `STAINED_GLASS`, which registers 16 blocks.
-2. **Block id** is the registration index in `BuiltInRegistries.BLOCK` (04 §5.1). `Blocks.register` is the only
+2. **Block id** is the registration index in `BuiltInRegistries.BLOCK` (04 section 5.1). `Blocks.register` is the only
    registering helper; a collection (`ColorCollection.registerBlocks`) registers its 16 members in the order white,
    orange, magenta, light blue, yellow, lime, pink, gray, light gray, cyan, purple, blue, brown, green, red, black
    (the field order of `ColorCollection.zipMap`). Collections before this range (`BED`, `WOOL`, `WOOL_STAIRS`,
    `WOOL_SLAB`) register 16 blocks each, so **block id = field index + 60 for fields up to 288** (`spruce_wall_sign`, field 210, is block 270), the glass field 289 registers blocks 349 to 364, and
    **block id = field index + 75 from field 290** (`oak_trapdoor`, field 290, is block 365). The block ids of the four boundary blocks are 266 to 269.
-3. **State ids** follow 04 §5.2: properties sorted by name, first name slowest; boolean values `true` then `false`;
+3. **State ids** follow 04 section 5.2: properties sorted by name, first name slowest; boolean values `true` then `false`;
    integer values ascending; enum values in the property's list order. The **first state id** column of section 2 was
    computed in this round by summing the state counts of every block before it (property lists read from each class's
-   `createBlockStateDefinition`, walking superclasses). The base for `spruce_wall_sign` is **7423** (an earlier draft of this part left out the 9 leaf blocks of 28 states each, 252 states, and gave 7171; corrected, see Open question 1). It equals 575 (24 part 2 section 1.2, `B105`) plus 6 848 (the 6 848 states of part 2's range, which ends just before `spruce_wall_sign`), as 24 part 2 states. State ids in this document are absolute (they do not depend on a base of another part).
+   `createBlockStateDefinition`, walking superclasses). The base for `spruce_wall_sign` is **7423**. It equals 575 (24 part 2 section 1.2, `B105`) plus 6 848 (the 6 848 states of part 2's range, which ends just before `spruce_wall_sign`), as 24 part 2 states. State ids in this document are absolute (they do not depend on a base of another part).
 4. **Key** is `minecraft:<name>`; the table gives `<name>`. Wall variants (`*_wall_sign`, `redstone_wall_torch`, ...)
    are separate blocks with no item of their own; `Blocks.wallVariant` gives them the loot table of the standing
    block and, when its flag is true, the same description id (the flag is true for every wall variant in this range).
@@ -338,7 +338,7 @@ derivation of the per-state values: 24 part 1 sections 5.2, 7 and 9.
 
 **Associated item.** `BlockItemIds` constants name block and item together: for every block of this range except the 27 wall variants and `nether_portal`, the item key
 equals the block key (24 part 1 section 11). Wall variants (`*_wall_sign`, `*_wall_hanging_sign`, `redstone_wall_torch`, `soul_wall_torch`,
-`copper_wall_torch`) and `nether_portal` are registered with `BlockIds` and have no item. The glass collection registers `<colour>_stained_glass` items.
+`copper_wall_torch`) and `nether_portal` are registered with `BlockIds` and have no item of their own; the standing sign, hanging sign and torch items place the wall variants (rule in 25 part 4 section 9.2, `StandingAndWallBlockItem` and `HangingSignItem` placement). `nether_portal` has no placing item. The glass collection registers `<colour>_stained_glass` items.
 
 **Loot table key.** `blocks/<block key>` (24 part 1 section 4.1). Wall variants take the table of the standing block through `wallVariant`
 (`oak_wall_sign` uses `blocks/oak_sign`, `redstone_wall_torch` uses `blocks/redstone_torch`, and so on), so none of the 27 wall variants has its own table file.
@@ -361,7 +361,7 @@ Counts over the 124 keys: 2 empty; 31 silk-touch category (23 silk touch only: `
 
 **`iron_door` and the correct-tool flag.** The `iron_door` entry of `Blocks` is map colour `METAL`, `strength(5.0)`, `noOcclusion`, push `POPPED` and nothing else: it does **not** call `requiresCorrectToolForDrops` in 26.3 (read in the static initialiser), so it drops with any tool or with the bare hand; it is in `mineable/pickaxe` only, which makes the pickaxe mine it faster. Do not add the flag from older versions.
 
-**Correct tool and tier, per block.** `needsTool` rows of section 3 are the only blocks in this range whose drops require a correct tool. A tool is correct for drops when the block is in the tool's `mineable/*` tag and not in the `incorrect_for_<tier>_tool` tag of the tool's tier; the `incorrect_for_*` tags are built from `needs_stone_tool`, `needs_iron_tool` and `needs_diamond_tool` (`incorrect_for_wooden_tool` = all three; the stone, gold and copper tool tags exclude the iron and diamond tiers). Read from the tag files (expanded):
+**Correct tool and tier, per block.** `needsTool` rows of section 3 are the only blocks in this range whose drops require a correct tool. A tool is correct for drops when the block is in the tool's `mineable/*` tag and not in the `incorrect_for_<tier>_tool` tag of the tool's tier; the `incorrect_for_*` tags are built from `needs_stone_tool`, `needs_iron_tool` and `needs_diamond_tool` (read from the tag files: `incorrect_for_wooden_tool` and `incorrect_for_gold_tool` each hold all three; `incorrect_for_stone_tool` and `incorrect_for_copper_tool` hold `needs_iron_tool` and `needs_diamond_tool` only; `incorrect_for_iron_tool` holds `needs_diamond_tool` only; `incorrect_for_diamond_tool` and `incorrect_for_netherite_tool` are empty). Read from the tag files (expanded):
 
 | Blocks | Mining tag | Tier tag | Drops with |
 |---|---|---|---|
@@ -587,6 +587,12 @@ tick (`FlowingFluid.getTickDelay`) when it is true; the placement state sets it 
 Redstone engine rules (the quasi-connectivity, `ExperimentalRedstoneUtils` orientation arguments) belong to the redstone
 document; this part gives the signal strengths each class reports.
 
+**Direction convention for signals (read once, applies to 7.5 to 7.9).** `getSignal(pos, direction)` and
+`getDirectSignal(pos, direction)` on a block state are asked by the *receiving* block, and `direction` points from the
+receiver toward the emitter. Example: the block below a lever asks the lever with UP; the block above a plate asks the
+plate with DOWN, and the block below a plate asks it with UP. An emitter that answers only for direction D therefore
+powers the single neighbour located at `pos.relative(D.opposite)`.
+
 ### 7.1 Ladder (`LadderBlock`, field 206)
 
 | Item | Rule |
@@ -636,7 +642,7 @@ and the sign no longer passes `canSurvive`; because `canSurvive` is always true,
 Ceiling hanging sign placement (`CeilingHangingSignBlock.getStateForPlacement`, read in full). Inputs: the clicked position `p`, the block state `A` at `p.above`, the player's horizontal facing `d` (the direction of the player's yaw), the player's yaw, and the secondary-use flag `sneak` (sneaking).
 
 1. `waterlogged` = the fluid at `p` is water.
-2. `attached` starts as: **true** when the collision shape of `A` has no full DOWN face (`Block.isFaceFull`) **or** `sneak` is true; **false** only when that face is full and `sneak` is false. (An earlier draft of this document had the first condition reversed.)
+2. `attached` starts as: **true** when the collision shape of `A` has no full DOWN face (`Block.isFaceFull`) **or** `sneak` is true; **false** only when that face is full and `sneak` is false. 
 3. If `A` is in tag `all_hanging_signs` and `sneak` is false, `attached` may be cleared, by exactly one of two checks: when `A` has the `facing` property (a wall hanging sign), `attached` becomes false when the axis of that `facing` equals the axis of `d`; otherwise, when `A` has the `rotation` property and `rotation` is one of 0, 4, 8, 12 (the values for which `RotationSegment.convertToDirection` returns a direction), `attached` becomes false when that direction's axis equals the axis of `d`. Any other `rotation` value leaves `attached` unchanged.
 4. `rotation` = when `attached` is false, `convertToSegment(d.opposite)`, that is 0 (d north), 4 (d east), 8 (d south), 12 (d west) (section 4: south 0, west 4, north 8, east 12 for the argument, so the opposite of the player's facing); when `attached` is true, `convertToSegment(yaw + 180)`, that is `round((yaw + 180) * 16 / 360)` masked to 0 to 15.
 5. The result is the default state with those three values; placement is then accepted or refused by `canSurvive` (the block above must have a CENTER-sturdy DOWN face).
@@ -661,14 +667,14 @@ the button, first state + 9).
 
 | Item | Rule |
 |---|---|
-| Connected direction | floor: DOWN; ceiling: UP; wall: `facing` (the direction the block's back points, i.e. the block is attached to the neighbour at `pos.relative(connected.opposite)`) |
+| Connected direction | floor: UP; ceiling: DOWN; wall: `facing` (read from `getConnectedDirection`: the face value CEILING maps to DOWN, FLOOR maps to UP, anything else gives `facing`). It points away from the supporting block: the support is the neighbour at `pos.relative(connected.opposite)` (below for floor, above for ceiling, behind the wall face for wall) |
 | Survival | the neighbour at `pos.relative(connectedDirection.opposite)` has its face toward the connected direction sturdy (`FaceAttachedHorizontalDirectionalBlock.canAttach`); `updateShape` returns air when the changed neighbour is that one and survival fails |
 | Placement | nearest looking directions in order: for the first vertical direction, `face` = ceiling when it is UP else floor, `facing` = the player's horizontal direction; for the first horizontal direction, `face` = wall and `facing` = its opposite; the first candidate that survives is used |
-| Lever use | toggles `powered`; on the server plays `LEVER_CLICK` (volume 0.3, pitch 0.6 when it becomes powered, 0.5 when unpowered), sends game event `BLOCK_ACTIVATE` or `BLOCK_DEACTIVATE`, and updates the neighbour at the connected side and the neighbour beyond it; the client spawns a red dust particle on use; `animateTick` spawns particles at random while powered (probability 0.25) |
-| Lever signal | `isSignalSource` true; own signal 15 when powered; direct signal 15 toward the block on the connected side only (`getDirectSignal` returns 15 when powered and the queried direction equals the connected direction) |
+| Lever use | toggles `powered`; on the server plays `LEVER_CLICK` (volume 0.3, pitch 0.6 when it becomes powered, 0.5 when unpowered), sends game event `BLOCK_ACTIVATE` or `BLOCK_DEACTIVATE`, and updates the supporting block and the neighbours of that block; the client spawns a red dust particle on use; `animateTick` spawns particles at random while powered (probability 0.25) |
+| Lever signal | `isSignalSource` true; own signal 15 when powered; direct signal 15 (strong power) to the supporting block only: `getDirectSignal` returns 15 when powered and the queried direction equals the connected direction, which under the convention above means the receiver is the support at `pos.relative(connected.opposite)` |
 | Button use | when unpowered: sets `powered` true, updates neighbours, schedules a tick after the press duration (20 ticks for the stone button; wooden buttons use 30 in other ranges), plays the set type's click sound and sends `BLOCK_ACTIVATE`; when powered the use is consumed with no effect |
 | Button tick | when powered, `checkPressed`: for a set type whose arrows can press (`canButtonBeActivatedByArrows`), looks for an arrow entity (class `AbstractArrow`) overlapping the button's current outline moved to the position; sets `powered` to whether one exists, and when the state changed updates neighbours, plays the click and sends the game event; when still powered reschedules after the press duration. Stone and polished blackstone buttons ignore arrows (no `entityInside` effect) |
-| Button signal | same as the lever: own 15 when powered, direct 15 toward the connected side |
+| Button signal | same as the lever: own 15 when powered, direct 15 to the supporting block only (same rule as the lever) |
 | Explosion | `onExplosionHit` triggers (toggles the lever; presses the unpowered button) when the explosion can trigger blocks |
 
 Lever outline and the button outline: section 5.2. The floor and ceiling collision-free outlines were checked against the
@@ -684,7 +690,7 @@ The lever model's base occupies x from 5 to 11 and z from 4 to 12 for floor nort
 |---|---|
 | States | `powered` (2); default false |
 | Survival | the block below can support a rigid block (`canSupportRigidBlock`) or can support the cell centre from above (`canSupportCenter`, direction UP); `updateShape` returns air when the changed neighbour is below and survival fails |
-| Signal | 15 when powered, else 0; the plate is a signal source; direct signal 15 when the queried direction is UP (otherwise 0) |
+| Signal | 15 when powered, else 0; the plate is a signal source; direct signal 15 when the queried direction is UP, i.e. to the block below the plate, its support (otherwise 0) |
 | Detection | the detection box is `column(14, 0, 4)` (the first box of that shape) moved to the position; the count is of entities of the class given by the plate sensitivity (all entities for `EVERYTHING`, living entities for `MOBS`), excluding spectators and entities that ignore block triggers; a count above 0 gives signal 15 |
 | Update | `entityInside` on the server: when the current signal is 0, runs `checkPressed`; `tick` (every 20 ticks while pressed): when the signal is above 0 runs `checkPressed`. `checkPressed` compares the new strength with the current one; on a change it sets `powered`, updates the plate's and the block below's neighbours, marks the position dirty, plays the set type's click (off when it turns off, on when it turns on) and the game event `BLOCK_DEACTIVATE` / `BLOCK_ACTIVATE`; if the new strength is above 0 it schedules the next tick after 20 ticks (`getPressedTime`) |
 | Removal | `affectNeighborsAfterRemoval` updates neighbours when the removed state was powered |
@@ -730,13 +736,18 @@ directions seen from above).
 Redstone torch behaviour. `onPlace` and removal notify the six neighbours (random orientation). The torch is lit unless the block it
 is attached to (below for the standing torch, `pos.relative(facing.opposite)` for the wall torch) receives a signal (`hasSignal` in
 the direction of that block). `neighborChanged` schedules a tick after 2 ticks when the lit state differs from "no signal on the
-support" and no tick is already due this tick. `tick` removes entries older than 60 game ticks from this position's toggle list,
-then: if lit and the support is powered, sets `lit` false and, if the position has toggled too often (a toggle is recorded each time;
-8 or more entries within the window), plays level event 1502 (burnout) and schedules another tick after 160 ticks; if not lit and
-the support is not powered and the torch is not toggling too often, sets `lit` true. Signals: own 15 when lit; `getSignal` toward every
-direction except UP for the standing torch (the torch powers the blocks around and below it but not the one above), toward every direction except
-`facing` for the wall torch; direct signal (`getDirectSignal`) 15 toward DOWN only (the support block, strongly powered), taken from `getSignal`.
-The wall torch's non-lit state also affects light (7 when lit).
+support" and no tick is already due this tick. `tick` first removes entries older than 60 game ticks from this position's toggle list, then decides by the table:
+
+| `lit` | support receives a signal | toggle list | Result |
+|---|---|---|---|
+| true | yes | any | set `lit` false and record a toggle; when the list then holds 8 or more entries, play level event 1502 (burnout) and schedule another tick after 160 ticks |
+| false | no | fewer than 8 entries | set `lit` true |
+| false | no | 8 or more entries | stay unlit (burnt out) |
+| true | no | any | no change |
+| false | yes | any | no change |
+
+Signals (receiver-to-emitter convention, section 7 preamble). Own signal 15 when lit. Standing torch: `getSignal` returns 0 only when the queried direction is UP, so the torch does not power the block below it (its support); the block above and the four side blocks receive 15 (when lit). `getDirectSignal` returns the `getSignal` value only for the queried direction DOWN, so strong power goes to the block above the torch and to no other. Wall torch: `getSignal` returns 0 when the queried direction equals `facing` (the receiver is then the support block on the opposite side, at `pos.relative(facing.opposite)`) and 15 otherwise when lit; `RedstoneWallTorchBlock` extends `RedstoneTorchBlock` and inherits the direct signal rule above (15 only for the queried direction DOWN, so the block above a lit wall torch is strongly powered).
+Light is 7 when lit.
 
 Wall torch common rules (`WallTorchBlock`, `soul_wall_torch`, `copper_wall_torch`, `redstone_wall_torch`): states `facing` (4), default
 north, survival as above, placement picks the first horizontal nearest-looking direction d with `facing = d.opposite` that survives,
@@ -749,9 +760,29 @@ and survival fails. Their particle options are the constructor argument of secti
 States `delay` (1 to 4) x `facing` (4) x `locked` (2) x `powered` (2) = 64, sorted `delay`, `facing`, `locked`, `powered`; default delay 1, north,
 unlocked, unpowered (first state + 3). Survival: the block below has its UP face sturdy with support type RIGID. Placement: `facing` = the opposite of the
 player's horizontal direction, `locked` = whether a side diode powers it (`isLocked`: the stronger of the two side inputs, from diodes only, is above 0).
-Use (when the player may build): cycles `delay` 1, 2, 3, 4, 1. The turn-on delay is `delay * 2` game ticks. The input is read from the block behind (the
-neighbour at `facing`): the larger of the world signal there and, when that block is redstone wire, its `power`; the repeater turns on when the input is above 0.
-`neighborChanged` (when the cell still holds a repeater) removes the block with its drops and updates all six neighbours when survival fails, else runs `checkTickOnNeighbor`: nothing while locked; when `powered` differs from the input test and no tick of this block is already due this game tick, it schedules a tick after the block's delay (`delay * 2` game ticks) with priority `HIGH`, raised to `EXTREMELY_HIGH` when the block in front is a diode that does not face the repeater (`shouldPrioritize`), else to `VERY_HIGH` when the repeater is currently powered. `tick` does nothing while locked; when on and the input is 0 it turns off (flag value 2); when off it turns on and, if the input is 0, schedules a tick after the delay with priority `VERY_HIGH` so that it turns off again. `setPlacedBy` schedules a tick after 1 tick when the input is above 0. Output signal: 15 when powered, given only toward the direction it faces (queried direction equal to `facing`); the direct signal equals it. Outline: 5.2.
+Use (when the player may build): cycles `delay` 1, 2, 3, 4, 1. The turn-on delay is `delay * 2` game ticks. The input is read from the neighbour at `facing` (the input side; the output side is the opposite one): the larger of the world signal there and, when that block is redstone wire, its `power`; the repeater turns on when the input is above 0.
+`neighborChanged` (when the cell still holds a repeater) removes the block with its drops and updates all six neighbours when survival fails, else runs the check of table A. `setPlacedBy` schedules a tick after 1 tick when the input is above 0.
+
+Table A, neighbour check (delay D is `delay * 2` game ticks):
+
+| `locked` | `powered` differs from (input > 0) | tick of this block already due | Priority of the tick scheduled after D | Result |
+|---|---|---|---|---|
+| true | any | any | - | nothing |
+| false | no | any | - | nothing |
+| false | yes | yes | - | nothing |
+| false | yes | no | `EXTREMELY_HIGH` when the output-side block is a diode that does not face this repeater (`shouldPrioritize`); else `VERY_HIGH` when this repeater is powered; else `HIGH` | tick scheduled |
+
+Table B, scheduled tick:
+
+| `locked` | `powered` | input > 0 | Result |
+|---|---|---|---|
+| true | any | any | nothing |
+| false | true | no | turn off (flag value 2) |
+| false | false | yes | turn on |
+| false | false | no | turn on, and schedule a tick after D with priority `VERY_HIGH` so that it turns off again |
+| false | true | yes | nothing |
+
+Signals (receiver-to-emitter convention, section 7 preamble). Output: 15 when powered, returned only when the queried direction equals `facing`, which makes the receiver the block at `pos.relative(facing.opposite)`: the output side, the direction the placing player was facing. The direct signal equals it. The input side is the neighbour at `facing`. `shouldPrioritize` examines the block on the output side, `pos.relative(facing.opposite)`. Outline: 5.2.
 
 ### 7.10 Snow layers, ice, cactus, cactus flower and sugar cane (fields 265 to 271)
 
@@ -876,7 +907,7 @@ shape selection for the four (open, half) cases of 5.2; (e) the cactus flower ch
 
 ## 10. Open questions
 
-1. **Part 1 and part 2 consistency (closed).** The first draft summed the states without the 9 leaf blocks (28 states each) and gave `spruce_wall_sign` 7171. 24 part 2 section 1.2 resolves `B105` = 575 and states 7307 for `ladder`, 7415 for `oak_wall_sign`, 7423 for `spruce_wall_sign`; 24 part 8 gives `mushroom_stem` 9628, which equals this part's end 9627 plus one. Every id of sections 2, 8 and 9 was re-based by +252 and agrees with both siblings. Nothing remains open; a sibling that still shows the old numbers is wrong.
+1. **Part 1 and part 2 consistency (closed).** 24 part 2 section 1.2 gives `B105` = 575 and states 7307 for `ladder`, 7415 for `oak_wall_sign`, 7423 for `spruce_wall_sign`; 24 part 8 gives `mushroom_stem` 9628, which equals this part's end 9627 plus one. All state ids here agree with both siblings. Nothing remains open.
 2. **Map colours and sound types.** The numeric `MapColor` table and the `SoundType` tables (volume, pitch, five events per type) are not in this part; names only are given. Part 1 section 8 owns the enumerations.
 3. **`deepslate_redstone_ore` and `packed_mud`** copy properties from `redstone_ore` and `dirt` (`ofLegacyCopy`); the `dirt` side belongs to part 1.
 4. **Ceiling hanging sign placement (closed).** The full rule is in steps 1 to 5 of 7.4 and was read from the method's bytecode; nothing is inferred.

@@ -8,11 +8,11 @@
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, and `javap -v` for lambda and bootstrap targets), of `assets/minecraft/lang/en_us.json`, of `assets/minecraft/items/*.json` and of `data/minecraft/jukebox_song` (names and counts only), with no execution. Class, method and field names in backticks say where a fact was read. Values not read are marked "(inferred)" or "(recalled, not verified)" and are listed in the Open questions. |
 | Status | Written for round RS5 (design map Part 5 GAP-2, Part 6 row RS5), part 6 of 8. |
 
-"17 §3.6" means section 3.6 of [17-tools-weapons-and-combat.md](17-tools-weapons-and-combat.md); "25-1 §8.3" means section 8.3 of
-[25-item-registry-1-model-and-blocks-a.md](25-item-registry-1-model-and-blocks-a.md); "25-5 §4" is the same for
-[25-item-registry-5-buckets-maps-potions-misc.md](25-item-registry-5-buckets-maps-potions-misc.md); "29 §9" is
+"17 section 3.6" means section 3.6 of [17-tools-weapons-and-combat.md](17-tools-weapons-and-combat.md); "25-1 section 8.3" means section 8.3 of
+[25-item-registry-1-model-and-blocks-a.md](25-item-registry-1-model-and-blocks-a.md); "25-5 section 4" is the same for
+[25-item-registry-5-buckets-maps-potions-misc.md](25-item-registry-5-buckets-maps-potions-misc.md); "29 section 9" is
 [29-block-updates-and-placement.md](29-block-updates-and-placement.md); "44-8" is
-[44-residual-mob-questions-8-vehicles-and-projectiles.md](44-residual-mob-questions-8-vehicles-and-projectiles.md); "46 §n" is
+[44-residual-mob-questions-8-vehicles-and-projectiles.md](44-residual-mob-questions-8-vehicles-and-projectiles.md); "46 section n" is
 [46-registry-ids.md](46-registry-ids.md). Class names in backticks say where a fact was read. They are not the design.
 
 ## Contents
@@ -35,8 +35,8 @@
 
 ## 1. Scope and the three numberings
 
-The brief for this part named "registry indices 940 to 1104". Those numbers are **statement numbers** in the sense of 25-1 §2.2
-and §2.3: the position of the `putstatic` in `Items.<clinit>`, counting a collection field (`ColorCollection`, `WeatheringCopperCollection`)
+The brief for this part named "registry indices 940 to 1104". Those numbers are **statement numbers** in the sense of 25-1 section 2.2
+and section 2.3: the position of the `putstatic` in `Items.<clinit>`, counting a collection field (`ColorCollection`, `WeatheringCopperCollection`)
 as one statement. The brief's item names agree with that reading (`mace` 1034, `tipped_arrow` 1089, `shield` 1091, `piglin_head` 1050: each is the statement number
 below). They are not registry ids. Three numbers exist for every entry:
 
@@ -44,13 +44,13 @@ below). They are not registry ids. Three numbers exist for every entry:
 |---|---|---|
 | Statement S | **0-based** position among the 1253 statements of `Items.<clinit>` (they run 0 to 1252; `chicken_spawn_egg` is the 941st statement, `BANNER` is S 1077, `debug_stick` S 1104, `music_disc_13` S 1105; a reader counting from 1 is off by one) | 940 |
 | Item field F | position among the 1218 plain `Item` fields only (collections skipped) | 912 |
-| Registry id I | the number of items registered before it; this is what packets carry (46 §2.1, 25-1 §2.1) | 1280 |
+| Registry id I | the number of items registered before it; this is what packets carry (46 section 2.1, 25-1 section 2.1) | 1280 |
 
-Relations read for this range (25-1 §2.4 computes the same totals; both were derived independently from the field types in `Items`):
+Relations read for this range (25-1 section 2.4 computes the same totals; both were derived independently from the field types in `Items`):
 
 - Before statement 940 there are 28 collection statements (18 colour collections and 10 weathering collections), each adding extra items
   beyond its one statement: 18 x 15 + 10 x 7 = 340. So **I = S + 340** for S = 940 to 1076.
-- Statement 1077 is the colour collection `BANNER`: 16 items, ids 1417 to 1432 (25-1 §2.3 gives the same range).
+- Statement 1077 is the colour collection `BANNER`: 16 items, ids 1417 to 1432 (25-1 section 2.3 gives the same range).
 - After it **I = S + 355** for S = 1078 to 1104 (340 + 15).
 - The range therefore holds 88 spawn eggs (ids 1280 to 1367), 76 single-item statements and the 16 banners: 165 statements, 180 items, ids 1280 to 1459, contiguous.
 - The registry has 1658 items in total (ids 0 to 1657), and the jar holds 1658 item model definitions (`assets/minecraft/items/*.json`, `air.json` included),
@@ -59,11 +59,20 @@ Relations read for this range (25-1 §2.4 computes the same totals; both were de
 
 Statement and id columns below are computed from the field types read in `Items`; no registry dump was available (Open question 1).
 
+**Where the other special items named by the round brief are specified.** They are registered outside statements 940 to 1104 and are covered by the sibling parts (checked by key in each part's rows):
+
+| Item(s) | Document |
+|---|---|
+| `bundle`, the 16 `dyed_bundle` items (`bundle_contents`), `compass`, `recovery_compass`, lodestone-tracker compass behaviour, maps, potions, buckets | [25-item-registry-5-buckets-maps-potions-misc.md](25-item-registry-5-buckets-maps-potions-misc.md) (25-5 section 7) |
+| `structure_block`, `jigsaw` (`GameMasterBlockItem`, rarity epic), `command_block`, barrier-like game-master items | [25-item-registry-4-boats-food-armor-signs.md](25-item-registry-4-boats-food-armor-signs.md) |
+| `lodestone` (plain `BlockItem`), `ominous_bottle`, `ominous_trial_key`, trial key, trial spawner, vault | [25-item-registry-8-late-items-templates-sherds-trial.md](25-item-registry-8-late-items-templates-sherds-trial.md) |
+| `enchanted_book` (`stored_enchantments`), `written_book`, `knowledge_book`, `totem_of_undying`, `nether_star`, `debug_stick`, `command_block_minecart` | this document (rows in section 4; engines in sections 6, 8 and 11) |
+
 ## 2. What this part adds to the shared model
 
 The id rule, the registering helpers (`registerItem`, `registerBlock`, `registerSpawnEgg`), `Item$Properties` defaults, the 13 default
 components (`COMMON_ITEM_COMPONENTS` plus `item_name` and `item_model`), the builder table, `Foods` and `Consumables` are in 25-1
-§2 to §9 and are not repeated. Facts re-read here that this part depends on:
+section 2 to section 9 and are not repeated. Facts re-read here that this part depends on:
 
 1. **Description id and model.** `Item$Properties.effectiveDescriptionId` is `item.<namespace>.<path>` for items registered with `registerItem`
    and `block.<namespace>.<path>` for items registered with `registerBlock` (which calls `useBlockDescriptionPrefix`). `useItemDescriptionPrefix`
@@ -78,7 +87,7 @@ components (`COMMON_ITEM_COMPONENTS` plus `item_name` and `item_model`), the bui
 4. **Block-item map.** `BlockItem.registerBlocks` enters the placed block in `Item.BY_BLOCK`; `StandingAndWallBlockItem.registerBlocks` enters the standing and the wall
    block, so both map back to the one item (skulls, heads, banners).
 
-New builder methods that 25-1 §6.4 names and this part needs the content of: `Properties.equippableUnswappable`, `Properties.loweredMobVisibility`, `Waypoint.addHideAttribute` (section 7),
+New builder methods that 25-1 section 6.4 names and this part needs the content of: `Properties.equippableUnswappable`, `Properties.loweredMobVisibility`, `Waypoint.addHideAttribute` (section 7),
 `Properties.horseArmor` (section 9). `Properties.spawnEgg` is in section 3.1.
 
 ## 3. Spawn eggs
@@ -89,17 +98,17 @@ New builder methods that 25-1 §6.4 names and this part needs the content of: `P
 
 | Part | Value |
 |---|---|
-| Component `entity_data` (id by 46 §8) | `TypedEntityData.of(entityType, empty CompoundTag)`: type = the entity type, tag = empty compound (the `id` entry of any tag is stripped on construction) |
+| Component `entity_data` (id by 46 section 8) | `TypedEntityData.of(entityType, empty CompoundTag)`: type = the entity type, tag = empty compound (the `id` entry of any tag is stripped on construction) |
 | `requiredFeatures` | the entity type's own feature set (the set form checks it is a subset of the registry) |
 | Stack size | default 64 (no `stacksTo` call) |
 | Rarity, durability, anything else | none: the 13 default components plus `entity_data` |
 | Description id | `item.minecraft.<key>` ("Chicken Spawn Egg"), model `minecraft:item/<key>` is a plain model with no tint (`assets/minecraft/items/chicken_spawn_egg.json`: type `minecraft:model`; 43: eggs have no tints) |
 
 All 88 statements call `registerSpawnEgg` once; in every statement the item key is `<entity key>_spawn_egg` and the entity argument is `EntityTypes.<ENTITY>` (read for each of the 88: the field names
-agree, check 3 of section 14). The entity keys are the lower-case field names (46 §11 states that `EntityTypeIds` keys are the plain lower-case names; the match of the egg name to the entity name was checked, the match of the
+agree, check 3 of section 14). The entity keys are the lower-case field names (46 section 11 states that `EntityTypeIds` keys are the plain lower-case names; the match of the egg name to the entity name was checked, the match of the
 `EntityTypes` field name to the registry key is inferred from that rule).
 
-The wire form of `entity_data` is the composite of the entity type codec (a registry id, 46 §11) and a compound tag (`TypedEntityData.streamCodec`: type stream codec, then `ByteBufCodecs.COMPOUND_TAG`).
+The wire form of `entity_data` is the composite of the entity type codec (a registry id, 46 section 11) and a compound tag (`TypedEntityData.streamCodec`: type stream codec, then `ByteBufCodecs.COMPOUND_TAG`).
 The persistent (JSON/NBT) form is a compound whose `id` string holds the type and whose remaining entries are the tag (`TYPE_TAG` = "id").
 
 ### 3.2 The 88 rows
@@ -153,7 +162,7 @@ S = statement, Id = registry id (I = S + 340). Left half 940 to 983, right half 
 | 982 | 1322 | `wandering_trader_spawn_egg` | 1026 | 1366 | `endermite_spawn_egg` |
 | 983 | 1323 | `bogged_spawn_egg` | 1027 | 1367 | `shulker_spawn_egg` |
 
-The entity of each row is its key without the `_spawn_egg` suffix. Eggs exist for 88 entity types; the other types of 21 §2 (161 in all) have none (the egg table above is complete for the registry).
+The entity of each row is its key without the `_spawn_egg` suffix. Eggs exist for 88 entity types; the other types of 21 section 2 (161 in all) have none (the egg table above is complete for the registry).
 
 ### 3.3 Using an egg on a block (`SpawnEggItem.useOn`)
 
@@ -204,7 +213,7 @@ Applied when the stack has `entity_data`:
 ### 3.6 `EntityType.canSpawn(level)`
 
 True only if (a) the type is enabled by the level's enabled feature flags, and (b) the type is allowed in peaceful mode (`isAllowedInPeaceful`) **or** the level difficulty is not `PEACEFUL`. A hostile type's egg therefore
-fails in peaceful difficulty (the per-type `isAllowedInPeaceful` flag values come from the type builders in 21 §2: not re-read here, Open question 11).
+fails in peaceful difficulty (the per-type `isAllowedInPeaceful` flag values come from the type builders in 21 section 2: not re-read here, Open question 11).
 
 ### 3.7 Using an egg in the air (`SpawnEggItem.use`)
 
@@ -234,9 +243,9 @@ The owner passed is null, so `OP_ONLY_CUSTOM_DATA` types get no entity data (3.5
 
 ## 4. The rows
 
-Statements 1028 to 1104 after the eggs. "Components beyond the common set" follows the schema of 25-1 §10: the 13 default components of 25-1 §7.1 are present in every row and not repeated.
-`fuel`, `compostable` and `cooking_fuel` give the provider key (25-1 §9). "waypoint hide modifier" and "equippable head unswappable" are defined in section 7.
-"Item" in the Class column means the base class `Item` (a plain registration). Foods: the `FoodProperties` and `Consumable` of the named constant (25-1 §8.2, §8.3; section 5 here).
+Statements 1028 to 1104 after the eggs. "Components beyond the common set" follows the schema of 25-1 section 10: the 13 default components of 25-1 section 7.1 are present in every row and not repeated.
+`fuel`, `compostable` and `cooking_fuel` give the provider key (25-1 section 9). "waypoint hide modifier" and "equippable head unswappable" are defined in section 7.
+"Item" in the Class column means the base class `Item` (a plain registration). Foods: the `FoodProperties` and `Consumable` of the named constant (25-1 section 8.2, section 8.3; section 5 here).
 
 | S | Id | Key | Class | Max stack | Components beyond the common set |
 |---|---|---|---|---|---|
@@ -289,7 +298,7 @@ Statements 1028 to 1104 after the eggs. "Components beyond the common set" follo
 | 1074 | 1414 | `command_block_minecart` | MinecartItem (entity `command_block_minecart`) | 1 | rarity epic |
 | 1075 | 1415 | `mutton` | Item | 64 | food `mutton` |
 | 1076 | 1416 | `cooked_mutton` | Item | 64 | food `cooked_mutton` |
-| 1077 | 1417 to 1432 | `white_banner` to `black_banner` (field `BANNER`, 16 items) | BannerItem (blocks `<colour>_banner`, `<colour>_wall_banner`) | 16 | `cooking_fuel` `cooking/time_wood_blocks`; `banner_patterns` empty |
+| 1077 | 1417 to 1432 | `white_banner` to `black_banner` (field `BANNER`, 16 items) | BannerItem (blocks `<colour>_banner`, `<colour>_wall_banner`) | 16 | `cooking_fuel` `cooking/time_wood_blocks`; `banner_patterns` empty (set by the per-colour lambda of `registerBlockItems`, see 8.5) |
 | 1078 | 1433 | `end_crystal` | EndCrystalItem | 64 | glint override true |
 | 1079 | 1434 | `chorus_fruit` | Item | 64 | food `chorus_fruit`; consumable `chorus_fruit`; `use_cooldown` 1.0 s |
 | 1080 | 1435 | `popped_chorus_fruit` | Item | 64 | none |
@@ -320,16 +329,16 @@ Statements 1028 to 1104 after the eggs. "Components beyond the common set" follo
 
 Notes on the rows:
 
-- The `rarity` component values are `common` (the default), `uncommon`, `rare`, `epic` (25-1 §7.2 gives their ids).
+- The `rarity` component values are `common` (the default), `uncommon`, `rare`, `epic` (25-1 section 7.2 gives their ids).
 - "glint override true" is the component `enchantment_glint_override` = true: the item shows the enchantment glint without enchantments.
-- Rows with "compostable `x`" use the provider key `compostable/x`; the composter engine is not in this document (25-1 §9).
+- Rows with "compostable `x`" use the provider key `compostable/x`; the composter engine is not in this document (25-1 section 9).
 - The banner statement (S 1077) registers its 16 items before `end_crystal`'s own statement; it has no separate field per colour in this range (the `Items.BANNER` field is the collection).
-  The 16 items are `<colour>_banner`, colours in the dye order white, orange, magenta, light_blue, yellow, lime, pink, gray, light_gray, cyan, purple, blue, brown, green, red, black (25-1 §2.3; `ColorCollection.zipMap` evaluates the colours in that record order). All 16 `<colour>_banner` item model files exist in the jar.
+  The 16 items are `<colour>_banner`, colours in the dye order white, orange, magenta, light_blue, yellow, lime, pink, gray, light_gray, cyan, purple, blue, brown, green, red, black (25-1 section 2.3; `ColorCollection.zipMap` evaluates the colours in that record order). All 16 `<colour>_banner` item model files exist in the jar.
 - The item class names are the artifact's; an implementation needs only the behaviours of sections 3 and 6 to 11.
 
 ## 5. Foods and consumables of this range
 
-The `Foods` and `Consumables` tables are 25-1 §8.2 and §8.3 (and 25-5 §4 for the consume pipeline). This part re-read the 14 foods that its rows use and the values agree with those tables. `saturation` is
+The `Foods` and `Consumables` tables are 25-1 section 8.2 and section 8.3 (and 25-5 section 4 for the consume pipeline). This part re-read the 14 foods that its rows use and the values agree with those tables. `saturation` is
 `FoodConstants.saturationByModifier(nutrition, modifier)` = `(float) nutrition * modifier * 2.0` in single precision (`i2f`, multiply by the modifier, multiply by 2); `Foods` builders store the modifier and the record stores the product.
 
 | Food | Nutrition | Modifier | Saturation (float) | Always edible | Consumable | Notes |
@@ -350,7 +359,7 @@ The `Foods` and `Consumables` tables are 25-1 §8.2 and §8.3 (and 25-5 §4 for 
 | `beetroot_soup` | 6 | 0.6 (the `stew(n)` helper) | 7.2 | no | default food | `use_remainder` bowl, stack 1 |
 
 The `stew(n)` helper of `Foods` is `new Builder().nutrition(n).saturationModifier(0.6f)`. Defaults of `Consumables.defaultFood()` (read): consume time 1.6 s, animation `EAT`, sound `entity.generic.eat`, consume particles on; `consumeTicks` = `(int)(1.6 x 20.0)` = 32.
-The whole consume pipeline (use start, per-tick sounds, `onConsume`, `FoodData.eat`, burp, `use_remainder`, `canConsume`) is 25-5 §4 and 17 §4.9; it is not repeated. One fact this part re-read: the `food` component is itself a `ConsumableListener`: when the consumable finishes,
+The whole consume pipeline (use start, per-tick sounds, `onConsume`, `FoodData.eat`, burp, `use_remainder`, `canConsume`) is 25-5 section 4 and 17 section 4.9; it is not repeated. One fact this part re-read: the `food` component is itself a `ConsumableListener`: when the consumable finishes,
 the listener plays `entity.generic.eat` at the eater (neutral source, volume 1.0, pitch `triangle(1.0, 0.4)`), and for a player calls `FoodData.eat(food)` and plays `entity.player.burp` (players source, volume 0.5, pitch `randomBetween(0.9, 1.0)`).
 
 `ApplyStatusEffectsConsumeEffect.apply`: draws one `nextFloat` from the entity's random source; if the draw is >= probability, no effect and the effect returns false; otherwise adds a **copy** of each listed effect instance to the entity and returns true if any addition succeeded (probability default 1.0, since the constructors without a probability pass `1`).
@@ -374,7 +383,7 @@ The statement numbers are the ones of section 4.
 Persistent form: an object with the optional field `pages` (default empty list). A `Filterable<T>` is a value with an optional filtered alternative for players with text filtering (the server uses the raw text unless the viewer has filtering on; the wire layout of `Filterable` is not specified here, Open question 5).
 
 **`written_book_content`** (`WrittenBookContent`): fields in order: `title` (`Filterable<String>`, 0 to 32 characters: `TITLE_MAX_LENGTH` = 32; the class also declares a second constant `TITLE_LENGTH` = 16, whose role was not read, Open question 18), `author` (string), `generation` (int 0 to 3, default 0; the constructor rejects another value with "Generation was N, but must be between 0 and 3"),
-`pages` (list of `Filterable<Component>`; each page is a text component whose serialized form is limited to 32767 characters: `ComponentSerialization.flatRestrictedCodec(32767)`; no count limit read), `resolved` (boolean, default false). Default instance (`EMPTY`): title "", author "", generation 0, no pages, resolved true.
+`pages` (list of `Filterable<Component>`; each page is a text component whose serialized form is limited to 32767 characters (the class constant `PAGE_LENGTH` = 32767): `ComponentSerialization.flatRestrictedCodec(32767)`; no count limit read), `resolved` (boolean, default false). Default instance (`EMPTY`): title "", author "", generation 0, no pages, resolved true.
 The tooltip shows the author as the translation `book.byAuthor` ("by %1$s") when the author is not blank and the generation as `book.generation.<n>` ("Original", "Copy of original", "Copy of a copy", "Tattered" for 0 to 3; `en_us.json`). Copy and unlock behaviour of generations (crafting recipes) belongs to the recipe documents.
 
 ### 6.3 Editing and signing (`ServerGamePacketListenerImpl.handleEditBook`, packet 0x18, 05c)
@@ -397,7 +406,7 @@ The stored book is persistent: a written book cannot be edited again (it has no 
 Statements 1044 to 1050 (field order skeleton, wither skeleton, player, zombie, creeper, dragon, piglin; the statement numbers are those of section 4): all are registered with `registerBlock` so they are **block items** (name from the block, `block.minecraft.<key>`), class `StandingAndWallBlockItem`
 (`PlayerHeadItem` for the player head). Constructor arguments: standing block, wall block, `attachmentDirection` = `DOWN` (the `PlayerHeadItem` constructor passes `DOWN` itself).
 
-Properties applied to each (in this order): `Waypoint.addHideAttribute` (the attribute component below), `rarity`, `equippableUnswappable(HEAD)`, and for four of them `loweredMobVisibility`:
+Properties set by the registering statement of `Items.<clinit>` (in this order): `rarity`, `equippableUnswappable(HEAD)`, and for four of them `loweredMobVisibility`. `Waypoint.addHideAttribute` (the attribute component below) is **not** applied by the registering statement: it is applied last, at construction, inside the item-factory lambda (seven calls in the `lambda$static$287` to `$293` family, `$289` being the `PlayerHeadItem` one), which calls it on the Properties when building the `StandingAndWallBlockItem` or `PlayerHeadItem`. The resulting component set does not depend on the order. The same helper is also used for the carved pumpkin item (outside this part, read in its own lambda `$107`):
 
 | Item | Rarity | `mob_visibility` target entity types |
 |---|---|---|
@@ -410,11 +419,11 @@ Properties applied to each (in this order): `Waypoint.addHideAttribute` (the att
 | `piglin_head` | uncommon | `piglin`, `piglin_brute` |
 
 **Waypoint hide modifier** (`Waypoint.addHideAttribute`): `attribute_modifiers` = one entry: attribute `waypoint_transmit_range`, modifier id `minecraft:waypoint_transmit_range_hide`, amount -1.0, operation `add_multiplied_total`, slot group `head`, display `hidden`
-(not shown in the tooltip). Worn on the head the modifier multiplies the wearer's transmit range by (1 + -1) = 0, so the wearer does not appear on other players' locator bars (the attribute's use by the waypoint engine is not read here; the attribute is in 23 §8).
+(not shown in the tooltip). Worn on the head the modifier multiplies the wearer's transmit range by (1 + -1) = 0, so the wearer does not appear on other players' locator bars (the attribute's use by the waypoint engine is not read here; the attribute is in 23 section 8).
 
 **Equippable (`equippableUnswappable(HEAD)`)**: `Equippable.builder(HEAD)` with `swappable` false. The builder defaults (read in `Equippable$Builder`): equip sound `item.armor.equip_generic`, no asset id, no camera overlay, no allowed-entity set,
 `dispensable` true, `swappable` (false here), `damage_on_hurt` true, `equip_on_interact` false, `can_be_sheared` false, shearing sound `item.shears.snip`. Because `swappable` is false, `Item.use` (use in the air) does **not** swap the head onto the player (the equippable check requires `swappable`);
-the head is worn through the inventory slot, by a dispenser (`dispensable`, behaviour not read, Open question 3) or by creative-mode picking. No asset id means no worn model overlay of its own; the player-model hat layer is a client matter (12 §7).
+the head is worn through the inventory slot, by a dispenser (`dispensable`, behaviour not read, Open question 3) or by creative-mode picking. No asset id means no worn model overlay of its own; the player-model hat layer is a client matter (12 section 7).
 
 **`mob_visibility`** (`MobVisibility`, record: `targetingEntityTypes` a holder set of entity types, `visibility` float 0.0 to 10.0; wire: holder set of `entity_type`, then Float): `loweredMobVisibility(types...)` stores the given set and visibility **0.5**.
 The set is built after the entity type registry exists (delayed component).
@@ -428,11 +437,11 @@ The slot loop is skipped entirely when `lookingEntity` is null (the sneak and in
 `getPlacementState(context)`:
 
 1. `wallState` = the wall block's `getStateForPlacement(context)` (may be null).
-2. For each direction `d` in `context.getNearestLookingDirections()` (the order of 29 §9.5): skip `d` if it is the opposite of `attachmentDirection` (UP, for DOWN); `state` = the standing block's `getStateForPlacement(context)` when `d == attachmentDirection` (DOWN), else `wallState`;
+2. For each direction `d` in `context.getNearestLookingDirections()` (the order of 29 section 9.5): skip `d` if it is the opposite of `attachmentDirection` (UP, for DOWN); `state` = the standing block's `getStateForPlacement(context)` when `d == attachmentDirection` (DOWN), else `wallState`;
    if `state` is not null and `canPlace(level, state, pos)` (= `state.canSurvive(level, pos)`) the search stops with that state.
 3. The state found is returned only if `level.isUnobstructed(state, pos, CollisionContext.empty())` is true; otherwise no state (placement fails).
 
-Everything else (the placement pipeline, `BlockPlaceContext`, sounds, `Item.BY_BLOCK`) is `BlockItem` (25-1 §5.2, 29 §9.6). The skull block states and block entity are 24.
+Everything else (the placement pipeline, `BlockPlaceContext`, sounds, `Item.BY_BLOCK`) is `BlockItem` (25-1 section 5.2, 29 section 9.6). The skull block states and block entity are 24.
 
 ### 7.3 `player_head`
 
@@ -455,7 +464,7 @@ Rows `item_frame` (S 1035) and `glow_item_frame` (S 1036), stack 64. `useOn(cont
 ### 8.2 `armor_stand` (S 1065), stack 16 (`ArmorStandItem.useOn`)
 
 1. Clicked face `DOWN`: `FAIL`.
-2. `placePos` = the clicked position of a `BlockPlaceContext` built from the context (the adjacent cell unless the clicked block is replaceable). `box` = the armor stand's entity dimensions (0.5 x 1.975, 21 §2) as a bounding box at `Vec3.atBottomCenterOf(placePos)`.
+2. `placePos` = the clicked position of a `BlockPlaceContext` built from the context (the adjacent cell unless the clicked block is replaceable). `box` = the armor stand's entity dimensions (0.5 x 1.975, 21 section 2) as a bounding box at `Vec3.atBottomCenterOf(placePos)`.
    If `!level.noCollision(null, box)` or any entity (no exclusion) is inside `box`: `FAIL`.
 3. Server side: create the entity with `EntityType.create(level, defaultStackConfig, placePos, SPAWN_ITEM_USE, true, true)` (A true, B true, see 3.4); null: `FAIL`.
 4. Yaw = `floor((wrapDegrees(player rotation - 180.0) + 22.5) / 45.0) x 45.0` (the `UseOnContext` rotation is the player's yaw); the stand keeps its x, y, z and gets that yaw, pitch 0 (`snapTo`).
@@ -465,7 +474,7 @@ Rows `item_frame` (S 1035) and `glow_item_frame` (S 1036), stack 64. `useOn(cont
 
 1. The clicked block must be `obsidian` or `bedrock`, else `FAIL`. Let `above` = the cell above it; it must be an empty block (`isEmptyBlock`: air), else `FAIL`.
 2. Entities (any) in the box [x, x + 1] x [above.y, above.y + 2] x [z, z + 1] (above's coordinates) must be none, else `FAIL`.
-3. Server side: `new EndCrystal(level, x + 0.5, above.y, z + 0.5)` with `showBottom` false, `addFreshEntity`, game event `ENTITY_PLACE` (player source) at `above`; if the level has a dragon fight (`getDragonFight`), call `tryRespawn()` (the respawn algorithm is the fight's: 21 §6.3).
+3. Server side: `new EndCrystal(level, x + 0.5, above.y, z + 0.5)` with `showBottom` false, `addFreshEntity`, game event `ENTITY_PLACE` (player source) at `above`; if the level has a dragon fight (`getDragonFight`), call `tryRespawn()` (the respawn algorithm is the fight's: 21 section 6.3).
 4. `stack.shrink(1)`; `SUCCESS` (client: `SUCCESS` after the checks).
 
 ### 8.4 `command_block_minecart` (S 1074), stack 1, rarity epic (`MinecartItem.useOn`)
@@ -477,26 +486,26 @@ Rows `item_frame` (S 1035) and `glow_item_frame` (S 1036), stack 64. `useOn(cont
 
 ### 8.5 Banners (`BannerItem`, 16 items, stack 16)
 
-`BannerItem(block, wallBlock, properties)` extends `StandingAndWallBlockItem` with `attachmentDirection` `DOWN`, and checks that both blocks are `AbstractBannerBlock` (`getColor()` = the block's dye colour). Properties: `cooking_fuel` with provider `cooking/time_wood_blocks` (300 left, 25-1 §9), `stacksTo(16)`, `banner_patterns` = `BannerPatternLayers.EMPTY`.
-Registered with `registerBlock`, so the name is `block.minecraft.<colour>_banner`. The wall block of colour c is `Blocks.WALL_BANNER.pick(c)`. Placement is 7.2. The pattern layers are applied by crafting and the loom (recipes, GAP of the workstation round); the layer list component is `banner_patterns` (17 §1.2, wire 17).
+The properties below come from the per-colour factory lambda that `ColorCollection.registerBlockItems` calls with the dye colour, not from `BannerItem`: its own constructor only validates the blocks and passes `DOWN`. `BannerItem(block, wallBlock, properties)` extends `StandingAndWallBlockItem` with `attachmentDirection` `DOWN`, and checks that both blocks are `AbstractBannerBlock` (`getColor()` = the block's dye colour). Properties: `cooking_fuel` with provider `cooking/time_wood_blocks` (300 left, 25-1 section 9), `stacksTo(16)`, `banner_patterns` = `BannerPatternLayers.EMPTY`.
+Registered with `registerBlock`, so the name is `block.minecraft.<colour>_banner`. The wall block of colour c is `Blocks.WALL_BANNER.pick(c)`. Placement is 7.2. The pattern layers are applied by crafting and the loom (recipes, GAP of the workstation round); the layer list component is `banner_patterns` (17 section 1.2, wire 17).
 
 ## 9. Animal armor (horse armor)
 
 Six rows (S 1066 to 1071, ids 1406 to 1411): `copper_horse_armor`, `iron_horse_armor`, `golden_horse_armor`, `diamond_horse_armor`, `netherite_horse_armor`, `leather_horse_armor`, registered with `new Properties().horseArmor(material)` where material is
-`ArmorMaterials.COPPER`, `IRON`, `GOLD`, `DIAMOND`, `NETHERITE`, `LEATHER`; `netherite_horse_armor` also `fireResistant()`. (Read again against `Item$Properties`: `wolfArmor` calls `durability` (via `ArmorType.getDurability`), `repairable` and sets an equippable; `horseArmor` and `nautilusArmor` call neither; `nautilusArmor` additionally sets `equip_on_interact` true, a part 7 matter, while `horseArmor` leaves it false.)
+`ArmorMaterials.COPPER`, `IRON`, `GOLD`, `DIAMOND`, `NETHERITE`, `LEATHER`; `netherite_horse_armor` also `fireResistant()`. (Read against `Item$Properties`: `wolfArmor` sets durability from `ArmorType.getDurability(BODY)` applied to the material's durability, the attributes, `repairable` from the material's repair-ingredient tag, an equippable (slot body, the material's equip sound and asset, allowed entities = {wolf}, `can_be_sheared` true, shearing sound `ARMOR_UNEQUIP_WOLF`, `damage_on_hurt` left at its default true), the component `break_sound` = `SoundEvents.WOLF_ARMOR_BREAK`, and `stacksTo(1)`; it makes no `enchantable` call. `horseArmor` and `nautilusArmor` set no durability and no repairable. `nautilusArmor` differs from `horseArmor` in three read points: equip sound `ARMOR_EQUIP_NAUTILUS`, allowed entities = the entity tag `can_wear_nautilus_armor`, shearing sound `ARMOR_UNEQUIP_NAUTILUS`; it also sets `equip_on_interact` true, which `horseArmor` leaves false. Both set `damage_on_hurt` false and `can_be_sheared` true; `horseArmor` uses equip sound `HORSE_ARMOR`, allowed entities = tag `can_wear_horse_armor`, shearing sound `HORSE_ARMOR_UNEQUIP`.)
 
 `Properties.horseArmor(material)` sets, in order:
 
 1. `attribute_modifiers` = `material.createAttributes(BODY)`: slot group `body`; three modifiers that share the identifier `minecraft:armor.body` (the format `armor.<type name>`), each `add_value`: `armor` = the material's defense for the BODY type (default 0 when absent), `armor_toughness` = the material's toughness (added **even when 0**),
-   and `armor_knockback_resistance`-class attribute `knockback_resistance` = the material's value, added **only when greater than 0**. Values per material (17 §2.5, body column): leather 3, copper 4, iron 5, gold 7, diamond 11, netherite 19; toughness 0 except diamond 2 and netherite 3; knockback resistance 0 except netherite 0.1.
+   and `armor_knockback_resistance`-class attribute `knockback_resistance` = the material's value, added **only when greater than 0**. Values per material (17 section 2.5, body column): leather 3, copper 4, iron 5, gold 7, diamond 11, netherite 19; toughness 0 except diamond 2 and netherite 3; knockback resistance 0 except netherite 0.1.
 2. `equippable` = `Equippable.builder(BODY)` with: equip sound `entity.horse.armor` (`SoundEvents.HORSE_ARMOR`); asset id = `material.assetId` (an equipment asset key, data); allowed entities = the entity type tag `can_wear_horse_armor` (data);
    `damage_on_hurt` **false**; `can_be_sheared` true; shearing sound `item.horse_armor.unequip`. Other builder defaults stay (dispensable true, swappable true, `equip_on_interact` false).
 3. `stacksTo(1)`.
 
-Not set (read: the method does not call them): `durability` and `repairable`. A horse armor item therefore has **no** `max_damage`, no `damage` and no `repairable`, and no `break_sound`. (Document 17 §1.4's table row "`wolfArmor`, `horseArmor`, `nautilusArmor` ... like humanoid with the body slot (durability multiplier x 16)" is correct for the wolf armor and not for horse and nautilus armor: see Open question 12.)
+Not set (read: the method does not call them): `durability` and `repairable`. A horse armor item therefore has **no** `max_damage`, no `damage` and no `repairable`, and no `break_sound`. (Document 17 section 1.4's table row "`wolfArmor`, `horseArmor`, `nautilusArmor` ... like humanoid with the body slot (durability multiplier x 16)" is correct for the wolf armor and not for horse and nautilus armor: see Open question 12.)
 
-Because `swappable` is true, Use Item swaps the armor into the body slot when no other use applies (`Item.use`: consumable, then swappable equippable, then blocks-attacks, then kinetic weapon, else `PASS`; 25-1 §5.1). Putting horse armor on a horse is an interaction of the horse (`equippable.allowedEntities` is the gate; 19, 44).
-The nautilus armor items (`Properties.nautilusArmor`, 25-1 §6.4) are rows of part 7.
+Because `swappable` is true, Use Item swaps the armor into the body slot when no other use applies (`Item.use`: consumable, then swappable equippable, then blocks-attacks, then kinetic weapon, else `PASS`; 25-1 section 5.1). Putting horse armor on a horse is an interaction of the horse (`equippable.allowedEntities` is the gate; 19, 44).
+The nautilus armor items (`Properties.nautilusArmor`, 25-1 section 6.4) are rows of part 7; their builder differs from `horseArmor` as stated in the note at the head of this section (equip sound, allowed-entity tag, shearing sound, `equip_on_interact` true).
 
 ## 10. Thrown items and arrows
 
@@ -513,7 +522,7 @@ Dispenser configuration (`createDispenseConfig`): uncertainty = default x 0.5, p
 
 `SplashPotionItem.use`: play `entity.splash_potion.throw` (source players, volume 0.5, pitch `0.4 / (nextFloat x 0.4 + 0.8)`), then `ThrowablePotionItem.use`. `LingeringPotionItem.use` the same with `entity.lingering_potion.throw` (source neutral).
 `ThrowablePotionItem.use`: on a server level `Projectile.spawnProjectileFromRotation(factory, level, stack, player, -20.0, 0.5, 1.0)` (`PROJECTILE_SHOOT_POWER` = 0.5), stat `item_used`, `stack.consume(1, player)`, `SUCCESS`. The entity is `ThrownSplashPotion` or the lingering variant (`createPotion`).
-Dispenser config: uncertainty x 0.5, power x 1.25 as for the bottle. Components: `potion_contents` = empty (`PotionContents.EMPTY`), lingering also `potion_duration_scale` 0.25 (17 §1.2). The potion effects, the cloud and the arithmetic are in 17 §3.15 and 25-5 §8.
+Dispenser config: uncertainty x 0.5, power x 1.25 as for the bottle. Components: `potion_contents` = empty (`PotionContents.EMPTY`), lingering also `potion_duration_scale` 0.25 (17 section 1.2). The potion effects, the cloud and the arithmetic are in 17 section 3.15 and 25-5 section 8.
 
 ### 10.3 Arrows
 
@@ -522,28 +531,28 @@ Dispenser config: uncertainty x 0.5, power x 1.25 as for the bottle. Components:
 | `spectral_arrow` (S 1088) | `SpectralArrowItem` extends `ArrowItem` | none | `createArrow` builds a `SpectralArrow` with a one-count copy of the stack; dispensed arrows get pickup `ALLOWED` |
 | `tipped_arrow` (S 1089) | `TippedArrowItem` | `potion_contents` empty, `potion_duration_scale` 0.125 | `getDefaultInstance` = the stack with `potion_contents` of the potion `poison`; `getName` = `PotionContents.getName("<descriptionId>.effect.")`: e.g. `item.minecraft.tipped_arrow.effect.poison` ("Arrow of Poison") |
 
-Arrow flight, damage and pickup: 17 §3.9 and 44-8. The `arrows` tag membership of the three arrow items is data (17 §3.9).
+Arrow flight, damage and pickup: 17 section 3.9 and 44-8. The `arrows` tag membership of the three arrow items is data (17 section 3.9).
 
 ## 11. Other special items
 
 - **empty map** (`map`, S 1042, class `EmptyMapItem`, stack 64): `use(level, player, hand)`: server side: consume one item from the stack in hand, stat `item_used`, play `ui.cartography_table.take_result` at the player's sound source (volume 1, pitch 1), then
-  `MapItem.create(level, player block X, player block Z, scale 0, trackingPosition true, unlimitedTracking false)`. If the result stack is empty: `SUCCESS` with the (shrunk) hand stack. Otherwise if the shrunk hand stack is empty the filled map replaces it in the hand (`heldItemTransformedTo`); else the filled map is added to the inventory, dropped at the player with prediction `SERVER_ONLY` if the inventory is full; `SUCCESS`. Map creation and map data: 25-5 §8.
+  `MapItem.create(level, player block X, player block Z, scale 0, trackingPosition true, unlimitedTracking false)`. If the result stack is empty: `SUCCESS` with the (shrunk) hand stack. Otherwise if the shrunk hand stack is empty the filled map replaces it in the hand (`heldItemTransformedTo`); else the filled map is added to the inventory, dropped at the player with prediction `SERVER_ONLY` if the inventory is full; `SUCCESS`. Map creation and map data: 25-5 section 8.
 - **`knowledge_book`** (S 1103, stack 1, rarity epic, `KnowledgeBookItem`): the component `recipes` is a list of recipe resource keys (empty by default). `use`: take the list (default empty), consume one item; empty list: `FAIL`; on a server level: look each key up in the recipe manager (an unknown key logs `Invalid recipe: <key>` and returns `FAIL`), award all found recipes with `Player.awardRecipes` (recipe book unlock, 27), stat `item_used`; `SUCCESS`.
 - **`debug_stick`** (S 1104 = id 1459, stack 1, rarity epic, glint, `DebugStickItem`): needs the game-master-blocks permission (`canUseGameMasterBlocks`, else the click does nothing: `useOn` fails, left click returns false). The component `debug_stick_state` is a map from block (by registered name) to the selected property name (empty by default).
   Behaviour (`handleInteraction(player, state, level, pos, cycling, stack)`): if the block has no properties: send the actionbar (overlay) message `<descriptionId>.empty` ("%s has no properties", argument the registered block name) and do nothing. Otherwise the selected property for the block is looked up in the state map (`DebugStickState.properties`); if none was stored or it is not a property of the block, the first property of the block's state definition is used.
-  Right click on a block (`useOn`, `cycling` true): replace the block state by the next value of the selected property in the property's value order, or the previous value when the player is sneaking (`isSecondaryUseActive`), wrapping around (`Util.findNextInIterable` or `findPreviousInIterable`); set with `setBlock(pos, newState, 18)` (flags 2 clients + 16 skip shape updates, 29 §1) and message `<descriptionId>.update` ("\"%s\" to %s", property name and the new value name). Left click on a block (`canDestroyBlock`, which then returns false so the block is never broken, `cycling` false): select the next property of the block's property list (previous with sneak), store it with `withProperty`, message `<descriptionId>.select` ("selected \"%s\" (%s)", property name and its current value name). The value names are `Property.getName(value)`. Both successful paths return `SUCCESS`/`false`; the right click returns `FAIL` if `handleInteraction` returned false.
-- **`totem_of_undying`** (S 1099, stack 1, rarity uncommon): component `death_protection` = `DeathProtection.TOTEM_OF_UNDYING` = the on-death consume effects, in order: clear all status effects, then apply together `regeneration` 900 ticks amplifier 1, `absorption` 100 ticks amplifier 1, `fire_resistance` 800 ticks amplifier 0 (probability 1). The death check, the health set and the trigger: 17 §4.10.
+  Right click on a block (`useOn`, `cycling` true): replace the block state by the next value of the selected property in the property's value order, or the previous value when the player is sneaking (`isSecondaryUseActive`), wrapping around (`Util.findNextInIterable` or `findPreviousInIterable`); set with `setBlock(pos, newState, 18)` (flags 2 clients + 16 skip shape updates, 29 section 1) and message `<descriptionId>.update` ("\"%s\" to %s", property name and the new value name). Left click on a block (`canDestroyBlock`, which then returns false so the block is never broken, `cycling` false): select the next property of the block's property list (previous with sneak), store it with `withProperty`, message `<descriptionId>.select` ("selected \"%s\" (%s)", property name and its current value name). The value names are `Property.getName(value)`. Both successful paths return `SUCCESS`/`false`; the right click returns `FAIL` if `handleInteraction` returned false.
+- **`totem_of_undying`** (S 1099, stack 1, rarity uncommon): component `death_protection` = `DeathProtection.TOTEM_OF_UNDYING` = the on-death consume effects, in order: clear all status effects, then apply together `regeneration` 900 ticks amplifier 1, `absorption` 100 ticks amplifier 1, `fire_resistance` 800 ticks amplifier 0 (probability 1). The death check, the health set and the trigger: 17 section 4.10.
 - **`nether_star`** (S 1051): `damage_resistant` for the tag `is_explosion` (the item entity survives explosions), not fire; rarity rare; glint.
 - **`resin_brick`** (S 1057): `provides_trim_material` = the `trim_material` registry entry `resin` (delayed: resolved when the data registries exist; `trim_material` data is 23). `nether_brick`, `prismarine_shard`, `prismarine_crystals`, `breeze_rod`, `rabbit_foot`, `rabbit_hide`, `popped_chorus_fruit`, `shulker_shell`, `iron_nugget`, `copper_nugget`, `firework_star`: plain items.
 - **`dragon_breath`** (S 1086): `craftRemainder(glass_bottle)` (the crafting remainder), rarity uncommon: not a component; it is stored on the item (`Item.getCraftingRemainder`).
-- **`wind_charge`**, **`fire_charge`**, **`flower_pot`**, **`lead`**, **`name_tag`**: 17 §3.15, §3.3, 24, §3.7.
-- **Seeds and crops as items** (`torchflower_seeds`, `pitcher_pod`, `beetroot_seeds`, `carrot`, `potato`): `BlockItem` with the item description prefix, so right-clicking a block plants the crop block through the normal placement (29 §9.6). The crop blocks are `torchflower_crop`, `pitcher_crop`, `beetroots`, `carrots`, `potatoes`.
-- **`firework_star`** (S 1054) is a plain `Item` with no components (its `firework_explosion` component is applied by crafting, 27); **`enchanted_book`** (S 1055) is a plain `Item` with stack 1, rarity rare, glint and `stored_enchantments` = empty (the enchantments are stored in `stored_enchantments`, 17 §1.2).
+- **`wind_charge`**, **`fire_charge`**, **`flower_pot`**, **`lead`**, **`name_tag`**: 17 section 3.15, section 3.3, 24, section 3.7.
+- **Seeds and crops as items** (`torchflower_seeds`, `pitcher_pod`, `beetroot_seeds`, `carrot`, `potato`): `BlockItem` with the item description prefix, so right-clicking a block plants the crop block through the normal placement (29 section 9.6). The crop blocks are `torchflower_crop`, `pitcher_crop`, `beetroots`, `carrots`, `potatoes`.
+- **`firework_star`** (S 1054) is a plain `Item` with no components (its `firework_explosion` component is applied by crafting, 27); **`enchanted_book`** (S 1055) is a plain `Item` with stack 1, rarity rare, glint and `stored_enchantments` = empty (the enchantments are stored in `stored_enchantments`, 17 section 1.2).
 
 ## 12. Items taken from 17
 
-Fully specified there and only located here: `mace` (17 §2.6, §4.8), `shield` (17 §2.6, §3.6; this part adds that its `equippable` slot is `offhand` with `swappable` false and that `BASE_COLOR` renames it `item.minecraft.shield.<colour>` through `ShieldItem.getName`, e.g. "White Shield"),
-the seven spears `wooden_spear` to `netherite_spear` (17 §2.4; their cooking fuel for wood is the provider `cooking/time_wood_items_large`), `firework_rocket` (17 §3.13), `wind_charge` and `fire_charge` (17 §3.15, §3.3), `lead` and `name_tag` (17 §3.7), `tipped_arrow` and `spectral_arrow` potion scale (17 §2.6).
+Fully specified there and only located here: `mace` (17 section 2.6, section 4.8), `shield` (17 section 2.6, section 3.6; this part adds that its `equippable` slot is `offhand` with `swappable` false and that `BASE_COLOR` renames it `item.minecraft.shield.<colour>` through `ShieldItem.getName`, e.g. "White Shield"),
+the seven spears `wooden_spear` to `netherite_spear` (17 section 2.4; their cooking fuel for wood is the provider `cooking/time_wood_items_large`), `firework_rocket` (17 section 3.13), `wind_charge` and `fire_charge` (17 section 3.15, section 3.3), `lead` and `name_tag` (17 section 3.7), `tipped_arrow` and `spectral_arrow` potion scale (17 section 2.6).
 
 ## 13. Worked examples
 
@@ -578,31 +587,31 @@ With the server option for spawner blocks off, the player gets "Spawner blocks a
 
 1. **Item model count equals the registry size.** `unzip -Z1 minecraft-26.3-client.jar | grep -v '/$' | grep '^assets/minecraft/items/' | wc -l` = **1658**, equal to the 1658 items computed from the field types (1218 plain fields + 20 colour collections x 16 + 15 weathering collections x 8). `air.json` is one of them.
 2. **The key of every row has an item model file.** All 88 spawn egg keys, the 76 single-item rows and the 16 `<colour>_banner` keys have a file `assets/minecraft/items/<key>.json` (checked by script against the lower-case field names; no key missing).
-3. **Eggs.** 88 statements call `registerSpawnEgg` (also 25-1 §2.4: 88), 88 item models match `*spawn_egg*`, and in each of the 88 statements the entity named by the `EntityTypes` argument equals the egg's key without `_spawn_egg`.
-4. **Ranges.** 165 statements (S 940 to 1104) = 88 + 76 + 1; items 88 + 76 + 16 = 180; ids 1280 to 1459 = 180 values. The two anchors that 25-1 §2.3 also derives (the banner range 1417 to 1432, and S 1077 for `BANNER`) agree with this document's formula.
+3. **Eggs.** 88 statements call `registerSpawnEgg` (also 25-1 section 2.4: 88), 88 item models match `*spawn_egg*`, and in each of the 88 statements the entity named by the `EntityTypes` argument equals the egg's key without `_spawn_egg`.
+4. **Ranges.** 165 statements (S 940 to 1104) = 88 + 76 + 1; items 88 + 76 + 16 = 180; ids 1280 to 1459 = 180 values. The two anchors that 25-1 section 2.3 also derives (the banner range 1417 to 1432, and S 1077 for `BANNER`) agree with this document's formula.
 5. **Statement numbers against the brief.** The brief's `mace` 1034, `piglin_head` 1050, `tipped_arrow` 1089 and `shield` 1091 equal S = F + 28 (F + 29 after the banner statement): `mace` F 1006, `piglin_head` F 1022, `tipped_arrow` F 1060, `shield` F 1062.
 6. **Language keys exist.** `en_us.json` contains `advMode.notEnabled.spawner`, `book.byAuthor`, `book.generation.0` to `3`, `block.minecraft.player_head.named`, `item.minecraft.tipped_arrow.effect.poison`, `item.minecraft.debug_stick.empty`, `.update`, `.select`, `painting.random`, `painting.dimensions`, `item.minecraft.shield.white` (read). `item.minecraft.carrot` exists and `block.minecraft.carrot` does not (the block is `carrots`).
-7. **Food arithmetic.** The saturation column of section 5 was computed with single-precision multiplication in the order of `saturationByModifier`; the nutrition and modifier values agree with 25-1 §8.2 (which was written by a separate reading).
+7. **Food arithmetic.** The saturation column of section 5 was computed with single-precision multiplication in the order of `saturationByModifier`; the nutrition and modifier values agree with 25-1 section 8.2 (which was written by a separate reading).
 8. **Durable rows have stack 1.** `Item$Properties.durability(n)` was read: it sets `MAX_DAMAGE` to n, `MAX_STACK_SIZE` to 1 and `DAMAGE` to 0, so `mace` and `shield` get stack 1 from `durability`, not from a `stacksTo` call (the `Items` registration of the shield calls only `durability(336)`). Rows: `mace` 1, `shield` 1, and the seven spears (17); horse armor has stack 1 through `stacksTo(1)` and no durability.
 9. **Self-checks for an implementation.** (a) Registering the 88 spawn eggs in table order must reproduce ids 1280 to 1367. (b) `Item.getId(banner colour c)` = 1417 + position of c in the dye order. (c) A spawn egg stack with no `entity_data` fails with `FAIL` in `useOn` and `use`. (d) A stack of 65 spawn eggs cannot exist (stack size 64).
 
 ## 15. Open questions
 
-1. **Registry ids not compared with a dump.** The ids of this part (I = S + 340 for S 940 to 1076, S + 355 for S 1078 to 1104) were computed from the field types read in `Items` (one item per plain field, 16 per colour collection, 8 per weathering collection). No packet capture or registry dump was available. The jar's 1658 item model files and the independent derivation in 25-1 §2.4 agree on the total.
+1. **Registry ids not compared with a dump.** The ids of this part (I = S + 340 for S 940 to 1076, S + 355 for S 1078 to 1104) were computed from the field types read in `Items` (one item per plain field, 16 per colour collection, 8 per weathering collection). No packet capture or registry dump was available. The jar's 1658 item model files and the independent derivation in 25-1 section 2.4 agree on the total.
 2. **`LivingEntity.randomTeleport(x, y, z, broadcast, tag)`** (chorus fruit, safe-ground descent, the `consumable_does_not_teleport_to` block tag, ender pearl sharing): not read here. The consume effect (16 attempts, diameter, clamp) is specified in section 5.
 3. **Dispenser behaviours.** `SpawnEggItemBehavior.execute` (including its null branch) and the fallback selection in `DispenserBlock` (3.8) were read. The explicit map filled by `DispenseItemBehavior.bootStrap` (which items are bound to which behaviour), the behaviour of armor stand, skulls and banners (equipment dispensing), minecarts, end crystals, potions and the experience bottle (`ProjectileDispenseBehavior` with the `createDispenseConfig` values: this part reads only the multipliers 0.5 and 1.25 of the experience bottle and potions) are not specified.
-4. **Thrown entities' behaviour.** The roles of the three floats of `Projectile.spawnProjectileFromRotation` are read (10.1) and no longer open. The thrown entities' own behaviour (experience amounts, splash application) is 21 §8 and 17 §3.15.
+4. **Thrown entities' behaviour.** The roles of the three floats of `Projectile.spawnProjectileFromRotation` are read (10.1) and no longer open. The thrown entities' own behaviour (experience amounts, splash application) is 21 section 8 and 17 section 3.15.
 5. **`Filterable` wire layout and the page conversion in `signBook`.** The filtered/raw pair of `Filterable` was not expanded. The page conversion is no longer open: the mapping function is `Component.literal(String)` (read, 6.3 step 4). Server text filtering (the `filterTextPacket` service) is out of scope; with filtering off the raw text is used.
 6. **`ResolvableProfile`** (the `profile` component of `player_head`) layout, the skin resolution and the name fallback.
-7. **Network synchronisation of the components first seen here.** Wire layouts read: `entity_data` (entity type id, compound tag), `mob_visibility` (holder set of entity types, float), `villager_food` (VarInt), `compostable` (a `ResolvableInt` stream codec), `cooking_fuel` and `brewing_fuel` (a `ResolvableInt` and a `ResolvableFloat`). Whether each of these components is network-synchronised at all (the `DataComponents` registration flags) and the wire layouts of `writable_book_content` (list of `Filterable<String>`, at most 100) and `written_book_content` are given in 46 §8 or not read here.
+7. **Network synchronisation of the components first seen here.** Wire layouts read: `entity_data` (entity type id, compound tag), `mob_visibility` (holder set of entity types, float), `villager_food` (VarInt), `compostable` (a `ResolvableInt` stream codec), `cooking_fuel` and `brewing_fuel` (a `ResolvableInt` and a `ResolvableFloat`). Whether each of these components is network-synchronised at all (the `DataComponents` registration flags) and the wire layouts of `writable_book_content` (list of `Filterable<String>`, at most 100) and `written_book_content` are given in 46 section 8 or not read here.
 8. **`Shapes.collide` / `VoxelShape.collideX` clipping.** Read: `Shapes.collide` threads the movement through every shape and returns the result, with a 1.0E-7 early exit. Not read: the exact clipping inside `VoxelShape.collideX` (index search with 1.0E-7 tolerance, cutoff per voxel layer). That a movement of -1.0 above a full block is cut to 0.0 relative to the box bottom, as example 2 of section 13 uses, is therefore still an assumption.
-9. **`ItemStack.shrink` versus `consume`.** The spawner path of the spawn egg calls `shrink(1)` unconditionally; the mob path calls `consume(1, owner)`. Resolved by reading: `consume(int, LivingEntity)` skips the shrink only for a non-null owner with `hasInfiniteMaterials()` true, so the mob path keeps the egg for a creative player and shrinks for a null owner (dispenser), while the spawner path always shrinks. The Use Item path that calls the item is in 29 §9.
+9. **`ItemStack.shrink` versus `consume`.** The spawner path of the spawn egg calls `shrink(1)` unconditionally; the mob path calls `consume(1, owner)`. Resolved by reading: `consume(int, LivingEntity)` skips the shrink only for a non-null owner with `hasInfiniteMaterials()` true, so the mob path keeps the egg for a creative player and shrinks for a null owner (dispenser), while the spawner path always shrinks. The Use Item path that calls the item is in 29 section 9.
 10. **`Entity.applyImplicitComponents` overrides.** The base class applies `custom_name` and `custom_data`; the overrides of the mob classes (variants, colours, sizes, for example a sheep colour or a cat variant carried by components of the spawn egg stack) were not read; 45 holds the entity fields.
-11. **`EntityType.isAllowedInPeaceful` per type.** The flag exists (read in `canSpawn`); its value for each of the 88 types is set in the type builders (21 §2 may list it: not re-read here).
-12. **Correction to 17 §1.4.** The builder table of 17 says that `wolfArmor`, `horseArmor` and `nautilusArmor` are "like humanoid with the body slot (durability multiplier x 16)". In `Item$Properties` only `wolfArmor` sets a durability and a repairable tag (and, in addition to the equippable, a further component that was taken to be the break sound); `horseArmor` and `nautilusArmor` set attributes, the equippable and `stacksTo(1)` and **nothing else** (section 9). The statement in 17 should be amended by its owner; this document does not edit 17.
+11. **`EntityType.isAllowedInPeaceful` per type.** The flag exists (read in `canSpawn`); its value for each of the 88 types is set in the type builders (21 section 2 may list it: not re-read here).
+12. **Correction to 17 section 1.4.** The builder table of 17 says that `wolfArmor`, `horseArmor` and `nautilusArmor` are "like humanoid with the body slot (durability multiplier x 16)". In `Item$Properties` only `wolfArmor` sets a durability and a repairable tag (and, in addition to the equippable, the component `break_sound` = `wolf_armor_break`, read, with `stacksTo(1)` and no `enchantable`); `horseArmor` and `nautilusArmor` set attributes, the equippable and `stacksTo(1)` and **nothing else** (section 9). The statement in 17 should be amended by its owner; this document does not edit 17.
 13. **Feature-flagged egg types.** `Properties.spawnEgg` copies the entity type's required feature set into the item. Which of the 88 types are outside the vanilla feature set (and therefore tied to a disabled feature data pack, 22) was not read.
 14. **The waypoint (locator bar) engine.** Section 7 specifies the hide modifier on the `waypoint_transmit_range` attribute; the engine that reads that attribute (range, which players are tracked) is not in this document.
 15. **Consumers of `getVisibilityPercent`.** The calculation is read; its use as a multiplier of the follow range in the targeting conditions is inferred (18 holds the targeting conditions).
 16. **Spawn egg on an ageable mob.** `spawnOffspringFromSpawnEgg` is specified here; its caller (the mob interaction that handles a spawn egg of the same type) was not read.
-17. **Map creation.** `MapItem.create(level, x, z, scale, tracking, unlimited)` is called with (player block X, player block Z, 0, true, false); the algorithm is 25-5 §8.
+17. **Map creation.** `MapItem.create(level, x, z, scale, tracking, unlimited)` is called with (player block X, player block Z, 0, true, false); the algorithm is 25-5 section 8.
 18. **`WrittenBookContent.TITLE_LENGTH` = 16.** The constant exists beside `TITLE_MAX_LENGTH` = 32; searched: the class's static fields and the edit-book handler. Where (if anywhere) 16 is applied, for instance in a client edit screen, was not read.

@@ -28,7 +28,7 @@ All per-player files live under the world folder's `players/` directory. The dir
 | Advancements | `players/advancements/<uuid>.json` | JSON, section 8 |
 | Statistics | `players/stats/<uuid>.json` | JSON, section 9 |
 
-`<uuid>` is the player's UUID in the hyphenated lower-case string form (`Player.getStringUUID`, `UUID.toString`). The directory `players/data/` is created when the storage object is created (`mkdirs`). The date in the corrupted-file name uses the pattern four-digit year, month, day, underscore, hour, minute, second, each two digits and separated by hyphens (`FileNameDateFormatter`), local time (`ZonedDateTime.now`).
+`<uuid>` is the player's UUID in the hyphenated lower-case string form (`Player.getStringUUID`, `UUID.toString`). The directory `players/data/` is created when the storage object is created (`mkdirs`). The date in the corrupted-file name (`FileNameDateFormatter`, `Locale.ROOT`, local time from `ZonedDateTime.now`) is: year, `-`, month, `-`, day, `_`, hour, `-`, minute, `-`, second. Month, day, hour, minute and second are two digits. The year has at least four digits (minimum 4, maximum 10, sign style "exceeds pad"), so a year above 9999 is printed with a leading plus sign.
 
 ### 1.2 Save (`PlayerDataStorage.save`, `Util.safeReplaceFile`)
 
@@ -40,7 +40,7 @@ All per-player files live under the world folder's `players/` directory. The dir
    b. Delete the final path if it is still there and check that it is gone.
    c. Rename the temporary file to the final name and check that it exists.
    d. If step c failed (and the move-only mode is off, which it is for players), rename the backup back to the final name.
-   Each file operation is retried up to 10 times (`runWithRetries` with count 10) before the step is declared failed; failures are logged, never thrown to the caller.
+   The retry unit is a whole step sequence, not a single file operation. `Util.runWithRetries` (count 10) runs the members of one sequence in order until one returns false, and repeats the whole sequence up to 10 times. There are four sequences: (a) delete the backup, rename the final file to the backup name, check the backup exists (only when the final file exists); (b) delete the final path, check it is gone; (c) rename the temporary file to the final name, check the final file exists; (d) rename the backup to the final name, check the final file exists (only when c failed, and not in move-only mode). Each failed attempt logs "Failed to <action>, retrying n/10" (n counts from 0); after 10 failed attempts it logs "Failed to <action>, aborting, progress might be lost" and the sequence yields false. If sequence a or b yields false, the replace returns false at once and c and d never run. If c yields false, d is attempted and the replace returns false whatever d gives. Failures are logged, never thrown to the caller.
 5. Any exception in the whole save is caught and logged as "Failed to save player data for <plain name>"; the game continues.
 
 Result: after a successful save the final file is the new data and `.dat_old` holds the previous final file (one generation). A first save leaves no `.dat_old`. Saves are not incremental: the file always holds the full compound.
@@ -106,7 +106,7 @@ If no compound is found, nothing is loaded: the player entity keeps its construc
 
 Load side effects, in order: set the entity UUID from the game profile id (the file's `UUID` is ignored for a player); load the inventory and selected slot; sleep counter; experience fields (`XpP` into progress, `XpLevel` into level, `XpTotal` into total); seed fix-up; score; food data; abilities (when present), then set the base value of the movement-speed attribute to the abilities' walking speed; ender items; last death location.
 
-Not saved for a player (read from the save methods, no key exists): the shoulder-parrot cooldown state, `current_impulse_context`, `ignore_fall_damage_from_current_explosion`, any fall-flying counter other than `FallFlying` (LivingEntity key, 45 section 2) and the current screen or container. The names `current_impulse_context` and `ignore_fall_damage_from_current_explosion` do not occur as persisted keys in the artifact's save methods. Explosion-related state that is persisted uses two key names in the player compound: the LivingEntity keys `current_impulse_context_reset_grace_time` and `current_explosion_impact_pos` (section 2.5), and the ServerPlayer key `last_explosion_impact_pos` (section 3.1). In `ServerPlayer` the key `last_explosion_impact_pos` is written and read through the field named `currentExplosionImpactPos`. Whether that field is the same storage as the one the LivingEntity key `current_explosion_impact_pos` maps to is (inferred) from the shared field name and was not traced in `LivingEntity` (Open question 16). Implementers must treat both keys as present in the compound and keep both.
+Not saved for a player (read from the save methods, no key exists): the shoulder-parrot cooldown state, `current_impulse_context`, `ignore_fall_damage_from_current_explosion`, any fall-flying counter other than `FallFlying` (LivingEntity key, 45 section 2) and the current screen or container. The names `current_impulse_context` and `ignore_fall_damage_from_current_explosion` do not occur as persisted keys in the artifact's save methods. Explosion-related state that is persisted uses two key names in the player compound: the LivingEntity keys `current_impulse_context_reset_grace_time` and `current_explosion_impact_pos` (section 2.5), and the ServerPlayer key `last_explosion_impact_pos` (section 3.1). In `ServerPlayer` the key `last_explosion_impact_pos` is written (`storeNullable` with the Vec3 codec) and read (`read(...).orElse(null)`, so absent means null) through the field `currentExplosionImpactPos`. The LivingEntity key `current_explosion_impact_pos` is stored in a different field, `currentImpulseImpactPos`, declared in `LivingEntity` (read from its save and load methods; `LivingEntity` declares no field named `currentExplosionImpactPos`). The two keys are therefore two independent values; implementers keep both and must not alias them.
 
 Totals: the Player layer writes 16 keys (15 always, `LastDeathLocation` the only optional one, written when present).
 
@@ -138,7 +138,7 @@ Four keys, always written: `foodLevel` Int, `foodTickTimer` Int, `foodSaturation
 
 ### 2.4 Inventory model
 
-`Inventory` has `items` (36 slots, `INVENTORY_SIZE`), `selected` (hotbar index, `SELECTION_SIZE` is 9) and an `EntityEquipment` for armor, off-hand, body and saddle. Container indices (constants of `Inventory`): 0 to 8 hotbar, 9 to 35 main, then the equipment indices 36 to 39 (feet 36, legs 37, chest 38, head 39, in `EquipmentSlot` index order feet 0, legs 1, chest 2, head 3 (inferred from the index offsets of the mapping `EQUIPMENT_SLOT_MAPPING`)), 40 off-hand (`SLOT_OFFHAND`), 41 body armor (`SLOT_BODY_ARMOR`), 42 saddle (`SLOT_SADDLE`).
+`Inventory` has `items` (36 slots, `INVENTORY_SIZE`), `selected` (hotbar index, `SELECTION_SIZE` is 9) and an `EntityEquipment` for armor, off-hand, body and saddle. Container indices (constants of `Inventory`): 0 to 8 hotbar, 9 to 35 main, then the equipment indices 36 to 39 (feet 36, legs 37, chest 38, head 39, in `EquipmentSlot` index order feet 0, legs 1, chest 2, head 3, each plus 36 in the mapping `EQUIPMENT_SLOT_MAPPING`), 40 off-hand (`SLOT_OFFHAND`), 41 body armor (`SLOT_BODY_ARMOR`), 42 saddle (`SLOT_SADDLE`).
 
 Persistence differs from the older numbering (slots 100 to 103 for armor and -106 for the off-hand): in 26.3 the `Inventory` list holds only the 36 `items` entries (`Inventory.save` iterates `items` from 0 and writes one element per non-empty stack, nothing else). Armor, off-hand, body and saddle are saved in the LivingEntity key `equipment` (a compound keyed by slot name, section 4.3). A save never writes the numbers 100 to 103 or -106. A load of a file that still has the old numbers is the data fixer's job (Open question 6); the load code itself places only elements whose slot is in 0 to 35 (`isValidInContainer`).
 
@@ -177,7 +177,7 @@ LivingEntity layer keys that apply to the player (names only, owned by 45 sectio
 
 Order of writing: `warden_spawn_tracker`, game types, `seenCredits`, `entered_nether_pos`, `last_explosion_impact_pos`, `RootVehicle`, `recipeBook`, `Dimension`, `respawn`, `spawn_extra_particles_on_fall`, `raid_omen_position`, `ender_pearls`, `post_effects`, shoulder entities. The ServerPlayer layer is 16 keys, 9 of them conditional: `previousPlayerGameType`, `entered_nether_pos`, `last_explosion_impact_pos`, `RootVehicle`, `respawn`, `raid_omen_position`, `ender_pearls`, `ShoulderEntityLeft`, `ShoulderEntityRight`.
 
-Name mapping against the scope list of this round: `enteredNetherPosition` is saved as `entered_nether_pos`; `current_explosion_impact_pos` (LivingEntity layer, persisted under that name together with `current_impulse_context_reset_grace_time`) and `last_explosion_impact_pos` (ServerPlayer layer) are two keys that both exist in the player compound; the ServerPlayer key is saved and loaded through the field named `currentExplosionImpactPos` (section 2.1, Open question 16); `seen_credits` is saved as `seenCredits`; `spawn point` is the `respawn` compound. `current_impulse_context` and `ignore_fall_damage_from_current_explosion` are not persisted (section 2.1).
+Name mapping against the scope list of this round: `enteredNetherPosition` is saved as `entered_nether_pos`; `current_explosion_impact_pos` (LivingEntity layer, persisted under that name together with `current_impulse_context_reset_grace_time`) and `last_explosion_impact_pos` (ServerPlayer layer) are two keys that both exist in the player compound; the ServerPlayer key is saved and loaded through the field named `currentExplosionImpactPos` (section 2.1; a different field from the one behind `current_explosion_impact_pos`); `seen_credits` is saved as `seenCredits`; `spawn point` is the `respawn` compound. `current_impulse_context` and `ignore_fall_damage_from_current_explosion` are not persisted (section 2.1).
 
 ### 3.2 Load order
 
@@ -194,7 +194,7 @@ Save: when the player has a vehicle, the player is not itself the root, and the 
 
 The save of a leaving player happens before the player is dismounted (`PlayerList.remove` calls `save` first, then, only when the player is a passenger and its root vehicle has exactly one player passenger, logs "Removing player mount" (debug level), calls `stopRiding` and marks the root vehicle and each entity of `getPassengersAndSelf` as removed with the reason `UNLOADED_WITH_PLAYER`; the player's `unRide` is called afterwards unconditionally), so the vehicle is recorded.
 
-Load (after `placeNewPlayer`, section 7): if `RootVehicle` is absent, do nothing. Otherwise load the root entity recursively with the LOAD spawn reason into the player's level; if that fails, stop. If the loaded root's UUID equals `Attach`, the player starts riding it (`startRiding(entity, force true, sendEvent false)`); otherwise search the root's indirect passengers for the one whose UUID equals `Attach` and ride that one. If the player is not a passenger afterwards, log "Couldn't reattach entity to player", discard the loaded root and all its indirect passengers.
+Load (after `placeNewPlayer`, section 7): if `RootVehicle` is absent, do nothing. Otherwise load the entity compound under `Entity` (an empty compound when missing) recursively with the LOAD spawn reason into the player's level. The recursive load hands every loaded entity to an entity processor, which adds it to the level keeping its saved UUID (`addWithUUID`); the nested `Passengers` lists are loaded through the same recursive load, so each passenger is added the same way. If the root's add fails the processor yields null and the load stops silently (no log line, no riding). If the loaded root's UUID equals `Attach`, the player starts riding it (`startRiding(entity, force true, sendEvent false)`); otherwise search the root's indirect passengers for the one whose UUID equals `Attach` and ride that one. If the player is not a passenger afterwards, log "Couldn't reattach entity to player", discard the loaded root and all its indirect passengers.
 
 ### 3.4 Game modes
 
@@ -238,7 +238,12 @@ Save: the packed form of the current sets and settings, always written.
 
 Save: for every thrown ender pearl owned by the player (a set held by the player entity), if the pearl is not removed, add one compound to `ender_pearls`: the pearl's full `save` compound plus the extra key `ender_pearl_dimension` (the level resource key of the level the pearl is in, a dimension key string). A pearl already removed at save time is skipped with a warning "Trying to save removed ender pearl, skipping". If the set is empty the key is omitted.
 
-Load (after `placeNewPlayer`): for each element, read `ender_pearl_dimension`; if missing, skip. Look up that level on the server; if it exists, load the pearl entity into it (the code continues with the entity loader; the remaining steps are in the engine for projectiles, sibling document for projectiles).
+Load (after `placeNewPlayer`): for each element, read `ender_pearl_dimension`; if missing, skip. Look up that level on the server and continue as follows.
+
+1. `ender_pearl_dimension` missing or undecodable as a dimension key: skip the element silently.
+2. The level is not loaded: log a warning "Trying to load ender pearl without level (<key>) being loaded, skipping" and skip.
+3. Otherwise load the element recursively with the LOAD spawn reason, with an entity processor that adds the entity to that level keeping its UUID. If the load or the add fails, log a warning "Failed to spawn player ender pearl in level (<key>), skipping".
+4. On success place a chunk ticket of type `ender_pearl` with radius 2 at the pearl's chunk (`placeEnderPearlTicket`). The ticket type is registered with a timeout of 40 (a long constant; the third registration argument, 14, was not interpreted, Open question 17). The returned timeout is ignored here.
 
 On leave (`PlayerList.remove`) pearls still in flight are removed with the reason "unloaded with player" after the save.
 
@@ -246,7 +251,7 @@ On leave (`PlayerList.remove`) pearls still in flight are removed with the reaso
 
 ## 4. Item stack and slot codecs
 
-### 4.1 Slot element (`ItemStackWithSlot.CODEC`)
+### 4.1 Slot element (`net.minecraft.world.ItemStackWithSlot.CODEC`)
 
 An inventory list element is a compound containing the stack's fields at the same level plus one extra key:
 
@@ -254,8 +259,10 @@ An inventory list element is a compound containing the stack's fields at the sam
 |---|---|---|---|
 | `Slot` | Byte | 0 (read: the codec's default constant is 0) | Slot index. The codec is the unsigned byte codec (`ExtraCodecs.UNSIGNED_BYTE`): a Byte decodes through an unsigned conversion that cannot fail, so a stored Byte of -1 loads as 255. Only the encode direction can error (an Integer above 255). A loaded slot outside the container size is dropped later by `isValidInContainer`, not by the codec. Written as a Byte. |
 | `id` | String | required | The item key, e.g. a namespaced item identifier. An unknown key fails the element (the element is dropped). |
-| `count` | Int | 1 | Stack size, range 1 to 99 (`ExtraCodecs.intRange(1, 99)`); outside that range fails the element. |
-| `components` | Compound | omitted when empty | A patch of data components applied on top of the item's default components (`DataComponentPatch.CODEC`; written only when the patch is non-empty; removed defaults are written with a key prefixed by an exclamation mark, per the patch codec, not traced here). The component schemas are data driven by the registry and are in 17 section 1. |
+| `count` | Int | 1 | Always written, even when it is 1 (the field is an always-present optional with default 1, so a stack of one carries `count: 1`). Stack size, range 1 to 99 (`ExtraCodecs.intRange(1, 99)`); outside that range fails the element; a missing key loads as 1. |
+| `components` | Compound | omitted when empty | A patch of data components applied on top of the item's default components (`DataComponentPatch.CODEC`; written only when the patch is non-empty; removed defaults are written with a key prefixed by `!`, see below). The component schemas are data driven by the registry and are in 17 section 1; they are not repeated here, so the content of `components` values is specified there, not in this document. |
+
+`components` patch syntax (`DataComponentPatch.CODEC`, read): a map from key string to value. A key is a component type identifier, optionally prefixed by `!`. Without the prefix the value is encoded by that component type's own codec and sets the component. With the prefix the entry removes a default component of that type; its value is encoded by the `Removed` codec (a marker type with a single instance; its exact NBT form was not read, Open question 20). On load the prefix is stripped, the identifier parsed and looked up in the data-component-type registry: an unknown identifier fails the decode, and so does a type marked transient (not persisted).
 
 An element is accepted into a container of size n when 0 <= Slot < n (`isValidInContainer`).
 
@@ -267,7 +274,7 @@ Worked example (a stack of 16 snowballs in hotbar slot 2, no extra components):
 | `id` | String `minecraft:snowball` |
 | `count` | Int 16 |
 
-The element has exactly three keys; `components` is absent.
+The element has exactly three keys; `components` is absent. A single snowball in the same slot is written with `count` Int 1, not with the key omitted.
 
 ### 4.2 Inventory list rules
 
@@ -277,7 +284,7 @@ The element has exactly three keys; `components` is absent.
 
 ### 4.3 `equipment` (LivingEntity key, applies to the player)
 
-`EntityEquipment.CODEC` is a compound mapping slot names to item stacks (stack fields `id`, `count`, `components` directly inside, no `Slot`). Slot names (`EquipmentSlot` serialized names): `mainhand`, `offhand`, `feet`, `legs`, `chest`, `head`, `body`, `saddle`. Empty stacks are removed before writing (`removeIf` on empty), so an empty equipment is an empty compound. For a player `mainhand` never appears (section 2.4). On load a missing `equipment` key yields an empty equipment object that replaces the current one.
+`EntityEquipment.CODEC` is a compound mapping slot names to item stacks (stack fields `id`, `count`, `components` directly inside, no `Slot`). Slot names (`EquipmentSlot` serialized names): `mainhand`, `offhand`, `feet`, `legs`, `chest`, `head`, `body`, `saddle`. Empty stacks are removed before writing (`removeIf` on empty), so an empty equipment is an empty compound. Each stored stack always carries `count`, including 1 (section 4.1), and `components` only when its patch is non-empty. For a player `mainhand` never appears (section 2.4). On load a missing `equipment` key yields an empty equipment object that replaces the current one.
 
 ---
 
@@ -309,7 +316,7 @@ A compound with `dimension` (String key) and `pos` (Int Array of 3). Written onl
 
 ### 6.3 `warden_spawn_tracker` (`WardenSpawnTracker.CODEC`)
 
-A compound of three optional non-negative Ints, all default 0: `ticks_since_last_warning`, `warning_level`, `cooldown_ticks`. Constants in the class: `MAX_WARNING_LEVEL` 4, `WARNING_CHECK_DIAMETER` 48, `DECREASE_WARNING_LEVEL_EVERY_INTERVAL` 12000, `WARNING_LEVEL_INCREASE_COOLDOWN` 200. The tracker logic belongs to the warden section (45 section for deep dark mobs and 21).
+A compound of three optional non-negative Ints (`NON_NEGATIVE_INT`), all default 0 (each codec default read as 0; the 12000 constant in the class is the decrease interval, not a field default, and the no-argument constructor sets all three fields to 0): `ticks_since_last_warning`, `warning_level`, `cooldown_ticks`. Constants in the class: `MAX_WARNING_LEVEL` 4, `WARNING_CHECK_DIAMETER` 48, `DECREASE_WARNING_LEVEL_EVERY_INTERVAL` 12000, `WARNING_LEVEL_INCREASE_COOLDOWN` 200. The tracker logic belongs to the warden section (45 section for deep dark mobs and 21).
 
 ### 6.4 `Vec3` and `BlockPos` encodings
 
@@ -382,27 +389,106 @@ Root object:
 
 Layout of `stats`: `{ "<stat type key>": { "<registry entry key>": <Int>, ... }, ... }`. The outer key is a stat type identifier from the stat-type registry; the inner key is an entry of the registry that type counts over, as a namespaced identifier; values are Int counts (`Codec.INT`). A stat type with no counts is not written. An outer key not in the stat-type registry or an inner key not in the type's registry fails that part of the decode.
 
-Stat types and their key registries (the type names appear as strings in `Stats`; the nine type names are read as strings at the start of the `Stats` static initializer; the registry each counts over is not read and comes from the type's name semantics (inferred)):
+Stat types and their key registries (the nine type names and the registry each counts over are read from the `Stats` static initializer, which creates each type through `makeRegistryStatType`):
 
 | Stat type | Counts over | Meaning |
 |---|---|---|
-| `mined` | blocks | blocks broken |
-| `crafted` | items | items crafted |
-| `used` | items | items used (placed, consumed, used on) |
-| `broken` | items | tools or armor broken |
-| `picked_up` | items | items picked up |
-| `dropped` | items | items dropped |
-| `killed` | entity types | mobs killed |
-| `killed_by` | entity types | times killed by a mob |
-| `custom` | custom statistics (identifiers) | the table below |
+| `mined` | block registry | blocks broken |
+| `crafted` | item registry | items crafted |
+| `used` | item registry | items used (placed, consumed, used on) |
+| `broken` | item registry | tools or armor broken |
+| `picked_up` | item registry | items picked up |
+| `dropped` | item registry | items dropped |
+| `killed` | entity-type registry | mobs killed |
+| `killed_by` | entity-type registry | times killed by a mob |
+| `custom` | custom-stat registry | the table below |
 
-Custom statistics (`Stats`): 78 identifiers, all in the standard namespace. Each has a formatter: default (plain integer), distance (centimetres shown as metres or kilometres), divide-by-ten (tenths of a heart or similar) or time (ticks). The identifiers, in registration order:
+Custom statistics (`Stats`): 78 identifiers, all in the standard namespace, registered in the order below through `makeCustomStat`, each with a formatter read from the call site. Formatter meanings: default (plain integer), distance (centimetres shown as metres or kilometres), divide by ten (tenths), time (ticks shown as a duration). Counts: 49 default, 17 distance, 7 divide by ten, 5 time.
 
-`leave_game`, `play_time`, `total_world_time`, `time_since_death`, `time_since_rest`, `sneak_time`, `walk_one_cm`, `crouch_one_cm`, `sprint_one_cm`, `walk_on_water_one_cm`, `fall_one_cm`, `climb_one_cm`, `fly_one_cm`, `walk_under_water_one_cm`, `minecart_one_cm`, `boat_one_cm`, `pig_one_cm`, `happy_ghast_one_cm`, `horse_one_cm`, `aviate_one_cm`, `swim_one_cm`, `strider_one_cm`, `nautilus_one_cm`, `jump`, `drop`, `damage_dealt`, `damage_dealt_absorbed`, `damage_dealt_resisted`, `damage_taken`, `damage_blocked_by_shield`, `damage_absorbed`, `damage_resisted`, `deaths`, `mob_kills`, `animals_bred`, `player_kills`, `fish_caught`, `talked_to_villager`, `traded_with_villager`, `eat_cake_slice`, `fill_cauldron`, `use_cauldron`, `clean_armor`, `clean_banner`, `clean_shulker_box`, `interact_with_brewingstand`, `interact_with_beacon`, `inspect_dropper`, `inspect_hopper`, `inspect_dispenser`, `play_noteblock`, `tune_noteblock`, `pot_flower`, `trigger_trapped_chest`, `open_enderchest`, `enchant_item`, `play_record`, `interact_with_furnace`, `interact_with_crafting_table`, `open_chest`, `sleep_in_bed`, `sleep_in_straw_bed`, `open_shulker_box`, `open_barrel`, `interact_with_blast_furnace`, `interact_with_smoker`, `interact_with_lectern`, `interact_with_campfire`, `interact_with_cartography_table`, `interact_with_loom`, `interact_with_stonecutter`, `bell_ring`, `raid_trigger`, `raid_win`, `interact_with_anvil`, `interact_with_grindstone`, `target_hit`, `interact_with_smithing_table`.
+| # | Identifier | Formatter |
+|---|---|---|
+| 1 | `leave_game` | default |
+| 2 | `play_time` | time |
+| 3 | `total_world_time` | time |
+| 4 | `time_since_death` | time |
+| 5 | `time_since_rest` | time |
+| 6 | `sneak_time` | time |
+| 7 | `walk_one_cm` | distance |
+| 8 | `crouch_one_cm` | distance |
+| 9 | `sprint_one_cm` | distance |
+| 10 | `walk_on_water_one_cm` | distance |
+| 11 | `fall_one_cm` | distance |
+| 12 | `climb_one_cm` | distance |
+| 13 | `fly_one_cm` | distance |
+| 14 | `walk_under_water_one_cm` | distance |
+| 15 | `minecart_one_cm` | distance |
+| 16 | `boat_one_cm` | distance |
+| 17 | `pig_one_cm` | distance |
+| 18 | `happy_ghast_one_cm` | distance |
+| 19 | `horse_one_cm` | distance |
+| 20 | `aviate_one_cm` | distance |
+| 21 | `swim_one_cm` | distance |
+| 22 | `strider_one_cm` | distance |
+| 23 | `nautilus_one_cm` | distance |
+| 24 | `jump` | default |
+| 25 | `drop` | default |
+| 26 | `damage_dealt` | divide by ten |
+| 27 | `damage_dealt_absorbed` | divide by ten |
+| 28 | `damage_dealt_resisted` | divide by ten |
+| 29 | `damage_taken` | divide by ten |
+| 30 | `damage_blocked_by_shield` | divide by ten |
+| 31 | `damage_absorbed` | divide by ten |
+| 32 | `damage_resisted` | divide by ten |
+| 33 | `deaths` | default |
+| 34 | `mob_kills` | default |
+| 35 | `animals_bred` | default |
+| 36 | `player_kills` | default |
+| 37 | `fish_caught` | default |
+| 38 | `talked_to_villager` | default |
+| 39 | `traded_with_villager` | default |
+| 40 | `eat_cake_slice` | default |
+| 41 | `fill_cauldron` | default |
+| 42 | `use_cauldron` | default |
+| 43 | `clean_armor` | default |
+| 44 | `clean_banner` | default |
+| 45 | `clean_shulker_box` | default |
+| 46 | `interact_with_brewingstand` | default |
+| 47 | `interact_with_beacon` | default |
+| 48 | `inspect_dropper` | default |
+| 49 | `inspect_hopper` | default |
+| 50 | `inspect_dispenser` | default |
+| 51 | `play_noteblock` | default |
+| 52 | `tune_noteblock` | default |
+| 53 | `pot_flower` | default |
+| 54 | `trigger_trapped_chest` | default |
+| 55 | `open_enderchest` | default |
+| 56 | `enchant_item` | default |
+| 57 | `play_record` | default |
+| 58 | `interact_with_furnace` | default |
+| 59 | `interact_with_crafting_table` | default |
+| 60 | `open_chest` | default |
+| 61 | `sleep_in_bed` | default |
+| 62 | `sleep_in_straw_bed` | default |
+| 63 | `open_shulker_box` | default |
+| 64 | `open_barrel` | default |
+| 65 | `interact_with_blast_furnace` | default |
+| 66 | `interact_with_smoker` | default |
+| 67 | `interact_with_lectern` | default |
+| 68 | `interact_with_campfire` | default |
+| 69 | `interact_with_cartography_table` | default |
+| 70 | `interact_with_loom` | default |
+| 71 | `interact_with_stonecutter` | default |
+| 72 | `bell_ring` | default |
+| 73 | `raid_trigger` | default |
+| 74 | `raid_win` | default |
+| 75 | `interact_with_anvil` | default |
+| 76 | `interact_with_grindstone` | default |
+| 77 | `target_hit` | default |
+| 78 | `interact_with_smithing_table` | default |
 
-The string `sleep_in_straw_bed` is exactly as read; it is a real custom statistic: registered through `makeCustomStat` with the default formatter, directly after `sleep_in_bed` (read). Which formatter belongs to which identifier is not tabulated (49 uses of the default formatter, 17 of distance, 7 of divide-by-ten, 5 of time were counted in the static initializer, which is 78 in total). A text search for `makeCustomStat` gives 79 hits because it includes the method definition itself; the 78 identifiers above match the call sites in order.
+The string `sleep_in_straw_bed` is exactly as read; it is a real custom statistic: registered through `makeCustomStat` with the default formatter, directly after `sleep_in_bed` (read). The formatter of every identifier is in the table above. A text search for `makeCustomStat` gives 79 hits because it includes the method definition itself; the 78 identifiers above match the call sites in order.
 
-Behaviour: `increment(player, stat, n)` adds n (saturating at the Int range, (inferred)) and `setValue` replaces; both mark the stat dirty for the next stats packet (`getDirty`, `sendStats`). `PlayerList.remove` increments `leave_game` before saving. Saves occur from `PlayerList.save` (called by leave and save-all) as `ServerStatsCounter.save` (when the counter exists for that UUID) and `PlayerAdvancements.save`, after the player data write.
+Behaviour: `increment(player, stat, n)` adds n (saturating at the Int range, (inferred, not traced)) and `setValue` replaces; both mark the stat dirty for the next stats packet (`getDirty`, `sendStats`). `PlayerList.remove` increments `leave_game` before saving. Saves occur from `PlayerList.save` (called by leave and save-all) as `ServerStatsCounter.save` (when the counter exists for that UUID) and `PlayerAdvancements.save`, after the player data write.
 
 Legacy: a file with `DataVersion` below the current one (or with no `DataVersion`, taken as 1343) goes through the STATS data fixer before decoding. The fixer's steps (the old flat `stat.<category>.<key>` names) are not read in this round (Open question 8).
 
@@ -472,7 +558,7 @@ The cobolcraft world type keeps 07 section 9.2 unchanged. The standard world typ
 Implementation checks, each stated with inputs and expected results:
 
 1. Save then load a default player. Expected compound has exactly these top-level key groups: the Entity and LivingEntity keys of 45 sections 1 and 2, the Player keys `DataVersion`, `Inventory` (empty list), `SelectedItemSlot` 0, `SleepTimer` 0, `XpP` 0.0, `XpLevel` 0, `XpTotal` 0, `XpSeed` (non-zero after a fresh seed), `Score` 0, `foodLevel` 20, `foodTickTimer` 0, `foodSaturationLevel` 5.0, `foodExhaustionLevel` 0.0, `abilities` (seven keys), `EnderItems` (empty list), and the ServerPlayer keys `warden_spawn_tracker`, `playerGameType`, `seenCredits`, `recipeBook`, `Dimension`, `spawn_extra_particles_on_fall`, `post_effects`. Absent: `LastDeathLocation`, `previousPlayerGameType`, `entered_nether_pos`, `last_explosion_impact_pos`, `RootVehicle`, `respawn`, `raid_omen_position`, `ender_pearls`, both shoulder keys.
-2. Slot round trip: 16 snowballs in slot 2, a stack in `EnderItems` slot 26, a stack in the feet slot. Expected: `Inventory` has one element `{Slot: 2b, id, count: 16}`; `EnderItems` has `Slot: 26b`; `equipment` has `feet` only. A hand-edited element with `Slot: 36b` in `Inventory` is dropped on load; `count: 0` and `count: 100` are dropped.
+2. Slot round trip: 16 snowballs in slot 2, a stack in `EnderItems` slot 26, a stack in the feet slot. Expected: `Inventory` has one element `{Slot: 2b, id, count: 16}` (a stack of 1 would still write `count: 1`); `EnderItems` has `Slot: 26b`; `equipment` has `feet` only, whose stack carries `id` and `count` (always, also when 1). A hand-edited element with `Slot: 36b` in `Inventory` is dropped on load; `count: 0` and `count: 100` are dropped.
 3. Atomic write: start with `<uuid>.dat` = A. Save B. Expected: `.dat` = B, `.dat_old` = A, no temp file remains. Save C: `.dat` = C, `.dat_old` = B.
 4. Corruption: make `.dat` an unreadable file and `.dat_old` = A. Load. Expected: a `<uuid>_corrupted_<date>.dat` copy appears, the returned compound is A.
 5. First join: no files. Expected: no compound, spawn level from the world spawn's `dimension`, position from the spawn finder at the world spawn position, rotation = world spawn yaw and pitch, game mode = server default.
@@ -496,10 +582,16 @@ Implementation checks, each stated with inputs and expected results:
 7. The interval of the periodic player save (the server's autosave tick) is in the server loop and not in this document.
 8. The stats fixer's behaviour for legacy flat names was not read.
 9. The time zone of the advancement timestamps (`ExtraCodecs.temporalCodec`) was not traced; the pattern was read.
-10. (Resolved: `sleep_in_straw_bed` is a registered custom statistic, section 9.) The per-identifier formatter table was not extracted.
+10. (Resolved: `sleep_in_straw_bed` is a registered custom statistic and the per-identifier formatter table is in section 9.)
 11. The member lists of `Mannequin.POSE_CODEC` and `LAYERS_CODEC` were not traced.
 12. (Resolved: the `Slot` default 0 was read, section 4.1.)
-13. The nine stat-type names are read from `Stats`; the registry each type counts over is (inferred) and should be confirmed by the registry document (46).
-14. The components patch's removal syntax in `components` (a key prefixed by an exclamation mark for removed components) is (recalled, not verified).
+13. (Resolved: the registry of each stat type was read from `Stats`, section 9.)
+14. (Resolved: the `!` removal syntax was read from `DataComponentPatch.CODEC`, section 4.1.) The per-component value schemas are not in this document; they belong to 17 section 1.
 15. The position handling `Entity.load` applies to a player file's `Pos` that is outside the world border is not traced.
-16. Whether the `ServerPlayer` field `currentExplosionImpactPos`, saved under `last_explosion_impact_pos`, is the same storage as the LivingEntity value saved under `current_explosion_impact_pos` was not traced (the `LivingEntity` field mapping was not read in this document; see 45 section 2).
+16. (Resolved: the two keys use different fields, `currentExplosionImpactPos` and `currentImpulseImpactPos`, section 2.1.)
+17. The ender pearl chunk ticket is registered with timeout 40 and a third registration argument 14; the meaning of that argument and the ticket's effect in the chunk system were not interpreted here (see the chunk-ticket documents when they exist).
+18. The inbound keys read by the spawn-preparation task (`PrepareSpawnTask$Ready`) were taken from the class list and not re-verified in this document.
+19. A table of load defaults for the keys inside the `recipeBook` compound beyond section 3.5 was not made.
+20. The NBT form written by the `Removed` codec for a `!`-prefixed component entry was not read.
+21. Not re-verified by the fixer pass of this round (the review did not reach them): the LivingEntity key list and order of section 2.5, the Entity load validation constants, the Mannequin keys of section 10, the `PrepareSpawnTask` radius and second read, the ender pearl ticket numbers, and the `ServerStatsCounter` default 1343. They keep the reader's original reading.
+22. Whether the sibling documents 45 section 1 and 45 section 2 fully specify `Brain` memories, `attributes`, `active_effects`, `locator_bar_icon` and the leash keys was not checked here; this document only lists those names.

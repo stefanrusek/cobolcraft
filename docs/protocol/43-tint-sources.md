@@ -72,7 +72,7 @@ Observations (all read): the mangrove leaves use the plain `foliage()` source, s
 
 ### 2.2 Redstone wire colour by power
 
-For power p in 0..15, with f = p / 15 (single precision): red = f x 0.6 + (0.4 if f > 0 else 0.3); green = clamp(f x f x 0.7 - 0.5, 0, 1); blue = clamp(f x f x 0.6 - 0.7, 0, 1); each channel becomes floor(value x 255) (`ARGB.as8BitChannel`, no clamp: the values above stay within 0..1.0 so no wrap happens), alpha 255. Computed with single-precision steps (the table was derived by arithmetic, not by running the client; Open question 1):
+For power p in 0..15, with f = p / 15 (single precision): red = f x 0.6 + (0.4 if f > 0 else 0.3); green = clamp(f x f x 0.7 - 0.5, 0, 1); blue = clamp(f x f x 0.6 - 0.7, 0, 1); each channel becomes floor(value x 255) (`ARGB.as8BitChannel`, no clamp: the values above stay within 0..1.0 so no wrap happens), alpha 255. Computed with single-precision steps (the table was derived by arithmetic, not by running the client; all 16 rows were re-derived independently with single-precision arithmetic and agree; Open question 1, resolved):
 
 | p | RGB | p | RGB | p | RGB | p | RGB |
 |---|---|---|---|---|---|---|---|
@@ -122,7 +122,7 @@ Serialised names `none`, `dark_forest`, `swamp` (default `none`).
 |---|---|
 | `none` | base unchanged |
 | `dark_forest` | `opaque(((base AND 0xFEFEFE) + 0x28340A) >> 1)` (alpha forced to 255) |
-| `swamp` | n = `Biome.BIOME_INFO_NOISE.get(x x 0.0225, z x 0.0225)` (a 2D simplex noise, specified in 10 §3.5 and 10 Open question 8: `SimplexNoise(WorldgenRandom(LegacyRandomSource(2345)), true)`); if n < -0.1 the result is `FF4C763C` (-11766212), otherwise `FF6A7039` (-9801671). The base colour is not used by the swamp modifier. |
+| `swamp` | n = `Biome.BIOME_INFO_NOISE.get(x x 0.0225, z x 0.0225)` (a 2D simplex noise, specified in 10 §3.5 and 10 Open question 8: `SimplexNoise(WorldgenRandom(LegacyRandomSource(2345)), true)`); `Noise.get` returns a float; it is widened to double and compared strictly (`dcmpg`) with the double constant -0.1 (NaN gives "not less"). If n < -0.1 the result is `FF4C763C` (-11766212), otherwise `FF6A7039` (-9801671). A float noise value of -0.1f widens to about -0.10000000149 and is therefore below -0.1, selecting `FF4C763C`. The base colour is not used by the swamp modifier. |
 
 x and z are the integer block coordinates of the column being sampled, converted to double. In the shipped data the dark forest biome uses `dark_forest`, the swamp and the mangrove swamp use `swamp` (64 biomes use `none`).
 
@@ -147,7 +147,7 @@ Cache (`BlockTintCache`, one per resolver): entries are per chunk column and per
 
 ## 5. Biome JSON fields that carry colours (schema, data not tabulated)
 
-A biome file (`data/minecraft/worldgen/biome/*.json`, 67 files) has `temperature`, `downfall`, `has_precipitation`, an `effects` object and an `attributes` map (plus spawn and feature data of other documents).
+A biome file (`data/minecraft/worldgen/biome/*.json`, 67 files) has `temperature`, `downfall`, `has_precipitation`, an `effects` object and an `attributes` map. The top-level keys of the 67 shipped files are `attributes`, `carvers`, `downfall`, `effects`, `features`, `has_precipitation`, `temperature`; two files also have `temperature_modifier`. No file has a spawn key: mob spawn data sits inside `attributes` (for example `minecraft:gameplay/natural_mob_spawns`, read in the swamp file), and carvers and features are for other documents. The colormap lookups (`Biome.getGrassColorFromTexture`, `getFoliageColorFromTexture`, `getDryFoliageColorFromTexture`) use only the raw climate `temperature` and `downfall`, each clamped to 0..1; `temperature_modifier` is not applied to them.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
@@ -161,7 +161,7 @@ A biome file (`data/minecraft/worldgen/biome/*.json`, 67 files) has `temperature
 | `attributes."minecraft:visual/water_fog_color"` | colour | no | (9 biomes) |
 | `attributes."minecraft:visual/water_fog_end_distance"` | `{modifier, argument}` | no | the two biomes that set it use modifier `multiply`, argument 0.85 |
 
-Colour field syntax (`ExtraCodecs.STRING_RGB_COLOR`, used by `effects`): a string `#RRGGBB` (six hex digits, parsed and made opaque), or an integer (kept as written), or a list of three floats [r, g, b] in 0..1 (converted with floor(v x 255) per channel, alpha 255). Item tint colours (`RGB_COLOR_CODEC`) accept the integer and the float-list forms. In an `ARGB` field (`STRING_ARGB_COLOR`) `#AARRGGBB` or an integer is read. The values of `attributes` that are colours use the same attribute colour codecs of 12 §3.1; their defaults, spatial blend and consumers are in 12 §3.1 and §5. The attribute defaults: fog `#000000`, water fog `#050533`, sky `#000000` (12 §3.1).
+Colour field syntax (`ExtraCodecs.STRING_RGB_COLOR`, used by `effects`): a string `#RRGGBB` (six hex digits, parsed and made opaque), or an integer (kept as written), or a list of three floats [r, g, b] in 0..1 (converted with floor(v x 255) per channel, alpha 255). Item tint colours (`RGB_COLOR_CODEC`) accept the integer and the float-list forms (same floor rule, alpha 255). `ARGB_COLOR_CODEC` accepts an integer or a list of four floats [r, g, b, a] (alpha from the fourth element, same floor rule). The statics `RGB_COLOR_VEC3_CODEC` and `ARGB_COLOR_VEC4_CODEC` prefer the list form with the integer as alternative. In an `ARGB` string field (`STRING_ARGB_COLOR`) `#AARRGGBB` or an integer is read. The values of `attributes` that are colours use the same attribute colour codecs of 12 §3.1; their defaults, spatial blend and consumers are in 12 §3.1 and §5. The attribute defaults: fog `#000000`, water fog `#050533`, sky `#000000` (12 §3.1).
 
 The dimension type's own attributes (overworld fog `#c0d8ff`, sky `#78a7ff`; Nether and End values) are in 12 §3.1 and are not repeated.
 
@@ -255,7 +255,7 @@ An equipment asset layer (`assets/minecraft/equipment/*.json`, 45 files) may car
 
 1. The stack's dye colour is `DyedItemColor.getOrDefault(stack, 0)`: the `dyed_color` component as `opaque(rgb)`, else 0.
 2. A layer with no `dyeable` entry is drawn with colour -1 (white, unaffected by dye), whatever the stack's dye.
-3. A layer with `dyeable`: if the dye colour is non-zero it is used; otherwise the colour is `color_when_undyed` when present, else 0. The `color_when_undyed` integer is used as written (the shipped values carry alpha FF; whether the Optional mapping step alters it was not inspected, Open question 3).
+3. A layer with `dyeable`: if the dye colour is non-zero it is used; otherwise the colour is `color_when_undyed` when present, else 0. The `color_when_undyed` Optional goes through a mapping step that is `ARGB.opaque` (read: the only non-lambda method handle in `EquipmentLayerRenderer`'s bootstrap table), then `orElse(0)`. A present value is therefore forced to alpha FF; an absent one stays 0, which is why such a layer (the scute overlay) is skipped (step 4). The shipped value -6265536 already has alpha FF, so the shipped output is unchanged.
 4. A layer whose resulting colour is 0 is skipped: it is not drawn at all.
 
 Shipped cases: `leather.json` has four layer types (`horse_body`, `humanoid`, `humanoid_baby`, `humanoid_leggings`), each with two layers: the first with `dyeable` and `color_when_undyed` -6265536 (`FFA06540`), the second (the overlay) with no `dyeable` entry, so the overlay is always white. `armadillo_scute.json` has one layer type, `wolf_body`, with two layers: the base layer has no `dyeable` entry (white), and the overlay layer has `dyeable: {}` with no `color_when_undyed`. So a dyeable layer without a default exists in the shipped data: wolf armour dyeing goes through this path, an undyed scute overlay has colour 0 and is not drawn, and a dyed one is drawn in the dye colour.
@@ -360,10 +360,12 @@ Colormap values below were read from the three vanilla PNGs (256 x 256, 8-bit RG
 | desert (2.0 clamps to 1.0) | 1.0, 0.0 | (0, 255) | BFB755 | AEA42A | A38046 |
 | item default (grass source) | 0.5, 1.0 | (127, 127) | 7CBD6B | 5BAB46 | A37146 |
 
+The foliage and dry foliage columns are raw colormap lookups. A biome `foliage_color` or `dry_foliage_color` replaces them (section 3.2): the shipped swamp uses foliage `6A7039` and dry foliage `7B5334`, and the dark forest uses dry foliage `7B5334`, so do not use the colormap value 45B421 for the swamp (the mangrove swamp also overrides foliage with `8DB127`).
+
 | # | Case | Expected |
 |---|---|---|
 | V1 | Dark forest grass at the forest climate: base 79C05A | (0x79C05A AND 0xFEFEFE) = 78C05A; + 28340A = A0F464; >> 1 = 507A32; result `FF507A32` |
-| V2 | Swamp grass, noise value -0.3 at the column | `FF4C763C`; noise value -0.1 exactly or above: `FF6A7039` (the comparison is strictly less than -0.1) |
+| V2 | Swamp grass, noise value -0.3 at the column | `FF4C763C`; a float noise value of -0.1f (widens to about -0.10000000149) is below the double -0.1 and also gives `FF4C763C`; a float of -0.09f or above gives `FF6A7039` (strict comparison of the widened float with the double -0.1) |
 | V3 | Radius 1 water blend: 6 of the 9 columns plains (`3F76E4` = 63, 118, 228) and 3 swamp (`617B64` = 97, 123, 100) | sums 669, 1077, 1668; divided by 9: 74, 119, 185; result `FF4A77B9` |
 | V4 | Radius 0 water in plains | `3F76E4` exactly as in the biome (opaque because the hex string form made it so) |
 | V5 | Stem age 3 | `FF60E70C`; attached stem `FFE0C71C` |
@@ -399,16 +401,16 @@ Colormap values below were read from the three vanilla PNGs (256 x 256, 8-bit RG
 
 ## Open questions
 
-1. The redstone colour table (2.2) was computed with single-precision steps by arithmetic, not by running the client. A row differing by one in the green or blue channel is possible only if a product lands exactly on an integer boundary; the values 13 to 15 were checked by hand, the others have no boundary within 1e-3. A reference screenshot or a vanilla client validation would settle it.
+1. Resolved: the redstone colour table (2.2) was re-derived independently for all 16 rows with single-precision steps and `ARGB.as8BitChannel` (floor of value x 255); every row matches, including 13 = EA0600, 14 = F41B00 and 15 = FF3200. It remains an arithmetic derivation, not a run of the client; a reference screenshot would only confirm it.
 2. Tie order for map colours: the counts are held in an insertion-ordered multiset and then sorted highest count first (read, 6.2), and the insertion order follows the dx-outer, dz-inner scan (read). That equal counts keep their insertion order through `Multisets.copyHighestCountFirst` is a property of the Guava library, which is not in the client jar and was not read (recalled, not verified).
-3. The worn-armour dyeable rule (7.2) was read in `EquipmentLayerRenderer` (`renderLayers`, `getColorForLayer`). Not inspected: the small mapping function applied to the `color_when_undyed` Optional (assumed to be a plain unboxing, inferred), and the trim and glint branches of the same method.
+3. The worn-armour dyeable rule (7.2) was read in `EquipmentLayerRenderer` (`renderLayers`, `getColorForLayer`). The mapping function of the `color_when_undyed` Optional is `ARGB.opaque` (read, 7.2). Not inspected: the trim and glint branches of the same method.
 4. Banner (6.1): the draw order and the diffuse tint of the base-pattern layer and pattern layers were read in `BannerRenderer`. Not read: the texture files behind `Sheets.BANNER_BASE`, `BANNER_PATTERN_BASE` and `SHIELD_PATTERN_BASE`, the shield and banner item special renderers (they were searched only through the shared `submitPatterns`), and the crumbling-overlay branch of `submitBanner`.
-5. The block-entity and entity colour users of `DyeColor` (sheep wool, wolf and cat collars, shulker, tropical fish, bed, banner item, beacon beam colour, firework rocket explosion particles, `ColorLerper` music-note and firework colours) were located but not specified here.
+5. The block-entity and entity colour users of `DyeColor` were located but not specified here. Callers of `DyeColor.getTextureDiffuseColor` in the jar: `ColorLerper`, `TropicalFishRenderer`, `BannerRenderer` (6.1), `TheEndGatewayRenderer`, `DyedItemColor` (7.4), `WolfCollarLayer`, `CatCollarLayer`, `LoomScreen` and `BeaconBlockEntity`. `ColorLerper` is also used by `SheepRenderState` and `NowPlayingToast`. Callers of `getFireworkColor`: `FireworkParticles$Starter`, `FireworkStarRecipe`, `FireworkStarFadeRecipe`, `CelebrateVillagersSurvivedRaid`. Of these only banner and dye mixing are specified here. Item definitions with `tints` total 26 files, all covered in 7.1.
 6. Which callers invoke `ClientLevel.clearTintCaches` (resource reload, option change, dimension change) was not traced; only that the blend option change calls a level-extractor operation and presets exist (section 4).
-7. How the item layer index relates to `tints[i]` when the model has more layers than tints (08 §5.8 says layer n uses tint index n; the overflow behaviour was not read).
+7. (Still untraced: the item model layer code was not read for this round; the block-side rule, index at or beyond the list size gives -1, is verified in `ModelBlockRenderer.computeTintColor`, section 1 item 2.) How the item layer index relates to `tints[i]` when the model has more layers than tints (08 §5.8 says layer n uses tint index n; the overflow behaviour was not read).
 8. The environment attribute blend (Gaussian) of 12 §3.1 was not re-read here; this document only separates it from the box average of the block tints.
-9. Whether `NativeImage.getPixel` returns ARGB (as 14 §9 states) or a different channel order was not re-verified; the colormap examples read the PNG channels directly and assume ARGB.
+9. Resolved: `NativeImage.getPixel` and `setPixel` convert through `ARGB.fromABGR` and `ARGB.toABGR` (`getPixelABGR` and `setPixelABGR` are the raw forms), so the API is ARGB and storage is ABGR. `MapTextureManager$MapInstance` calls `setPixel` with `MapColor.getColorFromPackedId` (ARGB). `MapColor.calculateARGBColor` is `ARGB.scaleRGB(ARGB.opaque(col), modifier)`, and `scaleRGB(int, int)` computes channel x modifier / 255 with a 64-bit multiply and truncating division, then clamps to 0..255, matching the integer-division statement in 6.2.
 10. Falling-leaves and other particle tints beyond index 0 of the block (section 2.4) were read only for the terrain and falling-dust particles and `getClientLeafTintColor`.
 11. The hex string codecs accept only `#RRGGBB`; whether lower-case hex digits and a missing `#` are rejected beyond the message "Hex color must begin with #" was not read in full.
-12. The client's `ClientLevel.getUncachedNoiseBiome` returns plains; when that path is taken (versus the stored cell of the chunk) was not traced.
+12. `ClientLevel.getUncachedNoiseBiome` returns the `Biomes.PLAINS` holder of the biome registry (read); `calculateBlockTint` confirms r = 0 (one resolver call, no averaging) and r > 0 (`Cursor3D` with equal min and max y, per-channel sums, integer division by (2r + 1)^2, opaque `ARGB.color`); `Options.biomeBlendRadius` is an IntRange 0..7, default 2. Not traced: when the uncached path is taken versus the stored cell of the chunk.
 13. Resolved in 6.2 (decrement-first sink walk). Residual: the legacy fluid block state and `getCorrectStateForFluidBlock` were read only for the fluid-and-not-up-face-sturdy test; the map colour of each fluid's legacy block state is not tabulated here (24).

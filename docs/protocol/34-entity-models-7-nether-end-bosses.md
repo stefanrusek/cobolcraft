@@ -4,8 +4,8 @@
 |---|---|
 | Covers | The models, layer definitions, render states, animation formulas and renderers of blaze, ghast, strider (adult, baby, saddle, cold shaking), hoglin and zoglin (adult and baby), the Wither (model, spawn-phase size and texture, power-swirl armor layer), the wither skull projectile, the end crystal (model, bobbing, beam), the Ender Dragon (model, neck and tail history, wings, jaw, death dissolve and rays, crystal beam) and the dragon fireball |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `BlazeModel`, `BlazeRenderer`, `GhastModel`, `GhastRenderer`, `GhastRenderState`, `StriderModel`, `AdultStriderModel`, `BabyStriderModel`, `StriderRenderer`, `StriderRenderState`, `HoglinModel`, `BabyHoglinModel`, `AbstractHoglinRenderer`, `HoglinRenderer`, `ZoglinRenderer`, `HoglinRenderState`, `WitherBossModel`, `WitherBossRenderer`, `WitherArmorLayer`, `EnergySwirlLayer`, `WitherRenderState`, `WitherSkullRenderer`, `WitherSkullRenderState`, `SkullModel`, `SkullModelBase`, `EnderDragonModel`, `EnderDragonRenderer`, `EnderDragonRenderState`, `DragonFlightHistory` (and `$Sample`), `EndCrystalModel`, `EndCrystalRenderer`, `EndCrystalRenderState`, `DragonFireballRenderer`, `SimpleEquipmentLayer`, `LayerDefinitions` (the entries of these models), `MeshTransformer`, `MeshDefinition`, `PartDefinition`, `PartPose`, `CubeListBuilder`, `CubeDefinition`, `CubeDeformation`, `ModelPart` (`Cube`, `Polygon`, `translateAndRotate`, `rotateBy`), `Model`, `EntityModel`, `LivingEntityRenderer`, `EntityRenderer`, `ModelFeatureRenderer`, `OverlayTexture`, `RenderTypes`, `RenderPipelines` and `BlendFunction` (the entries these renderers use), `Mth` (`sin`, `cos`, `wrapDegrees`, `rotLerp`, `lerp`), `SingleThreadedRandomSource`, `BitRandomSource`, `LightCoordsUtil`, and the shader `assets/minecraft/shaders/core/entity.fsh` (data, read for the dissolve branch). The `EnderDragon` and `Strider` entity classes were read only for the few values the renderers consume (section 11) |
-| Scope decisions | Standard Minecraft content is the target (ticket CC-0001; design README Parts 0, 1, 4; GAP-25). Textures, equipment asset JSON and item models are data that the extraction tool (22) copies into a resource pack; this document gives only the paths and image sizes the renderers ask for. Geometry, animation, render-state extraction and the renderers are code and are given completely. Entity behaviour, sizes, ids and metadata are not repeated: see 21 §5.1 (ghast), §5.2 (blaze), §5.6 (hoglin, zoglin), §5.7 (strider), §6.3 (end crystal), §6.4 (dragon), §7.2 (Wither) and 21 App A for metadata layouts. Pose-stack order for living entities is summarised in section 1.6 because every renderer here depends on it; it agrees with 34 part 1 section 6.5 (the shared framework: Y rotation by 180 minus body yaw, the (-1, -1, 1) flip and the -1.501 translate), and 12 §7.3 gives the same stack for the player |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `BlazeModel`, `BlazeRenderer`, `GhastModel`, `GhastRenderer`, `GhastRenderState`, `StriderModel`, `AdultStriderModel`, `BabyStriderModel`, `StriderRenderer`, `StriderRenderState`, `HoglinModel`, `BabyHoglinModel`, `AbstractHoglinRenderer`, `HoglinRenderer`, `ZoglinRenderer`, `HoglinRenderState`, `WitherBossModel`, `WitherBossRenderer`, `WitherArmorLayer`, `EnergySwirlLayer`, `WitherRenderState`, `WitherSkullRenderer`, `WitherSkullRenderState`, `SkullModel`, `SkullModelBase`, `EnderDragonModel`, `EnderDragonRenderer`, `EnderDragonRenderState`, `DragonFlightHistory` (and `$Sample`), `EndCrystalModel`, `EndCrystalRenderer`, `EndCrystalRenderState`, `DragonFireballRenderer`, `SimpleEquipmentLayer`, `LayerDefinitions` (the entries of these models), `MeshTransformer`, `MeshDefinition`, `PartDefinition`, `PartPose`, `CubeListBuilder`, `CubeDefinition`, `CubeDeformation`, `ModelPart` (`Cube`, `Polygon`, `translateAndRotate`, `rotateBy`), `Model`, `EntityModel`, `LivingEntityRenderer`, `EntityRenderer`, `ModelFeatureRenderer`, `OverlayTexture`, `RenderTypes`, `RenderPipelines` and `BlendFunction` (the entries these renderers use), `Mth` (`sin`, `cos`, `wrapDegrees`, `rotLerp`, `lerp`), `SingleThreadedRandomSource`, `BitRandomSource`, `LightCoordsUtil`, and the shader `assets/minecraft/shaders/core/entity.fsh` (data, read for the dissolve branch). The `EnderDragon` and `Strider` entity classes were read only for the few values the renderers consume (sections 4.1 and 8.8) |
+| Scope decisions | Standard Minecraft content is the target (ticket CC-0001; design README Parts 0, 1, 4; GAP-25). Textures, equipment asset JSON and item models are data that the extraction tool (22) copies into a resource pack; this document gives only the paths and image sizes the renderers ask for. Geometry, animation, render-state extraction and the renderers are code and are given completely. Entity behaviour, sizes, ids and metadata are not repeated: see 21 §5.1 (ghast), §5.2 (blaze), §5.6 (hoglin, zoglin), §5.7 (strider), §6.3 (end crystal), §6.4 (dragon), §7.2 (Wither) and 21 App A for metadata layouts. Pose-stack order for living entities is summarised in section 1.6 because every renderer here depends on it; it agrees with 34-1 section 6.5 (the shared framework: Y rotation by 180 minus body yaw, the (-1, -1, 1) flip and the -1.501 translate), and 12 §7.3 gives the same stack for the player |
 
 Conventions. Model units are pixels (1/16 block), x to the model's left, y down, z to the front, angles in radians unless a
 row says degrees. A box is written `origin (x, y, z), size (w, h, d), tex (u, v)`; "grow g" expands every face by g pixels
@@ -80,7 +80,7 @@ A layer definition is a mesh plus a texture size (W, H); UVs are divided by W an
 (the jar ships end crystal and ghast images at 128 x 64 for a 64 x 32 layer) is sampled by the same fractions.
 `MeshTransformer.scaling(s)` replaces the pose of the **root part only** (children are copied unchanged) by
 `ZERO.scaled(s).translated(0, 24.016 x (1 - s), 0)`: the root gets position (0, 24.016(1 - s), 0) and scale s, so every
-model point (x, y, z) becomes (s x, T + s y, s z) with T = 24.016(1 - s). This was read through `MeshTransformer.scaling`, `MeshDefinition.transformed` and `PartDefinition.transformed`: the transform is applied to the root pose and the children are copied by `putAll` unchanged, so a child keeps its own pivots (including absolute pivots set in `setupAnim`) and inherits the root scale. The sentence in 34 part 2 §1.3 that every direct child of the root gets its pose replaced by `pose.scaled(s)` disagrees with the artifact and is to be corrected by that document's owner.
+model point (x, y, z) becomes (s x, T + s y, s z) with T = 24.016(1 - s). This was read through `MeshTransformer.scaling`, `MeshDefinition.transformed` and `PartDefinition.transformed`: the transform is applied to the root pose and the children are copied by `putAll` unchanged, so a child keeps its own pivots (including absolute pivots set in `setupAnim`) and inherits the root scale. The sentence in 34-2 section 1.3 (the Scaling bullet) that every direct child of the root gets its pose replaced by `pose.scaled(s)` disagrees with the artifact; that sentence was still present in 34-2 when this document was last checked (2026-11-08), and this document keeps the disagreement visible until 34-2 is corrected by its owner.
 `CubeDeformation(g)` is the "grow" of 1.2. `INNER_ARMOR_DEFORMATION` is 0.5.
 
 ### 1.4 Sine and cosine tables (`Mth`)
@@ -88,8 +88,8 @@ model point (x, y, z) becomes (s x, T + s y, s z) with T = 24.016(1 - s). This w
 `Mth.sin(x)` = SIN[ floor-toward-zero(x x 10430.378350470453) AND 65535 ] and `Mth.cos(x)` = SIN[ floor-toward-zero(x x
 10430.378350470453 + 16384.0) AND 65535 ], where the argument is a double, the product is converted to a 64-bit
 integer by truncation toward zero (so negative products truncate toward zero before the AND), and SIN[i] = float(sin(i / 10430.378350470453)) for i
-in 0 to 65535 (10430.378350470453 = 65536 / 2 pi). Results differ from a true sine by up to about 1e-4; tests that compare
-poses should use a 1e-3 tolerance. `Mth.wrapDegrees(x)` (float): r = x remainder 360 (sign of x); if r >= 180 then r = r - 360;
+in 0 to 65535 (10430.378350470453 = 65536 / 2 pi). Results differ from a true sine by up to about 1e-4 (inferred: the table step is 2 pi / 65536, about 1e-4 rad, so the error is at most about 5e-5); tests that compare
+poses should use a 1e-3 tolerance (inferred margin). `Mth.wrapDegrees(x)` (float): r = x remainder 360 (sign of x); if r >= 180 then r = r - 360;
 if r < -180 then r = r + 360. `Mth.rotLerp(t, a, b)` = a + t x wrapDegrees(b - a). `Mth.lerp(t, a, b)` = a + t (b - a).
 
 ### 1.5 Random numbers used by model construction and the death rays
@@ -108,7 +108,7 @@ Pose stack, in order (each step multiplies on the right; the last listed acts fi
 1. translate to the entity position (done by the dispatcher);
 2. scale by `state.scale` (the entity's scale attribute) uniformly;
 3. `setupRotations`: when the entity is "shaking" add `cos(floor(ageInTicks) x 3.25) x pi x 0.4` degrees to the body yaw
-   (double-precision `cos` of the integer product, then narrowed to float; the 0.4 is the double 0.4000000059604645, the float 0.4 widened, multiplied by pi in double precision, as in 34 part 1 section 6.5; the worked values below are unaffected within 1e-3); when not sleeping rotate about Y by
+   (double-precision `cos` of the integer product, then narrowed to float; the 0.4 is the double 0.4000000059604645, the float 0.4 widened, multiplied by pi in double precision, as in 34-1 section 6.5; the worked values below are unaffected within 1e-3); when not sleeping rotate about Y by
    180 - bodyYaw degrees; when `deathTime > 0` rotate about Z by `min(1, sqrt((deathTime - 1) / 20 x 1.6)) x 90`
    degrees (90 is `getFlipDegrees`, not overridden by any renderer here); (spin-attack, sleeping and "upside down" name
    cases are the player's and are not used by these mobs);
@@ -281,7 +281,7 @@ by 2 first); (4) left_leg.y = 8 + 2 sin(1.5 p x 0.5 + pi) x 2 x s; right_leg.y =
 | `bristle1` (middle) | body | (0, -4.25, 0) | (-3.5, -2.5, 0), 7 x 3 x 0 | (0, 18) |
 | `bristle2` (front) | body | (0, -4.25, -2) | (-3.5, -2.5, 0), 7 x 3 x 0 | (0, 15) |
 
-`customAnimations(p, s, t)`: body.y = 17.25 - 2 cos(1.5 p) x s (the cos term is multiplied by 1, 2 and s: 17.25 - cos(1.5 p) x 2 x s);
+`customAnimations(p, s, t)`: body.y = 17.25 - 2 x cos(1.5 p) x s (worked value 16.75 at p = 0, s = 0.25);
 left_leg.y = 20 + 2 sin(1.5 p x 0.5 + pi) x 2 x s; right_leg.y = 20 + 2 sin(1.5 p x 0.5) x 2 x s; `animateBristle(t, base,
 bristle2 (front, "top"), bristle1 (middle), bristle0 (back, "bottom"))` adding to **xRot** with base = cos(1.5 p + pi) x s.
 
@@ -384,7 +384,7 @@ the heads, gets the grow). Let c0 = 0.20420352 (= 0.065 pi) and the pose angle c
 
 State `WitherRenderState` = living state + `xHeadRots[2]`, `yHeadRots[2]` (float arrays, copied from
 `WitherBoss.getHeadXRots/getHeadYRots`), `invulnerableTicks` (float), `isPowered` (`WitherBoss.isPowered()`).
-The renderer copies the arrays as they are (no partial-tick interpolation in the renderer; the entity keeps previous-tick copies, `xRotOHeads` and `yRotOHeads`, which this renderer does not consume). Entity side, per tick, for head i = 0 and 1 (read from `WitherBoss.aiStep`; the owner is 21 §7.2): the previous arrays are saved, then if the alternative target of head i+1 is a living entity, xRotHeads[i] = rotlerp(xRotHeads[i], pitch to the target's eye, 40) and yRotHeads[i] = rotlerp(yRotHeads[i], yaw to the target, 10), where yaw = atan2(dz, dx) x 57.2957763671875 - 90 degrees from the head's world position (the head positions of `getHeadX/Y/Z`) to the target's eye; otherwise yRotHeads[i] = rotlerp(yRotHeads[i], bodyYaw, 10) and xRotHeads[i] is unchanged. `rotlerp(a, b, maxStep)` limits the turn per tick to maxStep degrees (its body was not read: inferred from the name and the 40 and 10 arguments). The pitch sign convention was not traced (Open question 3).
+The renderer copies the arrays as they are (no partial-tick interpolation in the renderer; the entity keeps previous-tick copies, `xRotOHeads` and `yRotOHeads`, which this renderer does not consume). Entity side, per tick, for head i = 0 and 1 (read from `WitherBoss.aiStep`; the owner is 21 §7.2): the previous arrays are saved, then if the alternative target of head i+1 is a living entity: with (dx, dy, dz) = (target X, target eye Y, target Z) minus the head position (`getHeadX/Y/Z(i + 1)`), yaw = narrow-to-float(Mth.atan2(dz, dx) x 57.2957763671875) - 90.0f (the double product is narrowed to float first, then 90.0f is subtracted) and pitch = narrow-to-float(-(Mth.atan2(dy, sqrt(dx^2 + dz^2)) x 57.2957763671875)); the pitch is negated, so a target above the head gives a negative xRot. Both use `Mth.atan2`, not `Math.atan2`. Then xRotHeads[i] = rotlerp(xRotHeads[i], pitch, 40) and yRotHeads[i] = rotlerp(yRotHeads[i], yaw, 10); otherwise yRotHeads[i] = rotlerp(yRotHeads[i], bodyYaw, 10) and xRotHeads[i] is unchanged. `rotlerp(a, b, maxStep)` (read): d = wrapDegrees(b - a) (1.4), clamped to the range [-maxStep, +maxStep], result a + d. The body-turn path in `aiStep` (yaw set from atan2 of the horizontal motion when the horizontal speed squared exceeds 0.05) is entity behaviour, deferred to 21 §7.2.
 `invulnerableTicks` = `getInvulnerableTicks()` - partialTick when that integer is above 0, else 0.
 Renderer: model `WITHER`, shadow radius 1.0, block-light level 15, one layer (6.3).
 
@@ -649,6 +649,8 @@ The quad is 1 x 1 block before the scale of 2 (so 2 x 2 blocks), centred horizon
 0.75 (before scaling: -0.5 to +1.5 above the origin). When `outlineColor` is non-zero (glowing outline) the same quad is also
 submitted in the outline render type of `entityCutout` with the outline colour as the vertex colour.
 
+**Shadow.** `DragonFireballRenderer`'s constructor only calls the `EntityRenderer` super constructor and assigns no `shadowRadius`; the `EntityRenderer` constructor assigns only `shadowStrength` (1.0), and the `shadowRadius` field has no initialiser, so it keeps the field default 0 and no shadow is drawn. The value 0 is inferred from reading those two constructors, not from a read initialiser.
+
 ---
 
 ## 10. Layer and texture summary
@@ -670,21 +672,23 @@ not to this document.
 
 ### 10.1 Shadow, name tag, leash, fire, hitbox and eye height, and equipment
 
-These behaviours are shared by every entity and are specified once, not per model: the shadow drawing, name tag, leash and fire rendering are in 34 part 1 section 7; the generic layers (equipment, energy swirl, emissive) are in 34 part 1 section 8; hitbox size, eye height, name tag offset and passenger attachments per entity type are in 18 (entity type table and attachments section). What this document adds per entity is only the values below (all read in the sections cited).
+These behaviours are shared by every entity and are specified once, not per model: the shadow drawing, name tag, leash and fire rendering are in 34-1 section 7; the generic layers (equipment, energy swirl, emissive) are in 34-1 section 8; hitbox size, eye height, name tag offset and passenger attachments per entity type are in 18 (entity type table and attachments section). What this document adds per entity is only the values below (all read in the sections cited).
 
 | Entity | Shadow radius (x `state.scale`) | Block light | Extra layers | Hitbox, eye, name tag |
 |---|---|---|---|---|
-| blaze | read in 2.1 | 15 | none | 18 |
-| ghast | read in 3 | state default | none | 18 |
-| strider | read in 4.1 | state default | saddle equipment layer (4.1; path and flags: 34 part 1 section 8) | 18 |
-| hoglin, zoglin | read in 5.1 | state default | none | 18 |
+| blaze | 0.5 (read) | 15 | none | 18 |
+| ghast | 1.5 (read) | state default | none | 18 |
+| strider | 0.5, x 0.5 more for a baby (read in `StriderRenderer.getShadowRadius`) | state default | saddle equipment layer (4.1; path and flags: 34-1 section 8) | 18 |
+| hoglin, zoglin | 0.7 (read) | state default | none | 18 |
 | Wither | 1.0 | 15 | power swirl (6.3) | 18 |
 | wither skull | none | 15 | none | 18 (projectile) |
 | end crystal | 0.5 | state default | none (beam, 7.3) | 18 |
-| Ender Dragon | read in 8.5 | state default | eyes and dissolve passes (8.5) | 18 |
-| dragon fireball | read in 9 | 15 | none | 18 (projectile) |
+| Ender Dragon | 0.5 (read) | state default | eyes and dissolve passes (8.5) | 18 |
+| dragon fireball | 0 (no shadow; inferred from the constructor, see 9) | 15 | none | 18 (projectile) |
 
-The saddle's dye, glint and cutout flags and the energy-swirl and OIT generalisation belong to 34 part 1 section 8; this document states only the strider's layer wiring and the Wither swirl's concrete arguments.
+No renderer in this document overrides the name tag attachment (searched each renderer class for a name tag method: none), so the name tag position is the generic one from 34-1 section 7 and 18. Eye heights and hitboxes are deferred to 18.
+
+The saddle's dye, glint and cutout flags and the energy-swirl and OIT generalisation belong to 34-1 section 8; this document states only the strider's layer wiring and the Wither swirl's concrete arguments.
 
 ---
 
@@ -698,7 +702,7 @@ At t = 0 every rod is at its creation pivot. Ring 1: rod 0 (9, -1.000, 0); rod 1
 Ring 2: rod 4 (4.950, 1.584, 4.950); rod 5 (-4.950, 1.199, 4.950); rod 6 (-4.950, 1.010, -4.950); rod 7 (4.950, 1.064, -4.950).
 Ring 3: rod 8 (4.455, 11.960, 2.270); rod 9 (-2.270, 11.893, 4.455); rod 10 (-4.455, 11.347, -2.270); rod 11 (2.270, 10.614, -4.455).
 At t = 10: the ring 1 base angle is 10 pi x (-0.1) = -pi, so rod 0 is at (-9, -2.801, 0), rod 1 (0, -2.990, -9),
-rod 2 (9, -2.937, 0), rod 3 (0, -2.654, 9).
+rod 2 (9, -2.936, 0), rod 3 (0, -2.654, 9).
 
 ### 11.2 Ghast
 
@@ -766,7 +770,7 @@ At the entity position, a camera-facing quad of 2 x 2 blocks; vertex 1 is at loc
 4. Generator: `createThreadLocalInstance(1660)` followed by nine `nextInt(7)` + 8 gives the lengths 8, 13, 9, 11, 11, 10, 12, 9, 12 (3.1). `createThreadLocalInstance(432)` `nextFloat()` gives 0.76393 as the first value.
 5. Flight history: after `record` of values v1, v2, v3 into a fresh ring, `get(0)` = v3, `get(1)` = v2, `get(2)` = v1, `get(3)` = v1 (the initial fill); `get(0, 0.5)` = the midpoint between v3 and v2 (yaw by `rotLerp`).
 6. Ghast body centre world height 1.8045 blocks above the entity origin (3.1); dragon pose has translate (0, 0, 1) before the flip; Wither scale 2 (1.5 when `invulnerableTicks` is 220); end crystal drawn at scale 2 and shifted -0.5.
-7. Render types: blaze, ghast, strider, hoglin, zoglin, Wither main pass: `entityCutout` with alpha cut 0.1; wither skull `entityTranslucent` (model default read; overload choice unread); dragon main pass `entityCutout` (or the dissolve type while dying) + `eyes`; swirl `energySwirl`; fireball `entityCutout`; beam `endCrystalBeam`.
+7. Render types: blaze, ghast, strider, hoglin, zoglin, Wither main pass: `entityCutout` with alpha cut 0.1; wither skull `entityTranslucent` (model default and the `submitModel` overload both read, 6.4); dragon main pass `entityCutout` (or the dissolve type while dying) + `eyes`; swirl `energySwirl`; fireball `entityCutout`; beam `endCrystalBeam`.
 8. Texture selection fixtures: ghast `isCharging` true selects `ghast_shooting.png`; strider (`isSuffocating`, `isBaby`) (true, true) selects `strider_cold_baby.png`; hoglin and zoglin baby select `*_baby.png`; Wither n = 80 selects the invulnerable image, n = 79 the normal image.
 9. Strider cold shaking and hoglin conversion shaking add the yaw wobble cos(floor(ageInTicks) x 3.25) x pi x 0.4 degrees: at `ageInTicks` 0 to 0.99 the wobble is cos(0) x 0.4 pi = 1.2566 degrees; at 1.x it is cos(3.25) x 0.4 pi = -1.2494 degrees (cos(3.25) = -0.99413).
 
@@ -774,16 +778,16 @@ At the entity position, a camera-facing quad of 2 x 2 blocks; vertex 1 is at loc
 
 ## 13. Open questions
 
-Resolved items of earlier drafts were moved into the sections that state them: the scaling transformer applies to the root pose only (1.3; 34 part 2 §1.3 is the document to correct); the `dragon_rays` pipeline (8.6); the strider saddle image path (4.1); `NativeImage.setPixel` red-flash conversion (1.6); the skull render type (6.4); the swirl texture offset convention (6.3).
+Resolved items of earlier drafts were moved into the sections that state them: the scaling transformer applies to the root pose only (1.3; 34-2 section 1.3 still states otherwise and is the document to correct); the `dragon_rays` pipeline (8.6); the strider saddle image path (4.1); `NativeImage.setPixel` red-flash conversion (1.6); the skull render type (6.4); the swirl texture offset convention (6.3).
 
-1. `EquipmentLayerRenderer.renderLayers` (dye colour, glint, cutout flags, the layer type's directory name) and the `Equippable` component of the saddle item were not read in this round; they are assigned to 34 part 1 section 8 and to 22 (extraction). The strider saddle's wiring (4.1) is stated here; an implementer needs that section for the remaining flags. Searched: the call sites in `StriderRenderer` and `SimpleEquipmentLayer` only.
+1. `EquipmentLayerRenderer.renderLayers` (dye colour, glint, cutout flags, the layer type's directory name) and the `Equippable` component of the saddle item were not read in this round; they are assigned to 34-1 section 8 and to 22 (extraction). The strider saddle's wiring (4.1) is stated here; an implementer needs that section for the remaining flags. Searched: the call sites in `StriderRenderer` and `SimpleEquipmentLayer` only.
 2. `ARGB.white(alpha)` was read as used for the overlay's second row (1.6); `ARGB.colorFromFloat` and `ARGB.multiply` were treated as the obvious packers and not read.
-3. Wither head pitch: the sign of the pitch toward the target in `WitherBoss.aiStep` (the expression after the second `atan2`) and the body of `rotlerp` were not traced; the 40 and 10 step arguments, the yaw formula and the body-yaw fallback were read (6.2). Draw order between the main model, the energy swirl (order 1) and the equipment layer (order 0) across the translucent and opaque passes was not traced.
+3. Draw order between the main model, the energy swirl (order 1) and the equipment layer (order 0) across the translucent and opaque passes was not traced. (The Wither head pitch sign and `rotlerp` body are resolved in 6.2.)
 4. The order-independent-transparency variants (`OIT_EYES`, `OIT_ENERGY_SWIRL`, `OIT_DRAGON_RAYS`, shader define OIT_ADDITIVE for the last two, referenced by `RenderTypes.eyes`, `energySwirl` and `dragonRays`) are not specified; plain blending with the blend functions stated in 6.3, 8.5 and 8.6 is the assumed equivalent (inferred). Searched: `RenderPipelines` registrations only.
 5. Entity-side formulas were read only where renderers consume them (`flapTime`, flight history recording, `Strider.isSuffocating`'s derivation: cold when not on or in a warm block (tag), not in lava and not riding a strider that is warm, summarised from `Strider.tick`). Their full ownership is 21 §6.4 and §5.7. The wither skull's rotation interpolation (entity `getYRot(partial)` and `getXRot(partial)` are read) and the skull entity's own tick were not read.
-6. Shadow drawing, name tag, leash and bounding-box culling code of `EntityRenderer` is outside this round (10.1 assigns it to 34 part 1 section 7); only the radius values were read.
+6. Shadow drawing, name tag, leash and bounding-box culling code of `EntityRenderer` is outside this round (10.1 assigns it to 34-1 section 7); only the radius values were read.
 7. The dragon `DRAGON_SKULL` layer and the skull block entity renderer (`DragonHeadModel`) were not read.
 8. `Mth.sin`/`Mth.cos` tables: only the table index formula and the table fill expression were read; the float rounding of `float(sin(...))` is assumed to be the usual round-to-nearest.
 9. The `WitherBoss` flicker (`n div 5` odd/even) and the 220 / 80 tick constants of the spawn phase were read from the renderer only; the entity's own `invulnerableTicks` countdown is 21 §7.2.
 10. The end crystal pose arithmetic of 11.6 puts the base slab below the entity origin (-1.0 to -0.5 block) and the glass 0.4 to 1.4 above it. The renderer was read exactly; `EndCrystalItem.useOn` spawns at the empty block above the clicked block and sets `showBottom` false, so placed crystals do not draw the base slab; crystals spawned otherwise (for example by the dragon fight) were not checked against 21 §6.3.
-11. Review coverage: a reviewer verified the blaze, ghast, end crystal, Wither, strider, baby hoglin and dragon figures and the worked examples against the jar, but did not independently check the adult hoglin mesh table, baby strider mesh, overlay texture values, the `Mth` table details, death ray geometry and colours, crystal beam geometry, fireball quad, dragon pass list and pipeline states, strider and hoglin texture and shadow rules; those await a second spot check.
+11. Coverage note (2026-11-08): a fresh review re-read the `ModelPart$Cube` corner definitions and face count, the `MeshTransformer.scaling` behaviour, the fireball shadow default and the blaze t = 10 values against the jar. The per-face UV rectangles and vertex slot tables of 1.2 were not individually re-derived in that review; they agree with the existing 12 and 14 references and should be confirmed by the next reviewer. The OIT items (Open question 4) and the draw order (Open question 3) remain unspecified. Not covered by this document: the Wither Skeleton (34-2), the happy ghast (reuses the tentacle animation, 34-4) and the `DRAGON_SKULL` block-entity model (Open question 7).

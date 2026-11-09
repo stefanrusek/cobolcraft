@@ -10,7 +10,7 @@
 Class names in backticks say where a fact was read; they are not the design. Cross-references: "00" data types
 (GameProfile, PropertyMap, ResolvableProfile, PlayerSkinPatch), "02" login (offline UUID), "03" Client Information,
 "05a" Player Info Update, "12 section 7" player model, "13 section 7" options, "21" entity data indices, "22" the
-asset and data extraction tool (when it exists). The texture files themselves (18 default skins, the elytra texture) are
+asset and data extraction tool (22 §6, What is extracted). The texture files themselves (18 default skins, the elytra texture) are
 DATA and come from the vanilla resource pack that the tool extracts; this document specifies the engine that selects and
 interprets them.
 
@@ -45,7 +45,19 @@ so a resource pack can replace it) or a **downloaded texture** (a texture path p
 (00 section 13.3, PlayerSkinPatch) the three texture fields of a patch are resource textures, so a patch can never
 name a URL. `PlayerModelType`'s stream codec is a Boolean: true = SLIM, false = WIDE (read from the codec lambdas;
 this settles the "inferred" note in 00 section 13.3 for the model flag). The patch field order is body, cape, elytra,
-model (three texture codecs then the model codec; field-to-slot mapping inferred from the record order).
+model (three texture codecs then the model codec). The field names were read from `PlayerSkin$Patch.MAP_CODEC`, so the
+slot mapping is read, not inferred; the **data-component form** (JSON or NBT, used by items and mannequins) is a
+compound with four optional keys, in record order:
+
+| Key | Value | Fills |
+|---|---|---|
+| `texture` | resource texture: an identifier (`ResourceTexture.CODEC` is the identifier codec) | body |
+| `cape` | resource texture identifier | cape |
+| `elytra` | resource texture identifier | elytra |
+| `model` | `PlayerModelType.CODEC` (names `slim` and `wide`, section 1 table) | model |
+
+The stream form is body, cape, elytra, model with no key names. 00 section 13.3 still marks the cape and elytra slot
+meaning inferred; that is now stale (Open question 10).
 
 `PlayerSkin.with(patch)`: an empty patch returns the skin unchanged; otherwise each present patch field replaces the
 corresponding field, absent fields keep the old value, and the result is insecure.
@@ -147,7 +159,7 @@ validation fails or the skin is insecure and the player is not the local player.
 3. Load, on a background executor: if the property is absent the textures are `MinecraftProfileTextures.EMPTY`;
    otherwise `unpackTextures(property)` yields skin, cape, elytra (each a texture with URL, hash and metadata) and a
    **signature state** (SIGNED, UNSIGNED or INVALID). INVALID logs a warning "Profile contained invalid signature for
-   textures property" and the textures are still used (but see secure below).
+   textures property (profile id: {})" (the profile UUID fills the placeholder) and the textures are still used (but see secure below).
 4. Back on the main thread, `registerTextures(uuid, textures)`:
    - skin: if present, load it (3.4) and take the model from the texture metadata key `model`
      (`PlayerModelType.byLegacyServicesName`: `slim` gives SLIM, anything else including a missing key gives WIDE);
@@ -160,21 +172,23 @@ validation fails or the skin is insecure and the player is not the local player.
    optional, which the lookup turns into the default skin `D`.
 
 Consequences for a server: a profile without a `textures` property gives EMPTY textures, a default body and an
-insecure result; remote players then show `D`, which equals the same default entry. A properly signed property from the
+insecure result (inferred: the signature state of EMPTY was not read, Open question 2); remote players then show `D`, which equals the same default entry. A properly signed property from the
 Mojang session service is the only way to have another player's custom skin shown. For the local player an unsigned
 property is accepted.
 
 ### 3.4 Loading one texture (`SkinManager$TextureCache`, `SkinTextureDownloader`)
 
-Three caches (skin, cape, elytra) are keyed by the texture's hash string.
+Three caches (skin, cape, elytra) are keyed by the texture's hash string. Each is a plain hash map from hash string
+to a future of the registered texture, with no size limit and no expiry or removal in the class (only `get` and `put`
+were found on it), unlike the 15-second `CacheKey` cache of 3.3 step 2. A texture stays registered for the session.
 
 - Local name: `sha1 = SHA-1 of the hash string hashed as UTF-16 chars (Guava hashUnencodedChars), lowercase hex`.
   Texture id = `minecraft:skins/<sha1>`, `minecraft:capes/<sha1>` or `minecraft:elytra/<sha1>` by type.
 - Disk cache file: `<game assets directory>/skins/<first 2 hex chars of sha1>/<sha1>` (a name of 2 characters or
   fewer would use the folder `xx`; sha1 hex is 40 characters so not reached).
 - Download (`downloadSkin`): if the cache file is a regular file, read the image from it. Otherwise open the URL
-  (through the configured proxy), require an HTTP status of the form 2xx (status / 100 == 2, else an I/O error "... "
-  with the status), read all bytes, try to write them to the cache file (a write failure only logs "Failed to cache
+  (through the configured proxy), require an HTTP status of the form 2xx (status / 100 == 2, else an `IOException` whose message is built from the URL and
+  the integer status code), read all bytes, try to write them to the cache file (a write failure only logs "Failed to cache
   texture"), and decode the bytes as a PNG image.
 - For the **skin type only**, the legacy conversion of section 4 is applied; capes and elytra images are used as
   downloaded.
@@ -189,7 +203,9 @@ There is no size limit, retry or timeout in this code (Open question 3).
 1. Accept only width 64 with height 32 or 64. Any other size closes the image and fails with an
    `IllegalStateException` (message with the width, height and URL), which ends in the default skin (3.3 step 5).
    High-resolution skins are therefore not supported.
-2. `legacy = (height == 32)`.
+2. `legacy = (height == 32)`. Only the hat hack (step 4b) and the 64 x 64 expansion with its copies (step 3) depend on
+   `legacy`. The alpha fix-ups 4a, 4c and 4d run for **every accepted skin, including 64 x 64 downloads** (checked: the
+   three `setNoAlpha` calls are outside the height test; only the `doNotchTransparencyHack` call is inside it).
 3. If legacy, make a new 64 x 64 image, copy the old image into its top-left corner (rows 0..31), then set the pixel
    rectangle x 0..63, y 32..63 to 0 (fully transparent black). Then copy twelve rectangles inside the new image,
    each **mirrored horizontally** (the columns of each source rectangle are reversed): source (x, y), destination
@@ -219,13 +235,16 @@ There is no size limit, retry or timeout in this code (Open question 3).
 4. Opacity fix-ups, in this order (the rectangles are x from x0 inclusive to x1 exclusive, y likewise):
    a. force alpha to 255 on x 0..31, y 0..15 (head base layer);
    b. if legacy: the **hat transparency hack** on x 32..63, y 0..31: if any pixel in that rectangle has alpha below 128
-      the rectangle is left as is; if all pixels have alpha 128 or more, alpha is cleared to 0 on every pixel of it
-      (a skin that painted a solid background in the hat area gets no hat);
+      the rectangle is left as is; if all pixels have alpha 128 or more, every pixel of it is read back and ANDed with 0x00FFFFFF (16777215) before being
+      written, which clears alpha to 0 and keeps the 24 colour bits (the review finding that the constant itself is
+      written, making the colour white, does not match the bytecode: the pixel read-back precedes the mask) (a skin that
+      painted a solid background in the hat area gets no hat);
    c. force alpha 255 on x 0..63, y 16..31 (body, right leg, right arm base);
    d. force alpha 255 on x 16..47, y 48..63 (left leg and left arm base).
    Overlay regions (hat at 32..63 x 0..15, jacket, sleeves and pants rows 32..47 and the left overlays at 0..15 x 48..63
    and 48..63 x 48..63) keep their own alpha.
-5. Colour is untouched except alpha.
+5. Colour is untouched except alpha (the hat hack keeps the colour bits and clears alpha; the 64 x 32 to 64 x 64
+   expansion fills the new rows with 0, transparent black, before the copies).
 
 The converted image is the final texture; models read it as 64 x 64 (UV = pixel / 64). The default skins are already
 64 x 64 and are used as stored, with no fix-ups (they are resource textures, not downloaded images).
@@ -286,7 +305,8 @@ Bit 7 (0x80) is unused. There are 7 flags; the mask is one byte.
   data leaves all overlay layers and capes **hidden** on every player, because the default is 0. The server must copy
   Client Information into the entity data and send it in Set Entity Data (21 for the metadata wire form).
 - `AvatarRenderer.extractRenderState` reads the seven flags into the render state: hat, jacket, left and right pants,
-  left and right sleeve, cape. The model draws each overlay mesh only when its flag is set (12 section 7.4).
+  left and right sleeve, cape (`showCape`). The same method also stores `skin` (from `ClientAvatarEntity.getSkin()`, so
+  3.1 step 3 is evaluated each time the state is extracted) and `showExtraEars` (from `ClientAvatarEntity.showExtraEars()`, 6.4). The model draws each overlay mesh only when its flag is set (12 section 7.4).
 - The Player Info action UPDATE_HAT (05a, ordinal 7, Boolean) sets `PlayerInfo.showHat` (default true). It is used only
   for the face drawn in the tab list (section 7), not for the world model.
 
@@ -330,10 +350,11 @@ Render-state inputs (`AvatarRenderer.extractCapeState`), with partial tick `pt`:
 1. `(dx, dy, dz) = interpolatedCloakPosition(pt) - lerp(pt, previousEntityPosition, entityPosition)`.
 2. `yaw = rotLerp(pt, yBodyRotPrevious, yBodyRot)` in degrees (interpolating along the shortest angle), `s = sin(yaw *
    0.017453292)`, `c = -cos(yaw * 0.017453292)` using the game's sine and cosine (`Mth.sin`/`Mth.cos`, lookup tables
-   read as follows: `sin(x)` indexes a 65536-entry float table at `(int)(x * 10430.378350470453) & 65535`; `cos(x)` indexes
-   the same table at `(int)(x * 10430.378350470453 + 16384.0) & 65535`; entry `i` is a float-cast sine of `i / 10430.378350470453` (inferred: the static initialiser was seen to fill 65536
-   entries in a loop, but the sine argument and the float cast were not re-confirmed), which would be the sine of
-   `i * 2 pi / 65536` only to within rounding; Open question 4).
+   read as follows: `sin(x)` converts `x * 10430.378350470453` (double) to a 64-bit integer by truncation, ANDs it with the
+   64-bit value 65535 and narrows to int as the index into a 65536-entry float table; `cos(x)` does the same with
+   `x * 10430.378350470453 + 16384.0`; table entry `i` is the double sine of `i / 10430.378350470453` cast to float
+   (read from the static initialiser's fill lambda), which equals the sine of `i * 2 pi / 65536` only to within
+   rounding).
 3. `capeFlap = clamp(dy * 10, -6, 32)`.
 4. `capeLean = (dx * s + dz * c) * 100`; then `capeLean *= (1 - fallFlyingScale)`; then clamp to 0..150.
    `fallFlyingScale = clamp(t * t / 100, 0, 1)` with `t = fallFlyingTicks + pt`.
@@ -422,7 +443,7 @@ resolvable profile, each expiring 5 minutes after last access: the resolved skin
 `SkinManager.get`, then apply the profile's skin patch) and the **default** (immediate) skin, which is
 `DefaultPlayerSkin.get(partialProfile)` with the patch applied (the partial profile's UUID is the supplied one, or the
 nil UUID). Use rule (`getOrDefault`, `createLookup`): the resolved render info once the future is complete and present,
-otherwise the default render info. The profile resolution needs network access (Open question 6).
+otherwise the default render info. The profile resolution needs network access (Open question 4).
 
 ### 7.3 Mannequins
 
@@ -433,6 +454,36 @@ type like the player one. `ClientMannequin.DEFAULT_SKIN` is `DefaultPlayerSkin.g
 section 8.16) through `PlayerSkinRenderCache` (7.2). Its model-part byte defaults to **127** (21 section 8.16), unlike a
 player's default 0 (5.3), so the "no overlays when the byte is 0" rule of 5.3 must not be applied to mannequins.
 
+### 7.4 Skin preview widget and first-person hands
+
+`PlayerSkinWidget` (a GUI widget given a width, height, the entity model set and a supplier of `PlayerSkin`) draws a
+turnable model preview: it bakes both the wide and the slim player model, and each frame picks the slim one when the
+supplied skin's model is SLIM, else the wide one, and draws it with the skin's body texture. Constants (read): scale
+`0.97 * widgetHeight / 2.125`; the draw call also passes the constant -1.0625 (a vertical offset in model units; its
+use is inside the GUI renderer, not read); initial rotation x = -5, y = 30 (the unit, degrees, is inferred; not read); dragging by (dx, dy) pixels
+subtracts `dy * 2.5` from rotation x (clamped to -50..50) and adds `dx * 2.5` to rotation y (not clamped); clicking
+plays no sound.
+
+First-person hands: `AvatarRenderer.renderRightHand` and `renderLeftHand` take (pose stack, collector, light, skin texture
+id, boolean) and share one routine: reset the chosen arm part's pose and make it visible; set both sleeve meshes visible
+to the boolean; set the left arm's z rotation to -0.1 and the right arm's to +0.1 (radians); submit that arm part alone
+with the skin texture as a translucent entity render type and no overlay colour (Open question 9).
+
+### 7.5 Other consumers of a skin
+
+All of these take the body texture of a `PlayerSkin` (or a resolvable profile through `PlayerSkinRenderCache`, 7.2) and need no network beyond what 3 and 7.2 already say; with no network they show the default skin. Read: the class uses `PlayerFaceExtractor` (7.1) or the cache; not read: any rectangle other than the face and hat of 7.1.
+
+| Consumer | Uses | Source rectangle / size |
+|---|---|---|
+| `PlayerFaceWidget` | `PlayerFaceExtractor.extractRenderState` for a resolvable profile | face and hat of 7.1 |
+| Spectator `PlayerMenuItem` | `PlayerFaceExtractor` with a skin, size 12 | face and hat of 7.1 at 12 x 12 |
+| `PlayerGlyphProvider` (player-head glyph in text components) | `PlayerSkinRenderCache`; glyph advance constant 8.0 | face (rectangle not read) |
+| Player-head item model (`ModelManager`, `ModelBakery`) | `PlayerSkinRenderCache` | whole body texture on the head model |
+| Social `PlayerEntry`, `SocialInteractionsPlayerList`, `FriendToast`, `ClientActivePlayersTooltip`, `ChatSelectionScreen` heading entry, team-selection spectator item | listed in the jar; skin use not traced | presumed face of 7.1 (inferred) |
+| `HumanoidMobRenderer`, `CopperGolemRenderer` | wings layer on non-player bodies | not traced |
+
+Open question 13 lists what was not traced. An implementation may treat the unread rows as out of scope and draw the 7.1 face.
+
 ## 8. Offline, missing and no-network behaviour
 
 What the vanilla client does:
@@ -440,7 +491,7 @@ What the vanilla client does:
 | Situation | Result |
 |---|---|
 | Offline-mode server (no properties on any profile) | Every player, including the local one, shows `DefaultPlayerSkin.get(uuid)` with its model. |
-| Profile has a `textures` property but no network | The download fails (or the cache file is missing); the optional is empty; the default skin is shown (3.3). A previously cached file in `<assets>/skins/xx/<sha1>` is used even offline, as long as the property can be unpacked. |
+| Profile has a `textures` property but no network | The download fails (or the cache file is missing); the optional is empty; the default skin is shown (3.3). A previously cached file in `<assets>/skins/xx/<sha1>` is used even offline, as long as the property can be unpacked (inferred: depends on authlib `unpackTextures`, not read; Open question 11). |
 | Texture URL returns non-2xx, wrong image size, or cannot be decoded | Default skin. |
 | Remote player's property is unsigned or invalid | Default skin (secure rule). |
 | Local player's property unsigned | The skin is used. |
@@ -450,10 +501,10 @@ What the vanilla client does:
 
 What our client must do (derived from the above and from the operator decision that the client works with no network):
 
-1. Ship the 18 default skin textures as part of the vanilla resource pack produced by the extraction tool (22) and
+1. Ship the 18 default skin textures as part of the vanilla resource pack produced by the extraction tool (22 §6) and
    look them up through the normal resource-pack chain so packs can retheme them. The built-in cobolcraft pack (08
    section 10) must also provide something for the same 18 ids or the client must fall back to one of its own textures
-   (Open question 7).
+   (Open question 5). **Fallback with no network and no usable pack:** if neither the vanilla pack nor the built-in pack supplies a requested id, use any one bundled 64 x 64 skin (its model matching the id's slim or wide half where possible), and if no skin is bundled at all draw a flat opaque 64 x 64 placeholder; never fail the connection or frame (item 5).
 2. Choose the skin of every player from the UUID by section 2.2 (`floorMod(hashCode, 18)`), SLIM for 0..8 and WIDE for
    9..17, and render with the matching model. This is the only skin path that needs to work offline. The server's
    offline UUID derivation (02) therefore decides each player's default look.
@@ -498,7 +549,7 @@ source columns 4..7 of rows 20..31 mirrored to destination columns 20..23 of row
 (20 + (3 - i), 52 + j). Pixel (5, 21) has i = 1, j = 1, so it lands at (22, 53).
 
 Hat hack example: a legacy skin that is fully opaque in x 32..63, y 0..31 (every alpha 255): all alpha in the
-rectangle becomes 0, then fix-up c re-opaques x 0..63, y 16..31, so the hat area (y 0..15) is transparent and the arm
+rectangle becomes 0 with colour bits kept, then fix-up c re-opaques x 0..63, y 16..31, so the hat area (y 0..15) is transparent and the arm
 and body area (y 16..31) stays opaque.
 
 Cape lean example: a player at rest after turning has `dx = dy = dz = 0`: `capeFlap = 0 + sin(walk * 6) * 32 * bob`
@@ -513,7 +564,7 @@ after tick 1 rotX = 0.07853982, after tick 2 = 0.13352 (`0.07853982 + 0.3 * (0.2
 
 Default-skin flow example: an offline server, client connected, player `Steve`: Player Info ADD_PLAYER carries UUID
 `5627dd98-...` and zero properties; no `textures` property so the packed property is absent; textures are EMPTY;
-`registerTextures` takes the body and model from `DefaultPlayerSkin.get(uuid)` = `wide/efe`; secure is false; for
+`registerTextures` takes the body and model from `DefaultPlayerSkin.get(uuid)` = `wide/efe`; secure is false (inferred, Open question 2); for
 the local player that is accepted, for a remote player it is filtered and the lookup's own default
 `DefaultPlayerSkin.get(profile)` (the same entry) is used. Result: wide model, `textures/entity/player/wide/efe.png`.
 
@@ -528,7 +579,9 @@ An implementation is conformant to this document when:
 4. A 64 x 32 test image converts to 64 x 64 with the twelve mirrored copies of 4 and the alpha rules; a test pattern in
    which every pixel encodes its own (x, y) shows: destination (36, 48) equals source (47, 16); destination (47, 63)
    equals source (52, 31) (row 12, i = 3, j = 11); for the left-arm back face (row 12) destination (44 + i, 52 + j) equals source
-   (55 - i, 20 + j) for i 0..3, j 0..11; images that are not 64 x 32 or 64 x 64 are rejected.
+   (55 - i, 20 + j) for i 0..3, j 0..11; images that are not 64 x 32 or 64 x 64 are rejected; a 64 x 64 test image with alpha 0 in the base regions comes out
+   with alpha 255 in x 0..31 y 0..15, x 0..63 y 16..31 and x 16..47 y 48..63, with no copies and no hat hack, and the
+   overlay regions (x 32..63 y 0..15, rows 32..47, x 0..15 y 48..63, x 48..63 y 48..63) unchanged.
 5. Sending Client Information with all parts yields customisation 0x7F; toggling a part flips only its bit; with the
    entity byte 0 no overlay and no cape is drawn; with the byte 0x7F all seven are drawn.
 6. A cape is drawn only under the four conditions of 6.2; the wings layer uses the elytra texture, else the cape
@@ -547,32 +600,32 @@ An implementation is conformant to this document when:
    `SessionService.getPackedTextures`, the metadata key `model`, and the types SKIN, CAPE and ELYTRA.
 2. **Signature verification.** `SignatureState` SIGNED, UNSIGNED, INVALID and the check against Mojang's public key are
    authlib code, not read. Whether an absent signature gives UNSIGNED (assumed) and what `MinecraftProfileTextures.EMPTY`
-   reports are not verified; the secure outcome for EMPTY (insecure) is inferred from the behaviour that the default
-   body is returned anyway.
+   reports are not verified; "EMPTY is insecure" (3.3, 9) is inferred from the behaviour that the default body is
+   returned anyway.
 3. **Network limits.** No timeout, maximum size, redirect handling or retry was found in `SkinTextureDownloader`;
    they may be in the connection defaults of the JDK (not read).
-4. **Sine and cosine tables.** The index scale, the 65535 mask and the cosine offset 16384.0 are read (6.2 step 2).
-   The table fill (a float cast of a sine of `i / 10430.378350470453`) is inferred: only the 65536-entry loop in the
-   static initialiser (built through a `Util.make` helper) was confirmed. Searched: the `Mth` static initialiser; not
-   re-read in detail. An implementation using a double-precision sine then a float cast is the expected match.
-5. **Upside-down faces.** Resolved: read in 7.1 (profile-name rule, cape-flag gate in the world, tab-list rule). Nothing remains.
-6. **Profile resolution.** `ProfileResolver.fetchByNameOrId` (online lookups for head items by name or UUID) and the
+4. **Profile resolution.** `ProfileResolver.fetchByNameOrId` (online lookups for head items by name or UUID) and the
    resolver's offline behaviour are not read.
-7. **Built-in cobolcraft pack.** Whether the cobolcraft world type's built-in pack (08 section 10) must carry its own
-   default skins when no vanilla pack is available is a design decision outside this artifact.
-8. **Skin Customization screen leaving behaviour.** Resolved: `OptionsSubScreen.removed()` calls `Options.save()` (5.2).
-   Nothing remains.
-9. **Equipment asset path mapping.** The mapping from the equipment asset's texture id `minecraft:elytra` to
+5. **Built-in cobolcraft pack.** Whether the cobolcraft world type's built-in pack (08 §10) carries its own default skins is
+   a design decision outside this artifact; section 8 states the fallback an implementation uses meanwhile. The reference to
+   08 §10 was not re-checked here.
+6. **Equipment asset path mapping.** The mapping from the equipment asset's texture id `minecraft:elytra` to
    `textures/entity/equipment/wings/elytra.png` is inferred from the file listing; `EquipmentLayerRenderer` was not read.
-10. **Flight orientation.** `extractFlightData` (body orientation while fall flying, `flyingYRot`) and how the humanoid
-    pose uses `fallFlyingScale` outside the cape are not traced; they belong with the pose animation (12 section 7.5).
-11. **Cape and ears head pose.** That the ears follow the head pose and that the cape's outer face is the "front" region
-    are inferred from the model construction, not from rendered output.
-12. **PlayerSkinPatch field mapping.** The order of the four patch fields in the stream codec is read; which texture slot
-    each of the three texture codecs fills is inferred from the record field order (00 section 13.3 still marks it
-    inferred).
-13. **Cross-references from 12 and the index.** 12 section 7.4 and its open question 15 still describe the legacy
-    conversion as untraced and name `wide/steve.png` and `slim/alex.png` as the default; they contradict 47 sections 2 and 4 and
-    must be changed to point to them. `README.md` has no row for 47 yet (Documents table row and scope sentence). Neither
-    file is a target of this fixer pass (not edited here); both are required before round RS31 is closed, by another
-    agent.
+7. **Flight orientation.** `extractFlightData` (body orientation while fall flying, `flyingYRot`) and how the humanoid
+   pose uses `fallFlyingScale` outside the cape are not traced; they belong with the pose animation (12 §7.5).
+8. **Cape and ears head pose.** That the ears follow the head pose and that the cape's outer face is the "front" region
+   are inferred from the model construction, not from rendered output.
+9. **Hand rendering outside the world.** `AvatarRenderer.renderRightHand` and `renderLeftHand` (7.4) take the
+   skin texture id and a boolean that sets both sleeve meshes visible or not; which value the first-person item renderer
+   passes, and where it takes the model type from, was not traced.
+10. **Stale text in other documents (for another pass; not edited here).** 12 §7.4 (near line 967) still says the legacy
+    conversion is untraced and names `wide/steve.png` and `slim/alex.png` as default; 12 §7.6 says capes and elytra are
+    "Not covered"; 12 open question 15 and item 7 are stale; each should point to 47 (form "47 §N"). 00 §13.3 still marks
+    the cape, elytra and model-flag slots as inferred (read in 1). `README.md` has no row for 47 and its scope sentence is
+    not updated.
+11. **Offline use of a cached skin file.** That a cached file is used offline "as long as the property can be unpacked"
+    depends on authlib `unpackTextures`, not read (inferred).
+12. **Skin preview widget units.** The rotation units of `PlayerSkinWidget` (degrees) were not read from the artifact (inferred).
+13. **Other skin consumers.** The source rectangles and network behaviour of the glyph provider, the head item model,
+    social `PlayerEntry`, `FriendToast`, `ClientActivePlayersTooltip`, the chat-report heading, the team-selection item, the
+    wings-layer use in `HumanoidMobRenderer` and `CopperGolemRenderer` were not traced (7.5).

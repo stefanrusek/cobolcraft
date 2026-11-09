@@ -4,7 +4,7 @@
 |---|---|
 | Covers | Rows for the last 141 fields of the `Blocks` static initialiser, `CHISELED_NETHER_BRICKS` (field 770, block id 1031) through `FIREFLY_BUSH` (field 910, block id 1285): cracked nether bricks and quartz bricks, candles and candle cakes, amethyst, tuff, sulfur and cinnabar families, calcite, tinted glass, powder snow, the sculk family, the weathering copper families (copper block, cut, chiseled, stairs, slabs, doors, trapdoors, grates, bulbs, chests, golem statues, lightning rods), dripstone, cave vines, spore blossom, azalea, moss, dripleafs, hanging roots, rooted dirt, mud, the deepslate families, raw metal blocks, potted azaleas, froglights, frogspawn, reinforced deepslate, decorated pot, crafter, trial spawner, vault, heavy core, pale moss, eyeblossoms and the firefly bush. It also gives the classes of these rows (properties with value order, default state, shapes, survival and placement rules), and closes with the whole-registry check: 911 fields, 1286 registered blocks, 35723 block states, and the seam values and per-field table that let parts 1 to 8 be compared with no gap and no overlap. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`, and `javap -v` for the bootstrap method arguments of lambdas) and of the client resource files `assets/minecraft/blockstates/*.json` (used only to cross-check property names, values and variant counts) and, for 7.5, the data files `data/minecraft/tags/block/*.json` and the file names under `data/minecraft/loot_table/blocks/` that the jar carries, with no execution. The fix round after review re-read `BlockBehaviour$Properties`, `BlockBehaviour`, `BlockBehaviour$BlockStateBase`, `WallBlock`, `WallBlock$1`, `SpeleothemBlock$1`, `TrapDoorBlock`, `MossyCarpetBlock`, `MossyCarpetBlock$1`, `PotentSulfurBlock`, `OctahedralGroup`, `SymmetricGroup3`, `Blocks$1`, `TrialSpawnerState` and `VaultState`. Classes read are named in backticks where a fact is given. Values not read are marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions. |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`, and `javap -v` for the bootstrap method arguments of lambdas) and of the client resource files `assets/minecraft/blockstates/*.json` (used only to cross-check property names, values and variant counts) and, for 7.5, the data files `data/minecraft/tags/block/*.json` and the file names under `data/minecraft/loot_table/blocks/` that the jar carries, with no execution. The following classes were also read in full: `BlockBehaviour$Properties`, `BlockBehaviour`, `BlockBehaviour$BlockStateBase`, `WallBlock`, `WallBlock$1`, `SpeleothemBlock$1`, `TrapDoorBlock`, `MossyCarpetBlock`, `MossyCarpetBlock$1`, `PotentSulfurBlock`, `OctahedralGroup`, `SymmetricGroup3`, `Blocks$1`, `TrialSpawnerState` and `VaultState`. Classes read are named in backticks where a fact is given. Values not read are marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions. |
 | Status | Round RS4, part 8 of 8 (design map Part 5 GAP-1, and the columns of GAP-29 and GAP-30) |
 | Shared rules | Column definitions, the `Properties` builder, derived per-state values, the shape model, enumerations (`MapColor`, `NoteBlockInstrument`, `SoundType`, `PushReaction`), tint classes, placement columns, blocks and items, and block tags are defined in part 1 of this document family (file `24-block-registry-1-model-and-foundation.md`, cited "24-block-registry-1 §N"; the other parts are cited the same way by the leading part of their file name). This part does not repeat them. |
 | Siblings | Parts 1 to 7 cover `Blocks` fields 0 to 769 in field order: [24-block-registry-1-model-and-foundation.md](24-block-registry-1-model-and-foundation.md), [24-block-registry-2-leaves-flora-signs.md](24-block-registry-2-leaves-flora-signs.md), [24-block-registry-3-signs-doors-redstone.md](24-block-registry-3-signs-doors-redstone.md), [24-block-registry-4-stems-glass-skulls.md](24-block-registry-4-stems-glass-skulls.md), [24-block-registry-5-quartz-concrete-gates.md](24-block-registry-5-quartz-concrete-gates.md), [24-block-registry-6-gates-end-concrete-potted.md](24-block-registry-6-gates-end-concrete-potted.md), [24-block-registry-7-stairs-slabs-walls-workstations.md](24-block-registry-7-stairs-slabs-walls-workstations.md). Cite them as "24-block-registry-N §M". The seam between part 7 and this part was checked against part 7 (see 11.2). |
@@ -52,20 +52,19 @@ Appendix A. All 911 fields: ids and first state ids
 The row order is registry order. For a field that registers several blocks (section 2) the ids are consecutive in the
 position of the field, so id of the next field = id of this field + number of blocks registered.
 
-### 1.2 The brief lists more families than this range holds
+### 1.2 Families registered before this range
 
-The scope text of this round lists some families that are registered earlier in the initialiser, so they belong to
-parts 1 to 7. Field indices read from the class: `MANGROVE_PROPAGULE` 34, `MANGROVE_ROOTS` 61, `BAMBOO_BLOCK` 63,
+Some families that a reader may expect here are registered earlier in the initialiser and belong to parts 1 to 7. Field
+indices read from the class: `MANGROVE_PROPAGULE` 34, `MANGROVE_ROOTS` 61, `BAMBOO_BLOCK` 63,
 `BUSH` 128, `CREAKING_HEART` 183, `CACTUS_FLOWER` 269, `PACKED_MUD` 305, `MUD_BRICKS` 306, `COPPER_BARS` 317,
 `COPPER_CHAIN` 319, `RESIN_BLOCK` 336, `RESIN_BRICKS` 337, `GLOW_LICHEN` 328, `POLISHED_BLACKSTONE_BRICKS` 758,
 `CHISELED_POLISHED_BLACKSTONE` 760, `GILDED_BLACKSTONE` 764, `POLISHED_BLACKSTONE_WALL` 769 (see section 11.3 for the
-fields that are in this part). Pale moss, eyeblossoms and the firefly bush are here (fields 903 to 910). The brief
-asks for "26.3 additions, including a sulfur family": the sulfur family (fields 797 to 810, with the potent sulfur block
-at 798 and the sulfur spike at 849) and the cinnabar family (811 to 823) are in this range and are specified like the
-rest; whether each is new in 26.3 is not established by this round (no earlier artifact was read). Wildflowers (857) and
+fields that are in this part). Pale moss, eyeblossoms and the firefly bush are here (fields 903 to 910). The sulfur family
+(fields 797 to 810, with the potent sulfur block at 798 and the sulfur spike at 849) and the cinnabar family (811 to 823)
+are in this range; whether each is new in 26.3 is not established (no earlier artifact was read). Wildflowers (857) and
 leaf litter (858) are also in this range.
-Nothing is invented for families the brief names but this range does not contain: the only `pearlescent` block here is the
-pearlescent froglight, and no separate "tinted" set exists besides tinted glass.
+The only `pearlescent` block in this range is the pearlescent froglight, and no separate "tinted" set exists besides
+tinted glass.
 
 ### 1.3 Conventions
 
@@ -92,7 +91,7 @@ pearlescent froglight, and no separate "tinted" set exists besides tinted glass.
 
 ### 1.4 `Properties` defaults that the rows rely on
 
-A row with no call for a value takes the initial value assigned by the private constructor of `BlockBehaviour$Properties` (read this round). Table columns for
+A row with no call for a value takes the initial value assigned by the private constructor of `BlockBehaviour$Properties`. Table columns for
 sound, push reaction and instrument therefore show these defaults when the chain has no `sound`, `pushReaction` or `instrument` call.
 
 | Value | Initial value | Rows that show it |
@@ -104,6 +103,7 @@ sound, push reaction and instrument therefore show these defaults when the chain
 | has collision, can occlude | true, true | rows without `noCollision` or `noOcclusion` |
 | light emission | 0 for every state | rows without `lightLevel` |
 | friction, speed factor, jump factor | 0.6, 1.0, 1.0 | all 255 blocks of this range (see 7.4) |
+| hardness (destroy time), blast resistance (explosion resistance) | 0.0, 0.0 | every row with no `strength` or `instabreak` call (pink petals, wildflowers, leaf litter, pale hanging moss, the potted blocks and others show 0.0 / 0.0 in 7.1); the private constructor assigns neither, so both keep the Java numeric default 0.0 (inferred from the absent assignment, as for `bounceRestitution`) |
 | spawn terrain particles | true | |
 | loot table key, description id | `blocks/<path>` in the loot table registry, `block.<namespace>.<path>` | see 7.5 |
 
@@ -157,7 +157,7 @@ for the other three (`COPPER_BLOCK_SPECIAL_NAMES`), so the keys are `copper_bloc
 `waxed_oxidized_copper`. For every other family the base name is the family name (`cut_copper`, `copper_door`, ...).
 The item key of each block equals its block key.
 
-The classes: the weathering factory builds the "Weathering..." class (it implements the oxidation step, OQ 24 growth and ticks) and
+The classes: the weathering factory builds the "Weathering..." class (it implements the oxidation step, 29b part 5 section 4) and
 the waxed factory builds the plain class (table 7.3). A `WeatheringCopper*` class adds no property to its plain
 superclass: the state list is the same.
 
@@ -244,46 +244,46 @@ Water: a class that implements `SimpleWaterloggedBlock` reports the water source
 schedules a water tick on a neighbour update; unless stated otherwise the placement sets `waterlogged` when the fluid at the
 position is water. Box coordinates in the shape column are pixels (0 to 16) in the shape's own orientation; section 5 gives
 the orientation rule. Behaviour that is not about the registry (random ticks, growth, spreading, vibrations, block entities,
-use actions) is only named; the topics (block updates and placement, fluids, growth and falling and oxidation, block entities, redstone, worldgen features) have no document yet and are cited as "OQ 24 <topic>", meaning Open question 24.
+use actions) is only named and cross-referenced: block updates and placement are in 29, falling, growth, spreading, bone meal and oxidation in 29b, block entities in 31, light in 32, worldgen features in 35, loot and predicates in 26. Redstone and fluids have no document yet (Open question 24, written "OQ 24 redstone" below).
 
 ### 4.1 Plain and nearly plain blocks
 
 | Class | Properties and default | Shape and other overrides | Survive | Place |
 |---|---|---|---|---|
 | `Block` | none; one state | full cube | true | default state |
-| `AmethystBlock`, `BuddingAmethystBlock` | none | full cube; budding amethyst has `randomTicks` (growth: OQ 24 growth and ticks) | true | default |
+| `AmethystBlock`, `BuddingAmethystBlock` | none | full cube; budding amethyst has `randomTicks` (growth: 29b) | true | default |
 | `TintedGlassBlock` (extends `TransparentBlock`) | none | full cube; visual shape empty; shade brightness 1.0; `propagatesSkylightDown` false (the parent says true); `getLightDampening` 15 | true | default |
 | `WaterloggedTransparentBlock` (copper grate, waxed grate) | `waterlogged`; default false | full cube; visual shape empty; shade brightness 1.0; skylight passes; placement waterlogged when the fluid is water | true | default plus waterlogged |
 | `DropExperienceBlock(xp)` (copper ores: `ConstantInt(0)`; `SculkBlock`: `ConstantInt(1)`) | none | full cube | true | default |
-| `SculkBlock` | none | full cube; implements `SculkBehaviour` (spread: OQ 24 growth and ticks) | true | default |
+| `SculkBlock` | none | full cube; implements `SculkBehaviour` (spread: 31 part 8 section 7.3, `SculkSpreader`) | true | default |
 | `PowderSnowBlock` | none | outline: full cube; `dynamicShape`; collision depends on the entity (see 5.3); `skipRendering` true next to powder snow; `getVisualShape` empty; pathfindable true for every computation type | true | default |
-| `RootedDirtBlock` | none | full cube (bone meal behaviour: OQ 24 growth and ticks) | true | default |
+| `RootedDirtBlock` | none | full cube (bone meal behaviour: 29b part 1) | true | default |
 | `MudBlock` | none | outline full cube; collision `column(16,0,14)`; block support shape and visual shape full cube; shade brightness 0.2; not pathfindable | true | default |
-| `BonemealableFeaturePlacerBlock(feature)` (moss block: `CaveFeatures.MOSS_PATCH_BONEMEAL`; pale moss block: `VegetationFeatures.PALE_MOSS_PATCH_BONEMEAL`) | none | full cube; bone meal places the named configured feature (worldgen data, OQ 24 worldgen features) | true | default |
+| `BonemealableFeaturePlacerBlock(feature)` (moss block: `CaveFeatures.MOSS_PATCH_BONEMEAL`; pale moss block: `VegetationFeatures.PALE_MOSS_PATCH_BONEMEAL`) | none | full cube; bone meal places the named configured feature (worldgen data: bone meal placement in 29b part 5 section 3.3, feature model in 35) | true | default |
 | `RotatedPillarBlock` (deepslate, froglights) | `axis`; default `y` | full cube | true | `axis` of the clicked face (24-block-registry-1 §10.3) |
-| `InfestedRotatedPillarBlock(host, props)` (`INFESTED_DEEPSLATE`, host `DEEPSLATE`; constructor rule below the table) | `axis`; default `y` | full cube | true | `axis` of the clicked face; the silverfish release on break is OQ 24 growth and ticks |
+| `InfestedRotatedPillarBlock(host, props)` (`INFESTED_DEEPSLATE`, host `DEEPSLATE`; constructor rule below the table) | `axis`; default `y` | full cube | true | `axis` of the clicked face; the silverfish release on break is Open question 26 |
 | `FrogspawnBlock` | none | outline `column(16,0,1.5)` | block below: see 4.3 | default; hatch delay 3600 to 12000 ticks (rule below the table in 4.4) |
 | `FlowerPotBlock(content)` (four potted blocks) | none | `column(6,0,6)`; not pathfindable; the two potted eyeblossoms are randomly ticking (class rule) | true | default |
 | `HeavyCoreBlock` | `waterlogged`; default false | `column(8,0,8)`; not pathfindable | true | default plus waterlogged |
-| `CrafterBlock` | `crafting`, `orientation`, `triggered`; default `crafting` false, `orientation` north_up, `triggered` false | full cube; has a block entity (OQ 24 block entities); analog output from the block entity | true | front = the opposite of the placer's nearest looking direction; top = the opposite of the placer's horizontal direction when the front is down, the placer's horizontal direction when the front is up, and up in the four horizontal cases (`FrontAndTop.fromFrontAndTop(front, top)`); `triggered` true when a neighbour signal reaches the position |
-| `TrialSpawnerBlock` | `ominous`, `trial_spawner_state`; default false, `inactive` | full cube; block entity (OQ 24 block entities) | true | default |
-| `VaultBlock` | `facing` (horizontal), `ominous`, `vault_state`; default north, false, `inactive` | full cube; block entity (OQ 24 block entities) | true | `facing` = the opposite of the placer's horizontal direction |
-| `PotentSulfurBlock` | `potent_sulfur_state`; default `dry` | full cube; block entity (OQ 24 block entities); the ticker depends on the state | true | the state is recomputed at placement and on every shape update by `validBlockState(level, pos)`, read in this order: (1) the fluid above is not a water source: `dry`; (2) otherwise the block below is in block tag `causes_continuous_geyser_eruptions` and its fluid state is empty or a source: `continuous`; (3) otherwise the block below is in tag `causes_periodic_geyser_eruptions` with the same fluid condition: when the current state is neither `erupting` nor `dormant` the block entity's countdown is reset, then the result is `erupting` if the current state is `erupting`, else `dormant`; (4) otherwise `wet`. The fluid condition "empty or a source" is true for a solid block (empty fluid state). Ticker set per state: OQ 24 block entities |
+| `CrafterBlock` | `crafting`, `orientation`, `triggered`; default `crafting` false, `orientation` north_up, `triggered` false | full cube; has a block entity (31 part 2 section 7); analog output from the block entity | true | front = the opposite of the placer's nearest looking direction; top = the opposite of the placer's horizontal direction when the front is down, the placer's horizontal direction when the front is up, and up in the four horizontal cases (`FrontAndTop.fromFrontAndTop(front, top)`); `triggered` true when a neighbour signal reaches the position |
+| `TrialSpawnerBlock` | `ominous`, `trial_spawner_state`; default false, `inactive` | full cube; block entity (31 part 7 section 4) | true | default |
+| `VaultBlock` | `facing` (horizontal), `ominous`, `vault_state`; default north, false, `inactive` | full cube; block entity (31 part 7 section 5) | true | `facing` = the opposite of the placer's horizontal direction |
+| `PotentSulfurBlock` | `potent_sulfur_state`; default `dry` | full cube; block entity (31 part 8); the ticker depends on the state | true | the state is recomputed at placement and on every shape update by `validBlockState(level, pos)`, read in this order: (1) the fluid above is not a water source: `dry`; (2) otherwise the block below is in block tag `causes_continuous_geyser_eruptions` and its fluid state is empty or a source: `continuous`; (3) otherwise the block below is in tag `causes_periodic_geyser_eruptions` with the same fluid condition: when the current state is neither `erupting` nor `dormant` the block entity's countdown is reset, then the result is `erupting` if the current state is `erupting`, else `dormant`; (4) otherwise `wet`. The fluid condition "empty or a source" is true for a solid block (empty fluid state). Ticker set per state: 31 part 8 |
 
-`InfestedBlock` constructor rule (read in the fix round; parent of `InfestedRotatedPillarBlock`): the constructor replaces the properties it is given: destroy time = the host block's `defaultDestroyTime()` divided by 2, and explosion resistance = 0.75, whatever the builder chain set. The registry row of `infested_deepslate` has no `strength` call, so with host `DEEPSLATE` (hardness 3.0) its values are hardness 1.5 and blast resistance 0.75. Other infested blocks follow the same rule, but this is the only one in fields 770 to 910. The constructor also registers the host-to-infested pair in a static map (used by the silverfish behaviour, OQ 24 block updates).
+`InfestedBlock` constructor rule (parent of `InfestedRotatedPillarBlock`): the constructor replaces the properties it is given: destroy time = the host block's `defaultDestroyTime()` divided by 2, and explosion resistance = 0.75, whatever the builder chain set. The registry row of `infested_deepslate` has no `strength` call, so with host `DEEPSLATE` (hardness 3.0) its values are hardness 1.5 and blast resistance 0.75. Other infested blocks follow the same rule, but this is the only one in fields 770 to 910. The constructor also registers the host-to-infested pair in a static map (used by the silverfish behaviour, Open question 26).
 
 ### 4.2 Candles, cakes, amethyst, sculk
 
 | Class | Properties and default | Shape | Survive | Place and other |
 |---|---|---|---|---|
-| `CandleBlock` (`CANDLE`, `DYED_CANDLE`) | `candles`, `lit`, `waterlogged`; default 1, false, false | by `candles` 1 to 4: box(7,0,7,9,6,9); box(5,0,6,11,6,9); box(5,0,6,10,6,11); box(5,0,5,11,6,10) | `Block.canSupportCenter(level, pos.below(), UP)` | if the block at the position is this block, `candles` cycles 1 to 2 to 3 to 4 to 1 (`BlockState.cycle`); otherwise the default state with `waterlogged` from the fluid. Replaceable by the same candle item when the placer is not using secondary use and `candles` is below 4. Can be lit only when not waterlogged and not lit. Extinguished by an empty hand when `lit` (use action: OQ 24 block updates). Light: 3 times `candles` when lit |
+| `CandleBlock` (`CANDLE`, `DYED_CANDLE`) | `candles`, `lit`, `waterlogged`; default 1, false, false | by `candles` 1 to 4: box(7,0,7,9,6,9); box(5,0,6,11,6,9); box(5,0,6,10,6,11); box(5,0,5,11,6,10) | `Block.canSupportCenter(level, pos.below(), UP)` | if the block at the position is this block, `candles` cycles 1 to 2 to 3 to 4 to 1 (`BlockState.cycle`); otherwise the default state with `waterlogged` from the fluid. Replaceable by the same candle item when the placer is not using secondary use and `candles` is below 4. Can be lit only when not waterlogged and not lit. Extinguished by an empty hand when `lit` (use action: 29 section 9). Light: 3 times `candles` when lit |
 | `CandleCakeBlock(candle)` (`CANDLE_CAKE`, `DYED_CANDLE_CAKE`) | `lit`; default false | box(1,0,1,15,8,15) united with box(7,8,7,9,14,9) (`column(14,0,8)` and `column(2,8,14)`) | the block below `isSolid()` | not placed by an item; analog comparator output 14 (`CakeBlock.FULL_CAKE_SIGNAL`, which is (7 - 0 bites) times 2); not pathfindable; light 3 when lit |
 | `AmethystClusterBlock(height, width)` | `facing` (explicit order), `waterlogged`; default `up`, false | for facing north, box centred on x and y with side `width` and z from `16 - height` to 16 (`boxZ(width, 16 - height, 16)`), rotated to the other five facings (section 5.1). Arguments: cluster (7, 10), large bud (5, 10), medium bud (4, 10), small bud (3, 8) | the block opposite to `facing` (at `pos - facing`) must have its face toward `facing` sturdy (`isFaceSturdy`, full) | `facing` = the clicked face; `waterlogged` from the fluid. After a neighbour update from the opposite side, when `canSurvive` fails the state becomes air |
-| `SculkSensorBlock` | `power` 0 to 15, `sculk_sensor_phase`, `waterlogged`; default power 0, `inactive`, false | outline and collision `column(16,0,8)` (the lower half); `useShapeForLightOcclusion` true; not pathfindable | true | waterlogged from the fluid. Redstone: signal source; direct signal only toward `up`; analog output = last vibration frequency when active, else 0 (OQ 24 redstone) |
+| `SculkSensorBlock` | `power` 0 to 15, `sculk_sensor_phase`, `waterlogged`; default power 0, `inactive`, false | outline and collision `column(16,0,8)` (the lower half); `useShapeForLightOcclusion` true; not pathfindable | true | waterlogged from the fluid. Redstone: signal source; direct signal only toward `up`; analog output = last vibration frequency when active, else 0 (OQ 24 redstone; block entity 31 part 8 section 4) |
 | `CalibratedSculkSensorBlock` | as the sensor plus `facing` (horizontal); default = sensor default and north | as the sensor | true | as the sensor, plus `facing` = the placer's horizontal direction (not opposite). Its own signal is returned for every direction argument except the one equal to `facing`, for which it returns 0 |
 | `SculkCatalystBlock` | `bloom`; default false | full cube; block entity (xp range `ConstantInt(5)`) | true | default |
-| `SculkShriekerBlock` | `can_summon`, `shrieking`, `waterlogged`; default false, false, false | outline: full cube (no `getShape` override); collision and occlusion `column(16,0,8)`; `useShapeForLightOcclusion` true | true | waterlogged from the fluid; block entity (OQ 24 block entities) |
-| `SculkVeinBlock` (extends `MultifaceSpreadeableBlock`, `MultifaceBlock`) | `down`, `east`, `north`, `south`, `up`, `waterlogged`, `west` (seven booleans); default all false (the last state of the 128) | union of one thin sheet per true face; the sheet of a face is box(0,0,0,16,16,1) at the north face rotated to the face (section 5.1); the shape is the full cube when no face is set | true when at least one face flag is set and, for every set face, the neighbour on that face satisfies `canAttachTo` (its block support shape or its collision shape has the opposite face full) | `getStateForPlacement` picks the first of the nearest looking directions for which a valid state exists (face flag set and, when the position already holds this block, the face not set and attachable); replaceable by the same item when any face is free. Every face is supported by the base class (`isFaceSupported` true). Spreading: OQ 24 growth and ticks |
+| `SculkShriekerBlock` | `can_summon`, `shrieking`, `waterlogged`; default false, false, false | outline: full cube (no `getShape` override); collision and occlusion `column(16,0,8)`; `useShapeForLightOcclusion` true | true | waterlogged from the fluid; block entity (31 part 8 section 6) |
+| `SculkVeinBlock` (extends `MultifaceSpreadeableBlock`, `MultifaceBlock`) | `down`, `east`, `north`, `south`, `up`, `waterlogged`, `west` (seven booleans); default all false (the last state of the 128) | union of one thin sheet per true face; the sheet of a face is box(0,0,0,16,16,1) at the north face rotated to the face (section 5.1); the shape is the full cube when no face is set | true when at least one face flag is set and, for every set face, the neighbour on that face satisfies `canAttachTo` (its block support shape or its collision shape has the opposite face full) | `getStateForPlacement` picks the first of the nearest looking directions for which a valid state exists (face flag set and, when the position already holds this block, the face not set and attachable); replaceable by the same item when any face is free. Every face is supported by the base class (`isFaceSupported` true). Spreading: 31 part 8 section 7.3 |
 
 ### 4.3 Slabs, stairs, walls, doors, trapdoors, chests, statues, rods, grates, bulbs
 
@@ -295,9 +295,9 @@ use actions) is only named; the topics (block updates and placement, fluids, gro
 | `DoorBlock(type, props)` | `facing`, `half`, `hinge`, `open`, `powered`; default north, lower, left, false, false | 5.2 | the constructor sets the sound type of the block from the block set type (copper: `SoundType.COPPER`). Survive: the lower half needs a sturdy top face below; the upper half needs the lower half of the same block below. Placed only when the position above is replaceable and below the height limit; `powered` and `open` are both set when a signal reaches the position or the position above; `facing` = the placer's horizontal direction; hinge from `getHinge` (neighbours); `half` lower |
 | `TrapDoorBlock(type, props)` | `facing`, `half`, `open`, `powered`, `waterlogged`; default north, bottom, false, false, false | 5.2 | sound type from the block set type. Placement has two branches, selected as follows (read from `getStateForPlacement`): the **placer branch** is taken when `replacingClickedOnBlock()` is false or the clicked face is not horizontal (it is up or down): `facing` = the opposite of the placer's horizontal direction, `half` = bottom when the clicked face is up, else top. The **side branch** is taken when `replacingClickedOnBlock()` is true and the clicked face is horizontal: `facing` = the clicked face, `half` = top when the click height above the block base exceeds 0.5, else bottom. After either branch: when a neighbour signal reaches the position, `open` and `powered` are both true; `waterlogged` when the fluid at the position is water. Pathfindable when open for land and air, and for water when waterlogged |
 | `CopperBulbBlock` | `lit`, `powered`; default false, false | full cube | comparator output 15 when lit; light by weathering when lit (section 6) |
-| `ChestBlock` (`CopperChestBlock`, `WeatheringCopperChestBlock`) | `facing`, `type`, `waterlogged`; default north, single, false | single: `column(14,0,14)`; left and right: box(1,0,0,15,14,15) rotated so that the long side points to the partner (key `getConnectedDirection`: the facing rotated clockwise for `left`, counter-clockwise for `right`) | placement picks the partner with the neighbour rule of the class (`candidatePartnerFacing`) unless the placer is sneaking, and then the copper chest takes the least oxidized state of the connected chests. Block entity, container, comparator output from the container (OQ 24 block entities). Not pathfindable |
-| `DecoratedPotBlock` | `cracked`, `facing`, `waterlogged`; default false, north, false | `column(14,0,16)` = box(1,0,1,15,16,15) | `facing` = the placer's horizontal direction, `cracked` false, waterlogged from the fluid; comparator output from the block entity (OQ 24 block entities); not pathfindable |
-| `CopperGolemStatueBlock(weatherState, props)` | `copper_golem_pose`, `facing`, `waterlogged`; default standing, north, false | `column(10,0,14)` | `facing` = the opposite of the placer's horizontal direction; comparator output = ordinal of the pose plus 1 (1 to 4); block entity (OQ 24 block entities) |
+| `ChestBlock` (`CopperChestBlock`, `WeatheringCopperChestBlock`) | `facing`, `type`, `waterlogged`; default north, single, false | single: `column(14,0,14)`; left and right: box(1,0,0,15,14,15) rotated so that the long side points to the partner (key `getConnectedDirection`: the facing rotated clockwise for `left`, counter-clockwise for `right`) | placement picks the partner with the neighbour rule of the class (`candidatePartnerFacing`) unless the placer is sneaking, and then the copper chest takes the least oxidized state of the connected chests. Block entity, container, comparator output from the container (31 part 1). Not pathfindable |
+| `DecoratedPotBlock` | `cracked`, `facing`, `waterlogged`; default false, north, false | `column(14,0,16)` = box(1,0,1,15,16,15) | `facing` = the placer's horizontal direction, `cracked` false, waterlogged from the fluid; comparator output from the block entity (31 part 3 section 5); not pathfindable |
+| `CopperGolemStatueBlock(weatherState, props)` | `copper_golem_pose`, `facing`, `waterlogged`; default standing, north, false | `column(10,0,14)` | `facing` = the opposite of the placer's horizontal direction; comparator output = ordinal of the pose plus 1 (1 to 4); block entity (31 part 8 section 8; oxidation and statue hooks 29b part 5 section 6.3) |
 | `LightningRodBlock` (extends `RodBlock`) | `facing` (explicit order), `powered`, `waterlogged`; default up, false, false | 5.2 (by the axis of `facing`) | `facing` = the clicked face; direct signal 15 toward `facing` while powered; signal source; not pathfindable |
 
 Stair shape rule (`getStairsShape`): look at the neighbour in front (`pos` moved by `facing`). When it is a stair with the same
@@ -308,7 +308,7 @@ the other axis, and `canTakeShape(pos, that neighbour's facing)` holds, the shap
 facing rotated counter-clockwise, else `inner_right`. Otherwise `straight`. `canTakeShape(pos, dir)` looks at the block at
 `pos` moved by `dir` and is true when that block is not a stair, or has another facing than this stair, or another half.
 
-Wall rules (`WallBlock.updateShape`, `makeWallState`, `shouldRaisePost`, `isCovered`; read this round). Inputs: the wall state, the
+Wall rules (`WallBlock.updateShape`, `makeWallState`, `shouldRaisePost`, `isCovered`). Inputs: the wall state, the
 block above it, and for each of the four directions a flag "connected" (from `connectsTo`, from the neighbour on that side).
 
 1. `aboveShape` = the face of the above block's collision shape that points down (`getCollisionShape(...).getFaceShape(DOWN)`).
@@ -336,8 +336,8 @@ sides are `tall`, and 3.3 gives `up` false.
 
 | Class | Properties and default | Shape | Survive | Place and other |
 |---|---|---|---|---|
-| `SpeleothemBlock(base, props)` (`PointedDripstoneBlock`, `SulfurSpikeBlock`) | `thickness`, `vertical_direction`, `waterlogged`; default tip, up, false | by thickness (5.2), then moved by the block offset (type XZ, maximum horizontal offset 0.125 = (16 - 12) / 2 / 16, read from the base shape; maximum vertical offset the builder default). The two classes have the same shape, properties and defaults | `isValidSpeleothemPlacement` for the tip direction (rule not read here; OQ 24 growth and ticks) | `vertical_direction` from the nearest looking vertical direction, thickness from the neighbours, waterlogged from the fluid. Implements `Fallable` (falling: OQ 24 growth and ticks). Not pathfindable |
-| `CaveVinesBlock` (head) | `age` 0 to 25, `berries`; default 0, false | `column(14,0,16)` | the block above (growth direction down, opposite is `up`) must be attachable and have a sturdy down face, or be the head or body of cave vines | randomly ticking while `age` is below 25; placement age is random 0 to 24 (`nextInt(25)`); growth: OQ 24 growth and ticks |
+| `SpeleothemBlock(base, props)` (`PointedDripstoneBlock`, `SulfurSpikeBlock`) | `thickness`, `vertical_direction`, `waterlogged`; default tip, up, false | by thickness (5.2), then moved by the block offset (type XZ, maximum horizontal offset 0.125 = (16 - 12) / 2 / 16, read from the base shape; maximum vertical offset the builder default). The two classes have the same shape, properties and defaults | `isValidSpeleothemPlacement` for the tip direction (rule not read here, Open question 9) | `vertical_direction` from the nearest looking vertical direction, thickness from the neighbours, waterlogged from the fluid. Implements `Fallable` (falling: 29b part 1). Not pathfindable |
+| `CaveVinesBlock` (head) | `age` 0 to 25, `berries`; default 0, false | `column(14,0,16)` | the block above (growth direction down, opposite is `up`) must be attachable and have a sturdy down face, or be the head or body of cave vines | randomly ticking while `age` is below 25; placement age is random 0 to 24 (`nextInt(25)`); growth: 29b |
 | `CaveVinesPlantBlock` (body) | `berries`; default false | `column(14,0,16)` | as the head | not replaceable by the head's own item (the class returns false for it; otherwise the default rule); light 14 when berries |
 | `SporeBlossomBlock` | none | `column(12,13,16)` | the block above has a center-supporting down face (`canSupportCenter(above, DOWN)`) and the position is not in water (`isWaterAt`) | default |
 | `AzaleaBlock` (azalea and flowering azalea) | none | `column(16,8,16)` united with `column(4,0,8)` | the block below is in tag `supports_azalea`; not pathfindable | default |
@@ -345,15 +345,15 @@ sides are `tall`, and 3.3 gives `up` false.
 | `MossyCarpetBlock` (pale moss carpet) | `bottom`, `east`, `north`, `south`, `west`; default `bottom` true, sides none | `makeShapes`: the base slab (`bottom`: y 0 to 1 full width) united with, for each side: `low` = box(0,0,0,16,10,1) rotated to the side, `tall` = box(0,0,0,16,16,1) rotated to the side (mapping read from the `makeShapes` lambda: `low` is the height-10 sheet, `tall` the full-height sheet); the full cube when the union is empty. Collision: when `bottom` is true the shape of the default state (the base slab alone), else empty. `propagatesSkylightDown` true | when `bottom` the block below is not air; otherwise the block below must be a pale moss carpet with `bottom` set | `getUpdatedState(state, level, pos, forceLow)` recomputes the four sides (rule below the table) |
 | `FlowerBedBlock(props, height 3)` (pink petals, wildflowers) | `facing`, `flower_amount`; default north, 1 | 5.2 (segmented, height 3) | the block below is in tag `supports_vegetation` | `flower_amount` + 1 (capped at 4) when the block at the position is this block, else facing = the opposite of the placer's horizontal direction; replaceable by the same item when not using secondary use and amount below 4 |
 | `LeafLitterBlock` | `facing`, `segment_amount`; default north, 1 | 5.2 (segmented, height 1) | the block below has a sturdy up face | as flower beds with `segment_amount`; also has the builder `replaceable` flag |
-| `BigDripleafBlock` | `facing`, `tilt`, `waterlogged`; default north, none, false | 5.2 | the block below is a big dripleaf, a big dripleaf stem, or in tag `supports_big_dripleaf` | facing = opposite of the placer's horizontal direction unless a big dripleaf (or stem) is below (then copied); waterlogged when the fluid is a water source. Tilt timing and tick delays: OQ 24 growth and ticks |
-| `BigDripleafStemBlock` | `facing`, `waterlogged`; default north, false | 5.2 | the block below is a stem or in `supports_big_dripleaf`, and the block above is a stem or a big dripleaf | stem facing copied from the leaf above in the update rules (OQ 24 block updates) |
+| `BigDripleafBlock` | `facing`, `tilt`, `waterlogged`; default north, none, false | 5.2 | the block below is a big dripleaf, a big dripleaf stem, or in tag `supports_big_dripleaf` | facing = opposite of the placer's horizontal direction unless a big dripleaf (or stem) is below (then copied); waterlogged when the fluid is a water source. Tilt timing and tick delays: 29b |
+| `BigDripleafStemBlock` | `facing`, `waterlogged`; default north, false | 5.2 | the block below is a stem or in `supports_big_dripleaf`, and the block above is a stem or a big dripleaf | stem facing copied from the leaf above in the update rules (29 section 3.2) |
 | `SmallDripleafBlock` (extends `DoublePlantBlock`) | `facing`, `half`, `waterlogged`; default north, lower, false | `column(12,0,13)`, moved by the offset (type XYZ, maximum vertical offset 0.1) | upper half: the lower half of this block below; lower half: the block below is in tag `supports_small_dripleaf`, or the position above is a water source and the vegetation rule holds | `facing` = opposite of the placer's horizontal direction; needs the position above replaceable and below the height limit; waterlogged from the fluid (lower half) |
 | `HangingRootsBlock` | `waterlogged`; default false | `column(12,10,16)`, offset type XZ | the block above has a sturdy down face | default plus waterlogged; the builder has `replaceable` |
 | `HangingMossBlock` (pale hanging moss) | `tip`; default true | tip: `column(14,2,16)`; base: `column(14,0,16)`; skylight passes | `canStayAtPosition`: the block above can be attached to from below (multiface rule) or is this block | default |
-| `EyeblossomBlock(type, props)` (open, closed) | none | `column(6,0,10)` moved by the offset (XZ), via `FlowerBlock` | the block below is in tag `supports_vegetation` | default; the open and closed block exchange by environment ticks (OQ 24 growth and ticks); the suspicious stew effect is data of the type |
+| `EyeblossomBlock(type, props)` (open, closed) | none | `column(6,0,10)` moved by the offset (XZ), via `FlowerBlock` | the block below is in tag `supports_vegetation` | default; the open and closed block exchange by environment ticks (29b); the suspicious stew effect is data of the type |
 | `FireflyBushBlock` | none | default shape (full cube) with `noCollision` | the block below is in tag `supports_vegetation` | default; light 2 |
 
-Pale moss carpet sides (`MossyCarpetBlock.getUpdatedState(state, level, pos, forceLow)`, read this round). Let `base` be
+Pale moss carpet sides (`MossyCarpetBlock.getUpdatedState(state, level, pos, forceLow)`). Let `base` be
 `forceLow` OR the state's `bottom`. For each horizontal direction `d`, with `canSupportAtFace(d)` = `MultifaceBlock.canAttachTo(level, pos, d)`
 (always false for up, which is not iterated here):
 
@@ -370,7 +370,7 @@ through the block is allowed for air computations when it has no collision.
 
 Frogspawn survive (`FrogspawnBlock.mayPlaceOn`): the fluid at the position below passes when it is in fluid tag
 `supports_frogspawn` or the block below is in block tag `supports_frogspawn`, and the fluid above must be empty
-(grouping read in the fix round: (fluid below in tag OR block below in tag) AND the fluid at the frogspawn position is empty; Open question 6). Hatch timing: the static fields `minHatchTickDelay` and `maxHatchTickDelay` are set to 3600 and 12000 in the static initialiser (the class also has constants `DEFAULT_MIN_HATCH_TICK_DELAY` 3600, `DEFAULT_MAX_HATCH_TICK_DELAY` 12000, `MIN_TADPOLES_SPAWN` 2 and `MAX_TADPOLES_SPAWN` 5); `onPlace` schedules a tick after a uniform random delay between the two (`nextInt(min, max)`). The hatch behaviour itself is deferred (OQ 24 growth and ticks).
+(grouping read: (fluid below in tag OR block below in tag) AND the fluid at the frogspawn position is empty; Open question 6). Hatch timing: the static fields `minHatchTickDelay` and `maxHatchTickDelay` are set to 3600 and 12000 in the static initialiser (the class also has constants `DEFAULT_MIN_HATCH_TICK_DELAY` 3600, `DEFAULT_MAX_HATCH_TICK_DELAY` 12000, `MIN_TADPOLES_SPAWN` 2 and `MAX_TADPOLES_SPAWN` 5); `onPlace` schedules a tick after a uniform random delay between the two (`nextInt(min, max)`). The hatch behaviour itself is deferred (29b).
 
 ---
 
@@ -456,10 +456,25 @@ to 8 + sx/2, y = 8 - sy/2 to 8 + sy/2, z = z0 to z1; `boxZ(s, z0, z1)` means `bo
 
 `PowderSnowBlock.getCollisionShape` is evaluated with the collision context. Read as three cases: (a) when the context is
 not a placement context and the context belongs to an entity: if the entity's fall distance is greater than 2.5 the shape is
-the box of 5.2 (height 0.9 block); (b) otherwise, when the entity may walk on powder snow (a class test on the entity that was
-not read in detail) and the entity is above the block (`isAbove(full block, pos, false)`) and not descending, the shape is the
+the box of 5.2 (height 0.9 block); (b) otherwise, when the entity may walk on powder snow (`canEntityWalkOnPowderSnow`, rule below) and the entity is above the block (`isAbove(full block, pos, false)`) and not descending, the shape is the
 default collision shape (the full cube for a block with collision); (c) in every other case, including the placement context,
 the collision shape is empty. The outline shape is the full cube (the class has `dynamicShape`).
+
+`canEntityWalkOnPowderSnow(entity)`, read in full: true when the entity type is in entity type tag `powder_snow_walkable_mobs`
+(data file `data/minecraft/tags/entity_type/powder_snow_walkable_mobs.json`: `rabbit`, `endermite`, `silverfish`, `fox`); otherwise,
+when the entity is a `LivingEntity`, true exactly when the item in its feet equipment slot is `leather_boots`; otherwise false.
+
+Constants read in `PowderSnowBlock`: falling-into threshold `NUM_BLOCKS_TO_FALL_INTO_BLOCK` 2.5 (fall distance, case (a));
+`MINIMUM_FALL_DISTANCE_FOR_SOUND` 4.0 and `MINIMUM_FALL_DISTANCE_FOR_BIG_SOUND` 7.0 (fall distances for the landing sounds in `fallOn`, which
+only acts on a living entity; the sound ids were not read here); `IN_BLOCK_HORIZONTAL_SPEED_MULTIPLIER` 0.9 and
+`IN_BLOCK_VERTICAL_SPEED_MULTIPLIER` 1.5 (float constants; the vector actually passed is (0.8999999761581421, 1.5, 0.8999999761581421)).
+
+`entityInside` (entity inside the block's cell): (1) when the entity is not a `LivingEntity`, or its in-block state is this block, it calls
+`makeStuckInBlock(state, (0.9, 1.5, 0.9))`, the movement multiplier vector that is the powder snow slowdown (the multiplier semantics are in
+entity movement code, not read here; Open question 22); (2) on a server level it then spawns `snowflake` particles through the level particle
+packet (randomization type ALTERNATIVE; the count and spread values were not recorded here); (3) it applies the inside-effect types `FREEZE` and
+`EXTINGUISH` through the effect applier, `EXTINGUISH` also being registered to run before the freeze effect (`runBefore`) on the server path. What each effect type does
+is outside this part (see 33 and 29b by section title; not read here).
 
 ---
 
@@ -474,9 +489,9 @@ the collision shape is empty. The outline shape is the full cube (the class has 
 | `sculk_catalyst` | 6 constant | |
 | `cave_vines`, `cave_vines_plant` | 14 when `berries`, else 0 (`CaveVines.emission(14)`) | |
 | `ochre_froglight`, `verdant_froglight`, `pearlescent_froglight` | 15 | |
-| `copper_bulb` (all eight) | when `lit`: 15 (unaffected), 12 (exposed), 8 (weathered), 4 (oxidized, and its waxed twins by their state); else 0 | re-read this round: the properties function of the copper bulb in `Blocks` switches on the weather state (`Blocks$1`: UNAFFECTED 1, EXPOSED 2, WEATHERED 3, OXIDIZED 4) to the constants 15, 12, 8, 4 and passes it to `litBlockEmission`, which gives that number when `lit` is true and 0 otherwise |
-| `trial_spawner` | by `trial_spawner_state`: inactive 0, waiting_for_players 4, active 8, waiting_for_reward_ejection 8, ejecting_reward 8, cooldown 0 | re-read this round: `TrialSpawnerState.lightLevel()` returns the integer argument of each enum constant (the fourth constructor argument: 0, 4, 8, 8, 8, 0 in the declaration order inactive, waiting_for_players, active, waiting_for_reward_ejection, ejecting_reward, cooldown); the block's `lightLevel` function in `Blocks` calls it |
-| `vault` | by `vault_state`: inactive 6 (`HALF_LIT`), active 12, unlocking 12, ejecting 12 (`LIT`) | re-read this round: `VaultState.lightLevel()` returns the `value` of the constant's `VaultState$LightLevel`: `HALF_LIT` 6, `LIT` 12; INACTIVE is built with `HALF_LIT`, ACTIVE, UNLOCKING and EJECTING with `LIT`; the block's `lightLevel` function in `Blocks` calls it |
+| `copper_bulb` (all eight) | when `lit`: 15 (unaffected), 12 (exposed), 8 (weathered), 4 (oxidized, and its waxed twins by their state); else 0 | read: the properties function of the copper bulb in `Blocks` switches on the weather state (`Blocks$1`: UNAFFECTED 1, EXPOSED 2, WEATHERED 3, OXIDIZED 4) to the constants 15, 12, 8, 4 and passes it to `litBlockEmission`, which gives that number when `lit` is true and 0 otherwise |
+| `trial_spawner` | by `trial_spawner_state`: inactive 0, waiting_for_players 4, active 8, waiting_for_reward_ejection 8, ejecting_reward 8, cooldown 0 | read: `TrialSpawnerState.lightLevel()` returns the integer argument of each enum constant (the fourth constructor argument: 0, 4, 8, 8, 8, 0 in the declaration order inactive, waiting_for_players, active, waiting_for_reward_ejection, ejecting_reward, cooldown); the block's `lightLevel` function in `Blocks` calls it |
+| `vault` | by `vault_state`: inactive 6 (`HALF_LIT`), active 12, unlocking 12, ejecting 12 (`LIT`) | read: `VaultState.lightLevel()` returns the `value` of the constant's `VaultState$LightLevel`: `HALF_LIT` 6, `LIT` 12; INACTIVE is built with `HALF_LIT`, ACTIVE, UNLOCKING and EJECTING with `LIT`; the block's `lightLevel` function in `Blocks` calls it |
 | `firefly_bush` | 2 constant | |
 | all other blocks | 0 | |
 
@@ -653,7 +668,7 @@ Notes on individual fields:
 
 - Fields 840 and 841 (copper door and trapdoor): the builder chain has no `sound` call; the class constructor installs the sound
   type of `BlockSetType.COPPER`, which is `SoundType.COPPER`. The door's builder chain also has no `requiresCorrectToolForDrops`
-  (the trapdoor has it): what the artifact does, recorded as read (Open question 10).
+  (the trapdoor has it): what the artifact does, recorded as read. The loot table `data/minecraft/loot_table/blocks/copper_door.json` has one entry with only a `match_block` condition (block `copper_door`, state `half=lower`) and `survives_explosion` on the pool, with no tool or enchantment condition: the lower half drops the door item with any tool or by hand (Open question 10, closed). The `copper_golem_statue` loot table likewise has no tool condition; it copies `custom_name` from the block entity and the `copper_golem_pose` state property.
 - Field 825 (`tinted_glass`): `ofLegacyCopy(GLASS)` then map colour COLOR_GRAY and the four overrides in the flags. Its
   instrument is the glass instrument HAT. The class also overrides skylight and light dampening (4.1).
 - Field 826 (`powder_snow`): `dynamicShape`, so no shape cache is built; the class overrides the collision shape (5.3).
@@ -752,13 +767,13 @@ Rules, read from `BlockBehaviour`, `BlockBehaviour$BlockStateBase.initCache` and
 1. Friction, speed factor, jump factor: 0.6, 1.0, 1.0 for all 255 blocks of this range; read these as three constant columns that apply to every row of 7.1 to 7.3 (all rows: friction 0.6, speed factor 1.0, jump factor 1.0). No builder chain of this range, and no source block of a copy (cobbled deepslate, tuff,
    sulfur, cinnabar, deepslate variants, amethyst cluster, quartz block, iron ore, glass, dirt, basalt, copper ore, cake, candle cake, sculk sensor, copper block, cut copper),
    calls `friction`, `speedFactor` or `jumpFactor`; the only such calls in `Blocks` are for ice, soul sand, slime, honey, packed ice, frosted ice, blue ice and none in the id range of
-   this part. Mud and powder snow have no such call either, so their entity slowdown (if any) is not in these properties (inferred, Open question 22).
+   this part. Mud and powder snow have no such call either, so their entity slowdown is not in these properties. Powder snow's slowdown is in `PowderSnowBlock.entityInside`: `makeStuckInBlock` with the movement multiplier (0.9, 1.5, 0.9) (5.3). Mud's slowdown, if any, was not found in the `MudBlock` class members read here (Open question 22).
 2. Outline (`getShape`): the full cube unless the class says otherwise (sections 4 and 5.2). Collision (`getCollisionShape`): the outline when `hasCollision`, else empty; classes that
    override it: `WallBlock` (height 24), `MudBlock` (`column(16,0,14)`), `PowderSnowBlock` (5.3), `SculkShriekerBlock` (half-height box), `BigDripleafBlock` (leaf only) and
    `MossyCarpetBlock` (base slab when `bottom`, else empty). Rows with `noCollision` have an empty collision shape. Block support shape: the collision shape, except `MudBlock` (full cube).
 3. Occlusion shape: empty when `canOcclude` is false (flag `noOcclusion`, explicit or implied by `noCollision`); otherwise `getOcclusionShape(state)`, which is by default the outline evaluated at the
    origin; the only override in this range is `SculkShriekerBlock` (the half-height box). `solidRender` is true when the occlusion shape is the full cube.
-4. Light dampening (`getLightDampening`): 15 when `solidRender`; otherwise 0 when `propagatesSkylightDown` and 1 when not. The only override in this range is `TintedGlassBlock` (15, and
+4. Light dampening (`getLightDampening`; the engine that consumes it is 32 section 7): 15 when `solidRender`; otherwise 0 when `propagatesSkylightDown` and 1 when not. The only override in this range is `TintedGlassBlock` (15, and
    `propagatesSkylightDown` false). The default `propagatesSkylightDown` is true when the outline is not the full cube and the state's fluid is empty; the overrides are
    `TransparentBlock` (true; parent of the copper grate classes), `TintedGlassBlock` (false), `VegetationBlock` (the fluid is empty), `WallBlock` (not waterlogged),
    `MossyCarpetBlock` (true) and `HangingMossBlock` (true).
@@ -780,7 +795,18 @@ Result by family:
 Worked examples. A bottom `tuff_slab`, not waterlogged: outline box(0,0,0,16,8,16), occlusion the same, not a full cube, fluid empty, so dampening 0; the same slab waterlogged: 1; the double slab: 15.
 A `tinted_glass`: dampening 15 although its occlusion shape is empty. A `trial_spawner`: full outline, empty occlusion, `propagatesSkylightDown` false, dampening 1. A `candle` with `lit` true and `waterlogged` true: outline box(7,0,7,9,6,9) (one candle), empty occlusion, fluid water, dampening 1.
 
-5. Burnable: the registry has no burnable column. The only flammability fact on a block row is the flag `ignitedByLava` of the flags column (blocks that lava can ignite). The per-block fire spread and burn odds are not in `Properties`; no row of this range was found to set them in its builder chain, and where they live (the fire block's table) was not read here, see Open question 25.
+5. Burnable: the registry rows have no burnable column. Two separate facts exist.
+   - Fire odds (ignite, burn) come from `FireBlock.bootStrap`, tabulated in 17 section 3.3a and re-read for the blocks of this range. Blocks absent from that list are not flammable: in particular `moss_block`, `moss_carpet`, the sculk family, candles, copper, the dripstone and the stone families.
+
+| (Ignite, burn) | Blocks of this range |
+|---|---|
+| (5, 100) | `pale_moss_block`, `pale_moss_carpet`, `pale_hanging_moss` |
+| (15, 60) | `cave_vines`, `cave_vines_plant` |
+| (30, 60) | `azalea`, `flowering_azalea`, `hanging_roots` |
+| (60, 100) | `pink_petals`, `wildflowers`, `leaf_litter`, `spore_blossom`, `big_dripleaf`, `big_dripleaf_stem`, `small_dripleaf`, `firefly_bush` |
+
+   `big_dripleaf_stem` is read as its own entry in `bootStrap` (60, 100), after `big_dripleaf` and before `small_dripleaf`; 17 section 3.3a names only "big and small dripleaf".
+   - `ignitedByLava` is a separate builder flag of the flags column (blocks that lava can ignite). In this range it is set on `hanging_roots`, `pale_moss_block`, `pale_moss_carpet`, `pale_hanging_moss` and `firefly_bush` only. Fire odds and `ignitedByLava` are independent: for example `azalea` has fire odds but no lava flag.
 
 ### 7.5 Loot table key and correct-tool tags
 
@@ -803,9 +829,9 @@ The sulfur and cinnabar families, the tuff, deepslate, nether brick, quartz bric
 
 ## 8. Tint and placement summary (GAP-29 and GAP-30 columns)
 
-### 8.1 Tint (24-block-registry-1 §9)
+### 8.1 Tint (24-block-registry-1 §9; sources and colour lookup in 43 section 2.1)
 
-`BlockColors.createDefault` refers to three blocks of this range: `pink_petals` and `wildflowers` (two tint sources: a blank
+`BlockColors.createDefault` (43 section 2.1) refers to three blocks of this range: `pink_petals` and `wildflowers` (two tint sources: a blank
 first layer and the grass source at index 1, see 24-block-registry-1 §9.3) and `leaf_litter` (the dry foliage source,
 `BiomeColors.getAverageDryFoliageColor`). Every other block of this part has no tint class: the lists are empty. In
 particular the moss, azalea, dripleaf, cave vine, hanging root, eyeblossom, firefly bush and pale moss blocks are untinted.
@@ -826,12 +852,30 @@ hanging moss, frogspawn, speleothems, eyeblossoms, firefly bush, mossy carpet. E
 
 ### 8.4 Block tags that code reads in this range
 
-`supports_vegetation`, `supports_azalea`, `supports_big_dripleaf`, `supports_small_dripleaf`, `supports_frogspawn` (block tag
-and fluid tag), `wall_post_override`, `walls`, and the tool tags of 24-block-registry-1 §12.2. Tag contents are data (extraction tool, 22 §6).
+Block tags read by the classes of this range (tag contents are data, extraction tool, 22 section 6; tool tags: 24-block-registry-1 §12.2):
+
+| Tag | Read by |
+|---|---|
+| `supports_vegetation`, `supports_azalea`, `supports_big_dripleaf`, `supports_small_dripleaf` | the survival rules of section 4.4 (eyeblossoms, azalea, dripleafs and other vegetation) |
+| `supports_frogspawn` (block tag and fluid tag) | `FrogspawnBlock` |
+| `wall_post_override`, `walls` | `WallBlock` |
+| `candles` | `CandleBlock` |
+| `candle_cakes` | `CandleCakeBlock` |
+| `copper_chests` | `CopperChestBlock` |
+| `copper_golem_statues` | `CopperGolemStatueBlock` |
+| `causes_continuous_geyser_eruptions`, `causes_periodic_geyser_eruptions` | `PotentSulfurBlock` (4.1) |
+| `sculk_growth_inhibitors` | `SculkBlock` |
+| `vibration_resonators` | `SculkSensorBlock` |
+| `sculk_replaceable` | `SculkVeinBlock`, `SculkSpreader` |
+| `sculk_replaceable_world_gen` | `SculkSpreader` |
+| `speleothems` | `SpeleothemBlock` |
+| `pale_oak_logs` | `HangingMossBlock` |
+
+Fluid tags read: `water` (`SlabBlock`, `CopperGolemStatueBlock`), `lava` (`PointedDripstoneBlock`) and `supports_frogspawn` (`FrogspawnBlock`). `SulfurSpikeBlock` itself references no tag; the shared logic is in `SpeleothemBlock`. The tag set was collected from the constant pool references (`BlockTags`, `FluidTags`) of the listed classes; tags read only by helper classes they call are not included.
 
 ### 8.5 Block entities in this range
 
-`BaseEntityBlock` subclasses (block entity types to be specified by Open question 24, block entities): sculk sensor, calibrated sculk sensor, sculk
+`BaseEntityBlock` subclasses (block entity types and behaviour: 31): sculk sensor, calibrated sculk sensor, sculk
 shrieker, sculk catalyst, copper chests (both weathering and waxed), copper golem statues, decorated pot, crafter, trial
 spawner, vault, potent sulfur. Candles, bulbs, rods and the rest have no block entity.
 
@@ -867,7 +911,7 @@ Checks run for this document (all against the 26.3 client jar):
 
 | # | Check | Result |
 |---|---|---|
-| V1 | Registration order of `Blocks.<clinit>` against the declared fields | the 911 `public static final` block fields, in declaration order, are exactly the 911 block registrations in `putstatic` order (compared name by name in this round), so field index and registration order agree (24-block-registry-1 §2.2) |
+| V1 | Registration order of `Blocks.<clinit>` against the declared fields | the 911 `public static final` block fields, in declaration order, are exactly the 911 block registrations in `putstatic` order (compared name by name), so field index and registration order agree (24-block-registry-1 §2.2) |
 | V2 | Collection expansion: 14 collection fields in this range (2 colour, 12 weathering), 255 registrations from field 770 to 910 | ids 1031 to 1285 are consecutive and the count of blocks registered by the whole class is 1286 (section 11) |
 | V3 | Property sets against the client's block state files (`assets/minecraft/blockstates/<key>.json`): every variant key and every multipart condition names only properties and values that the class definition of the block has | 255 of 255 blocks of this part have a state file; for all 255 the file's property names are a subset of the computed property names (105 of them have no property in the file: plain or full-cube blocks and blocks whose state is not rendered by property) |
 | V4 | Variant counts: for each state file that uses `variants` only, the number of variant keys equals the product of the value counts of the properties named in the keys | 132 such files in this part, 132 agree; over the whole registry 626 of 626 agree |
@@ -906,10 +950,11 @@ the last field + 1 and the end state id + 1 of the part before. Known seams:
 | Part 1 ends / part 2 starts | field 104 `orange_poplar_leaves` (id 104, first state 547, 28 states), field 105 `yellow_poplar_leaves` (id 105, first state 575) |
 | Part 7 ends / part 8 starts | field 769 `polished_blackstone_wall` (id 1030, first state 26126, 324 states, last 26449), field 770 `chiseled_nether_bricks` (id 1031, first state 26450) |
 | Part 8 ends | field 910 `firefly_bush` (id 1285, state 35722) |
-| Part 7 seam check | done in the fix round against [24-block-registry-7-stairs-slabs-walls-workstations.md](24-block-registry-7-stairs-slabs-walls-workstations.md): its last field 769 is id 1030, first state 26126, 324 states, last state 26449; part 8 starts at 26450, which matches |
-| Boundaries between parts 1 to 6 | not re-checked in this part (Open question 12); Appendix A gives the field, id and first state id of every field so that each part's first and last row can be compared mechanically |
+| Part 7 seam check | checked against [24-block-registry-7-stairs-slabs-walls-workstations.md](24-block-registry-7-stairs-slabs-walls-workstations.md): its last field 769 is id 1030, first state 26126, 324 states, last state 26449; part 8 starts at 26450, which matches |
+| Appendix A, mechanical check | all 911 rows: field indices 0 to 910 contiguous; cumulative block count and state count give each row's id and first state id with no gap and no overlap, ending at 1286 blocks and 35723 states; names agree with the static field order of `Blocks`. Also counted: 14 `ColorCollection.registerBlocks` calls, 4 `zipMap` calls, 15 `WeatheringCopperCollection.registerBlocks` calls, 1288 blockstate files, and loot table files for all 255 keys of this range |
+| Boundaries between parts 1 to 6 | the appendix is consistent across them (row above); the per-part tables of parts 1 to 6 were not re-checked against the appendix in this part |
 
-The verification rule for the orchestrator: (a) every field index 0 to 910 appears in exactly one part's table; (b) for each
+The verification rule for the whole registry: (a) every field index 0 to 910 appears in exactly one part's table; (b) for each
 part the first row's id and first state id equal the preceding part's last row id + number of blocks it registers and first state
 id + states; (c) the last row of part 8 is `firefly_bush` id 1285 and its state id 35722; (d) the sum of the "states" column
 over all rows of all parts (counting each block of a collection field) is 35723; (e) the number of registered blocks is 1286.
@@ -925,7 +970,7 @@ over all rows of all parts (counting each block of a collection field) is 35723;
 | 797 to 823 | sulfur family (sulfur, potent sulfur, polished, bricks, chiseled) and cinnabar family |
 | 824 to 826 | calcite, tinted glass, powder snow |
 | 827 to 832 | sculk sensor, calibrated sensor, sculk, vein, catalyst, shrieker |
-| 833 to 846 | copper block, copper ore, deepslate copper ore, and the ten weathering copper families |
+| 833 to 846 | `copper_block` (833), copper ore, deepslate copper ore, and eleven further weathering copper families (836 to 846); twelve weathering fields in all |
 | 847 to 849 | dripstone block, pointed dripstone, sulfur spike |
 | 850 to 865 | cave vines and plant, spore blossom, azaleas, moss carpet, pink petals, wildflowers, leaf litter, moss block, dripleafs, hanging roots, rooted dirt, mud |
 | 866 to 890 | deepslate, cobbled, polished, tiles, bricks, chiseled, cracked, infested deepslate, smooth basalt, raw iron, copper and gold blocks |
@@ -938,41 +983,41 @@ over all rows of all parts (counting each block of a collection field) is 35723;
 ## 12. Open questions
 
 1. Map colour ids and colours, the `NoteBlockInstrument` constants beyond the first 19, and the `SoundType` table are cited from 24-block-registry-1 §8; this part names the constants it uses and did not re-read their values.
-2. The behaviour of each class that is not a registry fact (random ticks, growth, spreading, oxidation steps, vibrations, trial spawner and vault logic, copper chest hinge sounds (`getHingeSound`), potent sulfur tickers) was not read in this round; it belongs to the topics of Open question 24.
-3. `PotentSulfurBlock`: the placement and update state rule `validBlockState` is closed (4.1, read in the fix round). Still unread: the exact set of tickers per state (`getTicker` was only seen to choose among client and server tickers by state) and the block entity logic (OQ 24 block entities).
-4. The entity test `canEntityWalkOnPowderSnow` used by the powder snow collision (5.3), and the exact entity-class test in case (a), were not read in detail.
-5. Closed in the fix round: `MossyCarpetBlock.getUpdatedState` and the `low` and `tall` shape mapping were read (4.4 rule below the table; 5.2). Not read: `createTopperWithSideChance`, `placeAt` and `setPlacedBy` (worldgen and placement helpers of the same class).
-6. Closed in the fix round: `FrogspawnBlock.mayPlaceOn(level, below)` is read as (fluid at `below` in fluid tag `supports_frogspawn` OR block at `below` in block tag `supports_frogspawn`) AND fluid at `below.above()` (the block position itself) is the empty fluid; `canSurvive` calls it with the position below.
-7. Closed in the fix round: `WallBlock$1` (NONE 1, LOW 2, TALL 3) and the `makeShapes` lambda show that `low` uses the height-14 arm and `tall` the height-16 arm (5.2).
-8. Closed in the fix round (signs): the `BLOCK_ROT_*` constants were traced to `OctahedralGroup` constants and their direction maps (5.1). The remaining gap is Open question 19.
-9. Closed in the fix round: `SpeleothemBlock$1` (TIP_MERGE 1, TIP 2, FRUSTUM 3, MIDDLE 4, BASE 5) and the `getShape` switch were read (5.2). Still not read: `isValidSpeleothemPlacement`, the thickness calculation and the growth rules (OQ 24 growth and ticks).
-10. `COPPER_DOOR` has no `requiresCorrectToolForDrops` in its builder chain while `COPPER_TRAPDOOR` and the other copper families have it; this is what the artifact does. The drop rules are in the loot tables (data); confirm there if the door drops without a tool.
-11. Closed in the fix round: `Blocks$1` numbers UNAFFECTED 1, EXPOSED 2, WEATHERED 3, OXIDIZED 4; the map-colour switch gives COLOR_ORANGE, TERRACOTTA_LIGHT_GRAY, WARPED_STEM, WARPED_NYLIUM and the instrument switch TRUMPET, TRUMPET_EXPOSED, TRUMPET_WEATHERED, TRUMPET_OXIDIZED for 1 to 4 (section 6).
-12. The seam between parts 7 and 8 was checked against part 7 (11.2) and matches. The seams between parts 1 and 2 through 6 and 7 were not re-read in this round (the sibling files exist, see the header); the orchestrator can run the rule of 11.2 against Appendix A.
+2. The behaviour of each class that is not a registry fact (random ticks, growth, spreading, oxidation steps, vibrations, trial spawner and vault logic, copper chest hinge sounds (`getHingeSound`), potent sulfur tickers) was not read; its topics are covered by 29, 29b, 31 and 35, except redstone and fluids (Open question 24).
+3. `PotentSulfurBlock`: the placement and update state rule `validBlockState` is closed (4.1). Still unread here: the exact set of tickers per state (`getTicker` was only seen to choose among client and server tickers by state); the block entity logic is in 31 part 8.
+4. Closed: `canEntityWalkOnPowderSnow` was read (5.3): tag `powder_snow_walkable_mobs` or leather boots in the feet slot of a living entity. The case (a) test is the collision context being an entity context (with a fall distance above 2.5); the `FallingBlockEntity` test seen in the same method was not traced further.
+5. Closed: `MossyCarpetBlock.getUpdatedState` and the `low` and `tall` shape mapping were read (4.4 rule below the table; 5.2). Not read: `createTopperWithSideChance`, `placeAt` and `setPlacedBy` (worldgen and placement helpers of the same class).
+6. Closed: `FrogspawnBlock.mayPlaceOn(level, below)` is read as (fluid at `below` in fluid tag `supports_frogspawn` OR block at `below` in block tag `supports_frogspawn`) AND fluid at `below.above()` (the block position itself) is the empty fluid; `canSurvive` calls it with the position below.
+7. Closed: `WallBlock$1` (NONE 1, LOW 2, TALL 3) and the `makeShapes` lambda show that `low` uses the height-14 arm and `tall` the height-16 arm (5.2).
+8. Closed (signs): the `BLOCK_ROT_*` constants were traced to `OctahedralGroup` constants and their direction maps (5.1). The remaining gap is Open question 19.
+9. Closed: `SpeleothemBlock$1` (TIP_MERGE 1, TIP 2, FRUSTUM 3, MIDDLE 4, BASE 5) and the `getShape` switch were read (5.2). Still not read here: `isValidSpeleothemPlacement`, the thickness calculation and the growth rules; searched 29b parts 1, 3 and 5 by section title only.
+10. Closed: `COPPER_DOOR` has no `requiresCorrectToolForDrops` while `COPPER_TRAPDOOR` and the other copper families have it; its loot table has no tool condition (7.1 note on field 840), so the lower half drops with any tool or by hand.
+11. Closed: `Blocks$1` numbers UNAFFECTED 1, EXPOSED 2, WEATHERED 3, OXIDIZED 4; the map-colour switch gives COLOR_ORANGE, TERRACOTTA_LIGHT_GRAY, WARPED_STEM, WARPED_NYLIUM and the instrument switch TRUMPET, TRUMPET_EXPOSED, TRUMPET_WEATHERED, TRUMPET_OXIDIZED for 1 to 4 (section 6).
+12. Closed for Appendix A: the rule of 11.2 was run over all 911 appendix rows with no gap or overlap (11.2). Still open: the per-part tables of parts 1 to 6 were not checked against the appendix here.
 13. In the whole-registry validation the enum property `mode` of `test_block` (a block outside this part, block id 997) is resolved by name only as four values (`accept`, `fail`, `log`, `start` in the client state file, in an unknown order): its state count (4) is used in the totals, its value order is not given here.
 14. The `emissiveRendering` predicate (sculk sensors: phase active) is a rendering rule of the client; how the renderer uses it belongs to document 12.
 15. The suspicious-stew effects of the eyeblossom types and the contents of the `supports_*` tags are data and are not specified here.
-16. `SlabBlock.canBeReplaced` (replacement by click position) and `StairBlock`, `DoorBlock` placement and neighbour-update rules are summarised from their structure in 4.3 (the wall and trapdoor rules were read in full in the fix round); implementers should treat the sequences of a block-update document (Open question 24) as authoritative once written.
-17. Closed in the fix round: the branch condition of `TrapDoorBlock.getStateForPlacement` was read (4.3).
-18. Closed in the fix round: `WallBlock.shouldRaisePost`, `makeWallState` and `isCovered` were read (4.3 wall rules). The `connectsTo` helper and the neighbour update order in `updateShape` were summarised, not transcribed.
+16. `SlabBlock.canBeReplaced` (replacement by click position) and `StairBlock`, `DoorBlock` placement and neighbour-update rules are summarised from their structure in 4.3 (the wall and trapdoor rules were read in full); implementers should treat the sequences of 29 (block updates and placement) as authoritative.
+17. Closed: the branch condition of `TrapDoorBlock.getStateForPlacement` was read (4.3).
+18. Closed: `WallBlock.shouldRaisePost`, `makeWallState` and `isCovered` were read (4.3 wall rules). The `connectsTo` helper and the neighbour update order in `updateShape` were summarised, not transcribed.
 19. The point arithmetic of `Shapes.rotate` (and `DiscreteVoxelShape.rotate(group)`) was not read; 5.1 derives the pixel formulas from the direction maps of `OctahedralGroup.rotate(Direction)` and assumes boxes are transformed by the same group. Searched: `Shapes.rotate` delegates to `DiscreteVoxelShape.rotate(OctahedralGroup)`.
 20. `WallBlock`: `aboveShape` is the down face shape (`getFaceShape(DOWN)`) of the above block's collision shape; reading it as a footprint in x and z for the coverage tests (4.3 wall rule step 2 and 3.4) is inferred, since `VoxelShape.getFaceShape` and `Shapes.joinIsNotEmpty` were not read.
 21. The tool-tag and loot-table results of 7.5 come from the data files embedded in the client jar; that they equal the data the server loads is inferred (the extraction tool, 22 §6, copies these files). Tag files were read with references to other tags followed.
-22. `bounceRestitution` and `fallDistanceReduction` are not assigned by the `Properties` constructor, so their values 0 are inferred; mud and powder snow set no friction, speed or jump factor in the properties, and any slowdown they cause is in entity code that was not read here.
+22. `bounceRestitution` and `fallDistanceReduction` are not assigned by the `Properties` constructor, so their values 0 are inferred; mud and powder snow set no friction, speed or jump factor in the properties, and powder snow's slowdown is read in `PowderSnowBlock.entityInside` (multiplier (0.9, 1.5, 0.9), 5.3). Mud's slowdown, if any, was not found in the `MudBlock` members read; the meaning of `makeStuckInBlock` (entity movement code) was not read here.
 23. The dampening and occlusion results of 7.4 are derived by rule from the read `BlockBehaviour` methods and from a scan of the override sets of every class of this range (including the generic parents `AbstractChestBlock`, `BaseEntityBlock`, `GrowingPlantBlock`, `MultifaceBlock`, `RodBlock`, `FlowerBlock` and the `Weathering*` classes, which override none of the shape or dampening methods); they were not checked state by state.
 
-24. Behaviour topics deferred by this part, with no document yet (checked: docs/protocol/22, 33 and 41 do not cover them): block updates and placement, fluids, growth and falling and oxidation (random ticks), redstone, block entities, and worldgen features (configured features used by bone meal). Searched in the existing documents for these headings only. 22 §6 covers the data files (tags, loot tables) as files, not their meaning.
-25. Fire spread and burn odds per block: `ignitedByLava` is the only flammability flag on a row. The numeric odds (the fire block's registration table) were not read in this round, and no existing document was found that gives them; a fire and flammability document is needed.
-26. `InfestedBlock` release rule (silverfish on break) and the static host-to-infested state maps were only seen as fields and the spawn call (`EntityTypes.SILVERFISH`, spawn reason triggered, position block centre in x and z); the break and drop rules are deferred (OQ 24 block updates).
+24. Behaviour topics with no document yet: redstone (signal output of sculk sensors, bulbs, rods, doors and trapdoors) and fluids (waterlogging ticks, `canBeReplaced(Fluid)`). Searched: 22, 29, 29b, 31, 32, 33, 35 and 41 by section title only. Block updates and placement are covered by 29, falling, growth, spreading and oxidation by 29b, block entities by 31, worldgen features by 35, light by 32, loot and predicates by 26; 22 section 6 covers the data files (tags, loot tables) as files, not their meaning.
+25. Closed. Flammability odds are in 17 section 3.3a and are tabulated for this range in 7.4 item 5. Open sub-point: `FireBlock.bootStrap` was read for the blocks of this range only; the rows for blocks of other ranges are in 17.
+26. `InfestedBlock` release rule (silverfish on break) and the static host-to-infested state maps were only seen as fields and the spawn call (`EntityTypes.SILVERFISH`, spawn reason triggered, position block centre in x and z); the break and drop rules are deferred; 29 section 10 covers the player break path and 26 the loot side, but neither names the infested release (searched by section title only).
 
 ---
 
 ## Appendix A. All 911 fields: ids and first state ids
 
 Field index, name, id (a range for a collection field), first state id of the first block, total states of the field, number of
-blocks registered by the field. Use it for the whole-registry check of section 11.
+blocks registered by the field. Use it for the whole-registry check of section 11. The name column holds the lowercased Java field names. The registered block keys differ for these fields: 774 `dyed_candle` registers the 16 keys `<dye>_candle`, 776 `dyed_candle_cake` the 16 keys `<dye>_candle_cake`, 891 `potted_azalea` is the key `potted_azalea_bush` and 892 `potted_flowering_azalea` is the key `potted_flowering_azalea_bush` (as in 7.1); other collection fields behave likewise.
 
-| field | name | id | first state id | states | blocks |
+| field | field name (lowercased Java static field; not always the block key, see note) | id | first state id | states | blocks |
 |---|---|---|---|---|---|
 | 0 | air | 0 | 0 | 1 | 1 |
 | 1 | stone | 1 | 1 | 1 | 1 |

@@ -56,11 +56,14 @@ and are listed in section 12.
 - Where a column value is a name from an enumeration, section 8 lists the enumeration.
 - Part 1 rows list the behaviour class of each block (section 14) and where a class carries behaviour that other
   documents specify (fluids, falling blocks, tree growth), this document says only what the registry needs and cites
-  the document that owns the behaviour: random ticks 33 §2.4; fluids (design map RS10), falling and growth
-  (RS11), block updates and placement (RS9: no document exists yet) keep their design-map codes until a numbered
-  document exists.
+  the document that owns the behaviour: random ticks 33 §2.4; block updates, placement and breaking 29 (§2 to §3, §9, §10); falling blocks 29b-1 §3; crops,
+  stems, saplings 29b-1 §7 and 29b-2; spreading blocks, leaves, snow and ice 29b-3 (§3, §5); fungi, moss and copper
+  29b-5; light (consumes the emission, dampening and occlusion of section 5.2) 32 §2; tint behaviour 43 (owner of the
+  tint sources, the biome blend radius and the cache; section 9 here only indexes them and defers to 43 wherever the two
+  could differ). Fluids (design map RS10), pistons (RS12) and block entities 31 have no numbered document for the fluid
+  and piston rules yet and keep their design-map codes.
 - Related existing documents: 04 §5 (id rules), 06 §5 (chunk palettes), 13 §2 (break time), 17 Appendix A
-  (`mineable/*`), 11 §8 (ore blocks), 46 §14.3 (sound event table).
+  (`mineable/*`), 17 §3.3a (flammability), 43 (tint sources), 11 §8 (ore blocks), 46 §14.3 (sound event table).
 
 Sibling index (parts are by `Blocks` field order; the exact field boundaries are in each part's own header):
 
@@ -346,8 +349,10 @@ spawnTerrainParticles, instrument, replaceable.
 | the bounding box's Y extent >= 1.0 | true |
 | otherwise | false |
 
-(`AABB.getSize` is the sum of the three extents divided by 3.0, read; the true/false values of the reasons were read
-from the `SolidDebugger$Reason` constants, and the last "otherwise" value is (inferred) false, Open question 16.)
+(`AABB.getSize` is the sum of the three extents divided by 3.0, read. The values of the reasons were read from the
+`SolidDebugger$Reason` constants: `FORCE_SOLID_ON` true, `LARGE_ENOUGH_COLLISION_SHAPE` true,
+`HIGH_ENOUGH_COLLISION_SHAPE` true, `FORCE_SOLID_OFF` false, `NULL_CACHE` false, `EMPTY_COLLISION_SHAPE` false and
+`FALLTHROUGH` false; the last one is the "otherwise" row.)
 
 Other derived queries:
 
@@ -524,14 +529,14 @@ Columns requested by the design map that are not columns of the row table becaus
 |---|---|
 | friction, speed factor, jump factor | section 4.1 defaults (0.6, 1.0, 1.0); no block of this part overrides them (the builder chains of the rows contain no `friction`, `speedFactor` or `jumpFactor` call, read) |
 | replaceable | flag in "flags" plus section 10.1 |
-| burnable | there is no burnable flag in the builder: burn and spread chances belong to the fire block's table (design map RS11; not read in this part). The builder has only `ignitedByLava`. Open question 5 |
+| burnable | there is no burnable flag in the builder (it has only `ignitedByLava`): the (ignite odds, burn odds) pair of each block is registered by `FireBlock.bootStrap` and specified in 17 §3.3a. Section 15.2 gives the pair per row of this part |
 | ignited by lava | flag `ignitedByLava` |
 | occlusion, collision and outline shape | section 5.2 (derived) and section 6.7 (per family); for every block of this part section 6.7 names the shapes |
 | light opacity | `lightDampening` of section 5.2: 15 for full opaque cubes, 0 when skylight propagates, else 1; leaves override to 1 (`LeavesBlock.getLightDampening`) |
 | tint class | section 9 |
 | loot table key rule | `blocks/<path>` (section 4.1) unless the flags column says `noLootTable` |
 | associated item | section 11 |
-| correct-tool tags | not a per-row column. Which `mineable/*`, `needs_*` and `incorrect_for_*` tag contains a block is data supplied by the extraction tool (22); this document gives no per-row tool tag, only the tag names and their uses (section 12.2) and the "tool required" flag |
+| correct-tool tags | tag membership is data (design map R7: the extraction tool, 22, copies the tag files out of the jar and the loader reads them), not a column of the row table. For this part the membership was read from the shipped tag files (`data/minecraft/tags/block/*.json` in the artifact, `#` entries expanded) and is tabulated per row group in section 15.2, so that the rows can be checked; the complete `mineable/*` lists are also in 17 Appendix A (which agrees). The tag names and their uses are section 12.2 |
 
 ## 8. Enumerations used by the columns
 
@@ -669,8 +674,7 @@ the mapping of field to sound event key is the sound event table at 46 §14.3):
 | RED_SHRUB | - | RED_SHRUB_BREAK, EMPTY, RED_SHRUB_PLACE, EMPTY, EMPTY |
 
 
-The 110 standard constants (volume 1.0, pitch 1.0 except `METAL` and `ANVIL` above, events by the pattern). The list is the declaration order of the class, so it can be checked against it:
-`WOOD`, `GRAVEL`, `GRASS`, `STONE`, `METAL`, `GLASS`, `WOOL`, `SAND`, `SNOW`, `POWDER_SNOW`, `LADDER`, `ANVIL`, `SLIME_BLOCK`, `HONEY_BLOCK`, `WET_GRASS`, `CORAL_BLOCK`, `BAMBOO`, `SCAFFOLDING`, `VINE`, `LANTERN`, `STEM`, `NYLIUM`, `FUNGUS`, `ROOTS`, `SHROOMLIGHT`, `WEEPING_VINES`, `SOUL_SAND`, `SOUL_SOIL`, `BASALT`, `WART_BLOCK`, `NETHERRACK`, `NETHER_BRICKS`, `NETHER_SPROUTS`, `NETHER_ORE`, `BONE_BLOCK`, `NETHERITE_BLOCK`, `ANCIENT_DEBRIS`, `LODESTONE`, `CHAIN`, `NETHER_GOLD_ORE`, `GILDED_BLACKSTONE`, `CANDLE`, `AMETHYST_CLUSTER`, `TUFF`, `TUFF_BRICKS`, `POLISHED_TUFF`, `CALCITE`, `DRIPSTONE_BLOCK`, `POINTED_DRIPSTONE`, `COPPER`, `COPPER_BULB`, `COPPER_GRATE`, `COPPER_GOLEM_STATUE`, `CAVE_VINES`, `SPORE_BLOSSOM`, `AZALEA`, `FLOWERING_AZALEA`, `MOSS_CARPET`, `PINK_PETALS`, `LEAF_LITTER`, `MOSS`, `BIG_DRIPLEAF`, `SMALL_DRIPLEAF`, `ROOTED_DIRT`, `HANGING_ROOTS`, `AZALEA_LEAVES`, `SCULK_SENSOR`, `SCULK_CATALYST`, `SCULK_VEIN`, `SCULK_SHRIEKER`, `DEEPSLATE`, `DEEPSLATE_BRICKS`, `DEEPSLATE_TILES`, `POLISHED_DEEPSLATE`, `FROGLIGHT`, `MANGROVE_ROOTS`, `MUDDY_MANGROVE_ROOTS`, `MUD`, `MUD_BRICKS`, `PACKED_MUD`, `HANGING_SIGN`, `NETHER_WOOD_HANGING_SIGN`, `BAMBOO_WOOD_HANGING_SIGN`, `BAMBOO_WOOD`, `NETHER_WOOD`, `CHERRY_WOOD`, `CHERRY_SAPLING`, `CHERRY_LEAVES`, `CHERRY_WOOD_HANGING_SIGN`, `CHISELED_BOOKSHELF`, `SHELF`, `SUSPICIOUS_SAND`, `SUSPICIOUS_GRAVEL`, `DECORATED_POT`, `TRIAL_SPAWNER`, `SPONGE`, `WET_SPONGE`, `VAULT`, `CREAKING_HEART`, `HEAVY_CORE`, `COBWEB`, `SPAWNER`, `RESIN_BRICKS`, `IRON`, `SULFUR`, `POTENT_SULFUR`, `SULFUR_SPIKE`, `CINNABAR`, `POPLAR_LEAVES`, `STRAW_BED`
+The 110 standard constants follow the pattern above; the class declares them in the order `WOOD`, `GRAVEL`, `GRASS`, `STONE`, `METAL`, `GLASS`, `WOOL`, `SAND`, `SNOW` and so on (the first nine, read from the declaration order). The rows of this part use only these standard constants (plus `EMPTY` from the table above): `WOOD`, `GRAVEL`, `GRASS`, `STONE`, `SAND`, `NETHER_GOLD_ORE`, `DEEPSLATE`, `MANGROVE_ROOTS`, `MUDDY_MANGROVE_ROOTS`, `BAMBOO_WOOD`, `CHERRY_WOOD`, `CHERRY_SAPLING`, `CHERRY_LEAVES`, `SUSPICIOUS_SAND`, `SUSPICIOUS_GRAVEL` and `POPLAR_LEAVES`. The other 94 standard names are given by the part that first uses them; each is a `SoundType` constant whose five events are the `<NAME>_BREAK`, `_STEP`, `_PLACE`, `_HIT` and `_FALL` fields of `SoundEvents`, so no per-constant row is needed here (the full count, 131 = 110 standard + 21 in the table above, was read).
 
 ## 9. Tint classes (GAP-29 columns)
 
@@ -683,18 +687,28 @@ A tint source (`BlockTintSource`) has three colours: `color(state)` for items an
 
 ### 9.1 Sources (`BlockTintSources`)
 
+The interface defaults (read in `BlockTintSource`): `colorInWorld` returns `color`, and `colorAsTerrainParticle`
+returns `colorInWorld`. A source that overrides neither therefore has all three colours equal. 43 §2 owns this table
+(with the redstone and stem formulas, 43 §2.2 and §2.3); the rows below agree with it.
+
 | Source | In-hand colour | In-world colour | Terrain particle colour |
 |---|---|---|---|
-| `constant(c)` | c | c | not read |
-| `constant(inHand, inWorld)` | inHand | inWorld | not read |
-| `grass()` | `GrassColor.getDefaultColor()` | `BiomeColors.getAverageGrassColor(level, pos)` | not read |
+| `constant(c)` | c | c | c (default) |
+| `constant(inHand, inWorld)` | inHand | inWorld | inWorld (default) |
+| `grass()` | `GrassColor.getDefaultColor()` | `BiomeColors.getAverageGrassColor(level, pos)` | as in world (default) |
 | `grassBlock()` | `GrassColor.getDefaultColor()` | `BiomeColors.getAverageGrassColor(level, pos)` | constant -1 (opaque white, 0xFFFFFFFF), so the particle is untinted |
-| `doubleTallGrass()` | `GrassColor.getDefaultColor()` | grass colour at the lower half: the position is moved one down when the `half` property is `upper` | not read |
-| `sugarCane()` | not read | `BiomeColors.getAverageGrassColor(level, pos)` | not read |
-| `foliage()` | -12012264 (0xFF48B518) | `BiomeColors.getAverageFoliageColor(level, pos)` | not read |
-| `dryFoliage()` | not read | `BiomeColors.getAverageDryFoliageColor(level, pos)` | not read |
-| `water()`, `waterParticles()` | not read | `BiomeColors.getAverageWaterColor` | not read |
-| `redstone()`, `stem()` | not read | state dependent | not read |
+| `doubleTallGrass()` | `GrassColor.getDefaultColor()` | grass colour at the lower half: the position is moved one down when the `half` property is `upper` | as in world (default) |
+| `sugarCane()` | -1 (0xFFFFFFFF) | `BiomeColors.getAverageGrassColor(level, pos)` | as in world (default) |
+| `foliage()` | -12012264 (0xFF48B518) | `BiomeColors.getAverageFoliageColor(level, pos)` | as in world (default) |
+| `dryFoliage()` | -10732494 (0xFF5C3C32) | `BiomeColors.getAverageDryFoliageColor(level, pos)` | as in world (default) |
+| `water()` (`BlockTintSources$8`) | -1 (0xFFFFFFFF) | `BiomeColors.getAverageWaterColor(level, pos)` | as in world (default) |
+| `waterParticles()` (`BlockTintSources$9`) | -1 (0xFFFFFFFF) | -1 (not overridden; falls back to `color`) | `BiomeColors.getAverageWaterColor(level, pos)` |
+| `redstone()` | by `power`, 43 §2.2 | same | same |
+| `stem()` | by `age`, 43 §2.3 | same | same |
+
+The dry foliage in-hand value and the grass-family values agree with 43 §2. Consequence: a water or bubble column block
+is drawn in the world with no tint (0xFFFFFFFF); only its terrain particles take the biome water colour (the water
+fluid's own tint is 43's subject).
 
 `GrassColor.getDefaultColor()` calls `GrassColor.get(0.5, 1.0)` (temperature 0.5, downfall 1.0, both read from the
 bytecode). `GrassColor.get(temperature, downfall)` samples the colormap texture (65536 pixels, 256 by
@@ -709,7 +723,7 @@ ARGB or RGB int: the water resolver returns `Biome.getWaterColor()`, the foliage
 dry foliage resolver `Biome.getDryFoliageColor()`; the grass resolver is the biome's grass colour (temperature and
 downfall colormap lookup plus the grass colour modifier). `getAverageXColor(level, pos)` calls
 `BlockAndTintGetter.getBlockTint(pos, resolver)`, which blends the biome colours of the surrounding columns; the blend
-radius and the cache (`BlockTintCache`) belong to the biome blend rule (design map RS25; Open question 9).
+radius and the cache (`BlockTintCache`) are specified in 43 §4 (not repeated here).
 
 ### 9.3 Block to source table (all of `createDefault`, so that sibling parts can cite it)
 
@@ -724,7 +738,7 @@ radius and the cache (`BlockTintCache`) belong to the biome blend rule (design m
 | `OAK_LEAVES`, `JUNGLE_LEAVES`, `ACACIA_LEAVES`, `DARK_OAK_LEAVES`, `MANGROVE_LEAVES`, `VINE` | `foliage()` |
 | `LEAF_LITTER` | `dryFoliage()` |
 | `WATER_CAULDRON` | `water()` |
-| `WATER`, `BUBBLE_COLUMN` | `waterParticles()` |
+| `WATER`, `BUBBLE_COLUMN` | `waterParticles()` (untinted in the world, biome water colour for terrain particles) |
 | `REDSTONE_WIRE` | `redstone()` |
 | `SUGAR_CANE` | `sugarCane()` |
 | `ATTACHED_MELON_STEM`, `ATTACHED_PUMPKIN_STEM` | `constant(-2046180)` = 0xFFE0C71C |
@@ -748,7 +762,7 @@ flag: `air`, `water`, `lava`. The default-state replaced test for fluids is `can
 ### 10.2 `canSurvive`
 
 `BlockBehaviour.canSurvive(state, level, pos)` defaults to true. A class overrides it to keep a block in place; the
-block is then removed or turned into air by `updateShape` when it fails (the update machinery is RS9). Classes in this
+block is then removed or turned into air by `updateShape` when it fails (the update machinery is 29 §3). Classes in this
 part:
 
 | Class | canSurvive rule |
@@ -756,7 +770,7 @@ part:
 | `Block`, `AirBlock`, `RotatedPillarBlock`, `DropExperienceBlock`, falling blocks, liquids, leaves, `MangroveRootsBlock`, grass family | default (true) |
 | `SaplingBlock` (via `VegetationBlock`) | the state below (`pos.below()`) is in block tag `supports_vegetation` (`mayPlaceOn`); `updateShape` returns air when it fails |
 | `MangrovePropaguleBlock` | for the standing form: the state below is in `supports_mangrove_propagule` (`mayPlaceOn`); for the hanging form (property `hanging` true): the state at `pos.above()` is in tag `supports_hanging_mangrove_propagule` (read in `canSurvive`: the position is `BlockPos.above`) |
-| `SpreadingSnowyBlock` (grass block, and other spreading blocks) | `canStayAlive` and `canPropagate` are used by random ticks, not by `canSurvive` (the rules belong to the growth document, RS11) |
+| `SpreadingSnowyBlock` (grass block, and other spreading blocks) | `canStayAlive` and `canPropagate` are used by random ticks, not by `canSurvive` (the rules are in 29b-3 §3) |
 
 ### 10.3 Placement state
 
@@ -808,23 +822,21 @@ part:
 
 ### 12.2 Tags that decide breaking, tools and drops
 
-The tag names are read from `BlockTags`. The "used for" column states the use that the tag's name and the call sites cited in
-this document show; each entry that is only suggested by the name is marked (inferred) in its cell, and an unmarked entry cites its source. Only the call sites named in this
-document were read (`Properties` defaults, `Block.canSupportCenter`, `BlockStateBase`, the block classes of section 14).
+The tag names are read from `BlockTags`. Each row below states the call sites that reference the tag, found by searching every class of the jar for the field name and reading the referencing methods (the data generator class `VanillaBlockTagsProvider` is the only other referrer of every tag; it is not behaviour). The contents quoted are the shipped tag files. A tag with no behaviour referrer is said to be data only.
 
 | Tag | Used for |
 |---|---|
 | `mineable/pickaxe`, `mineable/axe`, `mineable/shovel`, `mineable/hoe` | "the tool type that mines this block quickly": the tool's mining rule (a component with a block set per speed; 17 Appendix A) matches the block against the tag. A block that is in none of them is mined at hand speed by every tool |
-| `needs_stone_tool`, `needs_iron_tool`, `needs_diamond_tool` | the minimum tier for `requiresCorrectToolForDrops` blocks |
-| `incorrect_for_wooden_tool`, `incorrect_for_gold_tool`, `incorrect_for_stone_tool`, `incorrect_for_copper_tool`, `incorrect_for_iron_tool`, `incorrect_for_diamond_tool`, `incorrect_for_netherite_tool` | (inferred) per tier: the blocks this tier cannot correctly mine; how a tool's rule list consumes the tag was not read here (13 §2 and 17 Appendix A own it) |
-| `sword_efficient`, `sword_instantly_mines` | (inferred) sword speed rules |
-| `shears_extreme_breaking_speed`, `shears_major_breaking_speed`, `shears_minor_breaking_speed` | (inferred) shears speed rules |
-| `turns_into_dirt_path`, `turns_into_farmland` | (inferred) tool use rules (shovel, hoe) |
-| `replaceable` | (inferred) blocks that placement replaces |
-| `climbable` | (inferred) blocks an entity can climb |
-| `fall_damage_resetting`, `suppresses_bounce`, `cushion_uses_collision_shape` | (inferred) fall rules |
-| `causes_suffocation`, `blocks_motion`, `blocks_motion_no_leaves`, `blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` | (inferred) suffocation, heightmaps |
-| `leaves`, `logs`, `planks`, `saplings`, `sand`, `dirt`, `ore`, `base_stone_overworld`, `snow`, `fire`, `air` | (inferred) grouping tags read by name in world rules |
+| `needs_stone_tool`, `needs_iron_tool`, `needs_diamond_tool` | only referenced by the `incorrect_for_*` tag files (below); a block in a `needs_*` tag is a block that the lower tiers cannot correctly mine (17 and 13 §2 own the consuming rule; membership of the rows of this part is section 15.2) |
+| `incorrect_for_wooden_tool`, `incorrect_for_gold_tool`, `incorrect_for_stone_tool`, `incorrect_for_copper_tool`, `incorrect_for_iron_tool`, `incorrect_for_diamond_tool`, `incorrect_for_netherite_tool` | `ToolMaterial` stores one such tag per material; `applyToolProperties` builds the tool component's rule list from two rules in this order: (1) `deniesDrops` for the blocks of the material's `incorrect_for_*` tag, (2) `minesAndDrops` for the `mineable/*` tag of the tool type with the material's speed (the component constructor then receives default speed 1.0, damage per block 1 and the boolean true). Material speeds read: wood 2.0, stone 4.0, copper 5.0, iron 6.0, diamond 8.0, gold 12.0, netherite 9.0. Tag contents (data): wooden and gold = `#needs_stone_tool` + `#needs_iron_tool` + `#needs_diamond_tool`; stone and copper = `#needs_iron_tool` + `#needs_diamond_tool`; iron = `#needs_diamond_tool`; diamond and netherite are empty. So a block of `needs_stone_tool` is denied only to wooden and gold tools, `needs_iron_tool` to wooden, gold, stone and copper, `needs_diamond_tool` to wooden, gold, stone, copper and iron |
+| `sword_efficient`, `sword_instantly_mines` | the sword's tool component (`ToolMaterial`, three rules in this order): (1) cobweb alone, `minesAndDrops` at speed 15.0; (2) the blocks of `sword_instantly_mines` get `overrideSpeed` 3.4028235E38 (the largest float); (3) the blocks of `sword_efficient` get `overrideSpeed` 1.5. Component defaults: speed 1.0, damage per block 2, boolean false. Contents: `sword_instantly_mines` = bamboo, bamboo sapling; `sword_efficient` = `#leaves`, vine, glow lichen, pumpkin, carved pumpkin, jack o'lantern, melon, cocoa, big dripleaf, big dripleaf stem, chorus plant, chorus flower |
+| `shears_extreme_breaking_speed`, `shears_major_breaking_speed`, `shears_minor_breaking_speed` | the shears' tool component (`ShearsItem`, four rules in this order): (1) cobweb alone, `minesAndDrops` 15.0; (2) extreme tag `overrideSpeed` 15.0; (3) major tag 5.0; (4) minor tag 2.0. Component defaults: speed 1.0, damage per block 1, boolean true. Contents: extreme = `#leaves`; major = `#wool`, `#wool_slabs`, `#wool_stairs`; minor = glow lichen, vine |
+| `turns_into_dirt_path`, `turns_into_farmland` | `BlockTransformers` (the shovel and hoe use rules): a block of `turns_into_dirt_path` whose block above (direction up) is in the `air` tag becomes `dirt_path` (sound `SHOVEL_FLATTEN`); a block of `turns_into_farmland` with air above becomes `farmland`; the hoe table also has coarse dirt (air above) to dirt and rooted dirt to dirt (sound `HOE_TILL`). The side effects of each transformer beyond the sound were not read. Contents: dirt path = grass block, dirt, podzol, coarse dirt, mycelium, rooted dirt; farmland = grass block, dirt path, dirt |
+| `replaceable` | data only: no class other than the data generator references `BlockTags.REPLACEABLE`. The placement engine reads the builder flag (section 10.1; 29 §9, "canBeReplaced"); the `ReplaceablePredicate` block predicate of world generation also reads the flag (`BlockState.canBeReplaced`), not the tag. The tag file lists air, water, lava, short grass, fern, dead bush, bush, red shrub, short and tall dry grass, seagrass, tall seagrass, fire, soul fire, snow, vine, glow lichen, resin clump and further entries (the file continues; it mirrors the flag) |
+| `climbable` | `LivingEntity` (the "is on a climbable" test): when the entity is fall flying and the state in its block is in `can_glide_through`, the answer is false; otherwise a state in `climbable` records the position as the last climbable position and the answer is true; a trapdoor test follows (not read further). Movement effect: 13 §1.3. `Entity` and `DismountHelper` also reference the tag (not read). Contents: ladder, vine, scaffolding, weeping vines and plant, twisting vines and plant, cave vines and plant |
+| `fall_damage_resetting`, `suppresses_bounce`, `cushion_uses_collision_shape` | `fall_damage_resetting`: read in the `ClipContext.Block.FALLDAMAGE_RESETTING` shape getter, blocks of the tag are full for everyone (33 §8.2, the `players_nether_portal_default_delay` row). `suppresses_bounce`: in `Entity`, in the code that picks the bounce value on landing: the bounce is 0 when the downward speed is not greater than the effective gravity, when the entity is suppressing bounce, or when the landed-on state is in the tag; otherwise the larger of the running value and the block's bounciness (`getBlockBounciness`). Contents: honey block only. `cushion_uses_collision_shape`: `CushionItem` use-on proceeds past a first test only when the clicked state is in the tag, then reads the player's eye position and the click location (rest not read). Contents: `#cauldrons`, hopper, composter |
+| `causes_suffocation`, `blocks_motion`, `blocks_motion_no_leaves`, `blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` | `causes_suffocation`: the default `isSuffocating` of `Properties` is true when the state is in the tag and its collision shape is a full block (section 4.1). `blocks_motion_in_heightmap` and `blocks_motion_in_heightmap_no_leaves`: the `Heightmap.Types` predicates of `MOTION_BLOCKING` and `MOTION_BLOCKING_NO_LEAVES`: a state counts when it is in the respective tag or its fluid state is not empty. `OCEAN_FLOOR` and `OCEAN_FLOOR_WG` use the heightmap field `MATERIAL_MOTION_BLOCKING`, `WORLD_SURFACE` and `WORLD_SURFACE_WG` use `NOT_AIR` (neither field's body was read; Open question 16). Usage kinds read: `WORLD_SURFACE_WG` worldgen, `WORLD_SURFACE` client, `OCEAN_FLOOR_WG` worldgen, `OCEAN_FLOOR` live world. `blocks_motion` and `blocks_motion_no_leaves` have no behaviour referrer: they are data only and exist as inclusions (`causes_suffocation` = `#blocks_motion`; `blocks_motion_in_heightmap` = `#blocks_motion`; `blocks_motion_in_heightmap_no_leaves` = `#blocks_motion_no_leaves`; `blocks_motion` = `#blocks_motion_no_leaves` + `#leaves`). Heightmap updates: 29 §2.1 step 4; 33 §2.4 reads `MOTION_BLOCKING` |
+| `leaves`, `logs`, `planks`, `saplings`, `sand`, `dirt`, `ores`, `base_stone_overworld`, `snow`, `fire`, `air` | grouping tags read by name in world rules. All eleven names were checked against section 12.3: `leaves`, `logs`, `planks`, `saplings`, `sand`, `dirt` and `ores` are `BlockItemTags` entries (the block path of each is its name; no tag `ore` exists), `base_stone_overworld`, `snow`, `fire` and `air` are `BlockTags` string constants. Uses read: `snow` decides the `snowy` property (section 10.3, 29b-3 §3.1); `logs` is the `prevents_nearby_leaf_decay` set of the leaf distance rule (29b-3 §5.2); `air` is the block-above test of the dirt path and farmland transformers (above); `fire` is referenced by the shears item construction (the use was not read); the use of every other name was not traced here (Open question 16) |
 | `supports_vegetation`, `supports_mangrove_propagule`, `supports_hanging_mangrove_propagule`, and the other `supports_*` tags | `canSurvive` of plant blocks (section 10.2) |
 | `prevents_nearby_leaf_decay` | leaf distance (read in `LeavesBlock.getOptionalDistanceAt`); random ticks 33 §2.4 |
 | `required_for_poplar_leaf_ambience` | poplar leaves ambient sound (an argument of the poplar leaves' ambient sound player) |
@@ -832,7 +844,7 @@ document were read (`Properties` defaults, `Block.canSupportCenter`, `BlockState
 
 The semantics of the tool tags, with the break formula, are 13 §2 and 17 Appendix A. In this part, a row's "tool required"
 and the tags `mineable/*` together answer "which tool mines it": the tag names the tool type, the flag says whether
-drops are lost without a correct tool and tier.
+drops are lost without a correct tool and tier. Section 15.2 gives the membership per row.
 
 ### 12.3 All `BlockTags` names
 
@@ -875,20 +887,20 @@ Constructor arguments are shown as read. Behaviour that belongs to other documen
 | `AirBlock` | none | none | shape empty; `getRenderShape` returns `RenderShape.INVISIBLE` (read). |
 | `Block` | none | none | full cube; defaults of section 5. |
 | `DropExperienceBlock` | xp `IntProvider`: `ConstantInt(0)` (gold, iron, coal... see rows) or `UniformInt(0,1)`, `UniformInt(0,2)` | none | `spawnAfterBreak` drops the experience (the xp amount is read from the provider when the block is broken with drops; the loot table gives items; see 17). |
-| `GrassBlock` (extends `SpreadingSnowyBlock` extends `SnowyBlock`) | none (the spread targets are fixed in the class) | `snowy` | random ticks 33 §2.4, spread and death rules RS11; bone meal (`placeBonemealEffect`; RS11). |
+| `GrassBlock` (extends `SpreadingSnowyBlock` extends `SnowyBlock`) | none (the spread targets are fixed in the class) | `snowy` | random ticks 33 §2.4, spread and death rules 29b-3 §3; bone meal (`placeBonemealEffect`; 29b-3 §3.3). |
 | `SnowyBlock` (podzol) | none | `snowy` | as above without the spreading. |
 | `RotatedPillarBlock` | none | `axis` | `rotate` for 90 degree rotations; placement section 10.3. |
-| `SaplingBlock` | `TreeGrower` | `stage` | shape 12x12 column 0..12 px; random ticks 33 §2.4, growth RS11; bone meal success chance 0.45 (read as a double constant in `isBonemealSuccess`). |
-| `MangrovePropaguleBlock` | `TreeGrower.MANGROVE` | `age`, `hanging`, `stage`, `waterlogged` | shapes by age and hanging (section 6.8); `getFluidState` gives the water source when waterlogged (section 5.2); `updateShape` schedules a water tick when waterlogged; random tick: a standing propagule (`hanging` false) calls `advanceTree` with probability 1 in 7 (`nextInt(7)` equal to 0); a hanging one that is not fully grown (`age` below 4) cycles `age` to the next value (update flag 2) (further growth rules RS11). |
-| `LiquidBlock` | `FlowingFluid` (`Fluids.WATER`, `Fluids.LAVA`) | `level` | `getFluidState` maps the level to the fluid (RS10); `getRenderShape` returns `RenderShape.INVISIBLE` (read); collision shape, in order: (1) the full cube when the collision context's `alwaysCollideWithFluid` is true; (2) else the empty shape when the state's `level` is not 0; (3) else the shape `getLiquidCollisionShape()` of the colliding living entity, only when `ifMobIsColliding` yields a living entity (the context is an entity collision context whose entity is a `LivingEntity`) and that context's `isAbove(shape, pos, true)` is true and `canStandOnFluid(fluid of the block above, this state's fluid)` is true; otherwise empty. `LivingEntity.getLiquidCollisionShape` is the empty shape (read), and `Strider` overrides it with `Block.column(16, 0, 8)`, a full-width column 8 pixels high (read; other overrides were not exhaustively searched, Open question 11). The review finding that step 3 yields the full cube was not confirmed: the shape comes from the entity; `getShape` empty; `propagatesSkylightDown` false; pickup (bucket) and flow ticks (RS10). Shape is `dynamicShape`-free: the shape cache is built. |
-| `SandBlock` | `ColorRGBA` dust colour | none | falling (RS11). Colours: sand 14406560 (0xDBD3A0), red sand 11098145 (0xA95821). |
-| `ColoredFallingBlock` (gravel) | `ColorRGBA` -8356741 (0xFF807C7B) | none | falling (RS11). |
-| `BrushableBlock` | turns-into block, brush sound, brush complete sound | `dusted` | has a block entity (`newBlockEntity`; RS13); falls like sand. Sand: turns into `SAND`, sounds `BRUSH_SAND` for both. Gravel: `GRAVEL`, `BRUSH_GRAVEL`. |
+| `SaplingBlock` | `TreeGrower` | `stage` | shape 12x12 column 0..12 px; random ticks 33 §2.4, growth 29b-1 §7; bone meal success chance 0.45 (read as a double constant in `isBonemealSuccess`). |
+| `MangrovePropaguleBlock` | `TreeGrower.MANGROVE` | `age`, `hanging`, `stage`, `waterlogged` | shapes by age and hanging (section 6.8); `getFluidState` gives the water source when waterlogged (section 5.2); `updateShape` schedules a water tick when waterlogged; random tick: a standing propagule (`hanging` false) calls `advanceTree` with probability 1 in 7 (`nextInt(7)` equal to 0); a hanging one that is not fully grown (`age` below 4) cycles `age` to the next value (update flag 2) (further growth rules 29b-3 §5). |
+| `LiquidBlock` | `FlowingFluid` (`Fluids.WATER`, `Fluids.LAVA`) | `level` | `getFluidState` maps the level to the fluid (RS10); `getRenderShape` returns `RenderShape.INVISIBLE` (read); collision shape, in order: (1) the full cube when the collision context's `alwaysCollideWithFluid` is true; (2) else the empty shape when the state's `level` is not 0; (3) else the shape `getLiquidCollisionShape()` of the colliding living entity, only when `ifMobIsColliding` yields a living entity (the context is an entity collision context whose entity is a `LivingEntity`) and that context's `isAbove(shape, pos, true)` is true and `canStandOnFluid(fluid of the block above, this state's fluid)` is true; otherwise empty. `LivingEntity.getLiquidCollisionShape` is the empty shape (read), and `Strider` overrides it with `Block.column(16, 0, 8)`, a full-width column 8 pixels high (read; other overrides were not exhaustively searched, Open question 11). The shape in step 3 comes from the colliding entity's `getLiquidCollisionShape`, not from the block. `getShape` is the empty shape; `propagatesSkylightDown` is false. Shape is `dynamicShape`-free: the shape cache is built. Other overrides of the class, all read as signatures and the facts below (the fluid tick algorithm they call is deferred to the fluid document of design map RS10, which does not exist yet): `isPathfindable` is true unless the fluid is in the `lava` fluid tag; `skipRendering` compares the neighbour state's fluid type with this fluid (`isSame`); `getDrops` is the empty list; `isRandomlyTicking` and `randomTick` delegate to the state's fluid state; `onPlace` and `neighborChanged` schedule a fluid tick after `FlowingFluid.getTickDelay` when `shouldSpreadLiquid` is true, then, when `shouldBubbleColumnOccupy` is true, call `tryScheduleBubbleBlockColumn` for the block below; `updateShape` schedules a fluid tick (same delay) when this or the neighbour fluid state is a source, and when the direction is down and `shouldBubbleColumnOccupy` is true it also calls `tryScheduleBubbleBlockColumn`; `tick` calls `BubbleColumnBlock.updateColumn` with `Blocks.BUBBLE_COLUMN` when `shouldBubbleColumnOccupy` is true (constant `BUBBLE_COLUMN_CHECK_DELAY` = 20); `pickupBlock` (bucket) replaces the block with air (flag value 11) and returns the fluid's bucket item only when `level` is 0, else the empty stack; `getPickupSound` returns the fluid's pickup sound. Deferred to RS10 (bodies of `shouldSpreadLiquid`, `fizz` for the lava and water interaction, `tryScheduleBubbleBlockColumn`, `shouldBubbleColumnOccupy`, `BubbleColumnBlock.updateColumn`, `FlowingFluid.getTickDelay`): Open question 19. |
+| `SandBlock` | `ColorRGBA` dust colour | none | falling (29b-1 §3). Colours: sand 14406560 (0xDBD3A0), red sand 11098145 (0xA95821). |
+| `ColoredFallingBlock` (gravel) | `ColorRGBA` -8356741 (0xFF807C7B) | none | falling (29b-1 §3). |
+| `BrushableBlock` | turns-into block, brush sound, brush complete sound | `dusted` | has a block entity (`newBlockEntity`; 31-4); falls like sand. Sand: turns into `SAND`, sounds `BRUSH_SAND` for both. Gravel: `GRAVEL`, `BRUSH_GRAVEL`. |
 | `MangroveRootsBlock` | none | `waterlogged` | `skipRendering` returns true when the neighbour state is `MANGROVE_ROOTS` and the face direction is on the Y axis (up or down), else false (no super call); `getFluidState` gives the water source when waterlogged (section 5.2); waterlogging (RS10). No override of shape, occlusion shape, light dampening or skylight propagation: the shape is the full cube, `noOcclusion` makes the occlusion shape empty (`solidRender` false), `propagatesSkylightDown` is false (the shape is a full block), so `lightDampening` is 1 (section 5.2), with `waterlogged` true or false. `suffocating:never`, so it does not suffocate. |
-| `LeavesBlock` | an ambient sound player (here `noAmbientSound`) | `distance`, `persistent`, `waterlogged` | `getLightDampening` returns 1; support shape empty; `getFluidState` gives the water source when waterlogged (section 5.2); `skipRendering` returns true when the static cutout option (`setCutoutLeaves`) is off and the neighbour state's block is a `LeavesBlock`, else it defers to the `Block` default; decay (random ticks 33 §2.4; `decaying`, `distance` 7 and not persistent; rules RS11); `setCutoutLeaves` is a static render option. |
-| `TintedParticleLeavesBlock` (extends `FallingParticlesLeavesBlock`) | falling-leaf particle chance (float) | as leaves | spawns a tinted falling-leaf particle (RS24). |
-| `UntintedParticleLeavesBlock` | chance, `ParticleOptions`, optional ambient sound event and tag | as leaves | untinted particle (RS24). |
-| `MangroveLeavesBlock` | chance 0.01 | as leaves | tinted particle and `getParticlePos` (RS24). |
+| `LeavesBlock` | an ambient sound player (here `noAmbientSound`) | `distance`, `persistent`, `waterlogged` | `getLightDampening` returns 1; support shape empty; `getFluidState` gives the water source when waterlogged (section 5.2); `skipRendering` returns true when the static cutout option (`setCutoutLeaves`) is off and the neighbour state's block is a `LeavesBlock`, else it defers to the `Block` default; decay (random ticks 33 §2.4; `decaying`, `distance` 7 and not persistent; rules 29b-3 §5); `setCutoutLeaves` is a static render option. |
+| `TintedParticleLeavesBlock` (extends `FallingParticlesLeavesBlock`) | falling-leaf particle chance (float) | as leaves | spawns a tinted falling-leaf particle (29b-3 §5.6). |
+| `UntintedParticleLeavesBlock` | chance, `ParticleOptions`, optional ambient sound event and tag | as leaves | untinted particle (29b-3 §5.6). |
+| `MangroveLeavesBlock` | chance 0.01 | as leaves | tinted particle and `getParticlePos` (29b-3 §5.6). |
 
 ## 15. The rows: fields 0 to 104
 
@@ -1018,7 +1030,7 @@ of `AirBlock`, `GrassBlock`, `SnowyBlock`, `MangrovePropaguleBlock`, `ColoredFal
 The following per-row values are not columns of the table above because each follows from a rule; they are listed here
 so that an implementer does not have to derive them. "Shape" is the outline shape from `getShape`; "collision" is the
 collision shape; "occlusion" is the occlusion shape (section 5.2); "dampening" is `lightDampening`. Defaults for every
-row of this part: friction 0.6, speed factor 1.0, jump factor 1.0 (section 4.1); loot table `blocks/<key>` except the four
+row of this part: friction 0.6, speed factor 1.0, jump factor 1.0 (section 4.1; none of the 105 rows overrides them, so those three columns are constant here); the explicit burn pair (ignite, burn) is (5, 20) for planks, bamboo mosaic and mangrove roots, (5, 5) for logs and wood and (30, 60) for leaves (table 15.2; read from 17 §3.3a, not re-read from the jar in this round); loot table `blocks/<key>` except the four
 `noLootTable` rows; associated item same key except `water` and `lava`.
 
 | Rows (ids) | Shape | Collision | Occlusion | Dampening | Tint source (9.3) | Ignited by lava | Fluid state |
@@ -1032,7 +1044,7 @@ row of this part: friction 0.6, speed factor 1.0, jump factor 1.0 (section 4.1);
 | 26 to 33, 35 (saplings) | 12x12 pixel column, y 0 to 12 | empty | empty (`noCollision` also clears `canOcclude`) | 0 (the shape is not a full block and the fluid is empty, so skylight propagates) | none | no | empty |
 | 34 `mangrove_propagule` | 2x2 column by age and hanging (6.8), moved by the XZ offset | empty | empty (`noCollision`) | 0 when not waterlogged; with `waterlogged` true the fluid is not empty, so skylight does not propagate by the default rule and the dampening is 1 (derived from section 5.2) | none | no | water source when `waterlogged` |
 | 36 `bedrock`, 39 to 50 (sand, gravel, suspicious blocks, ores) | full cube | full cube | full cube | 15 | none | no | empty |
-| 37 `water`, 38 `lava` | empty | empty (the collision shape of liquids is context dependent, section 14) | empty | 1 (`propagatesSkylightDown` is false by the `LiquidBlock` override and the occlusion is empty, so the default rule gives 1; same class for both) | 37: `waterParticles()`; 38: none | no | the liquid, by level |
+| 37 `water`, 38 `lava` | empty | empty (the collision shape of liquids is context dependent, section 14) | empty | 1 (`propagatesSkylightDown` is false by the `LiquidBlock` override and the occlusion is empty, so the default rule gives 1; same class for both) | 37: `waterParticles()` (in world 0xFFFFFFFF, terrain particle colour the biome water colour); 38: none | no | the liquid, by level |
 | 61 `mangrove_roots` | full cube | full cube | empty (`noOcclusion`) | 1 | none | yes | water source when `waterlogged` |
 | 62 `muddy_mangrove_roots` | full cube | full cube | full cube | 15 | none | no | empty |
 | 94 `oak_leaves`, 97 `jungle_leaves`, 98 `acacia_leaves`, 100 `dark_oak_leaves`, 102 `mangrove_leaves` | full cube (block support shape empty) | full cube | empty (`noOcclusion`) | 1 (class override) | `foliage()` | yes | water source when `waterlogged` |
@@ -1040,9 +1052,31 @@ row of this part: friction 0.6, speed factor 1.0, jump factor 1.0 (section 4.1);
 | 96 `birch_leaves` | as above | full cube | empty | 1 | `constant(0xFF80A755)` | yes | water source when `waterlogged` |
 | 99, 101, 103, 104 (cherry, pale oak, red poplar, orange poplar leaves) | as above | full cube | empty | 1 | none | yes | water source when `waterlogged` |
 
-Rows with a non-default tint: 8 (grass block), 37 (water), 94, 97, 98, 100, 102 (foliage colour), 95 and 96 (constant
+Rows with a non-default tint source: 8 (grass block), 37 (water, particle colour only), 94, 97, 98, 100, 102 (foliage colour), 95 and 96 (constant
 colours). Rows that are not a full cube in shape or collision: 0, 26 to 35, 37, 38. Rows whose occlusion is not a full
 cube although the shape is: 61 and 94 to 104.
+
+### 15.2 Burn odds and tool tags per row (read; cross-references 17 §3.3a and 17 Appendix A)
+
+Burn and ignite odds are the pair registered by `FireBlock.bootStrap` (17 §3.3a: "(ignite, burn)"); a row not listed is not flammable (ignite odds 0). The fire rules that consume the pair are in 17 §3.3a and 29b-3. Tool tags are the contents of the shipped tag files with `#` entries expanded (data; the extraction tool, 22, supplies them at run time, this table only lets the rows be checked). Rows not named in a tag column are in no tag of that column.
+
+| Rows (ids) | (ignite, burn) | `mineable/*` | `needs_*` | `incorrect_for_*` | Other tags read |
+|---|---|---|---|---|---|
+| 0 `air`, 26 to 35 (saplings), 36 `bedrock`, 37 `water`, 38 `lava` | not flammable | none | none | none | none |
+| 1 to 7, 12 (stone family, cobblestone) | not flammable | pickaxe | none | none (the tool-required flag alone: any pickaxe, any tier) | none |
+| 8 `grass_block`, 9 `dirt` | not flammable | shovel | none | none | `turns_into_dirt_path`, `turns_into_farmland` |
+| 10 `coarse_dirt`, 11 `podzol` | not flammable | shovel | none | none | `turns_into_dirt_path` |
+| 39 to 43 (sand, suspicious sand, red sand, gravel, suspicious gravel) | not flammable | shovel | none | none | none |
+| 44, 45 (gold ore, deepslate gold ore) | not flammable | pickaxe | `needs_iron_tool` | wooden, gold, stone, copper | none |
+| 46, 47 (iron ore, deepslate iron ore) | not flammable | pickaxe | `needs_stone_tool` | wooden, gold | none |
+| 48, 49, 50 (coal ore, deepslate coal ore, nether gold ore) | not flammable | pickaxe | none | none | none |
+| 13 to 19, 21 to 25 (planks, bamboo mosaic) | (5, 20) | axe | none | none | none |
+| 20, 51 to 60, 63 to 93 (wood, logs, stripped logs and wood, bamboo block, stripped bamboo block) | (5, 5) | axe | none | none | none |
+| 61 `mangrove_roots` | (5, 20) | axe | none | none | none |
+| 62 `muddy_mangrove_roots` | not flammable | shovel | none | none | none |
+| 94 to 104 (all leaves) | (30, 60) | hoe | none | none | `sword_efficient`, `shears_extreme_breaking_speed` |
+
+Checks: `needs_diamond_tool`, `incorrect_for_iron_tool`, `incorrect_for_diamond_tool`, `incorrect_for_netherite_tool`, `sword_instantly_mines`, `shears_major_breaking_speed` and `shears_minor_breaking_speed` contain none of rows 0 to 104. `mineable/axe` has 55 rows here, `mineable/pickaxe` 15, `mineable/shovel` 10, `mineable/hoe` 11 (these counts are of this range only). The pickaxe, axe, shovel and hoe rows agree with 17 Appendix A. `ignitedByLava` (section 15 flags) is a separate property from the fire odds: the planks, wood and logs, mangrove roots and leaves carry it.
 
 Block order by family inside the range (ids): 0 air; 1 to 7 stone, granite, polished granite, diorite, polished
 diorite, andesite, polished andesite; 8 to 11 grass block, dirt, coarse dirt, podzol; 12 cobblestone; 13 to 25
@@ -1108,8 +1142,7 @@ How to check an implementation against this document:
    the suffocating predicate); `ofLegacyCopy` and `ofFullCopy` were compared field by field; the tint registrations
    were read in full.
 
-Not validated: any behaviour listed as owned by another document (growth, falling, fluids, decay); the numeric tag
-contents (data).
+Not validated: any behaviour listed as owned by another document (growth, falling, fluids, decay); the tag contents beyond the rows of this part (data, 22).
 
 ## 18. Open questions
 
@@ -1122,26 +1155,23 @@ contents (data).
 2. Resolved: the `ColorCollection.prefixWithColor` recipe is `\u0001_\u0001`, the colour first (section 2.3). No open point.
 3. Resolved: the 66 `BlockTags` names built from `BlockItemTags` were read there (section 12.1, 12.3). No open point.
 4. Resolved: the propagule shapes and offsets are in section 6.8. No open point.
-5. Burn and spread chances ("burnable"): the fire block table (RS11) was not read here; the builder has only
-   `ignitedByLava`.
+5. Resolved: burn and spread odds are in 17 §3.3a and tabulated per row in section 15.2. No open point.
 6. The map rendering rules that choose a `MapColor$Brightness` for a map pixel (the modifiers themselves are read,
    section 8.1).
 7. Resolved: `NoteBlockInstrument` constants 19 to 26 are named in section 8.3. Their types and sound events were not
    read (they belong to the note block row, a later part).
 8. Resolved: `GrassColor.getDefaultColor()` is `get(0.5, 1.0)`. Not read: the numeric content of the colormap textures (data).
-9. Biome blend radius and the tint cache rules (`BlockTintCache`, `getBlockTint`): design map RS25.
-10. Whether `FallingParticlesLeavesBlock` (the base of the tinted and untinted leaves) adds any state property: no
-    `createBlockStateDefinition` override was found in the classes read, so the leaves have three properties (inferred
-    from the absence of an override).
-11. `LiquidBlock.getCollisionShape` is read (section 14). Open: which entity classes other than `LivingEntity` (empty) and `Strider` (column 16, 0, 8) override `getLiquidCollisionShape`; a scan of the entity classes was started but not completed, and the bodies of `CollisionContext.isAbove` and `canStandOnFluid` were not read.
+9. Resolved: the biome blend radius and the tint cache are in 43 §4. No open point.
+10. Resolved: `LeavesBlock.createBlockStateDefinition` adds exactly `distance`, `persistent` and `waterlogged` (read), and `FallingParticlesLeavesBlock` has no override of it, so the leaves have three properties.
+11. Open: which entity classes other than `LivingEntity` (empty) and `Strider` (column 16, 0, 8) override `getLiquidCollisionShape`; a scan of the entity classes was started but not completed, and the bodies of `CollisionContext.isAbove` and `canStandOnFluid` were not read.
 12. `CENTER` and `FULL` support types were read; the exact branch of `VoxelShape.getFaceShape` for non-cube-like shapes
     (`calculateFace`) was not decoded: section 6.4 describes only the entry rules.
-13. Semantics of the tool tier tags (`incorrect_for_*`, `needs_*`) in the break rule are read in 13 §2 and 17; this
-    part states only which tags exist and the formula of `getDestroyProgress` (in `BlockBehaviour`). How a tool's rule
-    list consumes them was not read here.
+13. Resolved in part: the construction of the tool rule lists from `incorrect_for_*` and `mineable/*` is read (section 12.2). Open: the body of `Tool` that evaluates a rule list for a block (which rule wins when several match, how `deniesDrops` interacts with `minesAndDrops`); 13 §2 and 17 own it, and `Tool$Rule` was not read here.
 14. `SoundEvents` field to registry key mapping for the 131 sound types: 46 §14.3 owns the sound event table; not
     cross-checked here.
 15. The class of `Block$ShapePairKey`-based face culling (`shouldRenderFace`) was only skimmed (cache size 256, compare
     with `ONLY_FIRST`): a full read belongs to the rendering document.
-16. The `isSolid` "otherwise" row (section 5.2) is (inferred) false: only the earlier rows' results were read from the `SolidDebugger$Reason` constants.
-17. Per-row correct-tool tag membership and burnable flags are not in this document by design (columns table, section 7): tag membership is data from the extraction tool (22); burn and spread odds are Open question 5.
+16. Uses of tags in section 12.2 that remain untraced: the grouping tags other than `snow`, `logs`, `leaves` and `air` (referrers of `planks`, `saplings`, `sand`, `dirt`, `ores`, `base_stone_overworld`, `fire` and the second referrers of `climbable`, `Entity` and `DismountHelper`, were not read); the bodies of the heightmap fields `MATERIAL_MOTION_BLOCKING` and `NOT_AIR`; the bodies after the first test in `CushionItem` use-on. Searched: every class of the jar for the field names of the tags in section 12.2 (all other referrers are read, see the table).
+17. Resolved: the `isSolid` fallthrough value is false, read from `SolidDebugger$Reason.FALLTHROUGH` (section 5.2). No open point.
+18. Resolved for rows 0 to 104: burn odds (section 15.2, 17 §3.3a) and tool tag membership (section 15.2, read from the shipped tag files, agreeing with 17 Appendix A). Tag membership of the rows of other parts remains with the extraction tool (22) and the parts that cover them.
+19. Fluid behaviour of `LiquidBlock` deferred to RS10 (design map GAP-9; no numbered document exists yet): `shouldSpreadLiquid`, `fizz` (lava and water interaction), `tryScheduleBubbleBlockColumn`, `shouldBubbleColumnOccupy`, `BubbleColumnBlock.updateColumn`, `FlowingFluid.getTickDelay` and the fluid tick itself. Only the call structure of these overrides is stated in section 14.

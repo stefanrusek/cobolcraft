@@ -45,7 +45,7 @@ Each row names the codec as read and the NBT shape it produces.
 | Item stack with slot (`ItemStackWithSlot.CODEC`) | The item stack compound above plus the `Slot` key; specified in 45 part 3 section 4.1 (unsigned-byte codec, decode cannot fail, a stored -1 loads as 255). Not repeated here. | `ItemStackWithSlot` |
 | Container contents (`ContainerHelper.saveAllItems` and `loadAllItems`) | Key `Items`: List of Compound, one item-stack-with-slot per non-empty slot, in slot order. When the list is empty the key is still written for the normal save. On read, `loadAllItems` does not clear the container: it reads `Items` (absent or wrong type counts as an empty list), skips entries whose `Slot` is outside `0 <= slot < size` and sets the slot of every other entry. Clearing is done by the callers (the chest-vehicle read clears the item list first). | `ContainerHelper` |
 | Block state (`BlockState.CODEC`, section 2.1) | A String (the block key) when the state is the block's default state, otherwise a Compound `{id: String block key, properties: Compound of String to String}`. | `BlockState`, `StateHolder` |
-| Block position (`BlockPos.CODEC`) | Int Array of 3 ints `[x, y, z]` (index order inferred from the accessor order 0, 1, 2). | `BlockPos` |
+| Block position (`BlockPos.CODEC`) | Int Array of exactly 3 ints `[x, y, z]` (read: the codec is the int-stream codec of `Vec3i`; the decode requires a fixed size of 3 and builds the position from array indices 0, 1, 2 as the x, y, z constructor arguments; the encode builds the array from `getX`, `getY`, `getZ`, the first of which was not individually confirmed at index 0). | `BlockPos` |
 | Direction legacy id (`Direction.LEGACY_ID_CODEC`) | Byte: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east (the constructor order of `Direction`). Decoding wraps with `abs(value mod 6)` (`from3DDataValue`). The encoder and decoder are the method references of the static initialiser (inferred to be `get3DDataValue` and `from3DDataValue`). | `Direction` |
 | Arrow pickup (`AbstractArrow$Pickup.LEGACY_CODEC`) | Byte: 0 `DISALLOWED`, 1 `ALLOWED`, 2 `CREATIVE_ONLY`. `byOrdinal` maps a negative value to 0 and a value greater than 3 to 0 (the bound test is "value above the count"; see Open question 2 for the value 3). | `AbstractArrow$Pickup` |
 | Sound event (`Registry.byNameCodec` of `SOUND_EVENT`) | String registry key, for example a hit sound's key. Unknown keys do not decode. | `AbstractArrow` |
@@ -109,7 +109,7 @@ The total carried is `Value x Count` (inferred from the names; the award code is
 | `TileEntityData` | Compound | when not null | none | The block entity data to apply to the placed block |
 | `CancelDrop` | Boolean | always | false | When true the block is not dropped as an item and not placed (set by the engine when the entity is cancelled) |
 
-Write order: `BlockState`, `Time`, `DropItem`, `HurtEntities`, `FallHurtAmount`, `FallHurtMax`, `TileEntityData` (when set), `CancelDrop`. The ordering on read differs (the `anvil` test uses the state just read, so `BlockState` is read first). The falling-block tick engine was not located in a numbered document (33 mentions only the `entity_drops` rule for it); the only persisted-state facts it needs are: an air block state makes the entity discard itself on the first tick, `Time` increments each tick, and `CancelDrop` suppresses the drop and the placement.
+Write order: `BlockState`, `Time`, `DropItem`, `HurtEntities`, `FallHurtAmount`, `FallHurtMax`, `TileEntityData` (when set), `CancelDrop`. The ordering on read differs (the `anvil` test uses the state just read, so `BlockState` is read first). The falling-block tick engine was not located in a numbered document (33 mentions only the `entity_drops` rule for it). Read from `FallingBlockEntity.tick` in this round: an air block state makes the entity discard itself at the start of the tick (before anything else); otherwise `Time` is incremented by 1 on every tick before gravity and movement are applied; on landing, when `CancelDrop` is true the entity is discarded and the after-fall break hook of the block is called, with no placement and no item drop. The rest of the landing and timeout behaviour (placement through a directional place context, the `Time` thresholds 100 and 600, the world height bounds) was seen but is not specified here.
 
 ### 3.4 `tnt` (`PrimedTnt`)
 
@@ -142,7 +142,7 @@ Keys, in write order:
 | `DurationOnUse` | Int | always | 0 | Added to `Duration` each time a victim is affected |
 | `RadiusOnUse` | Float | always | 0.0 | Added to the radius each time a victim is affected |
 | `RadiusPerTick` | Float | always | 0.0 | Added to the radius every tick after waiting |
-| `Radius` | Float | always | 3.0 | Current radius; setting it clamps to 0.0 to 32.0 |
+| `Radius` | Float | always | 3.0 | Current radius; setting it clamps to 0.0 to 32.0, but only on a server level (`setRadius` does nothing on a client level; read). Load runs on the server, so the clamp applies to loaded values |
 | `custom_particle` | particle options | when not null | none (the default particle is the entity-effect particle coloured by the potion colour) | Overrides the particle |
 | `Owner` | Int Array (entity reference) | when set | none | The living entity credited with the effects |
 | `potion_contents` | potion contents | unless equal to the empty value | the empty value | Effects applied: the potion's effects followed by `custom_effects` |
@@ -278,7 +278,7 @@ Used by the chest boats, chest rafts, chest minecarts and hopper minecarts.
 | `DisplayState` | block state | when a custom display block state is set | the minecart's default display state | The block shown in the cart |
 | `DisplayOffset` | Int | only when it differs from the cart's default offset | the cart's default offset | Vertical offset of the displayed block in 1/16 block |
 | `FlippedRotation` | Boolean | always | false | Whether the cart's orientation is flipped relative to its movement |
-| `HasTicked` | Boolean | always | false | Whether the cart has run its first tick (a flag set by the per-tick routine, 44 part 8 section 4.2, whose own use is not described there; Open question 12) |
+| `HasTicked` | Boolean | always | false | The value of the base `Entity` field named `firstTick`, written and read directly. That field starts true on construction and is set false by the entity base tick and by the minecart's own tick, so a cart saved before it has ticked writes true and a cart that has ticked writes false (the key name suggests the opposite sense; Open question 12) |
 
 Defaults per cart type (read in `getDefaultDisplayBlockState` and `getDefaultDisplayOffset`):
 
@@ -303,12 +303,12 @@ The movement, rail and collision rules of all carts are in 44 part 8 section 4; 
 | `minecart` | none |
 | `chest_minecart` (`AbstractMinecartContainer`) | chest vehicle data (section 4.2) |
 | `hopper_minecart` | chest vehicle data, then `Enabled` (Boolean, always written, absent on read true: whether the hopper collects items; it is switched by powered activator rails) |
-| `furnace_minecart` | `PushX` (Double, always, absent 0.0), `PushZ` (Double, always, absent 0.0), `Fuel` (Short, always, absent 0) |
+| `furnace_minecart` | `PushX` (Double, always, absent 0.0), `PushZ` (Double, always, absent 0.0; the absent default is the static `DEFAULT_PUSH`, which the class initialiser sets to the zero vector, read), `Fuel` (Short, always, absent 0) |
 | `tnt_minecart` | `fuse` (Int, always, absent -1 meaning not ignited), `explosion_power` (Float, only when not 4.0, absent 4.0, clamped on read to 0.0 to 128.0), `explosion_speed_factor` (Float, only when not 1.0, absent 1.0, clamped on read to 0.0 to 128.0) |
 | `spawner_minecart` | the spawner state, section 4.5 |
 | `command_block_minecart` | the command block state, section 4.6 |
 
-Furnace minecart facts needed to interpret the keys (the rest is in 44 part 8 section 4): the push vector's Y is always 0; `Fuel` is decremented by 1 each server tick while above 0, and when it reaches 0 or below the push is reset to zero; the cart is "lit" when `Fuel > 0`; the maximum speed is 0.5 of the base maximum (0.75 of it in water). The Fuel Short truncates (Open question 8). Persisted-state rules: the engine constant `MAX_FUEL_TICKS` is 32000 and each fuel item (item tag `furnace_minecart_fuel`) adds 3600 (`FUEL_TICKS_PER_ITEM`) only when `Fuel + 3600 <= 32000`, so play can never produce a `Fuel` above 32000 (at most 8 items from 0 give 28800; a ninth would give 32400 and is refused). A `Fuel` outside 0..32000 can therefore only come from hand-edited NBT.
+Furnace minecart facts needed to interpret the keys (the rest is in 44 part 8 section 4): the push vector's Y is always 0; `Fuel` is decremented by 1 each server tick while above 0, and when it reaches 0 or below the push is reset to zero; the cart is "lit" when `Fuel > 0`; the maximum speed is 0.5 of the base maximum (0.75 of it in water). The Fuel Short truncates (Open question 8). Persisted-state rules: the engine constant `MAX_FUEL_TICKS` is 32000 and each fuel item (item tag `furnace_minecart_fuel`) adds 3600 (`FUEL_TICKS_PER_ITEM`) only when `Fuel + 3600 <= 32000`, so play can never produce a `Fuel` above 32000 (at most 8 items from 0 give 28800; a ninth would give 32400 and is refused). A `Fuel` outside 0..32000 can therefore only come from hand-edited NBT, necessarily written as a wider numeric tag (Int or larger) since a Short tag holds at most 32767; reading such a tag keeps its low 16 bits (section 10 case 11, Open question 8).
 
 ### 4.5 Spawner state (`BaseSpawner.save` and `load`) and the spawner engine
 
@@ -324,7 +324,7 @@ Used by `spawner_minecart` (the spawner block entity uses the same object; its o
 | `RequiredPlayerRange` | Short | always | 16 | Distance within which a living player must be |
 | `SpawnRange` | Short | always | 4 | Horizontal spread of the spawn position and radius of the crowd check |
 | `SpawnData` | spawn data | when a "next" spawn data is chosen | none (see below) | The entity that the next round spawns |
-| `SpawnPotentials` | weighted list of spawn data | always | a list containing the current `SpawnData` (or, when none, the default spawn data) with weight 1 | The pool the next spawn data is drawn from |
+| `SpawnPotentials` | weighted list of spawn data | always | a one-element list of weight 1 holding the current `SpawnData` when one is set, otherwise a newly built default spawn data (read from the fallback supplier of the read) | The pool the next spawn data is drawn from |
 
 Write order: `Delay`, `MinSpawnDelay`, `MaxSpawnDelay`, `SpawnCount`, `MaxNearbyEntities`, `RequiredPlayerRange`, `SpawnRange`, `SpawnData`, `SpawnPotentials`. The write side stores the delay and counters through `putShort`, so values above 32767 wrap. The read side reads the counters as Ints from Short or Int tags alike (the min, max, count, nearby, range and spawn range values with `getIntOr` for all but `Delay`, which uses `getShortOr`). The default spawn data is `{entity: {}}` (an empty entity compound), which cannot spawn anything (step 6 below). The spawner minecart's initial state is the object default (inferred: the constructor builds the spawner with no explicit values).
 
@@ -338,7 +338,7 @@ Write order: `Delay`, `MinSpawnDelay`, `MaxSpawnDelay`, `SpawnCount`, `MaxNearby
    2. Position: if the compound has a `Pos` (a list of 3 doubles), use it. Otherwise `x = bx + (rand01() - rand01()) * SpawnRange + 0.5`, `y = by + nextInt(3) - 1`, `z = bz + (rand01() - rand01()) * SpawnRange + 0.5`, where `rand01()` is `nextDouble` and the draws happen in the order x1, x2, then y, then z1, z2 (a double draw for x, an int draw for y, a double pair for z).
    3. If the spawn box of the entity type at the position (`getSpawnAABB`) collides with anything: this attempt fails (continue with the next attempt).
    4. Rules: if `custom_spawn_rules` is present: a non-friendly mob category fails on Peaceful difficulty; the position must satisfy the block-light and sky-light ranges. Otherwise the standard spawn placement rules for the entity type with the reason `SPAWNER` must pass. A failure ends the attempt.
-   5. Create the entity from the compound with the chosen position (the creation processor sets the position and clears the entity id to -1).
+   5. Create the entity from the compound with the chosen position (the creation processor sets the position and clears the entity id to -1). If creation returns nothing (`EntityType.loadEntityRecursive` yields null): run `delay` and stop the whole tick, the same outcome as the invalid-id and crowd-limit cases (read: the null test is followed by the `delay` call and a return).
    6. Crowd check: count entities of exactly the same class, excluding spectators, inside the box of the block (1 x 1 x 1) inflated by `SpawnRange`. If the count is `>= MaxNearbyEntities`: run `delay` and stop the tick.
    7. Set the entity's yaw to `nextFloat() * 360` and pitch 0 at its position.
    8. If the entity is a `Mob`: when no custom rules are present it must pass the mob's own spawn rules (reason `SPAWNER`); it must pass the spawn obstruction check; and if the spawn data compound has exactly one key and that key is a String `id`, the mob is finalised (`finalizeSpawn`, with difficulty at its block position, reason `SPAWNER`) and the optional `equipment` table is applied. A failure ends the attempt.
@@ -356,13 +356,15 @@ The client tick only spins the displayed mob and emits smoke and flame particles
 |---|---|---|---|---|
 | `Command` | String | always | "" | The command text (without the leading slash handling of 16: the executor uses `performPrefixedCommand`) |
 | `SuccessCount` | Int | always | 0 | Number of successful command results of the last run |
-| `CustomName` | text component | when not null | none (default name used) | Name shown as the command source |
+| `CustomName` | text component (lenient read, below) | when not null | none (default name used) | Name shown as the command source |
 | `TrackOutput` | Boolean | always | true | Whether the last output is remembered |
-| `LastOutput` | text component | when `TrackOutput` is true and the output is not null | none | Output text of the last run |
+| `LastOutput` | text component (lenient read, below) | when `TrackOutput` is true and the output is not null | none | Output text of the last run |
 | `UpdateLastExecution` | Boolean | always | true | Whether the executor refuses to run twice in the same game tick |
 | `LastExecution` | Long | when `UpdateLastExecution` is true and the value is not -1 | -1 | The game time of the last run |
 
 On read, `LastOutput` is read only when `TrackOutput` is true (otherwise it becomes none) and `LastExecution` only when `UpdateLastExecution` is true (otherwise -1). After loading, the command minecart copies the command and the last output into its synced data.
+
+`CustomName` and `LastOutput` are both read through the block entity helper `parseCustomNameSafe`, which performs an optional read of the key with the text component codec and returns none when the optional is empty. A missing or undecodable value therefore yields none and does not abort the load. What the underlying optional read does with a decode failure (log or silent) was not read (Open question 16). This differs from the `text_display` handling in section 3.9.1 (decode, then resolve, log on failure); an implementer must not unify the two paths.
 
 **Executor (`performCommand`).**
 
@@ -456,7 +458,7 @@ Class defaults of the pickup stack: `arrow` gives `arrow`, `spectral_arrow` give
 | `end_crystal` | its own two keys | section below |
 | `boat`, `raft`, plain `minecart` | no keys beyond the layers of section 4 | |
 
-**`end_crystal` (`EndCrystal`, plain `Entity`):** `beam_target` (Int Array block position, when not null; the block the beam points at) and `ShowBottom` (Boolean, always, absent true; whether the bedrock base is drawn). Write order `beam_target`, `ShowBottom`. Fire immune. The fight behaviour is in 21 section 6.3.
+**`end_crystal` (`EndCrystal`, plain `Entity`):** `beam_target` (Int Array block position, when not null; the block the beam points at) and `ShowBottom` (Boolean, stored as a Byte tag per 07, always, absent true; whether the bedrock base is drawn). Write order `beam_target`, `ShowBottom`. Fire immune. The fight behaviour is in 21 section 6.3.
 
 ## 7. Master table: layers per entity type
 
@@ -537,7 +539,7 @@ Each example lists the top-level keys after the `Entity` layer of part 1. Types 
 
 **9.6 Tipped arrow stuck in a block.** `Owner` the shooter, `HasBeenShot` true, `life` Short 20, `inBlockState` the block, `shake` Byte 5, `inGround` true, `pickup` Byte 1, `damage` Double 2.0, `crit` false, `PierceLevel` Byte 0, `SoundEvent` the arrow-hit key, `item` `{id: "minecraft:tipped_arrow", count: 1, components: {potion_contents: ...}}`, `weapon` `{id: "minecraft:bow", ...}`. After loading, the synced colour equals the colour of the contents in `item`.
 
-**9.7 Chest minecart with an unopened loot table.** After the common layer (`DisplayState` absent, `DisplayOffset` absent, `FlippedRotation` false, `HasTicked` true): `LootTable` `"minecraft:chests/..."` and `LootTableSeed` Long 0 is omitted (seed 0), and no `Items`. After the player opens it the loot table is cleared and the next save contains `Items` with the generated stacks.
+**9.7 Chest minecart with an unopened loot table.** After the common layer (`DisplayState` absent, `DisplayOffset` absent, `FlippedRotation` false, `HasTicked` false once the cart has ticked, true if saved before its first tick): `LootTable` `"minecraft:chests/..."` and `LootTableSeed` Long 0 is omitted (seed 0), and no `Items`. After the player opens it the loot table is cleared and the next save contains `Items` with the generated stacks.
 
 **9.8 Furnace minecart.** `PushX` 0.5, `PushZ` 0.0, `Fuel` Short 3600 (one fuel item, 3600 ticks). After 3600 server ticks `Fuel` is 0, the push resets to zero and the lit state clears.
 
@@ -553,18 +555,18 @@ Each case is a test an implementer can write from the text above.
 2. An item compound whose `Item` is absent loads an empty stack and the entity is discarded.
 3. A `falling_block` with `BlockState` an anvil and no `HurtEntities` loads with `HurtEntities` true; with a sand block state and no key it loads false.
 4. A `tnt` with `explosion_power` 500 loads 128.0; with -3 loads 0.0; a `tnt` with power 4.0 saves no `explosion_power`.
-5. A cloud with `Radius` 40 saved in a file loads with radius 32.0 (the setter clamp applies on read as well, since the read calls the setter).
+5. A cloud with `Radius` 40 saved in a file loads with radius 32.0 on a server level (the setter clamp applies on read as well, since the read calls the setter; the clamp is server-side only).
 6. Cloud simulation with `WaitTime` 20 and `Duration` 100: nothing is applied before tick 20; at `t = 120` the cloud is discarded; victims are only evaluated when `t mod 5 = 0`.
 7. Two entities in a cloud with `ReapplicationDelay` 20, `Radius` 3: each is affected once; the next application of the same entity is at the first `t mod 5 = 0` with `t >= first + 20`.
 8. A cloud with `RadiusOnUse -0.5` and radius 1.0 that has three eligible entities in one pass: after the first the radius is 0.5 (not below 0.5, kept), after the second it would be 0.0 (below 0.5), so the cloud is discarded and the third entity is not affected.
 9. A chest boat saved with both `LootTable` and `Items` loads without the items.
 10. A hopper minecart without `Enabled` loads enabled.
-11. A furnace minecart loaded from hand-edited NBT with `Fuel` 40000 (unreachable in play, section 4.4) saves the Short value 40000 truncated to 16 bits (-25536).
+11. A furnace minecart loaded from hand-edited NBT with `Fuel` stored as an Int tag of 40000 (a Short tag cannot hold 40000; unreachable in play, section 4.4): `getShortOr` accepts any numeric tag and takes its low 16 bits (read: `NumericTag.shortValue`, which for an Int masks with 65535), so the cart holds -25536 and saves the Short -25536. Starting instead from an in-memory field value of 40000, the save gives the same Short (40000 - 65536 = -25536).
 12. A block state compound with a missing property loads the default value for it; the default state is written as a bare String, and any non-default state writes every property.
 13. A UUID round trip: the UUID `00112233-4455-6677-8899-aabbccddeeff` is written as `[0x00112233, 0x44556677, 0x8899aabb, 0xccddeeff]` as signed ints.
 14. A `text_display` with both alignment bits set in a hand-built flags byte reads back as left (bit 8 tested first).
 15. Entities `lightning_bolt` and `fishing_bobber` never produce a compound in the chunk entity list.
-16. A spawner round with `SpawnCount` 4 where the second attempt hits the crowd limit performs no further attempts, spawns nothing more and runs `delay`.
+16. A spawner round with `SpawnCount` 4 where the second attempt hits the crowd limit performs no further attempts, spawns nothing more and runs `delay`. The same holds when entity creation returns nothing (step 5 of the attempt) or when adding the entity fails.
 17. A command block minecart ran at game time 100 with `UpdateLastExecution` true: a second call in the same tick returns false; an activator signal at `tickCount - lastActivated < 4` does nothing.
 
 ## 11. Open questions
@@ -576,9 +578,12 @@ Each case is a test an implementer can write from the text above.
 5. In the cloud tick (step 8) the stream predicate that decides whether a potion effect list can affect an entity was not disassembled; "can be affected" is inferred.
 6. `firework_rocket` `LifeTime` is read as saved. How a freshly shot rocket computes its lifetime (flight duration and random addition) is in 21 section 8.7 and was not re-read here; a loaded rocket with `LifeTime` 0 is expected to explode at once (inferred).
 7. The block spawner (the block entity) uses the same save and engine; its other keys, the "spawner blocks enabled" level setting and the client event 1 handling were not read here (RS13).
-8. `Value` (orb), `Fuel` (furnace minecart), `Age` (item), `Health` and the spawner counters are written with a 16-bit truncation; the read side also reads 16-bit values (with sign extension for `getShortOr`, inferred from the `I` return). Values above 32767 therefore wrap to negative on reload; no code in the artifact clamps them.
+8. `Value` (orb), `Fuel` (furnace minecart), `Age` (item), `Health` and the spawner counters are written with a 16-bit truncation; the read side also reads 16-bit values. Read in this round: `getShortOr` (both the compound and the value-input wrapper) accepts any numeric tag and returns its `shortValue`, the low 16 bits as a signed short (an Int tag is masked with 65535), and returns the default only for an absent or non-numeric tag; it returns a short widened to an int, so the sign is kept. Values above 32767 therefore wrap to negative on reload; no code in the artifact clamps them.
 9. The component schemas inside an item stack's `components` (for example `potion_contents`, `fireworks`, `enchantments`) are in the data and in 17; they were not enumerated here.
 10. The `custom_spawn_rules` validity check (`isValidPosition`) and the equipment table were not disassembled; only their key names and the call points are stated.
 11. `ThrownEnderpearl` has chunk-ticket or cross-dimension handling (it overrides `teleport`, `canTeleport`, `onRemoval`) that was read only for the owner registration; the dimension-change behaviour is not specified here.
-12. `AbstractMinecart.HasTicked` is saved and read but its use in the new minecart behaviour (experimental pack) was not read.
+12. `AbstractMinecart.HasTicked` is the base `Entity.firstTick` flag (initially true, cleared in the entity base tick and in the minecart tick; absent on read gives false, so a loaded cart without the key counts as already ticked). Read in this round. The gloss of what consumers of `isFirstTick` do with it (and the interpretation that a true value means "has not ticked yet") is derived from the field name and its set sites; the consumers were not read.
 13. (Closed) The spawner class constants were read: `DEFAULT_SPAWN_DELAY` 20, `DEFAULT_MIN_SPAWN_DELAY` 200, `DEFAULT_MAX_SPAWN_DELAY` 800, `DEFAULT_SPAWN_COUNT` 4, `DEFAULT_MAX_NEARBY_ENTITIES` 6, `DEFAULT_REQUIRED_PLAYER_RANGE` 16 and `DEFAULT_SPAWN_RANGE` 4, equal to the read defaults; the default spawn data is an empty compound with empty optionals, which gives `{entity: {}}`. Whether the field initialisers use these constants was not disassembled (inferred from the names).
+14. Items marked "(inferred)" in this document and not read: the particle options key name `type` (the `BlockPos` index order was resolved: the decode takes indices 0, 1, 2 as x, y, z; only the encode's first element was not individually confirmed); `show_icon` absent meaning the same as `show_particles`; the identity quaternion `[0, 0, 0, 1]` (follows from the x, y, z, w order but the constant was not read); the orb total `Value x Count`; the spawner minecart initial state being the object default. Searched: the particle option codec construction was not located; the `BlockPos` and `Vec3i` classes were read.
+15. `end_crystal` is also covered by 45 part 9 section 4.2, which calls `ShowBottom` a Byte. The artifact writes it with the boolean operation and reads it with the boolean-or-default read (default true), so the type is Boolean (stored as a Byte tag, 07); part 9 should use that wording. Keys and order agree between the two parts.
+16. Failure handling of the optional value read (`ValueInput.read` with a codec) when the stored value does not decode (log versus silent) was not read; it decides how `CustomName` and `LastOutput` of section 4.6 behave on a malformed value beyond "becomes none". The `FallingBlockEntity` landing and timeout rules (section 3.3) were seen but not specified.

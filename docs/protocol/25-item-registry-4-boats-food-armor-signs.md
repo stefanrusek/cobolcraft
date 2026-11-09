@@ -8,11 +8,11 @@
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for lambda and bootstrap targets) and of data files in the jar (`unzip -p`), with no execution. Class, method and field names in backticks say where a fact was read. Values not read are marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions |
 | Status | Round RS5, part 4 of 8 (design map Part 5 GAP-2, Part 6 row RS5) |
 
-"25-1 §n" means section n of part 1 (the shared model: id rule, helpers, `Item.Properties` builders, the 13 default
+"25 part 1 §n" (written "25-1 §n" below, where 25-1 always names this sibling and not a section of 25) means section n of part 1 (the shared model: id rule, helpers, `Item.Properties` builders, the 13 default
 components, `Foods`, `Consumables`, the data-driven fuel and compost components, the row schema). "17 §n" is
 [17-tools-weapons-and-combat.md](17-tools-weapons-and-combat.md); "29 §n" is
-[29-block-updates-and-placement.md](29-block-updates-and-placement.md); "24-3" is
-[24-block-registry-3-signs-doors-redstone.md](24-block-registry-3-signs-doors-redstone.md); "44-8" and "44-9" are
+[29-block-updates-and-placement.md](29-block-updates-and-placement.md); "24 part 3" is
+[24-block-registry-3-signs-doors-redstone.md](24-block-registry-3-signs-doors-redstone.md); "44 part 8" and "44 part 9" are
 [44-residual-mob-questions-8-vehicles-and-projectiles.md](44-residual-mob-questions-8-vehicles-and-projectiles.md) and
 [44-residual-mob-questions-9-end-bosses-decorations.md](44-residual-mob-questions-9-end-bosses-decorations.md); "46 §n" is
 [46-registry-ids.md](46-registry-ids.md). Nothing the siblings state is repeated; this document adds only rows and the
@@ -108,7 +108,7 @@ Ids 975 to 996, statements 695 to 716. Each is registered by `registerItem(ItemI
 lambda constructs `BoatItem(entityType, properties)`. Properties of every row: `cookingFuel(cooking/time_boats)` then
 `stacksTo(1)`; nothing else (no rarity, no durability, no food). Key and entity type key are equal (`oak_boat` item gives
 entity type `oak_boat`; chest variants likewise; `bamboo_raft` and `bamboo_chest_raft` give the raft entity types of the same
-names). The entity type ids and sizes are 21 §2; boat entity physics and models are 44-8 §3 and 34 part 8.
+names). The entity type ids and sizes are 21 §2; boat entity physics and models are 44 part 8 §3 and 34 part 8.
 
 | Id | Key | Entity type | Max stack | Fuel (burn-time key) |
 |---|---|---|---|---|
@@ -138,9 +138,9 @@ names). The entity type ids and sizes are 21 §2; boat entity physics and models
 Order rule: for each wood in the order oak, spruce, birch, jungle, acacia, cherry, dark_oak, pale_oak, mangrove, poplar,
 bamboo, the plain boat is followed by its chest variant (22 = 11 x 2; the eleventh wood is the bamboo raft).
 
-Class behaviour: `BoatItem.use` is specified in 44-8 (the fluid-including pick ray, the entity-in-the-way PASS rule, creating the
+Class behaviour: `BoatItem.use` is specified in 44 part 8 (the fluid-including pick ray, the entity-in-the-way PASS rule, creating the
 boat at the hit location with the player's yaw, FAIL when its box collides, `ENTITY_PLACE`, consuming one item, the
-`item_used` statistic). One construction detail read here and not in 44-8: the boat is created through
+`item_used` statistic). One construction detail read here and not in 44 part 8: the boat is created through
 `EntityType.create(level, SPAWN_ITEM_USE)`, `setInitialPos(x, y, z)` of the hit location and, on a server level, the entity
 type's default stack configuration is applied with the held stack (a `custom_name` or entity-data component of the stack is
 copied onto the new boat; the component list is `EntityType.createDefaultStackConfig`, not traced: Open question 7).
@@ -176,14 +176,11 @@ shows these items only to game-master players (creative tabs: not specified here
 | 1007 | `apple` | `Item` | 64 | `food` apple (4, saturation 2.4), `consumable` default food; compostable `medium` |
 | 1008 | `bow` | `BowItem` | 1 | fuel `wood_items_small`; `durability(384)`; `enchantable(1)`; behaviour 17 §3.9 |
 | 1009 | `arrow` | `ArrowItem` | 64 | none (class below) |
-| 1010 | `coal` | `Item` | 64 | fuel `coal` |
-| 1011 | `charcoal` | `Item` | 64 | fuel `coal` |
-
-(Ids 1010 and 1011 belong to section 5; they are listed here because the brief groups them with the bow.)
+(Ids 1010 `coal` and 1011 `charcoal` belong to section 5 and are listed only there; the brief groups them with the bow.)
 
 `ArrowItem` (a `ProjectileItem`): `createArrow(level, ammoStack, shooter, weaponStack)` builds an `Arrow` entity from a copy of the
 ammo stack with count 1 and the weapon stack; `asProjectile(level, position, stack, direction)` (the dispenser path) builds an `Arrow` at the
-given position from a copy with count 1 and no weapon. The shooting arithmetic is 17 §3.9; the entity is 44-8.
+given position from a copy with count 1 and no weapon. The shooting arithmetic is 17 §3.9; the entity is 44 part 8.
 
 ### 4.3 Items whose key differs from the block (see 25-1 §4.3)
 
@@ -210,7 +207,7 @@ Not in the item class. `Player.tick` (read) runs, every tick, a check: when the 
 (`isEyeInFluid(water)` false) and the helmet is worn, `turtleHelmetTick` adds the effect `water_breathing` with duration 200 ticks,
 amplifier 0, ambient false, show particles false, show icon true (constructor arguments `(effect, 200, 0, false, false, true)`, read). Because
 the effect is re-added every tick with a fixed duration of 200, a worn helmet keeps `water_breathing` at 200 ticks while out of the water
-and the effect then counts down from 200 after the eyes enter the water, giving 10 seconds (inferred from the refresh; the effect-stacking rule that keeps the longer duration is not traced). `Player.isEquipped(item)` (read) loops `EquipmentSlot.VALUES` in order; for each slot it takes the stack in that slot (`getItemBySlot`),
+and the effect then counts down from 200 after the eyes enter the water, giving 10 seconds (200 ticks / 20 ticks per second, arithmetic on the read constant). The merge rule of an effect added while the same effect is already active (`MobEffectInstance` merge) was not read and nothing here relies on it: the duration is stated only for the first add and for the re-add each tick (Open question 13). `Player.isEquipped(item)` (read) loops `EquipmentSlot.VALUES` in order; for each slot it takes the stack in that slot (`getItemBySlot`),
 reads its `equippable` component, and returns true when the stack is the given item, the component is present and the component's `slot` is
 the very slot being visited (reference comparison); otherwise it continues, and returns false after the last slot. So the helmet counts only when worn in the head slot, not when held or carried elsewhere.
 
@@ -321,7 +318,7 @@ consumable) and `usingConvertsTo(bowl)`. Eating it replaces the stack with a `bo
 | 1100 | `golden_apple` | `Item` | 64 | `food` golden_apple, `consumable` golden_apple |
 | 1101 | `enchanted_golden_apple` | `Item` | 64 | rarity rare; `food` enchanted_golden_apple; `consumable` enchanted_golden_apple; `enchantment_glint_override` true |
 
-`painting` is `HangingEntityItem(PAINTING)`; its use (variant selection and survival) is specified in the placement paragraphs of 44-9. Note
+`painting` is `HangingEntityItem(PAINTING)`; its use (variant selection and survival) is specified in the placement paragraphs of 44 part 9. Note
 `HangingEntityItem.mayPlace`: the clicked face must be horizontal (not vertical) and `Player.mayUseItemAt(pos, face, stack)` must be true;
 the item action returns `FAIL` when `mayPlace` is false, `CONSUME` when no painting variant fits, else creates the entity,
 applies the default stack configuration, and succeeds only if the entity `survives()` (play the placement sound, `ENTITY_PLACE`,
@@ -436,7 +433,7 @@ helmet, chestplate, leggings, boots. Class `Item`; max stack 1; Max damage is mu
 
 Other components: `enchantable` (material value, 8.3), `repairable` (tag, 8.3), `equippable` (8.1 with the material's asset and sound), `attribute_modifiers`
 (8.2). Piglin behaviour toward gold armor uses the item tag `piglin_safe_armor` (the four golden pieces; data). The tag `trimmable_armor` is the
-union of the head, chest, leg and foot armor tags (data); trims (the `trim` component and its application) are part 8 of the brief's numbering.
+union of the head, chest, leg and foot armor tags (data); trims (the `trim` component and its application) have no dedicated document in docs/protocol/ at the time of writing (no NN section covers the `trim` component; see Open questions); cross-reference one when it exists.
 
 ## 9. Signs and hanging signs
 
@@ -444,7 +441,7 @@ union of the head, chest, leg and foot armor tags (data); trims (the `trim` comp
 
 Standing sign items, ids 1102 to 1114, statements 822 to 834. Registered by `registerBlock(BlockItemIds.<WOOD>_SIGN, Blocks.<WOOD>_SIGN, factory, properties)`;
 the factory creates `StandingAndWallBlockItem(sign block, wall sign block, Direction.DOWN, properties)`; properties: `cookingFuel(cooking/time_wood_items_large)`
-(not for crimson and warped), `stacksTo(16)`, `signText()`. There is no `SignItem` class in this version: the sign-specific behaviour is in the blocks (24-3) and in the
+(not for crimson and warped), `stacksTo(16)`, `signText()`. There is no `SignItem` class in this version: the sign-specific behaviour is in the blocks (24 part 3) and in the
 block-entity component copy (9.3).
 
 | Id | Key | Wall block | Max stack | Fuel |
@@ -482,7 +479,7 @@ Hanging sign items, ids 1115 to 1127, statements 835 to 847. The factory creates
 | 1126 | `crimson_hanging_sign` | `crimson_wall_hanging_sign` | 16 | - |
 | 1127 | `warped_hanging_sign` | `warped_wall_hanging_sign` | 16 | - |
 
-The woods are, in order: oak, spruce, birch, jungle, acacia, cherry, dark_oak, pale_oak, mangrove, poplar, bamboo, crimson, warped (the same order as in every other wood family). The block ids and states of the sign blocks are in 24-3.
+The woods are, in order: oak, spruce, birch, jungle, acacia, cherry, dark_oak, pale_oak, mangrove, poplar, bamboo, crimson, warped (the same order as in every other wood family). The block ids and states of the sign blocks are in 24 part 3.
 
 ### 9.2 Placement (`StandingAndWallBlockItem.getPlacementState` and `canPlace`)
 
@@ -501,7 +498,7 @@ false unless `WallHangingSignBlock.canPlace(state, level, P)` is true; for any o
 `WallHangingSignBlock.canPlace(state, level, P)` (read): let `f` be the state's `facing`, `cw` = clockwise of `f`, `ccw` = counter-clockwise of `f`. True when
 `canAttachTo(level, state, P + cw, ccw)` or `canAttachTo(level, state, P + ccw, cw)`, where `canAttachTo(level, state, pos, dir)` looks at the block state `N` at `pos`:
 if `N` is in the block tag `wall_hanging_signs`, the answer is whether `N`'s `facing` has the **same axis** as the new sign's `facing` (a chain of wall hanging signs);
-otherwise the answer is `N.isFaceSturdy(level, pos, dir, SupportType.FULL)`. The wall hanging sign's `canSurvive` is not overridden (24-3 Open question 6).
+otherwise the answer is `N.isFaceSturdy(level, pos, dir, SupportType.FULL)`. The wall hanging sign's `canSurvive` is not overridden (24 part 3 Open question 6).
 
 `StandingAndWallBlockItem.registerBlocks` maps both the standing and the wall block to the item in `Item.BY_BLOCK`.
 
@@ -560,8 +557,7 @@ After `Item.finishUsingItem`, `ItemStack.finishUsingItem` runs `applyAfterUseCom
 
 `UseRemainder.convertIntoRemainder(stack, originalCount, hasInfiniteMaterials, onExtraCreated)`: the remainder is created from the template (`convertInto`) when the entity
 does not have infinite materials and the stack has fewer items than before; if the used stack is now empty the result is the remainder stack; otherwise the remainder is handed to the
-`onExtraCreated` callback (the player receives it or it is dropped) and the stack stays. (The branch structure was read from the bytecode without branch targets; the order above is the observed
-reading: Open question 6.) `mushroom_stew` has stack size 1, so eating it always leaves a `bowl` in the hand.
+`onExtraCreated` callback (the player receives it or it is dropped) and the stack stays. (Read, branch by branch: 1 infinite materials returns the used stack unchanged; 2 a count at or above the original count returns it unchanged; 3 otherwise the remainder is created from the item-stack template; 4 an empty used stack returns the remainder; 5 otherwise the callback receives the remainder and the used stack is returned.) `mushroom_stew` has stack size 1, so eating it always leaves a `bowl` in the hand.
 
 ## 11. Fuel and compost keys used in this range
 
@@ -598,7 +594,7 @@ Compost keys: `compostable/low` (`wheat_seeds`: 30 percent to raise the level wh
 5. **Eating when full.** A player with food level 20 who is not invulnerable holding an apple: `canEat(false)` false, `FAIL`, nothing starts. Holding a golden apple: `can_always_eat` true, starts, completion adds food 4,
    saturation 9.6 and effects regeneration (100 ticks, amplifier 1) and absorption (2400 ticks, amplifier 0), each applied with probability 1.0.
 6. **Hanging sign placement.** A player looks straight up at the underside of a solid block and uses an `oak_hanging_sign` on it: the nearest-looking order (29 §9.5) puts UP first for a clicked face DOWN; `A` = UP, the opposite DOWN is skipped;
-   `d` = UP equals `A`, so the candidate is the ceiling hanging sign state; `canPlace` is `canSurvive` (the block above must support it, 24-3); the result is kept if unobstructed. Looking at the side of a wall instead gives a horizontal `d`:
+   `d` = UP equals `A`, so the candidate is the ceiling hanging sign state; `canPlace` is `canSurvive` (the block above must support it, 24 part 3); the result is kept if unobstructed. Looking at the side of a wall instead gives a horizontal `d`:
    the candidate is the wall hanging sign state, and `WallHangingSignBlock.canPlace` demands a sturdy full face or a same-axis wall hanging sign on one of the two lateral neighbours.
 7. **Fuel.** An `oak_boat` in a furnace burns 1200 ticks (60 s); in a smoker it burns 600 ticks. A `bowl` burns 100 ticks in a furnace. A `crimson_sign` and every `crimson` or `warped` sign burns 0 (no `cooking_fuel`).
 
@@ -608,7 +604,7 @@ Compost keys: `compostable/low` (`wheat_seeds`: 30 percent to raise the level wh
 |---|---|---|
 | 1 | Rows | 153 (ids 975 to 1127); every row's key equals the lower-case `Items` field name (all 153) |
 | 2 | Statement to id offset (0-based statements, section 1) | 695 + 280 = 975 and 847 + 280 = 1127; 24 collection statements precede the range (10 weathering x 8 + 14 colour x 16 = 304 items), none inside it; 671 plain statements precede it |
-| 3 | Total registry | 1658 items (1218 plain item statements + 20 x 16 + 15 x 8), equal to 25-1 §2.4 |
+| 3 | Total registry (1253 `putstatic` statements in all: 1218 plain + 35 collection statements, 0-based numbers 0 to 1252) | 1658 items (1218 plain item statements + 20 x 16 + 15 x 8), equal to 25-1 §2.4 |
 | 4 | Stack sizes | 1: 90 rows (22 boats, 35 tools, 28 armor, `turtle_helmet`, `wolf_armor`, `flint_and_steel`, `bow`, `mushroom_stew`); 16: 26 rows (signs); 64: 37 rows |
 | 5 | Rows with `max_damage` | 67 (35 tools, 28 armor, `turtle_helmet`, `wolf_armor`, `flint_and_steel`, `bow`); each has stack size 1 |
 | 6 | Fuel rows | 54 = 22 boats + 5 wooden tools + 11 signs (oak to bamboo) + 11 hanging signs (oak to bamboo) + 2 coal items (`coal`, `charcoal`) + `bow` + `bowl` + `stick`; the other 99 rows have none |
@@ -631,10 +627,12 @@ of `oak_sign` has the 13 common entries (25-1 §7.1) with `max_stack_size` 16, p
 2. The wire layouts of `villager_food` (a VarInt is inferred) and `provides_trim_material` (a holder of `trim_material`) were not read.
 3. Resolved: the equip sound key strings were read (8.3). Not read: the numeric ids of these events in the sound registry (46 §14) and whether the keys carry the `minecraft` namespace by default registration (inferred).
 4. The ordering inside `ColorCollection`/`WeatheringCopperCollection` (needed for the ids before this range) is taken from 25-1 §2.3, not re-read here; this range does not depend on it (no collection inside it), only the total offset 280 does.
-5. Resolved: `Player.isEquipped(item)` was read in full (section 4.5): per slot, stack `is(item)`, `equippable` present and its `slot` identical to the visited slot. Nothing remains open except that the turtle helmet's `equippable` slot (head) is taken from its row (section 4.2), not re-read here.
-6. `UseRemainder.convertIntoRemainder`: the branch order of the two conditions (infinite materials, remaining count) was read without branch targets; the stated reading (a remainder is produced only when not infinite and the stack shrank; empty stack returns the remainder, otherwise the callback gives it) is inferred.
+5. Resolved: `Player.isEquipped(item)` was read in full (section 4.5): per slot, stack `is(item)`, `equippable` present and its `slot` identical to the visited slot. The turtle helmet's head slot is also read: `Items` statement 721 calls `humanoidArmor(TURTLE_SCUTE, HELMET)` and `ArmorType.HELMET` maps to `EquipmentSlot.HEAD`; `Player.tick` additionally requires `isEyeInFluid(water)` false and `isEquipped(TURTLE_HELMET)`. Nothing remains open.
+6. Resolved: `UseRemainder.convertIntoRemainder` was read with branch targets (section 10.4). Formerly: the branch order of the two conditions (infinite materials, remaining count) was read without branch targets; the stated reading (a remainder is produced only when not infinite and the stack shrank; empty stack returns the remainder, otherwise the callback gives it) was inferred before that read.
 7. `EntityType.createDefaultStackConfig` (which stack components a spawned boat or painting takes from the item) was not traced.
 8. Creative inventory membership of the game-master items (`CreativeModeTabs`) and the operator-only filtering were not read.
 9. The `crafting_dye` recipe engine, the trim application, and the item entries `leather_horse_armor` and horse armor of other parts are outside this range.
 10. Whether `Player.tick` runs the turtle helmet check on the client as well as on the server (the effect is only meaningful on the server) was not traced.
 11. The brief numbered part 3 as "456-694", part 5 as "848-939" and this part as "695 to 847": those are statement numbers (section 1), not ids; the ids of this part are 975 to 1127 (part 3 ends at id 974, part 5 starts at id 1128). If another document uses the brief's numbers as ids it is wrong by 280.
+12. No document in docs/protocol/ was found that covers the `trim` component and its application (searched file names for "trim"; grep of 04, 08, 13, 14, 16, 17, 19, 23 only matched smithing or trim material mentions in other contexts and was not read for this purpose). Add an NN cross-reference when one exists.
+13. The effect-merge rule when `water_breathing` is added while already active (`MobEffectInstance` merge, whether the longer duration is kept) was not read; section 4.5 does not depend on it.

@@ -4,17 +4,17 @@
 |---|---|
 | Covers | Round RS26, part 2. The spawner block (`BaseSpawner`: tick, spawn data, delay arithmetic, spawn eggs on spawners); the trial spawner (states, configuration, ominous variant); the spawn egg item components; the five custom spawners and their gating; how a spawn list is picked (`WeightedList`, duplicate entries); how the biome attribute `natural_mob_spawns` is combined (`overlay`); structure `spawn_overrides` and the "piece" versus "full" bounding-box rule for all 52 structures; spawns placed by structure pieces and templates (mineshaft, fortress, stronghold, mansion, bastion, villages, igloo, pillager outpost, trial chambers); the contents of the spawn tags; the ocelot-in-the-monster-list consequence (`jungle` and `bamboo_jungle` only); cross-references for the Turtle, Slime and Animal predicates. Closes 18 Open questions 4 and 17, 19 Open questions 4, 5, 6 and 35, 20 Open question 12, 21 Open questions 2, 3, 6 and 22. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the JSON and structure NBT data inside the jar, with no execution. A statement is read from the artifact unless it is marked "(inferred)" or names an open question. Each fact was read in this round (a review pass re-read the biome files, tag files, structure files, trial spawner files, the two template spawners and the classes named in the text); no item is marked "(recalled, not verified)". A later review pass read the swamp hut floor, so no item is inferred except where the text says so (the ocean monument wing-room count in 10.8). |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the JSON and structure NBT data inside the jar, with no execution. A statement is read from the artifact unless it is marked "(inferred)" or names an open question. Each fact was read in this round; no item is marked "(recalled, not verified)". The items marked "(inferred)" are the odds arithmetic of 10.5, the statement in 10.9 that structure-block markers are filtered by the template's ignore setting, and the block names attributed to the `isValidSpawn` lambdas in 11. |
 | Status | Written by the reader for the story "all the standard mobs exist and have their standard behavior" (`tickets/CC-0001-client-polish.md`) and the gaps GAP-31 and GAP-18 of `docs/design/README.md` Part 5 |
 
 Class names in backticks say where a fact was read; they are not the design. Following the operator's data-versus-code
 rule, data rows (the 28 trial spawner config files, the 67 biome spawn tables, the 1511 structure templates, loot tables,
 tags) are not tabulated: the schema, the semantics and the engines that read them are. The two exceptions are small
 tables that the engines depend on and that the earlier documents asked for: the structure `spawn_overrides` of all 52
-structures (§8) and the spawn tags (§11). "18 framework: <topic>" is
+structures (§8) and the spawn tags (§11). "18 §N" cites
 `18-mob-framework.md`. The villager, POI, siege, cat and iron golem details are in
 [44-residual-mob-questions-3-villagers-poi-raids.md](44-residual-mob-questions-3-villagers-poi-raids.md), cited here
-as "44 part 3".
+as "44-3".
 
 ## Contents
 
@@ -41,7 +41,7 @@ as "44 part 3".
 |---|---|
 | 18 OQ 4: trial spawner states, configuration, ominous variant | 4 |
 | 18 OQ 4: spawn egg item components beyond 18 §6.12 | 5 |
-| 18 OQ 4: custom spawners `tickCustomSpawners` (phantom, patrol, trader, cat, siege) | 6 (the rules themselves are in 20 §12 phantom, 20 §14.1 patrol, 19 §23 trader, 44 part 3 §§1.6 and 1.7 cat and siege; this document adds the list, the order and the gating) |
+| 18 OQ 4: custom spawners `tickCustomSpawners` (phantom, patrol, trader, cat, siege) | 6 (the rules themselves are in 20 §12 phantom, 20 §14.1 patrol, 19 §23 trader, 44-3 §§1.6 and 1.7 cat and siege; this document adds the list, the order and the gating) |
 | 18 OQ 17: `spawn_overrides` replacement rule, "piece" versus "full", all structures | 8 |
 | 21 OQ 2: biome `overlay` modifier combination | 7.3 |
 | 21 OQ 3: bastion and Nether fortress spawners and preplaced mobs (spawn semantics only) | 10 |
@@ -55,12 +55,12 @@ as "44 part 3".
 | 19 OQ 6: duplicate biome entries (all five) | 7.1, 7.2 |
 
 Piece geometry of every structure belongs to the structure documents (RS20); here only the spawn behaviour of pieces
-is described. The raid-side logic of villages (raids, bells, villager brain) is in 44 part 3 and 20 §14.
+is described. The raid-side logic of villages (raids, bells, villager brain) is in 44-3 and 20 §14.
 
 ## 2. Spawner block (`BaseSpawner`)
 
 `BaseSpawner` is the engine of the mob spawner block (`SpawnerBlockEntity`, block entity type `mob_spawner`) and of the
-spawner minecart. 18 framework: spawn eggs, spawner blocks and trial spawners (18 §6.12) gives the attempt
+spawner minecart. 18 §6.12 (spawn eggs, spawner blocks and trial spawners) gives the attempt
 steps; this section adds every field, default, saved name and the parts that section did not give. All values were
 re-read in this round and agree with 18 §6.12.
 
@@ -75,13 +75,12 @@ re-read in this round and agree with 18 §6.12.
 | `maxNearbyEntities` | `MaxNearbyEntities` | 6 | cap on same-class entities in the count box |
 | `requiredPlayerRange` | `RequiredPlayerRange` | 16 | a player must be within this distance of the block centre |
 | `spawnRange` | `SpawnRange` | 4 | half-width of the random spawn area and the count-box inflation |
-| `nextSpawnData` | `SpawnData` | an empty `SpawnData` (empty entity tag) | the entity that the next round creates |
-| `spawnPotentials` | `SpawnPotentials` | a one-entry list holding `nextSpawnData` (or an empty `SpawnData` when none) | weighted choices for the next spawn data |
+| `nextSpawnData` | `SpawnData` | unset (the constructor does not set it) | the entity that the next round creates |
+| `spawnPotentials` | `SpawnPotentials` | an empty weighted list | weighted choices for the next spawn data |
 
 Number types: all seven numeric keys (`Delay`, `MinSpawnDelay`, `MaxSpawnDelay`, `SpawnCount`, `MaxNearbyEntities`, `RequiredPlayerRange`, `SpawnRange`) are **saved as shorts** (`putShort`). On load `Delay` is read as a short (`getShortOr`) and the other six are read as ints (`getIntOr`), so a hand-written file may use int tags for those six.
 
-A new block entity starts with the defaults above (`spawnDelay` 20). On load: every missing key takes the default; the
-potentials list falls back to a single entry equal to the loaded `SpawnData`. `setEntityId(type)` (used by
+A new block entity starts with the defaults above (`spawnDelay` 20, an empty potentials list, no next spawn data). On load: every missing key takes the default; only when the `SpawnPotentials` key is missing does the potentials list fall back to a single entry equal to the loaded `SpawnData` (that one-entry list exists only on this load path, not in a fresh block entity). `setEntityId(type)` (used by
 generators, spawn eggs and `/setblock` data tools) takes the current next spawn data (creating the empty one when
 there is none) and writes only the key `id` of its entity tag; custom rules, equipment and extra entity keys are left
 as they were. A spawner whose entity tag has no `id` cannot spawn: every round ends in step 1 of the attempt below
@@ -140,14 +139,14 @@ The enum has 19 values, in ordinal order: `NATURAL`, `CHUNK_GENERATION`, `SPAWNE
 Where they bite (read): `Mob.checkMobSpawnRules` skips the block test (`BlockState.isValidSpawn` on the block below)
 entirely when `isSpawner` is true, and otherwise requires it (§11); the monster light rules use
 `ignoresLightRequirements` (18 §6.8), so a normal mob spawner still obeys the light rule and only the trial
-spawner does not. The reasons that skip the Peaceful test or other gates are owned by the per-mob predicates (18 section
-6.8, 19 and 20); this document lists only the two helpers. The full table of the 19 reasons (producers, which reasons run
+spawner does not. The reasons that skip the Peaceful test or other gates are owned by the per-mob predicates (18 §6.8,
+19 and 20); this document lists only the two helpers. The full table of the 19 reasons (producers, which reasons run
 `checkSpawnRules` and `checkSpawnObstruction`, and the reason-specific branches inside `finalizeSpawn` and the per-mob
-predicates) is in 44 part 1 RQ-1.18 and is not repeated here. The reasons that bear on this document are `SPAWNER` and
+predicates) is in 44-1 RQ-1.18 and is not repeated here. The reasons that bear on this document are `SPAWNER` and
 `TRIAL_SPAWNER` (both gates run, 2.2 and 4.7), `STRUCTURE` (code and template placement, §10, no gate run) and
 `NATURAL` (the spawn lists of §§7 to 9).
 
-### 2.6 Spawner minecart (`MinecartSpawner`, closes Open question 11)
+### 2.6 Spawner minecart (`MinecartSpawner`, closed)
 
 The cart owns a `BaseSpawner` whose only override is the broadcast: `broadcastEvent(level, pos, id)` calls
 `Level.broadcastEntityEvent(cart, (byte) id)` (an entity event to the trackers of the cart) instead of the block event of the
@@ -263,7 +262,7 @@ has `total_mobs` 12.0 and `simultaneous_mobs` 4.0; `simultaneous_mobs_added_per_
 pairs (not only the ominous one). The other 9 pairs have identical totals. The ominous file also carries an `equipment`
 loot table on its spawn data in 9 pairs (`melee/husk`, `melee/zombie`, the three `ranged`, the three `slow_ranged` and
 `small_melee/baby_zombie`; for example `equipment/trial_chamber_melee` with `slot_drop_chances` 0.0; keys as in §3);
-no normal file has one. No ominous file sets `spawn_range` or `items_to_drop_when_ominous`. A spawn data entity may carry
+no normal file has one. No file at all, normal or ominous, sets `spawn_range` (all 28 use the default 4) or `items_to_drop_when_ominous`. Only the ominous files carry `loot_tables_to_eject`. `simultaneous_mobs` is set in 13 of the 14 normal files and 12 of the 14 ominous files (the `breeze` ominous file and the `small_melee/baby_zombie` ominous file leave the default 2.0; the `baby_zombie` normal file also omits it and is the one normal file without it, so both `baby_zombie` files use the default 2.0). Both files of each of the three `slow_ranged` mobs set `simultaneous_mobs` 4.0 and `simultaneous_mobs_added_per_player` 2.0 (default 1.0). Both `breeze` files set `total_mobs_added_per_player` 1.0 and `simultaneous_mobs_added_per_player` 0.5 (14.2 uses these). A spawn data entity may carry
 extra keys such as `Size` for a slime. The structure templates of the trial chambers reference the configs by the
 block entity keys `normal_config` and `ominous_config`; 14 spawners exist across the templates, one per config pair,
 and the two vault blocks carry their own loot table and key item (not part of this section).
@@ -306,6 +305,11 @@ Because the 30-tick rule uses `start` (the moment `waiting_for_reward_ejection` 
 comes on the first tick after the 40-tick wait whose `gameTime - start` is a multiple of 30, which is `start + 60`
 (the shutter opens at `start + 40`, `ejecting_reward` is first evaluated at `start + 41`).
 
+Float arithmetic in this tick, with its consequences:
+
+- The shutter-open test converts the absolute game time and the start tick to float: it is `(float)gameTime >= (float)start + 40.0f`. A float has a 24-bit mantissa, so once game time passes 2^24 = 16,777,216 ticks (about 9.7 days of continuous ticking) the conversion rounds to even values or coarser, and the 40-tick wait can come early or late by a few ticks.
+- The 30-tick ejection test subtracts in long first (`gameTime - start`) and only the difference is compared as a float, so it stays exact at any game time.
+
 ### 4.5 Player detection (`tryDetectPlayers`, `PlayerDetector.NO_CREATIVE_PLAYERS`)
 
 The block entity uses the detector `NO_CREATIVE_PLAYERS` with the selector `SELECT_FROM_LEVEL` (all players of the
@@ -342,7 +346,7 @@ ominous state ends only through the `cooldown` branch above.
 While ominous and `active`, each tick `spawnOminousItemSpawner` runs (only if the ominous config's
 `items_to_drop_when_ominous` table yields a non-empty list): the loot table is rolled once with an empty loot context
 and a seed `level.getSeed() + asLong(floor(x / 30), floor(y / 20), floor(z / 30))` of the spawner position (so the
-same stacks are rolled for spawners in one 30 x 20 x 30 cell), every rolled stack is split into single items weighted
+same stacks are rolled for spawners in one 30 x 20 x 30 cell; the division is float division, `floor(float(x) / 30.0f)`, `floor(float(y) / 20.0f)`, `floor(float(z) / 30.0f)`, not integer division, so a coordinate far from the origin, where the int-to-float conversion rounds, can land in a different cell than exact division would give), every rolled stack is split into single items weighted
 by its count, and the list is cached on the engine. When `gameTime >= cooldown_ends_at` (the field is reused as the
 item timer): choose a target (alive, non-creative, non-spectator detected players within `required_player_range`
 of the block centre, squared distance at most range squared; one `nextBoolean` draw chooses the candidate list: when
@@ -392,9 +396,12 @@ up (direction UP, speed value 2); then level event 3014 (data 0), emitted only w
 - Spawning from an egg (use on a block, or on a water source block): `EntityType.spawn(level, stack, player, pos,
   SPAWN_ITEM_USE, alignPosition, invertY)`. The creation steps are: create the entity; position it at
   `(x + 0.5, y + offset, z + 0.5)` of the block with a random yaw `wrapDegrees(nextFloat * 360)` and pitch 0, where the
-  offset is 0 when the position is not aligned and otherwise `getYOffset(...)` (read as: 1 plus the downward collision
-  distance of the block's box against the collisions there, limited to -1 or -2 when inverted; the numeric meaning
-  is inferred); for a `Mob` set head and
+  offset is 0 when the position is not aligned and otherwise `getYOffset(level, pos, invertY, box)` (read: the
+  unit block box at the position is expanded 1 block downward when `invertY` is set; the collisions inside that
+  expanded box are collected; the offset is `1.0 + Shapes.collide(Y, box, collisions, limit)`, where `box` is the
+  spawned type's own box passed in, `limit` is -1.0 normally and -2.0 when inverted, and `collide` returns the signed
+  (non-positive) free downward distance of `box` against those collisions. The offset therefore lies in [0, 1]
+  normally and in [-1, 1] when inverted); for a `Mob` set head and
   body rotation to the yaw and call `finalizeSpawn(difficulty at the block, SPAWN_ITEM_USE, no group data)`; then the
   post-spawn processors: `applyComponentsFromItemStack` and the stack's `entity_data`; `addFreshEntityWithPassengers`;
   a `Mob` plays its ambient sound. The egg is consumed with `ItemStack.consume(1, player)` and the `entity_place` game
@@ -463,9 +470,9 @@ other dimension get an empty list.
 |---|---|---|---|
 | 1 | `PhantomSpawner` | the call flag (below) and the game rule `spawn_phantoms` | 20 §12 |
 | 2 | `PatrolSpawner` | the call flag and `spawn_patrols` | 20 §14.1 |
-| 3 | `CatSpawner` | none of its own (no game rule and no flag test) | 44 part 3 §1.6 |
-| 4 | `VillageSiege` | the call flag (false resets the siege) | 44 part 3 §1.7 |
-| 5 | `WanderingTraderSpawner` | the game rule `spawn_wandering_traders` (no flag test) | 19 §23, 44 part 3 §9 |
+| 3 | `CatSpawner` | none of its own (no game rule and no flag test) | 44-3 §1.6 |
+| 4 | `VillageSiege` | the call flag (false resets the siege) | 44-3 §1.7 |
+| 5 | `WanderingTraderSpawner` | the game rule `spawn_wandering_traders` (no flag test) | 19 §23, 44-3 §9 |
 
 `ServerChunkCache.tickChunks` calls `tickCustomSpawners(spawnEnemies)` once per tick, after the block random ticks,
 passing the chunk cache's `spawnEnemies` field (18 §6.1 step 2: `spawn_mobs && spawn_monsters`), and only when a
@@ -563,7 +570,7 @@ For a candidate position `P` and a category `C` (the category of the list being 
       iteration returns **that override's spawn list** as the result; the biome list is **replaced**, not added to;
    c. if no structure qualifies, the result is `getMobsToSpawn(C)` of the `natural_mob_spawns` value at `P` (7.3).
 3. The caller (`getRandomSpawnMobAt`) first applies, for `C = WATER_AMBIENT` in a biome in the tag
-   `reduce_water_ambient_spawns`, a 0.98 chance of returning nothing (`nextFloat < 0.98`), then draws one entry
+   `reduce_water_ambient_spawns` (contents: `#minecraft:is_river`; read next to `without_wandering_trader_spawns` = `the_void`, §6, and `without_zombie_sieges` = `mushroom_fields`, §13), a 0.98 chance of returning nothing (`nextFloat < 0.98`), then draws one entry
    from the list (7.1). `canSpawnMobAt` is `contains` on the same list.
 
 An override whose spawn list is **empty** (8.3) therefore removes all natural spawns of that category inside the
@@ -604,7 +611,7 @@ Notes: the swamp hut's creature entry is a cat, but the cat's placement predicat
 18 §6.8) requires grass below, and the hut floor is a box of spruce planks at local y 1 (read in
 `SwampHutPiece.postProcess`: x 1 to 5, z 1 to 7), which is not grass. So the list does not produce a cat on the floor.
 The hut also places its own witch and its own cat at generation, which do not use any override (10.7), and the cat
-spawner (44 part 3 §1.6, hut case) is the source of later cats.
+spawner (44-3 §1.6, hut case) is the source of later cats.
 
 ### 8.4 Fortress: the hardcoded list and the data override compared (21 Open questions 3 and 22)
 
@@ -629,9 +636,12 @@ is). What the engine does with it, read from `NaturalSpawner`:
   distance (128); and `afterSpawn` increments the counters of the type's category. So a monster-pass ocelot is counted
   as a `creature` (global and local `creature` caps, 10 per player in the standard setup) and never raises the
   `monster` count.
-- The placement is the type's own registration (`Ocelot.checkOcelotSpawnRules`, 19 §5.2: ON_GROUND,
-  heightmap `MOTION_BLOCKING`, passes with `nextInt(3) != 0`, plus the block rules of the jungle floor), not the
-  monster light test: a monster-list ocelot does not need darkness.
+- The placement is the type's own registration (`Ocelot.checkOcelotSpawnRules`, 19 §5.2: placement ON_GROUND,
+  heightmap `MOTION_BLOCKING`, and a predicate that is only `nextInt(3) != 0`). The registered predicate has no light
+  test and no `isValidSpawn` floor test, so a monster-list ocelot does not need darkness. The block rule is not in the
+  registration: it lives in `Ocelot.checkSpawnObstruction`, which natural spawning step 7 (18 §6.5) and spawners call.
+  It requires: the box unobstructed, no liquid in the box, the feet y at or above the sea level, and the block below
+  either `grass_block` or in the `leaves` block tag. A monster-pass ocelot can therefore stand on leaves.
 - Persistence and despawn are the ocelot's own (Animal-based, 19 §5.2).
 
 Consequence: ocelots appear at monster-pass frequency, in daylight and darkness, without competing with the monster
@@ -692,12 +702,12 @@ The mansion templates contain structure blocks in data mode whose metadata is a 
 | `ChestWest`, `ChestEast`, `ChestSouth`, `ChestNorth` (any name starting with `Chest`) | a chest facing the named direction rotated by the piece's rotation, with the loot table `chests/woodland_mansion` |
 | `Mage` | one `evoker` |
 | `Warrior` | one `vindicator` |
-| `Group of Allays` | `1 + nextInt(3)` allays (the random source of the generation) |
+| `Group of Allays` | `1 + nextInt(3)` allays, drawn from the level accessor's own `getRandom()`, not from the `RandomSource` parameter the handler receives |
 
 For each created mob: `setPersistenceRequired`, `snapTo(marker block, yaw 0, pitch 0)`, `finalizeSpawn(difficulty at
-its block, STRUCTURE, no group data)`, `addFreshEntityWithPassengers`; then the marker block is replaced by air
-(flag 2). Counts of markers in the 1511 templates (for sizing, per template family): `woodland_mansion` has 20
-`Warrior`, 4 `Mage`, 4 `Group of Allays` and 10 chest markers across all room templates (which rooms are used is the
+its block, STRUCTURE, no group data)`, `addFreshEntityWithPassengers`; then, for the three mob markers only (`Mage`, `Warrior`, `Group of Allays`), the marker block is replaced by air
+(flag 2); the `Chest` markers do not do this. Counts of markers in the templates (for sizing, per template family): `woodland_mansion` has 20
+`Warrior`, 4 `Mage`, 4 `Group of Allays` and 10 chest markers (`ChestSouth` 5, `ChestWest` 3, `ChestNorth` 2; no template holds a `ChestEast`, which exists only in the code's name list) across all room templates (which rooms are used is the
 mansion layout's, RS20). One room template, `1x1_as2`, contains a spawner block whose stored NBT is not the code defaults of 2.1: `Delay` 0 (not 20, so the first round runs on the first tick a player is in range), `MinSpawnDelay` 200, `MaxSpawnDelay` 800, `SpawnCount` 4, `MaxNearbyEntities` 6, `RequiredPlayerRange` 16, `SpawnRange` 4, `SpawnData` = entity `{ id: spider }` and one `SpawnPotentials` entry of weight 1 with the same entity (it uses `checkSpawnRules(spider, SPAWNER)`). The mansion structure itself has no
 `spawn_overrides`, so evokers and vindicators do not respawn naturally.
 
@@ -741,7 +751,15 @@ projection `rigid`, and the pool fallback is `minecraft:empty`):
 | `bastion/mobs/piglin_melee` | `melee_piglin_always` 1, `melee_piglin` 5, `sword_piglin` 1 |
 | `bastion/mobs/hoglin` | `hoglin` 2, `mobs/empty` 1 |
 
-Which pools under `bastion/*` reference these three pools was not read (Open question 4).
+Which structures reference these pools: the references are `jigsaw` block entities in the bastion structure NBT, with the pool name in the block entity key `pool` (counted as occurrences of the pool name string in every file under `structure/bastion/**`):
+
+| Pool | References | By family (`bridge`, `hoglin_stable`, `treasure`, `units`) |
+|---|---|---|
+| `bastion/mobs/piglin` | 98 | 29, 27, 22, 20 |
+| `bastion/mobs/piglin_melee` | 34 | 4, 6, 18, 6 |
+| `bastion/mobs/hoglin` | 12 | 2 (the entrance piece), 10, 0, 0 |
+
+The `blocks` family references none. The placement odds follow from the pool weights above (inferred arithmetic): in the `piglin` pool a brute is 1/10 (via `melee_piglin`, which stores a `piglin_brute`), a sword or crossbow piglin 8/10 and no mob 1/10; in the `piglin_melee` pool a brute is 6/7 (`melee_piglin_always` 1 plus `melee_piglin` 5) and a sword piglin 1/7; in the `hoglin` pool a hoglin is 2/3 and no mob 1/3. So the `piglin` pool can also produce brutes.
 
 Zombified piglins, piglins and hoglins are therefore present in a bastion only through these template mobs and the
 spawn lists of the biome (18 appendix A: crimson forest and nether wastes), because the bastion has no override.
@@ -752,16 +770,16 @@ The trial chambers structure has `spawn_overrides` that empty every category ins
 from the 14 trial spawner blocks in the templates (§4) and from other pieces' vault and chest blocks; the
 templates store the config keys as strings.
 
-### 10.7 Swamp hut witch and cat (`SwampHutPiece.postProcess`, closes Open question 8)
+### 10.7 Swamp hut witch and cat (`SwampHutPiece.postProcess`, closed)
 
 The piece has two flags, `spawnedWitch` and `spawnedCat`, both false at creation. During post-processing, after the
 blocks are placed:
 
 1. If `spawnedWitch` is false and the world position of local `(2, 2, 5)` lies inside the generating box: set the flag and
-   create one `witch` (reason `STRUCTURE`), `setPersistenceRequired`, `snapTo` that block position (the yaw argument was not traced),
-   `finalizeSpawn(difficulty at its block, STRUCTURE, no group data)`, `addFreshEntityWithPassengers`.
-2. Then `spawnCat` runs (every post-processing pass): if `spawnedCat` is false and the same local position `(2, 2, 5)` is
-   inside the box, set the flag and create one `cat` the same way (`STRUCTURE`, persistent, finalised, added with
+   create one `witch` (reason `STRUCTURE`), `setPersistenceRequired`, `snapTo(x + 0.5, y, z + 0.5, yaw 0.0, pitch 0.0)` of that block position (order: create, `setPersistenceRequired`, `snapTo`,
+   `finalizeSpawn(difficulty at its block, STRUCTURE, no group data)`, `addFreshEntityWithPassengers`).
+2. Then `spawnCat` runs on every pass, whether or not a witch was created: if `spawnedCat` is false and the same local position `(2, 2, 5)` is
+   inside the box, set the flag and create one `cat` the same way (`STRUCTURE`, persistent, `snapTo` at the same centre with yaw 0.0 and pitch 0.0, finalised, added with
    passengers).
 
 So a hut gets one persistent witch and one persistent cat at generation; the `spawn_overrides` of 8.3 (witch weight 1 and
@@ -776,8 +794,10 @@ yaw 0 and pitch 0, `finalizeSpawn(difficulty at its block, STRUCTURE, no group d
 `(11, 2, 16)` when its `mainDesign` is 0 and at local `(11, 5, 13)` when `mainDesign` is 1 (other designs do not call it).
 There is no per-piece placed flag: the call is made on each post-processing pass whose box contains the position, so a
 chunk pass that does not contain the position creates nothing and one that contains it creates one (the position is a
-single block, so one pass). With the penthouse and two wing rooms a monument gets 3 (inferred: the number of wing rooms per
-monument was not read).
+single block, so one pass). `MonumentBuilding` creates exactly two wing rooms, with consecutive seeds `r` and `r + 1` from one `nextInt()` draw,
+and the wing room constructor sets `mainDesign = seed & 1`, so one wing room has design 0 and the other design 1; both
+designs call `spawnElder`. Every monument therefore gets exactly 3 elder guardians (penthouse, design 0, design 1),
+provided each of the three positions falls inside a generating box.
 
 ### 10.9 End city and ocean ruin data markers
 
@@ -786,19 +806,19 @@ templates):
 
 | Marker (prefix test) | Effect |
 |---|---|
-| `Chest...` | if the block position below the marker is inside the generating box, set the loot table `END_CITY_TREASURE` (the built-in end city treasure table) on the block entity there (random source of the generation) |
+| `Chest...` | if the block position below the marker is inside the generating box, set the loot table `END_CITY_TREASURE` (`chests/end_city_treasure`) on the block entity there (random source of the generation); this test comes first and uses the block below the marker |
 | `Sentry...` | if the marker position is inside the box and inside the spawnable world bounds: create one `shulker` (reason `STRUCTURE`), `setPos(x + 0.5, y, z + 0.5)` and `addFreshEntity` (no `finalizeSpawn` and no persistence call are made) |
-| `Elytra...` | under the same position tests: create an item frame on the marker block, facing the piece's rotation applied to south, holding one elytra (`setItem(stack, false)`), added with `addFreshEntity` |
+| `Elytra...` | under the same position tests: create an `ItemFrame` constructed at the marker position, facing the piece's rotation applied to south, holding one elytra (`setItem(stack, false)`), added with `addFreshEntity` |
 
 `OceanRuinPieces$OceanRuinPiece.handleDataMarker` (51 `drowned` and 47 `chest` markers): `chest` places a chest at the
 marker position with `waterlogged` set to whether the fluid there is water, flag 2, and sets the loot table
 `UNDERWATER_RUIN_BIG` when the piece's `isLarge` flag is set and `UNDERWATER_RUIN_SMALL` otherwise, with a seed from
-`nextLong` of the generation random source (built-in loot table constants; their resource paths were not read);
+`nextLong` of the generation random source (resource paths `chests/underwater_ruin_big` and `chests/underwater_ruin_small`; the three loot files, with `chests/end_city_treasure`, exist in the jar);
 `drowned` creates one `drowned` (reason `STRUCTURE`), `setPersistenceRequired`, `snapTo` the marker block with yaw 0 and
 pitch 0, `finalizeSpawn(difficulty, STRUCTURE, no group data)`, `addFreshEntityWithPassengers`, and then replaces the marker
-block with air when its y is above the sea level and with water otherwise (flag 2). What replaces the end city markers was not read (Open question 14).
+block with air when its y is above the sea level and with water otherwise (flag 2). `EndCityPiece.handleDataMarker` contains no `setBlock` or `removeBlock` call, so it never replaces the marker block (the marker blocks are not placed in the first place when the template's structure-block ignore setting of 10.5 filters them; that part is inferred). `Sentry` and `Elytra` are both gated by (marker position inside the generating box) and `Level.isInSpawnableBounds`.
 
-### 10.10 Dungeon spawner (`MonsterRoomFeature`, closes Open question 12)
+### 10.10 Dungeon spawner (`MonsterRoomFeature`, closed)
 
 The room's spawner block takes its mob from `randomEntityId`: one `nextInt(4)` draw (`Util.getRandom` on a 4-entry
 array) indexing, in this order, `skeleton`, `zombie`, `zombie`, `spider`. Zombie therefore has probability 1/2, skeleton
@@ -839,8 +859,9 @@ animal documents (19) and was confirmed here only for the axolotl and the animal
 **What decides the generic floor test.** `Mob.checkMobSpawnRules` returns true at once when the spawn reason is a
 spawner reason (`EntitySpawnReason.isSpawner`, 2.5). Otherwise it calls `BlockState.isValidSpawn(level, pos below,
 type)`, which uses the per-block predicate set through `BlockBehaviour.Properties.isValidSpawn`. The default predicate
-is: the top face of the block below is sturdy and its light emission is below 14. About 35 entries of `Blocks`
-override it with an always, never or type-specific lambda. The tag `valid_spawn` plays no part, and the villager,
+is: the top face of the block below is sturdy and its light emission is below 14. The `Blocks` class has 35 call sites of
+`Properties.isValidSpawn`; some sit inside shared helpers (the leaves property helper and the shulker box lambdas), so
+more than 35 blocks are affected. The 35 sites use six predicates: `never` at 24 sites, `always` at 5, `ocelotOrParrot` at 3, and three one-off lambdas. By name adjacency in the class (a read-order attribution, **(inferred)**: the block names were not read from each call site) the one-off lambdas belong to ice, frosted ice and magma block, and the `always` sites to soul sand, carved pumpkin, jack o'lantern, redstone lamp and mud. The tag `valid_spawn` plays no part, and the villager,
 wandering trader, iron golem and snow golem do not use it.
 
 ## 12. Spawn predicates owned elsewhere
@@ -858,15 +879,15 @@ reference.
 ## 13. Villages: the spawn rules that depend on the village test
 
 The village mechanics (POI types, tickets, the section distance field, bells, raids, villager behaviours) are
-specified in 44 part 3 §§1 to 10 and in 20 §14; the villager-side golem spawn is 19 §22.10. This
+specified in 44-3 §§1 to 10 and in 20 §14; the villager-side golem spawn is 19 §22.10. This
 section collects, for the planner, every spawn rule in this part that depends on `isVillage` or `isCloseToVillage`,
 and adds what was read here.
 
 | Rule | Test | Where |
 |---|---|---|
 | Pillager patrol | the chosen player must **not** be `isCloseToVillage(pos, 2)` (two sections of the nearest village centre, Chebyshev) | 20 §14.1 |
-| Zombie siege | the player must be in `isVillage` (one section), the biome must not be in `without_zombie_sieges` (`mushroom_fields`), roll at the overworld clock marker `roll_village_siege` (tick 18000), 1 in 10; 20 zombies from a ring 32 blocks out | 44 part 3 §1.7 |
-| Cat spawner | village case `isCloseToVillage(pos, 2)`; more than 4 occupied `home` POIs within 48; fewer than 5 cats in the (48, 8, 48) box | 44 part 3 §1.6 |
+| Zombie siege | the player must be in `isVillage` (one section), the biome must not be in `without_zombie_sieges` (`mushroom_fields`), roll at the overworld clock marker `roll_village_siege` (tick 18000), 1 in 10; 20 zombies from a ring 32 blocks out | 44-3 §1.7 |
+| Cat spawner | village case `isCloseToVillage(pos, 2)`; more than 4 occupied `home` POIs within 48; fewer than 5 cats in the (48, 8, 48) box | 44-3 §1.6 |
 | Wandering trader | the spawn reference position is the nearest `meeting` POI within 48 of a random player (any occupancy), else the player; no village test | 19 §23 |
 | Villager golem | villagers that slept within 24000 ticks and have no recent golem sensor memory; placement search with the legacy strategy (below) | 19 §22.10 |
 | Raid centre validity | `isVillage` at the centre, search radius 2 sections | 20 §14.2 |
@@ -899,7 +920,7 @@ Ticks 1 to 20 each decrement (20 to 0); tick 21 runs the round. The round makes 
 blocked). Then `delay`: `minSpawnDelay + nextInt(600)`; with `nextInt(600) = 123` the delay is 323 and the next round
 runs on tick 21 + 324 = 345 (323 decrement ticks, then the round tick), provided a player is within 16 blocks the
 whole time (the counter pauses otherwise). If the round had found 6 or more zombies in the count box (the box from the block corner to the corner plus 1, inflated by
-`spawnRange` 4, so the continuous range `[bx - 4, bx + 5]` on x and z and `[by - 4, by + 5]` on y: 10 units long on each axis
+`spawnRange` 4, so the continuous range `[bx - 4, bx + 5]` on x and z and `[by - 4, by + 5]` on y: 9 units long on each axis
 and covering 9 block cells, bx - 4 to bx + 4; an entity is counted when its bounding box intersects the box), it would roll
 a delay at once and stop without spawning any more of that round.
 
@@ -959,7 +980,7 @@ rule 3 holds (top defines every category of base): the result is top, so creatur
 ### 14.7 Ocelot
 
 Jungle or bamboo jungle, night, monster pass on a clearing: the ocelot is drawn with weight 2 of the monster
-list; it passes the type's own rule 2 times in 3; the cap tested for the monster pass is the monster cap, but the
+list; it passes the type's own rule 2 times in 3, then `checkSpawnObstruction` (grass block or leaves below, no liquid, at or above sea level); the cap tested for the monster pass is the monster cap, but the
 count increased afterwards is the creature count.
 
 ## 15. Validation
@@ -979,8 +1000,7 @@ What was checked and how.
 | Template mobs | parsed all 1511 structure NBT files (gzip NBT reader written for this round, outside the repository) | counts in 10.5 are exact for this jar |
 | Custom spawner values vs 20 and 19 | compared phantom, patrol and trader constants | agree (6) |
 | Cross-check with 18 §6 | compared the spawn cost, cap and category semantics | 18 §6.5 step 4 and §6.7 are refined by 7.3, 8.1 and 9 (type category versus list category; spawn costs read from the attribute at the position) |
-
-| Trial spawner pairs (second pass) | parsed all 14 normal and ominous file pairs | 4.2 states which keys differ per pair (5 pairs differ in totals; the reviewer's claim that only the ominous file sets `simultaneous_mobs_added_per_player` was not confirmed: both files set it) |
+| Trial spawner pairs | parsed all 14 normal and ominous file pairs | 4.2 states which keys differ per pair (5 pairs differ in totals; both files of a pair set `simultaneous_mobs_added_per_player` where it is set) |
 | Components per class | read every class overriding `applyImplicitComponent(s)` and the components it names | table in §5 |
 | Structure piece spawns | read `SwampHutPiece`, `OceanMonumentPiece.spawnElder` and its callers, `EndCityPiece.handleDataMarker`, `OceanRuinPiece.handleDataMarker`, `MonsterRoomFeature`, `MinecartSpawner`, `DismountHelper` | 2.6, 10.7 to 10.11, §11 |
 
@@ -989,19 +1009,16 @@ from the formulas of 2.3 and 4.2 and the tick order of 4.4.
 
 ## 16. Open questions
 
-1. Closed: the chunk's `structureReferences` is a plain `java.util.HashMap` keyed by `Structure`, and `Structure` overrides neither `hashCode` nor `equals`, so the iteration order depends on identity hash codes. It is not stable across runs and is not data-defined, so the rule "the first qualifying structure in the iteration wins" is effectively unspecified. An implementer may pick any deterministic order (for example registry order). No pair of structures in this jar's data overlaps on a category with a non-empty override, so the outcome is unaffected.
-2. **Client effects.** The level events 3011 to 3014, 3019, 3020, 3021 and 2004 and their particle and sound outputs
+18 OQ 4 and 17, 19 OQ 4, 5, 6 and 35, 20 OQ 12 and 21 OQ 2, 3, 6 and 22 are answered by this document and can be closed by citing it.
+
+1. **Client effects.** The level events 3011 to 3014, 3019, 3020, 3021 and 2004 and their particle and sound outputs
    are named, not specified; the client round owns them. The particle numbers in 4.1 are the ones read.
-3. Closed (§5: the table lists the components of each of the 26 classes and the base `Entity`).
-4. **Bastion template pools.** The three pools under `bastion/mobs` are read (10.5). Which structure pools under `bastion/*` reference them was not read (no pool JSON file other than the three themselves names a `bastion/mobs` template, so the references are jigsaw block fields inside the structure NBT, which were not read).
-5. Closed (§5: `shrink` has no creative exemption, so the creative egg stack is reduced on a spawner).
-6. Closed (§6: the gate is exactly the `spawn_mobs` value).
-7. Closed: `valid_spawn` has no consumer; the per-block `isValidSpawn` predicate is what counts (§11).
-8. Closed (10.7 and 8.3: the floor is spruce planks, read).
-9. Closed (§3: both limits optional, default 0 to 15, keys `min_inclusive` and `max_inclusive`).
-10. **Ocelot intent.** Whether the ocelot in the `monster` lists is intended cannot be determined from the artifact; the
-    behaviour in §9 follows from the engine as read.
-11. Closed (2.6).
-12. Closed (10.10).
-13. **Recall.** Nothing in this document is taken from memory. The one item marked "(inferred)" is the wing-room count of 10.8; the earlier unmarked claims about the ocelot biomes and the `valid_spawn` consumer were corrected against the artifact (§§9 and 11).
-14. **End city marker replacement.** What the end city piece does with the marker block after handling it, and the resource paths of the end city and ruin chest loot tables, were not read.
+2. **Ocelot intent.** Whether the ocelot in the `monster` lists is intended cannot be determined from the artifact; the
+   behaviour in section 9 follows from the engine as read.
+3. **Recall and inference.** Nothing in this document is taken from memory. Items marked "(inferred)": the bastion
+   placement odds (10.5, arithmetic on read weights), the filtering of end city marker blocks by the template ignore
+   setting (10.9), and the attribution of the `isValidSpawn` lambdas to named blocks (11, by adjacency in `Blocks`).
+4. **Editor actions outside this document.** 18 §6.5 step 4 lists structure overrides only for swamp huts, ocean
+   monuments and pillager outposts; the full set is fortress (piece), monument, pillager outpost, swamp hut, ancient
+   city and trial chambers (see 8.3), and 18 OQ 17 should not say step 4 uses the fortress case only. 18 §6.12 (trial
+   spawner bullet) and 18 OQ 4 should point to 44-2 sections 4 to 6.

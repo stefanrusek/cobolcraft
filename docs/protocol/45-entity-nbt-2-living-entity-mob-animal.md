@@ -32,6 +32,8 @@ An entity compound is produced by the Entity base first (part 1: `id`, `Pos`, `M
 
 Which concrete types extend which of these classes is in the sibling parts (45-1 §12 is the owner index of type keys). On load each class reads its own keys after its parent has read its keys (parent first), so a derived class sees the parent's state.
 
+The `VariantHolder` pattern (key `variant`, an identifier of a registry entry, read through `VariantUtils.readVariant`) is a helper of the concrete types, not of these classes; its form is in 45-1 §10.5, and `OwnableEntity` and `Leashable` are covered in 45-1 §10 and in sections 3 and 5.1 here.
+
 Keys that older formats carried and that these classes do not read or write: `HurtByTimestamp`, `ArmorItems`, `HandItems`, `ArmorDropChances`, `HandDropChances`, `ActiveEffects`, `Attributes` (capitalised), `SleepingX`, `SleepingY`, `SleepingZ`, `Leash` (capitalised), `Leashed`, `Target` (any form of the attack target) and `Invulnerable` for the damage window. They may exist in old save files and are upgraded by the DataFixer (code, not read in this round; Open question 14). Nothing here reads them.
 
 ---
@@ -44,12 +46,12 @@ Keys that older formats carried and that these classes do not read or write: `Hu
 |---|---|---|---|---|
 | `Health` | Float | the entity's maximum health at the moment of loading | always | Current health. The setter clamps to the range 0 to the current maximum health (the `max_health` attribute value at that moment). |
 | `HurtTime` | Short | 0 | always | Ticks left of the red hurt flash. Set to 10 (the hurt duration) when damage is taken; the value counts down by 1 each tick while above 0. Saved and reloaded as is. |
-| `DeathTime` | Short | 0 | always | Ticks spent dying. Starts counting when health reaches 0; when it reaches 20 the entity is removed (reason "killed") and the entity event 60 is broadcast (its client handler calls the poof-particle routine, which spawns 20 particles with a Gaussian 0.02 velocity jitter; read, the particle type was not checked). |
+| `DeathTime` | Short | 0 | always | Ticks spent dying. Starts counting when health reaches 0; when it reaches 20 the entity is removed (reason "killed") and the entity event 60 is broadcast (its client handler calls `makePoofParticles`, read: 20 `POOF` particles; for each, three `nextGaussian` values times 0.02 give the velocity, and the position is `getRandomX(1.0)`, `getRandomY()`, `getRandomZ(1.0)` each minus 10 times the matching velocity component). |
 | `AbsorptionAmount` | Float | 0.0 | always | Extra health pool that damage uses before `Health`. Read first, before attributes. |
 | `current_impulse_context_reset_grace_time` | Int | 0 | always | Counter belonging to the wind-charge and mace "impulse" context. Its tick behaviour was not read (Open question 6). |
 | `current_explosion_impact_pos` | `List<Double>` of 3 | none | when set | Position of the last impulse impact (`Vec3`, 45-1 §3). |
 | `attributes` | `List<Compound>` | no list: attribute bases and modifiers stay at the type's defaults | always (the list may be empty) | Section 2.2. Read only on the server side. |
-| `active_effects` | `List<Compound>` | empty list (no effects) | only when there is at least one effect | Section 2.3. Order of the written list is the iteration order of the effect map (not significant; Open question 7). |
+| `active_effects` | `List<Compound>` | empty list (no effects) | only when there is at least one effect | Section 2.3. Order of the written list is the iteration order of the effect map (not significant; Open question 7). On load the effect map is cleared (read: `Map.clear` is called before the decoded elements are put) and then filled from the saved list, so the saved list REPLACES whatever effects the freshly built entity had, unlike `attributes`, which merge (section 2.2 rule 3). |
 | `FallFlying` | Byte | 0 | always | Whether the entity is gliding. Loading sets shared flag bit 7 of the entity flags accordingly (shared flag index 7 of the entity-flags metadata byte, see 18 §1.4). |
 | `sleeping_pos` | `Int Array(3)` | none | only while sleeping | Block position of the bed. On load: the position is set, the pose is set to sleeping, and, when this is not the entity's first tick, the entity is moved to the bed (`setPosToBed`); if that fails it wakes up at once. When the key is absent the sleeping position is cleared. |
 | `Brain` | `Compound {memories: Compound}` | a fresh brain with no memories | always, even when no memory is stored (`{memories:{}}`) | Section 8. |
@@ -86,7 +88,7 @@ Load rules (`AttributeMap.apply`):
 
 1. The whole list is applied only when the entity is on the server side.
 2. For each element, the entity's attribute instance for `id` is obtained. When the entity's type does not have that attribute (its supplier lacks it) the instance does not exist and the element is ignored.
-3. For an existing instance: `base` replaces the base value, every listed modifier is added both to the instance's modifier set and to its permanent set (a later duplicate id in the list wins), and the instance is marked dirty so the client is sent an update.
+3. For an existing instance (`AttributeInstance.apply`, read): `base` replaces the base value; every listed modifier is put into the instance's id map, its per-operation map and its permanent map (a later duplicate id in the list wins); then the instance is marked dirty so the client is sent an update. Nothing is cleared first: the listed modifiers are MERGED into the set, so modifiers with other ids that the freshly constructed entity already has are kept.
 4. Instances not mentioned keep the type defaults.
 
 Save rule: the list contains one element for every attribute instance that exists in the map when saving. Instances in the map are created lazily on first access (reading a value, adding a modifier). Therefore which attributes appear in a saved file depends on which ones the entity touched; a reader must accept any subset. An implementation may write every attribute the type has (it loads identically; it is not byte-identical to the vanilla file; Open question 9).
@@ -98,10 +100,10 @@ Each element is a Compound (a record of the effect id merged with the effect's d
 | Key | NBT type | Default on load | Written when | Notes |
 |---|---|---|---|---|
 | `id` | String | none: REQUIRED | always | Mob effect registry key (40 entries, [46](46-registry-ids.md) §4.1). |
-| `amplifier` | Byte | 0 | (inferred) omitted when equal to the default 0, see Open question 19 (as a byte: values 128 to 255 appear as negative bytes in the tag) | Level minus 1. The codec is the "unsigned byte" codec and the constructor also clamps to 0 to 255. Decoding treats the byte as unsigned 0 to 255 (inferred from the codec's name, its range check and the constant `MAX_AMPLIFIER` = 255). |
-| `duration` | Int | 0 | (inferred) omitted when equal to its default 0 (Open question 19) | Remaining ticks, or -1 for an infinite effect (`INFINITE_DURATION`). |
-| `ambient` | Byte (boolean) | false | (inferred) omitted when false (Open question 19) | Beacon-style effect: reduced particles. |
-| `show_particles` | Byte (boolean) | true | (inferred) omitted when true (Open question 19) | The jar declares these four with the plain optional-field form with a default, unlike the attribute `base`, which uses the always-present form. Implementers accept both present and absent fields on load. |
+| `amplifier` | Byte | 0 | declared with default 0 (plain optional-field form); whether a default-valued field is written is Open question 19. As a byte, values 128 to 255 appear as negative bytes in the tag | Level minus 1. The codec is the "unsigned byte" codec and the constructor also clamps to 0 to 255. Decoding treats the byte as unsigned 0 to 255 (inferred from the codec's name, its range check and the constant `MAX_AMPLIFIER` = 255). |
+| `duration` | Int | 0 | declared with default 0; written or not: Open question 19 | Remaining ticks, or -1 for an infinite effect (`INFINITE_DURATION`). |
+| `ambient` | Byte (boolean) | false | declared with default false; written or not: Open question 19 | Beacon-style effect: reduced particles. |
+| `show_particles` | Byte (boolean) | true | declared with default true; written or not: Open question 19 | The jar declares these four with the plain optional-field form with a default, unlike the attribute `base`, which uses the always-present form. Implementers accept both present and absent fields on load. |
 | `show_icon` | Byte (boolean) | the value of `show_particles` | always (written explicitly) | HUD icon. |
 | `hidden_effect` | Compound (same keys as this table EXCEPT `id`) | none | only when the instance has a hidden effect | The weaker, longer effect that takes over when this one runs out. It is the same record again, nested: it carries `amplifier`, `duration`, `ambient`, `show_particles`, `show_icon` and possibly its own `hidden_effect`. The effect id is not repeated: a hidden effect always has the same effect as its parent. The chain is recursive without a fixed limit. |
 
@@ -133,7 +135,7 @@ The eight slot names (`EquipmentSlot`, a closed enum; the name is the string key
 | 3 | `legs` | humanoid armor | 1 | 2 | 1 | |
 | 4 | `chest` | humanoid armor | 2 | 3 | 1 | |
 | 5 | `head` | humanoid armor | 3 | 4 | 1 | |
-| 6 | `body` | animal armor | 0 | 6 | 1 | armor of animals; the type name `ANIMAL_ARMOR` was read; examples such as horses and wolves are (recalled, not verified) |
+| 6 | `body` | animal armor | 0 | 6 | 1 | armor of animals; the type name `ANIMAL_ARMOR` was read. Classes that reference `EquipmentSlot.BODY` (read, by scanning the entity and level packages): `AbstractHorse`, `Horse`, `ZombieHorse`, `Wolf`, `AbstractNautilus`, `ZombieNautilus`, `HappyGhast`, `SulfurCube`, `ArmorStand`, plus `Mob` and `LivingEntity` themselves |
 | 7 | `saddle` | saddle | 0 | 7 | 1 | |
 
 "Count limit" is the largest stack the slot accepts (1 for armor, body and saddle); hand slots have no slot limit (`NO_COUNT_LIMIT` = 0). "Wire id" is the id used by `BY_ID` and the stream codec of the enum. The clientbound Set Equipment packet (05b 0x68) does NOT use it: it writes the slot ORDINAL (first column, offhand = 1) as a byte, with 0x80 set as a continuation bit on every pair except the last. So the packet uses the Ordinal column, and every other user of the enum codec uses the Wire id column (offhand = 5). The four armor indices 0 to 3 run feet to head. The saved form does not check that a mob type uses a given slot: any listed slot loads. Gameplay code decides what a type does with it (Open question 11).
@@ -145,7 +147,7 @@ Decoding rules (inferred from the map codec and its shape): an unknown slot name
 | Key | NBT type | Notes |
 |---|---|---|
 | `style` | String (identifier) | Key in the waypoint style registry (`waypoint_style_asset`); the default is `minecraft:default` (the root of the family is a registry key named `waypoint_style_asset`; another constant in the same class is `bowtie`). Required. |
-| `color` | Int, or `List<Float>` of 3 | Optional RGB colour. The codec accepts an Int (0xRRGGBB) with an alternative of a 3-float vector (read: components are on a 0.0 to 1.0 scale; the vector is converted with alpha fixed at 1.0 and each channel as floor(component x 255), so (1.0, 0.0, 0.0) is red 255). |
+| `color` | Int, or `List<Float>` of 3 | Optional colour. The codec is `RGB_COLOR_CODEC`, an alternative of an Int and a 3-float vector (read). The vector components are on a 0.0 to 1.0 scale; the vector form is converted with `ARGB.colorFromFloat` with alpha 1.0 and each channel as floor(component x 255), giving an ARGB Int with alpha 0xFF, i.e. 0xFFRRGGBB (negative as a signed Int). (1.0, 0.0, 0.0) therefore becomes 0xFFFF0000 = -65536. What a plain Int input does with its alpha byte was not read (Open question 12). |
 
 The icon is what the locator bar (13 / 12) shows for this entity. It is written only when it carries data (non-default style or a colour).
 
@@ -182,7 +184,9 @@ The form is a map from slot name (section 2.4) to a Float, with these properties
 | Decoding | listed slots take their value; unlisted slots take 0.085 |
 | "Preserved" | a slot whose chance is greater than 1.0 (`PRESERVE_ITEM_DROP_CHANCE_THRESHOLD`) is preserved: its item drops whatever the kill, undamaged by the random wear step. The helper that sets a guaranteed drop writes 2.0 (`PRESERVE_ITEM_DROP_CHANCE`). |
 
-Use on death (`Mob.dropCustomDeathLoot`, read): for every slot in the order of `EquipmentSlot.VALUES` (the `playerKill` parameter is the boolean passed to the method): a chance of exactly 0 skips the slot; the death-loot enchantment step (`processEquipmentDropChance`, looting-like, inferred) may change the chance when the killer is a living entity; the stack is skipped when empty or when it carries the "prevent equipment drop" enchantment effect; when `playerKill` is false the slot is skipped unless it is preserved (so with a false flag only preserved slots, chance greater than 1.0, can drop); then a uniform float below the chance drops the stack; a non-preserved damageable item (checked after the chance test passed) gets random wear before it is dropped: new damage value = maximum damage minus `nextInt(1 + nextInt(max(maximum damage - 3, 1)))`, where the inner random value is added to 1 and that sum is the bound of the outer draw (read). Order of the random calls for one slot: `nextFloat` for the chance test, then the inner `nextInt`, then the outer `nextInt`. A preserved item skips the wear step. After the stack is spawned as an item entity, that equipment slot is set to EMPTY: the item leaves the mob, which matters for the saved `equipment` after a partial drop (slots that did not pass the chance test keep their items).
+Use on death (`Mob.dropCustomDeathLoot`, read): for every slot in the order of `EquipmentSlot.VALUES` (the `playerKill` parameter is the boolean passed to the method): a chance of exactly 0 skips the slot; the "preserved" test is taken on the ORIGINAL chance, before the enchantment step; then `EnchantmentHelper.processEquipmentDropChance` is applied to the chance whenever the damage source's entity is a living entity (on a server level), for every slot including preserved ones, and its result replaces the chance used in the random test (its body was not read, Open question 13); the stack is skipped when empty or when it carries the "prevent equipment drop" enchantment effect; when `playerKill` is false the slot is skipped unless it is preserved (so with a false flag only preserved slots, chance greater than 1.0, can drop); then a uniform float below the chance drops the stack; a non-preserved damageable item (checked after the chance test passed) gets random wear before it is dropped: new damage value = maximum damage minus `nextInt(1 + nextInt(max(maximum damage - 3, 1)))`, where the inner random value is added to 1 and that sum is the bound of the outer draw (read). Order of the random calls for one slot: `nextFloat` for the chance test, then the inner `nextInt`, then the outer `nextInt`. A preserved item skips the wear step. After the stack is spawned as an item entity, that equipment slot is set to EMPTY: the item leaves the mob, which matters for the saved `equipment` after a partial drop (slots that did not pass the chance test keep their items).
+
+`Mob.dropPreservedEquipment(level, predicate)` (read) is a separate path with no random draw: for each slot in `EquipmentSlot.VALUES` order, an empty slot is skipped; a stack for which the predicate fails is not dropped and its slot is added to the returned set; otherwise, when the slot is preserved (chance above 1.0), the slot is set to empty first and the stack is spawned as an item. The one-argument overload uses a predicate that is always true and discards the set. Callers found in the jar: `CopperGolem`, `ZombieVillager`, the trial spawner state data (what triggers them is outside this part, Open question 20).
 
 Worked example: a skeleton killed by a player with looting 0 and default chances drops each equipped slot with probability 0.085. A pillager captain's banner slot at 2.0 always drops.
 
@@ -198,9 +202,9 @@ The three keys are written and read ONLY when the type can be a baby (`canBeABab
 |---|---|---|---|---|
 | `Age` | Int | 0 | when `canBeABaby` | Negative: a baby, counting up to 0. Zero: an adult ready to breed. Positive: an adult on breeding cooldown, counting down to 0. |
 | `ForcedAge` | Int | 0 | when `canBeABaby` | Accumulated growth added by feeding (the "forced age" bookkeeping, see below). |
-| `AgeLocked` | Byte (boolean) | false | when `canBeABaby` | A locked baby does not grow up. Item flow (read): in `mobInteract` the held item must be the golden dandelion, the mob must be a baby, its `ageLockParticleTimer` must be 0 and the type must not be in the entity-type tag `cannot_be_age_locked` (`EntityTypeTags.CANNOT_BE_AGE_LOCKED`; the tag members are in the tag data, not read here). If so the static `setAgeLocked` helper runs these steps in order: (1) it calls the instance consumer `setAgeLockedData`, which flips the lock to the opposite of its current value, then ALWAYS sets the age to the baby start age (-24000), in both directions with no branch between the two steps (so unlocking also resets a baby to -24000), then sets `ageLockParticleTimer` to 40; (2) it consumes one item; (3) it reads the NEW lock state; (4) it calls `setPersistenceRequired` when that new state is on; (5) it plays the golden-dandelion use sound (lock on) or unuse sound (lock off) in the players sound category. The timer is therefore a 40-tick cooldown between uses; while it is above 0 on the server tick the `makeAgeLockedParticle` helper emits particles and returns the new timer value. |
+| `AgeLocked` | Byte (boolean) | false | when `canBeABaby` | A locked baby does not grow up. Item flow (read): in `mobInteract` the held item must be the golden dandelion, the mob must be a baby, its `ageLockParticleTimer` must be 0 and the type must not be in the entity-type tag `cannot_be_age_locked` (`EntityTypeTags.CANNOT_BE_AGE_LOCKED`; the tag members are in the tag data, not read here). If so the static `setAgeLocked` helper runs these steps in order: (1) it calls the instance consumer `setAgeLockedData`, which flips the lock to the opposite of its current value, then ALWAYS sets the age to the type's baby start age (default -24000, Sniffer -48000), in both directions with no branch between the two steps (so unlocking also resets a baby to its baby start age), then sets `ageLockParticleTimer` to 40; (2) it consumes one item; (3) it reads the NEW lock state; (4) it calls `setPersistenceRequired` when that new state is on; (5) it plays the golden-dandelion use sound (lock on) or unuse sound (lock off) in the players sound category. The timer is therefore a 40-tick cooldown between uses; while it is above 0 on the server tick the `makeAgeLockedParticle` helper emits particles and returns the new timer value. |
 
-Constants: a newborn baby starts at age -24000 (`BABY_START_AGE`; 24000 ticks = 20 minutes to grow up). `AGE_LOCK_COOLDOWN_TICKS` is 40 (the value `setAgeLocked` stores in `ageLockParticleTimer`, a transient counter that is not saved); the forced-age particle runs for 40 ticks (`FORCED_AGE_PARTICLE_TICKS`).
+Constants: a newborn baby starts at the type's baby start age, the overridable method `getBabyStartAge`: -24000 in `AgeableMob` (24000 ticks = 20 minutes to grow up) and -48000 in `Sniffer` (read: scanning the entity package found only these two definitions; any override in a class outside it is not excluded). `setBaby(true)`, the baby-chance branch of spawn finalisation and `setAgeLockedData` all use this method; the per-type parts own any further override. A Sniffer therefore takes twice as long to grow up, and a bred baby Sniffer is spawned at -48000. `AGE_LOCK_COOLDOWN_TICKS` is 40 (the value `setAgeLocked` stores in `ageLockParticleTimer`, a transient counter that is not saved); the forced-age particle runs for 40 ticks (`FORCED_AGE_PARTICLE_TICKS`).
 
 Behaviour of the saved numbers:
 
@@ -213,14 +217,15 @@ Behaviour of the saved numbers:
 
 | Key | NBT type | Default on load | Written when | Meaning |
 |---|---|---|---|---|
-| `InLove` | Int | 0 | always | Ticks left in love mode. 0: not in love. Fed breeding food sets it to 600 (30 seconds), broadcasting the entity event 18 (client handler `Animal.handleEntityEvent`: 7 heart particles, each with a Gaussian 0.02 velocity jitter; read); it counts down 1 per tick, with a heart particle every 10th tick. |
+| `InLove` | Int | 0 | always | Ticks left in love mode. 0: not in love. Fed breeding food sets it to 600 (30 seconds), broadcasting the entity event 18 (client handler `Animal.handleEntityEvent`: 7 heart particles, each with a Gaussian 0.02 velocity jitter; read); it counts down 1 per tick in `aiStep` on both sides, and the heart particle on every tick where the new value is a multiple of 10 is client-side only (it uses `Level.addParticle`). |
 | `LoveCause` | `Int Array(4)` (UUID) | none | only when set | The player who fed the animal (set only when the feeder is a server player). Used for the breeding advancement and experience credit. |
 
 Rules read in the artifact:
 
-1. `isInLove` is `InLove > 0`. Whenever the animal's age is not 0 (a baby, or an adult on cooldown) `InLove` is forced back to 0 on every tick and on every server AI step, so a saved `InLove` on a mob with a non-zero `Age` is lost at the first tick.
+1. `isInLove` is `InLove > 0`. Whenever the animal's age is not 0 (a baby, or an adult on cooldown) `InLove` is forced back to 0 in `aiStep` (both sides) and in `customServerAiStep` (server), so a saved `InLove` on a mob with a non-zero `Age` is lost at the first tick. The countdown by 1 also runs in `aiStep` on both sides.
+5. Damage cancels love: `Animal.actuallyHurt` calls `resetLove` (InLove becomes 0) before the `AgeableMob` damage code, so any damage that reaches `actuallyHurt` clears `InLove` (`LoveCause` stays, rule 4).
 2. Two animals can mate when they are different entities, have exactly the same class, and both are in love.
-3. After a successful breeding (`finalizeSpawnChildFromBreeding`): the credit for the advancement goes to the `LoveCause` of either parent; both parents get age 6000 (5 minutes cooldown) and `resetLove` (InLove 0); the entity event 18 is broadcast; when the `mob_drops` game rule is true an experience orb of 1 to 7 points is spawned (1 + a random integer below 7). The baby is spawned with age -24000 at the first parent's position with yaw and pitch 0.
+3. After a successful breeding (`finalizeSpawnChildFromBreeding`): the credit for the advancement goes to the `LoveCause` of either parent; both parents get age 6000 (5 minutes cooldown) and `resetLove` (InLove 0); the entity event 18 is broadcast; when the `mob_drops` game rule is true an experience orb of 1 to 7 points is spawned (1 + a random integer below 7). The baby is spawned with the baby's baby start age (-24000, Sniffer -48000; section 4.1) at the first parent's position with yaw and pitch 0.
 4. `LoveCause` is not cleared by `resetLove` (only `InLove` is zeroed; this was read from the method bodies).
 
 Worked example (breeding): two cows, both Age 0, InLove 0. The player feeds both: each gets `InLove: 600`, `LoveCause` the player. They meet, breed: the calf spawns with `Age: -24000, ForcedAge: 0, AgeLocked: 0, InLove: 0`; each parent becomes `Age: 6000, InLove: 0` with `LoveCause` still set.
@@ -269,7 +274,7 @@ Some concrete types (which ones: the owner index of 45-1 §12 and the species pa
 
 Load rule: if `anger_end_time` is present it is used. Otherwise the legacy Int key `AngerTime` (remaining ticks) is read when present and converted to an end time of the current game time plus that value; otherwise the end time is set to -1. `angry_at` is read only when the level is a server level; after reading, `setTarget` is called UNCONDITIONALLY with the result of resolving the reference to a living entity in that level: an absent or unresolvable `angry_at` therefore calls `setTarget(null)`, which clears the attack target. The method returns early on a client level, so none of this (the `angry_at` read and the target set) happens there; the end-time handling above runs on both sides.
 
-Meaning: the mob is angry (`isAngry`) when the end time is greater than 0 and the end time minus the current game time is positive. `stopBeingAngry` clears the last-hurt-by mob, the anger target, the attack target and sets the end time to -1. The per-tick maintenance (`updatePersistentAnger`) clears the anger when the target is dead (for a mob target), when the angry state lapses with a target that is not a valid player target, or when the target is a player who is in creative mode or spectator, or when the difficulty is Peaceful. A damaging target is recorded as the anger target (the entity reference) and the anger timer restarts. Universal anger (anger at all players) is a game rule effect and a Brain memory (`universal_anger`, section 8.4).
+Meaning: the mob is angry (`isAngry`) when the end time is greater than 0 and the end time minus the current game time is positive. `stopBeingAngry` clears the last-hurt-by mob, the anger target, the attack target and sets the end time to -1. The per-tick maintenance (`updatePersistentAnger`) clears the anger when the target is dead (for a mob target), when the angry state lapses with a target that is not a valid player target, or when the target is a player who is in creative mode or spectator, or when the difficulty is Peaceful. A damaging target is recorded as the anger target (the entity reference) and the anger timer restarts. Two more read helpers (also in [18](18-mob-framework.md) section 4.8): `playerDied(level, player)` calls `stopBeingAngry` when the game rule `forgive_dead_players` is true and the persistent anger target matches the dead player (it returns at once when the rule is false or there is no matching target). `isAngryAtAllPlayers(level)` is true when the game rule `universal_anger` is true, the mob `isAngry`, and it has NO persistent anger target. `isAngryAt(entity, level)` is false when `canAttack(entity)` is false; true for a valid player target when `isAngryAtAllPlayers` holds; otherwise true when the persistent anger target matches the entity. The Brain memory `universal_anger` is a separate Boolean (section 8.4).
 
 Note: the Brain-driven mobs store their anger in the `angry_at` memory instead (section 8.4), with the same UUID form.
 
@@ -324,7 +329,7 @@ Of the 115 registered memory types (registration order is the index, 0 to 114, f
 | Boolean | Byte |
 | Int | Int |
 | Long | Long |
-| Unit | an empty compound `{}` (the "presence only" value; decoding accepts any compound, inferred from the unit codec) |
+| Unit | an empty compound `{}` (the "presence only" value; the `Unit` codec is reached through `Unit.CODEC`, which is built with `MapCodec.unitCodec` (read), which encodes as an empty compound; that decoding accepts any compound is (inferred) from the codec's name) |
 | `List<GlobalPos>` | list of `GlobalPos` compounds. The list is stored as a set in memory for two of the three types (an `xmap` converts; inferred); duplicates collapse on load. |
 
 The 52 serialisable types (id is the registration index):
@@ -408,9 +413,11 @@ CanPickUpLoot: 0b, PersistenceRequired: 0b, LeftHanded: 0b,
 Age: 0, ForcedAge: 0, AgeLocked: 0b, InLove: 0
 ```
 
-Reading notes. `active_effects` and `equipment` are absent (nothing to store). `drop_chances`, `leash`, `home_*`, `DeathLootTable*`, `NoAI`, `sleeping_pos` and `locator_bar_icon` are absent. The attribute elements have no `modifiers`. The `base` values here are illustrative, not read; they depend on the type. `NoAI` is written only when true.
+Reading notes. `active_effects` and `equipment` are absent (nothing to store). `drop_chances`, `leash`, `home_*`, `DeathLootTable*`, `NoAI`, `sleeping_pos` and `locator_bar_icon` are absent. The attribute elements have no `modifiers`. The `Health` and `base` numbers (10.0, 0.2) are arbitrary test data, not read from the jar and not attribute bases of any type; real bases depend on the type and are in the per-type parts. Do not use them as defaults (section 11 question 22). `NoAI` is written only when true.
 
 ### 9.2 Equipment, drop chances, home and death table
+
+All values below (items, chances, the home radius and position, the loot table id, the seed) are arbitrary test data, not read facts (section 11 question 22). Only the key names and the 0.085 default and the preserved rule (above 1.0) are read.
 
 ```
 equipment: {mainhand: {id: "minecraft:iron_sword", count: 1}, head: {id: "minecraft:iron_helmet", count: 1}},
@@ -426,13 +433,13 @@ Reading notes: empty slots are not listed; slots not in `drop_chances` take 0.08
 Start: the entity has Speed amplifier 0, duration 1200 (no hidden effect). A potion applies Speed amplifier 1, duration 600.
 
 1. N.amplifier 1 > E.amplifier 0, and N (600) is shorter than E (1200): a copy of E becomes the hidden effect; E becomes amplifier 1, duration 600. Saved form:
-   `{id:"minecraft:speed", amplifier:1b, duration:600, ambient:0b, show_particles:1b, show_icon:1b, hidden_effect:{amplifier:0b, duration:1200, ambient:0b, show_particles:1b, show_icon:1b}}` (inferred form: a writer that omits default-valued `amplifier`, `ambient` and `show_particles` produces an equivalent compound; both load identically).
+   `{id:"minecraft:speed", amplifier:1b, duration:600, ambient:0b, show_particles:1b, show_icon:1b, hidden_effect:{amplifier:0b, duration:1200, ambient:0b, show_particles:1b, show_icon:1b}}` (whether vanilla omits the default-valued `amplifier`, `ambient` and `show_particles` is Open question 19; a compound with or without them loads identically).
 2. After 600 ticks the hidden effect was ticked down in step: it has 600 left. At the tick E reaches duration 0 it takes the hidden effect's details (amplifier 0, duration 600) and loses the hidden effect (the hidden effect's own hidden effect, none here).
 3. A further Speed amplifier 0, duration 3000: N.amplifier 0 is not greater than E 0; E (600) is shorter than N and the amplifiers are equal, so E takes duration 3000.
 
 ### 9.4 Brain memories
 
-A villager with a home bed, a job site, and a recent golem sighting (memories in the serialisable set; the TTLs are illustrative):
+A villager with a home bed, a job site, and a recent golem sighting (memories in the serialisable set; the positions, TTL 140 and the `last_slept` value are arbitrary test data, section 11 question 22):
 
 ```
 Brain: {memories: {
@@ -447,7 +454,7 @@ Loading this into a villager's brain: the four memories are set (the villager ow
 
 ### 9.5 Age and love
 
-A calf: `Age: -24000, ForcedAge: 0, AgeLocked: 0b, InLove: 0`. Each tick the age rises by 1 (unless age-locked), so after 24000 ticks `Age` is 0 and the "is baby" flag clears. A player feeding it breeding food while it is a baby grows it by the food's growth value in seconds via `ageUp` (x 20 ticks, capped at 0). An adult fed breeding food: `InLove: 600`, hearts every 10th tick.
+A calf (a type whose baby start age is -24000): `Age: -24000, ForcedAge: 0, AgeLocked: 0b, InLove: 0`. Each tick the age rises by 1 (unless age-locked), so after 24000 ticks `Age` is 0 and the "is baby" flag clears. A player feeding it breeding food while it is a baby calls `ageUp(seconds, true)` with seconds = truncate(float(integerDivide(-Age, 20)) x 0.1f) (`getSpeedUpSecondsWhenFeeding`, read; the argument is the remaining baby ticks), so each feeding advances the baby by 10 percent of its remaining baby time in whole seconds. For Age -24000: 1200 x 0.1 = 120 seconds = 2400 ticks, new Age -21600. Because `forced` is true, the difference (2400) is added to `ForcedAge` and `forcedAgeTimer` is set to 40 when it was 0 (section 4.1 rule 3). An adult fed breeding food: `InLove: 600`, hearts every 10th tick.
 
 ### 9.6 Tamed and sitting animal
 
@@ -464,9 +471,9 @@ An implementation of this document is correct when:
 3. Loading a compound with every optional key absent yields: health = max health, no effects, empty equipment, default drop chances, no leash, no home (radius -1), not left-handed, no override loot table, AI enabled, age 0, not in love.
 4. Equipment round-trips with slot names `mainhand`, `offhand`, `feet`, `legs`, `chest`, `head`, `body`, `saddle`, and a compound with only empty stacks is not written.
 5. Drop chances: a map equal to the default is not written; a slot written with 2.0 is preserved.
-6. Attributes: transient modifiers never appear in the saved list; an unknown attribute id is ignored for that entity; `base` is written even when 0.0.
-7. Effects: an amplifier 200 round-trips as byte -56 and loads as 200 (default-valued fields may be present or absent, inferred); a missing `show_icon` takes the value of `show_particles`; the hidden chain of three levels round-trips; an infinite effect writes duration -1 and does not tick down.
-8. Brain: only the 52 serialisable memory types are written; a memory with an expiry writes `ttl`; a memory of an unowned type is ignored on load; activities and the schedule are not saved and are rebuilt.
+6. Attributes: transient modifiers never appear in the saved list; an unknown attribute id is a decode error (reach unread, Open question 2b); the safe default for an implementation is to skip only that element and keep the rest of the list; `base` is written even when 0.0.
+7. Effects: an amplifier 200 round-trips as byte -56 and loads as 200 (default-valued fields may be present or absent: Open question 19); a missing `show_icon` takes the value of `show_particles`; the hidden chain of three levels round-trips; an infinite effect writes duration -1 and does not tick down.
+8. Brain: only the 52 serialisable memory types are written; a memory with an expiry writes `ttl`; a memory of an unowned type is ignored on load; an unknown or non-serialisable memory key: skip only that entry (implementer's choice, Open question 2); activities and the schedule are not saved and are rebuilt.
 9. Age keys are written and read only for types that can be babies.
 10. An animal with a non-zero `Age` and `InLove > 0` has `InLove` set to 0 at the first tick.
 11. A tameable with `Owner` loads tame; without `Owner` loads untame; `Sitting` independent of both.
@@ -483,18 +490,21 @@ Test inputs for the unit tests: the compounds in 9.1 to 9.6 and the update rule'
 2b. The `attributes` list uses the plain list codec; the artifact does not show whether an unknown attribute id loses only that entry or the whole list. Implementers should skip only the bad entry; 45-1 section 1 gives the shared failure rule.
 3. `amplifier` decoding as unsigned (values above 127) is inferred from the codec's name and range check; the decode lambda was not disassembled.
 4. Which concrete types can be babies (the `canBeABaby` gate for the three age keys) and which types own which memories are per-type facts in parts 4 to 9.
-5. The `Unit` memory value is shown as an empty compound; the exact written tag of the unit codec (an empty map) was not seen in the artifact beyond its constructor.
+5. (Closed: the `Unit` codec is `MapCodec.unitCodec`, read; see section 8.4. Only the decode leniency for a non-empty compound remains (inferred).)
 6. `current_impulse_context_reset_grace_time` and `current_explosion_impact_pos`: the tick logic that decrements or clears them (the name suggests the wind charge and mace impulse; inferred) was not read.
 7. The iteration order of the written `active_effects` list and of the written `attributes` list is the order of hash maps and is not significant on load.
 8. When the effect-start hook runs for effects restored from `active_effects`, and whether `Health` is clamped to a maximum health that does not yet include modifiers added by those effects (for example Health Boost). Loading sets the effects dirty and reads `Health` after `active_effects` in the same call; the dirty-effects pass runs later. The consequence for a saved Health above the base maximum was not traced.
 9. Which attribute instances vanilla writes depends on lazy instance creation; whether a type creates all of its instances at construction was not traced for every type.
 10. The behaviour of a saved `Brain` whose `memories` contains a TTL of the wrong type: the field is lenient, so the memory loads without expiry (read), but the consequences for specific memories were not examined.
 11. Whether a mob type can hold armor in the `body` and `saddle` slots is per type; the saved form accepts any slot on any mob.
-12. Closed in the fix pass: the 3-float vector of `locator_bar_icon.color` is on a 0.0 to 1.0 scale with alpha 1.0 (section 2.5). Remaining: the lambda-to-codec binding was matched by signature (the only Vector3f-to-Int conversion beside the 4-float one), not by tracing the call site.
-13. Resolved in this round: the wear expression and the order of the random calls were read (section 3.1). Nothing remains open except that `processEquipmentDropChance` (the looting-like step) is still (inferred) from its call site.
+12. The plain-Int form of `locator_bar_icon.color`: whether its alpha byte is kept or forced was not read (only the vector-derived form was, section 2.5).
+13. The body of `EnchantmentHelper.processEquipmentDropChance` (how it changes a drop chance) was not read; only its call site (section 3.1).
 14. DataFixer upgrades of the old keys listed at the end of section 1 are code not read in this round (45-1 Open question on version handling).
 15. How the `Player` class and `ServerPlayer` extend the `LivingEntity` keys (for example whether the player compound writes `Brain`, `equipment`, `attributes`, `active_effects`) is part 3; the `LivingEntity` code path is as in section 2.
 16. Whether `ShoulderRidingEntity` declares keys in a subclass that this round did not read (the parrot's own keys are in part 7) was not verified beyond the class itself having none.
-17. Read in this round (4.1): the golden dandelion flow and the cooldown role of `AGE_LOCK_COOLDOWN_TICKS`. Not read: the members of the tag `cannot_be_age_locked`, the particle type and count of `makeAgeLockedParticle`. The lock flip, the unconditional age reset and the timer were read from the method bodies in the fix pass (unlocking resets a baby to -24000).
-18. Statements still marked "(recalled, not verified)": which animals use the `body` slot (horses and wolves as examples). Read in this round: events 18 and 60, the `ANIMAL_ARMOR` type name, `ShoulderRidingEntity` (extends `TamableAnimal`; the parrot extends it), `PatrollingMonster` (extends `Monster`; `Raider` extends it and `AbstractIllager` extends `Raider`) and the `NeutralMob` users (see section 7). The particle type of event 60 was not checked.
+17. Not read: the members of the tag `cannot_be_age_locked`, and the particle type and count of `makeAgeLockedParticle`.
+18. No statement is currently marked "(recalled, not verified)" except the item in question 19; the worked-example numbers are covered by question 22; the body-slot users, events 18 and 60 and the `NeutralMob` users are read (sections 2.1, 2.4, 4.2, 7).
 19. Whether `amplifier`, `duration`, `ambient` and `show_particles` of an effect are omitted when equal to their default depends on the codec library's optional-field encoder (recalled, not verified; the jar uses the plain optional-field form for them and the always-present form for the attribute `base`). Implementers accept both forms on load.
+20. What triggers `Mob.dropPreservedEquipment` in `CopperGolem`, `ZombieVillager` and the trial spawner state data (the callers found by scanning the entity and level packages) is not described here; it belongs to those types' parts.
+21. `getBabyStartAge` overrides were searched only in the entity package (found: `AgeableMob`, `Sniffer`); overrides elsewhere are not excluded.
+22. The worked examples in 9.1, 9.2 and 9.4 use numbers that were not read from the jar: max_health 10.0, movement_speed 0.2, the iron sword and helmet, drop chance 0.5, home_radius 16, home_pos [100,64,-20], loot table `minecraft:entities/zombie`, seed 123456789, the villager home and job positions, ttl 140 and last_slept 5120. They are arbitrary test data to show the shape of the compound, not facts, and not recalled game values. Per-type attribute bases were not read in this part.

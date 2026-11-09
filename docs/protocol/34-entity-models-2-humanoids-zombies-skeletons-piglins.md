@@ -1,10 +1,11 @@
-# 34 part 2. Entity models and renderers: humanoid-base mobs (zombies, skeletons, piglins, armor stand)
+# 34-2. Entity models and renderers: humanoid-base mobs (zombies, skeletons, piglins, armor stand)
 
 | | |
 |---|---|
 | Covers | The models, layer definitions, render states, animation formulas and renderers of the humanoid-base entities other than the player: zombie, husk, drowned (with its outer layer), giant, baby zombie, baby husk and baby drowned; skeleton, stray, bogged, wither skeleton, parched (with the clothing layers); piglin, piglin brute, zombified piglin (adult and baby); armor stand (normal and small). Also the armor layer and the held-item layer as they apply to these mobs, the render-state fields, the texture paths and the transform pipeline of these renderers. Zombie villager, illagers, witch, vex (part 3) and undead horses (part 4) are excluded. |
+| Part file | This is part 2 of document 34 (file `34-entity-models-2-humanoids-zombies-skeletons-piglins.md`). In this document `34-N §x.y` means section x.y of part N of document 34 (34-1 shared framework, 34-7 Nether and End bosses, 34-9 non-living entities); `NN §x.y` means section x.y of document NN; section numbers without a prefix are this document's. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `HumanoidModel` (mesh, animation, arm poses, armor mesh sets, `BABY_TRANSFORMER`), `AnimationUtils`, `BabyModelTransform`, `MeshTransformer`, `PartPose`, `PartDefinition`, `CubeDeformation`, `LayerDefinitions.createRoots`, `ZombieModel`, `GiantZombieModel`, `DrownedModel`, `BabyZombieModel`, `BabyDrownedModel`, `SkeletonModel`, `BoggedModel`, `AbstractPiglinModel`, `AdultPiglinModel`, `PiglinModel`, `BabyPiglinModel`, `ZombifiedPiglinModel` and its adult and baby classes, `PlayerModel` (only the mesh and armor-set parts that piglins inherit), `ArmorStandModel`, `ArmorStandArmorModel`, `ArmorModelSet`, the renderers `HumanoidMobRenderer`, `AgeableMobRenderer`, `MobRenderer`, `LivingEntityRenderer`, `AbstractZombieRenderer`, `ZombieRenderer`, `HuskRenderer`, `DrownedRenderer`, `GiantMobRenderer`, `AbstractSkeletonRenderer`, `SkeletonRenderer`, `StrayRenderer`, `BoggedRenderer`, `ParchedRenderer`, `WitherSkeletonRenderer`, `PiglinRenderer`, `ZombifiedPiglinRenderer`, `ArmorStandRenderer`, `EntityRenderers`, the layers `HumanoidArmorLayer`, `EquipmentLayerRenderer`, `ItemInHandLayer`, `CustomHeadLayer`, `WingsLayer`, `DrownedOuterLayer`, `SkeletonClothingLayer`, `RenderLayer`, the render states of the scope, and `Piglin`, `PiglinBrute`, `PiglinArmPose`, `ArmorStand` for the values that feed the states. |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `HumanoidModel` (mesh, animation, arm poses, armor mesh sets, `BABY_TRANSFORMER`), `AnimationUtils`, `BabyModelTransform`, `MeshTransformer`, `PartPose`, `PartDefinition`, `CubeDeformation`, `LayerDefinitions.createRoots`, `ZombieModel`, `GiantZombieModel`, `DrownedModel`, `BabyZombieModel`, `BabyDrownedModel`, `SkeletonModel`, `BoggedModel`, `AbstractPiglinModel`, `AdultPiglinModel`, `PiglinModel`, `BabyPiglinModel`, `ZombifiedPiglinModel` and its adult and baby classes, `PlayerModel` (only the mesh and armor-set parts that piglins inherit), `SkullModel`, `PiglinHeadModel`, `SkullBlockRenderer`, `SkullModelBase`, `LayerDefinitions` (armor constants and call sites, skull layers), `EntityDimensions`, the `getDefaultDimensions` overrides of the entity classes, `ArmorStandModel`, `ArmorStandArmorModel`, `ArmorModelSet`, the renderers `HumanoidMobRenderer`, `AgeableMobRenderer`, `MobRenderer`, `LivingEntityRenderer`, `AbstractZombieRenderer`, `ZombieRenderer`, `HuskRenderer`, `DrownedRenderer`, `GiantMobRenderer`, `AbstractSkeletonRenderer`, `SkeletonRenderer`, `StrayRenderer`, `BoggedRenderer`, `ParchedRenderer`, `WitherSkeletonRenderer`, `PiglinRenderer`, `ZombifiedPiglinRenderer`, `ArmorStandRenderer`, `EntityRenderers`, the layers `HumanoidArmorLayer`, `EquipmentLayerRenderer`, `ItemInHandLayer`, `CustomHeadLayer`, `WingsLayer`, `DrownedOuterLayer`, `SkeletonClothingLayer`, `RenderLayer`, the render states of the scope, and `Piglin`, `PiglinBrute`, `PiglinArmPose`, `ArmorStand` for the values that feed the states. |
 | Scope decisions | Standard Minecraft content is the target (ticket CC-0001; design README Parts 0, 1, 4; GAP-25). Textures, equipment asset JSON and item models are data (extracted by the tool into a resource pack, 22); this document gives only the texture paths the renderers ask for. Model geometry, animation, and the renderers are code and are given completely. The shared model framework (`ModelPart`, box UV unwrap, the pose stack) is cross-referenced: 14 §5.3 and 12 §7.4 for the box unwrap and the humanoid skin layout, 12 §7.3 for the player's transform; this document restates only what the mobs need. |
 
 Conventions. Model units are pixels (1/16 block), x to the model's left, y down, z to the front, angles in radians unless
@@ -72,9 +73,23 @@ grows are the constants of the call site.
   `body`, `left_arm`, `right_arm`; legs = exactly `left_leg`, `right_leg`, `body`; feet = exactly `left_leg`, `right_leg`.
 - Grow per slot: head, chest and feet use the **outer** grow; legs use the **inner** grow. (Call `createArmorMeshSet(inner,
   outer)`: legs from inner, the other three from outer.)
-- Constants (`LayerDefinitions`): outer 1.0 (`OUTER_ARMOR_DEFORMATION`), inner 0.5 (`INNER_ARMOR_DEFORMATION`), baby outer
-  (−0.1, 0.5, 0.3) (grow x, y, z), baby inner (−0.1, 0.3, 0.3), baby piglin inner 0.7 and outer 0.7, baby piglin arm offset
-  pose (0.5, −0.5, 0), piglin outer 1.02 (the piglin armor passes inner 0.5 and outer 1.02).
+- Constants (`LayerDefinitions`, static fields read from its initialiser, and the four armor sets built at the start of
+  `createRoots`, each stored in a local and bound to model layers later in `createRoots`):
+
+  | Constant | Value | Set built from it | Bound to (`ModelLayers` entries) |
+  |---|---|---|---|
+  | `OUTER_ARMOR_DEFORMATION` | 1.0 | adult humanoid set (`HumanoidModel.createArmorMeshSet(INNER, OUTER)`) | `ZOMBIE_ARMOR`, `DROWNED_ARMOR`, `SKELETON_ARMOR`, `STRAY_ARMOR`, `BOGGED_ARMOR`, `PARCHED_ARMOR` unscaled; `GIANT_ARMOR`, `HUSK_ARMOR`, `WITHER_SKELETON_ARMOR` after a `MeshTransformer.scaling` (6.0, 1.0625, 1.2 per 3) |
+  | `INNER_ARMOR_DEFORMATION` | 0.5 | same call (and the piglin call below) | same |
+  | `BABY_OUTER_ARMOR_DEFORMATION` | (−0.1, 0.5, 0.3) (grow x, y, z) | baby humanoid set (`HumanoidModel.createBabyArmorMeshSet(BABY_INNER, BABY_OUTER, PartPose.ZERO)`) | `ZOMBIE_BABY_ARMOR`, `DROWNED_BABY_ARMOR`, `HUSK_BABY_ARMOR` |
+  | `BABY_INNER_ARMOR_DEFORMATION` | (−0.1, 0.3, 0.3) | same call | same |
+  | literal `1.02` (a `CubeDeformation` made inline, not a named field) | 1.02 | piglin set (`PiglinModel.createArmorMeshSet(INNER 0.5, 1.02)`) | `PIGLIN_ARMOR`, `PIGLIN_BRUTE_ARMOR`, `ZOMBIFIED_PIGLIN_ARMOR` |
+  | `BABY_PIGLIN_INNER_ARMOR_DEFORMATION` | 0.7 (uniform) | baby piglin set (`AbstractPiglinModel.createBabyArmorMeshSet(BABY_PIGLIN_INNER, BABY_PIGLIN_OUTER, BABY_PIGLIN_ARMOR_ARM_OFFSET)`) | `PIGLIN_BABY_ARMOR`, `ZOMBIFIED_PIGLIN_BABY_ARMOR` |
+  | `BABY_PIGLIN_OUTER_ARMOR_DEFORMATION` | 0.7 (uniform) | same call | same |
+  | `BABY_PIGLIN_ARMOR_ARM_OFFSET` | pose (0.5, −0.5, 0), rotations 0 | same call | same |
+
+  The 0.7 values are the baby piglin armor grows only; they are unrelated to any `MeshTransformer.scaling` constant in the same
+  class (the scalings are 6.0, 1.2 and 1.0625 for the giant, wither skeleton and husk; other entities' scalings are not in scope). The
+  baby piglin set's two grows being equal (0.7 each) was read from the two separate field initialisers.
 - Resulting grows for an adult humanoid: helmet and chestplate 1.0 on all cuboids, boots 0.9 on the legs, leggings 0.5 on
   the body and 0.4 on the legs.
 - Layer sizes: adult armor sets are 64 x 32; baby sets 64 x 64; piglin armor 64 x 32; baby piglin armor 64 x 64; armor-stand
@@ -129,20 +144,55 @@ follows every animation in 4 and 5 (the body-part subset of each slot is in 1.4)
 model's `translateToHand(state, arm, stack)` (the posed arm part's transform after the model root's; the skeleton overrides it
 in 4.8); rotate X by −90°; rotate Y by 180°; translate by `((left ? −1 : 1) × bx, by, bz) / 16`, where adult (and every armor
 stand, including a small one) uses (bx, by, bz) = (1, 2, −10) and a baby (not an armor stand) uses (0, 1, −4.5); if the current
-swing is the stab type of the matching hand, `SpearAnimations.thirdPersonAttackItem` adjusts the stack (34 part 1 section 3.8 gives all six `SpearAnimations` functions, and part 1 section 8.3 the layer steps that call them); if the arm is using an item (`ticksUsingItem` > 0) the arm pose's `animateUseItem` adjusts it (only the SPEAR pose does
+swing is the stab type of the matching hand, `SpearAnimations.thirdPersonAttackItem` adjusts the stack (34-1 §3.8 gives all six `SpearAnimations` functions, and 34-1 §8.3 the layer steps that call them); if the arm is using an item (`ticksUsingItem` > 0) the arm pose's `animateUseItem` adjusts it (only the SPEAR pose does
 anything); then the item model is submitted with the display context `THIRD_PERSON_RIGHT_HAND` or `THIRD_PERSON_LEFT_HAND`
 (12 §8.2); pop. `CustomHeadLayer` (skull or head item): scale `(hs, vs, hs)`; the model root's and head's transforms; for a skull
 block: translate (0, skullYOffset, 0), scale 1.1875, draw the skull model; for any other head item: translate (0, −0.25 +
 yOffset, 0), rotate Y 180°, scale (0.625, −0.625, −0.625), submit the head item model. The transforms are (yOffset, skullYOffset,
-hs, vs) = (0, 0, 1, 1) by default and (0, 0, 1.0019531, 1) for all piglin family renderers. `WingsLayer` (read this round; it is present on the humanoid mob renderers and the armor stand): reads the chest stack; returns
+hs, vs) = (0, 0, 1, 1) by default and (0, 0, 1.0019531, 1) for all piglin family renderers. `WingsLayer` (present on the humanoid mob renderers and the armor stand): reads the chest stack; returns
 when it has no equippable component or the component has no asset id. The model is the baby elytra model when `isBaby`, else
-the adult one (layers `ELYTRA_BABY`, `ELYTRA`; mesh and animation: 34 part 9, and 47 section 6.3). The texture override is
+the adult one (layers `ELYTRA_BABY`, `ELYTRA`; mesh and animation: 34-9; the player's elytra and cape textures: 47 §6.3). The texture override is
 the player skin's elytra or cape texture, which only a player state can supply, so for every mob here the equipment asset's own texture is
 used. Steps: push; translate (0, 0, 0.125); `EquipmentLayerRenderer.renderLayers` with layer type `wings`, the state's outline
 colour and the order counter start 0; pop. (The armor layer of 1.5 starts its counter at 1; see the order values in 1.5 step 5.)
-Skull and head-block models drawn by `CustomHeadLayer` for these mobs (`SKELETON_SKULL`, `WITHER_SKELETON_SKULL`,
-`ZOMBIE_HEAD`, `PIGLIN_HEAD` / `PiglinHeadModel`, and the skull render types): the `SkullModel` mesh pattern is in 34 part 7
-(the wither skull); the per-type skull meshes and `PiglinHeadModel` are not specified in any document (Open question 2).
+#### 1.6.1 Skull models drawn by `CustomHeadLayer` (`SkullBlockRenderer.createModel`, `SkullModel`, `PiglinHeadModel`)
+
+`CustomHeadLayer` and the skull block entity renderer share one model per skull type (`SkullBlockRenderer.createModel`). The
+skull type picks the model layer (all built in `LayerDefinitions.createRoots`):
+
+| Skull type | Model class | Model layer | Mesh | Texture size | Texture (from `SkullBlockRenderer`) |
+|---|---|---|---|---|---|
+| skeleton | `SkullModel` | `SKELETON_SKULL` | mob head (below) | 64 x 32 | `textures/entity/skeleton/skeleton.png` |
+| wither skeleton | `SkullModel` | `WITHER_SKELETON_SKULL` | mob head | 64 x 32 | `textures/entity/skeleton/wither_skeleton.png` |
+| creeper | `SkullModel` | `CREEPER_HEAD` | mob head | 64 x 32 | `textures/entity/creeper/creeper.png` |
+| zombie | `SkullModel` | `ZOMBIE_HEAD` | humanoid head (below) | 64 x 64 | `textures/entity/zombie/zombie.png` |
+| player | `SkullModel` | `PLAYER_HEAD` | humanoid head | 64 x 64 | the profile's skin, else the default skin (47) |
+| piglin | `PiglinHeadModel` | `PIGLIN_HEAD` | piglin head (below) | 64 x 64 | `textures/entity/piglin/piglin.png` |
+| dragon | `DragonHeadModel` | `DRAGON_SKULL` | not in scope | | `textures/entity/enderdragon/dragon.png` |
+
+- Mob head mesh (`SkullModel.createHeadModel` through `createMobHeadLayer`): one part `head`, pose ZERO, one cuboid origin
+  (−4, −8, −4), size 8 x 8 x 8, tex (0, 0), grow 0.
+- Humanoid head mesh (`createHumanoidHeadLayer`): the same `head`, plus a child `hat` (pose ZERO) with one cuboid origin (−4, −8, −4),
+  size 8 x 8 x 8, tex (32, 0), grow 0.25.
+- Piglin head mesh (`PiglinHeadModel.createHeadModel`: a new mesh with `AbstractPiglinModel.addHead(grow 0)`): exactly the piglin
+  head of 3.7 (cuboids of `head`, then `left_ear` and `right_ear` children, with their rest poses); no `hat` child is added
+  (the `addHead` method adds none; the `clearChild("hat")` of 3.7 acts on the player mesh the adult piglin starts from).
+- Animation. `SkullModel.setupAnim(state)`: head.yRot = state.yRot x 0.017453292 and head.xRot = state.xRot x 0.017453292 (degrees to
+  radians). `PiglinHeadModel.setupAnim`: the same two assignments, then with q = state.animationPos x π x 0.2:
+  left_ear.zRot = −(cos(q x 1.2) + 2.5) x 0.2 and right_ear.zRot = (cos(q) + 2.5) x 0.2. At q = 0 this gives −0.7 and +0.7 (the ears
+  are overwritten, not added to the rest angle, so the rest angles of ±0.5235988 do not matter once the model is posed).
+- Render type. `SkullBlockRenderer.getSkullRenderType(type, texture)` is `entityCutoutZOffset(texture)`, where the texture is the
+  table's path when none is passed. `CustomHeadLayer` calls the same function, except that a player skull with a resolved profile
+  uses the render type of the profile's skin render info. (The wither skull projectile's model, `entityTranslucent`, is a
+  different path: 34-7.)
+- Posing from `CustomHeadLayer`. The layer calls `SkullBlockRenderer.submitSkull(wornHeadAnimationPos, pose, ..., model,
+  renderType, ...)`; `submitSkull` creates a `SkullModelBase$State` whose `animationPos` is that argument and whose `yRot` and
+  `xRot` are left at their default 0 (no other assignment appears in the method), so a worn skull's own head rotation is zero
+  and the mob's head orientation comes only from the layer's head transform (1.6). `wornHeadAnimationPos` is a render-state
+  field; for a piglin head it is what makes the ears flap (the producer is 34-1 §6.3; for a mob it is the walk position or the
+  vehicle's, as that section says). The overlay is `NO_OVERLAY` and the order is 0 for the model and 1 for the crumbling overlay.
+- The block-entity side (floor and wall transformations (translate 0.25/0.5, scale and rotation steps in `createWallTransformation`
+  and `createGroundTransformation`), `SkullBlockRenderState`) is only partly relevant here and belongs to 31 §4.
 
 ---
 
@@ -150,8 +200,9 @@ Skull and head-block models drawn by `CustomHeadLayer` for these mobs (`SKELETON
 
 ### 2.1 Common (`LivingEntityRenderer.submit`)
 
-The pose stack for the body, in order of application on model vertices last to first (the stack is built top to bottom):
+The pose stack for the body is pushed first, then built top to bottom in the list below (step 0 is applied only when it applies; the entity position translate is the dispatcher's, listed as step 1); the last step listed acts first on a model vertex:
 
+0. (Only for a sleeping entity that has a bed orientation; the skeleton, zombie and piglin families and the armor stand can reach this only through the sleeping pose.) Translate by (−stepX × (eyeHeight − 0.1), 0, −stepZ × (eyeHeight − 0.1)), where (stepX, stepZ) is the unit step of the bed direction and `eyeHeight` is the state's eye height (the standing one, 34-1 §6.3; the values per entity are in 5.7). The constant 0.1 is subtracted from the eye height; it is not a multiplier on the step. 34-1 §6.5 lists the same step;
 1. translate to the entity's interpolated position (camera-relative);
 2. scale by `state.scale` (the attribute scale; 1 for these mobs unless a scale attribute is set);
 3. `setupRotations(state, stack, bodyRot, scale)` (2.2);
@@ -163,7 +214,7 @@ A model vertex at y_m (pixels) therefore lies at height P.y + 1.501 − y_m/16 a
 at y_m = 24 is 0.001 above the feet (the same offset as 12 §7.3, without the player's 0.9375 factor).
 
 Visibility: `isBodyVisible = !state.isInvisible`; a ghost draw (`translucent`) happens when the entity is invisible but not
-invisible to the local player: model tint 0x26FFFFFF (654311423) with render type `entityTranslucentCull`; else the model's own
+invisible to the local player: the final model tint is the component-wise product (`ARGB.multiply`) of a base colour (654311423 = 0x26FFFFFF for a ghost draw, −1 otherwise) and `getModelTint(state)`. `getModelTint` returns −1 (white) in `LivingEntityRenderer` and none of the renderers of this document overrides it (read: `HumanoidMobRenderer`, `AgeableMobRenderer`, `MobRenderer`, the zombie, skeleton, piglin, giant and armor-stand renderers declare no override), so the tint is 0x26FFFFFF for the ghost and −1 otherwise; the render type for the ghost is `entityTranslucentCull`; else the model's own
 render type (cutout; piglin model translucent, see 2.6) when visible; else `outline` when it appears glowing; else nothing.
 The overlay texture value is `getOverlayCoords(state, whiteOverlayProgress = 0)`: the red flash when `hasRedOverlay` (hurt or
 dying). The layers are then drawn in the order they were added (`model.setupAnim(state)` has already run), then the name tag.
@@ -182,8 +233,7 @@ also × `state.ageScale` (0.5 for a baby, 1 otherwise: `LivingEntity.getAgeScale
    "Dinnerbone" or "Grumm"): translate (0, (boundingBoxHeight + 0.1) / scale, 0) and rotate Z by 180.
 4. For an upside-down entity the extraction also negates `xRot` and `yRot` of the state.
 
-`isShaking`: base = `isFullyFrozen`. Zombie family and piglin: base or `isConverting`. Skeleton family: replaced by the state's
-`isShaking`. Armor stand: base.
+`isShaking`: base = `isFullyFrozen`. Overrides exist only in `AbstractZombieRenderer` (zombie, husk, drowned: base or `isConverting`), `PiglinRenderer` (piglin and brute: base or `isConverting`) and `AbstractSkeletonRenderer` (replaced by the state's `isShaking`). `ZombifiedPiglinRenderer`, `GiantMobRenderer` and `ArmorStandRenderer` have no override, so the zombified piglin, the giant and the armor stand use the base rule alone (`isFullyFrozen`); the zombified piglin state has no converting field (7).
 
 Overrides. **Armor stand**: rotate Y by (180 − bodyRot) always, then if `wiggle` < 5, rotate Y by sin(wiggle / 1.5 × π) × 3
 degrees (no step 1, 3 or 4). **Drowned**: the base steps, then if `swimAmount` > 0: a = lerp(swimAmount, 0, −10 − xRot) degrees; rotate
@@ -306,7 +356,7 @@ on the body. Then:
 
 - `body` is replaced by tex (16, 16) box (−4, 0, −2) size 8, 12, 4 at ZERO (replacing a part keeps its children, so the jacket
   child remains);
-- `head` is replaced by the piglin head (below) at ZERO and its `hat` child is replaced by an empty one at the same pose.
+- `head` is replaced by the piglin head (below) at ZERO, then the `hat` child is cleared (`PartDefinition.clearChild("hat")`): the child keeps its name and its own part pose and loses all cuboids (the method re-adds a child of that name built from an empty cuboid list and the old child's pose; read in `PartDefinition`), so the hat is an empty part and no hat cuboid is drawn.
 
 Piglin head (`AbstractPiglinModel.addHead(grow)`): cuboids of `head`: tex (0, 0) box (−5, −8, −4) size 10, 8, 8; tex (31, 1) box
 (−2, −4, −5) size 4, 4, 1 (snout); tex (2, 4) box (2, −2, −5) size 1, 2, 1 (right tusk); tex (2, 0) box (−3, −2, −5) size 1, 2, 1 (left
@@ -405,8 +455,8 @@ call, the other arm's pose is not applied after it.
 Arm pose effects (head = the head part after step 2; the left arm mirrors the sign where marked): EMPTY: yRot = 0. ITEM: xRot = xRot × 0.5
 − 0.31415927; yRot = 0. BOW_AND_ARROW (right-handed): R.yRot = −0.1 + head.yRot, L.yRot = 0.1 + head.yRot + 0.4, both xRot = −1.5707964
 + head.xRot (left-handed: L.yRot = 0.1 + head.yRot, R.yRot = −0.1 + head.yRot − 0.4, both xRot the same). THROW_TRIDENT: xRot = xRot × 0.5 −
-3.1415927; yRot = 0. CROSSBOW_CHARGE and CROSSBOW_HOLD, SPYGLASS, TOOT_HORN, BRUSH, BLOCK: as 12 §7.5 (the CROSSBOW pair, which the piglin
-also uses, is in 4.9). SPEAR: `SpearAnimations.thirdPersonHandUse` (34 part 1 section 3.8); `animateZombieArms` returns without
+3.1415927; yRot = 0. CROSSBOW_CHARGE and CROSSBOW_HOLD, SPYGLASS, TOOT_HORN, BRUSH, BLOCK: 12 §7.5 holds the formula of each (SPYGLASS: xRot = clamp(head.xRot − 1.9198622 − (0.2617994 when crouching), −2.4, 3.3), yRot = head.yRot − 0.2617994; TOOT_HORN: xRot = clamp(head.xRot, −1.2, 1.2) − 1.4835298, yRot = head.yRot − 0.5235988; BRUSH: xRot = xRot × 0.5 − 0.62831855, yRot = 0; BLOCK: xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232), yRot = ∓30° + clamp(head.yRot, −0.5235988, 0.5235988), also in 12 §7.5; of the two other constants of `HumanoidModel`, 0.9424779 occurs only in `poseBlockingArm` (the BLOCK row above) and 6.2831855 (2π) only in `setupAttackAnimation` (the body-yaw sine argument √p × 2π of 4.4); a spear-helper constant is not in `HumanoidModel`, see 34-1 §3.8); the piglin's CROSSBOW pair is in 4.9 (the CROSSBOW pair, which the piglin
+also uses, is in 4.9). SPEAR: `SpearAnimations.thirdPersonHandUse` (34-1 §3.8); `animateZombieArms` returns without
 changing anything when either arm is SPEAR.
 
 ### 4.3 Zombie arms (`AnimationUtils.animateZombieArms(left, right, aggressive, state)`; zombie, husk, drowned, giant, zombified piglin)
@@ -432,7 +482,7 @@ body.yRot = sin(sqrt(p) × 2π) × 0.2, negated when swingArm is the left arm. W
 R.x = −cos(body.yRot) × 5k; L.z = −sin(body.yRot) × 5k; L.x = cos(body.yRot) × 5k (assigned, replacing the pivot values); R.yRot += body.yRot;
 L.yRot += body.yRot; L.xRot += body.yRot. If the swing animation type is `whack`: u = sin(easeOutQuart(p) × π); v = sin(p × π) × −(head.xRot −
 0.7) × 0.75; the swinging arm: xRot −= u × 1.2 + v; yRot += body.yRot × 2; zRot += sin(p × π) × −0.4. If the type is `stab`: `SpearAnimations.
-thirdPersonAttackHand` (not read, Open question 1). Other types: nothing further. Zombies, piglins and skeletons override this function
+thirdPersonAttackHand`, called last, after the common body-yaw and arm-pivot steps above and only for the stab type (34-1 §3.8 gives the function and 34-1 §8.3 the layer steps). Other types: nothing further. Zombies, piglins and skeletons override this function
 (4.3, 4.7, 4.9) but call it first.
 
 ### 4.5 Swim (`HumanoidModel.setupSwimAnimation`, swim amount s = `swimAmount` > 0, wp = walk position)
@@ -573,6 +623,40 @@ texture above. `shouldShowName`: only when the custom name is visible. Render ty
 normal stand uses the base rule (2.1). `setupRotations` per 2.2. For armor on a stand the baby layer type is not used (1.5 step 2) and the held item uses the adult offsets (1.6), even for a small
 stand; the small stand's `isBaby` still selects its baby armor set (the small armor set, 3).
 
+### 5.7 Hitbox, eye height, name-tag attachment and scale
+
+Width x height and eye height (in blocks) of the entity types of this document. The adult values are the registry values of 18
+(table of entity types; 21 §2 repeats them); the baby values were read in the `getDefaultDimensions` overrides and the
+`BABY_DIMENSIONS` initialisers of `Zombie`, `Drowned`, `Husk`, `ZombifiedPiglin`, `Piglin` and `ArmorStand`. `state.boundingBoxWidth`,
+`boundingBoxHeight` and `eyeHeight` of the render state (34-1 §6.3) take these numbers, and 2.1 step 0 uses the eye height.
+
+| Entity | Width x height | Eye height | Baby (width x height, eye) | Name-tag attachment | Scale (see below) |
+|---|---|---|---|---|---|
+| zombie | 0.6 x 1.95 | 1.74 | 0.49 x 0.98, 0.775 (20 §4.1) | default (below) | attribute `scale` 1 |
+| husk | 0.6 x 1.95 | 1.74 | 0.49 x 0.98, 0.825 | default | attribute 1; model scaling 1.0625 (3) |
+| drowned | 0.6 x 1.95 | 1.74 | 0.49 x 0.98, 0.775 | default | attribute 1 |
+| giant | 3.6 x 12.0 | 10.44 | none | default | attribute 1; model scaling 6.0 (3) |
+| skeleton, stray | 0.6 x 1.99 | 1.74 | none | default | attribute 1 |
+| bogged, parched | 0.6 x 1.99 | 1.74 | none | default | attribute 1 |
+| wither skeleton | 0.7 x 2.4 | 2.1 | none | default | attribute 1; model scaling 1.2 (3) |
+| piglin, piglin brute | 0.6 x 1.95 | 1.79 | 0.49 x 0.98, 0.78 (the brute is never a baby) | default | attribute 1 |
+| zombified piglin | 0.6 x 1.95 | 1.79 | 0.49 x 0.98, 0.78 | default | attribute 1 |
+| armor stand | 0.5 x 1.975 | 1.7775 | small: 0.25 x 0.9875, eye 0.9875 | default | n/a |
+| armor stand, marker | 0 x 0 | 0 | marker wins over small: 0 x 0 | default (height 0) | n/a |
+
+- Small stand: the adult dimensions scaled by 0.5 in both axes (0.25 x 0.9875), then the eye height set to 0.9875 (read:
+  `scale(0.5)` followed by `withEyeHeight(0.9875)`). Marker stand: `EntityDimensions.fixed(0, 0)`, whose eye height is the default
+  rule, 0.85 x height = 0, and `getDefaultDimensions` returns it whenever the marker flag (client flag 16) is set, before the small
+  test. The model of a small or marker stand is still ARMOR_STAND_SMALL or ARMOR_STAND by `isSmall` alone (5.6).
+- The adult giant and husk, skeleton and zombie-family values are the unscaled type dimensions: the `scale` attribute is 1 unless a
+  server changes it, and the models' larger meshes (husk 1.0625, wither skeleton 1.2, giant 6.0) are renderer scalings that do not
+  change the hitbox. A `scale` attribute other than 1 multiplies the hitbox on the server (18) and the rendered model through
+  `state.scale` (2.1 step 2) alike.
+- Name tag. These entities' `EntityType` builders list no `nameTagOffset` in the attachment table of 18 (only the sniffer has one
+  in the part of that table read), so the tag height is the default rule of 34-1 §7.2: the bounding height (in the table above, for
+  a baby the baby height, and for a small stand 0.9875). That default is inferred from the absence of a listed entry; the
+  attachment values themselves were not re-read from `EntityType` in this round (Open question 8).
+
 ---
 
 ## 6. State values (what the server-side entity supplies)
@@ -630,7 +714,7 @@ All numbers are computed from the formulas above (double arithmetic, rounded); t
    18 + 11 × 0.5 = 23.5 to 24 (plate cuboid y 11 to 12, scaled 0.5).
 10. **Armor on an adult zombie (full diamond-like set)**: helmet and chestplate grow 1.0, leggings body grow 0.5 and leg cuboids 0.4, boots leg cuboids 0.9; the draw order is chest, legs, feet, head; each piece
     uses texture `textures/entity/equipment/humanoid/<asset>.png` (chest, feet, head) or `humanoid_leggings/<asset>.png` (legs) for each layer of the asset.
-11. **Ghost draw**: an invisible zombie seen by a spectator whose own body is visible to him: the whole model is drawn with render type `entityTranslucentCull` and tint 0x26FFFFFF; the armor still draws.
+11. **Ghost draw**: an invisible zombie (`isInvisible` true) for which the invisibility test against the local player is false (the artifact condition of 2.1; no other condition was read): the whole model is drawn with render type `entityTranslucentCull` and tint 0x26FFFFFF; the armor still draws.
 
 ---
 
@@ -655,8 +739,8 @@ A reimplementer can check these without a reference client:
 
 ## Open questions
 
-1. (Resolved.) `SpearAnimations` and the `SPEAR` arm pose are documented in 34 part 1 section 3.8 and section 8.3; nothing here remains unread for them. 12 §7.5 Open question 6 is covered by the same sections.
-2. The per-type skull and head-block meshes that `CustomHeadLayer` draws on these mobs (`SKELETON_SKULL`, `WITHER_SKELETON_SKULL`, `ZOMBIE_HEAD`, `PIGLIN_HEAD` with `PiglinHeadModel`) and `SkullBlockRenderer`'s render types were not read. Searched: the docs of 34 parts 1 and 7 and 47 (only the wither skull `SkullModel` and the default player skull texture appear).
+1. (Resolved.) `SpearAnimations` and the `SPEAR` arm pose are documented in 34-1 §3.8 and §8.3; nothing here remains unread for them. 12 §7.5 Open question 6 is covered by the same sections.
+2. (Resolved by 1.6.1.) The skull and head meshes, `PiglinHeadModel` and the skull render types are now documented. Still unread: `DragonHeadModel` (the dragon head is not in scope), the floor and wall transformation steps of `SkullBlockRenderer` (31 §4 territory), and the exact producer of `wornHeadAnimationPos` for a mob (34-1 §6.3 holds it).
 3. The equipment asset schema (`EquipmentClientInfo`, layer lists, dyeable defaults, `trim_overrides`) is data; its loader is in the extraction and resource-pack rounds, and `EquipmentLayerRenderer`'s palette handling
    (`PalettedTextureManager`) was read only for the identifier rules of 1.5; the recoloring algorithm itself is 14 §7.4.
 4. The entity-side producers of `isAggressive`, `isShaking`, `isConverting`, `isSheared`, `isDancing`, the charging-crossbow flag and the loved-item test are documented (or not) in 19 to 21 and 45; this document names the
@@ -665,7 +749,7 @@ A reimplementer can check these without a reference client:
 6. Texture contents: whether the second-layer UV regions of `piglin.png`, `zombified_piglin.png` and the zombie textures hold opaque pixels (jacket, sleeve and pants overlays of the piglin; hat overlay of the zombie family)
    is texture data and was not read.
 7. The `PlayerModel.createMesh` slim branch (not used by any mob here) was not described; `PlayerModel` ears and cloak parts were not read. 12 §7.4 covers the player.
-8. Name tags (`extractNameTags`, `shouldShowName` conditions) and the shadow rendering itself (shape, alpha) are in the framework part and were not repeated; only the shadow radius is given here.
+8. Name tags (`extractNameTags`, `shouldShowName` conditions) and the shadow rendering itself (shape, alpha) are in 34-1 §7.1 and §7.2 and are not repeated; only the shadow radius is given here. Hitbox and eye heights are in 5.7. Searched: the 18 attachment table for name-tag entries of the entities of this document (none listed); the `EntityType` builders' `nameTagOffset` calls for these entities were not read here, so the default tag height in 5.7 is inferred.
 9. The `ModelPart.Cube` face winding, normals and the mirror flag's exact vertex swap were read only to confirm that mirroring swaps the x extent of the cuboid; the pixel-exact orientation check against a reference render
    remains 14 Open question 4.
 10. Scale attribute values of these mobs (for example a husk or giant with a `scale` attribute other than 1) enter through `state.scale`, which multiplies the whole model in 2.1 step 2; their sources are in 18 to 21.

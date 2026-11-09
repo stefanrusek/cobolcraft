@@ -3,7 +3,7 @@
 | Item | Value |
 |---|---|
 | Covers | Seven block entity types: `jukebox`, `lectern`, `bell`, `campfire` (also `soul_campfire`), `enchanting_table`, `brushable_block` (suspicious sand and gravel) and `beehive` (also `bee_nest`), each with its saved fields, update tag, tickers, event handling, client animation state and the block-side code that drives it. The `Occupant` record of the beehive, the book item components the lectern stores, and the campfire cooking recipe schema are specified here as well. |
-| Does not cover | The shared block entity model (base class, chunk save and load, ticker registration, update packet plumbing): the sibling documents of part 31 (parts 1 to 3 and 5 to 8). Data rows (recipes, loot tables, tags, the `jukebox_song` entries, the `bees_stay_in_hive` keyframes, sprites): the extraction tool. The bee entity itself: 19 and 44 (parts 3 and 4). The menu screen of the lectern (RS14). |
+| Does not cover | The shared block entity model (base class, chunk save and load, ticker registration, update packet plumbing): the sibling documents of 31 that exist: 31-1 section 1 onward (shared model and containers), 31-2, 31-3, 31-5, 31-6, 31-7 and 31-8 (the `31-block-entities-5-*` document exists at the time of this revision; nothing here relies on its content). Data rows (recipes, loot tables, tags, the `jukebox_song` entries, the `bees_stay_in_hive` keyframes, sprites): the extraction tool. The bee entity itself: 19 and 44 (the part-3 and part-4 documents of 44). The menu screen of the lectern (RS14). |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: `world.level.block.entity.{JukeboxBlockEntity, LecternBlockEntity (+$1, $2), BellBlockEntity, CampfireBlockEntity, EnchantingTableBlockEntity, BrushableBlockEntity, BeehiveBlockEntity (+$Occupant, $BeeData, $BeeReleaseStatus), BlockEntity, BlockEntityTypes, BlockEntityTypeIds}`; `world.level.block.{JukeboxBlock, LecternBlock, BellBlock, CampfireBlock, EnchantingTableBlock, BrushableBlock, BeehiveBlock}`; `world.item.{JukeboxSong, JukeboxSongPlayer, JukeboxPlayable, BrushItem}`; `world.item.component.{WrittenBookContent, WritableBookContent, BookContent, TypedEntityData (+$1), Bees}`; `world.item.crafting.{CampfireCookingRecipe, AbstractCookingRecipe}`; `world.inventory.LecternMenu`; `world.{ContainerHelper, Containers, Nameable}`; `world.ticks.ContainerSingleItem`; `server.network.Filterable`; `core.{Direction, BlockPos, Vec3i}`; `client.renderer.LevelEventHandler`; `client.renderer.blockentity.{BellRenderer, EnchantTableRenderer, LecternRenderer, CampfireRenderer, BrushableBlockRenderer}`; `client.model.object.{bell.BellModel, book.BookModel}`; `world.entity.animal.bee.Bee$BeeEnterHiveGoal`; `world.level.levelgen.feature.treedecorators.BeehiveDecorator`. Scratch notes were kept outside the repository. |
 
@@ -30,7 +30,7 @@ Recalled knowledge is not evidence: every number below was read from the artifac
 
 ### 1.1 The seven types
 
-Ids are the `block_entity_type` registry ids of 46 §5.4 (the id travels in Block Entity Data, 05a 0x06, and in the chunk packet's block entity list, 06). "Update tag" is what `getUpdateTag` returns and "packet" says whether `getUpdatePacket` is overridden; the base class returns **no packet** (null) and an **empty compound** as the update tag, which is the behaviour of every type below that does not say otherwise.
+Ids are the `block_entity_type` registry ids of 46 section 5.4 (the id travels in Block Entity Data, 05a 0x06, and in the chunk packet's block entity list, 06). "Update tag" is what `getUpdateTag` returns and "packet" says whether `getUpdatePacket` is overridden; the base class returns **no packet** (null) and an **empty compound** as the update tag, which is the behaviour of every type below that does not say otherwise.
 
 | Type key (id) | Class | Valid blocks (`BlockEntityTypes`) | Saved keys (section) | Update packet and tag | Ticker |
 |---|---|---|---|---|---|
@@ -42,13 +42,13 @@ Ids are the `block_entity_type` registry ids of 46 §5.4 (the id travels in Bloc
 | `brushable_block` (40) | `BrushableBlockEntity` | `suspicious_sand`, `suspicious_gravel` | `LootTable`, `LootTableSeed`, `item` (7.2) | block entity data packet; tag is `{hit_direction?, item?}` (7.3) | none: the block's scheduled tick (7.6) |
 | `beehive` (33) | `BeehiveBlockEntity` | `bee_nest`, `beehive` | `bees`, `flower_pos` (8.3) | none, empty tag | server only (8.8) |
 
-`OP_ONLY_CUSTOM_DATA` (a set in `BlockEntityTypes`) contains `lectern` among five types (the others are `sign`, `hanging_sign`, `mob_spawner`, `trial_spawner`): custom block entity data on an item placed by a player is honoured for these types only for players who may use game-master blocks. `LecternBlock.getStateForPlacement` repeats this test for its own `has_book` state (3.7).
+`OP_ONLY_CUSTOM_DATA` (a set in `BlockEntityTypes`) contains six types, `command_block`, `lectern`, `sign`, `hanging_sign`, `mob_spawner` and `trial_spawner` (read: the `BlockEntityTypes` static initialiser builds the set with a six-argument `Set.of` in that order): custom block entity data on an item placed by a player is honoured for these types only for players who may use game-master blocks. `LecternBlock.getStateForPlacement` repeats this test for its own `has_book` state (3.7).
 
 ### 1.2 The on-disk wrapper and the item stack forms
 
-Every block entity compound in a chunk's `block_entities` list (07 §7) carries, besides the keys of its own `saveAdditional`, the keys written by `BlockEntity`: `id` (string, the type key), `x`, `y`, `z` (ints) and, when the entity has implicit components, `components`. Details of the wrapper belong to the sibling part 1; nothing below depends on more than that.
+Every block entity compound in a chunk's `block_entities` list (07 section 7) carries, besides the keys of its own `saveAdditional`, the keys written by `BlockEntity`: `id` (string, the type key), `x`, `y`, `z` (ints) and, when the entity has implicit components, `components`. Details of the wrapper belong to 31-1 section 1; nothing below depends on more than that.
 
-Item stacks are stored with `ItemStack.CODEC` (`id`, `count`, optional `components`; 45 §8). Lists of slots are stored by `ContainerHelper.saveAllItems`: an `Items` list of `{Slot: byte, id, count, components?}` compounds, empty slots skipped; load ignores out-of-range slots (45 §9.1). The campfire uses the three-argument save with the always-write flag true, so `Items` is present even when empty.
+Item stacks are stored with `ItemStack.CODEC` (`id`, `count`, optional `components`; 45 section 8). Lists of slots are stored by `ContainerHelper.saveAllItems`: an `Items` list of `{Slot: byte, id, count, components?}` compounds, empty slots skipped; load ignores out-of-range slots (45 section 9.1). The campfire uses the three-argument save with the always-write flag true, so `Items` is present even when empty.
 
 Positions (`flower_pos`) are `Int Array(3)` (45 part 1).
 
@@ -56,6 +56,7 @@ Positions (`flower_pos`) are `Int Array(3)` (45 part 1).
 
 - **Block events** (the Bell uses one): Level.blockEvent(pos, block, b0, b1) is queued, then delivered to the block entity's `triggerEvent(b0, b1)` on the server and sent in Block Event (05a 0x07) to nearby clients, which call the same method. `triggerEvent` returns true when handled.
 - **Level events** (jukebox 1010 and 1011, lectern 1043, brush 3008, campfire extinguish 1009): Level Event packet (05a 0x2F).
+- **Table trigonometry** (read from `Mth`; the definitions of `sin` and `cos` are also stated in 21 section 6.4.2): `Mth.sin(d)` = `SIN[(long)(d * 10430.378350470453) & 65535]` and `Mth.cos(d)` = `SIN[(long)(d * 10430.378350470453 + 16384.0) & 65535]`, with `SIN` a 65536-entry float table (`SIN[k] = (float) sin(k / 10430.378350470453)`, 21 section 6.4.2, 11 section 4); the result is a float. Every `sin` below (bell animation, book animation, book pose, renderer bob) is this table lookup, not the exact function. `Mth.atan2(y, x)` (the first argument is the one called `dz` below, the second `dx`) is the game's own routine, **not** `Math.atan2`; it returns a double. It is a table-based arctangent: NaN when `x*x + y*y` is NaN; otherwise the vector is folded into the first octant (negative `y` and negative `x` are made positive, and the two are exchanged when `y > x`), normalised to unit length with an approximate inverse square root, and the angle of the folded unit vector is read from a 257-entry arcsine table indexed by `round(y * 256)` (`ASIN_TAB[k] = asin(k / 256)`, with a companion `COS_TAB[k] = cos(ASIN_TAB[k])`), plus one cubic residual correction in the small sine `e` between the true `y` and the table abscissa: the correction is `e * (6 + e*e) * 0.16666666666666666`. The folds are undone in the order swap (`PI/2 - angle`, 1.5707963267948966), negative `x` (`PI - angle`, 3.141592653589793), negative `y` (negate), so the result lies in -PI to PI. Constants read: `FRAC_BIAS` = 2^44 (the rounding trick that makes the table index the low bits of `FRAC_BIAS + y`, spacing 2^-8); the inverse square root is the classic bit-hack form with magic constant 6910469410427058090 (`0x5FE6EB50C7B537AA`) applied to the half-shifted raw bits followed by one Newton step with the factor 1.5 and half the argument. The tables are built with the exact `Math.asin` and `Math.cos` of the Java runtime at class initialisation (the last-bit value of those library calls is not specified here). An implementation using exact trigonometry differs from the game by small amounts (the `Mth.sin` table has 65536 steps of 2*PI/65536); bit-exact animation needs these definitions.
 - **Direction numbering**, used by several rules below (read from the `Direction` constants): ordinal and 3D data value `DOWN 0, UP 1, NORTH 2, SOUTH 3, WEST 4, EAST 5`; 2D data value `SOUTH 0, WEST 1, NORTH 2, EAST 3` (DOWN and UP have -1); `toYRot` = `(data2D & 3) * 90` degrees, so SOUTH 0, WEST 90, NORTH 180, EAST 270; `getClockWise` maps NORTH to EAST, EAST to SOUTH, SOUTH to WEST, WEST to NORTH.
 - **Squared-distance rule `closerToCenterThan(position, d)`** (used by the bell and the bee goal): true when the squared distance from `position` to the block centre `(X + 0.5, Y + 0.5, Z + 0.5)` is strictly less than `d * d`.
 - **`Containers.dropItemStack(level, x, y, z, stack)`**, used by the campfire: let `w` = width of the item entity type (0.25, 41). The three coordinates are drawn first, in the order x, y, z, each with one `nextDouble`: `px = floor(x) + nextDouble * (1 - w) + w / 2`, `py = floor(y) + nextDouble * (1 - w)`, `pz = floor(z) + nextDouble * (1 - w) + w / 2`. Then, while the stack is not empty: split off `nextInt(21) + 10` items (or the rest), build an item entity at `(px, py, pz)` with that stack, set its motion to `(triangle(0, 0.11485000171139836), triangle(0.2, 0.11485000171139836), triangle(0, 0.11485000171139836))` in the order x, y, z (`triangle(c, d) = c + d * (nextDouble - nextDouble)`, 41), and add it. No pickup-delay call is made in this helper. `Containers.dropContents(level, pos, list)` calls this for each stack with the integer position coordinates `(X, Y, Z)` (the block's lower corner).
@@ -64,7 +65,7 @@ Positions (`flower_pos`) are `Int Array(3)` (45 part 1).
 
 ## 2. Jukebox
 
-This section adds to 25 §5 (which specifies the inserting of a disc, the song player, the client playback and the 22 song files): it closes that document's Open question 7 (loading), names the coupling to the block, and corrects nothing in 25 §5 except where stated. The song file schema is `JukeboxSong.DIRECT_CODEC` (`sound_event`, `description`, `length_in_seconds` positive float, `comparator_output` int 0 to 15; 04 §6, 23).
+This section adds to 25 section 5 (which specifies the inserting of a disc, the song player, the client playback and the 22 song files): it closes that document's Open question 7 (loading), names the coupling to the block, and corrects nothing in 25 section 5 except where stated. The song file schema is `JukeboxSong.DIRECT_CODEC` (`sound_event`, `description`, `length_in_seconds` positive float, `comparator_output` int 0 to 15; 04 section 6, 23).
 
 ### 2.1 State
 
@@ -95,33 +96,33 @@ Load (`loadAdditional`), in order:
 | Rule | Value |
 |---|---|
 | `canPlaceItem(slot, stack)` | the stack has the `jukebox_playable` component and slot 0 of this container is empty |
-| `canTakeItem(target, slot, stack)` | `target.hasAnyMatching(stack -> stack.isEmpty())`: the **destination** container has an empty slot (the predicate is the method reference `ItemStack::isEmpty`, read from the bootstrap table; this closes the part of 25 §5.2 that marks it "not traced") |
+| `canTakeItem(target, slot, stack)` | `target.hasAnyMatching(stack -> stack.isEmpty())`: the **destination** container has an empty slot (the predicate is the method reference `ItemStack::isEmpty`, read from the bootstrap table; this closes the part of 25 section 5.2 that marks it "not traced") |
 | `getTheItem`, `splitTheItem(n)` | the item; `splitTheItem` returns the item and sets the slot empty whatever `n` is |
 | `setTheItem(stack)` | store; `hasRecord = !stack.isEmpty()`; if the level is set and the block state at the position is the entity's cached state, set `has_record = hasRecord` with flags 2 and fire `block_change` (context: the block state); then, if `hasRecord` and the stack has a song, `play(level, song)`, otherwise `stop(level, state)` |
-| `popOutTheItem` | as 25 §5.2 (server only; item entity at the block's lower corner plus (0.5, 1.01, 0.5) displaced by `offsetRandomXZ(random, 0.7)`, default pickup delay 10, then `onSongChanged`). Also called by `preRemoveSideEffects` when the block is removed |
+| `popOutTheItem` | as 25 section 5.2 (server only; item entity at the block's lower corner plus (0.5, 1.01, 0.5) displaced by `offsetRandomXZ(random, 0.7)`, default pickup delay 10, then `onSongChanged`). Also called by `preRemoveSideEffects` when the block is removed |
 | `onSongChanged` | `updateNeighborsAt(pos, block)` then `setChanged` |
 | `setRemoved` | after the base behaviour: fire game event `jukebox_stop_play` at the position (context: block state) and send level event **1011** with data 0 |
 | `getComparatorOutput` | `comparator_output` of the song of the stored item, or 0 when the item has no song; it does **not** depend on whether the song is playing |
 | `setSongItemWithoutPlaying(stack)`, `tryForcePlaySong()` | store the stack and, for the first, call `setSongWithoutPlaying(song, 0)`, update neighbours and `setChanged`; the second calls `play` for the stored item's song. **No caller of either exists in the artifact** (searched every class of the jar); they are API only |
 
-### 2.4 Song player (confirms 25 §5.3)
+### 2.4 Song player (confirms 25 section 5.3)
 
 `play(level, song)`: set `song`, `ticks = 0`, send level event **1010** at the position with data = the song's id in the `jukebox_song` registry (`Registry.getId`), call the change callback. `stop`: nothing when no song; else `song = none`, `ticks = 0`, game event `jukebox_stop_play` (context: the block state), level event **1011** data 0, change callback. `tick`: no song, return; if `hasFinished(ticks)`, `stop` and return; if `ticks mod 20 == 0` fire game event `jukebox_play` and spawn the note particles; then `ticks = ticks + 1`. Note particles (server only): `ServerLevel.sendParticles(note, x, y, z, count 0, dx, 0, 0, speed 1)` with `(x, y, z)` = bottom centre of the block `(X + 0.5, Y, Z + 0.5)` plus (0, 1.2000000476837158, 0) and `dx = nextInt(4) / 24.0f`.
 
-### 2.5 Block coupling (`JukeboxBlock`, rows complement 24 §7.11)
+### 2.5 Block coupling (`JukeboxBlock`, rows complement 24 section 7.11)
 
 | Rule | Value |
 |---|---|
 | Properties | `has_record` boolean, default false |
 | Ticker | `getTicker` returns the entity's `tick` (which calls the song player) only when `has_record` is true; it is returned for the client level as well, but the client's song player never holds a song because no packet carries it, so the client tick does nothing (inferred from 1.1: no update tag, no packet) |
 | `setPlacedBy` | after the base behaviour, if the item's block entity data component contains the key `RecordItem`, set `has_record` true with flags 2 |
-| Use with an item | if `has_record`: try with empty hand. Else `JukeboxPlayable.tryInsertIntoJukebox` (25 §5.1); if that does not consume the action, try with empty hand |
+| Use with an item | if `has_record`: try with empty hand. Else `JukeboxPlayable.tryInsertIntoJukebox` (25 section 5.1); if that does not consume the action, try with empty hand |
 | Use without an item | if `has_record` and the entity is a jukebox: `popOutTheItem`, success; else pass |
 | Signal | the block is a signal source; `ownSignal` is **15** while the entity's song player is playing, else 0 |
 | Analog output | `hasAnalogOutputSignal` true; `getAnalogOutputSignal` is `getComparatorOutput()` (2.3) |
 | After removal | `Containers.updateNeighboursAfterDestroy` |
 
-### 2.6 Client events (confirms 25 §5.4)
+### 2.6 Client events (confirms 25 section 5.4)
 
 Level event 1010 looks the song up by registry index in the client's `jukebox_song` registry (nothing happens for an unknown index); level event 1011 stops the sound at the position and tells living entities within the block box inflated by 3.0 that no record plays (`setRecordPlayingNearby(pos, false)`; 1010 passes true). The notified entities are `LivingEntity` instances; `Parrot` overrides the method (19).
 
@@ -141,7 +142,7 @@ A jukebox holds `music_disc_13` (song `13`: 178.0 s, comparator 1; 25 part 7, wo
 | `page` | int | 0 | current page index |
 | `pageCount` | int | 0 | cached page count of `book` |
 
-Constants: `DATA_PAGE` = 0, `NUM_DATA` = 1, `SLOT_BOOK` = 0, `NUM_SLOTS` = 1. The entity is a `MenuProvider` (the menu is `lectern`, menu id 17, 46 §5.5) with display name the translatable component `container.lectern`.
+Constants: `DATA_PAGE` = 0, `NUM_DATA` = 1, `SLOT_BOOK` = 0, `NUM_SLOTS` = 1. The entity is a `MenuProvider` (the menu is `lectern`, menu id 17, 46 section 5.5) with display name the translatable component `container.lectern`.
 
 `getPageCount(stack)`: the number of pages of `written_book_content` if present; else the number of pages of `writable_book_content`; else 0.
 
@@ -150,17 +151,17 @@ Constants: `DATA_PAGE` = 0, `NUM_DATA` = 1, `SLOT_BOOK` = 0, `NUM_SLOTS` = 1. Th
 | Key | NBT type | Written when | Default on read |
 |---|---|---|---|
 | `Book` | item stack compound | the book is not empty | no book (empty) |
-| `Page` | Int | together with `Book` | 0 |
+| `Page` | Int | together with `Book` | 0 (then clamped as described below; -1 for a 0-page book) |
 
-Load: decode `Book`, then **resolve** it with no player (3.4) and store the result; `pageCount = getPageCount(book)`; `page = clamp(Page, 0, pageCount - 1)` (`Mth.clamp(v, 0, max)` with `max = pageCount - 1`; for a book with 0 pages the call is `clamp(Page, 0, -1)`, whose result for this clamp implementation is not traced, Open question 5).
+Load: decode `Book`, then **resolve** it with no player (3.4) and store the result; `pageCount = getPageCount(book)`; `page = clamp(Page, 0, pageCount - 1)`. The integer `Mth.clamp(v, min, max)` was read: it is `min(max(v, min), max)` (the lower bound is applied first, then the upper). For a book with 0 pages the call is `clamp(Page, 0, -1)` = `min(max(Page, 0), -1)` = **-1** for every `Page` value, so a lectern holding a 0-page book keeps `page = -1` after load (`getRedstoneSignal` then uses `pageCount > 1` false, so the page value does not enter the signal). For 1 or more pages the result is the usual range 0 to `pageCount - 1`.
 
 ### 3.3 Operations
 
 | Operation | Rule |
 |---|---|
 | `setBook(stack)` / `setBook(stack, player)` | `book = resolve(stack, player)` (3.4); `page = 0`; `pageCount = getPageCount(book)`; `setChanged` |
-| `setPage(n)` (private; the menu's data write) | `n' = clamp(n, 0, pageCount - 1)`; if `n' != page`: `page = n'`, `setChanged`, then `LecternBlock.signalPageChange` (3.7) |
-| `onBookItemRemove` | `page = 0`, `pageCount = 0`, `LecternBlock.resetBookState(null, level, pos, state, false)` (3.7) |
+| `setPage(n)` (private; the menu's data write) | `n' = clamp(n, 0, pageCount - 1)` (= `min(max(n, 0), pageCount - 1)`, so -1 when `pageCount` is 0); if `n' != page`: `page = n'`, `setChanged`, then `LecternBlock.signalPageChange` (3.7) |
+| `onBookItemRemove` | (as `setBook`, `page` is set to 0, not to the clamp result) `page = 0`, `pageCount = 0`, `LecternBlock.resetBookState(null, level, pos, state, false)` (3.7) |
 | `getRedstoneSignal` | `floor( (pageCount > 1 ? page / (pageCount - 1) : 1.0) * 14 ) + (hasBook ? 1 : 0)` with float arithmetic (`page` and `pageCount - 1` converted to float) |
 | `clearContent` | `setBook(empty)` (note: this runs the `setBook` path, not `onBookItemRemove`) |
 | `preRemoveSideEffects(pos, state)` | if the state has `has_book` and the level is set: drop the book: `f = 0.25f`; the item entity is at `x = X + 0.5 + f * stepX(facing)`, `y = Y + 1`, `z = Z + 0.5 + f * stepZ(facing)` with the stack copy, default pickup delay (10), added to the level; `facing` is the state's `facing` |
@@ -178,7 +179,7 @@ Both book components are items' `BookContent` (a list of `Filterable` pages and 
 
 **Resolution of dynamic text** (`resolveForItem(stack, context, registries)`, used by the lectern on set and on load): if the stack has `written_book_content` whose `resolved` is false, resolve each page, in order, by running the text-component resolver on the raw page and, when present, on the filtered page; a page whose resolved text no longer fits `PAGE_LENGTH` (32767 flat characters), or whose resolution throws, is handled so: a thrown error keeps the original component for that page; a too-long result makes the whole resolution fail. On success the stack's component is replaced by the content with the resolved pages and `resolved` true; on failure the stack's content is replaced by the **original** content marked `resolved` true (so a failing book is resolved only once). The method returns whether the stack changed; stacks without the component, or already resolved, are untouched. The lectern resolves on the server level only (when the level is not a server level the stack is stored as given).
 
-The resolver context is a command source stack built by the lectern: source `CommandSource.NULL`, position the block centre, rotation `Vec2.ZERO`, the server level, permission set **game master** (level 2, 15), and the name/display name of the player doing the placing when there is one (otherwise the literal `Lectern`); so selectors, scores and NBT components in a book run with game-master permission at the lectern. The component resolver itself (`ComponentUtils.resolve`: selectors, scores, NBT, translation arguments) was not read (Open question 1).
+The resolver context is a command source stack built by the lectern: source `CommandSource.NULL`, position the block centre, rotation `Vec2.ZERO`, the server level, permission set `LevelBasedPermissionSet.GAMEMASTER` (read: it is `create(PermissionLevel.GAMEMASTERS)`, where `PermissionLevel` is an enum of five constants in the order `ALL`, `MODERATORS`, `GAMEMASTERS`, `ADMINS`, `OWNERS`; the numeric levels behind the constants were not read, so no number is stated here), and the name/display name of the player doing the placing when there is one (otherwise the literal `Lectern`); so selectors, scores and NBT components in a book run with the `GAMEMASTER` permission set at the lectern. The component resolver itself (`ComponentUtils.resolve`: selectors, scores, NBT, translation arguments) was not read (Open question 1).
 
 ### 3.5 The container and data views (menu data)
 
@@ -200,7 +201,7 @@ The resolver context is a command source stack built by the lectern: source `Com
 
 ### 3.6 Client side
 
-The lectern entity sends no update packet. The client learns `has_book` from the block state; the page list reaches the client (inferred) through the menu's slot synchronisation (the book item stack with its components) and the data slot. The block entity renderer draws a book (the same model and texture as the enchanting table, 6.5) when `has_book` is true. Pose: translate `(0.5, 1.0625, 0.5)`; rotate about Y by `-yRot` degrees where `yRot = toYRot(clockWise(facing))`; rotate about Z by `67.5` degrees; translate `(0, -0.125, 0)`; the book state is the constant `BookModel.State.forAnimation(0, 0.1, 0.9, 1.2)`, that is openness `(sin(0 * 0.02) * 0.1 + 1.25) * 1.2 = 1.5`, page flips 0.1 and 0.9 (6.5 gives the model).
+The lectern entity sends no update packet. The client learns `has_book` from the block state; the page list reaches the client (inferred) through the menu's slot synchronisation (the book item stack with its components) and the data slot. The block entity renderer draws a book (the same model and texture as the enchanting table, 6.5) when `has_book` is true. Pose: translate `(0.5, 1.0625, 0.5)`; rotate about Y by `-yRot` degrees where `yRot = toYRot(clockWise(facing))`; rotate about Z by `67.5` degrees; translate `(0, -0.125, 0)`; the book state is the constant `BookModel.State.forAnimation(0, 0.1, 0.9, 1.2)`, that is openness `(sin(0 * 0.02) * 0.1 + 1.25) * 1.2 = 1.5` (`sin` is the table lookup of 1.3; `SIN[0]` is 0), page flips 0.1 and 0.9 (6.5 gives the model).
 
 ### 3.7 Block coupling (`LecternBlock`)
 
@@ -233,7 +234,7 @@ Level event 1043 on the client plays `BOOK_PAGE_TURN` (blocks, volume 1, pitch `
 
 ## 4. Bell
 
-44 §2.11a already describes the bell's tick, resonance and the villager reaction in prose; this section restates the exact tick order, adds the block side that rings it, the event wiring and the client animation, and gives the particle formula (42-7 §9.4 has the count rule; the count definition below is exact).
+44 section 2.11a already describes the bell's tick, resonance and the villager reaction in prose; this section restates the exact tick order, adds the block side that rings it, the event wiring and the client animation, and gives the particle formula (42-7 section 9.4 has the count rule; the count definition below is exact).
 
 ### 4.1 State and constants
 
@@ -253,7 +254,7 @@ Constants: `DURATION` 50, `GLOW_DURATION` 60, `MIN_TICKS_BETWEEN_SEARCHES` 60, `
 
 - **`onHit(direction)`** (server, from the block): `clickDirection = direction`; if `shaking`, `ticks = 0`, else `shaking = true`; then `level.blockEvent(pos, block, 1, direction.get3DDataValue())`.
 - **`triggerEvent(type, data)`**: for `type == 1`: `updateEntities()`; `resonationTicks = 0`; `clickDirection = Direction.from3DDataValue(data)`; `ticks = 0`; `shaking = true`; return true. Any other type: the base behaviour. The event runs on the server and on every client the packet reaches.
-- **`updateEntities()`**: if `gameTime <= lastRingTimestamp + 60` and a cached list exists, return (the list is reused). Otherwise: `lastRingTimestamp = gameTime`; `nearbyEntities` = every `LivingEntity` whose bounding box intersects the block's box inflated by 48 (a box gather; no distance test). On the server only, for each such entity that is alive and not removed and whose position satisfies `closerToCenterThan(position, 32)`, set the brain memory `heard_bell_time` to the current game time (44 §2.11a, 2.11 for the villager reaction).
+- **`updateEntities()`**: if `gameTime <= lastRingTimestamp + 60` and a cached list exists, return (the list is reused). Otherwise: `lastRingTimestamp = gameTime`; `nearbyEntities` = every `LivingEntity` whose bounding box intersects the block's box inflated by 48 (a box gather; no distance test). On the server only, for each such entity that is alive and not removed and whose position satisfies `closerToCenterThan(position, 32)`, set the brain memory `heard_bell_time` to the current game time (44 section 2.11a, 2.11 for the villager reaction).
 
 ### 4.3 Tick (client and server)
 
@@ -268,11 +269,11 @@ Constants: `DURATION` 50, `GLOW_DURATION` 60, `MIN_TICKS_BETWEEN_SEARCHES` 60, `
 
 **End action, server (`makeRaidersGlow`)**: every entity in the list that is alive, not removed, within `closerToCenterThan(position, 48)` and in the `raiders` tag gets the effect `glowing` for 60 ticks (default amplifier 0).
 
-**End action, client (`showBellParticles`)**: with `c` = the number of entities in the cached list whose position satisfies `closerToCenterThan(position, 48)` (**every living entity, not only raiders**; the first predicate has no alive or tag test) and a counter `color` starting at 16700985 (0xFED639), for each entity in the list that is alive, not removed, within 48 and in the `raiders` tag, in list order: with `dx = e.x - X`, `dz = e.z - Z` (the entity position minus the bell's integer corner, **not** the centre) and `d = sqrt(dx*dx + dz*dz)`: `px = X + 0.5 + dx / d`, `pz = Z + 0.5 + dz / d`, `py = Y + 0.5` (the division is real-valued, so `d = 0` gives non-finite values; the case is not guarded); `n = clamp((c - 21) / -2, 3, 15)` with Java integer division (truncating toward zero); then `n` times: `color = color + 5` (shared by all raiders, so the first particle of the bell uses 16700990), spawn `entity_effect` with colour int `color` (ARGB, 42-2 §1) at `(px, py, pz)` with velocity (0, 0, 0).
+**End action, client (`showBellParticles`)**: with `c` = the number of entities in the cached list whose position satisfies `closerToCenterThan(position, 48)` (**every living entity, not only raiders**; the first predicate has no alive or tag test) and a counter `color` starting at 16700985 (0xFED639), for each entity in the list that is alive, not removed, within 48 and in the `raiders` tag, in list order: with `dx = e.x - X`, `dz = e.z - Z` (the entity position minus the bell's integer corner, **not** the centre) and `d = sqrt(dx*dx + dz*dz)`: `px = X + 0.5 + dx / d`, `pz = Z + 0.5 + dz / d`, `py = Y + 0.5` (the division is real-valued, so `d = 0` gives non-finite values; the case is not guarded); `n = clamp((c - 21) / -2, 3, 15)` with Java integer division (truncating toward zero); then `n` times: `color = color + 5` (shared by all raiders, so the first particle of the bell uses 16700990), spawn `entity_effect` with colour int `color` (ARGB, 42-2 section 1) at `(px, py, pz)` with velocity (0, 0, 0).
 
 ### 4.4 Client animation state and renderer
 
-The renderer takes `ticks + partialTick` and the click direction when `shaking` (else none). The model (`BellModel`, texture 32 by 32) has a part `bell_body` (box origin (-3, -6, -3), size (6, 7, 6), texture offset (0, 0), part offset (8, 12, 8)) with a child `bell_base` (box origin (4, 4, 4), size (8, 2, 8), texture offset (0, 13), offset (-8, -12, -8)). Animation: with a shake direction, `a = sin(ticks / PI) / (4 + ticks / 3)`; then `xRot = -a` for NORTH, `+a` for SOUTH, and `zRot = -a` for EAST, `+a` for WEST (the switch indices are NORTH 1, SOUTH 2, EAST 3, WEST 4; other directions leave both 0); without a shake direction both rotations are 0. They are assigned to `bell_body`.
+The renderer takes `ticks + partialTick` and the click direction when `shaking` (else none). The model (`BellModel`, texture 32 by 32) has a part `bell_body` (box origin (-3, -6, -3), size (6, 7, 6), texture offset (0, 0), part offset (8, 12, 8)) with a child `bell_base` (box origin (4, 4, 4), size (8, 2, 8), texture offset (0, 13), offset (-8, -12, -8)). Animation: with a shake direction, `a = Mth.sin(ticks / PI) / (4 + ticks / 3)` (table lookup, 1.3); then `xRot = -a` for NORTH, `+a` for SOUTH, and `zRot = -a` for EAST, `+a` for WEST (the switch indices are NORTH 1, SOUTH 2, EAST 3, WEST 4; other directions leave both 0); without a shake direction both rotations are 0. They are assigned to `bell_body`.
 
 ### 4.5 Block side (`BellBlock`)
 
@@ -287,7 +288,7 @@ Properties: `facing` (default NORTH), `attachment` (`floor`, `ceiling`, `single_
 
 ### 4.6 Worked example
 
-A bell is struck at game time 1000 with 30 living entities in the 48-block box, 25 of them within 48 of the centre, 3 raiders within 32. Number the entity ticks after the event 1, 2, 3, ...: tick n sets `ticks = n` (step 1). At tick 5 step 3 starts the resonance (raider nearby, `resonationTicks` is 0, resonate sound) and step 4 raises `resonationTicks` to 1 in the same tick; ticks 6 to 44 raise it to 2 to 40; at tick 45 `resonationTicks` is already 40, so the end action runs and `resonating` becomes false (forty ticks after the start tick; 44 §2.11a words this "41 ticks after it starts", which counts the tick of the start as the first). At tick 50 `ticks` reaches 50 and the shake stops (`ticks` reset to 0); `resonationTicks` stays 40, so no second resonance until the next ring. Client particles: `c = 25`, `n = clamp((25 - 21) / -2, 3, 15) = clamp(-2, 3, 15) = 3` per raider; the colours of the 9 particles of 3 raiders are 16700990, 16700995, ... 16701030. With `c = 1`: `n = 10`; `c = 2`: 9; `c = 17` or more: 3.
+A bell is struck at game time 1000 with 30 living entities in the 48-block box, 25 of them within 48 of the centre, 3 raiders within 32. Number the entity ticks after the event 1, 2, 3, ...: tick n sets `ticks = n` (step 1). At tick 5 step 3 starts the resonance (raider nearby, `resonationTicks` is 0, resonate sound) and step 4 raises `resonationTicks` to 1 in the same tick; ticks 6 to 44 raise it to 2 to 40; at tick 45 `resonationTicks` is already 40, so the end action runs and `resonating` becomes false (forty ticks after the start tick; 44 section 2.11a words this "41 ticks after it starts", which counts the tick of the start as the first). At tick 50 `ticks` reaches 50 and the shake stops (`ticks` reset to 0); `resonationTicks` stays 40, so no second resonance until the next ring. Client particles: `c = 25`, `n = clamp((25 - 21) / -2, 3, 15) = clamp(-2, 3, 15) = 3` per raider; the colours of the 9 particles of 3 raiders are 16700990, 16700995, ... 16701030. With `c = 1`: `n = 10`; `c = 2`: 9; `c = 17` or more: 3.
 
 ---
 
@@ -330,11 +331,11 @@ After the loop, if `changed`, `setChanged(level, pos, state)`. Note that `cookin
 
 **`cooldownTick`** (unlit, server and only when the level ticks the entity): `changed = false`; for each slot: if `cookingProgress[i] > 0`: `changed = true`; `cookingProgress[i] = clamp(cookingProgress[i] - 2, 0, cookingTime[i])`. If `changed`, `setChanged`. It applies to empty and non-empty slots alike.
 
-**`particleTick`** (client, lit): 42-6 §4.1 has the full rule; read again here with the same result. Draws, in order: (1) one `nextFloat`; if it is below 0.11, loop `pass = 0, 1, ...` while `pass < nextInt(2) + 2` (the bound is **re-drawn at every pass**, including the first test) and call `makeParticles(level, pos, signal_fire, false)` per pass. (2) For each slot `i` in order 0 to 3: if the stack is not empty, draw `nextFloat`; if it is below 0.2: `d = from2DDataValue(floorMod(i + facing.get2DDataValue(), 4))` and emit four `smoke` particles at `x = X + 0.5 - stepX(d) * 0.3125 + stepX(clockWise(d)) * 0.3125`, `y = Y + 0.5`, `z = Z + 0.5 - stepZ(d) * 0.3125 + stepZ(clockWise(d)) * 0.3125`, velocity (0, 0.0005, 0), with no further random draws. Empty slots draw nothing.
+**`particleTick`** (client, lit): 42-6 section 4.1 has the full rule; read again here with the same result. Draws, in order: (1) one `nextFloat`; if it is below 0.11, loop `pass = 0, 1, ...` while `pass < nextInt(2) + 2` (the bound is **re-drawn at every pass**, including the first test) and call `makeParticles(level, pos, signal_fire, false)` per pass. (2) For each slot `i` in order 0 to 3: if the stack is not empty, draw `nextFloat`; if it is below 0.2: `d = from2DDataValue(floorMod(i + facing.get2DDataValue(), 4))` and emit four `smoke` particles at `x = X + 0.5 - stepX(d) * 0.3125 + stepX(clockWise(d)) * 0.3125`, `y = Y + 0.5`, `z = Z + 0.5 - stepZ(d) * 0.3125 + stepZ(clockWise(d)) * 0.3125`, velocity (0, 0.0005, 0), with no further random draws. Empty slots draw nothing.
 
 ### 5.4 Placing food (`placeFood(level, entity, stack)`, server)
 
-Called by the block's use-with-item when the held stack passes the property set `campfire_input` (the ingredients of the `campfire_cooking` recipes, data) on a server level: `CampfireBlock.useItemOn` calls `placeFood`; when it returns true it awards the custom stat `interact_with_campfire` and returns server success; otherwise consume. `placeFood`: scan slots 0 to 3; at the first empty slot: look up the `campfire_cooking` recipe for the stack; **if none, return false** (the scan stops, even if later slots are empty); else `cookingTime[slot] = recipe.cookingTime`, `cookingProgress[slot] = 0`, `items[slot] = stack.consumeAndReturn(1, entity)` (one item; creative players do not lose it, 17 §1), fire game event `block_change` (context: the entity and the block state), then `markUpdated` (`setChanged` and `sendBlockUpdated(pos, state, state, 3)`), return true. If no slot is empty return false.
+Called by the block's use-with-item when the held stack passes the property set `campfire_input` (the ingredients of the `campfire_cooking` recipes, data) on a server level: `CampfireBlock.useItemOn` calls `placeFood`; when it returns true it awards the custom stat `interact_with_campfire` and returns server success; otherwise consume. `placeFood`: scan slots 0 to 3; at the first empty slot: look up the `campfire_cooking` recipe for the stack; **if none, return false** (the scan stops, even if later slots are empty); else `cookingTime[slot] = recipe.cookingTime`, `cookingProgress[slot] = 0`, `items[slot] = stack.consumeAndReturn(1, entity)` (one item; creative players do not lose it, 17 section 1), fire game event `block_change` (context: the entity and the block state), then `markUpdated` (`setChanged` and `sendBlockUpdated(pos, state, state, 3)`), return true. If no slot is empty return false.
 
 ### 5.5 Cooking recipe schema (`campfire_cooking`)
 
@@ -354,7 +355,7 @@ For each non-empty slot `i` the renderer draws the item with the display context
 
 ### 5.9 Block coupling (what the entity relies on)
 
-`lit` extinguishing: use with an item in the tag `douses_campfires` on a lit campfire: on the server send level event **1009** (fizz); `douse(entity, level, pos, state)` (client side only: 20 calls of `makeParticles(level, pos, signal_fire, true)`; both sides: game event `block_change`); set `lit` false; damage the item by 1. `placeLiquid` of water into a lit campfire: play `GENERIC_EXTINGUISH_FIRE` (blocks, 1.0, 1.0), `douse`, set `waterlogged` true and `lit` false. `entityInside` of a lit campfire hurts a living entity with the `campfire` damage type for the block's integer fire damage (1 or 2, 17 §4). `signal_fire` is true when the block below is a hay block (set at placement and when the block below changes). `isSmokeyPos(level, pos)` (the rule the beehive uses for sedation, 8.7; `pos` is the hive position): for `i = 1` to `5`: let `b` = the block `i` below `pos`. If `b` is a **lit campfire** (it has the property `lit`, is in the block tag `campfires`, and `lit` is true) return true. Otherwise compute the collision shape of `b` (queried with the empty collision context, and with the level and the **hive** position as the position arguments) and test whether it intersects the "virtual post", a centred column 4 units wide, 16 units tall (`Block.column(4, 0, 16)`): if it does, **return** whether the block `i + 1` below `pos` (the one directly under `b`) is a lit campfire, ending the scan; if it does not, continue with `i + 1`. After `i = 5` without a result: false. So smoke reaches the hive through air and through blocks whose collision shape misses the centre column, and a single obstruction counts only when a lit campfire sits right under it. (17 §3.5 and 42-6 §4.1 describe the rule more loosely.)
+`lit` extinguishing: use with an item in the tag `douses_campfires` on a lit campfire: on the server send level event **1009** (fizz); `douse(entity, level, pos, state)` (client side only: 20 calls of `makeParticles(level, pos, signal_fire, true)`; both sides: game event `block_change`); set `lit` false; damage the item by 1. `placeLiquid` of water into a lit campfire: play `GENERIC_EXTINGUISH_FIRE` (blocks, 1.0, 1.0), `douse`, set `waterlogged` true and `lit` false. `entityInside` of a lit campfire hurts a living entity with the `campfire` damage type for the block's integer fire damage (1 or 2, 17 section 4). `signal_fire` is true when the block below is a hay block (set at placement and when the block below changes). `isSmokeyPos(level, pos)` (the rule the beehive uses for sedation, 8.7; `pos` is the hive position): for `i = 1` to `5`: let `b` = the block `i` below `pos`. If `b` is a **lit campfire** (it has the property `lit`, is in the block tag `campfires`, and `lit` is true) return true. Otherwise compute the collision shape of `b` (queried with the empty collision context, and with the level and the **hive** position as the position arguments) and test whether it intersects the "virtual post", a centred column 4 units wide, 16 units tall (`Block.column(4, 0, 16)`): if it does, **return** whether the block `i + 1` below `pos` (the one directly under `b`) is a lit campfire, ending the scan; if it does not, continue with `i + 1`. After `i = 5` without a result: false. So smoke reaches the hive through air and through blocks whose collision shape misses the centre column, and a single obstruction counts only when a lit campfire sits right under it. (17 section 3.5 and 42-6 section 4.1 describe the rule more loosely.)
 
 ### 5.10 Worked examples
 
@@ -395,8 +396,8 @@ The entity is `Nameable`: `getName` is the custom name or the default `container
 Per client tick, with `P` the block centre `(X + 0.5, Y + 0.5, Z + 0.5)`:
 
 1. `oOpen = open`, `oRot = rot`.
-2. Find the nearest player to `P` within **3.0** blocks (`getNearestPlayer(x, y, z, 3.0, false)`; the boolean is false; it is recalled, not verified, to be the creative and spectator filter, so that every player counts, Open question 7).
-3. If there is one: `dx = player.x - (X + 0.5)`, `dz = player.z - (Z + 0.5)`; `tRot = (float) atan2(dz, dx)`; `open = open + 0.1`; then if `open < 0.5` **or** `RANDOM.nextInt(40) == 0` (the second is drawn only when `open >= 0.5`): repeat `old = flipT; flipT = flipT + (float)(RANDOM.nextInt(4) - RANDOM.nextInt(4))` **until** `flipT != old` (the first draw is the positive term).
+2. Find the nearest player to `P` within **3.0** blocks (`getNearestPlayer(x, y, z, 3.0, false)`). Read: the default method `Level.getNearestPlayer(x, y, z, distance, boolean)` selects the entity filter from the boolean: **true** gives `NO_CREATIVE_OR_SPECTATOR`, **false** gives `NO_SPECTATORS`. The table passes false, so creative-mode players count (the book opens for them) and spectators do not. The distance limit is a squared-distance comparison against `3.0 * 3.0` (the comparison of the underlying predicate overload was not re-read; the sibling method `hasNearbyAlivePlayer` was read and compares `distanceToSqr` with the squared limit, which supports this).
+3. If there is one: `dx = player.x - (X + 0.5)`, `dz = player.z - (Z + 0.5)`; `tRot = (float) Mth.atan2(dz, dx)` (the game's routine, 1.3, not the exact function); `open = open + 0.1`; then if `open < 0.5` **or** `RANDOM.nextInt(40) == 0` (the second is drawn only when `open >= 0.5`): repeat `old = flipT; flipT = flipT + (float)(RANDOM.nextInt(4) - RANDOM.nextInt(4))` **until** `flipT != old` (the first draw is the positive term).
 4. Else: `tRot = tRot + 0.02`; `open = open - 0.1`.
 5. Normalise `rot` into [-PI, PI): while `rot >= PI`, `rot -= 2 PI`; while `rot < -PI`, `rot += 2 PI` (floats `3.1415927`, `6.2831855`); the same for `tRot`.
 6. `delta = tRot - rot`, normalised the same way; `rot = rot + delta * 0.4`.
@@ -408,7 +409,7 @@ Order of random draws: per tick with a player and `open < 0.5`: pairs of `nextIn
 
 ### 6.4 Render state (`EnchantTableRenderer`)
 
-With partial tick `p`: `flip = lerp(p, oFlip, flip)`, `open = lerp(p, oOpen, open)`, `time = time + p`, `d = rot - oRot` normalised to [-PI, PI) as above, `yRot = oRot + d * p`. Pose: translate `(0.5, 0.75, 0.5)`; translate `(0, 0.1 + sin(time * 0.1) * 0.01, 0)`; rotate about Y by `-yRot` (radians); rotate about Z by 80 degrees; `f1 = frac(flip + 0.25) * 1.6 - 0.3`, `f2 = frac(flip + 0.75) * 1.6 - 0.3` (`frac(v) = v - floor(v)`); state `forAnimation(time, clamp(f1, 0, 1), clamp(f2, 0, 1), open)`; render with the book texture (a block-entity sprite; the path is data, Open question 8).
+With partial tick `p`: `flip = lerp(p, oFlip, flip)`, `open = lerp(p, oOpen, open)`, `time = time + p`, `d = rot - oRot` normalised to [-PI, PI) as above, `yRot = oRot + d * p`. Pose: translate `(0.5, 0.75, 0.5)`; translate `(0, 0.1 + Mth.sin(time * 0.1) * 0.01, 0)`; rotate about Y by `-yRot` (radians); rotate about Z by 80 degrees; `f1 = frac(flip + 0.25) * 1.6 - 0.3`, `f2 = frac(flip + 0.75) * 1.6 - 0.3` (`frac(v) = v - floor(v)`); state `forAnimation(time, clamp(f1, 0, 1), clamp(f2, 0, 1), open)`; render with the book texture: `BOOK_TEXTURE`, built in the renderer's static initialiser by applying the default-namespace mapper of the block-entity sprite sheet (`Sheets.BLOCK_ENTITIES_MAPPER`) to the sprite name `enchantment/enchanting_table_book` (read). `sin` in the bob term is the table lookup of 1.3.
 
 ### 6.5 Book model (`BookModel`, texture 64 by 32) and its state
 
@@ -424,11 +425,11 @@ Parts (each box is `origin, size`, texture offset; part pose offset or rotation)
 | `flip_page1` | (0, -4, 0) | (5, 8, 0.005) | (24, 10) | none |
 | `flip_page2` | (0, -4, 0) | (5, 8, 0.005) | (24, 10) | none |
 
-`State` is `(openness, pageFlip1, pageFlip2)`; `forAnimation(time, flip1, flip2, open)` gives `openness = (sin(time * 0.02) * 0.1 + 1.25) * open`. `setupAnim`: `o = openness`; `left_lid.yRot = PI + o`; `right_lid.yRot = -o`; `left_pages.yRot = o`; `right_pages.yRot = -o`; `flip_page1.yRot = o - o * 2 * pageFlip1`; `flip_page2.yRot = o - o * 2 * pageFlip2`; and `left_pages.x`, `right_pages.x`, `flip_page1.x`, `flip_page2.x` all `= sin(o)`.
+`State` is `(openness, pageFlip1, pageFlip2)`; `forAnimation(time, flip1, flip2, open)` gives `openness = (Mth.sin(time * 0.02) * 0.1 + 1.25) * open`; the `x` offsets use `Mth.sin(o)` (all table lookups, 1.3). `setupAnim`: `o = openness`; `left_lid.yRot = PI + o`; `right_lid.yRot = -o`; `left_pages.yRot = o`; `right_pages.yRot = -o`; `flip_page1.yRot = o - o * 2 * pageFlip1`; `flip_page2.yRot = o - o * 2 * pageFlip2`; and `left_pages.x`, `right_pages.x`, `flip_page1.x`, `flip_page2.x` all `= Mth.sin(o)`.
 
 ### 6.6 Worked example
 
-A player stands 2 blocks east of the table's centre (dx = 2, dz = 0) after a long absence: `tRot` becomes `atan2(0, 2) = 0`; `open` rises by 0.1 per tick (from 0 reaching 0.5 after 5 ticks), during which every tick draws pairs of `nextInt(4)` until the sum changes; from `open >= 0.5` only a 1-in-40 tick moves `flipT`. When the player leaves (> 3 blocks) `tRot` drifts by +0.02 per tick and `open` falls 0.1 per tick, closing in 10 ticks from 1.0. `rot` converges toward `tRot` by 40 percent of the (normalised) gap per tick.
+A player stands 2 blocks east of the table's centre (dx = 2, dz = 0) after a long absence: `tRot` becomes `Mth.atan2(0, 2) = 0` (exactly 0: no fold applies and the table index is 0); `open` rises by 0.1f per tick (from 0 it reaches 0.5 after 5 ticks: the five-fold float sum computed in single precision is exactly 0.5, while after 4 ticks it is 0.4000000059604645 and after 3 ticks 0.30000001192092896, so the `open < 0.5` test is false from the fifth tick on; computed in this round, not read from a trace), during which every tick draws pairs of `nextInt(4)` until the sum changes; from `open >= 0.5` only a 1-in-40 tick moves `flipT`. When the player leaves (> 3 blocks) `tRot` drifts by +0.02 per tick and `open` falls 0.1 per tick, closing in 10 ticks from 1.0. `rot` converges toward `tRot` by 40 percent of the (normalised) gap per tick.
 
 ---
 
@@ -442,7 +443,7 @@ A player stands 2 blocks east of the table's centre (dx = 2, dz = 0) after a lon
 | `brushCountResetsAtTick` | long | 0 | no | game time after which the count decays |
 | `coolDownEndsAtTick` | long | 0 | no | game time before which a brush is ignored |
 | `item` | item stack | empty | yes (7.2) | the buried item, once the loot is rolled |
-| `hitDirection` | `Direction` | none | update tag only | the face first brushed |
+| `hitDirection` | `Direction` | none | not by `saveAdditional`; written in the update tag (7.3) and **read** by `loadAdditional` (7.2) | the face first brushed |
 | `lootTable` | loot table key | none | yes | the table to roll on the first brush |
 | `lootTableSeed` | long | 0 | yes | seed for the roll |
 
@@ -455,6 +456,7 @@ Constants: `BRUSH_COOLDOWN_TICKS` 10, `BRUSH_RESET_TICKS` 40, `REQUIRED_BRUSHES_
 | `LootTable` | String (resource key of a loot table) | when `lootTable` is set (`trySaveLootTable`) | `LootTable.KEY_CODEC`; absent means none |
 | `LootTableSeed` | Long | only with `LootTable` and only when non-zero | default 0 |
 | `item` | item stack compound | only when **no** loot table is set and the item is not empty | read only when no `LootTable` key is present; if a `LootTable` is present the item is set to empty |
+| `hit_direction` | Int (`Direction.LEGACY_ID_CODEC`, the 3D data value 0 to 5) | **never** by `saveAdditional` (only by the update tag, 7.3) | read by `loadAdditional` after the loot table and item handling; absent means none. This is how the client receives the direction from the Block Entity Data tag |
 
 `brushCount`, the two timestamps and `hitDirection` are **not** saved. After a reload the count is 0 while the block's `dusted` value is what the block state stored; nothing schedules a tick on load (the block schedules ticks on placement, on neighbour updates and on every counted brush), so a reloaded half-dusted block keeps its `dusted` value until it is brushed again, at which point the first counted brush recomputes `dusted` from the count 1 (inferred from 7.4 and 7.6).
 
@@ -464,7 +466,7 @@ Constants: `BRUSH_COOLDOWN_TICKS` 10, `BRUSH_RESET_TICKS` 40, `REQUIRED_BRUSHES_
 
 ### 7.4 Brushing (`brush(gameTime, level, entity, direction, brushItem)`, server)
 
-Called by `BrushItem.onUseTick` (17 §3.5 gives the item side: use duration 200, one action every 10 ticks counted as `t = 200 - remaining + 1` with `t mod 10 == 5`, so actions fall at `t = 5, 15, ..., 195`, 20 per full use, each exactly 10 ticks apart). Steps, returning a boolean "completed":
+Called by `BrushItem.onUseTick` (17 section 3.5 gives the item side: use duration 200, one action every 10 ticks counted as `t = 200 - remaining + 1` with `t mod 10 == 5`, so actions fall at `t = 5, 15, ..., 195`, 20 per full use, each exactly 10 ticks apart). Each counted brush action also makes a sound on the item side (`BrushItem.onUseTick`, before the server-only call to `brush`, so the call is made on both sides): the sound event is `getBrushSound()` of the target block when it is a `BrushableBlock`, else `brush_generic`, played with the four-argument `Level.playSound(player, pos, sound, BLOCKS)` (the using player is the first argument; the overload is the default method of `LevelAccessor`, read: it forwards to the six-argument form with volume 1.0 and pitch 1.0). `BrushableBlock` is constructed with `(turnsInto, brushSound, brushCompletedSound, properties)`; read from the block registration: suspicious gravel passes `brush_gravel` for both sounds and suspicious sand passes `brush_sand` for both. The completed sound is played by the client's level event **3008** handler (7.7): `playLocalSound(pos, completedSound, PLAYERS, 1.0, 1.0, false)`, followed by the block break particles for the state id in the event data. Steps, returning a boolean "completed":
 
 1. If `hitDirection` is none, `hitDirection = direction`.
 2. `brushCountResetsAtTick = gameTime + 40` (also for a brush rejected by step 3).
@@ -479,7 +481,7 @@ Called by `BrushItem.onUseTick` (17 §3.5 gives the item side: use duration 200,
 
 ### 7.5 Rolling the loot (`unpackLootTable`)
 
-Does nothing when `lootTable` is none. Else: load the table from the server's reloadable registries; when the brusher is a server player, trigger the `generate_loot` criterion with the table key; build loot parameters in the parameter set `archaeology` (26, parameter sets): `origin` = block centre, `luck` = the brusher's luck, `this_entity` = the brusher, `tool` = the brush stack; roll with the seed `lootTableSeed` (`getRandomItems(params, seed)`); the result is expected to hold at most one stack: 0 items give an empty stack, 1 gives that stack, more than 1 logs a warning and uses the first. Then `lootTable = none` and `setChanged`. (The seed is not cleared.) (26 §11.8 states the same.)
+Does nothing when `lootTable` is none. Else: load the table from the server's reloadable registries; when the brusher is a server player, trigger the `generate_loot` criterion with the table key; build loot parameters in the parameter set `archaeology` (26, parameter sets): `origin` = block centre, `luck` = the brusher's luck, `this_entity` = the brusher, `tool` = the brush stack; roll with the seed `lootTableSeed` (`getRandomItems(params, seed)`); the result is expected to hold at most one stack: 0 items give an empty stack, 1 gives that stack, more than 1 logs a warning and uses the first. Then `lootTable = none` and `setChanged`. (The seed is not cleared.) (26 section 11.8 states the same.)
 
 ### 7.6 Block-scheduled tick (`BrushableBlock`)
 
@@ -494,24 +496,25 @@ Client animation `animateTick` of the block: with probability 1 in 16 (`nextInt(
 ### 7.7 Completion (`brushingCompleted`, `dropContent`)
 
 1. `dropContent(level, entity, brushItem)`: first `unpackLootTable` again (no-op normally). If `item` is not empty: with `w` and `h` the width and height of the item entity type (0.25 and 0.25), `f = 1 - w`, `half = w / 2`, `dir = hitDirection or UP`, `p = pos.relative(dir)`: the item entity is at `x = pX + 0.5 * f + half`, `y = pY + 0.5 + h / 2`, `z = pZ + 0.5 * f + half` (with `w = 0.25`: `(pX + 0.5, pY + 0.625, pZ + 0.5)`, the centre of the neighbouring block on the brushed face), with a stack split off the item of size `nextInt(21) + 10` (the whole stack when smaller), **motion zero**, added to the level; `item = empty`. No pickup-delay call is made.
-2. Level event **3008** at the position with data = `Block.getId(current block state)` (the state id including the current `dusted` value).
+2. Level event **3008** at the position with data = `Block.getId(current block state)` (the state id including the current `dusted` value). Client handling (read): if that state's block is a `BrushableBlock`, play its completed sound (7.4) as a local sound in the `PLAYERS` source at volume 1.0, pitch 1.0 with no distance delay; then spawn the destroy-block particle effect for the state.
 3. Replace the block with the default state of `turnsInto` of the brushable block (suspicious sand turns into `sand`, suspicious gravel into `gravel`; block constructor data of 24) or `air` when the block is not a brushable block.
 
 ### 7.8 Client rendering (`BrushableBlockRenderer`)
 
 Draws the buried item when `dusted > 0`, the hit direction is known and the item model state is non-empty. The light value is that of the neighbouring position on the hit face. With `s = dusted / 10 * 0.75` (integer `dusted` converted to float) the translation `t = (0.5, 0, 0.5)` is adjusted by direction: EAST `t.x = 0.73 + s`; WEST `t.x = 0.25 - s`; UP `t.y = 0.25 + s`; DOWN `t.y = -0.23 - s`; NORTH `t.z = 0.25 - s`; SOUTH `t.z = 0.73 + s`. Pose: translate `(0, 0.5, 0)`, translate `t`, rotate about Y by 75 degrees, rotate about Y by `11 + (hit is EAST or WEST ? 90 : 0)` degrees, scale 0.5, item display context `fixed`.
 
-### 7.9 Differences from 17 §3.5 (that section stays correct for the item side)
+### 7.9 Differences from 17 section 3.5 (that section stays correct for the item side)
 
-| 17 §3.5 says | Read here |
+| 17 section 3.5 says | Read here |
 |---|---|
 | "a progress reset after 40 ticks without brushing (it schedules a block tick of 40)" | the reset time is 40 ticks; the scheduled block tick is always **2** ticks (7.4 step 8, 7.6); the decay is then 2 brushes every 4 ticks |
+| "7 to 12" dust particles per brush action | `nextInt(7, 12)` with an exclusive upper bound: **7 to 11** particles (read in `BrushItem.spawnDustParticles`) |
 | the dropped item has "speed 0.1 x random" | the item's motion is **zero** (7.7) |
 | "spawned beside the block on the face the player brushed" | at the centre of the neighbouring block on that face, y offset 0.625 (7.7); the face defaults to UP when the entity never recorded one |
 
 ### 7.10 Worked examples
 
-1. Ten brushes at game times T, T+10, ..., T+90 (the cadence of the item): brush 1: `dusted` 0 to 1; brush 3: `dusted` 2; brush 6: `dusted` 3; brush 10 (at T+90) completes: the item drops at (hit neighbour centre, +0.625), level event 3008, the block becomes sand or gravel; the brush loses 1 durability (17 §3.5).
+1. Ten brushes at game times T, T+10, ..., T+90 (the cadence of the item): brush 1: `dusted` 0 to 1; brush 3: `dusted` 2; brush 6: `dusted` 3; brush 10 (at T+90) completes: the item drops at (hit neighbour centre, +0.625), level event 3008, the block becomes sand or gravel; the brush loses 1 durability (17 section 3.5).
 2. One brush at time 100 (count 1, `dusted` 1, resets at 140): block ticks run at 102, 104, ..., 140: at 140 `checkReset` sets the count to `max(0, 1 - 2) = 0`, `dusted` 0, clears `hitDirection` and the timestamps.
 3. Brushes at 100, 110, 120, 130 (count 4, `dusted` 2), then stop. Resets at 170: count 2 (`dusted` 1), next reset at 174: count 0 (`dusted` 0).
 4. Two brush actions 9 ticks apart: the second is rejected by the cooldown but refreshes the reset time to `gameTime + 40`.
@@ -566,7 +569,7 @@ Called by the bee's enter-hive goal. That goal's `canBeeUse` needs a `hivePos`, 
 
 Status values (`BeeReleaseStatus`, in order): `HONEY_DELIVERED`, `BEE_RELEASED`, `EMERGENCY`.
 
-1. If the environment attribute `bees_stay_in_hive` evaluated at `pos` is true (33 §3.4; the day timeline sets it true from tick 12542 until 23460 in the overworld, 19 "Hive entry") and `status != EMERGENCY`: return false (nobody leaves).
+1. If the environment attribute `bees_stay_in_hive` evaluated at `pos` is true (33 section 3.4; the day timeline sets it true from tick 12542 until 23460 in the overworld, 19 "Hive entry") and `status != EMERGENCY`: return false (nobody leaves).
 2. `facing` = the block state's `facing`; `out = pos.relative(facing)`; `blocked` = the block at `out` has a non-empty collision shape. If `blocked` and `status != EMERGENCY`: return false.
 3. `entity = occupant.createEntity(level, pos)` (8.6); if it is none return false.
 4. If `entity` is a bee:
@@ -589,7 +592,7 @@ Copy the entity data tag (without `id`), remove the ignored tags, load the entit
 - **Fire test** (`isFireNearby`): any block in the 3 by 3 by 3 box centred on the hive whose block is an instance of the fire block class (`fire`; soul fire is a different class and does not count). Where tested: the entity's `setChanged()` override (any `setChanged` that is not the base-class call in `addOccupant`/`releaseAllOccupants`/`tickOccupants`'s static form): if a fire is nearby, run `emptyAllLivingFromHive(none, state, EMERGENCY)` before the base behaviour; and `BeehiveBlock.updateShape` when the neighbouring block is a fire block (same call).
 - **Sedation** (`isSedated`): `CampfireBlock.isSmokeyPos(level, pos)` (5.9).
 - **`emptyAllLivingFromHive(player, state, status)`**: `list = releaseAllOccupants(state, status)` (removes every stored bee for which `releaseOccupant` returned true, with the entity's `savedFlowerPos`; calls the base `setChanged` when the result list is not empty); then, when `player != null`, for each released bee within squared distance 16.0 of the player: when not sedated, `bee.setTarget(player)`; when sedated, `bee.setStayOutOfHiveCountdown(400)`.
-- **Block-side callers** (`BeehiveBlock`): breaking the block with a tool that does not carry the enchantment tag `prevents_bee_spawns_when_mining` releases all bees with `EMERGENCY` (with the player), updates the comparator neighbours and angers nearby bees (`angerNearbyBees`); the `bee_nest_destroyed` criterion is triggered in either case, with the occupant count read after any release. Explosion hits anger nearby bees. `getDrops` releases all bees (no player, `EMERGENCY`) when the loot context's entity is primed TNT, a creeper, a wither skull, the wither boss or a TNT minecart. In creative mode (`preventsBlockDrops`), with the `block_drops` game rule on, destroying a hive that holds bees or has honey level above 0 drops one hive item whose components are the entity's collected components (the `bees` component) plus `block_state` = `{honey_level: n}`, at the block's integer position with default pickup delay. `angerNearbyBees(level, pos)`: when any `Bee` is in the box of the block inflated by (8, 6, 8) and any `Player` too, every bee in the box without a target gets a random player from the player list as target. Pick-block copies `block_state` honey level. `dropHoneycomb` rolls the `harvest/beehive` table; `useItemOn` (shears, glass bottle) is 17 §3 (honey level 5 gate; `releaseBeesAndResetHoneyLevel` sets `honey_level` 0 and releases with `EMERGENCY` when not smoky).
+- **Block-side callers** (`BeehiveBlock`): breaking the block with a tool that does not carry the enchantment tag `prevents_bee_spawns_when_mining` releases all bees with `EMERGENCY` (with the player), updates the comparator neighbours and angers nearby bees (`angerNearbyBees`); the `bee_nest_destroyed` criterion is triggered in either case, with the occupant count read after any release. Explosion hits anger nearby bees. `getDrops` releases all bees (no player, `EMERGENCY`) when the loot context's entity is primed TNT, a creeper, a wither skull, the wither boss or a TNT minecart. In creative mode (`preventsBlockDrops`), with the `block_drops` game rule on, destroying a hive that holds bees or has honey level above 0 drops one hive item whose components are the entity's collected components (the `bees` component) plus `block_state` = `{honey_level: n}`, at the block's integer position with default pickup delay. `angerNearbyBees(level, pos)`: when any `Bee` is in the box of the block inflated by (8, 6, 8) and any `Player` too, every bee in the box without a target gets a random player from the player list as target. Pick-block copies `block_state` honey level. `dropHoneycomb` rolls the `harvest/beehive` table; `useItemOn` (shears, glass bottle) is 17 section 3 (honey level 5 gate; `releaseBeesAndResetHoneyLevel` sets `honey_level` 0 and releases with `EMERGENCY` when not smoky).
 - **Analog output**: the comparator output is the `honey_level`.
 
 ### 8.8 Tick (server only; `BeehiveBlock.getTicker` returns none for client levels)
@@ -601,7 +604,7 @@ A bee whose release is blocked or suppressed (daylight attribute, blocked exit) 
 
 ### 8.9 Comparison with other documents
 
-- 17 §3 (shears and bottle rules) and 19 (the bee: goals and `wantsToEnterHive`) cover the block-side use and the bee-side decisions; this section is the block entity half. The bee's `HasNectar`, `hive_pos`, `flower_pos`, `CannotEnterHiveTicks`, `TicksSincePollination` and `CropsGrownSincePollination` keys are in 45 part 4.
+- 17 section 3 (shears and bottle rules) and 19 (the bee: goals and `wantsToEnterHive`) cover the block-side use and the bee-side decisions; this section is the block entity half. The bee's `HasNectar`, `hive_pos`, `flower_pos`, `CannotEnterHiveTicks`, `TicksSincePollination` and `CropsGrownSincePollination` keys are in 45 part 4.
 - Worldgen: `BeehiveDecorator` and tree beehives place `bee_nest` facing south and call `storeBee(Occupant.create(nextInt(599)))` for each of `2 + nextInt(2)` occupants (35 part 4).
 - Dispensers shearing a full hive: the `ShearsDispenseItemBehavior` class references the hive (not read in this round; Open question 10).
 
@@ -655,14 +658,16 @@ Each row is a test an implementation can run from this document alone.
 2. **Component `Filterable` wire form.** Section 3.4's statement that the stream form is `raw` followed by an optional `filtered` is inferred from the codec composition (a `CodecOperation` whose body was not decoded); a wire fixture is needed.
 3. **`Filterable` encode form.** That the codec encodes in the record form `{raw, filtered?}` is inferred from the argument order of `Codec.withAlternative` (first argument primary); not checked against a saved book.
 4. **Jukebox load without a level.** Load step 2 can call the song player's `stop` while the entity's level is still unset (chunk load). The behaviour with a null level in `JukeboxSongPlayer.stop` (which dereferences the level for the game event and the level event) was not traced; in practice step 2 only runs when a song is playing, which cannot hold on a freshly created entity.
-5. **`Mth.clamp(v, 0, -1)`.** The lectern's `Page` load for a book with 0 pages evaluates a clamp whose maximum is below its minimum; the result of the integer `Mth.clamp` implementation in that case was not read.
+5. (Closed.) `Mth.clamp(int, int, int)` was read: `min(max(v, min), max)`, so a 0-page lectern keeps `page = -1` after load or `setPage` (3.2, 3.3).
 6. **Recipe check cache.** `RecipeManager.createCheck(campfire_cooking)` returns a `CachedCheck`; whether it only caches the last matching recipe (inferred from its name and use) or filters differently from `getRecipeFor(type, input, level)` (used by `placeFood`) was not read. The set `campfire_input` (`RecipePropertySet.CAMPFIRE_INPUT`) is taken to be the union of ingredients of all `campfire_cooking` recipes (inferred).
-7. **Nearest-player filter.** `Level.getNearestPlayer(x, y, z, distance, boolean)` is called by the enchanting table animation with `false`; the meaning of the boolean (recalled, not verified: a creative and spectator exclusion) and the exact distance test were not read.
-8. **Sprites.** The book texture path used by the enchanting table and lectern (`EnchantTableRenderer.BOOK_TEXTURE`) was not read (its static initialiser was not decompiled); the bell sprite is `bell/bell_body` in the block entity sprite mapper. These are texture-pack data (14).
+7. (Closed, with one residue.) The boolean of `getNearestPlayer(x, y, z, distance, boolean)` was read (false selects `NO_SPECTATORS`, 6.3). Not re-read: the body of the predicate overload `getNearestPlayer(x, y, z, distance, predicate)`, so the squared-distance comparison of 6.3 is inferred from the sibling `hasNearbyAlivePlayer`.
+8. (Closed for the book.) The book sprite name is `enchantment/enchanting_table_book` (6.4). The bell sprite is `bell/bell_body` in the block entity sprite mapper; the resource-pack path of these sprites is data (14).
 9. **Falling brushable blocks.** `BrushableBlock.tick` calls `FallingBlockEntity.fall` and `disableDrop`. Whether the falling entity carries the block entity's data (so a buried item survives the fall and is restored on landing) is the falling block entity's behaviour (29, 41), not read here.
 10. **Dispenser shearing.** `ShearsDispenseItemBehavior` references the hive; its use of `BeehiveBlock.dropHoneycomb` and `releaseBeesAndResetHoneyLevel` and its rules were not read.
-11. **Brush dust particles.** `BrushItem.spawnDustParticles` (7 to 11 particles, `nextInt(7, 12)`, with a direction-dependent delta) was read only as far as its call structure; 17 §3.5 says "7 to 12" and 42-4 may refine. The remaining `DustParticlesDelta.fromDirection` table was not decoded here.
+11. **Brush dust particles.** The count was read: `nextInt(7, 12)`, exclusive bound, so 7 to 11 particles (7.9; 17 section 3.5 says "7 to 12" and is not edited here). The particle delta values seen in `DustParticlesDelta` include -0.1, -1.0 and 0.1, with 1.0E-6f used as an epsilon, but the full `DustParticlesDelta.fromDirection` table was not decoded.
 12. **Hive release before the bee leaves.** `Bee.setHivePos`, `dropOffNectar`, `setSavedFlowerPos`, `getAge`, `isAgeLocked` and the `inLove` accessors are bee entity methods; their exact effects are in 19 and 45 part 4, not re-read.
 13. **Lectern menu slot class.** `LecternMenu$1` (the slot class that wraps the container slot) was not read: whether it overrides `setChanged` to notify the menu is not recorded.
 14. **Block shapes and placement rules** of the seven blocks (lectern, bell, campfire, enchanting table, suspicious sand and gravel, beehive and bee nest, jukebox) are block registry data (24) and were not read here.
 15. **`jukebox_song` entries and the `lectern_books`, `douses_campfires`, `raiders`, `beehive_inhabitors`, `beehives`, `campfires` tags** are data (extracted by the tool) and are not tabulated.
+16. **Brush sound parameters (resolved).** The four-argument `Level.playSound` used by `BrushItem.onUseTick` is the `LevelAccessor` default that forwards volume 1.0 and pitch 1.0 (7.4). Not traced: the six-argument implementation's distance attenuation and the client sound engine's handling of the excluded player (the first argument).
+17. **`Mth.asin`/`cos` table values.** The `ASIN_TAB` and `COS_TAB` entries are computed at class initialisation by the runtime's `Math.asin` and `Math.cos` (1.3); bit-exact values of those library calls were not read and are not tabulated.

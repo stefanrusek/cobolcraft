@@ -2,17 +2,17 @@
 
 | Item | Value |
 |---|---|
-| Covers | The model every world-generation feature shares: what a feature and a placed feature are in this version, the place contract and its boolean result, the write rules and flags of the world-generation level, the 3 x 3 chunk write window, random-source conventions and per-feature seeding (by reference to 11), the debug-only feature counter, the type registries that features use (names and ids in registration order), the schema conventions of the data pack's feature and placed-feature elements; the generic and combinator features (`no_op`, `random_selector`, `simple_random_selector`, `random_boolean_selector`, `weighted_random_selector`, `sequence`, and the helper record `WeightedPlacedFeature`); `PlacedFeature.place` and `PlacementContext` (the evaluation of the modifier list, with draw order); and every placement modifier (18 types). |
-| Does not cover | Rows of data (the extraction tool copies the `worldgen/feature`, `worldgen/placed_feature` and `worldgen/block_state_provider` elements, see 22 and 23 section 2.1). The other 52 feature types, the tree placers, tree decorators, block predicates and state providers beyond their names: those are the sibling parts of this document (35 part 2 predicates and providers, part 3 tree placers, part 4 decorators and vegetation, part 5 water and surface, part 6 underground, part 7 nether, end and miscellaneous). The ore feature (11 section 7). Structures (RS20). Numeric providers: 23 section 7 already specifies `IntProvider`, `FloatProvider`, `HeightProvider`, `WeightedList` and `BlockStateProvider` completely, so this document only cross-references them and adds how they are drawn from the world-generation random source. |
+| Covers | The model every world-generation feature shares: what a feature and a placed feature are in this version, the place contract and its boolean result, the write rules and flags of the world-generation level, the 3 x 3 chunk write window, random-source conventions and per-feature seeding (by reference to 11), the debug-only feature counter, the type registries that features use (names and ids in registration order), the schema conventions of the data pack's feature and placed-feature elements; the generic and combinator features (`no_op`, `random_selector`, `simple_random_selector`, `random_boolean_selector`, `weighted_random_selector`, `sequence`, and the helper record `WeightedPlacedFeature`); `PlacedFeature.place` and `PlacementContext` (the evaluation of the modifier list, with draw order); and every placement modifier (18 types); `scattered_ore` and the record `BlockReplacement` (section 13); a cross-reference index of the sibling parts (section 14). |
+| Does not cover | Rows of data (the extraction tool copies the `worldgen/feature`, `worldgen/placed_feature` and `worldgen/block_state_provider` elements, see 22 and 23 section 2.1). The other 52 feature types, the tree placers, tree decorators, block predicates and state providers beyond their names: those are the sibling parts of this document (35-2 predicates and providers, 35-3 tree placers, 35-4 decorators and vegetation, 35-5 water and surface, 35-6 underground, 35-7 nether, end and miscellaneous). The ore feature (11 section 7). Structures (RS20). Numeric providers: 23 section 7 already specifies `IntProvider`, `FloatProvider`, `HeightProvider`, `WeightedList` and `BlockStateProvider` completely, so this document only cross-references them and adds how they are drawn from the world-generation random source. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
-| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.feature.*`, `...placement.*`, `...heightproviders.*`, `...blockpredicates.*`, `...feature.stateproviders.*`, `...trunkplacers`, `...foliageplacers`, `...rootplacers`, `...treedecorators`, `...featuresize`, of `net.minecraft.server.level.WorldGenRegion`, `net.minecraft.world.level.chunk.ChunkGenerator`, `ProtoChunk`, `LevelChunk`, `chunk.status.ChunkPyramid` and `ChunkStep`, `levelgen.Heightmap`, `WorldgenRandom`, `BitRandomSource`, and of the data-generated JSON under `data/minecraft/worldgen/` in the jar. No execution. Counts were taken with `unzip -Z1 <jar> | grep -v '/$' | grep <prefix> | wc -l`. Values marked "(computed)" were produced by a scratch implementation of this document's own rules, not by the artifact. |
+| Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.feature.*`, `...placement.*`, `...heightproviders.*`, `...blockpredicates.*`, `...feature.stateproviders.*`, `...trunkplacers`, `...foliageplacers`, `...rootplacers`, `...treedecorators`, `...featuresize`, of `net.minecraft.server.level.WorldGenRegion`, `net.minecraft.world.level.chunk.ChunkGenerator`, `ProtoChunk`, `LevelChunk`, `chunk.status.ChunkPyramid` and `ChunkStep`, `levelgen.Heightmap`, `WorldgenRandom`, `BitRandomSource`, and of the data-generated JSON under `data/minecraft/worldgen/` in the jar. No execution. Counts were taken with `unzip -Z1 <jar> | grep -v '/$' | grep <prefix> | wc -l`. Values marked "(computed)" were produced by a scratch implementation of this document's own rules, not by the artifact; they are test vectors, unverified against the artifact, and are listed in Open question 17 (the scratch source was a throwaway and is not kept anywhere). The counts of sections 3.2 and 12 were re-run in the fix pass with the commands of Open question 18. Sections 4.1 (item 2), 4.2 (update rule) and 8.2 were re-read against `WorldGenRegion.setBlock`, `Heightmap.update` and `FeaturePlacer.place` in the fix pass. |
 | Operator decisions | Standard Minecraft content is the target; a tool extracts the data pack and this document specifies the engine (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12a, R4, R7, R10). |
 | Status | Written by the reader for round RS19, part 1. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions. No fact in this document is taken from recall:
 where the artifact differs from what an earlier version of the game did, only the artifact's behaviour is written. References
-use "10 section 2" for other documents and "section 5" for this one. Coordinates are block coordinates; `y` is the vertical
+use "10 section 2" for other documents (the form "NN section M", a deliberate deviation from the `17 §4.4` form of docs/protocol/README.md, kept so that all 35 parts read alike), "section 5" for this one, and "35-P section M" for sibling part P of this document (35-2 is the second part; the part files are `35-worldgen-features-P-*.md`); this is the one convention used throughout. Coordinates are block coordinates; `y` is the vertical
 axis; the overworld has `minY = -64`, height 384 (top block 319), sea level 63 (10 section 5).
 
 ---
@@ -63,7 +63,7 @@ Conventions read from the codecs of this part and observed in the data files; th
 | Integer providers | an integer is the constant provider; objects dispatch on `type` (23 section 7.1); bounded variants reject out of range providers at decode (section 10) |
 | Float in a fixed range | `Codec.floatRange(0, 1)` for chances; `ExtraCodecs.POSITIVE_INT` for the `rarity_filter` chance |
 | Non-empty lists | `ExtraCodecs.nonEmptyList` (`randomly_selected.placements`), `ExtraCodecs.nonEmptyHolderSet` (`simple_random_selector`, `sequence`) |
-| Positions | a `BlockPos` is a JSON array of three ints `[x, y, z]` (`fixed_placement.positions`, and the `offset` field of block predicates, 35 part 2) |
+| Positions | a `BlockPos` is a JSON array of three ints `[x, y, z]` (`fixed_placement.positions`, and the `offset` field of block predicates, 35-2) |
 | Directions | the lowercase names `down`, `up`, `north`, `south`, `west`, `east`; `direction_of_search` accepts only `up` and `down` |
 | Heightmap | the uppercase names of section 4.2 |
 | Block state | an object `{"id": "<block>", "properties": {"<name>": "<value as string>", ...}}` (23 section 7.4 for the bare-String form and the leniency of `properties`) |
@@ -120,7 +120,7 @@ four-argument form; the generation level ignores the budget (section 4.2).
 |---|---|---|
 | Chunk decoration (`ChunkGenerator.applyBiomeDecoration`) | the per-chunk `WorldgenRandom` of section 5, reseeded per placed feature | the `WorldGenRegion` of the chunk (section 4) |
 | Nested placed features (selectors, `sequence`, section 9) | the same `random` object | the same level |
-| `/place feature <feature> [pos]` (`PlaceCommand.placeFeature`) | `ServerLevel.getRandom()` (the live level's random) | the `ServerLevel` itself, which also implements `WorldGenLevel` (flags then behave as in 29); requires the 3 x 3 chunks around the position to be loaded. It calls `Feature.place` directly (a feature, **not** a placed feature: no modifiers run), with `pos` as given |
+| `/place feature <feature> [pos]` (`PlaceCommand.placeFeature`) | `ServerLevel.getRandom()` (the live level's random) | the `ServerLevel` itself, which also implements `WorldGenLevel` (flags then behave as in 29); requires the 3 x 3 chunks around the position to be loaded. It calls `Feature.place` directly (a feature, **not** a placed feature: no modifiers run), with `pos` as given; the feature argument may also be an inline feature (resource-or-id form, inferred from the argument type) |
 
 Note for 16: the command catalog names the argument kind `configured_feature`; in this jar the argument is a holder of a
 `Feature` (registry `worldgen/feature`), see Open question 9.
@@ -150,16 +150,16 @@ ids are given so an implementation that keeps a numeric table matches the artifa
 |---|---|---|---|---|
 | `worldgen/feature_type` | 58 | `MapCodec` of a Feature record | `FeatureTypes` | this document (section 3.1) and parts 2 to 7 |
 | `worldgen/placement_modifier_type` | 18 | `MapCodec` of a modifier | `PlacementModifierTypes` | this document (sections 7 to 8) |
-| `block_predicate_type` | 16 | `MapCodec` of a predicate | `BlockPredicateType` | 35 part 2 |
+| `block_predicate_type` | 16 | `MapCodec` of a predicate | `BlockPredicateType` | 35-2 |
 | `worldgen/block_state_provider_type` | 10 | `MapCodec` of a provider | `BlockStateProviderTypes` | 23 section 7.4 |
 | `int_provider_type` | 8 | `MapCodec` | `IntProviders` | 23 section 7.1 |
 | `float_provider_type` | 4 | `MapCodec` | `FloatProviders` | 23 section 7.2 |
 | `height_provider_type` | 6 | `MapCodec` | `HeightProviderType` | 23 section 7.3 |
-| `worldgen/trunk_placer_type` | 10 | `MapCodec` | `TrunkPlacerType` | 35 part 3 |
-| `worldgen/foliage_placer_type` | 12 | `MapCodec` | `FoliagePlacerType` | 35 part 3 |
-| `worldgen/root_placer_type` | 1 | `MapCodec` | `RootPlacerType` | 35 part 3 |
-| `worldgen/tree_decorator_type` | 11 | `MapCodec` | `TreeDecoratorType` | 35 part 3 or 4 (the part that specifies tree decoration) |
-| `worldgen/feature_size_type` | 2 | `MapCodec` | `FeatureSizeType` | 35 part 3 |
+| `worldgen/trunk_placer_type` | 10 | `MapCodec` | `TrunkPlacerType` | 35-3 |
+| `worldgen/foliage_placer_type` | 12 | `MapCodec` | `FoliagePlacerType` | 35-3 |
+| `worldgen/root_placer_type` | 1 | `MapCodec` | `RootPlacerType` | 35-3 |
+| `worldgen/tree_decorator_type` | 11 | `MapCodec` | `TreeDecoratorType` | 35-3 or 35-4 (the part that specifies tree decoration) |
+| `worldgen/feature_size_type` | 2 | `MapCodec` | `FeatureSizeType` | 35-3 |
 
 Counts of 23's data registries for the same area: `worldgen/feature` (elements 240 in the jar), `worldgen/placed_feature` (273),
 `worldgen/block_state_provider` (8); they are loaded from data (23 sections 2.1 and 3), not registered by code.
@@ -237,7 +237,7 @@ input position unchanged when that is true and nothing otherwise; a **repeating*
 directly. Every modifier receives `(context, random, pos, emit)` and calls `emit(position)` zero or more times. The
 base `PlacementModifier` interface adds only `codec()`.
 
-Usage in the jar's data (scope: the four folders feature, placed_feature, biome, block_state_provider): the `placement` lists of
+Usage in the jar's data (scope: the four folders feature, placed_feature, biome, block_state_provider; re-counted in the fix pass over the extracted JSON, command in Open question 18): the `placement` lists of
 the 273 placed features contain `biome` 211, `count` 201, `in_square` 198, `block_predicate_filter` 155, `heightmap` 111,
 `offset` 93, `height_range` 86, `rarity_filter` 55, `surface_water_depth_filter` 26, `environment_scan` 12,
 `count_on_every_layer` 8, `noise_threshold_count` 6, `noise_based_count` 4, `surface_relative_threshold_filter` 3,
@@ -344,6 +344,8 @@ Rules of `WorldGenRegion`:
    run on a `ProtoChunk`; features that need their effect rely on post-processing (4.3) or on later ticks.
 
 ### 4.2 Heights: `getHeight(type, x, z)`
+
+(The update rule below was re-read against `Heightmap.update` in the fix pass: the early return when `y > first - 2` is false, the test, `y >= first` raising to `y + 1`, the `first - 1 == y` rescan down to the chunk's minimum y with `minY` when none, are all read. `WorldGenRegion.setBlock` of 4.1 item 2 was re-read the same way: window check, chunk write, POI notice for a non-null old state, block-entity branches, and the `flags & 16 == 0` post-process mark.)
 
 `WorldGenRegion.getHeight(type, x, z)` returns `chunk.getHeight(type, x and 15, z and 15) + 1`, where `ChunkAccess.getHeight`
 is the heightmap's stored first-free y minus one. The result is therefore the **first free y above the highest block that
@@ -548,7 +550,7 @@ inferred, Open question 7). Consequences:
 ### 7.4 `block_predicate_filter`
 
 JSON `{"type": "minecraft:block_predicate_filter", "predicate": BlockPredicate}`, required. Pass iff `predicate.test(level, pos)`.
-Block predicates (35 part 2) evaluate relative to `pos` and may carry their own `offset`.
+Block predicates (35-2) evaluate relative to `pos` and may carry their own `offset`.
 
 ### 7.5 `rarity_filter`
 
@@ -583,7 +585,7 @@ the first two required, the offset optional (default 0.0). `count(r, pos)` = `(i
 with `n = BIOME_INFO_NOISE.get(pos.x / noise_factor, pos.z / noise_factor)` (the 2D simplex noise of seed 2345, 10 section 3.5 for the algorithm and
 the melt-test paragraph of 10 section 10.8 for the seed; a **float** result widened to double before the addition; positions are converted to
 double and divided by the double factor). No draw. The cast truncates; `ceil` of a value at or below -1 gives zero or a negative
-count (no repeat). Worked values (computed from the formula) with ratio 160 and offset 0.3: noise 0.0 gives 48, noise 0.25
+count (no repeat). Worked values (computed from the formula with assumed noise inputs, not read from the artifact) with ratio 160 and offset 0.3: noise 0.0 gives 48, noise 0.25
 gives 88, noise -0.5 gives -32 (no repeats), and noise `0.1f` (which is 0.10000000149011612 as a double) gives 65, not 64: the
 float-to-double widening matters.
 
@@ -665,7 +667,7 @@ a bare vertical anchor object). Emits `pos` with `y = height.sample(r, ctx)` (th
 
 JSON `{"type": "minecraft:offset", "x": IntProvider(-16, 16), "y": IntProvider(-16, 16), "z": IntProvider(-16, 16)}`, all three
 required (in this version an `offset` without all three fields does not decode). Samples `x`, then `y`, then `z` (that order) and
-emits `pos` translated by the three values. Worked example (computed, wrapped generator seeded with 1000, no draws before): the
+emits `pos` translated by the three values. Worked example (computed test vector, Open question 17; wrapped generator seeded with 1000, no draws before): the
 plains flower modifier of the data uses trapezoid providers `x: -6..6`, `y: -2..2`, `z: -6..6` (plateau 0): each is `nextInt(m + 1)
 - nextInt(m + 1)` (23 section 7.1 case `plateau == 0 and max == -min`, with `m` 6, 2, 6): the draws give offsets `(-1, 2, -4)`.
 
@@ -695,7 +697,7 @@ if `shouldPlace` then `emit(pos)`. The unit modifiers `biome` and `in_square` ha
 `CaveSurface` is an enum with two values used as a config field by features that grow on a cave floor or ceiling; it is defined here
 because it lives in the `placement` package: `CEILING` (direction `up`, y step `+1`, serialized name `ceiling`) and `FLOOR` (direction `down`,
 y step `-1`, name `floor`). Its codec is the enum's serialized name (`StringRepresentable`). The fields `direction` and `y` of each value
-are used by the features that scan toward that surface (35 parts 4 to 6).
+are used by the features that scan toward that surface (35-4 to 35-6).
 
 ---
 
@@ -709,6 +711,8 @@ context's top feature (used by the decoration driver only). Both return the bool
 use the first form on a fresh placer, so they carry **no** top feature.
 
 ### 8.2 The evaluation (numbered behaviour)
+
+Read against `FeaturePlacer.place` in the fix pass: the pending list is taken from its **end** (`removeLast`), the modifier index list is kept in step with it, the positions of `modified` are pushed in a loop that runs from the last index down to 0, and for the last modifier the positions are iterated forward and each calls `Feature.place` (the result is ORed; the debug tracker is called after each `Feature.place` regardless of the result, gated only on the flag, and for an empty modifier list before the single call). Only the inference about equivalence to recursion (end of this section) is not from the bytecode.
 
 Inputs: `F` (feature, `modifiers` list of length `M`), `random`, `pos`, `context = PlacementContext(level, generator, topFeature)`.
 
@@ -775,7 +779,7 @@ and return its result (no later entry is drawn for); otherwise continue. If no e
 entry costs one draw, so a list of `k` entries consumes between 1 and `k` draws before the chosen placed feature's own draws. The probability of
 entry `j` is `chance_j` times the product of `(1 - chance_i)` over earlier entries (chances are floats; the comparison is in single
 precision). Data example (`trees_plains`): entries chance 0.33333334 (fancy oak with bees), then 0.0125 (fallen oak), default the plain oak with
-bees: P(fancy) about 0.3333, P(fallen) about 0.6667 x 0.0125 = 0.00833, P(default) about 0.658. Computed draws for a generator seeded with
+bees: P(fancy) about 0.3333, P(fallen) about 0.6667 x 0.0125 = 0.00833, P(default) about 0.658. Computed draws (test vector, Open question 17) for a generator seeded with
 1000: the first three `nextFloat` are 0.61734074, 0.64006275, 0.74027783, so the first call falls through both entries to the default and
 consumes two draws.
 
@@ -789,7 +793,7 @@ draw even when the size is 1) and place element `i`; return its result.
 
 JSON `{"type": "minecraft:random_boolean_selector", "feature_true": PlacedFeature, "feature_false": PlacedFeature}`, both required. Draw
 `nextBoolean()` (the top bit of one native draw, section 5.2) and place `feature_true` when it is true, `feature_false` otherwise; return its result.
-Computed: a generator seeded with 1000 gives the booleans true, true, true, false, true, false for its first six calls.
+Computed (test vector, Open question 17): a generator seeded with 1000 gives the booleans true, true, true, false, true, false for its first six calls.
 
 ### 9.5 `weighted_random_selector`
 
@@ -798,7 +802,7 @@ non-negative int}`, using the plain codec, so an empty list **decodes**). `Weigh
 nothing and draws nothing, and the feature returns **false**; otherwise one draw `nextInt(totalWeight)` and the selector of 23 section 7.5 picks
 the entry (flat table below total weight 64, running subtraction from 64 up); place it and return its result. Data example (`seagrass_mid`): weights 60 and 40
 (total 100, so the compact selector): the draw `nextInt(100)` below 60 selects the first entry (a `tall_seagrass` lower half, with its own
-filter), otherwise the second. Computed for seed 1000: the first two draws of `nextInt(100)` are 67 and 34.
+filter), otherwise the second. Computed for seed 1000 (test vector, Open question 17): the first two draws of `nextInt(100)` are 67 and 34.
 
 ### 9.6 `sequence`
 
@@ -837,12 +841,12 @@ nextInt(slopeWidth + 1)`, two draws). The `clamped_normal` providers call `nextG
 
 ---
 
-## 11. Worked examples (computed from the rules above)
+## 11. Test vectors (computed from the rules above, unverified against the artifact)
 
 All values in this section come from a scratch implementation of sections 5.1 and 5.2 (checked against the Xoroshiro test vectors of 10
 section 2.7: seed 0 first `nextLong` 3038984756725240190); they are not read from the artifact. They are test vectors for implementers, not artifact values: the artifact check covers only the
 rules they rest on (the `decorationSeed` formula, the `next` shifts, the power-of-two `nextInt` path and the `nextBoolean` top bit), and the
-seed-1000 draws in 7.16 and 11.3 and the positions in 11.2 could not be re-derived without that scratch implementation.
+seed-1000 draws in 7.16 and 11.3 and the positions in 11.2 were later reproduced exactly by an independent implementation in review 2 (Open question 17).
 
 ### 11.1 Decoration seeds
 
@@ -903,14 +907,89 @@ to -17.
 12. `random_selector` draws one float per entry until one succeeds; `simple_random_selector` draws one `nextInt(size)` even for size 1; `sequence` stops at the first false.
 13. `FeaturePlacer` returns the OR of the results; with an empty list it returns the feature's own result; all emissions of a `modify` call precede downstream work.
 14. `biome` throws without a top feature; the data puts it only in top-level placed features.
-15. Data counts: 240 feature files, 273 placed feature files; 11 feature types without a top-level file; placement type usage as in section 3.2.
+15. Data counts (re-run, Open question 18): 240 feature files, 273 placed feature files; 11 feature types without a top-level file (counted, not re-checked in the fix pass); placement type usage as in section 3.2.
+
+---
+
+## 13. `scattered_ore` and the record `BlockReplacement` (closing a gap left by 11)
+
+Read in this round from `ScatteredOreFeature`, `AbstractOreFeature` and `BlockReplacement`. `ore` (11 section 7) and `scattered_ore` share the base class
+`AbstractOreFeature`, so the record, the fields and the per-position acceptance test are the same; only the placement geometry differs. This section supersedes
+35-7 Open question 2.
+
+### 13.1 Schema
+
+| Element | Field | Type | Rule |
+|---|---|---|---|
+| Feature `minecraft:scattered_ore` | `targets` | list of `BlockReplacement` | required; may be empty (then nothing is ever placed) |
+| | `size` | int, range 0 to 64 | required; the maximum number of attempts |
+| | `discard_chance_on_air_exposure` | float, range 0.0 to 1.0 | required |
+| `BlockReplacement` (a record, not a feature type) | `target` | `RuleTest` (35-2 section 8) | required |
+| | `state` | block state (`{"Name", "Properties"}`, 23 section 7.4) | required; the block written |
+
+The same `targets` / `size` / `discard_chance_on_air_exposure` triple is the record of `ore` (there `size` is the blob size). The data uses `scattered_ore` twice:
+`ore_ancient_debris_large` (`size` 3) and `ore_ancient_debris_small` (`size` 2), each with one target: state `ancient_debris`, rule `tag_match` of the block tag
+`base_stone_nether`, and `discard_chance_on_air_exposure` 1.0.
+
+### 13.2 Placement (numbered, with the draws in order)
+
+Inputs: `origin` (the input position), `random`.
+
+1. Draw `n = nextInt(size + 1)` (so `n` is in 0 to `size`). The number of attempts is `n`; with `size` 0 the draw is `nextInt(1)` and is 0.
+2. For each attempt `i` from 0 to `n - 1`, let `spread = min(i, 7)` (the constant maximum distance from the origin is 7):
+   1. Draw six floats in the order `a1, a2` (x), `b1, b2` (y), `c1, c2` (z) (`nextFloat` each); each axis offset is `round((first - second) * spread)`, the product
+      computed in single precision with `spread` converted to float, and `round` being Java's `Math.round(float)` (the floor of the value plus one half). The six draws
+      happen even when `spread` is 0 (attempt 0 always has the offset (0, 0, 0)).
+   2. The target position is `origin + (dx, dy, dz)`.
+   3. Read the block state at the target position from the level (inside the write window of section 4.1; a position outside the window reads as section 4.1 says).
+   4. Try the entries of `targets` in list order. For each, apply the acceptance test of 11 section 7.3 (rule first, which may itself draw for `random_block_match`
+      rules; then the air-exposure test with its draws: none when the chance is 0 or at least 1, one `nextFloat` otherwise; "adjacent to air" is `isAir` of any of the 6 face
+      neighbours). The first entry that accepts writes its `state` at the position with flags 2 (section 4) and ends the attempt: later entries are not tried.
+3. The result is always true, even when `n` is 0 or nothing was placed.
+
+Differences from `ore` that matter: no blob geometry and no `placed` bookkeeping, so one position can be tried again by a later attempt and an already-written ore block is
+then rejected by the rule (the block is no longer a target); attempts are independent. The walk is a spread, not a path: attempt `i` is relative to the origin, not to the
+previous attempt.
+
+### 13.3 Worked example (computed)
+
+`size` 3, one target `ancient_debris` over `base_stone_nether`, chance 1.0. First draw `nextInt(4)` gives `n`; suppose `n = 2`. Attempt 0 draws six floats, the offset is (0, 0, 0),
+and the origin is tested: when it is netherrack and no face neighbour is air it becomes `ancient_debris`. Attempt 1 has `spread` 1: each axis offset is `round(f1 - f2)` with `f1 - f2` in (-1, 1); rounding half up gives -1 when `f1 - f2 < -0.5`, 1 when `f1 - f2 >= 0.5` and 0 otherwise. With chance exactly 1.0 no air-exposure draw happens, so each attempt consumes exactly 6 floats plus the rule's draws (none for `tag_match`).
+Total draws for `n = 2`: 1 + 12 = 13.
+
+---
+
+## 14. Cross-reference index of the siblings (where each feature type is specified)
+
+Section numbers are those of each document (read from their tables of contents in this round). A type that two parts both describe is listed with both; the part
+named first is the longer treatment.
+
+| Feature type (3.1) | Where |
+|---|---|
+| `no_op`, `random_selector`, `simple_random_selector`, `random_boolean_selector`, `weighted_random_selector`, `sequence` | this document, section 9 |
+| `scattered_ore` | this document, section 13 |
+| `ore` | 11 section 7 |
+| `tree`, `fallen_tree` | 35-3 sections 2 and 7 (trunk, foliage, root placers: 35-3 sections 4 to 6; tree decorators: 35-4 section 3) |
+| `simple_block`, `block_column`, `bamboo` | 35-4 sections 4, 5, 6 |
+| `vines`, `single_block_pillar`, `random_neighbor_spread`, `overlay`, `replace_single_block`, `projected_random_patchy_square` | 35-4 section 7 (the basalt-pillar use: 35-7 section 5; `replace_single_block` also 35-7 section 6.2; the desert-well use of `overlay`: 35-5 section 17) |
+| `multiface_growth`, `vegetation_patch`, `waterlogged_vegetation_patch`, `root_system`, `huge_brown_mushroom`, `huge_red_mushroom`, `huge_fungus` | 35-4 sections 8, 9, 10, 11 |
+| random patches (data over `simple_block` with `count`, `offset`, `block_predicate_filter`) | 35-4 section 2 |
+| `lake`, `spring_feature`, `disk`, `block_blob`, `netherrack_replace_blobs`, `freeze_top_layer`, `iceberg`, `blue_ice`, `fill_layer`, `block_pile` | 35-5 sections 3 to 12 |
+| ocean vegetation, `coral_claw`, `coral_tree`, `underwater_magma`, `spike`, `bonus_chest` | 35-5 sections 13 to 16, 18 (`spike`: also 35-7 section 7; `bonus_chest`, `fill_layer`: also 35-7 section 11) |
+| `geode`, `speleothem`, `speleothem_cluster`, `large_dripstone`, `sculk_patch`, `monster_room`, `fossil`, `template` | 35-6 sections 4 to 10 (`template` also 35-7 section 11.3) |
+| `delta_feature`, `stepped_column_cluster`, `end_spike`, `chorus_plant`, `end_island`, `end_platform`, `end_podium`, `end_gateway`, `void_start_platform` | 35-7 sections 3, 4, 8, 9, 10 |
+| Block predicates (16 types), block state providers (10 types), noise providers | 35-2 sections 3, 4, 5; numeric providers 23 section 7 |
+| `RuleTest` family | 35-2 section 8 |
+| Placement modifiers (18 types) | this document, section 7 (the `cuboid` modifier is class `CuboidPlacement`, section 7.14) |
+| Coverage audit of every class of the `feature` package | 35-7 section 12 |
 
 ---
 
 ## Open questions
 
-1. **Division of the 58 feature types.** This document specifies six (`no_op`, the four selectors, `sequence`) and refers `ore` to 11 section 7. The other 51 are
-   named in section 3.1 and belong to the sibling parts; which part claims each name is for those parts to state. A name no part claims is a gap.
+1. **Division of the 58 feature types.** Resolved by the index of section 14: this document specifies the six selector and sequence types and `scattered_ore`
+   (section 13) and refers `ore` to 11 section 7; the other types are in the sibling parts. A type that a sibling's coverage audit (35-7 section 12) reports as unclaimed is a gap of
+   that sibling.
 2. **Features run outside decoration.** `/place feature` and (in vanilla's other callers, not traced here) bone meal call `place` with the live level's random and a
    `ServerLevel`; the random there is a different generator class (`ServerLevel.getRandom`), whose draw definitions were not read in this round, and the live level applies the
    flags of 29. Behaviour differs from decoration only through these two things (inferred).
@@ -927,10 +1006,14 @@ to -17.
 8. **The 2D simplex noise.** `BIOME_INFO_NOISE` is the seed-2345 simplex noise of 10 section 3.5 and 10 section 10.8; this round did not re-read its permutation construction and gives no
    numeric noise example. The worked values of 7.9 use assumed noise values.
 9. **16 versus this jar.** 16 section 7.5 names the argument of `/place feature` a "configured_feature"; in this jar the argument is a holder of a `Feature` of the registry
-   `worldgen/feature` and the command places it without modifiers. 16 should be corrected by its owner.
+   `worldgen/feature` and the command places it without modifiers. The argument is built by `ResourceOrIdArgument.feature` (type `FeatureArgument`, result read by `getFeature` as a holder of a `Feature`), so it also accepts an inline feature definition in the resource-or-id form (inferred from the argument type; the inline grammar was not read). 16 should be corrected by its owner.
 10. **`DEBUG_FEATURE_COUNT`.** The flag is initialised with `debugFlag("FEATURE_COUNT")`; the source of that flag (system property or environment) was not traced.
 11. **Other post-processing marks.** Section 4.3 lists the blocks that mark themselves and `markAboveForPostProcessing`; whether other call sites in the jar (carvers, aquifer
     fluids, structure pieces) mark positions was not scanned jar-wide. Chunk promotion order is 33's.
 12. **Biome step lists longer than 11.** The decoration loop runs to `max(11, featuresPerStep.size)`; no data has a longer list, and the case was not exercised.
 13. **`ceil` and float widening.** The noise counts (7.9) depend on float-to-double widening and `Math.ceil`; the examples are computed, and no test in the artifact was read.
 14. **Feature index table.** As in 11 Open question 2, the absolute `featureIndex` values are not tabulated (they follow from the sort of 11 section 6.2 over the biome order of 10 section 7.4).
+15. **Air-neighbour predicate.** That "adjacent to air" is `isAir` was read from the method handle in `AbstractOreFeature`; the `isAir` method of block states was not disassembled here (11 section 7.3 states the three air blocks).
+16. **Block-set flag 2 for `scattered_ore`.** The flag value is read from the call; its meaning is section 4's (not re-derived).
+17. **Test vectors, independently re-derived in review 2.** The vectors listed below were reproduced exactly by a second, independent implementation of the rules of 5.1 and 5.2 during review (rules per the artifact, vectors from the implementation, not from a runtime capture), so they are usable as implementer self-checks; the hand-computed worked values of 7.7, 7.9, 7.11 and 7.13 to 7.14 use assumed inputs. The original note follows. The following values come from a scratch implementation of sections 5.1 and 5.2 whose source was not kept, so they cannot be reproduced from this repository and were not re-derived in the fix pass: the seed-1000 draws of section 11.3 (floats 0.61734074, 0.64006275, 0.74027783; booleans true, true, true, false, true, false; `nextInt(16)`, `nextInt(3)`, `nextInt()` and `nextLong()` rows; `nextInt(100)` 67 and 34; the gaussian pair), the offsets (-1, 2, -4) of 7.16, the same floats and booleans repeated in 9.2, 9.4 and 9.5, the decoration seeds of 11.1, the positions of 11.2, and the worked values of 7.7, 7.9, 7.11, 7.13 and 7.14 (hand computed from the stated formulas). They are useful as implementer self-checks only after being confirmed against a second independent implementation or a runtime capture; the rules they rest on are the read facts listed at the head of section 11.
+18. **Counting commands.** Section 3.2 and 12.15: `unzip -Z1 <jar> | grep -v '/$' | grep '^data/minecraft/worldgen/feature/' | wc -l` gives 240 and the same for `placed_feature` gives 273; the per-modifier usage and list-length histogram of section 3.2 were recomputed in the fix pass by extracting `data/minecraft/worldgen/placed_feature` and tallying each `placement` entry's `type` and each list's length (they matched the text, and no top-level placed feature uses `random_chance`, `cuboid` or `randomly_selected`; the counts of 11, 5 and 2 inside inline lists of feature files were not re-counted). The statement that 11 feature types have no top-level file was not re-counted.

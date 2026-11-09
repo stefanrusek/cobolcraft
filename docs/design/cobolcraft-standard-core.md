@@ -47,13 +47,14 @@ that they are placeholders that may be built and tested only against this docume
 | `enchantment` `efficiency` (3.7): the `effects` shape and the description key | inferred or recalled | clean-room read (Open questions 4, 11) |
 | Food consume `animation` `eat` and `consume_seconds` 1.6 (5.4) | assumed | clean-room read (Open question 8) |
 | `day` timeline (3.2) | exact only for the tracks 12 section 3.2 lists | clean-room read of `day.json` (Open question 6) |
-| `monster_spawn_light_level` 0 (3.3) | a behavioural departure from the standard for vanilla spawn checks | operator decision (Open question 21) |
+| `monster_spawn_light_level` uniform 0..7 (3.3) | the numbers are the Overworld values of 18 and 20; only the JSON form of the IntProvider is (inferred) | clean-room read of the IntProvider shape (Open question 21) |
+| `cobolcraft:sunless` with no `default_clock` and no `timelines` (3.3, CORE-8) | whether a vanilla client accepts a fixed-time dimension with neither was never traced | clean-room read or a tier B test (Open question 22) |
 
 **Index of Decisions** (the text is in section order; this list is in number order): CORE-1, 2, 3 section 1; CORE-4 section 3.6;
 CORE-5 section 3.1; CORE-6 section 3.2; CORE-7, 8 section 3.3; CORE-9 section 3.4; CORE-10, 11, 12 section 3.6; CORE-13 section
 3.5; CORE-14 section 3.7; CORE-15 section 9; CORE-16 section 4; CORE-17, 18 section 5.1; CORE-19, 20 section 5.3; CORE-21 section
 5.4; CORE-22 section 5.6; CORE-23 section 5.7; CORE-24 section 5.8; CORE-25 section 5.9; CORE-26 section 5.5; CORE-27 section
-5.1 (break-time model); CORE-28 section 5.1 (cosmetic columns); CORE-29 section 5.5 (speed attribute).
+5.1 (break-time model); CORE-28 section 5.1 (cosmetic columns); CORE-29 section 5.5 (speed attribute); CORE-30 and CORE-31 section 5.5 (spawn-cycle meanings, persistence).
 
 Conventions. JSON is used to write rows because the standard schemas are JSON in a data pack and NBT on the wire
 (04 section 6: booleans are Byte 0 or 1, colours are `"#RRGGBB"` strings). Identifiers with no colon are in `minecraft:`.
@@ -256,8 +257,8 @@ column says why.
 | `logical_height` | 256 | 128 | standin section 4.6 |
 | `infiniburn` | `[]` | `[]` | an empty list names no tag, so no tag file is required (23 section 9.4); no block burns forever |
 | `ambient_light` | 0.0 | 0.0 | standin section 4.6; the renderer reads `ambient_light_color` instead (12 section 3.1) |
-| `monster_spawn_light_level` | 0 (constant) | 0 (constant) | 0 (constant): the stand-in spawn cycle is the only spawner and no biome carries `natural_mob_spawns` (Decision CORE-26). The field also governs every vanilla-engine spawn check (the spawner block, `/summon` spawn checks), not only natural spawning; with 0 such a check passes at any light level, a departure from the standard (Open question 21) |
-| `monster_spawn_block_light_limit` | 0 | 0 | same |
+| `monster_spawn_light_level` | uniform integer 0 to 7 inclusive (the form is (inferred), Open question 21) | same | Decision CORE-26: the Overworld values of 18 section 6.8 line 990 and 20 line 107 (uniform 0..7). The field governs every vanilla-engine spawn check (the spawner block and natural spawning through `Monster.checkMonsterSpawnRules`, 18 section 6.8; `/summon` loads the entity with reason COMMAND and runs no spawn-rule or light check, 16): such a check accepts only when the light is at most one sample of this distribution and rejects when sky light exceeds a fresh 0..31 draw. A constant 0 would be the strictest setting, not a permissive one, so it is not used |
+| `monster_spawn_block_light_limit` | 0 | 0 | the Overworld value (18 line 991, 20 line 107): any block light above 0 fails the check. Natural spawning is stopped by the empty `natural_mob_spawns` of every biome (section 3.4), not by these two fields |
 | `skybox` | absent (`overworld`) | `none` | standin section 4.6 |
 | `cardinal_light` | absent (`default`) | absent (`default`) | standin section 4.6 |
 | `attributes` | see below | see below | 12 section 3.1; standin section 15.3 |
@@ -296,7 +297,7 @@ moon, no weather (standin section 15.3). In the standard attribute system this i
 3.4), `sky_color` and `fog_color` both `#100c12` (the horizon fog fades to the sky colour, 12 section 3.3, so they must
 match or a seam shows), and `sky_light_factor` 0.0 (the Nether's value for a dimension with no sky light, 12 section 3.1).
 `ambient_light_color` `#1a1a1a` is the byte closest to the stand-in's brightness floor of 0.1 (standin section 4.6: 26 / 255
-= 0.102); the overworld's `#0a0a0a` would be darker than the floor the stand-in promised. A dimension with no skylight
+= 0.102); the overworld's `#0a0a0a` would be darker than the floor the stand-in promised. The attribute `gameplay/sky_light_level` is set by no `sunless` layer (no timeline, no attribute), so it stays at its default 15 (33 section 3.3 table, line 168) and `skyDarken` is 0 there; with `has_skylight` false the light engine puts no sky light in the dimension regardless. Whether a vanilla client accepts a fixed-time dimension with neither `default_clock` nor `timelines` was never traced (standin section 4.6, standin Open question 12): Open question 22. A dimension with no skylight
 cannot have weather (33 section 4.1: `canHaveWeather` needs sky light), so no weather layer applies, as the stand-in required
 (standin section 14.2).
 
@@ -326,9 +327,9 @@ Three entries, ids by CORE-2 (the stand-in order).
 keeps temperature 0.6 and downfall 0.4, not the standard plains 0.8 and 0.4 (10 section 7.8). Reason: README S33 says keep; the
 value matters only through the rain or snow test `temperature >= 0.15` (33 section 4.5), which 0.6, 0.3 and 1.4 all pass.
 The temperature is lowered with height, so the answer depends on `y` (formula of 33 section 4.5, sea level 48 of standin
-section 5.1, noise term 0). Upland (temperature 0.3) turns to snow above about `y` 185, which a player can reach (the surface
+section 5.1, noise term 0; the term N x 8 of a simplex noise shifts every line below by up to roughly 8 blocks, and sea level is an argument of the shared weather engine, not a `dimension_type` field: no document says which field supplies 48, standin section 5.1 calls it nominal, Open question 26). Upland (temperature 0.3) turns to snow above about `y` 185 (approximate), which a player can reach (the surface
 dimension is 256 high, `y` up to 255); the standard plains value 0.8 would not. Lowland (0.6) never snows: it would need `y`
-above 425, since 0.6 - (y - 65) x 0.00125 < 0.15 gives y > 425, and the build limit is 255. `ash_flats` has no precipitation.
+above 425 (approximate), since 0.6 - (y - 65) x 0.00125 < 0.15 gives y > 425, and the build limit is 255. `ash_flats` has no precipitation.
 The upland snow line near 185 is a behavioural difference from the stand-in (which had no snow) and is accepted here. The colours are the
 built-in pack's art. No biome carries
 `gameplay/natural_mob_spawns`, so the standard natural spawning engine (18 section 6) spawns nothing here and the stand-in
@@ -363,62 +364,62 @@ would change 09 section 3.1 for no gain.
 04 section 6: `message_id`, `scaling`, `exhaustion`, `effects`, `death_message_type`. Exhaustion, scaling, `effects` and
 `death_message_type` are the values of 17 section 4.12 (groups A to E and the separate attribute list). Legend for the group
 column: A no exhaustion; B always scaling, no exhaustion; C always scaling, exhaustion 0.1; D burning types; E other 0.1
-types (17 section 4.12). `scaling` is written `always` or `living` (= `when_caused_by_living_non_player`).
+types (17 section 4.12). `scaling` is written `always` or `living` (= `when_caused_by_living_non_player`). Per-row marker in the `message_id` column: no suffix means read (only id 34); "(inv)" means invented by Decision CORE-10 (50 rows, placeholders until the clean-room read); "(own, CORE-11)" is the CobolCraft type, whose value is the operator's own.
 
 | Id | Key | Group | message_id | scaling | exhaustion | effects | death_message_type |
 |---|---|---|---|---|---|---|---|
-| 0 | `minecraft:arrow` | E | `arrow` | living | 0.1 | hurt (default) | default |
-| 1 | `minecraft:bad_respawn_point` | C | `bad_respawn_point` | always | 0.1 | hurt (default) | intentional_game_design |
-| 2 | `minecraft:cactus` | E | `cactus` | living | 0.1 | hurt (default) | default |
-| 3 | `minecraft:campfire` | D | `campfire` | living | 0.1 | burning | default |
-| 4 | `minecraft:cramming` | A | `cramming` | living | 0.0 | hurt (default) | default |
-| 5 | `minecraft:dragon_breath` | A | `dragon_breath` | living | 0.0 | hurt (default) | default |
-| 6 | `minecraft:drown` | A | `drown` | living | 0.0 | drowning | default |
-| 7 | `minecraft:dry_out` | E | `dry_out` | living | 0.1 | hurt (default) | default |
-| 8 | `minecraft:ender_pearl` | A | `ender_pearl` | living | 0.0 | hurt (default) | fall_variants |
-| 9 | `minecraft:explosion` | C | `explosion` | always | 0.1 | hurt (default) | default |
-| 10 | `minecraft:fall` | A | `fall` | living | 0.0 | hurt (default) | fall_variants |
-| 11 | `minecraft:falling_anvil` | E | `falling_anvil` | living | 0.1 | hurt (default) | default |
-| 12 | `minecraft:falling_block` | E | `falling_block` | living | 0.1 | hurt (default) | default |
-| 13 | `minecraft:falling_stalactite` | E | `falling_stalactite` | living | 0.1 | hurt (default) | default |
-| 14 | `minecraft:fireball` | D | `fireball` | living | 0.1 | burning | default |
-| 15 | `minecraft:fireworks` | E | `fireworks` | living | 0.1 | hurt (default) | default |
-| 16 | `minecraft:fly_into_wall` | A | `fly_into_wall` | living | 0.0 | hurt (default) | default |
-| 17 | `minecraft:freeze` | A | `freeze` | living | 0.0 | freezing | default |
-| 18 | `minecraft:generic` | A | `generic` | living | 0.0 | hurt (default) | default |
-| 19 | `minecraft:generic_kill` | A | `generic_kill` | living | 0.0 | hurt (default) | default |
-| 20 | `cobolcraft:hail` | E (cobolcraft) | `hail` | living | 0.1 | hurt (default) | default |
-| 21 | `minecraft:hot_floor` | D | `hot_floor` | living | 0.1 | burning | default |
-| 22 | `minecraft:in_fire` | D | `in_fire` | living | 0.1 | burning | default |
-| 23 | `minecraft:in_wall` | A | `in_wall` | living | 0.0 | hurt (default) | default |
-| 24 | `minecraft:indirect_magic` | A | `indirect_magic` | living | 0.0 | hurt (default) | default |
-| 25 | `minecraft:lava` | D | `lava` | living | 0.1 | burning | default |
-| 26 | `minecraft:lightning_bolt` | E | `lightning_bolt` | living | 0.1 | hurt (default) | default |
-| 27 | `minecraft:mace_smash` | E | `mace_smash` | living | 0.1 | hurt (default) | default |
-| 28 | `minecraft:magic` | A | `magic` | living | 0.0 | hurt (default) | default |
-| 29 | `minecraft:mob_attack` | E | `mob_attack` | living | 0.1 | hurt (default) | default |
-| 30 | `minecraft:mob_attack_no_aggro` | E | `mob_attack_no_aggro` | living | 0.1 | hurt (default) | default |
-| 31 | `minecraft:mob_projectile` | E | `mob_projectile` | living | 0.1 | hurt (default) | default |
-| 32 | `minecraft:on_fire` | A | `on_fire` | living | 0.0 | burning | default |
-| 33 | `minecraft:out_of_world` | A | `out_of_world` | living | 0.0 | hurt (default) | default |
+| 0 | `minecraft:arrow` | E | `arrow` (inv) | living | 0.1 | hurt (default) | default |
+| 1 | `minecraft:bad_respawn_point` | C | `bad_respawn_point` (inv) | always | 0.1 | hurt (default) | intentional_game_design |
+| 2 | `minecraft:cactus` | E | `cactus` (inv) | living | 0.1 | hurt (default) | default |
+| 3 | `minecraft:campfire` | D | `campfire` (inv) | living | 0.1 | burning | default |
+| 4 | `minecraft:cramming` | A | `cramming` (inv) | living | 0.0 | hurt (default) | default |
+| 5 | `minecraft:dragon_breath` | A | `dragon_breath` (inv) | living | 0.0 | hurt (default) | default |
+| 6 | `minecraft:drown` | A | `drown` (inv) | living | 0.0 | drowning | default |
+| 7 | `minecraft:dry_out` | E | `dry_out` (inv) | living | 0.1 | hurt (default) | default |
+| 8 | `minecraft:ender_pearl` | A | `ender_pearl` (inv) | living | 0.0 | hurt (default) | fall_variants |
+| 9 | `minecraft:explosion` | C | `explosion` (inv) | always | 0.1 | hurt (default) | default |
+| 10 | `minecraft:fall` | A | `fall` (inv) | living | 0.0 | hurt (default) | fall_variants |
+| 11 | `minecraft:falling_anvil` | E | `falling_anvil` (inv) | living | 0.1 | hurt (default) | default |
+| 12 | `minecraft:falling_block` | E | `falling_block` (inv) | living | 0.1 | hurt (default) | default |
+| 13 | `minecraft:falling_stalactite` | E | `falling_stalactite` (inv) | living | 0.1 | hurt (default) | default |
+| 14 | `minecraft:fireball` | D | `fireball` (inv) | living | 0.1 | burning | default |
+| 15 | `minecraft:fireworks` | E | `fireworks` (inv) | living | 0.1 | hurt (default) | default |
+| 16 | `minecraft:fly_into_wall` | A | `fly_into_wall` (inv) | living | 0.0 | hurt (default) | default |
+| 17 | `minecraft:freeze` | A | `freeze` (inv) | living | 0.0 | freezing | default |
+| 18 | `minecraft:generic` | A | `generic` (inv) | living | 0.0 | hurt (default) | default |
+| 19 | `minecraft:generic_kill` | A | `generic_kill` (inv) | living | 0.0 | hurt (default) | default |
+| 20 | `cobolcraft:hail` | E (cobolcraft) | `hail` (own, CORE-11) | living | 0.1 | hurt (default) | default |
+| 21 | `minecraft:hot_floor` | D | `hot_floor` (inv) | living | 0.1 | burning | default |
+| 22 | `minecraft:in_fire` | D | `in_fire` (inv) | living | 0.1 | burning | default |
+| 23 | `minecraft:in_wall` | A | `in_wall` (inv) | living | 0.0 | hurt (default) | default |
+| 24 | `minecraft:indirect_magic` | A | `indirect_magic` (inv) | living | 0.0 | hurt (default) | default |
+| 25 | `minecraft:lava` | D | `lava` (inv) | living | 0.1 | burning | default |
+| 26 | `minecraft:lightning_bolt` | E | `lightning_bolt` (inv) | living | 0.1 | hurt (default) | default |
+| 27 | `minecraft:mace_smash` | E | `mace_smash` (inv) | living | 0.1 | hurt (default) | default |
+| 28 | `minecraft:magic` | A | `magic` (inv) | living | 0.0 | hurt (default) | default |
+| 29 | `minecraft:mob_attack` | E | `mob_attack` (inv) | living | 0.1 | hurt (default) | default |
+| 30 | `minecraft:mob_attack_no_aggro` | E | `mob_attack_no_aggro` (inv) | living | 0.1 | hurt (default) | default |
+| 31 | `minecraft:mob_projectile` | E | `mob_projectile` (inv) | living | 0.1 | hurt (default) | default |
+| 32 | `minecraft:on_fire` | A | `on_fire` (inv) | living | 0.0 | burning | default |
+| 33 | `minecraft:out_of_world` | A | `out_of_world` (inv) | living | 0.0 | hurt (default) | default |
 | 34 | `minecraft:outside_border` | A | `outsideBorder` (read, 33 section 7.5) | living | 0.0 | hurt (default) | default |
-| 35 | `minecraft:player_attack` | E | `player_attack` | living | 0.1 | hurt (default) | default |
-| 36 | `minecraft:player_explosion` | C | `player_explosion` | always | 0.1 | hurt (default) | default |
-| 37 | `minecraft:sonic_boom` | B | `sonic_boom` | always | 0.0 | hurt (default) | default |
-| 38 | `minecraft:spear` | E | `spear` | living | 0.1 | hurt (default) | default |
-| 39 | `minecraft:spit` | E | `spit` | living | 0.1 | hurt (default) | default |
-| 40 | `minecraft:stalagmite` | A | `stalagmite` | living | 0.0 | hurt (default) | default |
-| 41 | `minecraft:starve` | A | `starve` | living | 0.0 | hurt (default) | default |
-| 42 | `minecraft:sting` | E | `sting` | living | 0.1 | hurt (default) | default |
-| 43 | `minecraft:sulfur_cube_hot` | D | `sulfur_cube_hot` | living | 0.1 | burning | default |
-| 44 | `minecraft:sweet_berry_bush` | E | `sweet_berry_bush` | living | 0.1 | poking | default |
-| 45 | `minecraft:thorns` | E | `thorns` | living | 0.1 | thorns | default |
-| 46 | `minecraft:thrown` | E | `thrown` | living | 0.1 | hurt (default) | default |
-| 47 | `minecraft:trident` | E | `trident` | living | 0.1 | hurt (default) | default |
-| 48 | `minecraft:unattributed_fireball` | D | `unattributed_fireball` | living | 0.1 | burning | default |
-| 49 | `minecraft:wind_charge` | E | `wind_charge` | living | 0.1 | hurt (default) | default |
-| 50 | `minecraft:wither` | A | `wither` | living | 0.0 | hurt (default) | default |
-| 51 | `minecraft:wither_skull` | E | `wither_skull` | living | 0.1 | hurt (default) | default |
+| 35 | `minecraft:player_attack` | E | `player_attack` (inv) | living | 0.1 | hurt (default) | default |
+| 36 | `minecraft:player_explosion` | C | `player_explosion` (inv) | always | 0.1 | hurt (default) | default |
+| 37 | `minecraft:sonic_boom` | B | `sonic_boom` (inv) | always | 0.0 | hurt (default) | default |
+| 38 | `minecraft:spear` | E | `spear` (inv) | living | 0.1 | hurt (default) | default |
+| 39 | `minecraft:spit` | E | `spit` (inv) | living | 0.1 | hurt (default) | default |
+| 40 | `minecraft:stalagmite` | A | `stalagmite` (inv) | living | 0.0 | hurt (default) | default |
+| 41 | `minecraft:starve` | A | `starve` (inv) | living | 0.0 | hurt (default) | default |
+| 42 | `minecraft:sting` | E | `sting` (inv) | living | 0.1 | hurt (default) | default |
+| 43 | `minecraft:sulfur_cube_hot` | D | `sulfur_cube_hot` (inv) | living | 0.1 | burning | default |
+| 44 | `minecraft:sweet_berry_bush` | E | `sweet_berry_bush` (inv) | living | 0.1 | poking | default |
+| 45 | `minecraft:thorns` | E | `thorns` (inv) | living | 0.1 | thorns | default |
+| 46 | `minecraft:thrown` | E | `thrown` (inv) | living | 0.1 | hurt (default) | default |
+| 47 | `minecraft:trident` | E | `trident` (inv) | living | 0.1 | hurt (default) | default |
+| 48 | `minecraft:unattributed_fireball` | D | `unattributed_fireball` (inv) | living | 0.1 | burning | default |
+| 49 | `minecraft:wind_charge` | E | `wind_charge` (inv) | living | 0.1 | hurt (default) | default |
+| 50 | `minecraft:wither` | A | `wither` (inv) | living | 0.0 | hurt (default) | default |
+| 51 | `minecraft:wither_skull` | E | `wither_skull` (inv) | living | 0.1 | hurt (default) | default |
 
 **Decision CORE-10 (`message_id` is the key path, except where a document reads otherwise; provisional).** 04 section 6 makes
 `message_id` a required String. The core sets `message_id` to the path of the key, so a death message key is
@@ -428,12 +429,12 @@ section 7.5 gives the death message of `outside_border` as `death.attack.outside
 values below are invented by this decision, and some are probably wrong in the same way (candidates: `fly_into_wall`, `in_fire`,
 `dragon_breath` and other multi-word paths; this is a suspicion, not a read fact). The values affect no rule but are not harmless on
 the wire: a vanilla client builds the death message key from `message_id`, so a wrong value gives a wrong translation key.
-**Precondition:** the 51 standard `message_id` values must be read from the jar by a clean-room round before the
+Any statement elsewhere in this document that names a death message key (for example the abend's `death.attack.mob_attack`, section 5.5; README S59 and Part 7 decision 5) is provisional on the same basis. **Precondition:** the 51 standard `message_id` values must be read from the jar by a clean-room round before the
 `damage_type` rows are final or sent to a vanilla client (Open question 2). Until then the 50 invented values are placeholders.
 
 **Decision CORE-12 (the void type key is unresolved; the table carries `out_of_world` provisionally).** The documents disagree,
 and the evidence does not favour either side by count. For `out_of_world`: 17 section 4.12 (the type name and the tag lists,
-which it says are "as listed in the jar"), and 41 line 329 (which says the contents `bypasses_invulnerability` =
+which it says are "as listed in the jar"), and 41 line 342 (which says the contents `bypasses_invulnerability` =
 `out_of_world`, `generic_kill` were "read from `data/minecraft/tags/damage_type/`"), so two documents report the data key and
 the tag membership. For `fell_out_of_world`: 04 section 3.2 item 6, 18 section 3 and standin section 4.7 (which says "checked
 against the jar" and that an earlier draft's `out_of_world` was corrected). Those three describe the `DamageSources` code, so they
@@ -455,12 +456,12 @@ source of the hailstorm skin (standin section 14.6: 1 damage every 80 ticks to a
 It is a member of `no_knockback` and `bypasses_shield` (section 4.3), as `cactus` is: it has no cause position and no
 direction. It is in no other tag, so armor applies. Reason: a type must be in the tags that its nature implies, and the
 only standard type with the same nature is `cactus`. The retired stand-in types are `cobolcraft:generic`, `impact`,
-`below_world` (README S37: only where a cobolcraft rule uses them; none does: the void rule uses `out_of_world`, and the
+`below_world` (README S37: only where a cobolcraft rule uses them; none does: the void rule uses the standard void type, whose key CORE-12 leaves unresolved and the table carries provisionally as `out_of_world`, and the
 baseplate stops any fall below the world), `mob_attack`, `player_attack` and `starvation` (replaced by `minecraft:mob_attack`,
 `player_attack` and `starve`) (Decision CORE-4).
 
 **Decision CORE-4 (the 25 compat keys carry the standard values).** The vanilla client's `DamageSources` looks up 25 keys at
-once and 24 more lazily (04 section 3.2 item 6). All 49 are among the 51 standard rows above, now with the standard values
+once and 24 more lazily (04 section 3.2 item 6). 48 of the 49 are among the 51 standard rows above under their standard key; the 49th, `fell_out_of_world`, is carried only under the provisional key `out_of_world` (CORE-12, Open question 1), so all 49 are present once CORE-12 is settled. They carry now with the standard values
 instead of the stand-in's placeholder `never` and exhaustion 0.0 (README S37). No row uses `scaling` `never`: 17 section 4.12
 says no standard type does.
 
@@ -556,8 +557,8 @@ Proposed (24 section 12.2 marks the use "(inferred)": the consumers were not rea
 |---|---|---|
 | `minecraft:replaceable` | `cobolcraft:void` | placement may overwrite only `void` (standin section 1.3) |
 | `minecraft:air` | `cobolcraft:void` | the grouping tag read by name in world rules (24 section 12.2) |
-| `minecraft:causes_suffocation` | `cobolcraft:baseplate`, `greystone`, `loam`, `turf`, `grit`, `cardstack`, `glowtube`, `ledger_tile`, `goto_pad`, `slag`, `crafting_bench` (all `cobolcraft:`) | the default `isSuffocating` predicate is "in this tag and a full collision cube" (24 section 4.1); every full cube suffocates except `lucite`, whose row carries `suffocating:never` (section 5.1) |
-| `minecraft:blocks_motion`, `blocks_motion_no_leaves`, `blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` | the 11 blocks of `causes_suffocation` plus `cobolcraft:lucite`, that is the 12 blocks other than `void` | suffocation and the motion-blocking heightmaps; the stand-in heightmaps count every non-void block (standin section 5.2); there are no leaves, so the four lists are equal |
+| `minecraft:causes_suffocation` | the same 12 blocks as `blocks_motion` below (all `cobolcraft:` except `void`: `baseplate`, `greystone`, `loam`, `turf`, `grit`, `cardstack`, `lucite`, `glowtube`, `ledger_tile`, `goto_pad`, `slag`, `crafting_bench`) | 24 section 12.2 (line 838) gives the structure `causes_suffocation` = `#blocks_motion`, so this tag follows it and includes `lucite`; the default `isSuffocating` predicate is "in this tag and a full collision cube" (24 section 4.1), and `lucite` is kept from suffocating by the flag `suffocating:never` on its row (section 5.1), not by tag membership |
+| `minecraft:blocks_motion`, `blocks_motion_no_leaves`, `blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` | the 12 blocks other than `void` | suffocation and the motion-blocking heightmaps (24 line 838: the heightmap predicate is "in the tag or has a fluid state"; no fluid exists in the cobolcraft content, so it reduces to the tag); the stand-in heightmaps count every non-void block (standin section 5.2); there are no leaves, so the four lists are equal |
 
 ### 4.2 Item tags (registry `minecraft:item`)
 
@@ -609,7 +610,7 @@ section 3.6.
 | `minecraft:block` | `minecraft:mineable/shovel` | 3, 4, 5 |
 | `minecraft:block` | `minecraft:replaceable` | 0 |
 | `minecraft:block` | `minecraft:air` | 0 |
-| `minecraft:block` | `minecraft:causes_suffocation` | 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12 |
+| `minecraft:block` | `minecraft:causes_suffocation` | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 |
 | `minecraft:block` | `minecraft:blocks_motion` and the three `blocks_motion_*` tags | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 (each tag) |
 | `minecraft:item` | `minecraft:enchantable/mining` | 10, 11 |
 | `minecraft:damage_type` | the 20 tags of section 4.3 | the id column of section 4.3 |
@@ -690,9 +691,9 @@ defined".
 
 **Decision CORE-27 (break-time model: accumulating single precision).** 13 section 2.1 states the break time as
 ceil(1 / progress per tick), and 13 section 2.2 describes the client's accumulation of single-precision progress each tick. The
-two disagree by one tick for two blocks: `greystone` by hand is 46 by the closed formula and 45 by accumulation; `slag` by hand
-is 12 by the closed formula and 13 by accumulation. This document uses the accumulation model of 13 section 2.2, because it is
-what both the client's progress bar and the server's mining check run and the tables and examples below use it. This is a
+two disagree by one tick for one block in float32: `slag` by hand is 12 by the closed formula and 13 by accumulation; `greystone`
+is 45 by both in float32 (an earlier draft's 46 held only in higher precision and is dropped). This document uses the accumulation model of 13 section 2.2 because it is
+what the client's progress bar runs, and the tables and examples below use it. The tick counts below are therefore client-side counts. The server does not accumulate: 13 section 2.4 has it recompute progress as per-tick progress x (ticks since start + 1) and accept STOP_DESTROY_BLOCK at progress >= 0.7, so its acceptance tick can differ from the client's at boundary cases (`greystone` 45, `slag` 13); section 8 item 12 does not test the server side (Open question 25). This is a
 decision, not a fact of 13; 13 section 2.1 should state that its closed formula is exact only when the progress is not
 a float32 boundary case (section 9).
 
@@ -704,7 +705,7 @@ float32, starting at 0, and the break time is the number of additions until `des
 `speed / (H x 30)` was also computed and gives the same tick count for every cell of the table below, so the table does not depend
 on that choice. The exact-integer boundary cases of 1/(30 H) (`turf` 18, `cardstack` 21, `ledger_tile` and `crafting_bench` 24, `lucite`
 9, `goto_pad` 39, `loam` and `grit` 15, and with the tool `ledger_tile` 6) were each computed in this order and equal the closed
-formula; only `slag` by hand (13, closed formula 12) is not boundary-safe. A float32 or float64 change of order elsewhere (for
+formula; only `slag` by hand (13, closed formula 12) is not boundary-safe, and the closed formula for `greystone` also gives 45. A float32 or float64 change of order elsewhere (for
 example summing in double) can move a boundary case by one tick, so section 8 item 12 lists them as tests. The results agree with 13
 section 9: `dirt` by hand 15 ticks, `stone` with an iron pickaxe 8 ticks:
 
@@ -821,8 +822,7 @@ The `weapon` component is what the standard tool builders attach (`item_damage_p
 ```
 
 **Decision CORE-21 (food saturation 0.0, eating time 1.6 s).** Nutrition 3, 8 and 2 are the stand-in food values (README
-S63). Saturation 0.0 is the stand-in's ("saturation is always sent as 0.0", README S60) because no document tabulates
-per-food saturation (17 Open question 14). `consume_seconds` 1.6 is the default drink time of 17 section 3.8, and the default
+S63). Saturation 0.0 is an **invented decision**, not a retained stand-in value: README S60 marks the stand-in rule "saturation is always sent as 0.0" as "Delete: superseded for both world types". It is chosen because no document tabulates per-food saturation (17 Open question 14). Effect under the standard hunger rules (17 section 4.9): eating adds no saturation, so exhaustion removes food points directly (a point per 4.0 exhaustion) with no saturation buffer, and the fast regeneration at food 20 (which needs saturation above 0) never runs; a new player starts with saturation 5.0, which the first 20 units of exhaustion use up. The nutrition 3, 8 and 2 foods therefore do not feel the same as in the stand-in; the operator may want standard-like saturation values (Open question 8) `consume_seconds` 1.6 is the default drink time of 17 section 3.8, and the default
 for food is assumed equal (Open question 8); the stand-in's 30 ticks is retired (README S63). The sound is the inline form
 with the stand-in's silent id (standin section 4.5: an inline compound, never a bare string, because the id is not in the
 static `sound_event` registry); sounds are out of scope (README decision 17). The animation name `eat` is (recalled, not
@@ -848,6 +848,9 @@ The two mobs are expressed through the attributes the shared engines read (18 se
 | `follow_range` | (not set) | 20.0 | the give-up range 20.0 (the target is dropped beyond it); the notice range 12.0 stays an AI constant |
 | `step_height` | 1.0 | 1.0 | the step-up of one block (standin section 12.2) |
 | collision box, eye height | 0.9 x 0.9, 0.7 | 0.75 x 0.75, 0.5 | standin section 3 |
+| Entity type category | creature | monster | Decision CORE-30; read by the engines that use the mob category (18 section 6) |
+| Tracking range (`clientTrackingRange`), update interval | 5, 3 | 5, 3 | the defaults of 21 section 2 (line 59: "default 5 when the builder does not set it", "default 3 when not set"); no document gives other values for a cobolcraft type, so these are the defaults, not read per type |
+| Fire immune, can spawn far from a player | no, no | no, no | the builder defaults of 21 section 2 (flags absent) |
 | Default of every other attribute | standard (18 section 3) | standard | |
 
 **Decision CORE-29 (the mob speed is attribute times factor, chosen backwards from the stand-in).** The speed factors 0.5
@@ -868,18 +871,40 @@ range 12.0, attack reach 1.75, attack cooldown 30, gravity step 0.05 with drag 0
 1.2, and the stand-in's own physics is kept).
 
 **Decision CORE-26 (the stand-in spawn cycle is the only spawner; no experience; no despawning).** Natural spawning of
-sodgrazers and abends is the stand-in cycle of standin section 12.4 (README S64); the standard spawning engine (18 section 6)
-finds no `gameplay/natural_mob_spawns` in any cobolcraft biome (section 3.4) and so spawns nothing, and the dimension
-type's two spawn light fields are 0 (section 3.3). Both types are never removed for distance (the stand-in has no
-despawning, standin section 12.4). Both have experience reward 0 (the stand-in has no experience; a value would be
-invented content). Reason: one spawner, content unchanged. Open question 9 asks whether the operator wants the standard
-animal and monster rewards.
+sodgrazers and abends is the stand-in cycle of standin section 12.4 (README S64). The standard spawning engine (18 section 6)
+finds no `gameplay/natural_mob_spawns` in any cobolcraft biome (section 3.4) and so spawns nothing: that empty list is what stops
+natural spawning, not the dimension type's two spawn light fields. Those fields keep the standard Overworld values (section 3.3:
+level uniform 0..7, block light limit 0), so a spawner block spawn check in a cobolcraft world behaves as in the
+standard: it accepts only a position with block light 0 and a sample-bounded sky or raw light (18 section 6.8, 20 line 107); in total
+darkness (light 0) the check accepts every time, and at light 8 or more it never does. Both types have experience reward 0 (the
+stand-in has no experience; a value would be invented content). Reason: one spawner, content unchanged. Open question 9 asks whether the operator
+wants the standard animal and monster rewards.
+
+**Decision CORE-30 (what "night" and "block light at most 5" mean in the spawn cycle).** Standin section 12.4 selects the abend in
+`cobolcraft:main` at "night (section 4.8)" and tests "block light (section 5.2) at most 5". Section 4.8 (the 30000-tick day) and the
+stand-in light policy are retired (README S38, S41, CORE-5). The cycle now reads: "night" is the shared predicate `isDarkOutside`
+of 33 section 3.5 (the dimension has no fixed time and `skyDarken` is at least 4, true from tick 12523 to 23477 on the `day` track,
+section 7 example 5), and "day" (the sodgrazer rule) is its negation within `cobolcraft:main`; the `sunless` rule has no day or
+night. The light value tested by "at most 5" is the **block light layer** of the shared light engine (32) at the cell
+(X, top + 1, Z), not the combined brightness and not the sky layer, so the stand-in's tests mean the same number as before in the
+sky-free `sunless` dimension. Reason: these are the closest shared meanings; the choice of the block layer (rather than the
+raw brightness) is a design decision made here, not read.
+
+**Decision CORE-31 (persistence and spawn path of the two mobs).** The stand-in has no despawning (standin section 12.4), so both
+types must be persistent in the shared engine: the stand-in spawn path sets the persistence-required flag on every mob it
+creates (18 section 6.11 line 1103: a persistence-required mob is never removed for distance or randomly), and the flag is saved
+with the mob so a reloaded mob keeps it. Without it `Mob.checkDespawn` (18 line 1103 and following) would remove them at 128
+blocks and `Monster.aiStep` would raise `noActionTime` for the abend in bright light and let the random despawn remove it. The
+stand-in spawn path also **bypasses `Mob.finalizeSpawn`**, which would add the random `follow_range` modifier of plus or minus 11.5% (18
+line 321, section 7.1); that bypass is what makes the abend's `follow_range` 20.0 exact on the stand-in spawn path only. An abend made by `/summon cobolcraft:abend` takes the default `finalizeSpawn` path (18 line 321: random `follow_range` modifier of plus or minus 11.5%) and sets no persistence flag, so its `follow_range` is 20.0 only before that modifier and it may despawn; no rule here covers that path (Open question 24). The spawn cycle's caps (12 and 8) still count the
+mobs in the loaded chunks of the stand-in cycle itself, not the shared `SpawnState` (which skips persistent mobs, 18 line 935).
 
 Both types are in no entity type tag (the 21 section 3.6 tags list standard types only). Reason: no tag consumer of the
 two types was found in 18 to 21; the damage pipeline reads damage type tags (section 4.3), not entity tags, for them.
 
-Death messages: the generic mob message `death.attack.mob_attack` key for `minecraft:mob_attack` (README decision 5, with
-Decision CORE-10).
+Death messages: a death by an abend uses the damage type `minecraft:mob_attack` (README decision 5). The death message key it builds
+is **provisional**: it depends on the invented `message_id` of CORE-10 (the key `death.attack.mob_attack` is only what the invented value would give),
+so README S59 and Part 7 decision 5 rest on an unread key until Open question 2 is closed.
 
 Loot: section 5.6.
 
@@ -966,11 +991,11 @@ ids, so any order is valid on the wire.)
 
 ```json
 // data/cobolcraft/recipe/glowtube.json
-{ "type": "minecraft:crafting_shapeless", "category": "building",
+{ "type": "minecraft:crafting_shapeless", "category": "building", "show_notification": false,
   "ingredients": [ "cobolcraft:lucite", "cobolcraft:dump_shard" ],
   "result": { "id": "cobolcraft:glowtube", "count": 2 } }
 // data/cobolcraft/recipe/crafting_bench.json
-{ "type": "minecraft:crafting_shaped", "category": "building",
+{ "type": "minecraft:crafting_shaped", "category": "building", "show_notification": false,
   "pattern": [ "##", "##" ], "key": { "#": "cobolcraft:ledger_tile" },
   "result": { "id": "cobolcraft:crafting_bench", "count": 1 } }
 ```
@@ -986,7 +1011,7 @@ crafting needs no block rule (standin section 13) is retired (README S65).
 
 **Unlock.** The server decides which recipes a player knows (13 section 3.9); the engine for that is GAP-5b. The interim rule
 of README decision 14 is used: a player knows **all ten recipes** from joining (Recipe Book Add with Replace at join, no
-toast and no highlight, so `show_notification` and the highlight flag are false). Reason: the stand-in's crafting had no
+toast and no highlight, so `show_notification` and the highlight flag are false). All ten recipe files also carry `"show_notification": false` (13 section 3.1, line 376: default true, false in `crafting_table.json`), so the recipe book behaves the same on the data-driven path and on the Recipe Book Add path. Reason: the stand-in's crafting had no
 unlock either, and GAP-5b needs the advancement engine that the cobolcraft content does not otherwise need.
 
 **How each item is obtained in survival (SC-008), updated.** The rows of standin section 13 stay; these change or are added:
@@ -1036,7 +1061,7 @@ is not given again on respawn (README S58); a death drops the inventory by the s
 **Decision CORE-25 (a role for the crafting bench).** The menu opened by a crafting bench stays valid only while the block
 at its position is the crafting block (13 section 3.5: "while the block is still a crafting table and the player is within 8
 blocks"), and a use on that block opens the menu. WT-22 resolves content that has a different key per world type through a
-role table; its four roles do not include this one. The core adds a fifth role:
+role table; its first three roles do not include this one. The core adds the fourth role (world-types.md now holds all four, WT-22 lines 345 to 352):
 
 | Role | Standard | Cobolcraft |
 |---|---|---|
@@ -1128,9 +1153,10 @@ All numbers are computed from the rows above.
 11. Ids by CORE-2: chat types 0 `minecraft:chat`, 4 `cobolcraft:say`, 5 `minecraft:say_command`; timelines 0 `day`, 1 `moon`.
 12. Break-time boundary cases (section 5.1, float32, order `(speed / H) / 30` then repeated addition): by hand `turf` (H 0.6) 18,
     `cardstack` (0.7) 21, `ledger_tile` and `crafting_bench` (0.8) 24, `lucite` (0.3) 9, `goto_pad` (1.3) 39, `loam` and `grit`
-    (0.5) 15, `glowtube` (0.2) 6; with speed 4.0 `ledger_tile` 6, `greystone` 12; `slag` by hand 13 (closed formula 12).
-13. The spawn rule: with `monster_spawn_light_level` 0 a vanilla-engine spawn check (spawner block, `/summon` checks) passes at any
-    light level in both dimension types (section 3.3, Open question 21); a test pins this behaviour so a change is deliberate.
+    (0.5) 15, `glowtube` (0.2) 6; with speed 4.0 `ledger_tile` 6, `greystone` 12; `slag` by hand 13 (closed formula 12); client-side counts only, the server's acceptance tick is untested.
+13. The spawn light fields (section 3.3, CORE-26): with `monster_spawn_light_level` uniform 0..7 and `monster_spawn_block_light_limit` 0 a
+    vanilla-engine check (spawner block; `/summon` runs no such check) accepts a position with block light 0 and light 0, rejects any position with block
+    light above 0, and rejects a position of light 8 or more; no natural spawn occurs because every biome has an empty `natural_mob_spawns`.
 
 ---
 
@@ -1140,11 +1166,12 @@ All numbers are computed from the rows above.
 |---|---|
 | `docs/protocol/09-cobolcraft-profile.md` section 3.1 | Registry Data: 20 packets and 82 entries in the order biome, chat_type, 13 variants, dimension_type, damage_type, enchantment, world_clock, timeline; Update Tags no longer empty (sections 2 and 4.4); the fixtures `config-s2c-07-registry-data-chat-type`, `-damage-type`, `-world-clock` and `config-s2c-0e-update-tags` change, and fixtures for `enchantment` and `timeline` are added; the dimension type fixture changes (attributes, timelines, default clock) |
 | `docs/design/standin-content.md` | sections 1.1, 1.2 (block 12, state 18), 2 (item 18, components), 13 (recipe 9, recipes 5 and 7 need the bench, obtainability rows), 4.2 to 4.8 (replaced by this document, README S32 to S39), 6 (tags), the starting inventory paragraph of section 2 |
-| `docs/design/world-types.md` | WT-22 role table: add the crafting block row (section 5.9); section 7.2 dependency and Open question 7 (the core is now listed here); section 10 Open question 15 (the values owed by standin are in sections 5.1 to 5.8) |
+| `docs/design/world-types.md` | WT-22 role table: the crafting block row is **already done** (world-types lines 345 and 352; section 5.9 matches it); lines 258 and 324 (not 251) list `block_transformer` as a core row and must drop it (CORE-15); line 461 says "18 packets" followed by `damage_type` and `world_clock` and must say 20 packets in the order of section 2 (biome, chat_type, 13 variants, dimension_type, damage_type, enchantment, world_clock, timeline); line 28 and Open question 16 call the bench a conflict with the ticket text "for now unchanged": README decision 3 is an adopted default, not an operator ruling, so the bench and CORE-25 stand on a default that the operator has not confirmed; section 7.2 dependency and Open question 7 (the core is now listed here); section 10 Open question 15 (the values owed by standin are in sections 5.1 to 5.8) |
 | `docs/design/README.md` | S65 and WT-12: recipes 5 and 7 need the bench (Open question 12); GAP-35 closed by this document; S39 and C3: `block_transformer` carries no entry and `enchantment` one entry (CORE-14, CORE-15); C3 and decision 4: the tier tags (`needs_*`, `incorrect_for_*`) are not carried (CORE-17, Open question 13); S37: the stand-in damage types `impact` and `below_world` are dropped (CORE-11); S36 (the `timelines`, `default_clock` and attributes of `surface`, CORE-5, 7, 8) and S42 (Update Tags no longer empty; the own tags `cobolcraft:hard`, `soft`, `tools` retire, section 4) |
+| `docs/protocol/09-cobolcraft-profile.md` line 195 (Set Time row) and line 336 (`ticks` argument, max 29999); `docs/protocol/16` section 4.5 line 320 | stale: they use the clock `cobolcraft:daylight` with total ticks = `Time`, a one-clock world and a 29999 maximum, against CORE-5 (the clock is `minecraft:overworld`, a 24000-tick day) |
 | `docs/protocol/13-client-gameplay-and-controls.md` section 2.1 | state that the break time `ceil(1 / progress per tick)` can differ by one tick from the accumulating single-precision model of 2.2 (CORE-27) |
-| `docs/design/builtin-ui-art.md` and the built-in language file | the language keys of Open question 11 |
-| `docs/protocol/17-tools-weapons-and-combat.md` section 4.12, `41-item-entity-physics.md` line 329, `04-registry-sync.md` section 3.2 item 6, `18` section 3 and `standin-content.md` section 4.7 | whichever of `out_of_world` and `fell_out_of_world` is wrong (CORE-12, Open question 1); `docs/protocol/41-item-entity-physics.md` line 329 also names `out_of_world` (tag contents), so all five documents are candidates |
+| `docs/design/builtin-ui-art.md` and the built-in language file | the language keys of Open question 11; and the missing art of `cobolcraft:crafting_bench`: standin sections 1.4.2 and 1.5 (texture recipes and check values) cover only the 11 blocks and 6 items, so the bench has no texture, model or item icon in any document, and builtin-ui-art line 1554 gives language keys only (a texture recipe, model and icon for the bench block and item are owed) |
+| `docs/protocol/17-tools-weapons-and-combat.md` section 4.12, `41-item-entity-physics.md` line 342, `04-registry-sync.md` section 3.2 item 6, `18` section 3 and `standin-content.md` section 4.7 | whichever of `out_of_world` and `fell_out_of_world` is wrong (CORE-12, Open question 1); `docs/protocol/41-item-entity-physics.md` line 342 also names `out_of_world` (tag contents), so all five documents are candidates |
 
 **Decision CORE-15 (no `block_transformer` entry).** README C3 and S39 list `block_transformer` among the entries the
 cobolcraft type carries. No cobolcraft item has the `block_transformer` component (CORE-19 and section 5.3: the two tools
@@ -1157,7 +1184,7 @@ question 15 records the departure from C3.
 
 ## Open questions
 
-1. **`out_of_world` or `fell_out_of_world`.** 17 section 4.12 and 41 line 329 (tag contents "read from
+1. **`out_of_world` or `fell_out_of_world`.** 17 section 4.12 and 41 line 342 (tag contents "read from
    `data/minecraft/tags/damage_type/`") say `out_of_world`; 04 section 3.2 item 6, 18 section 3 and standin section 4.7 say
    `fell_out_of_world` (standin calls it "verified against the jar"). The three may have taken the name from the `DamageSources`
    code constant instead of the data key (hypothesis only). Searched in this round: 04, 17, 18, 41, standin; none gives the
@@ -1189,7 +1216,7 @@ question 15 records the departure from C3.
    5.1 says false) would put the horizon at 0 and lower the void-darkness onset from 32 to 1 (12 section 3.3). This needs a decision
    in 09 section 3.2 and world-types; it is not a core row.
 8. **Food defaults.** `consume_seconds` 1.6 for food and the animation name `eat` are assumed (17 Open question 14: per-food
-   values were not tabulated); the saturation 0.0 is the stand-in's.
+   values were not tabulated); the saturation 0.0 is an invented decision (CORE-21).
 9. **Experience.** Both cobolcraft mobs give no experience (CORE-26). Whether the operator wants the standard rewards (animals 1 to 3,
    monsters 5) is open; no document gives them.
 10. **The mob tags.** No entity type tag lists a cobolcraft mob (section 5.5). If a shared rule is found that reads an entity tag for
@@ -1205,7 +1232,7 @@ question 15 records the departure from C3.
     `stone`" (which requires a tool). Operator to confirm; the alternative adds `needs_*` tags and a deny-drops rule to the tools.
 14. **Break times.** Decision 4's nearest-standard rule changes `greystone` by hand to 2.25 s and `slag` to 0.65 s (section 5.1). The
     alternative is hardness from the stand-in times (`greystone` 1.0, `slag` 0.8), which keeps the stand-in times exactly. `grit` is the largest
-    difference: 0.75 s against 0.5 s (hardness 0.3 would give 0.5 s: round(0.5 x 2/3, 1)). Operator to confirm which.
+    difference: 0.75 s against 0.5 s (hardness 0.3 gives 9 ticks = 0.45 s, not 0.5 s; the stand-in's 0.5 s is 10 ticks and no rounded one-decimal hardness reproduces it: 0.3 gives 9, 0.4 gives 12, 0.33 gives 10). Operator to confirm which.
 15. **C3 departure.** README C3 and S39 list `block_transformer` and several `enchantment` entries; the core carries none and one
     (CORE-14, CORE-15). The README text should be corrected, or the operator should ask for the larger set.
 16. **The retained `cobolcraft:say`.** No shared engine sends it (CORE-13); keep or drop it when 09 is rewritten.
@@ -1220,8 +1247,17 @@ question 15 records the departure from C3.
 20. **Standard `minecraft:` vocabulary beyond the core.** world-types Open question 7 asked for the complete list of standard
     effect, enchantment and attribute keys; the effect and attribute registries are static vocabulary held by both types (WT-9),
     so only the synchronized rows above are core rows. The static registries are not authored here.
-21. **Spawn light level 0 (departure from the standard).** CORE-26 and section 3.3 set `monster_spawn_light_level` 0 and
-    `monster_spawn_block_light_limit` 0 so that no standard natural spawn happens. The same field governs every vanilla-engine spawn
-    check, so a spawner block or a `/summon` spawn check passes at any light level in a cobolcraft world, which differs from the
-    standard. No document says whether that is acceptable. Operator to accept the departure, or a different mechanism (an empty
-    spawn list with the standard light level) is chosen; validation item 13 pins the current behaviour.
+21. **Spawn light fields.** Section 3.3 now carries the standard Overworld values (`monster_spawn_light_level` uniform 0..7,
+    `monster_spawn_block_light_limit` 0, 18 line 991, 20 line 107) and natural spawning is stopped by the empty `natural_mob_spawns`
+    (CORE-26). An earlier draft wrote constant 0 for both and called it permissive; that was the wrong direction (level 0 with limit 0 is the
+    strictest setting). The JSON form of the uniform IntProvider (`type` `minecraft:uniform`, `min_inclusive`, `max_inclusive`) is (inferred): 04
+    section 6 says only "IntProvider", 0 to 15. Searched: 04, 18, 20, 21, 23 section 8. Operator to confirm that spawner blocks should follow
+    the standard; a clean-room read gives the shape.
+22. **Fixed-time dimension with no clock.** `cobolcraft:sunless` carries neither `default_clock` nor `timelines` (section 3.3). Whether a vanilla
+    client accepts that was never traced (standin section 4.6 and Open question 12). Searched: 04, 12, 23, 33, standin. Configuration-phase
+    risk, like Open question 17. Effect on gameplay values: `gameplay/sky_light_level` stays at its default 15 there, so `skyDarken` is 0. A second consequence: 16 section 4.5 says the `time` command acts on the executing dimension's default clock, so in `sunless` plain `/time` (query, set, add) has no clock; the behaviour (error or fallback) is not stated anywhere. This is another reason to give `sunless` a `default_clock`, or to specify the error.
+23. **Spawn-cycle meanings** (CORE-30, CORE-31): "night" as `isDarkOutside`, the block light layer for "at most 5", the persistence flag and
+    the `finalizeSpawn` bypass are decisions made here; the operator may prefer a clock window or the combined brightness.
+24. **`/summon` of `cobolcraft:abend`.** The default `finalizeSpawn` path applies a random `follow_range` modifier and sets no persistence flag (CORE-31 covers only the stand-in spawn path). Searched: 16, 18 line 321. Operator to decide a rule or accept that `/summon` abends differ.
+25. **Server-side mining acceptance.** The server's tick of acceptance (13 section 2.4, progress >= 0.7 by multiplication) was not computed for the table of section 5.1; the boundary cases `greystone` and `slag` may differ from the client-side counts. Searched: 13 sections 2.1 to 2.4.
+26. **Sea level for the weather engine.** Which field or constant supplies sea level 48 to the shared weather engine (33 section 4.5) is not stated; `dimension_type` has no such field. Searched: 04, 33, standin section 5.1.

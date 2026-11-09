@@ -5,7 +5,7 @@
 | Covers | How the numeric id of an entry of a static (built-in) registry is assigned, and the id to key tables of every static registry whose ids appear in a packet and that no earlier document tabulates: mob effects, attributes, particle types, menu types, block entity types, potions, game events, fluids, sound events, villager types and professions, point of interest types, stat types and custom stats, data component types (checked against 17), map decoration types, recipe display, slot display, recipe serializers, data component predicate types, recipe types, recipe book categories, number format types, consume effect types, position source types, command argument types (checked against 05a), debug subscriptions, the enchantment effect families, the entity metadata serializers and the id enums they carry. Entity types are verified against 21 §2 and not repeated. Block, block state and item ids are other rounds (24, 25). |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for bootstrap method arguments) with no execution. Every key and id below was read in this round from the class named in section 2.2, in the order of its registering code. Where a statement is not read it is marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions. |
-| Status | Written for round RS28 (design map Part 5, GAP-1 ids, and "entity type id check"). **The scan for registries on the wire is incomplete**: the key-only registries of Open question 1 (`chunk_status`, `memory_module_type`, `sensor_type`, `activity`, `attribute_type` and others) and the clientbound debug payload classes other than three (Open question 13) were not scanned for registry-id codecs. Section 3 lists what was found, not a proven complete list. |
+| Status | Written for round RS28 (design map Part 5, GAP-1 ids, and "entity type id check"). Section 17 item 1 lists all 95 static registries as tabulated, owned by another document, or not on the wire. The jar-wide scan of codecs that pair a static registry with a numeric id (Open question 13) covers every registry. It found one wire use that is not a plain VarInt registry id: the beacon menu data slots carry mob effect ids as registry id plus 1 (sections 3 and 4.1). That use is now covered. The sound event helper methods and the pattern-C registries were not scanned for other registering classes (Open question 14). |
 
 Class names in backticks say where a fact was read. They are not the design. "04 §5" means section 5 of
 `04-registry-sync.md`; "21 §2" means section 2 of document 21, and so on.
@@ -58,21 +58,24 @@ Class names in backticks say where a fact was read. They are not the design. "04
    and stores that size as the value's id in `toId`. The id of an entry is therefore the number of entries
    registered before it in the same registry. Ids are contiguous from 0.
 2. There is no registering method that takes an explicit id. The only writers of the id list are the constructor
-   and `register`. `freeze()` does not touch the id list (checked: the method reads `frozen`, `byValue`, `byKey`,
-   `allTags`, `frozenTags` and `unregisteredIntrusiveHolders` only).
+   and `register`. `freeze()` does not modify the id list (checked: the method reads `frozen`, `byValue`, `byKey`,
+   `allTags`, `frozenTags` and `unregisteredIntrusiveHolders`; it reads the `byId` list once, only to pass it as an iterable to
+   the `DataComponentLookup` constructor, and it writes the `frozen`, `unregisteredIntrusiveHolders`, `componentLookup` and `allTags`
+   fields). Only the constructor (which creates the list) and `register` (size, then append) write it.
 3. `Registry.register(registry, String, value)` turns the string into an Identifier with `Identifier.parse`; the
    `Identifier` overload builds a `ResourceKey` and calls `register`.
 4. The order of registration of **different registries** does not matter for ids. `BuiltInRegistries.bootStrap`
    calls `createContents`, which runs each registry's loader in the insertion order of the `LOADERS` map (the order
    of the static initialiser's calls), then `freeze`. Each registry's ids depend only on the order of the
    registering code of that registry.
-5. For the registries of this document the registering code lives in exactly one class (checked by scanning every
-   class of the jar for `Registry.register` / `registerForHolder` calls that follow a
-   `BuiltInRegistries.<NAME>` reference: each registry above has one registering class (for the sound event helper methods and the pattern-C registries only the bootstrap method was read, not a jar-wide scan: Open question 14); `SOUND_EVENT` has one
-   class with three helper methods; the registries whose loader passes the registry as an argument
-   (`VILLAGER_TYPE`, `VILLAGER_PROFESSION`, `POINT_OF_INTEREST_TYPE`, `RECIPE_SERIALIZER`, `RECIPE_DISPLAY`,
-   `SLOT_DISPLAY`, `NUMBER_FORMAT_TYPE`, `COMMAND_ARGUMENT_TYPE`) are filled by their `bootstrap` method, which was read; that no other class passes them a registry is inferred, since the scan pattern cannot see
-   those calls).
+5. The registering code of each registry of this document lives in one class. Two methods were used to show it.
+   - Jar-wide scan (done): I scanned every class of the jar for `Registry.register` and `registerForHolder` calls that follow a
+     `BuiltInRegistries.<NAME>` reference. Each registry of pattern A and pattern B (section 2.2) has one registering class.
+     `SOUND_EVENT` has one class with three helper methods.
+   - Bootstrap method only (not scanned jar-wide): the registries whose loader passes the registry as an argument
+     (`VILLAGER_TYPE`, `VILLAGER_PROFESSION`, `POINT_OF_INTEREST_TYPE`, `RECIPE_SERIALIZER`, `RECIPE_DISPLAY`, `SLOT_DISPLAY`,
+     `NUMBER_FORMAT_TYPE`, `COMMAND_ARGUMENT_TYPE`) and the codec-type registries of section 13. I read their `bootstrap` methods. The scan
+     pattern cannot see calls that receive the registry as an argument, so that no other class registers into them is inferred (Open question 14).
 
 ### 2.2 Where the order is written
 
@@ -146,7 +149,7 @@ the numbers.
 | Registry | Wire form | Packets and fields | Ids |
 |---|---|---|---|
 | `entity_type` | VarInt id | Add Entity (05a 0x01); tags (04, Update Tags 0x0E / 0x89) | 21 §2 (verified, section 11) |
-| `block_entity_type` | VarInt id | Block Entity Data (05a 0x06); chunk data block entity list (06) | section 5.4 |
+| `block_entity_type` | VarInt id | Block Entity Data (05a 0x06); chunk data block entity list (06); the `block_entity_data` item component (id 62, section 8.1): its network codec is a type id (`ByteBufCodecs.registry(BLOCK_ENTITY_TYPE)`) followed by a network NBT compound (`TypedEntityData.streamCodec`, composite of the type codec and `COMPOUND_TAG`) | section 5.4 |
 | `block` | VarInt id | Block Event (05a 0x07); tags; the hive info of the clientbound debug payloads (`DebugHiveInfo`, `ByteBufCodecs.registry(BLOCK)`, 05a Debug Event and Debug Block Value) | other (24) |
 | `item` | VarInt id (`holderRegistry`) | slots, item stack templates, Container Click (05c 0x12), slot display, tags | other (25) |
 | `fluid` | in tags only | Update Tags (04, Update Tags 0x0E / 0x89) | section 5.3 |
@@ -155,11 +158,12 @@ the numbers.
 | `point_of_interest_type` | VarInt id (`holderRegistry`) in the `DebugPoiInfo` payload; also in tags | Update Tags (04, Update Tags 0x0E / 0x89); clientbound debug payloads (05a) | section 6.3 |
 | `command_argument_type` | VarInt id | Commands (05a 0x10) | section 10 (matches 05a) |
 | `menu` | VarInt id | Open Screen (05a 0x3C) | section 5.5 |
-| `mob_effect` | VarInt id (`holderRegistry`, no inline form) | Update Mob Effect (05b 0x87), Remove Mob Effect (05b 0x4F), Set Beacon (05c 0x35), item components with effect lists | section 4.1 |
+| `mob_effect` | VarInt id (`holderRegistry`, no inline form) | Update Mob Effect (05b 0x87), Remove Mob Effect (05b 0x4F), Set Beacon (05c 0x35), item components with effect lists; also the beacon menu data slots 1 and 2 (Set Container Property traffic), which carry the id plus 1 and not a VarInt registry id (section 4.1) | section 4.1 |
 | `attribute` | VarInt id (`holderRegistry`) | Update Attributes (05b 0x86), attribute modifier components | section 4.2 |
 | `particle_type` | VarInt id then options | Level Particles (05a 0x30), Explode (explosion particle and block particles), metadata serializers 16 and 17 (00 §13.2) | section 5.1 (options layouts in 05a) |
 | `sound_event` | Holder: VarInt 0 plus an inline sound, or id + 1 | Sound (05b 0x77), Sound Entity (05b 0x76), Explode, item components | section 14; an inline sound avoids the table |
 | `stat_type`, `custom_stat` and the registries the stat types range over | VarInt stat type, VarInt value id | Award Statistics (05a) | section 7 (the other value registries: block 24, item 25, entity type 21 §2) |
+| `entity_type` (component use) | the `entity_data` component (id 60) uses `EntityType.STREAM_CODEC`, which is `ByteBufCodecs.registry(ENTITY_TYPE)`, inside the same `TypedEntityData.streamCodec` form | item stacks | 21 §2 |
 | `data_component_type` | VarInt id | item stacks and patches (00 §12), Container Click hashed stacks (05c 0x12), slot display | section 8.1 (compared with 17) |
 | `data_component_predicate_type` | Either: Boolean, then a VarInt id of this registry (true) or of `data_component_type` (false) | `can_place_on` and `can_break` components (ids 14 and 15 of section 8.1) through the adventure mode predicate | section 8.4 |
 | `number_format_type` | VarInt id | scoreboard number formats (05b) | section 8.3 |
@@ -170,8 +174,9 @@ the numbers.
 | `villager_type`, `villager_profession` | VarInt ids inside metadata serializer 18 | Set Entity Data (00 §13.2) | section 6 |
 | `consume_effect_type` | VarInt id inside the `consumable` component | item components (17) | section 8.2 |
 | entity metadata serializers | VarInt id | Set Entity Data (00 §13) | section 12 (matches 00 §13.2) |
-| `game_rule` | Identifier (no number) (taken from 16; not read here, Open question 1) | Game rule values (05a) | 16 |
+| `game_rule` | Identifier (no number): `ClientboundGameRuleValuesPacket` is a map codec of `ResourceKey.streamCodec(GAME_RULE)` keys to `STRING_UTF8` values (read; matches 05a 0x28) | Game rule values (05a) | 16 |
 | `dimension_type`, `damage_type`, `world_clock`, `dialog`, `chat_type`, `trim_pattern`, variants | synchronized registries | various | 04 §3 and §4 (ids are the order of Registry Data) |
+| (scan result) | The jar-wide search for classes that pair a `BuiltInRegistries` reference with `getId`, `byId` or `asHolderIdMap` found `ClientboundCommandsPacket` (argument types), `Item`, `BeaconMenu` (mob effect, the use named in the `mob_effect` row), and `ParticleEngine` and `ParticleResources` (client side only, no packet) | | |
 | `loot_*` and other data engine registries | none | not referenced by any packet read | none (Open question 4) |
 
 ## 4. Combat and status registries
@@ -180,6 +185,10 @@ the numbers.
 
 Wire: Update Mob Effect, Remove Mob Effect, Set Beacon (optional primary and secondary), `apply_effects` and
 `remove_effects` consume effects and other item components that hold effects (payload layouts: 17). There is no inline form.
+
+**Second wire use, beacon menu data slots.** `BeaconMenu` has three container data slots (a `SimpleContainerData` of size 3, read). Slot 0 is the pyramid level count (read in `getLevels`), slot 1 is the primary effect and slot 2 the secondary effect (read in `getPrimaryEffect` and `getSecondaryEffect`). `encodeEffect` stores
+`MOB_EFFECT.asHolderIdMap().getId(effect) + 1` and stores 0 when the holder is null; `decodeEffect` maps 0 to no effect and any other value v to the entry with id v - 1. These slot values travel in the container data traffic (Set Container Property, a plain number and not a VarInt registry id; the exact integer width is Open question 15),
+so a server must send id + 1 for slots 1 and 2 of an open beacon menu. Worked example: speed (id 0) is sent as 1, haste (id 2) as 3, regeneration (id 9) as 10, no effect as 0. (That the container data packet carries these values as plain numbers is the reading of the menu classes; the packet itself is not in 05a or 05b: Open question 15.)
 
 | Id | Key | Id | Key |
 |---|---|---|---|
@@ -381,7 +390,7 @@ Fluid ids appear in Update Tags (10 fluid tags in the data pack).
 
 ### 5.4 Block entity types (`block_entity_type`, 49 entries, `BlockEntityTypes` pattern B, keys in `BlockEntityTypeIds`)
 
-Used by Block Entity Data and by the block entity list of a chunk packet. The registry is created with intrusive holders
+Used by Block Entity Data, by the block entity list of a chunk packet and by the `block_entity_data` item component (id 62; the type id is followed by a network NBT compound). The registry is created with intrusive holders
 (`registerSimpleWithIntrusiveHolders`), which does not change numbering.
 
 | Id | Key | Id | Key |
@@ -819,7 +828,7 @@ with no jump instruction, so the ids are fixed for this version.
   name.
 - **Result of the check:** all 161 rows of 21 §2 (ids 0 to 160, key, in order) equal the registration order read here. Zero
   differences. Documents 19 and 20 say their entity ids are the registration order of `EntityTypes` (inferred there); that is the order
-  confirmed here, and 21 §2 is the table to use. 19 and 20's own per-mob id listings were not compared in this round (Open question 11).
+  confirmed here, and 21 §2 is the table to use. The 68 mob rows with an entity id in 19 (36) and 20 (32) were compared with 21 §2 afterwards: zero differences.
 - **Order rule.** The 155 types other than the six below are in ascending ASCII order of their constant names (upper case letters, `_`
   compared as the character 0x5F, which sorts after every letter): for example `ENDERMITE` 43, `ENDER_DRAGON` 44, `ENDER_PEARL` 45, `END_CRYSTAL` 46.
   (Verified mechanically: the list with the six removed equals its own sorted copy.) Six types are not at their sorted position, so sorting alone gets
@@ -1744,7 +1753,7 @@ Results of the checks made in this round (all mechanical unless stated):
 | # | Check | Result |
 |---|---|---|
 | 1 | Number of static registries in `BuiltInRegistries.<clinit>` | 95 (84 + 6 + 4 + 1) |
-| 2 | `MappedRegistry.register` assigns `byId.size()`; no explicit-id writer; `freeze` leaves the id list alone | read, section 2.1 |
+| 2 | `MappedRegistry.register` assigns `byId.size()`; no explicit-id writer; `freeze` reads the id list once (for the component lookup) but never modifies it | read, section 2.1 |
 | 3 | For each pattern-A class, number of register calls in `<clinit>` equals the number of entries listed in this document (not the number of `putstatic`, which differs where section 2.3 lists non-registered static fields) | equal for all 16 classes counted (mob effect 40, particle 128, menu 25, game event 61, component 122, attribute 40, potion 46, entity 161, block entity 49, fluid 5, stats 87, map decoration 40, debug 16, recipe type 8, recipe book category 13, position source 2) |
 | 4 | Only one class registers into each registry (scan of all classes of the jar for a register call after a `BuiltInRegistries.<NAME>` read) | yes for mob effect, attribute, particle, menu, block entity, entity, potion, game event, sound, fluid, component, stat, custom stat, recipe book category, map decoration, position source, recipe type, consume effect, debug subscription |
 | 5 | Entity type ids vs 21 §2 | 161 of 161 rows equal |
@@ -1773,12 +1782,11 @@ How a COBOL implementation should test itself:
 
 ## 17. Open questions
 
-1. **Registries not tabulated because no packet carries their ids and they are key-only.** Not read in this round: `environment_attribute`,
-   `attribute_type` (`AttributeTypes` registers at least 15 names in bootstrap), dialog `type` (5 read), dialog input control (4), dialog body (2), dialog action
-   (registered partly through a static map of `StaticAction`, not fully decoded), `spawn_condition_type` (3), `chunk_status`, `activity`,
-   `memory_module_type`, `sensor_type`, `ticket_type`, `incoming_rpc_method`, `outgoing_rpc_method`, `creative_mode_tab`, `trigger_types`,
-   `game_rule` (names are 16's), `entity_sub_predicate_type`, the loot, worldgen and structure codec registries,
-   test registries. The data tool (design map GAP-1 ids, RS6, RS19, RS20) owns those names; none was found in a packet (`data_component_predicate_type` was found on the wire and is section 8.4).
+1. **Completeness of the registry list, and registries with no table.** The static initialiser of `BuiltInRegistries` creates 95 registries (section 1). I classified every one:
+   - Tabulated in this document (33): `attribute`, `block_entity_type`, `command_argument_type`, `consume_effect_type`, `custom_stat`, `data_component_predicate_type`, `data_component_type`, `debug_subscription`, `enchantment_effect_component_type`, `enchantment_entity_effect_type`, `enchantment_level_based_value_type`, `enchantment_location_based_effect_type`, `enchantment_provider_type`, `enchantment_value_effect_type`, `fluid`, `game_event`, `map_decoration_type`, `menu`, `mob_effect`, `number_format_type`, `particle_type`, `point_of_interest_type`, `position_source_type`, `potion`, `recipe_book_category`, `recipe_display`, `recipe_serializer`, `recipe_type`, `slot_display`, `sound_event`, `stat_type`, `villager_profession`, `villager_type`.
+   - Owned by another document (4): `block` (24), `item` (25), `entity_type` (21 §2, verified in section 11), `game_rule` (16; the wire form is a key, section 3).
+   - Not on the wire (58): `activity`, `attribute_type`, `biome_source`, `block_predicate_type`, `block_state_provider_type`, `carver_type`, `chunk_generator`, `chunk_status`, `context_float_provider_type`, `context_int_provider_type`, `context_key_set`, `creative_mode_tab`, `density_function_type`, `dialog_action_type`, `dialog_body_type`, `dialog_type`, `entity_sub_predicate_type`, `environment_attribute`, `feature_size_type`, `feature_type`, `float_provider_type`, `foliage_placer_type`, `height_provider_type`, `incoming_rpc_method`, `input_control_type`, `int_provider_type`, `loot_condition_type`, `loot_function_type`, `loot_nbt_provider_type`, `loot_pool_entry_type`, `loot_score_provider_type`, `material_condition_type`, `material_rule_type`, `memory_module_type`, `outgoing_rpc_method`, `permission_check_type`, `permission_type`, `placement_modifier_type`, `pool_alias_binding_type`, `pos_rule_test`, `root_placer_type`, `rule_block_entity_modifier`, `rule_test`, `sensor_type`, `slot_source_type`, `spawn_condition_type`, `structure_piece`, `structure_placement`, `structure_pool_element`, `structure_processor`, `structure_type`, `test_environment_definition_type`, `test_function`, `test_instance_type`, `ticket_type`, `tree_decorator_type`, `trunk_placer_type`, `trigger_types`.
+   For the 58 not on the wire, the basis is the jar-wide search of Open question 13 (no packet class pairs them with a numeric id) plus the reading of 05a, 05b, 05c, 00, 03 and 09. I did not read the contents (keys) of these registries: the data tool (design map GAP-1 ids, RS6, RS19, RS20) owns those names. `attribute_type` registers at least 15 names in its bootstrap (not fully read), and the dialog action registry is registered partly through a static map of `StaticAction` (not fully decoded).
 2. **Synchronized registries** are not covered (04 §3, 04 §4): their ids are the order of Registry Data.
 3. **`makeRegistryStatType` registry arguments** were read from the static initialiser: block, item (five times), entity type (twice), custom
    stat. The semantics of the value that follows the two ids in Award Statistics (the stat value VarInt) are 05a's.
@@ -1797,9 +1805,9 @@ How a COBOL implementation should test itself:
     codec is `get3DDataValue`, read in the bootstrap method arguments of the class.
 10. **Class names of the content classes** (`EntityTypes`, `BlockEntityTypes`, `MenuType`) are as in this artifact and differ from earlier versions in
     places; nothing in this document relies on another version.
-11. **19 and 20 id listings.** Documents 19 and 20 contain entity ids in their own tables; they were not compared with section 11 (21 §2 was).
+11. **19 and 20 id listings.** Closed: all 68 mob rows with an entity id in 19 and 20 equal 21 §2 and section 11.
 12. **Payload after a data component predicate type** (section 8.4): the layout of the predicate value that follows the type id inside
     `DataComponentPredicate.STREAM_CODEC`, and of `DataComponentMatchers` and `BlockPredicate` around it, was not read in this round.
-13. **Other registries that may be on the wire through the debug payloads.** `DebugGameEventInfo` (game event), `DebugPoiInfo` (point of interest type)
-    and `DebugHiveInfo` (block) were read. The remaining clientbound debug payload classes were not scanned for registry-id codecs.
+13. **Registry ids reaching the wire (jar-wide scan).** I read `DebugGameEventInfo` (game event), `DebugPoiInfo` (point of interest type) and `DebugHiveInfo` (block). I scanned every class of the jar for `ByteBufCodecs.registry` and `holderRegistry` calls against a static registry: they are these three plus the debug subscription classes (`DebugSubscription$Event`, `DebugSubscription$Update`, `ServerboundDebugSubscriptionRequestPacket`, registry `debug_subscription`). I scanned a second pattern, classes that pair a `BuiltInRegistries` reference with `getId`, `byId` or `asHolderIdMap`: `ClientboundCommandsPacket`, `Item`, `BeaconMenu` (mob effect id plus 1 in the data slots, section 4.1), `ParticleEngine` and `ParticleResources` (client side only). I did not scan for other forms of numbering (for example a registry id packed into a larger integer by a class that does not name `BuiltInRegistries`). The block transformer and decorated pot pattern registries are `Registries` keys only (data-driven), so they have no table. Closed for the two patterns scanned.
 14. **Single-registering-class check (section 2.1 item 5).** For the sound event helper methods and the pattern-C registries (those registered through a bootstrap method) only the bootstrap method was read; no jar-wide scan for other callers was made. That no other class registers into them is inferred.
+15. **Container data packet.** The beacon data slot values (section 4.1) are numbers in the menu's container data. I did not read the packet that carries them (Set Container Property) in this round, and 05a and 05b do not describe the beacon slots. The integer width of the value on the wire was not read (recalled, not verified).

@@ -7,7 +7,7 @@
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Classes read: the model classes of `net.minecraft.client.model.animal.{wolf,feline,fox,panda,polarbear,parrot,bee,armadillo,frog,sniffer,turtle}` and `...model.ambient.BatModel`; `LayerDefinitions.createRoots`; the animation classes `FoxBabyAnimation`, `BatAnimation`, `FrogAnimation`, `ArmadilloAnimation`, `BabyArmadilloAnimation`, `SnifferAnimation` and the framework classes `AnimationDefinition`, `AnimationChannel`, `Keyframe`, `KeyframeAnimation`, `KeyframeAnimations`, `AnimationState`; the renderers, layers and render states of the same mobs; the base classes `ModelPart`, `PartPose`, `CubeListBuilder`, `CubeDefinition`, `PartDefinition`, `MeshTransformer`, `QuadrupedModel`, `LivingEntityRenderer`, `AgeableMobRenderer`, `Mth`; and the entity classes only for the helpers that the render states call. Keyframe tables and mesh tables were produced from the bytecode by a script that evaluates the constant pushes and the builder calls (a scratch tool of this round, not part of the repository), and the keyframe and channel counts of every table were checked against the bytecode counts (see Validation). |
 | Scope decisions | Standard Minecraft content is the target (ticket CC-0001; design README Parts 0, 1, 4; GAP-25). Texture files, equipment asset JSON, cat and frog variant JSON are **data** (extracted by the tool into a resource pack, 22): this document gives the code-defined texture selection rules and path names, never pixels. Everything that is code (meshes, formulas, keyframes, constants) is complete here. |
 
-Conventions. They are those of 34 part 2 (Conventions and §1): model units are pixels (1/16 block), x to the model's left,
+Conventions. They are those of 34-entity-models-1 section 1 (model conventions) and 34-entity-models-2 section 1.1 (pose application): model units are pixels (1/16 block), x to the model's left,
 y down, z to the front, angles in radians unless a row says degrees. A cuboid is written `[u,v] (x,y,z) w×h×d`: texture
 offset, origin and size; `grow g` expands every face by g pixels without changing the UV rectangle (14 §5.3); `grow D`
 means "the deformation passed to the mesh function" (see the mesh function's row); `mirror` flips the cuboid left to right.
@@ -20,11 +20,11 @@ that name in the artifact (the name has no effect on rendering).
 
 ## 1. Shared facts used by every model below
 
-### 1.1 What 34 part 2 already specifies
+### 1.1 What 34-entity-models-1 and 34-entity-models-2 already specify
 
 The pose application order (translate by pos/16, rotate with Z first then Y then X, then scale), `resetPose` at the start of
 every `setupAnim` (so every "+=" below is relative to the part's initial pose from the mesh), `visible` and `skipDraw`
-semantics, and the box unwrap (14 §5.3) are in 34 part 2 §1.1 and 14 §5.3. This document does not repeat them. Facts read
+semantics, and the box unwrap (14 §5.3) are in 34-entity-models-2 section 1.1, 34-entity-models-1 section 1.5 and 14 §5.3. This document does not repeat them. Facts read
 again in this round that those documents may not state:
 
 | Fact | Detail (read from) |
@@ -35,6 +35,8 @@ again in this round that those documents may not state:
 | Texture UV | A vertex's U = texel x / declared texture width, V = texel y / declared texture height, with the width and height of the `LayerDefinition` (`LayerDefinition.create(mesh, w, h)`). Texture offsets are integers; negative offsets occur (baby bee wing, baby turtle legs) and simply index outside the image to the left or top (an implementation must wrap or clamp as the engine's texture sampler does, 14 §5.2; Open question 1). |
 | Builder state | `CubeListBuilder` keeps a current texture offset and a mirror flag that apply to every later `addBox` on the same builder until changed; a builder variable reused for several parts shares its cuboids (the right and left leg of most models). The default texture offset is (0, 0). `addBox(name, x,y,z, w,h,d, u,v)` sets the texture offset to (u, v) as it adds. |
 | Model-to-world frame | The renderer applies, in order: the entity's scale; the entity rotation (body yaw, `setupRotations`); scale (-1, -1, 1); the renderer's own `scale` hook (no-op for every mob in this document); a translation of (0, -1.501, 0) blocks. Model y therefore grows downward and the model's ground plane is y = 24 texels (1.5 blocks) below the entity origin. (`LivingEntityRenderer.submit`) |
+| Name tag, hitbox, eye height, leash, fire | Generic: name tag position, leash drawing and fire are in 34-entity-models-1 sections 7.2, 7.3 and 7.4; bounding box, eye height and name tag offsets of every entity type are in 18 section 1 (for example the sniffer name tag y). The renderer classes of all 14 mobs here override none of scale, name tag, leash, fire or `shouldShowName` (Open question 7, closed as read); per-mob leash offsets in the entity classes remain unenumerated. |
+| No scale hook | Among the mobs of this document no renderer overrides the `scale` hook: the model-to-world frame row above states it for all of them, and the bat renderer class (`BatRenderer`) was read for this round and declares only its constructor (shadow radius 0.25), texture and state extraction, so the bat has no fixed scale. The same holds for every renderer table below, which lists only shadow radius and texture. |
 | Shadow radius | `getShadowRadius(state)` = renderer radius x `state.scale`. Per-mob radii are in each section's renderer table. Among the mobs of this document only the turtle overrides it (baby x 0.83). |
 | Baby selection | `AgeableMobRenderer.submit` swaps `model` to the baby model when `state.isBaby` and to the adult model otherwise, then draws. Adult and baby are different layer definitions (different meshes), not a scaled adult. |
 | `ageScale` | `state.ageScale` = 0.5 when the entity `isBaby`, otherwise 1 (`LivingEntity.getAgeScale`). Several pose formulas multiply their y/z offsets by it. `isBaby` = the mob can be a baby and its age is negative. |
@@ -94,7 +96,7 @@ right front leg xRot = cos(0.6662 p + pi) x 1.4 s; left front leg xRot = cos(0.6
 
 ### 1.4 Dye colours used by collars
 
-`DyeColor.getTextureDiffuseColor()` is the opaque colour (alpha 255) of this table (RGB hex). The wolf and cat collar
+`DyeColor.getTextureDiffuseColor()` returns the stored field `textureDiffuseColor`, which the `DyeColor` constructor builds from the constant's first int through `ARGB.opaque` (alpha forced to 255); the RGB values of this table are those first ints (RGB hex). The wolf and cat collar
 layers tint their collar texture with it.
 
 | id | name | RGB | id | name | RGB |
@@ -163,9 +165,9 @@ After `resetPose`, with p = walkAnimationPos, s = walkAnimationSpeed:
 1. `tail.yRot` = 0 when the state is angry, otherwise cos(0.6662 p) x 1.4 s.
 2. If sitting: the sitting pose of step 3. Otherwise the four legs: right hind xRot = cos(0.6662 p) x 1.4 s; left hind =
    cos(0.6662 p + pi) x 1.4 s; right front = cos(0.6662 p + pi) x 1.4 s; left front = cos(0.6662 p) x 1.4 s.
-3. Shake-off roll (always): see this document §2.3.
+3. Shake-off roll (`shakeOffWater`, always, called after the legs and before the head look): see this document §2.3. It writes only `zRot` values, so its position in the order does not change the result.
 4. `head.xRot` = state.xRot x 0.017453292, `head.yRot` = state.yRot x 0.017453292 (on `head`, not `real_head`).
-5. `tail.xRot` = state.tailAngle (so the angry or tame tail angle of §2.5 replaces whatever the sitting pose set).
+5. `tail.xRot` = state.tailAngle (the angry or tame tail angle of §2.5; the sitting pose does not write `tail.xRot`, it only offsets the tail y and z).
 
 Sitting pose, with a = ageScale. Common part (both ages): body y += 4a, body z -= 2a, body xRot = 0.7853982;
 tail y += 9a, tail z -= 2a; right and left hind leg y += 6.7a, z -= 5a, xRot = 4.712389; right and left front leg
@@ -194,10 +196,10 @@ xRot = 5.811947, right front leg x += 0.01a, left front leg x -= 0.01a, both fro
 | Item | Value |
 |---|---|
 | Models | `ModelLayers.WOLF` (adult), `WOLF_BABY` (baby), shadow radius 0.5 |
-| Texture | `state.texture` = `Wolf.getTexture()` (§2.5); the renderer itself does not choose. Selection rule, read from `Wolf.getTexture`: take the wolf's variant; use its **baby** asset set when the wolf is a baby, else its adult asset set; from that set return the `tame` texture if the wolf is tamed, else the `angry` texture if it is angry, else the `wild` texture (so tame wins over angry). Each of the three entries is an asset id from the variant data (`data/minecraft/wolf_variant/*.json`, **9** variants in the artifact: ashen, black, chestnut, pale, rusty, snowy, spotted, striped, woods; the reviewer's count of 7 disagrees with the archive listing), fields `assets` and `baby_assets`, each with `angry`, `tame` and `wild`; the texture file is `textures/<asset id path>.png`. Example, pale: adult `entity/wolf/wolf` (wild), `wolf_tame`, `wolf_angry`; baby `entity/wolf/wolf_baby`, `wolf_tame_baby`, `wolf_angry_baby`; ashen: `entity/wolf/wolf_ashen`, `wolf_ashen_tame`, `wolf_ashen_angry` and the `_baby` forms (`wolf_ashen_baby`, `wolf_ashen_tame_baby`, `wolf_ashen_angry_baby`). `textures/entity/wolf/wolf.png` is only the default value of the render-state field, overwritten every frame |
+| Texture | `state.texture` = `Wolf.getTexture()` (§2.5); the renderer itself does not choose. Selection rule, read from `Wolf.getTexture`: take the wolf's variant; use its **baby** asset set when the wolf is a baby, else its adult asset set; from that set return the `tame` texture if the wolf is tamed, else the `angry` texture if it is angry, else the `wild` texture (so tame wins over angry). Each of the three entries is an asset id from the variant data (`data/minecraft/wolf_variant/*.json`, **9** variants in the artifact: ashen, black, chestnut, pale, rusty, snowy, spotted, striped, woods), fields `assets` and `baby_assets`, each with `angry`, `tame` and `wild`; the texture file is `textures/<asset id path>.png`. Example, pale: adult `entity/wolf/wolf` (wild), `wolf_tame`, `wolf_angry`; baby `entity/wolf/wolf_baby`, `wolf_tame_baby`, `wolf_angry_baby`; ashen: `entity/wolf/wolf_ashen`, `wolf_ashen_tame`, `wolf_ashen_angry` and the `_baby` forms (`wolf_ashen_baby`, `wolf_ashen_tame_baby`, `wolf_ashen_angry_baby`). `textures/entity/wolf/wolf.png` is only the default value of the render-state field, overwritten every frame |
 | Model tint | `state.wetShade` (§2.6) as grey: ARGB (1, w, w, w); when w = 1 the tint is "white" (no tint) |
 | Collar layer | drawn when `collarColor` is set (the wolf is tamed) and the entity is not invisible: texture `textures/entity/wolf/wolf_collar.png` (baby: `textures/entity/wolf/wolf_collar_baby.png`), the **parent model in its current pose** (adult or baby), cutout render type, tinted with the dye's diffuse colour (§1.4), no overlay, layer order 1 |
-| Armor layer | skipped when the body armor item has no `equippable` component, the component has no asset id, or the wolf is a baby. Otherwise: render the equipment layers of type `WOLF_BODY` for the item's asset id with the **adult armor model** (`ModelLayers.WOLF_ARMOR`, grown 0.2) posed from the same state (the armor model runs its own `setupAnim`, with the adult formulas of §2.2 and §2.3); dyed leather is the equipment renderer's business (34 framework part). Then the crack overlay: level = `Crackiness.WOLF_ARMOR.byDamage(item)`; none for non-damageable items; the overlay texture is `textures/entity/wolf/wolf_armor_crackiness_{low,medium,high}.png`, drawn with the armor model in the "wolf armor cracks" render type. The overlay is submitted on its own ordered submit node with **order 1** (read: the constant pushed before the `order` call in `WolfArmorLayer.maybeRenderCracks`), i.e. after the order-0 equipment layers drawn by the same layer |
+| Armor layer | skipped when the body armor item has no `equippable` component, the component has no asset id, or the wolf is a baby. Otherwise: render the equipment layers of type `WOLF_BODY` for the item's asset id with the **adult armor model** (`ModelLayers.WOLF_ARMOR`, grown 0.2) posed from the same state (the armor model runs its own `setupAnim`, with the adult formulas of §2.2 and §2.3); dyed leather is the equipment renderer's business (34-entity-models-1 section 8.2). Then the crack overlay: level = `Crackiness.WOLF_ARMOR.byDamage(item)`; none for non-damageable items; the overlay texture is `textures/entity/wolf/wolf_armor_crackiness_{low,medium,high}.png`, drawn with the armor model in the "wolf armor cracks" render type. The overlay is submitted on its own ordered submit node with **order 1** (read: the constant pushed before the `order` call in `WolfArmorLayer.maybeRenderCracks`), i.e. after the order-0 equipment layers drawn by the same layer |
 | Crackiness | fraction f = (maxDamage - damage) / maxDamage as a float; level = HIGH when f < 0.32, else MEDIUM when f < 0.69, else LOW when f < 0.95, else NONE (`Crackiness.WOLF_ARMOR` fractions low 0.95, medium 0.69, high 0.32; the golem's are 0.75, 0.5, 0.25) |
 
 ### 2.5 State extraction (`WolfRenderer.extractRenderState`)
@@ -319,7 +321,7 @@ no relax). Cat: `texture`, `isCrouching`, `isSprinting`, `isSitting` (= `isInSit
 
 ### 3.5 Cat counters feeding §3.4 (`Cat.handleLieDown`)
 
-Each tick the cat stores the old values and then moves: `lieDownAmount` += 0.15 (max 1) while lying else -= 0.22 (min 0);
+(Read in review: `Cat.handleLieDown`, `updateLieDownAmount`, `updateRelaxStateOneAmount`.) Each tick the cat stores the old values and then moves: `lieDownAmount` += 0.15 (max 1) while lying else -= 0.22 (min 0);
 `lieDownAmountTail` += 0.08 (max 1) while lying else -= 0.13 (min 0); `relaxStateOneAmount` += 0.1 (max 1) while the relax-one flag
 is set else -= 0.13 (min 0). `isLyingOnTopOfSleepingPlayer` is recomputed each tick: true when the cat is lying and any sleeping
 player is within the block position inflated by 2 on each axis. While lying or relaxed, a purr sound plays every 5th tick
@@ -399,7 +401,7 @@ State extraction: held item (the standard holding-entity extraction, main-hand i
 lerp(t, interestedAngleO, interestedAngle) x 0.11 x pi, `isCrouching` (flag 4), `crouchAmount` = lerp(t, crouchAmountO, crouchAmount),
 `isSleeping` (flag 32), `isSitting` (flag 1), `isFaceplanted` (flag 64), `isPouncing` (flag 16), `variant`.
 
-Entity counters (`Fox.tick`): `interestedAngle` approaches 1 by 0.4 of the remainder per tick when the interested flag (flag 8) is
+Entity counters (`Fox.tick`, read in review; flag values sitting 1, crouching 4, interested 8, pouncing 16, sleeping 32, faceplanted 64): `interestedAngle` approaches 1 by 0.4 of the remainder per tick when the interested flag (flag 8) is
 set, else approaches 0 the same way; `crouchAmount` += 0.2 per tick while crouching (clamped to 5), set to 0 the tick it is not
 crouching; both stored as old and current values each tick.
 
@@ -499,9 +501,8 @@ State extraction: held item; `variant` = `Panda.getVariant()` (the gene from the
 `sitAmount` = lerp(t, old, current); `lieOnBackAmount` likewise; `rollAmount` = 0 for babies else lerp(t, old, current); `rollTime`
 = (rollCounter + t) when rollCounter > 0 else 0.
 
-Entity counters (`Panda.tick`): `sitAmount` += 0.15 (max 1) while sitting else -= 0.19 (min 0); `onBackAmount` the same constants while on
-its back; `rollAmount` the same constants while rolling. Unhappy counter counts down 1 per tick; the sneeze counter counts up per tick and
-the sneeze ends above 20.
+Entity counters (`Panda.tick`, read in review): `sitAmount` += 0.15 (max 1) while sitting else -= 0.19 (min 0); `onBackAmount` the same constants while on
+its back; `rollAmount` the same constants while rolling. Unhappy counter counts down 1 per tick and the sneeze counter counts up per tick, the sneeze ending (`sneeze(false)`, then the after-sneeze step) when the counter is above 20 (read in `Panda.tick`).
 
 ---
 
@@ -538,7 +539,7 @@ body.xRot -= e pi 0.35; body y += e a 2; right front leg y -= e a 20, z += e a 4
 right front z, xRot -= e pi 0.45; head y -= e 24, z += e 13, xRot += e pi 0.15. (The head offsets are not scaled by a.)
 
 State: `standScale` = `PolarBear.getStandingAnimationScale(t)` = lerp(t, clientStandOld, clientStand) / 6, where the entity's client counter moves
-by 1 per tick toward 6 while standing and toward 0 otherwise (clamped 0 to 6).
+by 1 per tick toward 6 while standing and toward 0 otherwise, clamped to 0..6 (read in `PolarBear.tick`, client side only).
 
 Renderer: shadow radius 0.9; textures `textures/entity/bear/polarbear.png` (adult) and `textures/entity/bear/polarbear_baby.png` (baby). No layers.
 
@@ -633,7 +634,7 @@ Pose (`BatModel.setupAnim`): if resting, `head.yRot` = state.yRot x 0.017453292;
 
 Renderer: shadow radius 0.25; texture `textures/entity/bat/bat.png`; state `isResting` plus copies of the two animation states. Entity side (`Bat.tick`,
 `setupAnimationStates`): resting stops the fly state and starts the rest state if stopped (start tick = `tickCount`); not resting does the opposite. A
-resting bat also has its delta movement zeroed and its y set to (floor(y) + 1 - bbHeight); a flying bat's delta y is multiplied by 0.6 each tick.
+resting bat also has its delta movement zeroed and its y set to (floor(y) + 1 - bbHeight); a flying bat's delta y is multiplied by 0.6 each tick (entity-side details read in review).
 
 ---
 
@@ -771,7 +772,7 @@ leg sits at -1.5 (mirror flags are set on the right hind and left front legs onl
 | Texture | `textures/entity/armadillo/armadillo.png`, baby `textures/entity/armadillo/armadillo_baby.png` |
 | State | `isHidingInShell` = `Armadillo.shouldHideInShell()`; copies of the `rollOut`, `rollUp` and `peek` animation states |
 
-Entity side. State enum (id, serialized name, threatened flag, animation duration in ticks): IDLE (0, "idle", no, 0), ROLLING (1, "rolling", yes, 10), SCARED (2, "scared", yes, 50), UNROLLING
+Entity side (`Armadillo` state machine; the state enum and `shouldHideInShell` thresholds were confirmed in review). State enum (id, serialized name, threatened flag, animation duration in ticks): IDLE (0, "idle", no, 0), ROLLING (1, "rolling", yes, 10), SCARED (2, "scared", yes, 50), UNROLLING
 (3, "unrolling", yes, 30). `shouldHideInShell(inStateTicks)`: IDLE never; ROLLING when inStateTicks > 5; SCARED always; UNROLLING when inStateTicks < 26.
 `setupAnimationStates` each tick: IDLE stops all three animation states; ROLLING starts roll-up if stopped and stops the others; UNROLLING starts roll-out if stopped and
 stops the others; SCARED stops roll-out and roll-up, clears a pending peek (when the client received entity event 64 it stops the peek state and clears the flag), then: if
@@ -914,7 +915,7 @@ Baby: `SniffletModel.createBodyLayer()` is the baby's **mesh** (`ModelLayers.SNI
 
 The renderer instantiates the plain `SnifferModel` class for both the adult and the baby layer; nothing in the client instantiates `SniffletModel` (only its
 `createBodyLayer` is called from `LayerDefinitions`, verified by a search of the client classes). The `SniffletModel` constructor and `setupAnim`, which would apply
-`BABY_TRANSFORM` (head scale 1.2, head position offset; §15.6) with `applyStatic`, are therefore **not** run by the standard client (Open question 3).
+`BABY_TRANSFORM` (head scale 1.2, head position offset; §15.6) with `applyStatic`, are therefore **not** run by the standard client. Read, not inferred: across every class of `net/minecraft/client/*`, only `LayerDefinitions` (calling `SniffletModel.createBodyLayer`) and `SniffletModel` itself reference `SniffletModel`; `SnifferRenderer` calls `SnifferModel.<init>` for both `SNIFFER` and `SNIFFER_BABY`, and `SnifferModel` never references `BABY_TRANSFORM`. The baby sniffer therefore renders without the head scale 1.2 (static reading only, no execution).
 
 ### 14.2 Per-frame pose (`SnifferModel.setupAnim`)
 
@@ -1413,9 +1414,8 @@ authored y, `scale` as the final factor), then keyframes `time:(x,y,z)I` with I 
 
 1. Texture offsets can be negative (baby bee left wing u = -3, baby turtle legs u = -1): the model reads texels left of the image. Not traced: the texture sampler's wrap or clamp rule for entity textures (14 §5.2 says the client samples by fraction); the faces affected are tiny wing and leg quads.
 2. Pixel-exact face orientation (which edge of each face rectangle is up, and the mirrored-box result) was inferred from the `Cube` and `Polygon` constructors and 14 §5.3, not checked against a rendered reference.
-3. `SniffletModel`'s own `setupAnim` (`BABY_TRANSFORM` applied statically) is unreachable through the standard renderer; whether the baby sniffer therefore renders without the head scale 1.2 is **read**, not inferred: across every class of `net/minecraft/client/*`, only `LayerDefinitions` (calling `SniffletModel.createBodyLayer`) and `SniffletModel` itself reference `SniffletModel`; `SnifferRenderer` calls `SnifferModel.<init>` for both `SNIFFER` and `SNIFFER_BABY`, and `SnifferModel` never references `BABY_TRANSFORM`. So the baby sniffer renders without the head scale 1.2 (static reading only, no execution).
-4. Closed: the `Mth.sin` table size (65536) was read from the static initialiser (§1.1).
-5. Entity classes were read only for the helpers called by the render states. The logic that starts the frog, sniffer and armadillo (peek) animation states, the pose choice of the parrot (party jukebox range) and the interested/crouch flags of the fox belongs to the mob documents (19, 44) and was not re-read here except where stated.
-6. Variant data fields were read: wolf (`assets`, `baby_assets`, each `angry`/`tame`/`wild`; 9 variant files, see §2.4), cat (`asset_id`, `baby_asset_id`, for example `entity/cat/cat_tabby` and `entity/cat/cat_tabby_baby`; 11 variant files) and frog (single `asset_id`, for example `entity/frog/frog_cold`; 3 variant files). The panda gene to texture mapping is code, not data, and is resolved in §5.4 (14 fixed paths). Still open: the spawn-condition and variant-selection data of those JSON files (biome conditions, priorities) belongs to the mob documents and the data extraction (22, 23) and was not specified here.
-7. The equipment renderer (`EquipmentLayerRenderer.renderLayers`) and the `StuckInBodyLayer` placement used by the bee stinger layer are framework or player-layer pieces and are not specified here (the framework part of 34 and the player-layer document).
-8. The `Mth.rotLerp` degrees quirk of §1.1 means that a pose lerp spanning more than pi radians would behave differently from a plain lerp; no call here spans that much, but this was checked only by reading the constants.
+3. Entity classes were read only for the helpers called by the render states. The logic that starts the frog, sniffer and armadillo (peek) animation states, the pose choice of the parrot (party jukebox range) and the pose logic beyond the counters read here belongs to the mob documents (19 sections for the land animals, 44-residual-mob-questions-4 sections 4 to 10 for fox, wolf, cat, panda, polar bear, goat and frog) and was not re-read here except where stated. The entity-side counters of sections 3.5, 4.3, 5.4, 6, 8 and 10.3 (and the bee, wolf and parrot counters) were read from the entity classes in the review round and match; no counter is left unread.
+4. Variant data fields were read: wolf (`assets`, `baby_assets`, each `angry`/`tame`/`wild`; 9 variant files, see §2.4), cat (`asset_id`, `baby_asset_id`, for example `entity/cat/cat_tabby` and `entity/cat/cat_tabby_baby`; 11 variant files) and frog (single `asset_id`, for example `entity/frog/frog_cold`; 3 variant files). The panda gene to texture mapping is code, not data, and is resolved in §5.4 (14 fixed paths). Still open: the spawn-condition and variant-selection data of those JSON files (biome conditions, priorities) belongs to the mob documents and the data extraction (22, 23) and was not specified here.
+5. The equipment renderer (`EquipmentLayerRenderer.renderLayers`) and the `StuckInBodyLayer` placement used by the bee stinger layer are framework or player-layer pieces and are not specified here (34-entity-models-1 section 8.2 for the equipment renderer; the player-layer placement of the bee stinger is not specified in any part of 34 read for this round).
+6. The `Mth.rotLerp` degrees quirk of §1.1 means that a pose lerp spanning more than pi radians would behave differently from a plain lerp; no call here spans that much, but this was checked only by reading the constants.
+7. Closed as read: the renderer classes of all 14 mobs declare only these methods beyond the constructor, texture lookup and `extractRenderState`: wolf `getModelTint`; cat, fox and panda `setupRotations` (panda also `getAngle`); turtle `getShadowRadius`; sniffer `getBoundingBoxForCulling` (box inflated by 0.6). None overrides scale, name tag, leash, fire or `shouldShowName`, so the generic rules of 34-entity-models-1 sections 7.2 to 7.4 apply. Still open: per-mob leash offsets live in the entity classes and are not enumerated (18 section 1 for bounding box, eye height and name tag offsets).

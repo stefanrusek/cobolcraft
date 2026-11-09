@@ -44,11 +44,11 @@ Related documents, not repeated here: 31-1 (the shared block entity model: `save
 | `test_block` | `test_block` | `TestBlockEntity` | yes | "custom only" (3 keys, 9.1) |
 | `test_instance_block` | `test_instance_block` | `TestInstanceBlockEntity` | yes | "custom only" (`data`, `errors`, 10.1) |
 
-The numeric ids of the types are in 31-1 §3.1 and 46 (command_block 23, structure_block 21, jigsaw 31, test_instance_block 46 in the `block_entity_type` registry; `test_block` is 45 in the same table at 46 §5.4, read there). The five blocks all have hardness -1 and blast resistance 3600000 and no loot table (`Blocks`: `strength(-1.0, 3600000.0)`, `noLootTable`); `command_block` and the structure, jigsaw blocks also `requiresCorrectToolForDrops`; the test instance block uses `noOcclusion` and no map colour. Their state properties are in 24: command blocks have `facing` (6 directions, default north) and `conditional` (Boolean, default false); the structure block has `mode` (the `structure_block` mode property, default `load`); the jigsaw block has `orientation` (a `FrontAndTop` value, default `north_up`); the test block has `mode` (`start`, `log`, `fail`, `accept`).
+The numeric ids of the types are in 31-1 §3.1 and 46 (command_block 23, structure_block 21, jigsaw 31, test_instance_block 46 in the `block_entity_type` registry; `test_block` is 45 in the same table at 46 §5.4, read there). The five blocks all have hardness -1 and blast resistance 3600000 and no loot table (`Blocks`: `strength(-1.0, 3600000.0)`, `noLootTable`); all three command blocks (`command_block`, `repeating_command_block`, `chain_command_block`), `structure_block` and `jigsaw` also call `requiresCorrectToolForDrops`; the two test blocks do NOT (read in the `Blocks` initializer). `test_block` has a light-gray map colour and no `noOcclusion`; `test_instance_block` has `noOcclusion` and no map colour. Map colours read: `command_block` brown, `repeating_command_block` purple, `chain_command_block` green, `structure_block`, `jigsaw` and `test_block` light gray. Their state properties are in 24: command blocks have `facing` (6 directions, default north) and `conditional` (Boolean, default false); the structure block has `mode` (the `structure_block` mode property, default `load`); the jigsaw block has `orientation` (a `FrontAndTop` value, default `north_up`); the test block has `mode` (`start`, `log`, `fail`, `accept`).
 
 ### 1.1 The `automatic` flag of the three command block blocks
 
-The `CommandBlock` block class takes one constructor flag, `automatic`; a new block entity copies it into its `auto` field. Read from the three block factories (each registration's factory function resolved through the bootstrap table): `command_block` = false, `repeating_command_block` = false, `chain_command_block` = true. See Open question 1.
+The `CommandBlock` block class takes one constructor flag, `automatic`; a new block entity copies it into its `auto` field. Read from the three factory lambdas in the `Blocks` initializer, which each pass a literal to the `CommandBlock(boolean, Properties)` constructor: `command_block` = false, `repeating_command_block` = false, `chain_command_block` = true. The registration order in `Blocks` is `command_block`, then `repeating_command_block`, then `chain_command_block`.
 
 ---
 
@@ -156,6 +156,8 @@ Loop, entered while `remaining > 0` (the counter is tested and then decremented)
 
 After the loop, if `remaining <= 0` (the counter ran out; note that leaving the loop early with a counter that happens to be 0 after the decrement also counts), log a warning "Command Block chain tried to execute more than {} steps!" with `max(rule, 0)`.
 
+Worked example, `max_command_sequence_length = 1`: block A (repeating, facing east) is followed by exactly one chain block B (auto) and then air. `executeChain` starts with `remaining = 1`: the test passes and the counter is decremented to 0; step 1 moves to B, B runs; step 4 turns to B's facing. The loop test then sees `remaining = 0` and exits; the chain ended on a counter of 0, so the warning "Command Block chain tried to execute more than 1 steps!" is logged although the chain would have ended anyway at the air block. With the rule at 2 the same layout still logs the warning: `remaining` goes 2 to 1 (B runs), then 1 to 0 and the step finds air, so the loop is left with `remaining = 0`. With the rule at 3 it logs nothing: 3 to 2 (B runs), 2 to 1 (air, leave), `remaining = 1`.
+
 `performCommand` returns false only when a command already ran in this same game tick (3.9); a command that fails still returns true, so a failed command does not stop a chain.
 
 ### 3.8 Comparator output
@@ -192,11 +194,24 @@ When the rule `command_blocks_work` is false, or the command is empty, steps 4a 
 |---|---|
 | Output sink | the capture of 4.2, or the null sink when `trackOutput` is false |
 | Position | the centre of the block (x+0.5, y+0.5, z+0.5) |
-| Rotation | pitch 0, yaw = the `facing` direction's yaw (`Direction.toYRot`) |
+| Rotation | pitch 0, yaw = the `facing` direction's yaw from the table below |
 | Level | the server level |
 | Permissions | the level-based set GAMEMASTER (level 2; 15 §2) |
 | Name | the command block's display name (2.1: custom name or `@`), used as both the plain name and the display name |
 | Entity | none |
+
+Yaw of a direction (`Direction.toYRot`): the direction's 2D data value ANDed with 3, times 90, as a float. The 2D data values read from the `Direction` constructor arguments are south 0, west 1, north 2, east 3, and -1 for both down and up (-1 AND 3 = 3).
+
+| `facing` | 2D data value | Yaw |
+|---|---|---|
+| south | 0 | 0.0 |
+| west | 1 | 90.0 |
+| north | 2 | 180.0 |
+| east | 3 | 270.0 |
+| up | -1 | 270.0 |
+| down | -1 | 270.0 |
+
+A vertical command block therefore has the same yaw as an east-facing one.
 
 `isValid()` is "the entity is not removed". A source with no entity: selectors such as `@s` select nothing, as for any entity-less source (15 §7).
 
@@ -253,7 +268,7 @@ Used only when `trackOutput` is true. It implements the command output sink:
 | `metaData` | `""` | `metadata` (String) | `""` |
 | `structurePos` (offset) | (0, 1, 0) | `posX`, `posY`, `posZ` (Int each) | each default from (0, 1, 0), each clamped to -48..48 |
 | `structureSize` | (0, 0, 0) | `sizeX`, `sizeY`, `sizeZ` (Int each) | each default 0, each clamped to 0..48 |
-| `rotation` | `NONE` | `rotation` (String: the enum constant name `NONE`, `CLOCKWISE_90`, `CLOCKWISE_180`, `COUNTERCLOCKWISE_90`, written through the "legacy codec"; inferred form, Open question 7) | `NONE` when absent or invalid |
+| `rotation` | `NONE` | `rotation` (String: the enum constant name `NONE`, `CLOCKWISE_90`, `CLOCKWISE_180`, `COUNTERCLOCKWISE_90`, written through the "legacy codec", 6.1.1) | `NONE` when absent or invalid |
 | `mirror` | `NONE` | `mirror` (String: `NONE`, `LEFT_RIGHT`, `FRONT_BACK`) | `NONE` |
 | `mode` | from the block state's `mode` (new entity) | `mode` (String: `SAVE`, `LOAD`, `CORNER`, `DATA`) | **`DATA`** when absent or invalid (not the block's default `load`) |
 | `ignoreEntities` | true | `ignoreEntities` (Boolean) | true |
@@ -267,6 +282,10 @@ Used only when `trackOutput` is true. It implements the command output sink:
 Constants: `MAX_OFFSET_PER_AXIS` 48, `MAX_SIZE_PER_AXIS` 48, scan range 80 (`SCAN_CORNER_BLOCKS_RANGE`). After loading, `updateBlockState()` runs: if the entity has a level and the block at its position is the structure block, set the block's `mode` property to the entity's mode with flags 2 (client broadcast only, no neighbour updates). `setMode(mode)` stores it and does the same.
 
 Update tag: the "custom only" form: all 19 keys above (so every key reaches clients, including `author`, `metadata`, `seed`).
+
+#### 6.1.1 The legacy codec strings
+
+`rotation`, `mirror` and `mode` use the "legacy enum" codec (`ExtraCodecs.legacyEnum`): a String codec whose encoder is `Enum.toString` of the value and whose decoder calls the enum's static `valueOf` with the text (an `IllegalArgumentException` becomes a decode error, which the load rules of 6.1 turn into the default). Read: no `toString` override in any of `Rotation`, `Mirror` and `StructureMode` (full member listings of the three classes), so the written strings are the upper-case constant names listed in 6.1. The decoder is `valueOf` for all three (read from the handles passed to the codec factory in each class), which is an exact, case-sensitive match on the constant name: the lower-case serialized names (`none`, `clockwise_90`, `180`, `counterclockwise_90`, `left_right`, `front_back`, `save`, `load`, `corner`, `data`) used by the other codecs of these enums do NOT decode here and give the default.
 
 ### 6.2 Triggering by redstone (`StructureBlock.neighborChanged`)
 
@@ -287,7 +306,8 @@ Server only; the entity must be a structure block entity. `p := level.hasNeighbo
 - `placeStructure(level)`: get the template by name and, when present, place it.
 - `placeStructure(level, template)` steps: (1) `loadStructureInfo(template)`; (2) placement settings: mirror, rotation, `ignoreEntities`, "known shape" = `strict`; (3) if `integrity < 1.0`: clear the processor list and add one `BlockRotProcessor` with integrity clamped to 0..1, and set the settings' random source to `createRandom(seed)`; (4) origin = block position + `structurePos`; (5) in the debug "structure edit mode" (`SharedConstants.DEBUG_STRUCTURE_EDIT_MODE`, normally false) the region is first filled with `structure_void`; (6) `template.placeInWorld(level, origin, origin, settings, createRandom(seed), flags)` with `flags = 2 | (strict ? 816 : 0)` (816 = `UPDATE_SKIP_ALL_SIDEEFFECTS`, 29 §1). Note the random source of the settings and the one passed to `placeInWorld` are two separate objects.
 - `createRandom(seed)`: seed 0 gives a source seeded from the current time in milliseconds (not reproducible); otherwise `RandomSource.create(seed)`, which is the legacy linear congruential source (`LegacyRandomSource`, 10 §random sources).
-- `BlockRotProcessor` (the "integrity" processor): for each placed block (when no `rottable_blocks` set is given, every block): draw one `nextFloat()` from the settings' random source (in processing order); the block is kept when the draw is `<= integrity`, and removed (not placed) when the draw is `> integrity`. When a `rottable_blocks` set is given (data pack processors use the same class through the processor registry, field `rottable_blocks` and `integrity`), only blocks in that set take part and others are always kept (22).
+- `BlockRotProcessor` (the "integrity" processor): for each placed block (when no `rottable_blocks` set is given, every block): draw one `nextFloat()` from the random source returned by `StructurePlaceSettings.getRandom(pos)` for that block (in processing order; the source is chosen as described just below); the block is kept when the draw is `<= integrity`, and removed (not placed) when the draw is `> integrity`. When a `rottable_blocks` set is given (data pack processors use the same class through the processor registry, field `rottable_blocks` and `integrity`), only blocks in that set take part and others are always kept (22).
+- `StructurePlaceSettings.getRandom(pos)` (the source the processor draws from): 1. when the settings hold a random source (a structure block with `integrity < 1.0` sets one, step 3 above), return that same object for every call; 2. otherwise, when `pos` is null, create a `LegacyRandomSource` seeded with the current time in milliseconds; 3. otherwise create a `LegacyRandomSource` seeded with `Mth.getSeed(pos)`, a position-derived seed (a fresh source per call, so the draw depends only on the position). Case 3 is what a data-pack processor list without a structure-block random source sees, and its draws are reproducible per position. `Mth.getSeed(pos)` is `Mth.getSeed(x, y, z)` (read): 1. `l := ((x * 3129871) as a 32-bit integer product, widened to 64 bits) XOR (z * 116129781, 64-bit) XOR y`; 2. `l := l * l * 42317861 + l * 11` (64-bit wrap-around); 3. the result is `l` shifted right by 16 (arithmetic shift, sign kept). `BlockRotProcessor` passes `pos()` of the block info it is processing (read: the info argument, not the offset arguments), so the draw for a block depends on that info's `pos()` only. Whether that `pos()` is template-relative or world-absolute at the point the processor runs was not traced (Open question 13). Worked example: pos (0, 0, 0): `l = 0`, seed 0; the first `nextFloat` of a `LegacyRandomSource` seeded 0 is then fixed for every block at that position.
 
 ### 6.5 Corner mode
 
@@ -358,7 +378,7 @@ Applies to every block entity that implements `BoundingBoxRenderable`.
 - `shouldRenderOffScreen` is true; view distance 96 blocks.
 - Mode `NONE` draws nothing. Otherwise, a box is drawn only when the size is at least 1 on all three axes: a wireframe cuboid from `blockPos + localPos` to that plus `size`, colour ARGB float (alpha 1.0, red 0.9, green 0.9, blue 0.9), drawn through blocks.
 - Mode `BOX_AND_INVISIBLE_BLOCKS` additionally scans every block position in the box (on extract) and classifies it: air gives `AIR`, `structure_void` gives `STRUCTURE_VOID`, `barrier` gives `BARRIER`, `light` gives `LIGHT`, anything else is not marked. Each marked block gets a small cuboid around the block centre: from 0.45 to 0.55 on each axis, inflated by 0.05 for `AIR` only (so `AIR` markers span 0.40 to 0.60, the others 0.45 to 0.55); colours (alpha, red, green, blue): `AIR` (1.0, 0.5, 0.5, 1.0) read as the float order of `colorFromFloat`, `STRUCTURE_VOID` (1.0, 1.0, 0.75, 0.75), `BARRIER` the int -65536 (0xFFFF0000, red), `LIGHT` the int -256 (0xFFFFFF00, yellow).
-- `STRUCTURE_VOIDS_COLOR` is (0.2, 0.75, 0.75, 1.0) in the same float order; it fills the exposed faces of the structure void voxels (a `renderStructureVoids` pass built from a voxel bit set, each face a quad inset 0.48 from the centre line); whether this pass is reached from `submit` was not traced (Open question 9).
+- `STRUCTURE_VOIDS_COLOR` is (0.2, 0.75, 0.75, 1.0) in the same float order; it fills the exposed faces of the structure void voxels (a `renderStructureVoids` pass built from a voxel bit set, each face a quad inset 0.48 from the centre line); whether this pass is reached from `submit` was not traced (Open question 7).
 
 ---
 
@@ -376,7 +396,7 @@ Applies to every block entity that implements `BoundingBoxRenderable`.
 | `placementPriority` | 0 | `placement_priority` | Int | 0 |
 | `selectionPriority` | 0 | `selection_priority` | Int | 0 |
 
-Constants: `EMPTY_ID` = `minecraft:empty`. Translation keys of the joint names: `jigsaw_block.joint.rollable`, `jigsaw_block.joint.aligned`. The update tag is "custom only" (these seven keys). The block's `orientation` is a `FrontAndTop` (24); the front direction is the face that points at the next piece and the top is the "up" of the piece. `JigsawBlock.canAttach` (used by the assembler, 36): two jigsaws match when their fronts are opposite and either the joint of the first is `rollable` or their tops are equal, and the target of the second equals the name of the first (or the name is null).
+Constants: `EMPTY_ID` = `minecraft:empty`. Translation keys of the joint names: `jigsaw_block.joint.rollable`, `jigsaw_block.joint.aligned`. The update tag is "custom only" (these seven keys). The block's `orientation` is a `FrontAndTop` (24); the front direction is the face that points at the next piece and the top is the "up" of the piece. `JigsawBlock.canAttach` (used by the assembler, 36): `canAttach(a, b)` is true when all of these hold: the front of `a` is the opposite of the front of `b`; the joint of `a` (the first argument) is `rollable` or the tops of `a` and `b` are equal; and either the `name` of `b` is null, or the `target` of `a` equals the `name` of `b`. So it is the target of the FIRST piece that must equal the name of the SECOND, and the joint test is on the first piece.
 
 ### 8.2 Packets
 
@@ -384,7 +404,7 @@ Constants: `EMPTY_ID` = `minecraft:empty`. Translation keys of the joint names: 
 - Jigsaw Generate (05c id 27), `handleJigsawGenerate`: same permission check; calls `generate(level, packet.levels, packet.keepJigsaws)`.
 - `generate(level, levels, keepJigsaws)`: `start = block position + front direction`; look up the pool in the template pool registry by the entity's `pool` key (a missing pool throws, the lookup is `getOrThrow`); call `JigsawPlacement.generateJigsaw(level, poolHolder, target, levels, start, keepJigsaws)` and ignore its result. The assembler is part of 36.
 - `JigsawBlock.useWithoutItem`: with a jigsaw entity and a player that can use game master blocks: open the screen and `SUCCESS`, else `PASS`.
-- `getStateForPlacement`: the orientation is `FrontAndTop.fromFrontAndTop(front, top)` with `front` = the clicked face and `top` = the opposite of the placing player's horizontal direction when the clicked face's axis is Y, otherwise `up` (the argument order was read as clicked face first; see Open question 5). `rotate` and `mirror` transform the orientation by the octahedral group of the rotation or mirror.
+- `getStateForPlacement`: the orientation is `FrontAndTop.fromFrontAndTop(front, top)` with `front` = the clicked face and `top` = the opposite of the placing player's horizontal direction when the clicked face's axis is Y, otherwise `up` (the call is `fromFrontAndTop(front, top)`, front first, read in bytecode). `rotate` and `mirror` transform the orientation by the octahedral group of the rotation or mirror.
 
 ---
 
@@ -409,7 +429,7 @@ Update tag: "custom only" (these three keys). `setMode(mode)`: store, then if th
 - Block `TestBlock`: `neighborChanged` (server only): when the mode is START, `p := hasNeighborSignal`; `p` and not `powered` gives `setPowered(true)` and `trigger()`; not `p` and `powered` gives `setPowered(false)`. `tick`: `reset()`. `ownSignal`: 15 when the mode is START and `powered`, else 0. `useWithoutItem`: needs the entity and a player that can use game master blocks; on a client level it opens the screen; always `SUCCESS` in that case, else `PASS`. `getStateForPlacement` takes `mode` from the item's `block_state` component. Pick block copies the mode into that component.
 - Set Test Block (05c id 61), `handleSetTestBlock`: ignored silently unless game master rights and a test block entity; `setMode`, `setMessage`, `setChanged()`, `sendBlockUpdated(pos, state, state, 3)`.
 
-Who calls `trigger()` for the LOG, FAIL and ACCEPT modes (the game test runner) was not traced (Open question 8).
+Who calls `trigger()` for the LOG, FAIL and ACCEPT modes (the game test runner) was not traced (Open question 6).
 
 ---
 
@@ -428,6 +448,8 @@ Who calls `trigger()` for the LOG, FAIL and ACCEPT modes (the game test runner) 
 
 `ErrorMarker`: `pos` (block position codec) and `text` (text component).
 
+Other constants and messages of the class: the static component `INVALID_TEST_NAME` is the translatable text with key `test_instance_block.invalid_test`; `getTestName()` returns it when no test is set (the test name is otherwise derived from the test holder's key; the mapping lambda was not read). The static export method (`export(level, id, feedback consumer)`) logs an error "Failed to save structure file {} to {}" (path arguments, not traced beyond the format string) when writing the template file fails; the surrounding path and export rules are Open question 9.
+
 Load: read `data`; if it decodes, replace the current `data` through `set` (which calls `setChanged`); a missing or undecodable `data` keeps the current one. Then clear the marker list and add the decoded `errors` (an empty list when missing). Update tag: "custom only" (the two keys).
 
 `setChanged()` override: the base behaviour, then on a server level `sendBlockUpdated(pos, air default state, current state, 3)` (an air "old state" forces the broadcast).
@@ -443,7 +465,7 @@ Let `padding` = the `padding` of the test's definition (0 when no test is set). 
 - `getStructurePos()` (the world position of the structure's origin) = block position + (`padding`, `padding`, `padding`) + (0, 1, 1).
 - `getTransformedSize()` = `size`, with x and z swapped when the effective rotation is `CLOCKWISE_90` or `COUNTERCLOCKWISE_90`.
 - `getStructureBoundingBox()` = the box from `getStructurePos()` to `getStructurePos() + transformedSize - (1,1,1)`, inclusive. `getTestBoundingBox()` = that box inflated by `padding`.
-- Effective rotation `getRotation()` = the test definition's own rotation (when a test is set and defines one; mapping lambdas not fully read, Open question 10) composed with `data.rotation` through `Rotation.getRotated`; `NONE` when no test is set.
+- Effective rotation `getRotation()` = the test definition's own rotation (read: the test holder is mapped through `Holder.value` and then `GameTestInstance.rotation()`, a field every test definition has; `NONE` when no holder resolves) composed with `data.rotation` through `Rotation.getRotated(data.rotation)`; `NONE` when no test is set.
 - `getStartCorner()` (where the template's own origin lands) = `getStructurePos()` plus an offset by the effective rotation: `NONE`: (0,0,0); `CLOCKWISE_90`: (sizeZ - 1, 0, 0); `CLOCKWISE_180`: (sizeX - 1, 0, sizeZ - 1); `COUNTERCLOCKWISE_90`: (0, 0, sizeX - 1) (here `sizeX`, `sizeZ` are the untransformed `data.size`).
 - `renderMode()` is always `BOX`. `getRenderableBox()`: `localPos = (0 + padding, 1 + padding, 1 + padding)`, `size = getTransformedSize()` (drawn by 7.4 relative to the block).
 - The beam (beacon-style) colours by status (`getBeamSections`, one section): `cleared`: none; `running`: ARGB colour (128,128,128); `finished` with no error: (0,255,0); `finished` with an error: (255,0,0) when the test is "required" (default true when unknown), else (255,128,0).
@@ -455,8 +477,8 @@ Requires the player to be able to use game master blocks and the entity to be a 
 - `placeStructure()` (internal): settings: effective rotation, `ignore_entities`, known shape true; force-load every chunk of the structure bounding box (`setChunkForced(x, z, true)`); `StructureUtils.clearSpaceForStructure` on the test bounding box; remove all non-player entities in the test bounds (box inflated by `padding`); `placeInWorld(level, startCorner, startCorner, settings, level.getRandom(), 818)` (818 = 2 + 816).
 - `resetTest(feedback)`: remove barriers (below), clear error markers, `placeStructure()`; on success send the green translation `test_instance_block.reset_success` with the test name; then `data := data.withStatus(cleared)`.
 - `saveTest(feedback)`: structure id = the test's `structure` (or, with no test holder, derived from the test key), absent gives the red message `test_instance_block.error.unable_to_save` (x, y, z); on a server level call the static `StructureBlockEntity` save with origin `getStructurePos()`, size `data.size`, `ignore_entities`, author `""`, write to disk true, ignore list [air].
-- `exportTest`: `saveTest` then an export of the template file through the test template manager; when exporting is disabled the red text "Test structure exporting is disabled" is sent. Details of path and file layout were not traced (Open question 11).
-- `runTest(feedback)`: needs a test (else red `test_instance_block.error.no_test`); `placeStructure()` (failure gives red `test_instance_block.error.no_test_structure`); clear error markers; clear the game test ticker and the failed test tracker; send `test_instance_block.starting` with the test name; build a `GameTestInfo` (test, rotation, no retries), `setTestBlockPos`, and start a game test runner for it. The runner (ticks, assertions, timeouts) is not specified here (Open question 8).
+- `exportTest`: `saveTest` then an export of the template file through the test template manager; when exporting is disabled the red text "Test structure exporting is disabled" is sent. Details of path and file layout were not traced (Open question 9).
+- `runTest(feedback)`: needs a test (else red `test_instance_block.error.no_test`); `placeStructure()` (failure gives red `test_instance_block.error.no_test_structure`); clear error markers; clear the game test ticker and the failed test tracker; send `test_instance_block.starting` with the test name; build a `GameTestInfo` (test, rotation, no retries), `setTestBlockPos`, and start a game test runner for it. The runner (ticks, assertions, timeouts) is not specified here (Open question 6).
 - `encaseStructure()` and `removeBarriers()` walk the boundary of the structure's bounds (positions where x, y or z equals the box's min or max; with the test's `skyAccess` the top layer is skipped) and place `barrier` blocks where the block is not a test instance block, or replace `barrier` by air. They use `setBlockAndUpdate` (flags 3).
 - Block `TestInstanceBlock.useWithoutItem`: with the entity and a game master player, opens the screen on a client level and returns `SUCCESS`, else `PASS`.
 
@@ -480,7 +502,7 @@ Uses (server side, `BlockItem.updateCustomBlockEntityTag(level, player, pos, sta
 4. If `onlyOpCanSetNbt()` for that type: the data is applied only when the placing player is not null AND `canUseGameMasterBlocks()` is true; otherwise return false (the data is discarded, the entity keeps its defaults).
 5. Otherwise load the component's tag into the entity (`loadInto`) and return the result.
 
-Note: step 4 requires creative mode as well as the permission, while 31-1 §3.2 says "operators".
+Note: step 4 requires creative mode as well as the permission, while 31-1 §3.2 says "operators". This document (read from `Player.canUseGameMasterBlocks`) is authoritative: an implementer must apply the stricter rule (creative AND `COMMANDS_GAMEMASTER`); a correction of 31-1 §3.2 is scheduled for the next fix pass on that document and is not made here.
 
 The tooltip warning: `BlockItem.shouldPrintOpWarning(stack, player)` is true when the player is not null, holds the permission `COMMANDS_GAMEMASTER` (without needing creative), and the stack's `block_entity_data` names a type for which `onlyOpCanSetNbt()` holds. `ItemStack` (tooltip construction, two places) then appends three lines (the constant `OP_NBT_WARNING`): translation key `item.op_warning.line1` in red and bold, `item.op_warning.line2` in red, `item.op_warning.line3` in red. The texts are language data (22, 14).
 
@@ -494,7 +516,7 @@ A creative operator places a `repeating_command_block` (no `block_entity_data`) 
 
 - Entity at placement: `auto := false` (1.1: repeating = false), `trackOutput := true`; `setPoweredAndUpdate(false)` no change.
 - Packet 55 (command `say hi`, mode 1, flags 0x01): block already `repeating_command_block`, same state (conditional false), no replacement; `setCommand("say hi")`, `successCount 0`; track on; `setAutomatic(false)`; mode unchanged; the system message `advMode.setCommand.success`.
-- Saved compound (3 keys of the base added after): `Command: "say hi"`, `SuccessCount: 0`, `TrackOutput: 1b`, `UpdateLastExecution: 1b`, `powered: 0b`, `conditionMet: 0b`, `auto: 0b` (no `CustomName`, no `LastOutput`, no `LastExecution`).
+- Saved compound (these seven keys are the complete compound for a fresh block; the base class adds `components` only when it is non-empty, 31-1 §2.2): `Command: "say hi"`, `SuccessCount: 0`, `TrackOutput: 1b`, `UpdateLastExecution: 1b`, `powered: 0b`, `conditionMet: 0b`, `auto: 0b` (no `CustomName`, no `LastOutput`, no `LastExecution`).
 - A lever powers the block: `setPoweredAndUpdate(true)`: not auto, mode AUTO: `markConditionMet()` (true), tick scheduled for t+1. At t+1 `tick`: `prevMet` true; AUTO: `markConditionMet()`; `execute(true)`: `performCommand`: the last run was never (-1), so run `say hi`; the capture stores `lastOutput = "[14:03:07]" + message` when the source sends one; `successCount` becomes 1; `lastExecution := t+1`; the chain walk starts in `facing` (nothing there). `powered` is true: schedule the next tick at t+2. At t+2 the same happens again: `lastExecution` differs, so it runs again (every tick while powered).
 
 ### 12.2 A conditional chain
@@ -549,24 +571,23 @@ An implementation is conformant for this part when the following hold.
 16. Jigsaw: all seven keys are written; a missing `joint` takes the default from the front direction; a missing pool gives `minecraft:empty`.
 17. Test block: `trigger` in mode START powers the block (output 15), logs, and leaves `triggered` false; in LOG it logs and sets `triggered`; in FAIL or ACCEPT it only sets `triggered`.
 18. Test instance: `errors` is written only when non-empty; `withStatus` clears the error message; geometry reproduces 12.8.
-19. Item data: placing a `block_entity_data` item for `command_block` as a non-creative or non-gamemaster player leaves the entity at its defaults; for a structure, jigsaw or test block the data is applied for any player.
+19. Item data (11.2, authoritative over 31-1 §3.2): placing a `block_entity_data` item for `command_block` as a non-creative or non-gamemaster player leaves the entity at its defaults; for a structure, jigsaw or test block the data is applied for any player.
 
 ---
 
 ## Open questions
 
-1. The `automatic` flag: read through the bootstrap tables, `repeating_command_block` constructs the block with false and `chain_command_block` with true (1.1). This is the opposite of what the reader would have expected from recall (recalled, not verified); a reviewer should re-read the two factory lambdas and their order in the `Blocks` initializer before an implementer relies on the table. It decides the default "always active" of a freshly placed block.
-2. Client-side effect of `loadAdditional` on a command block entity: it calls `setAutomatic`, which can call `scheduleTick` and so `Level.scheduleTick` on a client level when the loaded `auto` turns on. Whether the client level ignores that call was not read.
-3. The comparator signal of a command block is the raw `successCount`; the clamp to 15 of the comparator engine was not re-read here (31-1 §9.5 and the redstone document apply it).
-4. `StructureTemplate.fillFromWorld`, `placeInWorld`, `StructureTemplateManager` (cache, `save`, `getOrCreate`, file location and format), and `StructureUtils.clearSpaceForStructure` are cited, not specified (36, RS20).
-5. `JigsawPlacement.generateJigsaw` and the jigsaw block matching beyond `canAttach` (36, RS20); the jigsaw `getStateForPlacement` wording of 8.2 is a paraphrase of a conditional read in bytecode (the horizontal direction used as the top when the clicked face is vertical) and should be re-checked.
-6. The game test framework (`GameTestRunner`, `GameTestInfo`, `GameTestTicker`, `GameTestInstance` fields `padding`, `skyAccess`, `required`, `structure`, `rotation`, the `test_instance` and `test_environment` data) is not specified; only the block entity side is.
-7. The exact NBT string written for `rotation`, `mirror` and `mode` by the "legacy codec": the codec is a plain string codec built on the enum (`ExtraCodecs.legacyEnum`) whose encoder was not read in detail; the constant names in upper case are inferred (the decoder is a lookup by constant name).
-8. Callers of `TestBlockEntity.trigger()` for the LOG, FAIL and ACCEPT modes, and the game test runner's use of `reset()`; only the START mode and the redstone path in `TestBlock.neighborChanged` were read.
-9. The renderer's `renderStructureVoids` pass: whether and when it runs (it is not reached from the `submit` path that was read for modes BOX and BOX_AND_INVISIBLE_BLOCKS), the face geometry beyond the constants 0.48 and 0.5, and the exact component order of `ARGB.colorFromFloat` for the colours of 7.4 (read as alpha, red, green, blue).
-10. `TestInstanceBlockEntity.getRotation()`: the two mapping lambdas from the test holder to a rotation were not resolved; the "test definition's rotation" is inferred. The `Vec3i` codec form used for `size` (inferred: an Int array of three) and the `Rotation.CODEC` strings of 10.1 (read as lower-case serialized names) should be confirmed against 00 and 07.
-11. `TestInstanceBlockEntity.exportTest` and the test template manager (path validation, file format, the "testTemplates" enable condition).
-12. The `Direction.toYRot` values for `up` and `down` (command block yaw when facing vertically) were not read.
-13. The wording of the translation keys (`advMode.*`, `structure_block.*`, `test_instance_block.*`, `item.op_warning.*`, `jigsaw_block.joint.*`) lives in language data and was not read here.
-14. The set `EntityTypes.OP_ONLY_CUSTOM_DATA` members are taken from 46 and not re-read; `SpawnEggItem` and `EntityType` use `onlyOpCanSetNbt` for entity data (the entity documents 21 and 45).
-15. The `ServerPlayer.permissions()` source (how a player's `COMMANDS_GAMEMASTER` is derived) is in 15 §2; not re-read.
+1. Client-side effect of `loadAdditional` on a command block entity: it calls `setAutomatic`, which can call `scheduleTick` and so `Level.scheduleTick` on a client level when the loaded `auto` turns on. Whether the client level ignores that call was not read.
+2. The comparator signal of a command block is the raw `successCount`; the clamp to 15 of the comparator engine was not re-read here (31-1 §9.5 and the redstone document apply it).
+3. `StructureTemplate.fillFromWorld`, `placeInWorld`, `StructureTemplateManager` (cache, `save`, `getOrCreate`, file location and format), and `StructureUtils.clearSpaceForStructure` are cited, not specified (36, RS20).
+4. The game test framework (`GameTestRunner`, `GameTestInfo`, `GameTestTicker`, `GameTestInstance` fields `padding`, `skyAccess`, `required`, `structure`, `rotation`, the `test_instance` and `test_environment` data) is not specified; only the block entity side is.
+5. (Closed: no `toString` override in `Rotation`, `Mirror` or `StructureMode`, see 6.1.1. The number is kept so other references stay valid.)
+6. Callers of `TestBlockEntity.trigger()` for the LOG, FAIL and ACCEPT modes, and the game test runner's use of `reset()`; only the START mode and the redstone path in `TestBlock.neighborChanged` were read.
+7. The renderer's `renderStructureVoids` pass: whether and when it runs (it is not reached from the `submit` path that was read for modes BOX and BOX_AND_INVISIBLE_BLOCKS), the face geometry beyond the constants 0.48 and 0.5, and the exact component order of `ARGB.colorFromFloat` for the colours of 7.4 (read as alpha, red, green, blue).
+8. `TestInstanceBlockEntity.getRotation()` lambdas are now read (10.3: `Holder.value`, then `GameTestInstance.rotation()`). Still open: the `Vec3i` codec form used for `size` (inferred: an Int array of three) and the `Rotation.CODEC` strings of 10.1 (read as lower-case serialized names) should be confirmed against 00 and 07.
+9. `TestInstanceBlockEntity.exportTest` and the test template manager (path validation, file format, the "testTemplates" enable condition).
+10. The wording of the translation keys (`advMode.*`, `structure_block.*`, `test_instance_block.*`, `item.op_warning.*`, `jigsaw_block.joint.*`) lives in language data and was not read here.
+11. The set `EntityTypes.OP_ONLY_CUSTOM_DATA` members are taken from 46 and not re-read; `SpawnEggItem` and `EntityType` use `onlyOpCanSetNbt` for entity data (the entity documents 21 and 45).
+12. The `ServerPlayer.permissions()` source (how a player's `COMMANDS_GAMEMASTER` is derived) is in 15 §2; not re-read.
+13. `StructurePlaceSettings.getRandom(pos)` (6.4): the `Mth.getSeed` formula and the position source (the info's `pos()`) are read; whether that `pos()` is template-relative or world-absolute when processors run (`StructureTemplate.processBlockInfos`) was not traced.
+14. Scheduling of the remaining gaps (6 trigger callers, 7 `renderStructureVoids` call path, 8 `Vec3i` codec, 9 export path): assigned to the follow-up round on the game test framework and structure templates (36, RS20, with the renderer detail in 12); until then, 12.5, 12.8 and the 13 items on test instances are specified for the block entity side only, and 12.8 is exact for the rotation rule but not for how the runner places the structure.

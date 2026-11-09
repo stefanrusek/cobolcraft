@@ -6,7 +6,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md); version 26.3, protocol 777) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Every key name, default, constant and ordering below was read from the `addAdditionalSaveData` / `readAdditionalSaveData` pair of the class named in the section (the 26.3 `ValueOutput` / `ValueInput` form), from the codec it names, or from the tick code that consumes the field. Anything not read is marked "(inferred)" or "(recalled, not verified)" and listed in Open questions. |
 | Data versus code | Per the operator decisions (design README Part 0, rule R7), no data row is tabulated: loot tables, tags (`speeds_up_zombie_villager_curing`, ...), registry JSON and environment-attribute values (`piglins_zombify`) are data the extraction tool supplies. This document specifies the schema, the defaults and the engines that read them. |
-| Not covered here | Keys of `Entity`, `LivingEntity`, `Mob`, `PathfinderMob` (specified in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 5 for `Entity` and [45-2](45-entity-nbt-2-living-entity-mob-animal.md) sections 2 to 4 for `LivingEntity`, `Mob`, `AgeableMob` and `Animal`; section 1 only names them), the `Player` and `ServerPlayer` files ([45-3](45-entity-nbt-3-player-and-player-data.md); the one key needed from it, `warden_spawn_tracker`, is specified there in section 6.3 and its engine here in 7.3), illagers, piglins, villagers and the full trade, gossip and villager-data schemas ([45-6](45-entity-nbt-6-villagers-illagers-piglins.md) sections 4 to 6, 11 and 13; section 9 here repeats only the parts the zombie villager needs), animals ([45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 4, 45-4), aquatic and miscellaneous mobs (45-7), vehicles, projectiles and items (45-8), vehicles and projectiles. Mob behaviour is in [20](20-mobs-overworld-hostile.md), [21](21-mobs-aquatic-nether-end-bosses-and-entities.md) and the 44 series; behaviour is repeated here only where a saved field cannot be understood without it. |
+| Not covered here | Keys of `Entity`, `LivingEntity`, `Mob`, `PathfinderMob` (specified in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 5 for `Entity` and [45-2](45-entity-nbt-2-living-entity-mob-animal.md) sections 2 to 4 for `LivingEntity`, `Mob`, `AgeableMob` and `Animal`; section 1 only names them), the `Player` and `ServerPlayer` files ([45-3](45-entity-nbt-3-player-and-player-data.md); the one key needed from it, `warden_spawn_tracker`, is specified there in section 6.3 and its engine here in 7.3), illagers, piglins, villagers and the full trade, gossip and villager-data schemas ([45-6](45-entity-nbt-6-villagers-illagers-piglins.md) sections 4 to 6, 11 and 13; section 9 here repeats only the parts the zombie villager needs), land animals ([45-4](45-entity-nbt-4-land-animals.md); the `Animal` and `AgeableMob` keys are in [45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 4), aquatic and miscellaneous mobs ([45-7](45-entity-nbt-7-aquatic-and-misc-mobs.md)), vehicles, projectiles and items ([45-8](45-entity-nbt-8-vehicles-projectiles-items.md)), bosses and decorations ([45-9](45-entity-nbt-9-bosses-and-decorations.md)). Mob behaviour is in [20](20-mobs-overworld-hostile.md), [21](21-mobs-aquatic-nether-end-bosses-and-entities.md) and the 44 series; behaviour is repeated here only where a saved field cannot be understood without it. |
 | Related | The shared Brain serialisation model [45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 8 (7.1 here lists the memories of this part's mobs); `NeutralMob` helper [45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 7; NBT tag types and `entities/` storage [07](07-nbt-and-anvil.md) §1, §8, §9.3 (this document is the per-type content of the `Entities` list entries of 07 §9.3 for the mobs above); block-state compound form [07](07-nbt-and-anvil.md) §7.3; mob framework [18](18-mob-framework.md); warden and sulfur cube behaviour [44-5](44-residual-mob-questions-5-overworld-hostile.md); villager side of conversion [44-3](44-residual-mob-questions-3-villagers-poi-raids.md); nether mobs [44-6](44-residual-mob-questions-6-nether.md) |
 
 Reading guide. Section 2 gives the read and write conventions that hold for every key. Section 3 lists the inheritance chain of every type, so an implementer knows which tables apply. Sections 4 to 6 give the key tables (shared mid-level classes first, then each mob). Section 7 is brain, warden and vibration state. Section 8 is the engines behind the saved timers. Section 9 is the embedded codecs. Section 10 is the load-time validation rules, section 11 the worked examples, section 12 a per-type summary matrix.
@@ -28,11 +28,11 @@ The first compound level of every mob is written by the chain `Entity` → `Livi
 
 ## 2. Read and write conventions (apply to every table)
 
-Read from `TagValueOutput`, `TagValueInput` and `CompoundTag`:
+Read from `TagValueOutput`, `TagValueInput` and `CompoundTag` (booleans: `CompoundTag.getBooleanOr`):
 
 | Rule | Detail |
 |---|---|
-| Boolean | Written as a Byte tag, 1 for true and 0 for false. Read as `byteValue != 0` of any numeric tag. |
+| Boolean | Written as a Byte tag, 1 for true and 0 for false. Read through `CompoundTag.getBooleanOr`, which calls `getByteOr` (with the default converted to 1 or 0) and tests the resulting byte for nonzero, so the rule is `byteValue != 0` of any numeric tag (read in this round from `CompoundTag.getBooleanOr`; `TagValueInput` forwards to it). |
 | Numbers are read leniently | `getIntOr`, `getByteOr`, `getShortOr`, `getLongOr` accept any numeric tag type (Byte, Short, Int, Long, Float, Double) and convert it with the Java narrowing of the target type. A missing key or a non-numeric tag gives the default. The tables state the type that is written; a reader must accept any numeric type. |
 | `getXOr(key, default)` | The default applies when the key is absent or not numeric. No read of this part fails: a mob with an empty compound loads with the defaults in the tables. |
 | `store(key, codec, value)` | Writes the value with the codec under the key. |
@@ -71,8 +71,8 @@ Each entry lists the classes whose `addAdditionalSaveData` / `readAdditionalSave
 | shulker | `PathfinderMob` → `AbstractGolem` → `Shulker` | `AttachFace`, `Peek`, `Color` (5.7) |
 | slime, magma_cube | `PathfinderMob` → `AgeableMob` → `AbstractCubeMob` | `Size`, `wasOnGround`; the `AgeableMob` keys are skipped because `canBeABaby` is false (6.1) |
 | sulfur_cube | `AgeableMob` → `AbstractCubeMob` → `SulfurCube` | `Size`, `wasOnGround`, `Age`, `ForcedAge`, `AgeLocked`, `pickup_timer`, `from_bucket`, `fuse` (6.3) |
-| witch | `PathfinderMob` → `PatrollingMonster` → `Raider` | `patrol_target`, `PatrolLeader`, `Patrolling`, `Wave`, `CanJoinRaid`, `RaidId` (4.6, 4.7) |
-| ravager | `PatrollingMonster` → `Raider` → `Ravager` | the witch keys plus `AttackTick`, `StunTick`, `RoarTick` (6.6) |
+| witch | `PathfinderMob` → `Monster` → `PatrollingMonster` → `Raider` | `patrol_target`, `PatrolLeader`, `Patrolling`, `Wave`, `CanJoinRaid`, `RaidId` (4.6, 4.7) |
+| ravager | `PathfinderMob` → `Monster` → `PatrollingMonster` → `Raider` → `Ravager` | the witch keys plus `AttackTick`, `StunTick`, `RoarTick` (6.6) |
 | warden | `Monster` → `Warden` | `anger`, `listener` (6.4) |
 | creaking | `Monster` → `Creaking` | `home_pos` (6.5) |
 | zoglin | `Monster` → `Zoglin` | `IsBaby` (6.7) |
@@ -280,7 +280,7 @@ Husk and drowned (timers: 4.1), stray, parched, wither skeleton, spider, cave sp
 | `Size` | Int | 0 | **Stored as `size - 1`.** Written as `getSize() - 1`; read as `Size + 1`. A slime of size 4 stores `Size: 3`, and a file without the key loads as size 1. |
 | `wasOnGround` | Byte (boolean) | false | The previous tick's ground flag used by the squish animation and the landing sound. |
 
-Read order (differs from "parent first"): `Size` first, applied with `setSize(size, resetHealth=false)`, then the parent (`AgeableMob`) read, then `wasOnGround`. The parent chain reads `Health` afterwards, so the saved health wins (`resetHealth=false` leaves health untouched; Open question 14).
+Read order (differs from "parent first"): `Size` first, applied with `setSize(size, resetHealth=false)`, then the parent (`AgeableMob`) read, then `wasOnGround`. The parent chain was read to its end: `AbstractCubeMob` calls `AgeableMob`, which calls `PathfinderMob` (no override of its own), which resolves to `Mob`, which calls `LivingEntity.readAdditionalSaveData`; that method reads `Health` with the default `getMaxHealth()` and applies it with `setHealth`, so the saved health wins over the size-derived value (`resetHealth=false` leaves health untouched).
 
 `setSize(size, resetHealth)`:
 
@@ -290,7 +290,7 @@ Read order (differs from "parent first"): `Size` first, applied with `setSize(si
 4. The base value of `movement_speed` becomes `0.2 + 0.1 * size` (float arithmetic: `0.1f * size` added to `0.2f`, widened to double).
 5. If `resetHealth` is true, health becomes the new maximum health.
 
-Spawn size of the base class (`AbstractCubeMob.setSpawnSize`, read from the bytecode): draw `e = nextInt(3)`; when `e < 2` and then `nextFloat() < 0.5 * specialMultiplier` (the local-difficulty special multiplier), `e` increases by 1; the size is `1 << e`, applied with `setSize(size, resetHealth=true)`. So the spawn size is 1, 2 or 4: `e = 2` (probability 1/3) always gives 4 (the float is not drawn), `e = 0` or `1` gives 2 or 4 only when the float test passes. (An earlier text of this section said "size 1 when ..."; the bytecode disagrees and it is replaced.) Subclasses may override; spawn rules: 20, 44-4. Split on death: a cube mob of size above 1 that dies on the server spawns `getSplitCount()` smaller cubes; the children are saved with their own `Size`. The split rules are in the mob documents.
+Spawn size of the base class (`AbstractCubeMob.setSpawnSize`, read from the bytecode): draw `e = nextInt(3)`; when `e < 2` and then `nextFloat() < 0.5 * specialMultiplier` (the local-difficulty special multiplier), `e` increases by 1; the size is `1 << e`, applied with `setSize(size, resetHealth=true)`. So the spawn size is 1, 2 or 4: `e = 2` (probability 1/3) always gives 4 (the float is not drawn); `e = 0` gives 1, or 2 when the float test passes; `e = 1` gives 2, or 4 when the float test passes. Subclasses may override; spawn rules: 20, 44-4. Split on death: a cube mob of size above 1 that dies on the server spawns `getSplitCount()` smaller cubes; the children are saved with their own `Size`. The split rules are in the mob documents.
 
 Neither slime nor magma cube has `Age`, `ForcedAge` or `AgeLocked` in its file.
 
@@ -315,14 +315,14 @@ Engine facts needed to interpret `fuse`:
 | Fact | Value |
 |---|---|
 | Countdown | each tick a fuse above 0 is decremented first; when it equals 0 and the cube has explosion data, the cube dies by explosion (leash dropped) |
-| Explosion | at the cube's position with y raised by 0.0625, power and fire flag from the archetype's explosion data; interaction type `tnt` when the `mob_griefing` rule is true, `none` otherwise; no explosion when the `tnt_explodes` rule is false; then death effects (removal reason killed) and discard |
-| Priming (`primeTime(boolean randomFuse)`, returns a boolean) | refused (returns false) when the cube has no explosion data, is not alive, is not on a server level, the `tnt_explodes` rule is false, or it is already primed. Otherwise the fuse value is the archetype explosion-data fuse; when the parameter is true the value is `PrimedTnt.getRandomShortFuse(archetype fuse, random)` instead, when false the archetype fuse is used directly. `fuse` and the synched `max_fuse` are set to that value, the cube becomes permanently invulnerable, the TNT-primed sound plays and `prime_fuse` fires, and the call returns true. Callers read from the bytecode: the redstone path (`primeWhenOnPoweredPosition`) and the `mobInteract` call pass false; `hurtServer` contains one call with false and one with true (the conditions in `hurtServer` were not traced). Nothing in `primeTime` substitutes 1 for a zero archetype fuse (an earlier statement of such a rule was not found and is dropped) |
+| Explosion | at the cube's position with y raised by 0.0625, power and fire flag from the archetype's explosion data; interaction type `tnt` when the `mob_griefing` rule is true, `none` otherwise; no explosion when the `tnt_explodes` rule is false; then death effects (removal reason killed) and discard. The explosion uses the default damage source for the cube (`Explosion.getDefaultDamageSource`); when the cube's portal cooldown is above 0 the damage calculator is `PrimedTnt.USED_PORTAL_DAMAGE_CALCULATOR`, otherwise none (null). The rules of that calculator were not read (Open question 15) |
+| Priming (`primeTime(boolean randomFuse)`, returns a boolean) | refused (returns false) when the cube has no explosion data, is not alive, is not on a server level, the `tnt_explodes` rule is false, or it is already primed. Otherwise the fuse value is the archetype explosion-data fuse; when the parameter is true the value is `PrimedTnt.getRandomShortFuse(archetype fuse, random)` instead, when false the archetype fuse is used directly. `fuse` and the synched `max_fuse` are set to that value, the cube becomes permanently invulnerable, the TNT-primed sound plays and `prime_fuse` fires, and the call returns true. Callers read from the bytecode: the redstone path (`primeWhenOnPoweredPosition`) and the `mobInteract` call pass false; `hurtServer` contains one call with false and one with true (the conditions in `hurtServer` were not traced). `primeTime` does not substitute any value for a zero archetype fuse |
 | Redstone priming | each tick a server cube that can explode and whose block position has a best own-or-neighbour signal above 0 primes itself |
 | Baby rule | `setSize` called with `resetHealth` true for size 1 on a non-baby makes it a baby; when a baby reaches the age boundary and is no longer a baby it grows to size 2 with `resetHealth` true; split children are made babies |
 | Max health | `4 * size` (not `size * size`) |
 | Bucket round trip | `saveToBucketTag` writes the custom name, the `bucket_entity_data` component (the `Bucketable` defaults `NoAI` and `Silent` when set, and further flags `NoGravity`, `Glowing` as the default writer does) plus `age` (Int) and `age_locked` (Byte), and copies the `sulfur_cube_content` component; `loadFromBucketTag` restores `NoAI`, `Silent`, `NoGravity`, `Glowing`, persistence, then `age` and `age_locked` |
 
-The `getRandomShortFuse` helper and the archetype data are in 44-5 and 20 §18.2; the helper formula was not re-read here (Open question 6); the `hurtServer` conditions that choose the true or false form were not traced (Open question 6). The `NoGravity` and `Glowing` writer lines of the default bucket writer were seen only as the reader's list (Open question 15).
+The `getRandomShortFuse` helper and the archetype data are in 44-5 and 20 §18.2; the helper formula was not re-read here (Open question 6); the `hurtServer` conditions that choose the true or false form were not traced (Open question 6). The `NoGravity` and `Glowing` writer lines of the default bucket writer were seen only as the reader's list (Open question 12).
 
 ### 6.4 Warden
 
@@ -394,7 +394,7 @@ Rules read from `MemoryMap`, `ExpirableValue` and `Brain.pack`:
 5. A `Unit`-codec value is an empty compound `{}` (`MapCodec.unitCodec`; inferred).
 6. `ttl` is the remaining expiry at save time (`ExpirableValue.of(value, ttl)` is the packing call); after load the memory expires after that many more ticks (inferred; Open question 4).
 
-Serialisable memory types (every type registered with a codec in `MemoryModuleType`; value codecs read from the registrations):
+Serialisable memory types (every type registered with a codec in the static initialiser of `net.minecraft.world.entity.ai.memory.MemoryModuleType`; the codec of each row was read in this round from the argument of its `register` call: `GlobalPos.CODEC`, `Codec.BOOL`, `Codec.LONG`, `Codec.INT`, `net.minecraft.util.Unit.CODEC`, `net.minecraft.core.UUIDUtil.CODEC` and `net.minecraft.core.BlockPos.CODEC` as named in the rows; the list codecs of `visited_block_positions`, `unreachable_transport_block_positions` and `sniffer_explored_positions` wrap `GlobalPos.CODEC`, the wrapper form being the `xmap` noted earlier; the `Used by` column is inferred from the memory names):
 
 | Memory id | Value codec | Used by (this part) |
 |---|---|---|
@@ -425,7 +425,7 @@ Per mob of this part:
 | breeze | `breeze_jump_cooldown`, `breeze_shoot`, `breeze_shoot_charging`, `breeze_shoot_recover`, `breeze_shoot_cooldown`, `breeze_jump_inhaling`, `breeze_jump_target`, `breeze_leaving_water` (referenced in `Slide`, `LongJump`, `Shoot`, `ShootWhenStuck`, `Breeze`) | any subset |
 | creaking | none (`CreakingAi` and `Creaking` use the attack target and nearest-player lists only) | `{}` |
 | hoglin, zoglin | none (`HoglinAi` and `Zoglin` use the attack target, avoid target, breed target, pacified, nearest-entity and count memories, none serialisable) | `{}` |
-| all other mobs of this document | none (inferred; their AI code was not searched for serialisable memories; Open question 16) | `{}` (inferred) |
+| all other mobs of this document | none (inferred; their AI code was not searched for serialisable memories; Open question 13) | `{}` (inferred) |
 
 A saved mid-emerge warden resumes because `is_emerging` is restored with its remaining ticks.
 
@@ -516,7 +516,7 @@ Constants: maximum warning level 4; decay interval 12000 ticks; cooldown between
 | `listener.selector.tick` | Long, **required** (`Codec.LONG.fieldOf("tick")`) | none | Game tick of the choice. On save it is the chosen vibration's tick, or `-1` when no event is chosen (read from the getter). A selector compound without `tick` fails to decode. |
 | `listener.event_delay` | Int, non-negative (always-present optional field) | 0 | Ticks left until the travelling vibration arrives. |
 
-The worked example in 11.10 supplies `tick`, so it decodes. How a present `tick` with an absent `event` maps to selector state (the `-1` constant appears in the selector class; it is read as the saved tick of an empty selector, the load-side use was not traced) is Open question 8.
+The worked example in 11.10 supplies `tick`, so it decodes. How a present `tick` with an absent `event` maps to selector state (the `-1` constant appears in the selector class; it is read as the saved tick of an empty selector, the load-side use was not traced) is Open question 7.
 
 ---
 
@@ -554,9 +554,9 @@ The synched converting flag drives the client's shaking (`isShaking` for the ske
 
 The zombie villager does not use the tracker.
 
-Start (`mobInteract`): a player holding a golden apple while the zombie villager has the weakness effect: one apple is consumed, and on the server the cure starts with duration `nextInt(2401) + 3600` ticks (3600 to 6000) and the player's UUID; the result is "success on server" for that case and "consume" on the client; otherwise the parent decides.
+Start (`mobInteract`): a player holding a golden apple while the zombie villager has the weakness effect: one apple is consumed, and on the server the cure starts with duration `nextInt(2401) + 3600` ticks (3600 to 6000) and the player's UUID; the result is `SUCCESS_SERVER` in that case on both client and server (the client side only skips the start call and reaches the same return). A player holding a golden apple while the zombie villager does not have weakness gets `CONSUME` and no apple is consumed. In every other case the parent (`Zombie.mobInteract`) decides. This corrects the client result `CONSUME` and the duration `2401 + nextInt(3600)` stated in [20](20-mobs-overworld-hostile.md) section on the cure; the jar gives `nextInt(2401) + 3600` and `SUCCESS_SERVER` on both sides. Cross-document fix required: document 20 must be corrected by its owner (Open question 14).
 
-`startConverting(player, time)` (also called by the load): the starter UUID and remaining time are set, the synched converting flag is set, the weakness effect is removed, a strength effect with duration `time` and amplifier `min(difficultyId - 1, 0)` is added (so amplifier 0 above peaceful and -1 on peaceful: read as a minimum; Open question 12), and entity event 16 is broadcast (the client's cure particles).
+`startConverting(player, time)` (also called by the load): the starter UUID and remaining time are set, the synched converting flag is set, the weakness effect is removed, a strength effect with duration `time` and amplifier `min(difficultyId - 1, 0)` is added (so amplifier 0 above peaceful and -1 on peaceful: read as a minimum; Open question 10), and entity event 16 is broadcast (the client's cure particles).
 
 Per tick on the server while alive and converting: `villagerConversionTime -= getConversionProgress()`; at 0 or below, `finishConversion`.
 
@@ -564,13 +564,13 @@ Per tick on the server while alive and converting: `villagerConversionTime -= ge
 
 `finishConversion` converts into a `villager` with `ConversionParams.single(mob, keepEquipment=false, preserveCanPickUpLoot=false)` and the after step:
 
-1. Equipment items that do not carry the `prevent_armor_change` enchantment effect are dropped; each dropped slot's item is moved into the villager's slot index `300 + slot index` where the villager exposes it.
+1. The zombie villager calls `Mob.dropPreservedEquipment(level, predicate)`, whose predicate is true for an item that does NOT have the `prevent_armor_change` enchantment effect. Per equipment slot: an empty slot is skipped; an item for which the predicate is false (it has `prevent_armor_change`) puts its slot into the returned set and is left in place; an item for which the predicate is true is cleared from the slot and spawned in the world only when the mob's drop chance for that slot is above 1.0 (`DropChances.isPreserved`, a float compare against 1.0), and otherwise stays on the old mob and is lost (`keepEquipment` is false). The after step then moves the item of each slot in the returned set (the items WITH `prevent_armor_change`) into the villager's slot `300 + EquipmentSlot.getIndex()` where the villager exposes that slot.
 2. The villager receives the finalised flag, the `VillagerData`, the gossips (when non-null), a copy of the offers (when non-null) and the XP.
 3. The villager is finalised (`finalizeSpawn` with the local difficulty and the `conversion` spawn reason) and its brain refreshed.
 4. If the starter UUID resolves to a player in the level: the cured-zombie-villager advancement trigger fires and the `zombie_villager_cured` reputation event is sent.
 5. A nausea effect, duration 200 ticks, amplifier 0, is added to the villager; unless the zombie villager was silent, level event 1027 is broadcast at its position.
 
-`removeWhenFarAway` is true only when the zombie villager is not converting and has `Xp == 0`. The opposite conversion (a villager killed by a zombie) uses `ConversionParams.single(mob, true, true)` into `zombie_villager` (`Zombie.convertVillagerToZombieVillager`). Its after step, in order: the zombie villager's finalised flag is set from the villager's; `finalizeSpawn` runs with the local difficulty at the zombie villager's position, the `conversion` spawn reason and a `ZombieGroupData` constructed with the two booleans (false, true); then the zombie villager receives the villager's `VillagerData`, a copy of its gossips, a copy of its offers and its villager XP; finally, unless the zombie was silent, level event 1026 is broadcast at the zombie's block position. (Whether the conversion happens at all is decided by the caller of `Zombie.convertVillagerToZombieVillager`, not by this step; the caller was not traced.) The dropped-equipment predicate of the cure (step 1 above) was confirmed: an item is dropped when it does not have the `prevent_armor_change` enchantment effect.
+`removeWhenFarAway` is true only when the zombie villager is not converting and has `Xp == 0`. The opposite conversion (a villager killed by a zombie) uses `ConversionParams.single(mob, true, true)` into `zombie_villager` (`Zombie.convertVillagerToZombieVillager`). Its after step, in order: the zombie villager's finalised flag is set from the villager's; `finalizeSpawn` runs with the local difficulty at the zombie villager's position, the `conversion` spawn reason and a `ZombieGroupData` constructed with the two booleans (false, true); then the zombie villager receives the villager's `VillagerData`, a copy of its gossips, a copy of its offers and its villager XP; finally, unless the zombie was silent, level event 1026 is broadcast at the zombie's block position. (Whether the conversion happens at all is decided by the caller of `Zombie.convertVillagerToZombieVillager`, not by this step; the caller was not traced.) The slot-preservation rule of the cure is step 1 above (read: items with `prevent_armor_change` are carried into the villager; items without it are spawned in the world only for a drop chance above 1.0, else lost).
 
 ### 8.3 Hoglin zombification
 
@@ -586,7 +586,7 @@ Conversion: `ConversionParams.single(mob, keepEquipment=true, preserveCanPickUpL
 
 ## 9. Embedded codecs
 
-Cross-reference: the authoritative statements of these codecs are the item stack form in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 8, trade offers in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 4, gossip in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 5 and `VillagerData` in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 6; this section keeps only what the zombie villager and its conversions need and was read independently.
+Cross-reference: the authoritative statements of these codecs (45-6 for offers, gossip and villager data; 45-1 for item stacks) are the item stack form in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 8, trade offers in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 4, gossip in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 5 and `VillagerData` in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 6; this section keeps only what the zombie villager and its conversions need and was read independently.
 
 ### 9.1 `VillagerData`
 
@@ -605,11 +605,11 @@ Cross-reference: the authoritative statements of these codecs are the item stack
 | `count` | Int | 1 | range 1 to 99 inclusive |
 | `components` | Compound (component patch) | empty | keys are component ids; a key with the prefix `!` removes that component from the item's defaults |
 
-`OPTIONAL_CODEC` (used where a stack may be empty) writes an empty compound `{}` for the empty stack. The NBT form of each component value is not specified here (Open question 9).
+`OPTIONAL_CODEC` (used where a stack may be empty) writes an empty compound `{}` for the empty stack. The NBT form of each component value is not specified here (Open question 8).
 
 ### 9.3 `MerchantOffers` and `MerchantOffer`
 
-`Offers` is `{Recipes: [offer, ...]}` (the list key is `Recipes`, default empty). The full trade schema is [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 4; the defaults below were read independently from the codec in class `net.minecraft.world.item.trading.MerchantOffer`: `buy` and `sell` use `fieldOf`, `buyB` uses `lenientOptionalFieldOf`, and `uses`, `maxUses`, `rewardExp`, `specialPrice`, `demand`, `priceMultiplier`, `xp` use `lenientOptionalFieldOf` with the defaults in the table (0, 4, true, 0, 0, 0.0, 1).
+`Offers` is `{Recipes: [offer, ...]}` (the list key is `Recipes`, default empty). The full trade schema is [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 4; the defaults below were read independently from the codec in class `net.minecraft.world.item.trading.MerchantOffer`: `buy` and `sell` use `fieldOf`, `buyB` uses `lenientOptionalFieldOf`, and `uses`, `maxUses`, `rewardExp`, `specialPrice`, `demand`, `priceMultiplier`, `xp` use `lenientOptionalFieldOf` with the defaults in the table (read in this round from the `MerchantOffer` codec constants: `uses` 0, `maxUses` 4, `rewardExp` true, `specialPrice` 0, `demand` 0, `priceMultiplier` 0.0, `xp` 1). [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 4 is authoritative for the offer schema; this copy is a convenience and a disagreement is a defect of this document.
 
 | Offer key | Type | Default when absent |
 |---|---|---|
@@ -636,7 +636,7 @@ Cross-reference: the authoritative statements of these codecs are the item stack
 | `Type` | one of `major_negative`, `minor_negative`, `minor_positive`, `major_positive`, `trading` | by name |
 | `Value` | Int, positive | a value of 0 or less fails the entry |
 
-Gossip type constants (weight, max, decay per day, decay per transfer; read from the enum constructor arguments of `net.minecraft.world.entity.ai.gossip.GossipType`; the gossip schema and engine are in [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 5):
+Gossip type constants (weight, max, decay per day, decay per transfer; read in this round from the `<clinit>` constructor arguments of `net.minecraft.world.entity.ai.gossip.GossipType`; [45-6](45-entity-nbt-6-villagers-illagers-piglins.md) section 5 is authoritative for the gossip schema, the table and the engine, and this copy defers to it):
 
 | Type | Weight | Max | Decay per day | Decay per transfer |
 |---|---|---|---|---|
@@ -646,7 +646,7 @@ Gossip type constants (weight, max, decay per day, decay per transfer; read from
 | `major_positive` | 5 | 20 | 0 | 20 |
 | `trading` | 1 | 25 | 2 | 20 |
 
-Per-event change constants: 25 per reputation event, 20 per everlasting memory, 2 per trade; container discard threshold 2 (a decayed value at or below it is dropped; inferred from the constant name). The gossip engine belongs to the villager documents (44-3).
+Per-event change constants (read in this round as the `public static final int` fields of `net.minecraft.world.entity.ai.gossip.GossipContainer`): `REPUTATION_CHANGE_PER_EVENT` 25, `REPUTATION_CHANGE_PER_EVERLASTING_MEMORY` 20, `REPUTATION_CHANGE_PER_TRADE` 2, `DISCARD_THRESHOLD` 2 (what the threshold discards is inferred from the constant name). The gossip engine belongs to the villager documents (44-3).
 
 ---
 
@@ -698,6 +698,8 @@ powered: 1b, Fuse: 30s, ExplosionRadius: 3b, ignited: 1b
 Loads with `ignite()`; the swell restarts from 0, so it explodes 30 ticks later with radius `2.0 * 3 = 6.0`.
 
 **11.5 Enderman carrying grass, angry at a player**
+
+(Illustrative values: the end time 48000 and the game time 47000 are chosen for the arithmetic, not read from the artifact.)
 
 ```
 carriedBlockState: {id: "minecraft:grass_block", properties: {snowy: "false"}}
@@ -770,7 +772,9 @@ Age: 0, ForcedAge: 0, AgeLocked: 0b, InLove: 0, IsImmuneToZombification: 0b, Tim
 ```
 It converts after 101 more consecutive ticks at a zombifying position.
 
-**11.15 Shulker attached to the north face, half open**
+**11.15 Shulker attached to the north face, partly open**
+
+(Illustrative values. `Peek` is the raw synched byte; the shell animation reads it as `raw * 0.01f` and moves the current amount toward it by 0.05f per tick with a clamp, read from `Shulker.updatePeekAmount`; no maximum for `Peek` was read, Open question 9. `50b` is therefore only an example of a mid value.)
 
 ```
 AttachFace: 2b, Peek: 50b, Color: 16b
@@ -823,23 +827,18 @@ On load `startConversion(120)` runs; if the skeleton leaves powder snow, the nex
 
 ## Open questions
 
-1. The shared-chain keys of section 1 (`Entity`, `LivingEntity`, `Mob`) are named but not specified here; they are specified in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 5 and [45-2](45-entity-nbt-2-living-entity-mob-animal.md) sections 2 and 3. Keep those documents authoritative when the two disagree. `docs/protocol/README.md` has no Documents row for the 45 series yet: this is a required item left for the orchestrator (the fixer may not edit the README).
-2. Whether a rejected codec value (a malformed `Brain` or `anger` compound, or a `Brain.memories` key naming a memory without a codec) is logged, ignored or fails the whole entity load was not traced. 7.1 now states the `Brain` load path as read (a failed codec leaves the constructor's empty brain; logging not traced); sections 2 and 10 state the observable default for the other compounds (inferred).
+1. `docs/protocol/README.md` has no Documents row or scope sentence for the 45 series yet. The orchestrator adds it; this document does not edit the README. The shared-chain keys of section 1 are specified in [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) section 5 and [45-2](45-entity-nbt-2-living-entity-mob-animal.md) sections 2 and 3, which stay authoritative when the documents disagree.
+2. Whether a rejected codec value (a malformed `Brain` or `anger` compound, or a `Brain.memories` key naming a memory without a codec) is logged, ignored or fails the whole entity load was not traced. Sections 2, 7.1 and 10 state the observable default (inferred except for `Brain`, which was read).
 3. `Unit` memory values are said to be an empty compound (inferred from `MapCodec.unitCodec`); the stored byte form was not checked.
-4. The `ttl` semantic (remaining ticks versus absolute game time) is inferred from the packing call; the load-side application was not read (see [45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 8.3 for the shared model). The value codecs of every registration in 7.1 were read in `MemoryModuleType` (closed: all Boolean rows use `Codec.BOOL`, `angry_at` and `liked_player` use `UUIDUtil.CODEC`, `breeze_jump_target` uses `BlockPos.CODEC`, every warden and other breeze memory uses `Unit.CODEC`).
+4. The `ttl` semantic (remaining ticks versus absolute game time) is inferred from the packing call; the load-side application was not read (see [45-2](45-entity-nbt-2-living-entity-mob-animal.md) section 8.3 for the shared model).
 5. A phantom loaded without `anchor_pos` has a null anchor. The consumers of the anchor (the move goals) were not read for null handling.
 6. The `PrimedTnt.getRandomShortFuse(fuse, random)` helper used by the sulfur cube was not read, the archetype and explosion-data JSON schema is only named (data), and the conditions under which `hurtServer` calls `primeTime(true)` versus `primeTime(false)` were not traced.
-7. Closed: the rejecting test of `tryWarn` is the player's own tracker being on cooldown (7.3 step 3).
-8. The vibration selector's lenient pair (`event` optional, `tick` required) and how it maps to the selector state were not traced.
-9. The NBT form of every component value inside `ItemStack.components` (the per-component codec) is not specified.
-10. Closed: `Direction` (`net.minecraft.core.Direction`) was located; ids 0 to 5 and the `abs(i % 6)` decode were read, and the `LEGACY_ID_CODEC` decoder is the `from3DDataValue` method handle (5.7).
-11. The creeper explosion call was read as `explode(entity, x, y, z, radius, interaction)`; the `Level.explode` semantics belong to the explosion algorithm of 20 §6.2.
-12. A zombie villager's strength amplifier on start is `min(difficulty id - 1, 0)`, which is -1 on peaceful. This is read from the bytes and looks unintended; the client effect for amplifier -1 was not traced.
-13. The hoglin `piglins_zombify` environment attribute is data; the lookup engine is in the world-type documents and was not re-read.
-14. The loading of `Health` after `Size` for cube mobs relies on the `AgeableMob` read chain reaching `LivingEntity.readAdditionalSaveData`; that chain was read only down to `AgeableMob.readAdditionalSaveData`.
-15. The default bucket writer (`Bucketable.saveDefaultDataToBucketTag`) was read for `NoAI` and `Silent` (written) and its loader for `NoAI`, `Silent`, `NoGravity`, `Glowing` and persistence; the writer's remaining keys (`NoGravity`, `Glowing`, `Invulnerable`, `Health`) were not each confirmed.
-16. The AI code of the monsters other than warden, breeze, creaking, hoglin and zoglin was not searched for serialisable memories; the table in 7.1 states none for them without that search (not verified that they use goal selectors rather than brains; the 7.1 cells are marked inferred; the `Brain` compound is written regardless).
-20. The `Enderman` carried-block filter was re-read: the decoded state is kept unless `BlockState.isAir()` (5.2 confirmed). The `Warden.increaseAngerAt` order was not re-read in this round (7.2 stands as written earlier).
-17. Closed: the erase condition of `Warden.increaseAngerAt` is read (7.2).
-18. Closed: the after step of `Zombie.convertVillagerToZombieVillager` is read (8.2).
-19. Closed: the `ItemCost` `count` default is 1 and the `VillagerData` default type is plains (9.1, 9.3).
+7. The vibration selector's lenient pair (`event` optional, `tick` required) and how it maps to the selector state were not traced.
+8. The NBT form of every component value inside `ItemStack.components` (the per-component codec) is not specified.
+9. The shulker `Peek` maximum (the range of the raw byte) was not read; only the `0.01f` scale and the `0.05f` step were (11.15). Searched: `Shulker` fields, `updatePeekAmount`, `getPhysicalPeek`, the read and write methods.
+10. A zombie villager's strength amplifier on start is `min(difficulty id - 1, 0)`, which is -1 on peaceful. This is read from the bytes and looks unintended; the client effect for amplifier -1 was not traced.
+11. The hoglin `piglins_zombify` environment attribute is data; the lookup engine is in the world-type documents and was not re-read.
+12. The default bucket writer (`Bucketable.saveDefaultDataToBucketTag`) was read for `NoAI` and `Silent` (written) and its loader for `NoAI`, `Silent`, `NoGravity`, `Glowing` and persistence; the writer's remaining keys (`NoGravity`, `Glowing`, `Invulnerable`, `Health`) were not each confirmed.
+13. The AI code of the monsters other than warden, breeze, creaking, hoglin and zoglin was not searched for serialisable memories; the table in 7.1 states none for them without that search (inferred; the `Brain` compound is written regardless).
+14. Cross-document fix, owner of [20](20-mobs-overworld-hostile.md): its cure section states the client result `CONSUME` and the duration `2401 + nextInt(3600)`. The jar (`sipush 2401`, `nextInt`, `sipush 3600`; `SUCCESS_SERVER` on both sides) supports 8.2 here, so document 20 needs correcting; this document does not edit it.
+15. The behaviour of `PrimedTnt.USED_PORTAL_DAMAGE_CALCULATOR` (what the calculator changes in the explosion's damage and block rules) was not read; only that the sulfur cube passes it when its portal cooldown is above 0 (6.3).

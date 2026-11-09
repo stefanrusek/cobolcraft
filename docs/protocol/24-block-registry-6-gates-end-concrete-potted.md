@@ -6,7 +6,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, and `javap -v` for the bootstrap method arguments of lambdas), with no execution. The `Blocks` static initialiser was summarised field by field (builder calls, factory lambda, helper); each block class named below was read for its state definition, shapes, placement, survival and update methods. Values not read are marked "(inferred)" or "(recalled, not verified)" and listed in the Open questions. |
 | Status | Round RS4, part 6 of 8 (design map Part 5 GAP-1; GAP-29 and GAP-30 columns) |
-| Siblings | Part 1: [24-block-registry-1-model-and-foundation.md](24-block-registry-1-model-and-foundation.md) (cited as "24 part 1"; it defines the model and every column); part 2: [24-block-registry-2-leaves-flora-signs.md](24-block-registry-2-leaves-flora-signs.md). Parts 3 to 5, 7 and 8 are cited as "24 part N". |
+| Siblings | Part 1: [24-block-registry-1-model-and-foundation.md](24-block-registry-1-model-and-foundation.md) (cited as "24 part 1"; it defines the model and every column); part 2: [24-block-registry-2-leaves-flora-signs.md](24-block-registry-2-leaves-flora-signs.md); part 3: [24-block-registry-3-signs-doors-redstone.md](24-block-registry-3-signs-doors-redstone.md); part 4: [24-block-registry-4-stems-glass-skulls.md](24-block-registry-4-stems-glass-skulls.md); part 5: [24-block-registry-5-quartz-concrete-gates.md](24-block-registry-5-quartz-concrete-gates.md); part 7: [24-block-registry-7-stairs-slabs-walls-workstations.md](24-block-registry-7-stairs-slabs-walls-workstations.md); part 8: [24-block-registry-8-blackstone-copper-deepslate-modern.md](24-block-registry-8-blackstone-copper-deepslate-modern.md). Each is cited as "24 part N". Flammability odds are in 17 section 3.3a. |
 
 Class, method and field names in backticks say where a fact was read. They are not the design. "04 §5" means section 5 of
 [04-registry-sync.md](04-registry-sync.md); "46 §14" means section 14 of [46-registry-ids.md](46-registry-ids.md); "33 §2.4" means
@@ -25,7 +25,7 @@ tables, recipes, block tags, block models and block states JSON. Where a rule re
 4. Shape notation and the shape helpers used here
 5. State properties used here
 6. Families (rules, shapes, placement, survival, updates)
-7. The registry rows (tables 7.1 and 7.2)
+7. The registry rows (tables 7.1, 7.2 and 7.3)
 8. Tint and placement columns (GAP-29 and GAP-30) for this part
 9. Worked examples
 10. Validation
@@ -413,6 +413,15 @@ east is `cw`).
   For each horizontal direction `d` in `Plane.HORIZONTAL` order (north, east, south, west): let `N = pos.relative(d)` state;
   if `N` is a chorus plant: if `both`, return false; let `NB` = the state below `N`; if `NB` is a chorus plant or in tag
   `supports_chorus_plant`, return true. After the loop: return `B` is a chorus plant or `B` in tag `supports_chorus_plant`.
+  The same rule as a condition table (first matching row wins, horizontal neighbours examined in the order north, east, south, west; `both` = the cells above and below are both non-air):
+
+  | Neighbour `N` (horizontal) | `both` | State below `N` | Result |
+  |---|---|---|---|
+  | not a chorus plant | any | any | no effect, next direction |
+  | chorus plant | true | any | not survivable (stop) |
+  | chorus plant | false | chorus plant or in `supports_chorus_plant` | survivable (stop) |
+  | chorus plant | false | anything else | no effect, next direction |
+  | (no direction decided) | | `B` is a chorus plant or in `supports_chorus_plant` | survivable; otherwise not survivable |
 
 **Chorus flower.**
 - **Class.** `ChorusFlowerBlock(plant: CHORUS_PLANT, Properties)`. Builder: map colour `COLOR_PURPLE`, `forceSolidOff()`,
@@ -802,7 +811,10 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
     `BREEDING`) at the block's bottom centre with head yaw `facing.getYRot()`; play `ghastling_spawn`); else play `dried_ghast_transition`
     and set `hydration + 1` (flags 2), game event `block_change`. When not waterlogged and `hydration > 0`: set `hydration - 1`
     (flags 2), game event `block_change`.
-  - `animateTick` (client): when `waterlogged` is false, with probability 1 in 40 per call (`random.nextInt(40) == 0`), if the state below is in block tag `triggers_ambient_dried_ghast_block_sounds`, play `dried_ghast_ambient` (volume 1.0, pitch 1.0, no distance delay) as a local block-source sound at the block centre. The particle code that follows in the method was not examined (Open question 14).
+  - `animateTick` (client; read in full). Let `c` = the block centre (x+0.5, y+0.5, z+0.5). Two branches, chosen by `waterlogged`:
+    - **Not waterlogged.** (a) `random.nextInt(40) == 0` and the state below is in block tag `triggers_ambient_dried_ghast_block_sounds`: play `dried_ghast_ambient` (source BLOCKS, volume 1.0, pitch 1.0, no distance delay) as a local sound at `c`. (b) Independently, `random.nextInt(6) == 0`: spawn a `white_smoke` particle at `c` with velocity (0, 0.02, 0). The particle is not conditioned on the tag.
+    - **Waterlogged.** (a) `random.nextInt(40) == 0`: play `dried_ghast_ambient_water` (BLOCKS, volume 1.0, pitch 1.0, local, no distance delay) at `c`. (b) Independently, `random.nextInt(6) == 0`: spawn a `happy_villager` particle at x = `x + 0.5 + (nextFloat * 2 - 1) / 3`, y = `y + 0.5 + 0.4` (that is `y + 0.9`), z = `z + 0.5 + (nextFloat * 2 - 1) / 3`, with velocity (0, `nextFloat`, 0): x and z velocity are 0 and the y velocity is one fresh `nextFloat` value. (Read: the centre y of 0.5 plus the constant 0.4.)
+    The draw order within a call is: `nextInt(40)` first, then the tag test (not waterlogged only), then `nextInt(6)`, then for the waterlogged particle `nextFloat` for x, `nextFloat` for z, `nextFloat` for the y velocity (in that order of evaluation).
 
 ### 6.16 Corals (fields 584 to 623: 5 coral kinds, 8 field groups of 5)
 
@@ -1180,6 +1192,48 @@ of the block's colour (section 3.2). Flags not defined in 24 part 1 §7 are: `fo
 | 627 | `bamboo_sapling` | 1.0 | 1.0 | no | 0 | WOOD | BAMBOO_SAPLING | POPPED | HARP | forceSolidOn, randomTicks, noCollision, offset:XZ, ignitedByLava |
 | 628 | `bamboo` | 1.0 | 1.0 | no | 0 | PLANT | BAMBOO | POPPED | HARP | forceSolidOn, randomTicks, noOcclusion, dynamicShape, offset:XZ, ignitedByLava, redstoneConductor:never |
 | 629 | `potted_bamboo` | 0.0 | 0.0 | no | 0 | NONE | STONE | POPPED | HARP | noOcclusion |
+### 7.3 Burnable odds, loot key, item key and light opacity per row
+
+**Burnable (flammability odds).** Read in `FireBlock.bootStrap` (the table and the fire tick are in 17 section 3.3a; they are not repeated). For the rows of this part, (ignite, burn):
+
+| Rows (fields) | (ignite, burn) |
+|---|---|
+| all 3 fence gates (525 to 527, including `mangrove`, `poplar`, `bamboo`) and all 10 fences (528 to 537) | (5, 20) |
+| `torchflower_crop` (556) is not registered; the separate `torchflower` block (another part) is (60, 100) in the same table | see 17 3.3a |
+| `pitcher_plant` (558) | (60, 100) |
+| `dried_kelp_block` (580) | (30, 60) |
+| `bamboo` (628) | (60, 60) |
+| every other row of this part, including the ten doors (538 to 547, which carry `ignitedByLava` but are not registered), `end_rod`, chorus plant and flower, `bamboo_sapling`, `torchflower_crop`, `pitcher_crop`, `beetroots`, `potted_bamboo` | not flammable (odds 0) |
+
+`ignitedByLava` (the builder flag of table 7.2) and the fire odds are independent: a row can carry the flag without being in the fire table.
+
+**Loot table key.** Rule: the key of every row is `blocks/<block key>` (the block key of section 2) except: (a) `noLootTable` rows `end_gateway`, `repeating_command_block`, `chain_command_block`, `structure_void` have no loot table; (b) each of the ten coral wall fans uses the key of the corresponding coral fan (`overrideLootTable:fan`, 3.3); (c) the collections follow the rule with the colour-prefixed key.
+
+**Item key.** The item key is the block key, except `torchflower_crop` (`torchflower_seeds`), `pitcher_crop` (`pitcher_pod`) and `beetroots` (`beetroot_seeds`); the 15 rows registered through `BlockIds` have no item: `end_gateway`, `frosted_ice`, `kelp_plant`, the ten coral wall fans, `bamboo_sapling`, `potted_bamboo`.
+
+**Correct-tool tags.** Tag membership (`mineable/*`, `needs_*`) is data and is not listed (Open question 15).
+
+**Light opacity per row.** Map from fields to a row of table 8.1:
+
+| Fields | Row of 8.1 | Dampening |
+|---|---|---|
+| 525 to 527, 538 to 547, 548, 569 | fence gates, doors, end rod, structure void | 0 |
+| 528 to 537 | fences | 0 (1 waterlogged) |
+| 549 | chorus plant | 1 |
+| 550, 561 | chorus flower, end gateway | 1 |
+| 551, 553, 555, 565 to 568, 570, 562, 563, 573, 574, 577, 580, 584 to 593 | solid full blocks | 15 |
+| 625 | blue ice | 15 |
+| 564 | frosted ice | 1 |
+| 554, 575 | stairs | 0 (1 waterlogged) |
+| 552, 576 | slabs | 15 when double, else 0 (1 waterlogged) |
+| 560 | dirt path | 0 |
+| 556 to 559 | torchflower crop, pitcher crop, pitcher plant, beetroots | 0 |
+| 571, 572 | shulker boxes | 1 |
+| 578, 579 | kelp, kelp plant | 1 |
+| 581, 582 | turtle egg, sniffer egg | 0 |
+| 583, 626, 624, 594 to 623 | dried ghast, conduit, sea pickle, coral plants, fans, wall fans | 0 (1 waterlogged) |
+| 627, 628, 629 | bamboo sapling, bamboo, potted bamboo | 0 |
+
 ## 8. Tint and placement columns (GAP-29 and GAP-30)
 
 **Tint class (GAP-29).** None of the 105 rows is in the `BlockColors.createDefault` table of 24 part 1 §9.3, so every row has tint class
@@ -1322,8 +1376,7 @@ Rows not in a table row above do not exist in this part. The values for the rows
    (b) 46 §14 lists sound events; the `SoundType` constants used here (`WOOD`, `CHERRY_WOOD`, `BAMBOO_WOOD`, `GRASS`, `SAND`, `WET_GRASS`, `CROP`, `GLASS`, `SLIME_BLOCK`,
    `WART_BLOCK`, `NETHER_BRICKS`, `BONE_BLOCK`, `CORAL_BLOCK`, `METAL`, `BAMBOO`, `BAMBOO_SAPLING`, `DRIED_GHAST`, `STONE`) are constants of the table in 24 part 1 §8.4
    (`METAL` has pitch 1.5, `DRIED_GHAST` has empty place and hit sounds). (c) The map colours used are in the `MapColor` table of 24 part 1 §8.1; `TERRACOTTA_PURPLE` is id 46.
-   (d) 24 part 1 §2.3 names `BED` as field 120, `VOID_AIR` 631, `CAVE_AIR` 632 and `CUT_COPPER` 837: this is wrong; the declaration order gives `BED` 119 (with `STRAW_BED` 120),
-   `VOID_AIR` 630, `CAVE_AIR` 631 and `CUT_COPPER` 836, and 24 part 1 must be corrected (Open question 2). The id statements of 24 part 1 (ids coincide with field indices for fields 0 to 119) are consistent with `BED` at field 119.
+   (d) Closed: field numbering. The declaration order gives `BED` 119 (with `STRAW_BED` 120), `MANGROVE_FENCE_GATE` 525, `VOID_AIR` 630, `CAVE_AIR` 631 and `CUT_COPPER` 836, and 24 part 1 states the same values (its section 3 table row for `BED` and the text "Field 119 is `BED`"; `VOID_AIR` 630, `CAVE_AIR` 631). No correction is owed in part 1 and it must not be changed. The id statements of 24 part 1 (ids coincide with field indices for fields 0 to 118) are consistent with `BED` at field 119.
 9. **Shape invariants.** Every row with `noCollision` has an empty collision shape (coral plants, fans, wall fans, kelp, crops, end gateway, structure void, bamboo sapling); every
    box listed has its minimum below its maximum on all axes (`Shapes.box` fails otherwise); all box coordinates are within 0 to 16 pixels except the pitcher crop's lower half which starts at y = -1
    and the gate and fence collision boxes which reach 24 pixels (these cross the cell and make `largeCollisionShape` true, 24 part 1 §5.2).
@@ -1335,7 +1388,7 @@ Rows not in a table row above do not exist in this part. The values for the rows
 
 1. **Absolute first state id.** `S6`, the first state id of block id 689 (sum of the state counts of block ids 0 to 688), is not given here: it needs the state counts of parts 3 to 5
    (part 2 starts at id 105 and state id 575, 24 part 1 §3). The table gives offsets from `S6`. The orchestrator or the part 5 document should state `S6` and this document's first state id is then `S6 + offset`.
-2. **Field numbering in 24 part 1 (correction owed there).** The field order read in the artifact is `BED` 119, `STRAW_BED` 120, `PALE_OAK_FENCE_GATE` 524, `MANGROVE_FENCE_GATE` 525, `POTTED_BAMBOO` 629, `VOID_AIR` 630, `CAVE_AIR` 631, `CUT_COPPER` 836, `CHISELED_COPPER` 837; 911 fields and 1286 blocks (18 colour collections of 16 blocks and 15 weathering copper fields of 8 blocks) agree. 24 part 1 §2.3 (`BED` 120, `VOID_AIR` 631, `CAVE_AIR` 632, `CUT_COPPER` 837) is wrong and must be corrected in that document; this document is right and is not changed.
+2. **Field numbering in 24 part 1.** Closed. The field order read in the artifact is `BED` 119, `STRAW_BED` 120, `PALE_OAK_FENCE_GATE` 524, `MANGROVE_FENCE_GATE` 525, `POTTED_BAMBOO` 629, `VOID_AIR` 630, `CAVE_AIR` 631, `CUT_COPPER` 836, `CHISELED_COPPER` 837; 911 fields and 1286 blocks agree, and 24 part 1 now states the same numbers.
 3. **Direction of the 90-degree rotation.** `OctahedralGroup.BLOCK_ROT_Y_90` and `Shapes.rotateHorizontal` were read as calls and as the entry order, not as matrices. The statement that the `EAST` entry
    is the `NORTH` shape turned clockwise (seen from above) is inferred from the names of the stair shapes (6.6) and the use in pipes; the artifact's `BLOCK_ROT_Y_90` is assigned the `ROT_90_Y_NEG` constant (read), which supports but does not prove that reading; a fence or door shape is symmetric or follows from its
    direction names, but an asymmetric shape (stairs) depends on the sense. A reference client check or reading of `OctahedralGroup` is needed.
@@ -1356,5 +1409,5 @@ Rows not in a table row above do not exist in this part. The values for the rows
 12. **Block tag membership.** The tags read by name (`supports_crops`, `supports_vegetation`, `supports_bamboo`, `supports_chorus_plant`, `supports_chorus_flower`, `sniffer_egg_hatch_boost`,
     `cannot_support_kelp`, `coral_blocks`, `triggers_ambient_dried_ghast_block_sounds` (dried ghast), `ice_melts_when_destroyed_above` (frosted ice), `unstable_bottom_center` (read by `FallingBlock`, so concrete powder), `guarded_by_piglins` and `fire` (read in `Block`, outside this part), the enchantment tag `prevents_ice_melting` (frosted ice), `walls`, `fences`, `wooden_fences`, `shulker_boxes`, `grows_crops`, `sand`, `water` (fluid tag)) are data; no membership list is given.
 13. **`NEAR_PLANE_INTERSECTS_OUTLINE` argument.** The meaning of the box argument (camera near plane) is inferred from the name; no server rule reads it.
-14. **Dried ghast particles.** The part of `DriedGhastBlock.animateTick` after the ambient sound (particle spawning, by waterlogged state) was not examined; searched: only the sound branch was read.
-15. **Burnable and tool columns.** The `burnable` column is not given: fences, fence gates, doors, the pitcher plant, bamboo and bamboo sapling carry `ignitedByLava`, but the flammability odds come from the fire table (24 part 1 Open question 5) and were not read here. The correct-tool tag per row (`mineable/*`, `needs_*`, `incorrect_for_*`) is data and is not listed. The per-state tables of fence arms, stair corners and door rotations are given by construction rule (6.2, 6.3, 6.6), not enumerated; an implementer derives them.
+14. **Dried ghast particles.** Closed: both branches of `DriedGhastBlock.animateTick` were read in full (6.15).
+15. **Tool columns and tag membership.** The flammability odds are given in 7.3 (read in `FireBlock.bootStrap`, cited to 17 section 3.3a). The correct-tool tag per row (`mineable/*`, `needs_*`, `incorrect_for_*`) and the tag membership of `triggers_ambient_dried_ghast_block_sounds` and the other tags read by name are data: an extraction-tool item, not read here (searched: the `Blocks` initialiser and the block classes, which carry only `requiresCorrectToolForDrops`). The per-state tables of fence arms, stair corners and door rotations are given by construction rule (6.2, 6.3, 6.6), not enumerated; an implementer derives them.

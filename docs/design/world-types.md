@@ -7,10 +7,10 @@ are kept apart. It contains no game content rows. Section references use the for
 [README.md](README.md)), "22 §8.2" (docs/protocol/22-extraction-tool.md), "08 §1.6", "04 §5", "07 §9", "standin §1.1"
 ([standin-content.md](standin-content.md)), "ui §7" ([builtin-ui-art.md](builtin-ui-art.md)) and "CC-0001"
 (tickets/CC-0001-client-polish.md). Every judgement call is marked **Decision WT-n** with its reason. Decisions marked "adopted default" are not operator rulings: they are defaults this document adopts until the operator answers, and
-the README must say the same (section 9, which lists every one of them: WT-12, WT-17, WT-19, WT-20, WT-22, WT-23 and the skin pack placement). Anything that is not
+the README must say the same. **Pending, not done:** a search of README.md finds no `WT-` identifier, README Part 7 decisions 2, 3, 9 and 10 and Part 4 C10 and R1 still carry the older wording (jar, no seed, no WT-24 to WT-26), so the README is not yet consistent with this document. Section 9 lists the edit, and its README Part 7 row is to list every one of them: WT-12, WT-17 (a valid generated directory instead of the jar), WT-19, WT-20, WT-22, WT-23, WT-24, WT-25, WT-26 and the skin pack placement). Anything that is not
 settled is a numbered Open question at the end. Decision numbers are by order of writing, not of position: WT-1 to WT-4 in
-section 3, WT-5 to WT-7, WT-19 and WT-24 in section 2.1, WT-20 in section 3.1, WT-8, WT-21 and WT-22 in sections 5 and 6.2, WT-9
-to WT-11 and WT-13 in section 6, WT-14 to WT-16 and WT-23 in section 7, WT-17 and WT-18 in section 8, WT-12 in section 10.
+section 3, WT-5 to WT-7, WT-19, WT-24 and WT-26 in section 2.1, WT-20 in section 3.1, WT-8, WT-21 and WT-22 in sections 5 and 6.2, WT-9
+to WT-11, WT-13 and WT-25 in section 6, WT-14 to WT-16 and WT-23 in section 7, WT-17 and WT-18 in section 8, WT-12 in section 10.
 
 Sources of the rules used here: CC-0001 Decisions "Namespace", "Own world type", "Stand-in content", "Vanilla assets and
 data"; README Part 0 (R1 to R10), Part 4 (C1 to C14) and Part 7 (adopted defaults 2, 3, 6, 9, 11, 16, 18); 08 §1.6, §3.1,
@@ -51,22 +51,24 @@ The type is stored in `level.dat` (07 §9.2), as a new key.
 | `Seed` | Long | any | The world seed. Used by the standard generator and, through `obfuscateSeed`, by the hashed seed of the Login packet (see below). Written for both types for a uniform schema (Decision WT-5). The cobolcraft generator uses no seed (standin §5.2: deterministic and stateless), so for a cobolcraft world the value is stored and never read |
 | `ContentJar` | String | lower-case hex SHA-256, or absent | For a standard world: the `jar-sha256` of the manifest of the generated directory at creation (22 §6.4). Absent for a cobolcraft world, also when valid generated packs exist at creation (E5): a cobolcraft world does not read them, so there is nothing to record. Informational in this version (Decision WT-6) |
 
+**Placement.** The three keys sit in the root compound of `level.dat`, next to `DataVersion` (07 §9.2; the root is the unnamed compound of 07 §9.1). They are written when a `level.dat` is first created, in the order `WorldType`, `Seed`, `ContentJar` (`ContentJar` omitted when absent), after the keys 07 §9.2 already lists; NBT compounds are unordered on read, so the order is a writing convention only. Where they would sit under another layout is Decision WT-21 and Open question 12.
+
 **A world exists in a folder** if and only if `level.dat` is present in it. (Decision WT-24, adopted default.) A folder with no
 `level.dat` and no `dimensions/` content (empty, or holding only other files) holds no world: a creation may use it. A
 folder with no `level.dat` but with `dimensions/` content is **not opened and not used for creation**; the dedicated server
 prints "This folder holds world data but no level.dat." and exits with code 10, the single-player list shows the row with that
-second line and disables Play. Reason: creating over saved chunks would destroy them.
+second line and disables Play. Reason: creating over saved chunks would destroy them. This replaces the sentence of 07 §9.5 "A world folder without `level.dat` is created new, with all enabled dimensions" for a folder that holds `dimensions/` content (section 9).
 
 Reading rules for a folder that has `level.dat`, in order:
 
 1. `WorldType` is `standard` or `cobolcraft`: that is the type.
 2. `WorldType` is absent and the world folder holds no `dimensions/minecraft/` folder: the type is `cobolcraft`. On the next
-   save the server writes `WorldType = cobolcraft` and `Seed = 0` if `Seed` is absent, and leaves `ContentJar` absent
-   (Decision WT-7). Worlds of feature 001 follow 07 §9.1, which names no `minecraft` dimension folder, so they cannot hold one.
+   save the server (the dedicated server or the single-player host; no other tool writes these keys, Decision WT-26) writes `WorldType = cobolcraft` and `Seed = 0` if `Seed` is absent, and leaves `ContentJar` absent
+   (Decision WT-7). If the world is opened read-only nothing is written and this rule applies again at each open (Decision WT-26). Worlds of feature 001 follow 07 §9.1, which names no `minecraft` dimension folder, so they cannot hold one.
 3. `WorldType` is absent and the folder holds `dimensions/minecraft/...`: the folder is not from a version that had no type key,
    so the world is **not opened**. The message is `cobolcraft.world_type.missing` (key name proposed, text "This world has no
    world type and cannot be opened."). Nothing is altered. Exit code and list row as in rule 4.
-4. `WorldType` is any other string: the world is **not opened**. The message is `cobolcraft.world_type.unknown` (key
+4. `WorldType` is any other string (the match is exact and case-sensitive: `Standard` is another string), or the tag is not a String (a wrong NBT type; `<value>` is then shown as `(not a string)`; Decision WT-26): the world is **not opened**. The message is `cobolcraft.world_type.unknown` (key
    name proposed, text "This world was made by a newer version of the game (world type '<value>')."). Nothing is altered.
    The dedicated server prints the text on the console and exits with code 10 (section 3.5). The single-player world list
    shows the row with the second line "Unknown world type '<value>'", and Play is disabled (ui §7.3).
@@ -74,17 +76,17 @@ Reading rules for a folder that has `level.dat`, in order:
 **Seed rules.** At creation, `Seed` is the value the creator gave, or, when none was given, one random 64-bit value drawn at
 creation. The creator gives it on the Create New World screen (an optional text field) or
 in the server configuration (key `level-seed`, empty means draw). **Decision WT-19 (seed input, adopted default).** The text
-rule: a text that is an optional minus sign and decimal digits, and fits a signed 64-bit integer, is that number. Any other
+rule: a text that is an optional minus sign followed by **one or more** decimal digits (a lone `-` is not a number and is hashed), and fits a signed 64-bit integer, is that number. The text is taken exactly as typed or configured, with no trimming of whitespace (so a text with a space is not a number and is hashed); a leading `+` is not a minus sign, so `+5` is hashed; leading zeros are allowed and the value is the parsed one (`007` is 7, `-0` is 0); a text whose value is outside the signed 64-bit range is hashed. Any other
 non-empty text is hashed: `h = 0`; for each UTF-16 code unit `c` of the text, `h = (31 * h + c)` in 32-bit two's complement
-wrap-around; the seed is `h` sign-extended to 64 bits. (This is the 32-bit string hash of the Java platform; whether vanilla uses it
-for the seed field is not read here, so equality with vanilla seeds is not claimed.) The random draw has no test value. Reason: a
+wrap-around; the seed is `h` sign-extended to 64 bits. The text is first turned into UTF-16 code units: a typed or configured UTF-8 text is decoded to code points, and each code point above U+FFFF becomes a surrogate pair (high surrogate first), so the hash is over those units. Test vectors: `a` gives 97, `ab` gives 3105, `abc` gives 96354, `hello` gives 99162322 (each below 2^31, so sign extension changes nothing). (This is the 32-bit string hash of the Java platform; whether vanilla uses it
+for the seed field is not read here, so equality with vanilla seeds is not claimed.) The random draw uses the platform's random source, uniform over all 64-bit values, and has no algorithm or test value to specify (any value is valid). Reason: a
 fixed, stated rule is needed to implement the field and the key, a number must stay a number so a seed copied from a vanilla
 game can be typed, and no README or spec text gives another. The field and key names are final in this document. On reading: a standard world whose `Seed` is absent is **not opened** (the generator cannot run without
 it), with the text "This world has no seed and cannot be opened." and the same exit code and list row treatment as rule 4. A
 cobolcraft world whose `Seed` is absent reads it as 0.
 
 **Login hashed seed (09 §3.2).** In a cobolcraft world it is 0 (standin §5.1, §15, 09 §3.2). In a standard world it is
-`obfuscateSeed(Seed)` (**inferred**: 05b, on `Seed` in CommonPlayerSpawnInfo, calls the hashed-seed meaning "presumably" and its open item 2 says the bytecode shows only a Long), with `obfuscateSeed` defined in 10 §7.7 as the first 8 bytes of the SHA-256 of the 8 little-endian bytes of the seed, read as
+`obfuscateSeed(Seed)` (**inferred**: 05b, on `Seed` in CommonPlayerSpawnInfo, calls the hashed-seed meaning "presumably" and its open item 2 says the bytecode shows only a Long; supported by 10 §7.7, which reads `MinecraftServer` and `ServerPlayer` calling `obfuscateSeed` with the same world seed "for other purposes"), with `obfuscateSeed` defined in 10 §7.7 as the first 8 bytes of the SHA-256 of the 8 little-endian bytes of the seed, read as
 a little-endian 64-bit integer.
 
 **Decision WT-5 (Seed for both types).** Reason: one schema, so 07 §9.2 gets one new key either way. The cobolcraft value is
@@ -97,6 +99,13 @@ second row can decide whether to warn. It never blocks opening in this version. 
 **Decision WT-7 (absent key means cobolcraft).** Worlds written before this key existed come from feature 001, which had
 only the cobolcraft content. Treating them as standard would send the wrong registries. Reason: the only possible type for
 them. The exception is reading rule 3, a folder that cannot have come from feature 001.
+
+**Decision WT-26 (reading edges and the exit code, adopted default).** (a) The keys of section 2.1 are written only by the
+server or the single-player host, never by a tool; a world opened read-only is not written and rule 2 is re-applied at each
+open. (b) `WorldType` matching is exact and case-sensitive; a non-String tag falls into rule 4. (c) Exit code **10** is a
+judgement call, not a read fact: `contracts/operator-surface.md` names only status 1 (line 36) and names no codes 2 to 9, so 10
+is free in the contract as written; it was chosen to stay clear of the tool's codes 1 to 6 (22 §7.4) and of status 1. Reason:
+no source states these edges; each is the least surprising reading.
 
 ### 2.2 Folder layout
 
@@ -166,10 +175,15 @@ server or host side; if the result differs from the one the screen showed, the s
 | auto | `ok` | `standard` (even if the screen showed cobolcraft: the rule of this section is applied to the result at creation) |
 | auto | not `ok` | `cobolcraft`, with the visible fallback notice (the text of `cobolcraft.world_type.auto_fallback`, shown on the world list row and on the next screen) |
 | explicit `standard` | not `ok` | No world made; Decision WT-3 (missing-data screen) |
-| explicit `standard` | `ok` | `standard` |
+| explicit `standard` | `ok` | `standard` (also when the first check was not `ok` and this one is) |
+| dedicated server configured `standard` | not `ok` | No world made; exit code 10 (Decision WT-3) |
 | explicit `cobolcraft` | any | `cobolcraft` |
 
-The server and the host check before each world creation and each world open. Both 22 §8.2 (start-up and reload only) and
+The dedicated server has no screen: its `auto` is evaluated once, at creation (Decision WT-2), and a configured `standard` is the
+*explicit standard* row. **Ownership.** This section owns the outcomes (which type, whether a world is made); ui §7.2, §8.3
+(Decisions UI-15, UI-25) own what the screens show. If the two ever differ, this section decides the outcome and ui is to be edited.
+
+The check reads nothing but `manifest.txt` and the sentinels (22 §8.2), so running it at every point of this list costs a few file stats. The server and the host check before each world creation and each world open, cobolcraft worlds included (for the banner and the console line). Both 22 §8.2 (start-up and reload only) and
 ui §8.1 (its own list of points) must be reconciled with this list (section 9).
 
 ### 3.3 Explicit choice and no silent fallback
@@ -204,12 +218,12 @@ ids of 04 §5 and 46 are a wire matter and are not the reason.) A conversion wou
 | E7 | Single-player, check `damaged`, the player cycles to Standard and presses Create | No world made. The missing-data screen opens with `Use CobolCraft World Type` |
 | E8 | An existing world has `WorldType = standard`, the check is `damaged` | The world list row shows the short reason in the second line; Play opens the missing-data screen; the world is not opened and not altered |
 
-**Exact texts.** Console lines are English; language keys are proposals (inferred) and are to be placed in the built-in pack with the texts below (a row for builtin-ui-art.md is in section 9; none is placed there yet). The client-visible texts are: `cobolcraft.world_type.unknown` "This world was made by a newer version of the game (world type '<value>').", `cobolcraft.world_type.missing`, `cobolcraft.world_type.no_level` and `cobolcraft.world_type.no_seed` as in the rows below, and the fallback notice `cobolcraft.world_type.auto_fallback`.
+**Exact texts.** Console lines are English; language keys are proposals (inferred); ui §7.4/§9 already places `auto_fallback`, `unknown`, `missing`, `no_level` and `no_seed` in the built-in pack, plus `unknown.short` ("Unknown world type '%s'", the world list second line; a ui addition not defined here). The texts below stay the source for the console lines. The client-visible texts are: `cobolcraft.world_type.unknown` "This world was made by a newer version of the game (world type '<value>').", `cobolcraft.world_type.missing`, `cobolcraft.world_type.no_level` and `cobolcraft.world_type.no_seed` as in the rows below, and the fallback notice `cobolcraft.world_type.auto_fallback`.
 
 | Case | Key | Text |
 |---|---|---|
 | `auto`, check not `ok`, no world | `cobolcraft.world_type.auto_fallback` | `world-type=auto: Minecraft content is not usable (<result>), created a cobolcraft world` where `<result>` is `absent`, `incomplete`, `stale` or `damaged` |
-| Existing cobolcraft world, check not `ok` | the 22 §9.2 key of the result (`cobolcraft.packs.<result>`); no new key | Server console: `Standard worlds are unavailable: ` followed by that text (the prefix is console-only, not a language key). Client: the title banner of 22 §9.2 already shows it, nothing more. The key `cobolcraft.world_type.standard.unavailable` keeps the one text of 22 §9.2 and is used only by the Create screen and the world list (ui §7.2, §7.3) |
+| Existing cobolcraft world, check not `ok` | the 22 §9.2 key of the result (`cobolcraft.packs.<result>`); no new key | Server console: `Standard worlds are unavailable: ` followed by that text (the prefix is console-only, not a language key). Client: the title banner of 22 §9.2 already shows it, nothing more. The key `cobolcraft.world_type.standard.unavailable` keeps the one text of 22 §9.2; it is not drawn by any ui screen (the ui screens use the `short` keys, ui §7.4 and its Open question 25), so this document makes no claim about its use. The console prefix `Standard worlds are unavailable:` is a proposed wording, not a rule, until Open question 1 is settled |
 | Existing standard world cannot open (check not `ok`) | the 22 §9.2 key of the result | Server: that text, then the tool command line, exit code 10. Host: the missing-data screen (ui §8.3) with that text |
 | `WorldType` unknown | `cobolcraft.world_type.unknown` | see section 2.1 rule 4; exit code 10 |
 | `WorldType` absent, standard dimension folders | `cobolcraft.world_type.missing` | see section 2.1 rule 3; exit code 10 |
@@ -226,7 +240,7 @@ For each area, the standard world type's source, the cobolcraft world type's sou
 
 | Area | Standard | Cobolcraft | Notes |
 |---|---|---|---|
-| Static registries of content: blocks, block states, items, entity types (the fluid registry is not among them: see the next row) | The vanilla numbering of 04 §5, 46, 24; ids match a vanilla client (README R8, C1) | Its own numbering: standin §1.2 (18 states), §2, §3, with Decision WT-12 appended; a vanilla client cannot play it | Chunk palettes use the registry in force (06 §5). The global palette width follows from the state count: 5 bits for 18 or 19 states |
+| Static registries of content: blocks, block states, items, entity types (the fluid registry is not among them: see the next row) | The vanilla numbering of 04 §5, 46, 24; ids match a vanilla client (README R8, C1) | Its own numbering: standin §1.2 (18 states), §2, §3, with Decision WT-12 appended; a vanilla client cannot play it | Chunk palettes use the registry in force (06 §5). The global palette width follows from the state count: 5 bits for 18 or 19 states. The figures 12/18/18/9 apply instead of the 13/19/19/10 of Decision WT-12 if the operator rejects the bench (Open question 16); every figure here that includes the bench is conditional on that |
 | Other static registries (fluids, mob effects, attributes, menu types, data component types, particle types, game events and the rest) | The vanilla numbering of 04 §5 | The same vanilla keys and numbering as the standard type (Decision WT-9): protocol vocabulary that shared engines and commands name. The fluid registry is **not empty** in the cobolcraft type: it holds the vanilla keys, so 04 §5 numbering is unchanged, but no cobolcraft block state maps to a fluid and the cobolcraft generator places none | standin defines no numbering for these; none is invented |
 | Block registry | Document 24 | standin §1.1 | |
 | Item registry and default components | 17 §1, §2 and the item research documents | standin §2, re-expressed as components (README S21) | |
@@ -294,6 +308,12 @@ that resembles vanilla content (`cobolcraft:greystone` and the others of Decisio
 `cobolcraft:loose_item`) stays `cobolcraft:`, because it is a divergence by CC-0001 "Own world type", not a vanilla
 equivalent under another name. 08 §1.6 is to say this (section 9).
 
+**Decision WT-25 (reading of the namespace rule, adopted default).** CC-0001 words the rule as "`minecraft:` for anything with a
+vanilla equivalent". This document reads it with CC-0001 "Own world type" (the cobolcraft content stays unchanged) as in the
+paragraph above, and so narrows the ticket's wording to the standard type and the shared vocabulary. That is a reading, not an
+operator ruling: it is listed for README Part 7 and for operator confirmation (Open question 17). Reason: renaming the
+invented content would change it, which the ticket forbids.
+
 ### 6.2 Where each namespace is used
 
 | Thing | Namespace | Reason |
@@ -322,19 +342,19 @@ substitution; vocabulary has no such risk.
 
 **Decision WT-22 (shared engines resolve roles, not names).** Shared engines need a few pieces of content that have different
 keys per type. They do not look up `minecraft:air`, `minecraft:player` or `minecraft:item` by name; the world context holds a
-small role table, built with the registries:
+small role table, built with the registries (four roles; the fourth comes from cobolcraft-standard-core.md Decision CORE-25; fluids are not a role, they need no lookup because both types hold the vanilla fluid keys, Decision WT-9):
 
 | Role | Standard | Cobolcraft |
 |---|---|---|
 | Empty block state | `minecraft:air` | `cobolcraft:void` (standin §1.1) |
 | The player entity | `minecraft:player` (id 159, inferred: 21 §2, README row 3, 19 Open question 31; see 46) | `cobolcraft:operator` (id 0) (README S24) |
 | The item entity | `minecraft:item` (id 72, inferred, same source) | `cobolcraft:loose_item` (id 1) (README S24) |
-| Fluids | the vanilla fluids | no fluid content: the registry keeps the vanilla keys and numbering (Decision WT-9), but no block state is a fluid and none is generated; nothing in the 04 §5 numbering changes |
+| The crafting block | `minecraft:crafting_table` | `cobolcraft:crafting_bench` (Decision CORE-25: the shared menu engine tests the role, so the menu stays valid only while the block at its position is the crafting block, 13 §3.5) |
 
 07 §9.3 stores the item entity under its role key, so for the cobolcraft type the stored entity id is `cobolcraft:loose_item`
 and for the standard type `minecraft:item` (section 9). Reason: this is the one way a shared engine reaches type-specific
 content without a per-type branch. Roles beyond these four (a bedrock-like floor block, entity type tags such as the
-undead tag) are Open question 13.
+undead tag) are Open question 13. A shared engine that needs the floor block today cannot find `cobolcraft:baseplate`; the owner of that role is the owner of this document together with cobolcraft-standard-core.md, and no engine may name the floor block until a role is added.
 
 **Decision WT-10 (the vanilla-equivalent test applies to the standard core, not to cobolcraft content).** The cobolcraft
 blocks `greystone`, `loam`, `turf`, `grit`, `lucite` and `slag` resemble stone, dirt, grass, sand, glass and netherrack, and
@@ -394,11 +414,11 @@ leave a cobolcraft world and open a standard one (the single-player client does)
 
 The loader interface is the same for both types: it returns the registries and tags of the context. The only difference is the source.
 
-**Dependency (blocking).** 09 §3.1 today sends Update Tags with zero registries and 18 Registry Data packets with 52 entries, and
-04 §3.2 makes several variant registries mandatory and non-empty. Decision WT-11 and section 6.2 require hand-authored tags and
-core entries in the cobolcraft type. Until GAP-35 (the complete list of standard keys the hand-authored core must hold, Open
-question 7) is closed and 09 §3.1 carries it, the cobolcraft type cannot be shown to satisfy the 04 §3.2 validators for the
-full registry set.
+**Dependency.** The registry rows, tags, damage types, chat types, clock and timelines of the cobolcraft type are now listed in
+[cobolcraft-standard-core.md](cobolcraft-standard-core.md) (cited as "CORE-n"), which closes GAP-35 (Open question 7). Still open:
+09 §3.1 today sends Update Tags with zero registries and 18 Registry Data packets with 52 entries (standard-core line on 52
+entries notes the stand-in sent the same), and 04 §3.2 makes several variant registries mandatory and non-empty; 09 §3.1 must be
+edited to carry the standard-core set (section 9) before the cobolcraft type can be shown to satisfy the 04 §3.2 validators.
 
 ### 7.3 Packs
 
@@ -407,7 +427,7 @@ Resource packs (client), from bottom to top, as in 22 §8.1 and README C7:
 | Level | Pack | Standard world | Cobolcraft world |
 |---|---|---|---|
 | 1 | `cobolcraft` built-in | Present, fixed. Supplies the UI fallbacks, the CobolCraft language keys and the font fallback; has no content the standard world uses except when the vanilla pack is missing | Present, fixed. Supplies everything |
-| 2 | `vanilla` generated | Present when valid. Required for a standard world | Present when valid, because it is on whenever valid (22 §8.1). Supplies `minecraft:` UI sprites and language where the built-in pack has none |
+| 2 | `vanilla` generated | Present when valid. Required for a standard world | Present when valid, because it is on whenever valid (22 §8.1). Supplies `minecraft:` UI sprites and language. On any path both packs hold, the generated pack wins (Decision WT-18, 22 §8.1) |
 | 3 | User packs (Faithful) | As enabled | As enabled. Affects only `minecraft:` paths |
 | 4 | Server-pushed | As sent | As sent |
 
@@ -430,7 +450,7 @@ The `minecraft:dimension_type` registry holds, in the cobolcraft type, the entri
 vanilla entries. The keys `cobolcraft:main` and `cobolcraft:subroutine` are dimension (level) keys, not dimension types; they
 appear only in the Login packet's dimension names list in the play phase. The rule: if the Registry Data packet of
 `minecraft:dimension_type` holds an entry keyed `cobolcraft:surface`, the connection is `cobolcraft`; otherwise it is
-`standard`. A vanilla server is therefore `standard`.
+`standard`. A vanilla server is therefore `standard`. A server that sends `cobolcraft:surface` is `cobolcraft` by definition, even if it also sends vanilla entries.
 
 **Ordering.** The rule is evaluated at Finish Configuration, not on arrival of a packet. 04 §3.1 says the client does not
 depend on the order of Registry Data packets, processes nothing until Finish Configuration, and appends the entry lists when one
@@ -478,16 +498,16 @@ answers).** The standard type is available if and only if the check of 22 §8.2 
 | Check `absent`, `incomplete`, `stale` or `damaged` | The cobolcraft built-in pack alone (plus user packs). Title banner shows the reason (22 §9.2). The standard type is selectable on Create and explains itself (ui §7.2). Joining servers still works | Standard worlds cannot be created or opened. Cobolcraft worlds run |
 | Dedicated server configured `standard`, check not `ok`, **no existing world** | n/a | Refuses to start with the text of 22 §9.2 and the tool command line, exit code 10 (Decision WT-3). If a world exists, it is evaluated first (section 3.1): an existing cobolcraft world opens and the configuration line is printed; an existing standard world follows the last two rows |
 | Dedicated server `auto`, check not `ok`, no world | n/a | Creates a cobolcraft world; prints the `cobolcraft.world_type.auto_fallback` line (section 3.5) |
-| Existing standard world, check not `ok` | Not opened, not altered; row shows the reason | Server refuses to start; host refuses to open |
+| Existing standard world, check not `ok` | Not opened, not altered; row shows the reason | Server refuses to start: it prints the 22 §9.2 text followed by the tool command line and exits with code 10 (Decision WT-3, section 3.5); host refuses to open |
 | Existing cobolcraft world, check not `ok` | Opens | Opens. The client shows the title banner of 22 §9.2; the server prints the `Standard worlds are unavailable:` console line (section 3.5) |
 | Joining a standard server with no valid generated resource pack | Joins. `minecraft:` content with no asset is drawn with the engine's missing texture (orange and black stripes, README decision 12). The title banner shows the reason | n/a |
 | Joining a cobolcraft server with no generated pack | Joins and looks complete | n/a |
 | Generated packs become valid while the client is running | After a resource reload (22 §8.1), the standard type becomes available. No restart is needed for the list; an open world keeps its type | The server rechecks at the next world creation or open; the client's re-evaluation points are in section 3.2 |
 
 **Decision WT-18 (the cobolcraft type never reads the generated data pack, and uses the generated resource pack only as
-the shared stack).** Reason: the cobolcraft world must behave identically with and without generated packs. The visible
+the shared stack).** Reason: the cobolcraft world must **behave** identically (game rules, ids, content) with and without generated packs; looks are not covered. The visible
 difference allowed is the standard `minecraft:` UI sprites and fonts, which the built-in pack must also supply so that the
-world runs with no pack (22 §9.1, README C11).
+world runs with no pack (22 §9.1, README C11). Precedence of a path present in both packs: the generated pack replaces the built-in file of the same path (ui §0 and §10; 08 §3.2).
 
 ---
 
@@ -498,21 +518,23 @@ These are not made here. Each is a statement for the owner of the document.
 | Document | Change |
 |---|---|
 | 07 §9.2 `level.dat` (T15) | Add `WorldType`, `Seed`, `ContentJar` of section 2.1, the reading rules, the Seed rules (Decision WT-19) and the folder rule of Decision WT-24. Nothing else is asked by this document; the layout questions of Decision WT-21 (33 §10 layout, `players/` slots) are Open question 12 |
-| 07 §9.1, §9.3 | Dimension folder names of the standard dimensions; entity id of the item entity by role (`minecraft:item` standard, `cobolcraft:loose_item` cobolcraft; Decision WT-22) |
+| 07 §9.5 | Replace "A world folder without `level.dat` is created new, with all enabled dimensions" by the folder rule of Decision WT-24 (a folder with `dimensions/` content and no `level.dat` is not opened and not used); add exit code 10 and the world-list row treatment of section 2.1 and Decision WT-26 |
+| 07 §9.1, §9.3 | Dimension folder names of the standard dimensions; entity id of the item entity by role (`minecraft:item` standard, `cobolcraft:loose_item` cobolcraft; Decision WT-22). This is the one place this change is asked: the 07 §9.2 row asks only for the keys |
 | 33 §10 | Note where the keys of section 2.1 would sit under the 26.3 layout (the seed in `world_gen_settings.dat`); no migration is defined here (Decision WT-21, Open question 12) |
 | standin §4.6, §5.1 | State that they describe the cobolcraft type only; cite the dimension type keys and hashed seed 0 that Decision WT-16 and section 2.1 use |
 | 04 §5 | Static numbering per world type; vanilla numbering for the non-content static registries in both (Decision WT-9) |
 | 22 §8.6 and Open question 2 | Reconcile with Decision WT-17 and the exit code 10 of section 3.5 (not only §9.2) |
 | 22 §8.2 and ui §8.1 | Their lists of when the check runs (22 §8.2: start-up and reload; ui §8.1: its own points) to match section 3.2: also when the world list is shown, when the Create screen opens, at Create press, and before every world open |
-| builtin-ui-art.md (ui) | Place the new language keys and texts of section 3.5 (`cobolcraft.world_type.*`) in the built-in pack's language table |
-| 08 §1.6 | Cite this document, and restate the rule in the testable form of section 6.1: it governs the standard type and the shared vocabulary; cobolcraft content that resembles vanilla stays `cobolcraft:` |
+| builtin-ui-art.md (ui) | Cross-reference only: ui §7.4/§9 already places the `world_type.*` keys of section 3.5 (and `unknown.short`); its Open question 25 asks that the `standard.unavailable` claim be dropped, which section 3.5 now does |
+| 08 §1.6 | Cite this document, and restate the rule in the testable form of section 6.1 (Decision WT-25, an adopted default): it governs the standard type and the shared vocabulary; cobolcraft content that resembles vanilla stays `cobolcraft:` |
 | 22 §9.2 | Reconcile: the standard choice stays selectable (Open question 1) |
-| 09 §3.1 (T11) | Registry set per type as in section 7.2; the type detection of Decision WT-16; **blocking** for the cobolcraft type: the full tag and core registry set (section 7.2 dependency, GAP-35) |
+| 09 §3.1 (T11) | Registry set per type as in section 7.2; the type detection of Decision WT-16; today still 18 packets and 52 entries: it must carry the standard-core set (cobolcraft-standard-core.md) |
+| 13 §3.5 and the menu engine | The crafting block is a role (Decision WT-22, CORE-25): the engine tests the role, not `minecraft:crafting_table` |
 | spec FR-009, `contracts/operator-surface.md` | Add `world-type` (values `auto`, `standard`, `cobolcraft`, default `auto`) and `level-seed`; the file-absent write rule; the invalid value (`FATAL configuration`, status 1) and missing key rules of Decision WT-20 are already the contract's forms. **Contract change:** a new exit status 10 for a world that cannot be created or opened (Decision WT-3, section 2.1) |
 | ui §7.1 | The key `WorldType` and values are final; remove "working names" |
 | README Part 4, C10; Part 7, decision 2 | Replace "jar" with "valid generated directory" (Decision WT-17), and mark it adopted until the operator answers |
-| README Part 7 | One entry per adopted default of this document, each marked as not an operator ruling: WT-12 (decision 3), WT-17, WT-19 (seed input and text hash), WT-20 (configuration edge cases), WT-22 (role table), WT-23 (fail closed on foreign keys), WT-24 (a world is a folder with `level.dat`), and the skin pack placement (decision 10). WT-21 needs no entry: it decides nothing |
-| standin §1, §2, §13 | Hold the values of Decision WT-12 (dependency) |
+| README Part 7 | One entry per adopted default of this document, each marked as not an operator ruling: WT-12 (decision 3), WT-17 (a valid generated directory instead of the jar), WT-19 (seed input and text hash), WT-20 (configuration edge cases), WT-22 (role table, four roles), WT-23 (fail closed on foreign keys), WT-24 (a world is a folder with `level.dat`), WT-25 (reading of the namespace rule), WT-26 (reading edges and exit code 10), and the skin pack placement (decision 10). WT-21 states that whatever 07 §9 holds applies to both types and adds no change of its own (its open points are Open question 12) |
+| cobolcraft-standard-core.md §5 | Already holds the values of Decision WT-12 (section 10); standin §1, §2, §13 need only point to it |
 
 ---
 
@@ -524,30 +546,26 @@ These are not made here. Each is a statement for the owner of the document.
 addition to the cobolcraft content is the `cobolcraft:crafting_bench` block and item with a recipe from the inventory grid.
 Under that default the type has 13 blocks, 19 block states, 19 items and 10 recipes (the bench block has one state). The
 global block palette stays 5 bits (`ceillog2(19)` is 5). Reason: the shared rule that 3x3 recipes need a bench (README R6)
-applies to both types and recipe 7 has seven ingredients.
+applies to both types, and two recipes need the 3x3 grid: recipe 7 (seven ingredients) and recipe 5 (`sod_cake`, five ingredients), the correction of cobolcraft-standard-core.md §5.7 to README S65. Without the bench `goto_pad` and `sod_cake` would not be obtainable.
 
 **Conflict with the operator's ticket.** CC-0001 says the cobolcraft content stays "for now unchanged"; this decision adds a block, an
 item and a recipe. The ticket and spec are the operator's, so this addition needs operator confirmation (Open question 16);
 until then it is only an adopted default and the counts of 12/18/18/9 remain the ticket-conformant ones.
 
-This document holds no content rows. The values below are owned by standin-content.md §1 (block), §2 (item) and §13 (recipe),
-which must carry them (a dependency listed in section 9; grep finds no `crafting_bench` there yet). What this document fixes is
-the numbering rule: the bench is **appended**, so existing ids stay stable. Checked against standin §1.1 and §1.2: blocks 0 (`void`)
-to 11 (`slag`) and states 0 to 17 are all in use and the tables have no further rows, so block id 12 and state id 18 are free;
-standin §2 items hold ids 0 to 17. Block id 12 and state id 18 (states 0 to 17
-unchanged), item id 18 (items 0 to 17 unchanged), recipe id 9 (recipes 0 to 8 unchanged).
-
-Values not decided here and owed by standin: the recipe ingredients (the inventory 2x2 grid allows at most 4, shaped or
-shapeless), the recipe display id, hardness, mineable tag and tool tier, light, drop, texture recipe, English name, the menu
-the bench opens (the 3x3 crafting menu of 13) and its survival-obtainability row. Open question 15 lists them. The counts
-13/19/19/10 stand regardless of those values.
+This document holds no content rows. The values are owned by cobolcraft-standard-core.md §5 (not standin: the earlier statement
+that standin must carry them is out of date): block id 12 and state 18, hardness 0.8, tag `minecraft:mineable/pickaxe`, item 18,
+and recipe 9 as shaped `##/##` of 4 `ledger_tile` with category `building`. What this document fixes is the numbering rule: the bench
+is **appended**, so existing ids stay stable. Checked against standin §1.1 and §1.2: blocks 0 (`void`) to 11 (`slag`) and states 0
+to 17 are all in use, so block id 12 and state id 18 are free; standin §2 items hold ids 0 to 17. Block id 12 and state id 18 (states
+0 to 17 unchanged), item id 18 (items 0 to 17 unchanged), recipe id 9 (recipes 0 to 8 unchanged). The counts 13/19/19/10 match
+standard-core.
 
 ---
 
 ## Open questions
 
 1. **22 §9.2 says the standard choice is disabled** while the packs are invalid; ui §7.2 keeps it selectable and explains on
-   Create. This document sides with ui §7.2. The owner of 22 or the operator must settle it.
+   Create; this document sides with ui §7.2 and calls its own console prefix proposed. The three-way disagreement (22 §9.2, ui §7.2, this document) must be settled by the owner of 22 or the operator before the README Part 7 entry for it is written; the owner of the 22 §9.2 edit is the owner of 22.
 2. **Jar versus generated directory at run time** (22 Open question 2, Decision WT-17): operator to confirm. Also whether
    the title screen may start the tool.
 3. **Type detection on the wire** (Decision WT-16): inferring from the `cobolcraft:surface` entry works but is implicit. Order is not a problem: 04 §3.1 says the vanilla server sends Registry Data in the order of 04 §3, and the client does not depend on order, so detection runs at Finish Configuration. A
@@ -558,9 +576,9 @@ the bench opens (the 3x3 crafting menu of 13) and its survival-obtainability row
    cobolcraft world whose text the generated pack replaces: accepted, since both are the standard wording.
 6. **Bare names in the cobolcraft world** (section 6.3): `/give @s greystone` fails because a bare name means `minecraft:`.
    Would a default-namespace rule per world type be wanted? Decision WT-13 says no for this version.
-7. **Mob effects, enchantments and similar registries in the cobolcraft type**: README C3 lists only minimal entries. The
-   list of standard `effect`, `enchantment` and attribute keys the cobolcraft core must hold for the shared commands and
-   rules is not complete (GAP-35).
+7. **Mob effects, enchantments and similar registries in the cobolcraft type**: resolved in content by
+   cobolcraft-standard-core.md (GAP-35 closed there; searched: its §5 and its section 9 edit list). What remains is the 09 §3.1
+   edit (section 9) and checking that the core's set satisfies 04 §3.2.
 8. **Vanilla client against a cobolcraft server**: passes configuration only (04 §5). Whether a vanilla client should be
    refused at login with a clear message instead is not decided.
 9. **Moving a world folder between machines with different generated packs**: a standard world on a machine without the
@@ -574,10 +592,14 @@ the bench opens (the 3x3 crafting menu of 13) and its survival-obtainability row
     compound) disagree, and README Part 7 decision 9 says to keep the CobolCraft schemas. Whether to adopt the 26.3 layout, with a
     migration, and where `WorldType`, `Seed` and `ContentJar` then sit, belongs to the owners of 07 and 33. This document does not decide it.
 13. **Other roles for shared engines**: a floor block like bedrock, entity type tags such as the undead tag, and the 26.3
-    fluids. Searched: standin §1, §3, README S24: no cobolcraft rows for them. Needed before the tag engine and the damage rules
-    run in a cobolcraft world.
+    fluids. Searched: standin §1, §3, README S24, cobolcraft-standard-core.md. The core has the `baseplate` block (the bedrock
+    row) and says a tag file with `cobolcraft:` values is added for a mob such as the `abend`'s `undead`; whether the floor block
+    needs a role (as the crafting block now has, WT-22) is not decided.
 14. **Skin pack placement**: level, id, and whether it is fixed or optional in the stack (README decision 10; 22 §8.1 knows two
     built-in packs).
-15. **Crafting bench values** (Decision WT-12): the recipe and every property listed in section 10, owed by standin §1, §2, §13.
+15. **Crafting bench values** (Decision WT-12): resolved. cobolcraft-standard-core.md §5 holds them (section 10). Remaining: standin §1, §2, §13 should point to it.
 16. **Operator confirmation of the bench** (Decision WT-12): CC-0001 says the cobolcraft content stays "for now unchanged". The
     addition of section 10 conflicts with that wording until the operator confirms it.
+17. **Operator confirmation of the namespace reading** (Decision WT-25): that CC-0001's "`minecraft:` for anything with a vanilla
+    equivalent" does not apply to the invented cobolcraft content (greystone, operator, loose_item and the rest), and that the
+    standard type and the cobolcraft type hold none of each other's content (Decision WT-9).

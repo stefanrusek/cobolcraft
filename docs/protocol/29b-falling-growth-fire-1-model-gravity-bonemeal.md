@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Covers | The shared model for the block-behaviour documents 29b parts 1 to 7 (record schema, trigger kinds, probability notation, predicate vocabulary, id assignment, sibling index and block-to-part table); the falling-block family (`FallingBlock`, `Fallable`, sand, red sand, gravel, concrete powder, suspicious sand and gravel, anvils, dragon egg, scaffolding collapse) and the falling block entity (tick, landing, drops, damage, persistence); the `BonemealableBlock` framework and the generic bone-meal flow; the shared crop growth helpers (`CropBlock`); the sapling growth trigger and `TreeGrower` selection and rollback |
+| Covers | The shared model for the block-behaviour documents 29b parts 1 to 8 (record schema, trigger kinds, probability notation, predicate vocabulary, id assignment, sibling index and block-to-part table); the falling-block family (`FallingBlock`, `Fallable`, sand, red sand, gravel, concrete powder, suspicious sand and gravel, anvils, dragon egg, scaffolding collapse) and the falling block entity (tick, landing, drops, damage, persistence); the `BonemealableBlock` framework and the generic bone-meal flow; the shared crop growth helpers (`CropBlock`); the sapling growth trigger and `TreeGrower` selection and rollback |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Class and method names are cited to say where a fact was read; they are not a design. |
 | Round | RS11 (GAP-10b of `../design/README.md` Part 5), part 1 |
@@ -33,9 +33,9 @@ Covered here: sections 3 to 7. Not covered here, with the owner:
 
 | Topic | Owner |
 |---|---|
-| Fire spread and burn constants, flint and steel, fire charge | 17 §3.3, §3.3a (not repeated; the fire block's own tick belongs to a sibling part of 29b only where 17 leaves it open) |
-| Fluids (flow, source conversion, lava and water interaction, `FluidState` rules) | a fluids round (not in 29b part 1); aquifer fluids 10 §9 |
-| Redstone components | a redstone round |
+| Fire spread and burn constants, flint and steel, fire charge | 17 §3.3, §3.3a (not repeated; the fire block's own tick is part 8 of 29b, `29b-falling-growth-fire-8-fire-tnt-residual.md`, which adds only what 17 leaves open) |
+| Fluids (flow, source conversion, lava and water interaction, `FluidState` rules) | 29a (`29a-fluids.md`); aquifer fluids 10 §9 |
+| Redstone components | 30 (`30-redstone-1` to `30-redstone-8`) |
 | Tree shapes (trunk, foliage, root placers), the `Feature.place` algorithm | 35 parts 1 to 7 (`35 ...-3-tree-placers`) |
 | Brush use, the brush item, `BrushableBlockEntity` brushing steps | 17 §3.5 |
 | Dispenser, piston and other callers of `setBlock` | 29 §3.5, the piston round |
@@ -45,38 +45,51 @@ Covered here: sections 3 to 7. Not covered here, with the owner:
 | Loot of blocks | 26 |
 | Level event to sound mapping, particle shapes | 42 part 7 §8.3 (bone meal particles); 29 §7.4 (events used by block breaking) |
 
-### 1.2 Sibling index (proposed split; each sibling states its own scope)
+### 1.2 Sibling index (final 8-part split)
 
-| Part | File name (proposed) | Contents (proposed) |
+| Part | File | Contents (read from the part's own header) |
 |---|---|---|
-| 1 | `29b-falling-growth-fire-1-model-gravity-bonemeal.md` | this document |
-| 2 | `29b-falling-growth-fire-2-crops-and-stems.md` | crop blocks (wheat, carrots, potatoes, beetroots, torchflower crop, pitcher crop), stems and fruit, cocoa, sweet berry bush, nether wart, mushrooms |
-| 3 | `29b-falling-growth-fire-3-growing-plants.md` | `GrowingPlantHeadBlock` / `GrowingPlantBodyBlock` (kelp, vines of the nether, cave vines), bamboo, cactus, sugar cane, chorus, sea pickle, seagrass |
-| 4 | `29b-falling-growth-fire-4-spreading-and-decay.md` | grass and mycelium spread, nylium, snow layer, ice, farmland, leaves decay, vines |
-| 5 | `29b-falling-growth-fire-5-weathering-sculk-misc.md` | copper weathering, sculk family, amethyst, moss, azalea, dripleaf, hanging moss |
-| 6 | `29b-falling-growth-fire-6-fire-and-burning.md` | the fire block tick beyond 17 §3.3a, soul fire, campfire, tnt ignition, lava ignition |
-| 7 | `29b-falling-growth-fire-7-residual.md` | blocks that no other part took |
+| 1 | `29b-falling-growth-fire-1-model-gravity-bonemeal.md` (this document) | shared model, falling blocks and the falling block entity, the bone meal framework, `CropBlock` helpers, `SaplingBlock` and `TreeGrower` |
+| 2 | `29b-falling-growth-fire-2-crops-and-stems.md` | crop blocks (wheat, carrots, potatoes, beetroots, torchflower crop, pitcher crop), stems and attached stems, nether wart, cocoa, sweet berry bush, farmland, path, mud, rooted dirt, mangrove propagule, azalea, pumpkin and melon |
+| 3 | `29b-falling-growth-fire-3-spread-decay-snow-ice.md` | grass and mycelium spread, snowy property, nylium and netherrack bone meal, leaves (distance, decay, variants, mangrove leaves, leaf litter), snow layers, powder snow, ice and frosted ice, weather-driven block changes, lightning rod strike, sponge, magma block |
+| 4 | `29b-falling-growth-fire-4-growing-plants.md` | the `GrowingPlantBlock` family (kelp, weeping and twisting vines, cave vines), sugar cane, cactus, bamboo, vines, chorus, seagrass and tall seagrass, tall grass and flowers, flowers and flower beds, dry vegetation, firefly bush, sea pickle, lily pad, the three dripleaf blocks, hanging roots, spore blossom, pale hanging moss, mangrove roots |
+| 5 | `29b-falling-growth-fire-5-fungi-moss-copper.md` | mushrooms (small, huge, shelf), nether fungi and roots, moss and pale moss, mossy carpet, weathering copper and waxing, lightning de-oxidation |
+| 6 | `29b-falling-growth-fire-6-sculk-amethyst-dripstone.md` | the sculk family, amethyst blocks and clusters, budding amethyst, `SpeleothemBlock` (pointed dripstone and sulfur spike) including the falling stalactite hand-off to section 4 |
+| 7 | `29b-falling-growth-fire-7-aquatic-eggs-honey-cauldron.md` | aquatic, egg, honey and cauldron behaviours (see that document's header) |
+| 8 | `29b-falling-growth-fire-8-fire-tnt-residual.md` | the fire block tick beyond 17 §3.3a, soul fire, TNT and the residual block behaviours |
 
-The proposed split is the orchestrator's guess from the round's scope text (Open question 1); sibling parts overrule it. This part owns the shared model (section 2) and cites nothing from the siblings except through the table of 1.3.
+This part owns the shared model (section 2) and cites the siblings only through the tables of 1.2 and 1.3. Where a sibling's header and this table differ, the sibling overrules this table. The scopes of parts 7 and 8 above are one-line summaries of their file names and were not re-read for this revision (Open question 1).
 
-### 1.3 Block name to part (blocks whose behaviour this part specifies)
+### 1.3 Block name to part
 
-Rows are the registry names and ids of 24. "Class" is the class read in the artifact.
+Rows are registry block names. Every bracketed number is the `Blocks` **field** number used by 24 (the order of the fields of the `Blocks` class); a field number is not the registry id. Where a registry id is given it is labelled "id" (the registry ids are those of 24 and 46: dragon_egg 444 in 24 part 4, anvil 520 in 24 part 5, scaffolding 927 in 24 part 7, pointed_dripstone 1223 and sulfur_spike 1224 in 24 part 8; the field numbers are the 0-based `putstatic` index among the block fields of the `Blocks` static initialiser). "Class" is the class read in the artifact.
 
-| Registry block (24 id) | Class | Section |
+| Registry block (24 field) | Class | Section |
 |---|---|---|
-| `sand` (39), `red_sand` (41) | `SandBlock extends ColoredFallingBlock` | 3.2 |
-| `gravel` (42) | `ColoredFallingBlock` | 3.2 |
-| `suspicious_sand` (40), `suspicious_gravel` (43) | `BrushableBlock` (a `BaseEntityBlock` and `Fallable`; not a `FallingBlock` subclass) | 3.5 |
+| `sand` (field 39), `red_sand` (field 41) | `SandBlock extends ColoredFallingBlock` | 3.2 |
+| `gravel` (field 42) | `ColoredFallingBlock` | 3.2 |
+| `suspicious_sand` (field 40), `suspicious_gravel` (field 43) | `BrushableBlock` (a `BaseEntityBlock` and `Fallable`; not a `FallingBlock` subclass) | 3.5 |
 | the 16 `<colour>_concrete_powder` (24 part 6, field 577) | `ConcretePowderBlock extends FallingBlock` | 3.3 |
-| `anvil` (431), `chipped_anvil` (432), `damaged_anvil` (433) | `AnvilBlock extends FallingBlock` | 3.4 |
-| `dragon_egg` (355) | `DragonEggBlock extends FallingBlock` | 3.6 |
-| `scaffolding` (673 field, registry id 927) | `ScaffoldingBlock` (not a `FallingBlock`; spawns the entity itself) | 3.7 |
-| `pointed_dripstone` (848), `sulfur_spike` (849) | `SpeleothemBlock` (a `Fallable` that spawns the entity itself; its behaviour is not specified here) | 3.8 |
-| `oak_sapling` (26), `spruce_sapling` (27), `birch_sapling` (28), `jungle_sapling` (29), `acacia_sapling` (30), `cherry_sapling` (31), `dark_oak_sapling` (32), `pale_oak_sapling` (33), `poplar_sapling` (35) | `SaplingBlock(TreeGrower, ...)` | 7 |
-| `mangrove_propagule` (34) | `MangrovePropaguleBlock` with `TreeGrower.MANGROVE` (its hanging and growth rules belong to sibling part 3 or 7; the grower table is in 7.4) | 7.4 |
+| `anvil` (field 431, id 520), `chipped_anvil` (field 432), `damaged_anvil` (field 433) | `AnvilBlock extends FallingBlock` | 3.4 |
+| `dragon_egg` (field 355, id 444) | `DragonEggBlock extends FallingBlock` | 3.6 |
+| `scaffolding` (field 673, id 927) | `ScaffoldingBlock` (not a `FallingBlock`; spawns the entity itself) | 3.7 |
+| `pointed_dripstone` (field 848, id 1223), `sulfur_spike` (field 849, id 1224) | `SpeleothemBlock` (a `Fallable` that spawns the entity itself; its behaviour is specified in part 6 of 29b) | 3.8 |
+| `oak_sapling` (field 26), `spruce_sapling` (27), `birch_sapling` (28), `jungle_sapling` (29), `acacia_sapling` (30), `cherry_sapling` (31), `dark_oak_sapling` (32), `pale_oak_sapling` (33), `poplar_sapling` (35) (all field numbers) | `SaplingBlock(TreeGrower, ...)` | 7 |
+| `mangrove_propagule` (field 34) | `MangrovePropaguleBlock` with `TreeGrower.MANGROVE` (its hanging and growth rules are part 2 of 29b; the grower table is in 7.4) | 7.4, part 2 |
 | all `CropBlock` subclasses | `CropBlock` | 6 |
-| every other `BonemealableBlock` | see the implementer list in 5.2 | 5 |
+| every other `BonemealableBlock` | see the implementer list in 5.2 and the part table below | 5 |
+
+Owner of each direct `BonemealableBlock` implementer (the classes of 5.2, plus `MangrovePropaguleBlock`, which inherits the interface through `SaplingBlock`). Parts 2 to 6 are read from those documents' headers (1.2).
+
+| Part | Classes |
+|---|---|
+| 1 (this document) | `BonemealableBlock` and `BonemealSource` (5), `BushBlock` default (5.4), `CropBlock` (6), `SaplingBlock` (7) |
+| 2 | `CocoaBlock`, `PitcherCropBlock`, `StemBlock`, `SweetBerryBushBlock`, `RootedDirtBlock`, `AzaleaBlock`, `MangrovePropaguleBlock`, and the `CropBlock` subclasses' own overrides |
+| 3 | `GrassBlock`, `NyliumBlock`, `NetherrackBlock`, `MangroveLeavesBlock` |
+| 4 | `BambooSaplingBlock`, `BambooStalkBlock`, `GrowingPlantHeadBlock`, `GrowingPlantBodyBlock`, `SeagrassBlock`, `SeaPickleBlock`, `TallGrassBlock`, `TallFlowerBlock`, `ShortDryGrassBlock`, `TallDryGrassBlock`, `FlowerBedBlock`, `BigDripleafBlock`, `BigDripleafStemBlock`, `SmallDripleafBlock`, `HangingMossBlock`, `FireflyBushBlock` |
+| 5 | `MushroomBlock`, `ShelfMushroomBlock`, `NetherFungusBlock`, `BonemealableFeaturePlacerBlock`, `MossyCarpetBlock` |
+| 6 | none of the classes of 5.2 (the sculk family and `SpeleothemBlock` are not `BonemealableBlock` implementers: a jar-wide search of the classes naming `BonemealableBlock` finds neither); part 6 owns the sculk, amethyst and speleothem behaviour, see 3.8 |
+| 4 (additional) | `GlowLichenBlock` (a `BonemealableBlock`, via the `MultifaceBlock` rules in 24 part 4 section 6.8 and 35 part 4 section 8.1, as listed in the Covers of part 4) |
 
 ## 2. The shared model
 
@@ -221,7 +234,7 @@ Properties `distance` (0 to 7; this is `STABILITY_DISTANCE`, default 7), `bottom
 
 | Item | Rule |
 |---|---|
-| `getDistance(level, pos)` | `d = 7`. Let `B` = the state at `pos.below()`. If `B` is scaffolding then `d = B.distance`; else if `B.isFaceSturdy(level, pos.below(), up)` the result is **0** (returns immediately). Then for each horizontal direction in the order north, east, south, west: let `S` = the state at the neighbour; skip it if it is not scaffolding; `d = min(d, S.distance + 1)`; if `d == 1` stop the loop. The result is `d` |
+| `getDistance(level, pos)` | a result table, `B` = the state at `pos.below()`: **0** when `B` is not scaffolding and `B.isFaceSturdy(level, pos.below(), up)`; otherwise the minimum of: 7, `B.distance` when `B` is scaffolding, and `S.distance + 1` over the horizontal neighbours `S` (north, east, south, west) that are scaffolding. The result is at most 7; when `B` is scaffolding with stored distance 0 the starting value is 0 and the result is 0, so the minimum can fall to 0 on this branch; the order of the neighbours does not change the result. The horizontal loop exits early when the running minimum equals 1; this is an optimisation only and does not change the result |
 | `isBottom(level, pos, d)` | `d > 0` and the state below is not scaffolding |
 | Placement state | `waterlogged` = the fluid at the clicked position is water; `distance = getDistance(level, clickedPos)`; `bottom = isBottom(level, clickedPos, distance)` |
 | `canBeReplaced(state, context)` | true when the held item is the scaffolding item (so scaffolding can be stacked onto scaffolding) |
@@ -235,7 +248,7 @@ The two-stage collapse is therefore: a scaffolding block that loses all support 
 
 ### 3.8 Other users of the falling entity
 
-`SpeleothemBlock` (pointed dripstone, sulfur spike) calls `FallingBlockEntity.fall` for stalactites and then `setHurtsEntities(scale, 40)` with a scale derived from the height of the column it came from; it also overrides `onBrokenAfterFall` (a landing sound event). `PowderSnowBlock` reads `instanceof FallingBlockEntity` in its collision shape rule (a falling block does not sink). Their own rules belong to the dripstone and snow documents (Open question 6).
+`SpeleothemBlock` (pointed dripstone, sulfur spike) calls `FallingBlockEntity.fall` for stalactites and then `setHurtsEntities(scale, 40)` with a scale derived from the height of the column it came from; it also overrides `onBrokenAfterFall` (a landing sound event). `PowderSnowBlock` reads `instanceof FallingBlockEntity` in its collision shape rule (a falling block does not sink). The speleothem rules are in part 6 of 29b; the powder snow rule belongs to part 3 (Open question 5).
 
 ## 4. The falling block entity (`FallingBlockEntity`)
 
@@ -256,7 +269,7 @@ Entity type `falling_block` (21 §8.4: 0.98 x 0.98, tracking range 10, update in
 | `forceTickAfterTeleportToDuplicate` | false | 4.8 |
 | metadata index 8 | `startPos` (BlockPos, default 0,0,0) | set to the block position of the spawn |
 
-Entity default gravity is **0.04** per tick (`getDefaultGravity`); the air drag factor is **0.98** (`Entity.getAirDrag`, f32). Movement emission: none (no step sounds). `isAttackable` false; `isPickable` while not removed; `hurtServer` only marks the entity hurt (if not invulnerable to the base source) and returns false (the entity is damage-proof). `displayFireAnimation` false. `getMoveSimulationType`: SERVER_AND_CLIENT (the client simulates the same movement).
+Gravity: `applyGravity` adds `-getGravity()` to the velocity y. `getGravity()` is final and returns 0 when `isNoGravity()` is true (the base entity `NoGravity` flag, 45 part 1) and otherwise `getDefaultGravity()`, which is **0.04** for this entity (0.0 in the base class). The air drag factor is `Entity.getAirDrag()`, the float constant `0.98f` widened to double when the velocity is scaled, that is about 0.98000002; tests must not assume exactly 0.98 (the table of 8.1 agrees with exact 0.98 to 6 decimals). Movement emission: none (no step sounds). `isAttackable` false; `isPickable` while not removed; `hurtServer` only marks the entity hurt (if not invulnerable to the base source) and returns false (the entity is damage-proof). `displayFireAnimation` false. `getMoveSimulationType`: SERVER_AND_CLIENT (the client simulates the same movement).
 
 `FallingBlockEntity.fall(level, pos, state)` (static):
 1. The entity's state is `state`, with `waterlogged` set to false when the state has that property.
@@ -269,13 +282,13 @@ Entity default gravity is **0.04** per tick (`getDefaultGravity`); the air drag 
 0. If the entity's state is air: discard and return.
 1. `time += 1`.
 2. `applyGravity` (velocity y -= 0.04), then `move(SELF, velocity)` (collision as 13 §1, 41 §3.3), then block effects and portal handling.
-3. Everything below runs only on a server level, and only when the entity is alive (or `forceTickAfterTeleportToDuplicate`); on a client the tick ends after step 2 and step 9.
+3. Steps 4 to 7 run only on a server level and only when the entity is alive (or `forceTickAfterTeleportToDuplicate`). A client, or a dead entity without the force flag, skips the landing and expiry logic of steps 4 to 7 but still applies the drag and the precise-position call of steps 8 and 9.
 4. `pos` = the entity's block position. `isConcrete` = the state's block is a `ConcretePowderBlock`. `inWater` = `isConcrete and` the fluid at `pos` is in tag `water`.
 5. `speedSq` = the squared length of the velocity (after the move). **Concrete powder reaching water:** if `isConcrete and speedSq > 1.0`: ray-clip from `(xo, yo, zo)` to the current position with block mode COLLIDER and fluid mode SOURCE_ONLY; if the clip hits a block and the fluid at the hit block position is in tag `water`, then `pos` = the hit block position and `inWater = true`.
 6. **Landing test:** if `onGround` or `inWater`: go to 4.3. Otherwise go to 4.4 (expiry).
-7. (the 4.3 and 4.4 results then fall through to 8)
-8. (After the landing or expiry code, reached by every path on the server.) Velocity is multiplied by `getAirDrag()` (0.98) on all three axes. (The landing code of 4.3 has already multiplied by (0.7, -0.5, 0.7).)
-9. `setRequiresPrecisePosition(horizontalCollision or verticalCollision)`.
+7. After the landing (4.3) or expiry (4.4) logic has run, the entity continues with the drag and precise-position steps below.
+8. Applies to every entity, server and client. Velocity is multiplied by `getAirDrag()` (0.98f) on all three axes. (The landing code of 4.3 has already multiplied by (0.7, -0.5, 0.7); the placement test, expiry, concrete-water test and clip of steps 4 to 7 are the only server-only logic.)
+9. `setRequiresPrecisePosition(horizontalCollision or verticalCollision)` (also on the client).
 
 ### 4.3 Landing (when on the ground or in water, server)
 
@@ -304,7 +317,7 @@ If `time > 100` and the block y of `pos` is at or below the level's minimum y or
 
 ### 4.6 Damage (`causeFallDamage`) and anvil damage
 
-Called through the entity fall pipeline: `Entity.checkFallDamage` accumulates `fallDistance` (increase by the downward movement each tick when not in water), and when the entity moves onto the ground with `fallDistance > 0` it calls the landed-on block's `fallOn(level, state, pos, entity, fallDistance)`; `Block.fallOn` scales the distance by `(1 - block.getFallDistanceReduction())` (the reduction is a block property, 0 by default in 24 part 1; hay, beds and similar blocks set their own) and calls the entity's `causeFallDamage(distance, 1.0, fallDamageSource)` (read).
+Called through the entity fall pipeline: `Entity.checkFallDamage` accumulates `fallDistance` only when the entity is not in water and the vertical movement dy is below 0 (the distance is reduced by the float-cast dy, that is increased by the fall), and when the entity moves onto the ground with `fallDistance > 0` it calls the landed-on block's `fallOn(level, state, pos, entity, fallDistance)`; `Block.fallOn` scales the distance by `(1 - block.getFallDistanceReduction())` (the reduction is the `BlockBehaviour.Properties.fallDistanceReduction` field, which has no initialiser and so defaults to 0.0; hay, beds and similar blocks set their own) and calls the entity's `causeFallDamage(distance, 1.0f, damageSources().fall())` (read). The source passed is the generic `fall` source, which `FallingBlockEntity` ignores in favour of its own (step 3 below). After `fallOn` returns, `checkFallDamage` fires game event `hit_ground` at the entity position (context: the entity and the supporting block state), and then resets the fall distance to 0 (read). The reset and the game event happen only when the entity is on the ground with `fallDistance > 0`.
 
 `FallingBlockEntity.causeFallDamage(distance, multiplier, source)`:
 1. If `hurtEntities` is false return false.
@@ -340,7 +353,7 @@ Damage reductions (helmets: `damages_helmet` for `falling_block` and `falling_an
 
 ### 5.1 The interface (`BonemealableBlock`) and the source (`BonemealSource`)
 
-`BonemealSource` is an enum with two values: `INTERACTION` (the bone meal item) and `MOB` (a bee growing a crop, `Bee$BeeGrowCropGoal`; not read in detail, Open question 7). `BonemealableBlock.Type` has two values: `NEIGHBOR_SPREADER` and `GROWER` (the default is `GROWER`).
+`BonemealSource` is an enum with two values: `INTERACTION` (the bone meal item) and `MOB` (a bee growing a crop, 5.5). `BonemealableBlock.Type` has two values: `NEIGHBOR_SPREADER` and `GROWER` (the default is `GROWER`).
 
 | Method | Contract |
 |---|---|
@@ -352,12 +365,12 @@ Damage reductions (helmets: `damages_helmet` for `falling_block` and `falling_an
 
 ### 5.2 Implementers (every class that declares the interface or inherits it; read as the classes whose constant pool names `BonemealableBlock`)
 
-`AzaleaBlock`, `BambooSaplingBlock`, `BambooStalkBlock`, `BigDripleafBlock`, `BigDripleafStemBlock`, `BonemealableFeaturePlacerBlock`, `BushBlock` (the default, 5.4), `CocoaBlock`, `CropBlock` (6), `FireflyBushBlock`, `FlowerBedBlock`, `GlowLichenBlock`, `GrassBlock`, `GrowingPlantBodyBlock`, `GrowingPlantHeadBlock` (and with them kelp, weeping vines and the cave vines), `HangingMossBlock`, `MangroveLeavesBlock`, `MangrovePropaguleBlock` (uses `BonemealSource`), `MossyCarpetBlock`, `MushroomBlock`, `NetherFungusBlock`, `NetherrackBlock`, `NyliumBlock`, `PitcherCropBlock`, `RootedDirtBlock`, `SaplingBlock` (7), `SeagrassBlock`, `SeaPickleBlock`, `ShelfMushroomBlock`, `ShortDryGrassBlock`, `SmallDripleafBlock`, `StemBlock`, `SweetBerryBushBlock`, `TallDryGrassBlock`, `TallFlowerBlock`, `TallGrassBlock`. Their `performBonemeal` bodies belong to the sibling parts (1.2), except those of 5.4, 6 and 7.
+`AzaleaBlock`, `BambooSaplingBlock`, `BambooStalkBlock`, `BigDripleafBlock`, `BigDripleafStemBlock`, `BonemealableFeaturePlacerBlock`, `BushBlock` (the default, 5.4), `CocoaBlock`, `CropBlock` (6), `FireflyBushBlock`, `FlowerBedBlock`, `GlowLichenBlock`, `GrassBlock`, `GrowingPlantBodyBlock`, `GrowingPlantHeadBlock` (and with them kelp, weeping vines and the cave vines), `HangingMossBlock`, `MangroveLeavesBlock`, `MangrovePropaguleBlock` (uses `BonemealSource`), `MossyCarpetBlock`, `MushroomBlock`, `NetherFungusBlock`, `NetherrackBlock`, `NyliumBlock`, `PitcherCropBlock`, `RootedDirtBlock`, `SaplingBlock` (7), `SeagrassBlock`, `SeaPickleBlock`, `ShelfMushroomBlock`, `ShortDryGrassBlock`, `SmallDripleafBlock`, `StemBlock`, `SweetBerryBushBlock`, `TallDryGrassBlock`, `TallFlowerBlock`, `TallGrassBlock`. Their `performBonemeal` bodies belong to the parts named in the table of 1.3, except those of 5.4, 6 and 7 of this document.
 
 ### 5.3 The item flow (`BoneMealItem.useOn`; complements 17 §3.4)
 
 1. `pos` = the clicked block position, `adjacent` = `pos.relative(clickedFace)`.
-2. `growCrop(stack, level, pos)`: on the **clicked** block. If its block is a `BonemealableBlock` and `isValidBonemealTarget(level, pos, state, INTERACTION)`: on a server level, if `isBonemealSuccess(level, level.random, pos, state, INTERACTION)` then `performBonemeal(level, level.random, pos, state, INTERACTION)`; then (server only, on every valid target, whether or not the test passed) `stack.shrink(1)`. The function returns true for a valid target on both sides (the client returns without shrinking or growing). A creative-mode stack shrink is the stack's own rule (29 §9).
+2. `growCrop(stack, level, pos)`: on the **clicked** block. If its block is a `BonemealableBlock` and `isValidBonemealTarget(level, pos, state, INTERACTION)`: on a server level, if `isBonemealSuccess(level, level.random, pos, state, INTERACTION)` then `performBonemeal(level, level.random, pos, state, INTERACTION)`; then (server only, on every valid target, whether or not the test passed) `stack.shrink(1)`. The function returns true for a valid target on both sides (the client returns without shrinking or growing). `growCrop` has no creative-mode exception: it calls `shrink(1)` unconditionally on the server for a valid target. The restore is in the caller (read): `ServerPlayerGameMode.useItemOn` reads the held stack's count before `ItemStack.useOn`, and when `ServerPlayer.hasInfiniteMaterials()` is true writes the count back with `setCount` afterwards, so a creative player's bone meal stack is not consumed.
 3. If step 2 returned true: on the server, send the use vibration (game event `item_interact_finish`) and level event **1505** at `pos`, data **15**; return SUCCESS_SERVER (client: SUCCESS).
 4. Otherwise, if `isFaceSturdy(level, pos, clickedFace)` for the clicked block: `growWaterPlant(stack, level, adjacent, clickedFace)` (17 §3.4 gives its 128-attempt algorithm); if it returned true the server sends the vibration and event 1505 (data 15) and the item returns SUCCESS.
 5. Otherwise PASS.
@@ -375,6 +388,20 @@ The `performBonemeal` and `isBonemealSuccess` random source is the **level's** r
 | `performBonemeal` | `findSpreadableNeighbourPos(level, pos, state)`: the horizontal directions are put in a random permutation (`shuffledCopy`, the level's random) and the first neighbour that is air and where the state can survive is chosen; if one exists, `setBlockAndUpdate(thatPos, thisBlock.defaultBlockState())` |
 
 The random permutation uses the level random once per `shuffledCopy`; the spread does not cost the bone meal item beyond the common step in 5.3.
+
+### 5.5 The `MOB` source: a bee growing a crop (`Bee$BeeGrowCropGoal`)
+
+Read this round; no other 29b part or document specifies it (19 Open question 22 lists it as unspecified).
+
+| Item | Value |
+|---|---|
+| Start and continue test | false when the bee's crops grown since pollination is 10 or more; false when `nextFloat() < 0.3` (one draw from the bee's random); otherwise true only when the bee has nectar and a valid hive. Continue uses the same test |
+| Tick gate | each tick, `nextInt(adjustedTickDelay(30)) == 0` (bee random), else nothing |
+| Targets | the cells 1 and 2 below the bee's block position, in that order; a cell qualifies when its block is in block tag `bee_growables`, whose values are tag `crops`, `sweet_berry_bush`, `cave_vines` and `cave_vines_plant`. Tag `crops` holds `beetroots`, `carrots`, `potatoes`, `wheat`, `melon_stem`, `pumpkin_stem`, `torchflower_crop`, `pitcher_crop` (data pack) |
+| Growth | The branches are tested in this order. (1) `instanceof CropBlock`: age + 1 only when not at max age (directly, not through bone meal). (2) `instanceof StemBlock`: when age is below 7, age + 1. (3) `sweet_berry_bush`: when age is below 3, age + 1. (4) `cave_vines` and `cave_vines_plant` only: when `isValidBonemealTarget(..., MOB)`, `performBonemeal(level, bee random, pos, state, MOB)`, then the state is re-read. Any other block yields no new state: no event, no write, no counter increment. Consequence: `pitcher_crop` (in tag `crops`, but `PitcherCropBlock` is a `DoublePlantBlock`, not a `CropBlock`) is never grown by a bee; `torchflower_crop` (`TorchflowerCropBlock extends CropBlock`) is; `melon_stem` and `pumpkin_stem` take branch 2 |
+| Effect | when a new state resulted: level event **2011** at the cell, data 15, `setBlockAndUpdate(pos, newState)`, and the bee's crops-grown counter is incremented |
+
+The scan covers offset 1 and then offset 2 below the bee, with no early exit (read in the bytecode: the loop over the two offsets has no break). After a success it increments the counter and continues with the next offset, so both cells can grow in the same tick, each with its own level event 2011, its own `setBlockAndUpdate` and its own counter increment. The 30-in-`adjustedTickDelay` gate is drawn once per goal tick, not once per cell.
 
 ## 6. Crop growth helpers (`CropBlock`)
 
@@ -412,7 +439,7 @@ Values: the cell below only (nothing else around): `f = 1 + 1 = 2` for dry growi
 | `isBonemealSuccess` | always true |
 | `performBonemeal` -> `growCrops(level, pos, state)` | `newAge = min(getMaxAge(), age + U(2, 5))`, one `nextInt(4)` draw (the level random); `setBlock(pos, getStateForAge(newAge), 2)` |
 
-Subclasses may override `getBonemealAgeIncrease` (the age step), `getAgeProperty`, `getMaxAge` (siblings, part 2).
+Subclasses may override `getBonemealAgeIncrease` (the age step), `getAgeProperty`, `getMaxAge` (29b part 2).
 
 ## 7. Saplings and the tree growth trigger
 
@@ -438,7 +465,7 @@ A grower has: a name; `trees` (a weighted list of configured feature keys); `meg
 |---|---|
 | `getConfiguredFeature(random, flowers)` | if `flowers` and `flowerTrees` is not empty: one weighted draw from `flowerTrees`; otherwise one weighted draw from `trees` (an empty list yields null and consumes no draw) |
 | `getConfiguredMegaFeature(random)` | one weighted draw from `megaTrees` (null when empty, no draw) |
-| weighted draw (`WeightedList.getRandom`) | empty list: no draw; otherwise one `nextInt(totalWeight)` draw and the entry whose cumulative weight range (in list order) contains the value (cumulative order inferred from the helper, Open question 2). A single-entry list still consumes one `nextInt(weight)` draw |
+| weighted draw (`WeightedList.getRandom`) | empty list: no draw; otherwise one `nextInt(totalWeight)` draw and the entry whose cumulative weight range (in list order) contains the value. Both selector forms give the same result: `Compact` subtracts each entry's weight from the value in list order and returns the first entry for which the result is negative; `Flat` fills an array entry by entry in list order, `weight` slots each, and indexes it with the value. An empty list has no selector: it returns empty with no draw. A single-entry list still consumes one `nextInt(weight)` draw |
 | `hasFlowers(level, pos)` | any block in the box `pos + (-2, -1, -2)` to `pos + (2, 1, 2)` (inclusive corners, 5 x 3 x 5 cells) whose state is in block tag `flowers` |
 | `getMinimumHeight(level)` | if `shortestTreeType` is null: empty (0 for the caller). Else the registered feature: if it is a `TreeFeature` then its `trunkPlacer.getBaseHeight()`; otherwise empty |
 | `canGrow(level, pos, state)` | draws `normal = getConfiguredFeature(level.getRandom(), hasFlowers(level, pos))` and **then** `mega = getConfiguredMegaFeature(level.getRandom())` (both draws are made, in that order, from the level random, every time the bone meal target test runs); if `normal == null and mega != null`: the result is whether a 2 x 2 group of the same sapling exists (7.3); otherwise true |
@@ -470,7 +497,7 @@ A grower has: a name; `trees` (a weighted list of configured feature keys); `meg
 | `PALE_OAK` | none | `pale_oak_bonemeal` | none | null |
 | `POPLAR` | `red_poplar` 1, `orange_poplar` 1, `yellow_poplar` 1 | none | none | `red_poplar` |
 
-A weight is shown where the list has more than one entry; a single-entry list has weight 1 (the artifact builds it with `WeightedList.of(key)`). Entries are listed in construction order (the order that decides the cumulative ranges). The names are the `TreeFeatures` keys (`OAK`, `FANCY_OAK`, `OAK_BEES_005`, ...) lower-cased: the registry path is the lower-case field name (inferred from the key naming, Open question 3). `dark_oak` and `pale_oak` have no 1 x 1 tree: a lone sapling can never be a bone meal target (7.2, `canGrow` needs the 2 x 2 group) and never grows by random tick (7.3 returns false at step 2). Growers are also registered by name in a map used by the codec (`oak`, `spruce`, `mangrove`, `azalea`, `birch`, `jungle`, `acacia`, `cherry`, `dark_oak`, `pale_oak`, `poplar`).
+A weight is shown where the list has more than one entry; a single-entry list has weight 1 (the artifact builds it with `WeightedList.of(key)`). Entries are listed in construction order (the order that decides the cumulative ranges). The names are the `TreeFeatures` keys (`OAK`, `FANCY_OAK`, `OAK_BEES_005`, ...); the key strings were read in `TreeFeatures` and each equals the lower-cased field name (read: oak, fancy_oak, oak_bees_005, fancy_oak_bees_005, spruce, mega_spruce, mega_pine, mangrove, tall_mangrove, azalea_tree, birch, birch_bees_005, jungle_tree_no_vine, mega_jungle_tree, acacia, cherry, cherry_bees_005, dark_oak, pale_oak_bonemeal, red_poplar, orange_poplar, yellow_poplar). The jar contains no `worldgen/configured_feature` JSON files, so these keys resolve only through the data pack that the tool of 22 and 23 produces. `dark_oak` and `pale_oak` have no 1 x 1 tree: a lone sapling can never be a bone meal target (7.2, `canGrow` needs the 2 x 2 group) and never grows by random tick (7.3 returns false at step 2). Growers are also registered by name in a map used by the codec (`oak`, `spruce`, `mangrove`, `azalea`, `birch`, `jungle`, `acacia`, `cherry`, `dark_oak`, `pale_oak`, `poplar`).
 
 ## 8. Worked examples
 
@@ -515,15 +542,15 @@ A weight is shown where the list has more than one entry; a single-entry list ha
 
 ## 10. Open questions
 
-1. The sibling split of 1.2 is a proposal; the real files and numbering of parts 2 to 7 may differ, and the table of 1.3 must then be extended by the owners of those parts.
-2. `WeightedList.getRandom` was read as "draw `nextInt(totalWeight)` then `Selector.get(value)`"; the selector's internal ordering (cumulative in list order) was not read and is (inferred) from `WeightedRandom.getWeightedItem`.
-3. The feature keys of 7.4 are the field names of `TreeFeatures` lower-cased (inferred); their registry paths were not read from the data pack, which the extraction tool provides (22, 23).
-4. The default value of `Block.getFallDistanceReduction` was not read (it is a builder-supplied field); only the formula is read (4.6).
-5. `Entity.move`, `onGround`, `horizontalCollision` and the clip of 4.2 step 5 follow 13, 41 and 18; the `ClipContext` COLLIDER/SOURCE_ONLY semantics were not read here.
-6. `SpeleothemBlock` (pointed dripstone, sulfur spike), `PowderSnowBlock` and the sound mapping of level events 1029, 1031, 2015 were not specified here beyond the calls named in 3.8, 3.4 and 3.6.
-7. The `MOB` bone meal source (`Bee$BeeGrowCropGoal`) and the implementer-specific uses of `BonemealSource` were not read.
-8. Client rendering of the falling block entity (the model, interpolation, dust particle geometry `ParticleUtils.spawnParticleBelow`) was not read.
-9. The ambient sand sound player called by `SandBlock.animateTick` was not read.
-10. The block entity restore path (4.3 step 5b) was read from the bytecode; its only producer of `blockData` is NBT (`TileEntityData`), for example `/summon` or a data pack; no other producer was found among the classes that reference the entity (the list of referencing classes was: `AnvilBlock`, `ConcretePowderBlock`, `SpeleothemBlock`, `BrushableBlock`, `Fallable`, `ScaffoldingBlock`, `FallingBlock`, `PowderSnowBlock`, `EntityTypes`).
-11. The brushable falling case: whether the block entity's stored loot item is intentionally dropped is not stated by the artifact; the section 3.5 consequence is read from `disableDrop` plus the landing code.
-12. The mangrove propagule and azalea sapling-like paths (`MangrovePropaguleBlock`, `AzaleaBlock`) use `TreeGrower.MANGROVE` and `AZALEA` through own bone meal rules not read here.
+1. The scopes of parts 7 and 8 in 1.2 are summaries of their file names, not re-read headers; `GlowLichenBlock` is owned by part 4 through 24 part 4 section 6.8 and 35 part 4 section 8.1 (read in part 4's scope table). The headers of parts 4 to 8 were re-read for this revision; the owning parts overrule the tables of 1.2 and 1.3.
+2. `Entity.move`, `onGround`, `horizontalCollision` and the clip of 4.2 step 5 follow 13, 41 and 18; the `ClipContext` COLLIDER/SOURCE_ONLY semantics were not read here.
+3. The sound mapping of level events 1029, 1031, 2015 was not specified here beyond the calls named in 3.4 and 3.6; `PowderSnowBlock`'s use of `FallingBlockEntity` is only named in 3.8 (part 3 of 29b owns the block).
+4. The registry ids printed in 1.3 for `dragon_egg`, `anvil`, `scaffolding`, `pointed_dripstone` and `sulfur_spike` are those of 24 parts 4, 5, 7 and 8 (see 46); the field numbers agree with the `Blocks` static initialiser order. No open point remains except that 29b part 1 did not itself recount the registry.
+5. Client rendering of the falling block entity (the model, interpolation, dust particle geometry `ParticleUtils.spawnParticleBelow`) was not read.
+6. Resolved: the creative-mode stack restore is read in `ServerPlayerGameMode.useItemOn` (5.3 step 2). Not read: the same restore on the client prediction path.
+7. The ambient sand sound player called by `SandBlock.animateTick` was not read.
+8. The block entity restore path (4.3 step 5b) was read from the bytecode; its only producer of `blockData` is NBT (`TileEntityData`), for example `/summon` or a data pack; no other producer was found among the classes that reference the entity (the list of referencing classes was: `AnvilBlock`, `ConcretePowderBlock`, `SpeleothemBlock`, `BrushableBlock`, `Fallable`, `ScaffoldingBlock`, `FallingBlock`, `PowderSnowBlock`, `EntityTypes`).
+9. The brushable falling case: whether the block entity's stored loot item is intentionally dropped is not stated by the artifact; the section 3.5 consequence is read from `disableDrop` plus the landing code.
+10. The mangrove propagule and azalea sapling-like paths (`MangrovePropaguleBlock`, `AzaleaBlock`) use `TreeGrower.MANGROVE` and `AZALEA` through own bone meal rules; they are in part 2 of 29b (not re-read here; confirm against that document).
+11. 5.5: the bodies of `isValidBonemealTarget(..., MOB)` and `performBonemeal(..., MOB)` for the cave vines classes were not read here (see 29b part 4). The two-cell scan is resolved in 5.5 (no early exit).
+12. The index `README.md` Documents table and scope sentence do not yet list the 29b parts; the index step must add them (this round did not edit the README).

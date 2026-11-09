@@ -41,10 +41,14 @@ the numbers that a row needs to be usable, and does not tabulate the data files.
 - Scope: registry ids 228 to 455 inclusive. By the id rule of 25-1 §2 (id = registration index) these are statements 193 to
   375 of `Items.<clinit>` (183 statements: 180 register one item each, 3 are colour collections of 16 items each, so
   180 + 48 = 228 items).
-- **The brief's example numbers are statement numbers, not ids.** The brief names `WILDFLOWERS` 250, `CHERRY_SHELF` 300 and
-  `PUMPKIN` 350. Those are the statement numbers (the `putstatic` order of `Items.<clinit>`); the registry ids are
-  330, 380 and 430. `STONE_BRICK_STAIRS` (400) and `END_STONE_BRICK_WALL` (450) of the brief are statement numbers
-  past the end of this range (statement 375 is the last in it); they are in part 3 or later.
+- **Statement numbers are 0-based.** Statement 0 is `AIR`, the first `putstatic` of `Items.<clinit>` (in a 1-based listing
+  `AIR` is 1 and `AZALEA_LEAVES` is 193). As read: `AZALEA_LEAVES` is statement 192, `COPPER_BLOCK` 120, `WOOL` 215,
+  `WILDFLOWERS` 250, `CHERRY_SHELF` 300, `PUMPKIN` 350 and `DEEPSLATE_BRICKS` 375. The five weathering-copper collections
+  before the range sit at statements 120, 124, 125, 126 and 127.
+- **Example statement numbers are not ids.** A reader may have been given example numbers such as `WILDFLOWERS` 250,
+  `CHERRY_SHELF` 300 and `PUMPKIN` 350. Those are statement numbers (the `putstatic` order of `Items.<clinit>`); the
+  registry ids are 330, 380 and 430. Statements 400 (`STONE_BRICK_STAIRS`) and 450 (`END_STONE_BRICK_WALL`) lie past the end
+  of this range (statement 375 is the last in it); they are in part 3 or later.
 - **Id from statement number** inside this range, for a reader who walks the statements: ids 228 to 249 are statement 193
   to 214 plus 35 (five weathering-copper collections before it, 7 extra items each); `WOOL` is statement 215 and id 250,
   `WOOL_STAIRS` 216 and id 266, `WOOL_SLAB` 217 and id 282 (each colour collection adds 15 extra items to what follows);
@@ -142,7 +146,7 @@ Every one of these files is the same shape: `div` of the constant `left` by a `c
 `cooking/normal_burn_time_reduction_factor` (constant 1) and true branch `cooking/fast_burn_time_reduction_factor` (constant 2).
 The burn time in ticks of an item in a furnace is therefore `left`, and `left / 2` in a smoker or a blast furnace (integer
 division by the provider arithmetic of 26 §9). Example: a wooden slab burns 150 ticks in a furnace and 75 in a smoker.
-The `speedKey` (`cooking/speed_default`, 1.0 normally, 2.0 in a fast-cooking block, 25-1 §9) is the same for every row.
+The `speedKey` (`cooking/speed_default`, 25-1 §9) is the same for every row. It is a context FLOAT provider (`ContextFloatProviders.COOKING_DEFAULT_SPEED_MULTIPLIER`), file `data/minecraft/context_float_provider/cooking/speed_default.json`: a `conditional` on the predicate `block/fast_cooking` (`match_block` of `smoker` and `blast_furnace`) whose on_false is `cooking/normal_speed_multiplier` (constant 1.0) and on_true `cooking/fast_speed_multiplier` (constant 2.0). So the speed multiplier is 1.0 normally and 2.0 in a smoker or blast furnace.
 The fuel engine (the furnace block entity that reads the component) is not in this range.
 
 ### 4.3 `container` (77): the empty container
@@ -157,14 +161,13 @@ overrides it); it always sets the `container` component to the empty value, so a
 
 ### 4.4 `pot_decorations` (76): the decorated pot prototype
 
-Only `decorated_pot` (id 392). The statement sets it through a delayed initialiser (it needs the item registry to be
-complete): value = `PotDecorations.allBrick`, a record of four optional item templates (`back`, `left`, `right`, `front`),
+Only `decorated_pot` (id 392). The statement is `registerBlock(id, block, Properties)` whose Properties are built as `delayedComponent(POT_DECORATIONS, initialiser lambda$static$89)` followed by `component(CONTAINER, ItemContainerContents.EMPTY)`, in that order (read). `pot_decorations` is therefore applied through the delayed-initialiser path (`Item$Properties.delayedComponent`, defined in 25-1 §6): it is not part of the immediate prototype and is added only when the initialisers run, after the registries exist. The reason for the delay (the initialiser looks up items in the item registry, so it needs the registry complete) is (inferred): the delayed form takes a `HolderLookup$Provider`, which was read, but no statement of the reason was. Value = `PotDecorations.allBrick`, a record of four optional item templates (`back`, `left`, `right`, `front`),
 each the template { item `brick`, count 1, empty component patch }. So the prototype of a decorated pot item shows a pot
 with four plain brick sides, not the blank `PotDecorations.EMPTY`.
 
 ### 4.4a Wire layout of `pot_decorations`
 
-The record has four optional item slots in the order back, left, right, front, each an optional item template (item, count, component patch); its stream layout is not re-derived here and is owned by 17 §1.2 and 46 (not re-read in this round, Open question 8).
+The record has four optional item slots in the order back, left, right, front, each an optional item template (item, count, component patch); its stream layout is read from `PotDecorations.STREAM_CODEC`: a `StreamCodec.composite` of four components in the order back, left, right, front, each being `ItemStackTemplate.STREAM_CODEC` wrapped by `ByteBufCodecs.optional` (the wrapper is read; its bytes, a boolean presence flag followed by the value when present, are (recalled, not verified)). `ItemStackTemplate` is VarInt item id, VarInt count, DataComponentPatch (42 table of `ItemParticleOption`, 05a ItemStackTemplate, 00 §12). The all-brick prototype therefore encodes as four present templates; the blank `EMPTY` as four absent flags. No other document 00-46 owns this layout (17 and 46 only mention component id 76); the cost inside a component patch is the sum above. Open question 8.
 
 ### 4.5 `equippable` (32) and `attribute_modifiers` (16) on the carved pumpkin
 
@@ -174,14 +177,17 @@ Only `carved_pumpkin` (id 431). Its lambda calls `Waypoint.addHideAttribute` on 
 - `attribute_modifiers` = one entry: attribute `waypoint_transmit_range` (46 §4, id 38), modifier id
   `minecraft:waypoint_transmit_range_hide`, amount -1.0, operation `add_multiplied_total`, slot group `head`, tooltip
   display `hidden`. The intended effect is that a worn carved pumpkin cancels the wearer's waypoint transmit range, so the wearer is not
-  shown on locator bars (inferred from the modifier name and values; the operation arithmetic and the waypoint consumer were not traced here). The registry default is read: `Attributes.WAYPOINT_TRANSMIT_RANGE` is a ranged attribute with base 0.0, minimum 0.0 and maximum 6.0E7 (sentiment neutral), agreeing with 18 (attribute table, section number not re-checked here); Open question 2.
+  shown on locator bars (inferred from the modifier name and values; the operation arithmetic and the waypoint consumer were not traced here). The registry default is read: `Attributes.WAYPOINT_TRANSMIT_RANGE` is a ranged attribute with base 0.0, minimum 0.0 and maximum 6.0E7 (sentiment neutral), agreeing with the attribute table of 18 §1 (row 38) and 46 §4; Open question 2. `Waypoint.addHideAttribute` adds the modifier for slot group `HEAD` with display `hidden` (read).
 - `equippable` = `Equippable.builder(HEAD)` with `swappable` = false, camera overlay `minecraft:misc/pumpkinblur`, and every other
   field at the builder default: equip sound `item.armor.equip_generic`, no asset id, no allowed-entity set, `dispensable`
   true, `damage_on_hurt` true, `equip_on_interact` false, `can_be_sheared` false, shearing sound `item.shears.snip`
-  (the builder constructor, read).
+  (the `Equippable$Builder` constructor, read: it assigns `dispensable`, `swappable` and `damage_on_hurt` true, the equip
+  sound `ARMOR_EQUIP_GENERIC` and the shearing sound `SHEARS_SNIP`, and `Optional.empty` for asset id, camera overlay and
+  allowed entities; it assigns neither `equip_on_interact` nor `can_be_sheared`, so false for those two is the unassigned
+  default, not a read constant).
 - Consequences by the rules of 25-1 §5.1: `use` in the air on a swappable `equippable` swaps with the slot, so a carved
   pumpkin is **not** equipped by right-clicking in the air (swappable is false); it is equipped by dispensers
-  (`dispensable`: inferred from the field name), by moving the stack into the head slot of the inventory (13 §4 for the slot rules), and the overlay
+  (`dispensable` is true by the builder constructor, read), by moving the stack into the helmet slot of the inventory menu (slot 5, 13 §3.5; the shift-click rule for an armor item with an empty armor slot is in the same section), and the overlay
   identifier is what the client reads when the worn stack's `equippable` carries a camera overlay (Open question 1).
   Right-clicking a block places the pumpkin first, as for any block item (`BlockItem.useOn`, 29 §9.6).
 
@@ -225,7 +231,7 @@ Behaviour:
    2. Take `dirs` = `context.getNearestLookingDirections()` (29 §9.5; its base order is section 5.4).
    3. For each direction `d` in `dirs`, in order: if `d` is the opposite of the attachment direction (`UP`), skip it. Otherwise the
       candidate is the standing block's `getStateForPlacement(context)` when `d` equals the attachment direction (`DOWN`), else
-      `wallState`. If the candidate exists and `candidate.canSurvive(level, clickedPos)` is true, it is the result: stop.
+      `wallState`. If the candidate exists and the class's own `canPlace(level, candidate, clickedPos)` (item 3 below; a subclass override would be respected) is true, it is the result: stop.
    4. If a result was found and `level.isUnobstructed(result, clickedPos, CollisionContext.empty())` is true, return it; else return
       none (which makes `place` fail, 29 §9.6 step 4).
 3. `canPlace(level, state, pos)` for this class is only `state.canSurvive(level, pos)` (it is the survival test used in step 2.3).
@@ -244,7 +250,7 @@ Constructor is the `BlockItem` one. The only override is `placeBlock(context, st
 
 The effect is that the position above the lower half is cleared (and water kept if the position holds water) before the lower
 half is written, so that the upper half can then be written by the block's `setPlacedBy` hook (the double-block hook of 29 §9.6
-step 6.4; inferred, the hook of `small_dripleaf` is 24's). `Level.isWaterAt(pos)` (`LevelReader`, read) is true when the fluid state at `pos` is in the fluid tag `water`, so it holds for source and flowing water, and for waterlogged blocks (they have a water fluid state). The class is constructed at 11 `new` sites in lambda bodies and 2 constructor method-handle bootstrap entries of `Items`; the other `DoubleHighBlockItem` rows lie in later parts and are tabulated in 25-3 (ids 599 to 604, 888 to 909 and so on), not here.
+step 6.4; inferred, the hook of `small_dripleaf` is 24's). `Level.isWaterAt(pos)` (`LevelReader`, read) is true when the fluid state at `pos` is in the fluid tag `water`, so it holds for source and flowing water, and for waterlogged blocks (they have a water fluid state). In `Items`, the class is constructed at 11 `new` sites in lambda bodies (recounted: 11 `new DoubleHighBlockItem` instructions) and through 1 constructor method-handle bootstrap entry (the one `small_dripleaf` uses; the constant-pool `MethodHandle` line is the same entry, not a second one). That is 12 sites, 1 of them in this range; 25-1 §2 states 10 further direct references and 21 in all, and 25-3 tabulates 28 rows, counts of other ranges that this part did not recount (Open question 9); the other `DoubleHighBlockItem` rows lie in later parts and are tabulated in 25-3 (ids 599 to 604, 888 to 909 and so on), not here.
 
 ### 5.4 `Direction.orderedByNearest(entity)` (needed by 5.2; closes 29 Open question 9)
 
@@ -252,7 +258,7 @@ Input: the placing entity. Output: an array of all six directions, nearest to th
 
 1. `pitch` = the entity's view X rotation in degrees (`getViewXRot(1.0)`) times 0.017453292; `yaw` = the negation of the view Y rotation
    (`getViewYRot(1.0)`) times 0.017453292. Let `sp` = sin(pitch), `cp` = cos(pitch), `sy` = sin(yaw), `cy` = cos(yaw)
-   (the `Mth` sine and cosine on the float widened to double; both are table lookups, read: `Mth.SIN` is a float table of 65536 entries with SIN[i] = (float) sin(i / 10430.378350470453); sin(x) = SIN[(long)(x x 10430.378350470453) & 65535] and cos(x) = SIN[(long)(x x 10430.378350470453 + 16384.0) & 65535]; the cast to long truncates toward zero; the table is filled by the `Mth` static initialiser with the exact `Math.sin`, the fill expression itself was taken from the finding and the table constants 65536, 65535, 16384 and 10430.378350470453 were read in `Mth`). Because of the table, angles at exact multiples of the table step give table values, not exact trigonometry; an implementation must use this table to reproduce tie behaviour. `getViewXRot(1.0)` and `getViewYRot(1.0)` return the plain rotation fields when the partial tick is 1.0.
+   (the `Mth` sine and cosine on the float widened to double; both are table lookups, read: `Mth.SIN` is a float table of 65536 entries with SIN[i] = (float) sin(i / 10430.378350470453); sin(x) = SIN[(long)(x x 10430.378350470453) & 65535] and cos(x) = SIN[(long)(x x 10430.378350470453 + 16384.0) & 65535]; the cast to long truncates toward zero; the table is filled by the `Mth` static-initialiser lambda `lambda$static$0`: each of the 65536 entries is the exact `Math.sin` of i divided by 10430.378350470453, narrowed to float; the constants 65536, 65535, 16384 and 10430.378350470453 were read in `Mth`). Because of the table, angles at exact multiples of the table step give table values, not exact trigonometry; an implementation must use this table to reproduce tie behaviour. `getViewXRot(1.0)` and `getViewYRot(1.0)` return the plain rotation fields when the partial tick is 1.0.
 2. Booleans: `xPos` = (`sy` > 0), `yPos` = (`sp` < 0), `zPos` = (`cy` > 0).
 3. Magnitudes: `xAbs` = |`sy`|, `yAbs` = |`sp`|, `zAbs` = |`cy`| (each selected by the matching sign flag; a value of exactly 0 counts as not positive).
    `xComp` = `xAbs` x `cp`, `zComp` = `zAbs` x `cp`.
@@ -657,7 +663,7 @@ with `unzip -Z1 ... | grep -v '/$'`):
 | 5 | collection items: `WOOL` first id 250, `WOOL_STAIRS` 266, `WOOL_SLAB` 282, next statement id 298 | agrees with 25-1 §2.3 (first and last ids) |
 | 6 | key = string of the `BlockItemIds` constant used by the statement, for the 180 single-item statements; `BlockItemIds` constant name lower-cased equals that string | 180 of 180; the `Items` field name differs from the `BlockItemIds` constant in 3 (`DRY_SHORT_GRASS`, `DRY_TALL_GRASS`, `CUT_STANDSTONE_SLAB`) |
 | 7 | classes: statements whose expanded factory is `StandingAndWallBlockItem`, `DoubleHighBlockItem` | 3 and 1; the other 224 items are `BlockItem` |
-| 8 | occurrences of `Item$Properties.stacksTo`, `rarity`, `overrideDescription`, `durability`, `food`, `fireResistant`, `jukeboxPlayable`, `useItemDescriptionPrefix`, `requiredFeatures` (a) in the `javap -c -p -constants` output of `Items.<clinit>` between the `putstatic` of `AZALEA_LEAVES` and that of `DEEPSLATE_BRICKS` (the statements of this range, the one before and the one after), grepped for each method name; (b) in the bodies of the 52 lambdas (46 `UnaryOperator` + 3 torch + 3 colour-collection lambdas; the stretch has 54 `invokedynamic` factory sites, the `decorated_pot` delayed initialiser `lambda$static$89` and the `small_dripleaf` constructor reference are excluded) that the `invokedynamic` sites of that stretch bind (bootstrap indices mapped to `lambda$...` names with `javap -v`, each body grepped) | (a) 0 of each; (b) the lambdas call only `component` (17 calls), `compostable` (1) and `cookingFuel` (42; outside the three inner `UnaryOperator` lambdas `lambda$static$56`, `58`, `60` that the colour-collection lambdas pass to `registerBlock`, which hold `cookingFuel` for wool, wool stairs, wool slabs), none of the others: all rows max stack 64, rarity common, `block.` prefix |
+| 8 | occurrences of `Item$Properties.stacksTo`, `rarity`, `overrideDescription`, `durability`, `food`, `fireResistant`, `jukeboxPlayable`, `useItemDescriptionPrefix`, `requiredFeatures` (a) in the `javap -c -p -constants` output of `Items.<clinit>` between the `putstatic` of `AZALEA_LEAVES` and that of `DEEPSLATE_BRICKS` (the statements of this range, the one before and the one after), grepped for each method name; (b) in the bodies of the 52 lambdas (46 `UnaryOperator` + 3 torch + 3 colour-collection lambdas; the stretch has 54 `invokedynamic` factory sites, the `decorated_pot` delayed initialiser `lambda$static$89` and the `small_dripleaf` constructor reference are excluded) that the `invokedynamic` sites of that stretch bind (bootstrap indices mapped to `lambda$...` names with `javap -v`, each body grepped) | (a) 0 of each; (b) the lambdas call only `component` (17 calls: 13 shelves, `chiseled_bookshelf`, `chest`, `furnace` and the `carved_pumpkin` equippable; the carved pumpkin's `attribute_modifiers` is set by `Waypoint.addHideAttribute`, a call in another class that this grep does not count), `compostable` (1) and `cookingFuel` (42; outside the three inner `UnaryOperator` lambdas `lambda$static$56`, `58`, `60` that the colour-collection lambdas pass to `registerBlock`, which hold `cookingFuel` for wool, wool stairs, wool slabs), none of the others: all rows max stack 64, rarity common, `block.` prefix |
 | 9 | `requiredFeatures` occurrences in the whole `javap -c -p -constants` output of `Blocks` (class-wide grep) | 0: the vanilla feature set for every row |
 | 10 | rows with `compostable`: low 17, low_medium 6, medium 31, medium_high 3 | 57 rows |
 | 11 | rows with `cooking_fuel`: wood_blocks 28, wool 32, wool_slabs 16, wood_slabs 12, dry_plants 6, bamboo 1 | 95 rows |
@@ -668,6 +674,8 @@ Check 1 detail: `COPPER_BLOCK` (statement 120) is the first collection; the numb
 (colour), and the sum over all statements was recomputed from the bytecode in this round (it agrees with 25-1 §2.4). The 74 plain rows in check 12 are the 74 statements of the form
 `registerBlock(id, block)` of section 2, a count taken independently from the statement forms, so the two censuses
 (by form, by components) agree.
+
+Mapping for check 8(b): in `javap -v` output of `Items`, the operand of each `invokedynamic` instruction is an index into the `BootstrapMethods` table; that entry's implementation-method argument names the `lambda$static$N` body (or the constructor handle), so the 54 sites of the stretch map to lambda names and each body can be grepped to repeat the counts.
 
 An implementer's test list: (a) the id of every key in section 7 round-trips through a table built from the 228 rows; (b) the three
 collections expand in dye order with `<colour>_<base>` keys; (c) every row's prototype has exactly the components of its row
@@ -681,7 +689,7 @@ the `left` value of its key divided by 1 or 2.
    client code that draws the overlay when the stack is worn (and its opacity and condition) was not read. The texture itself
    is a resource-pack file (22).
 2. **Attribute arithmetic.** The modifier `waypoint_transmit_range_hide` (amount -1.0, operation `add_multiplied_total`) is read;
-   how `add_multiplied_total` combines modifiers and how the waypoint code uses `waypoint_transmit_range` (18 attribute table, 46 §4) were not
+   how `add_multiplied_total` combines modifiers and how the waypoint code uses `waypoint_transmit_range` (18 §1, 46 §4) were not
    traced in this round (the registry default 0.0 with maximum 6.0E7 is read, section 4.5), so the "wearer hidden" effect is inferred.
 3. **Wall torch placement.** The wall blocks' own `getStateForPlacement` and `canSurvive` (which neighbour supports a wall torch,
    how the facing is picked) are block behaviour (24 §10.3 and the block parts) and were not re-read here.
@@ -693,4 +701,5 @@ the `left` value of its key divided by 1 or 2.
     document gives only translation keys (`block.minecraft.<key>`).
 7. **Composter and furnace engines.** Where the `compostable` and `cooking_fuel` components are consumed (the composter block
     behaviour, the furnace, smoker and blast furnace block entities) are outside this part; 25-1 §9 states the same open point.
-8. **`pot_decorations` stream layout.** The wire encoding of the record is not given here and was not re-read; see 17 §1.2 and 46.
+8. **`pot_decorations` stream layout.** Order and element codecs are read (4.4a); the byte form of `ByteBufCodecs.optional` (boolean flag then value) was not read here, and the layout is owned by no other document.
+9. **DoubleHighBlockItem site counts.** 25-1 (21 in all: 11 lambda, 10 direct) and 25-3 (28 rows) do not agree with each other or with the 12 construction sites of `Items` recounted here (11 `new` plus 1 handle); rows can share a lambda or a handle, so the counts need not match, but one recount of rows against sites over the whole registry was not done here.

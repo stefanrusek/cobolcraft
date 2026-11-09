@@ -265,7 +265,7 @@ format: levels 0..15 exactly.
 
 `BlockState.getShadeBrightness` returns **0.2** if the block's collision shape is a full block, else **1.0** (`Block.getShadeBrightness`).
 Overrides read (a search of every class in the jar that defines `getShadeBrightness`; this list is complete): `TransparentBlock` 1.0 (inherited by its subclasses, among them `StainedGlassBlock`, `TintedGlassBlock` and `WaterloggedTransparentBlock`), `LightBlock` 1.0, `BarrierBlock` 1.0, `StructureVoidBlock` 1.0,
-`MudBlock` 0.2, `SoulSandBlock` 0.2, and `SnowLayerBlock`: 0.2 when its `layers` property equals 8, else 1.0. Which block uses which class is part of the block registry (04 §5; the block registry is GAP-1 of ../design/README.md, and standin-content §1 for the cobolcraft world type); the lighter only calls the method. The shade of an air cell is 1.0 (`Block` default: not a full collision shape).
+`MudBlock` 0.2, `SoulSandBlock` 0.2, and `SnowLayerBlock`: 0.2 when its `layers` property equals 8, else 1.0. Which block uses which class is part of the block registry (04 §5 and 24-block-registry-1-model-and-foundation.md with its series 24-block-registry-2 to -8 for the standard world type, and standin-content §1 for the cobolcraft world type); the lighter only calls the method. The shade of an air cell is 1.0 (`Block` default: not a full collision shape).
 
 ### 1.8 The light map texture
 
@@ -1034,7 +1034,7 @@ The texture coordinates are transformed (`TextureTransform.setupGlintTexturing(s
 
 ### 8.4 Items in the world (summary)
 
-Dropped items and items in item frames use the `ground` and `fixed` display transforms. Their lifetime, pickup delay and merge rules are in 18 §6.11; their motion and pickup box are not yet specified (GAP-26 of ../design/README.md).
+Dropped items and items in item frames use the `ground` and `fixed` display transforms. Their lifetime, pickup delay and merge rules are in 18 §6.11; their motion and pickup box are in 41-item-entity-physics.md.
 
 ---
 

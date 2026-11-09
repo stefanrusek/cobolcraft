@@ -8,6 +8,8 @@
 | Round | RS19 (GAP-12a), part 4 of the 35 series. Sibling parts: 1 framework and placement modifiers, 2 predicates and providers, 3 tree placers, 5 water and surface, 6 underground, 7 nether, end and misc. |
 | Related | Decoration order, seeding and the placed-feature pipeline: [11-world-generation-caves-and-ores.md](11-world-generation-caves-and-ores.md) §6. Random primitives (`nextInt`, `nextFloat`, `nextBoolean`): 10 §2 and 11 §2.3, §4. Block rules the features call into (`canSurvive`, shapes): [24-block-registry-1-model-and-foundation.md](24-block-registry-1-model-and-foundation.md) and its siblings; block updates: [29-block-updates-and-placement.md](29-block-updates-and-placement.md). |
 
+`SculkPatchFeature` (`sculk_patch`) is in the RS19 scope list but is specified in [35-worldgen-features-6-underground.md](35-worldgen-features-6-underground.md) together with the sculk spreader it drives; it is not repeated here. The water-only flower and grass patch features belong to part 5.
+
 Scope rule (operator decisions in CC-0001 and `docs/design/README.md` R7): the configured features, placed features, block state
 providers and tags are **data** that the extraction tool copies from the jar; this document does not tabulate them. It specifies the
 code that interprets them. Data rows appear only as short worked examples, each tagged with the file it was read from.
@@ -115,7 +117,7 @@ overlay, §11.6) has `span 5`, `lo = 1`, `hi = 4`: result `-4 + nextInt(5) + nex
    fourth set collects what decorators write. All are Java `HashSet`s of immutable `BlockPos` (Open question 1).
 2. If the placement failed, or logs and foliage are both empty, the feature returns false and no decorator runs.
 3. If the decorator list is not empty, a `TreeDecorator.Context` is built with the level, a setter, the feature random source, the log
-   list, the leaf list and the root list. The constructor copies each set into a list and **sorts each list by Y ascending** (a stable
+   list, the leaf list and the root list. The constructor copies each set into a list and **sorts each list by Y ascending** (stability of the sort is a Java library property, (recalled, not verified); if stable,
    sort; positions of equal Y keep the order the set iteration gave them, Open question 1). The decorators run one after another with
    this one context.
 4. The setter used by decorators writes with flags `19` and also records the position in the fourth set. The bounding box of all four
@@ -337,7 +339,7 @@ Field `probability` (0..1; `bamboo_no_podzol` 0.0, `bamboo_some_podzol` 0.2 in t
 5. Return true iff step 1 passed (the success counter is 1).
 
 Example: draws `n = 12`, clear air to Y +20: trunk at origin+0 .. origin+11, `cursor` at origin+12: `FINAL_LARGE` at +12,
-`TOP_LARGE` at +11, `TOP_SMALL` at +10. Eleven stalk cells keep plain `TRUNK` below +10, so the stalk is 13 blocks tall.
+`TOP_LARGE` at +11, `TOP_SMALL` at +10. Ten stalk cells (+0..+9) keep plain `TRUNK` below +10, so the stalk is 13 blocks tall.
 
 ## 7. `vines`, `single_block_pillar`, `random_neighbor_spread`, `overlay`, `replace_single_block`, `projected_random_patchy_square`
 
@@ -358,7 +360,7 @@ the build height; else set `block.getState(level, random, cursor)` (flags 2) and
 
 ### 7.3 `random_neighbor_spread`
 
-Fields: `block` (provider), `accepted_neighbors` (block set), `can_replace` (predicate), `attempts` (int provider, minimum 1),
+Fields: `block` (provider), `accepted_neighbors` (block set), `can_replace` (predicate), `attempts` (int provider, 1..3000),
 `xz_offset` and `y_offset` (int providers, each -16..16). `place(origin)`:
 
 1. Set `block.getState(level, random, origin)` at the origin (flags 2), unconditionally.
@@ -500,8 +502,8 @@ flowering azalea 4, azalea 7, moss carpet 25, short grass 50, tall grass 10). `m
 ## 10. `root_system` (azalea trees)
 
 Fields: `feature` (placed feature, the tree), `required_vertical_space_for_tree` (1..64), `level_test_distance` (0..16), `max_level_deviation` (0..64),
-`root_radius` (1..64), `root_replaceable` (block set), `root_state_provider`, `root_placement_attempts` (>= 1), `root_column_max_height` (>= 1),
-`hanging_root_radius` (1..64), `hanging_roots_vertical_span` (1..16), `hanging_root_state_provider`, `hanging_root_placement_attempts` (>= 1),
+`root_radius` (1..64), `root_replaceable` (block set), `root_state_provider`, `root_placement_attempts` (1..256), `root_column_max_height` (1..4096),
+`hanging_root_radius` (1..64), `hanging_roots_vertical_span` (1..16), `hanging_root_state_provider`, `hanging_root_placement_attempts` (1..256),
 `allowed_vertical_water_for_tree` (1..64), `allowed_tree_position` (predicate). `place(origin)`:
 
 1. If the state at the origin is not air: return false. `cursor = origin`.
@@ -641,12 +643,12 @@ An implementation is conformant to this document when the following checks hold.
 
 ## Open questions
 
-1. **Hash-set order.** The tree sets (roots, logs, leaves, decoration) and the vegetation-patch ground set are `HashSet<BlockPos>`s, and several draws depend on iteration order (ties of equal Y in the sorted tree lists; the order in which patch ground positions receive their vegetation
+1. **Hash-set order.** The tree sets (roots, logs, leaves, decoration) and the vegetation-patch ground set are `HashSet<BlockPos>`s, and several draws depend on iteration order (ties of equal Y in the sorted tree lists, which also assume the list sort is stable, (recalled, not verified): the `ObjectArrayList.sort` call with a Y comparator was read, the library guarantee was not; the order in which patch ground positions receive their vegetation
    draw). `BlockPos.hashCode()` is read and matched against the jar: `(y + z * 31) * 31 + x` in 32-bit arithmetic. `Context.getLowestTrunkOrRootOfTree` and the Context constructor (three sorted `ObjectArrayList`s) were also matched against 3.1. The remaining part is the behaviour of Java's `HashSet` (bucket index `(h ^ (h >>> 16)) & (n - 1)`, initial table 16, load factor 0.75, resize doubling, iteration by bucket then insertion order) which is **(recalled, not verified)**, not read from this artifact.
    An implementation that iterates in another order produces vanilla-like but not seed-identical trees and patches.
 2. **`block_column` test cursor.** The bytecode starts the allowed-placement test one cell beyond the origin (and writes from the origin). This differs from the origin-based test recalled from older versions. It is written as read; no cell at the origin is ever tested by this feature (the placed feature filters of the data test the origin).
 3. **`multiface_growth` search range.** The search cursor is recomputed as `origin + d` on every repetition, so `search_range` has no effect (§8.2). Written as read; recorded here because it contradicts the field's apparent purpose.
-4. **`attached_to_logs` and `cocoa` use `<=`, `attached_to_leaves`, `leave_vine`, `pale_moss` and the shelf mushroom top-level test use `<` / `>=`** as listed in each section; all read from the compare instructions. A boundary equal to the probability cannot occur for `nextFloat() <= p` with p 0 or 1 except at the exact float value, so the difference only shows in seed-exact tests.
+4. **Probability comparisons.** Each probability test is recorded as read from the compare instructions in its own section: `attached_to_logs` and `cocoa` use `<=`; `attached_to_leaves`, `leave_vine`, `pale_moss` and the shelf mushroom top-level test use `<` / `>=`. The document does not normalise them. The two forms differ only when the drawn float equals the probability exactly, so the difference shows only in seed-exact tests.
 5. **Clockwise order.** Closed: `getClockWise` was matched case by case (see 1.1) and `Direction.Plane.HORIZONTAL` is NORTH, EAST, SOUTH, WEST.
 6. **`single_block_pillar` and `projected_random_patchy_square`.** Their only user is `basalt_pillar` (Nether, sibling part 7); the `rule_based` provider and the nested overlay there are data and provider topics (sibling part 2).
 7. **`replace_single_block`.** The engine is specified (§7.5) but no configured feature in the jar uses it; its `RuleTest` forms belong to sibling part 2.

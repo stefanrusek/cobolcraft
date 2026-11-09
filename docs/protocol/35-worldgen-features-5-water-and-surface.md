@@ -11,16 +11,16 @@ engine behaviour or a worked example; this document specifies the schema, the se
 |---|---|
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the data JSON under `data/minecraft/worldgen/`, `data/minecraft/tags/block/` and `data/minecraft/structure/` in the jar, with no execution. Class names are not obfuscated. |
-| Scope | The classes `LakeFeature`, `SpringFeature`, `DiskFeature`, `BlockBlobFeature`, `ReplaceBlobsFeature`, `SnowAndFreezeFeature`, `IcebergFeature`, `BlueIceFeature`, `FillLayerFeature`, `BlockPileFeature`, `CoralTreeFeature`, `CoralClawFeature`, `UnderwaterMagmaFeature`, `SpikeFeature` (ice spikes), `BonusChestFeature`, plus the data-driven compositions that make seagrass, sea pickles, kelp, coral decoration and the desert well (section 2.2). |
+| Scope | The classes `LakeFeature`, `SpringFeature`, `DiskFeature`, `BlockBlobFeature`, `ReplaceBlobsFeature`, `SnowAndFreezeFeature`, `IcebergFeature`, `BlueIceFeature`, `FillLayerFeature`, `BlockPileFeature`, `CoralTreeFeature`, `CoralClawFeature`, `UnderwaterMagmaFeature`, `SpikeFeature` (ice spikes), `BonusChestFeature`, plus the data-driven compositions that make seagrass, sea pickles, kelp, coral decoration and the desert well (§2.2). |
 | Operator decision | Standard Minecraft content is the target (ticket CC-0001); a COBOL tool extracts the vanilla data pack, so data rows are not listed here. |
-| Siblings | The other parts of the 35 family: 35-worldgen-features-1-model-and-placement ("35-1"; feature model, placement modifiers, `FeaturePlacer`, generic composition features), -2-predicates-and-providers ("35-2"), -3-tree-placers ("35-3"), -4-decorators-and-vegetation ("35-4"), -6-underground ("35-6") and -7-nether-end-misc ("35-7"). This document cites them as "35-N section S" and never repeats them; where it needs a fact from them for a worked example it states the fact it read itself and says so. |
+| Siblings | The other parts of the 35 family: 35-worldgen-features-1-model-and-placement (feature model, placement modifiers, `FeaturePlacer`, generic composition features), -2-predicates-and-providers, -3-tree-placers, -4-decorators-and-vegetation (which also holds `WaterloggedVegetationPatchFeature`, section 9), -6-underground and -7-nether-end-misc. This document cites them as "35-N section S" (for example 35-1 section 8) and never repeats them; where it needs a fact from them for a worked example it states the fact it read itself and says so. Structure templates and their processors are in the structure documents of the 35 family and 36 onward, cited by topic. |
 
 Conventions. "Float" is IEEE single precision, "double" is IEEE double precision; every formula says which one is used, because the
 iceberg and block-pile formulas mix both. `nextInt(n)`, `nextFloat()`, `nextDouble()`, `nextBoolean()` are the operations of the
-feature's random source, which is the decoration `WorldgenRandom` described in 11 §4 and 11 §6.3 (the Java-LCG definitions on
+feature's random source, which is the decoration `WorldgenRandom` described in 11 section 4 and 11 section 6.3 (the Java-LCG definitions on
 top of a Xoroshiro-wrapped source); a draw order stated here is the order of the calls in the artifact. A "draw" is one call. Coordinates
 are `(x, y, z)`; `pos` is the position the feature is placed at (the output of the last placement modifier; with no modifier, the decoration origin
-`(16 cx, -64, 16 cz)` of 11 §6.1). Values marked "(inferred)" were deduced and are repeated in Open questions; "(recalled, not verified)" marks a
+`(16 cx, -64, 16 cz)` of 11 section 6.1). Values marked "(inferred)" were deduced and are repeated in Open questions; "(recalled, not verified)" marks a
 statement not read in this round. Worked examples marked "(computed)" were calculated by applying the rules of this document, not observed.
 
 ## 1. Shared facts used by the features
@@ -34,7 +34,7 @@ statement not read in this round. Worked examples marked "(computed)" were calcu
 | flag 260 (`UPDATE_NONE`) | `UPDATE_INVISIBLE (4)` plus `UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS (256)`; used by block piles | `Block.UPDATE_NONE = 260` |
 | `scheduleTick(pos, block_or_fluid, delay)` | queues a block or fluid tick | used by lake, spring, simple block |
 | `markAboveForPostProcessing(level, pos)` | for `i = 0, 1`: move up one block; if the block there is air, stop; otherwise ask the chunk of that position to mark the position for post-processing (the chunk's post-processing list, 29 and 33). At most two blocks above `pos` are marked, and the walk stops at the first air block | `Feature.markAboveForPostProcessing` |
-| block-write window | writes outside the 3 x 3 chunk window around the chunk being decorated are refused (11 §6.5); a refused write is a skipped block | 11 §6.5 |
+| block-write window | writes outside the 3 x 3 chunk window around the chunk being decorated are refused (11 section 6.5); a refused write is a skipped block | 11 section 6.5 |
 
 ### 1.2 Iteration orders and random helpers
 
@@ -51,8 +51,8 @@ statement not read in this round. Worked examples marked "(computed)" were calcu
 | `Direction.getRandom(r)` | `Util.getRandom` over all six directions in enum order (`nextInt(6)`) |
 | `Util.shuffle(list, r)` (also `shuffledCopy`, `toShuffledList`, `Plane.shuffledCopy`) | for `i = size` down to `2`: `j = nextInt(i)`; swap the elements at `i - 1` and `j`. The `IntStream` version used by the bonus chest does the same on ints. One draw per step, `size - 1` draws in all |
 | `WeightedList.getRandom(r)` (and `getRandomOrThrow`) | `v = nextInt(totalWeight)`; walk the entries in list order subtracting each weight; the entry at which the running value first becomes negative is chosen (the flat selector for total weight below 64 and the compact selector implement the same rule). A list with total weight 0 gives no choice and no draw |
-| `HolderSet.getRandomElement(r)` for a tag | `Util.getRandomSafe(contents, r)`: `contents[nextInt(size)]`, `contents` being the tag's element list in resolution order (Open question 2); an empty list gives no choice and no draw |
-| `IntProvider` `uniform` / `trapezoid` | `uniform`: 11 §4. `trapezoid(min, max, plateau)` with `plateau == 0` and `max == -min` is `nextInt(max + 1) - nextInt(max + 1)` (two draws, in that order; read in `TrapezoidInt.sample`). With `max == 0` these are two `nextInt(1)` calls returning 0; whether `nextInt(1)` consumes generator state follows 11 §4 (the Java-LCG rule for a power-of-two bound uses one `next(31)`), so each costs one step (inferred) |
+| `HolderSet.getRandomElement(r)` for a tag | `Util.getRandomSafe(contents, r)`: `contents[nextInt(size)]`, `contents` being the tag's element list in resolution order (tag expansion: 14.3); an empty list gives no choice and no draw |
+| `IntProvider` `uniform` / `trapezoid` | `uniform`: 11 section 4. `trapezoid(min, max, plateau)` with `plateau == 0` and `max == -min` is `nextInt(max + 1) - nextInt(max + 1)` (two draws, in that order; read in `TrapezoidInt.sample`). With `max == 0` these are two `nextInt(1)` calls returning 0; each `nextInt(1)` consumes exactly one `next(31)` step (read: the default `nextInt(int)` of `BitRandomSource` takes the power-of-two branch for a bound of 1 and returns the bound times `next(31)` shifted right by 31; it throws for a bound of 0 or less; the `next(31)` step is the 48-bit LCG of multiplier 25214903917, increment 11, mask 2^48-1, because `WorldgenRandom` overrides only `next(int)`) |
 | `Mth.ceil(f)` | `(int) Math.ceil((double) f)` |
 | `Mth.clamp(v, lo, hi)` (float) | `v < lo ? lo : min(v, hi)` |
 
@@ -60,58 +60,58 @@ statement not read in this round. Worked examples marked "(computed)" were calcu
 
 | Construct | Behaviour (read) |
 |---|---|
-| `PlacedFeature.place(level, generator, r, pos)` | runs the placed feature's modifier list from `pos` (in this version the position-stack engine is `net.minecraft.world.level.levelgen.placement.FeaturePlacer`; `PlacedFeature.place` only builds one and delegates to `FeaturePlacer.place`; the algorithm, including the empty-modifier-list case, is 35-1 section 8, and the depth-first order and the draw order of 11 §6.4 agree with it). The result is the OR of the results of every `place` call made |
+| `PlacedFeature.place(level, generator, r, pos)` | runs the placed feature's modifier list from `pos` (in this version the position-stack engine is `net.minecraft.world.level.levelgen.placement.FeaturePlacer`; `PlacedFeature.place` only builds one and delegates to `FeaturePlacer.place`; the algorithm, including the empty-modifier-list case, is 35-1 section 8, and the depth-first order and the draw order of 11 section 6.4 agree with it). The result is the OR of the results of every `place` call made |
 | `overlay` (`OverlayFeature`) | creates one `FeaturePlacer` for all its members (35-1 section 8) and runs each listed placed feature in order from the same `pos` with the same random source and returns the OR of the results; a failing member does not stop the others |
 | `sequence` (`SequenceFeature`) | runs each listed placed feature in order; returns `false` at the first one that fails (later ones are not run), `true` if all succeed |
 | `simple_random_selector` | `i = nextInt(n)` over the `n` listed placed features; runs entry `i` and returns its result |
 | `weighted_random_selector` | `WeightedList.getRandom` over the entries (each entry is an inline placed feature); runs it with `PlacedFeature.place`; returns its result, `false` if the list is empty |
 | `no_op` | returns `true` and does nothing (no draw) |
-| `simple_block` (`SimpleBlockFeature`) | see section 13.1 of this document |
-| `random_selector` (`RandomSelectorFeature`), `random_boolean_selector` (`RandomBooleanSelectorFeature`), `weighted_placed_feature` (`WeightedPlacedFeature`, the entry type of the weighted selectors) | registered in `FeatureTypes` beside the rows above; none is used by the data files of this document. Their behaviour is specified in 35-1: `random_selector` section 9.2, `random_boolean_selector` section 9.4, `weighted_placed_feature` section 9.7 (Open question 16, closed) |
+| `simple_block` (`SimpleBlockFeature`) | see §13.1 of this document |
+| `random_selector` (`RandomSelectorFeature`), `random_boolean_selector` (`RandomBooleanSelectorFeature`), `weighted_placed_feature` (`WeightedPlacedFeature`, the entry type of the weighted selectors) | registered in `FeatureTypes` beside the rows above; none is used by the data files of this document. Their behaviour is specified in 35-1: `random_selector` section 9.2, `random_boolean_selector` section 9.4, `weighted_placed_feature` section 9.7 |
 
 ## 2. Feature types of this document
 
 ### 2.1 Class table
 
 `FeatureTypes` registers each feature type under a snake-case id; the ids that belong to this document, their class and their configuration
-fields are below. Defaults are the `optionalFieldOf` defaults read from each codec.
+fields are below. Defaults are the `optionalFieldOf` defaults read from each codec; value ranges are the `Codec.intRange` / `floatRange` limits read from each codec (bounds inclusive), and data outside them is rejected at load. `DimensionType.Y_SIZE` is the build-height span constant of 10.
 
 | Type id | Class | Config fields (default) |
 |---|---|---|
 | `lake` | `LakeFeature` | `fluid` (state provider), `barrier` (state provider), `can_place_feature`, `can_replace_with_air_or_fluid`, `can_replace_with_barrier` (block predicates) |
 | `spring_feature` | `SpringFeature` | `state` (fluid state), `valid_blocks` (block set), `requires_block_below` (true), `rock_count` (4), `hole_count` (1) |
-| `disk` | `DiskFeature` | `state_provider`, `target` (block predicate), `radius` (int provider), `half_height` (int) |
+| `disk` | `DiskFeature` | `state_provider`, `target` (block predicate), `radius` (int provider, limited to 0..8), `half_height` (int, 0..4) |
 | `block_blob` | `BlockBlobFeature` | `state` (block state), `can_place_on` (block predicate) |
-| `netherrack_replace_blobs` | `ReplaceBlobsFeature` | `target` (block state), `state` (block state), `radius` (int provider) |
+| `netherrack_replace_blobs` | `ReplaceBlobsFeature` | `target` (block state), `state` (block state), `radius` (int provider, limited to 0..12) |
 | `freeze_top_layer` | `SnowAndFreezeFeature` | none |
 | `iceberg` | `IcebergFeature` | `state` (block state) |
 | `blue_ice` | `BlueIceFeature` | none |
-| `fill_layer` | `FillLayerFeature` | `height` (int), `state` (block state) |
+| `fill_layer` | `FillLayerFeature` | `height` (int, 0..`DimensionType.Y_SIZE`), `state` (block state) |
 | `block_pile` | `BlockPileFeature` | `state_provider` |
 | `coral_tree` | `CoralTreeFeature` | `feature` (a placed feature, applied at each coral block) |
 | `coral_claw` | `CoralClawFeature` | `feature` (a placed feature) |
-| `underwater_magma` | `UnderwaterMagmaFeature` | `floor_search_range` (int), `placement_probability_per_valid_position` (float), `placement_radius_around_floor` (int) |
+| `underwater_magma` | `UnderwaterMagmaFeature` | `floor_search_range` (int, 0..512), `placement_probability_per_valid_position` (float, 0..1), `placement_radius_around_floor` (int, 0..64) |
 | `spike` | `SpikeFeature` | `state` (block state), `can_place_on`, `can_replace` (block predicates) |
 | `bonus_chest` | `BonusChestFeature` | none |
-| `overlay`, `sequence`, `simple_random_selector`, `weighted_random_selector`, `simple_block`, `block_column`, `template`, `no_op` | composition classes, see sections 1.3, 13 and 17 of this document; the three further composition types are listed in section 1.3 | as in the data |
+| `overlay`, `sequence`, `simple_random_selector`, `weighted_random_selector`, `simple_block`, `block_column`, `template`, `no_op` | composition classes, see sections 1.3, 13 and 17 of this document; the three further composition types are listed in §1.3 | as in the data |
 
 ### 2.2 Which gameplay names are classes and which are data (resolved from the artifact)
 
 | Gameplay name | Resolution in 26.3 |
 |---|---|
-| Seagrass | No class. The configured features `seagrass_short`, `seagrass_slightly_less_short`, `seagrass_mid`, `seagrass_tall` are `weighted_random_selector` of two inline placed features: a `simple_block` of `tall_seagrass[half=lower]` guarded by "the block above is water", and a `simple_block` of `seagrass` (no guard). Section 13.1 |
-| Sea pickle | No class. `sea_pickle` is a `simple_block` whose state is a `randomized_int` provider on property `pickles` (uniform 1 to 4) over `sea_pickle[pickles=1, waterlogged=true]`. Section 13.2 |
-| Kelp | No class of its own: `kelp` is a `block_column`. Section 13.3 |
-| Coral tree, coral claw | The classes `CoralTreeFeature` and `CoralClawFeature`; each calls a nested placed feature at every coral block it lays out. Section 14 |
-| Coral mushroom, coral common base | **Not present in this artifact.** The feature type list has no coral-mushroom type and there is no shared coral base class; the coral block and its decoration are data (`coral/<kind>_block`, `coral/block_decoration`, section 14.3). |
-| Ice spikes | The class `SpikeFeature`, feature type `spike`; the data file `ice_spike` configures it with packed ice. Section 16 |
-| Desert well | No class. `desert_well` is an `overlay` of three `template` features placed with offsets, and `template` is `TemplateFeature`. Section 17 |
-| Forest rock | `BlockBlobFeature` (`block_blob`) with mossy cobblestone. Section 6 |
-| Basalt and blackstone blobs | `ReplaceBlobsFeature` (type id `netherrack_replace_blobs`). Section 7 |
-| Underwater magma | `UnderwaterMagmaFeature`. Section 15 |
-| Block piles (melon, pumpkin, hay, snow, ice) | `BlockPileFeature` (`block_pile`). The five data files exist and no biome lists their placed features: they are referenced only from village template pools (`decor`, 10 files). Section 12 |
-| Fill layer | `FillLayerFeature` (`fill_layer`). No data file of the jar uses it (the string `fill_layer` occurs in no JSON under `data/`, counted over `unzip -p jar 'data/*.json'`). Section 11 |
-| Bonus chest | `BonusChestFeature`. It is in no biome: the server calls it once at world creation. Section 18 |
+| Seagrass | No class. The configured features `seagrass_short`, `seagrass_slightly_less_short`, `seagrass_mid`, `seagrass_tall` are `weighted_random_selector` of two inline placed features: a `simple_block` of `tall_seagrass[half=lower]` guarded by "the block above is water", and a `simple_block` of `seagrass` (no guard). §13.1 |
+| Sea pickle | No class. `sea_pickle` is a `simple_block` whose state is a `randomized_int` provider on property `pickles` (uniform 1 to 4) over `sea_pickle[pickles=1, waterlogged=true]`. §13.2 |
+| Kelp | No class of its own: `kelp` is a `block_column`. §13.3 |
+| Coral tree, coral claw | The classes `CoralTreeFeature` and `CoralClawFeature`; each calls a nested placed feature at every coral block it lays out. §14 |
+| Coral mushroom, coral common base | **Not present in this artifact.** The feature type list has no coral-mushroom type and there is no shared coral base class; the coral block and its decoration are data (`coral/<kind>_block`, `coral/block_decoration`, §14.3). |
+| Ice spikes | The class `SpikeFeature`, feature type `spike`; the data file `ice_spike` configures it with packed ice. §16 |
+| Desert well | No class. `desert_well` is an `overlay` of three `template` features placed with offsets, and `template` is `TemplateFeature`. §17 |
+| Forest rock | `BlockBlobFeature` (`block_blob`) with mossy cobblestone. §6 |
+| Basalt and blackstone blobs | `ReplaceBlobsFeature` (type id `netherrack_replace_blobs`). §7 |
+| Underwater magma | `UnderwaterMagmaFeature`. §15 |
+| Block piles (melon, pumpkin, hay, snow, ice) | `BlockPileFeature` (`block_pile`). The five data files exist and no biome lists their placed features: they are referenced only from village template pools (`decor`, 10 files). §12 |
+| Fill layer | `FillLayerFeature` (`fill_layer`). No data file of the jar uses it (the string `fill_layer` occurs in no JSON under `data/`, counted over `unzip -p jar 'data/*.json'`). §11 |
+| Bonus chest | `BonusChestFeature`. It is in no biome: the server calls it once at world creation. §18 |
 
 ## 3. Lake (`LakeFeature`)
 
@@ -144,8 +144,8 @@ Inputs: `pos`. Output: boolean. Let `minY` be the level's minimum build height.
 4. `fluidState = fluid.getState(level, r, origin)` (once; the fluid provider is a plain state in the data, so no draw).
 5. **Validity pass.** For `x, z` in `0..15`, `y` in `0..7` (x outermost, z middle, y innermost): a cell is a **border cell** when it is not in the
    mask and at least one of its six neighbours inside `0..15, 0..15, 0..7` is in the mask. For each border cell at `p = origin + (x, y, z)` with block `s`:
-   1. if `y >= 4` and `s` is a liquid block (`BlockState.liquid()`, 24 §5.2), return false;
-   2. if `y < 4` and `s` is not solid (`isSolid`, 24 §5.2) and `s` is not exactly `fluidState` (state equality), return false;
+   1. if `y >= 4` and `s` is a liquid block (`BlockState.liquid()`, 24 section 5.2), return false;
+   2. if `y < 4` and `s` is not solid (`isSolid`, 24 section 5.2) and `s` is not exactly `fluidState` (state equality), return false;
    3. if `can_place_feature.test(level, p)` is false, return false.
    Nothing has been written when this pass returns false.
 6. **Fill pass.** For every mask cell (same order): `p = origin + (x, y, z)`; skip it if `can_replace_with_air_or_fluid.test(level, p)` is false;
@@ -155,7 +155,7 @@ Inputs: `pos`. Output: boolean. Let `minY` be the level's minimum build height.
    if `y >= 4` draw `nextInt(2)` and skip the cell when it is 0 (no draw for `y < 4`); then if the block at `p` is solid and `can_replace_with_barrier.test(level, p)`,
    write `barrierState` with flag 2 and call `markAboveForPostProcessing(p)`.
 8. **Freeze pass.** If `fluidState`'s fluid is in the fluid tag `water`: for `x = 0..15` (outer), `z = 0..15`: `p = origin + (x, 4, z)`; if
-   `biome(p).shouldFreeze(level, p, false)` (section 8 and 33 §4.4, 33 §4.5) and `can_replace_with_air_or_fluid.test(level, p)`, write `ice` with flag 2.
+   `biome(p).shouldFreeze(level, p, false)` (section 8 of this document, 33 section 4.4 and 33 section 4.5) and `can_replace_with_air_or_fluid.test(level, p)`, write `ice` with flag 2.
    The biome is `level.getBiome(p)`.
 9. Return true.
 
@@ -206,7 +206,7 @@ A disk replaces a flat circular patch of blocks in a short vertical range.
 
 Inputs: `pos`. Let `h = half_height`.
 
-1. `top = pos.y + h`, `bottom = pos.y - h - 1` (exclusive lower bound), `radius = radius.sample(r)` (one draw for `uniform`, 11 §4).
+1. `top = pos.y + h`, `bottom = pos.y - h - 1` (exclusive lower bound), `radius = radius.sample(r)` (one draw for `uniform`, 11 section 4).
 2. For every `(x, z)` of the square `betweenClosed(pos + (-radius, 0, -radius), pos + (radius, 0, radius))` (order 1.2), with `dx = pos.x - x`, `dz = pos.z - z`:
    skip when `dx*dx + dz*dz > radius*radius` (integer arithmetic; the circle includes its rim). Otherwise run the column below and OR its result.
 3. **Column.** `placedBefore = false`. For `y` from `top` down to `bottom + 1` (that is `pos.y + h` down to `pos.y - h`, both inclusive):
@@ -269,7 +269,7 @@ blob is a tall, diamond-like volume.
 
 ## 8. Snow and ice top layer (`SnowAndFreezeFeature`, `freeze_top_layer`)
 
-Inputs: `pos`, which for this placed feature (modifier `biome` only) is the decoration origin `(16 cx, -64, 16 cz)` (11 §6.1); only its x and z are used. No random use.
+Inputs: `pos`, which for this placed feature (modifier `biome` only) is the decoration origin `(16 cx, -64, 16 cz)` (11 section 6.1); only its x and z are used. No random use.
 
 For `dx = 0..15` (outer), `dz = 0..15`:
 
@@ -280,11 +280,11 @@ For `dx = 0..15` (outer), `dz = 0..15`:
    back with `snowy = true` (flag 2).
 4. Return true.
 
-`shouldFreeze(level, p, mustBeAtEdge)` (read in `Biome`): false when the biome is warm enough for rain at `p` (33 §4.5: temperature at least 0.15, with the height adjustment above `sea + 17`); else true when `p` is inside the build
+`shouldFreeze(level, p, mustBeAtEdge)` (read in `Biome`): false when the biome is warm enough for rain at `p` (33 section 4.5; the float constant 0.15 is read in `Biome.warmEnoughToRain` and the int constant 17 in `Biome.getHeightAdjustedTemperature`; how 17 combines with the sea level is taken from 33 section 4.5, Open question 2); else true when `p` is inside the build
 height, the block light at `p` is below 10, the fluid at `p` is source water **and** the block there is a `LiquidBlock`, and (only when `mustBeAtEdge` is true) not all four horizontal
-neighbours are water. The worldgen call passes `mustBeAtEdge = false`, so a lone water source qualifies; the running-game call of 33 §4.4 passes true. `shouldSnow(level, p)` requires the precipitation at `p` to be SNOW (33 §4.5),
+neighbours are water. The worldgen call passes `mustBeAtEdge = false`, so a lone water source qualifies; the running-game call of 33 section 4.4 passes true. `shouldSnow(level, p)` requires the precipitation at `p` to be SNOW (33 section 4.5),
 `p` inside the build height, block light at `p` below 10, the block at `p` air or snow, and the default snow state able to survive at `p`.
-Whether block light exists while features run (the lighting stage is later) is Open question 1; the light engine read is the live level's (Open question 1); with no light data the value is 0 and the light tests pass (inferred).
+The block-light limit 10 is read as the int constant in both `shouldFreeze` and `shouldSnow`. Whether block light exists while features run (the lighting stage is later) is Open question 1; with no light data the value is 0 and the light tests pass (inferred).
 
 The placed feature is listed by 56 of the 67 biomes in the jar in step 10 (`TOP_LAYER_MODIFICATION`), the last step, so it sees the final surface.
 
@@ -300,7 +300,7 @@ distances are double.
 
 ### 9.1 Parameter draws
 
-Let `S = ChunkGenerator.getSeaLevel()` (63 for the overworld noise settings, 10 §1). Inputs: `pos`; `origin = (pos.x, S, pos.z)` (the y of `pos` is discarded).
+Let `S = ChunkGenerator.getSeaLevel()` (63 for the overworld noise settings, 10 section 5). Inputs: `pos`; `origin = (pos.x, S, pos.z)` (the y of `pos` is discarded).
 
 | # | Name | Draw and formula | Range |
 |---|---|---|---|
@@ -419,7 +419,7 @@ With `spread = 1` the offsets are two `nextInt(1)` pairs (always 0): the candida
 ## 11. Fill layer (`FillLayerFeature`)
 
 Inputs: `pos` (a chunk corner). For `dx = 0..15` (outer), `dz = 0..15`: `p = (pos.x + dx, minY + height, pos.z + dz)`; if the block at `p` is air, write `state` there with flag 2. Return true. There is no random use, and no data file of the
-jar uses the type (section 2.2). The layer is at `minY + height`, an absolute offset from the world bottom, not from `pos.y`.
+jar uses the type (§2.2). The layer is at `minY + height`, an absolute offset from the world bottom, not from `pos.y`.
 
 ## 12. Block pile (`BlockPileFeature`)
 
@@ -432,7 +432,7 @@ Inputs: `pos`.
 4. Return true.
 
 `tryPlace(p)`: if the block at `p` is air and `mayPlaceOn(p)`, write `state_provider.getState(level, r, p)` at `p` with flag 260 (no update). `mayPlaceOn`: let `b` be the block at `p.below()`; if `b` is `dirt_path`, the result is `nextBoolean()`;
-otherwise it is `b.isFaceSturdy(level, below, UP)` (24 §5.2). The provider is called with the random source.
+otherwise it is `b.isFaceSturdy(level, below, UP)` (24 section 5.2). The provider is called with the random source.
 
 | Configured feature | Provider |
 |---|---|
@@ -458,7 +458,7 @@ Worked example (computed): the centre cell `d = 0` is placed when `10u - 6v >= 0
 
 The tall entry is `simple_block(tall_seagrass[half=lower])` with the placement `[block_predicate_filter: water at offset (0, 1, 0)]`; the single entry is `simple_block(seagrass)` with no placement. The seagrass placed features all have the modifiers
 `in_square`, `count N`, `offset (trapezoid -7..7, trapezoid 0..0, trapezoid -7..7)`, `heightmap OCEAN_FLOOR`, `block_predicate_filter (block at pos is water)`, `biome`, in that order. Per placed feature the draws are: `nextInt(16)` x and z (`in_square`, once), then for each of the `N` repeats the offset draws
-(`nextInt(8) - nextInt(8)` for x, two `nextInt(1)` for y, `nextInt(8) - nextInt(8)` for z; 1.2), then the heightmap lookup (the OCEAN_FLOOR position is the first position above the floor ignoring fluids: for a flooded floor, the water block on top, inferred), the water filter, the biome filter, and
+(`nextInt(8) - nextInt(8)` for x, two `nextInt(1)` for y, `nextInt(8) - nextInt(8)` for z; 1.2), then the heightmap lookup (the OCEAN_FLOOR position is the first position above the highest block that blocks motion, ignoring fluids, so for a flooded floor it is the lowest water block directly above the solid floor. Read in `Heightmap$Types`: `OCEAN_FLOOR` (usage LIVE_WORLD) and `OCEAN_FLOOR_WG` (usage WORLDGEN) both use the predicate `MATERIAL_MOTION_BLOCKING`, which is membership in the block tag `blocks_motion_in_heightmap`, whose value is the tag `#blocks_motion`; fluids are not counted. `MOTION_BLOCKING` and `MOTION_BLOCKING_NO_LEAVES` use their own tags (`blocks_motion_in_heightmap`, `blocks_motion_in_heightmap_no_leaves` = `#blocks_motion_no_leaves`) or a non-empty fluid state), the water filter, the biome filter, and
 then the feature: one `nextInt(total weight)`, and for the tall entry its water-above filter (no draw) and the block placement.
 
 `simple_block` (`SimpleBlockFeature`, config `to_place` provider, `schedule_tick` default false):
@@ -494,7 +494,7 @@ Placed `sea_pickle` (listed by `warm_ocean`, step 9): `rarity_filter 16`, `in_sq
 `kelp` data: `direction up`, `allowed_placement` = water at the tested position and water above it, `prioritize_tip` true, layers: `kelp_plant` with height uniform 0 to 9, then one `kelp[age = uniform 20..23]` (a `randomized_int` provider on `age`, source `kelp[age=0]`). Total height 1 to 10 (the tested positions begin one above `pos`, so
 a column needs water at `pos + 1` and the position above the tip).
 Placed: `kelp_cold` (`noise_based_count`: `noise_factor 80.0`, `noise_to_count_ratio 120`; biomes `cold_ocean`, `deep_cold_ocean`, `ocean`, `deep_ocean`), `kelp_warm` (ratio 80; `lukewarm_ocean`, `deep_lukewarm_ocean`); then `in_square`, `heightmap OCEAN_FLOOR`, a filter (water at `pos`, water above, the block below has a sturdy UP face and is not in tag `cannot_support_kelp` = `magma_block`), `biome`.
-`noise_based_count` computes `ceil((BIOME_INFO_NOISE(x / factor, z / factor) + noise_offset) * ratio)` with `noise_offset` default 0 (read) and `BIOME_INFO_NOISE` the fixed-seed simplex noise of 10 §15 item 8; it draws no random number.
+`noise_based_count` computes `ceil((BIOME_INFO_NOISE(x / factor, z / factor) + noise_offset) * ratio)` with `noise_offset` default 0 (read) and `BIOME_INFO_NOISE` the fixed-seed simplex noise of 10 section 15 item 8; it draws no random number.
 
 ## 14. Corals
 
@@ -537,9 +537,9 @@ Config: `feature` (placed feature `F`). Inputs: `pos`.
   2. to 5. four wall-fan members in the order north, east, south, west: each is `[random_chance 0.2, offset to the neighbour (north (0,0,-1), east (+1,0,0), south (0,0,+1), west (-1,0,0)), block_predicate_filter (water at pos)]` and a `simple_block` whose provider is a `rotated` provider with the direction set to that member's direction over a `random_block` of tag `wall_corals`
      (a fixed direction draws nothing; the provider sets `facing` and `horizontal_facing` of the chosen wall fan to that direction).
   Each member runs from the same `pos` (the coral block position), so a wall fan on the neighbour cell faces away from the coral block. The `random_chance` is drawn first (`nextFloat() < 0.2f`).
-- Tags (read): `corals` = the tag `coral_plants` followed by `tube_coral_fan`, `brain_coral_fan`, `bubble_coral_fan`, `fire_coral_fan`, `horn_coral_fan`; `coral_plants` = `tube_coral`, `brain_coral`, `bubble_coral`, `fire_coral`, `horn_coral`; `wall_corals` = the five wall fans in the order tube, brain, bubble, fire, horn. A `random_block` over a tag picks `contents[nextInt(size)]` and uses the block's default state; with the nested tag expanded in place, `corals` has exactly these 10 entries in this order (duplicates would be dropped; the order is the tag file's value order; Open question 2, closed).
+- Tags (read): `corals` = the tag `coral_plants` followed by `tube_coral_fan`, `brain_coral_fan`, `bubble_coral_fan`, `fire_coral_fan`, `horn_coral_fan`; `coral_plants` = `tube_coral`, `brain_coral`, `bubble_coral`, `fire_coral`, `horn_coral`; `wall_corals` = the five wall fans in the order tube, brain, bubble, fire, horn. A `random_block` over a tag picks `contents[nextInt(size)]` and uses the block's default state; with the nested tag expanded in place, `corals` has exactly these 10 entries in this order (duplicates would be dropped; the order is the tag file's value order, because `TagLoader.tryBuildTag` collects entries into an insertion-ordered `LinkedHashSet` and `TagEntry.build` expands a nested `#tag` entry in place; the same holds for every block set used by `matching_blocks`, 35-2).
 - **Survival** (read): a coral plant or fan survives when the block below has a sturdy UP face; a wall fan survives when the block behind it (opposite its facing) has a sturdy face towards the facing direction; coral blocks have no survival rule. The default state of plants, fans and wall fans is `waterlogged = true`, so the placed blocks hold water (the feature does not change `waterlogged`).
-- **Cuboid placement modifier** (`CuboidPlacement`; fields `xz_size`, `y_size` int providers, `include_edges`, `include_interior`): for each input position `P`, draw `sy = y_size.sample`, then `sx = xz_size.sample`, then `sz = xz_size.sample` (in that order); for `x = 0..sx`, `y = 0..sy`, `z = 0..sz` (x outermost, z innermost), the output position is `P + (x, y, z)`
+- **Cuboid placement modifier** (`net.minecraft.world.level.levelgen.feature.CuboidPlacement`, registered id `cuboid`; it is in the feature package, not in `levelgen.placement` with the other modifiers; fields `xz_size`, `y_size` int providers, `include_edges`, `include_interior`): for each input position `P`, draw `sy = y_size.sample`, then `sx = xz_size.sample`, then `sz = xz_size.sample` (in that order); for `x = 0..sx`, `y = 0..sy`, `z = 0..sz` (x outermost, z innermost), the output position is `P + (x, y, z)`
   (the box extends from `P` in the positive directions). With `include_edges` false, positions with at least two of the three coordinates at an extreme (0 or the size on that axis) are dropped; with `include_interior` false, positions with none of the three at an extreme are dropped. The coral data uses both false (sizes `xz_size` uniform 3..5, `y_size` uniform 3..5), leaving the face cells with exactly one extreme coordinate.
   The number of face cells for sizes `(sx, sy, sz)` is `2 * ((sx-1)(sy-1) + (sx-1)(sz-1) + (sy-1)(sz-1))`.
 
@@ -561,9 +561,9 @@ Config: `floor_search_range` (5 in the data), `placement_probability_per_valid_p
 4. Return true when at least one block was placed.
 
 `isValidPlacement(p)`: false if the block at `p` is water or air; false if the block **below** `p` presents a visible UP face (`isVisibleFromOutside(p.below(), UP)`); false if, for any horizontal direction `d` (N, E, S, W), the block at `p + d` presents a visible face towards `-d` (`isVisibleFromOutside(p.relative(d), d.opposite)`); otherwise true.
-`isVisibleFromOutside(q, dir)`: let `shape` be the block's face occlusion shape for `dir` (24 §5.2); visible when `shape` is the empty shape **or** is not a full block face. So magma only replaces blocks whose lower and four side neighbours present full opaque faces towards it; the block above is not examined.
+`isVisibleFromOutside(q, dir)`: let `shape` be the block's face occlusion shape for `dir` (24 section 5.2); visible when `shape` is the empty shape **or** is not a full block face. So magma only replaces blocks whose lower and four side neighbours present full opaque faces towards it; the block above is not examined.
 
-Placed: `count uniform 44..52`, `in_square`, `height_range uniform` from `above_bottom 0` to absolute 256, `surface_relative_threshold_filter(OCEAN_FLOOR_WG, max_inclusive -2)` (pass when the position's y is at most the OCEAN_FLOOR_WG height minus 2 or more below it: read as `heightmap + min <= y <= heightmap + max`; the minimum is unbounded in the data; 35-1 section 7.7), `biome`. Listed by 56 biomes in step 6 (`UNDERGROUND_ORES`; 11 §6.2 puts `underwater_magma` before `disk_sand`).
+Placed: `count uniform 44..52`, `in_square`, `height_range uniform` from `above_bottom 0` to absolute 256, `surface_relative_threshold_filter(OCEAN_FLOOR_WG, max_inclusive -2)` (pass when the position's y is at most the OCEAN_FLOOR_WG height minus 2 or more below it: read as `heightmap + min <= y <= heightmap + max`; the minimum is unbounded in the data; 35-1 section 7.7), `biome`. Listed by 56 biomes in step 6 (`UNDERGROUND_ORES`; 11 section 6.2 puts `underwater_magma` before `disk_sand`).
 
 Worked example (computed): `pos` is water with water below and a stone block two below: the cursor starts at `pos.y` (water, `i = 1`), moves to `pos.y - 1` (water, `i = 2`), moves to `pos.y - 2` (stone) and the loop ends because the block is not water: floor = `pos.y - 2`; the 27-cell box is centred on that stone block.
 If the first non-water block were 5 below, the loop stops at `i = 5` with the cursor 4 below on a water block, so there is no floor and the feature returns false.
@@ -584,7 +584,7 @@ Config: `state` (`packed_ice`), `can_place_on` (block is `snow_block`), `can_rep
    and `n = nextInt(5)` (two draws, in that order); otherwise stop this column.
 8. Return true.
 
-Data: placed `ice_spike`: `count 3`, `in_square`, `heightmap MOTION_BLOCKING`, `biome`; only the `ice_spikes` biome lists it, step 4. `ice_patch` (a disk, section 5) is listed by the same biome in the same step.
+Data: placed `ice_spike`: `count 3`, `in_square`, `heightmap MOTION_BLOCKING`, `biome`; only the `ice_spikes` biome lists it, step 4. `ice_patch` (a disk, §5) is listed by the same biome in the same step.
 
 Worked example (computed): `H = 8`: `H / 4 = 2`, `Wd` is 2 or 3. For `Wd = 2`: layer `y = 0` has `f = 2.0`, `rad = 2`, a 5 x 5 square clipped by `fx*fx + fz*fz <= 4` (cell `(2, 2)`: `1.75^2 + 1.75^2 = 6.125 > 4`, dropped; `(2, 0)`: `3.0625 + 0.0625 = 3.125 <= 4`, kept); layer `y = 4` has `f = 1.0`, `rad = 1`: a 3 x 3 square (`(1, 1)`: `0.5625 + 0.5625 = 1.125 > 1`, dropped; the cross kept); layer `y = 7` has `f = 0.25`, `rad = 1`:
 only the axis cell survives (`(1, 0)`: `0.5625 + 0.0625 = 0.625 > 0.0625`). The pillar: `t = 1`, so a 3 x 3 pillar of columns going down from `pos - 1`; the four corner columns use a random countdown `nextInt(5)` before skipping down 1 to 5 blocks.
@@ -604,7 +604,7 @@ There is no desert-well class. `desert_well` (configured) is an `overlay` of thr
 1. `entry = templates.getRandomOrThrow(r)` (one `nextInt(totalWeight)` draw); `rotation = rotations[nextInt(size)]`.
 2. `template = StructureTemplateManager.getOrCreate(entry.id)`; let `size` be its size (x, y, z).
 3. `offX = unit(rotate(WEST, rotation)) * (size.x / 2)` and `offZ = unit(rotate(NORTH, rotation)) * (size.z / 2)` (integer division; the negative direction of axis X is WEST and of axis Z is NORTH). `origin = pos + offX + offZ`.
-4. Placement settings: the rotation, the random source, and the processors of the list in order. Call `placeInWorld(level, origin, origin, settings, r, 3)` and return its result. The template placement engine, processor rules and block-entity modifiers belong to the structure documents (RS20); the NBT files are data and are not tabulated here.
+4. Placement settings: the rotation, the random source, and the processors of the list in order. Call `placeInWorld(level, origin, origin, settings, r, 3)` and return its result. The template placement engine, processor rules and block-entity modifiers belong to the structure documents (structure documents); the NBT files are data and are not tabulated here.
 
 Template sizes (read from the first bytes of the NBT, the `size` list): `desert_well/well` `(5, 7, 5)`, `desert_well/suspicious_sand` `(1, 1, 1)`. For rotation NONE: `offX = (-1, 0, 0) * 2` and `offZ = (0, 0, -1) * 2`, so the well's corner is `pos + (-2, 0, -2)` before the placed feature's y offset; the 1 x 1 x 1 templates have offsets of 0 (`1 / 2 = 0`).
 
@@ -631,7 +631,7 @@ Worked example (computed): chunk `(0, 0)`: `xs` is a permutation of `0..15` (15 
 
 ## 19. Where these features run (decoration steps, from the biome data)
 
-Counted from the 67 biome JSON files (`features` is an array of 11 lists, steps 0 to 10, 11 §6.2); "biomes" counts biomes that list the placed feature in that step. Placed-feature modifier lists are data and are not repeated beyond sections 3 to 18.
+Counted from the 67 biome JSON files (`features` is an array of 11 lists, steps 0 to 10, 11 section 6.2); "biomes" counts biomes that list the placed feature in that step. Placed-feature modifier lists are data and are not repeated beyond sections 3 to 18.
 
 | Placed feature | Step (name) | Biomes |
 |---|---|---|
@@ -648,10 +648,10 @@ Counted from the 67 biome JSON files (`features` is an array of 11 lists, steps 
 | `spring_delta` (`spring_lava_nether`), `basalt_blobs`, `blackstone_blobs` | 7 | `basalt_deltas` |
 | `spring_water`, `spring_lava` | 8 (FLUID_SPRINGS) | 55 |
 | `spring_lava_frozen` | 8 | `frozen_peaks`, `grove`, `jagged_peaks`, `snowy_slopes` |
-| `spring_lava` (again) | 9 (VEGETAL_DECORATION) | `crimson_forest`, `nether_wastes`, `soul_sand_valley`, `warped_forest` (the overworld placed feature has stone-type valid blocks, so it places nothing in those biomes' netherrack, inferred) |
+| `spring_lava` (again) | 9 (VEGETAL_DECORATION) | `crimson_forest`, `nether_wastes`, `soul_sand_valley`, `warped_forest` (read: `spring_lava_overworld` lists valid blocks stone, granite, diorite, andesite, deepslate, tuff, calcite and dirt, no netherrack, so step 1 of §4 fails inside netherrack; stone-type blocks in those biomes' terrain could still host a spring) |
 | `warm_ocean_vegetation`, `sea_pickle` | 9 | `warm_ocean` |
 | `seagrass_*` | 9 | `cold_ocean`, `ocean`, `deep_ocean`, `deep_cold_ocean`, `deep_lukewarm_ocean`, `lukewarm_ocean`, `warm_ocean`, `river`, `swamp`, `mangrove_swamp` |
-| `kelp_cold`, `kelp_warm` | 9 | see section 13.3 of this document |
+| `kelp_cold`, `kelp_warm` | 9 | see §13.3 of this document |
 | `freeze_top_layer` | 10 (TOP_LAYER_MODIFICATION) | 56 |
 | `pile_*`, `bonus_chest`, `fill_layer` | none | in no biome (2.2) |
 
@@ -662,11 +662,11 @@ Counted from the 67 biome JSON files (`features` is an array of 11 lists, steps 
 3. `warm_ocean_vegetation` has 15 entries: 5 `coral_tree`, 5 `coral_claw`, 5 plain coral-block references.
 4. `coral/block_decoration` weights 20, 3, 57 (total 80); the four wall-fan members use `random_chance 0.2`.
 5. Lake blob example (3.3): layer `y = 4` 25 cells, layers `y = 3` and `y = 5` 21 cells each (corners excluded), 67 cells in all.
-6. Disk radius 3 has 29 columns and radius 2 has 13 (section 5).
+6. Disk radius 3 has 29 columns and radius 2 has 13 (§5).
 7. `FlowingFluid.getLegacyLevel` of a source is 0; the springs therefore write level-0 source blocks.
 8. `Direction` enum order DOWN, UP, NORTH, SOUTH, WEST, EAST; `Plane.HORIZONTAL` array NORTH, EAST, SOUTH, WEST.
 9. Block-flag constants: `UPDATE_CLIENTS = 2`, `UPDATE_ALL = 3`, `UPDATE_NONE = 260`.
-10. Iceberg helper values of section 9.8: `ellRadius(0, 8, 6) = 3`, `ellRadius(2, 8, 6) = 2`, `ellRadius(4, 8, 6) = -3`, `ellipseC(6, 8, 4) = 2`, `steepRadius` example 4.
+10. Iceberg helper values of §9.8: `ellRadius(0, 8, 6) = 3`, `ellRadius(2, 8, 6) = 2`, `ellRadius(4, 8, 6) = -3`, `ellipseC(6, 8, 4) = 2`, `steepRadius` example 4.
 11. Cuboid example: sizes `(3, 3, 3)` emit 24 positions; `(5, 3, 4)` emit 52.
 12. `desert_well/well` template size `(5, 7, 5)`, `suspicious_sand` `(1, 1, 1)` (the `size` list at the start of each NBT).
 13. The ice-spike pillar threshold `y > 50` and the block-pile minimum `pos.y >= minY + 5` are absolute constants of the code.
@@ -675,19 +675,13 @@ Counted from the 67 biome JSON files (`features` is an array of 11 lists, steps 
 
 ## Open questions
 
-1. **Block light at feature time.** `shouldFreeze` and `shouldSnow` read the block-light level (below 10 required, `getBrightness(BLOCK, pos) < 10`; read). `WorldGenRegion.getLightEngine()` returns the `ServerLevel` light engine (read), so the test reads the live level's light storage, not a region-local copy. Whether a chunk that has not been lit yet reports 0 was not traced; this document assumes 0 (inferred), so the light test passes. 33 §4.4 describes the same predicates for the running game.
-2. **Tag expansion order (closed).** Read: `TagLoader.tryBuildTag` collects entries into an insertion-ordered `LinkedHashSet`, and `TagEntry.build` expands a nested `#tag` entry in place by adding that tag's elements at the position of the reference. So the resolved list is in the tag file's value order with duplicates dropped, and `corals` has the 10 entries listed in 14.3. The same holds for every block set used by `matching_blocks` (35-2).
-3. **`environment_scan` defaults (closed).** The `EnvironmentScanPlacement` codec defaults `allowed_search_condition` to the always-true predicate (read). `lake_lava_underground` passes `max_steps` 32, direction down, and a target of non-air plus `inside_world_bounds` at offset `(0, -5, 0)` (read from the data). Nothing remains open.
-4. **Horizontal iteration order (closed).** Read: `Direction$Plane.iterator()` returns `Iterators.forArray(faces)`, so `Plane.HORIZONTAL` iterates N, E, S, W.
-5. **`nextInt(1)` draws.** `WorldgenRandom` extends `LegacyRandomSource` and does not override `nextInt(n)` (read); `LegacyRandomSource.next(int)` is the 48-bit LCG (multiplier 25214903917, increment 11). The `y` offset of the seagrass and sea pickle placements is `trapezoid(0, 0, 0)`, two `nextInt(1)` calls; that each consumes one step follows from 11 §4's rule for a power-of-two bound (one `next(31)`), inferred from that text and not run.
-6. **Template placement.** `StructureTemplate.placeInWorld` (flags 3), the `rule` processor and the `append_loot` block-entity modifier used by the desert well are only named here; they belong to the structure documents (RS20).
-7. **`MossyCarpetBlock.placeAt`** (a `simple_block` branch for mossy carpets) was not read; the vegetation sibling covers moss.
-8. **Heightmap semantics for ocean features.**
-9. **Spawn wiring of the bonus chest.** Only the feature is specified; which worlds enable it (`WorldOptions.generateBonusChest`) and how the spawn position is found come from server-side world creation (not in scope).
-10. **Fill layer usage.** No data file of the jar uses `fill_layer`; flat-world generation of the artifact (`flat_level_generator_preset`, 9 files) was not traced to the code that fills layers, so whether flat worlds use this feature or a separate path is unknown.
-11. **`isSolid` "otherwise" row.** The lake validity test relies on `BlockState.isSolid`; 24 §5.2 records one row of its derivation as inferred (24 Open questions, item 16).
-12. **Float versus double.** The iceberg radius helpers and the block-pile test are float arithmetic with `Math.pow` narrowed from double; the rounding of intermediate products was reproduced from the operand types in the bytecode but not verified by running, so a bit-exact port should be compared against a vanilla iceberg.
-13. **`spring_lava` in the nether biomes.** Four nether biomes list the overworld `spring_lava` in step 9; it is assumed to place nothing there (inferred from its stone-type valid-block list).
-14. **Position passed to `freeze_top_layer`.** The decoration origin `(16 cx, -64, 16 cz)` of 11 §6.1 is assumed to be what reaches `SnowAndFreezeFeature` (only x and z matter); the call site in `ChunkGenerator` was not re-read in this round.
-15. **Snow surviving on ice (closed).** Read: ice and packed ice cannot support a snow layer (section 8). Not read: the full-face test for particular blocks (shape data), left to 24 and 29.
-16. **Other composition types (closed).** Specified in 35-1 sections 9.2 (`random_selector`), 9.4 (`random_boolean_selector`) and 9.7 (`weighted_placed_feature`); not repeated here.
+1. **Block light at feature time.** `shouldFreeze` and `shouldSnow` read the block-light level (below 10 required, `getBrightness(BLOCK, pos) < 10`; read). `WorldGenRegion.getLightEngine()` returns the `ServerLevel` light engine (read), so the test reads the live level's light storage, not a region-local copy. Whether a chunk that has not been lit yet reports 0 was not traced; this document assumes 0 (inferred), so the light test passes. 33 section 4.4 describes the same predicates for the running game.
+2. **Height adjustment of the freeze test.** The constants 0.15f (`warmEnoughToRain`) and 17 (`getHeightAdjustedTemperature`) are read, but the full formula of the height-adjusted temperature (the sea-level base, the noise terms with 8.0f, 0.05f and 40.0f) was not re-read in this document; it is taken from 33 section 4.5.
+3. **Template placement.** `StructureTemplate.placeInWorld` (flags 3), the `rule` processor and the `append_loot` block-entity modifier used by the desert well are only named here; they belong to the structure documents.
+4. **`MossyCarpetBlock.placeAt`** (a `simple_block` branch for mossy carpets) was not read; it is to be confirmed in 35-4 (searched: this document's classes only).
+5. **Spawn wiring of the bonus chest.** Only the feature is specified; which worlds enable it (`WorldOptions.generateBonusChest`) and how the spawn position is found come from server-side world creation (not in scope).
+6. **Fill layer usage.** No data file of the jar uses `fill_layer`; flat-world generation of the artifact (`flat_level_generator_preset`, 9 files) was not traced to the code that fills layers, so whether flat worlds use this feature or a separate path is unknown.
+7. **`isSolid` "otherwise" row.** The lake validity test relies on `BlockState.isSolid`; 24 section 5.2 records one row of its derivation as inferred (24 Open questions, item 16).
+8. **Float versus double.** The iceberg radius helpers and the block-pile test are float arithmetic with `Math.pow` narrowed from double; the rounding of intermediate products was reproduced from the operand types in the bytecode but not verified by running, so a bit-exact port should be compared against a vanilla iceberg.
+9. **`spring_lava` in the nether biomes.** Four nether biomes list the overworld `spring_lava` in step 9; it places nothing in netherrack (read: the valid-block list of `spring_lava_overworld` has no netherrack, so section 4 step 1 fails); only stone-type blocks in those biomes' terrain could host one (not traced).
+10. **Position passed to `freeze_top_layer`.** The decoration origin `(16 cx, -64, 16 cz)` of 11 section 6.1 is assumed to be what reaches `SnowAndFreezeFeature` (only x and z matter); the call site in `ChunkGenerator` was not re-read.

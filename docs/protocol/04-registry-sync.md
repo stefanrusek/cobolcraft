@@ -1,6 +1,6 @@
 # 04 — Registry and tag synchronization
 
-This document describes how the server tells the client the contents of the data-driven ("dynamic") registries and the tag sets during the configuration phase. It also covers how numeric ids are assigned, both for those synchronized registries and for the built-in ("static") registries that are never sent. Those ids are what play-phase packets carry. For an original game that uses this protocol, this is the key interop surface. The game can define its own entries for every synchronized registry and send them. It cannot change the static registries: blocks, block states, items, entity types and so on. For those, a game that serves the standard world type must reproduce the client's built-in numbering exactly, while the cobolcraft world type keeps its own numbering. §5 states both cases.
+This document describes how the server tells the client the contents of the data-driven ("dynamic") registries and the tag sets during the configuration phase. It also covers how numeric ids are assigned, both for those synchronized registries and for the built-in ("static") registries that are never sent. Those ids are what play-phase packets carry. For an original game that uses this protocol, this is the key interop surface. The game can define its own entries for every synchronized registry and send them. It cannot change the static registries: blocks, block states, items, entity types and so on. For those, a game that serves the standard world type must reproduce the client's built-in numbering exactly, while the cobolcraft world type keeps its own numbering for the content registries (blocks, block states, items, entity types) only. The other static registries keep the vanilla numbering in both world types. §5 states both cases.
 
 Registry names in this document are written without the `minecraft:` namespace (for example `worldgen/biome` means `minecraft:worldgen/biome`). On the wire, a registry is always identified by its full Identifier.
 
@@ -221,7 +221,7 @@ The client numbers each one itself, so **a server must use exactly the client's 
 How this applies depends on the world type of the game (the standard world type and the cobolcraft world type, see docs/design/README.md Part 4, C1):
 
 - **Standard world type.** This is the requirement. Server and client use the vanilla numbering of every static registry, so that a reference client can validate ids, registry contents and chunk encodings. The numbering is code, not data: it is specified by the block and item registry documents (docs/design/README.md Part 5, GAP-1 and GAP-2) and for entity types by 21 section 2.
-- **Cobolcraft world type.** The content is original and keeps its own numbering, so the static ids it sends do not match the client's built-in registries. That is why a vanilla client can pass configuration for this world type but cannot play it. CobolCraft's own client reads the original content from its built-in pack.
+- **Cobolcraft world type.** The content is original. Blocks, block states, items and entity types keep their own numbering, so those static ids do not match the client's built-in registries. The other static registries (fluids, mob effects, attributes, menu types, data component types, particle types, game events) keep the vanilla keys and numbering, as in the standard world type (docs/design/world-types.md, WT-9). That is why a vanilla client can pass configuration for this world type but cannot play it. CobolCraft's own client reads the original content from its built-in pack.
 
 ### 5.1 Where the order comes from
 
@@ -232,7 +232,7 @@ How this applies depends on the world type of the game (the standard world type 
 - To obtain the numbering without running the client, use the jar's built-in data generator reports:
   - `net.minecraft.data.info.RegistryDumpReport` writes `registries.json`, giving every static registry entry's `protocol_id` (its `Registry.getId`).
   - `net.minecraft.data.info.BlockListReport` writes `blocks.json`, giving every block state's `id` (`Block.getId(state)`).
-  - This document does not reproduce that content. The block registry and the item registry are specified by their own documents (docs/design/README.md Part 5, GAP-1 and GAP-2, research items RS1 and RS2). The extraction tool does not produce the registries: they are code, not data.
+  - This document does not reproduce that content. The block registry and the item registry are specified by their own documents (docs/design/README.md Part 5, GAP-1 and GAP-2, research items RS4 and RS5). The extraction tool does not produce the registries: they are code, not data.
 
 ### 5.2 Block state ids
 

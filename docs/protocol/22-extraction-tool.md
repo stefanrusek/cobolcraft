@@ -18,9 +18,8 @@ Other documents: 04 §2 (known packs and omitted entry data), 08 (pack format, s
 13 §7 and §8 (`options.txt`, the pack screen), 14 (textures, atlases, fonts). Documents that interpret what this tool
 produces or that share its numbering: 46 (how the numeric id of a static registry entry is assigned, which is not read from the
 extracted data), 24 (the block registry in eight parts: block ids and block state ids come from the registry model, not from
-`blockstates/` files), 33 (world simulation), 41 (item entity physics) and 44 (residual mob questions). Planned and not yet
-existing: the registry-loading document (23 in the plan of [../design/README.md](../design/README.md) Part 6) and the
-world-types document (RS2); they are cited by name until they exist. Cross-references to sections of this document are written
+`blockstates/` files), 33 (world simulation), 41 (item entity physics) and 44 (residual mob questions). The registry-loading
+document now exists as 23 (it cites section 8 of this document for the stack). Planned and not yet existing: the world-types document (RS2), cited by name until it exists. Cross-references to sections of this document are written
 "section N.N" in prose and "N.N" in parentheses inside tables; other documents are cited "NN §x".
 
 ---
@@ -56,14 +55,14 @@ reads the jar at run time, as the user's own program on the user's own machine.
 | Compression | Every one of the 34,227 entries uses method **8 (deflate)**, "normal" deflate, general-purpose flags `0x0808` (bit 3: sizes and CRC follow the data in a data descriptor; bit 11: names are UTF-8). Not encrypted. No extra field (length 0) and no file comment on any entry. "Version needed" 2.0 |
 | Local headers | Signature `PK 03 04`; in every local header the CRC and both sizes are **0** (bit 3), so the sizes and the CRC must come from the **central directory**. The data starts at: local header offset + 30 + the name length and extra length **read from the local header itself**. A 16-byte data descriptor (signature `PK 07 08`, CRC, compressed size, uncompressed size) follows the data |
 | Empty files | A zero-length file is still deflated: compressed size 2 bytes (`03 00`), uncompressed size 0, CRC 0. Example: `assets/.mcassetsroot` |
-| Entry order | Not sorted by name. The first central record is `META-INF/MANIFEST.MF`; `version.json` is near the end |
+| Entry order | Not sorted by name. The first central record is `META-INF/MANIFEST.MF`; `version.json` is central record index 27,459 (zero-based; record 27,460 of 34,227), about 80% in, with its central record at offset 40,829,200. After the first record come `MOJANGCS.SF`, `MOJANGCS.RSA`, the `META-INF/` directory entry and `META-INF/LICENSE`. The last record is `assets/minecraft/waypoint_style/default.json`. The tool's linear walk to `version.json` (C3) therefore reads about 80% of the directory first |
 | Dates | 3 entries (the signature files `META-INF/MANIFEST.MF`, `.SF`, `.RSA`) carry the build time 2026-09-15 11:22; all other entries carry 1980-02-01 00:00 (DOS time zero) |
 | Signing | `META-INF/MOJANGCS.SF` and `MOJANGCS.RSA` hold a jar signature. The tool does **not** verify it; the whole-file SHA-256 (4) is the integrity check. `META-INF/MANIFEST.MF` has `Manifest-Version: 1.0`, `Main-Class: net.minecraft.client.Main` and, per entry, a `Name:` line with a SHA-384 digest, so it lists assets by name. The tool ignores the manifest |
 | Directory entries by prefix | `data/` 565, `net/` 530, `assets/` 209, `com/` 44, `META-INF/` 1: 1,349 in all (the figure above; a test can check the split) |
 
 Under `assets/` and `data/` there is no duplicate name (also not when compared in lower case) and, for every file under
 `assets/` and `data/`, only the characters `a-z 0-9 _ - . /`, no empty segment and no `.` or `..` segment. The longest
-path under `assets/` or `data/` is 139 characters (a nested feature-pack file) and the deepest has 10 segments.
+path under `assets/` or `data/` is 139 characters (a nested feature-pack file) and the deepest has 10 segments (98 paths; 6 more have 9 segments, of which 5 are in the `trade_rebalance` feature pack and 1 is `data/minecraft/worldgen/template_pool/bastion/units/stages/rot/stage_1.json`).
 These are exactly the identifier rules of 08 §1.3 and §1.4.
 
 ### 2.2 Top level of the archive
@@ -75,7 +74,7 @@ These are exactly the identifier rules of 08 §1.3 and §1.4.
 | `net/` | 10,737 (class files) | No (code) |
 | `com/` | 646 (class files) | No (code) |
 | `META-INF/` | 4: `MANIFEST.MF`, `MOJANGCS.SF`, `MOJANGCS.RSA`, `LICENSE` | No |
-| `version.json` | 1 | Yes: version and pack formats (2.3) |
+| `version.json` | 1 | Read, not copied: version and pack formats (2.3; 6.1 maps it to none) |
 | `pack.png` | 1: a 128 x 128 8-bit RGB PNG, 11,851 bytes | Yes: copied as the icon of both generated packs |
 | `flightrecorder-config.jfc` | 1 | No |
 
@@ -117,7 +116,7 @@ metadata from the running version, as follows (this is what the generated `pack.
 | Description key and English text | `resourcePack.vanilla.description`: "The default look and feel of Minecraft" | `dataPack.vanilla.description`: "The default data for Minecraft" |
 | Declared format range | from the running version's pack version: `[major.minor, major.2147483647]` (`PackFormat.minorRange`), that is 97.1 to 97.* | the same rule with the data version: 121.0 to 121.* |
 | Selection config (required, default position, fixed) | required (true), BOTTOM, fixed (false) (read from `ClientPackSource`, field `VANILLA_SELECTION_CONFIG`) | not required, BOTTOM, not fixed (read from `ServerPacksSource`, field `VANILLA_SELECTION_CONFIG`) |
-| Second selection config, for the other built-in packs of the same source | not required, TOP, not fixed: used by the other built-in client packs (`programmer_art`, `high_contrast`, which exist in code only) | not required, TOP, not fixed (`FEATURE_SELECTION_CONFIG`): applied by `createBuiltinPack` to built-in packs whose source is `PackSource.FEATURE`; the feature packs would sit at the top of the stack if enabled (8.3 level 2). The string `datapacks` is a separate constant of `ServerPacksSource`, read in its static initializer next to the feature config; it is the folder name of a world's data packs (inferred: the link between that folder and the feature-pack config was not traced) |
+| Second selection config, for the other built-in packs of the same source | not required, TOP, not fixed: used by the other built-in client packs (`programmer_art`, `high_contrast`, which exist in code only) | not required, TOP, not fixed (`FEATURE_SELECTION_CONFIG`): applied by `createBuiltinPack` to built-in packs whose source is `PackSource.FEATURE`; the feature packs would sit at the top of the stack if enabled (8.3 level 2). The `ServerPacksSource` field `PACKS_DIR` (type `Identifier`, built as `minecraft:datapacks`) is a different thing: it is passed to the built-in-pack source as the in-jar directory of the built-in packs, which is the jar folder `data/minecraft/datapacks/` of 2.7 (read). The client twin `PACKS_DIR` is `minecraft:resourcepacks`, consistent with the jar having no such folder. The world folder name is read from elsewhere (8.3 level 3) |
 | Namespaces exposed | `minecraft` and `realms` (no `realms` content is in the jar) | `minecraft` |
 
 The jar also carries three built-in **feature data packs** as ordinary files under `data/minecraft/datapacks/`
@@ -230,7 +229,7 @@ code (RS2 and RS3 specify this).
 | `redstone_experiments/` | 1 | `pack.mcmeta` only |
 | `trade_rebalance/` | 104 | `pack.mcmeta` and 103 files under `data/minecraft/` (loot tables, tags, villager trades) |
 
-Depth (segments of the jar path, `data` counted as the first): the three `pack.mcmeta` files are at depth 5 (`data/minecraft/datapacks/<name>/pack.mcmeta`); the 103 data files of `trade_rebalance` are 5 files at depth 9 and 98 files at depth 10, the deepest paths in the jar under `assets/` and `data/`. The jar-wide count of 10 segments in 2.1 is this depth.
+Depth (segments of the jar path, `data` counted as the first): the three `pack.mcmeta` files are at depth 5 (`data/minecraft/datapacks/<name>/pack.mcmeta`); the 103 data files of `trade_rebalance` are 5 files at depth 9 and 98 files at depth 10 (within the feature pack; jar-wide the depth-9 count is 6, 2.1), the deepest paths in the jar under `assets/` and `data/`. The jar-wide count of 10 segments in 2.1 is this depth.
 
 Each `pack.mcmeta` has the keys `features` (with `enabled`: one flag, `minecraft:minecart_improvements`,
 `minecraft:redstone_experiments` or `minecraft:trade_rebalance`) and `pack` (`description` as a translate component
@@ -255,7 +254,7 @@ The tool copies every file **byte for byte**. It never parses, reformats or re-e
 
 | Absent | Consequence |
 |---|---|
-| **Any sound**: no `.ogg`, no `sounds.json`, no `assets/minecraft/sounds*` path (the only matches of "sound" or "music" under `assets/` are model and texture names) | There is nothing to extract and nothing for the tool to leave out. The game's sound files and sound index are not in the client jar (inferred: they are separate downloads of the launcher, recalled, not verified). Sounds stay out of scope (design README decision 17) |
+| **Any sound**: no `.ogg`, no `sounds.json`, no `assets/minecraft/sounds*` path (the check is on `assets/` only: the only matches of "sound" or "music" there are 70 `music_disc*` item textures and models, plus `gui/sprites/icon/music_notes.png` and its `.mcmeta`; under `data/` 23 file names contain "sound", for example the three `tags/block/triggers_ambient_*_block_sounds.json` files, so a validator must not flag them) | There is nothing to extract and nothing for the tool to leave out. The game's sound files and sound index are not in the client jar (inferred: they are separate downloads of the launcher, recalled, not verified). Sounds stay out of scope (design README decision 17) |
 | Any language other than `en_us` | The generated pack is English only (14 and 08 §8 already assume `en_us`) |
 | The unifont glyph data | Characters not covered by the bitmap sheets have no glyph (14 §10) |
 | `pack.mcmeta`, at any level | The tool writes it (6.2) |
@@ -416,7 +415,7 @@ Both files are written by the tool as UTF-8, LF line ends, two-space indent, one
 The numbers come from the identified table row (which equals `version.json`): the resource pack uses `resource_major` and
 `resource_minor`, the data pack uses `data_major` and `data_minor`. The rule for the format keys is the one the game applies to
 its own built-in packs (2.4): the range is from the version's own `major.minor` up to the end of its major. In the notation of 08
-§2.1, `min_format` is the two-element array `[major, minor]` and `max_format` is the integer `major`.
+§2.1, `min_format` is the two-element array `[major, minor]` and `max_format` is the integer `major`. This is the only place where the tool writes an array where the files read use plain integers: the jar's three feature packs have `min_format` and `max_format` as integers (121 and 121) and Faithful uses integers (84 and 97). A test must not compare the generated `pack.mcmeta` with the form of those files.
 
 `vanilla-resources/pack.mcmeta`, exact text (129 bytes, CRC-32 `c6f2b630`, computed from this text):
 
@@ -534,7 +533,7 @@ they are provided.
 | Directory create, rename, recursive remove | `mkdir -p` semantics; rename of a directory within one volume; removal of a directory tree (or listing plus unlink plus rmdir) |
 | Write a file | Create or truncate, write in blocks, close with an error status |
 
-Working storage: the largest entry that is extracted is 546,577 bytes (`lang/en_us.json`), so a 1 MiB (1,048,576 bytes)
+Working storage: the largest entry under `assets/` and `data/`, and so the largest that is extracted, is 546,577 bytes (`lang/en_us.json`), so a 1 MiB (1,048,576 bytes)
 buffer suffices. An entry whose uncompressed size exceeds the buffer is CCX-041. The central directory (3.4 MB) is read
 in blocks and processed record by record; no table of all entries is needed.
 
@@ -586,6 +585,18 @@ in blocks and processed record by record; no table of all entries is needed.
 10. **Swap** (7.5). Print the final line.
 
 Progress output: one line per 1,000 files written (to standard output), unless `--quiet`.
+
+### 7.3.1 Zip record layouts (read from the jar's bytes)
+
+All integers are little-endian. Offsets are from the start of the record. Values in the last column were read from the jar's end record, first central record and its local header.
+
+| Record | Size | Field offsets |
+|---|---|---|
+| End record `PK 05 06` | 22 + comment | +4 disk number (2), +6 disk of central directory (2), +8 entries on this disk (2), +10 total entries (2; 34,227), +12 central directory size (4; 3,557,113), +16 central directory offset (4; 37,926,585), +20 comment length (2; 0) |
+| Central record `PK 01 02` | 46 + name + extra + comment | +4 version made by (2), +6 version needed (2; 20), +8 flags (2; 0x0808), +10 method (2; 8), +12 time (2), +14 date (2), +16 CRC-32 (4), +20 compressed size (4), +24 uncompressed size (4), +28 name length (2), +30 extra length (2), +32 comment length (2), +34 disk start (2), +36 internal attributes (2), +38 external attributes (4), +42 local header offset (4); the name starts at +46 |
+| Local header `PK 03 04` | 30 + name + extra | +4 version (2), +6 flags (2), +8 method (2), +10 time (2), +12 date (2), +14 CRC-32 (4; 0 in the jar), +18 compressed size (4; 0 in the jar), +22 uncompressed size (4; 0 in the jar), +26 name length (2), +28 extra length (2); the name starts at +30 and the data at +30 + name length + extra length |
+
+The central directory begins at the end record's offset and ends exactly at the end record (3,557,113 + 37,926,585 = 41,483,698, plus 22 = 41,483,720, the jar size). The manifest `Name:` list covers the entries the jar signature covers (2.1: it lists assets by name with a SHA-384 digest); the tool ignores it.
 
 ### 7.4 Exit codes and messages
 
@@ -707,11 +718,11 @@ For a **standard** world the server builds a data pack stack, bottom to top:
 |---|---|---|
 | 1 | `vanilla` = `<generated>/vanilla-data` | required for standard worlds; the check of 8.2 must be `ok` |
 | 2 | feature packs from `<generated>/featurepacks/<name>` | **not loaded in this version**: each needs its feature flag (08 §2.6); none is enabled by default, and no setting enables one (Open question 5). If one were enabled, the feature-pack config of 2.4 (not required, TOP, not fixed, applied to built-in packs by their source `FEATURE`, not by the folder name) would put it at the top, so it would sit above `vanilla` (inferred; the effect on a stack was not traced); its place relative to user data packs is not read (inferred: user packs are added later and go above) |
-| 3 | user data packs from `<world folder>/datapacks/` | optional; a directory with `pack.mcmeta` or a `.zip`, id `file/<name>`; same detection and format rules as 08 §1.1 to §2.3 against the data format 121.0 (inferred from the 13 §8 resource rules and from the string `datapacks` in `ServerPacksSource`, which was seen as a constant but whose use was not traced: that it names the world folder is inferred; the world folder document 07 §9 does not list it yet) |
+| 3 | user data packs from `<world folder>/datapacks/` | optional; a directory with `pack.mcmeta` or a `.zip`, id `file/<name>`; same detection and format rules as 08 §1.1 to §2.3 against the data format 121.0 (the folder name is read: `LevelResource.DATAPACK_DIR` has the id `datapacks`, and the server's pack-repository factory that takes the level storage access builds the repository from the level path of that resource; the detection and format rules are inferred from the 13 §8 resource rules; the world folder document 07 §9 does not list the folder yet) |
 
 The pack-level override rule is the one of 08 §3.2 applied to the data tree: files replace by path from the top pack down, and merged
 kinds (tags) concatenate bottom to top (the tag document will define the tag merge). How the data is read once found (the
-registry loader, codecs, tag resolution) is for the registry-loading document.
+registry loader, codecs, tag resolution) is 23 §2 and §3.
 
 For a **cobolcraft** world the data pack stack is empty at level 1: the cobolcraft world type's hand-authored core (design
 README C3) is part of the game and is not read from a directory. The generated data pack is **not** read for a cobolcraft world, even when it exists.
@@ -890,20 +901,14 @@ Checks an implementation of the tool and loaders must pass, with the expected nu
    already require a decoder for all of these was not re-read in this round.
 8. **`.gitignore`.** The generated directory and any user-chosen directory must be ignored by git. The default `<game directory>/generated` is not covered by the current
    `/tmp/` rule unless the game directory is under `tmp/`. The operator or the planner must add the rule; this document does not edit that file.
-9. **Documents that do not exist yet.** The registry-loading document (23 in the design README plan) and the world-types document (RS2) are cited by role
-   only. Documents 24 (block registry), 46 (static registry ids), 33, 41 and 44 now exist and are cross-referenced in the header and section 1; how the
-   synchronized registries of 2.6 are loaded from `vanilla-data` and numbered on the wire (04 §3, 46) was not re-read in this round, so section 8.3 still
-   defers to the registry-loading document.
+9. **Documents that do not exist yet.** The world-types document (RS2) is cited by role only. Documents 23 (registry loading), 24, 46, 33, 41 and 44 exist and are cross-referenced; 8.3 now defers to 23 §2 and §3. How 23 numbers the synchronized registries on the wire was not re-read in this round.
 10. **Sound files and index.** 2.9 says the sound files are not in the client jar. That the launcher downloads them separately is recalled, not verified. Not needed by this round (sounds are out of scope).
 11. **Large offsets.** The jar is 41,483,720 bytes, so every offset fits in 31 bits. User packs (Faithful: 13,116,019 bytes) too. A pack above 2 GiB would need 64-bit offsets and zip64, which both are
     rejected (8.4). Whether the file service of 7.2 needs a wider offset is left to the implementer.
-12. **Data-pack merge for user packs.** 8.3 level 3 (user data packs from the world folder) is inferred from the name `datapacks` in the server's pack repository and is not required by any story. It can be
-    dropped, or specified by the world-folder document (07 §9, task T15).
+12. **Data-pack merge for user packs.** The folder name `datapacks` under the world folder is read (8.3 level 3, `LevelResource`), but no story requires user data packs and the world folder document (07 §9, task T15) does not list the folder. It can be dropped or specified there. The merge itself follows 08 §3.2.
 13. **Skipped-entry count.** The figure 11,391 of 7.3 step 7 (and of E5) is derived from the counts of 2.2 (10,737 + 646 + 4 + 1 plus `version.json` and the two markers), not from a separate run of the tool.
 14. **Resolved from the jar for 08.** 08 Open question 3 (the dispatch key of an item model) is answered in 2.5: the key is `type`. 08 Open questions 5, 7, 8 and 9 were not in the scope of this round (they need
     bytecode of the renderer, `PackFormat` and the download classes) and stay open.
 15. **Document 08 still says the client vanilla pack is fixed.** 2.4 gives the read value (required, BOTTOM, not fixed). 08 §3.1 ("Typical resulting
-    order") and 08 §10 ("required and fixed at BOTTOM, inferred") are not changed by this round and are wrong. The owner of 08 must correct them; this document cannot.
-16. **Feature-pack config and the `datapacks` constant.** 2.4 and 8.3 say the TOP config is applied to built-in feature packs by source. The string
-    `datapacks` in `ServerPacksSource` was seen next to the feature config in the static initializer, but where it is used (world folder, pack scan) was searched for
-    only in that class and not traced; that it is the world-folder name is inferred.
+    order"; line 277 reads "built-in default pack (required, fixed BOTTOM)") and 08 §10 (line 905, "required and fixed at BOTTOM, inferred") are unchanged and wrong (re-confirmed against the jar: `VANILLA_SELECTION_CONFIG` is required true, BOTTOM, fixed false). The owner of 08 must correct them; this document cannot.
+16. **Feature-pack config and `PACKS_DIR` (closed).** Read: `ServerPacksSource.PACKS_DIR` is `minecraft:datapacks`, the in-jar built-in pack root (2.4); the world folder comes from `LevelResource.DATAPACK_DIR` (8.3). Still not traced: which pack-repository code applies the feature config to a pack stack when a feature is enabled (8.3 level 2 stays inferred).

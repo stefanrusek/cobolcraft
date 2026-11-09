@@ -42,7 +42,7 @@ Class `MushroomBlock extends VegetationBlock`, implements `BonemealableBlock`. C
 Trigger RT, flags 2 (clients only; no neighbour update).
 
 1. One draw `nextInt(25)`; continue only when it is 0 (chance 1/25). Otherwise stop with no further draws.
-2. `canSpread`: count the blocks equal to this block (the same block, any state; the plant has no properties) in the box from (x-4, y-1, z-4) to (x+4, y+1, z+4) around `pos`. The count includes the mushroom itself. Spread is allowed when the count is at most 4 (the engine tests `not atLeastMatched(5)`). When it fails, stop.
+2. `canSpread`: count the blocks equal to this block (the same block, any state; the plant has no properties) in the box from (x-4, y-1, z-4) to (x+4, y+1, z+4) around `pos`. The count includes the mushroom itself. Spread is allowed when the count is at most 4 (the engine call is `BlockMatcher.atMostMatched(4)`, read). When it fails, stop.
 3. Draw a first target: `T = pos + (nextInt(3) - 1, nextInt(2) - nextInt(2), nextInt(3) - 1)`. The draws are made in the order dx, dy-first, dy-second, dz (four draws; the y offset is in -1..1 with the triangular weights 1:2:1).
 4. Repeat 4 times: if `isEmptyBlock(T)` (air) and this block's state `canSurvive(level, T)`, then the walking position `pos` becomes `T`. Then, whether or not it moved, draw a new target `T = pos + (...)` with the same four draws as step 3 (from the possibly moved `pos`). So the loop makes 4 x 4 = 16 draws.
 5. After the loop: if `isEmptyBlock(T)` and the state `canSurvive(T)`, set `T` to the original state of the mushroom with flags 2.
@@ -54,10 +54,10 @@ The state written is the state of the ticking block (it has no properties). The 
 | Method | Rule |
 |---|---|
 | `isValidBonemealTarget` | only on a server level. Looks up the configured feature `feature` in the feature registry; valid when it exists, is an `AbstractHugeMushroomFeature`, and `isInsideBuildHeight(pos.above(4 + foliageRadius))`, where `foliageRadius()` is a value of the huge mushroom feature's configuration (data, 35 part 4 gives the two features) |
-| `isBonemealSuccess` | one `nextFloat()` draw; success when `< 0.4` (40%) |
+| `isBonemealSuccess` | one `nextFloat()` draw widened to double and compared with the double constant 0.4 (success when the double value is `< 0.4`, 40%) |
 | `performBonemeal` | `growMushroom(level, pos, state, random)` |
 
-`growMushroom`: when the feature is absent return false (nothing changes). Otherwise remove the mushroom block with `removeBlock(pos, false)`, then run the feature's `place` at `pos` with the chunk generator of the level and the random source; on success return true. On failure restore the original state with `setBlockAndUpdate(pos, state)` and return false. The huge mushroom shape is worldgen (35 part 4); the return value of `performBonemeal` is ignored by the item flow (29b-1 §5.3), so a failed growth still consumes the bone meal item when the 40% test passed or not (the stack shrinks on every valid target).
+`growMushroom`: when the feature is absent return false (nothing changes). Otherwise remove the mushroom block with `removeBlock(pos, false)`, then run the feature's `place` at `pos` with the chunk generator of the level and the random source; on success return true. On failure restore the original state with `setBlockAndUpdate(pos, state)` and return false. The huge mushroom shape is worldgen (35 part 4); the return value of `performBonemeal` is ignored by the item flow (29b-1 §5.3), so the stack shrinks for every valid target whether or not the growth succeeded. When `place` fails, `growMushroom` has already restored the mushroom, so the player loses one bone meal and nothing else changes. (The item flow itself, 29b-1 §5.3, was not re-read this round; it is cited from that document.)
 
 ## 2. `HugeMushroomBlock` and `ShelfMushroomBlock`
 
@@ -70,7 +70,7 @@ Properties: six booleans `north`, `east`, `south`, `west`, `up`, `down`; default
 | Placement state | each face is true when the block in that direction is NOT the same block as this one, false when it is (looked up from the placement position; `BlockState.is(this)`) |
 | SU | when the neighbour state in the direction of the update is the same block, the face of that direction is set false; otherwise the state is returned by the generic shape update unchanged (a face is never set back to true by a shape update) |
 | Rotation | the face property of the rotated direction takes the value of the original direction, for the six directions (up and down map to themselves under the horizontal rotations) |
-| Mirror | the same permutation with the mirror applied to the direction (the `mirror` body was read to exist, its use of `Mirror.mirror` for the horizontal directions is (inferred)) |
+| Mirror | for each of the six directions d (north, south, east, west, up, down) the face property of `Mirror.mirror(d)` receives the old value of the face property of d (read: all six directions are passed through `Mirror.mirror`; up and down are unchanged by every mirror, so only the two faces of the mirrored axis swap) |
 
 Worldgen of huge mushrooms writes the face states directly (35 part 4); the placement rule above applies only to the block item and commands.
 
@@ -104,7 +104,7 @@ Shape: `Block.column(8, 0, 9)`. `mayPlaceOn(state)`: the state below is in the s
 | Method | Rule |
 |---|---|
 | `isValidBonemealTarget` | the block directly below IS `requiredBlock` (the nylium itself, not the tag) and `isInsideBuildHeight(pos.above())` |
-| `isBonemealSuccess` | one `nextFloat()` draw, success when `< 0.4` |
+| `isBonemealSuccess` | one `nextFloat()` draw widened to double, success when the double comparison `< 0.4` holds |
 | `performBonemeal` | look up the feature; if present, run `place` at `pos` with the chunk generator and the random source. The fungus block is NOT removed first and no state is restored on failure (the feature itself replaces it when it places the stem; the planted feature variants are configured in data, 35 part 4 `huge_fungus`) |
 
 So bone meal on a fungus over netherrack or soil in the support tag (not the required nylium) is not a valid target.
@@ -145,7 +145,14 @@ Properties: `base` (boolean) and four wall-side enums `north`, `east`, `south`, 
 | `isBonemealSuccess` | always true |
 | `performBonemeal` | compute the same helper with the side-chance supplier answering true; when the result is not air, `setBlockAndUpdate(pos.above(), result)` |
 
-The helper returns air when the cell above holds a pale moss carpet whose `base` is true, or holds a non-replaceable block that is not itself a carpet to extend; the exact construction of the topper state (which sides are filled) was not read in full (Open question 6). `isValidBonemealTarget` and `performBonemeal` both pass a supplier that returns true (the two lambdas return the constant true, read), so no random draw is made in these two methods.
+`createTopperWithSideChance(level, pos, sideChance)` was read in this round as follows (the cell above is `A = pos.above()`):
+
+1. If `A` holds a pale moss carpet whose `base` is true, return air. If `A` holds something that is not a pale moss carpet and cannot be replaced (`canBeReplaced` false), return air.
+2. Otherwise start from the default pale moss carpet state with `base` false and run the helper `getUpdatedState(candidate, level, A, true)`: it works per horizontal direction d as follows. `canSupportAtFace(level, A, d)` is false for `up`, otherwise `MultifaceBlock.canAttachTo(level, A, d)`. The force-low flag is (the fourth argument OR the candidate's `base`); with the argument true (as here) every supported side becomes `low` and every other side `none`. A `low` side becomes `tall` when the cell above `A` holds a pale moss carpet whose same side is not `none` and whose `base` is false. Additional clause: when the candidate's `base` is false, a side is set to `none` when the cell below `A` (the clicked carpet's own position) holds a pale moss carpet whose same side is `none`.
+3. For each horizontal direction in plane order, when the resulting side is not `none` and the `sideChance` supplier answers false, that side is set to `none`.
+4. If the state still has at least one face (`hasFaces`) and differs from the state already at `A` (compared by reference identity, that is, "a different state"), it is the result; otherwise the result is air.
+
+`isValidBonemealTarget` and `performBonemeal` both pass a supplier that returns the constant true (read), so step 3 never removes a side there and no random draw is made in these two methods; the supplier with real randomness belongs to other callers (placement of the carpet by worldgen, not read).
 
 ## 4. The oxidation engine (`ChangeOverTimeBlock`)
 
@@ -166,7 +173,7 @@ The helper returns air when the cell above holds a pale moss carpet whose `base`
 
 Let `a` be the ordinal of the block's own weather state (unaffected 0, exposed 1, weathered 2, oxidized 3).
 
-1. Scan every position within Manhattan distance 4 of `pos`, excluding `pos` itself (the position filter `p != pos`). The scan region is `BlockPos.withinManhattan(pos, 4)`: all offsets with `|dx| + |dy| + |dz| <= 4`, which is 129 positions including the centre, so 128 are examined (count computed; the iteration runs by increasing Manhattan depth, read as the iterator's `currentDepth` field; the order does not affect the outcome, see step 3).
+1. Scan every position within Manhattan distance 4 of `pos`, excluding `pos` itself (the position filter `p != pos`). The scan region is read as follows: `ChangeOverTimeBlock` calls `ServerLevel.findBlocksInManhattan(pos, 4)` (an `OrderedBlockMatcher` of the `blockscan` package, fed a position filter and a state filter), which is the default method of `LevelReader`; that method calls `BlockPos.withinManhattan(pos, 4)`, which delegates to `manhattanOrdered(pos, 4, 4, 4, 4)`. The iterator class behind it carries a `currentDepth` counter (read as a field name; its body was not followed line by line). The region is therefore (inferred from the name and the geometry) all offsets with `|dx| + |dy| + |dz| <= 4`: 129 positions including the centre (1+6+18+38+66, computed), so 128 are examined. The visiting order (increasing depth, inferred from `currentDepth`) does not affect the outcome, see step 3.
 2. A scanned block counts only when it is a `ChangeOverTimeBlock` whose age enum is the same class as this block's age enum (all weathering copper blocks share `WeatheringCopper.WeatherState`). Waxed blocks are plain classes (`Block`, `SlabBlock`, `StairBlock`, `DoorBlock`, ...), do not implement the interface, and are not counted. A position above or below the world's section range, or in a chunk section that has no matching block, counts nothing; a chunk that is not yet in memory is fetched through `LevelReader.getChunk(x, z)` (it may load or generate a chunk, Open question 2).
 3. For each counted neighbour with ordinal `b`:
    - `b < a`: abort. The result is "no change" (empty); the scan stops and no second random draw is made.
@@ -196,7 +203,7 @@ For the weathering classes the state test is: the block has a next block (`Weath
 | `getFirst(block)` | follows `PREVIOUS_BY_BLOCK` repeatedly until no entry exists: the fully unaffected block of the family |
 | state-level `getNext` / `getPrevious` / `getFirst` | the target block's `withPropertiesOf(state)`: the new block keeps every property the old state has (same names) |
 
-The order of the 15 collections in the map is: copper block, cut copper, chiseled copper, cut copper slab, cut copper stairs, copper door, copper trapdoor, copper bars, copper grate, copper bulb, copper lantern, copper chest, copper golem statue, lightning rod, copper chain (the order has no effect on lookup).
+The order of the 15 collections in the map is: copper block, cut copper, chiseled copper, cut copper slab, cut copper stairs, copper door, copper trapdoor, copper bars, copper grate, copper bulb, copper lantern, copper chest, copper golem statue, lightning rod, copper chain (the order has no effect on lookup). The table in 5.2 lists stairs before slab because it follows the registry id order of 24 part 7; the two orders differ only in presentation.
 
 ### 5.2 `WeatheringCopperCollection` and the name table
 
@@ -220,9 +227,9 @@ The wax-on map is `HoneycombItem.WAXABLES` = for each of the same 15 collections
 | 12 | `LIGHTNING_ROD` | `lightning_rod` (1214) | `WeatheringLightningRodBlock` | `LightningRodBlock` | |
 | 13 | `COPPER_BARS` | `copper_bars` (392) | `WeatheringCopperBarsBlock` | `IronBarsBlock` | |
 | 14 | `COPPER_CHAIN` | `copper_chain` (401) | `WeatheringCopperChainBlock` | `ChainBlock` | |
-| 15 | `COPPER_LANTERN` | `copper_lantern` (941) | `WeatheringLanternBlock` | `LanternBlock` (inferred from the weathering class's superclass; the waxed factory was not read) | |
+| 15 | `COPPER_LANTERN` | `copper_lantern` (941) | `WeatheringLanternBlock` | `LanternBlock` (read: the waxed factory of the collection returns a `LanternBlock`) | |
 
-Ids are the block ids of 24 parts 1, 4 and 8 (the first of the eight consecutive ids); 46 is the id list. Every class listed adds no block property to its plain superclass (24 part 8 §2.3). Ores (`copper_ore`, `deepslate_copper_ore`), raw copper and the exposed-copper items are not weathering blocks.
+The absolute first ids (1124 to 1214, 392, 401, 941) were NOT re-read this round; they are carried from 24 and 46 (Open question 14). Only the spacing was confirmed (cut_copper 10 after copper_block, then 8 each; bars to chain 9). Ids are the block ids of 24 parts 1, 4 and 8 (the first of the eight consecutive ids); 46 is the id list. Every class listed adds no block property to its plain superclass (24 part 8 §2.3). Ores (`copper_ore`, `deepslate_copper_ore`), raw copper and the exposed-copper items are not weathering blocks.
 
 A block's `getAge()` is the stored weather state (for the chest `getState()`, for the statue `getWeatheringState()`).
 
@@ -232,11 +239,13 @@ Every weathering class's random tick calls `changeOverTime` (4.1) after the clas
 
 ### 6.1 Door
 
-`WeatheringCopperDoorBlock.randomTick`: only when `half` is `lower`. The upper half never ticks the engine. After the lower half is replaced (flags 3 via `setBlockAndUpdate`), the vertical shape update reaches the upper half; the `DoorBlock` shape rule says: for an update coming from the other half's direction, when the neighbour block is any `DoorBlock` whose `half` differs, the new state of this half is the neighbour's state with `half` set to this half. So the upper half becomes the same new block with the lower half's other properties (facing, hinge, open, powered). A scan of the world counts both halves as separate blocks of the family, but only the lower half ticks.
+`WeatheringCopperDoorBlock.randomTick`: only when `half` is `lower`. The upper half never ticks the engine. After the lower half is replaced (flags 3 via `setBlockAndUpdate`), the vertical shape update reaches the upper half; the `DoorBlock` shape rule says: for an update coming from the other half's direction, when the neighbour block is any `DoorBlock` whose `half` differs, the new state of this half is the neighbour's state with `half` set to this half. So the upper half becomes the same new block with the lower half's other properties (facing, hinge, open, powered). Two more `DoorBlock.updateShape` branches were read. For an update along the Y axis coming from the other half's direction, when the neighbour is not a `DoorBlock` or has the same `half`, the result is air (not unchanged). For the lower half with a `down` update, when the state cannot survive the result is air. A scan of the world counts both halves as separate blocks of the family, but only the lower half ticks.
 
 ### 6.2 Chest
 
-`WeatheringCopperChestBlock.randomTick`: runs the engine only when the `type` is not `right` AND the block entity at `pos` is a chest block entity AND no entity currently has its container open (`getEntitiesWithContainerOpen()` is empty). So a left half or single chest ages, a right half never ticks, and an open chest does not age. The partner half of a double chest is made consistent by the chest's own shape update, which uses the least oxidized state of the connected chests (`getLeastOxidizedChestOfConnectedBlocks`, 24 part 8 placement rule) and `unwaxBlock` (read to exist; its exact partner-update flow was not read, Open question 3). The chest block keeps its block entity across weathering changes (`shouldChangedStateKeepBlockEntity`).
+`WeatheringCopperChestBlock.randomTick`: runs the engine only when the `type` is not `right` AND the block entity at `pos` is a chest block entity AND no entity currently has its container open (`getEntitiesWithContainerOpen()` is empty). So a left half or single chest ages, a right half never ticks, and an open chest does not age. The partner half of a double chest is made consistent by the chest's own shape update, which uses the least oxidized state of the connected chests (`getLeastOxidizedChestOfConnectedBlocks`, 24 part 8 placement rule) and `unwaxBlock` (read, flow below). The chest block keeps its block entity across weathering changes (`shouldChangedStateKeepBlockEntity`).
+
+Partner flow, read in `CopperChestBlock`. (a) `updateShape`: after the ordinary chest shape update, when the neighbour that changed is a copper chest (block tag `copper_chests` and it has a `type` property), this chest's `type` is not `single`, and the direction of the changed neighbour equals this chest's connected direction, the result is the NEIGHBOUR's block with this chest's properties (`withPropertiesOf`). So a double chest's half always takes the block (age and wax) of the half that last changed. (b) `getLeastOxidizedChestOfConnectedBlocks` (placement, and the `getFromCopperBlock` conversion): when the new state's `type` is not `single` and both it and the chest at the connected position are copper chests: if exactly one of the two is waxed, both are first replaced by their unwaxed blocks (`WAX_OFF_BY_BLOCK`); then the block with the smaller or equal weather ordinal wins (this chest on a tie), and the result is that block with the new state's properties. A waxed pair therefore stays waxed only when both halves were waxed, and a mixed pair becomes unwaxed. (c) The weather ordinals compared are the chests' own stored states, not the unwaxed ones.
 
 ### 6.3 Golem statue
 
@@ -256,6 +265,8 @@ What `removeStatue` builds (the copper golem entity and its data) is entity cont
 
 ### 7.1 Honeycomb on a block (`HoneycombItem.useOn`, wax on)
 
+`HoneycombItem` also holds `WAXED_RECIPES`, a map from each waxed block to a pair (recipe category, recipe id string). It is crafting data, not block behaviour, and is not specified here (Open question 11). Some ids differ from the block name; the strings read include `waxed_copper_block` (base block), `waxed_copper_bar` (copper bars, singular), `waxed_copper_chain`, `waxed_copper_lantern`, `waxed_lightning_rod`, `waxed_copper_chest`, `waxed_copper_golem_statue`, `waxed_copper_trapdoor` and `waxed_copper_door`.
+
 1. `getWaxed(state)`: the waxed block of the clicked block from `WAXABLES`, with `withPropertiesOf(state)`. If none exists: PASS (then sign waxing and other uses are tried by the item system, 17).
 2. For a server player: advancement trigger `item_used_on_block` (29 §9) at the position with the stack.
 3. `stack.shrink(1)` (no creative-mode test in this method; Open question 4).
@@ -270,7 +281,7 @@ A sign (`tryApplyToSign`) sets its waxed flag with level event 3003 and the same
 
 ### 7.2 Dispenser (honeycomb)
 
-The honeycomb dispense behaviour (`DispenseItemBehavior$12`, an optional behaviour): the target is the cell in front of the dispenser. When `getWaxed(state)` exists: `setBlockAndUpdate(target, waxed)` (flags 3), level event 3003 at the target data 0, sound `item.honeycomb.wax_on` (BLOCKS, 1, 1), shrink the stack by 1 and mark success. Otherwise the default optional behaviour (item dispensed as an item entity, 29 §3.5).
+The honeycomb dispense behaviour (`DispenseItemBehavior$12`, an optional behaviour): the target is the cell in front of the dispenser. When `getWaxed(state)` exists: `setBlockAndUpdate(target, waxed)` (flags 3), level event 3003 at the target data 0, sound `item.honeycomb.wax_on` (BLOCKS, 1, 1), shrink the stack by 1 and mark success. Otherwise the default optional behaviour (item dispensed as an item entity; the item-drop routine is 29 section 10.5).
 
 ### 7.3 Axe scrape and wax-off (`BlockTransformer` engine, `axe.json`)
 
@@ -300,8 +311,18 @@ The axe is a data component: item tag `axes` items carry a `block_transformer` c
 8. Play the transformation's sound at `pos` (BLOCKS, volume 1, pitch 1, the player as excluded source).
 9. Particle event: for a non-`none` particle send level event with the particle's event id, data 0, with the player as excluded source: `scrape` **3005**, `wax_on` **3003**, `wax_off` **3004** (client particle effects are 42 part 7).
 10. Game event `block_change` at `pos` with the player and the new state.
-11. When the transformation's type is `copper_chest` and the new block is a copper chest whose `type` is not `single`: send the game event and the particle event at the connected half position too (no sound there). The other half's state is changed by the shape update caused by step 7.
+11. When the transformation's type is `copper_chest` and the block state read BEFORE the `setBlock` of step 7 (the old state) is a `CopperChestBlock` whose `type` is not `single`: the connected position is computed from that old state, and the game event and the particle event are sent there too (no sound there). The other half's state is changed by the shape update caused by step 7.
 12. Return SUCCESS. When no transformation applied: PASS.
+
+The same `BlockTransformer` engine and the same `transformBlock` steps serve the other two files of `data/minecraft/block_transformer/`, `hoe.json` and `shovel.json`, which differ in more than contents: they use a plain block id (and state) instead of `copy_properties`, and use `disallowed_faces` and `loot`, which the axe does not. Both were read.
+
+| File | Index | Rules and fields |
+|---|---|---|
+| `hoe.json` | 0 | `disallowed_faces` [down], sound `item.hoe.till`, damage 1. Rule 1: block tag `turns_into_farmland` AND tag `air` at offset (0,1,0) gives `farmland` with `moisture` 0. Rule 2: `coarse_dirt` AND air above gives `dirt` |
+| `hoe.json` | 1 | `drop_strategy` `clicked_face`, loot `till/rooted_dirt`, sound `item.hoe.till`, damage 1. Rule: `rooted_dirt` gives `dirt` |
+| `shovel.json` | 0 | `disallowed_faces` [down], sound `item.shovel.flatten`, damage 1. Rule: block tag `turns_into_dirt_path` AND air above gives `dirt_path` |
+
+In step 2 a clicked `down` face skips hoe 0 and shovel 0; the loot table of hoe 1 is dropped in step 5 (the drop position follows `drop_strategy`, whose other values were not read).
 
 Scrape order of effects matters for gameplay: the `axe` first tries the strip entry (index 0), so a block cannot be both; scrape and wax-off entries cannot overlap because waxed blocks have no previous entry.
 
@@ -312,8 +333,10 @@ Scrape order of effects matters for gameplay: the `axe` first tries the strip en
 | Item | Value |
 |---|---|
 | Strike position | `BlockPos.containing(x, y - 1.0E-6, z)` of the bolt: the block just under the bolt's feet (so a rod top is the strike block) |
-| `powerLightningRod` | when the strike block is a `LightningRodBlock`, call its `onLightningStrike(state, level, pos)`: sets `powered` true (`setBlockAndUpdate`, flags 3), updates neighbours of the rod and of the block it is attached to, schedules a block tick after **8** ticks (`ACTIVATION_TICKS`), and sends level event **3002** (electric spark) at the position with the rod's facing as data; the scheduled tick sets `powered` false and updates neighbours again. A powered rod outputs signal 15 (own and direct towards its facing) |
-| `RANGE` | 128 (the lightning rod's targeting range constant; the code that picks a rod for a bolt is in the weather/spawning code, Open question 5) |
+| `powerLightningRod` | when the strike block is a `LightningRodBlock`, call its `onLightningStrike(state, level, pos)`: sets `powered` true (`setBlockAndUpdate`, flags 3), makes one `Level.updateNeighborsAt` call at `pos.relative(facing.opposite)` (the neighbours of the attached block's position, the rod being among them; there is no separate update of the rod's own neighbours), schedules a block tick after **8** ticks (`ACTIVATION_TICKS`), and sends level event **3002** (electric spark) at the position with the ordinal of the AXIS of the rod's facing as data (x 0, y 1, z 2; 42 part 7 agrees); the scheduled tick sets `powered` false and updates neighbours again. A powered rod outputs signal 15 (own and direct towards its facing) |
+| `RANGE` | 128 (the lightning rod's targeting range constant; the rod search that redirects a bolt is documented in 30 part 5, Open question 5) |
+
+The reaction of a `CopperGolem` mob to a bolt (one weather state back per distinct bolt) is in 44 part 9; this section covers blocks only.
 
 `clearCopperOnLightningStrike(level, pos)`:
 
@@ -340,6 +363,8 @@ The walk position restarts at the strike position for each of the `n` walks. Wax
 
 **9.6 Wax then scrape.** Honeycomb on `oxidized_copper_door` (lower half, closed): becomes `waxed_oxidized_copper_door`, 1 honeycomb consumed, event 3003 and the wax-on sound. An axe on it: transformation 6 matches, the new block is `oxidized_copper_door` with the clicked state's properties copied, `update_from_neighbors` false; 1 durability, sound `item.axe.wax_off`, event 3004.
 
+**9.7 Double chest.** A `waxed_copper_chest` (left half) placed next to an `exposed_copper_chest` (right half): exactly one is waxed, so both are unwaxed first; ordinals 0 (unaffected) and 1 (exposed): the left half's block wins, the result is `copper_chest` with the new state's properties. A later change of the right half to `weathered_copper_chest` updates the left half through 6.2(a): the left half becomes `weathered_copper_chest`.
+
 ## 10. Validation
 
 | # | Check | Expected |
@@ -362,16 +387,22 @@ The walk position restarts at the strike position for each of the `n` walks. Wax
 | V16 | Lightning | strike cell reset to the first ladder block (when not waxed); 3 to 5 walks of 1 to 8 steps; waxed untouched |
 | V17 | Huge mushroom block placement faces | true for each side whose neighbour is not the same block |
 | V18 | Roots and sprouts bone meal | not valid targets |
+| V19 | Mixed waxed double chest on placement | both halves unwaxed first; lower ordinal wins, tie goes to the placed chest |
+| V20 | Huge mushroom mirror | each face property takes the value of the mirrored direction's face; up and down unchanged |
 
 ## 11. Open questions
 
-1. `MossyCarpetBlock.createTopperWithSideChance`: the construction of the topper state (which sides are filled and how the random supplier is used) was read only as far as the air conditions of 3.4; the rest is not specified here.
+1. (closed in 3.4) `MossyCarpetBlock.getUpdatedState` conditions read: `canSupportAtFace`, force-low, tall test and the below-cell none clause.
 2. The scan uses `LevelReader.getChunk(x, z)` (and so can load or generate a chunk) through `FilteredSectionCache.getOrLoad`; the chunk status requested and the behaviour for unloaded chunks were not read.
-3. The copper chest partner update (`CopperChestBlock.updateShape`, `unwaxBlock`, `getLeastOxidizedChestOfConnectedBlocks`) was identified by name; its flow on wax-on, scrape and oxidation of a double chest was not read.
+3. (closed in 6.2) Not read: whether wax-on, scrape and oxidation of one half reach the partner only through the shape update of 6.2(a) (it is the only path found in `CopperChestBlock`).
 4. `HoneycombItem` uses `ItemStack.shrink(1)` directly; whether creative-mode players keep the item depends on the stack or player abilities (29 §9) and was not read here.
-5. The code that chooses a lightning rod as the strike target (using `RANGE` 128) is not in the classes read; it belongs to the weather and lightning spawn round (33).
-6. `CopperGolemStatueBlockEntity.removeStatue`, the statue pose update and the oxidation of the `CopperGolem` mob (`CopperGolemOxidationLevels`) were not read.
-7. `HugeMushroomBlock.mirror` was read to exist; its direction mapping is (inferred) to mirror the horizontal faces.
-8. The waxed lantern class (`LanternBlock`) of 5.2 row 15 is inferred from the weathering class's superclass.
+5. The code that chooses a lightning rod as the strike target (using `RANGE` 128) is not in the classes read; it is documented in 30 part 5 (rod search).
+6. `CopperGolemStatueBlockEntity.removeStatue`, the statue pose update were not read here; `CopperGolemOxidationLevels` is in 44 x2 section 8.1 and the golem's reaction to a bolt in 44 part 9.
+7. (closed) `HugeMushroomBlock.mirror` mapping read, see 2.1.
+8. (closed) the waxed lantern class is read as `LanternBlock`.
 9. Client-side effects of level events 3002 to 3005 (the particle shapes) are 42 part 7 and were not read here; `HugeMushroomBlock` textures, `ShelfMushroomBlock` bounce velocity (41 §3) and the moss feature shapes (35 part 4) were not read here.
 10. Moss and mushroom feature configuration values (`foliageRadius` of the huge mushroom features, the patch radius) are data of the extracted packs and are not tabulated here.
+11. `HoneycombItem.WAXED_RECIPES` (waxed block to recipe category and id) is crafting data; recipes belong to 26 and 35. The ids are listed in 7.1 from the constant pool only; the category values and the full block-to-id mapping were not read.
+12. (closed in 7.3) `hoe.json` and `shovel.json` read. Not read: the `drop_strategy` values other than `clicked_face` and the exact drop position.
+13. Not re-read this round and carried from the earlier pass: `WeatheringCopperDoorBlock`, `WeatheringCopperChestBlock`, `CopperChestBlock`, `WeatheringCopperGolemStatueBlock` and `LightningRodBlock` (`ACTIVATION_TICKS` 8, `RANGE` 128, level event 3002 data), and the shelf mushroom restitution 0.75 (24 part 4, 41 section 3).
+14. The first block ids in the table of 5.2 are carried from 24 and 46 and were not reproduced from the artifact in this round (spacing only was confirmed).

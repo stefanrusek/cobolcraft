@@ -64,17 +64,58 @@ Renderers that are registered but draw nothing under a condition read in this ro
 | `DisplayRenderer` (all three) | no render state yet, or no sub-state (nothing set); the item display with an empty stack; the text display with no lines (draws only a background, which needs a non-zero ARGB) |
 | `LightningBoltRenderer` | never culled (`affectedByCulling` false) |
 
+### 1.3 Shadow, hitbox, name tag, fire, passengers and leash for the types of this document
+
+Shadow radius and strength are the `shadowRadius` and `shadowStrength` fields the renderer constructor sets (read by listing the `putfield` of both fields in each renderer class). `EntityRenderer`'s constructor sets strength 1.0 and leaves radius at its default 0; a renderer that sets neither draws no shadow (34 part 1 §7.1 owns the shadow drawing).
+
+| Renderer (types) | Shadow radius | Shadow strength | Hitbox |
+|---|---|---|---|
+| `MinecartRenderer`, `TntMinecartRenderer` | 0.7 | 1.0 (default) | see below |
+| `ItemEntityRenderer` | 0.15 | 0.75 | see below |
+| `ExperienceOrbRenderer` | 0.15 | 0.75 | see below |
+| `FallingBlockRenderer` | 0.5 | 1.0 | see below |
+| `TntRenderer` | 0.5 | 1.0 | see below |
+| `DisplayRenderer` (3) | from the render state, interpolated (§17.1) | likewise | see below |
+| arrows, trident, wind charge, thrown items, firework rocket, fishing hook, item frame, painting, lead knot, lightning, ominous item spawner, cushion | 0 (no `putfield` of either field in the class) | 1.0 (default, unused) | see below |
+
+**Hitbox and eye height** (read from the `EntityTypes` static initialiser: the `sized(width, height)` call, and the `eyeHeight(h)` call where one is present; width and height are blocks). Where no `eyeHeight` call exists the type uses the engine default, which was not read here ((recalled, not verified): a fraction of the height; Open question 17). 18 owns the general bounding-box rules; the renderer only copies `boundingBoxWidth`, `boundingBoxHeight` and `eyeHeight` into the render state (34 part 1 §6.3).
+
+| Entity types | Width x height | Eye height call |
+|---|---|---|
+| `minecart`, `chest_minecart`, `furnace_minecart`, `hopper_minecart`, `tnt_minecart`, `spawner_minecart`, `command_block_minecart` | 0.98 x 0.7 | none; `passengerAttachments` one point at y 0.1875 (below) |
+| `arrow`, `spectral_arrow`, `trident` | 0.5 x 0.5 | 0.13 |
+| `wind_charge`, `breeze_wind_charge` | 0.3125 x 0.3125 | 0 |
+| `snowball`, `egg`, `ender_pearl`, `splash_potion`, `lingering_potion`, `experience_bottle`, `eye_of_ender`, `firework_rocket`, `fishing_bobber`, `ominous_item_spawner` | 0.25 x 0.25 | none |
+| `fireball` | 1 x 1 | none |
+| `small_fireball` | 0.3125 x 0.3125 | none |
+| `item` | 0.25 x 0.25 | 0.2125 |
+| `item_frame`, `glow_item_frame` | 0.5 x 0.5 (placeholder: the frame sets its own box from its position and facing) | 0 |
+| `painting` | 0.5 x 0.5 (placeholder likewise) | none |
+| `leash_knot` | 0.375 x 0.5 | 0.0625 |
+| `falling_block` | 0.98 x 0.98 | none |
+| `tnt` | 0.98 x 0.98 (and the type is fire immune: the only type in this list with that call) | 0.15 |
+| `experience_orb` | 0.5 x 0.5 | none |
+| `lightning_bolt`, `block_display`, `item_display`, `text_display` | 0 x 0 | none |
+
+The "frame and painting set their own box" remark is (inferred) from the placeholder size, not read.
+
+Name tag position and distance: 34 part 1 §7.2 (non-living entities use the squared compare with 64 squared; position is the `NAME_TAG` attachment, else the bounding height); item frame is the only renderer here that overrides `shouldShowName` (§10). Fire overlay (`displayFireAnimation`): 34 part 1 §7.4, applied by the dispatcher to every type here without a renderer override (none of the renderers of this document was read to override it).
+
+**Minecart passengers** (read): `AbstractMinecart.getPassengerAttachmentPoint(passenger, dimensions, scale)` returns the constant `LOWERED_PASSENGER_ATTACHMENT = (0, 0, 0)` when the passenger is a villager or a wandering trader; for every other passenger it calls the `VehicleEntity` / `Entity` default, which resolves the type's `passengerAttachments` (one point at y 0.1875 for all seven minecarts, above); how that default turns the attachment into a position (clamping, rotation by yaw, scale) was not read (Open question 18). `Minecart.positionRider` first runs the common rider placement, then, on the client only, when the rider is a player whose `shouldRotateWithMinecart` is true and the experimental-movement check holds, sets the player's yaw to `yaw - (offset - playerRotationOffset)` where `offset = rotLerp(0.5, playerRotationOffset, rotationOffset)` and stores `offset` as the new `playerRotationOffset`; `playerRotationOffset` and `rotationOffset` are fields whose update path was not read.
+
+**Leash** (read): none of the 74 classes of the packages `vehicle.minecart`, `projectile`, `item`, `decoration`, and of `Display`, `ExperienceOrb`, `LightningBolt`, `OminousItemSpawner`, `Interaction`, `Marker`, `AreaEffectCloud` names `Leashable` in its class header, and the `Entity` header does not either (while `Mob` does), so none of the types of this document can be leashed. The lead knot is the holder entity (§12), drawing: 34 part 1 §7.3. (Inheritance through intermediate classes was checked only by the headers listed; `Leashable` as an interface with default methods could in principle be inherited through a super-interface, which was not checked: Open question 19.)
+
 ---
 
 ## 2. Conventions this document relies on
 
-**Sine and cosine.** Every `sin` and `cos` below (shake, hurt tilt, bob, orb colour, fishing hand angle) is `Mth.sin` / `Mth.cos`, the game's table-based functions (see 15), which differ from the exact sine by under 1e-4. The worked examples (the orb colours r = 127, b = 3 and 12, among others) were computed with the exact sine; their integer truncations can differ at boundaries.
+**Sine and cosine.** Every `sin` and `cos` below (shake, hurt tilt, bob, orb colour, fishing hand angle) is `Mth.sin` / `Mth.cos`, the game's table-based functions (see 15). Read here: `sin(x)` returns `SIN[(long)(x * 10430.378350470453) & 65535]` (the double product is cast to long, which truncates toward zero, then masked, so negative arguments wrap); `cos(x)` returns `SIN[(long)(x * 10430.378350470453 + 16384.0) & 65535]`. `SIN` has 65536 float entries and entry `i` is the exact `Math.sin(i / 10430.378350470453)` narrowed to float (the table-fill loop was read). The argument is therefore quantised to a step of 1 / 10430.378350470453 = 9.59e-5 rad (2*pi / 65536), and truncation toward zero makes the error up to one step; the resulting value error bound of about 1e-4 is (inferred) from that step, not measured. The worked examples (the orb colours r = 127, b = 3 and 12, among others) were computed with the exact sine; their integer truncations can differ at boundaries.
 
 These facts were read here because every model below needs them. The framework part (34 part 1) is the owner of the general statement; this section is what part 9 actually depends on.
 
 ### 2.1 How a model part is placed (`ModelPart.translateAndRotate`)
 
-For a part with pose `off (x, y, z)`, `rot (xRot, yRot, zRot)`, `scale (sx, sy, sz)` the code does, in this order on the pose stack: translate by `(x/16, y/16, z/16)`; if any rotation is non-zero, rotate by the quaternion `rotationZYX(zRot, yRot, xRot)` (which applies x first, then y, then z to vertices); if any scale differs from 1, scale by `(sx, sy, sz)`. Children are drawn inside the parent's transform. `PartPose.offsetAndRotation(...)` has scale 1; `PartPose.offset`, `rotation` likewise; `withScale(s)` sets all three scales to `s` and keeps offset and rotation; `scaled(s)` multiplies offset and scale by `s` and leaves rotation.
+For a part with pose `off (x, y, z)`, `rot (xRot, yRot, zRot)`, `scale (sx, sy, sz)` the code does, in this order on the pose stack: translate by `(x/16, y/16, z/16)`; if any rotation is non-zero, rotate by the quaternion `rotationZYX(zRot, yRot, xRot)` (the call to `rotationZYX` was read; that it applies x first, then y, then z to vertices is JOML library semantics, (recalled, not verified), Open question 21); if any scale differs from 1, scale by `(sx, sy, sz)`. Children are drawn inside the parent's transform. `PartPose.offsetAndRotation(...)` has scale 1; `PartPose.offset`, `rotation` likewise; `withScale(s)` sets all three scales to `s` and keeps offset and rotation; `scaled(s)` multiplies offset and scale by `s` and leaves rotation.
 
 `PartDefinition.transformed(op)` replaces **only that part's own pose** by `op(pose)`; children are carried over unchanged. `MeshDefinition.transformed(op)` does this to the root part only. So `ArrowModel`'s `transformed(scaled 0.9)` (§4.1) gives the root a scale of 0.9 and leaves the children's poses as defined, and the whole model ends up 0.9 times its defined size, including the child offsets.
 
@@ -110,7 +151,7 @@ The `mirror` flag swaps the x extents of the cuboid and reverses the vertex orde
 
 `LightCoordsUtil.pack(block, sky) = (block << 4) | (sky << 20)`; `block(l) = (l >> 4) & 15`; `sky(l) = (l >> 20) & 15`. Constants used here: **15728880** = block 15, sky 15 (full bright); **15728850** = 15728640 + 210: sky 15, block field 13, plus a 2 in the unused low nibble (only the block and sky fields are read by the light map).
 
-`OverlayTexture` is a 16 x 16 texture. Rows 0 to 7: colour `0xB2FF0000` (hurt red, ARGB -1291911168). Rows 8 to 15 (v = 10 is "not hurt"): white with alpha `int((1 - (u/15) * 0.75) * 255)` at column u. `u(f) = int(f * 15)`, `v(hurt) = 3 if hurt else 10`, `pack(u, v) = u | (v << 16)`. `NO_OVERLAY = pack(0, 10)`: pixel (0, 10) is alpha 255 white (no tint). The TNT flash uses `pack(u(1.0) = 15, 10)`: pixel (15, 10), alpha `int(0.25 * 255) = 63`. How the shader mixes the overlay texel into the colour was not read (Open question 5); the intent is "blend towards white".
+`OverlayTexture` is a 16 x 16 texture. Rows 0 to 7: colour `0xB2FF0000` (hurt red, ARGB -1291911168). Rows 8 to 15 (v = 10 is "not hurt"): white with alpha `int((1 - (u/15) * 0.75) * 255)` at column u. `u(f) = int(f * 15)`, `v(hurt) = 3 if hurt else 10`, `pack(u, v) = u | (v << 16)`. `NO_OVERLAY = pack(0, 10)`: pixel (0, 10) is alpha 255 white (no tint). The TNT flash uses `pack(u(1.0) = 15, 10)`: pixel (15, 10), alpha `int(0.25 * 255) = 63`. How the shader mixes the overlay texel into the colour was not read (Open question 5); the intent is "blend towards white" (inferred).
 
 ---
 
@@ -154,11 +195,11 @@ Shadow radius 0.7 (`shadowRadius` field, default shadow strength 1.0).
 3. If `isNewRender`: rotate Y by `yRot` deg, rotate Z by `-xRot` deg, translate `(0, 0.375, 0)`.
    Else (old): with `(x, y, z)` the state position: if `posOnRail`, `frontPos`, `backPos` are all non-null: translate by `(posOnRail.x - x, (front.y + back.y)/2 - y, posOnRail.z - z)`; let `v = back - front`; if `|v| != 0`: `v` normalised, `yaw = atan2(v.z, v.x) * 180 / pi` (degrees, double precision), `pitch = atan(v.y) * 73.0` (degrees; the factor 73 is a read constant), replacing the state's `yRot` and `xRot`. Then in all old cases: translate `(0, 0.375, 0)`, rotate Y by `180 - yaw` deg, rotate Z by `-pitch` deg (yaw and pitch are the possibly replaced values).
 4. If `hurtTime > 0`: rotate X by `sin(hurtTime) * hurtTime * damageTime / 10 * hurtDir` degrees (`Mth.sin` of the float, radians in, i.e. a sine of the tick count).
-5. If the display block model is non-empty: push; scale 0.75; translate `(-0.5, (displayOffset - 8) / 16, 0.5)`; rotate Y 90 deg; call `submitMinecartContents(state, blockModel, pose, collector, lightCoords)`; pop. The base `submitMinecartContents` submits the block model with `NO_OVERLAY`. (Display offsets: default 6, chest minecart 8, hopper minecart 1, all others 6 (`getDefaultDisplayOffset`); a command can override through synched data.)
+5. If the display block model is non-empty: push; scale 0.75; translate `(-0.5, (displayOffset - 8) / 16, 0.5)`; rotate Y 90 deg; call `submitMinecartContents(state, blockModel, pose, collector, lightCoords)`; pop. The base `submitMinecartContents` submits the block model with `NO_OVERLAY`. (Display offsets, read from `getDefaultDisplayOffset`: `AbstractMinecart` returns 6, `MinecartChest` overrides it to 8, `MinecartHopper` to 1; `MinecartFurnace`, `MinecartSpawner`, `MinecartCommandBlock`, `MinecartTNT` and `Minecart` declare no override, so they use 6. The effective offset is `getDisplayOffset()`, the integer synched-data accessor `DATA_ID_DISPLAY_OFFSET`, initialised in `defineSynchedData` from `getDefaultDisplayOffset()`.)
 6. Scale `(-1, -1, 1)` and submit the minecart model with texture `minecart.png`, `lightCoords`, `NO_OVERLAY`.
 7. pop.
 
-**Display block per type** (`getDefaultDisplayBlockState`): `minecart` air (nothing drawn); `chest_minecart` chest facing north; `furnace_minecart` furnace facing north, `lit` = the cart's `hasFuel()` (set in the same method that sets FACING = NORTH); `hopper_minecart` hopper; `spawner_minecart` spawner (a plain block model, **no spinning mob** is drawn by this renderer); `command_block_minecart` command block; `tnt_minecart` TNT. A custom display state replaces it.
+**Display block per type** (`getDefaultDisplayBlockState`): `minecart` air (nothing drawn); `chest_minecart` chest facing north; `furnace_minecart` furnace facing north, `lit` = the cart's `hasFuel()` (set in the same method that sets FACING = NORTH); `hopper_minecart` hopper; `spawner_minecart` spawner (a plain block model, **no spinning mob** is drawn by this renderer); `command_block_minecart` command block; `tnt_minecart` TNT. Each default was read from the `getDefaultDisplayBlockState` method of the named class: `AbstractMinecart` (and so `Minecart`) returns the default state of air; `MinecartChest` sets the chest `FACING` to `Direction.NORTH`; `MinecartFurnace` sets the furnace `FACING` to `NORTH` and `LIT` to `hasFuel()`; `MinecartHopper`, `MinecartSpawner`, `MinecartCommandBlock` and `MinecartTNT` return the default state of their block (no property set). The effective state, `getDisplayBlockState()`, is the content of the synched-data accessor `DATA_ID_CUSTOM_DISPLAY_BLOCK` (an `Optional` of a block state) when present, else the default; which commands or NBT set the custom accessor is the server side (45 part 8) and was not read here.
 
 **TNT minecart contents** (`TntMinecartRenderer.submitMinecartContents`, called in step 5 with the 0.75 scale already applied): `f = fuseRemainingInTicks`; if `-1 < f < 10`: `a = swell(f)`, translate `(-a * 0.5, 0, -a * 0.5)` then scale by `1 + a` uniformly. Then `submitWhiteSolidBlock(blockModel, pose, collector, light, isLit(f), outlineColor)` (§13.2): overlay `pack(15, 10)` when lit, else `NO_OVERLAY`.
 
@@ -263,7 +304,7 @@ Texture `textures/entity/fishing/fishing_hook.png`, render type `entityCutoutCul
 `getHoldingArm(player)`: the main arm when the main-hand item is a fishing rod, else the opposite arm. `side = +1` when that arm is RIGHT, else `-1`. `getPlayerHandPos`:
 
 * **Third person** (the camera is not first-person, or the player is not the local player): `a = lerp(pt, yBodyRotO, yBodyRot) * D`; `s = side * 0.35 * scale`, `fw = 0.8 * scale` (`scale` = `player.getScale()`); `dy = isCrouching ? -0.1875 : 0`; result = `eyePosition(pt) + (-cos(a) * s - sin(a) * fw, dy - 0.45 * scale, -sin(a) * s + cos(a) * fw)`.
-* **First person, local player**: `fov` = the option `fov` (integer degrees); `k = 960 / fov` (double); `v = camera.getNearPlane(fov).getPointOnPlane(side * 0.525, -0.1)`, scaled by `k`, rotated about y by `f * 0.5` and about x by `-f * 0.7` (radians); result = `eyePosition(pt) + v`. (`Camera.getNearPlane(fov)` was read: aspect = projection width / height; half-height = `tan(fov * 0.017453292 / 2) * zNear`; half-width = half-height * aspect; the plane is centred `zNear` along the camera forward vector and spans the camera left and up vectors. The body of `getPointOnPlane` was not read: Open question 12.)
+* **First person, local player**: `fov` = the option `fov` (integer degrees); `k = 960 / fov` (double); `v = camera.getNearPlane(fov).getPointOnPlane(side * 0.525, -0.1)` (`getPointOnPlane(x, y)` = `forward + up * y - left * x`, read), scaled by `k`, rotated about y by `f * 0.5` and about x by `-f * 0.7` (radians); result = `eyePosition(pt) + v`. (`Camera.getNearPlane(fov)` was read: aspect = projection width / height; half-height = `tan(fov * 0.017453292 / 2) * zNear`; half-width = half-height * aspect; the plane is centred `zNear` along the camera forward vector and spans the camera left and up vectors. The body of `getPointOnPlane` was not read: Open question 12.)
 
 **Submit** (two pieces, pose origin = hook position):
 
@@ -333,7 +374,7 @@ rotate X by `xRot`, then Y by `yRot` (this order on the stack).
 
 **Name tag**: `shouldShowName` is true only when the HUD is not hidden, the entity is the crosshair target, and the stack has a custom name; the text is the stack's hover name (the name tag drawing itself is the framework).
 
-Worked example: a frame on the north face (`direction` NORTH, step (0, 0, -1), `toYRot` 180, read: NORTH has 2D data value 2 and `toYRot` is `(data2D & 3) * 90`): translate `(0, 0, -0.46875)`, `yRot = 180 - 180 = 0`, then the item is drawn at `z = -0.46875 + 0.4375 = -0.03125` in front of the wall plane for a visible frame, at a 0.5 scale.
+Worked example: a frame on the north face (`direction` NORTH, step (0, 0, -1), `toYRot` 180, read: NORTH has 2D data value 2 and `toYRot` is `(data2D & 3) * 90`): translate `(0, 0, -0.46875)`, `yRot = 180 - 180 = 0`, then the item is drawn at `z = -0.46875 + 0.4375 = -0.03125` in the pose's own axes for a visible frame, at a 0.5 scale; that this lies on the room side of the wall plane is deduced from the direction step and is not read (inferred).
 
 ---
 
@@ -397,7 +438,7 @@ Worked values: `f = 9`: `1 - 0.9 = 0.1`, `0.1^4 * 0.3 = 3.0e-5`, scale 1.00003; 
 
 Shadow radius 0.15, strength 0.75. State: `icon = entity.getIcon()`. `getIcon()` from the orb's value `v`: v >= 2477: 10; >= 1237: 9; >= 617: 8; >= 307: 7; >= 149: 6; >= 73: 5; >= 37: 4; >= 17: 3; >= 7: 2; >= 3: 1; else 0. Block light for the orb = `clamp(blockLight + 7, 0, 15)`.
 
-Submit: push; with `i = icon`: `u0 = ((i mod 4) * 16) / 64`, `u1 = ((i mod 4) * 16 + 16) / 64`, `v0 = ((i / 4) * 16) / 64`, `v1 = ((i / 4) * 16 + 16) / 64` (integer division by 4; the sheet is 64 x 64 holding 4 x 4 icons of 16 px, the texture `textures/entity/experience/experience_orb.png`, which has 11 used icons). `t = ageInTicks / 2`; `r = int((sin(t) + 1) * 0.5 * 255)`; `g = 255`; `b = int((sin(t + 4.1887903) + 1) * 0.1 * 255)` (4.1887903 is a read constant); alpha is 128 for every vertex. Translate `(0, 0.1, 0)`; rotate by the camera orientation; scale 0.3; draw one quad with render type `entityTranslucent(experience_orb.png)`; pop. Quad vertices `(x, y, u, v)` in order: `(-0.5, -0.25, u0, v1)`, `(0.5, -0.25, u1, v1)`, `(0.5, 0.75, u1, v0)`, `(-0.5, 0.75, u0, v0)`, each with colour `(r, g, b, 128)`, light `lightCoords`, overlay `NO_OVERLAY`, normal (0, 1, 0), z = 0.
+Submit: push; with `i = icon`: `u0 = ((i mod 4) * 16) / 64`, `u1 = ((i mod 4) * 16 + 16) / 64`, `v0 = ((i / 4) * 16) / 64`, `v1 = ((i / 4) * 16 + 16) / 64` (integer division by 4; the sheet is 64 x 64 holding 4 x 4 icons of 16 px, the texture `textures/entity/experience/experience_orb.png`, whose used icon count is not read; `getIcon` returns 0 to 10, so at most 11 icons are used (inferred); the texture contents are data for the tool in 22). `t = ageInTicks / 2`; `r = int((sin(t) + 1) * 0.5 * 255)`; `g = 255`; `b = int((sin(t + 4.1887903) + 1) * 0.1 * 255)` (4.1887903 is a read constant); alpha is 128 for every vertex. Translate `(0, 0.1, 0)`; rotate by the camera orientation; scale 0.3; draw one quad with render type `entityTranslucent(experience_orb.png)`; pop. Quad vertices `(x, y, u, v)` in order: `(-0.5, -0.25, u0, v1)`, `(0.5, -0.25, u1, v1)`, `(0.5, 0.75, u1, v0)`, `(-0.5, 0.75, u0, v0)`, each with colour `(r, g, b, 128)`, light `lightCoords`, overlay `NO_OVERLAY`, normal (0, 1, 0), z = 0.
 
 Worked example: value 20 gives icon 3: `u0 = 0.75, u1 = 1.0, v0 = 0, v1 = 0.25`. At `ageInTicks = 0`: `t = 0`: `r = int(0.5 * 255) = 127`, `b = int((sin(4.1887903) + 1) * 0.1 * 255) = 3`. At `ageInTicks = 3.1415927` (`t = pi/2`): `r = 255`, `b = 12`.
 
@@ -450,7 +491,7 @@ Data, defaults, interpolation and the entity side: 44 part 9 §6 (fields, `calcu
 * **Shadow**: radius and strength are `renderState.shadowRadius().get(progress)` and `shadowStrength().get(progress)` (the interpolators of 44 part 9); 0 when there is no render state.
 * **Submit**: if there is no render state or no sub-state (the subclass has nothing to show), draw nothing. Else: base submit; push; rotate by the billboard orientation quaternion (below); apply the render state's transformation `transformation().get(progress)` as a matrix multiply (translation, left rotation, scale, right rotation, 44 part 9 §6.1); call `submitInner(state, pose, collector, lightCoords, progress)`; pop.
 
-**Billboard orientation**: `q = rotationYXZ(yaw, pitch, 0)` (JOML: apply Z, then X, then Y), with `yaw` and `pitch` radians chosen by the render state's billboard constraint, where `camY' = cameraYRot - 180` and `camX' = -cameraXRot`:
+**Billboard orientation**: `q = rotationYXZ(yaw, pitch, 0)` (the composition order of JOML's `rotationYXZ` is library behaviour, not read from this artifact: (recalled, not verified) that it applies Z, then X, then Y to a vertex; the call itself was read in `DisplayRenderer`, Open question 21), with `yaw` and `pitch` radians chosen by the render state's billboard constraint, where `camY' = cameraYRot - 180` and `camX' = -cameraXRot`:
 
 | Constraint (id, 44 part 9) | yaw | pitch |
 |---|---|---|
@@ -482,19 +523,19 @@ State: `textRenderState` (the entity's text state: `flags` byte, `textOpacity` a
 3. `opacity = (byte) textOpacity(progress)` (interpolated integer, narrowed to a byte).
 4. `background`: if `(flags & 4)`: `int(optionsBackgroundOpacity(0.25) * 255) << 24` (black at the player's "background opacity" option, where the argument 0.25 is the default passed to the option reader; 13 for the option), else `backgroundColor(progress)` (ARGB interpolated by `srgbLerp`).
 5. Pose matrix: rotate by pi about y; scale by `-0.025` on all three axes (so one font pixel is 0.025 block, mirrored in all axes, undoing the model flip).
-6. `lh = fontHeight + 1 = 10` (font height 9 plus 1); `width = cachedInfo.width`; `height = lines * lh - 1`. Translate by `(1 - width / 2, -height, 0)` in that scaled space (centres the block horizontally and puts its bottom at the entity origin... the text grows upwards from `y = -height` to 0 in text pixels, y pointing down after the flip).
+6. `lh = fontHeight + 1 = 10` (font height 9 plus 1); `width = cachedInfo.width`; `height = lines * lh - 1`. Translate by `(1 - width / 2, -height, 0)` in that scaled space (the translate is issued after the rotate and scale, so it is in text pixels). Net effect on a text-space point `(x, y)`: the scale by -0.025 and the rotation by pi about Y (which negates x again) give world `x = +0.025 * x` and `y = -0.025 * y`; so text-space y from `-height` to 0 maps to world y from `+0.025 * height` down to 0, that is, the block lies above the entity origin with its bottom edge at the origin, and the first line is at the top.
 7. If `background != 0`: `submitTextBackground(pose, -1, -1, width, height, background, mode, lightCoords)`.
 8. For each line in order, with running `y` starting at 0 and increasing by `lh` per line: `x = 0` for left alignment; `width - lineWidth` for right; `width / 2 - lineWidth / 2` for centre (floats); `submitText(pose, x, y, line, shadow, mode, lightCoords, color = (opacity << 24) | 0xFFFFFF, 0, 0)`.
 
 The alignment is read from the bits by `TextDisplay.getAlign` (left tested first, then right, else centre, 44 part 9 §6.3). The text component is already resolved by the server at load (44 part 9).
 
-Worked example: two lines of pixel widths 40 and 60 with centre alignment, defaults: `width = 60`, `height = 2 * 10 - 1 = 19`; translate `(1 - 30, -19) = (-29, -19)`; the first line `x = 30 - 20 = 10`, `y = 0`; the second `x = 0`, `y = 10`. In world units after the 0.025 scale: the block spans x from -0.725 to 0.775 and y 0.475 below the origin (before the mirror). (Derived arithmetic.)
+Worked example: two lines of pixel widths 40 and 60 with centre alignment, defaults: `width = 60`, `height = 2 * 10 - 1 = 19`; translate `(1 - 30, -19) = (-29, -19)`; the first line `x = 30 - 20 = 10`, `y = 0`; the second `x = 0`, `y = 10`. In world units after the 0.025 scale: the block spans world x from -0.725 to +0.775 (the two mirrors cancel) and world y from 0 to +0.475, above the entity origin (before the billboard rotation and the display transformation). (Derived arithmetic; the pose order, the -0.025 scale and the translate were read.)
 
 ---
 
 ## 18. Worn equipment (cross-reference only)
 
-`ElytraModel` (texture 64 x 32, layer `ELYTRA`; the `ELYTRA_BABY` layer is the same definition passed through `ElytraModel.BABY_TRANSFORMER`): parts `left_wing` tex (22, 0) cuboid origin (-10, 0, 0) size 10 x 20 x 2, deformation 1.0, pose off (5, 0, 0), rot (0.2617994, 0, -0.2617994); `right_wing` tex (22, 0) mirrored, origin (0, 0, 0), size 10 x 20 x 2, deformation 1.0, pose off (-5, 0, 0), rot (0.2617994, 0, 0.2617994). `setupAnim(HumanoidRenderState)` (read): the left wing gets `y = 3.0` when the state's `isCrouching` is set and `y = 0` otherwise; it then always takes `xRot = elytraRotX`, `zRot = elytraRotZ`, `yRot = elytraRotY` from the state (there is no flying flag in this method; the state fields are filled by the caller). The right wing is always the mirror: `yRot = -left.yRot`, `y = left.y`, `xRot = left.xRot`, `zRot = -left.zRot`. `ELYTRA_BABY` uses `BABY_TRANSFORMER`, whose static initialiser starts with the scale 0.5; the remaining transform values and the elytra layer's shadow are not tabulated (Open question 9). `ShieldModel` (texture 64 x 64, layer `SHIELD`): `plate` tex (0, 0) origin (-6, -11, -2) size 12 x 22 x 1; `handle` tex (26, 0) origin (-1, -3, -1) size 2 x 6 x 6. Where and how they are drawn belongs to the equipment layer part (34 part 1 and the player document 12 §7.6).
+`ElytraModel` (texture 64 x 32, layer `ELYTRA`; the `ELYTRA_BABY` layer is the same definition passed through `ElytraModel.BABY_TRANSFORMER`): parts `left_wing` tex (22, 0) cuboid origin (-10, 0, 0) size 10 x 20 x 2, deformation 1.0, pose off (5, 0, 0), rot (0.2617994, 0, -0.2617994); `right_wing` tex (22, 0) mirrored, origin (0, 0, 0), size 10 x 20 x 2, deformation 1.0, pose off (-5, 0, 0), rot (0.2617994, 0, 0.2617994). `setupAnim(HumanoidRenderState)` (read): the left wing gets `y = 3.0` when the state's `isCrouching` is set and `y = 0` otherwise; it then always takes `xRot = elytraRotX`, `zRot = elytraRotZ`, `yRot = elytraRotY` from the state (there is no flying flag in this method; the state fields are filled by the caller). The right wing is always the mirror: `yRot = -left.yRot`, `y = left.y`, `xRot = left.xRot`, `zRot = -left.zRot`. `ELYTRA_BABY` uses `BABY_TRANSFORMER`, whose whole static initialiser was read: it is exactly `MeshTransformer.scaling(0.5)` (no other transform). How a mesh scaling transformer rewrites cuboids and poses was not read ((recalled, not verified): it scales the whole mesh about the origin; 34 part 1 owns the mesh transformers); the elytra layer's shadow is not tabulated (Open question 9). `ShieldModel` (texture 64 x 64, layer `SHIELD`): `plate` tex (0, 0) origin (-6, -11, -2) size 12 x 22 x 1; `handle` tex (26, 0) origin (-1, -3, -1) size 2 x 6 x 6. Where and how they are drawn belongs to the equipment layer part (34 part 1 and the player document 12 §7.6).
 
 ---
 
@@ -511,7 +552,7 @@ Checkable facts:
 7. Fishing line: with offset `(dx, dy, dz) = (4, 0, 0)` the vertex at `t = 0.5` is `P(0.5) = (2, 0 * 0.75 * 0.5 + 0.25, 0) = (2, 0.25, 0)`; with `(4, -2, 0)`: `P(1) = (4, -2 * 2 * 0.5 + 0.25, 0) = (4, -1.75, 0)`.
 8. Item frame on UP: `xRot = -90`, `yRot = 180`; on DOWN: `xRot = +90`.
 9. Painting 2 x 1 (w = 2, h = 1): cell (0, 0) has `x0 = -1, x1 = 0`, `y0 = -0.5, y1 = 0.5`, `uA = getU(1)`, `uB = getU(0.5)`, `vA = getV(1)`, `vB = getV(0)`; cell (1, 0) has `x0 = 0, x1 = 1`, `uA = getU(0.5)`, `uB = getU(0)`. Both cells have the top and bottom edge strips (h = 1); only cell (0, 0) has the `x0` edge and only cell (1, 0) the `x1` edge.
-10. Lightning with seed 0 reproduces the worked example of §15.
+10. Lightning with seed 0 reproduces the worked example of §15. The generator vectors for that seed, computed here from the read LCG (setSeed scramble, `next(31)`, rejection loop): first five `nextInt(100)` are 60, 48, 29, 47, 15; first eight `nextInt(11)` are 0, 6, 8, 5, 6, 2, 2, 6.
 11. Display orientation: `fixed` with `entityYRot = 90`, `entityXRot = 0`: `yaw = -D * 90 = -1.5707964`, `pitch = 0`.
 
 
@@ -527,11 +568,17 @@ Checkable facts:
 6. **Lightning shader and flash.** The `lightning` pipeline's fragment output, the order-independent-transparency variant (`OIT_ADDITIVE`) and the level's sky flash (`skyFlashTime`) were not traced here; the additive blend factors were read (§2.3).
 7. (Closed.) The minecart culling-box condition was read: the display state is not air (§3.2). Number kept so later references stay valid.
 8. **Map rendering in item frames.** `MapRenderer.render` (map pixel colours, decorations) was not read.
-9. **Elytra baby transformer.** (Partly closed: the `setupAnim` rule was read, see §18.) The `BABY_TRANSFORMER` values beyond the leading 0.5 and the elytra layer's shadow were not tabulated.
+9. **Elytra baby transformer.** (Mostly closed.) `BABY_TRANSFORMER` is `MeshTransformer.scaling(0.5)` and nothing else (read, §18); the effect of that transformer on cuboids and poses and the elytra layer's shadow were not read.
 10. (Closed.) `Direction` 2D data values read: DOWN -1, UP -1, NORTH 2, SOUTH 0, WEST 1, EAST 3; `toYRot = (data2D & 3) * 90` read (§10, §11, §16). Number kept so later references stay valid.
 11. (Closed.) `Brightness.pack` calls `LightCoordsUtil.pack(block, sky)` and `unpack` uses `LightCoordsUtil.block` and `sky` (read), so the override is packed like the light coordinates of §2.5. Number kept so later references stay valid.
-12. **Fishing hook first-person geometry.** `Camera.getNearPlane(fov)` was read (§8); the body of `NearPlane.getPointOnPlane(x, y)` (how x and y scale the plane's left and up vectors) was not read.
+12. (Closed.) `getPointOnPlane(x, y)` = `forward + up * y - left * x` (read, §8). Number kept so later references stay valid.
 13. **Default render type per model.** `entityCutout` (non-culled) is the one-argument `EntityModel` default and `ArrowModel` uses `entityCutoutCull`, `TridentModel` `entitySolid` (from the constructor method handles); the exact pipeline flags of those render types are the framework's (12 §2.4 for the entity sampler).
 14. **Registry id of items for the cluster seed.** The seed uses `Item.getId` (raw registry id); the id table is in 25 and depends on the registry order of the data pack.
 15. **Hurt shake source fields.** `getHurtTime`, `getHurtDir`, `getDamage` of the vehicle entities (set by the damage path) are not specified here.
-16. **Recall.** Nothing in this document is marked "(recalled, not verified)": every constant was read from the bytecode of this artifact in this round; the items still marked "(inferred)" are question 5 and the trident spike orientation in §5, and the worked-example numbers derived by arithmetic are labelled as such.
+16. **Recall.** Marked "(recalled, not verified)": the JOML rotation composition order (§2.1, §17.1, question 21), the engine default eye height (§1.3, question 17), the effect of the scaling mesh transformer (§18). Everything else was read from the bytecode of this artifact in this round. The "(inferred)" items are: question 5 and its sentence in §2.5 ("blend towards white"); the trident spike orientation in §5.2; the icon count of at most 11 in §14; the "room side of the wall plane" remark in the §10 worked example; the 1e-4 sine error bound (§2); the frame and painting placeholder boxes (§1.3). The worked-example numbers derived by arithmetic are labelled as such.
+17. **Default eye height.** Types without an `eyeHeight` call (§1.3 table) use the engine default, which was not read in this round (the `EntityDimensions` default eye-height rule).
+18. **Minecart attachment default.** The constant lowered point for villagers and wandering traders and the one `passengerAttachments` point (y 0.1875) were read (§1.3); the `Entity` default that converts an attachment into a rider position, and the update path of `rotationOffset` and `playerRotationOffset`, were not.
+19. **Leashable by inheritance.** Class headers of the 74 entity classes of the listed packages and of `Entity` do not name `Leashable` (§1.3); a super-interface or a super-class outside the checked packages that carries it was not searched for.
+20. **Cross-document defect, 10 §2.6.** `10-world-generation-terrain.md` §2.7 table row "First five `nextInt(100)` of seed 0" lists 96, 18, 15, 31, 88; the LCG read in this round gives 60, 48, 29, 47, 15 (§19 item 10). That file is outside this document's edit scope and must be corrected by its owner; no source was found that gives the old values.
+21. **JOML semantics.** The calls `rotationYXZ` (§17.1) and `rotationZYX` (§2.1, `translateAndRotate`) were read in the bytecode; the order in which JOML applies the three axis rotations to a vertex is library behaviour of a jar outside this artifact's game classes, and is (recalled, not verified). Every rotation of this document that depends on it is flagged.
+22. **README entry.** `README.md` has no row for any part of document 34 (a search for `34-entity` found nothing); reviewers and fixers do not edit it, so the orchestrator must add the Documents row and scope sentence for part 9 and the other parts.

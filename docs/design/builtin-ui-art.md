@@ -1,9 +1,11 @@
 # Built-in UI art, fallback UI texts, world type selection and missing-data screens
 
 Status: design, round RS29 (closes GAP-34 of [README.md](README.md) Part 5 for the art, the font, the fallback texts of the new screens and the text-colour rules; the options screen texts are not supplied and stay open, Open question 13). Written from documents only: no artifact was
-opened and no repository code was read. Every pixel value in this document comes from a recipe that was run once to
-produce the check values of section 9; if a rule and a check value ever disagree, the document is wrong and is corrected
-first (as in standin-content section 1.5).
+opened and no repository code was read. Every pixel value in this document comes from a recipe, and every check value of
+section 9 was produced by running that recipe with a script written from this document's own rules (the groups of sections
+4.1 to 4.9, 4.11 and 4.12 when they were written; the 40 effect icons of section 4.10 in the fix pass of the same round, which
+also reproduced the three values given earlier). If a rule and a check value ever disagree, the document is wrong and is
+corrected first (as in standin-content section 1.5).
 
 Citations use the form "14 section 6" for docs/protocol documents ("12 section 5.6a"), "standin section 1.4.1" for
 [standin-content.md](standin-content.md), "faithful section 6.4" for
@@ -26,7 +28,9 @@ world types. So the built-in pack (08 section 10) has to draw all of that with o
 
 README Part 4, C11 also names "options" and "a fallback font and language set". The art for the options screen widgets
 (sliders, checkboxes, buttons, section 4.5) and the font are supplied here. The **texts of the options screen** (13
-section 7) are not: they are out of scope of this document and GAP-34 stays open for them (Open question 13). Until a
+section 7) are not: they are out of scope of this document and GAP-34 stays open for them (Open question 13). **GAP-34 and README C11 also stay open for the standard language keys** that the
+cobolcraft world type needs and that no generated pack supplies there: the bench title, the experience level number, chat,
+command feedback and death messages (Open question 23). Until a
 later round supplies those keys in the built-in `lang/en_us.json`, the lookup rule of 08 section 10.8 shows an unknown key as
 the key itself, so the options screen of the cobolcraft world type would show raw key names.
 
@@ -219,18 +223,18 @@ with `stretch_inner` left at its default (false: the inner parts tile, 14 sectio
 uniform interior, so tiling and stretching look the same. A border value is at least the outline plus the bevel (1 + b),
 so the corner parts contain every pixel that is not uniform along an edge.
 
-**Decision UI-21 (borders are chosen, and differ from 12 for the buttons).** The border values of the table of section 5.3
+**Decision UI-21 (borders are chosen; the buttons follow 12 except the disabled one).** The border values of the table of section 5.3
 are choices of this document, not read values, with one exception: tooltip border 9 (12 section 5.8, read). 12 section 5.9 reports
 border 3 for `widget/button` and `widget/button_highlighted` and border 1 for `widget/button_disabled`; this document uses
-border 2 for all three, and 1 for the text field (no value is documented for the text field, the sliders, the handles or
-the scrollers). Reason: with the built-in art (outline 1 plus bevel 1), a border below 2 would copy the highlight edge but not
+border 3 for the first two (the read value) and 2 for the disabled button, and 1 for the text field (no value is documented for the text field, the sliders, the handles or
+the scrollers). Reason for the disabled button only: with the built-in art (outline 1 plus bevel 1), a border of 1 would copy the highlight edge but not
 the shadow edge at a width under 200 (the Create button is 120 x 20, a default button 150 x 20, 12 section 5.9), because the
-untiled right and bottom parts would then start inside the bevel; border 2 is the smallest that keeps both edges, and border
-3 would draw the same image for this art. The consequence for a pack that replaces only `widget/button.png`: a file's
+untiled right and bottom parts would then start inside the bevel; border 2 is the smallest that keeps both edges. The normal and highlighted buttons keep the read 3, which draws
+the same image for this art. The consequence for a pack that replaces only `widget/button.png`: a file's
 `.mcmeta` companion comes from the **same pack as the file** (08 section 3.2 and 7.4; 22 E6 says the same for Faithful), so a
 pack that ships the PNG alone does **not** inherit the built-in `.mcmeta`: the sprite then has no nine-slice and is stretched
 over the whole button. A nine-slice replacement must ship its own `.mcmeta` (Faithful does) and then uses its own border, for
-example the 3 of 12 section 5.9. The border 2 of this document applies only to the built-in files. Open question 19 lists the
+example the 3 of 12 section 5.9. The borders of this document apply only to the built-in files. Open question 19 lists the
 difference.
 
 ## 4. Recipes
@@ -465,6 +469,18 @@ h...h...h
 | `container/slot_highlight_front` | 24 x 24 | `R(4, 4, 19, 19)` in `#FFFFFF` at alpha 40 % (102). |
 | `container/slot/helmet`, `chestplate`, `leggings`, `boots`, `shield` | 16 x 16 | `Art(rows, key)` with every `S` = `#6F674D`; rows below. |
 
+**Decision UI-27 (where the empty-slot icons are drawn, and `container/slot`).** All values here are chosen: 12 sections 5.6 and
+5.6a do not mention the icons. (a) An icon is drawn only while its slot holds no item, at the slot's item cell, i.e. its
+top-left pixel at the slot position of 12 section 5.6a (the 16 x 16 icon covers the 16 x 16 cell; the 24 x 24 highlights at
+slot - 4 are drawn around it, so the icon is under the highlight). (b) It is drawn over the slot well that the sheet carries (section 4.11) and under
+any item, at full opacity, with no tint. (c) The mapping is: menu slots 5, 6, 7, 8 of the inventory menu (12 section 5.6a:
+head, chest, legs, feet, at (8, 8), (8, 26), (8, 44), (8, 62)) draw `helmet`, `chestplate`, `leggings`, `boots` in that order;
+menu slot 45, the off-hand at (77, 62), draws `shield`. No other slot, and no slot of the bench menu, has an icon. (d) The
+sheets of section 4.11 already carry the slot wells, so no built-in screen draws `container/slot` (18 x 18); it is supplied
+because 14 section 6.1 lists it and a pack that replaces the sheets may rely on it (a screen without a sheet would draw it at
+(slot.x - 1, slot.y - 1); inferred, not used by any built-in screen). Reason: with the 16 x 16 cell origin, the icon and an item
+occupy exactly the same pixels. Open question 5 covers the unread vanilla placement.
+
 **Decision UI-8 (slot highlight size).** The highlight sprites are 24 x 24 and are drawn at (slot.x - 4, slot.y - 4)
 (12 section 5.6), so the 16 x 16 item cell sits in the middle with 4 pixels around. The back sprite is a soft 2-pixel
 glow ring around the cell, the front sprite is a translucent white square over the cell. This replaces the earlier
@@ -511,8 +527,8 @@ helmet                chestplate            leggings              boots         
 
 | Sprite id | Size | Scaling | Recipe |
 |---|---|---|---|
-| `widget/button` | 200 x 20 | nine_slice border 2 | `Bevel(200, 20, BTN, 1, 1)` |
-| `widget/button_highlighted` | 200 x 20 | nine_slice border 2 | `Bevel(200, 20, BTNH, 1, 1)` |
+| `widget/button` | 200 x 20 | nine_slice border 3 | `Bevel(200, 20, BTN, 1, 1)` |
+| `widget/button_highlighted` | 200 x 20 | nine_slice border 3 | `Bevel(200, 20, BTNH, 1, 1)` |
 | `widget/button_disabled` | 200 x 20 | nine_slice border 2 | `Bevel(200, 20, BTND, 1, 1)` |
 | `widget/text_field` | 200 x 20 | nine_slice border 1 | `Bevel(200, 20, O = #6B6B75, HI = #14141A, LO = #14141A, F = #14141A, 0, 0)`: a 1-px outline and a flat dark fill |
 | `widget/text_field_highlighted` | 200 x 20 | nine_slice border 1 | the same with `O` = `#FFFFFF` |
@@ -533,8 +549,8 @@ disabled label colour (not traced: 12 section 5.9's own Open question 5, and Ope
 
 | Sprite id | Size | Scaling | Non-transparent pixels | SHA-256 of RGBA |
 |---|---|---|---|---|
-| `widget/button` | 200 x 20 | nine_slice 200x20, border 2 | 3996 | `f8dc9cafe0138e6a494f074d5ef924e0867541b8849232063dc1f051a84ecc50` |
-| `widget/button_highlighted` | 200 x 20 | nine_slice 200x20, border 2 | 3996 | `f81a5a3524017f2939f9abdea23e02caebff15570a9d1e5294a56307acbffb0f` |
+| `widget/button` | 200 x 20 | nine_slice 200x20, border 3 | 3996 | `f8dc9cafe0138e6a494f074d5ef924e0867541b8849232063dc1f051a84ecc50` |
+| `widget/button_highlighted` | 200 x 20 | nine_slice 200x20, border 3 | 3996 | `f81a5a3524017f2939f9abdea23e02caebff15570a9d1e5294a56307acbffb0f` |
 | `widget/button_disabled` | 200 x 20 | nine_slice 200x20, border 2 | 3996 | `4e6dec8a1dc4abacffa04eddcdedc2265ec344f3e0adccb5d71f1f36169d0fe7` |
 | `widget/text_field` | 200 x 20 | nine_slice 200x20, border 1 | 4000 | `8223446042379b35a4b6a4cc4847f73931a5169d702f1a8f9b91af21c8f0bf07` |
 | `widget/text_field_highlighted` | 200 x 20 | nine_slice 200x20, border 1 | 4000 | `4dad001685564f09e1f73d494289177b741032bf2b4e1ab016c0c5b477ce697d` |
@@ -604,14 +620,19 @@ button 20 x 18 (documented).
 | `recipe_book/crafting_overlay_disabled_highlighted` | 25 x 25 | stretch | `Bevel(25, 25, BTND, 1, 1)` with `O` = `#FFFFFF` |
 
 **Decision UI-23 (who draws the recipe-book panel's fields and labels).** The `recipe_book` sheet is only the flat PAR bevel
-and carries no field art. In both world types the client draws, over the panel at the rectangles of 13 section 3.9:
+and carries no field art. **In the cobolcraft world type** the client draws, over the panel at the rectangles of 13 section 3.9
+(except the two labels, whose rectangles are chosen here):
+
+(In the standard world type the vanilla `recipe_book.png` of the generated pack may already hold the search-field art, or the
+vanilla search box may draw its own sprite; no document says which, so this decision does not apply there and the client
+draws the fields as 13 section 3.9 documents. Open question 4.)
 
 | Part | Rectangle on the panel | Background | Text |
 |---|---|---|---|
 | Search box | (25, 13), 81 x 14 | `widget/text_field` (nine-slice, border 1, `#14141A` face, `#6B6B75` outline; `_highlighted` while focused) stretched to 81 x 14 | typed text `#FFFFFF` with shadow; hint `cobolcraft.screen.common.search_hint` in `#A0A0A0`; both on the dark field |
 | Filter button | (110, 12), 26 x 16 | the sprite `recipe_book/filter_*` itself (section 4.7 table), which is the whole button | none (tooltip only) |
-| Page label | right of the arrows, as 13 section 3.9 places it | none (the PAR face) | `cobolcraft.screen.recipe_book.page` in `#404040`, no shadow |
-| Toast text | inside `toast/recipe` (PAR face) | the sprite | `cobolcraft.screen.recipe_book.toast` in `#404040`, no shadow; its position is not given by any document (Open question 4) |
+| Page label (position **chosen**; 13 section 3.9 gives the arrows at (38, 137) and (93, 137), 12 x 17 each, and that a "page/total" label exists, but no label position) | the rectangle between the arrows: x = 50 to 92 (43 wide), y = 141 (the arrows' vertical middle for 9-high text: 137 + (17 - 9) div 2); the text is centred in it: x = 50 + (43 - textWidth) div 2 | none (the PAR face) | `cobolcraft.screen.recipe_book.page` in `#404040`, no shadow |
+| Toast text (text and position **chosen**; 13 gives neither) | left-aligned at (toastX + 8, toastY + 11) (9-high text centred in the 32-high sprite: 11 = (32 - 9) div 2 rounded down) | the sprite | `cobolcraft.screen.recipe_book.toast` ("New Recipe") in `#404040`, no shadow |
 
 13 section 3.9 gives the search text as white; that holds because the text sits on the dark field. A page label that 13 would
 draw in white would be unreadable on `#D8D0B4` (contrast 1.54), so the built-in art overrides it with the parchment rule of section 6.
@@ -746,9 +767,8 @@ registry is known. An effect whose key path is not in the list (a name that a la
 server's own registry) has no icon in the built-in pack: its sprite request draws the missing-texture stripes, and no icon is
 made on demand. When the generated vanilla pack is present (the standard world type), its files of the same paths replace
 the virtual ones by the path rule (08 section 3.2). Whoever edits 46 section 4.1 must also edit the list here (08 section 10
-must state the virtual-file rule: until then 08 section 10.2 and this section disagree; Open question 7). Only three icons have check
-values (the worked examples below) and there is no group manifest over the 40, unlike the other groups of section 9.2: the
-manifest was not computed in this round (Open question 21). The 18 x 18 size and the placement of the icon inside the
+must state the virtual-file rule: until then 08 section 10.2 and this section disagree; Open question 7). All 40 icons have check
+values (the table at the end of this section) and the group has a manifest (section 9.2, key `mob_effect/<name>`). The 18 x 18 size and the placement of the icon inside the
 24 x 24 `effect_background` are choices; 12 section 5 has no status-effect HUD layout at all, so the HUD placement itself is
 unread (Open question 22).
 
@@ -772,6 +792,51 @@ Worked examples (the base colours are results of step 1; the counts are in the s
 | `night_vision` | `#977C56` | `#D7BC96` | `#4B3E2B` | N | 4 | 64 | 29 | 31 | 179 | 17 | `101255423fa4e69f890c65872a02dfe5a0e6cbd1e262582eda906b1c72a8b40e` |
 
 (The counts are those of the final image: the glyph overwrites bevel and face pixels, so the white count is the glyph's ink, 15 and 17 pixels.)
+
+**Check values of all 40 effect icons** (18 x 18, stretch (none); all 324 pixels except the 4 corner pixels are non-transparent, 320 in all; the white count depends on the letter). The first three repeat the worked examples.
+
+| Key | Base | Letter | SHA-256 of RGBA |
+|---|---|---|---|
+| `mob_effect/speed` | `#7EC35C` | S | `552ad8826f4fae713e5c29559a162ff98f7602013df4074a0c6c18b22b3f82bb` |
+| `mob_effect/slowness` | `#D6B05E` | S | `2005e3a85da9f3b8cc2533c80c4a64d78f8a495369e990bb9d2882fbfb5895f0` |
+| `mob_effect/haste` | `#8091DF` | H | `d6bb5cc9e4e25e49ab8944cd9b57f8c3204804c813857f66c732b1104cdebeb7` |
+| `mob_effect/mining_fatigue` | `#A882D0` | M | `6d4d5130ddd4a7b88e32b6a88d9775113b1b48fb938072391f536df1029149e0` |
+| `mob_effect/strength` | `#51CB79` | S | `e21758b698ab2cd8b4ef61f2ec8ef08feca00f8645222f3ad1c97e397b73d68e` |
+| `mob_effect/instant_health` | `#A27C61` | I | `0c454d28618d6cbb8924d2cb074c70bfda895fba0fb473f2842e35ec935df31d` |
+| `mob_effect/instant_damage` | `#964452` | I | `1fbfcd8022789807f0723f737caa8c3e3657a87b20e9369c5502e0c7cdcd867d` |
+| `mob_effect/jump_boost` | `#AE4795` | J | `2c93b357ac06bcb17829ecfd0a378eb7480285c07434b26a18d7200d7d17462e` |
+| `mob_effect/nausea` | `#7384D2` | N | `82712dc9f708f8f886da4ac0249af28d6a207b28a045e81e8670fa8f3a0ebf5a` |
+| `mob_effect/regeneration` | `#5F79BE` | R | `5ab05e2a1c535c4268f425c0db67e32b13c0cae13b05085ff46ff5517fb46d0f` |
+| `mob_effect/resistance` | `#815B40` | R | `c022830081ebfcd30bac4c366448e331d6996f55c08e2299134f07fcd02ccf7f` |
+| `mob_effect/fire_resistance` | `#D7BC96` | F | `7c3495652c2bede28dc94211750d7eda8d2396de16fd072f47365b979cafc2b5` |
+| `mob_effect/water_breathing` | `#C4A942` | W | `2c0ba29052916e71325c8f5bdb63a51a00e4280b74fe28e6e57d419b53dc2d77` |
+| `mob_effect/invisibility` | `#D37852` | I | `b9a0ac186e70cf13ed7cdd705152ff2644b328f903bd05d636437f2c0e22e4d7` |
+| `mob_effect/blindness` | `#77BC96` | B | `05a0f1121ced2cbdb011b183ad89656829ca43081666e3691607972c40e18f96` |
+| `mob_effect/night_vision` | `#977C56` | N | `101255423fa4e69f890c65872a02dfe5a0e6cbd1e262582eda906b1c72a8b40e` |
+| `mob_effect/hunger` | `#437C61` | H | `44f0acc890d7c579ee1fe06e3dca68de8a93abca8428e91fc3a5ab418135b0c3` |
+| `mob_effect/weakness` | `#C0DA48` | W | `a81bf6805ffd962a63490081e962b55144a522784e27ebda5ca76b0ce56f01c2` |
+| `mob_effect/poison` | `#90AA4F` | P | `84cc1926ae4ce98a2bb9fcc99a5fb28c9f1eb44679952b047f9276ea733ad139` |
+| `mob_effect/wither` | `#91ABB9` | W | `383c8266747045d6a6d7df88fca9829c4ece9d06dc861b0892151eaeb7b1b873` |
+| `mob_effect/health_boost` | `#CBD987` | H | `e9aaef0593fdb689ea4c64eff66048a225875f0a9ff3badb4e1b0cba6101be41` |
+| `mob_effect/absorption` | `#63DD82` | A | `87c22ab4009fb0c08eba2edcfe2410b9efd0b9ee5293ebbc2d4e79b2d1cb5cc9` |
+| `mob_effect/saturation` | `#DF599E` | S | `67fc29b60ead1d562ebae911d736b6575a3a4ce715413fbc7b187bc68e5afd68` |
+| `mob_effect/glowing` | `#40519F` | G | `3c3844c165dfcc61165dfc7aac771cf0593cec877451070339155349b9c1a618` |
+| `mob_effect/levitation` | `#934152` | L | `62a7a471c9bb3eb138824b8a59b51e3071f419444d652a74432c2a9a1db63acc` |
+| `mob_effect/luck` | `#5C6A7B` | L | `262612046e7fc1710e337a4df858a35735776da7bf055370ce364c7949eba485` |
+| `mob_effect/unluck` | `#B383D1` | U | `78dc0ebc3cda951268b25a306031f5f2ecccedf23536e3190b5c9d1b540a6853` |
+| `mob_effect/slow_falling` | `#B15FD9` | S | `98aa747a84857e06d42e2f76e06eee5c39ed39dc4c4217c4b7b888641c58bb31` |
+| `mob_effect/conduit_power` | `#CF68B6` | C | `e25947c17434204834697cb64d294859288fdd2812151ddaf66d7f7ec6002f37` |
+| `mob_effect/dolphins_grace` | `#87D546` | D | `c2173bc9e76d1adae84533422923f54bdad7a2e0ba6bfb46de1735cd823a0b22` |
+| `mob_effect/bad_omen` | `#4BD069` | B | `1062b82eabf6c85307d7a8cdfd9405fbd159a81195646eaace9c1e1fb032b739` |
+| `mob_effect/hero_of_the_village` | `#5061AF` | H | `99c76968a8e6472609250f765dff6f07fc27600c1a972f80792a7905ddfd9fdc` |
+| `mob_effect/darkness` | `#62DC8A` | D | `63ded7be1fab583c3807ae1666f3a8ada3f27f85c3cb4474fc100a67cb5a5ca8` |
+| `mob_effect/trial_omen` | `#7DCBDC` | T | `b19b202fbfb368a99a936e60b3f0862d85f05aa966cf320e15816548f9731cbc` |
+| `mob_effect/raid_omen` | `#5F44BE` | R | `84e7ca9fd5d6ba84a46402345943878084283c9398bcbf09b987b39cfc974f72` |
+| `mob_effect/wind_charged` | `#5D6B7C` | W | `8c7acdc94c302c029ef5c9f4a07b4fcb41fecb6a9e55e1ae408c3a9366578f53` |
+| `mob_effect/weaving` | `#DE4F5C` | W | `df891f1cda8137f8401e26adf0c9c552b6c8a1d0955cbc14ec4049780601dc65` |
+| `mob_effect/oozing` | `#785DD7` | O | `aab4d42c82f18b7e27ac1a862d54950120cf4c97ae19ccedb1f00f7f789a38ae` |
+| `mob_effect/infested` | `#D28091` | I | `4f6cbbda9d3124ecc2efb639ca966b2ece448603403621107e0aa9b2b1cf1051` |
+| `mob_effect/breath_of_the_nautilus` | `#DDB765` | B | `9eb3ff72f17e1ec34e80d89808afdc4218da5d099465436b82880c65a74b6856` |
 
 ### 4.11 Sheets: inventory, crafting table and recipe book
 
@@ -923,7 +988,8 @@ Fifteen sprites carry a `.mcmeta` file of the form of section 3. W and H are the
 
 | Sprite id | W | H | B |
 |---|---|---|---|
-| `widget/button`, `widget/button_highlighted`, `widget/button_disabled` | 200 | 20 | 2 |
+| `widget/button`, `widget/button_highlighted` | 200 | 20 | 3 |
+| `widget/button_disabled` | 200 | 20 | 2 |
 | `widget/text_field`, `widget/text_field_highlighted` | 200 | 20 | 1 |
 | `widget/slider`, `widget/slider_highlighted` | 200 | 20 | 2 |
 | `widget/slider_handle`, `widget/slider_handle_highlighted` | 8 | 20 | 2 |
@@ -933,9 +999,10 @@ Fifteen sprites carry a `.mcmeta` file of the form of section 3. W and H are the
 | `popup/background`, `recipe_book/overlay_recipe` | 32 | 32 | 4 |
 
 Rule for the writer of each: a user pack that replaces one of these PNG files must ship its own `.mcmeta` too (Decision UI-21), otherwise
-the sprite is stretched. The border B must leave a non-empty centre in both directions (08 section 7.4): the smallest case is the
-8-pixel-wide handle with B = 2, a centre of 4 pixels. The border values are chosen (Decision UI-21), and the three buttons
-differ from 12 section 5.9 (border 3, and 1 for disabled).
+the sprite is stretched. The border B must leave a non-empty centre in both directions (08 section 7.4): the smallest case is
+`widget/scroller`, 6 wide with B = 2, whose centre is 2 pixels wide (the 8-pixel handle with B = 2 has a centre of 4, and
+`widget/scroller_background`, 6 wide with B = 1, also has 4); 2 is non-empty, so the rule holds for every row of the table. The border values other than the tooltip's are chosen (Decision UI-21); the two enabled buttons use the read 3 of 12 section 5.9,
+and the disabled button uses 2 where 12 reads 1.
 
 ### 5.4 Sections of other documents that this document supersedes
 
@@ -951,6 +1018,8 @@ sprite ids. This document wins for these, and the owner of each must edit them:
 | 08 section 10.9 | the count leaves out the GUI art | section 5.1 (98 + 134 + 15 = 247) |
 | 08 section 10.2 (closing sentence) | "built-in GUI sprites ... not yet specified, so the table of 10.3 lists none" | this document specifies them (sections 4 and 5.1); 08 already defines `atlases/gui.json` (10.2), which is unchanged |
 | 08 section 10 | no virtual effect icons | the virtual `mob_effect` files (section 4.10; Open question 7) |
+| 08 section 10.8.6 | `cobolcraft.hud.health` ("Health %s/%s"), `cobolcraft.hud.food` and `cobolcraft.hud.crosshair` ("+"): a text health and food line and a text crosshair | retired: the HUD draws hearts, food and the crosshair as sprites (sections 4.1 to 4.3); the three keys draw nothing (Open question 25) |
+| 08 section 10.8.6 | the `cobolcraft.screen.crafting.*` keys of feature 001's crafting screen | retired with that screen (README R6: crafting is the inventory 2x2 grid and the bench 3x3 grid, whose sheets are in section 4.11) |
 
 ## 6. Text colours and fallback UI texts
 
@@ -1009,7 +1078,16 @@ ASCII (Decision UI-11). `%s` is replaced by the argument in order.
 | `cobolcraft.ui.missing_data.path` | path | Looked in: %s |
 | `cobolcraft.ui.missing_data.what_works` | none | The CobolCraft world type needs no extra data and still works. |
 | `cobolcraft.ui.missing_data.fix` | none | Command: cobolcraft-extract --jar <file>, then restart the game. |
+| `cobolcraft.ui.missing_data.fix_force` | none | Command: cobolcraft-extract --jar <file> --force, then restart the game. |
 | `cobolcraft.ui.missing_data.banner` | none | Game data missing. Click for details. |
+| `cobolcraft.screen.create_world.seed` | none | Seed (optional) |
+| `cobolcraft.screen.create_world.seed_hint` | none | Leave empty for a random seed |
+| `cobolcraft.world_type.auto_fallback` (world-types.md 3.5) | result word | world-type=auto: Minecraft content is not usable (%s), created a cobolcraft world |
+| `cobolcraft.world_type.unknown.short` | world type value | Unknown world type '%s' |
+| `cobolcraft.world_type.unknown` (world-types.md 3.5; console) | world type value | This world was made by a newer version of the game (world type '%s'). |
+| `cobolcraft.world_type.missing` (world-types.md 3.5) | none | This world has no world type and cannot be opened. |
+| `cobolcraft.world_type.no_level` (world-types.md 3.5) | none | This folder holds world data but no level.dat. |
+| `cobolcraft.world_type.no_seed` (world-types.md 3.5) | none | This world has no seed and cannot be opened. |
 | `cobolcraft.ui.missing_data.use_cobolcraft` | none | Use CobolCraft World Type |
 | `cobolcraft.screen.common.search_hint` | none | Search... |
 | `cobolcraft.screen.recipe_book.filter_on` | none | Showing Craftable |
@@ -1032,8 +1110,17 @@ new here; `fix` carries the tool's command line `cobolcraft-extract --jar <file>
 not drawn by any screen of this document: it is 22's text for a disabled standard choice and for opening a standard world by
 other means (section 8.1 says where this document differs); the screens here show the reason text or the `short` text instead.
 
-The recipe-book, search and pack-folder texts are the English words of 13 section 3.9 and 13 section 8; they are listed
-here only because the sprites of sections 4.5 to 4.7 are drawn for them. The existing `cobolcraft.screen.*` keys of 08 section
+The `world_type.*` keys other than `standard`, `cobolcraft` and their descriptions are the keys world-types.md 3.5 asks this
+document to place in the built-in pack; the texts are those of world-types.md 3.5 and 2.1 (`%s` replaces `<result>` or
+`<value>`). The `config_ignored` and `config_invalid` texts of that table are console lines of the server only and are not
+language keys of the client. world-types.md says `standard.unavailable` is used by the Create screen and the world list;
+this document does not draw it there (the screens use the `short` keys), and the claim should be dropped from world-types.md
+(Open question 25).
+
+The search hint, filter, page, tab and pack-folder texts are the English words of 13 section 3.9 and 13 section 8 as those
+documents word them (checked against 13 section 3.9 for the search hint, the filter tooltips and "Right Click for More", and against 13 section 8 for "Open Pack Folder", "(Place pack files here)" and "Drag and drop files into this window to add packs"; the five tab names are in 13 section 3.9; the page label format `%s/%s` and the toast text are chosen); they are listed here only because the sprites of sections 4.5 to 4.7 are
+drawn for them. The exception is the **toast text** `cobolcraft.screen.recipe_book.toast` ("New Recipe"), which 13 does not
+give: it is chosen here (Decision UI-23), as is the position of the page label (13 gives the arrows and the existence of the label only). The existing `cobolcraft.screen.*` keys of 08 section
 10.8.6 are unchanged and are reused (for example `cobolcraft.screen.common.back`, `cobolcraft.screen.create_world.create`).
 The options screen texts are not supplied (Open question 13); GAP-34 is not closed for them (section 0).
 
@@ -1051,8 +1138,8 @@ names (Open question 8). The `standard` type is **available** when the result of
 
 **Decision UI-15 (the type control).** The Create New World screen gets one more row: a **cycle button** (a normal button
 of 200 x 20, sprites `widget/button*`) that shows `cobolcraft.screen.create_world.type` with the name of the selected type.
-Activating it (click, Enter or Space when focused) selects the next type in the order `standard`, `cobolcraft`, and wraps. Both
-types are always in the cycle, even when `standard` is unavailable. (README Part 4, C10 says that without a valid jar the game
+Activating it (click, Enter or Space when focused) selects the next type in the order `standard`, `cobolcraft`, and wraps (the
+auto and explicit states are Decision UI-25 below). Both types are always in the cycle, even when `standard` is unavailable. (README Part 4, C10 says that without a valid jar the game
 "offers only the cobolcraft world type", and README decision 2 says a missing or wrong jar "disables the standard type": the
 "offers only" and "disables" wordings differ from this rule; the outcome, that no standard world is created, is the same,
 because Create opens the missing-data screen. Open question 20.) Reason: if the unavailable type were hidden, the player
@@ -1066,8 +1153,28 @@ the choice selectable and explains on Create (Decision UI-16). The two cannot bo
 (selectable) because a disabled choice would explain nothing, and the operator or the owner of 22 settles it (Open question
 20). If 22's rule wins, the cycle skips `standard` and the description block shows `standard.unavailable` under the button.
 
-Initial selection: `standard` if it is available, else `cobolcraft` (README decision 2: "default `standard` when the generated
-packs are present, otherwise `cobolcraft`").
+**Decision UI-25 (auto and explicit state of the type button).** The button has two states, as world-types.md 3.2 defines
+them, and the state lives only in the screen. In the **auto** state (the screen's initial state) the button shows the type the
+default rule yields from the check result when the screen opened: `standard` if it is available, else `cobolcraft` (README
+decision 2: "default `standard` when the generated packs are present, otherwise `cobolcraft`"). The first activation makes the
+choice **explicit**: it selects the type after the one shown (wrapping), and the state stays explicit afterwards, even when the
+player cycles back to the type it started on. The description block always follows the type shown.
+
+Pressing Create re-runs the check (world-types.md 3.2) and the result at that moment decides:
+
+| State | Result at Create | Outcome |
+|---|---|---|
+| auto | `ok` | a `standard` world (even if the screen showed `cobolcraft`) |
+| auto | not `ok` | a `cobolcraft` world, with the visible fallback notice (below); no missing-data screen (T2a) |
+| explicit `standard` | not `ok` | no world; the missing-data screen with the extra button (T2, Decision UI-16) |
+| explicit `standard` | `ok` | a `standard` world |
+| explicit `cobolcraft` | any | a `cobolcraft` world |
+
+(This is world-types.md 3.2 and its examples E6 and E6a: opened with `ok`, button untouched, check `damaged` at Create gives a
+cobolcraft world and the notice.) **Fallback notice:** the key `cobolcraft.world_type.auto_fallback`, with the result word
+(`absent`, `incomplete`, `stale` or `damaged`) as its argument, in `#FFC857`. It is drawn as the second line of the new world's
+row in the world list (section 7.3) and as a one-line text at the top of the world list screen (y = 8, centred, wrapped by the
+greedy rule of section 8.3 to `wrapW`) when the player returns to it after Create; it is kept in memory only.
 
 Below the cycle button is a **description block**: left-aligned text, wrapped to 200 pixels at the greedy rule of section 8.3 with a
 line pitch of 11, at most 3 lines (further lines are not drawn). When the selected type is available it is the type's
@@ -1075,12 +1182,23 @@ description key (`#A0A0A0`). When it is unavailable it is the `short` key of the
 (`cobolcraft.ui.missing_data.short.<reason>`, reason one of `absent`, `incomplete`, `stale`, `damaged`, `#FFC857`).
 
 **Decision UI-16 (Create and Play stay enabled).** The Create button is never disabled by the type. If the player presses it
-while the selected type is unavailable, no world is made and the missing-data screen of section 8.3 opens, with the extra
+with an explicit `standard` choice while the check is not `ok` (an auto choice falls back instead, Decision UI-25), no world is made and the missing-data screen of section 8.3 opens, with the extra
 button `Use CobolCraft World Type`. Reason: a disabled button answers "why" with silence; a pressed button can open the full
 explanation, and it is the same screen for every trigger.
 
+**Decision UI-24 (Create screen layout and seed row).** Every position in the table below is a choice of this document, since no
+document gives them (Open question 17): the title at y = 20, the name label at y = 40, the name field at y = 50, the game mode
+button at y = 78, the type button at y = 102, the description block at y = 128 with its cap of 3 lines, 11-pixel pitch and
+200-pixel wrap width, the seed label at y = 164 and field at y = 174, and the Create and Cancel buttons (120 x 20 at guiH - 28,
+cx - 122 and cx + 2). The seed row is the optional seed text field of world-types.md WT-19; its label and its empty-field
+hint `cobolcraft.screen.create_world.seed_hint` ("Leave empty for a random seed", `#A0A0A0`, drawn in the empty field) are chosen
+(Open question 26). The seed field is shown for both types, because the seed is stored for both (world-types.md WT-5). The
+description block has its 31 pixels (y = 128 to 159) reserved even when it is shorter, so the seed row does not move. Reason:
+the rows must not overlap at the smallest automatic GUI (240 high: the field ends at y = 193, Create starts at 212), and an
+exact table is needed to test a layout. The 3-line cap cuts anything longer; only the two worked examples below were wrapped by hand.
+
 Layout, in GUI pixels (12 section 5.1), with cx = guiW div 2. The earlier rows exist already (08 section 10.8.6 keys); their
-positions are fixed here because no document gives them (Open question 17). Values for the smallest automatic GUI, 320 x 240:
+positions are fixed by Decision UI-24. Values for the smallest automatic GUI, 320 x 240:
 
 | Element | x | y | Width x height | At 320 x 240 |
 |---|---|---|---|---|
@@ -1090,6 +1208,8 @@ positions are fixed here because no document gives them (Open question 17). Valu
 | Game mode cycle button (existing) | cx - 100 | 78 | 200 x 20 | (60, 78) |
 | **World type cycle button** | cx - 100 | 102 | 200 x 20 | (60, 102) |
 | **Description block** | cx - 100 | 128 | 200 wide, up to 3 x 11 - 2 = 31 | (60, 128) to y = 159 |
+| **Seed label** `cobolcraft.screen.create_world.seed` ("Seed (optional)"), `#A0A0A0` | cx - 100 | 164 | text x 9 | (60, 164) |
+| **Seed field** (`widget/text_field`, optional; world-types.md WT-19) | cx - 100 | 174 | 200 x 20 | (60, 174) to y = 193 |
 | Create button | cx - 122 | guiH - 28 | 120 x 20 | (38, 212) |
 | Cancel button | cx + 2 | guiH - 28 | 120 x 20 | (162, 212) |
 
@@ -1108,6 +1228,26 @@ when the type is available, or the `short` key of the reason (section 8.1) in `#
 disabled for such a world: pressing it opens the missing-data screen (without the extra button, because a world's type
 cannot be changed). Reason: the same as Decision UI-16, and the row itself tells the player which worlds are affected before
 they press anything. A world of an unavailable type is never opened and is never altered.
+
+**Decision UI-26 (worlds that cannot be opened at all).** world-types.md 2.1 defines four more cases in which a world is not
+opened. The row's second line, in `#FFC857`, and the Play button, which is **disabled** (sprite `widget/button_disabled`,
+label `#A0A0A0`, no activation; unlike the unavailable-standard case above, because no screen can explain or fix these),
+are:
+
+| Case (world-types.md 2.1) | Second line | Key and text |
+|---|---|---|
+| `WorldType` is an unknown string `<value>` | `cobolcraft.world_type.unknown.short` | Unknown world type '%s' (the value, drawn with the missing glyph for a character outside codes 32 to 126) |
+| `WorldType` absent, with `dimensions/minecraft/` | `cobolcraft.world_type.missing` | This world has no world type and cannot be opened. |
+| a folder with `dimensions/` and no `level.dat` | `cobolcraft.world_type.no_level` | This folder holds world data but no level.dat. |
+| a standard world with no `Seed` | `cobolcraft.world_type.no_seed` | This world has no seed and cannot be opened. |
+
+The long keys `cobolcraft.world_type.unknown` and `.config_*` are server console texts (world-types.md 3.5) and are not drawn
+by this document's screens. Nothing in such a world is altered. The "newer version" text of `unknown` is not shown on the
+row; it is the console text. A second line wider than the row is cut at the row's edge (Open question 24). A world whose
+`WorldType` is valid and available has no warning line.
+
+**Fallback notice.** A world created through an auto fallback (Decision UI-25) shows the notice as its second line in place of
+the type line, until the player first opens that world or leaves the game; nothing is stored.
 
 ## 8. The missing-data message
 
@@ -1143,8 +1283,9 @@ four reasons.
 
 | # | Trigger | Surface |
 |---|---|---|
-| T1 | The title screen is shown while the state is not `ok` | the banner (section 8.4) |
-| T2 | Create is pressed with an unavailable type selected | the missing-data screen with the extra button |
+| T1 | The title screen is shown while the state is not `ok` | the banner with the reason (section 8.4) |
+| T2 | Create is pressed with an **explicit** `standard` choice (the button was pressed at least once, section 7.2) and the check at that moment is not `ok` | the missing-data screen with the extra button |
+| T2a | Create is pressed in the **auto** state of the type button and the check at that moment is not `ok` | no screen: a cobolcraft world is created and the fallback notice of Decision UI-25 is shown (world-types.md 3.2) |
 | T3 | Play is pressed on a world of an unavailable type | the missing-data screen with only Back |
 | T4 | The banner is clicked or activated | the missing-data screen with only Back |
 
@@ -1165,7 +1306,11 @@ Contents, in this order, each a paragraph:
 | 1 | the reason text | `cobolcraft.packs.<reason>` (section 8.1) | `#FFC857` |
 | 2 | where it looked | `cobolcraft.ui.missing_data.path` with the generated directory, capped (rule below) | `#A0A0A0` |
 | 3 | what still works | `cobolcraft.ui.missing_data.what_works` | `#FFFFFF` |
-| 4 | what to do | `cobolcraft.ui.missing_data.fix` (the command line of 22 section 9.2) | `#FFFFFF` |
+| 4 | what to do: the exact command line | `cobolcraft.ui.missing_data.fix` for `absent`, `incomplete` and `stale`; `cobolcraft.ui.missing_data.fix_force` for `damaged` (the command line of 22 section 9.2, with `--force` for `damaged` as the text of paragraph 1 says) | `#FFFFFF` |
+
+Paragraph 1 is 22's fixed text and names the action; paragraph 4 gives the command line to type, and for `damaged` it carries
+the same `--force` as paragraph 1, so the screen never gives two different instructions for one state. The `damaged` command
+line wraps to 2 lines like the others (inferred from the widths; not hand-checked).
 
 **Decision UI-19 (design of the screen).** A single centred panel with a title, four paragraphs and one or two 200 x 20
 buttons below it. Reason: it follows the shape of the existing notice screens (pack confirmation, delete confirmation, 08
@@ -1210,10 +1355,14 @@ first paragraph is 2 lines); a 2-line path adds 11 to each panel.
 
 ### 8.4 The title-screen banner
 
-When the state is not `ok`, the title screen draws one line (T1): a `popup/background` panel (nine-slice, border 4) of width
-textWidth + 16 and height 20 at x = (guiW - width) div 2, y = 8, and the text `cobolcraft.ui.missing_data.banner` in
-`#FFC857` at (x + 8, y + 5). At 320 x 240 the text is 198 wide, so the panel is 214 x 20 at (53, 8) and the text is at
-(61, 13). When the pointer is over the panel, or it has keyboard focus, `Ring(x, y, x + width - 1, y + 19, 1, #FFFFFF)` is
+When the state is not `ok`, the title screen draws a two-line banner (T1), so that the reason is on the title screen itself (22
+section 8.6 says the banner "says why"; it is the only surface for a standard server joined without packs and for an existing
+cobolcraft world with a not-`ok` check). A `popup/background` panel (nine-slice, border 4) of width textWidth + 16 and height 30
+at x = (guiW - width) div 2, y = 8, where textWidth is the larger of the widths of the two lines. Line 1 is the text
+`cobolcraft.ui.missing_data.banner` in `#FFC857` at (x + 8, y + 5); line 2 is `cobolcraft.ui.missing_data.short.<reason>`
+(section 8.1 reason) in `#FFC857` at (x + 8, y + 16). At 320 x 240 with reason `absent`, line 1 is 198 wide and line 2
+("Needs Minecraft content from your jar.") 209 wide, so the panel is 225 x 30 at (47, 8), line 1 is at (55, 13) and line 2 at
+(55, 24). When the pointer is over the panel, or it has keyboard focus, `Ring(x, y, x + width - 1, y + 29, 1, #FFFFFF)` is
 drawn over its edge. Clicking or activating it opens the screen of section 8.3 (T4).
 
 **Decision UI-20 (no dismissal).** The banner is shown every time the title screen is shown while the state is not `ok`; there is
@@ -1257,7 +1406,11 @@ line feed.
 | Menu tiles (4.8) | 8 (ids: `menu_background`, ...) | `54ce53f995bdb0efac069adf2573094da62cf4ea59892d5f94554598ff9f86c4` |
 | Pack icon (4.8) | 1 (`misc/unknown_pack`) | `64429336d33116504793186b0dbb5ec7dbadaeed2bf67011a53cb25f550014b3` |
 | Crack overlay (4.9) | 20 (ids: `block/destroy_stage_N`, `block/destroy_oit_stage_N`) | `f263d943bb93b125fb27470d4e82bc4ede98e6d031b30f484838ac92488d2427` |
+| Effect icons (4.10) | 40 (keys: `mob_effect/<name>`, names in id order in 4.10) | `24644e02a9e418b8516e40e3abcb12b5067192bb0820e318c889df5c8fa8aac2` |
 | Sheets (4.11) | 3 (ids: `container/inventory`, `container/crafting_table`, `recipe_book`) | `7b89b76c45319c214fa63a2ed24b3780cc2fdb3237867707ee0a976d46df9f8e` |
+
+The 40 generated effect icons (4.10) are one group of this table: the key of a member is `mob_effect/<name>` (for example
+`mob_effect/speed`), and the lines are sorted by key in byte order, not in id order (`mob_effect/absorption` is first, `mob_effect/weakness` before `mob_effect/weaving`, `mob_effect/wind_charged` before `mob_effect/wither`).
 
 ### 9.3 Font image and spot checks
 
@@ -1285,7 +1438,8 @@ Spot checks (pixel colours; `transparent` is RGBA 0, 0, 0, 0):
 1. Generate all 135 PNG files and the 15 `.mcmeta` files and count them: 102 sprites in `gui/sprites/`, 20 under `block/`, 8 menu
    images, the pack icon, 3 sheets and the font image; check that the pack lists the 4 font definition files of 08 section 10.10
    and 40 virtual `mob_effect/<name>.png` files (section 4.10).
-2. Hash every file as in section 9 and compare with sections 4.1 to 4.12, then the manifests of 9.2.
+2. Hash every file as in section 9 (the 40 virtual effect icons of section 4.10 included) and compare with sections 4.1 to 4.12,
+   then the manifests of 9.2.
 3. Check that no sprite of the table of section 1 marked "supplied" is requested by the client and found missing: start the
    client in the cobolcraft world type with no other pack, open the inventory, the bench, the recipe book, Create New World,
    the pack screen, and look for the missing-texture stripes (standin section 1.4.2). None may appear in any of them.
@@ -1319,9 +1473,13 @@ Spot checks (pixel colours; `transparent` is RGBA 0, 0, 0, 0):
 | UI-18 | The state is the single result of 22 section 8.2 (`absent`, `incomplete`, `stale`, `damaged`); no jar state; follows 22 against README C10 | 8.1 |
 | UI-19 | One centred panel for the missing-data screen, path capped at 2 lines | 8.3 |
 | UI-20 | The title banner has no dismissal and stores nothing | 8.4 |
-| UI-21 | Nine-slice borders are chosen; buttons use 2 against 3 and 1 of 12 section 5.9 | 3, 5.3 |
+| UI-21 | Nine-slice borders are chosen; buttons use the read 3, the disabled button 2 against the read 1 of 12 section 5.9 | 3, 5.3 |
 | UI-22 | Recipe-book tab icons are letters in the cobolcraft world type | 4.7 |
-| UI-23 | Recipe-book search field uses `widget/text_field`; dark text without shadow on parchment | 4.7, 6 |
+| UI-23 | Recipe-book search field uses `widget/text_field` (cobolcraft world type only); dark text without shadow on parchment; page label and toast text rectangles are chosen | 4.7, 6 |
+| UI-24 | The Create New World layout (row positions, pitch, 3-line cap, 200-pixel wrap, button positions) and the seed row are chosen | 7.2 |
+| UI-25 | The type button has an auto and an explicit state; an auto choice that fails at Create falls back to cobolcraft with a visible notice | 7.2 |
+| UI-26 | A world with an unknown or missing type, no level.dat or no seed shows a warning line and a disabled Play | 7.3 |
+| UI-27 | Placement and use of the empty-slot icons and of `container/slot` | 4.4 |
 
 ## 12. Open questions
 
@@ -1341,7 +1499,8 @@ has a stated working choice.
    and whether the hotbar indicator is 18 x 18 (12 section 5.2 says only "not detailed here").
 4. **Recipe-book tab and toast details.** Original tab icons (new sprite ids with recipes) are not drawn; Decision UI-22 uses
    letters in the cobolcraft world type, and the real icon offsets in the standard type are still unread. Also the tab sprite width, the id
-   of the toast sprite (`toast/recipe` is a working name from 14 section 6.1's `toast/*`) and the toast's texts.
+   of the toast sprite (`toast/recipe` is a working name from 14 section 6.1's `toast/*`) and the toast's texts. The page-label and toast-text rectangles and the toast text are chosen (Decision UI-23); no document
+   gives them.
 5. **Other sprite ids.** 14 section 6.1 says its list is "the list our client needs, not every sprite of the jar". Ids that the
    cobolcraft client's classes ask for and that are not in the list would show as stripes; a read of the sprite string
    constants of the screens in section 1's "supplied" rows would settle it.
@@ -1374,17 +1533,69 @@ has a stated working choice.
     data model section 13) has them, that one wins and the rows of the type control follow the game mode row.
 18. **Banner focus and keyboard.** The tab order of the banner and the Create screen's extra button, and whether Enter on the
     banner activates it (the text of section 8.3 says Enter activates the first button of that screen only).
-19. **Button borders.** 12 section 5.9 reports border 3 (disabled 1); the built-in art uses 2 (Decision UI-21). A read of the
+19. **Button borders.** 12 section 5.9 reports border 3 (disabled 1); the built-in art uses 3 (disabled 2, Decision UI-21). A read of the
     real `.mcmeta` values for the other widgets (text field, sliders, handles, scrollers) would confirm or replace the rest.
-20. **Selectable or disabled standard choice.** 22 section 9.2 disables the standard choice on the world-creation screen; this
+20. **Selectable or disabled standard choice (needs a ruling; this fix pass could not settle it).** 22 section 9.2 disables the standard choice on the world-creation screen; this
     document keeps it selectable and explains on Create (Decision UI-15, UI-16). README Part 4, C10 ("the game offers only the
     cobolcraft world type" without a valid jar) and README decision 2 ("a missing or wrong jar disables the standard type") say
     offered-only or disabled as well, so the conflict is three-sided: README and 22 say not offered or disabled, this document says
     offered and selectable. No world is created in any reading, so the outcome matches C10; only the wording "offers only" does not.
-    The owner of 22, the README or the operator decides. (Open question 9 is a separate question: jar against generated directory.)
-21. **Manifest of the 40 effect icons.** Section 4.10 lists the 40 names and gives three check values; a group manifest over all
-    40 (as in section 9.2, key `mob_effect/<name>`) was not computed in this round, because no tool run was part of it. Whoever
-    runs the recipes should add it.
+    The owner of 22, the README or the operator decides; until then the screens of section 7.2 are implemented as written and
+    are the first thing to change if the ruling goes the other way (cycle skips `standard`, `standard.unavailable` shown under
+    the button, which would also give that key its user). Searched: README Part 4 C10, README decision 2, 22 section 9.2,
+    world-types.md 3.5; none carries a ruling. (Open question 9 is a separate question: jar against generated directory.)
+21. **Closed: manifest of the 40 effect icons.** The hashes of all 40 icons and the group manifest are in sections 4.10 and 9.2.
+    Nothing remains open except the placement (Open question 22).
 22. **Status-effect HUD layout.** 12 section 5 has no layout for the status-effect icons (position, spacing, the use of the
     24 x 24 background, the 18 x 18 icon offset, the blink at the end of a duration). Searched: 12 section 5 and 14 section 7.5.
     The 18 x 18 icon centred in the 24 x 24 background is a working choice only.
+23. **Standard language keys the cobolcraft world type still lacks (GAP-34 and README Part 4, C11, fallback language set).**
+    cobolcraft-standard-core.md Open question 11 makes this document and the built-in `lang/en_us.json` the home of
+    `container.crafting` (the bench title), `block.cobolcraft.crafting_bench` and `item.cobolcraft.crafting_bench`,
+    `enchantment.minecraft.efficiency`, the `chat.type.*` keys, `commands.message.display.incoming` and `.outgoing`,
+    `death.attack.*` and `death.attack.hail`; the experience level text of 12 section 5.4 uses the standard key
+    `gui.experience.level`, and 08 section 10.8 retired the stand-in death and command keys in favour of the standard ones.
+    With no generated pack the cobolcraft world type has no language file for any of these, so by the lookup rule of 08
+    section 10.8 each is shown as the key itself. **This document supplies none of these texts** (it supplies the level
+    colour, section 6, and the bench sheet, section 4.11, but not the words), so GAP-34 and README C11 stay open for the
+    bench title, the experience level number, chat messages, command feedback and death messages, as well as for the options
+    screen (Open question 13). Searched: sections 6 and 6.1 of this document, and the key tables of 08 section 10.8.6; none
+    holds them. The next round must write the English texts (and mark which are read from the vanilla language file and
+    which are chosen).
+24. **Rows and widths of the world list and the notice.** The row width of the world list and the room for the second line
+    are not given by any document (Open question 17), so a long second line (the texts of `no_level`, `no_seed` and
+    `missing`, Decision UI-26) is cut at the row's right edge, without an ellipsis; a round that reads the list layout should
+    replace that rule. Where the fallback notice of Decision UI-25 sits on "the next screen" is likewise chosen (the line at
+    the top of the world list; the screen after Create is the world list).
+25. **Edits other documents owe this document (the contradictions stay until those edits are made; this task may edit only this file).** (a) world-types.md section 3.5 says that `cobolcraft.world_type.standard.unavailable`
+    is used by the Create screen and the world list; this document draws the `short` keys there instead (section 6.1), so
+    world-types.md should drop that claim, or this document must change. (b) 22 section 8.6 says the title banner "says why":
+    the banner of section 8.4 now shows the `short` reason on its second line, so the sentence holds; 22 section 9.2 should
+    cite section 8.4 for the layout. (c) 08 section 10.8.6 still lists `cobolcraft.hud.health`, `.food`, `.crosshair` and the
+    `cobolcraft.screen.crafting.*` keys; the table of section 5.4 says they are retired. (d) world-types.md says no keys are placed in this document yet; section 6.1
+    places them, so that sentence must be updated. (e) 08 section 10.2 (closing sentence), 10.9 (count), 10 (no virtual
+    `mob_effect` file rule) must be edited as section 5.4 lists; until then the repository holds conflicting definitions.
+26. **Seed field texts.** The label and hint of the seed field (Decision UI-24) are chosen; whether the standard Create screen
+    has the same words is unread.
+27. **Hardcore and effect combinations of the hearts.** 12 section 5.4 says hardcore worlds use `hardcore_*` hearts and that
+    poison, wither and freeze use `poisoned_*`, `withered_*`, `frozen_*`, but not which one is drawn when both apply, nor whether
+    `absorbing_*` has hardcore forms. Section 4.2 supplies no `hardcore_poisoned_*`, `hardcore_withered_*`, `hardcore_frozen_*`
+    or `hardcore_absorbing_*` ids; if the client asks for such an id it draws the missing-texture stripes. Working choice: the
+    client draws the effect sprite (`poisoned_*` and so on) over the hardcore container, since the effect sprites are the
+    ones 12 names for the filled part. Searched: 12 section 5.4, 14 section 6.1. `container_hardcore_blinking` is inferred.
+28. **Misc whole-image textures and the 14 section 6.2 sheets not supplied.** 14 section 7.6 lists placeholder icons for an unknown
+    server or pack under `textures/misc`. Only `misc/unknown_pack` is supplied. The unknown-server icon (the server list entry
+    with no favicon, 08 section 10.8.6), and the other `misc/` textures (vignette, underwater, pumpkin, spyglass, shadow, glint)
+    and sheets (`generic_54` and the like) are not supplied and not otherwise addressed: nothing in the cobolcraft screens as
+    listed in section 1 draws them (not verified against client code). Until a round decides, such a request draws the stripes;
+    the server list should draw no icon rather than request one.
+29. **Minimum window size and text widths.** Section 7.2 assumes the smallest automatic GUI is 320 x 240; 12 section 5.1 derives the
+    GUI size from the framebuffer, so a window below 320 x 240 at GUI scale 1 overflows the rows. The text widths in the worked
+    examples of sections 7.2 and 8.3 (90, 95, 111, 121, 209 and so on) were computed from standin section 18 advances and not
+    re-verified by a second reader; section 10 step 5 depends on them.
+30. **Recipe-book panel origin and tab overlap.** The origin (rbX, rbY) of the panel in `recipe_book.png` is a parameter that holds
+    only at (0, 0) (Open question 2, Decision UI-10); the Sheets manifest changes if it moves, and in the standard world type the
+    client must use the real sheet's origin, which no document gives. Also, 13 section 3.9 places a tab at x = panel - offset - 30,
+    so a 32-wide tab overlaps the panel by 2 pixels; the tab sprite is drawn over the panel edge there.
+31. **Contrast values and shadow colour.** The contrast ratios of section 6 and the shadow `#3F3F3F` are chosen or assumed as
+    stated; the ratios were not recomputed in the fix pass.

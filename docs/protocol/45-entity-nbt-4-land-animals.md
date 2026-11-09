@@ -6,8 +6,8 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`), with no execution. Read: the `addAdditionalSaveData` and `readAdditionalSaveData` methods (and their lambdas) of every class listed above and of the classes they inherit from, `TagValueInput`, `EntityReference`, `VariantUtils`, `Brain$Packed`, `MemoryMap`, `ExpirableValue`, `MemoryModuleType`, `InventoryCarrier`, `SimpleContainer`, `ItemStackWithSlot`, `ItemStack`, `EntityEquipment`, `NeutralMob`, the enums used as codecs, the Brain set-memory sites of each mob. |
 | Evidence rule | Every key, type, default and constant below was read in this round. "(inferred)" marks a deduction from the shape of read code. "(recalled, not verified)" marks a statement not read; each is repeated in Open questions. |
-| Siblings | `45-entity-nbt-1` (shared model), `-2` (shared mob classes), `-3` (Player), `-5` to `-9` (other mob groups). This part gives the shared chain of keys only as a reference table (section 3) so that a land animal can be written without opening the siblings; where a sibling exists, its text rules. |
-| Related | 07 §9.3 (the entity compound the keys of this document go into), 18 (mob framework, breeding, taming), 19 and [44 part 4](44-residual-mob-questions-4-land-animals.md) (behaviour of these mobs), [45-1](45-entity-nbt-1-shared-model-and-entity-base.md) and [45-2](45-entity-nbt-2-living-entity-mob-animal.md) (shared keys), 46 (registry ids) |
+| Siblings | 45-1 (shared model), 45-2 (shared mob classes), 45-3 (Player), 45-5 to 45-9 (other mob groups). This part gives the shared chain of keys only as a reference table (section 3) so that a land animal can be written without opening the siblings; where a sibling exists, its text rules. |
+| Related | 07 §9.3 (the entity compound the keys of this document go into), 18 (mob framework, breeding, taming), 19 and 44-4 (behaviour of these mobs), 45-1 and 45-2 (shared keys), 46 (registry ids) |
 
 Notation: "tick" is a game tick. A "key" is a named child of the entity's compound. "Default" is the value used when the key is absent or has the wrong type. `Byte`, `Short`, `Int`, `Long`, `Float`, `Double`, `String`, `IntArray`, `List`, `Compound` are the NBT types of 07 §1.
 
@@ -43,7 +43,7 @@ Primitive reads (`TagValueInput`):
 | `getBooleanOr` | Numeric tag whose Byte conversion is not zero gives true. An Int of 256 therefore reads as false (the low 8 bits are zero), and a Float of 0.5 reads as false (floor is 0). A non-numeric tag gives the default. |
 | `getString` | Only a String tag counts; any other type is "absent". |
 | `read(key, codec)` | Decodes the child with the codec. A missing child is "absent". On a decode error a problem is reported (not thrown) and the read returns the error result's partial value when the codec produced one, otherwise "absent" (as stated in 45-1 section 1). Whether a given codec produces a partial value on a bad element was not traced per codec (Open question 5); the calling code applies its default or leaves the field unchanged when the result is absent, as each table says. |
-| `listOrEmpty`, `list` | A List tag whose elements decode. Elements that fail to decode are skipped (inferred from the existence of per-element problem classes; Open question 6). |
+| `listOrEmpty`, `list` | A List tag whose elements decode. Elements that fail to decode are skipped (inferred from the existence of per-element problem classes; Open question 11). |
 
 Writes: `putBoolean` writes a **Byte** 0 or 1; `putInt`, `putLong`, `putFloat`, `putShort`, `putByte` write the matching type; `store(key, codec, value)` writes the codec's encoding; `storeNullable` writes nothing when the value is null; `list(key, codec)` writes a List.
 
@@ -72,13 +72,13 @@ Because every numeric read converts from any numeric type, files written by tool
 | Enum by legacy id | Int | Id tables in the sections that use them. Out-of-range handling is stated per enum. |
 | Dye colour (`DyeColor.LEGACY_ID_CODEC`) | Int 0 to 15: 0 white, 1 orange, 2 magenta, 3 light_blue, 4 yellow, 5 lime, 6 pink, 7 gray, 8 light_gray, 9 cyan, 10 purple, 11 blue, 12 brown, 13 green, 14 red, 15 black | An id outside 0 to 15 maps to element 0, white (the id map uses the ZERO out-of-bounds strategy of `ByIdMap`, which was read: it returns element 0 of the sorted array when the id is below 0 or at or above the length). |
 | Unit (`Unit.CODEC`) | An empty Compound `{}` | The "flag" memories. |
-| `ItemStack.CODEC` | Compound `{id: String (item key), count: Int 1 to 99 (default 1), components: Compound (optional, default empty patch)}` | `id` must name a non-air item. An empty stack cannot be encoded; callers skip empty slots. Strict validation checks (such as `validateStrict`) are not run by this codec. The `components` Compound is a data-component patch; its form, and the component handling on load, are specified in 45-1 section 8 (and 00). |
+| `ItemStack.CODEC` | Compound `{id: String (item key), count: Int 1 to 99 (default 1), components: Compound (optional, default empty patch)}` | The bounds 1 and 99 are literals of the `ItemStack` codec (an integer-range codec with lower bound 1 and upper bound 99, read in the `ItemStack` class initialiser), and the default 1 is the field's always-present default; the per-item maximum stack size (the `max_stack_size` component) is checked only by the strict validation, which this codec does not run. `id` must name a non-air item. An empty stack cannot be encoded; callers skip empty slots. Strict validation checks (such as `validateStrict`) are not run by this codec. The `components` Compound is a data-component patch; its form, and the component handling on load, are specified in 45-1 section 8 (and 00). |
 | `ItemStackWithSlot.CODEC` | The `ItemStack` fields above inline, plus `Slot`: unsigned byte (default 0, always written). `ExtraCodecs.UNSIGNED_BYTE` is built on the plain Byte codec: **written as a Byte tag**; on write an Int above 255 is an error, otherwise it is narrowed to a signed byte (so 128 to 255 appear as negative Bytes; an Int below 0 has no check in the write lambda, read in this round); on read the Byte is converted to an unsigned Int 0 to 255. | Used by chested-horse `Items`. |
 | `EntityEquipment.CODEC` | Compound whose keys are equipment slot names and whose values are `ItemStack` Compounds | Slot names: `mainhand`, `offhand`, `feet`, `legs`, `chest`, `head`, `body`, `saddle`. Empty stacks are removed on read (a key holding an empty stack is dropped). The full form, with `drop_chances`, is in 45-2 section 2 and section 3. |
 
 ## 3. The inherited chain of keys (reference)
 
-These are written by every land animal below; the siblings 45-1 (see section 5 and section 10) and 45-2 (sections 2 to 7) are the authority and this table only lets this part stand alone. The key names of the `LivingEntity`, `Mob`, `AgeableMob`, `Animal` and `TamableAnimal` rows were re-checked against the string constants of those classes in the fixing pass and all appear (`leash` is handled by a separate mechanism, 45-1 section 10.1); the per-key defaults and write conditions defer to 45-1 and 45-2.
+These are written by every land animal below; the siblings 45-1 (sections 5 and 10) and 45-2 (sections 2 to 7) are the authority and this table only lets this part stand alone. The key names of the `LivingEntity`, `Mob`, `AgeableMob`, `Animal` and `TamableAnimal` rows appear among the string constants of those classes (`leash` is handled by a separate mechanism, 45-1 section 10.1); the per-key defaults and write conditions defer to 45-1 and 45-2.
 
 | Level | Key | Type | Default on read | Written when |
 |---|---|---|---|---|
@@ -120,9 +120,9 @@ These are written by every land animal below; the siblings 45-1 (see section 5 a
 
 A "variant holder" is a registry entry chosen per animal. Two forms exist.
 
-**Registry-key form** (cow, pig, chicken, cat, wolf, frog; `VariantUtils`): key `variant`, a String identifier of an entry of the variant registry. Writing stores the identifier of the held entry. Reading looks the identifier up in the loaded registry and sets the variant only when the entry exists: a missing key, a malformed identifier or an entry not in the registry leaves the variant at the value the mob had before the read (the value given at creation, see the default column). The entries themselves (textures, spawn conditions, model type) are data of the data pack and are not specified here.
+**Registry-key form** (cow, pig, chicken, cat, wolf, frog; `VariantUtils`): key `variant`, a String identifier of an entry of the variant registry. Writing (`VariantUtils.writeVariant`) takes the held entry's key with `Holder.unwrapKey` and stores its identifier under `variant` only when a key is present; an entry with no key writes nothing (as for `sound_variant`). Reading (`VariantUtils.readVariant`) reads `variant` with the plain `Identifier` codec (not the registry-key codec), builds a registry key from it for the variant registry, and looks it up in the registry of the read context's `lookup()` provider. Reading looks the identifier up in the loaded registry and sets the variant only when the entry exists: a missing key, a malformed identifier or an entry not in the registry (the read result is empty) leaves the variant at the value the mob had before the read (the value given at creation, see the default column). The entries themselves (textures, spawn conditions, model type) are data of the data pack and are not specified here.
 
-**Sound-variant form** (cow, pig, chicken, cat, wolf): key `sound_variant`, a String identifier of an entry of the matching sound-variant registry; written when the held entry has a key, read with the same "unknown key leaves it unchanged" rule. The registries are `cow_sound_variant`, `pig_sound_variant`, `chicken_sound_variant`, `cat_sound_variant`, `wolf_sound_variant`.
+**Sound-variant form** (cow, pig, chicken, cat, wolf): key `sound_variant`, a String identifier of an entry of the matching sound-variant registry. In the save method of each of the `Cow`, `Pig`, `Chicken`, `Cat` and `Wolf` classes the held entry's key is taken with `Holder.unwrapKey` and stored only when a key is present (an entry with no key writes nothing); in the read method the String is read with the registry-key codec of the sound-variant registry (`ResourceKey.codec(registry)`, the only variant key read that way), looked up in the registry and the variant is set only when the lookup yields an entry, so an unknown key leaves it unchanged (as for `variant`). The registries are `cow_sound_variant`, `pig_sound_variant`, `chicken_sound_variant`, `cat_sound_variant`, `wolf_sound_variant`.
 
 | Mob | Variant registry | Default entry key (code constant) | Sound-variant key |
 |---|---|---|---|
@@ -133,17 +133,17 @@ A "variant holder" is a registry entry chosen per animal. Two forms exist.
 | wolf | `wolf_variant` | `pale` | `sound_variant` |
 | frog | `frog_variant` | `temperate` (the `DEFAULT_VARIANT` constant of the frog class) | none |
 
-Defaults of cow, pig, chicken and wolf are the `DEFAULT` constants of the variant key classes. Which entry a newly spawned animal gets (biome conditions) is the data-driven spawn-variant engine and is not part of the save format; the saved value always wins on load.
+Defaults of cow, pig, chicken and wolf are the `DEFAULT` constants of the variant key classes (the constants' values were taken from the table above; the key class initialisers themselves were not re-read in the fix pass, so these four are (inferred) from the earlier reading). Which entry a newly spawned animal gets (biome conditions) is the data-driven spawn-variant engine and is not part of the save format; the saved value always wins on load.
 
 **Enum forms** (not registry holders):
 
 | Mob | Key | Type | Values |
 |---|---|---|---|
 | mooshroom | `Type` | String enum | `red` (default), `brown` |
-| rabbit | `RabbitType` | Int | 0 brown (default), 1 white, 2 black, 3 white_splotched, 4 gold, 5 salt, 99 evil. An Int not in this set maps to the default (brown) (sparse id map with a default entry). |
+| rabbit | `RabbitType` | Int | 0 brown (default), 1 white, 2 black, 3 white_splotched, 4 gold, 5 salt, 99 evil. An Int not in this set maps to the default (sparse id map `ByIdMap.sparse` given the `DEFAULT` argument; the `Rabbit$Variant` initialiser assigns `DEFAULT` = `BROWN`, read). |
 | fox | `Type` | String enum | `red` (default), `snow` |
-| llama and trader llama | `Variant` | Int | 0 creamy, 1 white, 2 brown, 3 gray. CLAMP strategy (read in `ByIdMap`: the id is clamped to 0 through length-1): a value above 3 maps to gray, below 0 to creamy. Default creamy when absent. |
-| parrot | `Variant` | Int | 0 red_blue (default), 1 blue, 2 green, 3 yellow_blue, 4 gray; CLAMP strategy (above 4 gives gray, below 0 gives red_blue). |
+| llama and trader llama | `Variant` | Int | 0 creamy, 1 white, 2 brown, 3 gray. CLAMP strategy (read in `ByIdMap`: the id is clamped to 0 through length-1): a value above 3 maps to gray, below 0 to creamy. The `Llama$Variant` initialiser assigns `DEFAULT` = `CREAMY` (read); the save key is read through `LEGACY_CODEC` (Int) and an absent key leaves the llama's creation value (inferred: the default constant is not shown to be applied by the read call). |
+| parrot | `Variant` | Int | 0 red_blue (default), 1 blue, 2 green, 3 yellow_blue, 4 gray; CLAMP strategy (above 4 gives gray, below 0 gives red_blue). `Parrot$Variant` assigns `DEFAULT` = `RED_BLUE` (read). |
 | horse | `Variant` | Int | A packed value, section 6. |
 
 Strategy meanings (read in `ByIdMap`): ZERO returns element 0 for an out-of-range id; CLAMP is `Mth.clamp(id, 0, length-1)`; WRAP is `Mth.positiveModulo(id, length)`. Fox type, panda genes, armadillo `state`, mooshroom `Type` and copper golem `weather_state` are not id-mapped in the save format (they use by-name codecs); only their network stream codecs use `ByIdMap`.
@@ -166,7 +166,7 @@ The shared cow base class adds no key.
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `Type` | String enum `red` or `brown` | `red` | Written always. An unknown name reads as red. |
-| `stew_effects` | List of `{id: effect key (String), duration: Int (default 160)}` | none (no stew effect) | Written only when set. The codec is `SuspiciousStewEffects.CODEC`, a list of entries `{id, duration}`; `id` is read through the `MobEffect` codec (a registry identifier String; its form was not traced further, Open question 7). Read: absent leaves the field null (none), as read. |
+| `stew_effects` | List of `{id: effect key (String), duration: Int (default 160)}` | none (no stew effect) | Written only when set. The codec is `SuspiciousStewEffects.CODEC`, a list of entries `{id, duration}`; `id` is required and is read through `MobEffect.CODEC`, which is the mob-effect registry's `holderByNameCodec`: an identifier String such as `minecraft:speed` resolved to a registry entry (read in `MobEffect`, `SuspiciousStewEffects` and its `Entry` class: the `Entry` fields are `id` and `duration` with default 160, and the list codec is a plain list of entries). What an unknown identifier does was not traced (Open question 10). Read: absent leaves the field null (none). |
 
 The mooshroom does not use `variant` or `sound_variant` (it inherits the cow base class only).
 
@@ -210,7 +210,7 @@ After the `Animal` chain:
 | `Tame` | Byte | 0 | |
 | `Owner` | UUID IntArray | none | Written when set (the null case writes nothing). Read with the old-name conversion of section 2. |
 
-**There is no `SaddleItem` key and no `ArmorItem` key in this version.** The saddle is the `saddle` slot and horse or llama armor and the llama carpet are the `body` slot of the `equipment` Compound of `LivingEntity` (section 3). A horse is "saddled" when the `saddle` slot is non-empty. `AbstractHorse` allows the `saddle` slot only while the horse is alive, not a baby and tamed; any other slot defers to the `Animal` rule (read in `canUseSlot`). The llama and trader llama override it and allow every slot. The `body` slot rule for equine animals was not traced (Open question 8). Files from older games that hold `SaddleItem` or `ArmorItem` are not read by these classes (a migration, if the data fixer exists, is outside this round).
+**There is no `SaddleItem` key and no `ArmorItem` key in this version.** The saddle is the `saddle` slot and horse or llama armor and the llama carpet are the `body` slot of the `equipment` Compound of `LivingEntity` (section 3). A horse is "saddled" when the `saddle` slot is non-empty. `AbstractHorse` allows the `saddle` slot only while the horse is alive, not a baby and tamed; any other slot defers to the `Animal` rule (read in `canUseSlot`). The llama and trader llama override it and allow every slot. The `body` slot rule for equine animals was not traced (Open question 6). Files from older games that hold `SaddleItem` or `ArmorItem` are not read by these classes (a migration, if the data fixer exists, is outside this round).
 
 ### 6.2 Horse (`minecraft:horse`)
 
@@ -279,7 +279,7 @@ Chain: `TamableAnimal`. Keys: `CollarColor` (Int, default 14 red), `variant`, `s
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `Trusted` | List of UUID IntArray (a list of entity references through `TRUSTED_LIST_CODEC`; each element is an entity reference saved as its UUID, section 2; the list codec itself was not traced further, Open question 9) | empty | The players the fox trusts. Read: the trust list is cleared first, then each UUID is added. |
+| `Trusted` | List of UUID IntArray (a list of entity references through `TRUSTED_LIST_CODEC`; each element is an entity reference saved as its UUID, section 2; the list codec itself was not traced further, Open question 7) | empty | The players the fox trusts. Read: the trust list is cleared first, then each UUID is added. |
 | `Sleeping` | Byte | 0 | |
 | `Type` | String enum `red` or `snow` | `red` | |
 | `Sitting` | Byte | 0 | Fox-specific; the fox is an `Animal`, not tameable. |
@@ -342,7 +342,7 @@ The travel target and the "digging" flags are not saved.
 | `flower_pos` | IntArray(3) | none | The saved flower position; written only when set. |
 | `HasNectar` | Byte | 0 | |
 | `HasStung` | Byte | 0 | |
-| `TicksSincePollination` | Int | 0 | Backed by a field named `ticksWithoutNectarSinceExitingHive`; the reading "ticks without nectar since leaving the hive" is taken from that field name only (inferred, Open question 10). |
+| `TicksSincePollination` | Int | 0 | Backed by a field named `ticksWithoutNectarSinceExitingHive`; the reading "ticks without nectar since leaving the hive" is taken from that field name only (inferred, Open question 8). |
 | `CannotEnterHiveTicks` | Int | 0 | |
 | `CropsGrownSincePollination` | Int | 0 | |
 | persistent anger | | | section 3 |
@@ -360,7 +360,7 @@ Chain: `PathfinderMob` (no `Age`, no `InLove`). The allay's held item is `equipm
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `Inventory` | List of `ItemStack` (without slot) | empty | `InventoryCarrier` (`TAG_INVENTORY`): save is `storeAsItemList`, one element per non-empty slot, in slot order. Load is `fromItemList`: the container is cleared and each element is added with the add-item operation (stacks merge into earlier slots of the same item). The allay constructor creates a `SimpleContainer` of 1 slot, so at most one stack persists. |
-| `listener` | Compound (vibration listener state) | the default state | Fields: `selector` (required Compound `{tick: Long (required), event?: VibrationInfo}`), `event_delay` (non-negative Int, default 0, always written), `event` (optional VibrationInfo `{game_event: id, distance: Float, pos: Vec3, source?: UUID, projectile_owner?: UUID}`). In `selector`, `event` is a lenient optional field. In VibrationInfo `distance` is a required field (no default) restricted to the range 0 to 3.4028235E38 (the constant is the upper bound); `source` and `projectile_owner` are lenient optional fields. |
+| `listener` | Compound (vibration listener state) | the default state | The key is the `NBT_TAG_KEY` constant of `VibrationSystem$Data`. Fields (read in `VibrationSystem$Data`, `VibrationSelector` and `VibrationInfo`): `selector` (required Compound `{tick: Long (required), event?: VibrationInfo}`), `event_delay` (non-negative Int, default 0, always written), `event` (optional VibrationInfo `{game_event, distance: Float, pos: Vec3, source?: UUID, projectile_owner?: UUID}`). In `selector` and in `Data`, `event` is a lenient optional field. In VibrationInfo `game_event` is a required field read through the `GameEvent` registry-reference codec (its identifier form is inferred, not traced); `distance` is a required field (no default) whose float-range codec has the literal lower bound 0 and the literal upper bound 3.4028235E38; `pos` is a required Vec3 (section 2); `source` and `projectile_owner` are lenient optional UUID fields. |
 | `DuplicationCooldown` | Long | 0 | **Written as Long, read through the Int accessor**: a stored value above 2147483647 is truncated to its low 32 bits (section 1 conversion). |
 
 ### 10.3 Parrot
@@ -369,9 +369,11 @@ Chain: `TamableAnimal` through the shoulder-riding base (which adds no key). Key
 
 ### 10.4 Happy ghast
 
+Chain: `Animal` (the class extends `Animal`, not `PathfinderMob`; its save method calls `Animal.addAdditionalSaveData` first, so `Age`, `ForcedAge`, `AgeLocked` and `InLove` are written and read as in 45-2). Then:
+
 | Key | Type | Default |
 |---|---|---|
-| `still_timeout` | Int | 0 |
+| `still_timeout` | Int | 0 (read through `getIntOr`; written with `putInt`; applied through the server still-timeout setter) |
 
 The harness is `equipment.body`.
 
@@ -381,8 +383,10 @@ Chain: `PathfinderMob` (no `Age`).
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `next_weather_age` | Long | **-1** | The game time of the next weathering step; -1 means none scheduled. |
+| `next_weather_age` | Long | **-1** | Written with `putLong`, read with `getLongOr` default -1. Game time of the next weathering step. Sentinels (constants of the class): `UNSET_WEATHERING_TICK` = -1 (nothing scheduled yet) and `IGNORE_WEATHERING_TICK` = -2 (weathering disabled). -2 can be saved and loaded, since the key is a plain Long. Range constants: `WEATHERING_TICK_FROM` = 504000 and `WEATHERING_TICK_TO` = 552000. |
 | `weather_state` | String enum | `unaffected` | `unaffected` (0), `exposed` (1), `weathered` (2), `oxidized` (3). Unknown name gives `unaffected`. |
+
+Weathering tick logic (traced in the fix pass, server side only, once per tick): (1) value -2: nothing happens. (2) value -1: set it to game time plus a uniform inclusive random integer in 504000 to 552000. (3) otherwise, when game time is at or above the value and the state is not `oxidized`: advance `weather_state` to the next state, then set the value to 0 if the new state is `oxidized`, else to the old value plus a fresh uniform inclusive 504000 to 552000. (4) when the state is `oxidized` and the statue check passes, the golem turns into a statue (conditions not traced). The interaction handler sets the value to -2 when one item class (not identified in this round) is used on the golem; a second item-class test in the same handler reads the value and compares it with -2 (effects not traced).
 
 The item it carries is `equipment.mainhand`. The golem's action state is not saved. Its brain memories: section 11.
 
@@ -413,7 +417,7 @@ Codec classes of the persisted memory types (all of them, for reading a file):
 | `GlobalPos` | `home`, `job_site`, `potential_job_site`, `meeting_point`, `liked_noteblock` |
 | `BlockPos` | `breeze_jump_target` |
 | UUID | `angry_at`, `liked_player` |
-| List of `GlobalPos` | `visited_block_positions`, `unreachable_transport_block_positions` (both a set stored as a list), `sniffer_explored_positions` (a list; order matters) |
+| List of `GlobalPos` | `visited_block_positions`, `unreachable_transport_block_positions` (both a plain list codec converted to and from a set; read in `MemoryModuleType`), `sniffer_explored_positions` (a list built with the one-argument `Codec.list` factory, whose descriptor takes only the element codec; order matters). The code that implements `Codec.list` is not in the jar, so any size cap or minimum inside it is unknown (Open question 9). |
 
 All other memory types (walk target, look target, attack target, path, nearest-entity lists, `ride_target`, `transport_items_cooldown_ticks`, `sniffer_sniffing_target`, `sniffer_digging`, `sniffer_happy`, `spear_*`, and the rest) are not saved.
 
@@ -430,7 +434,7 @@ Rule: any persisted memory present in the brain at save time is written, so the 
 | Camel | `gaze_cooldown_ticks`, `temptation_cooldown_ticks` | |
 | Armadillo | `danger_detected_recently` (Boolean, set true with an expiry of **80** ticks when hurt by a living entity), `gaze_cooldown_ticks`, `is_panicking`, `temptation_cooldown_ticks` | |
 | Happy ghast | `is_panicking`, `temptation_cooldown_ticks` | |
-| Copper golem | `gaze_cooldown_ticks`; when it runs the container-transport behaviour: `visited_block_positions` (at most 10 positions) and `unreachable_transport_block_positions` (at most 50), both set with an expiry of **6000** ticks and erased when a target is found or after a failed search; `transport_items_cooldown_ticks` is not persisted | |
+| Copper golem | `gaze_cooldown_ticks`; when it runs the container-transport behaviour (`TransportItemsBetweenContainers`, which holds the constants `MAX_VISITED_POSITIONS` = 10, `MAX_UNREACHABLE_POSITIONS` = 50 and `VISITED_POSITIONS_MEMORY_TIME` = 6000): `visited_block_positions` (at most 10 positions) and `unreachable_transport_block_positions` (at most 50), both set with an expiry of **6000** ticks and erased when a target is found or after a failed search; `transport_items_cooldown_ticks` is not persisted | |
 
 The brain of the other mobs of this part (cow, pig, sheep, chicken, rabbit, horse family except the camel, cat, ocelot, wolf, fox, panda, polar bear, turtle, bee, parrot, iron golem, snow golem, bat) uses goals, not a Brain, apart from the shared `Brain` key every `LivingEntity` writes (an empty `memories` Compound for them: `LivingEntity` writes `Brain` unconditionally and `Brain$Packed` requires `memories`, so `{memories:{}}` is always present; 45-2 section 8.1).
 
@@ -498,11 +502,15 @@ Position list newest first; the `ttl` field is present when the memory expires.
 
 1. The default entry of `variant` for animals created without a registry lookup (for example by a command that gives no variant) comes from the data-driven spawn-variant engine; only the code constants are given here.
 2. The legacy data fixers (`SaddleItem`, `ArmorItem`, `Tame`, old `Variant` values, the `Color` Byte of sheep) are applied before the entity classes read and live in the data fixer, which this round did not read. These classes read `Color` and `RabbitType` through numeric conversion, so Byte values load.
-3. The behaviour that sets `item_pickup_cooldown_ticks` on the allay (argument 60 of the give-items behaviour) was read as a constant; whether it is the cooldown length was not traced. The 600 of `liked_noteblock_cooldown_ticks` is read in `AllayAi` (no longer open).
-4. `sniffer` drop seeds: the spec asked for "sniffer state and seeds"; the artifact stores neither (section 9.2). The seed items dropped by digging come from a loot table of the data pack (not read here). `still_timeout` of the happy ghast and `next_weather_age` of the copper golem are saved counters whose use (the tick logic) is in 44 part 4 and 19 and was not re-read in this round.
-5. (Searched again: the client jar contains no `com/mojang/serialization` classes, so the DFU codec implementations cannot be read from it; this stays open.) Partial-value behaviour per codec: `TagValueInput.read` returns the error result's partial value, but whether the `equipment` map codec, the Brain `memories` dispatched-map codec, the variant codecs and the list codecs produce a partial value for one bad entry was not traced (searched: `TagValueInput.read`, which was read; the codec classes were not).
-6. The per-element skip behaviour of `listOrEmpty` and `list` (section 1) is inferred from the existence of per-element problem classes and was not read in the list wrapper methods.
-7. (Resolved in this fixing pass.) `MobEffect.CODEC` is the built-in mob-effect registry's `holderByNameCodec`, which is the identifier codec (a String such as `minecraft:speed`) flat-mapped to a registry reference. The mooshroom `stew_effects` `id` is therefore an identifier String. What an unknown identifier does (expected: a decode error for that element) was not traced.
-8. The `body` slot rule (which items an equine or llama accepts) was not traced; only the saddle rule was read.
-9. The `Fox` `TRUSTED_LIST_CODEC` was seen as a list codec of entity references; its exact form (list of UUID IntArrays) follows from section 2 and was not traced in the codec itself (inferred).
-10. The meaning of the bee `TicksSincePollination` counter is taken from the field name only (section 9.5); its tick logic was not read.
+3. The behaviour that sets `item_pickup_cooldown_ticks` on the allay (argument 60 of the give-items behaviour) was read as a constant; whether it is the cooldown length was not traced.
+4. Sniffer drop seeds: the artifact stores neither a state nor a seed (section 9.2). The seed items dropped by digging come from a loot table of the data pack (not read here). `still_timeout` of the happy ghast is a saved counter whose use was not read. The copper golem weathering logic was traced in the fix pass (section 10.5); not traced: the statue conditions and which items set or test the -2 value.
+5. The client jar contains no `com/mojang/serialization` classes, so the codec implementations cannot be read from it. Partial-value behaviour per codec: `TagValueInput.read` returns the error result's partial value, but whether the `equipment` map codec, the Brain `memories` dispatched-map codec, the variant codecs and the list codecs produce a partial value for one bad entry was not traced (searched: `TagValueInput.read`, which was read; the codec classes were not).
+6. The `body` slot rule (which items an equine or llama accepts) was not traced; only the saddle rule was read.
+7. The `Fox` `TRUSTED_LIST_CODEC` was seen as a list codec of entity references; its exact form (list of UUID IntArrays) follows from section 2 and was not traced in the codec itself (inferred).
+8. The meaning of the bee `TicksSincePollination` counter is taken from the field name only (section 9.5); its tick logic was not read.
+9. Size cap or minimum of the persisted `sniffer_explored_positions` list: the memory type is registered with the one-argument `Codec.list` factory (descriptor with the element codec only), and `visited_block_positions` and `unreachable_transport_block_positions` with the no-argument `listOf` converted to a set. Searched: the registrations in `MemoryModuleType`. The factory implementations are outside the jar, so a limit applied inside them is unknown. The in-game limits (20 retained plus one inserted for the sniffer; 10 and 50 for the transport sets) are enforced by the behaviours that write the memory, not by the codec as far as read.
+10. What an unknown effect identifier in the mooshroom `stew_effects` `id` does (expected: a decode error for that element, with the partial-value question of Open question 5) was not traced.
+11. The per-element skip behaviour of `listOrEmpty` and `list` (section 1) is inferred from the existence of per-element problem classes and was not read in the list wrapper methods.
+12. Review status of sections 11 and 12: the memory identifier-to-codec table, the numeric ranges (`U(100, 140)`, `U(600, 1200)`, `U(600, 6000)`, 80, 6000, 20 retained plus one inserted) and the `ItemStack` count bounds 1 to 99 were not independently re-verified after the first reading. The fix pass re-read none of them; treat them as read once, unchecked by a second pass.
+13. Sections 4 default constants: the `DEFAULT` constants of the rabbit, llama and parrot variant classes were read in the fix pass (brown, creamy, red_blue). The `DEFAULT` key constants of the cow, pig, chicken and wolf variant key classes were not re-read (inferred from the first reading).
+14. Copper golem (section 10.5): the statue conditions (`canTurnToStatue`) and the identity of the items that set or test the -2 sentinel in the interaction handler were not traced.

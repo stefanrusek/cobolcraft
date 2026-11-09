@@ -656,7 +656,7 @@ scope here.
 
 `tints[i]` supplies the colour for faces with `tintindex` *i*. TintSource is `type`-dispatched. The type ids
 are `constant` (field `value`), `dye`, `grass`, `firework`, `potion`, `team` and `custom_model_data`
-(`ItemTintSources`). The stand-in pack needs none.
+(`ItemTintSources`). The built-in pack needs none.
 
 ---
 
@@ -1182,32 +1182,36 @@ the client, so CobolCraft gives them keys of its own in the same `<kind>.<namesp
 
 #### 10.8.4 Disconnect and refusal reasons (standin-content §17)
 
+Only three disconnect keys are CobolCraft's own, because the standard has no equivalent: `host_closed` (a
+client-hosted world), `pack_required` (09 §9.8) and `name_is_host`. The other CobolCraft reasons of the earlier
+design (barred, not on the guest list, replaced, shutdown, ejected, ejected without a reason) are retired. They use
+the shared standard keys in both world types (for example `multiplayer.disconnect.not_whitelisted`; 16 §11.22,
+and GAP-27 for standard keys that no document lists yet).
+
 | Key | Arguments | Value |
 |---|---|---|
-| `cobolcraft.disconnect.barred` | — | You are barred from this world |
-| `cobolcraft.disconnect.not_on_guestlist` | — | You are not on this world's guest list |
 | `cobolcraft.disconnect.name_is_host` | name | The name %s belongs to the host of this world |
-| `cobolcraft.disconnect.replaced` | — | Someone joined elsewhere under your name |
-| `cobolcraft.disconnect.shutdown` | — | The server is shutting down |
 | `cobolcraft.disconnect.host_closed` | — | The host closed the world |
 | `cobolcraft.disconnect.pack_required` | — | This server requires its resource pack |
-| `cobolcraft.disconnect.ejected` | reason | You were ejected: %s |
-| `cobolcraft.disconnect.ejected_plain` | — | You were ejected by an operator |
 
 The protocol documents fix the keys of some disconnects, and CobolCraft's server sends those keys as they
 are (FR-001 makes the protocol's disconnect behaviours required; 09 §2 and its Open question 2). These are
-**[engine name]** keys. The built-in pack gives them its own English texts, and a pack can change them like
-any other key:
+**[engine name]** keys. Their texts are the **standard wording** of the standard `en_us`, not wording of our own.
+In the standard world type the generated pack supplies them and its texts replace any built-in text with the
+same key (pack order, 22 Open question 3). In the cobolcraft world type this file is the fallback and carries the
+standard wording. The Value column below therefore gives no text. The standard text is in no document yet
+(GAP-27) and a clean-room round must supply it before the fallback file is written. A pack can change these
+texts like any other key:
 
 | Key | Arguments | Sent when | Value |
 |---|---|---|---|
-| `multiplayer.disconnect.incompatible` | the server's version name | Login with protocol version ≠ 777, client version ≥ 754 (02) | This server runs %s and cannot talk to your game version |
-| `multiplayer.disconnect.outdated_client` | the server's version name | Login with protocol version < 754 (02) | Your game version is too old for this server (%s) |
-| `multiplayer.disconnect.transfers_disabled` | — | Handshake with intent 3, transfer (02) | This server does not take transferred players |
-| `multiplayer.disconnect.slow_login` | — | Login not finished within 600 ticks (01 §7.5, 02) | Logging in took too long |
-| `multiplayer.disconnect.unexpected_query_response` | — | An answer to a query or cookie request the server never made (02) | The server got a reply it never asked for |
-| `multiplayer.disconnect.invalid_player_movement` | — | A position or rotation that is not a finite number in range (05c) | The server refused an impossible position |
-| `disconnect.timeout` | — | A missing or wrong Keep Alive reply (01 §7.5) | No reply arrived in time |
+| `multiplayer.disconnect.incompatible` | the server's version name | Login with protocol version ≠ 777, client version ≥ 754 (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.outdated_client` | the server's version name | Login with protocol version < 754 (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.transfers_disabled` | — | Handshake with intent 3, transfer (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.slow_login` | — | Login not finished within 600 ticks (01 §7.5, 02) | standard text (GAP-27) |
+| `multiplayer.disconnect.unexpected_query_response` | — | An answer to a query or cookie request the server never made (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.invalid_player_movement` | — | A position or rotation that is not a finite number in range (05c) | standard text (GAP-27) |
+| `disconnect.timeout` | — | A missing or wrong Keep Alive reply (01 §7.5) | standard text (GAP-27) |
 
 The other disconnect keys of 01 and 02 are never sent by CobolCraft's server. `disconnect.ignoring_status_request`
 and `multiplayer.status.request_handled` end a status exchange, which has no Disconnect packet.
@@ -1223,8 +1227,14 @@ mode, which CobolCraft never uses.
 
 #### 10.8.6 Client screens and HUD (data-model §13)
 
-These keys belong to the client alone. The server never sends them. The screen names follow the screen
-model of data-model §13. Keys under `cobolcraft.screen.common` are shared by several screens.
+These keys belong to the client alone. The server never sends them. **Lookup rule.** Where the standard `en_us`
+has a key for a UI text (title screen, pause menu, options, resource pack screens, connecting and similar), the
+client uses the standard key in both world types, and its text comes from the generated pack or the standard
+`en_us`. The `cobolcraft.screen.*` and `cobolcraft.hud.*` entries below are the **fallback set** of the built-in
+pack. The client looks up the standard key first and uses the entry below only when no loaded pack defines that
+key. An entry with no standard counterpart (for example the pack prompt, open to others and the crafting list
+texts) stays a CobolCraft key. Which entries have a standard counterpart is settled with the standard key
+survey (GAP-27). The screen names follow the screen model of data-model §13. Keys under `cobolcraft.screen.common` are shared by several screens.
 
 | Key | Arguments | Value |
 |---|---|---|
@@ -1513,5 +1523,5 @@ draws no quads. The sky colour and daylight changes of §14.5 are client constan
 11. ~~**Protocol-defined disconnect reasons.**~~ Answered: the server keeps the keys that 01, 02 and 05c
     fix (`multiplayer.disconnect.incompatible`, `…outdated_client`, `…transfers_disabled`, `…slow_login`,
     `…unexpected_query_response`, `…invalid_player_movement` and `disconnect.timeout`), and 10.8.4 gives
-    each one an original `en_us` text, so the client never shows a bare key for them. A pack can change
-    these texts.
+    each one its standard `en_us` text (generated pack in the standard world type, this file as fallback in the
+    cobolcraft world type), so the client never shows a bare key for them. A pack can change these texts.

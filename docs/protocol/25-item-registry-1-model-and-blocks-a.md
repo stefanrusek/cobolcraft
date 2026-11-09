@@ -50,7 +50,9 @@ extraction tool (22) copies out of the jar (item models and item assets, recipes
 - **Correction 2: the registration call census.** Counting the final registration call of each of the 1253 statements
   gives the figures of section 2.4 (749 `registerBlock` calls, 17 `registerItem` calls keyed by a `BlockItemId`,
   364 `registerItem` calls keyed by an `ItemIds` key, 88 `registerSpawnEgg` calls and 35 collection calls). They do
-  not reproduce the split 773 / 392 / 88 given in the brief; the sum is the same, 1253 (Open question 1).
+  not reproduce the split 773 / 392 / 88 given in the brief; the sum is the same, 1253. Recounted in the fixing pass
+  (section 14, check 4): 749 + 381 (of which 17 keyed by a `BlockItemId`) + 88 + 35 = 1253; the brief's two larger
+  figures exceed these by 24 and 11, which sum to the 35 collection statements (inferred explanation, Open question 1).
 - Placement behaviour of `BlockItem` (what happens when the item is used on a block) is summarised in section 5.2 and
   owned by 29. Fuel, composting and brewing semantics at the furnace, composter and brewing stand are owned by the
   documents of those machines; section 9 specifies how the item side is expressed.
@@ -80,7 +82,7 @@ Two collection types appear in `Items` (same classes as in 24 §2.3):
 | Collection | Items per field | Expansion rule |
 |---|---|---|
 | `ColorCollection<Item>` | 16 | Registered by `ColorCollection.registerBlockItems(blockIdCollection, blockCollection, factory)` (block items, 16 statements) or `ColorCollection.registerItems(idCollection, factory)` (plain items, 4 statements: `harness`, `dyed_bundle`, `cushion`, `dye`). The 16 items are registered consecutively, in the dye order of 24 §2.3 (white, orange, magenta, light_blue, yellow, lime, pink, gray, light_gray, cyan, purple, blue, brown, green, red, black). The key of each is the colour joined to the base name, colour first |
-| `WeatheringCopperCollection<Item>` | 8 | `WeatheringCopperCollection.registerItems(ids, blocks, factory)` zips the id collection with the block collection. The order is the weathering record (unaffected, exposed, weathered, oxidized) and then the waxed record, with the key prefixes `""`, `exposed_`, `weathered_`, `oxidized_`, `waxed_`, `waxed_exposed_`, `waxed_weathered_`, `waxed_oxidized_` (`WeatheringCopperCollection.PREFIXES`, read). The prefix is joined to the base name by plain concatenation, prefix first (the `makeConcatWithConstants` recipe of `prefixWithState` is two operands with no separator; operand order prefix, name read: see Open question 2). `BlockItemIds.COPPER_BLOCK` uses special base names: `copper_block` for the unaffected state and `copper` for the other three, and the waxed record repeats them (`COPPER_BLOCK_SPECIAL_NAMES`, read). Every other weathering collection uses one base name for all eight |
+| `WeatheringCopperCollection<Item>` | 8 | `WeatheringCopperCollection.registerItems(ids, blocks, factory)` zips the id collection with the block collection. The order is the weathering record (unaffected, exposed, weathered, oxidized) and then the waxed record, with the key prefixes `""`, `exposed_`, `weathered_`, `oxidized_`, `waxed_`, `waxed_exposed_`, `waxed_weathered_`, `waxed_oxidized_` (`WeatheringCopperCollection.PREFIXES`, read). The prefix is joined to the base name by plain concatenation, prefix first (the `makeConcatWithConstants` recipe of `prefixWithState` is two operands with no separator; operand order prefix first, read; Open question 2 is resolved). `BlockItemIds.COPPER_BLOCK` uses special base names: `copper_block` for the unaffected state and `copper` for the other three, and the waxed record repeats them (`COPPER_BLOCK_SPECIAL_NAMES`, read). Every other weathering collection uses one base name for all eight |
 
 All 35 collection statements, with the first and last id computed in section 2.4:
 
@@ -123,6 +125,13 @@ All 35 collection statements, with the first and last id computed in section 2.4
 | 1247 | `COPPER_GOLEM_STATUE` | weathering | 8 | 1645 | 1652 |
 
 ### 2.4 Counts (computed from the 1253 statements)
+
+Method of the count: each of the 1253 `putstatic` statements of `Items.<clinit>` is taken with the last registration
+call before it (`registerBlock`, `registerItem`, `registerSpawnEgg`, `ColorCollection.registerBlockItems` /
+`registerItems`, `WeatheringCopperCollection.registerItems`); a `registerItem` statement counts as "keyed by a
+`BlockItemId`" when a `BlockItemIds` constant is loaded inside the statement (the 3 statements `air`, `resin_clump`,
+`nether_wart` use `.item()` of that constant, the other 14 use the `registerItem(BlockItemId, ...)` overloads). All
+figures below were recomputed from the bytecode in the fixing pass (read).
 
 | Statement kind | Statements | Items |
 |---|---|---|
@@ -247,9 +256,9 @@ read):
 | Default max stack | the `max_stack_size` component of the prototype, 1 if absent (the common set always has it, section 7.1) |
 | `getDestroySpeed(stack, state)` | `Tool.getMiningSpeed(state)` when the stack has `tool`, else 1.0 (17 §1.3) |
 | `isCorrectToolForDrops` | `Tool.isCorrectForDrops(state)` when the stack has `tool`, else false |
-| `canDestroyBlock` | false when the stack has `tool` with `can_destroy_blocks_in_creative` false and the player is in creative (`instabuild`); else true |
-| `mineBlock` | when `tool` is present, the server side, a block of destroy speed not 0 and `damage_per_block` > 0: hurt the stack by `damage_per_block` (main hand); returns true |
-| `use` (right click in air) | in order: `consumable` present: start consuming; `equippable` present and swappable: swap with the equipment slot; `blocks_attacks` present: start using, CONSUME; `kinetic_weapon` present: start using and make its sound, CONSUME; else PASS |
+| `canDestroyBlock` | false when the stack has `tool` with `can_destroy_blocks_in_creative` false and the miner is a player in creative (`instabuild`); true in every other case, including a non-player miner (read) |
+| `mineBlock` | returns false when the stack has no `tool`; otherwise, on the server side, for a block whose destroy speed is not 0 and with `damage_per_block` > 0, hurt the stack by `damage_per_block` (main hand); returns true (read, `Item.mineBlock`) |
+| `use` (right click in air) | in order: `consumable` present: `Consumable.startConsuming` (FAIL when `canConsume` is false; when `consumeTicks` > 0 start using the item and CONSUME; with 0 ticks the item is consumed at once and CONSUME carries the resulting stack); `equippable` present and swappable: swap with the equipment slot; `blocks_attacks` present: start using, CONSUME; `kinetic_weapon` present: start using and make its sound, CONSUME; else PASS |
 | `useOn` | the `block_transformer` component's `transformBlock` when present, else PASS |
 | `finishUsingItem` | `Consumable.onConsume` when `consumable` is present |
 | Use animation | `consumable.animation`, else BLOCK when `blocks_attacks`, else SPEAR when `kinetic_weapon`, else NONE |
@@ -258,7 +267,9 @@ read):
 | Foil | `ItemStack.isEnchanted` |
 | Name | the `item_name` component of the stack (default empty text if absent); `AirItem` reads it from the prototype |
 | `canFitInsideContainerItems` | true (`BlockItem` returns false for a `ShulkerBoxBlock` block) |
-| Hooks with no effect in the base class | `onUseTick`, `onDestroyed`, `hurtEnemy`, `postHurtEnemy`, `inventoryTick`, `onCraftedPostProcess`, `releaseUsing` (false), `useOnRelease` (false), `interactLivingEntity` (PASS), `getAttackDamageBonus` (0), `getItemDamageSource` (none) |
+| Hooks with no effect in the base class | `onUseTick`, `onDestroyed`, `hurtEnemy`, `postHurtEnemy`, `inventoryTick`, `onCraftedPostProcess` (`onCraftedBy` only calls it), `releaseUsing` (false), `useOnRelease` (false), `interactLivingEntity` (PASS), `getAttackDamageBonus` (0), `getItemDamageSource` (none) |
+
+Verification status of this table (fixing pass): every row was re-read in `Item` (`getDefaultMaxStackSize`, `getDestroySpeed`, `isCorrectToolForDrops`, `canDestroyBlock`, `mineBlock`, `use`, `useOn`, `finishUsingItem`, `getUseAnimation`, `getUseDuration`, `isBarVisible` (= `ItemStack.isDamaged`), `getBarWidth`, `getBarColor`, `isFoil`, `getName`, `canFitInsideContainerItems`, the empty hooks). The bar width is the float `13 - damage x 13 / max_damage`, rounded with `Math.round` and clamped to 0..13; the colour is `Mth.hsvToRgb(f / 3.0, 1, 1)` with `f = max(0, (max_damage - damage) / max_damage)`; the use duration constant is 72000; `consumeTicks` multiplies `consume_seconds` by 20.0 in float and truncates to int (`Consumable.consumeTicks`). `Item.useOn` is read in the form above and is also called by `BlockItem.useOn` (section 5.2). The `BlockItem` method `canFitInsideContainerItems` exception for shulker boxes was not re-traced (Open question 8).
 
 The constructor of every item (and therefore of every row) does: create the intrusive registry holder; derive the
 description id (section 6.3); queue the component initialiser (section 6.2) under the item key in
@@ -267,8 +278,11 @@ In the `Item` constructor, when the shared flag `SharedConstants.IS_RUNNING_IN_I
 
 ### 5.2 `BlockItem` (class of every row of this part except `air`)
 
-Fields: the placed `block`. `useOn(context)` is: try `place`; if the result does not consume the action and the stack has
-a `consumable` component, fall through to `use`. `place(context)` in order (the placement checks are specified in
+Fields: the placed `block`. `useOn(context)` is (read, `BlockItem.useOn`): try `place` on a `BlockPlaceContext` built from the use context; if the
+result consumes the action, return it; else run the base `Item.useOn` (the `block_transformer` step of section 5.1) and
+return its result if it consumes the action; else, when the stack has a `consumable` component, run the base `Item.use`
+for the held hand; else return the last result. `place(context)` in order (read in `BlockItem.place`; the order of the
+seven steps and the constants 11, 1, 2 and 0.8 were traced in the fixing pass) (the placement checks are specified in
 29; the item-side steps are):
 
 1. If the block is not enabled by the world's enabled features, FAIL.
@@ -405,9 +419,9 @@ against it (00 §12.2), so a client must reproduce this default set exactly.
 
 | Name | Values |
 |---|---|
-| `Rarity` (ordinal, name) | 0 common, 1 uncommon, 2 rare, 3 epic |
-| `ItemUseAnimation` (ordinal, name; 12 constants, read) | 0 `NONE`, 1 `EAT`, 2 `DRINK`, 3 `BLOCK`, 4 `BOW`, 5 `TRIDENT`, 6 `CROSSBOW`, 7 `SPYGLASS`, 8 `TOOT_HORN`, 9 `BRUSH`, 10 `BUNDLE`, 11 `SPEAR` (serialised names are the lower-case forms) |
-| `SwingAnimationType` (3 constants, read) | 0 `NONE` (serialised `none`), 1 `WHACK` (`whack`, the default of `SwingAnimation.DEFAULT`, duration 6), 2 `STAB` (`stab`, spears) |
+| `Rarity` (ordinal, id, serialised name; read in `Rarity.<clinit>`: 4 constants, each with ordinal equal to its id) | 0 `COMMON` `common`, 1 `UNCOMMON` `uncommon`, 2 `RARE` `rare`, 3 `EPIC` `epic` (each also carries a chat formatting colour, not read here) |
+| `ItemUseAnimation` (ordinal, id, serialised name; 12 constants read in `ItemUseAnimation.<clinit>`, id equal to ordinal) | 0 `NONE` `none`, 1 `EAT` `eat`, 2 `DRINK` `drink`, 3 `BLOCK` `block`, 4 `BOW` `bow`, 5 `TRIDENT` `trident`, 6 `CROSSBOW` `crossbow`, 7 `SPYGLASS` `spyglass`, 8 `TOOT_HORN` `toot_horn`, 9 `BRUSH` `brush`, 10 `BUNDLE` `bundle`, 11 `SPEAR` `spear`. The class also has a boolean `customArmTransform` (read as true for `EAT`, `DRINK` and `SPEAR`, false for the others; its use is a rendering matter, not traced) |
+| `SwingAnimationType` (3 constants, read in `SwingAnimationType.<clinit>`, id equal to ordinal) | 0 `NONE` `none`, 1 `WHACK` `whack`, 2 `STAB` `stab`. `SwingAnimation` is a record (type, duration); `SwingAnimation.DEFAULT` is (`WHACK`, 6) (read; the `stab` use by spears is in 17 §1.4, not re-read here) |
 | `Consumable.Builder` defaults | consume_seconds 1.6, animation `EAT`, sound `entity.generic.eat` (`GENERIC_EAT`), has_consume_particles true, no effects |
 | `Consumable.consumeTicks` | `trunc(consume_seconds x 20)` |
 
@@ -423,7 +437,7 @@ Max stack of a stack = the effective `max_stack_size`. An item with `damage` in 
 A record (nutrition int, saturation float, can_always_eat boolean). Wire: VarInt, Float, Boolean (17 §1.2).
 `FoodProperties.Builder` takes `nutrition(int)`, `saturationModifier(float)` and `alwaysEdible()`; `build()` stores
 **saturation = nutrition x modifier x 2** (`FoodConstants.saturationByModifier`: float multiply, then multiply by 2).
-Eating (`FoodProperties.onConsume`, for a player) does, in order: play the consumable's sound at the eater's position (source NEUTRAL, volume 1.0, pitch `RandomSource.triangle(1.0, 0.4)`, read); `FoodData.eat(food)` (17 §4.9); play `entity.player.burp` at the player (source PLAYERS, volume 0.5, pitch `Mth.randomBetween(random, 0.9, 1.0)`, read). `FoodConstants`: MAX_FOOD 20, MAX_SATURATION 20.0,
+Eating (`FoodProperties.onConsume`, for a player) does, in order: play the consumable's sound at the eater's position (source NEUTRAL, volume 1.0, pitch `RandomSource.triangle(1.0, 0.4)`, read); `FoodData.eat(food)` (17 §4.9); play `entity.player.burp` at the player (source PLAYERS, volume 0.5, pitch `Mth.randomBetween(random, 0.9, 1.0)`, read); the three calls and their order, the constants 1.0 / 0.4 (triangle), 0.5, 0.9 and 1.0 were re-read in `FoodProperties.onConsume` in the fixing pass (the first sound is played from the eater's position with the consumable's sound event, no excluded player argument was traced). `FoodConstants`: MAX_FOOD 20, MAX_SATURATION 20.0,
 START_SATURATION 5.0, SATURATION_FLOOR 2.5, EXHAUSTION_DROP 4.0, HEALTH_TICK_COUNT 80, HEALTH_TICK_COUNT_SATURATED 10,
 HEAL_LEVEL 18, SPRINT_LEVEL 6, STARVE_LEVEL 0, the modifier scale POOR 0.1, LOW 0.3, NORMAL 0.6, GOOD 0.8, MAX 1.0,
 SUPERNATURAL 1.2, and the exhaustion costs HEAL 6.0, JUMP 0.05, SPRINT_JUMP 0.2, MINE 0.005, ATTACK 0.1, WALK 0.0,
@@ -518,19 +532,19 @@ the sibling parts quote only the key.
 | `brewing_fuel` (86) | (uses provider key, speed provider key) | `Properties.brewingFuel(key)` sets the speed key to `brewing/speed_default` |
 | `compostable` (84) | (chance provider key) | `Properties.compostable(key)` |
 
-How the providers evaluate, read from the 26 files:
+How the providers evaluate, read from the 26 files (all values below were re-read from the jar in the fixing pass; paths `data/minecraft/context_int_provider/cooking/*.json`, `.../compostable/*.json`, `data/minecraft/context_float_provider/cooking/*.json` and `brewing/speed_default.json`; the predicate is `data/minecraft/predicate/block/fast_cooking.json`, a `match_block` on the list smoker, blast_furnace):
 
 - `cooking/time_*` (18 keys): `div` of a constant "left" (ticks) by a `conditional` on the block predicate
   `block/fast_cooking` (the predicate matches the blocks `smoker` and `blast_furnace`): 1 (`cooking/normal_burn_time_reduction_factor`)
   when false, 2 (`cooking/fast_burn_time_reduction_factor`) when true. Burn time in ticks therefore is `left / factor` in the
   integer provider arithmetic of 26 §9 (division semantics there). Examples: `cooking/time_wood_blocks` left 300 (300 ticks in
   a furnace, 150 in a smoker or blast furnace); `cooking/time_coal_block` left 16000; `cooking/time_roots` left 300;
-  `cooking/time_dry_plants` left 100.
+  `cooking/time_dry_plants` left 100 (each file read). The statement count of the keys: `cooking/time_roots` is used by exactly one statement of `Items` (`mangrove_roots`, mechanical count of the fixing pass).
 - `cooking/speed_default`: `conditional` on `block/fast_cooking` between `cooking/normal_speed_multiplier` (1.0) and
-  `cooking/fast_speed_multiplier` (2.0); `brewing/speed_default` is 1.0; `brewing/uses_default` is 20.
+  `cooking/fast_speed_multiplier` (2.0); `brewing/speed_default` is 1.0; `brewing/uses_default` is 20 (read).
 - `compostable/*` (5 keys): a `number_dispatcher` whose single case, when the block is a `composter` with `level` 0, gives 1
   (the first item always raises an empty composter), else a `weighted_list` of {1, 0}; weights: `low` 30 for 1 and 70 for 0
-  (30 percent), `low_medium` 50 and 50; `medium` 65 and 35 (65 percent), `medium_high` 85 and 15 (85 percent) (both read from the data files; the first-item case is the same); `always_add_one` is the constant 1. The composter engine that rolls them (level step, result) is owned by the block
+  (30 percent), `low_medium` 50 and 50; `medium` 65 and 35 (65 percent), `medium_high` 85 and 15 (85 percent) (all four files read: the case list is the same in each, `match_block` composter with `level` 0 gives the constant 1, and the `weighted_list` weights are 30/70, 50/50, 65/35 and 85/15); `always_add_one` is the constant 1. The composter engine that rolls them (level step, result) is owned by the block
   behaviour documents (sibling of 29).
 
 The keys that appear in rows 0 to 227 are `compostable/low`, `cooking/time_wood_blocks`, `cooking/time_dry_plants`,
@@ -794,23 +808,64 @@ and wood with `fuel wood_blocks`; 173 `mangrove_roots` (`compostable low`, `fuel
 
 ## 12. Part index (family map of ids 228 to 1657)
 
-The siblings (parts 2 to 8) take consecutive id ranges of the remaining 1430 items (1658 - 228) and read their rows in
-full. The families below were found from the class of each statement (first id of each family computed with section 2;
-the classes are those named by the statement or its lambda; a family whose class names only appear in a lambda that was
-not expanded is marked inferred):
+The siblings (parts 2 to 8, plus the continuation x1) split the remaining 1430 items (1658 - 228) among themselves
+and read their rows in full; **the boundaries of their ranges belong to those documents** and are not stated here
+(their own headers differ in how they number statements and ids, so this map does not depend on them). Only part 2
+was cross-checked: its header states ids 228 to 455 (`flowering_azalea_leaves` to `deepslate_bricks`), which matches
+the id arithmetic of section 2.
 
-| First id | Field of first statement | Family | Items |
-|---|---|---|---|
-| 228 | `FLOWERING_AZALEA_LEAVES` | leaves continued (`compostable low_medium`), flora, glass, wool collections, plants (plain `BlockItem`) | rows in 25-2 (ids 228 to 455) |
-| 339 | `SMALL_DRIPLEAF` | `DoubleHighBlockItem` rows (tall plants; exact rows and count in 25-2 and 25-3) | see 25-2, 25-3 |
-| 395 | `TORCH` | `StandingAndWallBlockItem` | torches, coral fans, signs, skulls and heads (class in section 5.3; rows in 25-2 to 25-4) |
-| 486 | `RESIN_CLUMP` | plain `Item` family (the plain `Item` rows are read in 25-3 to 25-8; this part gives no count) | see 25-3 to 25-8 |
-| 497 | `LILY_PAD` | `PlaceOnWaterBlockItem` | 2 |
-| 529 | `COMMAND_BLOCK` | `GameMasterBlockItem` | 7 |
-| 1005 | `FLINT_AND_STEEL` | tools and special items with their own classes (`BowItem`, `ArrowItem`, `SnowballItem`, `EggItem`, `CompassItem`, `BundleItem`, `FishingRodItem`, `SpyglassItem`, `InkSacItem`, `DyeItem`, `BoneMealItem`, `MapItem`, `ShearsItem`, `EnderpearlItem`, `BottleItem`, `PotionItem`, ..., `MaceItem`, `TridentItem`, `CrossbowItem`, `BrushItem`, `SmithingTemplateItem`) | 25-4 to 25-8 (each part states its exact rows) |
-| 1280 | `CHICKEN_SPAWN_EGG` | 88 spawn eggs (`SpawnEggItem`), ids 1280 to 1367 (25-6) | 88 |
+The table lists, for the whole registry, every item class that the 1218 non-collection statements of `Items` give
+their item, with a count computed in the fixing pass from the bytecode: the class is taken from the method handle of
+the statement's factory (`X::new`) or, for a lambda factory, from the class that the lambda body instantiates
+(read). "Id of first member" is the lowest id of the class; members of one class are generally **not**
+consecutive, so the column is not the start of a range. The 35 collection statements (440 items) are not
+in the counts, because their factories are lambdas that delegate to the register helpers and their classes were not
+traced here (Open question 9; the sibling parts that cover them read the classes).
 
-Class counts are not repeated here; the sibling parts 25-2 to 25-8 state the exact rows and classes they read, and their own ranges.
+| Id of first member | Field of first member | Class | Statements | Basis |
+|---|---|---|---|---|
+| 0 | `AIR` | `AirItem` | 1 | read |
+| 1 | `STONE` | `BlockItem` (default factory, or a lambda that only changes the properties; members run to id 1656) | 671 | read |
+| 339 | `SMALL_DRIPLEAF` | `DoubleHighBlockItem` (11 through a lambda, 10 through a direct constructor reference; ids 339 to 901) | 21 | read |
+| 395 | `TORCH` | `StandingAndWallBlockItem` (all through a lambda; ids 395 to 1390) | 33 | read |
+| 486 | `RESIN_CLUMP` | plain `Item` (a constructor reference, a plain `registerItem`, or a lambda that only changes the properties; largest id 1657) | 256 | read |
+| 497 | `LILY_PAD` | `PlaceOnWaterBlockItem` (second member at id 1576) | 2 | read |
+| 529 | `COMMAND_BLOCK` | `GameMasterBlockItem` (ids 529, 648, 649 and 997 to 1000: `command_block`, `repeating_command_block`, `chain_command_block`, `structure_block`, `jigsaw`, `test_block`, `test_instance_block`) | 7 | read |
+| 823 | `SCAFFOLDING` | `ScaffoldingBlockItem` (one member) | 1 | read |
+| 966 | `MINECART` | `MinecartItem` (ids 966 to 968 and later ones, last id 1414 `command_block_minecart`) | 6 | read |
+| 971 | `CARROT_ON_A_STICK` | `FoodOnAStickItem` (ids 971, 972) | 2 | read |
+| 975 | `OAK_BOAT` | `BoatItem` (ids 975 to 996, `oak_boat` to `bamboo_chest_raft`) | 22 | read |
+| 1005 | `FLINT_AND_STEEL` | one-member classes, see below | 46 in all (including `AirItem` and `ScaffoldingBlockItem` above) | read |
+| 1115 | `OAK_HANGING_SIGN` | `HangingSignItem` (ids 1115 to 1127) | 13 | read |
+| 1128 | `BUCKET` | `BucketItem` 3 (ids 1128 to 1130) | 3 | read |
+| 1131 | `POWDER_SNOW_BUCKET` | `SolidBucketItem` (one member, counted among the one-member classes) | 1 | read |
+| 1135 | `PUFFERFISH_BUCKET` | `MobBucketItem` (ids 1135 to 1141, last `tadpole_bucket`) | 7 | read |
+| 1148 | `EGG` | `EggItem` (ids 1148 to 1150: `egg`, `blue_egg`, `brown_egg`) | 3 | read |
+| 1238 | `FILLED_MAP` | `MapItem` (ids 1238 to 1254, last `warm_ocean_ruins_map`) | 17 | read |
+| 1280 | `CHICKEN_SPAWN_EGG` | `SpawnEggItem`, ids 1280 to 1367 | 88 | read |
+| 1375 | `ITEM_FRAME` | `ItemFrameItem` (ids 1375, 1376) | 2 | read |
+| 1579 | `NETHERITE_UPGRADE_SMITHING_TEMPLATE` | `SmithingTemplateItem` (ids 1579 to 1597) | 19 | inferred: the factory is a static method reference whose name says this class; its body was not read |
+
+The one-member classes (each exactly one statement, id of the member in parentheses): `FlintAndSteelItem` (1005),
+`BowItem` (1008), `ArrowItem` (1009), `HangingEntityItem` (1099), `SolidBucketItem` (1131), `SnowballItem` (1132), `CompassItem` (1151),
+`BundleItem` (1153), `FishingRodItem` (1186), `SpyglassItem` (1188), `InkSacItem` (1196), `GlowInkSacItem` (1197),
+`BoneMealItem` (1215), `ShearsItem` (1255), `EnderpearlItem` (1265), `BottleItem` (1270), `PotionItem` (1271),
+`EnderEyeItem` (1278), `ExperienceBottleItem` (1368), `FireChargeItem` (1369), `WindChargeItem` (1370),
+`WritableBookItem` (1371), `WrittenBookItem` (1372), `MaceItem` (1374), `EmptyMapItem` (1382), `PlayerHeadItem` (1386),
+`FireworkRocketItem` (1393), `ArmorStandItem` (1405), `LeadItem` (1412), `NameTagItem` (1413), `EndCrystalItem` (1433),
+`SplashPotionItem` (1442), `SpectralArrowItem` (1443), `TippedArrowItem` (1444), `LingeringPotionItem` (1445),
+`ShieldItem` (1446), `KnowledgeBookItem` (1458), `DebugStickItem` (1459), `DiscFragmentItem` (1482), `TridentItem`
+(1483), `CrossbowItem` (1491), `InstrumentItem` (1504), `HoneycombItem` (1530), `BrushItem` (1578), plus `AirItem` (0)
+and `ScaffoldingBlockItem` (823), which makes 46 (44 names in the list above plus these two). (Their ids come from the same id arithmetic as section 2;
+a registry dump from the extraction tool, 22, would confirm them.)
+
+Sum check (statement counts, 1218 in all): `BlockItem` 671, plain `Item` 256, `SpawnEggItem` 88, `StandingAndWallBlockItem` 33,
+`BoatItem` 22, `DoubleHighBlockItem` 21, `SmithingTemplateItem` 19, `MapItem` 17, `HangingSignItem` 13, `GameMasterBlockItem` 7,
+`MobBucketItem` 7, `MinecartItem` 6, `BucketItem` 3, `EggItem` 3, `PlaceOnWaterBlockItem` 2, `FoodOnAStickItem` 2,
+`ItemFrameItem` 2 add up to 1172, and the 46 one-member classes bring it to 1218.
+
+Ids 228 to 455 are a **sibling-part range** (part 2), not a family; the first `DoubleHighBlockItem` (id 339) and
+the first `StandingAndWallBlockItem` (id 395) fall inside it.
 
 ## 13. Worked examples
 
@@ -845,7 +900,7 @@ Checks performed while reading (each is a count or a comparison against the arti
 | 1 | `Items` `public static final` fields | 1253; `putstatic` statements in `<clinit>` 1253; same order |
 | 2 | Fields whose type is an `Item` (not a collection) | 1218; collection fields 35 (20 `ColorCollection`, 15 `WeatheringCopperCollection`) |
 | 3 | Items registered | 1218 + 20 x 16 + 15 x 8 = 1658 |
-| 4 | Statements per call kind | 749 / 17 / 364 / 88 / 16 / 4 / 15 (section 2.4) |
+| 4 | Statements per call kind | 749 / 17 / 364 / 88 / 16 / 4 / 15 (section 2.4); recounted in the fixing pass with the method of section 2.4: `registerBlock` 749 (388 + 177 + 104 + 48 + 30 + 1 + 1 over its eight overload shapes), `registerItem` 381 (17 with a `BlockItemIds` constant, 364 without), `registerSpawnEgg` 88, `registerBlockItems` 16, `ColorCollection.registerItems` 4, `WeatheringCopperCollection.registerItems` 15; total 1253 |
 | 5 | Rows 0 to 227: key equals the lower-case `BlockItemIds` field name, and the item key equals the block key | all 228 rows (air included) |
 | 6 | The last row of the range | id 227, statement 192, `AZALEA_LEAVES`; id 228 is `FLOWERING_AZALEA_LEAVES` |
 | 7 | Rows with a collection statement in 0 to 227 | statement 120 (ids 120 to 127), 124 (131 to 138), 125 (139 to 146), 126 (147 to 154), 127 (155 to 162) |
@@ -859,7 +914,9 @@ the translatable text of `block.minecraft.stone`.
 ## 15. Open questions
 
 1. The brief's split 773 `registerBlock`, 392 `registerItem`, 88 spawn eggs (total 1253) could not be reproduced; the counts of
-   section 2.4 (sum 1253) are from the final registration call of each statement. The brief's total of "1253 items" is the
+   section 2.4 (sum 1253) are from the final registration call of each statement, and were recounted in the fixing pass with the
+   same result (749 / 381 / 88 / 35). The brief's figures exceed the recount by 24 and 11, whose sum is the 35 collection
+   statements: the brief probably assigned the collections to the two larger groups (inferred, not checkable from the artifact). The brief's total of "1253 items" is the
    field count; the registered count is 1658. The ids were computed from the code, not compared with a registry dump
    (the extraction tool, 22, can compare them).
 2. Resolved: `prefixWithState` calls `zipMap(PREFIXES, names, f)` and `f` (`lambda$prefixWithState$0(String,String)`) concatenates its first argument and then its second with the recipe `\u0001\u0001`, so the prefix comes first (read). The inner per-state zip of the two `ByState` records was not traced separately; a registry dump (22) would confirm `waxed_copper_block`.
@@ -871,3 +928,12 @@ the translatable text of `block.minecraft.stone`.
     (design map GAP-27) and are not given here.
 7. Spawn egg behaviour (`SpawnEggItem.useOn` and `use`, the spawn offset, the baby spawn) is for the sibling part that registers
     the eggs.
+8. `BlockItem.canFitInsideContainerItems` (false for a shulker box block) and `BlockItem.onDestroyed` were taken over from the first
+   reading and not re-traced in the fixing pass; `StandingAndWallBlockItem` and `DoubleHighBlockItem` (section 5.3) were likewise not
+   re-traced. The `Item.Properties` builder rows of section 6.4 other than `durability` (read: `max_damage`, then `max_stack_size`
+   1, then `damage` 0) were not spot-checked; the armor rows (`humanoidArmor`, `wolfArmor`, `horseArmor`, `nautilusArmor`) are
+   verified in the sibling part that registers armor (part 4 and later).
+9. The item classes of the 35 collection statements (440 items) are not in the section 12 counts: their factories are lambdas that
+   delegate to the register helpers, and the class that finally builds each item was not traced here. The class of each plain `Item`
+   and `BlockItem` statement whose factory is a lambda that only changes properties was not separately inspected (the lambda bodies
+   contain no `new` of an item class, read), and `SmithingTemplateItem` is inferred (section 12).

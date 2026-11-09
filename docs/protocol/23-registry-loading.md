@@ -30,6 +30,9 @@ An `Identifier` (`net.minecraft.resources.Identifier`) is a namespace and a path
 | Namespace characters | `a` to `z`, `0` to `9`, `_`, `-`, `.`. The namespace `..` is rejected |
 | Path characters | `a` to `z`, `0` to `9`, `_`, `-`, `.`, `/`. No upper case, no `:` |
 | Parsing failure | `parse` throws an `IdentifierException`; `Identifier.read` (used by the codec forms and by `TAG_OR_ELEMENT_ID`) wraps it into a data error; both are errors for the element being decoded |
+| Exact messages (constants of `Identifier`, `\u0001` = a placeholder filled by string concatenation) | "Non [a-z0-9_.-] character in namespace of identifier: <namespace>:<path>" (namespace fails `isValidNamespace`), "Non [a-z0-9/._-] character in path of location: <namespace>:<path>" (path fails `isValidPath`), "Not a valid resource location: <text> <exception message>" (the data error built by `Identifier.read` when `parse` throws; the exception message is one of the first two texts, so a data error reads e.g. "Not a valid resource location: A:b Non [a-z0-9_.-] character in namespace of identifier: A:b"). The first two texts are thrown by `assertValidNamespace` and `assertValidPath` as an `IdentifierException`, which passes its message through `StringEscapeUtils.escapeJava` before storing it, so non-ASCII or quote characters in the offending id appear escaped in the message |
+| `realms` namespace | `Identifier` defines the constant `REALMS_NAMESPACE` = `realms`. Within `Identifier` itself the constant is only declared: no namespace or path check compares against it (`isValidNamespace` tests only the `..` rule and the character set). Whether any other class special-cases `realms` was not searched (Open question 22) |
+| Path resolution guard | `resolveAgainst(root)` resolves `<root>/<namespace>/<path>`, normalises both, and throws `IllegalStateException` "Identifier \"<id>\" tried to access path \"<path>\" from root \"<root>\"" when the normalised result is not inside the root. This is a file-system helper used for pack extraction and data generation, not a load-time id rule (what calls it was not traced) |
 | Equality and hash | by namespace and path (hash = 31 * hash(namespace) + hash(path)) |
 | **Ordering** | `compareTo` compares the **path first** (`String.compareTo`, UTF-16 code units), and only when the paths are equal compares the namespace. This ordering decides numeric ids in pack-loaded registries (section 3.4) |
 
@@ -51,7 +54,10 @@ Directory rules, read from `Registries`: `registryDirPath(key)` is the **path pa
 only (the namespace of the registry key is ignored), `elementsDirPath` returns it unchanged, and `tagsDirPath` is the text
 `tags/` followed by it. A registry path that itself contains `/` therefore gives nested directories on both sides:
 elements of `worldgen/biome` live under `data/<ns>/worldgen/biome/` and its tags under `data/<ns>/tags/worldgen/biome/`.
-There is no per-registry exception list; the two directories are always derived by these two rules.
+There is no per-registry exception list; the two directories used by the loaders are always derived by these two rules.
+`Registries` also defines a third helper, `componentsDirPath(key)`, which gives the text `components/` followed by the registry
+path. Searching every class of the jar for the method name finds it only in `Registries` itself and in
+`net.minecraft.data.PackOutput` (data generation), so it is not a runtime load path and no loader in this document uses it.
 
 Tag-or-element id grammar, read from `ExtraCodecs.TAG_OR_ELEMENT_ID` (the codec behind tag-file strings, the `id` of an
 object entry and the `#` form of holder-set fields): a String whose first character is `#` has that single `#` removed and
@@ -267,6 +273,18 @@ cannot hit the first message; a Registry Data packet that repeats an id can (04 
 `RegistryValidator.nonEmpty`: if the frozen registry has size 0 the error is "Registry must be non-empty: <registry id>",
 recorded under the registry key itself. `RegistryValidator.none` never reports. The timeline validator is in 9.2.
 
+Bind-time tag checks (`MappedRegistry`, class constants). When tags are bound or refreshed in a registry, each member of a
+tag goes through one check (`validateAndUnwrapTagElement`), and both failures are an `IllegalStateException`:
+
+| Check, in order | Text |
+|---|---|
+| the member holder cannot be serialized in this registry (it is owned by another registry) | "Can't create named set <tag> containing value <holder> from outside registry <registry>" |
+| the member is not a **reference** holder (it is a direct holder, an inline value without an id) | "Found direct holder <holder> value in tag <tag>" |
+
+The second text is a tag-binding check of `MappedRegistry`; it is not part of `TagNetworkSerialization` (6.6). The use site
+read is the refresh of the holders' tag lists after binding (`refreshTagsInHolders`, which walks every bound tag and every
+member). A third constant of the class, "Invalid method used for tag loading", was not traced to a call (Open question 18).
+
 ## 4. Loading from the network (client)
 
 `RegistryDataLoader.load(Map<registry key, NetworkedRegistryData>, knownDataSource, ...)` builds one
@@ -286,7 +304,7 @@ Per registry (read from `NetworkRegistryLoadTask`):
 4. Resolve the registry's tags from the Update Tags payload (section 6.6) and bind them.
 5. Freeze and validate exactly as in 3.5 and 3.6. The 13 non-empty validators apply to the client too.
 
-Failure texts (read): "Failed to parse value %s for key %s from server" (a Data entry that does not decode) and
+Failure texts (read; all three are String constants of `net.minecraft.resources.RegistryLoadTask$PendingRegistration`, whose record components are `key`, `value`, `registrationInfo`): "Failed to parse value %s for key %s from server" (a Data entry that does not decode) and
 "Failed to find resource %s for element %s" (a Data-less entry whose pack file is missing); a pack file that exists but
 does not decode reports "Failed to parse %s from pack %s".
 
@@ -302,9 +320,16 @@ same field with a plain ops fails with the errors below.
 
 | Form (class) | Accepts | Does | Errors (read) |
 |---|---|---|---|
-| **Id ref** (`RegistryFixedCodec`, API `RegistryCodecs.holder(key)`) | an Identifier String | looks the key up in the getter of that registry and returns its holder. Never an inline object | "Can't access registry <registry>" when the ops has no getter for the registry; "Failed to get element <id> from registry <registry>" when the getter returns nothing (see 5.2: a lazy getter never returns nothing). When the ops is not a registry ops at all, the field cannot be decoded (the generic decode error of the library) |
+| **Id ref** (`RegistryFixedCodec`, API `RegistryCodecs.holder(key)`) | an Identifier String | looks the key up in the getter of that registry and returns its holder. Never an inline object | "Can't access registry <registry>" when the ops has no getter for the registry; "Failed to get element <id> from registry <registry>" when the getter returns nothing (see 5.2: a lazy getter never returns nothing). When the ops is not a registry ops at all, `RegistryOps` reports "Not a registry ops". Encoding a **direct** holder through an Id ref fails with "Elements from registry <registry> can't be serialized to a value" |
 | **Id-or-inline** (`RegistryFileCodec`, `RegistryCodecs.holder(key, codec)`; the third argument `allowInline` is true for this overload) | first tries to read an Identifier String; if that fails and inline is allowed, decodes the value with the element codec and wraps it in a **direct holder** (no id) | as Id ref for the String branch; inline otherwise | "Inline definitions not allowed here" when `allowInline` is false (the `holder(key, codec, false)` overload); "Registry does not exist: <registry>" when the ops has no getter; "Failed to get element <id> from registry <registry>" |
-| **HolderSet** (`HolderSetCodec`, `RegistryCodecs.holderSet(...)`) | a `#`-prefixed String (a tag), or elements (see below) | tag form: looks the tag key up in the registry getter and returns a **named** set; element form: a **direct** set of holders | "Registries are not available in this context" (ops that is not a registry ops); "Registry <registry> is not available in this context" (no getter for the registry); "Missing tag: '<tag>' in '<registry>'" when the getter returns no set for the tag; a String without `#` fails the tag branch with "Not a tag id" and is then tried as an element |
+| **HolderSet** (`HolderSetCodec`, `RegistryCodecs.holderSet(...)`) | a `#`-prefixed String (a tag), or elements (see below) | tag form: looks the tag key up in the registry getter and returns a **named** set; element form: a **direct** set of holders | "Registries are not available in this context" (ops that is not a registry ops); "Registry <registry> is not available in this context" (no getter for the registry); "Missing tag: '<tag>' in '<registry>'" when the getter returns no set for the tag; a String without `#` fails the tag-id parser (`net.minecraft.tags.TagKey`, constant "Not a tag id"; it is not a constant of `HolderSetCodec`) and is then tried as an element |
+
+Complete constant lists (read from the class constant pools; `HolderSetCodec`, `RegistryFixedCodec` and `RegistryFileCodec` are in package `net.minecraft.core.registries.codec`; `RegistryOps` is in `net.minecraft.resources`). `HolderSetCodec` has exactly four: "Registries are not available in
+this context", "Registry %s is not available in this context", "HolderSet %s is not valid in current registry set" and
+"Missing tag: '%s' in '%s'". `RegistryFixedCodec` has "Can't access registry <registry>", "Failed to get element <id> from
+registry <registry>", "Elements from registry <registry> can't be serialized to a value" and "Element <holder> is not valid in
+current registry set". `RegistryOps` has "Not a registry ops", "Can't find value: <id>" and "Unknown registry: <registry>"
+(the last two belong to its element and getter retrieval helpers; which branch produces which was not traced).
 
 HolderSet element form. The flag `homogenousList` of `holderSet(..., boolean)` decides:
 
@@ -374,7 +399,7 @@ Additional rules read from `TagEntry`:
 - Display form of an entry (used in error messages): `#` for a tag, the id, and a trailing `?` when optional.
 - `required` does not change *what* is matched, only whether a missing target is an error (6.3).
 
-Example (illustrative only, not data):
+Constructed test vector (the names are invented for this document; they are not read from the artifact and say nothing about the contents of any vanilla tag such as `minecraft:logs` or `birch_logs`):
 
 ```
 { "replace": false,
@@ -414,8 +439,15 @@ order (low to high priority):
 
 Step B. **Order by dependencies.** Build a graph: tag `A` depends on every **required** tag reference of any of its
 entries (an edge that must be satisfied), and on every **optional** tag reference (an edge that only orders). Visit
-tags so that referenced tags are built before the tags that reference them (`DependencySorter`). An edge that would
-close a cycle is not recorded (so one tag of a cycle is built before its dependency is available). The visiting order
+tags so that referenced tags are built before the tags that reference them (`DependencySorter`). `DependencySorter.orderByDependencies` runs in two
+passes over one multimap of edges: first it adds **every required** edge of every entry, then **every optional** edge. Each edge
+goes through add-if-not-cyclic: the edge from `A` to `B` is dropped only when `B` can already reach `A` through the edges
+recorded so far (the test follows recorded edges transitively; a direct reverse edge counts). Because all required edges are
+recorded before any optional one, required edges win: in a cycle that mixes required and optional edges, an optional edge is the
+one dropped. Among edges of the same kind the first one tried wins, and the order of trying follows the contents map, a plain
+`HashMap`. After the edges are fixed, the visit is a depth-first walk over the key set of that same map (a visited set; each
+tag's recorded dependencies are visited before the tag itself). An edge that would close a cycle is not recorded (so one tag of
+a cycle is built before its dependency is available). The visiting order
 of independent tags is the iteration order of a hash map: **not specified**; it does not change any result except in
 cycles (6.5).
 
@@ -442,7 +474,8 @@ error, a missing required reference makes the tag **missing**, and a tag that de
 
 Step D. **Bind.** The result map (tag id -> list of holders) is wrapped into tag keys and bound to the registry
 (`bindTags`). For a registry loaded in this layer this happens before the freeze; for a static registry the result is
-kept as pending tags and applied at the end of step 6 of section 2 (`Registry.prepareTagReload` then `apply`). A bound
+kept as pending tags and applied at the end of step 6 of section 2 (`Registry.prepareTagReload` then `apply`). Bind-time
+member checks (including "Found direct holder <holder> value in tag <tag>") are in 3.6. A bound
 tag replaces any earlier binding of that tag.
 
 ### 6.4 Order inside a tag
@@ -458,7 +491,8 @@ A tag that references itself, or a cycle of required references, cannot be satis
 cycle is dropped from the build order, so one of the tags is built when the other is not yet available; a required
 reference to an unavailable tag fails that tag, and every tag that requires the failed one fails with it. Which tag of
 the cycle fails first depends on hash iteration order (Open question 4); **at least one tag of every cycle that has
-only required edges is missing**. An optional edge in a cycle is skipped without failing the referencing tag.
+only required edges is missing**. An optional edge in a cycle is skipped without failing the referencing tag. In a cycle that mixes both kinds the optional edge is
+the one dropped from the ordering (6.3 step B: required edges are recorded first).
 
 ### 6.6 Network form (Update Tags) and its resolution on the client
 
@@ -467,8 +501,8 @@ Server (`TagNetworkSerialization.serializeTagsToNetwork` and `serializeToNetwork
 tags (`Registry.getTags`, which includes tags with no members); for each tag write the **numeric id of each element**
 (`Registry.getId`) in the tag's order. Every member must be a **reference** holder: a holder of any other kind raises an
 `IllegalStateException` whose text is "Can't serialize unregistered value <holder>" (this is the only String constant of
-the class; the text "Found direct holder ... value in tag ..." that an earlier draft of this section gave is **not in the
-artifact** and has been removed). Registries whose payload is empty are left out: a filter keeps a registry only when
+`TagNetworkSerialization`). The text "Found direct holder <holder> value in tag <tag>" does exist in the artifact, but in
+`MappedRegistry`, as a tag-binding check (3.6); it is not a serialization message. Registries whose payload is empty are left out: a filter keeps a registry only when
 `NetworkPayload.isEmpty()` is false, and `isEmpty` tests that the payload's tag map has no entries (so a registry whose
 tags all exist with zero members is still sent, with those empty tags). There is no nesting, no `replace`, no optional
 flag on the wire.
@@ -527,8 +561,8 @@ or "Value provider too high: <v> [<min>-<max>]". The range of a provider is the 
 |---|---|---|---|---|
 | `constant` | `value` (Int) | none | `value` (no draw) | `[value, value]` |
 | `uniform` | `min_inclusive`, `max_inclusive` (Int) | `max >= min`, else "Max must be at least min, min_inclusive: a, max_inclusive: b" | `rb(min, max)` (one draw) | `[min, max]` |
-| `biased_to_bottom` | `min_inclusive`, `max_inclusive` | `max >= min` | `min + r.nextInt( r.nextInt(max - min + 1) + 1 )` (inner draw first) | `[min, max]` |
-| `very_biased_to_bottom` | `min_inclusive`, `max_inclusive` | `max >= min` | with `a = r.nextInt(max - min + 1)`, `b = r.nextInt(a + 1)`, result `min + r.nextInt(b + 1)` (three draws, in that order) | `[min, max]` |
+| `biased_to_bottom` | `min_inclusive`, `max_inclusive` | `max >= min`, else "Max must be at least min, min_inclusive: a, max_inclusive: b" (read in `BiasedToBottomInt`) | `min + r.nextInt( r.nextInt(max - min + 1) + 1 )` (inner draw first) | `[min, max]` |
+| `very_biased_to_bottom` | `min_inclusive`, `max_inclusive` | `max >= min`, else the same message (read in `VeryBiasedToBottomInt`) | with `a = r.nextInt(max - min + 1)`, `b = r.nextInt(a + 1)`, result `min + r.nextInt(b + 1)` (three draws, in that order) | `[min, max]` |
 | `clamped` | `source` (IntProvider), `min_inclusive`, `max_inclusive` | `max >= min`, else "Max must be at least min, min_inclusive: a, max_inclusive: b" (read) | `clamp(source.sample(r), min, max)` | `[max(min, source.min), min(max, source.max)]` |
 | `weighted_list` | `distribution`: non-empty weighted list of IntProvider (7.5; field `distribution`, codec `WeightedList.nonEmptyCodec`) | total weight must be above 0: an empty list and a list whose weights are all 0 both fail with "Weighted list must contain at least one entry with non-zero weight" (7.5) | pick an entry by weight (one draw `r.nextInt(totalWeight)`, then the selector of 7.5), then `entry.sample(r)` | `minInclusive` is the smallest `minInclusive` of the entries and `maxInclusive` the largest `maxInclusive`, both computed once at construction (`WeightedListInt`: running `Math.min` / `Math.max` starting from `2147483647` and `-2147483648`) |
 | `clamped_normal` | `mean` (Float), `deviation` (Float), `min_inclusive`, `max_inclusive` (Int) | `max >= min`, else "Max must be larger than min: [a, b]" (read; this is a different text from the `clamped` row, whose failure text is "Max must be at least min, min_inclusive: a, max_inclusive: b") | `(int) clamp( mean + (float) r.nextGaussian() * deviation, (float)min, (float)max )` (truncating cast, one Gaussian draw) | `[min, max]` |
@@ -734,14 +768,14 @@ Each `EnvironmentAttribute` has: `type` (an `AttributeType`), `defaultValue` (re
 
 `valueCodec` of an attribute is the type's value codec **validated by the range**. A range is one of: *any*; or a float
 interval `[min, max]` (inclusive both ends). Predefined: `UNIT_FLOAT` = `[0, 1]`; `UNIT_FLOAT_EPSILON` = `[0, 0.9999999]`;
-`NON_NEGATIVE_FLOAT` = `[0, +Infinity]`. Validation error text: "<value> is not in range [<min>; <max>]". `sanitize(value)` clamps a float into the interval (used
+`NON_NEGATIVE_FLOAT` = `[0, +Infinity]`. Validation error text (a constant of the nested class `AttributeRange$2`, not of `AttributeRange`, which has no String constants): "<value> is not in range [<min>; <max>]". `sanitize(value)` clamps a float into the interval (used
 when a sampled or combined value leaves the range), and is the identity for *any*.
 
 ### 8.2 The 15 attribute types
 
 | Type id | Value codec (data form) | Default interpolation | Modifier library (op ids; section 8.4) |
 |---|---|---|---|
-| `boolean` | boolean | step at the end of a keyframe segment (see below) | `and`, `nand`, `or`, `nor`, `xor`, `xnor` (+ `override`) |
+| `boolean` | boolean | step; thresholds 1 (keyframe), 0 (state change), 0.5 (spatial), 0 (partial tick), see the "Step" paragraph below this table | `and`, `nand`, `or`, `nor`, `xor`, `xnor` (+ `override`) |
 | `tri_state` | `true`, `false`, `default` (also accepts a boolean) | step | `override` only |
 | `float` | Float | linear (`Mth.lerp`) | `alpha_blend`, `add`, `subtract`, `multiply`, `minimum`, `maximum` |
 | `angle_degrees` | Float | keyframe, state-change and spatial blending: linear; **partial-tick** blending: the shortest-arc function with a 90-degree limit (8.5) | same as `float` |
@@ -760,7 +794,8 @@ when a sampled or combined value leaves the range), and is the identity for *any
 An `AttributeType` carries four interpolation functions (keyframe, state change, spatial, partial tick). Interpolated types
 built with one function use it for all four; the five-argument form (`float`, `angle_degrees`, `integer`) takes a second
 function for the **partial-tick** slot only. `float`, `angle_degrees` and `integer` also define `toFloat` conversions
-(`integer` also `toInt`) used when a value is read as a number; the other types have none.
+(`integer` also `toInt`) used when a value is read as a number; the other types have none. `AttributeType` carries the failure
+texts of those conversions: "<value> cannot be represented as a float" and "<value> cannot be represented as an integer".
 
 "Step" types (`ofNotInterpolated`) have four interpolation functions that all select between the two endpoint values by a
 threshold on the progress `t in [0, 1]`: key-frame blending switches at `t >= 1`, state-change blending switches at
@@ -828,7 +863,7 @@ colours as `AARRGGBB`. Flags: S = syncable, N = not positional, I = spatially in
 | `gameplay/villager_activity` | activity | `idle` | n/a | |
 | `gameplay/baby_villager_activity` | activity | `idle` | n/a | |
 
-Registry order (the `environment_attribute` registration order, which is the numeric id in 46) is the row order above.
+Registry order (the `environment_attribute` registration order, which is the numeric id in 46) is the row order above. Verified from the static initialiser of `EnvironmentAttributes` in this round: the 51 name constants, in the order of the class's registration code, equal the 51 rows above in the same order (compared name by name); the claim about 46 itself was not re-read from 46.
 The syncable set (the attributes that survive the network `attributes` map and timeline tracks) is exactly the rows with
 flag S: **33** attributes (all 24 `visual/*` rows, all 4 `audio/*` rows, and 5 `gameplay/*` rows: `sky_light_level`,
 `water_evaporates`, `fast_lava`, `piglins_zombify`, `creaking_active`). This answers 04 Open question 7 (which attributes
@@ -901,12 +936,13 @@ hex string is tried first, then the alternative (`Codec.withAlternative`).
 Hex string rules (`ExtraCodecs.hexColor(digits)`), all errors being data errors of the field: the text must start with `#`
 ("Hex color must begin with #"); the number of characters after `#` must equal `digits` ("Hex color is wrong size, expected
 <digits> digits but got <n>"); the digits are parsed as an unsigned number that must lie in `[0, 16^digits - 1]` (an
-unparsable text or an out-of-range value is a further data error whose exact text was not recorded). Hex digits of either case are
+unparsable digit string gives "Invalid color value: <text>" and a value outside the range gives "Color value out of range:
+<text>"; both read in `ExtraCodecs`, the argument being the input text (inferred: the message builders take one String)). Hex digits of either case are
 accepted (inferred: the parser is `HexFormat.fromHexDigitsToLong`, not read further). Encoding a 3-vector writes the
 channels as `floor(component * 255)` (`ARGB.as8BitChannel`) and the string as `#` plus 6 digits (lower case, from the default `HexFormat`: recalled, not verified); encoding a 4-vector writes 8 digits in ARGB order. Converting a float vector to an Int uses the same
 `floor(component * 255)` and, for an RGB list, alpha 255.
 
-Worked examples (illustrative). `"#c0d8ff"` gives `(192/255, 216/255, 255/255)`; the Int `-16448205` (`0xFF050533`) for an
+Constructed test vectors (the values are invented for this document, not read from the artifact). `"#c0d8ff"` gives `(192/255, 216/255, 255/255)`; the Int `-16448205` (`0xFF050533`) for an
 `rgb_color` gives `(5/255, 5/255, 51/255)` (the alpha byte is ignored); `[0.5, 0.25, 1.0]` is accepted as is, without
 rounding to bytes, for a vector codec, but an Int-valued codec would store `(127, 63, 255)`. `"#80FF0000"` for an
 `argb_color` gives `(1.0, 0.0, 0.0, 128/255)`.
@@ -916,7 +952,7 @@ rounding to bytes, for a vector codec, but an Int-valued codec would store `(127
 | Name | Fields | Notes |
 |---|---|---|
 | BedRule | `can_sleep`: `always` / `when_dark` / `never` (Req); `can_set_spawn`: same enum (Req); `destroy_on_use` (boolean, Opt, default `false`); `destroy_on_leave` (boolean, Opt, default `false`); `error_message` (TextComponent, Opt, absent by default) | Three constants are defined (field order of the constructor: `can_sleep`, `can_set_spawn`, `destroy_on_use`, `destroy_on_leave`, `error_message`). `CAN_SLEEP_WHEN_DARK` = `when_dark`, **`always`**, false, false, translatable `block.minecraft.bed.no_sleep` (the default of `gameplay/bed_rule`). `DESTROY_ON_LEAVE` = `when_dark`, `never`, false, **true**, translatable `block.minecraft.bed.no_sleep` (the default of `gameplay/straw_bed_rule`). `DESTROY_ON_USE` = `never`, `never`, **true**, false, no error message (not the default of an attribute). The two enum tests in `BedRule$Rule` are `always` true, `never` false, `when_dark` evaluated against the level (body not read; 33) |
-| AmbientParticle | `particle` (particle options, Req); `probability` (Float in a range, Req) | per-tick spawn probability |
+| AmbientParticle | `particle` (particle options, Req); `probability` (Float in `[0, 1]` inclusive, Req: `Codec.floatRange(0, 1)` in `AmbientParticle`) | per-tick spawn probability |
 | AmbientSounds | `loop` (SoundEvent, Opt); `mood` (AmbientMoodSettings, Opt); `additions` (compact list of AmbientAdditionsSettings, Opt, default empty) | |
 | AmbientMoodSettings | `sound` (SoundEvent), `tick_delay` (Int), `block_search_extent` (Int), `offset` (Double); all Req | |
 | AmbientAdditionsSettings | `sound` (SoundEvent), `tick_chance` (Double); both Req | |
@@ -938,7 +974,7 @@ Therefore a server that serializes a biome with the network codec drops every no
 (the vanilla client does not need them: `gameplay/natural_mob_spawns` is not synced, so spawn data stays on the server),
 and a biome file (DIRECT codec) that sets `gameplay/sky_light_level` or `gameplay/fast_lava` fails to load.
 
-Worked example (illustrative shapes, not data). In a biome file:
+Constructed test vector (the colours and the file are invented, not read from the artifact). In a biome file:
 
 ```
 "attributes": {
@@ -970,7 +1006,7 @@ confirmed or resolved.
   `CODEC_ONLY_POSITIONAL` (8.8). `DimensionType.DIRECT_CODEC` uses `EnvironmentAttributeMap.CODEC`; its network twin uses the
   syncable-only form.
 - `Timeline.NETWORK_CODEC` is the direct codec with non-syncable tracks removed (04 §6); the direct codec's validation
-  (marker ticks in `[0, period)`, keyframe ticks in `[0, period]`, tracks' own checks) applies on both sides.
+  (section 9.2a: marker ticks in `[0, period)`, keyframe ticks in `[0, period]`, tracks' own checks) applies on both sides.
 
 ### 9.2 Timeline registry-level validation (resolves 04 Open question 8)
 
@@ -978,12 +1014,27 @@ The timeline registry is the only one in `WORLD_REGISTRIES` with a custom regist
 the `SYNCHRONIZED_REGISTRIES` entry for `timeline` has no validator, so the check runs on a **server** load and not on the
 client's network load. The check: for every timeline, take its `clock` (a `world_clock` holder) and the set of **time
 marker names** it defines; across **all** timelines, a marker name may be defined at most once **per clock**. A second
-definition is reported against the registry as "<marker> was defined multiple times in <timeline registered name>" (the
-text is `"%s was defined multiple times in %s"` with the marker key and the second timeline's registered name). The message
+definition is not a data error of the registry: `Timeline.validateRegistry` walks the registry elements in registry iteration
+order (id order), keeps a multimap clock -> marker names, and when adding a marker to a clock's set finds it already present
+it puts an `IllegalStateException` into the shared error map (resource key -> exception) under the **key of the offending
+(second) timeline's element**, with the message "<marker key> was defined multiple times in <registered name>" (text
+`"%s was defined multiple times in %s"`, the registered name coming from `Holder.getRegisteredName` of the holder being
+visited). A third definition gives a further exception under the third timeline's key. The message
 "Timeline has no track for <...>" exists in the same class but belongs to run-time look-ups of a track, not to loading.
 
 `clock` in a timeline is an **Id ref** into `world_clock` (no inline form, no tag). `period_ticks` is a positive Int.
 Time-marker keys are `ClockTimeMarker.KEY_CODEC` identifiers.
+
+### 9.2a Timeline codec checks (read from `Timeline`, `AttributeTrack`, `KeyframeTrack`, `Keyframe`)
+
+Timeline record fields (`Timeline.CODEC`, field order): `clock` (Id ref into `world_clock`, Req), `period_ticks` (`POSITIVE_INT`, Opt, absent by default), `tracks` (map attribute id to track, Opt, default empty; the track codec is chosen by the attribute, section 8.4), `time_markers` (map of `ClockTimeMarker` key to `{ticks, show_in_commands}`, Opt, default empty; `TimeMarkerInfo` fields `ticks` Int, `show_in_commands` boolean). The whole-timeline check `validateInternal` runs **after** the record decodes and only when `period_ticks` is present (with no period it returns the timeline unchanged, so markers and keyframes are then unbounded):
+
+| # | Check | Message (constants of the named class) |
+|---|---|---|
+| 1 | For each time marker, in the map's iteration order: `0 <= ticks < period_ticks`; the first failure ends validation | "Time Marker <marker key> must be in range [0; <period_ticks>)" (`Timeline`; the closing bracket is a parenthesis: upper bound exclusive) |
+| 2 | For each track, `KeyframeTrack.validatePeriod`: every keyframe has `0 <= ticks <= period_ticks` (upper bound **inclusive**); results of the tracks are combined with `apply2stable` | "Keyframe at tick <ticks> must be in range [0; <period_ticks>]" (`KeyframeTrack`) |
+
+Track codec (`AttributeTrack` plus `KeyframeTrack.mapCodec`): `modifier` (Opt; the modifier operation, `override` when absent is **recalled, not verified**: the default was not traced), then the argument track fields `keyframes` (list of `{ticks: Int, value}`, Req) and `ease` (`EasingType`, Opt, default `linear`). `KeyframeTrack.validateKeyframes` checks, in this order: the list is not empty ("Keyframes must not be empty"); the keyframes are in non-decreasing order of `ticks` ("Keyframes must be ordered by ticks field"); no more than two keyframes share one tick ("More than 2 keyframes on same tick: <keyframe>"; exactly how runs of equal ticks are counted was inferred from a loop over the sorted list, so treat it as "three or more at the same tick fails"). A run-time sampler of an empty track reports "Track has no keyframes" (not a load error). Non-syncable tracks are removed from the network form (`filterSyncableTracks`, 9.1). The set of easing type ids, the semantics of two keyframes on one tick, and the `ClockTimeMarker` and `WorldClock` codecs were not read here (Open question 23).
 
 ### 9.3 Numeric field leniency (resolves 04 Open question 9)
 
@@ -1069,7 +1120,7 @@ is missing (6.3).
 
 | # | Check | Condition | Result |
 |---|---|---|---|
-| V1 | Identifier syntax | namespace in `[a-z0-9_.-]`, not `..`; path in `[a-z0-9_./-]`; split at the first `:` | element or field error |
+| V1 | Identifier syntax | namespace in `[a-z0-9_.-]`, not `..`; path in `[a-z0-9_./-]`; split at the first `:` | element or field error with the messages of section 1 ("Non [a-z0-9_.-] character in namespace of identifier: ...", "Non [a-z0-9/._-] character in path of location: ...", wrapped as "Not a valid resource location: ...") |
 | V2 | JSON syntax | strict JSON, whole document consumed | element error ("Did not consume the entire document.") |
 | V3 | Element decode | the registry element codec accepts the value (every Req field present, ranges, enums) | element error "Failed to parse <id> from pack <pack>" (pack load), "Failed to parse value ... for key ... from server" (network) |
 | V4 | Missing pack file (network, Data-less entry) | file not found in the known data source | "Failed to find resource <file> for element <id>" |
@@ -1077,12 +1128,12 @@ is missing (6.3).
 | V6 | Unbound element reference | a key named by some element was never registered | freeze: "Unbound values in registry <r>: <keys>" |
 | V7 | Unbound tag reference | a `#tag` named by some element was never bound | freeze: "Unbound tags in registry <r>: <tags>" |
 | V8 | Non-empty registries | the 13 listed in 2.1 have at least one element | "Registry must be non-empty: <r>" |
-| V9 | Timeline markers | unique per clock across the registry | "<marker> was defined multiple times in <timeline>" |
-| V10 | Int/float provider bounds | per section 7.1 and 7.2 | "Max must be at least min, ...", "Max must be larger than min: [a, b]", "Plateau can at most be the full span: [a, b]", "Value provider too low/high: ..." |
+| V9 | Timeline markers | unique per clock across the registry | exception recorded under the second timeline's element key: "<marker> was defined multiple times in <timeline>" (9.2) |
+| V10 | Int/float provider bounds | per section 7.1 and 7.2 | "Max must be at least min, min_inclusive: a, max_inclusive: b" (`uniform`, `biased_to_bottom`, `very_biased_to_bottom` and `clamped` int providers), "Max must be larger than min: [a, b]", "Plateau can at most be the full span: [a, b]", "Value provider too low/high: ..." |
 | V11 | Weighted list | weights >= 0 and total weight above 0 (an empty list and an all-zero list are the same failure); sum of weights at most 2147483647 | decode error "Weighted list must contain at least one entry with non-zero weight" for an empty or all-zero list; "Sum of weights must be <= 2147483647" on overflow (7.5). "Weighted list has no elements" is a sampling-time exception, not a decode error |
 | V12 | Vertical anchor | exactly one key, value in `[-2032, 2031]` | decode error |
 | V13 | Environment attribute value | within the attribute range; for the biome map, only positional attributes; modifier allowed for the type | decode errors of 8.1, 8.4, 8.8 |
-| V14 | Colour string | starts with `#`, exact digit count | "Hex color must begin with #" or length error |
+| V14 | Colour string | starts with `#`, exact digit count | "Hex color must begin with #", "Hex color is wrong size, expected <n> digits but got <m>", "Invalid color value: <text>" or "Color value out of range: <text>" |
 | V15 | Tag file read | opens, parses as strict JSON, `values` present and every entry decodes | file skipped and logged. A syntax or I/O failure leaves the tag undefined (if it was its only file); a decode failure leaves the tag defined as an empty tag (6.3 step A) |
 | V16 | Tag references | required entries resolve | tag missing, logged; other tags unaffected |
 | V17 | Dimension type bounds | `min_y` in `[-2032, 2031]`, `height` in `[16, 4064]`, `logical_height` in `[0, 4064]` (codec ranges), then the five record-constructor checks of 9.5 in their order (height at least 16, `min_y + height` at most 2032, `logical_height` at most `height`, `height` a multiple of 16, `min_y` a multiple of 16) | element error with the messages of 9.5 |
@@ -1097,8 +1148,9 @@ Test cases for implementers (each states the input, the expected result):
    weight, make sure this is intentional!" is also logged for the second); `"distribution": [{"data": 3, "weight": 1}]`
    decodes and always samples 3 with exactly one `nextInt(1)` draw consumed (7.5).
 4. A biome file with `"attributes": {"minecraft:gameplay/fast_lava": true}` fails to load.
-5. Two timelines on the same clock each defining the time marker `minecraft:noon` produce one registry error naming the
-   second timeline.
+5. Two timelines on the same clock each defining the time marker `minecraft:noon` produce one **element** error (an exception, not a data error), recorded against the resource key of the second timeline in
+   id order, with message "minecraft:noon was defined multiple times in <second timeline's registered name>" (marker key
+   written as in 9.2).
 6. A tag file with `{"values": ["minecraft:missing_block"]}` for the `block` registry (static): the tag is missing and
    the log names `minecraft:missing_block`; with `{"id": "minecraft:missing_block", "required": false}` the tag loads
    empty.
@@ -1149,8 +1201,8 @@ Test cases for implementers (each states the input, the expected result):
 10. **`overlay` modifier on `mob_spawn_settings`.** The merge rule and the `MobSpawnSettings` codec fields are in 18 App A or
     RS13; they were not re-read.
 11. **Colour codecs, residual.** The forms are now read (8.6). Not recorded: the exact texts of the data errors for a float
-    list of the wrong length (the `VECTOR3F` and `VECTOR4F` list codecs), for an unparsable hex digit string and for a hex
-    value outside its range (only the `Hex color must begin with #` and `Hex color is wrong size` texts were captured), and
+    list of the wrong length (the `VECTOR3F` and `VECTOR4F` list codecs), (the texts for an unparsable hex digit string and for a hex
+    value outside its range are now read: 8.6), and
     whether an upper-case digit string is accepted (the parser is `HexFormat`, library code, recalled not verified).
 12. **`BedRule` and `Music`, residual.** Fields, defaults and the three `BedRule` constants are read (8.7). Not read: the
     level-dependent test behind `BedRule$Rule.when_dark` (33 owns run-time use), and whether any check relates `max_delay` to
@@ -1169,9 +1221,12 @@ Test cases for implementers (each states the input, the expected result):
     registries, `enchantment` and its effect components (RS8), the track checks of `timeline` other than the marker checks
     of 9.2, and the nested records of `test_environment` and `test_instance` were not searched for error strings beyond what
     04 §6 already tabulates.
-18. **Where the error text "Found direct holder ... value in tag ..." came from.** It is not in `TagNetworkSerialization`
-    (the only String constant of that class is "Can't serialize unregistered value <v>") nor anywhere in the `net/minecraft`
-    class files searched by string for the text; it was recalled text and has been removed from 6.6.
+18. **Resolved (was: where the error text "Found direct holder ... value in tag ..." came from).** It is a String constant of
+    `net.minecraft.core.MappedRegistry` (with "Can't create named set ... from outside registry" and "Invalid method used for tag
+    loading"), used by the bind-time member check of 3.6; `TagNetworkSerialization` only has "Can't serialize unregistered
+    value". Residual: the caller chain was read only down to `refreshTagsInHolders`, and where "Invalid method used for tag
+    loading" is thrown was not traced. No tag file or Update Tags payload can produce a direct holder (both resolve to
+    reference holders), so the check is believed to guard code-built tags only (inferred).
 19. **`Direction` enum order.** The draw of `rotated` indexes `Direction.VALUES`, assigned from `Direction.values()`; the
     declaration order `down, up, north, south, west, east` was read from the static initialiser's constant order (the
     sorted-by-id arrays also present in the class are other fields), and `Util.getRandom(array, r)` is one `nextInt(length)`.
@@ -1179,5 +1234,15 @@ Test cases for implementers (each states the input, the expected result):
     code and not in the artifact; it is **recalled, not verified**.
 21. **Sections not exhaustively re-verified.** A later review checked the provider and DimensionType messages (7.1, 7.2, 9.5)
     against the class constants but did not exhaustively re-verify 7.4 (block state provider semantics), the dialog validation
-    texts in 9.5, the network registry loading message texts in section 4, or the HolderSet and id-reference codec error strings
-    in 5.1. A later reviewer should spot-check these.
+    texts in 9.5. The network-load message texts of section 4 and the HolderSet and id-reference codec strings of 5.1 were later
+    matched against the constant pools (`RegistryLoadTask$PendingRegistration`; `HolderSetCodec`, `RegistryFixedCodec`) and are
+    verified. A later reviewer should spot-check the rest.
+22. **`realms` namespace and the path-resolution guard.** `Identifier.REALMS_NAMESPACE` (`realms`) is declared but not used by
+    any `Identifier` method. Searched: the constant pool and bytecode of `Identifier` only; no other class was searched for a
+    special case of that namespace, and the callers of `Identifier.resolveAgainst` (the "tried to access path" guard) were not
+    traced.
+23. **Timeline and track details not read.** The default of the track `modifier` field, the `EasingType` ids, the behaviour of two
+    keyframes on one tick, the `ClockTimeMarker`, `WorldClock` and `Timelines` (built-in timeline data) contents, and the
+    field-level validation of `biome` (beyond 04 §6, 8.8 and 9.1) and of the `spawn_conditions` priority selector (the priority
+    value range and ordering rule) were not read in this round. Searched: string constants of `Timeline`, `Timeline$TimeMarkerInfo`,
+    `AttributeTrack`, `KeyframeTrack`, `Keyframe`.
