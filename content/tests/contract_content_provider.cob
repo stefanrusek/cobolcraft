@@ -298,7 +298,7 @@
      MOVE "cobolcraft:void" TO TL-EXPECTED
      MOVE WS-B-KEY TO TL-OBSERVED
      PERFORM ASSERT-TEXT
-     MOVE 18 TO WS-STATE
+     MOVE 19 TO WS-STATE
      CALL "CONTENT-BLOCK-OF-STATE" USING WS-STATE WS-ID WS-INDEX WS-BLOCK-ROW WS-STATUS
      MOVE "contract provider: an unknown state is not found in the cobolcraft set too" TO TL-CASE
      MOVE CT-NOT-FOUND TO TL-EXPECTED-N

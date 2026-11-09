@@ -2,7 +2,7 @@
 *> 5.2 to 5.4): the cobolcraft set answers the item lookups with the eighteen items (ids 0 to 17) as the same
 *> record shapes the standard set returns: key, class, the block a block item places, stack size, and the
 *> default components (tool, attributes, food, consumable) as "name value" entries of the summary. The bench
-*> item (id 18) belongs to the bench phase.
+*> item (id 18) is covered by test_builtin_bench.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-BUILTIN-ITEMS.
  DATA DIVISION.
@@ -199,9 +199,9 @@
      MOVE "cobolcraft:nothing" TO TL-EXPECTED
      MOVE WS-R-KEY TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 18 TO WS-ID
+     MOVE 19 TO WS-ID
      CALL "CONTENT-ITEM-BY-ID" USING WS-ID WS-ROW WS-STATUS
-     MOVE "builtin items: item 18 is not found (the bench is a later phase)" TO TL-CASE
+     MOVE "builtin items: item 19 is not found" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE CT-NOT-FOUND TO TL-EXPECTED-N
      MOVE WS-STATUS TO TL-OBSERVED-N

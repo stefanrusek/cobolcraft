@@ -1,14 +1,14 @@
 *> The built-in block layer of the cobolcraft world type (T0203; docs/design/standin-content.md section 1.1 and
-*> 1.2, cobolcraft-standard-core.md section 5.1): twelve blocks, eighteen states (state ids 0 to 17), as rows
+*> 1.2, cobolcraft-standard-core.md section 5.1): thirteen blocks, nineteen states (state ids 0 to 18), as rows
 *> of the same CT-BLOCK-ROW shape the generated standard table has. Values are transcribed from the table of
-*> core section 5.1 (columns of 24 section 7); the crafting bench (block 12, state 18) belongs to the
-*> bench phase. Each line below is one row, its columns separated by "|", in the order of CT-BLOCK-ROW;
+*> core section 5.1 (columns of 24 section 7); the crafting bench is block 12, state 18 (T0218, appended,
+*> WT-12). Each line below is one row, its columns separated by "|", in the order of CT-BLOCK-ROW;
 *> an empty column is blank.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-BLOCK-ROW.
-*> USING block id (BINARY-LONG), row out (PIC X(819)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 11,
-*> the row left as it was), count out (BINARY-LONG: 12).
+*> USING block id (BINARY-LONG), row out (PIC X(819)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 12,
+*> the row left as it was), count out (BINARY-LONG: 13).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -25,8 +25,9 @@
     05 FILLER PIC X(190) VALUE "9|cobolcraft:ledger_tile|Block||1|15|15|0.8|0.8|no|0|STONE|STONE|PUSH_PULL|BASEDRUM|".
     05 FILLER PIC X(190) VALUE "10|cobolcraft:goto_pad|Block||1|16|16|1.3|1.3|no|6|METAL|METAL|PUSH_PULL|HARP|".
     05 FILLER PIC X(190) VALUE "11|cobolcraft:slag|Block||1|17|17|0.4|0.4|no|0|NETHER|NETHERRACK|PUSH_PULL|BASEDRUM|".
+    05 FILLER PIC X(190) VALUE "12|cobolcraft:crafting_bench|CraftingTableBlock||1|18|18|0.8|0.8|no|0|WOOD|WOOD|PUSH_PULL|BASS|".
  01 WS-TABLE REDEFINES WS-ROWS.
-    05 WS-LINE             PIC X(190) OCCURS 12 TIMES.
+    05 WS-LINE             PIC X(190) OCCURS 13 TIMES.
  01 WS-INDEX               BINARY-LONG.
  01 WS-BUILT.
     05 WS-B-ID             PIC X(4).
@@ -51,8 +52,8 @@
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.
-     MOVE 12 TO L-COUNT
-     IF L-ID < 0 OR L-ID > 11
+     MOVE 13 TO L-COUNT
+     IF L-ID < 0 OR L-ID > 12
          MOVE CT-NOT-FOUND TO L-STATUS
          GOBACK
      END-IF
@@ -70,20 +71,20 @@
  PROGRAM-ID. BUILTIN-BLOCK-TAGS.
 *> No parameters: binds the built-in block tags of the cobolcraft set (cobolcraft-standard-core.md section 4.1 and 4.4;
 *> members are block ids, not state ids) with TAG-PUT: the two mineable classes, replaceable, air, and
-*> causes_suffocation with the four blocks_motion tags (every block but void). The crafting bench joins the
-*> lists in the bench phase.
+*> causes_suffocation with the four blocks_motion tags (every block but void). The crafting bench (12) is in
+*> mineable/pickaxe and those five lists.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-TAGS.
-    05 FILLER PIC X(120) VALUE "minecraft:mineable/pickaxe|2 6 9 11".
+    05 FILLER PIC X(120) VALUE "minecraft:mineable/pickaxe|2 6 9 11 12".
     05 FILLER PIC X(120) VALUE "minecraft:mineable/shovel|3 4 5".
     05 FILLER PIC X(120) VALUE "minecraft:replaceable|0".
     05 FILLER PIC X(120) VALUE "minecraft:air|0".
-    05 FILLER PIC X(120) VALUE "minecraft:causes_suffocation|1 2 3 4 5 6 7 8 9 10 11".
-    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion|1 2 3 4 5 6 7 8 9 10 11".
-    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_no_leaves|1 2 3 4 5 6 7 8 9 10 11".
-    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_in_heightmap|1 2 3 4 5 6 7 8 9 10 11".
-    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_in_heightmap_no_leaves|1 2 3 4 5 6 7 8 9 10 11".
+    05 FILLER PIC X(120) VALUE "minecraft:causes_suffocation|1 2 3 4 5 6 7 8 9 10 11 12".
+    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion|1 2 3 4 5 6 7 8 9 10 11 12".
+    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_no_leaves|1 2 3 4 5 6 7 8 9 10 11 12".
+    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_in_heightmap|1 2 3 4 5 6 7 8 9 10 11 12".
+    05 FILLER PIC X(120) VALUE "minecraft:blocks_motion_in_heightmap_no_leaves|1 2 3 4 5 6 7 8 9 10 11 12".
  01 WS-TAG-TABLE REDEFINES WS-TAGS.
     05 WS-TAG-LINE         PIC X(120) OCCURS 9 TIMES.
  01 WS-REGISTRY            PIC X(48) VALUE "block".

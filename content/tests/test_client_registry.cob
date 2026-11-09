@@ -341,13 +341,13 @@
      MOVE "client registry: ... finish is ok" TO TL-CASE
      MOVE CT-OK TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
-     MOVE "client registry: the cobolcraft set has its 12 blocks" TO TL-CASE
-     MOVE 12 TO TL-EXPECTED-N
+     MOVE "client registry: the cobolcraft set has its 13 blocks" TO TL-CASE
+     MOVE 13 TO TL-EXPECTED-N
      MOVE CT-BLOCK-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
-     MOVE "client registry: ... 18 states, 18 items, 4 entity types" TO TL-CASE
+     MOVE "client registry: ... 19 states, 19 items, 4 entity types" TO TL-CASE
      COMPUTE TL-OBSERVED-N = CT-STATE-COUNT * 10000 + CT-ITEM-COUNT * 100 + CT-ENTITY-COUNT
-     MOVE 181804 TO TL-EXPECTED-N
+     MOVE 191904 TO TL-EXPECTED-N
      PERFORM ASSERT-NUMBER
      MOVE "cobolcraft:greystone" TO WS-KEY
      CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK-ID WS-BLOCK-ROW WS-STATUS

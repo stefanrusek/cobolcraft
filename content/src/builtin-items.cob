@@ -1,17 +1,17 @@
 *> The built-in item layer of the cobolcraft world type (T0205; docs/design/standin-content.md section 2,
-*> cobolcraft-standard-core.md sections 5.2 to 5.4): eighteen items (ids 0 to 17) as rows of the same CT-ITEM-ROW
+*> cobolcraft-standard-core.md sections 5.2 to 5.4): nineteen items (ids 0 to 18) as rows of the same CT-ITEM-ROW
 *> shape the generated standard table has. BLOCK is the block id a block item places (standin 1.1), STACK the
 *> maximum stack size, and the summary holds the default components that differ from the prototype as
 *> "name value" entries separated by ", ": the tool rule ("tool <block set> <speed>"), the attack modifiers
 *> of core 5.3 ("attack_damage", "attack_speed": the attribute modifier amounts), "weapon" (damage per
 *> attack), "food" (nutrition; saturation is 0.0) and "consumable" (consume seconds and animation, core
-*> 5.4). The crafting bench item (id 18) belongs to the bench phase. Each line below is one row, its
+*> 5.4). The crafting bench item (id 18, appended: T0218) places block 12. Each line below is one row, its
 *> columns separated by "|": id, key, class, block, stack, damage, flags, summary.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-ITEM-ROW.
-*> USING item id (BINARY-LONG), row out (PIC X(270)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 17,
-*> the row left as it was), count out (BINARY-LONG: 18).
+*> USING item id (BINARY-LONG), row out (PIC X(270)), status out (CT-OK; CT-NOT-FOUND for an id outside 0 to 18,
+*> the row left as it was), count out (BINARY-LONG: 19).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -34,8 +34,9 @@
     05 FILLER PIC X(190) VALUE "15|cobolcraft:dump_shard|||64|||".
     05 FILLER PIC X(190) VALUE "16|cobolcraft:goto_pad|BlockItem|10|16|||".
     05 FILLER PIC X(190) VALUE "17|cobolcraft:slag|BlockItem|11|64|||".
+    05 FILLER PIC X(190) VALUE "18|cobolcraft:crafting_bench|BlockItem|12|64|||".
  01 WS-TABLE REDEFINES WS-ROWS.
-    05 WS-LINE             PIC X(190) OCCURS 18 TIMES.
+    05 WS-LINE             PIC X(190) OCCURS 19 TIMES.
  01 WS-INDEX               BINARY-LONG.
  01 WS-BUILT.
     05 WS-B-ID             PIC X(4).
@@ -52,8 +53,8 @@
  01 L-STATUS               BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-ROW L-STATUS L-COUNT.
-     MOVE 18 TO L-COUNT
-     IF L-ID < 0 OR L-ID > 17
+     MOVE 19 TO L-COUNT
+     IF L-ID < 0 OR L-ID > 18
          MOVE CT-NOT-FOUND TO L-STATUS
          GOBACK
      END-IF

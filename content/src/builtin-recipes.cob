@@ -1,15 +1,15 @@
 *> The built-in recipe layer of the cobolcraft world type (T0215; docs/design/cobolcraft-standard-core.md section 5.7 and
 *> decision CORE-23, docs/design/standin-content.md section 13): the stand-in recipes as rows of the RC-STORE shape
 *> the recipe loader (recipes.cob) gives a data file. Nine crafting_shapeless recipes in the order of core 5.7
-*> (display ids 0 to 8): each ingredient is written once per unit, every item is a cobolcraft: item, the category is
+*> (display ids 0 to 8), then the bench recipe (display id 9, T0218): each ingredient is written once per unit, every item is a cobolcraft: item, the category is
 *> that of the table of 5.7, there is no group, show_notification is false and no recipe has an unlock condition (a
-*> player knows all recipes from joining, core 5.7 "Unlock"). The bench recipe (display id 9, shaped) belongs to
-*> the bench phase (core 5.7, T0217 to T0218). Each line below is one recipe, its columns separated by "|": key,
+*> player knows all recipes from joining, core 5.7 "Unlock"). The bench recipe is crafting_shaped, the pattern
+*> ["##","##"] with # = ledger_tile: a 2 x 2 pattern whose four cells are held row by row, as the loader does. Each line below is one recipe, its columns separated by "|": key,
 *> category, result, result count, ingredients separated by spaces (all names without "cobolcraft:").
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BUILTIN-RECIPES-LOAD.
-*> No parameters: replaces the content of RC-STORE with the nine built-in recipes.
+*> No parameters: replaces the content of RC-STORE with the ten built-in recipes.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTRECIPE.
@@ -23,8 +23,9 @@
     05 FILLER PIC X(140) VALUE "seared_flank|misc|seared_flank|2|grazer_flank grazer_flank glowtube".
     05 FILLER PIC X(140) VALUE "goto_pad|misc|goto_pad|1|ledger_tile ledger_tile ledger_tile ledger_tile dump_shard dump_shard glowtube".
     05 FILLER PIC X(140) VALUE "dump_shard|misc|dump_shard|1|cardstack cardstack lucite lucite".
+    05 FILLER PIC X(140) VALUE "crafting_bench|building|crafting_bench|1|ledger_tile ledger_tile ledger_tile ledger_tile".
  01 WS-TABLE REDEFINES WS-ROWS.
-    05 WS-LINE             PIC X(140) OCCURS 9 TIMES.
+    05 WS-LINE             PIC X(140) OCCURS 10 TIMES.
  01 WS-INDEX               BINARY-LONG.
  01 WS-KEY                 PIC X(40).
  01 WS-CATEGORY            PIC X(24).
@@ -36,13 +37,18 @@
  01 WS-END                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "RECIPES-FREE"
-     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > 9
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > 10
          MOVE SPACES TO WS-LIST
          UNSTRING WS-LINE(WS-INDEX) DELIMITED BY "|" INTO WS-KEY WS-CATEGORY WS-RESULT WS-COUNT WS-LIST
          ADD 1 TO RC-COUNT
          INITIALIZE RC-ROW(RC-COUNT)
          STRING "cobolcraft:" FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO RR-KEY(RC-COUNT)
-         MOVE 1 TO RR-SERIALIZER(RC-COUNT)
+         IF WS-KEY = "crafting_bench"
+             MOVE 0 TO RR-SERIALIZER(RC-COUNT)
+             MOVE 2 TO RR-WIDTH(RC-COUNT) RR-HEIGHT(RC-COUNT)
+         ELSE
+             MOVE 1 TO RR-SERIALIZER(RC-COUNT)
+         END-IF
          MOVE WS-CATEGORY TO RR-CATEGORY(RC-COUNT)
          STRING "cobolcraft:" FUNCTION TRIM(WS-RESULT) DELIMITED BY SIZE INTO RR-RESULT-ID(RC-COUNT)
          MOVE WS-COUNT TO RR-RESULT-COUNT(RC-COUNT)

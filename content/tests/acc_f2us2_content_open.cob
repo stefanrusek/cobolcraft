@@ -161,16 +161,16 @@
      MOVE CT-TYPE-COBOLCRAFT TO TL-EXPECTED-N
      MOVE CT-SET-TYPE TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
-     MOVE "acceptance US2-cobolcraft: 12 blocks" TO TL-CASE
-     MOVE 12 TO TL-EXPECTED-N
+     MOVE "acceptance US2-cobolcraft: 13 blocks" TO TL-CASE
+     MOVE 13 TO TL-EXPECTED-N
      MOVE CT-BLOCK-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
-     MOVE "acceptance US2-cobolcraft: 18 states" TO TL-CASE
-     MOVE 18 TO TL-EXPECTED-N
+     MOVE "acceptance US2-cobolcraft: 19 states" TO TL-CASE
+     MOVE 19 TO TL-EXPECTED-N
      MOVE CT-STATE-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
-     MOVE "acceptance US2-cobolcraft: 18 items" TO TL-CASE
-     MOVE 18 TO TL-EXPECTED-N
+     MOVE "acceptance US2-cobolcraft: 19 items" TO TL-CASE
+     MOVE 19 TO TL-EXPECTED-N
      MOVE CT-ITEM-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
      MOVE "acceptance US2-cobolcraft: 4 entity types" TO TL-CASE
@@ -205,8 +205,8 @@
      MOVE "minecraft:mineable/pickaxe" TO WS-TAG
      MOVE 64 TO WS-CAPACITY
      CALL "CONTENT-TAG-MEMBERS" USING WS-TAG-REGISTRY WS-TAG WS-COUNT WS-IDS WS-CAPACITY WS-STATUS
-     MOVE "acceptance US2-cobolcraft: mineable/pickaxe has 4 members (the bench joins later)" TO TL-CASE
-     MOVE 4 TO TL-EXPECTED-N
+     MOVE "acceptance US2-cobolcraft: mineable/pickaxe has 5 members (the bench is the fifth)" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
      MOVE "acceptance US2-cobolcraft: ... greystone, cardstack, ledger_tile, slag (2, 6, 9, 11)" TO TL-CASE

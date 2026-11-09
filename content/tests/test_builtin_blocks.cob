@@ -196,9 +196,9 @@
      MOVE 2 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 18 TO WS-STATE
+     MOVE 19 TO WS-STATE
      CALL "CONTENT-BLOCK-OF-STATE" USING WS-STATE WS-ID WS-INDEX WS-ROW WS-STATUS
-     MOVE "builtin blocks: state 18 is not found (the bench is a later phase)" TO TL-CASE
+     MOVE "builtin blocks: state 19 is not found" TO TL-CASE
      MOVE CT-NOT-FOUND TO TL-EXPECTED-N
      MOVE WS-STATUS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -245,16 +245,16 @@
      MOVE 17 TO TL-EXPECTED-N
      MOVE WS-STATE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 12 TO WS-ID
+     MOVE 13 TO WS-ID
      CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
-     MOVE "builtin blocks: block 12 is not found" TO TL-CASE
+     MOVE "builtin blocks: block 13 is not found" TO TL-CASE
      MOVE CT-NOT-FOUND TO TL-EXPECTED-N
      MOVE WS-STATUS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-ID
      CALL "BLOCK-ROW-AT" USING WS-ID WS-ROW WS-STATUS WS-COUNT
-     MOVE "builtin blocks: the layer has 12 rows" TO TL-CASE
-     MOVE 12 TO TL-EXPECTED-N
+     MOVE "builtin blocks: the layer has 13 rows" TO TL-CASE
+     MOVE 13 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -1 TO WS-ID
@@ -270,14 +270,14 @@
      MOVE "minecraft:mineable/pickaxe" TO WS-TAG
      MOVE 16 TO WS-CAPACITY
      CALL "CONTENT-TAG-MEMBERS" USING WS-TAG-REGISTRY WS-TAG WS-COUNT WS-MEMBERS WS-CAPACITY WS-STATUS
-     MOVE "builtin blocks: mineable/pickaxe members 2, 6, 9, 11 (core 4.4)" TO TL-CASE
+     MOVE "builtin blocks: mineable/pickaxe members 2, 6, 9, 11, 12 (core 4.4)" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-OBSERVED-N = WS-MEMBER(1) * 1000000000 + WS-MEMBER(2) * 1000000 + WS-MEMBER(3) * 1000
          + WS-MEMBER(4)
      MOVE 2006009011 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "builtin blocks: mineable/pickaxe has 4 members" TO TL-CASE
-     MOVE 4 TO TL-EXPECTED-N
+     MOVE "builtin blocks: mineable/pickaxe has 5 members" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:mineable/shovel" TO WS-TAG
@@ -299,14 +299,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:causes_suffocation" TO WS-TAG
      CALL "CONTENT-TAG-MEMBERS" USING WS-TAG-REGISTRY WS-TAG WS-COUNT WS-MEMBERS WS-CAPACITY WS-STATUS
-     MOVE "builtin blocks: causes_suffocation holds blocks 1 to 11" TO TL-CASE
-     COMPUTE TL-OBSERVED-N = WS-COUNT * 100 + WS-MEMBER(1) + WS-MEMBER(11) * 10
-     MOVE 1211 TO TL-EXPECTED-N
+     MOVE "builtin blocks: causes_suffocation holds blocks 1 to 12" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-COUNT * 100 + WS-MEMBER(1) + WS-MEMBER(12) * 10
+     MOVE 1321 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "minecraft:blocks_motion_in_heightmap_no_leaves" TO WS-TAG
      CALL "CONTENT-TAG-MEMBERS" USING WS-TAG-REGISTRY WS-TAG WS-COUNT WS-MEMBERS WS-CAPACITY WS-STATUS
-     MOVE "builtin blocks: the last blocks_motion tag holds blocks 1 to 11" TO TL-CASE
-     COMPUTE TL-OBSERVED-N = WS-COUNT * 100 + WS-MEMBER(1) + WS-MEMBER(11) * 10
+     MOVE "builtin blocks: the last blocks_motion tag holds blocks 1 to 12" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-COUNT * 100 + WS-MEMBER(1) + WS-MEMBER(12) * 10
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-STATE
      MOVE "minecraft:mineable/pickaxe" TO WS-TAG

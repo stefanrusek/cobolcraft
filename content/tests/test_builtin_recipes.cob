@@ -3,8 +3,8 @@
 *> with the cobolcraft recipes as rows of the same shape RECIPES-LOAD gives a data file: the nine stand-in recipes
 *> (display ids 0 to 8, in the order of core 5.7), each a crafting_shapeless row (serializer 1) with its category,
 *> its result and one ingredient slot per unit, every item a cobolcraft: item, no group, show_notification false
-*> and no unlock condition (core 5.7: a player knows all recipes from joining). The bench recipe (display id 9) belongs
-*> to the bench phase. RECIPE-FIND finds a row by key; RECIPES-FREE empties the store.
+*> and no unlock condition (core 5.7: a player knows all recipes from joining). The bench recipe (display id 9) is covered by
+*> test_builtin_bench. RECIPE-FIND finds a row by key; RECIPES-FREE empties the store.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-BUILTIN-RECIPES.
  DATA DIVISION.
@@ -45,9 +45,9 @@
  01 WS-I-TEXT              PIC 9.
  PROCEDURE DIVISION.
      CALL "BUILTIN-RECIPES-LOAD"
-     MOVE "builtin recipes: nine rows" TO TL-CASE
+     MOVE "builtin recipes: nine stand-in rows and the bench" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 9 TO TL-EXPECTED-N
+     MOVE 10 TO TL-EXPECTED-N
      MOVE RC-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "builtin recipes: no unlock conditions" TO TL-CASE
@@ -179,8 +179,8 @@
      MOVE WS-ROW TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "BUILTIN-RECIPES-LOAD"
-     MOVE "builtin recipes: loading again keeps nine rows" TO TL-CASE
-     MOVE 9 TO TL-EXPECTED-N
+     MOVE "builtin recipes: loading again keeps ten rows" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
      MOVE RC-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "RECIPES-FREE"
