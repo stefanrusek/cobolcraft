@@ -8,7 +8,7 @@
 
 | Field | Meaning |
 |---|---|
-| `CS-WORLD-TYPE` PIC X(10) | `standard` or `cobolcraft`; used only when a world is created, ignored for an existing world (its `level.dat` decides, WT-4). |
+| `CS-WORLD-TYPE` PIC X(10) | `standard`, `cobolcraft`, or `debug` (the hidden test-tool type of plan "Operator addition: debug world"; it uses the standard content set); used only when a world is created, ignored for an existing world (its `level.dat` decides, WT-4). |
 | `CS-GENERATED-DIR` PIC X(1024) | the generated directory (22 §5.1), default `<game directory>/generated`. |
 | `CS-SEED-TEXT` PIC X(64) | creation seed text; empty means a random seed. The text-to-seed rule is the clean-room answer to seed text hash (11 Open question; a Foundational docs round). |
 | `CS-GAME-DIR` PIC X(1024) | game directory (for `datapacks`-independent lookups and messages). |

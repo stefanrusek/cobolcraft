@@ -289,8 +289,10 @@ package's `tests/`, run by every lane gate) is kept.
 
 ## Test strategy (constitution 4.1, 4.2, 4.3)
 
-- **Naming.** Feature-2 tests are `acc_f2us<N>_<slug>` so they never collide with 001's `acc_us<N>_...` (both
-  features number stories from 1); case names carry "acceptance" and Given/When/Then as in 001 R9. Contract tests
+- **Naming.** Story-level acceptance tests are `acc_f2us<N>_<slug>` so they never collide with 001's `acc_us<N>_...` (both
+  features number stories from 1). Per-item tests of a document family (one command, tool, mob, or document chapter)
+  are `test_<family>_<item>` programs whose case names start `acceptance US<n>` (the family tasks name them), because
+  one acceptance scenario spans hundreds of items (SC-008); case names carry "acceptance" and Given/When/Then as in 001 R9. Contract tests
   `contract_<seam>_<side>`; implementation tests `test_<unit>`.
 - **Test-first.** Every implementation task is preceded by the test that defines it (the tasks phase orders them).
 - **Acceptance tests**: one or more cases per acceptance scenario of spec.md, placed at the lowest layer that can
@@ -415,6 +417,8 @@ documents lack stops that slice, records the gap, and a round is run before it r
 | Single-player world opened to others (`world-types.md` 10) | US2, host | Round; the host keeps types and rules (spec Assumptions). |
 | `TestInstanceBlockEditScreen` (`40-menus-9` Open question 1) | US12 (block entities, FR-038) | Round. |
 | Cobolcraft-type items the shared rules need beyond the bench; their design records (FR-027) | US2, US10 | Design-document edit before the content slice. |
+| Optional Faithful skin for the cobolcraft type: pack id, title, stack level, toggle placement (`faithful-pack-mapping.md` Open question 11, FR-006) | US3 | Round SKIN (reader and reviewer), recorded in `faithful-pack-mapping.md`; adopted default if the round finds no better: off by default, stack level 2, toggle row on the resource pack screen. |
+| Debug world layout (operator addition, no story): our own design, no artifact read | debug world | Design record `docs/design/debug-world.md` written by us from documents 24 and 46 (grid of every block state in state-id order, flat), then reviewed; no clean-room round because nothing from the jar is read. |
 | Texture path of every cobolcraft block, item and mob (FR-012, `faithful-pack-mapping.md`) | US5 | Review task confirms each is written; unmapped ones keep the missing-texture look. |
 | Sound event helpers (`46` 14), unknown jar (`22` 1), cobolcraft-skin entity geometry (`faithful-pack-mapping.md`) | none | Not needed: sounds are out of scope (FR-043); the unknown jar is rejected by README Part 7 decision 11; the optional skin covers blocks and items only (FR-006). |
 
@@ -437,10 +441,22 @@ spawn light, crop and sapling growth, light-dependent block rules) and as the li
 carry; the client keeps its present brightness model and gets no new sky, fog or cloud work. This is surfaced in
 the Plan Summary as a judgement call; it adds no behaviour beyond what FR-031, FR-032 and FR-036 require.
 
+## Operator addition: debug world (a test tool, not a story; no spec change)
+
+Recorded 2026-11-09 by the operator after tasks analysis. (a) `docs/design/debug-world.md`, written by us: a flat grid of
+every block state from documents 24 and 46 in state-id order, our own layout, no vanilla artifact read or committed.
+(b) A generator in `core` for a `debug` world type: no ticks, no terrain, uses the content set of the standard type
+(so it needs valid packs, like a standard world). (c) Selection: holding Ctrl while clicking the world-type button on the
+create-world screen selects `debug`; it is not shown in the normal UI and is not a user story. (d) Tests: every block and
+state present in order; the 16-bit palette and chunk codec round-trip the grid; the client mesher draws every state without
+the missing-texture stripes with the generated vanilla pack (real-input test; it fails loudly when the packs are absent, per
+the project convention of no skips); the Ctrl-click selection. Lanes: design record in Foundational; generator tests in `core`
+(US11-core part g); selection in `client` (US2-client); mesher test in `client` (US11-client part b); `CS-WORLD-TYPE` accepts
+`debug` (contracts/core-host-delta.md).
+
 ## Spec observations (not changes to the spec)
 
-1. FR-009 lists "sky" among surfaces drawn with pack textures while FR-043 excludes sky: pack textures reach the
-   sky only where the 001 renderer already draws one; no new sky work.
+1. FR-009 no longer lists "sky" (aligned with FR-043, which excludes sky, fog and clouds): resolved in the spec.
 2. `checklists/requirements.md` Notes were reworded after the Clarifications session so the artifacts carry no
    open marker and no literal marker token (resolved).
 3. FR-016 names creative and spectator, US7 only creative: FR-016 governs (13 §1.4); the plan follows the

@@ -23,7 +23,7 @@ into a document.
 | OpenSSL | SHA-256 and CRC-32 need no glue. | Spike above (`EVP_sha256` direct); CRC-32 is a table in COBOL (22 §7.2 gives the check value `cbf43926`). | Pass. |
 
 Every probe that could run succeeded; the two that could not (a real vanilla client, a real Finder window under
-test) are the markers Q-1 and Q-2. No spike mutated external state.
+test) are the decisions Q-1 and Q-2, both recorded by the operator. No spike mutated external state.
 
 ## Decisions
 
@@ -166,7 +166,7 @@ test) are the markers Q-1 and Q-2. No spike mutated external state.
   `quickstart.md` §9 once, at the terminal phase. Gameplay beyond joining and decoding is not in the scope.
 - **Why not automated.** No vanilla client can be launched by a test (Dependency table; the launcher's libraries
   are not in the repository and the jar alone is not runnable). Whether to accept manual evidence for SC-013 is
-  operator decision Q-1.
+  operator decision Q-1 (manual run accepted).
 
 ### R11. Server and single-player host
 
@@ -193,7 +193,7 @@ test) are the markers Q-1 and Q-2. No spike mutated external state.
 
 - **Decision.** A shim call `cc_open_path(opener, path)` starts the opener (production passes `/usr/bin/open`) with
   the folder as its single argument and returns without waiting; the client creates `resourcepacks/` first
-  (FR-008). How it is exercised by a test is marker Q-2.
+  (FR-008). How it is exercised by a test is decision Q-2 (the sanctioned opener double).
 
 ### R15. Deferred work and existing tickets (constitution 1.4)
 

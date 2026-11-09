@@ -16,6 +16,6 @@ call (OpenSSL digests, `CBL_*`, libm through glue only where a C double crosses 
 
 **Contract tests.** `shim/tests/contract_shim_provider.c` extends the existing provider test: `cc_f64_*` against
 IEEE vectors computed independently (Python `struct`), texture calls against the real MoltenVK device (readback of
-mip level 1 and of an updated rectangle), `cc_open_path` with an opener that exists (Q-2 decides which) and with a
+mip level 1 and of an updated rectangle), `cc_open_path` with an opener that exists (`/usr/bin/true`, the Q-2 sanctioned double) and with a
 missing opener (`CC-NOTFOUND`). Consumer side: `contract_shim_consumer.cob` in `core`, `client`, `formats` assert
 the COBOL `CALL` shapes of `CCSHIM.cpy` (as today).

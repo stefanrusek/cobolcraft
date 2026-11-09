@@ -52,7 +52,7 @@ When creating a world, the Player picks a world type. The standard type is Minec
 **Acceptance Scenarios**:
 
 1. **Given** the generated packs are present, **When** the Player creates a world, **Then** both types are offered and the default is standard (README Part 7 decision 2).
-2. **Given** the generated packs are missing or invalid, **When** the Player opens the creation screen, **Then** the behaviour of the standard choice is as the operator decides (FR-003) and the cobolcraft type works.
+2. **Given** the generated packs are missing or invalid, **When** the Player opens the creation screen, **Then** the standard choice stays selectable and pressing Create is refused with an explanation of how to build the packs (FR-003, decided in Clarifications), and the cobolcraft type works.
 3. **Given** a saved world of either type, **When** it is reopened, **Then** it opens as the same type; a standard world on a machine with no valid packs is not opened and the game says why (`world-types.md` §8.2).
 4. **Given** a world of either type, **When** the Player plays, **Then** health, hunger, damage, the hit window, day length, movement, commands, crafting screens and ground items follow the shared standard rules of documents 10 to 21, not the retired stand-in values.
 
@@ -167,7 +167,7 @@ The Faithful 32x pack for 26.3 (`Faithful 32x - 26.3.zip`, `minecraft:` namespac
 1. **Given** the ingredients, **When** the Player crafts a crafting bench and places it, **Then** it stands in the world as a block.
 2. **Given** a placed bench, **When** used, **Then** a crafting screen opens with the large grid, a result slot and the recipe book (`12` §5.6b, `13` §3.5).
 3. **Given** a recipe that needs the large grid, **Then** it can be made only at a bench.
-4. **Given** the cobolcraft world type, **Then** the bench is as the operator decides (FR-027).
+4. **Given** the cobolcraft world type, **Then** the bench is the `cobolcraft:crafting_bench` block and item (FR-027, decided in Clarifications).
 
 ---
 
@@ -327,7 +327,7 @@ Values come from the named documents only (FR-042). "The standard" means documen
 
 - **FR-007**: The client MUST load a pack in the `minecraft:` namespace in the format of `docs/protocol/08-resource-packs.md` and `docs/protocol/14-texture-only-packs.md`, and the Faithful 32x pack for 26.3 MUST load and apply by path.
 - **FR-008**: The resource pack screen MUST list the packs in `resourcepacks/`, enable, disable and reorder them, persist the choice, and have an Open Pack Folder button that opens that folder in the system file browser and shows new packs after a refresh (`13` §8).
-- **FR-009**: With a pack enabled, blocks, items, mobs, HUD, inventory and crafting screens, the crack overlay, particles, sky, weather and text MUST be drawn with the pack's textures at the pack's resolution wherever supplied; the pack stack order MUST be built-in, generated, user packs, server packs (README C7).
+- **FR-009**: With a pack enabled, blocks, items, mobs, HUD, inventory and crafting screens, the crack overlay, particles, weather and text MUST be drawn with the pack's textures at the pack's resolution wherever supplied; the pack stack order MUST be built-in, generated, user packs, server packs (README C7). Sky, fog and clouds are out of scope (FR-043).
 - **FR-010**: Texture animations MUST play and unsupported connected-texture rules MUST be ignored without error.
 - **FR-011**: Textures MUST be drawn without seams, shimmering or bleeding between atlas cells at any distance.
 - **FR-012**: The texture path each cobolcraft block, item and mob uses MUST be written in `docs/design/` before implementation.

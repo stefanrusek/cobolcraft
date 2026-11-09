@@ -13,6 +13,7 @@ Foundational.
 |---|---|---|
 | World type | `standard` or `cobolcraft`; stored in `level.dat` as `WorldType` with `Seed` and `ContentJar` (world-types.md §2.1) | Chosen at creation, never changed (WT-4). Default `standard` when the generated packs are valid (README Part 7 decision 2). |
 | Content set | the type, its blocks, items, entity types, registries, tags, recipes, loot, dimensions | Standard: static registries generated from 24, 25, 46 plus the generated data pack through the loaders of 23. Cobolcraft: the built-in layer (`cobolcraft-standard-core.md`, `standin-content.md`). The two share no rows (WT-25). |
+| Debug world (hidden test tool) | type `debug`, `WorldType = debug` in `level.dat` | A flat grid of every block state of the standard set in state-id order (`docs/design/debug-world.md`), no terrain, no ticks; selected only by Ctrl-clicking the type button; needs valid packs. |
 | Packs status | one of `ok`, `absent`, `incomplete`, `stale`, `damaged` | The check of 22 §8.2, run at start-up, at reload and before a standard world is created or opened. Drives the title banner, the Create refusal text (FR-003) and the server refusal (FR-004). |
 | Accepted jar row | version id, size, SHA-256, world and protocol versions, pack formats | One row today (22 §4.1). Compiled into `content`; `extract` and the check both read it from `content`'s generated table, never a second copy. |
 
