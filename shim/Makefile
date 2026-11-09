@@ -19,7 +19,7 @@ CFLAGS_DIRS = $(patsubst -I%,%,$(shell $(PKG_CONFIG) --cflags-only-I openssl) $(
 INCLUDES  = -I $(CURDIR)/src $(addprefix -I ,$(CFLAGS_DIRS)) -I $(SHIM_GEN)
 DEPLIBS  :=
 LDLIBS    = $(shell $(PKG_CONFIG) --libs openssl) $(shell pkg-config --libs glfw3 vulkan zlib)
-LINT_FILES = $(SRC) $(TESTS) tests/tls_testsrv.h $(SHADERS)
+LINT_FILES = $(SRC) $(TESTS) tests/tls_testsrv.h tests/vk_readback.h $(SHADERS)
 
 include ../tools/package.mk
 
@@ -46,3 +46,4 @@ $(OBJ)/cc_vk.o: $(SHIM_GEN)/spirv.h src/cc_internal.h
 $(OBJ)/cc_win.o $(OBJ)/cc_net.o $(OBJ)/cc_tls.o: src/cc_internal.h
 lint: $(SHIM_GEN)/spirv.h
 $(TOUT)/contract_shim_provider $(TOUT)/test_cc_tls: tests/tls_testsrv.h
+$(TOUT)/test_cc_vk_texture_ex $(TOUT)/test_cc_vk_texture_update: tests/vk_readback.h

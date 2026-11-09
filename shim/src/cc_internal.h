@@ -39,6 +39,8 @@ typedef struct {
     VkDeviceMemory memory;
     VkImageView view;
     VkDescriptorSet set;
+    uint32_t mips;
+    int32_t width, height;
 } texture_t;
 
 /* A resource waiting for the GPU to finish with it (any field may be VK_NULL_HANDLE). */
@@ -78,6 +80,8 @@ struct cc_vk_state {
     VkPipeline pipelines[3];
     VkSampler sampler;        /* clamp-to-edge */
     VkSampler repeat_sampler; /* repeat (cc_vk_texture_wrap) */
+    VkSampler mip_sampler;        /* linear through the mip chain, clamp-to-edge */
+    VkSampler mip_repeat_sampler; /* the same with repeat */
     int32_t wrap[4];          /* per texture id: CC_WRAP_CLAMP or CC_WRAP_REPEAT */
     VkCommandPool commands;
     VkCommandBuffer cmd;

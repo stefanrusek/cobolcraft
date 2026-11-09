@@ -6,6 +6,7 @@
  * VK_KHR_swapchain (+ VK_KHR_portability_subset when reported), FIFO swapchain on the surface's first
  * format at framebuffer extent, D32_SFLOAT depth, one frame in flight. Resources replaced or freed
  * while the GPU may still use them are destroyed after the next frame's commands have completed. */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,13 +62,13 @@ static VkBuffer host_buffer(VkBufferUsageFlags usage, const void *data, VkDevice
     return buffer;
 }
 
-static VkImage device_image(VkFormat format, uint32_t w, uint32_t h, VkImageUsageFlags usage, VkDeviceMemory *memory) {
+static VkImage device_image(VkFormat format, uint32_t w, uint32_t h, uint32_t mips, VkImageUsageFlags usage, VkDeviceMemory *memory) {
     VkImageCreateInfo info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = format,
         .extent = {w, h, 1},
-        .mipLevels = 1,
+        .mipLevels = mips,
         .arrayLayers = 1,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
@@ -84,13 +85,13 @@ static VkImage device_image(VkFormat format, uint32_t w, uint32_t h, VkImageUsag
     return image;
 }
 
-static VkImageView image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect) {
+static VkImageView image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect, uint32_t mips) {
     VkImageViewCreateInfo info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
         .format = format,
-        .subresourceRange = {aspect, 0, 1, 0, 1},
+        .subresourceRange = {aspect, 0, mips, 0, 1},
     };
     VkImageView view;
     check(vkCreateImageView(cc_vk_state.device, &info, NULL, &view), "cc_vk: vkCreateImageView failed");
@@ -142,9 +143,10 @@ static void begin(VkCommandBuffer cmd) {
     check(vkBeginCommandBuffer(cmd, &info), "cc_vk: vkBeginCommandBuffer failed");
 }
 
-static void barrier(VkCommandBuffer cmd, VkImage image, VkImageLayout from, VkImageLayout to,
-                    VkAccessFlags src_access, VkAccessFlags dst_access, VkPipelineStageFlags src_stage,
-                    VkPipelineStageFlags dst_stage) {
+/* A barrier over mip levels [base, base + count) of a colour image. */
+static void barrier_levels(VkCommandBuffer cmd, VkImage image, VkImageLayout from, VkImageLayout to,
+                           VkAccessFlags src_access, VkAccessFlags dst_access, VkPipelineStageFlags src_stage,
+                           VkPipelineStageFlags dst_stage, uint32_t base, uint32_t count) {
     VkImageMemoryBarrier b = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .srcAccessMask = src_access,
@@ -154,7 +156,7 @@ static void barrier(VkCommandBuffer cmd, VkImage image, VkImageLayout from, VkIm
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = image,
-        .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, base, count, 0, 1},
     };
     vkCmdPipelineBarrier(cmd, src_stage, dst_stage, 0, 0, NULL, 0, NULL, 1, &b);
 }
@@ -339,11 +341,11 @@ static void create_swapchain(void) {
     cc_vk_state.extent = extent;
     cc_vk_state.image_count = CC_VK_MAX_IMAGES;
     check(vkGetSwapchainImagesKHR(cc_vk_state.device, cc_vk_state.swapchain, &cc_vk_state.image_count, cc_vk_state.images), "cc_vk: vkGetSwapchainImagesKHR failed");
-    cc_vk_state.depth = device_image(VK_FORMAT_D32_SFLOAT, extent.width, extent.height, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &cc_vk_state.depth_memory);
-    cc_vk_state.depth_view = image_view(cc_vk_state.depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    cc_vk_state.depth = device_image(VK_FORMAT_D32_SFLOAT, extent.width, extent.height, 1, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &cc_vk_state.depth_memory);
+    cc_vk_state.depth_view = image_view(cc_vk_state.depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
     VkSemaphoreCreateInfo semaphore = {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     for (uint32_t i = 0; i < cc_vk_state.image_count; i++) {
-        cc_vk_state.views[i] = image_view(cc_vk_state.images[i], cc_vk_state.format.format, VK_IMAGE_ASPECT_COLOR_BIT);
+        cc_vk_state.views[i] = image_view(cc_vk_state.images[i], cc_vk_state.format.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         VkImageView attachments[2] = {cc_vk_state.views[i], cc_vk_state.depth_view};
         VkFramebufferCreateInfo fb = {
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -420,6 +422,13 @@ static void create_layouts(void) {
     check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.sampler), "cc_vk_init: vkCreateSampler failed");
     sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.repeat_sampler), "cc_vk_init: vkCreateSampler failed");
+    /* The sampler of textures with mip levels (12 §2.4): linear filtering through the whole chain. */
+    sampler.magFilter = sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler.maxLod = VK_LOD_CLAMP_NONE;
+    check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.mip_repeat_sampler), "cc_vk_init: vkCreateSampler failed");
+    sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    check(vkCreateSampler(cc_vk_state.device, &sampler, NULL, &cc_vk_state.mip_sampler), "cc_vk_init: vkCreateSampler failed");
 }
 
 /* Pipeline `p`: opaque (depth test + write, no blend), translucent (depth test, no write, alpha blend)
@@ -550,31 +559,76 @@ int32_t cc_vk_init(void) {
 
 /* ---- textures and meshes ---------------------------------------------------------------------- */
 
+/* Submits and waits for a one-shot command buffer, then frees it. */
+static void submit_wait(VkCommandBuffer cmd, const char *what) {
+    char message[64];
+    snprintf(message, sizeof message, "%s: vkEndCommandBuffer failed", what);
+    check(vkEndCommandBuffer(cmd), message);
+    VkSubmitInfo submit = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .commandBufferCount = 1, .pCommandBuffers = &cmd};
+    snprintf(message, sizeof message, "%s: vkQueueSubmit failed", what);
+    check(vkQueueSubmit(cc_vk_state.queue, 1, &submit, VK_NULL_HANDLE), message);
+    snprintf(message, sizeof message, "%s: vkQueueWaitIdle failed", what);
+    check(vkQueueWaitIdle(cc_vk_state.queue), message);
+    vkFreeCommandBuffers(cc_vk_state.device, cc_vk_state.commands, 1, &cmd);
+}
+
+/* Fills mip levels 1.. from level 0 by 2 x 2 box filter (linear blit at exactly half size), then leaves
+ * every level readable by shaders. On entry every level is TRANSFER_DST_OPTIMAL and level 0 is written. */
+static void generate_mips(VkCommandBuffer cmd, VkImage image, int32_t w, int32_t h, uint32_t mips) {
+    int32_t lw = w, lh = h;
+    for (uint32_t i = 1; i < mips; i++) {
+        barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+                       VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, i - 1, 1);
+        int32_t nw = lw > 1 ? lw / 2 : 1, nh = lh > 1 ? lh / 2 : 1;
+        VkImageBlit blit = {
+            .srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1},
+            .srcOffsets = {{0, 0, 0}, {lw, lh, 1}},
+            .dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1},
+            .dstOffsets = {{0, 0, 0}, {nw, nh, 1}},
+        };
+        vkCmdBlitImage(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+        lw = nw;
+        lh = nh;
+    }
+    if (mips > 1)
+        barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,
+                       VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, mips - 1);
+    barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+                   VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mips - 1, 1);
+}
+
 int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba) {
+    return cc_vk_texture_ex(tex_id, w, h, rgba, 1);
+}
+
+int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels) {
     if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_ENVIRONMENT || w <= 0 || h <= 0) cc_fatal("cc_vk_texture: invalid texture");
+    int32_t longest = w > h ? w : h, most = 1;
+    while ((longest >> most) > 0) most++;
+    if (mip_levels < 1 || mip_levels > most) cc_fatal("cc_vk_texture_ex: invalid mip level count");
+    uint32_t mips = (uint32_t)mip_levels;
     VkDeviceSize size = (VkDeviceSize)w * (VkDeviceSize)h * 4;
     VkDeviceMemory staging_memory;
     VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rgba, size, &staging_memory);
     texture_t t;
-    t.image = device_image(VK_FORMAT_R8G8B8A8_UNORM, (uint32_t)w, (uint32_t)h, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &t.memory);
-    t.view = image_view(t.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+    t.mips = mips;
+    t.width = w;
+    t.height = h;
+    t.image = device_image(VK_FORMAT_R8G8B8A8_UNORM, (uint32_t)w, (uint32_t)h, mips,
+                           VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &t.memory);
+    t.view = image_view(t.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mips);
 
     VkCommandBuffer cmd = command_buffer();
     begin(cmd);
-    barrier(cmd, t.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    barrier_levels(cmd, t.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, mips);
     VkBufferImageCopy region = {
         .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
         .imageExtent = {(uint32_t)w, (uint32_t)h, 1},
     };
     vkCmdCopyBufferToImage(cmd, staging, t.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-    barrier(cmd, t.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-    check(vkEndCommandBuffer(cmd), "cc_vk_texture: vkEndCommandBuffer failed");
-    VkSubmitInfo submit = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .commandBufferCount = 1, .pCommandBuffers = &cmd};
-    check(vkQueueSubmit(cc_vk_state.queue, 1, &submit, VK_NULL_HANDLE), "cc_vk_texture: vkQueueSubmit failed");
-    check(vkQueueWaitIdle(cc_vk_state.queue), "cc_vk_texture: vkQueueWaitIdle failed");
-    vkFreeCommandBuffers(cc_vk_state.device, cc_vk_state.commands, 1, &cmd);
+    generate_mips(cmd, t.image, w, h, mips);
+    submit_wait(cmd, "cc_vk_texture");
     vkDestroyBuffer(cc_vk_state.device, staging, NULL);
     vkFreeMemory(cc_vk_state.device, staging_memory, NULL);
 
@@ -585,7 +639,9 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
         .pSetLayouts = &cc_vk_state.set_layout,
     };
     check(vkAllocateDescriptorSets(cc_vk_state.device, &alloc, &t.set), "cc_vk_texture: vkAllocateDescriptorSets failed");
-    VkSampler s = cc_vk_state.wrap[tex_id] == CC_WRAP_REPEAT ? cc_vk_state.repeat_sampler : cc_vk_state.sampler;
+    int repeat = cc_vk_state.wrap[tex_id] == CC_WRAP_REPEAT;
+    VkSampler s = mips > 1 ? (repeat ? cc_vk_state.mip_repeat_sampler : cc_vk_state.mip_sampler)
+                           : (repeat ? cc_vk_state.repeat_sampler : cc_vk_state.sampler);
     VkDescriptorImageInfo image = {s, t.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     VkWriteDescriptorSet write = {
         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -599,6 +655,30 @@ int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba)
     texture_t *old = &cc_vk_state.textures[tex_id];
     discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set});
     *old = t;
+    return 0;
+}
+
+/* Replaces the rectangle (x, y, w, h) of the base level and regenerates the mip levels. */
+int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
+    if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_ENVIRONMENT || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
+    texture_t *t = &cc_vk_state.textures[tex_id];
+    if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > t->width || y + h > t->height) cc_fatal("cc_vk_texture_update: invalid rectangle");
+    VkDeviceMemory staging_memory;
+    VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rgba, (VkDeviceSize)w * (VkDeviceSize)h * 4, &staging_memory);
+    VkCommandBuffer cmd = command_buffer();
+    begin(cmd);
+    barrier_levels(cmd, t->image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT,
+                   VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, t->mips);
+    VkBufferImageCopy region = {
+        .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+        .imageOffset = {x, y, 0},
+        .imageExtent = {(uint32_t)w, (uint32_t)h, 1},
+    };
+    vkCmdCopyBufferToImage(cmd, staging, t->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    generate_mips(cmd, t->image, t->width, t->height, t->mips);
+    submit_wait(cmd, "cc_vk_texture_update");
+    vkDestroyBuffer(cc_vk_state.device, staging, NULL);
+    vkFreeMemory(cc_vk_state.device, staging_memory, NULL);
     return 0;
 }
 
@@ -718,6 +798,8 @@ void cc_vk_shutdown(void) {
     vkDestroyDescriptorSetLayout(cc_vk_state.device, cc_vk_state.set_layout, NULL);
     vkDestroySampler(cc_vk_state.device, cc_vk_state.sampler, NULL);
     vkDestroySampler(cc_vk_state.device, cc_vk_state.repeat_sampler, NULL);
+    vkDestroySampler(cc_vk_state.device, cc_vk_state.mip_sampler, NULL);
+    vkDestroySampler(cc_vk_state.device, cc_vk_state.mip_repeat_sampler, NULL);
     vkDestroySemaphore(cc_vk_state.device, cc_vk_state.acquired, NULL);
     vkDestroyFence(cc_vk_state.device, cc_vk_state.done, NULL);
     vkDestroyCommandPool(cc_vk_state.device, cc_vk_state.commands, NULL);

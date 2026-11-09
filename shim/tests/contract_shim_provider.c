@@ -450,6 +450,11 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_texture after repeat wrap returns 0", 0, cc_vk_texture(CC_TEX_ENVIRONMENT, 4, 4, rgba));
     tl_int("contract shim cc_vk_texture_wrap clamp returns 0", 0, cc_vk_texture_wrap(CC_TEX_ENVIRONMENT, CC_WRAP_CLAMP));
 
+    tl_int("contract shim cc_vk_texture_ex with 1 level returns 0", 0, cc_vk_texture_ex(CC_TEX_BLOCKS, 4, 4, rgba, 1));
+    tl_int("contract shim cc_vk_texture_ex with 3 levels returns 0", 0, cc_vk_texture_ex(CC_TEX_BLOCKS, 4, 4, rgba, 3));
+    tl_int("contract shim cc_vk_texture_ex with 3 levels on the repeat texture returns 0", 0, cc_vk_texture_ex(CC_TEX_ENVIRONMENT, 4, 4, rgba, 3));
+    tl_int("contract shim cc_vk_texture_update of a rectangle returns 0", 0, cc_vk_texture_update(CC_TEX_BLOCKS, 1, 2, 3, 2, rgba));
+    tl_int("contract shim cc_vk_texture_update of the whole texture returns 0", 0, cc_vk_texture_update(CC_TEX_BLOCKS, 0, 0, 4, 4, rgba));
     tl_int("contract shim cc_vk_mesh create returns 0", 0, cc_vk_mesh(1, QUAD, 6));
     tl_int("contract shim cc_vk_mesh replace returns 0", 0, cc_vk_mesh(1, QUAD, 3));
     tl_int("contract shim cc_vk_mesh free returns 0", 0, cc_vk_mesh(1, NULL, 0));
