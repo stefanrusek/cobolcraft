@@ -2,9 +2,13 @@
 
 This document specifies the resource pack *format* that the 26.3 client reads (resource pack version
 **97.1**), and how server-pushed packs flow on the wire. Our game reads the same format so that
-creators can use existing tooling. Our packs target our own `cobolcraft:` namespace. Nothing here
-describes or depends on vanilla asset content. We do not extract, bundle or list vanilla textures,
-models or sounds.
+creators can use existing tooling. The game has two world types (1.6). The built-in pack, which belongs to
+the cobolcraft world type, targets our own `cobolcraft:` namespace (section 10). The resource pack of the
+standard world type is not written by hand. A tool generates it at run time from the user's own client jar
+and it uses the `minecraft:` namespace. User packs written for the standard client, such as Faithful, use
+`minecraft:` too. Nothing is committed, bundled or listed in these documents: no vanilla textures, models or
+sounds appear here. The tool reads the jar on the user's machine and writes into the user's game directory
+only.
 
 A few identifiers in the `minecraft:` namespace are **engine vocabulary**: names that the client code
 hard-wires, such as the atlas definition ids, the built-in item-model generator and the dispatch type
@@ -68,7 +72,8 @@ ignored**. A non-directory entry where a namespace directory is expected is also
 
 Identifier text is `namespace:path`. When the namespace and colon are left out, the namespace is
 `minecraft`. **Every reference inside a `cobolcraft` pack must therefore spell out `cobolcraft:`.** A
-bare `block/greystone` means `minecraft:block/greystone`.
+bare `block/greystone` means `minecraft:block/greystone`. A reference inside the generated vanilla pack or
+inside Faithful uses bare or `minecraft:` ids (1.6).
 
 ### 1.4 Path rules
 
@@ -99,6 +104,31 @@ read from the root.
 
 Overlay directory names must match the regular expression `[-_a-zA-Z0-9.]+`. Any other name is a parse
 error for the `overlays` section ("is not accepted directory name").
+
+### 1.6 Namespaces and world types
+
+The game has two **world types**. The **standard** world type is Minecraft 26.3 content, built from the
+vanilla resource pack and data pack that the extraction tool generates from the user's jar, plus the engines
+that the documents 10 to 21 specify. The **cobolcraft** world type is the invented `cobolcraft:` content of
+[../design/standin-content.md](../design/standin-content.md), which runs with no jar and no generated pack.
+
+**Namespace rule.**
+
+| World type | Namespace use |
+|---|---|
+| Standard | `minecraft:` for everything: registry keys, texture and model paths, language keys, tags, dimension keys. Packs written for it, such as Faithful, apply directly by path. |
+| Cobolcraft | `cobolcraft:` for its own content. `minecraft:` for protocol vocabulary (the **[engine name]** ids of this document and the registry slot names of 04) and for the standard entries that the shared gameplay rules need. |
+
+`cobolcraft:` is the place where CobolCraft extends or diverges from Minecraft. Anything with a vanilla
+equivalent uses `minecraft:`.
+
+**Shared rules.** Gameplay rules are the standard rules of the documents 10 to 21 in both world types:
+health, hunger, damage, the hurt window, day length, movement, commands, the crafting grids, ground items and
+the like. Where the standard behaviour and the stand-in content differ on a rule, the standard rule applies in
+both world types. The world type selects the content set (blocks, items, mobs, recipes, biomes, dimensions and
+textures) and nothing else.
+
+The pack order for both world types is in 3.1 and section 10.
 
 ---
 
@@ -244,8 +274,9 @@ On every rebuild, required packs missing from the selection are added at their d
 (`PackRepository.rebuildSelected`). Available packs are discovered into a map sorted by pack id, so
 required packs are added in pack-id order.
 
-Typical resulting order, bottom to top: the built-in default pack (required, fixed `BOTTOM`), then
-user-selected packs in the user's order, then server-pushed packs (required, fixed `TOP`, section 9.6).
+Typical resulting order, bottom to top: the built-in default pack (required, fixed `BOTTOM`), then, for
+a client that has generated a pack from the vanilla client files, that generated vanilla pack (the
+four-layer stack and its placement are in section 10), then user-selected packs in the user's order, then server-pushed packs (required, fixed `TOP`, section 9.6).
 
 ### 3.2 Overriding
 
@@ -625,7 +656,7 @@ scope here.
 
 `tints[i]` supplies the colour for faces with `tintindex` *i*. TintSource is `type`-dispatched. The type ids
 are `constant` (field `value`), `dye`, `grass`, `firework`, `potion`, `team` and `custom_model_data`
-(`ItemTintSources`). The stand-in pack needs none.
+(`ItemTintSources`). The built-in pack needs none.
 
 ---
 
@@ -642,12 +673,27 @@ so 16 × 16 or other power-of-two sizes are recommended. The maximum atlas size 
 ### 7.2 Atlases
 
 Sprites used by models are packed into **atlases**. The set of atlases is fixed by the client
-(`AtlasManager`): there are twelve, each with a definition id. The two a block game needs are:
+(`AtlasManager`): there are twelve, each with a definition id. The standard client uses all twelve. Their
+shipped sources and sprite ids are in 14 §3.1.
 
 | Atlas | Definition file **[engine name]** | Used by |
 |---|---|---|
-| Block atlas | `assets/minecraft/atlases/blocks.json` | All block models. Item models may also use it. |
+| Block atlas | `assets/minecraft/atlases/blocks.json` | All block models. Item models may also use it. Break-stage overlays and a few block-entity pieces. |
 | Item atlas | `assets/minecraft/atlases/items.json` | Item models. |
+| GUI atlas | `assets/minecraft/atlases/gui.json` | Every GUI sprite and the status effect icons. |
+| Celestials | `assets/minecraft/atlases/celestials.json` | Sun, moon phases and the End flash. |
+| Particles | `assets/minecraft/atlases/particles.json` | Particles. |
+| Map decorations | `assets/minecraft/atlases/map_decorations.json` | Map icons. |
+| Paintings | `assets/minecraft/atlases/paintings.json` | Paintings. |
+| Chests | `assets/minecraft/atlases/chests.json` | Chest block entities. |
+| Banner patterns | `assets/minecraft/atlases/banner_patterns.json` | Banners. |
+| Shield patterns | `assets/minecraft/atlases/shield_patterns.json` | Shields. |
+| Shulker boxes | `assets/minecraft/atlases/shulker_boxes.json` | Shulker boxes. |
+| Decorated pot | `assets/minecraft/atlases/decorated_pot.json` | Decorated pots. |
+
+The generated vanilla pack carries the definitions of all twelve. The built-in pack carries the definitions
+of the atlases that the sprites of the cobolcraft world type need (10.2). Definitions merge across packs
+(7.3), so both can be present.
 
 A sprite id that appears in two atlases produces a warning ("Duplicate sprite … This will be rejected in
 a future version").
@@ -657,7 +703,8 @@ a future version").
 Path: `assets/<ns>/atlases/<atlas>.json` (`SpriteSourceList`, directory `atlases`). **Definitions are
 merged across all packs** (3.2): every pack's copy is parsed, and their source lists are concatenated
 from the bottom pack upwards. A pack therefore *adds* sprites by shipping a definition with only its own
-sources.
+sources. The generated vanilla pack holds the shipped sources of each atlas (14 §3.1). The built-in pack
+holds only the sources for its own `cobolcraft:` sprites (10.2).
 
 Top level:
 
@@ -724,7 +771,8 @@ Two further texture sections exist for code-defined uses: `villager` (field `hat
 ## 8. Other asset kinds
 
 All paths are under `assets/<ns>/`. The last column says whether CobolCraft's client reads the kind. The
-built-in pack (section 10) ships every kind marked **read**.
+built-in pack (section 10) ships every kind marked **read**, except the colormaps, which the generated
+vanilla pack carries (Faithful has none).
 
 | Path | Purpose | CobolCraft client |
 |---|---|---|
@@ -732,9 +780,9 @@ built-in pack (section 10) ships every kind marked **read**.
 | `models/**/<name>.json` | Geometry and texture slots (5). | **read** (10.4, 10.5, 10.7) |
 | `items/<item>.json` | Item model definition (6). | **read** (10.7) |
 | `textures/**/<name>.png` (+ `.png.mcmeta`) | Images (7). | **read** (10.3) |
-| `atlases/<atlas>.json` | Sprite sources per atlas (7.3). The ids are fixed by the client. | **read** (block and item atlases, 10.2) |
+| `atlases/<atlas>.json` | Sprite sources per atlas (7.3). The ids are fixed by the client. | **read** (the twelve atlases, 7.2; the built-in pack defines blocks, items and gui, 10.2) |
 | `lang/<code>.json` | A JSON object mapping translation key to string. Values may use `%s` and `%1$s` placeholders; numeric `%d`/`%f` placeholders are rewritten to `%s` on load. Keys for registry content follow `<kind>.<namespace>.<path with / replaced by .>`, for example `block.cobolcraft.greystone` (`Util.makeDescriptionId`). | **read** (`en_us`, 10.8) |
-| `font/<id>.json` | Font provider definitions. CobolCraft reads the `bitmap` provider type (10.10). | **read** (`cobolcraft:default`, 10.10) |
+| `font/<id>.json` | Font provider definitions. CobolCraft reads the `bitmap` provider type (10.10). | **read** (`minecraft:default`, 10.10) |
 | `sounds.json` | Sound event → sound file list. | not read (sounds are out of scope) |
 | `sounds/**/<name>.ogg` | Ogg audio files. | not read (sounds are out of scope) |
 | `particles/<id>.json` | Particle sprite lists. | not read |
@@ -742,7 +790,7 @@ built-in pack (section 10) ships every kind marked **read**.
 | `shaders/**` (`.json`, `.vsh`, `.fsh`, `include/*.glsl`) | GLSL programs. | not applicable (our Vulkan client) |
 | `post_effect/<id>.json` | Post-processing chains (named by the Post Effects packet, 03). | not read |
 | `waypoint_style/<id>.json` | Locator-bar waypoint styles. | not read |
-| `textures/colormap/*.png` | Biome colour lookup images. | not read |
+| `textures/colormap/*.png` | Biome colour lookup images: `grass.png`, `foliage.png`, `dry_foliage.png`, each 256 × 256 (14 §9). | **read** (14 §9) |
 | `textures/palettes/*.png` | Palettes for `paletted_permutations` (7.3). | not read directly (only as input to an atlas source, 7.3) |
 | `texts/*` | Plain-text resources such as the title-screen splash list. | not read |
 
@@ -846,15 +894,21 @@ So the reason the player sees always comes from the server's §17 key, never fro
 
 ---
 
-## 10. Stand-in default pack
+## 10. Built-in default pack of the cobolcraft world type
 
-CobolCraft's built-in pack, named `cobolcraft`, carries the procedural textures of
+CobolCraft's built-in pack, named `cobolcraft`, is the pack of the cobolcraft world type (1.6). It carries the procedural textures of
 [../design/standin-content.md](../design/standin-content.md) (§1.4, §2, §3.2, §12.6 and §14.5), the bitmap font
 of its §18, and the English texts of its names and messages (FR-003). The texture generator writes PNG files
 at the paths below, or serves them from memory through a pack source. The renderer reads only pack data.
 Every texture must match its stand-in recipe pixel for pixel. standin-content §1.5 lists check values (SC-004).
 A user or server pack replaces any file by shipping the same path (3.2). The built-in pack sits at the bottom
 of the stack, required and fixed at `BOTTOM` (inferred to mirror the client's own built-in pack).
+
+The stack, from bottom to top, in both world types: (1) this built-in pack; (2) the generated vanilla
+resource pack, when the tool has produced it; (3) the user's packs in the user's order, including Faithful;
+(4) server-pushed packs (9.6). A `minecraft:` texture of Faithful replaces the generated pack's texture by
+the same path. It has no effect on `cobolcraft:` content, which only a pack that ships `cobolcraft:` paths
+can replace.
 
 The missing texture (orange and black stripes, standin-content §1.4.2) stays engine-generated. It is not a
 pack file. It stands in for any block, item, entity or environment texture that no pack supplies, at that
@@ -867,7 +921,7 @@ texture's stand-in size. The client's own missing sprite is also code-generated
 
 | Key path | Value |
 |---|---|
-| `pack.description` | String "CobolCraft stand-in default pack" |
+| `pack.description` | String "CobolCraft built-in default pack" |
 | `pack.min_format` | 97 |
 | `pack.max_format` | 97 |
 
@@ -875,15 +929,18 @@ texture's stand-in size. The client's own missing sprite is also code-generated
 
 ### 10.2 Atlas definitions
 
-These two files are **[engine name]** paths. A pack adds its sprites to the fixed atlases this way.
+These three files are **[engine name]** paths. A pack adds its sprites to the fixed atlases this way.
 
 | File | `sources` |
 |---|---|
 | `assets/minecraft/atlases/blocks.json` | One entry: `type` = `directory`, `source` = `block`, `prefix` = `block/` |
 | `assets/minecraft/atlases/items.json` | One entry: `type` = `directory`, `source` = `item`, `prefix` = `item/` |
+| `assets/minecraft/atlases/gui.json` | Two entries as in 14 §3.1: `type` = `directory`, `source` = `gui/sprites`, `prefix` = empty; `type` = `directory`, `source` = `mob_effect`, `prefix` = `mob_effect/` |
 
 Because `directory` scans every namespace, these entries pick up `assets/cobolcraft/textures/block/*.png`
-as sprites `cobolcraft:block/<name>`, and `textures/item/*.png` as `cobolcraft:item/<name>`.
+as sprites `cobolcraft:block/<name>`, and `textures/item/*.png` as `cobolcraft:item/<name>`. The `gui` entries
+pick up `textures/gui/sprites/<name>.png` as sprite `<namespace>:<name>`. The built-in GUI sprites that the
+shared UI needs in the cobolcraft world type are not yet specified (GAP-34), so the table of 10.3 lists none.
 
 Entity textures (`textures/entity/`), environment textures (`textures/environment/`) and the font image
 (`textures/font/`) are **not** atlas sprites. No atlas source lists those directories, and no model refers
@@ -891,7 +948,8 @@ to them. The client loads each one as a whole image by its path (10.10, 10.11).
 
 ### 10.3 Textures
 
-All files are RGBA PNG under `assets/cobolcraft/textures/`. The recipes are in standin-content. No `.mcmeta`
+All files are RGBA PNG under `assets/cobolcraft/textures/`, except the font image, which is
+`assets/minecraft/textures/font/ascii.png`. The recipes are in standin-content. No `.mcmeta`
 is needed. The "Drawn on" column lists everything a file affects. A pack that replaces one file therefore
 changes exactly those things and nothing else (SC-005, US18-3). An *item icon* is the item's picture in
 inventory slots, in the hotbar and on a ground item (10.11).
@@ -924,7 +982,7 @@ inventory slots, in the hotbar and on a ground item (10.11).
 | `entity/abend.png` | 72 × 12 | — (whole image) | §3.1, §12.6 | every abend |
 | `environment/drizzle.png` | 16 × 16 | — (whole image) | §14.5 drizzle | drizzle precipitation quads |
 | `environment/hailstorm.png` | 16 × 16 | — (whole image) | §14.5 hailstorm | hailstorm precipitation quads |
-| `font/ascii.png` | 128 × 48 | — (whole image) | §18 | every character of client text (10.10) |
+| `assets/minecraft/textures/font/ascii.png` (not under `cobolcraft`) | 128 × 128 | — (whole image) | §18, placed by the standard layout (10.10) | every character of client text (10.10) |
 
 The `ground item` entity (`cobolcraft:loose_item`) has no texture of its own: it shows its item's icon. The
 `clear` weather kind has no environment texture and draws nothing.
@@ -1072,7 +1130,7 @@ Rules that CobolCraft's client and server console apply:
 - **Lookup.** A key that no pack defines is shown as the key itself.
 - **Arguments.** The texts use only plain `%s` placeholders, in argument order: the first `%s` takes the
   first argument of the `translate` component, and so on. The "Arguments" columns give that order. They
-  copy standin-content §10.7, §16 and §17, which also say how each argument is written. A replacement pack may
+  copy standin-content §17, which also says how each argument is written. A replacement pack may
   reorder the arguments with `%1$s`, `%2$s`, … (section 8).
 - **Character set.** Every text is printable ASCII (codes 32 to 126), the range of the built-in font (10.10).
   Any other character draws as the missing glyph.
@@ -1081,6 +1139,27 @@ Rules that CobolCraft's client and server console apply:
   chat is literal text. The client renders those messages through
   this table. The server console prints them through the same texts (operator-surface §3). Client screen
   and HUD texts (10.8.6) are looked up by the client itself.
+
+**Where the texts come from.** There are three sources, and the merge order above (bottom pack first, a higher pack replaces a
+key) decides which one a player sees:
+
+| Source | Holds | Pack level (11.2) |
+|---|---|---|
+| This built-in file | The `cobolcraft.*` keys, the `block.cobolcraft.*`, `item.cobolcraft.*`, `entity.cobolcraft.*`, `weather.cobolcraft.*` and `dimension.cobolcraft.*` names of 10.8.1, and a **fallback set** of standard keys | 1 |
+| The generated `vanilla` pack (22 §6.1: `assets/minecraft/lang/en_us.json`, verbatim) | Every standard key with its standard text: command feedback, death messages, disconnect reasons, advancement and UI texts | 2 |
+| User packs such as Faithful | Whatever they ship; Faithful is textures only (14) and has no `lang` file | 3 |
+
+Consequences. (1) In the standard world type the generated pack's text wins over any fallback entry of the same key, so a fallback
+text is never seen while the generated pack is valid. (2) In the cobolcraft world type, with no generated pack, the standard keys the shared rules need
+(death messages, command feedback, UI texts) are shown from the fallback set, in the standard wording (README P08-12). That wording is
+read from the standard `en_us` (15 §5 for the framework keys, 16 for each command's keys with their English text, 16 §13 for the game rule titles).
+(3) A CobolCraft text never takes a standard key (world-types §6.2, Decision WT-15), because the generated `en_us` would replace it:
+that is why the CobolCraft keys use the `cobolcraft.` prefix. (4) The lookup rule above (a key no pack defines is shown as the key) applies
+last.
+
+Sections 10.8.2 (death messages) and 10.8.3 (command messages) no longer exist. The stand-in keys they
+listed are retired: death messages and command messages use the standard keys in both world types (15 §5, 16
+and the standard `en_us`). The numbers are not reused, so that citations of 10.8.4 to 10.8.6 stay valid.
 
 #### 10.8.1 Names
 
@@ -1118,119 +1197,38 @@ the client, so CobolCraft gives them keys of its own in the same `<kind>.<namesp
 | `cobolcraft.gamemode.survival` | Survival |
 | `cobolcraft.gamemode.creative` | Creative |
 
-#### 10.8.2 Death messages and the death screen (standin-content §10.7)
-
-| Key | Arguments | Value |
-|---|---|---|
-| `cobolcraft.death.fall` | victim name | %s misjudged the drop |
-| `cobolcraft.death.mob.abend` | victim name | %s was halted by an Abend |
-| `cobolcraft.death.player` | victim name, attacker name | %s lost a duel with %s |
-| `cobolcraft.death.starvation` | victim name | %s ran out of rations |
-| `cobolcraft.death.hail` | victim name | %s was battered by hail |
-| `cobolcraft.death.command` | victim name | %s had their vitality set to zero |
-| `cobolcraft.screen.death.title` | — | Run Terminated |
-| `cobolcraft.screen.death.respawn` | — | Return to Spawn |
-
-The death screen shows the Player Combat Kill message under the title.
-
-#### 10.8.3 Command messages (standin-content §16)
-
-The shared messages of standin-content §16.4:
-
-| Key | Arguments | Value |
-|---|---|---|
-| `cobolcraft.command.unknown` | word as typed | Unknown command %s (howto lists the commands) |
-| `cobolcraft.command.not_permitted` | command name | You may not use %s |
-| `cobolcraft.command.missing_argument` | usage string | Missing argument. Usage: %s (see howto) |
-| `cobolcraft.command.invalid_argument` | word as typed, usage string | Invalid argument %s. Usage: %s (see howto) |
-| `cobolcraft.command.invalid_name` | word as typed | %s is not a valid player name |
-| `cobolcraft.command.player_not_found` | name | No player named %s is online |
-| `cobolcraft.command.dimension_not_found` | word as typed | No dimension is named %s |
-| `cobolcraft.command.item_not_found` | word as typed | No item is named %s |
-| `cobolcraft.command.mob_not_found` | word as typed | No mob is named %s |
-| `cobolcraft.command.not_survival` | name | %s is not in survival mode |
-| `cobolcraft.command.not_alive` | name | %s is dead and has not respawned yet |
-| `cobolcraft.command.is_host` | name | %s is the host of this world |
-| `cobolcraft.command.promote.notice` | — | You now hold operator status |
-| `cobolcraft.command.demote.notice` | — | You no longer hold operator status |
-
-The per-command messages of standin-content §16.2, in its row order:
-
-| Key | Arguments | Value |
-|---|---|---|
-| `cobolcraft.command.howto.header` | number of entries | Commands you may use (%s): |
-| `cobolcraft.command.howto.entry` | usage string | - %s |
-| `cobolcraft.command.roster` | count, names | Online (%s): %s |
-| `cobolcraft.command.murmur.incoming` | sender name, message | %s murmurs to you: %s |
-| `cobolcraft.command.murmur.incoming_console` | message | The server murmurs to you: %s |
-| `cobolcraft.command.murmur.sent` | target name, message | You murmur to %s: %s |
-| `cobolcraft.command.promote.done` | name | %s now holds operator status |
-| `cobolcraft.command.promote.already` | name | %s already holds operator status |
-| `cobolcraft.command.demote.done` | name | %s no longer holds operator status |
-| `cobolcraft.command.demote.not_operator` | name | %s does not hold operator status |
-| `cobolcraft.command.eject.done` | name | Ejected %s |
-| `cobolcraft.command.bar.done` | name | Barred %s |
-| `cobolcraft.command.bar.already` | name | %s is already barred |
-| `cobolcraft.command.unbar.done` | name | Lifted the bar on %s |
-| `cobolcraft.command.unbar.not_barred` | name | %s is not barred |
-| `cobolcraft.command.barlist` | count, names | Barred (%s): %s |
-| `cobolcraft.command.guestlist.on` | — | The guest list is now enforced |
-| `cobolcraft.command.guestlist.off` | — | The guest list is no longer enforced |
-| `cobolcraft.command.guestlist.added` | name | Added %s to the guest list |
-| `cobolcraft.command.guestlist.already` | name | %s is already on the guest list |
-| `cobolcraft.command.guestlist.removed` | name | Removed %s from the guest list |
-| `cobolcraft.command.guestlist.not_listed` | name | %s is not on the guest list |
-| `cobolcraft.command.guestlist.show` | `on` or `off`, count, names | Guest list enforcement %s; guests (%s): %s |
-| `cobolcraft.command.mode.done` | name, `survival` or `creative` | %s now plays in %s mode |
-| `cobolcraft.command.relocate.position` | name, x, y, z, dimension path | Relocated %s to %s, %s, %s in %s |
-| `cobolcraft.command.relocate.player` | name, target name | Relocated %s to %s |
-| `cobolcraft.command.supply.done` | number added, item path, name | Supplied %s %s to %s |
-| `cobolcraft.command.supply.no_room` | name | %s has no room for that |
-| `cobolcraft.command.empty.done` | name, total number of items removed | Emptied the inventory of %s (%s items removed) |
-| `cobolcraft.command.vitality.done` | name, new health | Set the health of %s to %s |
-| `cobolcraft.command.ration.done` | name, new food | Set the food level of %s to %s |
-| `cobolcraft.command.conjure.done` | mob path, x, y, z, dimension path | Conjured a %s at %s, %s, %s in %s |
-| `cobolcraft.command.conjure.hostile_disabled` | mob path | Hostile mobs are switched off, so no %s can be conjured |
-| `cobolcraft.command.sweep.done` | number removed | Swept away %s |
-| `cobolcraft.command.sweep.unknown_target` | word as typed | Nothing to sweep is named %s |
-| `cobolcraft.command.clock.done` | ticks | The clock now reads %s |
-| `cobolcraft.command.skies.timed` | dimension path, kind word, seconds | The skies over %s turn to %s for %s seconds |
-| `cobolcraft.command.skies.held` | dimension path, kind word | The skies over %s turn to %s until changed |
-| `cobolcraft.command.skies.no_weather` | dimension path | %s has no skies to change |
-| `cobolcraft.command.homestead.done` | x, y, z | The world spawn point is now %s, %s, %s |
-| `cobolcraft.command.announce.message` | message | [Server] %s |
-| `cobolcraft.command.announce.done` | — | Announcement sent |
-| `cobolcraft.command.persist.done` | — | The world has been saved |
-| `cobolcraft.command.shutdown.done` | — | Shutting down |
-
 #### 10.8.4 Disconnect and refusal reasons (standin-content §17)
 
+Only three disconnect keys are CobolCraft's own, because the standard has no equivalent: `host_closed` (a
+client-hosted world), `pack_required` (09 §9.8) and `name_is_host`. The other CobolCraft reasons of the earlier
+design (barred, not on the guest list, replaced, shutdown, ejected, ejected without a reason) are retired. They use
+the shared standard keys in both world types (for example `multiplayer.disconnect.not_whitelisted`; 16 §11.22,
+and GAP-27 for standard keys that no document lists yet).
+
 | Key | Arguments | Value |
 |---|---|---|
-| `cobolcraft.disconnect.barred` | — | You are barred from this world |
-| `cobolcraft.disconnect.not_on_guestlist` | — | You are not on this world's guest list |
 | `cobolcraft.disconnect.name_is_host` | name | The name %s belongs to the host of this world |
-| `cobolcraft.disconnect.replaced` | — | Someone joined elsewhere under your name |
-| `cobolcraft.disconnect.shutdown` | — | The server is shutting down |
 | `cobolcraft.disconnect.host_closed` | — | The host closed the world |
 | `cobolcraft.disconnect.pack_required` | — | This server requires its resource pack |
-| `cobolcraft.disconnect.ejected` | reason | You were ejected: %s |
-| `cobolcraft.disconnect.ejected_plain` | — | You were ejected by an operator |
 
 The protocol documents fix the keys of some disconnects, and CobolCraft's server sends those keys as they
 are (FR-001 makes the protocol's disconnect behaviours required; 09 §2 and its Open question 2). These are
-**[engine name]** keys. The built-in pack gives them its own English texts, and a pack can change them like
-any other key:
+**[engine name]** keys. Their texts are the **standard wording** of the standard `en_us`, not wording of our own.
+In the standard world type the generated pack supplies them and its texts replace any built-in text with the
+same key (pack order, 22 Open question 3). In the cobolcraft world type this file is the fallback and carries the
+standard wording. The Value column below therefore gives no text. The standard text is in no document yet
+(GAP-27) and a clean-room round must supply it before the fallback file is written. A pack can change these
+texts like any other key:
 
 | Key | Arguments | Sent when | Value |
 |---|---|---|---|
-| `multiplayer.disconnect.incompatible` | the server's version name | Login with protocol version ≠ 777, client version ≥ 754 (02) | This server runs %s and cannot talk to your game version |
-| `multiplayer.disconnect.outdated_client` | the server's version name | Login with protocol version < 754 (02) | Your game version is too old for this server (%s) |
-| `multiplayer.disconnect.transfers_disabled` | — | Handshake with intent 3, transfer (02) | This server does not take transferred players |
-| `multiplayer.disconnect.slow_login` | — | Login not finished within 600 ticks (01 §7.5, 02) | Logging in took too long |
-| `multiplayer.disconnect.unexpected_query_response` | — | An answer to a query or cookie request the server never made (02) | The server got a reply it never asked for |
-| `multiplayer.disconnect.invalid_player_movement` | — | A position or rotation that is not a finite number in range (05c) | The server refused an impossible position |
-| `disconnect.timeout` | — | A missing or wrong Keep Alive reply (01 §7.5) | No reply arrived in time |
+| `multiplayer.disconnect.incompatible` | the server's version name | Login with protocol version ≠ 777, client version ≥ 754 (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.outdated_client` | the server's version name | Login with protocol version < 754 (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.transfers_disabled` | — | Handshake with intent 3, transfer (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.slow_login` | — | Login not finished within 600 ticks (01 §7.5, 02) | standard text (GAP-27) |
+| `multiplayer.disconnect.unexpected_query_response` | — | An answer to a query or cookie request the server never made (02) | standard text (GAP-27) |
+| `multiplayer.disconnect.invalid_player_movement` | — | A position or rotation that is not a finite number in range (05c) | standard text (GAP-27) |
+| `disconnect.timeout` | — | A missing or wrong Keep Alive reply (01 §7.5) | standard text (GAP-27) |
 
 The other disconnect keys of 01 and 02 are never sent by CobolCraft's server. `disconnect.ignoring_status_request`
 and `multiplayer.status.request_handled` end a status exchange, which has no Disconnect packet.
@@ -1246,8 +1244,14 @@ mode, which CobolCraft never uses.
 
 #### 10.8.6 Client screens and HUD (data-model §13)
 
-These keys belong to the client alone. The server never sends them. The screen names follow the screen
-model of data-model §13. Keys under `cobolcraft.screen.common` are shared by several screens.
+These keys belong to the client alone. The server never sends them. **Lookup rule.** Where the standard `en_us`
+has a key for a UI text (title screen, pause menu, options, resource pack screens, connecting and similar), the
+client uses the standard key in both world types, and its text comes from the generated pack or the standard
+`en_us`. The `cobolcraft.screen.*` and `cobolcraft.hud.*` entries below are the **fallback set** of the built-in
+pack. The client looks up the standard key first and uses the entry below only when no loaded pack defines that
+key. An entry with no standard counterpart (for example the pack prompt, open to others and the crafting list
+texts) stays a CobolCraft key. Which entries have a standard counterpart is settled with the standard key
+survey (GAP-27). The screen names follow the screen model of data-model §13. Keys under `cobolcraft.screen.common` are shared by several screens.
 
 | Key | Arguments | Value |
 |---|---|---|
@@ -1354,7 +1358,7 @@ model of data-model §13. Keys under `cobolcraft.screen.common` are shared by se
 
 A "game mode name" argument is the text of `cobolcraft.gamemode.survival` or `cobolcraft.gamemode.creative`
 (10.8.1). A "`Yes` or `No` text" argument is the text of `cobolcraft.screen.common.yes` or `.no`. The death
-screen keys are in 10.8.2. Three HUD parts of data-model §13 carry no fixed text. The hotbar shows item
+screen uses the standard keys (10.8.2 was removed). Three HUD parts of data-model §13 carry no fixed text. The hotbar shows item
 icons and each stack count as decimal digits. The chat lines show the received messages. The target
 highlight is an outline. The world screen has no labels apart from the HUD.
 
@@ -1363,58 +1367,79 @@ highlight is an outline. The world screen has no labels apart from the HUD.
 | Kind | Files |
 |---|---|
 | `pack.mcmeta` | 1 |
-| Atlas definitions (10.2) | 2 |
+| Atlas definitions (10.2) | 3 |
 | PNG textures (10.3) | 27: 15 block, 6 item, 3 entity, 2 environment, 1 font |
 | Template models (10.4) | 4 |
 | Block models (10.5) | 13 (14 with void) |
 | Item models (10.7) | 17 |
 | Block state files (10.6) | 11 (12 with void) |
 | Item definitions (10.7) | 17 (18 with nothing) |
-| Font definitions (10.10) | 1 |
+| Font definitions (10.10) | 4 |
 | Language files (10.8) | 1 |
 
-That is 94 files, or 97 with the three optional ones.
+That is 98 files, or 101 with the three optional ones. The built-in GUI sprites (GAP-34) are not counted.
 
 ### 10.10 Font
 
-CobolCraft draws every character of client text (screens, HUD, chat and item names) with the font
-`cobolcraft:default`. The renderer ignores any `font` a text component names. The font is built from
-standin-content §18.
+Both world types use the standard font definitions of 14 §10.1: the font `minecraft:default`, a list of
+providers that includes `include/space` and `include/default`. The built-in pack carries a fallback copy of
+them, and the generated vanilla pack carries the full set. Every character of client text (screens, HUD, chat
+and item names) is drawn with `minecraft:default`. The renderer ignores any `font` a text component names. The
+fallback glyphs are built from standin-content §18.
 
-**`assets/cobolcraft/font/default.json`** holds one provider:
+**Definition files in the built-in pack.** The files of 14 §10.1 for `default`: `assets/minecraft/font/default.json`,
+`assets/minecraft/font/include/space.json`, `assets/minecraft/font/include/default.json` and
+`assets/minecraft/font/include/unifont.json` (an empty provider list, as in the shipped jar). Their content is
+the one in 14 §10.1, with one difference: `include/default` holds only provider (c), the `bitmap` of
+`minecraft:font/ascii.png`, because the built-in pack supplies no image for providers (a) and (b). The
+generated pack's definitions hold all three.
+
+`include/default` provider (c) in the built-in pack:
 
 | Key path | Value |
 |---|---|
 | `providers[0].type` | `bitmap` **[engine name]** |
-| `providers[0].file` | `cobolcraft:font/ascii.png` (an id relative to `textures/`, including `.png`, so the file is `assets/cobolcraft/textures/font/ascii.png`) |
+| `providers[0].file` | `minecraft:font/ascii.png` (an id relative to `textures/`, including `.png`, so the file is `assets/minecraft/textures/font/ascii.png`) |
 | `providers[0].height` | 8 |
 | `providers[0].ascent` | 7 |
-| `providers[0].chars` | the six strings below |
+| `providers[0].chars` | the sixteen strings below (the standard layout of 14 §10.2, ASCII only) |
 
 `chars` lists the image row by row. Each string covers one row of 16 cells, and every string has the same
 length. The character `\u0000` marks an unused cell. In JSON:
 
 ```json
-[" !\"#$%&'()*+,-./",
+["\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ " !\"#$%&'()*+,-./",
  "0123456789:;<=>?",
  "@ABCDEFGHIJKLMNO",
  "PQRSTUVWXYZ[\\]^_",
  "`abcdefghijklmno",
- "pqrstuvwxyz{|}~\u0000"]
+ "pqrstuvwxyz{|}~\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+ "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"]
 ```
 
-The field meanings are inferred from the format, because the font provider classes were not part of the
-bytecode pass. `file` names the image. The cell size is the image width divided by the row length, by the
-image height divided by the number of rows. `height` is the drawn glyph height in pixels. `ascent` is the
-number of pixels above the baseline, and it may not exceed `height`.
+The field meanings are those of 14 §10.1 and §10.3. `file` names the image. The cell size is the image width
+divided by the row length, by the image height divided by the number of rows. `height` is the drawn glyph
+height in pixels. `ascent` is the number of pixels above the baseline, and it may not exceed `height`.
 
-**`assets/cobolcraft/textures/font/ascii.png`** is 128 × 48 RGBA. The glyph for code c (32 to 126) fills the
-8 × 8 cell whose top-left pixel is (((c − 32) mod 16) × 8, ((c − 32) div 16) × 8). Within the cell, row r is
-the glyph's row byte r, and column k is bit 0x80 >> k: a set bit is `#FFFFFF` at alpha 255, and a clear bit
-is transparent. The cell for code 127, at (120, 40), stays transparent. With ascent 7, cell rows 0 to 6 sit
-above the baseline and row 7 holds descenders, as standin-content §18 says.
+**`assets/minecraft/textures/font/ascii.png`** is 128 × 128 RGBA, a 16 × 16 grid of 8 × 8 cells. The glyph for
+code c (32 to 126) fills the cell whose top-left pixel is ((c mod 16) × 8, (c div 16) × 8), so the printable
+range sits in rows 2 to 7 as in 14 §10.2. Within the cell, row r is the glyph's row byte r, and column k is bit
+0x80 >> k: a set bit is `#FFFFFF` at alpha 255, and a clear bit is transparent. Every other cell, including the
+one for code 127 at (120, 56), stays transparent. With ascent 7, cell rows 0 to 6 sit above the baseline and
+row 7 holds descenders, as standin-content §18 says. (standin-content §18 still describes a 128 × 48 image
+with the first glyph row at the top. The placement above replaces that layout. The glyph data and advances are
+unchanged.)
 
-**CobolCraft's text rules** apply to the built-in font and to any pack's replacement:
+**CobolCraft's text rules** apply to the built-in font and to any pack's replacement. At scale 1 they agree with 14 §10.3:
 
 - A glyph's advance is the column of its rightmost non-transparent pixel plus 2, counted in cell pixels. A
   cell with no ink, such as the space, advances 4. These rules give the advances listed in
@@ -1423,7 +1448,7 @@ above the baseline and row 7 holds descenders, as standin-content §18 says.
 - Text is coloured by multiplying the ink by the text colour.
 - A character that is not in `chars`, or that falls in a `\u0000` cell, draws as the **missing glyph**.
   This glyph is engine-generated, not a pack file: the box `F8 88 88 88 88 88 F8 00` (standin-content §18),
-  advance 6. If no pack supplies a usable `cobolcraft:default`, every character draws as the missing glyph.
+  advance 6. If no pack supplies a usable `minecraft:default`, every character draws as the missing glyph.
 
 ### 10.11 Entities and weather
 
@@ -1483,6 +1508,57 @@ draws no quads. The sky colour and daylight changes of §14.5 are client constan
 
 ---
 
+
+## 11. Generated resource pack and pack order
+
+The resource pack of the standard world type is not authored in these documents. The extraction tool (22) builds it on the user's machine from
+the user's own client jar, and the client loads it as a built-in required pack. This section only places it in the stack; the rows, the paths and
+the checks are in 22.
+
+### 11.1 The generated pack
+
+| Item | Where it is specified |
+|---|---|
+| Location: `<generated>/vanilla-resources/`, a directory pack (1.1) with pack id `vanilla`, title "Default" | 22 §5.1, §5.2, §8.1 |
+| Content: the jar's `assets/` verbatim (models, block states, item definitions, atlases, textures, colormaps, fonts, language, sounds as files) plus `pack.png` | 22 §6.1 |
+| `pack.mcmeta`: written by the tool, description and format range 97.1 to 97.*, in the array form of 2.1 | 22 §6.2 |
+| When it is present: the generated-pack check result `ok`; otherwise `absent`, `incomplete`, `stale` or `damaged` with a message | 22 §8.2, §9.2 |
+| Regeneration, atomic replacement, `--verify` | 22 §6.3, §7.5, §7.6 |
+| Reload: the client re-reads the pack on every resource reload; it does not watch the directory | 22 §8.1 |
+| What it cannot hold: anything the jar does not contain (22 §2.9), and any content that is code (README R7) | 22 §10 |
+
+Because the pack is a copy of the jar's own assets, everything in 2 to 9 applies to it as written (formats, atlases 7, colormaps 8, `.mcmeta`
+rules). It uses bare or `minecraft:` ids (1.3). The block tint index is data in its models; the tint source and colour of each block is code
+(Open question 10, 14 §9).
+
+### 11.2 Pack order
+
+The client's pack repository holds two built-in required packs below all user packs (22 §8.1). Both are fixed at the bottom: the player can neither
+disable nor move them, so no user pack can end up below them (README C7).
+
+| Level (bottom first) | Pack | Present when | Replaced by |
+|---|---|---|---|
+| 1 | `cobolcraft` built-in (10) | always | any higher pack on the same path |
+| 2 | `vanilla` generated (11.1) | the generated-pack check is `ok` | levels 3 and 4 |
+| 3 | User packs, in the order of `resourcePacks` in `options.txt`, from `<game directory>/resourcepacks/` (3.1, 13 §8). Faithful is here, never enabled by itself | enabled by the player | level 4 |
+| 4 | Server-pushed packs (9.6) | the server sent them | nothing |
+
+Rules.
+
+1. A path is resolved top-down: the first pack from the top that holds it supplies it (3.2). Texture, model and language entries follow the same rule per
+   path and per key.
+2. **Level 2 wins over level 1** on a path that both hold. The two packs share very few paths: the built-in pack supplies `cobolcraft:` paths, the generated
+   pack `minecraft:` paths. The shared ones are engine vocabulary (22 §9.1) and the language (10.8: standard keys in both files, the generated text wins).
+3. Faithful and other `minecraft:` packs apply by path over the generated pack; they never touch a `cobolcraft:` path (world-types §6.4, 22 §9).
+4. The same stack applies in both world types when the generated pack is valid; the isolation is by namespace (world-types Decision WT-15, 7.3).
+5. A standard world type needs level 2. If it is not `ok`, the standard world type is disabled with the message of 22 §9.2, and the stack is level 1, 3, 4. A
+   cobolcraft world runs on level 1 alone (22 §9.1).
+6. Which texture is used for a block, item or entity of the standard world type when nothing in the stack holds it: the engine-generated missing texture (10, last paragraph).
+
+### 11.3 Open points
+
+The language fallback texts for standard keys (10.8.4, 10.8.6) and the zip-reader and format details are in Open questions 12 and 13.
+
 ## Open questions
 
 1. ~~**Quadrant values.**~~ Resolved: the value modulo 360 must be 0, 90, 180 or 270 (`Quadrant.parseJson`).
@@ -1507,10 +1583,18 @@ draws no quads. The sky colour and daylight changes of §14.5 are client constan
    activation.
 9. **Cache vacuum policy.** The criterion that `DownloadCacheCleaner` uses to choose victims (modification
    time versus log order) was not traced in detail.
-10. **Block tint indexes.** Which tint index produces which colour for blocks is fixed in client code and
-    keyed to vanilla blocks. Our client needs its own policy if tinted faces are wanted.
+10. ~~**Block tint indexes.**~~ Now a requirement. The tint index of a face (`tintindex`, 5.5) is data: the
+    generated models carry it. Which tint source and colour each block uses (grass, foliage, dry foliage,
+    water, constant) is code, keyed to the block, and the colour comes from the biome and the colormaps
+    (14 §9). The client must implement that mapping for the standard world type (GAP-29). The rules are not
+    yet written down.
 11. ~~**Protocol-defined disconnect reasons.**~~ Answered: the server keeps the keys that 01, 02 and 05c
     fix (`multiplayer.disconnect.incompatible`, `…outdated_client`, `…transfers_disabled`, `…slow_login`,
     `…unexpected_query_response`, `…invalid_player_movement` and `disconnect.timeout`), and 10.8.4 gives
-    each one an original `en_us` text, so the client never shows a bare key for them. A pack can change
-    these texts.
+    each one its standard `en_us` text (generated pack in the standard world type, this file as fallback in the
+    cobolcraft world type), so the client never shows a bare key for them. A pack can change these texts. The texts themselves are still missing (question 12).
+12. **Standard texts of the fallback language set (GAP-27).** 10.8.4 gives no text for the seven protocol-defined disconnect reasons, and 10.8.6 does not
+    say which `cobolcraft.screen.*` entries have a standard key. Until a clean-room round supplies them (README GAP-27) the cobolcraft world type shows
+    the bare key for a disconnect reason when the generated pack is absent. The command and framework keys are covered by 15 §5 and 16.
+13. **Index of standard `en_us` keys.** 11.1 relies on the generated `en_us` for every standard text; the engine reads keys that no document lists. The
+    list of keys the engine looks up is open until the standard key survey (README GAP-27) is done.

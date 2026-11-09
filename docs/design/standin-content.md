@@ -1,66 +1,97 @@
-# Stand-in content (placeholder data for engineering)
+# Content of the cobolcraft world type
 
-Status: **placeholder**. Nothing in this document is final game design. It is the smallest coherent set of
-original content that lets the COBOL client and the COBOL server go end to end: connect, configure, join,
-receive chunks, render, walk around, and place and break blocks. Sections 9 to 18 extend it (FR-015) with
-ground items, health, hunger, mobs, recipes, weather, a second dimension, the command set, system messages
-and a bitmap font. Every value here is expected to be replaced. Section 7 lists what to replace.
+Status: **content document** of the cobolcraft world type, the invented `cobolcraft:` content of the game: its 12 blocks,
+18 items, 4 entity types (two of them mobs), 9 recipes, 2 dimensions, 3 biomes, procedural textures and bitmap font. The
+file began as placeholder data for engineering and is re-scoped under the operator's decisions "Own world type" and
+"Stand-in content" (tickets/CC-0001-client-polish.md, Decisions): the content is kept unchanged and is demoable with no jar
+and no packs. What it no longer is: a source of rules. Health, hunger, damage, the hurt window, day length, movement,
+commands, crafting screens, ground items and weather mechanism are the **standard rules of documents 10 to 21 in both world
+types** (README R2); sections 9 to 17 keep only the content that sits on those rules, and two interim rows (§9 values and
+§14.3 timing) that stay until the named gaps close (README R9). The world type mechanism is in
+[world-types.md](world-types.md); the registry rows and the cobolcraft content in the standard data schemas are in
+[cobolcraft-standard-core.md](cobolcraft-standard-core.md).
 
-Wire formats, packet layouts and the id-assignment rules are in [../protocol/](../protocol/README.md). This
-document only chooses *content*. Section references such as "04 §5.2" point into that spec.
+Wire formats, packet layouts and the id-assignment rules are in [../protocol/](../protocol/README.md). This document only
+chooses *content*. Section references use these forms: "04 §5.2" is docs/protocol/04-registry-sync.md; "core §5.1" is
+cobolcraft-standard-core.md; "README S21" and "README R2" are rows and rules of [README.md](README.md) (this folder);
+"WT-n" is a Decision of world-types.md; "faithful §3" is faithful-pack-mapping.md; a bare "§1.4.1" is a section of this
+file. Section numbers of the earlier edition are kept, so citations of content sections still resolve; the retired
+sections (§7, §10, §11 apart from §11.5, §16) stay as short stubs that say where the rule lives now.
 
-Every value in this document is exact. Where a rule needs a pseudo-random choice, it uses the integer hash
-`H` of §1.4.1, so two implementations given the same state produce the same result. A "tick" is one server
-(or single-player) game tick; there are 20 ticks per second.
+Every value in this document is exact. Where a content rule needs a pseudo-random choice, it uses the integer hash `H` of
+§1.4.1, so two implementations given the same state produce the same result. A "tick" is one server (or single-player)
+game tick; there are 20 ticks per second. `Time` in the rules of §12 and §14 is the total tick count of the shared world
+clock `minecraft:overworld` (core §3.1, 12 §3.2); the day is 24000 ticks, so every "`Time` mod 80" or "`Time` mod 100"
+rule has the same phase on both sides of a day wrap (Open question 14).
 
 ## 0. Ground rules and the two compatibility tiers
 
-- **Namespace.** All original content uses `cobolcraft:`.
-- **Protocol-required names.** A few keys must use the `minecraft:` namespace because the vanilla client
-  looks them up by exact name (04 §3.2). Each such key is marked **[compat name]**. Only the *name* is kept,
-  for protocol compatibility. Every value attached to it is our own minimal placeholder.
+- **Namespace.** The cobolcraft world type's own content uses `cobolcraft:`. The standard world type uses `minecraft:`
+  for everything, and `cobolcraft:` is where CobolCraft extends or diverges (README R1). The rule itself is stated in the
+  intro of 08 and in world-types.md.
+- **Protocol-required names.** A few keys must use the `minecraft:` namespace because the vanilla client looks them up by
+  exact name (04 §3.2). Each such key is marked **[compat name]**. The cobolcraft world type's own client load must pass the
+  vanilla validators (04 §3.2), and the shared rules read some of these keys (the damage types and chat types of core §3.5
+  and §3.6, the clock of core §3.1), so where a shared rule reads an entry its value is the standard value written in core
+  §3; the value of an entry no rule reads is our own minimal placeholder.
 - **Registry keys are protocol vocabulary, not content.** Names such as `minecraft:dimension_type`,
-  `minecraft:worldgen/biome` or `minecraft:wolf_variant` name a *slot in the protocol*. We send them as-is.
-  Enum values that a codec fixes (for example skybox `overworld` or `none`, model `normal`, scaling `never`)
-  and identifiers the protocol defines (for example the command suggestion type `minecraft:ask_server`) are
-  protocol constants in the same sense.
+  `minecraft:worldgen/biome` or `minecraft:wolf_variant` name a *slot in the protocol*. We send them as-is. Enum values that
+  a codec fixes (for example skybox `overworld` or `none`, model `normal`, scaling `never`) and identifiers the protocol
+  defines (for example the command suggestion type `minecraft:ask_server`) are protocol constants in the same sense.
 
-The game owns both client and server, so two compatibility tiers exist:
+The game owns both client and server, so two compatibility tiers exist. They map onto the world types:
 
-| Tier | Meaning | Status for the stand-in |
+| Tier | Meaning | Where it applies |
 |---|---|---|
-| A. Own-client | The COBOL client parses and uses everything sent. | **Required.** This is the target. |
-| B. Vanilla-parse | A vanilla 26.3 client can finish the configuration phase without a registry load error (04 §3.2). | **Kept as a goal for the configuration phase only.** It costs very little and lets a reference client act as a test oracle for our Registry Data encoder. |
+| A. Own-client | The COBOL client parses and uses everything sent. | **Required.** Both world types. |
+| B. Vanilla-parse | A vanilla 26.3 client can finish the configuration phase without a registry load error (04 §3.2). | **The cobolcraft world type only**, for the configuration phase only. It costs very little and lets a reference client act as a test oracle for our Registry Data encoder. The standard world type uses the vanilla ids and registries (04 §5), and for it the vanilla client is a validation goal for play too (README R8). |
 
-Tier B cannot extend into play. The static registries (blocks, block states, items, entity types) are never
-sent. A vanilla client numbers them from its own built-in tables (04 §5). Our block state 2 would be drawn as
-whatever vanilla state 2 is. Original static content and a playable vanilla client are mutually exclusive.
-That is accepted: the vanilla client is an oracle for configuration only.
+Tier B cannot extend into play for the cobolcraft world type. Its static registries (blocks, block states, items, entity
+types) are original content and are never sent: a vanilla client numbers them from its own built-in tables (04 §5). Our
+block state 2 would be drawn as whatever vanilla state 2 is. Original static content and a playable vanilla client are
+mutually exclusive for this world type; that is accepted, and the vanilla client is an oracle for configuration only here.
+The standard world type uses the vanilla numbering and has no such limit (README C1).
 
 ---
 
-## 1. Block registry
+## 1. cobolcraft world: blocks
 
 ### 1.1 Blocks
 
-Registration order defines the block id. Twelve blocks; id 0 is the air-equivalent.
+Registration order defines the block id. Twelve blocks; id 0 is the air-equivalent. The hand break times of the earlier
+edition are replaced by standard block properties, so the shared break formula (13 §2.1) applies: **hardness**, the
+**mineable tag** (class) and the tool tier (none, core §5.1 CORE-17). The values below are the ones of core §5.1, which is
+the authority for them and for the resulting break times in ticks (CORE-18, CORE-27); the nearest standard block each value
+came from is listed under the table.
 
-| Block id | Key | Properties | Solid / collides | Opaque (occludes faces, blocks light) | Light emitted | Hand break time | Notes |
-|---|---|---|---|---|---|---|---|
-| 0 | `cobolcraft:void` | none | no | no | 0 | n/a | Empty space. Not targetable, not breakable, not placeable. |
-| 1 | `cobolcraft:baseplate` | none | yes | yes | 0 | unbreakable | Bottom layer of every dimension (y = 0). Creative may place it but nobody may break it. |
-| 2 | `cobolcraft:greystone` | none | yes | yes | 0 | 1.5 s | Bulk underground fill. "Hard" class. |
-| 3 | `cobolcraft:loam` | none | yes | yes | 0 | 0.6 s | Subsoil. "Soft" class. |
-| 4 | `cobolcraft:turf` | none | yes | yes | 0 | 0.7 s | Top surface on higher ground. "Soft" class. Different top, side and bottom faces. |
-| 5 | `cobolcraft:grit` | none | yes | yes | 0 | 0.5 s | Top surface on low ground. "Soft" class. No gravity in the stand-in. |
-| 6 | `cobolcraft:cardstack` | `axis` (x, y, z); `punched` (true, false) | yes | yes | 0 | 1.0 s | A bound stack of punch cards. Exercises the two-property Cartesian rule. "Hard" class. |
-| 7 | `cobolcraft:lucite` | none | yes | **no** | 0 | 0.4 s | Clear block. Tests transparency and face culling. Faces between two lucite blocks are culled; faces against any opaque block are drawn on the lucite side only. |
-| 8 | `cobolcraft:glowtube` | `lit` (true, false) | yes | yes | 15 when `lit=true`, 0 when `lit=false` | 0.3 s | Light source. Exercises the one-property rule and block light. Using it (right-click without a held block) toggles `lit`. |
-| 9 | `cobolcraft:ledger_tile` | none | yes | yes | 0 | 1.2 s | Plain building block. "Hard" class. |
-| 10 | `cobolcraft:goto_pad` | none | yes | yes | 6 | 2.0 s | The means of travel between dimensions (§15). Using it (Use Item On, with any held item or none) starts travel; nothing is ever placed against it and it is never toggled. No class. |
-| 11 | `cobolcraft:slag` | none | yes | yes | 0 | 1.2 s | Surface fill of the `cobolcraft:subroutine` dimension (§15). "Hard" class. |
+| Block id | Key | Properties | Solid / collides | Opaque (occludes faces, blocks light) | Light emitted | Hardness (core §5.1) | Mineable tag | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 0 | `cobolcraft:void` | none | no | no | 0 | n/a | none | Empty space. Not targetable, not breakable, not placeable. |
+| 1 | `cobolcraft:baseplate` | none | yes | yes | 0 | -1.0 (unbreakable) | none | Bottom layer of every dimension (y = 0). Creative may place it but nobody may break it (13 §2.5, §2.6). |
+| 2 | `cobolcraft:greystone` | none | yes | yes | 0 | 1.5 | `mineable/pickaxe` | Bulk underground fill. |
+| 3 | `cobolcraft:loam` | none | yes | yes | 0 | 0.5 | `mineable/shovel` | Subsoil. |
+| 4 | `cobolcraft:turf` | none | yes | yes | 0 | 0.6 | `mineable/shovel` | Top surface on higher ground. Different top, side and bottom faces. |
+| 5 | `cobolcraft:grit` | none | yes | yes | 0 | 0.5 | `mineable/shovel` | Top surface on low ground. No gravity: it is not a falling block in this world type. |
+| 6 | `cobolcraft:cardstack` | `axis` (x, y, z); `punched` (true, false) | yes | yes | 0 | 0.7 | `mineable/pickaxe` | A bound stack of punch cards. Exercises the two-property Cartesian rule. |
+| 7 | `cobolcraft:lucite` | none | yes | **no** | 0 | 0.3 | none | Clear block. Tests transparency and face culling. Faces between two lucite blocks are culled; faces against any opaque block are drawn on the lucite side only. |
+| 8 | `cobolcraft:glowtube` | `lit` (true, false) | yes | yes | 15 when `lit=true`, 0 when `lit=false` | 0.2 | none | Light source. Exercises the one-property rule and block light. Using it (right-click without a held block) toggles `lit`. |
+| 9 | `cobolcraft:ledger_tile` | none | yes | yes | 0 | 0.8 | `mineable/pickaxe` | Plain building block. |
+| 10 | `cobolcraft:goto_pad` | none | yes | yes | 6 | 1.3 | none | The means of travel between dimensions (§15). Using it (Use Item On, with any held item or none) starts travel; nothing is ever placed against it and it is never toggled. |
+| 11 | `cobolcraft:slag` | none | yes | yes | 0 | 0.4 | `mineable/pickaxe` | Surface fill of the `cobolcraft:subroutine` dimension (§15). |
 
-All blocks are full 1 × 1 × 1 cubes. There are no fluids: every section's fluid count (06 §4) is 0.
+Nearest standard block of each value (the source of the properties above, README S10, S11, decision 4, and the optional
+skin mapping of faithful §3, README decision 10; they are not replacements): `void` is `air`; `baseplate` is `bedrock`;
+`greystone` is `stone`; `loam` is `dirt`; `turf` is `grass_block`; `grit` is `sand`; `lucite` is `glass`; `glowtube` is
+`redstone_lamp`; `slag` is `netherrack`. `cardstack`, `ledger_tile` and `goto_pad` have no equivalent; their hardness is
+derived from the earlier hand times (core §5.1, CORE-18). The tools that mine the two mineable tags are in §2 and core §5.3.
+
+**One addition (README decision 3, an adopted default).** The cobolcraft world type also carries one crafting bench block,
+`cobolcraft:crafting_bench`, appended as block id 12 and state 18 (core §5.1, WT-12), so that the shared 3 x 3 crafting menu
+(13 §3.5) exists in this world type. The table above, §1.2 and the texture sections keep the original twelve blocks; the
+bench's texture and check values are owed (Open question 15).
+
+All blocks are full 1 × 1 × 1 cubes. There are no fluids: every section's fluid count (06 §4) is 0 while the shared fluid
+rules (GAP-9) are not enabled in this world type.
 
 Property value orders (as they would be declared; these define state numbering):
 
@@ -107,32 +138,37 @@ Total: **18 block states**. Consequences for chunk encoding (06 §5.3):
   **HashMap** palette at 5 bits. Generated terrain never holds more than 9 distinct states in a section
   (§5.2, §15.2), so the HashMap kind is reached only when players build a section containing 17 or 18
   different states. The Global kind (9 bits or more) is never reached by this content; tests for it need a
-  hand-crafted packet.
-- An unknown state id should decode to state 0 (void), mirroring 04 §5.2's last paragraph.
+  hand-crafted packet. (The standard world type's far larger state count does reach it, 06 §5.3.)
+- An unknown state id decodes by the generic rule of 04 §5.2 (the default state of the air-equivalent, here state 0 of
+  `void`).
 
 ### 1.3 Placement, breaking and block yields
 
 - Placing a block item puts the block's **default state**, except:
   - `cardstack`: `axis` follows the clicked face's axis (top/bottom face → y, east/west → x,
     north/south → z); `punched=false`.
-- A position can receive a block only if it currently holds `void`, lies inside the dimension's height range,
-  and the new block's cell would not overlap any player or mob (US4 edge cases).
+- Which positions accept a block, and the overlap test with players and mobs, are the shared placement rule (GAP-30). Its
+  cobolcraft instance: a position can receive a block only if it currently holds `void` (core §4.1 proposes the tag
+  `minecraft:replaceable` with `void` as its only member) and lies inside the dimension's height range.
 - Use Item On a `goto_pad` never places a block, whatever is held: it starts travel (§15.5). Use Item On a
   `glowtube` with no block item held toggles `lit`; with a block item held it places against the glowtube
   as against any other block. Use Item On with a non-block item held (tools, food, `dump_shard`) places
   nothing.
-- Breaking sets the position to state 0 (`void`). `baseplate` refuses.
-- **Block yields (FR-002).** In survival, a broken block leaves its item **on the ground**: one
-  `cobolcraft:loose_item` (§3, §9) holding one item of the block's item, at position (x + 0.5, y + 0.25,
-  z + 0.5) for the broken block at (x, y, z), with motion (0, 0, 0) and a pickup delay of 6 ticks (§9.2).
-  The block's item is the item that places it (§2): block id 2–9 → item id 2–9 (every `cardstack` state →
-  item 6, both `glowtube` states → item 8), `goto_pad` → item 16, `slag` → item 17. In creative mode a break
-  yields nothing (FR-007). Nothing is ever added straight to the breaker's inventory.
+- Breaking sets the position to state 0 (`void`). `baseplate` refuses (hardness -1.0, §1.1).
+- **Block yields (FR-002).** The yield of a block is its item, one of it, from the block's loot table (core §5.6); the
+  dropped stack is an item entity with the shared rules (18 §6.11: pickup delay 10, lifetime 6000, merging; §9). The
+  block's item is the item that places it (§2): block id 2–9 → item id 2–9 (every `cardstack` state →
+  item 6, both `glowtube` states → item 8), `goto_pad` → item 16, `slag` → item 17. The creative rule (a break yields
+  nothing, and is instant) is 13 §2.5. The earlier position, motion and delay rules for the dropped item are retired
+  (README S15, S50).
 
 ### 1.4 Placeholder textures
 
 All block textures are **16 × 16** RGBA, generated procedurally at startup. Every recipe below admits
-exactly one RGBA image; §1.4.1 defines the vocabulary the recipes use, and §1.5 lists check values.
+exactly one RGBA image; §1.4.1 defines the vocabulary the recipes use, and §1.5 lists check values. They are the art of
+the built-in pack of the cobolcraft world type (08 §10.3). The rules for the standard world type's textures are in 08,
+14 and faithful; Faithful's `minecraft:` textures do not bind to these `cobolcraft:` blocks except through the optional
+skin of faithful §3.
 
 #### 1.4.1 Drawing rules (shared by every procedural texture in this document)
 
@@ -194,10 +230,10 @@ exactly one RGBA image; §1.4.1 defines the vocabulary the recipes use, and §1.
 | ledger_tile | all | `ledger_tile` | Pixel (x, y) is `#24425A` if x mod 8 = 0 or y mod 8 = 0 (grid lines on columns 0 and 8 and rows 0 and 8); otherwise `#3E6C8F` if (x div 4) + (y div 4) is even and `#355D7B` if it is odd (a 4 × 4 checkerboard). |
 | goto_pad | all | `goto_pad` | With ring r = min(x, y, 15 − x, 15 − y): r = 0 → `#3B2F5C`; r ∈ {1, 3, 5} → `#1F1B2E`; r ∈ {2, 4} → `#6A4FB3`; r ≥ 6 (the central 4 × 4) → `#C9B8FF`. |
 | slag | all | `slag` | Noise `slag`: fill `#4A3F3A`; 25 % `#3A302C`, 12 % `#6E4A32`. |
-| (missing texture) | — | — | Pixel (x, y) is `#F28C28` if ((x + y) div 2) mod 2 = 0, otherwise `#1A1A1A`: 2-px diagonal stripes running from bottom-left to top-right. Used for any unknown block, item, entity or environment texture; for a texture of another size the same formula is applied at that size. Engine-generated, not a pack file. |
+| (missing texture) | — | — | Pixel (x, y) is `#F28C28` if ((x + y) div 2) mod 2 = 0, otherwise `#1A1A1A`: 2-px diagonal stripes running from bottom-left to top-right. Used for any unknown block, item, entity or environment texture; for a texture of another size the same formula is applied at that size. Engine-generated, not a pack file, for both world types: the standard missing sprite is the magenta and black pattern of 14 §3.1, and the colours here are CobolCraft's own and are kept (README S18, decision 12). |
 
-Shading: the renderer applies its own fixed per-face brightness (data-model "Render list": top 1.0, north
-and south 0.8, east and west 0.6, bottom 0.5). That is renderer policy, not texture content.
+Shading: the per-face brightness and smooth lighting of the renderer are the shared rules of 12 §1.1 to §1.8 (they agree with
+the fixed factors of the earlier edition, 12 §0; CC-0007). That is renderer policy, not texture content.
 
 ### 1.5 Check values for every procedural texture
 
@@ -240,9 +276,12 @@ document is wrong and is corrected first (FR-005). `@a` marks a colour with alph
 
 ## 2. Item registry
 
-Item ids are our own static numbering. On the wire an item appears as `RegistryId<item>` inside an ItemStack
-(00 §12.1). The stand-in uses **no data components**: every non-empty stack is sent with AddedCount = 0 and
-RemovedCount = 0, so no `data_component_type` numbering is needed yet.
+Item ids are our own static numbering (the standard world type's are the vanilla registration order, 04 §5.1). On the wire
+an item appears as `RegistryId<item>` inside an ItemStack (00 §12.1). Stacks are encoded as 00 §12.1 in both world types.
+The cobolcraft items carry **no data components in a stack**: every non-empty stack is sent with AddedCount = 0 and
+RemovedCount = 0, a valid empty patch (README S22), so no `data_component_type` numbering is needed for stacks. The items'
+own default components (stack size, `tool`, `food`, `consumable`, attack modifiers) are the prototype components of core
+§5.2 to §5.4 and are not repeated here, except the maximum stack size.
 
 | Item id | Key | Places block (state) | Max stack | Notes |
 |---|---|---|---|---|
@@ -256,21 +295,28 @@ RemovedCount = 0, so no `data_component_type` numbering is needed yet.
 | 7 | `cobolcraft:lucite` | lucite (12) | 64 | |
 | 8 | `cobolcraft:glowtube` | glowtube (13) | 64 | |
 | 9 | `cobolcraft:ledger_tile` | ledger_tile (15) | 64 | |
-| 10 | `cobolcraft:pry_bar` | — | 1 | Tool. Divides break time by 4 for "hard" class blocks (greystone, cardstack, ledger_tile, slag). |
-| 11 | `cobolcraft:trowel` | — | 1 | Tool. Divides break time by 4 for "soft" class blocks (loam, turf, grit). |
-| 12 | `cobolcraft:grazer_flank` | — | 32 | Food (§11.5), value 3. Yield of the sodgrazer (§12). |
-| 13 | `cobolcraft:seared_flank` | — | 32 | Food (§11.5), value 8. Recipe 6 (§13). |
-| 14 | `cobolcraft:sod_cake` | — | 16 | Food (§11.5), value 2. Recipe 5 (§13). |
+| 10 | `cobolcraft:pry_bar` | — | 1 | Tool: a `tool` component with mining speed 4.0 on `#minecraft:mineable/pickaxe`, attack damage 4 (core §5.3). Mines the pickaxe class of §1.1. |
+| 11 | `cobolcraft:trowel` | — | 1 | Tool: a `tool` component with mining speed 4.0 on `#minecraft:mineable/shovel`, attack damage 2 (core §5.3). Mines the shovel class of §1.1. |
+| 12 | `cobolcraft:grazer_flank` | — | 32 | Food (§11.5), `food` nutrition 3 (core §5.4). Yield of the sodgrazer (§12). |
+| 13 | `cobolcraft:seared_flank` | — | 32 | Food (§11.5), nutrition 8. Recipe 6 (§13). |
+| 14 | `cobolcraft:sod_cake` | — | 16 | Food (§11.5), nutrition 2. Recipe 5 (§13). |
 | 15 | `cobolcraft:dump_shard` | — | 64 | Crafting material. Yield of the abend (§12); recipe 8 (§13). |
 | 16 | `cobolcraft:goto_pad` | goto_pad (16) | 16 | The travel block (§15). Recipe 7 (§13). |
 | 17 | `cobolcraft:slag` | slag (17) | 64 | Building block from the Subroutine (§15). |
+
+The bench item `cobolcraft:crafting_bench` is appended as item id 18 (README decision 3, core §5.2); see the addition note
+of §1.1.
 
 English names (08 §10.8) of the blocks and items added by the extension: `goto_pad` "GOTO Pad", `slag`
 "Slag", `grazer_flank` "Grazer Flank", `seared_flank` "Seared Flank", `sod_cake` "Sod Cake", `dump_shard`
 "Dump Shard".
 
-Tools have no durability in the stand-in. Lucite, glowtube and goto_pad are in no class and break at hand
-speed with any item. In creative, every break is instant. Each item's attack damage is in §10.4.
+Tools have no durability (core §5.3, CORE-19; "no durability" stays allowed). Break time is the shared formula 13 §2.1
+from the block's hardness and mineable tag (§1.1) and the tool's speed; the earlier rule "divides break time by 4" is
+replaced by it (a tool speed of 4.0 divides the time by 4 in the formula, CORE-18). `lucite`, `glowtube` and `goto_pad` are
+in no mineable tag and break at hand speed with any item. In creative, every break is instant (13 §2.5). Each item's
+attack damage is an attribute modifier of the item (core §5.3: 4 for `pry_bar`, 2 for `trowel`, 1 for any other item);
+reach, cooldown and the rest of combat are 17 §4.
 
 Item icons are 16 × 16 RGBA. A block item uses its block's texture (the top face for turf, the end face for
 cardstack, the lit texture for glowtube) drawn as a flat icon. The other icons are drawn with the §1.4.1
@@ -291,23 +337,26 @@ rules on a transparent background (texture file stem = the item's key path):
 - `dump_shard`: `T((8, 1), (4, 12), (11, 9))` in `#8F7CFF`; then `L(8, 3, 7, 10, 1)` (a highlight) in
   `#E8F04A`.
 
-**Starting inventory** (FR-002, US4-8; slot numbers of data-model "Inventory": 0–8 hotbar, 9–35 main),
-given once to a first-time survival player: slots 0 to 7 hold items 2 to 9 in id order, 64 each (slot 0
-greystone, … slot 7 ledger_tile); slot 8 holds one `pry_bar`; slot 9 holds one `trowel`; every other slot is
-empty. The held slot is 0.
+**cobolcraft: starting kit** (FR-002, US4-8; README S23, adopted default of decision 6; slot numbers of data-model
+"Inventory": 0–8 hotbar, 9–35 main). This is a rule of the cobolcraft world type only: the standard world type starts with
+an empty inventory. It is given once to a first-time survival player: slots 0 to 7 hold items 2 to 9 in id order, 64 each
+(slot 0 greystone, … slot 7 ledger_tile); slot 8 holds one `pry_bar`; slot 9 holds one `trowel`; every other slot is empty.
+The held slot is 0. It is not given again on respawn (17 §4.10). The data form of the kit is core §5.8.
 
 ---
 
 ## 3. Entity types
 
-| Entity type id | Key | Size (width × height) | Eye height | Notes |
+| Entity type id | Key | Collision box (width × height) | Eye height | Notes |
 |---|---|---|---|---|
-| 0 | `cobolcraft:operator` | 0.7 × 1.75 | 1.6 | Player-equivalent. Used for the joining player's own entity and in Add Entity (05a, id 1) for other players. Sends no entity metadata in the stand-in. |
-| 1 | `cobolcraft:loose_item` | 0.3 × 0.3 | 0.15 | **Required.** An item on the ground (FR-002): every block yield, mob yield, thrown item and death drop is one of these. Rules in §9. Its only entity metadata is its item stack (Set Entity Data, 00 §12, 00 §13): one entry, index 0, serializer 7 (`ITEM_STACK`), sent after its Add Entity and whenever the stack changes. |
+| 0 | `cobolcraft:operator` | 0.6 × 1.8 | 1.62 | Player-equivalent, the **player role** (WT-22): the joining player's own entity and, in Add Entity (05a, id 1), other players. Gameplay uses the standard player box (21 §2) and the standard player metadata. The model and texture of §3.2 stay. |
+| 1 | `cobolcraft:loose_item` | 0.25 × 0.25 | 0.2125 | **Required.** The **item entity role** (WT-22): the standard item entity (21 §2, size and eye height as the standard `item`). Its metadata is the standard layout (21 App A: the item stack as `DATA_ITEM`, `ITEM_STACK`). Ground-item rules: §9 and 18 §6.11. |
 | 2 | `cobolcraft:sodgrazer` | 0.9 × 0.9 | 0.7 | Passive mob (§12). |
 | 3 | `cobolcraft:abend` | 0.75 × 0.75 | 0.5 | Hostile mob (§12). |
 
-"Size" is the collision box: centred on the entity position horizontally, from the position's y upward.
+"Size" is the collision box: centred on the entity position horizontally, from the position's y upward. The earlier
+stand-in boxes of `operator` (0.7 × 1.75, eye 1.6) and `loose_item` (0.3 × 0.3, eye 0.15) are retired (README S24); the
+ids and keys are unchanged.
 
 ### 3.1 Entity models and textures
 
@@ -339,32 +388,42 @@ Entity appearance is described as boxes drawn with one entity texture per entity
 ### 3.2 Operator appearance
 
 One part, `box`, from (−5.5, 0, −5.5) to (5.5, 28, 5.5): 11 × 28 × 11 model pixels (0.6875 × 1.75 ×
-0.6875 blocks, a whisker narrower than the 0.7 collision box). Texture `operator`, 66 × 28: every face
+0.6875 blocks, a little wider than the 0.6 collision box of §3). Texture `operator`, 66 × 28: every face
 rectangle filled `#3A5A9A`; then two 2 × 2 "eyes" in `#F0F0F0` at front (2, 4)–(3, 5) and front (7, 4)–(8, 5)
 (in the upper third of the face toward the look direction). No limbs or animation.
 
 ### 3.3 Ground item appearance
 
 A `loose_item` is drawn as its item's icon (§2) on a square 0.3 × 0.3 block quad, bottom edge at the entity
-position's y, centred on the position horizontally, turned about the vertical axis to face the camera.
+position's y, centred on the position horizontally, turned about the vertical axis to face the camera. This is the
+built-in pack's drawing of the cobolcraft items; the shared item-entity rendering by the item model's `ground` display
+transform (12 §8.2, §8.4) applies wherever a model exists (Open question 16).
 
 ---
 
 ## 4. Synchronized registries
+
+The rows of the registries that the shared rules read (clock, timelines, dimension types, biomes, chat types, damage types,
+the enchantment) and their tags are written out in core §3 and §4; this section keeps the sending rules, the class key and
+the cobolcraft-only content (biomes, placeholders, dimension geometry). The counts and the rows below are those of the
+cobolcraft world type.
 
 ### 4.1 How to send them
 
 - **Enabled features.** Send Update Enabled Features (03, id 13) with exactly one flag,
   `minecraft:vanilla` (protocol vocabulary, §0). Our client ignores the flag set.
 - **Known packs.** Send Select Known Packs with an **empty list** (or skip it). Every entry is sent with
-  Data present. This is the simplest correct behaviour in 04 §2.
+  Data present. This is the simplest correct behaviour in 04 §2, and it holds for both world types.
 - **Order.** Order the Registry Data packets as in 04 §3. The client does not depend on that order, but
   keeping it makes byte-level comparison against reference captures easier.
-- **Entry order is the id.** The tables below list entries in id order (04 §4).
-- **Empty registries.** For a registry left empty, send no Registry Data packet at all (04 §3.2 item 5).
-- **No vanilla static references in entry data.** Wherever a field points into a static registry (sound
-  events, blocks, items, environment attributes), we either use an inline form with our own identifier or
-  leave the field at its default. That keeps tier A free of vanilla static vocabulary.
+- **Entry order is the id.** The tables below list entries in id order (04 §4); core §1 (CORE-2) fixes the id order of the
+  registries it adds.
+- **Empty registries.** The server sends every registry that the loaded content defines. For a registry the content leaves
+  empty, send no Registry Data packet at all (04 §3.2 item 5; core §2 lists which). The 13 variant registries (MV) are
+  non-empty because they hold the placeholders of §4.5.
+- **Static references in entry data.** The cobolcraft-only entries (placeholder variants, our biomes) use an inline form
+  with our own identifier or leave the field at its default. The standard-core entries of core §3 reference standard static
+  registries (attributes, blocks, items) by their real names, as the shared rules need.
 
 Key to the "Class" column:
 
@@ -372,13 +431,14 @@ Key to the "Class" column:
   fails without it (04 §3.2). Needed for tier B only; our own client does not need it.
 - **NJ** — needed by the join flow or by the play loop, in tier A.
 - **OE** — optional, left empty.
+- **SC** — standard core: an entry set the shared engines read (core §3).
 
 ### 4.2 Summary
 
 | # | Registry | Class | Entries sent |
 |---|---|---|---|
 | 0 | `worldgen/biome` | NJ + MV (`minecraft:plains`) | 3 |
-| 1 | `chat_type` | NJ (sent for registry completeness, FR-002) | 1 |
+| 1 | `chat_type` | NJ + SC (core §3.5) | 8 |
 | 2 | `trim_pattern` | OE | 0 |
 | 3 | `trim_material` | OE | 0 |
 | 4 | `wolf_variant` | MV | 1 |
@@ -396,25 +456,25 @@ Key to the "Class" column:
 | 16 | `painting_variant` | MV | 1 |
 | 17 | `sulfur_cube_archetype` | OE | 0 |
 | 18 | `dimension_type` | NJ | 2 |
-| 19 | `damage_type` | MV (25 compat keys) + NJ (7 of ours) | 32 |
+| 19 | `damage_type` | MV (the standard keys) + SC (core §3.6) | 52 |
 | 20 | `banner_pattern` | OE | 0 |
-| 21 | `enchantment` | OE | 0 |
+| 21 | `enchantment` | SC (core §3.7) | 1 |
 | 22 | `jukebox_song` | OE | 0 |
 | 23 | `instrument` | OE | 0 |
 | 24 | `test_environment` | OE | 0 |
 | 25 | `test_instance` | OE | 0 |
 | 26 | `dialog` | OE | 0 |
-| 27 | `world_clock` | NJ (kept by FR-002; see 4.8) | 1 |
-| 28 | `timeline` | OE | 0 |
+| 27 | `world_clock` | NJ + SC (core §3.1) | 1 |
+| 28 | `timeline` | SC (core §3.2) | 2 |
 | 29 | `decorated_pot_pattern` | OE | 0 |
-| 30 | `block_transformer` | OE | 0 |
+| 30 | `block_transformer` | OE (core CORE-15; Open question 17) | 0 |
 | 31 | `worldgen/block_state_provider` | OE | 0 |
 
-That is 18 Registry Data packets and 52 entries (3 biomes, 1 chat type, 13 MV placeholders, 2 dimension
-types, 32 damage types, 1 world clock). Both dimension types and all three biomes are always sent, even when
-the `extra-dimensions` setting is off, so registry ids never depend on configuration. A tier-A-only server
-could drop the 13 MV variant registries and the 25 compat damage keys. The recommendation is to keep them,
-because they are cheap and keep tier B working.
+That is 20 Registry Data packets and 82 entries (3 biomes, 8 chat types, 13 MV placeholders, 2 dimension types, 52 damage
+types, 1 enchantment, 1 world clock, 2 timelines; core §2). The earlier edition sent 18 packets and 52 entries. Both
+dimension types and all three biomes are always sent, even when the `extra-dimensions` setting is off, so registry ids
+never depend on configuration. A tier-A-only server could drop the 13 MV variant registries and the compat damage keys.
+The recommendation is to keep them, because they are cheap and keep tier B working.
 
 ### 4.3 `worldgen/biome`
 
@@ -424,9 +484,10 @@ because they are cheap and keep tier B working.
 | 1 | `cobolcraft:upland` | 1 | 0.3 | 0.2 | water_color `"#2F5C8C"`, grass_color `"#6B9A55"`, foliage_color `"#6B9A55"` | absent (empty) |
 | 2 | `cobolcraft:ash_flats` | 0 | 1.4 | 0.0 | water_color `"#3A2F2A"`, grass_color `"#5A4A40"`, foliage_color `"#5A4A40"` | absent (empty) |
 
-- `temperature_modifier`, `dry_foliage_color` and `grass_color_modifier` are left absent (defaults).
-- `minecraft:plains` is used only because the vanilla client looks it up as its fallback biome. In our game
-  it means "lowland". It is placed at id 0 so that it is also the natural fallback for our client.
+- `temperature_modifier`, `dry_foliage_color` and `grass_color_modifier` are left absent (defaults). The rows as data are
+  core §3.4 (CORE-9: the lowland keeps 0.6 and 0.4, not the standard plains 0.8 and 0.4 of 10 §7.8).
+- `minecraft:plains` is used because the vanilla client looks it up as its fallback biome. In the cobolcraft world type it
+  means "lowland". It is placed at id 0 so that it is also the natural fallback for our client.
 - Lowland and upland are the biomes of `cobolcraft:main` (§5.2); `ash_flats` is the only biome of
   `cobolcraft:subroutine` (§15.2).
 - `has_precipitation` follows §14: weather is drawn and has its gameplay effect in lowland and upland, and
@@ -439,11 +500,13 @@ because they are cheap and keep tier B working.
 
 | Id | Key | chat | narration |
 |---|---|---|---|
-| 0 | `cobolcraft:say` | translation_key `cobolcraft.chat.say`, parameters [`sender`, `content`], no style | translation_key `cobolcraft.chat.say.narrate`, parameters [`sender`, `content`] |
+| (4 in core §3.5) | `cobolcraft:say` | translation_key `cobolcraft.chat.say`, parameters [`sender`, `content`], no style | translation_key `cobolcraft.chat.say.narrate`, parameters [`sender`, `content`] |
 
-Our client's language table maps `cobolcraft.chat.say` to "<%s> %s" and the narrate key to "%s says %s".
-Player chat is broadcast as System Chat with the literal text `<name> message` (FR-013, §17), so this entry
-is sent for registry completeness only. System messages do not use a chat type.
+The cobolcraft chat type is kept. Our client's language table maps `cobolcraft.chat.say` to "<%s> %s" and the narrate key to
+"%s says %s". The shared commands and player chat use the standard chat types (`minecraft:chat`, `emote_command`,
+`say_command`, `msg_command_incoming` and `_outgoing`, the team types; 16 §8, README decision 7), which this world type
+also carries: the eight rows and their ids are core §3.5 (CORE-13). No shared engine sends `cobolcraft:say`
+(Open question 18).
 
 ### 4.5 Mandatory variant registries (MV)
 
@@ -476,7 +539,8 @@ Shared placeholder values:
 ### 4.6 `dimension_type`
 
 Two entries. The Login and Respawn packets' CommonPlayerSpawnInfo carries the id of the player's current
-dimension's type.
+dimension's type. The rows as data, with their attributes and timelines, are core §3.3; this table keeps the geometry and
+points to core where a shared rule changed a field.
 
 | Id | Key | Used by |
 |---|---|---|
@@ -494,14 +558,13 @@ dimension's type.
 | height | 256 | 128 | Multiples of 16, at least 16; min_y + height ≤ 2032. |
 | logical_height | 256 | 128 | ≤ height. |
 | infiniburn | empty List `[]` | empty List `[]` | Required HolderSet over static `block`. An empty list names no block and no tag, so neither vanilla block names nor an Update Tags entry are needed. |
-| ambient_light | 0.0 | 0.0 | Our client's brightness floor of 0.1 (data-model "Render list") keeps the Subroutine faintly visible. |
-| monster_spawn_light_level | Int 0 (constant form) | Int 0 (constant form) | Our spawning rules are §12.4, not this field; any value in 0–15 is valid. |
-| monster_spawn_block_light_limit | 0 | 0 | As above. |
+| ambient_light | 0.0 | 0.0 | See core §3.3 (the renderer reads `ambient_light_color`, 12 §3.1). |
+| monster_spawn_light_level, monster_spawn_block_light_limit | core §3.3 (CORE-26) | core §3.3 | The standard Overworld values, which govern spawner-block checks; our spawning rules are §12.4 and natural spawning is stopped by the empty `natural_mob_spawns` of core §3.4. |
 | skybox | absent (default `overworld`) | `none` | Protocol enum constants naming the client's sky mode, not content. |
 | cardinal_light | absent (default) | absent (default) | |
-| attributes | absent (empty) | absent (empty) | Avoids vanilla `environment_attribute` keys. Our client uses its own sky constants (§4.8, §15.3). |
-| timelines | absent (empty) | absent (empty) | |
-| default_clock | `"cobolcraft:daylight"` | absent | Refers to the `world_clock` entry in 4.8. A fixed-time dimension has no clock. |
+| attributes | core §3.3 (the standard overworld map of 12 §3.1) | core §3.3 (CORE-8) | Day length and sky come from the shared rules (12 §3), not from constants of this document. |
+| timelines | core §3.3: `["minecraft:day","minecraft:moon"]` | absent (empty) | CORE-7. |
+| default_clock | `"minecraft:overworld"` (core §3.1) | absent | A fixed-time dimension has no clock. `has_fixed_time` for `sunless` stays (Open question 12). |
 
 Derived geometry (06 §1, §3.1, §7):
 
@@ -513,68 +576,36 @@ Derived geometry (06 §1, §3.1, §7):
 
 ### 4.7 `damage_type`
 
-Our own three come first. The compat block follows. Four more of ours follow the compat block; they are
-appended so that no earlier id moves.
+The 52 entries of the cobolcraft world type are the 51 standard damage types with their standard values (exhaustion,
+scaling, effects: 17 §4.12) and the one cobolcraft-only type `cobolcraft:hail` (core §3.6, CORE-4, CORE-10 to CORE-12;
+ids by core §3.6, sorted by path, so the earlier ids 0 to 31 no longer apply). The earlier 25 compat keys carried
+placeholder values (scaling `never`, exhaustion 0.0); they now carry the standard values, and the shared rules use the
+standard keys (`minecraft:fall`, `minecraft:starve`, `minecraft:mob_attack`, `minecraft:player_attack`, ...).
 
-| Id | Key | message_id | scaling | exhaustion | effects | death_message_type |
-|---|---|---|---|---|---|---|
-| 0 | `cobolcraft:generic` | `cobolcraft.generic` | `never` | 0.0 | absent | absent |
-| 1 | `cobolcraft:impact` | `cobolcraft.impact` | `never` | 0.0 | absent | absent |
-| 2 | `cobolcraft:below_world` | `cobolcraft.below_world` | `never` | 0.0 | absent | absent |
-| 3–27 | the 25 compat keys below, in the listed order | `cobolcraft.compat` | `never` | 0.0 | absent | absent |
-| 28 | `cobolcraft:mob_attack` | `cobolcraft.mob_attack` | `never` | 0.0 | absent | absent |
-| 29 | `cobolcraft:player_attack` | `cobolcraft.player_attack` | `never` | 0.0 | absent | absent |
-| 30 | `cobolcraft:starvation` | `cobolcraft.starvation` | `never` | 0.0 | absent | absent |
-| 31 | `cobolcraft:hail` | `cobolcraft.hail` | `never` | 0.0 | absent | absent |
+Retired from the earlier table (README S37): `cobolcraft:generic`, `cobolcraft:impact`, `cobolcraft:below_world` (no rule
+uses them; core CORE-11), `cobolcraft:mob_attack`, `cobolcraft:player_attack` and `cobolcraft:starvation` (the standard
+keys replace them). Kept: `cobolcraft:hail`, used by the hail rule of §14.6.
 
-Compat keys **[compat name]**, ids 3 to 27 in this order:
-
-`minecraft:in_fire`, `minecraft:campfire`, `minecraft:lightning_bolt`, `minecraft:on_fire`,
-`minecraft:lava`, `minecraft:hot_floor`, `minecraft:in_wall`, `minecraft:cramming`, `minecraft:drown`,
-`minecraft:starve`, `minecraft:cactus`, `minecraft:fall`, `minecraft:ender_pearl`,
-`minecraft:fly_into_wall`, `minecraft:fell_out_of_world`, `minecraft:generic`, `minecraft:magic`,
-`minecraft:wither`, `minecraft:dragon_breath`, `minecraft:dry_out`, `minecraft:sweet_berry_bush`,
-`minecraft:freeze`, `minecraft:stalagmite`, `minecraft:outside_border`, `minecraft:generic_kill`.
-
-- These names are kept **only** because the vanilla client's `DamageSources` looks them up by exact key.
-  They carry no meaning in our game, our server never emits them, and they all share one placeholder value.
-- **Verified.** These 25 keys match the set the 26.3 `DamageSources` constructor resolves (checked against the jar; see 04 §3.2). An earlier draft used the old name `out_of_world`, which is corrected here to `fell_out_of_world`.
-- Our server names only ids 0, 1 and 28–31 in packets (the causes of §10.3). Id 2 (`below_world`) is kept so
-  ids never move, but no §10 cause uses it: every dimension's baseplate floor cannot be passed.
-- The `message_id` values are protocol fields; our death messages are the §10.7 translation keys.
+The correctness of the key `fell_out_of_world` against `out_of_world` is open (core Open question 1); this document no
+longer asserts either.
 
 ### 4.8 `world_clock`, day length and sky
 
-| Id | Key | Data |
-|---|---|---|
-| 0 | `cobolcraft:daylight` | empty Compound |
-
-Kept by FR-002 (§8 question 7 is closed). It gives Set Time (05b, id 115) a clock to report and gives the
-`surface` dimension type its `default_clock`.
-
-- **Day length.** The time of day `Time` runs from 0 to 29999 and advances by 1 every tick, wrapping from
-  29999 to 0 (30,000 ticks = 25 minutes per cycle at rate 1.0). A new world starts at `Time` 0. One `Time`
-  is shared by every dimension; the Subroutine's sky ignores it (§15.3).
-- **Night.** It is *night* when 16000 ≤ `Time` < 29000 and *day* otherwise (used by §12.4).
-- **Daylight factor** (client, `surface` dimension): with u in thousandths,
-  - 0 ≤ `Time` < 15000: u = 1000;
-  - 15000 ≤ `Time` < 16000: u = 1000 − ((`Time` − 15000) × 4) div 5;
-  - 16000 ≤ `Time` < 29000: u = 200;
-  - 29000 ≤ `Time` < 30000: u = 200 + ((`Time` − 29000) × 4) div 5.
-
-  The daylight factor is u / 1000 (it multiplies sky light in the per-face brightness rule). Weather lowers
-  u (§14.5).
-- **Sky colour** (client clear colour, `surface` dimension): each of the R, G and B channels is
-  N + trunc((D − N) × (u − 200) / 800), with D the day colour `#8FB8E6`, N the night colour `#0E1222`, and
-  trunc truncating toward zero. At u = 1000 the sky is `#8FB8E6`; at u = 200 it is `#0E1222`. Weather tints
-  it afterwards (§14.5).
+Retired as a content section (README S38; shared rule for both world types). The clock is `minecraft:overworld` (core
+§3.1), the day is 24000 ticks with the standard night shape, and the sky colours come from the timeline and attributes
+(12 §3.1, §3.2; core §3.2, §3.3), not from the earlier 30000-tick day, the daylight factor and the day and night colours.
+The `time` command acts on that clock (16 §4.5).
 
 ### 4.9 Optional-empty registries (OE)
 
-`trim_pattern`, `trim_material`, `sulfur_cube_archetype`, `banner_pattern`, `enchantment`,
-`jukebox_song`, `instrument`, `test_environment`, `test_instance`, `dialog`, `timeline`,
-`decorated_pot_pattern`, `block_transformer`, `worldgen/block_state_provider`: **no packet sent**. None
-has a validator, and nothing in this content references them.
+`trim_pattern`, `trim_material`, `sulfur_cube_archetype`, `banner_pattern`, `jukebox_song`, `instrument`,
+`test_environment`, `test_instance`, `dialog`, `decorated_pot_pattern`, `worldgen/block_state_provider`: **no packet
+sent**. None has a validator, and nothing in this content references them.
+
+Removed from the earlier OE list (README S39): `enchantment` (one entry, core §3.7: the shared tool rules read it, 17
+§6) and `timeline` (two entries, core §3.2: the shared sky reads it, 12 §3.2). `block_transformer` is also removed from the
+list by README S39 (17 §3.1), but core CORE-15 sends none, because no cobolcraft item has the component; it stays empty
+here and sends no packet (Open question 17).
 
 ---
 
@@ -590,14 +621,14 @@ has a validator, and nothing in this content references them.
 | Sea level (CommonPlayerSpawnInfo) | 48. Nominal only; there is no water. |
 | Login "dimension names" | [`cobolcraft:main`, `cobolcraft:subroutine`] when the `extra-dimensions` setting is on (FR-009, the default); [`cobolcraft:main`] when it is off. The list holds every enabled dimension (§15), in this order. |
 | Is flat / is debug | false / false |
-| Hashed seed | 0 for the stand-in |
+| Hashed seed | Derived from the world seed by the standard rule (10 §7.7: the first 8 bytes of the SHA-256 of the 8 little-endian bytes of the seed), not 0. |
 | Game mode | From the server configuration or the world (FR-007, FR-009). Previous game mode: absent (0). |
-| View distance / simulation distance | The configured view distance (default 8) for both. |
+| View distance / simulation distance | The configured view distance for both. It is a server setting (FR-009, default 8, retained); the standard client default is 12 (13 §7.2). |
 
 ### 5.2 Generator
 
-Deterministic and stateless: any column can be generated on its own from its (x, z) alone. No seed is used
-yet.
+Deterministic and stateless: any column can be generated on its own from its (x, z) alone. The generator
+reads no seed yet (the Login hashed seed is still derived from the world seed, §5.1).
 
 **Surface height.** For world block column (x, z), the surface height h is 52 plus 6 times sin(x / 23)
 times cos(z / 31), with angles in radians (IEEE 754 double), rounded to the nearest integer with halves away
@@ -639,147 +670,132 @@ corner column. If it is 55 or more, the biome is `cobolcraft:upland` (id 1); oth
   topmost non-void Y + 1, because min_y is 0. Marker columns count the marker blocks.
 - Block entities: none.
 
-**Light (stand-in policy).**
-
-- Sky light: 15 in every void cell at or above the column's top non-void block + 1; 0 everywhere at or
-  below it. There is no sideways spreading, and lucite does not let sky light through in the stand-in.
-  Light sections fully at 15 are sent as arrays; light sections fully at 0 go in the empty mask.
-- Block light: from each light-emitting block (a lit glowtube emits 15, a goto_pad 6; §1.1), level L at the
-  block, minus 1 per block of taxicab distance through non-opaque cells, down to 0; where several sources
-  reach a cell, the highest level wins. Generated chunks contain only marker glowtubes. Recompute the
-  affected sections when a light-emitting block is placed, broken or toggled.
-- This is deliberately crude. It exists to exercise the LightData encoding, not to look right.
+**Light.** The shared light engine (32; the client reads the levels as 12 §1.4 and §1.8 define) applies in this world type
+(README S41, R2). The earlier column-drop sky light and taxicab block light policy is retired. What this content supplies to
+the engine is the per-block data of §1.1 (light emitted, opacity, and `lucite` as non-opaque) and the dimension types of
+§4.6 (`surface` has sky light, `sunless` has none). Generated chunks contain only marker glowtubes as light sources.
 
 **Spawn point.** Feet at (4.5, 54.0, 8.5), facing east (+X): yaw −90.0, pitch 0.0. Column (4, 8) has h = 52 + round(6 × sin(4/23) ×
 cos(8/31)) = 52 + round(1.004) = 53, so the player stands on its turf. Chunk (0, 0) is a marker chunk, so the
 marker pillar at (8, 55–59, 8) is four blocks ahead in plain view. (The column (8, 8) itself is not used
-because the pillar occupies it.) The world spawn point is always in `cobolcraft:main`; the set-spawn command
-(§16) moves it within this dimension.
+because the pillar occupies it.) The world spawn point is always in `cobolcraft:main`; `setworldspawn`
+(16 §4.7) moves it within this dimension.
 
 ---
 
 ## 6. Tags
 
-**None are required for the join flow.**
+The tags of the cobolcraft world type are the core's (core §4): Update Tags is **no longer empty**. It carries the block
+tags the shared mining and placement rules read (`minecraft:mineable/pickaxe` and `minecraft:mineable/shovel` with the
+cobolcraft blocks as members, plus the proposed `replaceable`, `air`, `causes_suffocation` and `blocks_motion*` tags), the
+item tag `minecraft:enchantable/mining` and the damage type tags, with the payload in core §4.4. Cobolcraft blocks and tools
+join the standard tags instead of carrying tags of their own (README S42, decision 4): the earlier own tags
+`cobolcraft:hard`, `cobolcraft:soft` and `cobolcraft:tools` retire (the classes of §1.1 are `mineable/pickaxe` and
+`mineable/shovel`; the tools read them, §2). The tier tags (`needs_*`, `incorrect_for_*`) are not carried (core CORE-17,
+Open question 19).
 
-- `dimension_type.infiniburn` uses an empty list, not a tag (4.6).
-- No synchronized entry above references a `#tag`.
-- Recommendation: send **one Update Tags packet with zero registries** during configuration. That exercises
-  the packet path at no risk. 04 §1 shows a partial or empty tag set is tolerated: unknown ids are dropped,
-  and a tag-less registry simply has no tags.
-
-Optional tags for our client's own logic, which may be sent later over the static registries (04 §5.3).
-They use our own tag names:
-
-| Registry | Tag | Members (numeric ids) |
-|---|---|---|
-| `minecraft:block` | `cobolcraft:hard` | 2 greystone, 6 cardstack, 9 ledger_tile, 11 slag |
-| `minecraft:block` | `cobolcraft:soft` | 3 loam, 4 turf, 5 grit |
-| `minecraft:item` | `cobolcraft:tools` | 10 pry_bar, 11 trowel |
-
-If they are sent, the client should take tool speed from the tags rather than hard-coding section 2's
-"class" lists. Until then both sides hard-code those lists.
+`dimension_type.infiniburn` uses an empty list, not a tag (§4.6).
 
 ---
 
-## 7. Stand-in → replace later checklist
+## 7. Removed
 
-- [ ] Block set, names, break times and textures (section 1). The state registry now has 18 states, so the
-      HashMap chunk palette is reachable (only by player building); the Global palette still is not.
-- [ ] Real texture art and an atlas pipeline in place of the procedural recipes (1.4, 2, 3.1, 12.6, 14.5).
-- [ ] Item set, stack sizes, tool behaviour; tool durability via data components (which brings in a
-      `data_component_type` numbering).
-- [ ] Ground-item rules (9): real physics (bouncing, sliding), merging of identical items.
-- [ ] Player entity size, model and metadata (3).
-- [ ] Health, damage values, fall rule, death and respawn rules (10); damage types: our own set now exists
-      (4.7) — decide whether the compat block stays (tier B).
-- [ ] Hunger, exhaustion rates, walking and sprint speeds, eating time, food items (11).
-- [ ] Mob types, models, behaviour and spawning (12); a seeded random source in place of the `H`-based rules.
-- [ ] Recipe set and the crafting interaction (13).
-- [ ] Weather kinds, durations, drawing and effects (14).
-- [ ] Biomes: real climate values and sky/fog via `attributes`; more than three biomes.
-- [ ] Dimensions: height, min_y and ambient light; the Subroutine and its travel block (15).
-- [ ] World generator: real noise, a seed, caves, water and fluids (non-zero fluid counts).
-- [ ] A lighting engine in place of the column-drop sky light and taxicab block light.
-- [ ] Command names, syntax and message texts (16, 17).
-- [ ] Chat types and their language strings.
-- [ ] Day length and sky colours (4.8); possibly a `timeline`. `world_clock` itself is kept (FR-002).
-- [ ] The bitmap font (18).
-- [ ] Hashed seed in CommonPlayerSpawnInfo.
-- [ ] Decide whether tier B (vanilla client passes configuration) is still worth keeping. If not, drop
-      the 13 MV registries and the compat damage keys.
-- [ ] Sounds: our own sound identifiers. Play-phase sound packets can use the inline holder form
-      (04 §4), so no static sound numbering is required.
+The earlier "Stand-in → replace later checklist" is removed (README S43). It was the work list of a first run; README Part 6
+and the status log of README replace it. Its items are answered or owned elsewhere: block set, textures, items, ground items,
+health, hunger, mobs, recipes, weather, biomes, dimensions, generator, lighting engine, command names, chat types, day
+length, font (kept as the fallback), hashed seed, tier B, sounds (out of scope).
 
 ---
 
 ## 8. Open questions
 
-1. ~~**The exact damage_type key list.**~~ Resolved: the 25 keys in section 4.7 were checked against the 26.3 `DamageSources` constructor.
+These are the questions of the earlier edition that remain open for the cobolcraft world type (README S44). Questions 1, 7
+and 11 are closed; 6 (state permutation order) is 04 Open question 5; 8 (Y bounds) is closed by 10 §5; 9 (section
+counts) is 06 Open questions 1 and 3; 10 (level key) is closed by the standard key `minecraft:overworld`; 13 (Brigadier
+string kinds) is 05a Open question 1 and 15a. Their numbers are not reused. Questions 14 and up were added by this edition.
+
 2. **Other hard-coded vanilla keys** (04 Open question 1). Play-phase code in the vanilla client may also
    look up specific chat_type, dimension_type, timeline or world_clock keys. This affects tier B in play
    only, which we have already given up, so it is low priority. If configuration itself fails in a tier B
    test, look here first.
+
 3. **Default variant lookups.** The MV registries hold a single `cobolcraft:placeholder` entry. The
    assumption is that the vanilla client falls back to "any entry" when its preferred default key (a vanilla
    name) is absent. That is plausible, since that is what a non-empty validator would protect, but it was not
    traced. It only matters if a vanilla client spawns such a mob, which never happens in our game.
+
 4. **Item default components** (04 Open question 2). Whether the vanilla client's
    `DataComponentInitializers` needs particular `instrument` or `jukebox_song` keys after load is not known.
    If a tier B configuration test fails after registries load, this is a likely cause; the fix would be
    compat-named placeholder entries in those registries.
+
 5. **Empty-list HolderSet for `infiniburn`.** That an empty NBT List decodes as an empty direct holder set
    is inferred from 04 §6's HolderSet conventions. If it is rejected, use a tag string such as
    `#cobolcraft:never_burns`, and send that tag (empty) under `minecraft:block` in Update Tags. That runs into
    04 Open question 4 (unbound tags).
-6. **Block-state permutation order** (04 Open question 5). The first-property-slowest Cartesian order rests
-   on Guava's documented contract. Our client and server both follow the same rule, so the stand-in is
-   self-consistent either way. It would only matter if we ever had to agree with vanilla numbering, which we
-   do not.
-7. ~~**Is `world_clock` / `default_clock` needed at all?**~~ Closed: FR-002 keeps the `world_clock` entry and
-   the `surface` dimension type's `default_clock`; §4.8 now also fixes the day length, night and sky colour.
-   The fixed-time `sunless` type has no `default_clock` (see question 12).
-8. **Dimension Y bounds** (04 Open question 6). These do not affect us: both dimension types (min_y 0, height
-   256 and 128) are well inside every candidate limit.
-9. **Section buffer and count validation** (06 Open questions 1 and 3). Our server must write exactly 16
-   sections (`surface`) or 8 sections (`sunless`) with correct non-empty counts. Our client should decide
-   whether it trusts the counts or recomputes them. Recomputing is recommended, since the cost is small at 18
-   states.
-10. **Level key `cobolcraft:main` versus `minecraft:overworld`.** The vanilla client may treat the
-    `minecraft:overworld` level key specially in play (for example compass behaviour). This is not relevant
-    to tier A, and tier B does not reach play, so we keep our own keys (`cobolcraft:main`,
-    `cobolcraft:subroutine`).
-11. ~~**Feature flags.**~~ Resolved: Update Enabled Features (03, id 13) is sent in configuration with the
-    single flag `minecraft:vanilla` (protocol vocabulary, like the registry keys of §0), as
-    `docs/protocol/09-cobolcraft-profile.md` §3.1 fixes. A vanilla client may disable all items without it;
-    sending it keeps that question out of tier B.
+
 12. **A fixed-time dimension type without `default_clock`.** `sunless` sets `has_fixed_time` and omits
     `default_clock`. Whether a vanilla client accepts that combination in configuration was not traced (04
     marks both fields optional). Tier A is unaffected. If a tier B configuration test fails on it, give
-    `sunless` the `default_clock` `"cobolcraft:daylight"` too; our client ignores it for a fixed-time type.
-13. **Brigadier string kinds** (05a Open question 1). The command tree (§16.3) uses `brigadier:string` kinds
-    0 (single word) and 2 (greedy phrase), whose ordinals are inferred. Client and server are both ours and
-    use the same values, so tier A is self-consistent either way.
+    `sunless` the `default_clock` `"minecraft:overworld"` too; our client ignores it for a fixed-time type.
+
+14. **The `Time` of the §12 and §14 rules.** The rules `Time` mod 80 (wander, hail), mod 100 (spawn cycle) and the hash input
+    `Time` were written for a counter that wraps at 30000. They now read the total tick count of the shared clock
+    `minecraft:overworld` (header paragraph). Whether a wrapped day time or the total ticks is meant is not stated; both
+    give the same phase for mod 80 and mod 100 (24000 is a multiple of 80 and of 100), but the hash input differs, so the
+    exact random choices of the earlier edition are not reproduced. Owner: the planner, with 33 §3 (the clock).
+15. **Texture, check values and recipes of the bench.** The crafting bench (README decision 3, core §5.1, §5.2, §5.7) has no
+    texture recipe or check value in §1.4.2 or §1.5 and no English name here (core Open question 11 lists the language keys;
+    builtin-ui-art.md owes the art). Recipes 5 (`sod_cake`, five ingredients) and 7 (`goto_pad`, seven) both need the 3 × 3
+    grid; README S65 names only recipe 7 (core Open question 12). §13 follows core §5.7. Decision 3 is an adopted default, not
+    an operator ruling.
+16. **Rendering of the two role entities.** §3.3 keeps the 0.3 × 0.3 quad for ground items and §3.2 keeps the `operator`
+    box of 11 × 28 × 11 model pixels, which is 0.6875 blocks wide against the standard 0.6 collision box; README S25 says to
+    keep both. Whether the item model's `ground` display transform (12 §8.2, §8.4) replaces the quad for block items is not
+    decided.
+17. **`block_transformer`.** README S39 and C3 list a minimal entry; core CORE-15 sends none (no cobolcraft item has the
+    component) and records the departure (core Open question 15). This file follows core; the README text is to be corrected
+    or the operator asks for the entry.
+18. **`cobolcraft:say`.** No shared engine sends it (core CORE-13, Open question 16). Keep it or drop it when 09 is rewritten.
+19. **Tier tags and tool requirement.** Every cobolcraft block yields its item without a tool (core CORE-17, Open question 13),
+    against README S10's nearest block `stone`, which requires a tool. Operator to confirm.
+20. **Break times.** The earlier hand times are gone; the shared formula with the hardness of §1.1 gives, for example,
+    `greystone` by hand about 2.25 s against the earlier 1.5 s, and `grit` about 0.75 s against 0.5 s (core Open question 14).
+    Operator to confirm the nearest-standard rule of README decision 4 or the alternative of keeping the old times.
+21. **Interim rows.** Two sets of values stay only until their gap closes (README R9, decision 14): the thrown-item motion, the
+    ground-item movement and the pickup box of §9 (GAP-26, 18 Open question 6, 21 Open question 13) and the timing of the
+    natural weather schedule of §14.3 (GAP-11). When a clean-room round specifies them, §9.1 (throw), §9.2 step 3, §9.3 and
+    §14.3 are deleted.
+22. **Hail.** README Part 6 task T23 lists §14.6 among the sections to delete, while README S66 and decision 5 keep `hail` as the
+    cobolcraft-only damage extra of the `hailstorm` skin. This file follows S66 (Part 2 governs): §14.6 stays, reduced to the
+    cobolcraft rule, and uses the standard damage-event path (17 §4).
+23. **Subroutine clock.** `sunless` has no `default_clock`, so plain `/time` has no clock in the Subroutine (core Open question
+    22); the behaviour is not specified. Also whether a vanilla client accepts a fixed-time dimension with neither a clock nor
+    timelines is untraced (core Open question 22, Open question 12 here).
 
 ---
 
-## 9. Ground items
+## 9. Ground items (interim values)
 
-Rules for `cobolcraft:loose_item` (§3; data-model §5). A ground item holds one item stack (item and count,
-1 ≤ count ≤ the item's max stack).
+Ground items are **item entities** under the shared rules (18 §6.11; README S50): lifetime 6000 ticks, default pickup delay
+10, and merging of equal stacks within a box inflated by 0.5 horizontally while below the maximum stack. The entity type
+is `cobolcraft:loose_item` (§3), whose metadata is the standard layout (21 App A). The rest of this section holds only the
+**interim values** that the shared documents do not yet give (GAP-26; 18 Open question 6, 21 Open question 13): they stay
+for both world types until that gap closes, and then §9 is deleted (README R9, decision 14). A ground item holds one item
+stack (item and count, 1 ≤ count ≤ the item's max stack).
 
 ### 9.1 Where ground items come from
 
+Item entities are created, with the shared defaults, by a survival block break (§1.3), a mob defeat (§12.5) and a death drop
+(17 §4.10). The interim rows are the throws:
+
 | Source | Position | Initial motion | Pickup delay |
 |---|---|---|---|
-| Survival block break (§1.3) | (x + 0.5, y + 0.25, z + 0.5) of the broken block | (0, 0, 0) | 6 ticks |
-| Mob defeat (§12.5) | the mob's position | (0, 0, 0) | 6 ticks |
 | Throw (Player Action 5 `DROP_ITEM`: one item; 4 `DROP_ALL_ITEMS`: the whole stack, from the held hotbar slot; any game mode) | the thrower's feet + (0, 1.3, 0) | see below | 30 ticks |
 | Inventory-screen throw (Container Click, container 0, any game mode): mode 4 `THROW` on a slot, button 0 (Q) one item, button 1 (Ctrl+Q) the whole stack, from that slot; mode 0 `PICKUP` with slot −999 (a click or drag release outside the window), button 0 the whole carried stack, button 1 one carried item | as Throw | as Throw | 30 ticks |
 | Inventory screen closed while carrying (Close Container, container 0) | the carried stack goes back into the inventory as INV-ADD places it; only what does not fit is thrown, as Throw | as Throw | 30 ticks |
-| Death drop (§10.6) | the dead player's feet + (0, 0.5, 0) | see §10.6 | 30 ticks |
 
-**Thrown motion.** With the thrower's yaw Y and pitch P in degrees (protocol convention: yaw 0 faces +Z,
+**Thrown motion (interim).** With the thrower's yaw Y and pitch P in degrees (protocol convention: yaw 0 faces +Z,
 yaw 90 faces −X; pitch positive looks down):
 mx = −sin(Y) × cos(P) × 0.25, my = −sin(P) × 0.25 + 0.12, mz = cos(Y) × cos(P) × 0.25 (blocks per tick).
 There is no random spread. A throw from an empty slot does nothing.
@@ -787,16 +803,14 @@ There is no random spread. A throw from an empty slot does nothing.
 ### 9.2 Per-tick rules
 
 Ground items are processed once per tick, only while their chunk is loaded, in ascending network entity id
-order, in this order of steps (§9.5 places the steps in the server tick):
+order (the order of the steps within the server tick is 18 §2), in this order of steps:
 
 1. **Pickup delay.** If it is above 0, it decreases by 1.
-2. **Age and despawn.** If any player (any game mode, alive or dead) is in the same dimension with a feet
-   position within **32.0** blocks (3D Euclidean distance between positions) of the item, its age increases
-   by 1. Otherwise its age does not change (US5 edge case). When the age reaches **4800** ticks (4 minutes
-   of a player being near), the item despawns: it is removed and viewers are sent Remove Entities. The age is
-   saved as `Age` (world-folder.md §3); a new ground item has age 0. A despawned item skips the
-   remaining steps.
-3. **Movement.** The item's box is x ± 0.15, y to y + 0.3, z ± 0.15. A cell (i, j, k) is
+2. **Age and despawn.** The shared rule of 18 §6.11 (lifetime 6000 ticks; no player-distance condition) replaces the earlier
+   player-distance rule and the 4800-tick lifetime. The age is saved as `Age` (world-folder.md §3); a new ground item has
+   age 0. A despawned item is removed and viewers are sent Remove Entities; it skips the remaining steps. Equal stacks
+   merge (18 §6.11); the earlier "ground items never merge" rule is retired.
+3. **Movement (interim).** The item's box is x ± 0.15, y to y + 0.3, z ± 0.15. A cell (i, j, k) is
    [i, i + 1] × [j, j + 1] × [k, k + 1]; the box *overlaps* a solid cell when they share positive volume
    (touching faces do not overlap); a cell in an unloaded chunk counts as solid. A new item is *falling*.
    1. If the box overlaps any solid cell (a block was placed into it), y ← (the highest j among those
@@ -816,11 +830,9 @@ order, in this order of steps (§9.5 places the steps in the server tick):
    changed.
 4. **Pickup.** See §9.3.
 
-Ground items never merge: two identical items lying side by side stay two entities.
-
 ### 9.3 Pickup
 
-- **Range.** A player is in pickup range of an item when the item's box (above) overlaps, with positive
+- **Range (interim).** A player is in pickup range of an item when the item's box (above) overlaps, with positive
   volume or touching, the player's box expanded by 0.75 block in x and in z and by 0.25 block in y (the
   player's box is x ± 0.35, y to y + 1.75, z ± 0.35, so the expanded box is x ± 1.1, y − 0.25 to y + 2.0,
   z ± 1.1).
@@ -844,196 +856,56 @@ edge case).
 
 ### 9.5 Order of the rules within a server tick
 
-1. Received packets are handled in arrival order (break, place, throw, attack, eat start and stop, craft,
-   command, travel).
-2. `Time` advances (§4.8).
-3. Weather countdown and changes (§14.3).
-4. Player survival rules, players in entering order: hurt cooldown, eating completion (§11.6), exhaustion
-   from time (§11.2), food point removal (§11.3), starvation (§10.3), recovery (§10.5), hail (§14.6).
-5. Mob spawning (§12.4).
-6. Mobs in ascending entity id order: hurt cooldown, AI (§12.3), physics (§12.2), hail (§14.6).
-7. Ground items (§9.2).
-
-All "every N ticks" rules that test `Time` use its value after step 2.
+Retired (README S51, shared rule): the per-tick order of living entities and mobs is 18 §2, the player rules are 17 §4.9.
+The content rules of §12 (mob AI, physics, spawning) and §14.6 (hail) run in the entity step of 18 §2.
 
 ---
 
 ## 10. Health and death
 
-These rules apply to players in survival mode only; creative players take no damage and have no health shown
-(FR-007, US7-6). A player who switches to creative keeps their health and food values unchanged until they
-switch back (US7 edge case).
+Retired for both world types (README S52 to S59). The rules are the standard ones, and a content note stays only where the
+cobolcraft world type adds something:
 
-### 10.1 Health
-
-- **Maximum health: 30.** Health is a whole number from 0 to 30, sent as a Float in Set Health and saved as
-  a Float (world-folder.md §2). A new player and a respawned player have 30.
-- Mobs have the health of §12.1.
-
-### 10.2 Taking damage
-
-- Damage of amount A to a player or a mob: if its *hurt cooldown* is above 0, the damage is ignored.
-  Otherwise health ← max(0, health − A), and the hurt cooldown is set to 12 ticks. The hurt cooldown
-  decreases by 1 every tick (step 4 or 6 of §9.5) and never below 0.
-- A damaged entity's viewers are sent Damage Event (with the §10.3 damage type id) and Hurt Animation; a
-  damaged player is also sent Set Health.
-- A player whose health reaches 0 dies (§10.6). A mob whose health reaches 0 is defeated (§12.5).
-
-### 10.3 Causes of damage
-
-| Cause | Amount | Damage type (§4.7) | Death message key (§10.7) |
-|---|---|---|---|
-| Falling | 2 × (floor(D) − 4) when floor(D) ≥ 5, otherwise none. D is the fall distance below. The **safe fall height is 4 blocks**. | `cobolcraft:impact` (1) | `cobolcraft.death.fall` |
-| Hit by an abend (§12) | 3 | `cobolcraft:mob_attack` (28) | `cobolcraft.death.mob.abend` |
-| Hit by another player (only when `player-combat` is on, FR-009) | the attacker's held item's damage (§10.4) | `cobolcraft:player_attack` (29) | `cobolcraft.death.player` |
-| Starvation: while food is 0, every 60th consecutive tick at food 0 | 1 | `cobolcraft:starvation` (30) | `cobolcraft.death.starvation` |
-| Hail (§14.6) | 1 | `cobolcraft:hail` (31) | `cobolcraft.death.hail` |
-| Set-health command to 0 (§16) | sets health to 0 directly, ignoring the hurt cooldown | `cobolcraft:generic` (0) | `cobolcraft.death.command` |
-
-**Fall distance.** The server keeps each player's *fall start*, the highest feet y reached since the player
-was last on the ground. Each accepted Move Player packet with on-ground true ends a fall: D = fall start − the
-new feet y, damage is applied as in the table, and the fall start becomes the new feet y. While the player is
-on the ground, flying, or in creative mode, the fall start follows the feet y. Teleporting, travel and respawn
-set the fall start to the new feet y.
-
-**Starvation counter.** A per-player counter counts consecutive ticks with food at 0; at 60 the player takes
-1 starvation damage and the counter returns to 0. It returns to 0 whenever food is above 0. Starvation can
-kill.
-
-Mobs take damage from player attacks (§10.4) and hail only; they take no fall damage and do not starve.
-
-### 10.4 Attacks and item damage
-
-| Held item (held hotbar slot) | Attack damage against players and mobs |
+| Earlier section | Now |
 |---|---|
-| empty slot (bare hand) | 1 |
-| `pry_bar` (10) | 4 |
-| `trowel` (11) | 2 |
-| every other item | 1 |
-
-An Attack packet (05c 0x01) from an alive player in either game mode hits when the target is a player or mob
-in the same dimension, the target is alive, and the distance from the attacker's eye point (feet +
-(0, 1.6, 0)) to the nearest point of the target's collision box is at most **4.0** blocks. A hit on a player
-does damage only if `player-combat` is on and the target is in survival mode (US7 edge case). A hit on a
-`loose_item` or out of reach does nothing. Every hit adds attack exhaustion to a survival attacker (§11.2).
-
-### 10.5 Recovery
-
-While a survival player's food is at least **20** and health is below 30, a per-player counter counts
-consecutive ticks; at **50** the player gains 1 health (up to 30), gains 2.5 exhaustion (§11.2), is sent Set
-Health, and the counter returns to 0. The counter returns to 0 whenever the condition does not hold.
-
-### 10.6 Death and respawn
-
-- **On death.** The dead player is sent Player Combat Kill whose message is the death message (§10.7); every
-  connected player, in every dimension, is sent the same message as System Chat; the server console prints it
-  (operator-surface.md §3). The player's dimension, position and game mode are unchanged until respawn.
-- **Inventory.** Every non-empty slot s (0 to 35, ascending) becomes one ground item holding that slot's
-  whole stack, at the dead player's feet + (0, 0.5, 0), with motion (((s mod 6) × 2 − 5) × 0.02, 0.2,
-  (((s div 6) mod 6) × 2 − 5) × 0.02) and pickup delay 30. The inventory is then empty. Nothing is kept.
-- **Respawn** (Client Command 0x0C action 0, PERFORM_RESPAWN, from a dead player): the player reappears at
-  the world spawn point in `cobolcraft:main` (§5.2 or as set by command), with health 30, food 24, exhaustion
-  0, all counters 0, and the game mode, held slot and inventory unchanged (empty, unless a command gave items
-  while dead). The starting inventory (§2) is not given again.
-- A player who disconnects while dead is stored with health 0 and is shown the death screen again on the next
-  join (data-model §6).
-
-### 10.7 Death and death-screen texts
-
-Every death message is a `translate` text component (contracts/wire-profile.md §1 message rule; texts in 08
-§10.8). Every argument is a plain literal text component.
-
-| Key | Arguments | When |
-|---|---|---|
-| `cobolcraft.death.fall` | [victim name] | Fall damage killed the player. |
-| `cobolcraft.death.mob.abend` | [victim name] | An abend's attack killed the player. (One key `cobolcraft.death.mob.<mob key path>` per hostile mob type; the abend is the only one.) |
-| `cobolcraft.death.player` | [victim name, attacker name] | Another player's attack killed the player. |
-| `cobolcraft.death.starvation` | [victim name] | Starvation killed the player. |
-| `cobolcraft.death.hail` | [victim name] | Hail killed the player. |
-| `cobolcraft.death.command` | [victim name] | The set-health command set the player's health to 0. |
-
-Client-only texts of the death screen (in the client's own lang lookup, no arguments): the title
-`cobolcraft.screen.death.title` and the respawn button label `cobolcraft.screen.death.respawn`. The cause line
-under the title is the Player Combat Kill message.
+| §10.1 health (maximum 30) | `max_health` 20 (17 §1.5). |
+| §10.2 taking damage, hurt cooldown 12 | The 10-tick invulnerability window (17 §4.7). |
+| §10.3 causes of damage, fall, starvation | Fall 17 §4.11 and 13 §1.3, starvation 17 §4.9, lightning 17 §4.11; damage types `minecraft:fall`, `starve`, `mob_attack`, `player_attack` (§4.7). Hail is the cobolcraft-only cause (§14.6); the abend's hit of 3 is its `attack_damage` attribute (core §5.5). There is no set-health command: use `damage`, `effect`, `kill` and `attribute` (16 §5). |
+| §10.4 attack damage and reach | Attack strength, reach and exhaustion 17 §4.1 to §4.3 and §1.5; the item damages 4 and 2 are modifiers of the two tools (core §5.3, §2 above). |
+| §10.5 recovery | 17 §4.9. |
+| §10.6 death and respawn | 17 §4.10; the starting kit is not given again (§2). |
+| §10.7 death texts | The standard `death.*` keys and death screen (17 §4.10, GAP-27); the abend uses the generic mob message (README decision 5; core §5.5, Open question 2). |
 
 ---
 
-## 11. Hunger and food
+## 11. Food
 
-### 11.1 Food level
+### 11.1 to 11.4 and 11.6
 
-- **Maximum food level: 24.** Food is a whole number from 0 to 24, sent as the Food field of Set Health
-  (saturation is always sent as 0.0) and saved as an Int. A new player and a respawned player have 24.
-- Hunger applies only to alive survival players (US8-6).
-
-### 11.2 Exhaustion
-
-Each survival player has an exhaustion accumulator (a decimal number, starting at 0, not saved: a joining
-player starts at 0). It gains:
-
-| Activity | Exhaustion |
-|---|---|
-| Time: every tick | 0.005 |
-| Walking: per block of horizontal distance moved while not sprinting and not flying | 0.02 |
-| Running (sprinting: between Player Command 0x2A action 1 `START_SPRINTING` and action 2 `STOP_SPRINTING`): per block of horizontal distance moved while sprinting and not flying | 0.12 (six times walking) |
-| Jumping: each accepted Move Player whose on-ground is false, following one whose on-ground was true, with a higher feet y | 0.3 |
-| Attacking: each hit (§10.4) | 0.15 |
-| Breaking a block (each completed survival break) | 0.025 |
-| Recovering 1 health (§10.5) | 2.5 |
-
-Horizontal distance is sqrt(Δx² + Δz²) between consecutive accepted positions. The server keeps the
-sprinting flag from Player Command and clears it on death, respawn and travel.
-
-### 11.3 Food point removal
-
-Whenever exhaustion is at least **5.0**, 5.0 is subtracted and, if food is above 0, food decreases by 1 and
-the player is sent Set Health. (This repeats within the same tick while exhaustion is still at least 5.0.)
-
-### 11.4 Movement speeds
-
-These are the client's horizontal ground speeds (nothing else in the documents fixes them):
-
-- **Walking speed: 0.2 blocks per tick** (4.0 blocks per second).
-- **Sprint speed: 0.28 blocks per tick** (5.6 blocks per second), used while the client is sprinting
-  (client-surface.md §3: Left Control held while moving forward).
-
-The client's other movement numbers (recorded after Phase 33; the client is their only user, and the server
-sees their effect only through the positions it is sent, for example the fall start of §10):
-
-- **Flying speed:** 0.5 blocks per tick horizontally; 0.375 blocks per tick up (Space held) or down (Left Shift held).
-- **Jump:** vertical speed 0.42 blocks per tick when Space is pressed on the ground.
-- **Gravity and drag (not flying):** after each tick's move, vertical speed ← (speed − 0.08) × 0.98.
-- **Flying toggle:** two Space presses within 0.3 s, only when the server's abilities allow flying.
-- **Mouse look:** 0.15 degrees per pixel of cursor movement; pitch held between −90 and 90.
-- **Block reach (recorded after Phase 34):** the target ray runs at most 5 blocks from the eye (1.6 above the
-  feet, §3) along the look direction, in survival and creative; the first non-void cell it enters is the
-  target and the face it enters through is the clicked face.
+Retired for both world types (README S60 to S62, S63). Food and saturation (maximum 20, new player food 20 and saturation
+5.0), exhaustion and the threshold are 17 §4.9; movement speeds, flying, jump, gravity, mouse look and reach are 13 §1,
+§7.2 and 17 §1.5; eating (the `consumable` component, 1.6 s default, completion effects) is 17 §1.2, §4.9 and core §5.4.
+The earlier 24-point food level, the 30-tick eating time and the Entity Event rule are deleted (Entity Event 9: 09 Open
+question 7).
 
 ### 11.5 Food items
 
-| Item id | Key | English name | Food value | How it is obtained (SC-008) |
+| Item id | Key | English name | Food value (`food` nutrition, core §5.4) | How it is obtained (SC-008) |
 |---|---|---|---|---|
 | 12 | `cobolcraft:grazer_flank` | Grazer Flank | 3 | Yield of a defeated sodgrazer (2 per mob, §12.5). |
 | 13 | `cobolcraft:seared_flank` | Seared Flank | 8 | Recipe 6 (§13): 2 grazer flank + 1 glowtube → 2. |
 | 14 | `cobolcraft:sod_cake` | Sod Cake | 2 | Recipe 5 (§13): 4 turf + 1 loam → 1. |
 
-Icons in §2.
-
-### 11.6 Eating
-
-- **Start.** Use Item (05c 0x43) from an alive survival player whose held hotbar slot holds a food item and
-  whose food is below 24 starts eating that item; the server records the slot and the start tick. Use Item
-  with food at 24 (US8-4), in creative mode, or without a food item held does nothing.
-- **Eating time: 30 ticks** (1.5 seconds).
-- **Completion.** When 30 ticks have passed since the start and the player is still eating, one item leaves
-  the slot, food ← min(24, food + the item's value), and the player is sent Set Health, the slot update and
-  Entity Event with event id 9 (eating finished, contracts/wire-profile.md §3.3) to the player and its viewers.
-- **Cancel.** Player Action 6 `RELEASE_USE_ITEM`, a change of held slot, a change of the slot's contents,
-  death, travel or a switch to creative before completion cancels it; nothing is eaten (US8 edge case).
+Icons in §2. The three foods are items with the standard `food` and `consumable` components (core §5.4); eating follows the
+standard rule.
 
 ---
 
 ## 12. Mobs
+
+The two mobs are cobolcraft content. Their health, damage, hurt window, knockback and death follow the shared combat rules
+(17 §4, 18 §3, §7; README S64), and the attributes the shared engines read are written in core §5.5; the stand-in AI and
+physics of §12.2 and §12.3 and the spawn cycle of §12.4 remain the mobs' own (core CORE-26, CORE-29 to CORE-31).
 
 ### 12.1 Mob types
 
@@ -1043,14 +915,14 @@ Icons in §2.
 | English name | Sodgrazer | Abend |
 | Kind | passive | hostile |
 | Collision box (width × height), eye height | 0.9 × 0.9, 0.7 | 0.75 × 0.75, 0.5 |
-| Maximum health | 8 | 12 |
+| Maximum health (`max_health`, core §5.5) | 8 | 12 |
 | Wander speed | 0.05 blocks per tick | 0.04 blocks per tick |
 | Flee speed | 0.1 blocks per tick | — |
 | Pursue speed | — | 0.12 blocks per tick |
 | Notice range | — | 12.0 blocks |
 | Give-up range | — | 20.0 blocks |
 | Attack reach | — | 1.75 blocks |
-| Attack damage | — | 3 (§10.3) |
+| Attack damage | — | 3 (the `attack_damage` attribute, core §5.5) |
 | Attack cooldown | — | 30 ticks |
 | Yield on defeat | one ground item of 2 `grazer_flank` | one ground item of 1 `dump_shard` |
 | Spawns in | `cobolcraft:main` by day, on turf | `cobolcraft:main` at night, and `cobolcraft:subroutine` always; on dark ground |
@@ -1089,7 +961,7 @@ each tick in which they changed.
   from the mob to the target). If the horizontal distance to the target is above 1.0, (hx, hz) = pursue speed
   × the unit horizontal vector toward the target; otherwise (0, 0).
 - **Attack** (abend). Its attack cooldown decreases by 1 each tick to a minimum of 0. When it has a target
-  within the attack reach and the cooldown is 0, the target takes 3 damage (`mob_attack`, §10.3) and the
+  within the attack reach and the cooldown is 0, the target takes 3 damage (damage type `minecraft:mob_attack`, through the shared combat rules, 17 §4) and the
   cooldown becomes 30.
 - AI state (wander decision, flee time, target, cooldown) is not saved; a loaded mob starts idle.
 
@@ -1105,7 +977,7 @@ for each alive player p in it in entering order:
    highest non-void block in the column; the cells (X, top + 1, Z) and (X, top + 2, Z) must be void and
    inside the height range.
 4. The candidate type:
-   - `cobolcraft:main`, night (§4.8): `abend`, if the block light (§5.2) at (X, top + 1, Z) is at most 5.
+   - `cobolcraft:main`, night (the shared predicate `isDarkOutside`, core §5.5 CORE-30): `abend`, if the block light layer of the shared light engine (core §5.5 CORE-30) at (X, top + 1, Z) is at most 5.
    - `cobolcraft:main`, day: `sodgrazer`, if the block at (X, top, Z) is turf.
    - `cobolcraft:subroutine`: `abend`, if the block at (X, top, Z) is slag and the block light at
      (X, top + 1, Z) is at most 5.
@@ -1122,7 +994,7 @@ despawning: mobs stay until defeated, removed by command or removed by that sett
 ### 12.5 Defeat
 
 A mob whose health reaches 0 is removed (viewers: Remove Entities) and its yield (§12.1) appears as one ground
-item at the mob's position (§9.1). Mobs are saved with type, position, motion, rotation and health
+item at the mob's position (loot table core §5.6; item entity §9). Mobs are saved with type, position, motion, rotation and health
 (world-folder.md §3) and belong to their dimension (US12 edge case).
 
 ### 12.6 Appearance
@@ -1153,14 +1025,16 @@ Check values for both textures and for `operator` are in §1.5.
 
 ## 13. Recipes
 
-Crafting (US10, data-model §8): a recipe is craftable for a player when the inventory holds every ingredient
-count and the result fits after the ingredients are removed. A craft (Place Recipe, contracts/wire-profile.md
-§3.3) makes the recipe once, atomically: all ingredients are removed and the result added (inventory add
-rule), or nothing changes (US10-3, US10-4). Crafting works the same in both game modes and needs no block.
-The display id sent in Recipe Book Add is the recipe's number below.
+The recipe set of the cobolcraft world type: nine recipes, **shapeless recipes in the standard recipe format** (13 §3.1;
+the data rows, matching, the unlock rule and the bench recipe are core §5.7). They are crafted in the inventory 2 × 2 grid
+or the crafting bench's 3 × 3 grid, in both game modes (13 §3.5, 12 §5.6a, §5.6b; README R6, S65). Feature 001's crafting
+screen, the Place Recipe rule and the display ids are retired. Recipe 5 (five ingredients) and recipe 7 (seven) do not fit
+the 2 × 2 grid and need the bench, the one addition of README decision 3 (§1.1, core §5.7). The recipe numbers below are
+the names used elsewhere in this document.
 
-| Display id | Ingredients | Result |
+| Recipe | Ingredients | Result |
 |---|---|---|
+
 | 0 | 4 `greystone` | 2 `ledger_tile` |
 | 1 | 4 `grit` | 2 `lucite` |
 | 2 | 3 `greystone` + 1 `cardstack` | 1 `pry_bar` |
@@ -1171,8 +1045,8 @@ The display id sent in Recipe Book Add is the recipe's number below.
 | 7 | 4 `ledger_tile` + 2 `dump_shard` + 1 `glowtube` | 1 `goto_pad` |
 | 8 | 2 `cardstack` + 2 `lucite` | 1 `dump_shard` |
 
-Ingredients are listed in this order in the recipe display. No recipe uses `baseplate`, `slag`, `sod_cake`,
-`seared_flank`, `pry_bar`, `trowel` or `goto_pad` as an ingredient.
+Ingredients are listed in this order. No recipe uses `baseplate`, `slag`, `sod_cake`, `seared_flank`, `pry_bar`, `trowel`
+or `goto_pad` as an ingredient. The bench recipe (4 `ledger_tile`, shaped) is core §5.7.
 
 **How each ingredient is obtained in survival (SC-008)**, from the §2 starting inventory and the world with
 default settings:
@@ -1199,62 +1073,46 @@ source of `dump_shard`; `sodgrazer` spawning does not depend on any setting.
 
 ## 14. Weather
 
-### 14.1 Weather kinds
+The weather **mechanism** is the standard one for both world types (README S66, C5): one server-level weather state with
+clear, rain and thunder levels (16 §4.10, 33 §4), the wire events Game Event 1, 2, 7 and 8, the sky, fog and precipitation
+rendering (12 §3.3, §3.5, 14 §8.2), and lightning (17 §4.11). The earlier sections on where weather applies (§14.2), the
+wire (§14.4), the client drawing (§14.5, apart from the two environment textures) and the gameplay effects (§14.6, apart
+from hail) are retired. What stays is the cobolcraft content on top of it and one interim row.
 
-| Kind key | English name | (rain level, thunder level) | Environment texture | Gameplay effect |
+### 14.1 Weather kinds (a skin of the standard levels)
+
+| Kind key | English name | Standard state it skins | Environment texture | Gameplay effect |
 |---|---|---|---|---|
-| `cobolcraft:clear` | Clear | (0.0, 0.0) | none | none |
-| `cobolcraft:drizzle` | Drizzle | (1.0, 0.0) | `textures/environment/drizzle.png` | none |
-| `cobolcraft:hailstorm` | Hailstorm | (1.0, 1.0) | `textures/environment/hailstorm.png` | hail damage (§14.6) |
+| `cobolcraft:clear` | Clear | clear | none | none |
+| `cobolcraft:drizzle` | Drizzle | rain | `textures/environment/drizzle.png` | none beyond rain |
+| `cobolcraft:hailstorm` | Hailstorm | thunder | `textures/environment/hailstorm.png` | hail damage (§14.6) |
 
-The pair is what Game Event carries (§14.4). The client maps a received pair back to the kind: rain level
-below 0.5 → clear; otherwise thunder level below 0.5 → drizzle; otherwise hailstorm.
+`drizzle` is rain and `hailstorm` is thunder (README decision 5); the pair of levels on the wire is the standard one for
+that state, and the client maps a received state back to the kind. `cobolcraft:subroutine` has no weather (a dimension
+with no sky light cannot have weather, 33 §4.1; core §3.3 CORE-8).
 
-### 14.2 Where weather applies
+### 14.3 How the weather changes (interim until GAP-11)
 
-- `cobolcraft:main` has weather. A kind is drawn and has its effect only in biomes with
-  `has_precipitation` = 1: lowland and upland (§4.3), i.e. everywhere in the main dimension.
-- `cobolcraft:subroutine` has **no weather**: it is always clear, it has no `Weather` entry in `level.dat`,
-  and it is never changed by command (US11 edge case).
-
-### 14.3 How the weather changes
-
-Each dimension with weather has a kind and a remaining time in ticks (`level.dat` `Weather`, world-folder.md
-§2). A new world starts with `cobolcraft:clear` and 6000 remaining ticks.
+The natural schedule (the choice of the next state and its duration) is not yet specified by the shared documents
+(GAP-11); the standard durations are in 16 §4.10 (clear 12000 to 180000, rain 12000 to 24000, thunder 3600 to 15600).
+Until GAP-11 closes, the earlier schedule stays as a placeholder, applied to the one server-level state:
 
 - Every tick, if the `weather-changes` setting is on (FR-009) and the remaining time is not −1, it decreases
   by 1. While the setting is off it does not change (US11-4).
-- When it reaches 0, with dimension index d (0 for `cobolcraft:main`) and r = H(d, `Time`) (§1.4.1):
+- A new world starts with `cobolcraft:clear` and 6000 remaining ticks. When the remaining time reaches 0, with
+  r = H(0, `Time`) (§1.4.1):
   - if the current kind is clear: the next kind is drizzle when r mod 100 < 70, otherwise hailstorm;
   - otherwise the next kind is clear;
   - the remaining time becomes: clear 6000 + ((r div 100) mod 6001); drizzle 2400 + ((r div 100) mod
-    2401); hailstorm 1200 + ((r div 100) mod 1201). (Clear lasts 5 to 10 minutes, drizzle 2 to 4, hailstorm 1
-    to 2.)
-- The set-weather command (§16) sets the kind and either a remaining time (seconds × 20) or −1, meaning
-  "until changed": no countdown at all, whatever the setting. −1 is saved as such in `Remaining`.
+    2401); hailstorm 1200 + ((r div 100) mod 1201).
+- The `weather` command (16 §4.10) sets the state and either a duration or "until changed"; the earlier cobolcraft
+  `skies` command is retired (§16).
 
-### 14.4 On the wire
+### 14.5 Environment textures
 
-To each player in the dimension, on join, on every change of kind, and on arrival by travel or teleport:
-Game Event 1 `START_RAINING` (value 0.0) if the kind's rain level is above 0, otherwise Game Event 2
-`STOP_RAINING` (value 0.0); then Game Event 7 `RAIN_LEVEL_CHANGE` with the rain level; then Game Event 8
-`THUNDER_LEVEL_CHANGE` with the thunder level. A dimension without weather sends the clear sequence
-(`STOP_RAINING`, 7 with 0.0, 8 with 0.0).
+The sky tint and precipitation geometry of the earlier edition are retired (12 §3.3, §3.5, 14 §8.2 apply). The two
+environment textures stay, as the cobolcraft world type's art for the two skins:
 
-### 14.5 How weather is drawn (client)
-
-- **Sky.** The daylight factor uses u′ = (u × 85) div 100 in drizzle and u′ = (u × 70) div 100 in a
-  hailstorm (u from §4.8; clear keeps u). The sky colour is first computed from the unadjusted u (§4.8), then
-  each channel c becomes (c × 60 + t × 40) div 100 with t from `#7A7F88` in
-  drizzle, or (c × 45 + t × 55) div 100 with t from `#5A5E68` in a hailstorm. Clear changes nothing.
-- **Precipitation geometry** (drizzle and hailstorm). With the camera in block column (cx, cz) at block y cy:
-  for every column (x, z) with |x − cx| ≤ 8 and |z − cz| ≤ 8 whose biome at (x, top + 1, z) has
-  `has_precipitation` = 1 (top: the column's highest non-void block), two vertical quads, 1 block wide,
-  crossing at the column centre (one in the plane z = z + 0.5 spanning x to x + 1, one in the plane x = x + 0.5
-  spanning z to z + 1), from y = max(top + 1, cy − 8) to y = cy + 16 (no quads if that range is empty). The
-  kind's environment texture repeats every 1 block vertically (v = y mod 1 per block) and is scrolled
-  downward by (`Time` × fall speed) mod 1 blocks (`Time` as the client last received it in Set Time, advanced by 1 per client tick), with fall speed 0.25 blocks per tick for drizzle and 0.5
-  for hail. The quads are drawn with alpha blending, unlit, after opaque geometry.
 - **Environment textures** (16 × 16, transparent background, §1.4.1 rules):
   - `drizzle`: for each column x in {1, 5, 9, 13}, with s = (x × 7) mod 16, the five pixels
     (x, (s + k) mod 16) for k = 0 … 4 are `#A7C1DC` at alpha 66 % (streaks, 20 pixels).
@@ -1262,13 +1120,13 @@ Game Event 1 `START_RAINING` (value 0.0) if the kind's rain level is above 0, ot
     `hailstorm`, cx, cy), ox = r mod 3 and oy = (r div 3) mod 3: `R(4cx + ox, 4cy + oy, 4cx + ox + 1,
     4cy + oy + 1)` is `#EEF2F7` at alpha 92 % (sixteen 2 × 2 pellets).
 
-### 14.6 Gameplay effects
+### 14.6 Hail (cobolcraft-only damage extra)
 
-- **Hail.** On every tick with `Time` mod 80 = 0 while a dimension's kind is hailstorm, every alive survival
-  player and every mob in it that is *exposed* takes 1 damage (`cobolcraft:hail`, §10.3). An entity is
-  exposed when the biome cell containing its position has `has_precipitation` = 1 and every cell of its
-  column (floor(x), j, floor(z)) with floor(y + height) ≤ j ≤ the dimension's top y is void.
-- Drizzle and clear have no gameplay effect.
+On every tick with `Time` mod 80 = 0 while the state is `hailstorm`, every alive survival player and every mob in
+the dimension that is *exposed* takes 1 damage of the damage type `cobolcraft:hail` (§4.7), through the standard damage
+path (17 §4). An entity is exposed when the biome cell containing its position has `has_precipitation` = 1 and every cell
+of its column (floor(x), j, floor(z)) with floor(y + height) ≤ j ≤ the dimension's top y is void. Drizzle and clear have no
+gameplay effect beyond the standard rain rules. The lightning of thunder is the standard 17 §4.11 (5.0 and ignition).
 
 ---
 
@@ -1283,7 +1141,7 @@ Game Event 1 `START_RAINING` (value 0.0) if the kind's rain level is above 0, ot
 | Y range | 0 to 127 (min_y 0, height 128) |
 | Sea level (CommonPlayerSpawnInfo) | 32. Nominal only. |
 | Biome | `cobolcraft:ash_flats` (id 2) everywhere |
-| Weather | none (§14.2) |
+| Weather | none (§14.1) |
 | Time | fixed: no day or night (`has_fixed_time`) |
 | Enabled | when the `extra-dimensions` setting is on (FR-009, default on) |
 | World folder | `dimensions/cobolcraft/subroutine/` (world-folder.md §1) |
@@ -1315,9 +1173,9 @@ topmost non-void Y + 1. No block entities.
 
 - No sky light: the dimension type has `has_skylight` 0, so chunk and light packets carry no sky light
   (sky light masks and empty sky light masks are all zero).
-- Block light exactly as §5.2 (glowtubes 15, goto_pads 6).
-- The client draws a fixed sky colour `#100C12`, no sun or moon, no weather; the daylight factor does not
-  apply (there is no sky light to scale).
+- Block light by the shared light engine (§5.2; glowtubes 15, goto_pads 6).
+- The sky is the standard attributes of core §3.3 (CORE-8): `skybox` `none`, sky and fog colour `#100c12`, sky light factor
+  0.0; no sun or moon, no weather.
 
 ### 15.4 Mobs
 
@@ -1343,7 +1201,7 @@ but may be brought here by command.
   unchanged. No block is ever removed by travel.
 - **Arrival.** The player is sent Respawn with the destination's spawn info and `Data to keep` = 0x03,
   followed by the join sequence for that dimension (contracts/wire-profile.md §3.3), including its weather
-  (§14.4). Inventory, health, food level and game mode are unchanged (US12-1); eating is cancelled; the fall
+  (the shared weather events, §14). Inventory, health, food level and game mode are unchanged (US12-1); eating is cancelled; the fall
   start is reset. Mobs and ground items stay in the dimension they were in.
 - **Disabled dimension.** A player whose stored dimension is `cobolcraft:subroutine` while
   `extra-dimensions` is off is placed at the world spawn point in `cobolcraft:main` on joining (US12-4).
@@ -1352,181 +1210,60 @@ but may be brought here by command.
 
 ## 16. Command set
 
-### 16.1 General rules
+Retired for both world types (README S68 to S71, R3). The standard command set runs in the cobolcraft world type against the
+cobolcraft registries: items, entity types and dimensions are named by their `cobolcraft:` keys through the standard argument
+parsers (15 §6, 05a), permissions are the levels 0 to 4 (15 §2), the tree is filtered per player (15 §3.3), and the
+messages are the standard keys (15 §5, 16). The earlier general rules, the 29-command table, the command tree and the
+`cobolcraft.command.*` message keys are deleted. The dimension arguments of the earlier edition were `main` and
+`subroutine`; they are now the keys `cobolcraft:main` and `cobolcraft:subroutine`.
 
-- **Typing.** In chat a command is a line starting with `/`; at the server console it is the same text
-  without the `/` (operator-surface.md §4). The rest of the line is split into words at single spaces; the
-  first word is the command name. A greedy argument (`<message...>`, `<reason...>`) takes the rest of the line
-  as written.
-- **Permission.** "everyone": any player and the console. "operator": players holding operator status and the
-  console (the console always has operator permission). In a single-player world the host holds operator
-  status, and every command is available (US16-3); in a world opened to others the host holds it and guests
-  hold it only if the host allowed it (US17-1). No command is console-only.
-- **Order of checks.** (1) Unknown command name → `cobolcraft.command.unknown`. (2) Not permitted →
-  `cobolcraft.command.not_permitted`. (3) Missing argument → `cobolcraft.command.missing_argument`; an
-  argument that does not parse, is out of its range, is not one of the listed words, or extra words after
-  the last argument → `cobolcraft.command.invalid_argument`. (4) The command's own checks, in the order
-  listed in its row. The first failing check sends its message and nothing changes (US14-3, US14-4, US15-3).
-- **Player names.** A name argument must be valid as a login name: 1 to 16 characters from `A`–`Z`, `a`–`z`,
-  `0`–`9`, `_` (02; contracts/wire-profile.md §1); otherwise `cobolcraft.command.invalid_name`.
-  **Target rule (operator decision I1, FR-016):** commands that act on a player in the world — eject
-  (disconnect), relocate (teleport, both the moved player and a target player), supply (give item), empty
-  (clear inventory), mode (set game mode), vitality (set health), ration (set food), murmur (private message)
-  — need that player to be online in this world (exact, case-sensitive name match); an offline name gives
-  `cobolcraft.command.player_not_found`. Bar (ban), unbar (lift ban), guestlist add and guestlist remove
-  (allow-list), promote and demote (grant and revoke operator status) accept any valid name, online or not;
-  the identity is the name and its offline UUID (02 Offline mode; FR-010), so they work for a player who has
-  never joined. In a single-player world not opened to others, only the host is online. In a client-hosted
-  world (single-player, opened to others or not) the host always holds operator status and cannot be
-  disconnected by command: demote, eject and bar naming the host give `cobolcraft.command.is_host`. A dead
-  player (awaiting respawn) is online.
-- **Names of things.** Items, mob types and dimensions are named by the path of their key (for example
-  `pry_bar`, `abend`, `subroutine`), because the single-word argument parser does not accept `:`. A
-  disabled dimension counts as nonexistent.
-- **Arguments in messages.** Every message is a `translate` component (contracts/wire-profile.md §1); every
-  argument is a plain literal text component holding: names as written; integers in decimal without leading
-  zeros (with `-` when negative); doubles with exactly two digits after the point, rounded half away from
-  zero (for example `4.50`, `-12.25`); name lists as the names joined by `, ` (comma and space) in the stated
-  order, or the empty string when the list is empty; usage strings and words exactly as in the tables.
-- **Feedback.** Each message below goes to the sender (as System Chat for a player; printed through the
-  `en_us` text for the console, operator-surface.md §3), unless the row says it goes elsewhere.
-
-### 16.2 Commands
-
-Ranges: x and z are doubles from −30000000.0 to 30000000.0; y is a double from 0.0 to 256.0 in the tree and
-must also lie from the dimension's min_y to min_y + height − 2 (0 to 254 in main, 0 to 126 in the
-subroutine), otherwise `cobolcraft.command.invalid_argument`. Where `[<dimension>]` is omitted it means the
-sender's dimension for a player and `main` for the console.
-
-| # | Command (usage string) | Who | Effect | Confirmation (key [arguments]) | Command-specific failures (key [arguments]) |
-|---|---|---|---|---|---|
-| 1 | `howto` | everyone | Lists the commands the sender may use, in this table's order. | `cobolcraft.command.howto.header` [number of entries that follow]; then one `cobolcraft.command.howto.entry` [usage string] per usage form | — |
-| 2 | `roster` | everyone | Lists online players in entering order. | `cobolcraft.command.roster` [count, names] | — |
-| 3 | `murmur <player> <message...>` | everyone | Sends the message to that player only. The target receives `cobolcraft.command.murmur.incoming` [sender name, message] from a player, or `cobolcraft.command.murmur.incoming_console` [message] from the console. | `cobolcraft.command.murmur.sent` [target name, message] | name invalid; player not found |
-| 4 | `promote <player>` | operator | Grants operator status (saved in `access.dat`). If the player is online: they receive `cobolcraft.command.promote.notice` [] and a new command tree at once (US14-5). | `cobolcraft.command.promote.done` [name] | name invalid; `cobolcraft.command.promote.already` [name] |
-| 5 | `demote <player>` | operator | Revokes operator status, also from the sender themself or the last operator (US14/US15 edge case). If online: `cobolcraft.command.demote.notice` [] and a new command tree. | `cobolcraft.command.demote.done` [name] | name invalid; `cobolcraft.command.is_host` [name]; `cobolcraft.command.demote.not_operator` [name] |
-| 6 | `eject <player> [<reason...>]` | operator | Disconnects the player with `cobolcraft.disconnect.ejected` [reason] or, without a reason, `cobolcraft.disconnect.ejected_plain` [] (§17). | `cobolcraft.command.eject.done` [name] | name invalid; player not found; `cobolcraft.command.is_host` [name] |
-| 7 | `bar <player>` | operator | Adds the identity to the ban list (saved). If online, the player is disconnected with `cobolcraft.disconnect.barred` [] (§17). | `cobolcraft.command.bar.done` [name] | name invalid; `cobolcraft.command.is_host` [name]; `cobolcraft.command.bar.already` [name] |
-| 8 | `unbar <player>` | operator | Removes the identity from the ban list. | `cobolcraft.command.unbar.done` [name] | name invalid; `cobolcraft.command.unbar.not_barred` [name] |
-| 9 | `barlist` | operator | Lists banned names in the order they were added. | `cobolcraft.command.barlist` [count, names] | — |
-| 10 | `guestlist on` | operator | Turns allow-list enforcement on (saved in `access.dat`, survives restarts, A2). Players already online stay. | `cobolcraft.command.guestlist.on` [] | — |
-| 11 | `guestlist off` | operator | Turns enforcement off. | `cobolcraft.command.guestlist.off` [] | — |
-| 12 | `guestlist add <player>` | operator | Adds the identity to the allow-list. | `cobolcraft.command.guestlist.added` [name] | name invalid; `cobolcraft.command.guestlist.already` [name] |
-| 13 | `guestlist remove <player>` | operator | Removes the identity. A removed online player stays online. | `cobolcraft.command.guestlist.removed` [name] | name invalid; `cobolcraft.command.guestlist.not_listed` [name] |
-| 14 | `guestlist show` | operator | Lists allow-listed names in the order added, and the enforcement state as the word `on` or `off`. | `cobolcraft.command.guestlist.show` [`on` or `off`, count, names] | — |
-| 15 | `mode <player> survival` / `mode <player> creative` | operator | Sets the game mode (Game Event 3, abilities, health and food display rules follow, FR-007). | `cobolcraft.command.mode.done` [name, `survival` or `creative`] | name invalid; player not found |
-| 16 | `relocate <player> at <x> <y> <z> [<dimension>]` | operator | Moves the player's feet to (x, y, z) in that dimension (Player Position; Respawn and the join sequence when the dimension changes, as §15.5 without any goto_pad). | `cobolcraft.command.relocate.position` [name, x, y, z, dimension path] | name invalid; player not found; `cobolcraft.command.dimension_not_found` [word] |
-| 17 | `relocate <player> to <target>` | operator | Moves the player to the target player's dimension and position. | `cobolcraft.command.relocate.player` [name, target name] | name invalid; player not found [the first of the two names, in argument order, that is not online] |
-| 18 | `supply <player> <item> [<count>]` | operator | Adds count (1 to 2304, default 1) of the item with the inventory add rule; what does not fit is not added. | `cobolcraft.command.supply.done` [number added, item path, name] | name invalid; player not found; `cobolcraft.command.item_not_found` [word] (also for `nothing`); `cobolcraft.command.supply.no_room` [name] when nothing fits |
-| 19 | `empty <player>` | operator | Empties all 36 slots (nothing is dropped). | `cobolcraft.command.empty.done` [name, total number of items removed] | name invalid; player not found |
-| 20 | `vitality <player> <amount>` / `vitality <player> full` / `vitality <player> zero` | operator | Sets health to amount (0 to 30), 30 or 0. Health 0 kills the player (§10.3, cause `generic`), after the confirmation is sent. | `cobolcraft.command.vitality.done` [name, new health] | name invalid; player not found; `cobolcraft.command.not_survival` [name] if the player is in creative mode; `cobolcraft.command.not_alive` [name] if the player is dead |
-| 21 | `ration <player> <amount>` / `ration <player> full` / `ration <player> zero` | operator | Sets food to amount (0 to 24), 24 or 0. | `cobolcraft.command.ration.done` [name, new food] | name invalid; player not found; `cobolcraft.command.not_survival` [name]; `cobolcraft.command.not_alive` [name] |
-| 22 | `conjure <mob> <x> <y> <z> [<dimension>]` | operator | Spawns one mob of that type (`sodgrazer` or `abend`) at the position with yaw 0 and full health, ignoring §12.4's conditions and caps. | `cobolcraft.command.conjure.done` [mob path, x, y, z, dimension path] | `cobolcraft.command.mob_not_found` [word]; dimension not found; `cobolcraft.command.conjure.hostile_disabled` [mob path] for `abend` while `hostile-mobs` is off |
-| 23 | `sweep <what> everywhere` / `sweep <what> area <dimension> <x1> <y1> <z1> <x2> <y2> <z2>` | operator | Removes the matching mobs and ground items in every enabled dimension, or those whose position lies in the box from (min x, min y, min z) to (max x, max y, max z) of the two corners, bounds included. `<what>` is `mobs` (every mob), `items` (every ground item), a mob type path (mobs of that type) or an item path (ground items of that item). | `cobolcraft.command.sweep.done` [number removed] | `cobolcraft.command.sweep.unknown_target` [word]; dimension not found |
-| 24 | `clock <ticks>` | operator | Sets `Time` (0 to 29999); every player is sent Set Time. | `cobolcraft.command.clock.done` [ticks] | — |
-| 25 | `skies <dimension> <kind> [<seconds>]` | operator | Sets the dimension's weather kind (`clear`, `drizzle` or `hailstorm`) for seconds (1 to 86400) × 20 ticks, or until changed when seconds is omitted (§14.3); players there are sent §14.4. | `cobolcraft.command.skies.timed` [dimension path, kind word, seconds] or `cobolcraft.command.skies.held` [dimension path, kind word] | dimension not found; `cobolcraft.command.skies.no_weather` [dimension path] for the Subroutine |
-| 26 | `homestead <x> <y> <z>` | operator | Moves the world spawn point (always in `cobolcraft:main`; its yaw unchanged); every player in main is sent Set Default Spawn Position. | `cobolcraft.command.homestead.done` [x, y, z] | — |
-| 27 | `announce <message...>` | operator | Every connected player receives `cobolcraft.command.announce.message` [message]; the console prints it. | `cobolcraft.command.announce.done` [] | — |
-| 28 | `persist` | operator | Saves the world now (world-folder.md §5). | `cobolcraft.command.persist.done` [], sent after the save | — |
-| 29 | `shutdown` | operator | Stops: on a server, saves and disconnects every player with `cobolcraft.disconnect.shutdown` [] and exits (US15-2); in a client-hosted world, it is the host quitting the world (guests get `cobolcraft.disconnect.host_closed` [], US17-4). | `cobolcraft.command.shutdown.done` [], sent before stopping | — |
-
-Rows 10–14 are one command (`guestlist`), rows 16–17 one (`relocate`); `howto` lists each usage string
-shown in the second column as one entry (35 entries in all for an operator or the console, 3 for everyone: one entry per
-`/`-separated form). The capability map of FR-016: everyone — 1, 2, 3; operator status — 4, 5; disconnect —
-6; ban, unban, list bans — 7, 8, 9; allow-list on/off, add, remove, list — 10 to 14; game mode — 15; move to
-a position in any dimension or to a player — 16, 17; give item and count — 18; clear inventory — 19; health
-and food including full and zero — 20, 21; spawn a mob — 22; remove mobs or ground items in an area or of a
-type — 23; time of day — 24; weather in a dimension for a duration or until changed — 25; world spawn point —
-26; message to all as the server — 27; save — 28; stop — 29.
-
-### 16.3 Command tree
-
-The Commands packet (05a 0x10) holds, under the root, one literal node per command the receiving player may
-use (contracts/wire-profile.md §3.3), with the structure of §16.2: every fixed word (`at`, `to`, `full`,
-`zero`, `on`, `off`, `add`, `remove`, `show`, `survival`, `creative`, `everywhere`, `area`, `clear`,
-`drizzle`, `hailstorm`) is a literal node; a node is executable where a usage string may end. Argument nodes:
-
-| Argument | Parser (05a parser id) | Properties | Suggestions |
-|---|---|---|---|
-| `<player>`, `<target>` | `game_profile` (7) | none | `minecraft:ask_server`: online player names (also offered for offline-capable commands) |
-| `<item>` | `brigadier:string` (5) | 0 single word | `minecraft:ask_server`: item key paths (ids 1–17) |
-| `<mob>` | `brigadier:string` (5) | 0 single word | `minecraft:ask_server`: `sodgrazer`, `abend` |
-| `<what>` | `brigadier:string` (5) | 0 single word | `minecraft:ask_server`: `mobs`, `items`, mob type paths, item key paths |
-| `<dimension>` | `brigadier:string` (5) | 0 single word | `minecraft:ask_server`: enabled dimension paths (`main`, `subroutine`) |
-| `<message...>`, `<reason...>` | `brigadier:string` (5) | 2 greedy phrase | none |
-| `<x>`, `<z>`, `<x1>`, `<z1>`, `<x2>`, `<z2>` | `brigadier:double` (2) | min −30000000.0, max 30000000.0 | none |
-| `<y>`, `<y1>`, `<y2>` | `brigadier:double` (2) | min 0.0, max 256.0 | none |
-| `<count>` | `brigadier:integer` (3) | min 1, max 2304 | none |
-| `<amount>` (vitality) | `brigadier:integer` (3) | min 0, max 30 | none |
-| `<amount>` (ration) | `brigadier:integer` (3) | min 0, max 24 | none |
-| `<ticks>` | `brigadier:integer` (3) | min 0, max 29999 | none |
-| `<seconds>` | `brigadier:integer` (3) | min 1, max 86400 | none |
-
-Weather kinds in `skies` and modes in `mode` are literal nodes. A player without operator status is sent a
-tree with only `howto`, `roster` and `murmur`; the tree is re-sent when operator status changes (US14-5).
-
-### 16.4 Shared command messages
-
-| Key | Arguments | When |
-|---|---|---|
-| `cobolcraft.command.unknown` | [the first word as typed] | Not a command name. The text names the help command (`howto`). |
-| `cobolcraft.command.not_permitted` | [command name] | The sender may not use the command (US14-3). |
-| `cobolcraft.command.missing_argument` | [usage string] | An argument is missing. The text names `howto`. |
-| `cobolcraft.command.invalid_argument` | [the offending word as typed, usage string] | An argument is invalid or out of range, or extra words follow. The text names `howto`. |
-| `cobolcraft.command.invalid_name` | [the word as typed] | Not valid as a player name at login. |
-| `cobolcraft.command.player_not_found` | [name] | A command acting on a player in the world names a player who is not online (§16.1 target rule). |
-| `cobolcraft.command.dimension_not_found` | [the word as typed] | No enabled dimension has that path. |
-| `cobolcraft.command.item_not_found` | [the word as typed] | No item (other than `nothing`) has that path. |
-| `cobolcraft.command.mob_not_found` | [the word as typed] | No mob type has that path. |
-| `cobolcraft.command.not_survival` | [name] | Vitality or ration on a creative player. |
-| `cobolcraft.command.promote.notice` | [] | To a player who has just been granted operator status. |
-| `cobolcraft.command.demote.notice` | [] | To a player whose operator status has just been revoked. |
-| `cobolcraft.command.not_alive` | [name] | Vitality or ration on a player who is dead (health 0, awaiting respawn). |
-| `cobolcraft.command.is_host` | [name] | Demote, eject or bar names the host of a client-hosted world (§16.1). |
-
-The usage string in `missing_argument` and `invalid_argument` is that of the first usage form, in §16.2
-table order, whose fixed words match the words typed so far (for example `guestlist add <player>` for
-`/guestlist add`, and `guestlist on` for `/guestlist` alone).
+One-time migration note (kept until 09 is rewritten): the earlier command to its standard counterpart. `howto` is `help`
+(16 §8.6); `roster` is `list` (8.5); `murmur` is `msg`, `tell` or `w` (8.3); `promote` and `demote` are `op` and `deop`
+(11.1, 11.2); `eject` is `kick` (11.8); `bar`, `unbar` and `barlist` are `ban` and `ban-ip`, `pardon` and `pardon-ip`,
+and `banlist` (11.3 to 11.7); `guestlist` is `whitelist` (11.22); `mode` is `gamemode` (4.1); `relocate` is `teleport` or
+`tp` (5.2); `supply` is `give` (6.1); `empty` is `clear` (6.2); `conjure` is `summon` (5.8); `sweep` is `kill` (5.1); `clock`
+is `time` (4.5); `skies` is `weather` (4.10); `homestead` is `setworldspawn` (4.7); `announce` is `say` (8.1); `persist` is
+`save-all` (11.9); `shutdown` is `stop` (11.12). `vitality` and `ration` have no standard counterpart (`damage` 5.7,
+`effect` 5.10, `attribute` 5.12 and `kill` cover health; there is no set-food command). Dedicated-only commands and
+`publish` and `unpublish`: 16 §2.
 
 ---
 
 ## 17. System messages
 
-Disconnect and refusal reasons are `translate` components (contracts/wire-profile.md §1 message rule) with
-these keys; their texts are in 08 §10.8. Every argument is a plain literal text component.
+Disconnect and refusal reasons are `translate` components (contracts/wire-profile.md §1 message rule) with these keys;
+their texts are in 08 §10.8. Every argument is a plain literal text component. Only the keys with no vanilla equivalent stay
+(README S72); the others are the standard keys (the ones outside 15 §5 and 16 are GAP-27): `barred`, `replaced`, `shutdown`,
+`ejected` and `ejected_plain` retire in favour of the shared standard keys, and `not_on_guestlist` is the standard
+`multiplayer.disconnect.not_whitelisted` (16 §11.22).
 
 | Key | Arguments | Sent as | When |
 |---|---|---|---|
-| `cobolcraft.disconnect.barred` | [] | Login Disconnect; play Disconnect | A banned player tries to join (US2/US14 edge case); an online player is barred (§16). |
-| `cobolcraft.disconnect.not_on_guestlist` | [] | Login Disconnect | Allow-list enforcement is on and the player is not on it. |
 | `cobolcraft.disconnect.name_is_host` | [name] | Login Disconnect | A guest joins a world opened to others with the host's name (US17 edge case); the host stays. |
-| `cobolcraft.disconnect.replaced` | [] | play (or configuration) Disconnect | The same name logs in again: the earlier connection is closed ("logged in from another location", US2 edge case). |
-| `cobolcraft.disconnect.shutdown` | [] | play (or configuration) Disconnect | The server is stopping (US15-2, `shutdown`). |
 | `cobolcraft.disconnect.host_closed` | [] | play (or configuration) Disconnect | The host quit a world opened to others (US17-4). |
 | `cobolcraft.disconnect.pack_required` | [] | configuration (or play) Disconnect | The player declined a required server pack (US18-7, 08 §9.7). |
-| `cobolcraft.disconnect.ejected` | [reason] | play Disconnect | `eject` with a reason (§16). |
-| `cobolcraft.disconnect.ejected_plain` | [] | play Disconnect | `eject` without a reason. |
 
-**Player chat stays literal.** A chat message from a player is broadcast as System Chat with the literal text
-`<name> message` (§4.4, FR-013), never a `translate` component. Only player-authored chat is literal; every
-message the server composes uses the keys of §10.7, §16 and §17.
+Player chat is the standard Player Chat and Disguised Chat with the standard chat types, in both world types (README
+decision 7, 16 §8; the chat type rows are core §3.5); the earlier "player chat stays literal" rule is retired.
 
 ---
 
 ## 18. Bitmap font
 
-An original 8 × 8 bitmap font for ASCII codes 32 to 126, used for all client text (research R13; 08 builds
-`assets/cobolcraft/font/default.json` and `assets/cobolcraft/textures/font/ascii.png` from it).
+An original 8 × 8 bitmap font for ASCII codes 32 to 126, the built-in **fallback font for both world types** (research R13;
+08 builds `assets/cobolcraft/font/default.json` and the pack file `minecraft:font/ascii.png` from it; README S73). The glyph
+data and the advance table below are unchanged.
 
 - **Glyph rows.** Each glyph is eight row bytes, top row first. In a row byte, bit 0x80 is column 0 (the
   leftmost) and bit 0x01 is column 7. A set bit is an ink pixel `#FFFFFF` (alpha 255); a clear bit is
   transparent. Row 6 is the baseline row (the bottom of capitals); row 7 holds descenders.
-- **Atlas.** `ascii.png` is 128 × 48 pixels: the glyph for code c occupies the 8 × 8 cell whose top-left
-  pixel is (((c − 32) mod 16) × 8, ((c − 32) div 16) × 8). (In 08's `bitmap` provider terms: 6 rows of 16
-  characters, height 8, ascent 7.)
+- **Atlas.** `ascii.png` (the file `minecraft:font/ascii.png`) is **128 × 128** pixels, a 16 × 16 grid of 8 × 8 cells as the
+  standard font's file is (14 §10.2): the glyph for code c occupies the cell whose top-left pixel is ((c mod 16) × 8,
+  (c div 16) × 8), so codes 32 to 126 fill rows 2 to 7 and rows 0, 1 and 8 to 15 are empty. (In 08's `bitmap` provider
+  terms: 16 rows of 16 characters, rows 2 to 7 holding the ASCII characters 0x20 to 0x7E, height 8, ascent 7; faithful §6.3.)
 - **Advance width.** A glyph's advance is (its rightmost column holding a set bit) + 2 pixels: one column of
   ink width plus one column of spacing. The space (code 32) has no ink and advances 4. The table lists every
-  advance.
+  advance. This is the advance rule of 14 §10.3 at scale 1.
 - **Missing glyph.** Any character outside codes 32 to 126 is drawn with the box glyph `F8 88 88 88 88 88 F8
   00`, advance 6.
 

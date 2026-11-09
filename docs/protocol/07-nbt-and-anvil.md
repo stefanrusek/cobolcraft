@@ -317,9 +317,15 @@ Both use the region container (§6) and the same compression ids. Each chunk pay
 ## 9. CobolCraft world folder
 
 Sections 1 to 8 describe the vanilla formats. This section is **CobolCraft's own** world folder. It reuses those formats,
-but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it and CobolCraft does not open vanilla saves.
-Server worlds and single-player worlds use this one format (FR-004). The folder holds all of a world's dimensions and is
-copied as a unit. Everything FR-014 lists as world state is saved here and nowhere else.
+but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it and CobolCraft does not open vanilla saves
+(design README Part 7, decision 9: vanilla-loadable saves are not a goal). Server worlds and single-player worlds use this
+one format (FR-004). The folder holds all of a world's dimensions and is copied as a unit. Everything FR-014 lists as world
+state is saved here and nowhere else.
+
+The game has two world types, the **standard** and the **cobolcraft** world type ([../design/world-types.md](../design/world-types.md)
+§1). They share this one folder format and this one schema (world-types Decision WT-21). The type is the `WorldType` key of
+`level.dat` (§9.2); it selects the content set (keys of dimensions, blocks, items, entity types, biomes) and nothing in the
+byte formats. Where a key's content differs by type, the tables below name both.
 
 ### 9.1 Layout
 
@@ -328,19 +334,25 @@ copied as a unit. Everything FR-014 lists as world state is saved here and nowhe
   level.dat
   access.dat
   players/<offline-uuid>.dat              one per player who has been in the world
+  data/minecraft/wandering_trader.dat     standard world only, written when there is a value (§9.6)
   dimensions/<namespace>/<path>/
     region/r.<rx>.<rz>.mca                chunks (§6 region files, §7 chunk NBT, values in §9.4)
-    entities/r.<rx>.<rz>.mca              mobs and ground items (§6 region files, §8, schema in §9.3)
+    entities/r.<rx>.<rz>.mca              entities: mobs, ground items, vehicles (§6 region files, §8, schema in §9.3)
+    poi/r.<rx>.<rz>.mca                   points of interest, standard world only (§9.6)
+    data/minecraft/raids.dat              standard world only, written when there are raids (§9.6)
 ```
 
 | Item | Value |
 |---|---|
 | `<offline-uuid>` | The offline UUID of 02-handshake-status-login.md "Offline mode", written hyphenated and lower-case |
-| `<namespace>/<path>` | The dimension key split at the colon: `cobolcraft/main` for the main dimension ([../design/standin-content.md](../design/standin-content.md) §5.1) and one folder for each extra dimension |
-| Region file names | As §6.1, in each dimension's `region/` and `entities/` folders |
-| `poi/` | Not written. CobolCraft has no points of interest. |
+| `<namespace>/<path>` | The dimension key split at the colon. Standard world: `minecraft/overworld`, `minecraft/the_nether`, `minecraft/the_end`. Cobolcraft world: `cobolcraft/main` (the main dimension, [../design/standin-content.md](../design/standin-content.md) §5.1) and `cobolcraft/subroutine`, and one folder for each extra dimension. The two sets of names never coincide (world-types §2.2); the `WorldType` key decides, not the folder names. |
+| Region file names | As §6.1, in each dimension's `region/`, `entities/` and `poi/` folders |
+| `poi/` | Standard world: written, villagers and bees use points of interest (19 §22, 44 part 3); the format is §8. Cobolcraft world: not written, it has no points of interest. |
 | `.dat` files | gzip-compressed NBT files (§5.1, `writeCompressed` / `readCompressed`). The root is a Compound in the file framing of §3 (type byte, empty name, payload). The world-folder contract's "unnamed root compound" means this empty name; it is not the network "unnamed root" of §3. |
 | `DataVersion` | Every `.dat` root and every region chunk payload carries `DataVersion` (Int) = 5023, the value of §7 |
+
+A folder is a world if and only if `level.dat` is present, and a folder with `dimensions/` content but no `level.dat` is not
+opened (world-types §2.1, Decision WT-24). That replaces the first sentence of §9.5 for such a folder.
 
 ### 9.2 `.dat` schemas
 
@@ -350,11 +362,30 @@ copied as a unit. Everything FR-014 lists as world state is saved here and nowhe
 |---|---|---|
 | `DataVersion` | Int | 5023 |
 | `LevelName` | String | World name, shown in the single-player world list |
+| `WorldType` | String | `standard` or `cobolcraft`. Written at creation, never changed. Reading rules for an absent or unknown value: world-types §2.1. |
+| `Seed` | Long | The world seed. The standard generator reads it (10 §7); the Login hashed seed is `obfuscateSeed(Seed)` (10 §7.7, world-types §2.1). Written for both types; a cobolcraft world stores it and never reads it. Input and hashing rules of the seed text: world-types §2.1, Decision WT-19. |
+| `ContentJar` | String | Lower-case hex SHA-256 of the jar the standard world was created from (22 §6.4). Absent for a cobolcraft world. Informational (world-types Decision WT-6). |
 | `GameMode` | Int | The game mode chosen when a single-player world is created. When the world is hosted by the client (core-host-api `CS-HOST-KIND` 1, and 2 for the host) it is the game mode of new players; guests get the guest mode chosen when the world is opened to others. A dedicated server (`CS-HOST-KIND` 0) ignores it and uses its `default-game-mode` setting. |
-| `Time` | Long | Time of day in ticks |
-| `Spawn` | Compound | `Dimension` (String, dimension key), `X`, `Y`, `Z` (Double), `Yaw` (Float). Changed by command. |
-| `Weather` | Compound | One entry per dimension that has weather, named by the dimension key. A dimension without weather (`cobolcraft:subroutine`, standin-content §14.2) has no entry. Each value is a Compound: `Kind` (String, weather kind key) and `Remaining` (Int, ticks left, or −1 meaning "until changed": no countdown, standin-content §14.3). |
+| `Time` | Long | **Game time**: ticks since the world was created, +1 per overworld tick whether or not the day advances (33 §3 and §10). It is not the time of day. Earlier worlds of feature 001 stored the time of day here (§9.2 before this revision); see "Time and clocks" below. |
+| `Clocks` | Compound | Time-of-day state, one entry per world clock, named by the clock key (`minecraft:overworld`, `minecraft:the_end`; `cobolcraft:daylight` in a cobolcraft world, 09 §3.2). Each value is a Compound with the four fields of 33 §10 (world clocks): `total_ticks` (Long), `partial_tick` (Float, default 0), `rate` (Float, default 1.0), `paused` (Byte, default 0). The time of day is `total_ticks` taken modulo the period of the dimension's timeline (24000 for the reference timeline, 12 §3.2c). |
+| `GameRules` | Compound | One entry per rule id with its value (Byte for a boolean rule, Int for an integer rule); an absent entry means the default of 16 §13. The server has one set (33 §8.1). The rule `advance_time` (default true) stops `total_ticks` of the clocks that have a daylight cycle from advancing when false; it never stops `Time` (33 §10, 33 §3). |
+| `Spawn` | Compound | `Dimension` (String, dimension key), `X`, `Y`, `Z` (Double), `Yaw` (Float). Changed by command. The standard spawn search that fills it for a new world is 33 §6.2. |
+| `Weather` | Compound | See "Weather" below; the form depends on `WorldType`. |
 
+Time and clocks. A world written before this revision has no `Clocks` compound. It is read as follows: the value of `Time` is
+both the game time and `total_ticks` of the world's single clock, and the next save writes both keys. (inferred: the only
+existing writers keep one counter, 09 §3.2, so the two values were equal.) A cobolcraft world and a standard world differ only in
+the clock key and in the number of clocks.
+
+Weather. **Standard world:** one compound named `Weather` for the whole server with the five fields of 33 §10 (weather): `clear_weather_time`,
+`rain_time`, `thunder_time` (Int) and `raining`, `thundering` (Byte). A dimension's rain level is derived from these and from the dimension's
+own flags (33 §4), so there is no per-dimension entry. A missing field reads as 0 or 0 (false), which starts a fresh cycle (33 §4.1).
+**Cobolcraft world:** one entry per dimension that has weather, named by the dimension key. A dimension without weather
+(`cobolcraft:subroutine`, standin-content §14.2) has no entry. Each value is a Compound: `Kind` (String, weather kind key) and `Remaining`
+(Int, ticks left, or −1 meaning "until changed": no countdown, standin-content §14.3). Whether the cobolcraft world's
+weather timers also move to the standard record is Open question 10.
+
+The world border (one record per dimension in 33 §10) is stored in the dimension folder as `data/minecraft/world_border.dat` with the framing of §9.6.
 Network entity ids are assigned per run and are not stored anywhere in the folder.
 
 `access.dat`:
@@ -362,13 +393,16 @@ Network entity ids are assigned per run and are not stored anywhere in the folde
 | Key | NBT type | Meaning |
 |---|---|---|
 | `DataVersion` | Int | 5023 |
-| `Operators` | List of Compound | Players with operator status |
-| `Bans` | List of Compound | Banned players |
-| `AllowList` | List of Compound | Allow-listed players |
+| `Operators` | List of Compound | Players with operator status. An entry is an identity plus `Level` (Int, 1 to 4), the permission level of 15 §2.1 (1 moderators, 2 gamemasters, 3 admins, 4 owners). A player not in the list has level 0. |
+| `Bans` | List of Compound | Banned players. An entry is an identity plus `Created` (String, the creation time as text), `Source` (String, the text name of the source that banned: 16 §11.3), `Expires` (String, `forever` when there is no expiry) and `Reason` (String, absent when none was given). |
+| `AllowList` | List of Compound | Allow-listed players (identity only). The standard commands are `whitelist` (16 §11.22). |
 | `AllowListEnforced` | Byte | 1 if the allow-list is enforced in this world, otherwise 0 |
 
-Each entry of the three lists is an offline identity `{Name: String, UUID: Int Array (4)}`. The UUID is the same offline UUID
-as the player file name, stored as four Ints, most significant first (inferred: the vanilla `UUIDUtil` int-array form).
+An **identity** is `{Name: String, UUID: Int Array (4)}`. The UUID is the same offline UUID as the player file name, stored as four
+Ints, most significant first (inferred: the vanilla `UUIDUtil` int-array form). A new operator gets the level the server grants by
+default (16 §11.1: `PlayerList.op` gives the level of the server's `operatorUserPermissions`; the value was not read, so the
+CobolCraft default is 4, Open question 13). IP bans (16 §11.4) are not part of this schema, because offline mode has no stable address
+identity worth keeping (Open question 13).
 
 A new world takes `AllowListEnforced` from the `allow-list` configuration setting (dedicated server) or 0 (single-player).
 After that, only the allow-list on/off commands change it, and the setting no longer applies to that world. Single-player
@@ -376,18 +410,28 @@ worlds behave the same way.
 
 `players/<offline-uuid>.dat`:
 
+The file keeps CobolCraft's own path and framing. Its keys are the standard player keys of 45-3 §2 and §3, so that the standard
+rules (45-3 §1.3 load, §1.6 first join, §3.2 load order, §7 join sequence) apply unchanged, plus three CobolCraft keys.
+
 | Key | NBT type | Meaning |
 |---|---|---|
 | `DataVersion` | Int | 5023 |
-| `Name` | String | Offline name |
-| `Dimension` | String | Dimension key |
-| `Pos` | List of 3 Double | Feet position X, Y, Z |
-| `Rotation` | List of 2 Float | Yaw, pitch |
-| `GameMode` | Int | 0 survival, 1 creative |
-| `Health` | Float | Current health |
-| `Food` | Int | Food level |
-| `Inventory` | List of Compound | One `{Slot: Byte, id: String, count: Int}` per **non-empty** slot. Slots are numbered 0 to 8 (hotbar) and 9 to 35 (main), as in the data model's Inventory. `id` is an item key. |
-| `HeldSlot` | Int | Selected hotbar slot, 0 to 8 |
+| `Name` | String | Offline name (CobolCraft key; 45-3 §12 notes that the standard file has no such key) |
+| `Dimension` | String | Dimension key (CobolCraft key) |
+| `Pos`, `Rotation` | List of 3 Double, List of 2 Float | Entity base keys (45-1 §5). `Pos` is the feet position. |
+| `playerGameType`, `previousPlayerGameType` | Int | Game mode, numbering 0 to 3 (45-3 §3.4). Replaces the CobolCraft key `GameMode`. |
+| `Health` | Float | Current health (LivingEntity key, 45-2) |
+| `foodLevel`, `foodSaturationLevel`, `foodExhaustionLevel`, `foodTickTimer` | Int, Float, Float, Int | Hunger state, defaults 20, 5.0, 0.0, 0 (45-3 §2.3; 17 §4.9). Replaces the CobolCraft key `Food`. |
+| `XpP`, `XpLevel`, `XpTotal`, `XpSeed`, `Score` | Float, Int, Int, Int, Int | Experience (45-3 §2.1; 17 §4.10) |
+| `Inventory` | List of Compound | One `{Slot: Byte, id: String, count: Int}`, plus `components` when the stack has any (45-3 §4.1), per **non-empty** slot of the 36 storage slots. Slots 0 to 8 are the hotbar and 9 to 35 the main grid (45-3 §2.4). `id` is an item key. `count` is 1 to 99 (45-3 §12). |
+| `SelectedItemSlot` | Int | Selected hotbar slot, 0 to 8. Replaces the CobolCraft key `HeldSlot`. |
+| `equipment` | Compound | Armor and off-hand, keyed by slot name (45-3 §4.3). In the container numbering of 13 §3.5 and 45-3 §2.4 the armor slots are 36 to 39 and the off-hand is 40; this file never writes those numbers into `Inventory`. |
+| `active_effects`, `respawn`, `LastDeathLocation`, `abilities`, `EnderItems`, `recipeBook`, `Air`, `Fire`, `fall_distance` and the other keys of 45-3 §2 and §3 and 45-2 | various | As written in those sections. A key absent on read takes the default given there. |
+
+Reading is lenient in both directions. A file with the earlier keys (`GameMode`, `Food`, `HeldSlot`) and without the standard ones
+is read through them (the value of `Food` is `foodLevel`; saturation 5.0 and exhaustion 0.0), and the next save writes the
+standard keys only. In a cobolcraft world the item keys in `Inventory` and `equipment` are `cobolcraft:` keys; the
+slot rules are the same in both types (README rule R2).
 
 ### 9.3 Entity storage (`entities/`)
 
@@ -396,22 +440,23 @@ Each chunk payload is the §8 `entities/` compound, stored as in §6.3 with comp
 | Key | NBT type | Notes |
 |---|---|---|
 | `DataVersion` | Int | 5023 |
-| `Position` | Int Array (2) | `[chunkX, chunkZ]`. CobolCraft fixes the Int Array form that §8 marks as inferred. |
+| `Position` | Int Array (2) | `[chunkX, chunkZ]`. CobolCraft fixes the Int Array form that §8 marks as inferred. On read it must equal the chunk requested (45-1 §13, rule 3). |
 | `Entities` | List of Compound | One compound per entity in the chunk, as below |
 
-Entity compound:
+The entity compound is the **standard entity compound**. 45-1 §13 extends this section for the standard world type and fixes the
+placement of each entity in the chunk of its position, the empty-chunk rule, the read pipeline and the save order; 45-1 §5 gives the
+base keys, 45-1 §7 the nesting of passengers, and 45-1 §4 the identity rules. This section keeps only what CobolCraft decides.
 
-| Key | NBT type | Applies to | Meaning |
-|---|---|---|---|
-| `id` | String | all | Entity type key: `cobolcraft:loose_item` for a ground item, or a mob type key of standin-content §3 (as extended) |
-| `Pos` | List of 3 Double | all | Position |
-| `Motion` | List of 3 Double | all | Velocity |
-| `Rotation` | List of 2 Float | all | Yaw, pitch |
-| `Health` | Float | mobs | Current health |
-| `Item` | Compound | ground items | The stack: `{id: String, count: Int}` |
-| `Age` | Int | ground items | Ticks the despawn timer has run. Remaining time = despawn time − `Age`. The timer runs only near players. |
+| Item | Rule |
+|---|---|
+| `id` | The entity type key in full form: `minecraft:pig`, `minecraft:item` in a standard world; the `cobolcraft:` key of the type's registry (`cobolcraft:loose_item`, a mob type key of standin-content §3, as extended) in a cobolcraft world (45-1 §13). |
+| Keys of each type | Per type, in the sibling documents: 45-1 (base, items, passengers), 45-2 (living entities, mobs, animals), 45-4 (land animals), 45-5 (hostile mobs), 45-6 (villagers, illagers, piglins), 45-7 (aquatic and miscellaneous mobs), 45-8 (vehicles, projectiles, ground items), 45-9 (bosses, decorations). |
+| Ground item | A standard world writes `minecraft:item` as 45-8 specifies (`Item`, `Age` as Short, `Health` as Short, `PickupDelay`, `Thrower`, `Owner`). The earlier CobolCraft keys (`Item` as `{id, count}`, `Age` as Int) remain the form of the cobolcraft world's `cobolcraft:loose_item` until it adopts the standard item compound (Open question 11). |
+| Unknown ids and invalid compounds | As 45-1 §4.2 and §6: skipped on load with a log line, never fatal, never deleting the rest of the chunk. |
+| Players | Not stored here. They live in `players/` (§9.2). A vehicle whose only passenger is a player is not stored here either (45-1 §7.2). |
+| Other entity-related saved data | Villager and raid state: §9.6. Brain, leash and owner references: 45-1 §10 and 45-2. |
 
-Players are not stored here. They live in `players/` (§9.2).
+The `Health` key of the earlier schema is now the LivingEntity key of 45-2 (a Float; a Short for `minecraft:item`).
 
 ### 9.4 Chunk storage (`region/`)
 
@@ -421,17 +466,35 @@ Chunk payloads follow §7 as written, with these CobolCraft values:
 |---|---|
 | Compression | Id 2 (zlib, the §5.2 default), as for `entities/` (§9.3) |
 | `Status` | `minecraft:full` |
-| Block-state palette entries (§7.3) | The block keys and properties of standin-content §1 (as extended) |
-| Biome palette entries (§7.3) | The biome keys of standin-content §4.3 (as extended) |
-| `block_entities` | No block entities, so the list is empty |
-| `LastUpdate` | World time at save: the `level.dat` `Time` value written by the same save (inferred: the world keeps no game-time counter separate from time of day) |
+| Block-state palette entries (§7.3) | Standard world: the block keys and properties of the vanilla registry (24, 46; 04 §5.1). Cobolcraft world: the block keys and properties of standin-content §1 (as extended). |
+| Biome palette entries (§7.3) | Standard world: the vanilla biome keys (04 §3.2, the generated data pack). Cobolcraft world: the biome keys of standin-content §4.3 (as extended). |
+| `block_entities` | Standard world: one compound per block entity, in the form of 31-1 §2.2 ("with full metadata": `id`, `x`, `y`, `z`, `components` and the type's own keys) plus `keepPacked` as 31-1 §6 describes. The keys of each type are in 31-2 to 31-8 (31-1 §3.1 lists the 49 types). Cobolcraft world: the list is empty, it has no block entities. |
+| `LastUpdate` | **Game time** at save: the `level.dat` `Time` value written by the same save (§9.2). |
+| Block ticks and fluid ticks | Standard world: the saved ticks of 29 §12 (`block_ticks`, `fluid_ticks`). Cobolcraft world: empty lists. |
 
 ### 9.5 Behaviour
 
-- A world folder without `level.dat` is created new, with all enabled dimensions. Chunks are generated on first use. A
+- A world folder without `level.dat` is created new, with all enabled dimensions, unless it holds `dimensions/` content (§9.1). Chunks are generated on first use. A
   chunk is saved when it has changed, or when an entity is in it at save time.
 - A save writes every changed chunk, every chunk holding entities, the file of every online player and of every player who
-  left since the previous save, `level.dat`, and `access.dat`.
+  left since the previous save, `level.dat`, `access.dat`, and the saved-data files of §9.6 that changed.
+
+### 9.6 Other saved data
+
+The standard world keeps the saved-data files of 33 §10 and 45-6 §12.3 in the framing of 45-6 §12.3: gzip NBT, root keys `data` (the type's compound)
+and `DataVersion` (Int, 5023), path `<namespace>/<path>.dat` below a `data/` folder. Placement (a design choice, because the artifact leaves the data folder to
+the caller): world-wide data in `<world>/data/`, per-dimension data in `<world>/dimensions/<namespace>/<path>/data/`.
+
+| File | Placement | Content |
+|---|---|---|
+| `minecraft/wandering_trader.dat` | world | 45-6 §12 |
+| `minecraft/raids.dat` | dimension | 45-6 §12 (a missing file is an empty value) |
+| `minecraft/world_border.dat` | dimension | the nine fields of 33 §10 (world border) |
+| the remaining files of 33 §10 (`scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat`, `world_gen_settings.dat`) | not specified | Open question 12 |
+
+A cobolcraft world writes none of these files (no raids, no wandering trader; its border is not specified). Clocks, weather, game rules and the
+`level.dat` keys of §9.2 stay in `level.dat`: they are not split into saved-data files. That is the one place where this folder differs from the 26.3
+layout of 33 §10, kept for Decision WT-21 of the world-type document.
 
 ---
 
@@ -458,3 +521,13 @@ None beyond those defined inline above. This file describes byte formats, not pa
    beyond those in §9.4. Empty lists and compounds (`structures` = `{starts: {}, References: {}}`, `PostProcessing` = one empty list per
    section), `InhabitedTime` 0, and heightmaps computed as in 06-chunk-format.md §3.1 are
    assumed.
+10. §9.2 `Time`: this section makes it the game time (33 §3) and moves the time of day to `Clocks`. 09 §3.2 (Set Time: "Game time = `Time`") and
+    standin-content §4.8 still describe the earlier single counter, and the cobolcraft world's day length of 30000 ticks is retired
+    by the shared rules (README R2, 12 §3.2c). Whether the cobolcraft weather timers (`Kind`, `Remaining`) also move to the standard weather record
+    is open (README GAP-11).
+11. §9.3: whether the cobolcraft world's `cobolcraft:loose_item` adopts the standard item compound (45-8) is open. The shared rules say the ground-item
+    physics are the standard ones (README R2); the stored keys are content-neutral.
+12. §9.6: the other saved-data files of 33 §10 (`scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat`, `world_gen_settings.dat`) are not
+    specified for the CobolCraft folder. 33 Open question 4 (the wrapper keys and the border path) applies to the files that are.
+13. §9.2 `access.dat`: the stored form of an operator level, of a ban's time and expiry text, and the absence of IP bans are CobolCraft choices (README
+    decision 8); the vanilla list files are not specified (16 §11 intro). The default level a new operator gets was not read (16 §11.1).

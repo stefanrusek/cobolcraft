@@ -23,6 +23,7 @@ Nothing needs attention.
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
 | [CC-0005](../CC-0005-tests-free-port.md) | Server tests do not depend on port 25565 being free | bug | stefanrusek |  |  |
 | [CC-0006](../CC-0006-creative-cursor-throws.md) | A creative player's carried stack can be thrown out of the inventory window | bug | stefanrusek |  |  |
+| [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
 
 ## Recently Closed
 

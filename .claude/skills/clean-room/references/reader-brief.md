@@ -35,6 +35,14 @@ artifact.
    the text. Where it helps, add worked examples with concrete inputs and expected outputs.
 6. **Uncertainty:** mark every deduced value "(inferred)". Anything you could not trace goes in the document's
    numbered `## Open questions` section. Never guess silently.
+   - **Count files from the archive, not from a listing.** A zip listing includes directory entries, so a count taken
+     from `unzip -l` is too high (this inflated the recipe, damage-type, enchantment and loot-table counts in the
+     first rounds). Count with `unzip -Z1 <archive> | grep -v '/$' | grep <prefix> | wc -l`.
+   - **Recall is not evidence.** You may remember Minecraft's source code and the Minecraft wiki from training, and
+     that memory may be about another version. Use it to decide where to look, never as a source: every value,
+     formula and ordering you write must be read from the artifact in this round, even when it matches what you
+     remember. Anything you could not read is marked "(recalled, not verified)" and listed in Open questions. Do not
+     reproduce remembered code or wiki wording; see "Recalled knowledge is not evidence" in the skill.
 7. **Header:** a new document starts with the format of `docs/protocol/README.md`'s header table: what it covers,
    the source artifact name and SHA-256, and the method ("Static reading of the shipped bytecode (`javap`), with no
    execution").
