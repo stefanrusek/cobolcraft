@@ -665,3 +665,116 @@
      END-IF
      GOBACK.
  END PROGRAM PB-GET-COMMAND-NODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-BLOCK-DESTRUCTION.
+*> USING PB-BUFFER, breaker entity id, x, y, z, stage (all BINARY-LONG): the body of Block
+*> Destruction (05a 0x05, 13 2.4): VarInt entity id, Position, UByte stage. A stage of -1 is
+*> written as 255 (the overlay is removed). A stage outside -1 to 255 appends nothing and sets
+*> PB-ERROR. The packet id is the caller's.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-X L-Y L-Z L-STAGE.
+     IF L-STAGE < -1 OR L-STAGE > 255
+         MOVE 1 TO PB-ERROR
+         GOBACK
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-STAGE
+     GOBACK.
+ END PROGRAM PB-PUT-BLOCK-DESTRUCTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-BLOCK-DESTRUCTION.
+*> USING PB-BUFFER, entity id out, x, y, z out, stage out (BINARY-LONG, the UByte 0 to 255 as
+*> read: 255 removes the overlay, as does any value above 9). A short read sets PB-ERROR, leaves
+*> PB-POS where it was and yields zeros.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-X L-Y L-Z L-STAGE.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-GET-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-GET-UBYTE" USING PB-BUFFER L-STAGE
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO L-ENTITY L-X L-Y L-Z L-STAGE
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-BLOCK-DESTRUCTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-PLAYER-ACTION.
+*> USING PB-BUFFER, status, x, y, z, face, sequence (all BINARY-LONG): the body of Player Action
+*> (05c 0x29, 13 2.3): VarInt status, Position, UByte face, VarInt sequence. A status outside
+*> 0 to 8, a face outside 0 to 5 or a negative sequence appends nothing and sets PB-ERROR.
+*> The packet id is the caller's.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-STATUS               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-STATUS L-X L-Y L-Z L-FACE L-SEQUENCE.
+     IF L-STATUS < 0 OR L-STATUS > 8 OR L-FACE < 0 OR L-FACE > 5 OR L-SEQUENCE < 0
+         MOVE 1 TO PB-ERROR
+         GOBACK
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATUS
+     CALL "PB-PUT-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FACE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SEQUENCE
+     GOBACK.
+ END PROGRAM PB-PUT-PLAYER-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-PLAYER-ACTION.
+*> USING PB-BUFFER, status out, x, y, z out, face out, sequence out (BINARY-LONG; the face is the
+*> UByte as read, 05c says the receiver takes its absolute value modulo 6). A status outside 0 to 8,
+*> a negative sequence or a short read sets PB-ERROR, leaves PB-POS where it was and yields zeros.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-STATUS               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-STATUS L-X L-Y L-Z L-FACE L-SEQUENCE.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-STATUS
+     CALL "PB-GET-POSITION" USING PB-BUFFER L-X L-Y L-Z
+     CALL "PB-GET-UBYTE" USING PB-BUFFER L-FACE
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-SEQUENCE
+     IF L-STATUS < 0 OR L-STATUS > 8 OR L-SEQUENCE < 0
+         MOVE 1 TO PB-ERROR
+     END-IF
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO L-STATUS L-X L-Y L-Z L-FACE L-SEQUENCE
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-PLAYER-ACTION.

@@ -1,0 +1,173 @@
+*> Contract test of the proto side of the wire seam (specs/002-client-polish/contracts/wire-delta.md
+*> section 4): each fixture of contract/fixtures/wire decodes to its stated fields and the same
+*> fields encode to the same bytes. Phase 10 holds Block Destruction (play-s2c-05) and Player
+*> Action (play-c2s-29). The expected fields are the "Stated inputs" of each fixture file.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTRACT-WIRE-PROVIDER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-FIXTURE             PIC X(256).
+ 01 WS-NAME                PIC X(60).
+ 01 WS-STATED              PIC X(40).
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-STAGE               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG.
+ 01 WS-SEQUENCE            BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-HEX-A               PIC X(1024).
+ 01 WS-HEX-B               PIC X(1024).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DESTRUCTION-TABLE.
+    05 FILLER PIC X(100) VALUE "play-s2c-05-block-destruction".
+    05 FILLER PIC X(40)  VALUE "1 5 53 8 3".
+    05 FILLER PIC X(100) VALUE "play-s2c-05-block-destruction-standard".
+    05 FILLER PIC X(40)  VALUE "300 -12 -60 40 9".
+    05 FILLER PIC X(100) VALUE "play-s2c-05-block-destruction-standard-clear".
+    05 FILLER PIC X(40)  VALUE "1 7 70 -3 255".
+ 01 WS-DESTRUCTIONS REDEFINES WS-DESTRUCTION-TABLE.
+    05 WS-DESTRUCTION         OCCURS 3 TIMES.
+       10 WS-D-NAME           PIC X(100).
+       10 WS-D-FIELDS         PIC X(40).
+ 01 WS-ACTION-TABLE.
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-start-destroy".
+    05 FILLER PIC X(40)  VALUE "0 4 53 8 1 1".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-abort-destroy".
+    05 FILLER PIC X(40)  VALUE "2 4 53 8 1 2".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-stop-destroy".
+    05 FILLER PIC X(40)  VALUE "3 4 53 8 1 3".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-drop-all-items".
+    05 FILLER PIC X(40)  VALUE "4 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-drop-item".
+    05 FILLER PIC X(40)  VALUE "5 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-release-use-item".
+    05 FILLER PIC X(40)  VALUE "6 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-swap-item-with-offhand".
+    05 FILLER PIC X(40)  VALUE "7 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-start-destroy-standard".
+    05 FILLER PIC X(40)  VALUE "0 -12 -60 40 1 41".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-abort-destroy-standard".
+    05 FILLER PIC X(40)  VALUE "2 -12 -60 40 1 42".
+    05 FILLER PIC X(100) VALUE "play-c2s-29-player-action-stop-destroy-standard".
+    05 FILLER PIC X(40)  VALUE "3 -12 -60 40 1 300".
+ 01 WS-ACTIONS REDEFINES WS-ACTION-TABLE.
+    05 WS-ACTION              OCCURS 10 TIMES.
+       10 WS-A-NAME           PIC X(100).
+       10 WS-A-FIELDS         PIC X(40).
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE WS-D-NAME(WS-I) TO WS-NAME
+         MOVE WS-D-FIELDS(WS-I) TO WS-STATED
+         PERFORM DESTRUCTION-CASE
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE WS-A-NAME(WS-I) TO WS-NAME
+         MOVE WS-A-FIELDS(WS-I) TO WS-STATED
+         PERFORM ACTION-CASE
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     STOP RUN.
+
+ DESTRUCTION-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-BLOCK-DESTRUCTION" USING PB-BUFFER WS-ENTITY WS-X WS-Y WS-Z WS-STAGE
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE WS-ENTITY TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-X TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-Y TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-Z TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-STAGE TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE PB-ERROR TO WS-EDIT
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-BLOCK-DESTRUCTION" USING PK-BUFFER WS-ENTITY WS-X WS-Y WS-Z WS-STAGE
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES.
+
+ ACTION-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-PLAYER-ACTION" USING PB-BUFFER WS-STATUS WS-X WS-Y WS-Z WS-FACE WS-SEQUENCE
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE WS-STATUS TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-X TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-Y TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-Z TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-FACE TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-SEQUENCE TO WS-EDIT
+     PERFORM ADD-FIELD
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-PLAYER-ACTION" USING PK-BUFFER WS-STATUS WS-X WS-Y WS-Z WS-FACE WS-SEQUENCE
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES.
+
+ LOAD-FIXTURE.
+     MOVE SPACES TO WS-FIXTURE
+     STRING "contract/fixtures/wire/" FUNCTION TRIM(WS-NAME) ".hex" DELIMITED BY SIZE
+         INTO WS-FIXTURE
+     CALL "TEST-LOAD-HEX" USING WS-FIXTURE PB-BUFFER.
+
+ ADD-FIELD.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+*> The encoder's buffer (PK) against the fixture's bytes (PB, still whole: PB-LENGTH is unchanged).
+ CHECK-SAME-BYTES.
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER WS-HEX-A
+     CALL "TEST-BUFFER-HEX" USING PK-BUFFER WS-HEX-B
+     MOVE "T" TO TL-MODE
+     MOVE WS-HEX-A TO TL-EXPECTED
+     MOVE WS-HEX-B TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM CONTRACT-WIRE-PROVIDER.
+ COPY PROTOTEST.
