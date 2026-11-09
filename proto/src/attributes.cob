@@ -1,0 +1,171 @@
+*> Attribute packets (docs/protocol 05b 0x86 Update Attributes, 0x87 Update Mob Effect; 46 §4). The
+*> packet id is the caller's. A writer appends nothing and sets PB-ERROR for a value it cannot
+*> encode; a reader that fails sets PB-ERROR, leaves PB-POS where it was and yields zeros (for
+*> Update Attributes the entity id and the snapshot count: the table behind them is left as it was).
+*> Update Attributes uses the record PB-ATTRIBUTES of copy/PBATTR.cpy.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-UPDATE-ATTRIBUTES.
+*> USING PB-BUFFER, PB-ATTRIBUTES: Entity id VarInt, snapshot count VarInt (0 to 128), then per
+*> snapshot the attribute id VarInt, base Double and the modifier count VarInt (0 to 8), then per
+*> modifier its Identifier, amount Double and operation VarInt (0 to 2). A negative id, a count
+*> out of range, an identifier that is not valid (1 to 64 bytes) or an operation out of range is an
+*> error, found before anything is written.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PBATTR.
+ PROCEDURE DIVISION USING PB-BUFFER PB-ATTRIBUTES.
+     IF PB-AT-ENTITY < 0 OR PB-AT-COUNT < 0 OR PB-AT-COUNT > PB-AT-MAX-ATTRIBUTES
+         MOVE 1 TO PB-ERROR
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-AT-COUNT OR WS-BAD = 1
+         IF PB-AT-ATTRIBUTE(WS-I) < 0 OR PB-AT-MOD-COUNT(WS-I) < 0
+                 OR PB-AT-MOD-COUNT(WS-I) > PB-AT-MAX-MODIFIERS
+             MOVE 1 TO WS-BAD
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1
+                 UNTIL WS-BAD = 1 OR WS-J > PB-AT-MOD-COUNT(WS-I)
+             MOVE PB-AT-MOD-ID-LENGTH(WS-I, WS-J) TO WS-LENGTH
+             MOVE 0 TO WS-VALID
+             IF WS-LENGTH >= 1 AND WS-LENGTH <= PB-AT-ID-MAX
+                 CALL "PB-VALID-IDENTIFIER" USING PB-AT-MOD-ID(WS-I, WS-J) WS-LENGTH WS-VALID
+             END-IF
+             IF WS-VALID = 0 OR PB-AT-MOD-OPERATION(WS-I, WS-J) < 0
+                     OR PB-AT-MOD-OPERATION(WS-I, WS-J) > 2
+                 MOVE 1 TO WS-BAD
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF WS-BAD = 1
+         MOVE 1 TO PB-ERROR
+         GOBACK
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER PB-AT-ENTITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER PB-AT-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-AT-COUNT
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-AT-ATTRIBUTE(WS-I)
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER PB-AT-BASE(WS-I)
+         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-AT-MOD-COUNT(WS-I)
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-AT-MOD-COUNT(WS-I)
+             MOVE PB-AT-MOD-ID-LENGTH(WS-I, WS-J) TO WS-LENGTH
+             CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER PB-AT-MOD-ID(WS-I, WS-J) WS-LENGTH
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER PB-AT-MOD-AMOUNT(WS-I, WS-J)
+             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-AT-MOD-OPERATION(WS-I, WS-J)
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PB-PUT-UPDATE-ATTRIBUTES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-UPDATE-ATTRIBUTES.
+*> USING PB-BUFFER, PB-ATTRIBUTES out. More than 128 snapshots, more than 8 modifiers in one, a
+*> negative id, an invalid or empty identifier or an operation outside 0 to 2 is an error.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ID-CAPACITY         BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PBATTR.
+ PROCEDURE DIVISION USING PB-BUFFER PB-ATTRIBUTES.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-AT-ENTITY
+     CALL "PB-GET-VARINT" USING PB-BUFFER PB-AT-COUNT
+     IF PB-AT-ENTITY < 0 OR PB-AT-COUNT < 0 OR PB-AT-COUNT > PB-AT-MAX-ATTRIBUTES
+         MOVE 1 TO PB-ERROR
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-AT-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-VARINT" USING PB-BUFFER PB-AT-ATTRIBUTE(WS-I)
+         CALL "PB-GET-DOUBLE" USING PB-BUFFER PB-AT-BASE(WS-I)
+         CALL "PB-GET-VARINT" USING PB-BUFFER PB-AT-MOD-COUNT(WS-I)
+         IF PB-AT-ATTRIBUTE(WS-I) < 0 OR PB-AT-MOD-COUNT(WS-I) < 0
+                 OR PB-AT-MOD-COUNT(WS-I) > PB-AT-MAX-MODIFIERS
+             MOVE 1 TO PB-ERROR
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1
+                 UNTIL PB-ERROR = 1 OR WS-J > PB-AT-MOD-COUNT(WS-I)
+             MOVE SPACES TO PB-AT-MOD-ID(WS-I, WS-J)
+             CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PB-AT-MOD-ID(WS-I, WS-J) WS-ID-CAPACITY
+                 PB-AT-MOD-ID-LENGTH(WS-I, WS-J)
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PB-AT-MOD-AMOUNT(WS-I, WS-J)
+             CALL "PB-GET-VARINT" USING PB-BUFFER PB-AT-MOD-OPERATION(WS-I, WS-J)
+             IF PB-AT-MOD-ID-LENGTH(WS-I, WS-J) < 1 OR PB-AT-MOD-OPERATION(WS-I, WS-J) < 0
+                     OR PB-AT-MOD-OPERATION(WS-I, WS-J) > 2
+                 MOVE 1 TO PB-ERROR
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO PB-AT-ENTITY PB-AT-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-UPDATE-ATTRIBUTES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-UPDATE-MOB-EFFECT.
+*> USING PB-BUFFER, entity id, effect id, amplifier, duration, flags (all BINARY-LONG): VarInt,
+*> VarInt, VarInt, VarInt (-1 is infinite), Byte (0x01 ambient, 0x02 visible, 0x04 icon, 0x08
+*> blend). A negative entity, effect or amplifier, or flags outside 0 to 255, is an error.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-EFFECT L-AMPLIFIER L-DURATION L-FLAGS.
+     IF L-ENTITY < 0 OR L-EFFECT < 0 OR L-AMPLIFIER < 0 OR L-FLAGS < 0 OR L-FLAGS > 255
+         MOVE 1 TO PB-ERROR
+         GOBACK
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-EFFECT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-AMPLIFIER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-DURATION
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-FLAGS
+     GOBACK.
+ END PROGRAM PB-PUT-UPDATE-MOB-EFFECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-UPDATE-MOB-EFFECT.
+*> USING PB-BUFFER, entity id, effect id, amplifier, duration, flags (0 to 255) out. A negative
+*> entity, effect or amplifier is an error.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-ENTITY L-EFFECT L-AMPLIFIER L-DURATION L-FLAGS.
+     MOVE PB-POS TO WS-START
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-ENTITY
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-EFFECT
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-AMPLIFIER
+     CALL "PB-GET-VARINT" USING PB-BUFFER L-DURATION
+     CALL "PB-GET-UBYTE" USING PB-BUFFER L-FLAGS
+     IF L-ENTITY < 0 OR L-EFFECT < 0 OR L-AMPLIFIER < 0
+         MOVE 1 TO PB-ERROR
+     END-IF
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         MOVE 0 TO L-ENTITY L-EFFECT L-AMPLIFIER L-DURATION L-FLAGS
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-UPDATE-MOB-EFFECT.

@@ -10,7 +10,8 @@
 *> (play-s2c-06), Login (play-s2c-32) and Respawn (play-s2c-54) for one, two and three dimensions.
 *> Phase 14 holds Commands (play-s2c-10, with every argument parser), Command Suggestion (play-c2s-0f),
 *> Command Suggestions (play-s2c-0f), Chat Command (play-c2s-07), Player Chat (play-s2c-42) and
-*> Disguised Chat (play-s2c-21). The expected fields are the "Stated inputs" of each fixture file.
+*> Disguised Chat (play-s2c-21). Phase 15 holds Update Attributes (play-s2c-86) and Update Mob Effect
+*> (play-s2c-87). The expected fields are the "Stated inputs" of each fixture file.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-PROVIDER.
  DATA DIVISION.
@@ -18,6 +19,7 @@
  COPY PROTO.
  COPY PBLEVEL.
  COPY PBCHAT.
+ COPY PBATTR.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  COPY TESTLIB.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -536,6 +538,12 @@
          MOVE CM-DG-FIELDS(WS-I) TO WS-STATED-LONG
          PERFORM DISGUISED-CASE
      END-PERFORM
+     MOVE "play-s2c-86-update-attributes" TO WS-NAME
+     MOVE "300 2 23 20.00 0 26 0.10 1 minecraft:sprinting 0.30 2" TO WS-STATED-LONG
+     PERFORM ATTRIBUTES-CASE
+     MOVE "play-s2c-87-update-mob-effect" TO WS-NAME
+     MOVE "300 2 1 600 7" TO WS-STATED-LONG
+     PERFORM EFFECT-CASE
      CALL "PB-FREE" USING PB-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
      STOP RUN.
@@ -1636,5 +1644,63 @@
 
  ADD-FLOAT.
      STRING " " FUNCTION TRIM(LV-FLT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+*> Update Attributes: entity, snapshot count, then per snapshot the attribute id, base and modifier
+*> count, and per modifier its identifier, amount and operation.
+ ATTRIBUTES-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-UPDATE-ATTRIBUTES" USING PB-BUFFER PB-ATTRIBUTES
+     PERFORM START-OBSERVED
+     MOVE PB-AT-ENTITY TO WS-EDIT
+     PERFORM PUT-NUM
+     MOVE PB-AT-COUNT TO WS-EDIT
+     PERFORM ADD-FIELD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-AT-COUNT
+         MOVE PB-AT-ATTRIBUTE(WS-I) TO WS-EDIT
+         PERFORM ADD-FIELD
+         COMPUTE LV-FLT ROUNDED = PB-AT-BASE(WS-I)
+         PERFORM ADD-FLOAT
+         MOVE PB-AT-MOD-COUNT(WS-I) TO WS-EDIT
+         PERFORM ADD-FIELD
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-AT-MOD-COUNT(WS-I)
+             MOVE PB-AT-MOD-ID-LENGTH(WS-I, WS-J) TO WS-LEN
+             STRING " " PB-AT-MOD-ID(WS-I, WS-J)(1:WS-LEN) DELIMITED BY SIZE
+                 INTO TL-OBSERVED WITH POINTER WS-PTR
+             COMPUTE LV-FLT ROUNDED = PB-AT-MOD-AMOUNT(WS-I, WS-J)
+             PERFORM ADD-FLOAT
+             MOVE PB-AT-MOD-OPERATION(WS-I, WS-J) TO WS-EDIT
+             PERFORM ADD-FIELD
+         END-PERFORM
+     END-PERFORM
+     PERFORM CHECK-DECODE
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UPDATE-ATTRIBUTES" USING PK-BUFFER PB-ATTRIBUTES
+     PERFORM CHECK-ENCODE.
+
+*> Update Mob Effect: entity, effect, amplifier, duration, flags.
+ EFFECT-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-UPDATE-MOB-EFFECT" USING PB-BUFFER WS-ENTITY WS-RECIPE WS-COUNT WS-LEN
+         WS-STATE
+     PERFORM START-OBSERVED
+     MOVE WS-ENTITY TO WS-EDIT
+     PERFORM PUT-NUM
+     MOVE WS-RECIPE TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-COUNT TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-LEN TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-STATE TO WS-EDIT
+     PERFORM ADD-FIELD
+     PERFORM CHECK-DECODE
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UPDATE-MOB-EFFECT" USING PK-BUFFER WS-ENTITY WS-RECIPE WS-COUNT WS-LEN
+         WS-STATE
+     PERFORM CHECK-ENCODE.
  END PROGRAM CONTRACT-WIRE-PROVIDER.
  COPY PROTOTEST.
