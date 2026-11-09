@@ -24,8 +24,9 @@ finished, not like a debug renderer. Lighting, sky and clouds are CC-0007. The o
 and gameplay: creative-only flight with no endless climb in survival, a break indicator, inventory and bench crafting with a recipe book, cave and ore
 world generation, game options, a resource-pack folder button, the F3 overlay, F5 camera modes, the off-hand swap
 and a visible held item. The operator also supplied a real resource pack (Faithful 32x for 26.3) that the client must
-load and use. The stand-in content (`docs/design/standin-content.md`) stays the source of the
-values, so new looks are added there first (Principle II).
+load and use. The standard Minecraft behaviour and content, written down in `docs/protocol/` 10 to 47 and
+`docs/design/`, is the target, and the stand-in content (`docs/design/standin-content.md`) now describes only the
+cobolcraft world type (Principle II).
 
 ## User Stories
 
@@ -156,8 +157,8 @@ values, so new looks are added there first (Principle II).
   `docs/design/` before implementation (Principle II).
 - Given the inventory 2x2 grid and the crafting bench 3x3 grid, when they land, then feature 001's single crafting
   screen (US10, the C key) is removed, and crafting is done only in the inventory and bench screens.
-- Given any visual change, when it lands, then its values come from `docs/design/standin-content.md` or
-  `docs/protocol/`, never from constants invented in code.
+- Given any visual or gameplay change, when it lands, then its values come from `docs/protocol/` or `docs/design/`
+  (for the cobolcraft world type, `docs/design/standin-content.md`), never from constants invented in code.
 
 ## Decisions
 
