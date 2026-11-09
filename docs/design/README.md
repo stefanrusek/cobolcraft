@@ -76,290 +76,84 @@ World type: **S** standard, **C** cobolcraft, **both** shared rule. The last col
 | 18 | GUI | both | HUD 12 §5; inventory (46 slots) and crafting table 12 §5.6a, 5.6b, 13 §3.5; recipe book 13 §3.9; options 13 §7; F3 13 §5; F5 13 §6; pack screen 13 §8; sprites 14 §6. Other menus are code. | Doc; menus Engine GAP-19 |
 | 19 | Resource packs and the built-in default pack | S | Format 08 §1 to 9; pack facts 14, faithful §2; generated vanilla resource pack: GAP-32. | Tool (GAP-32) |
 | 19c | Resource packs and the built-in default pack | C | 08 §10 (the built-in pack, retained and re-scoped) | Doc |
-| 20 | Vanilla assets and data tool; loaders; pack discovery and order | both | none yet | Spec GAP-32 |
-| 21 | World types: selection, what each selects, shared rules, fallback without packs | both | none yet | Spec GAP-33 |
+| 20 | Vanilla assets and data tool; loaders; pack discovery and order | both | `docs/protocol/22-extraction-tool.md`, `23-registry-loading.md` | Closed (GAP-32) |
+| 21 | World types: selection, what each selects, shared rules, fallback without packs | both | `docs/design/world-types.md` | Closed (GAP-33) |
 | 22 | Protocol packets and profile | both | 00 to 05c, 09 (rewritten for two world types, Part 3.2) | Doc; 09 to be rewritten |
 | 23 | World folder and persistence | both | 07 §9, edited as in Part 3.6, with a world type key | Retain with edits; entity and block-entity NBT GAP-8 |
 | 24 | Permissions and operator status | both | 15 §2, 16 §11 | Doc; storage 07 §9.2 to be edited |
 | 25 | Game rules | both | 16 §13 | Engine GAP-21 (partial) |
 | 26 | Server and host configuration (FR-009) | both | spec FR-009, `contracts/operator-surface.md`; adds `world-type` (Part 7, decision 9) | Retained |
-| 27 | Namespace rule and world-type rule | both | R1, R2 of Part 0 until 08 intro and the world-type document state them | To be written (T07, GAP-33) |
+| 27 | Namespace rule and world-type rule | both | R1, R2 of Part 0 until 08 intro and the world-type document state them | `docs/design/world-types.md`, `docs/protocol/08-resource-packs.md` §1.6 | Closed (T07, GAP-33) |
 | 28 | Block behaviour (fluids, falling blocks, growth, fire, redstone, block updates), block entities, particles | S | 17 §3.3a fire constants, 10 §9 aquifer fluids; the rest is code | Engine GAP-8, 9, 10, 15 |
 | 29 | Sounds | both | out of scope (spec 001 Assumptions) | none |
 
-## 2. Disposition of docs/design/standin-content.md
+## 2. Status log
 
-The file is re-scoped, not removed: it becomes the content document of the cobolcraft world type. Each row says what stays
-as content of that world type, what is now a shared standard rule (superseded by documents 10 to 21 for **both** world
-types), and what is renamed or re-scoped. Disposition values: **World content (stays)** (kept unchanged as cobolcraft
-content), **World content, re-scoped** (kept, with the stated edit), **Shared rule: superseded for both world types** (the
-named standard document replaces the section; delete it), **Retained**, **Retain with edits**, **Remove**. "Stand-in" quotes
-come from standin-content.md; "Standard" values come from the document and section named. The "Conflicting statements" column
-is the list of values that the shared rule retires. An "interim" row keeps its stand-in value under rule R9.
+This part replaces the former Part 2 (disposition of `standin-content.md`, rows S00 to S73) and Part 3 (disposition of the
+other documents, rows P04, P08, P09, P12 to P19, P07, PR, F and K). Those rows were the edit lists of tasks T01 to T23. The
+edits are made in the documents named below; the row ids no longer exist, and references elsewhere to "Part 3.5", "Part 3.7"
+or "Part 6" now point to this log. Status words: **done** (the target document exists and holds the result), **partial**
+(the document records unread or unresolved items in its Open questions that bear on the task). Every file named was
+checked to exist in `docs/protocol/` or `docs/design/`. Open questions are counted in Part 8.
 
-### 2.1 Front matter and §0
+### 2.1 Edit tasks T01 to T25
 
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S00 | Title and opening paragraphs (lines 1 to 14): "Status: placeholder ... smallest coherent set of original content ... Sections 9 to 18 extend it (FR-015)". | Retain with edits | The document is no longer the source of content (R2, R3). | Re-title the file "Content of the cobolcraft world type". Replace the opening paragraphs: the content stays, the rules in §9 to §17 are shared standard rules (R2), the §7 checklist and §8 questions go (S43, S44). |
-| S01 | §0 "Namespace. All original content uses `cobolcraft:`." | World content, re-scoped (R1) | Stand-in: `cobolcraft:` for all content. Decision: `minecraft:` for anything with a vanilla equivalent, `cobolcraft:` only for extensions (CC-0001 Decisions, Namespace). | Rewrite as: the cobolcraft world type's own content uses `cobolcraft:`; the standard world type uses `minecraft:`. The rule itself moves to 08 intro and the world-type document (T07, GAP-33). |
-| S02 | §0 "Protocol-required names ... **[compat name]**" | World content (stays) | Stand-in: only 25 damage-type keys, `minecraft:plains` and a few others carry `minecraft:`. Standard: every registry key is the real `minecraft:` key (04 §3.2 item 6 explains why a client looks them up). | Keep. The compat keys and `minecraft:plains` stay because the cobolcraft world type's own client load must pass the vanilla validators (04 §3.2) and because shared rules use these damage keys (S37). |
-| S03 | §0 "Registry keys are protocol vocabulary, not content ... `minecraft:dimension_type`, ... `minecraft:ask_server`" | Retained | Still true; it is why `minecraft:` registry slot names are sent as they are. | Keep; also move one sentence into 04 intro. |
-| S04 | §0 table "the two compatibility tiers" (A own-client, B vanilla-parse) | World content, re-scoped | Stand-in: tier A required, tier B kept for configuration only. Now: tier B corresponds to the cobolcraft world type; the standard world type has vanilla ids (04 §5). | Re-scope the tier table as a world-type table: tier A (own client) applies to both world types; tier B (vanilla-parse) applies to the cobolcraft world type only. For the standard world type the vanilla client is a validation goal for play too (R8). |
-| S05 | §0 last paragraph: "Tier B cannot extend into play. The static registries ... are never sent ... Our block state 2 would be drawn as whatever vanilla state 2 is. Original static content and a playable vanilla client are mutually exclusive. That is accepted." | Retain with edits | Stand-in: "Tier B cannot extend into play ... Original static content and a playable vanilla client are mutually exclusive. That is accepted." True for the cobolcraft world type; false for the standard world type. | Restrict the paragraph to the cobolcraft world type: its static content is original, so a vanilla client can configure but not play. Add that the standard world type uses the vanilla numbering and has no such limit (Part 4, C1). |
-
-### 2.2 §1 Block registry
-
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S10 | §1.1 block table: 12 blocks, ids 0 to 11 (`cobolcraft:void` 0, `baseplate` 1, `greystone` 2, `loam` 3, `turf` 4, `grit` 5, `cardstack` 6, `lucite` 7, `glowtube` 8, `ledger_tile` 9, `goto_pad` 10, `slag` 11) | World content (stays), renamed | Standard ids are registration order of the `Blocks` initializer (04 §5.1), not 0 to 11. Nearest standard blocks (faithful §3): void is `air`; baseplate is `bedrock` (13 §2.6: hardness -1, unbreakable); greystone is `stone` (hardness 1.5, pickaxe, correct tool required, 13 §2.6); loam is `dirt` (0.5, shovel); turf is `grass_block` (0.6, shovel); grit is `sand` (0.5, shovel; the stand-in says "No gravity in the stand-in", standard falling-block behaviour is GAP-10); lucite is `glass` (0.3, no tool); glowtube is `redstone_lamp` (stand-in toggles `lit` by Use Item On with default `lit=true`; the standard lamp's behaviour is not documented: GAP-1); slag is `netherrack`. `cardstack`, `ledger_tile`, `goto_pad` have no equivalent. | Keep the 12 blocks and ids as the cobolcraft registry. Rename the section "cobolcraft world: blocks". The nearest standard blocks listed here are the optional skin mapping (F-6) and the source for the standard properties of S11, not replacements. |
-| S11 | §1.1 columns: "Hand break time" (greystone 1.5 s, loam 0.6 s, turf 0.7 s, grit 0.5 s, cardstack 1.0 s, lucite 0.4 s, glowtube 0.3 s, ledger_tile 1.2 s, goto_pad 2.0 s, slag 1.2 s) and "Light emitted" (glowtube 15, goto_pad 6) and "Solid / collides, Opaque" | World content, re-scoped | Standard break time is computed from hardness, tool speed, tier and the correct-tool divisor (13 §2.1): stone by hand 1.0 / 1.5 / 100 gives 150 ticks (7.5 s) and no drop; stone with an iron pickaxe 8 ticks; dirt by hand 15 ticks (13 §9). Stand-in "greystone 1.5 s" and "loam 0.6 s" are wrong under R2. Light, shape and opacity are per-block registry data (GAP-1). | Keep light, solidity and opacity. Replace "Hand break time" by standard block properties (hardness, tool tag, tier) so the shared break formula 13 §2.1 applies; initial values are the nearest standard equivalent of S10 and, for blocks without one, derived from the listed time (adopted default, Part 7 decision 4). |
-| S12 | §1.1 notes "Property value orders", "All blocks are full 1 x 1 x 1 cubes. There are no fluids: every section's fluid count (06 §4) is 0." | World content (stays) | Standard blocks have shapes, and water and lava exist (10 §9 aquifers, 11 §5.6 carver fluids); `axis`, `punched`, `lit` are stand-in properties. | Keep (full cubes, no fluids in the cobolcraft overworld). Delete only the sentence that fluid counts are always 0 if the shared fluid rules (GAP-9) are enabled in this world type. |
-| S13 | §1.2 block state ids table (18 states) and consequences: "`ceillog2(18) = 5`, so the global block palette is 5 bits", "A section with 17 or 18 distinct states needs 5 bits: the HashMap palette", "The Global kind (9 bits or more) is never reached by this content", "An unknown state id should decode to state 0 (void)" | World content (stays) | The standard state count is far above 18, so the Global palette is reachable; palette widths follow 06 §5.3. An unknown state id decodes to the default state of air (04 §5.2 last paragraph), which is state 0 of `air`. The computation rule (04 §5.2) is unchanged. | Keep (18 states, 5-bit global palette, palette consequences). The decode rule for an unknown state id is the generic 04 §5.2 rule (default of the air-equivalent). |
-| S14 | §1.3 placement: "Placing a block item puts the block's default state, except cardstack ...", "A position can receive a block only if it currently holds `void`", "Breaking sets the position to state 0 (`void`). `baseplate` refuses." | World content, re-scoped | Standard placement state and which positions accept a block are per-block rules that no document gives (GAP-30). Standard bedrock has hardness -1 (13 §2.6); the creative instant-break rule is 13 §2.5. | Keep for the cobolcraft blocks (default state, cardstack axis, goto_pad, glowtube). The generic replaceable-position rule becomes the shared placement rule (GAP-30); "holds `void`" is the cobolcraft instance of it. |
-| S15 | §1.3 "Block yields (FR-002)": survival break leaves one `cobolcraft:loose_item` at (x + 0.5, y + 0.25, z + 0.5), motion (0, 0, 0), pickup delay 6 ticks; "In creative mode a break yields nothing"; "Nothing is ever added straight to the breaker's inventory" | World content, re-scoped | Standard drops come from the block's loot table rolled with the tool context (17 §3.16, 11 §9.2 for ores; GAP-4); the dropped item is an item entity with the default pickup delay 10 (18 §6.11); the creative rule is 13 §2.5. Spawn offset and random motion are not read (GAP-26). | Keep the yield table (block id to item id) as the loot rows of the cobolcraft world type (loot data authored by hand). Delete the loose-item mechanics (position, delay 6, motion 0): item entities follow the shared rules (S50). |
-| S16 | §1.4 and §1.4.1 drawing rules (coordinates, colours, integer hash `H`, noise, border, rectangle, line, triangle) | Retained | Not in conflict. It is the vocabulary of the procedural art of the built-in pack of the cobolcraft world type. | Keep. It is the vocabulary of the built-in pack's procedural art in the cobolcraft world type. |
-| S17 | §1.4.2 recipe table for the 11 stand-in blocks, `turf_top`, `turf_side` etc. | World content (stays) | Stand-in: texture recipes of the cobolcraft blocks. Faithful's `minecraft:` textures do not bind to them (they have `cobolcraft:` ids) except through the optional skin of faithful §3. | Keep. The recipes feed the built-in pack of the cobolcraft world type (08 §10.3). |
-| S18 | §1.4.2 row "(missing texture)": `#F28C28` and `#1A1A1A` 2-px diagonal stripes, "Used for any unknown block, item, entity or environment texture" | Retain with edits | Standard missing sprite is a code-generated "16 x 16 magenta (`#F800F8`) and black pattern" (14 §3.1, last paragraph). The stand-in colours are CobolCraft's own and engine-generated, not pack data; decision 12 keeps them. | Keep; the engine-generated sprite for both world types (decision 12 keeps the colours). |
-| S19 | §1.4.2 "Shading: ... top 1.0, north and south 0.8, east and west 0.6, bottom 0.5" | Shared rule: superseded for both world types | 12 §1.1 gives the directional factors (they agree: "the `default` column of 1.1 is the same numbers", 12 §0) and 12 §1.2 to 1.8 add smooth lighting and the light map. CC-0007 adopts them. | Delete; 12 §1.1 and §1.8 apply to both world types (they agree with these factors; CC-0007). |
-| S20 | §1.5 check values (SHA-256 and colour counts for 29 textures) | World content (stays) | Check values of the cobolcraft textures; they stay valid for the cobolcraft world type (no standard counterpart). | Keep all rows (cobolcraft textures); edit only where S18 or decision 12 changes a texture. |
-
-### 2.3 §2 to §3 Items and entity types
-
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S21 | §2 item table: 18 items, ids 0 to 17 (`cobolcraft:nothing` 0 ... `cobolcraft:slag` 17), max stack 64, tools `pry_bar` and `trowel` "Divides break time by 4", food `grazer_flank`, `seared_flank`, `sod_cake`, `dump_shard`. | World content, re-scoped | Standard ids are registration order of `Items` (04 §5.1). Break speed comes from the `tool` component and material (13 §2.1: wood 2.0, stone 4.0, copper 5.0, iron 6.0, diamond 8.0, netherite 9.0, gold 12.0), not a divisor 4. Standard stack sizes vary per item (components, 17 §1). | Keep the 18 items and ids. Re-express the tool rows (`pry_bar`, `trowel`) and food rows as standard components: tool speed and tier, attack damage, `food` nutrition (the "divides break time by 4" rule is replaced by the shared formula 13 §2.1; "no durability" stays allowed). |
-| S22 | §2 "The stand-in uses **no data components**: every non-empty stack is sent with AddedCount = 0 and RemovedCount = 0"; "Tools have no durability in the stand-in." | Retain with edits | Standard stacks carry component patches (00 §12.1: damage, enchantments, custom name, ...). Iron pickaxe durability 250, etc. (13 §2.1, 17 §2, §5). | Keep the statement that cobolcraft items carry no data components (a valid empty patch). Stacks are encoded as 00 §12.1 in both world types; delete the claim that this is a stand-in limitation. |
-| S23 | §2 English names, item icon recipes (`pry_bar`, `trowel`, `grazer_flank`, `seared_flank`, `sod_cake`, `dump_shard`) and "Starting inventory (FR-002, US4-8)": slots 0 to 7 hold items 2 to 9 x 64, slot 8 `pry_bar`, slot 9 `trowel`; "The held slot is 0." | World content (stays) | Names are `en_us` data (GAP-27); icons are pack textures (`minecraft:item/iron_pickaxe`, ... faithful §4). The standard first-join inventory is empty (no standard document gives a starting kit). Spec US4-8 cites it (Part 3.7). | Keep English names and icon recipes. The starting inventory is a world-type rule of the cobolcraft type (the standard world type starts empty): keep it as "cobolcraft: starting kit" (adopted default, Part 7 decision 6). |
-| S24 | §3 entity table: `cobolcraft:operator` id 0 (0.7 x 1.75, eye 1.6), `loose_item` id 1 (0.3 x 0.3, eye 0.15), `sodgrazer` id 2 (0.9 x 0.9), `abend` id 3 (0.75 x 0.75) | World content, re-scoped | Standard: `player` id 159, 0.6 x 1.8, eye 1.62 (21 §2; 12 Open question 16 notes the player size was quoted, not separately read); `item` id 72, 0.25 x 0.25, eye 0.2125, tracking range 6, update interval 20 (21 §2); `cow` id 30, 0.9 x 1.4 (21 §2). Entity metadata of `item`: 8 DATA_ITEM ITEM_STACK (21 App A) versus stand-in "index 0, serializer 7". Ids are "inferred" (20 Open question 25). | Keep the four entity types and ids. Gameplay uses the standard player box (0.6 x 1.8, eye 1.62: 21 §2) for the player-equivalent in both world types; the `operator` model and texture stay (adopted default, Part 7 decision 5). The ground-item type is the shared item-entity rule with the standard metadata layout (21 App A). |
-| S25 | §3.1 entity model space, face rule, strip layout; §3.2 `operator` model (one 11 x 28 x 11 box, texture 66 x 28); §3.3 ground item "square 0.3 x 0.3 block quad ... facing the camera" | World content (stays) | Standard unwrap: 14 §5.3 (box UV layout), humanoid and other models: 14 §5.4, 12 §7.4 (player model parts). Ground items use the `ground` display transform of the item model (12 §8.2, §8.4). Entity textures are whole images sampled by fractions (14 §5.2). Models of other mobs: GAP-25. | Keep (cobolcraft entity models and strip layout). They are the built-in pack's entity art for this world type. |
-
-### 2.4 §4 Synchronized registries
-
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S30 | §4.1 "How to send them": empty Select Known Packs list (every entry with Data); one flag `minecraft:vanilla` in Update Enabled Features; registry order of 04 §3; "Entry order is the id"; "For a registry left empty, send no Registry Data packet" | Retain with edits | The first four are CobolCraft choices still correct (04 §2 guidance, 03 id 13). Edit "send no packet for an empty registry": the 13 non-empty-validated registries now hold the standard entries, and the server sends every registry that the loaded content defines. Delete "No vanilla static references in entry data": standard entries reference static registries (sound events, blocks, items, attributes) by their real names. | Keep and extend: the sending rules (empty Select Known Packs, Data present, order, entry order = id) hold for both world types. Delete "No vanilla static references in entry data" for the standard type, whose entries reference static registries by their real names. |
-| S31 | §4.1 class key MV, NJ, OE | World content (stays) | The classes encode which registries tier B needed. | Keep (for the cobolcraft world type). |
-| S32 | §4.2 summary: "18 Registry Data packets and 52 entries (3 biomes, 1 chat type, 13 MV placeholders, 2 dimension types, 32 damage types, 1 world clock)"; "Both dimension types and all three biomes are always sent" | World content (stays) | Standard counts: 51 damage types (17 §4.12), 43 enchantments (17 §6.2), every overworld biome (10 §7.4, §7.8; 18 App A lists all biomes), the vanilla variant registries, painting variants, `dimension_type` for the dimensions in play, standard `chat_type` set. GAP-7. | Keep as the registry summary of the cobolcraft world type; add the standard entries of C3 to the counts. |
-| S33 | §4.3 `worldgen/biome`: 3 entries: `minecraft:plains` "our lowland" (temperature 0.6, downfall 0.4, water `#3A6EA5`, grass `#4F8F3A`), `cobolcraft:upland`, `cobolcraft:ash_flats`; "With 3 biomes, the global biome palette is 2 bits" | World content (stays) | Standard plains: temperature 0.8, downfall 0.4, has_precipitation true (10 §7.8). The upland and ash_flats biomes do not exist. Biome data (effects, attributes, colours) is partly specified: climate 10 §7.8, spawns 18 App A; effects and attributes GAP-7, GAP-29. Biome palette width follows 06 §5. | Keep. `minecraft:plains` is the cobolcraft "lowland" there. |
-| S34 | §4.4 `chat_type`: one entry `cobolcraft:say` (`cobolcraft.chat.say` "<%s> %s"); "Player chat is broadcast as System Chat with the literal text `<name> message`"; "System messages do not use a chat type" | World content, re-scoped | Standard commands use chat types: `minecraft:say_command`, `minecraft:emote_command`, `minecraft:msg_command_incoming` and `_outgoing` (16 §8, §15); player chat uses `minecraft:chat`. Data for these entries: GAP-7. Decision 7 covers Player Chat versus System Chat. | Keep `cobolcraft:say` as the cobolcraft chat type. Shared commands need the standard chat types (16 §8) in both world types, so the cobolcraft world type also carries them (Part 4, C3); Player Chat versus System Chat: Part 7, decision 7. |
-| S35 | §4.5 mandatory variant registries (MV): 13 registries, one `cobolcraft:placeholder` entry each, texture `cobolcraft:entity/placeholder`, sound `{sound_id: "cobolcraft:silent"}`, painting 1 x 1 `"Placeholder"` | World content (stays) | Standard variant sets: wolf variants and 7 wolf sound variants (19 Open question 30), pig, cat, frog, cow, chicken, zombie nautilus, painting (52 painting textures in Faithful, 14 §7.2). The 13 stay non-empty (04 §3.2 item 4) but with real data. Mob variant selection: 19 §1. GAP-7. | Keep (13 MV placeholder registries). |
-| S36 | §4.6 `dimension_type`: `cobolcraft:surface` (min_y 0, height 256, logical_height 256, has_fixed_time absent, `infiniburn` empty list, `attributes` absent, `timelines` absent, `default_clock` `"cobolcraft:daylight"`) and `cobolcraft:sunless` (height 128, has_skylight 0, skybox none); "Derived geometry": 16 sections, light covers 18 sections, heightmap entries `ceillog2(257) = 9` bits, 37 Longs | World content, re-scoped | Standard `minecraft:overworld`: `min_y -64`, `height 384`, `logical_height 384`, `coordinate_scale 1.0`, `has_skylight true`, `has_ceiling false`, `ambient_light 0.0` (10 §5); sea level 63 (10 §5); 24 sections and 26 light sections; heightmap entries `ceillog2(385) = 9` bits (06 §3.1 rule); `attributes` (fog, sky, cloud colours: 12 §3.1 overworld map) and `timelines` are required for the sky (CC-0007, 12 §3.1); `infiniburn` is a tag. Nether and End dimension types: 12 §3.1 gives some attributes only (GAP-13). | Keep `surface` and `sunless` and the derived geometry. Edit: day length and sky come from the shared rules (a `world_clock`, the standard timeline and attributes, 12 §3), not the stand-in ones; `has_fixed_time` for `sunless` stays. |
-| S37 | §4.7 `damage_type`: 32 entries (3 ours, 25 compat keys, 4 ours: `mob_attack`, `player_attack`, `starvation`, `hail`); every entry "scaling `never`, exhaustion 0.0" | World content, re-scoped | Standard: 51 types; "none of the types uses `never`" (17 §4.12); exhaustion 0.1 for many types (17 §4.12 groups C, D, E); the stand-in keys `starvation` and `hail` do not exist (`starve` and no hail). Full per-entry fields: `message_id`, `effects`, `death_message_type` in no document (GAP-7). | Keep the cobolcraft-only entries (`impact`, `below_world`, `hail`) only where a cobolcraft rule uses them. Shared rules use the standard damage types (`fall`, `starve`, `mob_attack`, `player_attack`, ...), so the 25 compat keys carry the standard values (17 §4.12), not 0.0 and `never`. Retire `starvation` and `player_attack`/`mob_attack` clones (standard keys replace them). |
-| S38 | §4.8 `world_clock` `cobolcraft:daylight`; "Day length: `Time` runs from 0 to 29999 ... 30,000 ticks = 25 minutes"; "Night: 16000 <= `Time` < 29000"; daylight factor u (1000 to 200); sky colour `#8FB8E6` to `#0E1222` | Shared rule: superseded for both world types | Standard day period is 24000 ticks (12 §3.2, 13 §5 `day_count`); night shape: darkens about 11270 to 13140, dark until 22860, brightens until 24730 (12 §0 D4, §3.2); sky colours come from the timeline tracks and attributes (12 §3.1, §3.2: overworld `sky_color` `#78a7ff`, `fog_color` `#c0d8ff`). The `world_clock` key is `minecraft:overworld` (12 §3.2c). | Delete. Day length is 24000 ticks, the standard timeline, the `minecraft:overworld` clock (12 §3.2) in both world types. Answers CC-0007's questions. |
-| S39 | §4.9 optional-empty registries (OE): `trim_pattern`, `trim_material`, `sulfur_cube_archetype`, `banner_pattern`, `enchantment`, `jukebox_song`, `instrument`, `test_environment`, `test_instance`, `dialog`, `timeline`, `decorated_pot_pattern`, `block_transformer`, `worldgen/block_state_provider`: "no packet sent" | World content, re-scoped | `enchantment` (17 §6.1: 43 entries) and `block_transformer` (17 §3.1) are needed by tools and combat; `timeline` is needed by the sky (12 §3.2). Others are sent as the loaded data pack defines them (standard world type) or left empty (cobolcraft world type). | Keep the OE list for the cobolcraft world type, except `enchantment` and `block_transformer` (needed by the shared tool rules, 17 §3.1, §6) and `timeline` (needed by the shared sky, 12 §3.2): the cobolcraft world type sends minimal entries for these. |
-
-### 2.5 §5 to §8 Dimension, tags, checklist, open questions
-
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S40 | §5.1 dimension table: level key `cobolcraft:main`, Y range 0 to 255, sea level 48 ("Nominal only; there is no water"), hashed seed 0, "View distance ... default 8", dimension names list | World content (stays) | Standard: `minecraft:overworld` (R1; the vanilla client treats the key specially, standin §8 Q10), Y -64 to 319, sea level 63 (10 §5), water exists. Hashed seed: the Login seed field is the obfuscated seed (first 8 bytes of SHA-256 of the 8 little-endian bytes of the seed, 10 §7.7), not 0. View distance 8 is a server setting (FR-009, retained); the standard client default is 12 (13 §7.2 `renderDistance`). | Keep as `cobolcraft:main` data. Edit: hashed seed is derived from the world seed (10 §7.7), view distance default is a server setting. |
-| S41 | §5.2 generator: surface height `52 + 6 sin(x/23) cos(z/31)`, layers baseplate/greystone/loam/turf-or-grit, marker pillars at chunk multiples of 4, two biomes by height 55, "No seed is used yet", "Block entities: none"; Light (stand-in policy): sky light 15 above the column top, no sideways spreading, "lucite does not let sky light through", block light taxicab minus 1 per block; spawn point (4.5, 54.0, 8.5), yaw -90 | World content, re-scoped | R4: terrain 10, caves 11 (seeded, 3D density, aquifers, three cave kinds, ores). Block entities exist in the standard world (07 §7: `block_entities`; GAP-8). Light engine GAP-24 (12 §1.4 and §1.8 define how the client reads the levels). World spawn: standard search uses `spawn_target` (10 §5, algorithm GAP-28); the marker pillar goes. Marker blocks, `goto_pad` and stand-in light policy are removed. | Keep the generator, layers, markers, biomes and spawn point as the cobolcraft world type's generator. Replace the "Light (stand-in policy)" paragraph by the shared light engine (GAP-24, R2). |
-| S42 | §6 Tags: "None are required for the join flow"; "send one Update Tags packet with zero registries"; optional tags `cobolcraft:hard`, `cobolcraft:soft`, `cobolcraft:tools` | World content, re-scoped | Standard tag sets drive mining (`mineable/*`, `needs_*_tool`, 13 §2.6, 17 App A), damage (17 §4.12), recipes (`#minecraft:planks`, 13 §3.1), mob behaviour and spawning (18, 19, 20, 21), `infiniburn` and others. The server sends the standard tags (04 §1, §5.3). GAP-6. | Keep the optional own tags only if cobolcraft blocks are not placed in the standard tags. Preferred: cobolcraft blocks and tools join `minecraft:mineable/*` and the tier tags (adopted default, decision 4); `cobolcraft:hard`, `cobolcraft:soft` retire. Update Tags in this world type is no longer empty (C3). |
-| S43 | §7 "Stand-in -> replace later checklist" (19 items) | Remove | It is the work list of a first run; this README Part 6 replaces it. Items already answered: block set, textures, items, ground items, health, hunger, mobs, recipes, weather, biomes, dimensions, generator, lighting engine, command names, chat types, day length, font (kept as fallback), hashed seed, tier B, sounds (out of scope). | Delete; this README replaces it. |
-| S44 | §8 open questions 1 to 13 | Retain with edits | Q1, Q7, Q11 are closed already. Q2, Q3, Q4, Q5, Q12 are tier B and placeholder questions that no longer arise. Q6 (state permutation order) is still an open check but belongs to 04 Open question 5. Q8 (Y bounds) closed by 10 §5. Q9 (section counts) belongs to 06 Open questions. Q10 closed (`minecraft:overworld`). Q13 (Brigadier string kinds) is 05a Open question 1 and 15a. | Keep Q2, Q3, Q4, Q5, Q12 (tier B and placeholder questions) as open questions of the cobolcraft world type. Delete Q1, Q6 to Q11, Q13 (closed or owned elsewhere). |
-
-### 2.6 §9 to §18 FR-015 extensions
-
-| ID | Stand-in section | Disposition | Conflicting statements (stand-in versus standard) | Action |
-|---|---|---|---|---|
-| S50 | §9 Ground items. §9.1 sources and pickup delays: block break 6, mob defeat 6, throw 30, inventory throw 30, death drop 30; thrown motion `mx = -sin(Y) cos(P) 0.25`, `my = -sin(P) 0.25 + 0.12`. §9.2: age counts only with a player within 32.0 blocks, despawn at 4800, gravity 0.035, drag 0.97, "Ground items never merge". §9.3 pickup box x/z +0.75, y +0.25; players tried in entering order. §9.4: pickup delay not saved. | Retain with edits (interim) | Standard: lifetime 6000 ticks, default pickup delay 10, items merge within a box inflated by 0.5 horizontally while below max stack (18 §6.11). 18 §6.11 states no player-distance condition for the lifetime (the stand-in counts age only while a player is within 32.0 blocks). Standard throw velocity, gravity, friction, pickup box and the 30-tick throw delay are not read (18 Open question 6, 21 Open question 13). | Replace 4800 and the no-merge rule with 18 §6.11 (shared). Keep §9.1 thrown motion, §9.2 movement and §9.3 pickup box as interim for both world types until GAP-26; then delete §9. |
-| S51 | §9.5 order of the rules within a server tick | Shared rule: superseded for both world types | Standard per-tick order for living entities and mobs: 18 §2; player rules 17 §4.9. | Delete (18 §2). |
-| S52 | §10.1 "Maximum health: 30 ... A new player and a respawned player have 30." | Shared rule: superseded for both world types | Standard `max_health` 20 ("the player uses 20 (standin-content §10.1 differs)", 17 §1.5). | Delete. |
-| S53 | §10.2 "if its hurt cooldown is above 0, the damage is ignored ... the hurt cooldown is set to 12 ticks" | Shared rule: superseded for both world types | Standard invulnerability window: a hit while `invulnerableTime <= 10` sets it to 20 and applies in full; a hit during the first 10 ticks after is ignored if amount <= `lastHurt`, else only the excess applies (17 §4.7, which states "This differs from standin-content §10.2"). | Delete. |
-| S54 | §10.3 causes: fall "2 x (floor(D) - 4) when floor(D) >= 5 ... safe fall height is 4 blocks"; abend hit 3; player hit = held item damage; starvation 1 every 60 ticks; hail 1; set-health command to 0 | Shared rule: superseded for both world types | Standard fall: `floor((distance + 1.0E-6 - safe_fall_distance) x multiplier x fall_damage_multiplier)`, `safe_fall_distance` 3.0, a fall of 4 does 1, 10 does 7, 23 does 20 (17 §4.11). Starvation: 1.0 every 80 ticks at food 0 and only if health > 10, or Hard, or Normal with health > 1 (17 §4.9). Player attack: attack-strength scale, damage by item and enchantments, crit, sweep (17 §4.1 to 4.3). Hail does not exist; lightning 5.0 (17 §4.11). There is no set-health command; `damage`, `effect`, `kill` and `attribute` exist (16 §5). | Delete. Keep as mob data only: the abend's attack amount 3 becomes an `attack_damage` attribute of the abend. |
-| S55 | §10.3 fall distance and starvation counter paragraphs | Shared rule: superseded for both world types | 13 §1.3 and 17 §4.11 (fall distance accumulates in the entity's `fallDistance`); starvation timer 17 §4.9. | Delete. |
-| S56 | §10.4 attack damage table (bare hand 1, `pry_bar` 4, `trowel` 2); reach "at most **4.0** blocks" from the eye; "Every hit adds attack exhaustion" | Shared rule: superseded for both world types | Standard player base attack damage 1.0 (17 §1.5); item damages in 17 §2; `entity_interaction_range` 3.0 and `block_interaction_range` 4.5 (17 §1.5; server margin 3.0 in 17 §4.1); attack cooldown D = (1 / attack_speed) x 20 ticks (17 §4.1); exhaustion per attack 0.1 (17 §4.9). | Delete the rules. Keep the item damage numbers (4 for `pry_bar`, 2 for `trowel`) as attack-damage components of the two items (S21). |
-| S57 | §10.5 recovery: food >= 20 and health below 30, 1 health per 50 ticks, 2.5 exhaustion | Shared rule: superseded for both world types | Standard: saturated and food >= 20 heals `min(saturation, 6) / 6` every 10 ticks; food >= 18 heals 1.0 every 80 ticks and adds 6.0 exhaustion (17 §4.9). | Delete. |
-| S58 | §10.6 death and respawn: dead player's slots dropped with motion `(((s mod 6) x 2 - 5) x 0.02, 0.2, ...)` and delay 30; "Nothing is kept"; respawn at the world spawn in `cobolcraft:main` with health 30, food 24; disconnect while dead is stored | Shared rule: superseded for both world types | Standard: `Inventory.dropAll` unless gamerule `keep_inventory` (vanishing-curse items removed; velocity from the damage direction), experience dropped `min(level x 7, 100)`, totem rule, respawn through the player's respawn config (bed, respawn anchor) else world spawn (17 §4.10), health 20 and food 20. The disconnect-while-dead case is not specified (GAP-28). | Delete. The starting kit is not given again on respawn (S23 stays as the first-join kit only). |
-| S59 | §10.7 death message keys `cobolcraft.death.fall`, `.mob.abend`, `.player`, `.starvation`, `.hail`, `.command`; screen keys `cobolcraft.screen.death.title`, `.respawn` | Shared rule: superseded for both world types | Standard death messages are the combat tracker's `death.*` translation keys and the death screen texts of the standard `en_us` (GAP-27). Wire: Player Combat Kill 0x45 and System Chat (17 §4.10), unchanged. | Delete. Death messages are the standard keys in both world types; the abend uses the generic mob message (adopted default, decision 5). |
-| S60 | §11.1 "Maximum food level: 24"; "saturation is always sent as 0.0"; respawned player food 24 | Shared rule: superseded for both world types | Standard MAX_FOOD 20, new player food 20 and saturation 5.0, MAX_SATURATION 20.0 (17 §4.9). | Delete. |
-| S61 | §11.2 exhaustion: time 0.005 per tick, walking 0.02 per block, running 0.12 per block, jumping 0.3, attacking 0.15, breaking 0.025, regeneration 2.5; §11.3 "Whenever exhaustion is at least **5.0**, 5.0 is subtracted" | Shared rule: superseded for both world types | Standard: breaking 0.005; attacking 0.1; jumping 0.05; sprint-jumping 0.2; sprinting 0.1 per metre; swimming 0.01 per metre; walking 0 (inferred); no per-tick exhaustion; threshold 4.0; regeneration 6.0 (17 §4.9). | Delete. |
-| S62 | §11.4 movement: "Walking speed: 0.2 blocks per tick", "Sprint speed: 0.28", flying 0.5 horizontal and 0.375 vertical, jump 0.42, gravity `(speed - 0.08) x 0.98`, double Space "within 0.3 s", mouse look 0.15 degrees per pixel, block reach 5 blocks | Shared rule: superseded for both world types | Standard: base movement speed attribute 0.1, sprint x1.3 (13 §1.2), ground speed from the per-tick order 13 §1.3; Abilities flying speed 0.05 (doubled when sprinting, 13 §1.3); flight toggle window 7 ticks (13 §1.2, §1.4); jump 0.42 and gravity 0.08 with vertical drag 0.98 are identical (13 §1.2); mouse turn `delta x (s x 0.6 + 0.2)^3 x 8` (13 §7.2); block interaction range 4.5 (17 §1.5); flight only in creative (CC-0001). | Delete. |
-| S63 | §11.5 food items (3 items) and §11.6 eating: "Eating time: 30 ticks"; Entity Event 9 on completion | World content, re-scoped | Standard: per-item `consumable` component, `consume_seconds` (17 §1.2 type 24; default drink 1.6 s in 17 §3.8; per-food values not tabulated, 17 Open question 14) and food nutrition and saturation per item. Entity Event 9 meaning: 09 Open question 7. | Keep the three food items as items with standard `food` components (nutrition 3, 8, 2) and the standard eating rule (17 §1.2, §4.9). Delete the 24-point food level, 30-tick eating time and Entity Event rule. |
-| S64 | §12.1 to §12.6 mobs: `sodgrazer` (health 8, wander 0.05, flee 0.1, yield 2 `grazer_flank`) and `abend` (health 12, pursue 0.12, notice 12.0, reach 1.75, damage 3, cooldown 30, yield 1 `dump_shard`); physics `(vy - 0.05) x 0.96`; spawn every 100 ticks, caps 12 and 8, "dark ground"; models | World content (stays) | Standard mobs, attributes, AI, pathfinding, spawn cycle and caps (18 §6.1, §6.3), loot (18 §7.6), models. Physics: 18 §3. Standard cow: 0.9 x 1.4 (21 §2). | Keep the two mobs, their models and spawn rules as cobolcraft world content. Their health, damage, hurt window and knockback follow the shared combat rules (17 §4); the stand-in AI and physics (§12.2, §12.3) remain the mobs' own. |
-| S65 | §13 recipes: 9 recipes (display ids 0 to 8), "Crafting works the same in both game modes and needs no block" | World content, re-scoped | Standard crafting uses the inventory 2x2 grid and a crafting table 3x3 (13 §3.5), recipes from GAP-5; recipe book per 13 §3.9; R6 removes feature 001's crafting screen. The survival-obtainability table (SC-008) has no standard counterpart. | Keep the nine recipes as the recipe set of the cobolcraft world type, as shapeless recipes in the standard recipe format (13 §3.1), crafted in the inventory 2x2 or the bench 3x3 (R6); recipe 7 (seven ingredients) needs the bench, which the cobolcraft world type must offer (Part 7, decision 3). Delete "needs no block" and the Place Recipe/display-id remarks (09 §3.3 is rewritten). |
-| S66 | §14 weather: kinds `clear`, `drizzle` (1.0, 0.0), `hailstorm` (1.0, 1.0); "A new world starts with `cobolcraft:clear` and 6000 remaining ticks"; durations clear 6000 to 12000, drizzle 2400 to 4800, hailstorm 1200 to 2400; sky tint; precipitation quads over a 17 x 17 column area; `hail` damage "every tick with `Time` mod 80 = 0"; environment textures `drizzle`, `hailstorm` | World content, re-scoped | Standard: clear, rain, thunder; `rain` and `snow` textures 128 x 512 (14 §8.2, faithful §6.2); attribute layers and fog (12 §3.3, §3.5); lightning does 5.0 and ignites for 8 s (17 §4.11). The wire events (Game Event 1, 2, 7, 8) are unchanged. Standard weather state is one server-level `WeatherData`, not per dimension (16 §4.10); its default durations are clear 12000..180000, rain 12000..24000, thunder 3600..15600 (16 §4.10, constants `RAIN_DELAY`, `RAIN_DURATION`, `THUNDER_DURATION`), against the stand-in per-dimension schedule above. The transition rules of the natural schedule: GAP-11 (interim: keep §14.3 timing only as a placeholder). | Keep the kinds as a skin: `drizzle` is rain, `hailstorm` is thunder (adopted default, decision 5), with `hail` as a cobolcraft-only damage extra. The mechanism (server-level state, durations, schedule) is shared (GAP-11); §14.3 stays interim until GAP-11. |
-| S67 | §15 extra dimensions: `cobolcraft:subroutine`, `goto_pad`, travel by Use Item On, arrival rule, `sunless` | World content (stays) | Spec US12 and FR-009 `extra-dimensions` depend on it. Standard extra dimensions are the Nether and the End (GAP-13; 10 and 11 cover the overworld only). The `goto_pad` block and recipe 7 vanish with S10 and S65. | Keep as the cobolcraft world type's second dimension and travel rule. Standard travel (portals) applies in the standard world type (GAP-13). |
-| S68 | §16.1 general rules (permissions "everyone" and "operator", "Order of checks" with `cobolcraft.command.unknown`, "Target rule", "Names of things", "Arguments in messages", "Feedback") | Shared rule: superseded for both world types | Standard permission levels 0 to 4 and permission sets (15 §2); parse and error rules (15 §4, 15a); target rule is "selectors" (15 §7) and offline names for `ban`/`whitelist`/`op` follow 16 §11; message keys 15 §5 and 16. | Delete. |
-| S69 | §16.2 command table, 29 commands (`howto`, `roster`, `murmur`, `promote`, `demote`, `eject`, `bar`, `unbar`, `barlist`, `guestlist`, `mode`, `relocate`, `supply`, `empty`, `vitality`, `ration`, `conjure`, `sweep`, `clock`, `skies`, `homestead`, `announce`, `persist`, `shutdown`) with "Ranges: ... y ... 0.0 to 256.0" and `howto` "35 entries" | Shared rule: superseded for both world types | The standard server registers 97 index rows (16 §3, including dev and debug). Mapping: `howto` to `help` (16 §8.6); `roster` to `list` (8.5); `murmur` to `msg` / `tell` / `w` (8.3); `promote`, `demote` to `op`, `deop` (11.1, 11.2); `eject` to `kick` (11.8); `bar`, `unbar`, `barlist` to `ban` / `ban-ip`, `pardon` / `pardon-ip`, `banlist` (11.3 to 11.7); `guestlist` to `whitelist` (11.22); `mode` to `gamemode` (4.1); `relocate` to `teleport` / `tp` (5.2); `supply` to `give` (6.1); `empty` to `clear` (6.2); `conjure` to `summon` (5.8); `sweep` to `kill` (5.1); `clock` to `time` (4.5); `skies` to `weather` (4.10); `homestead` to `setworldspawn` (4.7); `announce` to `say` (8.1); `persist` to `save-all` (11.9); `shutdown` to `stop` (11.12). `vitality` and `ration` have no standard counterpart (`damage` 5.7, `effect` 5.10, `attribute` 5.12 and `kill` cover health; there is no set-food command). Dedicated-only commands and `publish` / `unpublish`: 16 §2. | Delete the table; keep the mapping column as a one-time migration note until 09 is rewritten. |
-| S70 | §16.3 command tree (argument table and "A player without operator status is sent a tree with only `howto`, `roster` and `murmur`") | Shared rule: superseded for both world types | The standard tree is filtered per player by requirements (15 §3.3); argument parser ids and properties: 15 §6, 05a. | Delete. |
-| S71 | §16.4 shared command messages (`cobolcraft.command.*`) | Shared rule: superseded for both world types | Standard keys with English text: 15 §5, 16 per command. | Delete. |
-| S72 | §17 system messages: `cobolcraft.disconnect.barred`, `.not_on_guestlist`, `.name_is_host`, `.replaced`, `.shutdown`, `.host_closed`, `.pack_required`, `.ejected`, `.ejected_plain`; "Player chat stays literal" | Retain with edits | Retained and ours (no vanilla equivalent): `cobolcraft.disconnect.host_closed` (client-hosted world, spec US17-4), `cobolcraft.disconnect.pack_required` (08 §9.8) and `name_is_host`. Superseded by standard keys: `barred`, `replaced`, `shutdown`, `ejected` and `ejected_plain` (the standard keys are in no document, GAP-27) and `not_on_guestlist` (standard `multiplayer.disconnect.not_whitelisted`, 16 §11.22). The standard keys outside 15 §5 and 16 are GAP-27. "Player chat stays literal": decision 7. | Keep `host_closed`, `pack_required`, `name_is_host`; the others retire in favour of the shared standard keys. Chat: decision 7. |
-| S73 | §18 bitmap font: ASCII 32 to 126 glyph rows, 128 x 48 atlas, advance = rightmost ink column + 2, missing glyph `F8 88 88 88 88 88 F8 00` advance 6 | Retain with edits | The glyph data and advance table are retained as the built-in fallback font. The standard font is `minecraft:default` with providers `nonlatin_european`, `accented`, `ascii` (14 §10.1) and `ascii.png` is 16 x 16 cells (14 §10.2; faithful §6.3 already binds a 128 x 128 built-in image). The advance rule of 14 §10.3 equals the stand-in rule at scale 1 (14 §10.3 last paragraph). | Keep as the built-in fallback font for both world types (glyph data and advance table unchanged). Change the atlas to 128 x 128 and the file to `minecraft:font/ascii.png`. |
-
-## 3. Disposition of the other documents
-
-Under the two-world-type model the stand-in material is not deleted from these documents; it is re-scoped to the cobolcraft
-world type, and a second set of rows (generated vanilla packs, standard registries) is added for the standard world type.
-
-### 3.1 docs/protocol/08-resource-packs.md
-
-| ID | Section and statement | Disposition | Action |
-|---|---|---|---|
-| P08-1 | Introduction, paragraph 1: "Our packs target our own `cobolcraft:` namespace. Nothing here describes or depends on vanilla asset content. We do not extract, bundle or list vanilla textures, models or sounds." | Retain with edits | Say: the built-in pack targets `cobolcraft:` (the cobolcraft world type); the standard world type's resource pack is generated at run time from the user's jar by the extraction tool (GAP-32) and uses `minecraft:`; user packs such as Faithful use `minecraft:`. Keep "nothing is committed, bundled or listed in documents": the tool reads the user's jar on the user's machine. |
-| P08-2 | §1.3 last paragraph: "Every reference inside a `cobolcraft` pack must therefore spell out `cobolcraft:`. A bare `block/greystone` means `minecraft:block/greystone`." | Retained | Still correct for the built-in pack. Add one sentence: a reference in the generated vanilla pack or in Faithful uses bare or `minecraft:` ids. |
-| P08-3 | §2 to §7 (pack.mcmeta, stacking, block states, models, item definitions, textures, `.mcmeta`) | Retained | None. 08 Open questions 3, 5, 7 to 9 stay open and now matter for the standard world type (models are interpreted by the client). |
-| P08-4 | §7.2, §7.3 atlas definitions | Retain with edits | Add the atlases the standard client uses (14 §3.1 lists twelve). The generated pack carries their definitions; the built-in pack carries those of the cobolcraft sprites. |
-| P08-5 | §8 "Other asset kinds": rows `textures/colormap/*.png` and `textures/**` "not read" | Retain with edits | The colormaps are read (14 §9). Mark the rows read. The generated pack carries the vanilla colormaps (Faithful has none). |
-| P08-6 | §9 server-pushed packs; §9.8 declined required pack | Retained | None. |
-| P08-7 | §10 title and opening paragraph ("CobolCraft's built-in pack, named `cobolcraft`, carries the procedural textures ... Every texture must match its stand-in recipe pixel for pixel (SC-004)") | Retain with edits | Re-scope to "Built-in default pack of the cobolcraft world type". Keep: bottom of the stack, required, fixed. Add: the pack stack order (C7). The pixel rule stays for these textures. |
-| P08-8 | §10.1 root | Retained | None. |
-| P08-9 | §10.2 atlas definitions (`blocks`, `items`) | Retain with edits | Add the `gui` definition and the others the built-in pack's GUI art needs (GAP-34). |
-| P08-10 | §10.3 texture table (27 files) | Retain with edits | Keep (cobolcraft world). Change the font row to `minecraft:font/ascii.png` 128 x 128 (S73). Add the built-in GUI sprites of GAP-34. |
-| P08-11 | §10.4 to §10.7 template models, block models, block states, item models and definitions for the 13 + 17 entries | Retained | None (cobolcraft world content). |
-| P08-12 | §10.8 language: §10.8.1 names; §10.8.2 death messages; §10.8.3 command messages; §10.8.4 disconnect and refusal reasons; §10.8.5 chat type; §10.8.6 client screens and HUD | Retain with edits | Keep §10.8.1 names, §10.8.5 and the lookup rules. Delete §10.8.2 and §10.8.3 (the stand-in keys retire, S59, S71). §10.8.4: keep the three CobolCraft keys (S72); the standard keys' texts come from the generated pack in the standard world type and from this file as fallback in the cobolcraft world type, in the standard wording. §10.8.6: the UI texts use the standard keys in both world types; the built-in file carries a fallback set. |
-| P08-13 | §10.9 file count | Retain with edits | Recount after P08-9, P08-10. |
-| P08-14 | §10.10 font | Retain with edits | Use the standard definitions of 14 §10.1 in both world types; fallback `minecraft:font/ascii.png` 128 x 128 (S73). |
-| P08-15 | §10.11 entities and weather | Retained | Cobolcraft world content (boxes, strips, `drizzle`, `hailstorm` quads). The standard world type uses standard models and weather textures from the generated pack and Faithful. |
-| P08-16 | Open question 10 "Block tint indexes ... Our client needs its own policy if tinted faces are wanted" | Retain with edits | Becomes a requirement: the tint index is in the generated models (data); which tint source each block uses is code (GAP-29). |
-| P08-17 | (new) | Add | A short §11 "Generated resource pack and pack order" that points to the extraction-tool document (GAP-32): where the pack lives, its `pack.mcmeta`, its position between the built-in pack and the user packs. |
-
-### 3.2 docs/protocol/09-cobolcraft-profile.md
-
-| ID | Section and statement | Disposition | Action |
-|---|---|---|---|
-| P09-1 | Header: "the game meaning CobolCraft gives to packets for the content of standin-content.md (as extended by FR-015)"; fixtures written from this document | Retain with edits | Say: for the content of the world type in use; shared rules from documents 10 to 21. Regenerate fixtures whose values change. |
-| P09-2 | §1 Identity: offline mode, names, "Chat is unsigned", `Enforces secure chat` false | Retained | None. |
-| P09-3 | §1 chat: System Chat with literal `<name> message`; `cobolcraft:say`; "Player Chat and Disguised Chat are never sent" | Retain with edits (decision 7) | Standard commands send chat of a chat type (16 §8). Adopted default: Player Chat and Disguised Chat with the standard chat types in both world types. |
-| P09-4 | §1 message rule: keys `cobolcraft.death.*`, `cobolcraft.command.*`, `cobolcraft.disconnect.*`; encoding table | Retain with edits | Keep the rule and the encoding table. Keys: the shared standard keys in both world types; only the three CobolCraft keys of S72 stay. |
-| P09-5 | §2 transport choices | Retained | None. |
-| P09-6 | §3.1 configuration rows (brand, Update Enabled Features, Select Known Packs, resource-pack rows) | Retained | None. |
-| P09-7 | §3.1 Registry Data rows (biome 3 entries, `chat_type`, 13 MV registries, `dimension_type` 2, `damage_type` 32, `world_clock`; "18 packets, 52 entries"); Update Tags "Zero registries" | Retain with edits | Keep as the registry set of the cobolcraft world type, with the C3 additions (standard chat types, damage keys with standard values, `timeline`, `world_clock`, `enchantment`, `block_transformer`, standard tags the shared rules need). Add the standard world type's set: every registry the loaded data pack defines, in the order of 04 §3. Delete the counts "18 packets, 52 entries" or give one per world type. |
-| P09-8 | §3.1 `Disconnect (pack required)` | Retained | None. |
-| P09-9 | §3.2 "Values that hold for every play row": dimensions `cobolcraft:main` and `cobolcraft:subroutine`; "hashed seed 0"; "Inventory slots. Container id 0 ... 36 slots in all ... Item stacks never carry data components" | Retain with edits | Dimensions per world type (`minecraft:overworld`, `the_nether`, `the_end` for S). Hashed seed per 10 §7.7 in both. Container 0 is the 46-slot inventory menu in both (12 §5.6a, 13 §3.5). Stacks use 00 §12.1; cobolcraft items carry an empty patch. |
-| P09-10 | §3.2 rows (Login, Respawn, Level Chunk With Light, Light Update, Player Position, Set Default Spawn Position, Set Time, Container Set Content with starting items, Block Update, Add Entity operator, Player Abilities) | Retain with edits | Keep packet ids and layouts. Values: generator and spawn per world type; light by the shared engine (GAP-24); Set Time with separate game time and day time (12 §3.2c); starting items only in the cobolcraft world type; Block Update state ids per registry; Add Entity type ids per registry (S: 21 §2). |
-| P09-11 | §3.3 added gameplay: ground items, health, hunger, mobs, crafting, weather, dimensions, commands (90-node tree) | Retain with edits | Ground items, health, hunger, damage, weather wire: shared standard values (17 §4, 18 §6.11, 12 §3.5; food 0 to 20, real saturation). Mobs: per registry. Crafting: 13 §3.9 and Place Recipe, for both recipe sets. Dimensions: `goto_pad` row is cobolcraft only. Commands: generated from 15 §3; delete the fixed 90-node tree. Entity Event 9: Open question 7. |
-| P09-12 | §3.3 packs rows | Retained | None. |
-| P09-13 | §3.4 encoding conventions 1 to 10 | Retain with edits | Keep 1 to 3, 5 to 8, 10. Rule 4 (block light spread) is replaced by the shared light engine (GAP-24). Rule 9 (registry entry NBT order) refers to the entry schemas of 04 §6 for the standard world type and to the stand-in tables for the cobolcraft type. Rule 6 re-points to 18 §6.11 and 17 §4.10. |
-| P09-14 | §4 "Packets CobolCraft never sends": Player Chat, Disguised Chat, Bundle Delimiter | Retain with edits | Remove Player Chat and Disguised Chat. Bundle Delimiter: the client must accept it from a vanilla-like server path; decide in the rewrite. |
-| P09-15 | Open question 5 ("Container 0 uses the data model's 36-slot numbering ... a vanilla client in play, which tier B does not cover") | Retain with edits | Resolved: 46 slots. Add: a vanilla client can play only the standard world type (R8). Open questions 3, 7, 8 stay. |
-
-### 3.3 docs/protocol/04-registry-sync.md
-
-04 contains no statement about tiers or the stand-in content. It states facts about the vanilla client that stay true. The edits are reframings.
-
-| ID | Section and statement | Disposition | Action |
-|---|---|---|---|
-| P04-1 | §5 first two paragraphs: "a server must use exactly the client's numbering. An original game cannot add, remove or reorder ..." | Retain with edits | For the standard world type this is the requirement: the vanilla numbering on both sides (GAP-1, GAP-2, 21 §2). For the cobolcraft world type it is the reason the content is original and a vanilla client cannot play it. State both. |
-| P04-2 | §5.1 last bullets: "use the jar's built-in data generator reports ... This document does not reproduce that content." | Retain with edits | Point to the block and item registry documents (RS1, RS2); the tool does not produce the registries (they are code). |
-| P04-3 | §5.3 last bullet: a server may send its own tag definitions for static registries | Retain with edits | In the standard world type the server sends the tags of the loaded data pack (GAP-6). |
-| P04-4 | §2 guidance: data can be omitted only for byte-for-byte pack entries | Retain with edits | Add: with the standard world type a vanilla client could take them from its own pack; CobolCraft's own client has none and the empty-list rule stays. |
-| P04-5 | §3.2 "a minimal original server must send at least these" | Retained | Facts about the vanilla client; they are what the cobolcraft world type must satisfy (tier B). |
-| P04-6 | Open questions 1, 2, 4 | Retained | They matter for the cobolcraft world type and for vanilla-client validation. |
-| P04-7 | (new) | Add | A section on registry loading from the data pack: how the server and the single-player host turn data-pack files into registry entries, tags and Registry Data (GAP-7, RS3). |
-
-### 3.4 docs/protocol/README.md
-
-| ID | Statement | Disposition | Action |
-|---|---|---|---|
-| PR-1 | Intro: "The original voxel game ..." | Retain with edits | Say there are two world types and where each is specified. |
-| PR-2 | Row 08: "Resource pack format (for packs in our own namespace) ..." | Retain with edits | "Resource pack format, stacking, server-pushed packs, the cobolcraft world type's built-in pack, pack order". |
-| PR-3 | Row 09 | Retained | Unchanged after the rewrite. |
-| PR-4 | Last paragraph before Conventions: "standin-content.md is the placeholder content used to unblock engineering. faithful-pack-mapping.md binds the stand-in content to the Faithful 32x pack's texture paths." | Retain with edits | "standin-content.md is the content of the cobolcraft world type; faithful-pack-mapping.md says how the Faithful pack layers on the packs." Point to `../design/README.md` and list the new documents (Part 6). |
-| PR-5 | Third-party data row (Faithful) | Retained | None. |
-
-### 3.5 docs/design/faithful-pack-mapping.md
-
-Premise change, second time. In the standard world type the pack's `minecraft:` textures bind by the vanilla path to the generated vanilla resource pack's models; there is no mapping table. In the cobolcraft world type the built-in pack supplies its own art under `cobolcraft:` ids, and the stand-in-to-vanilla texture mapping (sections 3 to 5, 8.2) becomes an **optional skin**: an extra built-in pack, off by default, whose models point the cobolcraft blocks and items at Faithful's `minecraft:` textures. What stays is almost everything; what changes is the label and the scope.
-
-| ID | Section | Disposition | Action |
-|---|---|---|---|
-| F-1 | Header paragraph and header table | Retain with edits | Restate the purpose: pack stack order; how Faithful layers on the generated and built-in packs; the optional skin for the cobolcraft world type. |
-| F-2 | §1.1 Rule (namespace by stand-in entry) | Retain with edits | Keep for the skin: entries with a vanilla equivalent point at `minecraft:` textures, the rest stay `cobolcraft:`. Add: standard content needs no rule (the generated pack and Faithful share the vanilla paths). |
-| F-3 | §1.2 "What does not change" (registry keys `cobolcraft:greystone` stay; recipe names as noise seeds; check values valid) | Retained | True again: the cobolcraft keys stay. |
-| F-4 | §1.3 table of statements of 08 and SC that this changes | Remove | Those 08 and SC rows would have moved the cobolcraft content to `minecraft:` paths. They are not applied; Part 3.1 lists the 08 edits that are. |
-| F-5 | §2 What the pack provides | Retained | Pack facts. |
-| F-6 | §3 Blocks, §4 Items | Retain with edits | Optional skin mapping. Add a first line: "skin only". |
-| F-7 | §5 Mobs and the player figure, with the precondition of vanilla box layouts (Q1) | Retain with edits | Skin only, and only if the skin includes entities. Adopted default: the skin covers blocks and items; entities keep the strips (Part 7, decision 10). |
-| F-8 | §6.1 Sky, §6.2 Weather, §6.3 Font, §6.4 GUI sprites and sheets | Retain with edits | Shared client UI and sky: bind by `minecraft:` in both world types. 6.2: the cobolcraft weather skin binds `drizzle` to `rain` and `hailstorm` to `snow` (as written) only in the skin. 6.4: the used GUI id list extends to the implemented screens. |
-| F-9 | §7 Colormap, particles, trims, other; §8.1 break stages | Retained | The generated pack carries colormaps and particle definitions for the standard type; the built-in pack carries them for the cobolcraft type (GAP-34). |
-| F-10 | §8.2 Grass tint (turf) | Retain with edits | Skin only; adopted default: the skin leaves `turf` out (no tint), so Q2 and Q4 lapse. |
-| F-11 | §9.1 fallback chain, §9.2 namespaces enumerated | Retain with edits | The chain becomes: user packs (Faithful) and server packs, above the generated vanilla pack, above the built-in pack, above the missing sprite (C7). |
-| F-12 | §9.3 what the built-in pack must still supply; §9.4 file count; §9.5 coverage report; §9.6 unused files | Retain with edits | Valid for the cobolcraft world type and the skin. Add: a coverage report for the standard world type is a tool output (GAP-32), not a document. |
-| F-13 | §10 Validation D1 to D15 | Retained | Pack facts and stand-in checks both stay. |
-| F-14 | §11 Open questions | See table | |
-
-Status of the §11 questions (ten; Q1 to Q6 need the operator's approval):
-
-| Q | Question | Status under the new decisions | Adopted default (operator may overrule) |
-|---|---|---|---|
-| Q1 | Vanilla box layout for the player, grazer and cube mob | Skin only. | Skin covers blocks and items; entities keep strips. Closed. |
-| Q2 | SC-004 turf tolerance | Skin only. | Skin leaves out turf. Closed. |
-| Q3 | Do the keys move to `minecraft:`? | Decided: the cobolcraft keys stay (Own world type); the standard world type uses `minecraft:`. | Closed. |
-| Q4 | Per-biome grass tint | Lapses with Q2 for the cobolcraft type; the standard type uses the colormap rule (14 §9). | Closed. |
-| Q5 | Equivalents marked "(inferred)" | Skin choices only. | Keep as written. |
-| Q6 | About 96 built-in GUI sprites need original recipes | Open and larger: the cobolcraft world type must draw the UI with no vanilla pack (GAP-34). | Specify a minimal original GUI set (GAP-34). |
-| Q7 | Crafting bench screen | Closed (12 §5.6b, pack `container/crafting_table.png`). | Closed. |
-| Q8 | Break-stage set | Open (14 Open question 3). | Supply both. |
-| Q9 | Rain and snow repeat distance | Open. | Keep. |
-| Q10 | Clouds and sky | Closed (CC-0007, 12 §3). | Closed. |
-
-### 3.6 Other protocol documents that mention stand-in content or `cobolcraft:`
-
-| ID | Document and place | Statement | Action |
-|---|---|---|---|
-| P07-1 | 07 §9 intro | "its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it and CobolCraft does not open vanilla saves" | Retained as a divergence (decision 9). With standard content a vanilla-compatible save becomes conceivable but needs vanilla `level.dat` and player NBT (not documented). |
-| P07-2 | 07 §9.1 layout and table: `dimensions/<namespace>/<path>/` with "`cobolcraft/main` for the main dimension (standin-content §5.1) and one folder for each extra dimension"; `poi/` "Not written. CobolCraft has no points of interest." | Retain with edits | The folder is the dimension key (`minecraft/overworld` in the standard world type, `cobolcraft/main` in the cobolcraft type); points of interest exist for villagers and bees in the standard type (19 §22; GAP-8). |
-| P07-3 | 07 §9.2 `level.dat`: `Time` "Time of day in ticks"; `Weather` "A dimension without weather (`cobolcraft:subroutine`, standin-content §14.2) has no entry ... `Kind` (weather kind key) and `Remaining`" | Retain with edits | Add `WorldType` (`standard` or `cobolcraft`, GAP-33) and `Seed` (the Login hashed seed needs the seed, 10 §7.7), split game time and day time (12 §3.2c), rule `advance_time`, and the standard weather state (GAP-11). Keep the `cobolcraft:subroutine` sentence for the cobolcraft world type. |
-| P07-4 | 07 §9.2 `access.dat`: `Operators`, `Bans`, `AllowList`, `AllowListEnforced` (identity entries only) | Retain with edits | Operators need a permission level (15 §2: five levels, permission sets); ban entries carry a reason and source in the standard commands (16 §11.3). Decision 8. |
-| P07-5 | 07 §9.2 `players/<uuid>.dat`: `Health` (Float), `Food` (Int), `Inventory` "Slots ... 0 to 8 (hotbar) and 9 to 35 (main)" | Retain with edits | Add saturation, exhaustion, experience, armour and off-hand slots, effects, respawn position (17 §4.9, §4.10). Slot numbering of the standard inventory (the inventory index of 13 §3.5: off-hand is index 40). |
-| P07-6 | 07 §9.3 entity compound: `id` "`cobolcraft:loose_item` ... or a mob type key of standin-content §3"; keys `Pos`, `Motion`, `Rotation`, `Health`, `Item`, `Age` | Retain with edits | Standard entity NBT per type (`minecraft:item`, mobs) is in no document (GAP-8). |
-| P07-7 | 07 §9.4 chunk storage: palette entries "block keys ... of standin-content §1", biome keys "of standin-content §4.3", "`block_entities` ... No block entities, so the list is empty" | Retain with edits | Standard keys; block entities per GAP-8. |
-| P12-1 | 12 header "Related" and §0 "Relation to the CobolCraft stand-in (decision points for the operator)": decisions D1 (light map), D2 (sky model), D3 (day length), D4 (night definition) | Retain with edits | Rewrite §0 as "Resolved": the standard rules apply to both world types (R2); D1 adopt 12 §1.8, D2 adopt 12 §3, D3 the day is 24000 ticks, D4 the reference tracks. Remove the table of stand-in statements. |
-| P12-2 | 12 §3.2c "CobolCraft's own clock (standin-content §4.8) wraps at 30000 ..." and 12 §1.7 line 288 "(08, standin-content §1)" and 12 §8.4 line 1061 "Their motion rules belong to standin-content §9" | Retain with edits | Delete the 30000 paragraph; re-point the two citations to the new registry document and to GAP-26. |
-| P13-1 | 13 header: "standin-content ... its break times (standin-content §1.1 and §2) and recipes (standin-content §13) override the vanilla values given here"; §2.6 closing sentence "CobolCraft's own block set and break classes (standin-content §1.1 and §2) are what the server uses" | Retain with edits | Reverse: the vanilla values given here are the values (R2). Delete both clauses. |
-| P14-1 | 14 intro line 7 "The mapping of our stand-in content onto a particular pack is a design matter and lives in faithful-pack-mapping.md"; §5.3 last sentence "Our stand-in entities do **not** use this layout (08 10.11 uses its own strips)"; §5.4 title "the three vanilla-equivalent models used by the stand-in mapping" | Retain with edits | Re-point line 7 to the reduced faithful-pack-mapping (Part 3.5); delete the §5.3 sentence; rename §5.4 (the three models, player, cow, slime, are standard models; the other mobs are GAP-25). |
-| P16-1 | 16 §5.7 (`damage`), cross-reference at line 642: "(cross-ref standin §4.7 for the synchronized registry)" | Retain with edits | Delete the cross-reference; 17 §4.12 is the damage-type document. |
-| P17-1 | 17 header paragraph: "where standin-content gives a different number (for example its maximum health 30, hurt cooldown 12 and fall rule in standin-content §10), the vanilla rule below is what 'works like Minecraft' means, and which side a CobolCraft build follows is a **decision point for the operator**" | Retain with edits | Replace by "the rule below is the rule (CC-0001 Decisions)". Delete the decision-point sentence. Same for §1.5 `max_health` row note and §4.7 last bullet ("This differs from standin-content §10.2"). |
-| P16-2 | 16 §4.10 line 444 "'s own kinds `clear/drizzle/hailstorm` (standin §14) are CobolCraft design; the vanilla ..." | Retain with edits | Delete the standin remark; the `weather` command takes the standard kinds `clear`, `rain`, `thunder` only. |
-| P19-1 | 19 header table, row Dependencies: "... 13 and the standin-content design document for the game's own placeholder content" | Retain with edits | Drop the standin dependency. 18, 20, 21 have no stand-in citation. |
-
-### 3.7 specs/001-cobolcraft-complete/spec.md items that cite stand-in values
-
-The spec is not edited by the document editors. Spec 001 describes the cobolcraft world type well. Where an item cites a stand-in value of a shared rule (health, hunger, hurt window, day length, movement, commands, crafting), the shared standard rule applies in both world types (decision 13). Items that cite content (blocks, items, mobs, recipes, dimensions, textures) stay valid for the cobolcraft world type.
-
-| Spec item | Citation or value | Shared rule or standard replacement (what stays) |
+| Task | Status | Where the result is |
 |---|---|---|
-| Header, lines 10 to 12 (typed request, approval feedback, change request) | "all content original"; "original `cobolcraft:` content; sounds stay out of scope" | R1, R2: content is standard; sounds stay out of scope. |
-| US3-3 (line 59) | Spawn at the world spawn "standing on turf, with the marker pillar (two unpunched cardstacks, one punched cardstack, lucite, a lit glowtube) four ... ahead" (standin §5.2) | Stays for the cobolcraft world type (standin §5.2); the standard world type uses GAP-28. |
-| US3-5 (line 80) | Other players seen as "the operator figure described in standin-content §3" | Stays for the cobolcraft world type (operator figure); the standard world type uses the player model 12 §7. |
-| US3-6 (line 81) | Day and night "whose full length is the day length set in standin-content §4.8" | 24000 ticks (12 §3.2). |
-| US4-2, US4-3, US4-8 (lines 98, 99, 104) | State per standin §1.3 (cardstack axis); break time of standin §1.1 and §2 "a quarter of it with the matching tool"; starting items of standin §2 | Placement stays for the cobolcraft blocks; break time follows the shared formula 13 §2.1 (decision 4); the starting kit stays in the cobolcraft world type (decision 6) and is empty in the standard type. |
-| US4 edge cases (lines 399 to 404) | Baseplate cannot be broken (US3, US4); lucite next to lucite shows no face between them (standin §1.1) | Stay for the cobolcraft world type; standard: bedrock hardness -1 (13 §2.6), face culling is a model and renderer rule (12, 08 §5.5). |
-| US5-1, 5-2, 5-4 and edge case (lines 120 to 123, 408) | "the pickup range ... and the despawn time set by the stand-in ground-item rules (FR-015)"; despawn "does not run until a player is near it again" | 18 §6.11 lifetime 6000, delay 10, merging; GAP-26 for the rest. |
-| US6-1 (line 139) | "`<name> message` (standin-content §4.4)" | Decision 7. |
-| US7-2 to US7-5 (lines 156 to 161) | Health bar; "the health that the stand-in health rules (FR-015) set for that cause"; recovery "at the rate ... the stand-in health and hunger rules set"; "full health and full food" on respawn; attack "damage the stand-in health rules set for the held item" | 17 §4.1 to 4.11, 12 §5.4. |
-| US8-2, 8-3, 8-5 (lines 178 to 182) | Food level falls "at the rates the stand-in hunger rules (FR-015) set"; "the eating time the stand-in hunger rules set"; starvation | 17 §4.9. |
-| US9-1, 9-4, 9-6 (lines 200 to 203, 205) | "mobs of the stand-in mob types (FR-015) ... where and when that dimension's stand-in spawning rules allow"; yield "as set by the stand-in mob rules"; hostile-mob setting off removes hostile mobs | Cobolcraft mobs stay (standin §12); standard world type: 18 §6, §7.6, 19 to 21; setting maps to difficulty and gamerules (decision 16). |
-| US10 (lines 205 to 225) | The whole story: crafting screen, "every recipe of the stand-in recipe set (FR-015)" | Removed by CC-0001 (R6); replaced by CC-0001's inventory and bench stories and 13 §3. |
-| US11 (lines 227 to 242, 413) | Weather "between the stand-in weather kinds"; "the stand-in weather description"; "a gameplay effect" of a kind; dimension without weather | 12 §3.5, GAP-11; lightning 17 §4.11. |
-| US12 (lines 244 to 258) and SC-012 | "the stand-in means of travel (FR-015)", arrival rule, extra dimensions | Stays for the cobolcraft world type (standin §15); standard world type: GAP-13. |
-| US14 (lines 290 to 302, 416) | "the effect FR-016 and the stand-in command definitions (FR-015) give it"; offline names give "player not found" | 15, 16. |
-| US18 (lines 370 to 385) | Example packs replacing "the greystone texture, the trowel icon and one mob's texture"; scenario 3 "replaces a block state file, a model, an item definition, a texture or a language entry in the `cobolcraft` namespace"; scenario 5 stripes "(standin-content §1.4)" | `minecraft:` namespace (R1); 08 §3.2. |
-| FR-002 (line 443 to 447) | All game content is the stand-in content; server sends "every registry marked MV, NJ or MV + NJ in §4.2, including the 25 compatibility damage-type keys, the `chat_type` entry and the `world_clock` entry"; "one tag update with no registries (§6)"; "fixed hard and soft block classes"; "terrain ... is the same in every new world (§5.2)" | Describes the cobolcraft world type (stays); the standard world type loads the data pack (Part 4, C2). |
-| FR-003 (line 448) | "the built-in stand-in default pack of 08 §10, extended with the assets for everything the FR-015 extension adds"; English "(08 §10.8 and standin-content §4.4)" | P08-7: describes the cobolcraft built-in pack (stays). |
-| FR-007 (line 452) | Creative: flying, instant breaking, no yields, no damage, no hunger; survival rules | Mostly consistent; flight creative-only per CC-0001. |
-| FR-009 (line 454) | Defaults "view distance 8 (standin-content §5.1)", `hostile mobs`, `weather changes`, `extra dimensions`, `player combat` settings | Decision 16. |
-| FR-014 (line 462) | State saved per player: "dimension, position, inventory, health, food level and game mode"; per dimension "mobs (type, position, health), ground items (item, count ...)" | 07 §9 edits (P07-3 to P07-7). |
-| FR-015 (lines 463 to 470) | The whole extension rule: "all in the `cobolcraft:` namespace. None of it is copied from Minecraft ... names, values or lists" | The content stays as the cobolcraft world type; the rules in it are shared standard rules (R2). "None of it is copied from Minecraft" applies to the cobolcraft content only; CC-0001 supersedes FR-015 for the standard world type's generation. |
-| FR-016 (lines 472 to 476) | CobolCraft's own command capabilities and names | Commands are the standard set in both world types (R3). |
-| Key Entities (lines 483 to 490) | Block "one of the block states of standin-content §1.2"; Item "of standin-content §2"; Mob "of a stand-in mob type"; Weather | Standard definitions. |
-| SC-004 (line 504) | "All block states, items, mob types and weather kinds of the stand-in content are drawn with the appearance of the built-in pack, matching the stand-in recipes pixel for pixel" | Stays for the built-in textures of the cobolcraft world type. |
-| SC-005 (line 505) | "A pack that replaces exactly one texture changes ... exactly the blocks, items, mobs or weather that use that texture" | Still testable on the standard set. |
-| SC-007 (line 507) | Terrain out to the view distance after walking 1,000 blocks in each direction "in every dimension" | Generator 10, 11. |
-| SC-008 (line 508) | "Every recipe of the stand-in recipe set, and every food item, can be obtained ... starting from the starting inventory" | Stays for the cobolcraft world type (starting kit); the standard world type starts empty. |
-| Reference Artifacts table (line 529) | Row "Stand-in content ... All game content, dimensions and world generators" | Add documents 10 to 21 and this README. |
-| Assumptions (lines 536 to 540) | "Content will be replaced later. The stand-in content ... is the binding content for this feature"; "Decisions of this specification where the stand-in content is silent or is superseded" | Replaced by this README. |
-| Plan-Phase Handoff (lines 551 to 559) | "standin-content §4.8 ... doubt whether `world_clock` is needed"; "§5.2's light policy is deliberately crude"; Weather mapping hypotheses | Moot. |
+| T01 | done | `docs/protocol/12-client-rendering.md` §0 "Resolved: the rules apply to both world types" |
+| T02 | done | `docs/protocol/13-client-gameplay-and-controls.md` (header override clause removed) |
+| T03 | done | `docs/protocol/17-tools-weapons-and-combat.md` (header, `max_health` row, §4.7: "both world types") |
+| T04 | done | `docs/protocol/14-texture-only-packs.md`, `16-commands-catalog.md`, `19-mobs-land-friendly-and-neutral.md` |
+| T05 | done | `docs/protocol/04-registry-sync.md` (§5 states both world types) |
+| T06 | done | `docs/protocol/08-resource-packs.md` (atlas list, colormap rows, Q10 requirement) |
+| T07 | done | `docs/protocol/08-resource-packs.md` §1.6 "Namespaces and world types"; `docs/design/world-types.md` |
+| T08 | done | `docs/protocol/08-resource-packs.md` §10 (built-in pack of the cobolcraft world type) |
+| T09 | done | `docs/protocol/08-resource-packs.md` §11 "Generated resource pack and pack order" |
+| T10 to T14 | done | `docs/protocol/09-cobolcraft-profile.md` (rewritten for two world types; its Open questions remain) |
+| T15 | done | `docs/protocol/07-nbt-and-anvil.md` §9.2 (`WorldType` key, per-dimension folders) |
+| T16 | done | `docs/protocol/07-nbt-and-anvil.md` §9.2 (`access.dat` with `Level` 1 to 4, `players/`) |
+| T17 | done | `docs/protocol/07-nbt-and-anvil.md` §9.3, §9.4 (entity storage cites `45-entity-nbt-*`) |
+| T18, T19 | done | `docs/design/faithful-pack-mapping.md` (skin only for the cobolcraft world type; pack order in its §9) |
+| T20 | done | `docs/protocol/README.md` (Documents table lists 150 files, 22 to 47 included) |
+| T21 to T23 | done | `docs/design/standin-content.md` ("Content of the cobolcraft world type"). §9 ground items and the §14.3 timing remain as the two interim row sets (its Open question 21) |
+| T24 | done | this file |
+| T25 | not an editor task | recorded in Part 7, decisions 13 and 15 |
 
-### 3.8 Tickets and files outside docs/
+### 2.2 Research rounds RS1 to RS31
 
-| ID | File and statement | Action |
+| Round | Status | Document that holds it |
 |---|---|---|
-| K-1 | CC-0001 Summary: "The stand-in content (`docs/design/standin-content.md`) stays the source of the values, so new looks are added there first (Principle II)." and Functional Requirements: "its values come from `docs/design/standin-content.md` or `docs/protocol/`" | Contradicts the Decisions ("standard trumps stand-in"). The operator edits the ticket (decision 15); the editors do not. |
-| K-2 | CC-0001 story "Faithful 32x ... The built-in stand-in pack fills every gap, and nothing is drawn with the missing-texture stripes for content the pack covers" | Consistent: the generated pack and the built-in pack fill gaps in their world types. |
-| K-3 | CC-0007 Open Questions: "The reference day timeline has 24000 ticks, while `docs/design/standin-content.md` §4.8 uses 30000 ... Which one does the game use?" and "§4.9 says the `timeline` registry sends no packet ..." | Answered by R2: 24000 ticks, the server sends the standard `timeline` and `world_clock` (S38, S39). Operator closes the questions (decision 15). |
+| RS1 | done | `docs/protocol/22-extraction-tool.md` |
+| RS2 | done | `docs/design/world-types.md` |
+| RS3 | done | `docs/protocol/23-registry-loading.md` |
+| RS4 | done | `docs/protocol/24-block-registry-1-model-and-foundation.md` to `24-block-registry-8-blackstone-copper-deepslate-modern.md` |
+| RS5 | done | `docs/protocol/25-item-registry-1-model-and-blocks-a.md` to `25-item-registry-8-late-items-templates-sherds-trial.md`, `25-item-registry-x1-continuation.md` |
+| RS6 | done | `docs/protocol/26-loot-and-predicates.md` |
+| RS7 | done | `docs/protocol/27-recipes-and-unlocks.md` |
+| RS8 | done | `docs/protocol/28-enchantment-effects.md` |
+| RS9 | done | `docs/protocol/29-block-updates-and-placement.md` |
+| RS10 | done | `docs/protocol/29a-fluids.md` |
+| RS11 | done | `docs/protocol/29b-falling-growth-fire-1-model-gravity-bonemeal.md` to `29b-falling-growth-fire-8-fire-tnt-residual.md` |
+| RS12 | done | `docs/protocol/30-redstone-1-model-signal-and-wire.md` to `30-redstone-8-tripwire-sculk-bells-vibration.md` |
+| RS13 | done | `docs/protocol/31-block-entities-1-shared-model-and-containers.md` to `31-block-entities-8-sculk-and-remaining-types.md` |
+| RS14 | partial | `docs/protocol/40-menus-1-model-and-containers.md` to `40-menus-9-block-editor-screens.md`, `40-menus-x1-continuation.md`. `40-menus-9` Open question 1: `TestInstanceBlockEditScreen` was not re-read in that round |
+| RS15 | done | `docs/protocol/32-light-engine.md` |
+| RS16 | done | `docs/protocol/33-world-simulation.md` |
+| RS17 | done | `docs/protocol/34-entity-models-1-shared-model-and-framework.md` to `34-entity-models-9-non-living-entities.md` |
+| RS18 | done | `docs/protocol/41-item-entity-physics.md` |
+| RS19 | done | `docs/protocol/35-worldgen-features-1-model-and-placement.md` to `35-worldgen-features-7-nether-end-misc.md` |
+| RS20 | done | `docs/protocol/36-structures-1-model-placement-starts.md` to `36-structures-10-ancient-city-trial-chambers-trail-ruins.md` |
+| RS21 | done | `docs/protocol/37-nether-1-model-and-dimension-rules.md` to `37-nether-6-structures-spawns-hooks.md` |
+| RS22 | done | `docs/protocol/38-end.md` |
+| RS23 | done | `docs/protocol/39-portals.md` |
+| RS24 | done | `docs/protocol/42-particles-1-shared-model-engine.md` to `42-particles-7-emitters-entities-events-commands.md` |
+| RS25 | done | `docs/protocol/43-tint-sources.md` |
+| RS26 | done | `docs/protocol/44-residual-mob-questions-1-shared-model-framework.md` to `44-residual-mob-questions-9-end-bosses-decorations.md`, `44-residual-mob-questions-x1-continuation.md`, `44-residual-mob-questions-x2-continuation.md` |
+| RS27 | done | `docs/protocol/45-entity-nbt-1-shared-model-and-entity-base.md` to `45-entity-nbt-9-bosses-and-decorations.md` |
+| RS28 | partial | `docs/protocol/46-registry-ids.md` (all 95 static registries classified; its Open question 14: sound event helper methods and pattern-C registries not scanned for other registering classes); entity-type id check in `docs/protocol/44-residual-mob-questions-5-overworld-hostile.md` §5 |
+| RS29 | partial | `docs/design/builtin-ui-art.md` (its status line: options screen texts not supplied, Open question 13) |
+| RS30 | done | `docs/design/cobolcraft-standard-core.md` |
+| RS31 | done | `docs/protocol/47-default-skin.md` |
 
 ## 4. Consequences
 
@@ -382,162 +176,65 @@ What follows from two world types, shared rules and the extraction tool. Each it
 | C13 | **Spec 001 stays largely valid for the cobolcraft world type** (Part 3.7). The items that cite shared-rule values are superseded by documents 10 to 21 (decision 13). |
 | C14 | **Vanilla-client validation constraints** (R8, decision 1 records that the planner decides scope): ids, registry contents and chunk encodings of the standard world type match vanilla; the generated data and the registries must therefore not be altered by CobolCraft. |
 
+
 ## 5. Gaps
 
-A GAP is an area that CC-0001 needs and that no document specifies exactly enough to implement without research. The
-**Kind** column applies rule R7: **Tool** = the rows are extracted by the tool, so the work is specifying the tool and
-its loaders (no rows are listed in documents); **Engine** = code in the artifact, research needed; **Tool + engine** = rows
-by the tool and an interpreter that needs research (both sizes are given); **Spec** = a design document to write (no
-artifact reading beyond file formats). Sources are class names or data paths in the client artifact; no content is
-reproduced. Sizes: small (one reader session), medium (several tables), large (a new document or several). "Needed": after
-the operator's world-scope decision all of terrain, caves, ores, trees, vegetation, lakes, the Nether, the End, structures,
-redstone and block updates are in this run, so their gaps are **needed**; "out of scope" marks what no decision or story
-needs.
+Each former gap (GAP-1 to GAP-35) is mapped to the document that now specifies it. The kind, size and artifact source columns
+of the former table are dropped. "Residual" says where unresolved items of that area are recorded; the per-document counts are
+in Part 8. No gap is without a document. Out of scope by decision: GAP-14 (sounds, decision 17) and GAP-22 (`server.properties`).
 
-| GAP | Area | Kind | Covered now? | What is missing | Artifact source | Size | Needed | Recommendation |
-|---|---|---|---|---|---|---|---|---|
-| GAP-1 | Block registry: ids, state properties and value order, default state, hardness, tool, tier, light emission, collision and occlusion shape class, flags (replaceable, falls, flammable, tint use) | Engine | No. Partial: id rules 04 §5.2; hardness table 13 §2.6; `mineable/*` 17 App A; ore blocks 11 §8. | One row per block and the shape classes | `Blocks` initializer, `BlockBehaviour$Properties`, `StateDefinition`, shape classes | Large | Needed (RS4) | New document by block family. First round: other rounds cite ids. |
-| GAP-2 | Item registry and default components (food, consumable, tool, attribute modifiers, equippable, fuel, durability) | Engine | Partial: 17 §1, §2 (tools, weapons, armor, utility) | Ids, stack sizes, components of all other items; block item links | `Items`, `Item$Properties`, `Foods`, `Consumables` | Large | Needed (RS5) | New document. |
-| GAP-3 | Models, block states, item definitions, atlas definitions, textures, fonts, colormaps, particle and equipment definitions, `pack.mcmeta` of the standard world type | Tool (engine small) | Formats yes (08 §4 to §7, 14); rows: tool. Engine remainder: 08 Open questions 3, 5, 7 to 9. | The tool writes the generated resource pack (GAP-32); the client already interprets the formats | `assets/minecraft/` in the jar | Small (engine remainder) | Needed | Fold the engine questions into RS1. |
-| GAP-4 | Loot tables (blocks, entities, chests, fishing, archaeology, gifts, trial) | Tool + engine | Partial: ores 11 §9.2; conditions 17 §3.16; entity rolling 18 §7.6 | Rows: tool. Engine: loot table grammar, functions, conditions, number providers, context parameters, `random_sequence` | `data/minecraft/loot_table/`, `net.minecraft.world.level.storage.loot.*` | Medium to large (engine) | Needed (RS6) | One engine document; shared by GAP-17. |
-| GAP-5 | Recipes: crafting (shaped, shapeless, transmute, dye, special types: banner duplicate, shield decoration, repair, map extending, firework, book cloning, decorated pot), smelting family, stonecutting, smithing, brewing | Tool + engine | Partial: schema and shaped and shapeless matching 13 §3.1 to 3.4; menus and recipe book 13 §3.5 to 3.9 | Rows: tool. Engine: the matching and result rules of the other recipe types and the special ones; cooking times and experience semantics | `data/minecraft/recipe/`, recipe serializers, `RecipeManager` | Medium (engine) | Needed (crafting types); needed for the furnace family (GAP-19) | RS7. |
-| GAP-5b | Recipe unlock: which recipes a player knows, recipe book at join | Tool + engine | No (13 §3.9 has the UI) | Rows: advancement data by the tool. Engine: criteria and triggers, `ServerRecipeBook`, `limited_crafting` | `data/minecraft/advancement/recipes/`, `PlayerAdvancements`, `CriterionTrigger` classes | Medium | Needed ("the recipes I know") | RS7 together with GAP-16. |
-| GAP-6 | Tags | Tool + engine | Wire 04 §1, §3.3, §5.3 | Rows: tool. Engine: tag file format (`values`, `#` references, `replace`), resolution and loading, registry-specific tag use | `data/minecraft/tags/`, `TagLoader`, `TagManager` | Small (engine) | Needed (RS3) | |
-| GAP-7 | Registry data of the synchronized registries (rows 7a to 7h) | Tool + engine | Schemas 04 §6; partial data (17 §4.12, §6.2; 12 §3.2) | Rows: tool. Engine: registry loading from the pack, the codecs including the sub-schemas 04 Open question 7 leaves unexpanded (int and float providers, environment attribute value codecs, block state providers), validators | `RegistryDataLoader`, codecs, `data/minecraft/<registry>/` | Medium (engine) | Needed (RS3) | |
-| GAP-7a | `worldgen/biome` effects and attributes | Tool + engine | Climate 10 §7.8; spawns 18 App A | Rows: tool. Engine: attribute value codecs and syncable set (04 Open question 7) | biome JSON | Small | Needed | RS3. |
-| GAP-7b | `dimension_type`, `timeline`, `world_clock` | Tool | Overworld 10 §5, 12 §3.1, 12 §3.2 | Rows: tool | `data/minecraft/dimension_type/` etc. | none | Needed | |
-| GAP-7c | Variants and sound variants (wolf, pig, cat, cow, chicken, frog, zombie nautilus), painting, banner pattern, trim, jukebox song, instrument, decorated pot pattern, sulfur cube archetype, chat type, damage type | Tool | Selection rules 19 §1; damage types 17 §4.12 | Rows: tool | data JSON | none | Needed for variants, chat and damage; the others are loaded because the loader loads every registry | |
-| GAP-7g | Enchantment effect components | Engine | Table 17 §6.2, effects 17 §6.3 | The wire codecs and the behaviour of each effect component key the 43 entries use (04 Open question 7) | enchantment effect component codecs and `EnchantmentHelper` | Medium | Needed (RS8) | |
-| GAP-7h | `dialog`, `test_environment`, `test_instance`, `worldgen/block_state_provider` | Tool | Schemas | Loaded by the generic loader; no behaviour | | none | Out of scope for behaviour | |
-| GAP-8 | Block entities and their NBT (chests, furnaces, hoppers, dispensers, droppers, comparators, signs, beds, banners, jukebox, note block, command block, spawners, beehives, ...), client sync | Engine | No (07 §7 says inner keys out of scope) | Per type: fields, save and load, tick logic, `BlockEntityData` | `BlockEntityType`, `BlockEntity.saveAdditional`, per-class ticks | Large | Needed (redstone containers, villages, chests) | RS13. |
-| GAP-9 | Fluids: flow, source conversion, spread, falling, water and lava interaction, bubble columns | Engine | Partial: 10 §9, 11 §5.6, 13 §1.3, 17 §4.11 | Fluid tick rules | `FlowingFluid`, `WaterFluid`, `LavaFluid`, `LiquidBlock` | Medium | Needed (RS10) | |
-| GAP-10a | Block updates: neighbour updates, `updateShape`, scheduled ticks, random ticks | Engine | No | The update rules and tick queues | `BlockBehaviour`, `LevelTicks`, `ServerLevel.tickChunk` | Medium | Needed (RS9) | |
-| GAP-10b | Falling blocks, growth (crops, saplings, grass, vines), fire spread (partial 17 §3.3a), bone meal (17 §3.4), farmland, snow and ice melting | Engine | Partial | Behaviour per block family | `FallingBlock`, `CropBlock`, `SaplingBlock`, `SpreadingSnowyDirtBlock`, `FireBlock` | Medium to large | Needed (RS11) | |
-| GAP-10c | Redstone: wire, torches, repeaters, comparators, observers, pistons, levers and buttons, plates, lamps, rails, hoppers, dispensers, droppers, TNT, daylight sensors | Engine | No | Power rules, update order, quasi-connectivity decisions, piston push limits | `RedStoneWireBlock`, `DiodeBlock`, `PistonBaseBlock`, `PistonStructureResolver`, `Redstone*` classes | Large | Needed (RS12) | Split by component family. |
-| GAP-11 | Weather and day-night server rules; bed skipping; lightning | Engine | Partial (16 §4.10, 16 §4.5, 12 §3.5) | Natural transitions, thunder, lightning strike rules, sleeping, `advance_*` rules, moon phase | `ServerLevel`, `WeatherData`, `SleepStatus` | Small to medium | Needed (RS16) | |
-| GAP-12a | Worldgen features: trees and tree placers, vegetation, flowers, mushrooms, lakes, springs, disks, snow layers, ice, dripstone, lush caves, kelp, corals | Tool + engine | No (11 covers ore and blob features and decoration order) | Rows: tool (configured and placed feature JSON). Engine: feature types, placement modifiers, tree trunk, foliage and decorator placers, block state, height and int providers (04 Open question 7) | `net.minecraft.world.level.levelgen.feature.*`, `...placement.*`, `...feature.treedecorators.*`, `...foliageplacers.*`, `...trunkplacers.*` | Large | Needed (RS19) | |
-| GAP-12b | Structures: structure starts, structure sets and placement, jigsaw, template pools and processors, structure pieces and their special behaviour (villages, mineshafts, strongholds, monuments, mansions, temples, outposts, ruins, shipwrecks, ancient cities, trial chambers, ...), structure terrain adaptation (beardifier) | Tool + engine | No (10 Open question 3, 11 Open question 6, 18 Open question 17) | Rows and structure NBT: tool. Engine: placement algorithm, jigsaw assembly, per-structure pieces coded in Java, the template (structure NBT) loader, structure `spawn_overrides` | `net.minecraft.world.level.levelgen.structure.*`, `StructureTemplate`, `JigsawPlacement` | Large | Needed (RS20) | Split by structure family. |
-| GAP-13a | Nether generation | Tool + engine | No (10 Open question 4) | Rows: tool (noise settings, biomes, features, structures). Engine: noise-router node types the overworld does not use (10 Open question 5), Nether carvers, `nether` features, fortress and bastion pieces (with GAP-12b) | `data/minecraft/worldgen/noise_settings/nether.json`, Nether carver and feature classes | Large | Needed (RS21) | |
-| GAP-13b | End generation: islands, outer islands, chorus, End cities (GAP-12b), the exit portal and dragon arena setup | Tool + engine | Dragon fight 21 §6; generation no | Engine: `end_islands` and `end_outer_islands` density nodes, End features, `EndDragonFight` arena setup | `noise_settings/end.json`, `TheEndBiomeSource`, `EndDragonFight` | Large | Needed (RS22) | |
-| GAP-13c | Portals and dimension travel: nether portal (frame detection, linking, `coordinate_scale`, `PortalForcer`), end portal, end gateway, respawn rules | Engine | No | Rules | `NetherPortalBlock`, `PortalShape`, `PortalForcer`, `EndPortalBlock`, `EndGatewayBlockEntity` | Medium | Needed (RS23) | |
-| GAP-14 | Sounds | none | No | Not needed; the tool does not extract them (decision 17) | | none | Out of scope | |
-| GAP-15 | Particles: which event emits which particle, behaviour | Tool + engine | Atlas 14 §3.1, §7.1 | Definitions: tool. Engine: emitters and particle behaviour | `ParticleTypes`, `ParticleEngine`, particle classes | Medium | Needed (implied by redstone, fire, water, block break) (RS24) | |
-| GAP-16 | Advancements (data and triggers) | Tool + engine | Packets 05b 0x85; command 16 §6.6 | Engine: trigger and criterion engine, needed for recipe unlock | `data/minecraft/advancement/`, `CriterionTrigger` | Medium (shared with GAP-5b) | Implied | RS7. |
-| GAP-17 | Chest, fishing, archaeology, gift and trial loot tables | Tool + engine | No | Rows: tool. Engine: GAP-4 | `data/minecraft/loot_table/` | none beyond GAP-4 | Needed (structures, fishing) | |
-| GAP-18 | Villager trades, structure spawn data, points of interest, village mechanics | Tool + engine | Trades 19 §24; villager brain 19 §22 | Rows: tool. Engine: POI, village bookkeeping, golem and raid spawn rules (18 Open question 17) | `PoiTypes`, `VillageSiege`, `Raids` | Medium | Needed (structures in scope) | RS26. |
-| GAP-19 | GUI menus and screens: furnace family, chest and barrel, shulker box, hopper, dispenser and dropper, anvil, enchanting table, brewing stand, stonecutter, grindstone, smithing, loom, cartography, merchant, horse and llama, beacon, command block, crafter, lectern | Engine | No (only 12 §5.6a, §5.6b, 13 §3.5; logic 17 §5.4, §5.5, §6.5) | Slot ids, positions, background sprites, quick-move rules, menu type ids, buttons | `net.minecraft.world.inventory.*Menu`, `...gui.screens.inventory.*Screen`, `MenuType` | Large | Needed (redstone containers, villages, tools story) | RS14. |
-| GAP-20 | Default skin of an offline player | Engine | Partial 12 §7 | Wide or slim and which skin | `DefaultPlayerSkin` | Small | Implied | RS31. |
-| GAP-21 | Game rule effects | Engine | Table 16 §13 | Rule to consumer index | `GameRules` consumers | Medium | Needed | RS16. |
-| GAP-22 | Standard `server.properties` | none | Not in the client artifact | Not applicable | | n/a | Out of scope | FR-009 stays. |
-| GAP-23 | The namespace rule and the world-type rule as text | Spec | CC-0001 only | One paragraph in 08 and the world-type document | | Small | Needed | T07, RS2. |
-| GAP-24 | Light engine (server): sky and block light propagation, opacity, updates, cross-chunk | Engine | Wire 06 §7; client use 12 §1 | Algorithm and per-block opacity and emission | `LevelLightEngine`, `BlockLightEngine`, `SkyLightEngine` | Medium | Needed (CC-0007) (RS15) | |
-| GAP-25 | Entity models, animations, renderers for the 161 entity types | Engine (code) | Player 12 §7; three models 14 §5.4; unwrap 14 §5.3 | Model geometry (parts, boxes, UV offsets, texture size), animation, baby, armor and equipment layers, item in hand, shadows, name tags | `net.minecraft.client.model.*Model`, `...renderer.entity.*Renderer` | Large | Needed (RS17) | One pass per mob family. |
-| GAP-26 | Item entity physics, pickup box, throw velocity, spawn offset for drops | Engine | Partial 18 §6.11 | Motion, friction, merge test, pickup box | `ItemEntity`, `Player.drop`, `Inventory` | Small | Needed (RS18) | Interim standin §9 (S50). |
-| GAP-27 | Language texts of the standard world type | Tool | Lookup rules 08 §10.8; framework and command keys 15 §5, 16 | The generated resource pack's `lang/en_us.json` | `assets/minecraft/lang/` | none | Needed | The built-in file keeps only the cobolcraft keys and a fallback UI set. |
-| GAP-28 | World spawn search, player spawn, respawn flow | Engine | Partial 17 §4.10; 10 §5 `spawn_target` | Spawn search and radius, bed and anchor rules | `PlayerSpawnFinder`, `ServerPlayer.findRespawnPositionAndUseSpawnBlock` | Small | Needed | RS16. |
-| GAP-29 | Block tint sources: which block uses which tint source and index; biome colour blending | Engine | Partial 14 §9, 08 §6.4; models carry the index (tool) | `BlockColors`, `BiomeColors` rules | `BlockColors`, `BiomeColors`, `ColorResolver` | Small | Needed | RS25. |
-| GAP-30 | Block placement and interaction: replaceable blocks, placement state per block, use-on-block, `canSurvive`, sneaking | Engine | Partial 17 §3 | Per-block rules | `BlockItem`, `BlockBehaviour.useWithoutItem`, `canSurvive` | Medium to large | Needed (RS9) | |
-| GAP-31 | Residual open questions of 18 to 21 that affect implemented mobs | Engine | Partial | The unread internals (18 Open questions 5, 9, 10, 12; 19 Open questions 8 to 29; 20 Open question 22; 21 Open questions 10 to 14) | per question | Medium to large | Needed | RS26. |
-| GAP-32 | The extraction tool and the loaders: zip reading, what is extracted and where, version and SHA check, `pack.mcmeta` of both packs, data-pack folder layout, how the server and client find the packs, missing-jar behaviour, behaviour without packs, pack order with Faithful | Spec | No | Everything | The jar's layout (`version.json`, `assets/`, `data/`), pack format numbers | Medium | Needed (RS1) | New document (suggested `docs/protocol/22-extraction-tool.md`). First research round that does not need an engine. |
-| GAP-33 | World types: definition, selection (creation screen, server setting), the content set each selects, shared rules, `level.dat` key, fallback | Spec | No | One document | none | Small to medium | Needed (RS2) | Suggested `docs/design/world-types.md`. |
-| GAP-34 | Built-in GUI art, font and fallback UI texts for operation without the vanilla pack (cobolcraft world type) | Spec | No (faithful Q6: about 96 sprites) | Original art recipes and the sprite id list for the shared UI | the sprite ids of 14 §6, faithful §6.4 | Medium | Needed (RS29) | Reuse the vocabulary of standin §1.4.1. |
-| GAP-35 | The cobolcraft world type's standard core (C3): damage, chat, clock and timeline, enchantment and transformer entries and tags | Spec | Partial (standin §4.7) | Hand-authored entries with standard values | 17 §4.12, 17 §6.2, 12 §3.2 | Small to medium | Needed (RS30) | |
-
-Summary by kind and size.
-
-| Kind | Gaps | Sizes |
-|---|---|---|
-| Tool (rows by the tool, no engine) | GAP-3, 7b, 7c, 7h, 27; GAP-14 none | none beyond GAP-32 |
-| Tool + engine (engine part needs research) | GAP-4 (medium to large), 5 (medium), 5b (medium), 6 (small), 7 and 7a (medium, small), 12a (large), 12b (large), 13a (large), 13b (large), 15 (medium), 16 (medium), 17, 18 (medium) | engine sizes shown |
-| Engine only (research needed) | GAP-1 (large), 2 (large), 7g (medium), 8 (large), 9 (medium), 10a (medium), 10b (medium to large), 10c (large), 11 (small to medium), 13c (medium), 19 (large), 20 (small), 21 (medium), 24 (medium), 25 (large), 26 (small), 28 (small), 29 (small), 30 (medium to large), 31 (medium to large) | as shown |
-| Spec (write a design document) | GAP-23 (small), 32 (medium), 33 (small to medium), 34 (medium), 35 (small to medium) | as shown |
-| Out of scope | GAP-14 sounds, GAP-22 server.properties | n/a |
+| GAP | Area | Closed by | Residual open questions recorded in |
+|---|---|---|---|
+| GAP-1 | Block registry | `docs/protocol/24-block-registry-1-...` to `24-block-registry-8-...`; ids in `46-registry-ids.md` | Open questions of each `24-*` file |
+| GAP-2 | Item registry and default components | `docs/protocol/25-item-registry-1-...` to `25-item-registry-8-...`, `25-item-registry-x1-continuation.md` | Open questions of each `25-*` file |
+| GAP-3 | Resource pack formats, generated resource pack | `docs/protocol/22-extraction-tool.md`, `08-resource-packs.md` §11 | 08 Open questions 3, 5, 7 to 9 (engine remainder as named in the former table); 22 Open questions |
+| GAP-4 | Loot tables and loot engine | `docs/protocol/26-loot-and-predicates.md` | 26 Open questions |
+| GAP-5 | Recipes | `docs/protocol/27-recipes-and-unlocks.md` | 27 Open questions |
+| GAP-5b | Recipe unlock | `docs/protocol/27-recipes-and-unlocks.md` | 27 Open questions |
+| GAP-6 | Tags | `docs/protocol/23-registry-loading.md` | 23 Open questions |
+| GAP-7 | Registry data, loading, codecs | `docs/protocol/23-registry-loading.md` (§11 lists the resolutions of 04 Open questions) | 23 Open questions; 04 Open questions |
+| GAP-7a | Biome effects and attributes | `docs/protocol/23-registry-loading.md` | 23 Open questions |
+| GAP-7b | `dimension_type`, `timeline`, `world_clock` | rows by the tool (`22-extraction-tool.md`); cobolcraft world type in `docs/design/cobolcraft-standard-core.md` | core Open questions 6, 22, 26 |
+| GAP-7c | Variants, chat type, damage type, other rows | rows by the tool (`22-extraction-tool.md`); cobolcraft world type in `cobolcraft-standard-core.md` | core Open questions 1 to 3 |
+| GAP-7g | Enchantment effect components | `docs/protocol/28-enchantment-effects.md` | 28 Open questions |
+| GAP-7h | `dialog`, `test_environment`, `test_instance`, `block_state_provider` | generic loader of `23-registry-loading.md` | none recorded |
+| GAP-8 | Block entities and entity NBT | `docs/protocol/31-block-entities-1-...` to `31-block-entities-8-...`; `45-entity-nbt-1-...` to `45-entity-nbt-9-...`; `07-nbt-and-anvil.md` §9.3 | Open questions of `31-*` and `45-*` |
+| GAP-9 | Fluids | `docs/protocol/29a-fluids.md` | 29a Open questions |
+| GAP-10a | Block updates | `docs/protocol/29-block-updates-and-placement.md` | 29 Open questions |
+| GAP-10b | Falling blocks, growth, fire | `docs/protocol/29b-falling-growth-fire-1-...` to `29b-falling-growth-fire-8-...` | Open questions of each `29b-*` file |
+| GAP-10c | Redstone | `docs/protocol/30-redstone-1-...` to `30-redstone-8-...` | Open questions of each `30-*` file |
+| GAP-11 | Weather, day-night, sleeping | `docs/protocol/33-world-simulation.md` | 33 Open questions |
+| GAP-12a | Worldgen features | `docs/protocol/35-worldgen-features-1-...` to `35-worldgen-features-7-...` | Open questions of each `35-*` file |
+| GAP-12b | Structures | `docs/protocol/36-structures-1-...` to `36-structures-10-...`; `44-residual-mob-questions-2-spawning-structures.md` | Open questions of each `36-*` file |
+| GAP-13a | Nether generation | `docs/protocol/37-nether-1-...` to `37-nether-6-...` | Open questions of each `37-*` file |
+| GAP-13b | End generation | `docs/protocol/38-end.md` | 38 Open questions |
+| GAP-13c | Portals and travel | `docs/protocol/39-portals.md` | 39 Open questions |
+| GAP-14 | Sounds | out of scope (decision 17) | none |
+| GAP-15 | Particles | `docs/protocol/42-particles-1-...` to `42-particles-7-...` | Open questions of each `42-*` file |
+| GAP-16 | Advancements | `docs/protocol/27-recipes-and-unlocks.md` | 27 Open questions |
+| GAP-17 | Chest, fishing, archaeology, gift, trial loot | `docs/protocol/26-loot-and-predicates.md` (engine); rows by the tool | 26 Open questions |
+| GAP-18 | Trades, POI, villages | `docs/protocol/36-structures-9-villages-outposts.md`, `44-residual-mob-questions-3-villagers-poi-raids.md` | 36-9 and 44-3 Open questions |
+| GAP-19 | Menus and screens | `docs/protocol/40-menus-1-...` to `40-menus-9-...`, `40-menus-x1-continuation.md` | Open questions of each `40-*` file |
+| GAP-20 | Default skin | `docs/protocol/47-default-skin.md` | 47 Open questions |
+| GAP-21 | Game rule effects | `docs/protocol/33-world-simulation.md` | 33 Open questions |
+| GAP-22 | `server.properties` | out of scope | none |
+| GAP-23 | Namespace and world-type rule as text | `docs/design/world-types.md`, `docs/protocol/08-resource-packs.md` §1.6 | world-types Open question 17 (operator confirmation of the namespace reading) |
+| GAP-24 | Light engine | `docs/protocol/32-light-engine.md` | 32 Open questions |
+| GAP-25 | Entity models | `docs/protocol/34-entity-models-1-...` to `34-entity-models-9-...` | Open questions of each `34-*` file |
+| GAP-26 | Item entity physics | `docs/protocol/41-item-entity-physics.md`; interim values remain in `standin-content.md` §9 | 41 Open questions; standin Open question 21 |
+| GAP-27 | Language texts | rows by the tool (`22-extraction-tool.md`); lookup `08-resource-packs.md` §10.8 | 22 Open question 3 |
+| GAP-28 | World spawn, respawn | `docs/protocol/33-world-simulation.md` | 33 Open questions |
+| GAP-29 | Block tint sources | `docs/protocol/43-tint-sources.md` | 43 Open questions |
+| GAP-30 | Placement and interaction | `docs/protocol/29-block-updates-and-placement.md`; block columns in `24-*` | 29 Open questions |
+| GAP-31 | Residual mob questions | `docs/protocol/44-residual-mob-questions-1-...` to `44-residual-mob-questions-9-...`, `-x1-continuation`, `-x2-continuation` | Open questions of each `44-*` file |
+| GAP-32 | Extraction tool and loaders | `docs/protocol/22-extraction-tool.md` | 22 Open questions 1 to 3 (unknown jar, jar at run time, stack order and language keys) |
+| GAP-33 | World types | `docs/design/world-types.md` | world-types Open questions 1 to 17 |
+| GAP-34 | Built-in UI art | `docs/design/builtin-ui-art.md` | builtin-ui-art Open questions 13 (options texts) and 20 (selectable or disabled standard choice) |
+| GAP-35 | Cobolcraft standard core | `docs/design/cobolcraft-standard-core.md` | core Open questions 1 to 26 |
 
 ## 6. Edit plan
 
-Ordered tasks. Each is small enough for one agent. "Research first" says whether a clean-room round (RS-tasks, run by
-reader and reviewer agents under `.claude/skills/clean-room/SKILL.md`) must finish before the edit. T-tasks only change
-documents; RS-tasks write new documents. Phase 1 can start now. Phase 2 runs in parallel with Phase 1. Phase 3 follows its
-dependencies. Phase 4 re-scopes the stand-in file last, because the documents of Phases 1 and 3 cite it (Part 4, C12).
-
-### Phase 1: edits that need no research
-
-| Task | Target file | What to do | Standard source | Depends on | Research first |
-|---|---|---|---|---|---|
-| T01 | docs/protocol/12-client-rendering.md | Rewrite §0 as "Resolved" (P12-1); delete the 30000 paragraph of §3.2c; re-point line 12 "Related", §1.7 line 288 and §8.4 line 1061 (P12-2). | 12 §1.8, §3, R2 | none | no |
-| T02 | docs/protocol/13-client-gameplay-and-controls.md | Delete the override clause in the header (line 16) and the closing sentence of §2.6 (line 355) (P13-1). | R2 | none | no |
-| T03 | docs/protocol/17-tools-weapons-and-combat.md | Replace the "decision point" paragraph in the header, the §1.5 `max_health` note and the §4.7 last bullet by "the rule below applies in both world types" (P17-1). | R2 | none | no |
-| T04 | docs/protocol/14, 16, 19 | One edit each: 14 P14-1, 16 P16-1 and P16-2, 19 P19-1. | none | none | no |
-| T05 | docs/protocol/04-registry-sync.md | P04-1 to P04-6 (reframe §5, §5.1, §5.3, §2 guidance; keep §3.2). | C1, C2 | none | no |
-| T06 | docs/protocol/08-resource-packs.md | P08-4 (atlas list), P08-5 (colormap rows read), P08-16 (Q10 requirement). | 14 §3.1, §9 | none | no |
-| T07 | docs/protocol/08-resource-packs.md | P08-1, P08-2: introduction and §1.3; add a short section "Namespaces and world types" stating R1, R2 (GAP-23). | CC-0001 Decisions | none | no |
-| T08 | docs/protocol/08-resource-packs.md | P08-7 to P08-11, P08-13 to P08-15: re-scope §10 as the built-in pack of the cobolcraft world type; font definitions; recount files. Delete P08-12's §10.8.2 and §10.8.3. | 14 §10, standin §18 | none | no |
-
-### Phase 2: research rounds (new documents)
-
-Numbers and names are suggestions; the protocol README (T20) lists whatever is created. Spec rounds (RS1, RS2, RS29, RS30)
-write design documents; the others read the artifact in the clean-room way. Sizes: S small, M medium, L large.
-
-| Task | Closes | Kind | New document (suggested) | Source in the artifact (no content here) | Depends on | Size |
-|---|---|---|---|---|---|---|
-| RS1 | GAP-32 | Spec (jar layout only) | `docs/protocol/22-extraction-tool.md` | zip layout, `version.json`, pack format numbers, directory names under `assets/` and `data/` | none | M |
-| RS2 | GAP-33, GAP-23 | Spec | `docs/design/world-types.md` | none | RS1 | S to M |
-| RS3 | GAP-6 (engine), GAP-7 (engine), GAP-7a | Engine | `docs/protocol/23-registry-loading.md` | `RegistryDataLoader`, `TagLoader`, codec classes, int, float and block state providers, attribute value codecs | RS1 | M |
-| RS4 | GAP-1, GAP-29 (columns), GAP-30 (columns) | Engine | `docs/protocol/24-block-registry.md` | `Blocks`, `BlockBehaviour$Properties`, shape classes | none | L (split by family) |
-| RS5 | GAP-2 | Engine | `docs/protocol/25-item-registry.md` | `Items`, `Foods`, `Consumables` | RS4 | L |
-| RS6 | GAP-4, GAP-17 (engine) | Engine | `docs/protocol/26-loot-and-predicates.md` | loot classes, predicates | RS3 | M to L |
-| RS7 | GAP-5, GAP-5b, GAP-16 (engine) | Engine | `docs/protocol/27-recipes-and-unlocks.md` | recipe serializers, `ServerRecipeBook`, criterion triggers | RS3, RS5 | M |
-| RS8 | GAP-7g | Engine | section of 17 §6 or `28-enchantment-effects.md` | enchantment effect component codecs | RS3 | M |
-| RS9 | GAP-10a, GAP-30 | Engine | `docs/protocol/29-block-updates-and-placement.md` | `BlockBehaviour`, `LevelTicks`, `BlockItem` | RS4 | M to L |
-| RS10 | GAP-9 | Engine | section of 29 | fluid classes | RS4, RS9 | M |
-| RS11 | GAP-10b | Engine | section of 29 | falling, growth, fire classes | RS4, RS9 | M to L |
-| RS12 | GAP-10c | Engine | `docs/protocol/30-redstone.md` | redstone and piston classes | RS4, RS9 | L (split by component family) |
-| RS13 | GAP-8 | Engine | `docs/protocol/31-block-entities.md` | `BlockEntity` classes | RS4, RS9 | L |
-| RS14 | GAP-19 | Engine | sections of 12 §5.6 and 13 §3.5 | menu and screen classes | RS5, RS13 | L (per menu) |
-| RS15 | GAP-24 | Engine | `docs/protocol/32-light-engine.md` | light engine classes | RS4 | M |
-| RS16 | GAP-11, GAP-21, GAP-28 | Engine | `docs/protocol/33-world-simulation.md` | `ServerLevel`, `WeatherData`, `GameRules` consumers, spawn | none | M |
-| RS17 | GAP-25 | Engine (code) | `docs/protocol/34-entity-models.md` | model and renderer classes | RS3 (variants) | L (per family) |
-| RS18 | GAP-26 | Engine | section of 18 §6.11 | `ItemEntity`, drop helpers | none | S |
-| RS19 | GAP-12a | Engine | `docs/protocol/35-worldgen-features.md` | feature and placer classes | RS3, RS4 | L |
-| RS20 | GAP-12b, GAP-18 (structures, POI) | Engine | `docs/protocol/36-structures.md` | structure, jigsaw, template classes, per-structure pieces | RS3, RS4, RS13, RS19 | L (per structure family) |
-| RS21 | GAP-13a | Engine | `docs/protocol/37-nether.md` | Nether noise, carvers, features | RS3, RS19 | L |
-| RS22 | GAP-13b | Engine | `docs/protocol/38-end.md` | End noise nodes, features, arena setup | RS3, RS19 | L |
-| RS23 | GAP-13c | Engine | section of 33 or `39-portals.md` | portal classes | RS4, RS21, RS22 | M |
-| RS24 | GAP-15 | Engine | section of 12 | particle emitters | RS4 | M |
-| RS25 | GAP-29 | Engine | section of 12 | `BlockColors`, `BiomeColors` | RS4 | S |
-| RS26 | GAP-31, GAP-18 (villages) | Engine | edits of the 18 to 21 open questions and a villages section | per question | the mob list | M to L |
-| RS27 | GAP-8 (entity NBT) | Engine | section of 07 §9.3 | `addAdditionalSaveData` classes | RS3 | M |
-| RS28 | entity type id check | Engine | note in 21 §2 | registry order of `EntityTypes` | none | S |
-| RS29 | GAP-34 | Spec | `docs/design/builtin-ui-art.md` | the sprite ids of 14 §6 | none | M |
-| RS30 | GAP-35 | Spec | edits of standin §4, §6 (cobolcraft standard core) | 17 §4.12, §6.2, 12 §3.2 | none | S to M |
-| RS31 | GAP-20 | Engine | section of 12 §7 | `DefaultPlayerSkin` | none | S |
-
-### Phase 3: edits that need decisions or RS-task output
-
-| Task | Target file | What to do | Standard source | Depends on | Research first |
-|---|---|---|---|---|---|
-| T09 | docs/protocol/08-resource-packs.md | P08-12 language rewrite and P08-17 (new §11 generated pack and pack order). | RS1 output, 15 §5, 16 | RS1 | RS1 |
-| T10 | docs/protocol/09-cobolcraft-profile.md | Part a: header, §1 identity, chat and message rule, encoding table (P09-1 to P09-4). | 15, 16, 17 §4.10 | decision 7 | no |
-| T11 | docs/protocol/09-cobolcraft-profile.md | Part b: §3.1 registry rows for both world types (P09-7). | 04, RS3, RS2 | RS2, RS3 | RS2, RS3 |
-| T12 | docs/protocol/09-cobolcraft-profile.md | Part c: §3.2 play rows (P09-9, P09-10). | 10, 11, 12 §5.6a, 13 §3.5, 21 §2 | RS2, RS4, RS15, RS16 | yes |
-| T13 | docs/protocol/09-cobolcraft-profile.md | Part d: §3.3 (P09-11); delete the fixed command tree. | 17 §4, 18 to 21, 13 §3.9, 15 §3, 16 | RS7, RS16, RS18 | yes |
-| T14 | docs/protocol/09-cobolcraft-profile.md | Part e: §3.4, §4, Open questions (P09-13 to P09-15); regenerate the fixture list. | 04 §6, 06 §7 | T10 to T13 | no |
-| T15 | docs/protocol/07-nbt-and-anvil.md | §9.1 and §9.2 `level.dat`: dimension folders, `WorldType`, `Seed`, game time and day time, weather (P07-2, P07-3). | 10 §7.7, 12 §3.2c, 16 §4.5 | RS2, RS16 | RS2, RS16 |
-| T16 | docs/protocol/07-nbt-and-anvil.md | §9.2 `access.dat` and `players/` (P07-4, P07-5). | 15 §2, 16 §11, 17 §4.9, 17 §4.10, 13 §3.5 | decision 8 | no |
-| T17 | docs/protocol/07-nbt-and-anvil.md | §9.3 entity NBT and §9.4 chunk storage (P07-6, P07-7). | RS27, RS13 output | RS27, RS13 | yes |
-| T18 | docs/design/faithful-pack-mapping.md | Part a: header, §1 (F-1 to F-4), §3 to §5 labelled "skin only" (F-6, F-7). | this README Part 3.5 | decision 10 | no |
-| T19 | docs/design/faithful-pack-mapping.md | Part b: §6 to §9, §10, §11 (F-8 to F-14), pack order. | C7 | T18, RS1 | RS1 |
-| T20 | docs/protocol/README.md | Rows PR-1 to PR-4; list every new document of Phase 2. | none | Phase 2 documents created | no |
-
-### Phase 4: the stand-in file (re-scope) and this README
-
-| Task | Target file | What to do | Depends on |
-|---|---|---|---|
-| T21 | docs/design/standin-content.md | Part a: re-title; replace S00; edit S01, S02, S04, S05; apply S10 to S25 (rename sections, restate break times and tools as standard properties, delete the loose-item mechanics, drop §1.4.2 "Shading", keep textures and check values). | T01, T02, T08, RS4 for S11 values, decision 4 |
-| T22 | docs/design/standin-content.md | Part b: apply S30 to S44 (world-type scope of §4, §5, §6; the cobolcraft standard core of C3; delete §7; trim §8). | RS30, T11 |
-| T23 | docs/design/standin-content.md | Part c: delete §9 to §11, §14.1 to §14.2, §14.4 to §14.6, §16 and shared parts of §10, §17 (S50 to S72) except the interim rows (S50 values, S66 §14.3); keep content rows (S63 food items, S64 mobs, S65 recipes, S67 dimension, §15); re-express item numbers (S56) as components; adjust §18 (S73). | T04, T13, RS18, RS16, decisions 3, 5 |
-| T24 | docs/design/README.md | Replace Parts 2 and 3 by a status log; keep Parts 0, 1 and 7; delete interim rows as GAPs close. | T21 to T23 |
-| T25 | tickets and specs (operator) | Not an editor task: decisions 13 and 15 record that CC-0001 and CC-0007 text and the spec 001 items of Part 3.7 are edited, if at all, by the operator or a separate step. | decisions 13, 15 |
+The edit plan (tasks T01 to T25 and research rounds RS1 to RS31) is carried out; its status is in Part 2, the status log.
 
 ## 7. Decisions for the operator
 
@@ -571,3 +268,179 @@ operator overrules it; it is a recommendation made with the reconciliation, not 
 | 17 | Sounds in the extraction tool. | The tool does not extract sounds; sounds stay out of scope. | Spec 001 Assumptions. | GAP-14 |
 | 18 | The cobolcraft standard core (C3): is the small set of standard entries authored by hand. | Yes, authored in the documents (RS30), with the values of 17 §4.12, 17 §6.2 and 12 §3.2. | Shared rules need them; the type must run with no pack. | GAP-35, S37, S39, S42 |
 | 19 | Order of the large research rounds (RS4, RS5, RS12, RS13, RS17, RS19 to RS22). | Order: RS1, RS2, RS3, RS4, RS5, then RS6 to RS11, RS15, RS16, RS18, RS19, then RS12 to RS14, RS17, RS20 to RS24. The planner may reorder. | Dependencies of Phase 2. | Part 6 |
+
+## 8. Remaining open items for the planner
+
+Counts are of the numbered items under each document's "Open questions" heading, counted by script over the numbered list
+(`1.`, `2.`, ...) of that section. The third column counts those items whose text contains "operator", "planner" or
+"decision" (a word match, not a classification). Items marked closed or resolved inside the section are included in the
+count. Each item states in its own text whether it needs a decision, an implementation-time check or a later read; this part
+does not restate them.
+
+### 8.1 Design documents: topics of the open questions
+
+- `docs/design/world-types.md` (17): standard choice disabled versus selectable while packs are invalid; jar versus generated
+  directory at run time; type detection on the wire; opening a world made with another accepted jar; language collision; bare
+  names in the cobolcraft world; vanilla client against a cobolcraft server; moving a world folder between machines; opened
+  single-player worlds; seed text hash; save layout of 07 and 33; other roles for shared engines; skin pack placement; crafting
+  bench values and operator confirmation; operator confirmation of the namespace reading.
+- `docs/design/cobolcraft-standard-core.md` (26): `out_of_world` key; death message keys; chat type keys; enchantment effect
+  shape; inferred block tags; completeness of the `day` timeline; dark horizon; food defaults; experience; mob tags; language
+  keys; recipes 5 and 7 and the bench; tool requirement and break times; C3 departure; `cobolcraft:say`; vanilla-client
+  configuration check; tool attack speed; starting kit location; `minecraft:` vocabulary beyond the core; spawn light
+  fields; fixed-time dimension with no clock; spawn-cycle meanings; `/summon` of the abend; server-side mining acceptance; sea
+  level for the weather engine.
+- `docs/design/builtin-ui-art.md` (31): unread sprite sizes; sheet regions; attack indicator; recipe-book tabs and toasts;
+  other sprite ids; boss bar and locator bar families; effect icon names; world-type naming and the 22 versus README C10
+  conflict; title screen layout; options screen texts; label colours; font definitions; tooltip frame; existing screen layouts;
+  banner focus; button borders; selectable or disabled standard choice; status-effect HUD layout; language keys the core lacks;
+  world list rows; seed field texts; hardcore hearts; misc textures; minimum window size; recipe-book panel origin; contrast
+  values.
+- `docs/design/faithful-pack-mapping.md` (14): entity geometry; turf tolerance; wire-id implication; per-biome grass tint;
+  inferred equivalents; built-in GUI art (about 96 sprites); break-stage set; rain and snow period; skin pack placement and
+  toggle; built-in sky art; weather skin mechanism; GUI id list.
+- `docs/design/standin-content.md` (15): other hard-coded vanilla keys; default variant lookups; item default components;
+  empty-list HolderSet; fixed-time dimension type; `Time` of the §12 and §14 rules; bench texture and recipes; rendering of
+  the two role entities; `block_transformer`; `cobolcraft:say`; tier tags; break times; interim rows; hail; subroutine clock.
+- `docs/protocol/22-extraction-tool.md` (16): accepting an unknown jar; jar needed at run time; stack order and language
+  keys; move tests of fixed entries; feature packs; shaders and unused assets; PNG decoder coverage (items 1 to 7; items 8 to
+  16 are in the file).
+
+### 8.2 Every document with an Open questions section
+
+| Document | Open questions | Items naming operator, planner or decision | Subject (title of the document) |
+|---|---|---|---|
+| [builtin-ui-art.md](builtin-ui-art.md) | 31 | 9 | Built-in UI art, fallback UI texts, world type selection and missin... |
+| [cobolcraft-standard-core.md](cobolcraft-standard-core.md) | 26 | 12 | The cobolcraft world type's standard core |
+| [faithful-pack-mapping.md](faithful-pack-mapping.md) | 14 | 2 | Faithful 32x pack mapping and the cobolcraft skin (design) |
+| [standin-content.md](standin-content.md) | 15 | 8 | Content of the cobolcraft world type |
+| [world-types.md](world-types.md) | 17 | 12 | World types: the standard and the cobolcraft world type |
+| [07-nbt-and-anvil.md](../protocol/07-nbt-and-anvil.md) | 13 | 1 | 07 — NBT binary format and Anvil region files |
+| [08-resource-packs.md](../protocol/08-resource-packs.md) | 13 | 0 | 08 Resource packs |
+| [09-cobolcraft-profile.md](../protocol/09-cobolcraft-profile.md) | 12 | 1 | 09 — CobolCraft protocol profile |
+| [22-extraction-tool.md](../protocol/22-extraction-tool.md) | 16 | 3 | 22 Extraction tool and pack loaders |
+| [23-registry-loading.md](../protocol/23-registry-loading.md) | 23 | 0 | 23 Registry loading, codecs and tag resolution |
+| [24-block-registry-1-model-and-foundation.md](../protocol/24-block-registry-1-model-and-foundation.md) | 19 | 0 | Block registry, part 1: shared model and the foundation blocks (Blo... |
+| [24-block-registry-2-leaves-flora-signs.md](../protocol/24-block-registry-2-leaves-flora-signs.md) | 21 | 0 | 24 — Block registry, part 2: leaves, flora, signs (ordinals 105 to ... |
+| [24-block-registry-3-signs-doors-redstone.md](../protocol/24-block-registry-3-signs-doors-redstone.md) | 18 | 0 | Block registry, part 3: wall signs to huge mushroom blocks |
+| [24-block-registry-4-stems-glass-skulls.md](../protocol/24-block-registry-4-stems-glass-skulls.md) | 13 | 0 | Block registry, part 4: stems, glass panes, vines, cauldrons, the E... |
+| [24-block-registry-5-quartz-concrete-gates.md](../protocol/24-block-registry-5-quartz-concrete-gates.md) | 15 | 0 | Block registry, part 5: heads to fence gates (Blocks fields 420 to ... |
+| [24-block-registry-6-gates-end-concrete-potted.md](../protocol/24-block-registry-6-gates-end-concrete-potted.md) | 15 | 0 | Block registry, part 6: gates, fences, doors, the End, concrete, th... |
+| [24-block-registry-7-stairs-slabs-walls-workstations.md](../protocol/24-block-registry-7-stairs-slabs-walls-workstations.md) | 24 | 1 | Block registry, part 7: stairs, slabs, walls, workstations and the ... |
+| [24-block-registry-8-blackstone-copper-deepslate-modern.md](../protocol/24-block-registry-8-blackstone-copper-deepslate-modern.md) | 26 | 0 | Block registry, part 8: cracked nether bricks to firefly bush (Bloc... |
+| [25-item-registry-1-model-and-blocks-a.md](../protocol/25-item-registry-1-model-and-blocks-a.md) | 9 | 0 | Item registry, part 1: shared model and the block items of ids 0 to... |
+| [25-item-registry-2-blocks-b.md](../protocol/25-item-registry-2-blocks-b.md) | 9 | 0 | Item registry, part 2: block items of ids 228 to 455 |
+| [25-item-registry-3-blocks-c-and-utility.md](../protocol/25-item-registry-3-blocks-c-and-utility.md) | 10 | 1 | Item registry, part 3: block items from `polished_deepslate_wall` t... |
+| [25-item-registry-4-boats-food-armor-signs.md](../protocol/25-item-registry-4-boats-food-armor-signs.md) | 13 | 1 | Item registry, part 4: boats, technical blocks, materials, tools, f... |
+| [25-item-registry-5-buckets-maps-potions-misc.md](../protocol/25-item-registry-5-buckets-maps-potions-misc.md) | 6 | 0 | Item registry, part 5: buckets, maps, bottles, potions and miscella... |
+| [25-item-registry-6-spawn-eggs-and-specials.md](../protocol/25-item-registry-6-spawn-eggs-and-specials.md) | 18 | 0 | Item registry, part 6: spawn eggs and special items (statements 940... |
+| [25-item-registry-7-discs-ranged-patterns-horns.md](../protocol/25-item-registry-7-discs-ranged-patterns-horns.md) | 18 | 0 | Item registry, part 7: music discs, trident, nautilus items, crossb... |
+| [25-item-registry-8-late-items-templates-sherds-trial.md](../protocol/25-item-registry-8-late-items-templates-sherds-trial.md) | 17 | 0 | Item registry, part 8: composter to ominous bottle (`Items` fields ... |
+| [25-item-registry-x1-continuation.md](../protocol/25-item-registry-x1-continuation.md) | 4 | 1 | Item registry, continuation x1: the block items of ids 456 to 549 (... |
+| [26-loot-and-predicates.md](../protocol/26-loot-and-predicates.md) | 17 | 0 | 26 Loot tables and predicates: the engine |
+| [27-recipes-and-unlocks.md](../protocol/27-recipes-and-unlocks.md) | 13 | 0 | 27. Recipes, recipe book unlocks and the advancement engine |
+| [28-enchantment-effects.md](../protocol/28-enchantment-effects.md) | 20 | 0 | Enchantment effect components: schema and engine |
+| [29-block-updates-and-placement.md](../protocol/29-block-updates-and-placement.md) | 23 | 0 | 29. Block updates, ticking, block placement and block breaking |
+| [29a-fluids.md](../protocol/29a-fluids.md) | 14 | 0 | 29a. Fluids: flow, states, waterlogging, buckets, bubble columns, e... |
+| [29b-falling-growth-fire-1-model-gravity-bonemeal.md](../protocol/29b-falling-growth-fire-1-model-gravity-bonemeal.md) | 12 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-2-crops-and-stems.md](../protocol/29b-falling-growth-fire-2-crops-and-stems.md) | 8 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-3-spread-decay-snow-ice.md](../protocol/29b-falling-growth-fire-3-spread-decay-snow-ice.md) | 9 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-4-growing-plants.md](../protocol/29b-falling-growth-fire-4-growing-plants.md) | 13 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-5-fungi-moss-copper.md](../protocol/29b-falling-growth-fire-5-fungi-moss-copper.md) | 14 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-6-sculk-amethyst-dripstone.md](../protocol/29b-falling-growth-fire-6-sculk-amethyst-dripstone.md) | 11 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-7-aquatic-eggs-honey-cauldron.md](../protocol/29b-falling-growth-fire-7-aquatic-eggs-honey-cauldron.md) | 13 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [29b-falling-growth-fire-8-fire-tnt-residual.md](../protocol/29b-falling-growth-fire-8-fire-tnt-residual.md) | 14 | 0 | 29b. Falling blocks, growth, fire and similar block behaviours, par... |
+| [30-redstone-1-model-signal-and-wire.md](../protocol/30-redstone-1-model-signal-and-wire.md) | 10 | 0 | 30 (part 1). Redstone: shared model, the signal queries, redstone w... |
+| [30-redstone-2-repeaters-comparators-observers.md](../protocol/30-redstone-2-repeaters-comparators-observers.md) | 10 | 0 | 30-2 Redstone: repeaters, comparators, observers and analog output |
+| [30-redstone-3-pistons.md](../protocol/30-redstone-3-pistons.md) | 9 | 0 | 30-3 Redstone: pistons |
+| [30-redstone-4-dispensing-hoppers-crafters.md](../protocol/30-redstone-4-dispensing-hoppers-crafters.md) | 9 | 0 | 30-4 Redstone: dispensers, droppers, hoppers and crafters |
+| [30-redstone-5-switches-plates-sensors-notes.md](../protocol/30-redstone-5-switches-plates-sensors-notes.md) | 12 | 0 | Redstone, part 5: levers, buttons, pressure plates, daylight detect... |
+| [30-redstone-6-rails.md](../protocol/30-redstone-6-rails.md) | 10 | 0 | 30 Redstone, part 6: rails |
+| [30-redstone-7-doors-lamps-bulbs-tnt.md](../protocol/30-redstone-7-doors-lamps-bulbs-tnt.md) | 15 | 0 | 30 (part 7). Redstone: power-driven openable blocks, lamps, copper ... |
+| [30-redstone-8-tripwire-sculk-bells-vibration.md](../protocol/30-redstone-8-tripwire-sculk-bells-vibration.md) | 14 | 0 | 30 (part 8). Redstone: tripwire, sculk sensors, sculk shrieker, bel... |
+| [31-block-entities-1-shared-model-and-containers.md](../protocol/31-block-entities-1-shared-model-and-containers.md) | 11 | 0 | 31-1 Block entities, part 1: shared model and plain containers |
+| [31-block-entities-2-processing-and-redstone-containers.md](../protocol/31-block-entities-2-processing-and-redstone-containers.md) | 13 | 0 | 31-2 Block entities: processing and redstone containers |
+| [31-block-entities-3-signs-banners-skulls-pots-shelves.md](../protocol/31-block-entities-3-signs-banners-skulls-pots-shelves.md) | 19 | 0 | 31. Block entities, part 3: signs, banners, skulls, decorated pots,... |
+| [31-block-entities-4-jukebox-lectern-bell-campfire-brushable-beehive.md](../protocol/31-block-entities-4-jukebox-lectern-bell-campfire-brushable-beehive.md) | 17 | 0 | Block entities, part 4: jukebox, lectern, bell, campfire, enchantin... |
+| [31-block-entities-5-beacon-conduit-end-piston-creaking.md](../protocol/31-block-entities-5-beacon-conduit-end-piston-creaking.md) | 7 | 0 | 31-5 Block entities, part 5: beacon, conduit, end portal, end gatew... |
+| [31-block-entities-6-command-structure-jigsaw-test.md](../protocol/31-block-entities-6-command-structure-jigsaw-test.md) | 14 | 0 | 31-6 Block entities, part 6: command block, structure block, jigsaw... |
+| [31-block-entities-7-spawners-trial-vaults.md](../protocol/31-block-entities-7-spawners-trial-vaults.md) | 12 | 0 | 31-7 Block entities, part 7: mob spawner, trial spawner and vault |
+| [31-block-entities-8-sculk-and-remaining-types.md](../protocol/31-block-entities-8-sculk-and-remaining-types.md) | 15 | 0 | 31 Block entities, part 8: sculk family, statue, potent sulfur, tes... |
+| [32-light-engine.md](../protocol/32-light-engine.md) | 13 | 0 | 32 — Light engine |
+| [33-world-simulation.md](../protocol/33-world-simulation.md) | 19 | 1 | World simulation: server and level tick order, clocks and time, wea... |
+| [34-entity-models-1-shared-model-and-framework.md](../protocol/34-entity-models-1-shared-model-and-framework.md) | 26 | 0 | Entity models and renderers, part 1: shared model, framework classe... |
+| [34-entity-models-2-humanoids-zombies-skeletons-piglins.md](../protocol/34-entity-models-2-humanoids-zombies-skeletons-piglins.md) | 10 | 0 | 34-2. Entity models and renderers: humanoid-base mobs (zombies, ske... |
+| [34-entity-models-3-villagers-illagers-golems-misc.md](../protocol/34-entity-models-3-villagers-illagers-golems-misc.md) | 12 | 0 | 34 Entity models and renderers, part 3: villagers, illagers, golems... |
+| [34-entity-models-4-farm-animals-equines.md](../protocol/34-entity-models-4-farm-animals-equines.md) | 18 | 0 | 34 Entity models and renderers, part 4: farm and ridable land animals |
+| [34-entity-models-5-wild-companion-animals-small-creatures.md](../protocol/34-entity-models-5-wild-companion-animals-small-creatures.md) | 7 | 0 | 34 part 5. Entity models and renderers: wild and companion animals ... |
+| [34-entity-models-6-overworld-hostiles-arthropods-slimes.md](../protocol/34-entity-models-6-overworld-hostiles-arthropods-slimes.md) | 18 | 0 | Entity models and renderers, part 6: creeper, enderman, endermite, ... |
+| [34-entity-models-7-nether-end-bosses.md](../protocol/34-entity-models-7-nether-end-bosses.md) | 11 | 0 | 34 part 7. Entity models and renderers: Nether and End mobs and bosses |
+| [34-entity-models-8-aquatic-nautilus-boats.md](../protocol/34-entity-models-8-aquatic-nautilus-boats.md) | 15 | 0 | 34 Entity models and renderers, part 8: aquatic mobs, nautilus fami... |
+| [34-entity-models-9-non-living-entities.md](../protocol/34-entity-models-9-non-living-entities.md) | 22 | 0 | 34 Entity models and renderers, part 9: entities without a living-m... |
+| [35-worldgen-features-1-model-and-placement.md](../protocol/35-worldgen-features-1-model-and-placement.md) | 18 | 0 | 35 Worldgen features, part 1: shared model, generic features and pl... |
+| [35-worldgen-features-2-predicates-and-providers.md](../protocol/35-worldgen-features-2-predicates-and-providers.md) | 12 | 0 | 35 World generation features, part 2: block predicates and block st... |
+| [35-worldgen-features-3-tree-placers.md](../protocol/35-worldgen-features-3-tree-placers.md) | 9 | 0 | 35 World generation features, part 3: the tree feature and its placers |
+| [35-worldgen-features-4-decorators-and-vegetation.md](../protocol/35-worldgen-features-4-decorators-and-vegetation.md) | 14 | 0 | World generation features, part 4: tree decorators and vegetation f... |
+| [35-worldgen-features-5-water-and-surface.md](../protocol/35-worldgen-features-5-water-and-surface.md) | 10 | 0 | World generation features, part 5: water, ice, disks, blobs, corals... |
+| [35-worldgen-features-6-underground.md](../protocol/35-worldgen-features-6-underground.md) | 17 | 0 | 35 World generation features, part 6: underground features (geodes,... |
+| [35-worldgen-features-7-nether-end-misc.md](../protocol/35-worldgen-features-7-nether-end-misc.md) | 7 | 0 | 35 World generation features, part 7: nether, end and miscellaneous... |
+| [36-structures-1-model-placement-starts.md](../protocol/36-structures-1-model-placement-starts.md) | 13 | 1 | 36 Structures, part 1: shared model, placement, starts, pieces base... |
+| [36-structures-10-ancient-city-trial-chambers-trail-ruins.md](../protocol/36-structures-10-ancient-city-trial-chambers-trail-ruins.md) | 13 | 0 | 36 Structures, part 10: ancient city, trial chambers, trail ruins, ... |
+| [36-structures-2-templates-and-processors.md](../protocol/36-structures-2-templates-and-processors.md) | 13 | 0 | 36 Structures, part 2: structure templates (structure NBT), placeme... |
+| [36-structures-3-jigsaw-assembly.md](../protocol/36-structures-3-jigsaw-assembly.md) | 16 | 0 | 36-3 Structures, part 3: jigsaw assembly |
+| [36-structures-4-scattered-and-small.md](../protocol/36-structures-4-scattered-and-small.md) | 17 | 0 | 36 Structures, part 4: scattered and small overworld structures (de... |
+| [36-structures-5-mineshaft-stronghold.md](../protocol/36-structures-5-mineshaft-stronghold.md) | 16 | 0 | 36 Structures, part 5: mineshaft and stronghold (the recursive code... |
+| [36-structures-6-ocean.md](../protocol/36-structures-6-ocean.md) | 15 | 0 | 36 Structures, part 6: ocean ruins, shipwrecks and the ocean monument |
+| [36-structures-7-woodland-mansion.md](../protocol/36-structures-7-woodland-mansion.md) | 14 | 0 | 36 Structures, part 7: the woodland mansion |
+| [36-structures-8-nether-and-end.md](../protocol/36-structures-8-nether-and-end.md) | 11 | 0 | 36 Structures, part 8: Nether fortress, End city and bastion remnant |
+| [36-structures-9-villages-outposts.md](../protocol/36-structures-9-villages-outposts.md) | 15 | 0 | 36 Structures, part 9: villages, the zombie variant, the pillager o... |
+| [37-nether-1-model-and-dimension-rules.md](../protocol/37-nether-1-model-and-dimension-rules.md) | 15 | 0 | 37-1 The Nether: shared model and dimension rules |
+| [37-nether-2-noise-settings-and-density.md](../protocol/37-nether-2-noise-settings-and-density.md) | 14 | 0 | 37-2 The Nether: noise settings, density pipeline, legacy seeding, ... |
+| [37-nether-3-biome-source-and-climate.md](../protocol/37-nether-3-biome-source-and-climate.md) | 11 | 0 | 37-3 The Nether: biome source, climate sampling and the five biome ... |
+| [37-nether-4-surface-rules-and-carvers.md](../protocol/37-nether-4-surface-rules-and-carvers.md) | 13 | 0 | 37-4 The Nether: surface rules and carvers |
+| [37-nether-5-features-and-decoration.md](../protocol/37-nether-5-features-and-decoration.md) | 11 | 0 | 37 The Nether, part 5: features and decoration |
+| [37-nether-6-structures-spawns-hooks.md](../protocol/37-nether-6-structures-spawns-hooks.md) | 20 | 0 | 37 The Nether, part 6: structures, spawns and hooks |
+| [38-end.md](../protocol/38-end.md) | 14 | 0 | 38 The End: generation and mechanics |
+| [39-portals.md](../protocol/39-portals.md) | 14 | 0 | 39 Portals and dimension travel: nether portals, end portals, gatew... |
+| [40-menus-1-model-and-containers.md](../protocol/40-menus-1-model-and-containers.md) | 14 | 0 | 40-1 Menus and screens, part 1: shared model and container menus |
+| [40-menus-2-furnaces-brewing-crafter.md](../protocol/40-menus-2-furnaces-brewing-crafter.md) | 8 | 0 | 40-2 Menus, part 2: furnaces, brewing stand and crafter |
+| [40-menus-3-anvil-grindstone-smithing.md](../protocol/40-menus-3-anvil-grindstone-smithing.md) | 14 | 0 | 40-3 Menus and screens, part 3: item combiner base, anvil, grindsto... |
+| [40-menus-4-enchanting-loom-stonecutter-cartography.md](../protocol/40-menus-4-enchanting-loom-stonecutter-cartography.md) | 13 | 0 | 40-4 Menus and screens, part 4: enchanting table, loom, stonecutter... |
+| [40-menus-5-merchant-beacon-lectern.md](../protocol/40-menus-5-merchant-beacon-lectern.md) | 12 | 0 | 40-5 Menus, part 5: merchant, beacon and lectern |
+| [40-menus-6-mount-inventories.md](../protocol/40-menus-6-mount-inventories.md) | 8 | 0 | 40-6 Menus, part 6: mount inventories (horse, donkey, mule, llama, ... |
+| [40-menus-7-creative-inventory.md](../protocol/40-menus-7-creative-inventory.md) | 17 | 0 | 40-7 Menus and screens, part 7: the creative inventory screen |
+| [40-menus-8-book-and-sign-editors.md](../protocol/40-menus-8-book-and-sign-editors.md) | 17 | 0 | 40. Menus and screens, part 8: book and sign editors |
+| [40-menus-9-block-editor-screens.md](../protocol/40-menus-9-block-editor-screens.md) | 9 | 0 | 40-9 Menus and screens, part 9: block editor screens (command block... |
+| [40-menus-x1-continuation.md](../protocol/40-menus-x1-continuation.md) | 18 | 0 | 40. Menus and screens, continuation x1: the block editor screens |
+| [41-item-entity-physics.md](../protocol/41-item-entity-physics.md) | 20 | 0 | 41. Item entity physics, drops and pickup |
+| [42-particles-1-shared-model-engine.md](../protocol/42-particles-1-shared-model-engine.md) | 18 | 0 | 42. Particles, part 1: shared model, registry, options and engine core |
+| [42-particles-2-effects-fire-smoke-magic.md](../protocol/42-particles-2-effects-fire-smoke-magic.md) | 15 | 0 | 42. Particles, part 2: effects, fire, smoke, magic, explosions, fir... |
+| [42-particles-3-fluid-drip-water.md](../protocol/42-particles-3-fluid-drip-water.md) | 14 | 0 | 42. Particles, part 3: fluid drips, bubbles, water, ink and their e... |
+| [42-particles-4-block-item-dust-ambient.md](../protocol/42-particles-4-block-item-dust-ambient.md) | 11 | 1 | 42. Particles, part 4: block, item, dust and ambient particles |
+| [42-particles-5-sculk-trial-wind-geyser.md](../protocol/42-particles-5-sculk-trial-wind-geyser.md) | 15 | 0 | 42. Particles, part 5: sculk, trial, wind, vault, sulfur and geyser... |
+| [42-particles-6-emitters-blocks.md](../protocol/42-particles-6-emitters-blocks.md) | 6 | 0 | 42. Particles, part 6: emitters driven by blocks |
+| [42-particles-7-emitters-entities-events-commands.md](../protocol/42-particles-7-emitters-entities-events-commands.md) | 11 | 0 | 42. Particles, part 7: emitters for entities, entity events, level ... |
+| [43-tint-sources.md](../protocol/43-tint-sources.md) | 13 | 0 | 43 Tint sources |
+| [44-residual-mob-questions-1-shared-model-framework.md](../protocol/44-residual-mob-questions-1-shared-model-framework.md) | 17 | 0 | Residual mob questions, part 1: shared model and framework answers ... |
+| [44-residual-mob-questions-2-spawning-structures.md](../protocol/44-residual-mob-questions-2-spawning-structures.md) | 4 | 0 | Residual mob questions, part 2: spawner blocks, trial spawners, cus... |
+| [44-residual-mob-questions-3-villagers-poi-raids.md](../protocol/44-residual-mob-questions-3-villagers-poi-raids.md) | 31 | 0 | 44. Residual mob questions, part 3: villages, villagers, points of ... |
+| [44-residual-mob-questions-4-land-animals.md](../protocol/44-residual-mob-questions-4-land-animals.md) | 13 | 0 | 44. Residual mob questions, part 4: land animals |
+| [44-residual-mob-questions-5-overworld-hostile.md](../protocol/44-residual-mob-questions-5-overworld-hostile.md) | 18 | 0 | 44 — Residual mob questions, part 5: overworld hostile mobs (round ... |
+| [44-residual-mob-questions-6-nether.md](../protocol/44-residual-mob-questions-6-nether.md) | 12 | 0 | Residual mob questions 6: piglin and hoglin engines, strider, Nethe... |
+| [44-residual-mob-questions-7-aquatic.md](../protocol/44-residual-mob-questions-7-aquatic.md) | 10 | 0 | Residual mob questions, part 7: aquatic mobs, nautilus family, amph... |
+| [44-residual-mob-questions-8-vehicles-and-projectiles.md](../protocol/44-residual-mob-questions-8-vehicles-and-projectiles.md) | 20 | 0 | Residual mob questions, part 8: vehicles and projectiles |
+| [44-residual-mob-questions-9-end-bosses-decorations.md](../protocol/44-residual-mob-questions-9-end-bosses-decorations.md) | 7 | 0 | 44-9. Residual mob questions, part 9: End bosses, decoration entiti... |
+| [44-residual-mob-questions-x1-continuation.md](../protocol/44-residual-mob-questions-x1-continuation.md) | 7 | 0 | 44 — Residual mob questions, continuation x1 (round RS26) |
+| [44-residual-mob-questions-x2-continuation.md](../protocol/44-residual-mob-questions-x2-continuation.md) | 24 | 0 | 44 — Residual mob questions, continuation x2 (round RS26) |
+| [45-entity-nbt-1-shared-model-and-entity-base.md](../protocol/45-entity-nbt-1-shared-model-and-entity-base.md) | 18 | 1 | 45. Entity NBT, part 1: shared model and the Entity base |
+| [45-entity-nbt-2-living-entity-mob-animal.md](../protocol/45-entity-nbt-2-living-entity-mob-animal.md) | 22 | 0 | 45. Entity NBT, part 2: LivingEntity, Mob, Animal and the shared Br... |
+| [45-entity-nbt-3-player-and-player-data.md](../protocol/45-entity-nbt-3-player-and-player-data.md) | 22 | 0 | 45-3 Entity and player NBT: the player, its data file, advancements... |
+| [45-entity-nbt-4-land-animals.md](../protocol/45-entity-nbt-4-land-animals.md) | 14 | 0 | 45. Entity NBT, part 4: land animals |
+| [45-entity-nbt-5-hostile-mobs.md](../protocol/45-entity-nbt-5-hostile-mobs.md) | 15 | 0 | 45 — Entity NBT, part 5: hostile mobs (round RS27) |
+| [45-entity-nbt-6-villagers-illagers-piglins.md](../protocol/45-entity-nbt-6-villagers-illagers-piglins.md) | 18 | 0 | 45. Entity NBT, part 6: villagers, wandering trader, illagers and r... |
+| [45-entity-nbt-7-aquatic-and-misc-mobs.md](../protocol/45-entity-nbt-7-aquatic-and-misc-mobs.md) | 16 | 0 | Entity NBT, part 7: aquatic mobs, nautilus family, strider, buckete... |
+| [45-entity-nbt-8-vehicles-projectiles-items.md](../protocol/45-entity-nbt-8-vehicles-projectiles-items.md) | 16 | 0 | Entity NBT, part 8: items, orbs, blocks, clouds, displays, vehicles... |
+| [45-entity-nbt-9-bosses-and-decorations.md](../protocol/45-entity-nbt-9-bosses-and-decorations.md) | 15 | 2 | 45. Entity NBT, part 9: bosses, decorations, boss-bar and dragon-fi... |
+| [46-registry-ids.md](../protocol/46-registry-ids.md) | 15 | 0 | Static registry ids on the wire |
+| [47-default-skin.md](../protocol/47-default-skin.md) | 13 | 1 | Default player skin and skin handling |
+| Total (133 documents) | 1926 | 59 | |

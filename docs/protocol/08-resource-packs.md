@@ -1140,6 +1140,23 @@ Rules that CobolCraft's client and server console apply:
   this table. The server console prints them through the same texts (operator-surface §3). Client screen
   and HUD texts (10.8.6) are looked up by the client itself.
 
+**Where the texts come from.** There are three sources, and the merge order above (bottom pack first, a higher pack replaces a
+key) decides which one a player sees:
+
+| Source | Holds | Pack level (11.2) |
+|---|---|---|
+| This built-in file | The `cobolcraft.*` keys, the `block.cobolcraft.*`, `item.cobolcraft.*`, `entity.cobolcraft.*`, `weather.cobolcraft.*` and `dimension.cobolcraft.*` names of 10.8.1, and a **fallback set** of standard keys | 1 |
+| The generated `vanilla` pack (22 §6.1: `assets/minecraft/lang/en_us.json`, verbatim) | Every standard key with its standard text: command feedback, death messages, disconnect reasons, advancement and UI texts | 2 |
+| User packs such as Faithful | Whatever they ship; Faithful is textures only (14) and has no `lang` file | 3 |
+
+Consequences. (1) In the standard world type the generated pack's text wins over any fallback entry of the same key, so a fallback
+text is never seen while the generated pack is valid. (2) In the cobolcraft world type, with no generated pack, the standard keys the shared rules need
+(death messages, command feedback, UI texts) are shown from the fallback set, in the standard wording (README P08-12). That wording is
+read from the standard `en_us` (15 §5 for the framework keys, 16 for each command's keys with their English text, 16 §13 for the game rule titles).
+(3) A CobolCraft text never takes a standard key (world-types §6.2, Decision WT-15), because the generated `en_us` would replace it:
+that is why the CobolCraft keys use the `cobolcraft.` prefix. (4) The lookup rule above (a key no pack defines is shown as the key) applies
+last.
+
 Sections 10.8.2 (death messages) and 10.8.3 (command messages) no longer exist. The stand-in keys they
 listed are retired: death messages and command messages use the standard keys in both world types (15 §5, 16
 and the standard `en_us`). The numbers are not reused, so that citations of 10.8.4 to 10.8.6 stay valid.
@@ -1491,6 +1508,57 @@ draws no quads. The sky colour and daylight changes of §14.5 are client constan
 
 ---
 
+
+## 11. Generated resource pack and pack order
+
+The resource pack of the standard world type is not authored in these documents. The extraction tool (22) builds it on the user's machine from
+the user's own client jar, and the client loads it as a built-in required pack. This section only places it in the stack; the rows, the paths and
+the checks are in 22.
+
+### 11.1 The generated pack
+
+| Item | Where it is specified |
+|---|---|
+| Location: `<generated>/vanilla-resources/`, a directory pack (1.1) with pack id `vanilla`, title "Default" | 22 §5.1, §5.2, §8.1 |
+| Content: the jar's `assets/` verbatim (models, block states, item definitions, atlases, textures, colormaps, fonts, language, sounds as files) plus `pack.png` | 22 §6.1 |
+| `pack.mcmeta`: written by the tool, description and format range 97.1 to 97.*, in the array form of 2.1 | 22 §6.2 |
+| When it is present: the generated-pack check result `ok`; otherwise `absent`, `incomplete`, `stale` or `damaged` with a message | 22 §8.2, §9.2 |
+| Regeneration, atomic replacement, `--verify` | 22 §6.3, §7.5, §7.6 |
+| Reload: the client re-reads the pack on every resource reload; it does not watch the directory | 22 §8.1 |
+| What it cannot hold: anything the jar does not contain (22 §2.9), and any content that is code (README R7) | 22 §10 |
+
+Because the pack is a copy of the jar's own assets, everything in 2 to 9 applies to it as written (formats, atlases 7, colormaps 8, `.mcmeta`
+rules). It uses bare or `minecraft:` ids (1.3). The block tint index is data in its models; the tint source and colour of each block is code
+(Open question 10, 14 §9).
+
+### 11.2 Pack order
+
+The client's pack repository holds two built-in required packs below all user packs (22 §8.1). Both are fixed at the bottom: the player can neither
+disable nor move them, so no user pack can end up below them (README C7).
+
+| Level (bottom first) | Pack | Present when | Replaced by |
+|---|---|---|---|
+| 1 | `cobolcraft` built-in (10) | always | any higher pack on the same path |
+| 2 | `vanilla` generated (11.1) | the generated-pack check is `ok` | levels 3 and 4 |
+| 3 | User packs, in the order of `resourcePacks` in `options.txt`, from `<game directory>/resourcepacks/` (3.1, 13 §8). Faithful is here, never enabled by itself | enabled by the player | level 4 |
+| 4 | Server-pushed packs (9.6) | the server sent them | nothing |
+
+Rules.
+
+1. A path is resolved top-down: the first pack from the top that holds it supplies it (3.2). Texture, model and language entries follow the same rule per
+   path and per key.
+2. **Level 2 wins over level 1** on a path that both hold. The two packs share very few paths: the built-in pack supplies `cobolcraft:` paths, the generated
+   pack `minecraft:` paths. The shared ones are engine vocabulary (22 §9.1) and the language (10.8: standard keys in both files, the generated text wins).
+3. Faithful and other `minecraft:` packs apply by path over the generated pack; they never touch a `cobolcraft:` path (world-types §6.4, 22 §9).
+4. The same stack applies in both world types when the generated pack is valid; the isolation is by namespace (world-types Decision WT-15, 7.3).
+5. A standard world type needs level 2. If it is not `ok`, the standard world type is disabled with the message of 22 §9.2, and the stack is level 1, 3, 4. A
+   cobolcraft world runs on level 1 alone (22 §9.1).
+6. Which texture is used for a block, item or entity of the standard world type when nothing in the stack holds it: the engine-generated missing texture (10, last paragraph).
+
+### 11.3 Open points
+
+The language fallback texts for standard keys (10.8.4, 10.8.6) and the zip-reader and format details are in Open questions 12 and 13.
+
 ## Open questions
 
 1. ~~**Quadrant values.**~~ Resolved: the value modulo 360 must be 0, 90, 180 or 270 (`Quadrant.parseJson`).
@@ -1524,4 +1592,9 @@ draws no quads. The sky colour and daylight changes of §14.5 are client constan
     fix (`multiplayer.disconnect.incompatible`, `…outdated_client`, `…transfers_disabled`, `…slow_login`,
     `…unexpected_query_response`, `…invalid_player_movement` and `disconnect.timeout`), and 10.8.4 gives
     each one its standard `en_us` text (generated pack in the standard world type, this file as fallback in the
-    cobolcraft world type), so the client never shows a bare key for them. A pack can change these texts.
+    cobolcraft world type), so the client never shows a bare key for them. A pack can change these texts. The texts themselves are still missing (question 12).
+12. **Standard texts of the fallback language set (GAP-27).** 10.8.4 gives no text for the seven protocol-defined disconnect reasons, and 10.8.6 does not
+    say which `cobolcraft.screen.*` entries have a standard key. Until a clean-room round supplies them (README GAP-27) the cobolcraft world type shows
+    the bare key for a disconnect reason when the generated pack is absent. The command and framework keys are covered by 15 §5 and 16.
+13. **Index of standard `en_us` keys.** 11.1 relies on the generated `en_us` for every standard text; the engine reads keys that no document lists. The
+    list of keys the engine looks up is open until the standard key survey (README GAP-27) is done.

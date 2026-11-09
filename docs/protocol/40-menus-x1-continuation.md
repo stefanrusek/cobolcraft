@@ -316,7 +316,7 @@ Encoding detail read in the packet class (`ServerboundSetStructureBlockPacket`, 
 
 `keyPressed`: `Screen.keyPressed` first (Escape, focus navigation, the focused widget; an `EditBox` does not take Enter), then `isConfirmation` calls `onDone`. The Enter shortcut does not look at the mode or any button state.
 
-`resize(w, h)` saves the values of all nine boxes, rebuilds the screen with `init`, and restores the nine values with `setValue`. The entity (mode, mirror, rotation, flags) is not touched, so the rebuilt button states follow the entity; `initial*` values are re-read from the entity by the new `init`, so a Cancel after a resize restores the values at the time of the resize, not the values at the first open (read from the order: `init` re-reads them from the entity that the buttons already changed; Open question 6).
+`resize(w, h)` saves the values of all ten boxes (40-9 re-read the code and counts ten), rebuilds the screen with `init`, and restores the ten values with `setValue`. The entity (mode, mirror, rotation, flags) is not touched, so the rebuilt button states follow the entity; `initial*` values are re-read from the entity by the new `init`, so a Cancel after a resize restores the values at the time of the resize, not the values at the first open (read from the order: `init` re-reads them from the entity that the buttons already changed; Open question 6).
 
 ### 5.8 Layout summary and stale data
 

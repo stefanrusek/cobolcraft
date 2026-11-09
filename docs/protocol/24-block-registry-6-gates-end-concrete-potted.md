@@ -49,10 +49,11 @@ tables, recipes, block tags, block models and block states JSON. Where a rule re
   setters (§4.2), copy builders (§4.3), offset functions (§4.4), derived per-state values (§5), the shape model and its
   helpers (§6), column definitions (§7), `MapColor` (§8.1), `PushReaction` (§8.2), `NoteBlockInstrument` (§8.3),
   `SoundType` (§8.4), tint classes (§9) and the replaceable and `canSurvive` model (§10).
-- Behaviour owned by other documents is named and not specified here: fluids and waterlogging mechanics (design map RS10),
-  falling blocks and growth rules (RS11), redstone and pistons (RS12), block entities and their menus (RS13), block updates,
-  neighbour notification order and the general placement path (RS9: `docs/protocol/29-block-updates-and-placement.md` when it
-  exists), random ticks selection (33 §2.4). Where such a document is needed for a rule below, the section says so.
+- Behaviour owned by other documents is named and not specified here: fluids and waterlogging mechanics (29a), falling
+  blocks and growth rules (29b), redstone and pistons (30, in particular 30 part 3 for push reactions), block entities (31)
+  and their menus (40), block updates, neighbour notification order and the general placement path (29), random ticks
+  selection (33 §2.4), the portal and end gateway rules (39), chorus tree generation (35 part 7). Where such a document is
+  needed for a rule below, the section says so.
 - Hardness and resistance feed the break formula of 13 §2.1 and the table of 13 §2.6; a hardness of 0.0 is an instant break.
 - Tag names are written as in `net.minecraft.tags.BlockTags` (the key is `minecraft:<name>`). The set of blocks in a tag is
   data (extraction tool) and is read from the loaded data pack.
@@ -260,7 +261,8 @@ east is `cw`).
 | `SHAPE_OCCLUSION` | union (`Shapes.or`) of box(0,5,7, 2,16,9) and box(14,5,7, 16,16,9): both posts are present together | the same union rotated by `BLOCK_ROT_Y_90`: box(7,5,0, 9,16,2) together with box(7,5,14, 9,16,16) | occlusion shape when `in_wall` is false |
 | `SHAPE_OCCLUSION_WALL` | the `SHAPE_OCCLUSION` union moved by -0.1875 on y (3 pixels down) | likewise | occlusion shape when `in_wall` is true |
 
-  The collision box is 24 pixels (1.5 blocks) tall: an entity cannot jump over a closed gate. `isPathfindable`: for the
+  The collision box is 24 pixels (1.5 blocks) tall (read from the shape constants); that an entity cannot step or jump onto a
+  closed gate follows from the step and jump rules of 13 (inferred, not read here). `isPathfindable`: for the
   path computation types `LAND` and `AIR` the result is the `open` value; for `WATER` it is false (the synthetic switch class `FenceGateBlock$1` assigns the numbers by enum constant, read from its static initialiser: `LAND` is 1, `WATER` is 2, `AIR` is 3; the results are open, false, open).
 - **Placement** (`getStateForPlacement`): `powered = open = level.hasNeighborSignal(pos)`; `facing` = the player's
   horizontal direction (`getHorizontalDirection`, not opposite); `in_wall` = true when the facing axis is `Z` and the block to the west or
@@ -385,9 +387,12 @@ east is `cw`).
 - **Placement.** Let `c = context.getClickedFace()`; let `n` = the state at `clickedPos.relative(c.getOpposite())` (the block the
   player clicked against). If `n` is an end rod with `facing == c`, the new rod has `facing = c.getOpposite()`; otherwise
   `facing = c`. Rotation and mirror apply to `facing`.
-- **Client effect.** `animateTick` (client only, 12): with probability 1 in 5 per call (`random.nextInt(5) == 0`) an `end_rod`
-  particle is spawned near the rod's tip (position `0.55 - random * 0.1` above the cell corner on each axis, shifted along
-  `facing` by `0.4 - (random + random) * 0.4`, velocity gaussian times 0.005 on each axis).
+- **Client effect.** `animateTick` (client only, 12). Draw order within one call, read in full: first the three position
+  floats `nextFloat` (x, then y, then z), then the two floats `nextFloat` of the shift distance, on **every** call; then the
+  test `random.nextInt(5) == 0`; only when it passes is a particle spawned, and then three gaussian draws (x, y, z velocity
+  order) are made. The `end_rod` particle position on each axis is the cell coordinate plus `0.55 - nextFloat * 0.1`, plus
+  the facing's step on that axis times `d` where `d = 0.4 - (nextFloat + nextFloat) * 0.4`; the velocity is gaussian times
+  0.005 on each axis. This is client-side presentation only and no server rule reads it.
 
 ### 6.5 Chorus plant and chorus flower (`ChorusPlantBlock`, `ChorusFlowerBlock`: fields 549 and 550)
 
@@ -440,8 +445,8 @@ east is `cw`).
 - **Random tick** (`randomTick`), `age < 5` only, and only if `pos.above()` is empty and `pos.getY() <= maxY`:
   1. `grow = false`, `endBelow = false`. Let `B` = the state below.
   2. If `B` is in tag `supports_chorus_flower`: `grow = true`.
-  3. Else if `B` is the chorus plant: let `h = 1`; for `j` in 0 to 3: `S` = the state at `pos.below(h + 1)`; if `S` is the plant, `h += 1`; else
-     if `S` is in `supports_chorus_flower`, `endBelow = true` and stop the loop. Then `grow = (h < 2) || (h <= random.nextInt(endBelow ? 5 : 4))`
+  3. Else if `B` is the chorus plant: let `h = 1`; for `j` in 0 to 3: `S` = the state at `pos.below(h + 1)`; if `S` is the plant, `h += 1` and
+     the loop continues; any other `S` ends the loop, and when that `S` is in `supports_chorus_flower` first `endBelow = true`. Then `grow = (h < 2) || (h <= random.nextInt(endBelow ? 5 : 4))`
      (`nextInt(bound)` returns 0 to bound-1).
   4. Else if `B` is air: `grow = true`.
   5. If `grow` and all four horizontal neighbours of `pos.above()` are empty (`allNeighborsEmpty(level, above, null)`: no direction
@@ -457,7 +462,7 @@ east is `cw`).
 - **Projectiles**: `onProjectileHit` destroys the block with drops when a server-level projectile may interact and break
   (`mayInteract`, `mayBreak`).
 - **World generation helpers** `ChorusFlowerBlock.generatePlant` and `growTreeRecursive` (used by End island generation) are not
-  specified here: Open question 6.
+  specified here; they are specified in 35 part 7 (Open question 6). Level events 1033 and 1034 (grown and dead flower) are sent with data 0.
 
 ### 6.6 Purpur, end stone bricks, and the stair and slab classes (fields 551 to 555 and 575 to 576)
 
@@ -619,7 +624,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
   not cooling down: `entity.setAsInsidePortal(this, pos)` and `blockEntity.triggerCooldown(serverLevel)`.
 - **Destination** (`getPortalDestination`): the block entity's portal position, with a teleport transition; an ender pearl
   gets a transition without velocity (`TeleportTransition` with the `PLACE_PORTAL_TICKET` flag); the portal rules belong to the
-  portal document (design map RS23).
+  portal document (39).
 - **Client**: `animateTick` spawns `portal` particles by `getParticleAmount()` of the block entity.
 
 ### 6.10 Command blocks (`CommandBlock`: fields 562 and 563; `COMMAND_BLOCK` itself is in part 5)
@@ -642,7 +647,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
   and update comparator neighbours; after execution a chain follows `facing` through blocks that are `CHAIN_COMMAND_BLOCK`, bounded by the game
   rule `maxCommandSequenceLength`, with the warning "Command Block chain tried to execute more than {} steps!" when the
   bound is hit. The mode (impulse, repeating, chain) is a property of the block entity, derived from which block it is on. The full
-  chain algorithm belongs to the block entity document (RS13, 31): Open question 8.
+  chain algorithm belongs to the block entity documents (31 part 6): Open question 8.
 - `setPlacedBy`: the command feedback flag (`SEND_COMMAND_FEEDBACK`) is copied to the command block's `trackOutput`
   when the item has no block entity data; `automatic` is applied; `setPoweredAndUpdate` with the current neighbour signal.
 
@@ -685,7 +690,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
   `requiresCorrectToolForDrops()`, `isRedstoneConductor(never)`. States 12: `facing` (six values), `powered` (boolean). Default:
   facing south, `powered` false (index 5). Placement: `facing` = the nearest looking direction (the artifact applies
   `getOpposite()` twice, which cancels; so the observer's face points the way the player looks).
-  Signal rules (specified with redstone in RS12): `isSignalSource` true; `getSignal(dir)` = 15 when `powered` and `dir == facing`,
+  Signal rules (specified with redstone in 30 part 2): `isSignalSource` true; `getSignal(dir)` = 15 when `powered` and `dir == facing`,
   else 0 (`getDirectSignal` equals `getSignal`); `shouldRedstoneWireConnectTo(dir)` is `dir == facing`. `updateShape` for the neighbour in the `facing`
   direction, when not `powered`, schedules a tick in 2 ticks unless one is already scheduled (`startSignal`, server only).
   `tick`: when `powered`, set it false (flags 2); otherwise set it true (flags 2) and schedule another tick in 2 ticks; in both cases
@@ -710,7 +715,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
 - **Opening** (`useWithoutItem`): on the server with a shulker box entity: `canOpen(state, level, pos, entity)`: true when the
   lid animation status is not `CLOSED`, else the extension box `getProgressDeltaAabb(1.0, facing, 0.0, 0.5, (pos bottom
   centre))` deflated by 1.0E-6 has no collisions (`Level.noCollision`). When allowed: open the menu, award the stat
-  `open_shulker_box`, anger nearby piglins (`PiglinAi.angerNearbyPiglins`); return `SUCCESS` (also for the client). The menu is RS13.
+  `open_shulker_box`, anger nearby piglins (`PiglinAi.angerNearbyPiglins`); return `SUCCESS` (also for the client). The menu is in 40.
 - **Breaking** (`playerWillDestroy`): when the entity is not empty and the player does not prevent drops, the item is
   dropped with the entity's components (`BlockEntity.collectComponents`, contents kept) as a fresh item entity at the block
   centre; when the player prevents drops (creative) and the box is not empty, the loot table is unpacked. `getDrops` adds a
@@ -720,15 +725,15 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
 ### 6.13 Glazed terracotta, concrete, concrete powder (fields 573 to 577)
 
 - **`<colour>_GLAZED_TERRACOTTA`** (`GlazedTerracottaBlock extends HorizontalDirectionalBlock`). Builder: `mapColor(dye)`,
-  `BASEDRUM`, `requiresCorrectToolForDrops()`, `strength(1.4)`, `pushReaction(PUSH)` (note: `PUSH`, not `PUSH_PULL`, so a
-  sticky piston cannot pull it back). States 4: `facing` (north, south, west, east); default north (index 0). Placement:
+  `BASEDRUM`, `requiresCorrectToolForDrops()`, `strength(1.4)`, `pushReaction(PUSH)` (note: `PUSH`, not `PUSH_PULL`; the
+  meaning, pushed only along the piston's facing and never pulled, is specified in 30 part 3 and not read again here). States 4: `facing` (north, south, west, east); default north (index 0). Placement:
   `facing` = the opposite of the player's horizontal direction. Full cube.
 - **`<colour>_CONCRETE`** (`Block`): `mapColor(dye)`, `BASEDRUM`, tool required, `strength(1.8)`. 1 state.
 - **`<colour>_CONCRETE_STAIRS`**, **`<colour>_CONCRETE_SLAB`**: sections 3.3 and 6.6; hardness and resistance 1.8, tool required,
   instrument `BASEDRUM`, map colour of the colour, sound `STONE`.
 - **`<colour>_CONCRETE_POWDER`** (`ConcretePowderBlock(concrete, Properties)` extends `FallingBlock`; `concrete` = the concrete block of the same
   colour). Builder: `mapColor(dye)`, instrument `SNARE`, `strength(0.5)`, sound `SAND`. 1 state. The falling behaviour
-  (gravity, `onLand`) is the falling block rule (RS11). Block-local rules:
+  (gravity, `onLand`) is the falling block rule (29b part 1). Block-local rules:
   - `canSolidify(state)` = the state's fluid is in tag `water`.
   - `touchesLiquid(level, pos)`: for each `d` in `Direction.values()` order (down, up, north, south, west, east): `s` = the state at the
     last set position (`pos` itself at the start); when `d == down` and `!canSolidify(s)`, skip this direction; otherwise `m =
@@ -794,7 +799,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
   `hatch` 0 to 2 (default 0). Shape `column(14, 12, 0, 16)` = box(1,0,2, 15,16,14). `isPathfindable` false.
   `onPlace`: when the block below is in tag `sniffer_egg_hatch_boost` the hatch time is 12000 ticks, else 24000; the
   first tick is scheduled after `time / 3 + random.nextInt(300)` ticks (`RANDOM_HATCH_OFFSET_TICKS` = 300), game event `block_place`, level event
-  3009 (on the server, only when boosted). `tick`: when `hatch < 2` play `sniffer_egg_crack` and set `hatch + 1` (flags 2); at
+  3009 with data 0 (on the server, only when boosted). `tick`: when `hatch < 2` play `sniffer_egg_crack` and set `hatch + 1` (flags 2); at
   `hatch == 2` play `sniffer_egg_hatch`, destroy the block (`destroyBlock(pos, false)`), spawn a baby sniffer (`EntityTypes.SNIFFER`,
   spawn reason `BREEDING`, baby) at the block centre with a random yaw, then add it. (Tick rescheduling after each stage is by the same hatch time
   rule; `tick` contains no scheduling call, so the next stage is scheduled by `onPlace`, which must run again when the stage change is
@@ -866,7 +871,7 @@ facing north and waterlogged true, index 0). The wall fans' loot table key is th
   collision shape is empty. The `BaseCoralPlantTypeBlock` default shape `column(12,0,4)` is overridden by the plant class.
 - **Liquid.** `getFluidState` returns the water source when `waterlogged`, else the empty fluid state (via `Block.getFluidState`).
   `waterlogged` blocks schedule water ticks from `updateShape`. Placement and removal of liquid use the standard waterlogged
-  rules (RS10).
+  rules (29a).
 - **Bone meal and ecology**: coral blocks are in tag `coral_blocks`, plants in `coral_plants`, fans in `corals`, wall fans in
   `wall_corals` (the tag contents are data; the tag names exist in `BlockTags`, 24 part 1 §12.3). The coral growth feature is world generation (35).
 
@@ -1315,10 +1320,10 @@ Rows not in a table row above do not exist in this part. The values for the rows
    left of a viewer facing east), the corner is on the north side, consistent with the name.
 7. **Fence connection.** A `spruce_fence` placed with an `oak_fence` to the west: both are in tag `wooden_fences`, `isSameFence` true: `west = true` without any
    sturdiness test. With a `nether_brick_fence` to the east (tag `fences` but not `wooden_fences`): `isSameFence` is false and a fence's side face
-   is not sturdy (its support shape is only the post), so `east = false`. With a `stone` block to the north: `isExceptionForConnection` is false and the stone's south
+   is not sturdy (inferred: its support shape, the default, is the collision shape, which is not a full face), so `east = false`. With a `stone` block to the north: `isExceptionForConnection` is false and the stone's south
    face is sturdy: `north = true`.
 8. **Fence collision height.** A fence's collision box is 24 pixels (1.5 blocks) tall (post box(6,0,6, 10,24,10)), while its selection box is 16 pixels tall:
-   an entity at ground level cannot step onto the fence top by normal jumping, which is the 1.5-block rule of 13.
+   that an entity at ground level cannot step onto the fence top by normal jumping is an inference from the box height and the step and jump rules of 13 (not read here).
 9. **Sea pickle light.** Waterlogged pickles 1, 2, 3, 4 emit 6, 9, 12, 15; the same blocks with `waterlogged = false` emit 0. A sea pickle placed on a sea pickle with `pickles = 3`
    by a player who is not sneaking becomes `pickles = 4` (`canBeReplaced` is true while `pickles < 4`).
 10. **Pitcher crop shape.** Age 0 lower: `a = 4 + 0 = 4`, `w = 6`: selection box(5,-1,5, 11,3,11) (`column(6, -1, min(16, 3))`); collision `column(6,-1,3)`. Age 4 lower: `a = 6 + 26 = 32`,
@@ -1386,23 +1391,22 @@ Rows not in a table row above do not exist in this part. The values for the rows
 
 ## 11. Open questions
 
-1. **Absolute first state id.** `S6`, the first state id of block id 689 (sum of the state counts of block ids 0 to 688), is not given here: it needs the state counts of parts 3 to 5
-   (part 2 starts at id 105 and state id 575, 24 part 1 §3). The table gives offsets from `S6`. The orchestrator or the part 5 document should state `S6` and this document's first state id is then `S6 + offset`.
+1. **Absolute first state id.** Closed by cross-reference, not by a new read: `S6`, the first state id of block id 689, is **15555** (24 part 5: `pale_oak_fence_gate` has first state 15523 and 32 states, so `mangrove_fence_gate` follows at 15555). Consistency check against this document: 24 part 7 gives `VOID_AIR` (block id 884) the first state id 18649, and 15555 + 3094 = 18649. The first state id of a block of this part is `S6 + offset` (table 7.1).
 2. **Field numbering in 24 part 1.** Closed. The field order read in the artifact is `BED` 119, `STRAW_BED` 120, `PALE_OAK_FENCE_GATE` 524, `MANGROVE_FENCE_GATE` 525, `POTTED_BAMBOO` 629, `VOID_AIR` 630, `CAVE_AIR` 631, `CUT_COPPER` 836, `CHISELED_COPPER` 837; 911 fields and 1286 blocks agree, and 24 part 1 now states the same numbers.
 3. **Direction of the 90-degree rotation.** `OctahedralGroup.BLOCK_ROT_Y_90` and `Shapes.rotateHorizontal` were read as calls and as the entry order, not as matrices. The statement that the `EAST` entry
    is the `NORTH` shape turned clockwise (seen from above) is inferred from the names of the stair shapes (6.6) and the use in pipes; the artifact's `BLOCK_ROT_Y_90` is assigned the `ROT_90_Y_NEG` constant (read), which supports but does not prove that reading; a fence or door shape is symmetric or follows from its
    direction names, but an asymmetric shape (stairs) depends on the sense. A reference client check or reading of `OctahedralGroup` is needed.
 4. **Path computation mapping.** Closed: the numbering of `FenceGateBlock$1`, `DoorBlock$1` and `SlabBlock$1` was read by enum constant (6.1, 6.3, 6.6).
 5. **Outline of the pitcher plant.** Closed: no `getShape` or `getCollisionShape` override exists in `DoublePlantBlock` or `VegetationBlock`, so the outline is the default full cube moved by the XZ offset (read, 6.7). It has not been compared with a rendered outline.
-6. **Chorus flower world generation.** `ChorusFlowerBlock.generatePlant` and `growTreeRecursive` (used by the End island features) are not specified here (design map RS19, document 35).
+6. **Chorus flower world generation.** Closed here by reference: `ChorusFlowerBlock.generatePlant` and `growTreeRecursive` (used by the End island features) are specified in 35 part 7, not in this document.
 7. **Waterlogging mechanics.** Blocks with a `waterlogged` property return the water source as their fluid state; which of them implement the liquid placement interface
-   (`SimpleWaterloggedBlock`), the water tick delay (`Fluids.WATER.getTickDelay`) and the removal of water on break belong to RS10. Only the slab was read to use the interface.
+   (`SimpleWaterloggedBlock`), the water tick delay (`Fluids.WATER.getTickDelay`) and the removal of water on break belong to 29a. Only the slab was read to use the interface.
 8. **Block entities.** The behaviour of `CommandBlockEntity` (modes, the exact chain algorithm), `ShulkerBoxBlockEntity` (animation progress, container, `getBoundingBox`),
-   `TheEndGatewayBlockEntity` and `ConduitBlockEntity` belongs to RS13 (31). This document gives only the block-side rules.
+   `TheEndGatewayBlockEntity` and `ConduitBlockEntity` belongs to 31 (parts 1, 5, 6 and 8). This document gives only the block-side rules.
 9. **Sniffer egg staging.** `SnifferEggBlock.tick` contains no scheduling call; the next stage must therefore be scheduled by `onPlace` when the changed state is placed
-   (inferred; whether `Level.setBlock` of a changed state of the same block calls `onPlace`, which RS9 specifies).
+   (inferred; whether `Level.setBlock` of a changed state of the same block calls `onPlace`, which 29 specifies).
 10. **Update flags and context methods.** The flag bits of `Level.setBlock` (2, 3, 10, 18, 35 appear here), `BlockPlaceContext.getNearestLookingDirection(s)`, `getHorizontalDirection`,
-    `isSecondaryUseActive`, `replacingClickedOnBlock` and `getClickLocation` are specified by RS9 (29) and are only used here.
+    `isSecondaryUseActive`, `replacingClickedOnBlock` and `getClickLocation` are specified in 29 and are only used here.
 11. **Items.** The items `torchflower_seeds`, `pitcher_pod`, `beetroot_seeds` and the items of the other rows are listed by key only; their behaviour (planting) belongs to the item registry
     (RS5). Game rules (`mobGriefing`, `maxCommandSequenceLength`, `sendCommandFeedback`), environment attributes (`water_evaporates`, `turtle_egg_hatch_chance`) and block tags
     are named; their values and contents are data or other documents (33 §3.4 for the attributes).
