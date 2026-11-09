@@ -1,0 +1,8 @@
+minecraft-26.3-client.jar records 34227 files 32878 methods {8: 32878}
+  block textures 1300 by size {(16, 16): 1200, (32, 32): 45, (16, 64): 17, (16, 48): 9, (16, 512): 7, (16, 128): 4}
+  block mcmeta 105
+  top dirs ['META-INF', 'assets', 'com', 'data', 'flightrecorder-config.jfc', 'net', 'pack.png', 'version.json']
+Faithful 32x - 26.3.zip records 5300 files 5066 methods {8: 3075, 0: 1991}
+  block textures 1297 by size {(32, 32): 1197, (64, 64): 45, (32, 128): 17, (32, 96): 9, (32, 1024): 7, (32, 256): 4}
+  block mcmeta 105
+  top dirs ['LICENSE.txt', 'assets', 'pack.mcmeta', 'pack.png']
