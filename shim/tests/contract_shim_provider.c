@@ -475,6 +475,13 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_shutdown completes", 1, 1);
 }
 
+/* §12 cc_open_path: an opener that exists returns 0 at once, a missing one CC_NOTFOUND. */
+static void open_path(void) {
+    tl_int("contract shim cc_open_path with an existing opener returns 0", 0, cc_open_path("/usr/bin/true", "/tmp"));
+    tl_int("contract shim cc_open_path with a missing opener returns CC_NOTFOUND", CC_NOTFOUND,
+           cc_open_path("/nonexistent/opener", "/tmp"));
+}
+
 int main(void) {
     net_listen_accept();
     net_connect_status();
@@ -486,6 +493,7 @@ int main(void) {
     zlib_deflate();
     zlib_inflate();
     fs_list();
+    open_path();
     window();
     vulkan();
     cc_win_close();
