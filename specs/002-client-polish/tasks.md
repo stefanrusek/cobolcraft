@@ -357,12 +357,12 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 16: US15-proto — entity spawn and metadata
 
-- [ ] T0171 [US15-proto] Extend `proto/tests/contract_wire_provider.cob` with the Spawn Entity, Set Entity Data and Entity Event fixtures
-- [ ] T0172 [US15-proto] Write tests in `proto/tests/test_entity_metadata.cob` for every serializer of `docs/protocol/46-registry-ids.md` §12
-- [ ] T0173 [US15-proto] Implement the entity metadata entry codecs in `proto/src/entity-metadata.cob`
-- [ ] T0174 [US15-proto] Write tests in `proto/tests/test_entity_packets.cob` for Spawn Entity and Entity Event (18, 21)
-- [ ] T0175 [US15-proto] Implement the Spawn Entity and Entity Event codecs in `proto/src/entity-packets.cob`
-- [ ] T0176 [US15-proto] Gate: run `make gate-proto` and record the command and real output
+- [X] T0171 [US15-proto] Extend `proto/tests/contract_wire_provider.cob` with the Spawn Entity, Set Entity Data and Entity Event fixtures
+- [X] T0172 [US15-proto] Write tests in `proto/tests/test_entity_metadata.cob` for every serializer of `docs/protocol/46-registry-ids.md` §12
+- [X] T0173 [US15-proto] Implement the entity metadata entry codecs in `proto/src/entity-metadata.cob`
+- [X] T0174 [US15-proto] Write tests in `proto/tests/test_entity_packets.cob` for Spawn Entity and Entity Event (18, 21)
+- [X] T0175 [US15-proto] Implement the Spawn Entity and Entity Event codecs in `proto/src/entity-packets.cob`
+- [X] T0176 [US15-proto] Gate: run `make gate-proto` and record the command and real output
 
 #### Phase 17: US19-proto — swap action
 
