@@ -27,10 +27,11 @@ of README Part 7 decision 16.
 
 ## 3. World folder additions (`level.dat`, region data)
 
-`level.dat`: `WorldType`, `Seed`, `ContentJar` (world-types.md §2.1). Dimensions: up to three folders under
-`dimensions/` (overworld, Nether, End). Chunks store block states by key in palettes (07 §7.3, WT-23); the save
-layout question between 07 and 33 (world-types.md Open question 12) is answered by a Foundational docs round before
-the `core` persistence slice. An old 001 world opens as `cobolcraft` (data-model §6).
+`level.dat`: `WorldType`, `Seed`, `ContentJar` as flat root keys (world-types.md §2.1, 07 §9.7). Dimensions under
+`dimensions/`: a standard world has three folders (overworld, Nether, End); a cobolcraft world has the two
+`cobolcraft/` folders (07 §9.1, §9.7), selected by `WorldType`. Chunks store block states by key in palettes (07 §7.3,
+WT-23). The save layout question between 07 and 33 (world-types.md Open question 12) is answered in 07 §9.7. An old
+001 world opens as `cobolcraft` (data-model §6).
 
 ## 4. Contract tests
 

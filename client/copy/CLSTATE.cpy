@@ -109,7 +109,7 @@
 *>  ---- single-player (US16; sp-host.cob, game-dir.cob, the world list screens) ----
     05 SP-STATE.
        10 SP-ACTIVE          PIC 9.          *> 1 while this client hosts a world (in-process core)
-       10 SP-SETTINGS        PIC X(1707).    *> the hosted world's CORE-SETTINGS (core-host-api §1)
+       10 SP-SETTINGS        PIC X(3829).    *> the hosted world's CORE-SETTINGS (core-host-api §1)
        10 SP-NEXT-TICK       BINARY-DOUBLE.  *> clock of the next core tick
        10 SP-TICKS           BINARY-DOUBLE.  *> core ticks run since the world was opened
        10 SP-PAUSED          PIC 9.          *> 1 while the single-player pause is in effect (US16-4)

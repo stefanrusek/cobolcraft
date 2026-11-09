@@ -1,0 +1,9 @@
+# Fixture: Block Update, three-byte state id
+# Phase: play. Direction: clientbound (S->C). Packet id 0x08 (8).
+# Doc refs: 05a 0x08; 24 part 8 (35723 states)
+# Stated inputs:
+#   location (0, 319, 0) (top of the overworld); new state 35722 (the last state id, a three-byte VarInt)
+
+08                                               # packet id: VarInt 0x08
+00 00 00 00 00 00 01 3f                          # Location: Position (0, 319, 0)
+8a 97 02                                         # Block state: VarInt 35722

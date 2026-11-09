@@ -1051,7 +1051,7 @@ A column position that no rule matches keeps the block placed by the fill (stone
 3. `makeBands(1, yellow_terracotta)`, `makeBands(2, brown_terracotta)`, `makeBands(1, red_terracotta)`, where `makeBands(width, state)`: `count = r.nextIntBetweenInclusive(6, 15)`; repeat `count` times: `w = width + r.nextInt(3)`, `start = r.nextInt(192)`; for `k = 0 .. w-1` while `start + k < 192`: `bands[start + k] = state`.
 4. `count = r.nextIntBetweenInclusive(9, 15)`; `pos = 0`; for `j = 0 .. count-1` while `pos < 192`: `bands[pos] = white_terracotta`; if `pos - 1 > 0` and `r.nextBoolean()` then `bands[pos-1] = light_gray_terracotta`; if `pos + 1 < 192` and `r.nextBoolean()` then `bands[pos+1] = light_gray_terracotta`; `pos = pos + r.nextInt(16) + 4`. (The `nextBoolean` is evaluated only when the position test passes.)
 
-Band lookup: `getBand(x, y, z) = bands[(y + round(clay_bands_offset.get(x, 0, z) * 4.0f) + 192) mod 192]` where `round` is Java `Math.round(float)` (floor of `v + 0.5`) and the noise value is a float.
+Band lookup: `getBand(x, y, z) = bands[(y + round(clay_bands_offset.get(x, 0, z) * 4.0f) + 192) mod 192]` where `round` is Java `Math.round(float)`: exactly floor(v + 1/2) in infinite precision, ties toward positive infinity, NOT a float add followed by floor (see §16.2 `round_f32`), and the noise value is a float.
 
 ### 10.7 Eroded badlands pillars (`erodedBadlandsExtension`)
 
@@ -1501,10 +1501,188 @@ Quantised target of the first row: `(1182, -13, -81, -1039, -881, 111)`.
 7. **Biome zoom seed.** Closed: the argument is `WorldOptions.seed()` via `ServerLevel.getSeed()` (§7.7), read from the call chain. Not traced: whether the `obfuscateSeed` call in `MinecraftServer` is used by generation (it supplies other state).
 8. **`FROZEN` temperature modifier.** Read from the bytecode of `Biome`'s static initialiser: `TEMPERATURE_NOISE` = `SimplexNoise(WorldgenRandom(LegacyRandomSource(1234)), true)`; `BIOME_INFO_NOISE` = `SimplexNoise(WorldgenRandom(LegacyRandomSource(2345)), true)`; `FROZEN_TEMPERATURE_NOISE` = stack of three `SimplexNoise(r, true)` from one `r = WorldgenRandom(LegacyRandomSource(3456))`, layers (freq 1.0, amp 0.14285715f), (0.5, 0.2857143f), (0.25, 0.5714286f). `WorldgenRandom` extends `LegacyRandomSource` and its `next(bits)` delegates to the wrapped legacy source (read), so the draw sequence is the plain legacy one. See 11 §4 for the wrapper in its other uses. Still inferred: nothing in this item; the 1234 noise is used by the height adjustment above y = 80 only, which iceberg generation never reaches.
 9. **`DimensionType` constants.** Closed: derived from the static initialisers (§5).
-10. **Float behaviour of `Math.pow`/`Math.sqrt`** in `NormalNoise` setup is IEEE double; all of those values (frequencies, normalisation factors) are computed once per noise at start-up and rounded to float only where §3.3 says so.
+10. **Float behaviour of `Math.pow`/`Math.sqrt`** in `NormalNoise` setup is IEEE double; all of those values (frequencies, normalisation factors) are computed once per noise at start-up and rounded to float only where §3.3 says so. Closed by §16: the `pow` calls there have integer exponents with bases 2.0 and 0.5, so each result is an exact power of two (`Math.sqrt` is correctly rounded); remaining libm dependencies are listed in §16.7.
 11. **Aquifer `shouldScheduleFluidUpdate`.** Its effect after generation (fluid ticks) is outside this document.
 12. **Worked examples and counts.** §13, §2.7's derived values, and the per-biome counts in §7.4 come from a hand-written reference of this text and have not been compared against a run of the artifact; the biome table transcription has no data file to check against (see §7.4).
 13. **Snow layers and top-layer freezing** (the `freeze_top_layer` feature) are decoration and belong to document 11; the surface rules here only place blocks (snow_block, packed_ice, powder_snow, ice).
+
+---
+
+## 16. Floating-point function set (libm-style functions and rounding rules; the `cc_f64_*` table)
+
+Scope: every arithmetic step on `float`/`double` that documents 10, 11, 15 and 18 call for and that is not plain add, subtract, multiply, divide, `floor` (as an exact IEEE operation), `sqrt` or text conversion. Source: artifact `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md), version 26.3; class files are Java 25, major version 69). Method: static reading (`javap -c`) of `net.minecraft.util.Mth`, `net.minecraft.world.level.levelgen.*`, `net.minecraft.world.level.biome.*`, `net.minecraft.world.entity.*`, `net.minecraft.commands.*`, `net.minecraft.server.commands.*`; every call to `java.lang.Math`, `Mth`, `org.joml.Math` in the 6618 classes of `net/minecraft/{world,commands,util,core,server,network/protocol/game}` was enumerated. The JDK's own semantics (for `Math.round` and `Math.min`/`Math.max`) were read from the JDK 21 `Math.java` source on the analysis machine, not from the artifact (marked "JDK"). Worked examples were computed with a throwaway `python3 -I` script (scratch only); hex values are IEEE-754 bit patterns.
+
+### 16.1 Findings in one list
+
+1. The artifact contains **no call to `StrictMath`** anywhere in the enumerated classes; all libm-style calls are `java.lang.Math` (0 `StrictMath` invocations).
+2. There is **no `tan`, `exp`, `cbrt`, `toDegrees` or `fmod` (as a method) call** in scope. `Math.log10` appears only in client option code (out of scope). `Math.log1p` (sculk), `Math.toRadians`, `Math.nextUp`, `Math.copySign` appear and have rows in §16.2 (all outside documents 10/11/15/18 except `toRadians` in entity position handling). `Math.random` appears only in a latency simulator (out of scope).
+3. `Mth.sin` and `Mth.cos` are **table lookups** (65536 floats), not libm calls (§16.3). `Mth.atan2` is a **custom approximation** (two 257-entry double tables, one Newton step of an inverse square root, a cubic correction), not libm (§16.4). It is not exact: it differs from true `atan2` by up to about 8e-6 radian in 200000 random samples.
+4. All float (`binary32`) arithmetic in the artifact is plain IEEE single precision with **no fused multiply-add** (no `Math.fma` call in scope) and each operation rounded to float before the next. It is reproduced exactly by doing the operation in double and rounding the result to float (§16.2, row `f32_round`).
+5. The only places that genuinely need libm functions that plain IEEE operations cannot give are listed in §16.7.
+
+### 16.2 The function table
+
+Column "Prec" is the precision of the artifact call. "Suffix" is the proposed name suffix (`cc_f64_<suffix>`; every function takes and returns IEEE doubles; float values travel as doubles that are exactly representable in float). Rows marked "table" or "poly" replace a libm call in the artifact.
+
+| Suffix | Artifact method | Prec | Exact semantics needed | Call sites in scope (class `method`) |
+|---|---|---|---|---|
+| `f32_round` | JVM `d2f` / `f2d` pair | f64 to f32 | Round a double to the nearest binary32, ties to even; magnitude above the float maximum becomes infinity; NaN stays NaN; subnormals are kept. Applied after **every** float add, subtract, multiply, divide, sqrt (reproduces binary32 exactly; tested 0 mismatches in 60000 random operand pairs per operation, checked against exact rational rounding) and wherever the artifact narrows (`(float)` casts, `d2f`). | everywhere float arithmetic occurs: `PerlinNoise`, `Mth.lerp(FFF)`, `Mth.smoothstep`, density-function samplers, `CubicSpline$Multipoint.sample`, carvers, `LivingEntity`, `Entity`, `LookControl`, etc. |
+| `to_i32` | JVM `d2i` (and `f2i`) | f64 to i32 | Truncate toward zero; NaN gives 0; values at or above 2147483647 give 2147483647; at or below -2147483648 give -2147483648 (saturating, never wraps). A float is widened to double first (exact). | `Mth.floor`, `Mth.ceil`, `Mth.packDegrees`, `Climate.quantizeCoord` (long form), `BlockPos.containing`, every `(int)` cast of a double |
+| `to_i64` | JVM `d2l` (and `f2l`) | f64 to i64 | As `to_i32` with the limits of 64 bits (+/-9223372036854775807/-9223372036854775808). Never wraps. | `Mth.sin`/`Mth.cos` table index, `Mth.lfloor`, `Mth.ceilLong`, `Climate.quantizeCoord`, `Math.round(D)` |
+| `i32_to_f32` | JVM `i2f` | i32 to f32 | Nearest float, ties to even (integers above 2^24 lose low bits). `l2f`, `l2d` likewise (`l2d` rounds to nearest double above 2^53). | `Mth.unpackDegrees`, `Mth.lerpInt`, `GradientFunction` factor, `RoundFunction` |
+| `floor` | `Math.floor(D)` | f64 | Exact IEEE floor (largest integral double not above x); -0.0 and NaN and infinities unchanged. Any C library gives the identical result. | `Mth.floor(D)`, `Mth.floor(F)` (widen first), `Mth.lfloor`, `GradientNoise.wrap`, `RoundFunction`, `MaterialSystem.erodedBadlandsExtension` etc. |
+| `ceil` | `Math.ceil(D)` | f64 | Exact IEEE ceiling; same remarks. `Mth.ceil(F)` widens first then `to_i32`. | `Mth.ceil`, `OreFeature.place` (four `Mth.ceil(F)`), `MaterialSystem` extensions, `RoundFunction` |
+| `round_f32` | `Math.round(F)` returning int | f32 | **Exact** floor(x + 1/2) in infinite precision (JDK): ties go toward positive infinity, so round(2.5)=3, round(-2.5)=-2, round(-0.5)=0; NaN gives 0; out-of-range saturates (as `to_i32`). **Not** "float add 0.5 then floor": for the float 0.49999997 (0x3EFFFFFF) the float sum 0.49999997+0.5 rounds to 1.0, but the correct result is 0. An implementation may take `r = floor(x)`, then `r + 1` if `x - r >= 0.5` (the difference is exact in double). | `MaterialSystem.getBand`, `RoundFunction` (type round), `TimeArgument.parse`, `LivingEntity.actuallyHurt`/`getDamageAfterMagicAbsorb`/`hurtServer`, `Player.actuallyHurt`/`damageStatsAndHearts`, `ServerPlayer.checkMovementStatistics`/`checkRidingStatistics`, `EnchantmentHelper.selectEnchantment`, `ApplyMobEffect.apply`, `BlocksAttacks`, `Item.getBarWidth` |
+| `round_f64` | `Math.round(D)` returning long | f64 | Same rule on doubles (floor(x + 1/2) exactly), result `to_i64` saturating, NaN gives 0. | `VecDeltaCodec.encode` (value times 4096.0), `Player.causeFallDamage`, `ServerPlayer.checkMovementStatistics`, `RemoveBinomial.process` (these are the in-scope sites; other `Math.round(D)` callers `Shapes.create` (6), `Shapes.findBits` (2) and `ChunkGeneratorStructureState.generateRingPositions` (2) belong to other documents) |
+| `abs_f32`, `abs_f64` | `Math.abs(F)` / `(D)`, `Mth.abs(F)` | f32 / f64 | Clear the sign bit: abs(-0.0) = +0.0, abs(-inf) = +inf, NaN stays NaN (payload kept). `abs_i32` (`Math.abs(I)`, `Mth.abs(I)`) is integer: abs(-2147483648) = -2147483648 (no libm; may be inlined). | `NormalNoise$OctaveInfo.absAmplitude`, `UnaryFunction$AbsSampler` (density node `abs`), `MaterialSystem` extensions, `Mth.absMax`, `Mth.equal`, `Mth.triangleWave`, `Aquifer$NoiseBasedAquifer.calculatePressure`/`computeFluidType`, `WorldCarver.carveEllipsoid`, `CanyonWorldCarver.updateVerticalRadius`, the carver width term of 11 (the `1 - |0.5 - step/maxSteps| * 2` factor), most mob controls |
+| `log1p` | `Math.log1p(D)` | f64 | libm `log(1 + x)` accurate near 0; no exact IEEE replacement (`log(1+x)` loses precision). Single call: `SculkSpreader.updateCursors` (sculk spreading, specified in 29b part 6 and 31 part 8, not in 10/11/15/18). Out of scope here; the owning document must decide; exactness risk is last-bit only. | |
+| `to_radians`, `next_up`, `copysign`, `inv_sqrt` | `Math.toRadians(D)`, `Math.nextUp(D)`, `Math.copySign(F,F)`, `Mth.invSqrt(D)` | f64 / f32 | `toRadians(x)` = `x * 0.017453292519943295` (double constant pi/180; (JDK) read from the JDK 21 `Math.java`, not the artifact); there is **no `toDegrees` call** in the enumerated classes. `nextUp` = C `nextafter(x, +inf)` (pairs with `next_down`); its only sites are the three in `AABB.nextDeflated` (no `MapItemSavedData` call exists), not in 10/11/15/18. `Mth.invSqrt(D)` calls `org.joml.Math.invsqrt` (a library outside the jar, so its definition is not available here; presumably `1.0 / sqrt(x)`, inferred); its two calls are in `GeodeFeature.place`, document 35. `copySign(a, b)` = magnitude of a with sign bit of b (used by `util.Interval`, not in scope). `toRadians` is used by `PositionMoveRotation.calculateAbsolute` (entity position/rotation, document 18 context). | |
+| `fmod` | JVM `frem` / `drem` (Java `%`) | f32 / f64 | C `fmod`: result has the sign of the dividend and magnitude below the divisor; x % 0 and inf % y are NaN; x % inf is x; exact (no rounding), identical in every C library. For floats: widen, fmod in double, the result is exactly a float. | `Mth.wrapDegrees(F/D)` (divisor 360), `Mth.wrapDegrees90` (90), `Mth.positiveModulo(F/D)`, `Mth.triangleWave` |
+| `min_j`, `max_j` | `Math.min/max(F/D)` | f32 / f64 | If either argument is NaN the result is NaN; -0.0 is smaller than +0.0 (min(-0.0, 0.0) = -0.0, max(-0.0, 0.0) = 0.0) (JDK). C `fmin`/`fmax` differ (they return the non-NaN argument). | `BinaryFunction$MinSampler`/`MaxSampler`, `CubicSpline$Multipoint.range`, `Mth.clamp`, `Mth.absMax`, `MaterialSystem` |
+| `clamp_f32`, `clamp_f64` | `Mth.clamp(FFF)` / `(DDD)` | f32 / f64 | If `v < lo` return `lo`, otherwise return `min_j(v, hi)`. So a NaN `v` stays NaN (the comparison is false, then `min_j` propagates NaN), and if `lo > hi` the result is `lo` when `v < lo` and `hi` otherwise. | `ClampFunction`, `Blender`, `Aquifer$NoiseBasedAquifer.computeSurfaceLevel`, `Entity.setXRot` (uses `Math.clamp(FFF)`, JDK 21: throws if `lo > hi` or either is NaN) |
+| `signum` | `Math.signum(F)` / `(D)` | f32 / f64 | -1.0, 0.0 or 1.0; zero and NaN are returned unchanged (including -0.0). | `UnaryFunction$SignSampler`, `Bat.customServerAiStep`, `Player.maybeBackOffFromEdge`, `AbstractArrow.onHitBlock`, `Fox$FoxPounceGoal.tick` |
+| `nextdown` | `Math.nextDown(D)` | f64 | Largest double below x (C `nextafter(x, -inf)`). Six call sites in the enumerated classes: `GradientNoise` (the constant `HALF = nextDown(16777216.0)`, §3.1; the only one in scope of 10/11/15/18), three in `AABB.nextDeflated` and two in `Cushion.hasAnchorBelow` (bounding-box and entity placement code, not specified by 10/11/15/18). | `GradientNoise` static initialiser |
+| `sqrt` | `Math.sqrt(D)`; `Mth.sqrt(F)` = widen, sqrt, narrow | f64 / f32 | Correctly rounded IEEE square root (any C `sqrt`); the float version narrows with `f32_round`, which equals the correctly rounded float sqrt (tested 0 mismatches). Negative gives NaN. `Mth.length(F..)` = `Mth.sqrt` of the float sum of squares; `Mth.length(D..)` = `Math.sqrt` of the double sum. | `NormalNoise`, `SimplexNoise`, `Vec3.length`/`distanceTo`/`normalize`, `Entity.distanceTo`, `Node.distanceTo`, `LocateCommand`, `CommandSourceStack.facing`, `MoveControl.tick`, many mob goals |
+| `pow` | `Math.pow(D,D)` | f64 | libm `pow`. Terrain use is **exact** (powers of two, see below). Gameplay use (below) needs a correctly rounded or at least identical `pow`. | `NormalNoise.buildOctaves` (3 calls: `2^firstOctave`, `0.5^(-(n-1))`, `0.5^(-n)`, all integer exponents so every result is an exact power of two; `ldexp` is identical), `BlendedNoise.createFbm`/`computeFbmRange`, `PowFunction$*Sampler` (density node `pow`, unused by overworld data), `Player.getDestroySpeed` (`0.3^(level+1)` as double, then narrowed), `Entity.playAmethystStepSound` (`0.997^(ticks since last)`, narrowed), `ShufflingList$WeightedEntry.setRandom` (`-pow(random, 1/weight)`), `NoteBlock.getPitchFromNote` (`2^((note-12)/12)`, narrowed), `LevelBasedValue$Exponent.calculate`, `ScaleExponentially.process`, `Power` loot number providers, `NaturalSpawner` static lambda, `MaceItem` (`3.5` vs `pow(distance, 2.0)` compare), `EnderDragon.aiStep` (`pow(y, 2.0)` form), `Climate$RTree.bucketize` (below) |
+| `log` | `Math.log(D)` | f64 | libm natural logarithm; log(0) = -inf, log(x<0) = NaN. | `UnaryFunction$LogSampler` (density node `log`: widen the float, `log`, narrow), `Climate$RTree.bucketize` (below), `MarsagliaPolarGaussian.nextGaussian`, `SpeleothemUtils.getSpeleothemHeight` (document 35), `SculkSpreader.updateCursors` (`log1p`) |
+| `sin`, `cos` | `Math.sin(D)`, `Math.cos(D)` | f64 | libm. In the artifact used (a) to **build** the sine table (§16.3) and the `COS_TAB`/`ASIN_TAB` tables of `Mth.atan2` (§16.4); (b) directly by `OreFeature.place` for the blob axis (argument = a float expression widened with `f2d`); also `Ravager.stunEffect`, `PrimedTnt`, `Guardian$GuardianMoveControl.tick`, `LivingEntity.createItemStackToDrop`/`updateFallFlyingMovement`, `RandomLookAroundGoal.start`, `RandomPos.generateRandomDirectionWithinRadians`, `Fox$PerchAndSearchGoal.resetLook`, `LongJumpUtil`, `EndSpikeFeature`, `IcebergFeature`, `NoiseSpawnFinder` (the last four belong to other documents). | |
+| `asin`, `acos` | `Math.asin(D)`, `Math.acos(D)` | f64 | libm. `asin` builds `ASIN_TAB`; also `Vec3.rotation`, `LivingEntity.applyItemBlocking`, `Fox$FoxPounceGoal.tick`, `Player.getRopeHoldPosition`, `DragonStrafePlayerPhase`, `DragonSittingScanningPhase`. | |
+| `atan2_lib` | `Math.atan2(D,D)` | f64 | libm `atan2`. Only 9 call sites, none in terrain: `Vec3.rotation` (command rotation from a direction), `DolphinJumpGoal.tick`, `SulfurCube`, `NewMinecartBehavior`, `LongJumpUtil`. | |
+| `atan2_mth` | `Mth.atan2(D,D)` | f64 | The custom routine of §16.4 (30+ call sites: look/move controls, `Entity.lookAt`, `Mob.lookAt`, `CommandSourceStack.facing`, `Projectile.shoot`/`updateRotation`, `AbstractArrow.tick`, `Rabbit.facePoint`, `Ghast.faceMovementDirection`, `ServerPlayer.indicateDamage`, `ServerPlayer$RespawnPosAngle.calculateLookAtYaw`). | |
+| `sin_tab`, `cos_tab` | `Mth.sin(D)`, `Mth.cos(D)` return float | table | §16.3. 59 call sites in scope (view vectors, `LocalCoordinates.apply`, carvers, `OreFeature.doPlace`, knockback, jump, swim and flying movement, `Direction.orderedByNearest`). | |
+| `f64_bits`, `f64_from_bits` | `Double.doubleToRawLongBits`, `longBitsToDouble` | f64 | Reinterpret the 64 bits; no NaN canonicalisation (raw). Used by `Mth.atan2`, `Mth.fastInvSqrt` (§16.4). | |
+| `fast_inv_sqrt` | `Mth.fastInvSqrt(D)` | f64 | §16.4 formula. | `Mth.atan2`; `Beardifier` (document 36) |
+| `lerp_f32`, `lerp_f64` | `Mth.lerp(FFF)` / `(DDD)` | f32 / f64 | `a + t * (b - a)` with the order: difference first, then times `t`, then add `a`; each step rounded (float for the float form, no FMA). The float form is not symmetric: `lerp(1, a, b)` may differ from `b` by an ulp. `lerp2`, `lerp3` nest `lerp`: x first, then y, then z (see 3.1). | `PerlinNoise`, `InterpolatedFunction`, `CubicSpline$Multipoint.sample`, `LerpFunction`, `Entity` interpolation, `OreFeature.doPlace` (double form), `Level.getRainLevel`/`getThunderLevel` |
+
+These rows are the proposed `cc_f64_*` set: `f32_round`, `to_i32`, `to_i64`, `i32_to_f32`, `floor`, `ceil`, `round_f32`, `round_f64`, `abs_f32`, `abs_f64`, `log1p`, `to_radians`, `next_up`, `copysign`, `inv_sqrt`, `fmod`, `min_j`, `max_j`, `clamp_f32`, `clamp_f64`, `signum`, `nextdown`, `sqrt`, `pow`, `log`, `sin`, `cos`, `asin`, `acos`, `atan2_lib`, `atan2_mth`, `sin_tab`, `cos_tab`, `f64_bits`, `f64_from_bits`, `fast_inv_sqrt`, `lerp_f32`, `lerp_f64`. The last seven are built from the first ones and the three libm functions `sin`, `cos`, `asin`; an implementer may instead implement them in COBOL from IEEE operations, but then the tables must come from `sin`, `cos`, `asin` anyway (§16.7).
+
+#### 16.2.1 Small `Mth` helpers (all exact compositions of the rows above; read from `Mth`)
+
+Every helper is a fixed order of IEEE operations; the order matters for bit-exactness.
+
+| Helper | Value (float helpers: each operation rounded to float) |
+|---|---|
+| `smoothstep(t)` (float) | `(t*t*t) * (t * (t*6 - 15) + 10)` evaluated as `t*t`, times `t`, then `t*6`, minus 15, times `t`, plus 10, then the product of the two parts |
+| `smoothstepDerivative(t)` | `30 * t * t * (t - 1) * (t - 1)` evaluated left to right: `((((30*t)*t)*(t-1))*(t-1))` |
+| `inverseLerp(v, a, b)` | `(v - a) / (b - a)` (float or double form) |
+| `map(v, a, b, c, d)` | `lerp(inverseLerp(v, a, b), c, d)`; `clampedMap` uses `clampedLerp`, which returns `c` if the fraction is below 0, `d` if above 1, else `lerp` (NaN fraction falls through to `lerp`) |
+| `square`, `cube` | `x*x`; `(x*x)*x` (float or double) |
+| `wrapDegrees(float)` | `r = a fmod 360`; if `r >= 180` then `r - 360`; if `r < -180` then `r + 360` (float steps). `wrapDegrees(double)` likewise in double. `wrapDegrees90` uses 90, 45. |
+| `wrapDegrees(long)` | `r = (float)(a % 360L)` (long remainder, truncating, then `l2f`), then the same steps: if `r >= 180` then `r - 360`; if `r < -180` then `r + 360` (float) |
+| `wrapDegrees(int)` | `r = a % 360` (int remainder, truncating); if `r >= 180` then `r - 360`; if `r < -180` then `r + 360` (int); returns int |
+| `degreesDifference(a, b)` | `wrapDegrees(b - a)`; `rotLerp(t, a, b) = a + t * wrapDegrees(b - a)`; `rotateIfNecessary(a, b, m) = b - clamp(degreesDifference(a, b), -m, m)` |
+| `positiveModulo(float)` | `((a fmod b) + b) fmod b` (double: same) |
+| `packDegrees(a)` | `to_i32(floor(f32(f32(a*256)/360)))` then Java `i2b` (keep the low 8 bits as a signed byte, wraps): 90 gives 64; -1 gives -1 (0xFF); 180 gives -128 (0x80); 359.9 gives -1. `unpackDegrees(b) = f32(f32(b*360) / 256)` with `b*360` an exact integer |
+| `quantize(v, n)` | `to_i32(floor(v / n)) * n` (int multiply, wraps) |
+| `length`, `lengthSquared` | sums in the order x, y, z; float forms in float, double forms in double |
+| `nextDouble(r, a, b)` | `a` if `a >= b`, else `r.nextDouble() * (b - a) + a` (multiply then add; no FMA) |
+| `randomBetween(r, a, b)` (float) | `r.nextFloat() * (b - a) + a` in float |
+| `sign(double)` | 0 if `x == 0` (including -0.0), 1 if `x > 0`, else -1 (NaN is neither, so it gives -1) |
+| `lerpInt(t, a, b)` | `a + floor(f32(t * (float)(b - a)))` (int add) |
+| `getSeed(x, y, z)` | integer only; see §2.4 |
+| other helpers | Not used by 10/11/15/18 by method; owners: `frac(D)` (`BlockGetter.traverseBlocks`/`addCollisionsAlongTravel`, `TargetBlock.getRedstoneStrength`) and `frac(F)` (`AbstractFurnaceBlockEntity.createExperience`): block/furnace documents; `approach`, `approachDegrees`, `degreesDifferenceAbs` (`Phantom$PhantomMoveControl.tick`, `SignBlockEntity.getSlotPlayerIsFacing`): mob and sign documents; `normal` (`ClampedNormalFloat/Int.sample`): value providers; `lerpDiscrete` (`AbstractContainerMenu.getRedstoneSignalFromContainer`): menus; `positiveModulo(DD)` (`Blender.heightToOffset`, world blending, not specified here); `positiveModulo(II)` is `floorMod`. Definitions read from `Mth`: `frac(x) = x - floor(x)` (double form uses the long floor then `l2d`); `approach(a, b, d)`: with `d = abs(d)`, if `a < b` then `clamp(a + d, a, b)` else `clamp(a - d, b, a)`; `approachDegrees(a, b, d) = approach(a, a + degreesDifference(a, b), d)`; `degreesDifferenceAbs = abs(degreesDifference)`; `normal(r, mean, sd) = mean + (float) r.nextGaussian() * sd`; `lerpDiscrete(t, a, b) = a + floor(t * (float)(b - a - 1)) + (t > 0 ? 1 : 0)`. |
+
+### 16.3 `Mth.sin` and `Mth.cos` (lookup table)
+
+Read from `Mth.sin`, `Mth.cos` and the table initialiser `Mth.lambda$static$0`.
+
+- Table `SIN` has 65536 float entries: `SIN[i] = (float) Math.sin(i / 10430.378350470453)` (division in double, `Math.sin` in double, narrowed).
+- `sin(x) = SIN[ to_i64(x * 10430.378350470453) AND 65535 ]`; `cos(x) = SIN[ to_i64(x * 10430.378350470453 + 16384.0) AND 65535 ]`. `x` is a double (callers widen a float; the float product `angle * 0.017453292f` is computed in float first, then widened). The multiplication and the addition are separate double operations (no FMA). The `AND` is on the two's-complement 64-bit value, so negative arguments index from the top: `sin(-1.0)` uses index 55106, giving the negated value of `sin(1.0)`.
+- Argument handling: `to_i64` saturates and maps NaN to 0, so NaN gives `SIN[0] = 0.0`, and an argument of magnitude beyond about 8.8e14 saturates at 9223372036854775807, giving index 65535.
+- Result is a float. Resolution is 2*pi/65536 = about 9.59e-5 rad, so the table is a coarse approximation of sine; callers get quantised angles.
+- The class constants: `PI = 3.1415927f`, `HALF_PI = 1.5707964f`, `TWO_PI = 6.2831855f`, `DEG_TO_RAD = 0.017453292f` (0x3C8EFA35), `RAD_TO_DEG = 57.295776f` (widened exactly to the double 57.2957763671875, which is the literal the callers use).
+- Table check value: the SHA-256 of the 65536 entries written as big-endian IEEE floats (index 0 first) computed with the scratch machine's libm is `87a67a39fff59636acb04edcda4ef622831037291f11fb61586c57596771dac2`. Reproduce the table and compare this hash. The same hash resulted from correctly rounded sine (50-digit decimal evaluation): of 65536 entries, 0 differ as floats between the system `sin` and the exactly rounded value, although 2527 of the intermediate doubles differ in the last bit. So any `sin` accurate to under 1 double ulp gives this table (the float narrowing hides the difference).
+
+### 16.4 `Mth.atan2` (custom approximation, read from `Mth.atan2`, `Mth.fastInvSqrt`, static initialiser)
+
+Constants: `FRAC_BIAS = longBitsToDouble(4805340802404319232)` = 2^44 = 17592186044416.0 (0x42B0000000000000). Tables (257 doubles each, built in the static initialiser): `ASIN_TAB[i] = Math.asin(i / 256.0)`, `COS_TAB[i] = Math.cos(ASIN_TAB[i])`, `i = 0..256`.
+
+`fastInvSqrt(x)`: `h = 0.5 * x`; `bits = doubleToRawLongBits(x)`; `bits = 6910469410427058090 - (bits >> 1)` (arithmetic shift, 64-bit); `y = longBitsToDouble(bits)`; result `y * (1.5 - h * y * y)` evaluated as `1.5 - ((h * y) * y)`. One Newton step only, so the result has a relative error up to about 0.2 percent (it is **not** `1/sqrt(x)`).
+
+`atan2(y, x)` (arguments in the order y, x):
+1. `d = x*x + y*y`. If `d` is NaN return NaN.
+2. `ny = (y < 0)`; if `ny`, `y = -y`. `nx = (x < 0)`; if `nx`, `x = -x`. `sw = (y > x)`; if `sw`, swap `x` and `y`. (-0.0 is not less than 0, so negative zero is treated as positive.)
+3. `inv = fastInvSqrt(d)`; `x = x * inv`; `y = y * inv`.
+4. `t = FRAC_BIAS + y`; `idx = low 32 bits of doubleToRawLongBits(t)` as a signed int (this equals `y` times 256 rounded to the nearest integer, because the ulp of 2^44 is 1/256; after the swap `y <= x`, so `y` is about 0.7071 at most and `idx` is at most about 181, inside the 257-entry tables); `a = ASIN_TAB[idx]`; `c = COS_TAB[idx]`; `b = t - FRAC_BIAS` (exactly `idx / 256`).
+5. `e = y * c - x * b`; `p = (6.0 + e*e) * e * 0.16666666666666666` evaluated as `(((6.0 + (e*e)) * e) * 0.16666666666666666)`; `r = a + p`.
+6. If `sw`: `r = 1.5707963267948966 - r`. If `nx`: `r = 3.141592653589793 - r`. If `ny`: `r = -r`.
+
+Edge cases: `atan2(0, 0)` returns 0 (the inverse square root of 0 is a huge finite number and `0 * huge = 0`); `atan2(0, -1) = pi`; infinite arguments give `d = inf`, `inv = 0` (bit trick on infinity), then `x*0` and `y*0`: infinity times 0 is NaN, so the result is NaN (inferred from the arithmetic; not executed).
+
+Accuracy: against libm `atan2`, the difference was 2.7e-8 at (1, 1), 4.5e-6 at (3, -4) and up to 7.8e-6 over 200000 random inputs in [-100, 100]. An implementation using libm `atan2` instead would drift from vanilla angles by that much; the routine above must be used.
+
+Callers apply it as follows (all read): `Mth.atan2(dz, dx) * 57.2957763671875`, narrowed to float, minus `90.0f` for yaw (`LookControl.getYRotD`, `CommandSourceStack.facing`); pitch is `-(Mth.atan2(dy, horizontalDistance) * 57.2957763671875)` narrowed to float (`LookControl.getXRotD`, `facing`); `facing` then applies `Mth.wrapDegrees(float)` to both. `Vec3.rotation` (used for command rotations from vectors) instead uses libm `Math.atan2` and `Math.asin`, narrowed to float and multiplied by `57.295776f` in float.
+
+### 16.5 Casts, narrowing and widening: rules for every site
+
+| Operation | Rule |
+|---|---|
+| `(float) double` | `f32_round` (nearest, ties to even; overflow to infinity) |
+| `(double) float` | exact |
+| `(int) double`, `(int) float` | `to_i32`: truncate toward zero, saturate, NaN gives 0 |
+| `(long) double` | `to_i64` |
+| `(byte) int` | keep low 8 bits, signed |
+| `(float) int`, `(float) long` | nearest float, ties to even |
+| `Mth.floor(float)` | widen, `floor`, `to_i32` |
+| float `%` | `fmod` |
+| int `%`, `/` | not libm (truncate toward zero); `Math.floorDiv`/`floorMod` (int/long) round toward negative infinity and the result of `floorMod` has the sign of the divisor |
+| integer overflow | Java wraps (two's complement) for `+ - *` on int/long; `Math.abs(int)` of -2147483648 stays -2147483648; `Math.absExact`/`subtractExact`/`toIntExact`/`powExact` throw (see loot number providers and `TimeCommand.wrapTime`) |
+
+`Climate.quantizeCoord(f) = to_i64(f32(f * 10000.0f))` (float product, then `f2l`): for the float 0.3 (0x3E99999A) the product is 3000.0000 and the result 3000.
+
+### 16.6 Call sites by document (what each document needs)
+
+- **10 (terrain).** `GradientNoise.wrap` (`floor`, `nextdown` constant, divisions by 33554432.0); `PerlinNoise.get`/`sampleAndLerp`, `SmearedPerlinNoise` (`to_i32`/`floor`, `f32_round` on `x - floor(x)`, `smoothstep`, `lerp3` of floats); `SimplexNoise.get` (`sqrt`, `floor`); `NormalNoise` (`pow` exact, `sqrt`, `Mth.square`, `Math.abs`); `BlendedNoise` (`pow`); density nodes `abs`, `square`, `cube`, `sqrt`, `log`, `sign`, `squeeze` (`clamp`, `cube`), `round` (types floor, round, ceiling, truncate-toward-zero: `RoundFunction$Type` ordinals 0..3: 0 gives `f32(floor(x))`, 1 gives the float of `round_f32(x)`, 2 gives `f32(ceil(x))`, 3 gives floor for positive and ceiling for non-positive), `pow` (`pow` of widened floats, narrowed), `lerp`, `clamp`, `min`, `max`, `interpolated` (`lerp`, `lerp3`), spline (`Mth.lerp(FFF)`; the `findIntervalStart` search is pure comparison); `Climate.quantizeCoord`, `ParameterPoint.fitness` (long `Mth.square`); `RTree.bucketize` (below); `BiomeManager.getFiddle` (`floorMod(long, int)`, int to double, divide by 1024.0, minus 0.5, times 0.9) and `getFiddledDistance` (`Mth.square(double)`); `Aquifer` (`Mth.map`, `clampedMap`, `quantize`, `floorDiv`, `abs`, NaN test); `MaterialSystem` (`getBand` `round_f32`; `erodedBadlandsExtension`: `abs`, `min` (double), `ceil`, `floor`; `frozenOceanExtension`: `abs`, `ceil`, `min`, `max`); `StoneDepthCondition`/`VerticalGradientCondition` (`Mth.map` double). §3.3 line "`Math.pow`/`Math.sqrt` is IEEE double" is confirmed (Open question 10 below).
+  - `RTree.bucketize(list, b)` (tree construction only, `b` = per-node child limit passed down; its value was not traced here): the bucket size is `to_i32( pow(b, floor( log(n - 0.01) / log(b) )) )` with `n` the list size. For integer `n >= 2` this equals the largest power of `b` strictly below `n` (checked for base 6 and `n` in 2..99999: 0 mismatches against an exact integer rule), so an implementation can use integers and avoid `log`/`pow` here.
+- **11 (caves and ores).** `Mth.sin`/`Mth.cos` (carvers: `CaveWorldCarver.createTunnel`/`createRoom`, `CanyonWorldCarver.doCarve`: float arguments widened; the room uses `Mth.sin(1.5707963705062866)` = `sin_tab` of the widened `HALF_PI`, giving `1.5 + sin(...) * ...`); `WorldCarver.carveEllipsoid` (`Mth.floor(D)`, `Math.abs(D)`, int min/max, `+ 0.5` offsets); `OreFeature.place` (float `PI` times a float, `Mth.ceil(F)`, then `Math.sin`/`Math.cos` on a float widened with `f2d` times a float widened), `OreFeature.doPlace` (`Mth.lerp(DDD)`, `Mth.sin(D)` for the radius, `Mth.floor(D)`), `Block.popResource` (`Mth.nextDouble`).
+- **15 (commands).** `LocalCoordinates.apply` (`Mth.cos`/`Mth.sin` of `f32(f32(yaw + 90.0f) * 0.017453292f)` and of `f32(-pitch * 0.017453292f)` widened; the vectors are combined in double: mixed float/double rounding matters), `CommandSourceStack.facing` (above), `Vec3.rotation` (libm), `TimeArgument.parse` (`round_f32(readFloat * (float) unitTicks)`; a trailing unit multiplies in float), `EntitySelectorParser.createRotationPredicate` and `AngleArgument$SingleAngle.getAngle`, `TeleportCommand.performTeleport`, `SetSpawnCommand` (`wrapDegrees`, `clamp`), `DataCommands.getNumeric`/`getData` and `ExecuteCommand` store (`Mth.floor(D)` of a double product with the scale), `ExperienceCommand`, `LocateCommand` (`Mth.sqrt(F)`, `Mth.floor(F)`), `PlaySoundCommand` (`Math.sqrt`), `SpreadPlayersCommand` (`Math.sqrt`, `Mth.floor(D)`, `randomize` with `Mth.nextDouble`), `WorldBorderCommand` (`Mth.floor`, `Math.abs(F)`), `ScheduleCommand`/`TimeCommand` (long `floorMod`, `toIntExact`), `OperationArgument` (integer `floorDiv`, `positiveModulo`).
+- **18 (mobs).** All of the controls and goals use only: `sin_tab`/`cos_tab`, `atan2_mth`, `wrapDegrees`, `rotLerp`, `rotateIfNecessary`, `lerp`, `sqrt`, `abs`, `min`/`max`, `to_i32` (floor/ceil), `round_f32` (damage, armour absorb, statistics) and `packDegrees`/`unpackDegrees` (`ServerEntity.sendChanges`, add-entity packets). Libm `sin`/`cos`/`acos`/`atan2_lib`/`pow`/`signum` appear in: `Guardian$GuardianMoveControl.tick` (`Math.sin`/`cos`), `LivingEntity.updateFallFlyingMovement` and `createItemStackToDrop` (`Math.sin`/`cos`), `LivingEntity.applyItemBlocking` (`acos`), `Fox$FoxPounceGoal.tick` (`acos`, `signum`), `DolphinJumpGoal.tick` (`atan2_lib`), `RandomLookAroundGoal.start`, `RandomPos.generateRandomDirectionWithinRadians`, `Bat.customServerAiStep` (`signum`), `Player.getRopeHoldPosition` (`acos`), `Player.maybeBackOffFromEdge` (`signum`), `AbstractArrow.onHitBlock` (`signum`); `pow` rows above (destroy speed with Mining Fatigue, amethyst chime volume decay, enchantment exponents, shuffling weights). A frequently used literal: `57.2957763671875` (the double value of the float `RAD_TO_DEG`).
+
+### 16.7 Can the artifact's arithmetic be reproduced with plain IEEE-754 double operations?
+
+Yes, for everything except the following, which need a libm-quality implementation of the named function:
+
+1. `sin` (table build, 65536 evaluations, narrowed to float): any implementation within 1 ulp of correct gives the identical table (measured: 0 float differences against exactly rounded values on the scratch machine). Safe.
+2. `asin`/`cos` at 257 points (`ASIN_TAB`, `COS_TAB`): the tables are doubles and are used at full precision. On the scratch machine's libm, 21 of the 257 `asin` entries and 9 of the 257 `cos` entries differ from the correctly rounded value in the last bit. The effect on `atan2_mth` is at most about 1e-16 radian and almost never changes the float after the final narrowing, but bit-exact doubles cannot be promised (Open question 16.8-1).
+3. `Math.sin`/`Math.cos`/`Math.asin`/`Math.acos`/`Math.atan2`/`Math.pow` (non-power-of-two)/`Math.log` calls in gameplay (listed in §16.2): bit-exactness relies on the same libm results as the JVM that produced the reference (last-bit differences between JVM and C libm implementations: recalled, not verified; Open question 16.9-1). Narrowing to float (most call sites narrow) hides last-bit differences except very rarely.
+4. `Math.log` in `bucketize` and `Math.pow` in `NormalNoise`/`BlendedNoise`: replaceable by exact integer or power-of-two operations (verified above).
+
+Everything else (float arithmetic, casts, `floor`, `ceil`, `round_f32`/`round_f64`, `fmod`, `sqrt`, `min`/`max`, `clamp`, `lerp`, `smoothstep`, `signum`, `nextdown`, the sine table lookup, the arctangent routine, bit reinterpretation) is reproduced exactly by IEEE double operations plus the rules of §16.2 and §16.5. The C wrappers must be compiled without floating-point contraction (no FMA fusion) and without fast-math.
+
+### 16.8 Worked examples (computed with a scratch script; hex is IEEE bit patterns)
+
+| Function | Input (bits) | Result (bits) |
+|---|---|---|
+| `sin_tab` | 1.0 (0x3FF0000000000000): index `to_i64(10430.378...) = 10430` | float 0x3F57695C |
+| `sin_tab` | -1.0 (0xBFF0000000000000): index 55106 | float 0xBF57695C |
+| `cos_tab` | 0.0: index 16384 | float 0x3F800000 (1.0) |
+| `cos_tab` | float `pi/3` (0x3F860A92) widened: index 27306 | float 0x3F0003A1 |
+| `cos_tab` arg | yaw 30.0f in `LocalCoordinates`: `f32(f32(30+90) * 0x3C8EFA35)` = 0x40060A92 (as float), index 38229 | table entry 38229 |
+| `f32_round` | 0.1 (0x3FB999999999999A) | 0x3DCCCCCD (widened back 0x3FB99999A0000000) |
+| `f32_round` | 1e40 | 0x7F800000 (+infinity) |
+| `to_i32` | 3e10 / -3e10 / NaN / -2.5 floor | 2147483647 / -2147483648 / 0 / -3 |
+| `round_f32` | 0x3EFFFFFF (0.49999997) | 0 (naive float `x + 0.5` then floor gives 1: wrong) |
+| `round_f32` | 2.5, -2.5, -0.5 | 3, -2, 0 |
+| `wrapDegrees` (float) | 190.0 (0x43390000) / -190.0 / 540.0 / 180.0 / -10.0 | 0xC32A0000 (-170.0) / 170.0 / -180.0 / -180.0 / -10.0 |
+| `packDegrees` | 90 / -1 / 180 / 359.9 / -90 | 64 / -1 / -128 / -1 / -64 |
+| `lerp_f32` | t = 0x3E99999A (0.3), a = 0x3DCCCCCD (0.1), b = 0x3F333333 (0.7) | 0x3E8F5C29 |
+| `smoothstep` | 0x3E99999A | 0x3E26FE73 |
+| `atan2_mth` | (y, x) = (1.0, 1.0) | 0x3FE921FB45E6D12F (libm gives 0x3FE921FB54442D18) |
+| `atan2_mth` | (3.0, -4.0) | 0x4003FC19CD3C7E4C (libm 0x4003FC176B7A8560) |
+| `atan2_mth` | (-2.0, 0.5) | 0xBFF5368CCF5A6268 (libm 0xBFF5368C951E9CFD) |
+| `atan2_mth` | (0.0, -1.0) / (0.0, 0.0) | 0x400921FB54442D18 (pi) / 0.0 |
+| `sin` (libm) | 0.5 | 0x3FDEAEE8744B05F0 (`cos` 0.5: 0x3FEC1528065B7D50) |
+| `pow` | `pow(2, -9)` | exactly 2^-9 (0x3F60000000000000) |
+| `quantizeCoord` | 0.3f times 10000.0f | 3000 |
+
+The `atan2_mth` values depend on the `asin`/`cos` table entries of the scratch machine's libm; only the leading 15 digits are reliable until tested against the artifact's own library.
+
+### 16.9 Open questions for this section
+
+1. **Which `sin`/`cos`/`asin`/`pow`/`log` the reference JVM computes.** The artifact calls `Math.*`, never `StrictMath`. In the JDK 21 source `Math.sin` delegates to `StrictMath.sin` (read), but whether the HotSpot virtual machine of the reference replaces `Math.sin`, `Math.cos`, `Math.pow`, `Math.log` by processor-specific intrinsics with different last-bit behaviour was not read (recalled, not verified). The 257-entry `ASIN_TAB`/`COS_TAB` could therefore differ in the last bit from this document's tables; this would move `atan2_mth` only at the 1e-16 level.
+2. **`bucketize` child limit.** The base `b` passed to `bucketize` (the R-tree's per-node child count) was not traced; it affects only tie-breaking among equal-fitness biome points (§7.3).
+3. **Out-of-scope call sites seen but not specified:** `Beardifier`, `IcebergFeature`, `SpeleothemUtils`, `FancyTrunkPlacer`, `EndSpikeFeature`, `ChunkGeneratorStructureState.generateRingPositions` (stronghold rings), `NoiseSpawnFinder`, `LegacyFbmInitializer`, `NoiseUtils.biasTowardsExtreme`, `MarsagliaPolarGaussian`. They use `sin`, `cos`, `pow`, `log`, `Math.round(D)` from the same set above, and belong to documents 35, 36, 37, 38.
+4. **Infinite and NaN inputs to `atan2_mth`** were derived from the arithmetic, not read from a result.
 
 ---
 

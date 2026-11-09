@@ -1,0 +1,8 @@
+# Fixture: Recipe Book Seen Recipe
+# Phase: play. Direction: serverbound (C->S). Packet id 0x30 (48).
+# Doc refs: 05c 0x30
+# Stated inputs:
+#   display id 300
+
+30                                               # packet id: VarInt 0x30
+ac 02                                            # Recipe: VarInt 300

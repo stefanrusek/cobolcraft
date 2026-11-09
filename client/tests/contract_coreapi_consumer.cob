@@ -38,9 +38,9 @@
  01 WS-E4                  PIC -(9)9.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
-     MOVE "contract client coreapi consumer record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 "
+     MOVE "contract client coreapi consumer record lengths CORE-SETTINGS 3829 CORE-BUFFER 16 "
          & "CORE-STATUS 5 (core-host-api §1)" TO TL-CASE
-     MOVE 1707016005 TO TL-EXPECTED-N
+     MOVE 3829016005 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = LENGTH OF CORE-SETTINGS * 1000000 + LENGTH OF CORE-BUFFER * 1000
          + LENGTH OF CORE-STATUS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

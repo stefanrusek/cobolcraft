@@ -1,0 +1,8 @@
+# Fixture: Set Cursor Item, empty
+# Phase: play. Direction: clientbound (S->C). Packet id 0x62 (98).
+# Doc refs: 05b 0x62 (the optional form encodes the empty stack); 00 section 12.1
+# Stated inputs:
+#   cursor empty: Count 0, nothing follows
+
+62                                               # packet id: VarInt 0x62
+00                                               # Contents: ItemStack Count 0

@@ -1,0 +1,10 @@
+# Fixture: Place Recipe, standard menu
+# Phase: play. Direction: serverbound (C->S). Packet id 0x27 (39).
+# Doc refs: 05c 0x27; 27 (display ids)
+# Stated inputs:
+#   container 2, recipe display id 300 (two-byte VarInt), use max items true
+
+27                                               # packet id: VarInt 0x27
+02                                               # Container id: VarInt 2
+ac 02                                            # Recipe: VarInt 300
+01                                               # Use max items: Boolean true

@@ -1,0 +1,14 @@
+renderDistance:far
+this line has no colon
+gamma:bright
+graphicsPreset:"turbo"
+resourcePacks:["vanilla"
+unknownOption:42
+
+mouseSensitivity:0.25
+key_key.forward:key.keyboard.w
+key_key.jump:key.keyboard.nosuchkey
+soundCategory_music:0.5
+modelPart_hat:maybe
+chatVisibility:"full"
+fov:abc

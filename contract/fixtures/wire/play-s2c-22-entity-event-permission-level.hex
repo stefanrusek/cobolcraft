@@ -1,0 +1,9 @@
+# Fixture: Entity Event 28 (permission level 4)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x22 (34).
+# Doc refs: 05a 0x22; 09 section 3.5 (event id 24 + level, 24 = level 0 to 28 = level 4)
+# Stated inputs:
+#   entity id 1 (the player's own, Int); event id 28 (level 4)
+
+22                                               # packet id: VarInt 0x22
+00 00 00 01                                      # Entity id: Int 1
+1c                                               # Event id: Byte 28 (permission level 4)

@@ -1,0 +1,13 @@
+# Fixture: Command Suggestions response
+# Phase: play. Direction: clientbound (S->C). Packet id 0x0f (15).
+# Doc refs: 05a 0x0F (SuggestionEntry with optional tooltip)
+# Stated inputs:
+#   transaction id 300; replaced range start 10, length 1; suggestions: "creative" (no tooltip), "c" with tooltip plain String "short"
+
+0f                                               # packet id: VarInt 0x0f
+ac 02                                            # Transaction id: VarInt 300
+0a                                               # Start: VarInt 10
+01                                               # Length: VarInt 1
+02                                               # Suggestions: VarInt count 2
+08 63 72 65 61 74 69 76 65 00                    # [0] Text "creative", tooltip absent
+01 63 01 08 00 05 73 68 6f 72 74                 # [1] Text "c", tooltip present: plain String "short"

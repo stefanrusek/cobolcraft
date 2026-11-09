@@ -136,4 +136,67 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
 void cc_vk_frame_end(void);
 void cc_vk_shutdown(void);
 
+/* §10 cc_f64: IEEE double arithmetic by reference (specs/002-client-polish/contracts/shim-delta.md;
+ * function set fixed by 10 §16). COBOL cannot receive a C double return value, so every operand and
+ * result is passed by reference and every function returns nothing. Float (binary32) values travel as
+ * doubles that are exactly representable in float; the _f32 forms round their result to float.
+ * add and mul are fma(a,1,b) and fma(a,b,0) so results are exactly IEEE binary64; the library is built
+ * without contraction and without fast-math. int results are int32_t or int64_t by reference. */
+void cc_f64_add(const double *a, const double *b, double *r);
+void cc_f64_sub(const double *a, const double *b, double *r);
+void cc_f64_mul(const double *a, const double *b, double *r);
+void cc_f64_div(const double *a, const double *b, double *r);
+void cc_f64_floor(const double *a, double *r);
+void cc_f64_ceil(const double *a, double *r);
+void cc_f64_sqrt(const double *a, double *r);
+void cc_f64_from_text(const char *text, double *r);          /* strtod of a decimal text */
+void cc_f64_f32_round(const double *a, double *r);           /* nearest binary32, ties to even (10 §16.2) */
+void cc_f64_to_i32(const double *a, int32_t *r);             /* d2i: truncate, saturate, NaN gives 0 */
+void cc_f64_to_i64(const double *a, int64_t *r);             /* d2l */
+void cc_f64_i32_to_f32(const int32_t *a, double *r);         /* i2f */
+void cc_f64_round_f32(const double *a, int32_t *r);          /* Math.round(float): exact floor(x + 1/2) */
+void cc_f64_round_f64(const double *a, int64_t *r);          /* Math.round(double) */
+void cc_f64_fmod(const double *a, const double *b, double *r);
+void cc_f64_min_j(const double *a, const double *b, double *r);   /* Math.min: NaN propagates, -0.0 < 0.0 */
+void cc_f64_max_j(const double *a, const double *b, double *r);
+void cc_f64_clamp_f32(const double *v, const double *lo, const double *hi, double *r);
+void cc_f64_clamp_f64(const double *v, const double *lo, const double *hi, double *r);
+void cc_f64_signum(const double *a, double *r);
+void cc_f64_nextdown(const double *a, double *r);
+void cc_f64_next_up(const double *a, double *r);
+void cc_f64_abs_f32(const double *a, double *r);             /* sign bit cleared */
+void cc_f64_abs_f64(const double *a, double *r);
+void cc_f64_log1p(const double *a, double *r);
+void cc_f64_to_radians(const double *a, double *r);          /* a * 0.017453292519943295 */
+void cc_f64_copysign(const double *a, const double *b, double *r);
+void cc_f64_pow(const double *a, const double *b, double *r);
+void cc_f64_log(const double *a, double *r);
+void cc_f64_sin(const double *a, double *r);
+void cc_f64_cos(const double *a, double *r);
+void cc_f64_asin(const double *a, double *r);
+void cc_f64_acos(const double *a, double *r);
+void cc_f64_atan2_lib(const double *y, const double *x, double *r);   /* libm atan2 */
+void cc_f64_atan2_mth(const double *y, const double *x, double *r);   /* the table routine of 10 §16.4 */
+void cc_f64_sin_tab(const double *a, double *r);             /* the 65536-entry table sine of 10 §16.3 */
+void cc_f64_cos_tab(const double *a, double *r);
+void cc_f64_f64_bits(const double *a, int64_t *r);           /* raw bits */
+void cc_f64_f64_from_bits(const int64_t *a, double *r);
+void cc_f64_fast_inv_sqrt(const double *a, double *r);       /* 10 §16.4 */
+void cc_f64_inv_sqrt(const double *a, double *r);            /* 1/sqrt(a), 10 §16.2 (inferred replacement of org.joml.Math.invsqrt) */
+void cc_f64_lerp_f32(const double *t, const double *a, const double *b, double *r);
+void cc_f64_lerp_f64(const double *t, const double *a, const double *b, double *r);
+
+/* §11 texture upload with mip levels and sub-rectangle update (US3/US5): cc_vk_texture is
+ * cc_vk_texture_ex with mip_levels 1; cc_vk_texture_update replaces one rectangle of the base level and
+ * regenerates the mip levels it touches. Both return 0 or call cc_fatal. */
+int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels);
+int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba);
+
+/* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */
+void cc_vk_clear_depth(void);
+
+/* §12 cc_open_path: starts opener with path as its only argument (posix_spawn) and returns 0 at once, or
+ * CC_NOTFOUND when the opener cannot be started. Does not wait (US4). */
+int32_t cc_open_path(const char *opener, const char *path);
+
 #endif

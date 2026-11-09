@@ -669,6 +669,9 @@ Textures are PNG files under `assets/<ns>/textures/`. The client decodes them in
 unable to load"). Dimensions need not be powers of two. However, the smallest power of two that divides a
 sprite's width and height limits the mipmap levels of the whole atlas ("limits mip level from … to …"),
 so 16 × 16 or other power-of-two sizes are recommended. The maximum atlas size is the GPU limit.
+Which PNG kinds occur in the client jar and in the Faithful pack (colour types, depths, Adam7, 16-bit, several `IDAT`
+chunks, ancillary chunks), what a decoder must support, what the Java-side reader rejects and what an unreadable file
+does are in 22 §2.8.1.
 
 ### 7.2 Atlases
 
@@ -971,6 +974,8 @@ inventory slots, in the hotbar and on a ground item (10.11).
 | `block/ledger_tile.png` | 16 × 16 | `cobolcraft:block/ledger_tile` | §1.4.2 ledger_tile | ledger_tile block; ledger_tile item icon |
 | `block/goto_pad.png` | 16 × 16 | `cobolcraft:block/goto_pad` | §1.4.2 goto_pad | goto_pad block (the travel block, all faces); goto_pad item icon |
 | `block/slag.png` | 16 × 16 | `cobolcraft:block/slag` | §1.4.2 slag | slag block; slag item icon |
+| `block/crafting_bench_top.png` | 16 × 16 | `cobolcraft:block/crafting_bench_top` | cobolcraft-standard-core.md CORE-33 | crafting bench top face; crafting bench item icon |
+| `block/crafting_bench_side.png` | 16 × 16 | `cobolcraft:block/crafting_bench_side` | cobolcraft-standard-core.md CORE-33 | crafting bench side faces (its bottom face is `block/ledger_tile.png`) |
 | `item/pry_bar.png` | 16 × 16 | `cobolcraft:item/pry_bar` | §2 pry_bar | pry_bar item icon |
 | `item/trowel.png` | 16 × 16 | `cobolcraft:item/trowel` | §2 trowel | trowel item icon |
 | `item/grazer_flank.png` | 16 × 16 | `cobolcraft:item/grazer_flank` | §2 grazer_flank | grazer_flank item icon (food) |
@@ -1368,7 +1373,7 @@ highlight is an outline. The world screen has no labels apart from the HUD.
 |---|---|
 | `pack.mcmeta` | 1 |
 | Atlas definitions (10.2) | 3 |
-| PNG textures (10.3) | 27: 15 block, 6 item, 3 entity, 2 environment, 1 font |
+| PNG textures (10.3) | 29: 17 block (the 15 of the table, and the 2 bench textures `crafting_bench_top` and `crafting_bench_side` of cobolcraft-standard-core.md CORE-33), 6 item, 3 entity, 2 environment, 1 font |
 | Template models (10.4) | 4 |
 | Block models (10.5) | 13 (14 with void) |
 | Item models (10.7) | 17 |

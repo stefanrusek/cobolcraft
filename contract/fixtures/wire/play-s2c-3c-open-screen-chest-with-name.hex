@@ -1,0 +1,10 @@
+# Fixture: Open Screen, single chest with a plain string title
+# Phase: play. Direction: clientbound (S->C). Packet id 0x3c (60).
+# Doc refs: 05a 0x3C; 46 worked example 2 (generic_9x3 = 2); 00 section 9.1 (plain String form)
+# Stated inputs:
+#   container id 127 (one-byte VarInt maximum); menu type 2 (generic_9x3); title plain String "Loot"
+
+3c                                               # packet id: VarInt 0x3c
+7f                                               # Container id: VarInt 127
+02                                               # Menu type: VarInt 2 (generic_9x3)
+08 00 04 4c 6f 6f 74                             # Title: network NBT String "Loot"

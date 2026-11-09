@@ -9,7 +9,6 @@
  78 CORE-MAX-DIMS           VALUE 2.
  78 CORE-MAX-CHUNKS         VALUE 4096.
  78 CORE-PB-SIZE            VALUE 21.     *> LENGTH OF PB-BUFFER
- 78 CORE-SETTINGS-SIZE      VALUE 1707.   *> LENGTH OF CORE-SETTINGS
  78 CORE-CHUNK-CELLS        VALUE 65536.  *> 16 x 256 x 16 cells, index y * 256 + z * 16 + x
  78 CORE-CHUNK-BYTES        VALUE 196608. *> states, sky light, block light: one byte per cell each
  78 CORE-MAX-ENTITIES       VALUE 1024.
@@ -44,7 +43,7 @@
 *> World (data-model §1).
  01 CORE-WORLD EXTERNAL.
     05 CW-OPEN               PIC X.              *> "Y" once CORE-WORLD-OPEN has run
-    05 CW-SETTINGS           PIC X(1707).        *> the CORE-SETTINGS bytes of CORE-WORLD-OPEN
+    05 CW-SETTINGS           PIC X(3829).        *> the CORE-SETTINGS bytes of CORE-WORLD-OPEN
     05 CW-FOLDER             PIC X(1024).
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).

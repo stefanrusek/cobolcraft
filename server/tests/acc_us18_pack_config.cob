@@ -14,8 +14,8 @@
  01 WS-CONF                PIC X(4096).
  01 WS-CONF-PATH           PIC X(256) VALUE "cobolcraft-server.conf".
  01 WS-LINES               PIC X(4096).
- 01 WS-DEFAULTS            PIC X(1707).
- 01 WS-EXPECTED            PIC X(1707).
+ 01 WS-DEFAULTS            PIC X(3829).
+ 01 WS-EXPECTED            PIC X(3829).
  01 WS-I                   BINARY-LONG.
  01 WS-AT                  BINARY-LONG.
  01 WS-START               BINARY-LONG.

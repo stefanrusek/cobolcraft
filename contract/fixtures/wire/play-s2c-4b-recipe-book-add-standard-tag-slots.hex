@@ -1,0 +1,15 @@
+# Fixture: Recipe Book Add, the remaining slot display types
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4b (75).
+# Doc refs: 05b SlotDisplay table (types 2, 3, 8); 46 section 9.2
+# Stated inputs:
+#   one shapeless entry id 7, ingredients [with_any_potion(item 63), only_with_component(item 1, component 3 damage),
+#   smithing_trim(base item 1, material item 62, inline pattern asset minecraft:coast, description plain String "Coast", decal false)]
+#   result item 1, station empty; category 3; requirements absent; flags 1; Replace false
+
+4b                                               # packet id: VarInt 0x4b
+01                                               # Entries: VarInt count 1
+07 00 03 02 04 3f 03 04 01 03 08 04 01 04 3e 00  # entry 0: RecipeDisplayEntry
+0f 6d 69 6e 65 63 72 61 66 74 3a 63 6f 61 73 74  #   (continued)
+08 00 05 43 6f 61 73 74 00 04 01 00 00 03 00     #   (continued)
+01                                               # entry 0 flags: Byte 1
+00                                               # Replace: Boolean false

@@ -25,8 +25,8 @@
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
  01 WS-CAPTURED            PIC X(4096).
  01 WS-STATUS              PIC XX.
- 01 WS-EXPECTED            PIC X(1707).
- 01 WS-SETTINGS            PIC X(1707).
+ 01 WS-EXPECTED            PIC X(3829).
+ 01 WS-SETTINGS            PIC X(3829).
  01 WS-SUMMARY             PIC X(1024).
  01 WS-PAIRS               PIC X(1024).
  01 WS-AT                  BINARY-LONG.
@@ -234,7 +234,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SUMMARIZE.
-*> USING expected settings, observed settings (PIC X(1707) each), summary out: "port <SV-PORT>
+*> USING expected settings, observed settings (PIC X(3829) each), summary out: "port <SV-PORT>
 *> bound <SV-BOUND-PORT> same" when the records are equal, else the observed fields that differ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -242,7 +242,7 @@
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
  LINKAGE SECTION.
- 01 L-EXPECTED             PIC X(1707).
+ 01 L-EXPECTED             PIC X(3829).
  COPY COREAPI.
  01 L-SUMMARY              PIC X(1024).
  PROCEDURE DIVISION USING L-EXPECTED CORE-SETTINGS L-SUMMARY.

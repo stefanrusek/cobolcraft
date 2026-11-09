@@ -40,7 +40,7 @@
  01 WS-COMMAND             PIC X(64) VALUE Z"nosuchcommand".
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-DEFAULTS            PIC X(1707).
+ 01 WS-DEFAULTS            PIC X(3829).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY

@@ -11,7 +11,7 @@ LIBNAME  := libclient.a
 SRC      := $(shell find src -name '*.cob' 2>/dev/null | sort)
 TESTS    := $(wildcard tests/acc_*.cob tests/contract_*.cob tests/test_*.cob)
 INCLUDES := -I copy -I tests
-DEPLIBS   = $(BUILD)/core/libcore.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
+DEPLIBS   = $(BUILD)/core/libcore.a $(BUILD)/formats/libformats.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
 LDLIBS    = $(shell $(PKG_CONFIG) --libs glfw3 vulkan libssl libcrypto) -lz
 
 include ../tools/package.mk

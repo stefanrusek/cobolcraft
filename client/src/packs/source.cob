@@ -119,57 +119,6 @@
  END PROGRAM PACK-ROOT-READ.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FILE-READ-ALL.
-*> USING path (PIC X(1100)), path length, area, capacity, length out, status out (0 read; 1 the
-*> file cannot be opened or read; 5 larger than the capacity: length out is its size, nothing read).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-PATH                PIC X(1101).
- 01 WS-INFO.
-    05 WS-SIZE             PIC X(8) COMP-X.
-    05 FILLER              PIC X(8).
- 01 WS-ACCESS              PIC X COMP-X VALUE 1.
- 01 WS-DENY                PIC X COMP-X VALUE 0.
- 01 WS-DEVICE              PIC X COMP-X VALUE 0.
- 01 WS-HANDLE              PIC X(4).
- 01 WS-OFFSET              PIC X(8) COMP-X VALUE 0.
- 01 WS-COUNT               PIC X(4) COMP-X.
- 01 WS-FLAGS               PIC X COMP-X VALUE 0.
- LINKAGE SECTION.
- 01 L-PATH                 PIC X(1100).
- 01 L-PATH-LENGTH          BINARY-LONG.
- 01 L-AREA                 PIC X.
- 01 L-CAPACITY             BINARY-LONG.
- 01 L-LENGTH               BINARY-LONG.
- 01 L-STATUS               BINARY-LONG.
- PROCEDURE DIVISION USING L-PATH L-PATH-LENGTH L-AREA L-CAPACITY L-LENGTH L-STATUS.
-     MOVE 0 TO L-LENGTH
-     MOVE 1 TO L-STATUS
-     MOVE SPACES TO WS-PATH
-     MOVE L-PATH(1:L-PATH-LENGTH) TO WS-PATH
-     CALL "CBL_CHECK_FILE_EXIST" USING WS-PATH WS-INFO
-     IF RETURN-CODE NOT = 0
-         MOVE 0 TO RETURN-CODE
-         GOBACK
-     END-IF
-     MOVE WS-SIZE TO L-LENGTH
-     IF WS-SIZE > L-CAPACITY
-         MOVE 5 TO L-STATUS
-         GOBACK
-     END-IF
-     CALL "CBL_OPEN_FILE" USING WS-PATH WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
-     IF RETURN-CODE NOT = 0
-         MOVE 0 TO RETURN-CODE L-LENGTH
-         GOBACK
-     END-IF
-     MOVE WS-SIZE TO WS-COUNT
-     CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS L-AREA
-     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
-     MOVE 0 TO L-STATUS RETURN-CODE
-     GOBACK.
- END PROGRAM FILE-READ-ALL.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. PACK-SOURCE-FILES.
 *> USING CLIENT-STATE, pack (kind 1 or 2, open; the packs above it open with their PK-META): the
 *> pack's file table PK-FILES (at most CL-MAX-PACK-FILES entries of 268 bytes: logical path

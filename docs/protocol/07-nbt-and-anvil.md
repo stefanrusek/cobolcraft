@@ -322,7 +322,7 @@ but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open
 one format (FR-004). The folder holds all of a world's dimensions and is copied as a unit. Everything FR-014 lists as world
 state is saved here and nowhere else.
 
-The game has two world types, the **standard** and the **cobolcraft** world type ([../design/world-types.md](../design/world-types.md)
+The game has two world types, the **standard** and the **cobolcraft** world type (plus a hidden third value, `debug`, a test tool with the standard content set and one dimension, [../design/debug-world.md](../design/debug-world.md)) ([../design/world-types.md](../design/world-types.md)
 §1). They share this one folder format and this one schema (world-types Decision WT-21). The type is the `WorldType` key of
 `level.dat` (§9.2); it selects the content set (keys of dimensions, blocks, items, entity types, biomes) and nothing in the
 byte formats. Where a key's content differs by type, the tables below name both.
@@ -352,7 +352,7 @@ byte formats. Where a key's content differs by type, the tables below name both.
 | `DataVersion` | Every `.dat` root and every region chunk payload carries `DataVersion` (Int) = 5023, the value of §7 |
 
 A folder is a world if and only if `level.dat` is present, and a folder with `dimensions/` content but no `level.dat` is not
-opened (world-types §2.1, Decision WT-24). That replaces the first sentence of §9.5 for such a folder.
+opened (world-types §2.1, Decision WT-24). §9.5 already applies this rule.
 
 ### 9.2 `.dat` schemas
 
@@ -362,7 +362,7 @@ opened (world-types §2.1, Decision WT-24). That replaces the first sentence of 
 |---|---|---|
 | `DataVersion` | Int | 5023 |
 | `LevelName` | String | World name, shown in the single-player world list |
-| `WorldType` | String | `standard` or `cobolcraft`. Written at creation, never changed. Reading rules for an absent or unknown value: world-types §2.1. |
+| `WorldType` | String | `standard` or `cobolcraft`, or the hidden `debug` (standard content set, test tool only, docs/design/debug-world.md). Written at creation, never changed. Reading rules for an absent or unknown value: world-types §2.1. |
 | `Seed` | Long | The world seed. The standard generator reads it (10 §7); the Login hashed seed is `obfuscateSeed(Seed)` (10 §7.7, world-types §2.1). Written for both types; a cobolcraft world stores it and never reads it. Input and hashing rules of the seed text: world-types §2.1, Decision WT-19. |
 | `ContentJar` | String | Lower-case hex SHA-256 of the jar the standard world was created from (22 §6.4). Absent for a cobolcraft world. Informational (world-types Decision WT-6). |
 | `GameMode` | Int | The game mode chosen when a single-player world is created. When the world is hosted by the client (core-host-api `CS-HOST-KIND` 1, and 2 for the host) it is the game mode of new players; guests get the guest mode chosen when the world is opened to others. A dedicated server (`CS-HOST-KIND` 0) ignores it and uses its `default-game-mode` setting. |
@@ -452,7 +452,7 @@ base keys, 45-1 §7 the nesting of passengers, and 45-1 §4 the identity rules. 
 | `id` | The entity type key in full form: `minecraft:pig`, `minecraft:item` in a standard world; the `cobolcraft:` key of the type's registry (`cobolcraft:loose_item`, a mob type key of standin-content §3, as extended) in a cobolcraft world (45-1 §13). |
 | Keys of each type | Per type, in the sibling documents: 45-1 (base, items, passengers), 45-2 (living entities, mobs, animals), 45-4 (land animals), 45-5 (hostile mobs), 45-6 (villagers, illagers, piglins), 45-7 (aquatic and miscellaneous mobs), 45-8 (vehicles, projectiles, ground items), 45-9 (bosses, decorations). |
 | Ground item | A standard world writes `minecraft:item` as 45-8 specifies (`Item`, `Age` as Short, `Health` as Short, `PickupDelay`, `Thrower`, `Owner`). The earlier CobolCraft keys (`Item` as `{id, count}`, `Age` as Int) remain the form of the cobolcraft world's `cobolcraft:loose_item` until it adopts the standard item compound (Open question 11). |
-| Unknown ids and invalid compounds | As 45-1 §4.2 and §6: skipped on load with a log line, never fatal, never deleting the rest of the chunk. |
+| Unknown ids and invalid compounds | As 45-1 §4.2 and §6: skipped on load with a log line, never fatal, never deleting the rest of the chunk. **Exception:** an entity `id` that is missing from the opened world type's registries fails the whole chunk closed under WT-23 (§9.7 rule 6); 45-1 §4.2 step 2 (skip the entity) describes the artifact, and WT-23 overrides it for CobolCraft. |
 | Players | Not stored here. They live in `players/` (§9.2). A vehicle whose only passenger is a player is not stored here either (45-1 §7.2). |
 | Other entity-related saved data | Villager and raid state: §9.6. Brain, leash and owner references: 45-1 §10 and 45-2. |
 
@@ -474,7 +474,7 @@ Chunk payloads follow §7 as written, with these CobolCraft values:
 
 ### 9.5 Behaviour
 
-- A world folder without `level.dat` is created new, with all enabled dimensions, unless it holds `dimensions/` content (§9.1). Chunks are generated on first use. A
+- A world folder without `level.dat` is created new, with the dimension folders of all enabled dimensions made when the world is created, unless it holds `dimensions/` content (§9.1). `region/` files appear only when a chunk is first saved (inferred); §9.7 follows the same rule. (Artifact behaviour, read: it builds every dimension's level at start and creates each dimension's `data/` folder then, `ServerChunkCache`.) Chunks are generated on first use. A
   chunk is saved when it has changed, or when an entity is in it at save time.
 - A save writes every changed chunk, every chunk holding entities, the file of every online player and of every player who
   left since the previous save, `level.dat`, `access.dat`, and the saved-data files of §9.6 that changed.
@@ -490,11 +490,90 @@ the caller): world-wide data in `<world>/data/`, per-dimension data in `<world>/
 | `minecraft/wandering_trader.dat` | world | 45-6 §12 |
 | `minecraft/raids.dat` | dimension | 45-6 §12 (a missing file is an empty value) |
 | `minecraft/world_border.dat` | dimension | the nine fields of 33 §10 (world border) |
-| the remaining files of 33 §10 (`scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat`, `world_gen_settings.dat`) | not specified | Open question 12 |
+| `scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat` (33 §10) | not specified | Open question 12 |
+| `world_gen_settings.dat` (33 §10) | not written: the seed is the `Seed` root key of `level.dat` (§9.2); `generate_structures`, `bonus_chest` and `dimensions` are not specified | Open question 12 |
 
 A cobolcraft world writes none of these files (no raids, no wandering trader; its border is not specified). Clocks, weather, game rules and the
-`level.dat` keys of §9.2 stay in `level.dat`: they are not split into saved-data files. That is the one place where this folder differs from the 26.3
-layout of 33 §10, kept for Decision WT-21 of the world-type document.
+`level.dat` keys of §9.2 stay in `level.dat`: they are not split into saved-data files. That is one of several differences from the 26.3
+layout of 33 §10, all listed in §9.7 (kept for Decision WT-21 of the world-type document).
+
+### 9.7 The world-folder contract: what the artifact does, what CobolCraft decides
+
+This section answers world-types Open question 12 for the layout. Source for the "Read" column: static reading of the shipped
+26.3 client jar (`tmp/minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, the
+artifact recorded in README), with no execution. The classes read are `LevelStorageSource$LevelStorageAccess`, `LevelResource`,
+`DimensionType.getStorageFolder`, `Identifier.resolveAgainst`, `PrimaryLevelData`, `SavedDataStorage`, `PlayerDataStorage`,
+`ServerChunkCache`, `ChunkMap`, `ServerLevel`, `WorldGenSettings`, `WorldOptions`, and the file-migration classes in
+`net.minecraft.util.filefix.fixes` (which name the destination of every file in the current layout). The "CobolCraft" column
+is **our design**, not read from the artifact; where a row says so it is marked **(decision)**. Decisions here are adopted
+defaults of the design documents and are not operator rulings unless the row says so.
+
+**Folder tree.** Read from the artifact (the 26.3 layout), then CobolCraft's.
+
+| Path below the world folder | Read from the artifact (26.3) | CobolCraft (decision) |
+|---|---|---|
+| `level.dat` | gzip NBT. The root compound holds one compound `Data` (written by `LevelStorageAccess.saveDataTag`); every key below sits inside `Data`, including `DataVersion` (added by `NbtUtils.addCurrentDataVersion`). Written to a temporary file, then swapped in, with the previous one kept as `level.dat_old` | Same file name and gzip framing. **The keys sit in the root compound itself, with no `Data` wrapper** (§9.2, as feature 001 wrote them). The three added keys `WorldType`, `Seed`, `ContentJar` are root keys beside `DataVersion`. |
+| `level.dat_old`, `session.lock`, `icon.png`, `datapacks/`, `generated/`, `resourcepacks/resources.zip` | The names of `LevelResource` (the resource list is `players/advancements`, `players/stats`, `players/data`, `players`, `level.dat`, `level.dat_old`, `icon.png`, `session.lock`, `generated`, `datapacks`, `resourcepacks/resources.zip`, `data`). A folder holds a world when `level.dat` or `level.dat_old` exists | Not part of the CobolCraft contract. A folder is a world only if `level.dat` exists (WT-24, §9.1 **(decision)**); `level.dat_old` does not count. Any other file or folder found is ignored on read and left untouched. |
+| `dimensions/<namespace>/<path>/` | One folder per dimension: the dimension key's namespace and path as two folder levels under `dimensions` (`DimensionType.getStorageFolder`; `Identifier.resolveAgainst` rejects a path that escapes the world folder). The three built-in dimensions are `dimensions/minecraft/overworld`, `dimensions/minecraft/the_nether`, `dimensions/minecraft/the_end` (the old names `DIM-1` and `DIM1` are moved here by `DimensionStorageFileFix`, which also renames `chunks.dat` to `minecraft/chunk_tickets.dat` and the old End file `raids_end.dat` to `raids.dat` inside the End folder, and a world with no `dimensions` folder, or an empty one, is assumed by the file fixer's dimension discovery (`FileRelation.discoverDimensions`) to have exactly these three; that is a migration-time rule, not a runtime one). | The same rule. **A standard world has these three folders**, created with the world; their `region/` files appear when a chunk is first saved. A cobolcraft world has `dimensions/cobolcraft/main` and `dimensions/cobolcraft/subroutine` instead (world-types §2.2 **(decision)**). The `WorldType` key, not the folder names, decides the type. |
+| `<dimension>/region/` | Chunk region files, `r.<rx>.<rz>.mca` (§6, §7) | Same (§9.4). |
+| `<dimension>/entities/` | Entity region files (§8) | Same (§9.3). |
+| `<dimension>/poi/` | Points-of-interest region files (§8) | Standard world only (§9.1). |
+| `<dimension>/data/<namespace>/<name>.dat` | The dimension's own saved-data store (`ServerChunkCache` creates the folder and a `SavedDataStorage` on it). Files read from the fix classes: `minecraft/raids.dat`, `minecraft/world_border.dat`, `minecraft/chunk_tickets.dat`, and `minecraft/ender_dragon_fight.dat`, which the file fix `LevelDatToSavedDataFileFix` writes into the End dimension's folder (that it is read from there at run time was not traced, (inferred)) | §9.6 (`raids.dat`, `world_border.dat`; the others are not specified). |
+| `data/<namespace>/<name>.dat` | The world-wide saved-data store (`MinecraftServer` builds its `SavedDataStorage` on the `data` resource). Files read: `minecraft/weather.dat`, `minecraft/world_clocks.dat`, `minecraft/game_rules.dat`, `minecraft/world_gen_settings.dat`, `minecraft/scheduled_events.dat`, `minecraft/wandering_trader.dat`, `minecraft/custom_boss_events.dat`, `minecraft/scoreboard.dat`, `minecraft/stopwatches.dat`, `minecraft/random_sequences.dat`, `minecraft/maps/last_id.dat`, `minecraft/maps/<n>.dat`, and `<namespace>/command_storage.dat` | §9.6 places `minecraft/wandering_trader.dat` here. **Weather, clocks and game rules are not saved-data files in CobolCraft: they stay in `level.dat`** (§9.2, WT-21 **(decision)**). The remaining files are not specified. |
+| `players/` | Player files are `players/data/<uuid>.dat` (`LevelResource.PLAYER_DATA_DIR`, `PlayerDataStorage`; the file name is the UUID in hyphenated text form plus `.dat`; the older folder names `playerdata`, `advancements`, `stats` are moved to `players/data`, `players/advancements`, `players/stats` by `PlayerStorageFileFix`). The previous file is kept as `<uuid>.dat_old` | **`players/<offline-uuid>.dat`, one level shallower** (§9.1 **(decision)**; the key schema is §9.2). No `_old` copy, no `advancements/` or `stats/` folders. |
+
+**Saved-data file framing (read).** Every file of a `data/` folder is gzip NBT. The root compound holds the type's value under
+the key `data` and `DataVersion` (Int); the file name is the saved-data type's identifier with `.dat` appended and is
+resolved by the same namespace-then-path rule as a dimension. This matches §9.6.
+
+**Where the three CobolCraft keys would sit under the 26.3 layout (read, for the record; not adopted).**
+
+| CobolCraft key | In the 26.3 layout |
+|---|---|
+| `Seed` | `data/minecraft/world_gen_settings.dat`, `data.seed` (the `WorldOptions` key is `seed`; type Long (inferred, the field is a `long`)). The same compound also has `generate_structures`, `bonus_chest` and `dimensions` (the dimension generator settings). |
+| `WorldType` | No counterpart. The artifact has no world-type notion in `level.dat`. |
+| `ContentJar` | No counterpart. |
+| `LevelName`, `Time` (game time), `spawn`, `GameType` (Int), `difficulty_settings`, `allowCommands`, `initialized`, `version`, `singleplayer_uuid`, `ServerBrands`, `WasModded`, `removed_features`, `version_history`, `LastPlayed`, and the `DataPacks` and `enabled_features` of the data configuration | Inside `Data` of `level.dat` (the key names above were read from `PrimaryLevelData`; the contents of the compound-valued ones were not read, see Open question 14). |
+
+**Contract adopted for feature 002 (adopted default, not an operator ruling; WT-21).** CobolCraft does **not** adopt the 26.3 tree for `level.dat`. Its contract is
+the one of §9.1 to §9.6, with these fixed points:
+
+1. A world is a folder with a `level.dat` (§9.1). `WorldType` is `standard` or `cobolcraft`, or the hidden `debug` (standard content set, `minecraft:overworld` only, test tool; docs/design/debug-world.md).
+2. `level.dat` is a flat root compound holding `DataVersion`, `LevelName`, `WorldType`, `Seed`, `ContentJar` (absent for a
+   cobolcraft world), `GameMode`, `Time`, `Clocks`, `GameRules`, `Spawn`, `Weather` (§9.2). The three added keys are written
+   in the order `WorldType`, `Seed`, `ContentJar` when `level.dat` is first created. Order is a writing convention only.
+3. Dimensions live in `dimensions/<namespace>/<path>/` exactly as the artifact lays them out: three folders for a standard world
+   (`minecraft/overworld`, `minecraft/the_nether`, `minecraft/the_end`), two for a cobolcraft world.
+4. Each dimension folder holds `region/`, `entities/`, `poi/` (standard only) and `data/`.
+5. Chunks and entities store block states, biomes, items and entity types **by key**, never by numeric id. A block state in a
+   section palette is the key form of §7.3 (the key string for a default state, otherwise a compound with `id` and
+   `properties`); the numbered state ids of the wire registry never reach disk (§7.3, world-types §7.5).
+6. **Foreign keys (WT-23, adopted default, not an operator ruling).** A chunk whose block or biome palette holds a key that is
+   not in the opened world type's registries is **not loaded**: not generated over, not rewritten, the region file stays as
+   found, and the server prints one console line `chunk <x> <z> in <dimension> holds content of another world type and was not
+   loaded`. The same holds for one unknown entity type in an otherwise valid `entities/` chunk, since rewriting would drop it.
+   WT-23 therefore takes precedence over the "skipped on load" rule of §9.3 for an unknown entity id: that skip still applies
+   to an invalid compound, but an id missing from the registries fails the whole chunk closed. Whether a key that belongs to
+   *neither* world type (a corrupt id) should be treated differently is not decided by WT-23's wording (Open question 15).
+7. Existing feature-001 worlds, which have no `WorldType`, open as `cobolcraft` (world-types §2.1; specs/002-client-polish
+   data-model §6), unless the folder holds `dimensions/minecraft/` (world-types §2.1 rule 3). The 26.3 migration of `Time`, weather, clocks and game rules out of `level.dat` is **not** performed.
+
+A vanilla server cannot open a CobolCraft folder and CobolCraft does not open vanilla saves (README Part 7, decision 9).
+Everything in the first table that the artifact does and CobolCraft does not is therefore a documented difference, not a gap.
+
+**Worked examples.**
+
+1. Standard world named `Alpha`, seed 42, created from a jar with SHA-256 `H`. After the first save the folder holds
+   `level.dat` (root keys include `DataVersion` 5023, `LevelName` `Alpha`, `WorldType` `standard`, `Seed` 42, `ContentJar` `H`),
+   `access.dat`, and `dimensions/minecraft/overworld/region/r.0.0.mca` (and the other region files of loaded chunks). The
+   other two dimension folders exist from creation (§9.5); their `region/` files appear when a chunk in them is first saved (inferred).
+2. A cobolcraft world has `dimensions/cobolcraft/main/region/r.0.0.mca` and no `poi/` folder; `level.dat` has `WorldType`
+   `cobolcraft`, a `Seed`, and no `ContentJar` key.
+3. Hand-copy `dimensions/minecraft/overworld/` into a cobolcraft world, renaming it `dimensions/cobolcraft/main/`. The chunks
+   have palettes with `minecraft:stone`, which the cobolcraft registry lacks. Result: every such chunk is reported with the
+   console line of rule 6 and is not loaded; the files are unchanged afterwards.
+4. A folder with `dimensions/minecraft/overworld/region/` but no `level.dat` is not a world (§9.1): the world list does not
+   offer it as playable (Play is disabled) and the dedicated server refuses to use it (exit code 10, world-types §2.1, WT-24).
 
 ---
 
@@ -527,7 +606,12 @@ None beyond those defined inline above. This file describes byte formats, not pa
     is open (README GAP-11).
 11. §9.3: whether the cobolcraft world's `cobolcraft:loose_item` adopts the standard item compound (45-8) is open. The shared rules say the ground-item
     physics are the standard ones (README R2); the stored keys are content-neutral.
-12. §9.6: the other saved-data files of 33 §10 (`scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat`, `world_gen_settings.dat`) are not
+12. §9.6: the other saved-data files of 33 §10 (`scheduled_events.dat`, `custom_boss_events.dat`, `ender_dragon_fight.dat`; of `world_gen_settings.dat` only `generate_structures`, `bonus_chest` and `dimensions`, the seed being `Seed`) are not
     specified for the CobolCraft folder. 33 Open question 4 (the wrapper keys and the border path) applies to the files that are.
 13. §9.2 `access.dat`: the stored form of an operator level, of a ban's time and expiry text, and the absence of IP bans are CobolCraft choices (README
     decision 8); the vanilla list files are not specified (16 §11 intro). The default level a new operator gets was not read (16 §11.1).
+14. §9.7: the contents of the compound-valued `level.dat` keys of the 26.3 layout (`spawn`, `difficulty_settings`, `DataPacks`, `enabled_features`, `version`,
+    `version_history`) and the exact NBT types of `Seed` in `world_gen_settings.dat` were not traced; they matter only if the 26.3 layout is ever adopted.
+15. §9.7 rule 6: WT-23 fails a chunk closed for a key "not in the world type's registries". Whether a key unknown to both types should instead be skipped
+    like an invalid entity (§9.3) is a decision for the owners of world-types; until then WT-23 applies as written.
+16. Inventory size of `players/<offline-uuid>.dat` (§9.2 `Inventory`): §9.2 stores the 36 storage slots (0 to 35) and writes armor and off-hand through `equipment`, while design README C5 says container 0 is the 46-slot inventory menu. These are consistent only if the 46 counts menu slots (crafting, armor, off-hand) that are not saved as `Inventory`; that reading is (inferred) and is not confirmed by the owners of 45-3 and 13. Also world-types Open question 12.

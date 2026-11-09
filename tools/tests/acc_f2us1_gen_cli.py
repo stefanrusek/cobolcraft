@@ -14,11 +14,12 @@ def run(*arguments):
 
 
 class AcceptanceF2US1GenCli(unittest.TestCase):
-    def test_acceptance_F2US1_check_passes_on_an_empty_table_set(self):
-        """acceptance F2US1-1 given an empty generated directory when --check runs then it exits 0"""
+    def test_acceptance_F2US1_check_fails_on_an_empty_directory(self):
+        """acceptance F2US1-1 given an empty generated directory when --check runs then it exits 1 naming the missing tables"""
         with tempfile.TemporaryDirectory() as directory:
             result = run("--check", "--out", directory)
-        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("DRIFT blocks.cpy", result.stdout)
 
     def test_acceptance_F2US1_check_passes_on_the_repository(self):
         """acceptance F2US1-2 given the repository's content/copy/gen when --check runs then it exits 0"""

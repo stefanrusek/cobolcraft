@@ -49,7 +49,7 @@ class PackageSelection(unittest.TestCase):
         self.assertEqual(runtests.build_order(["extract"]), ["shim", "formats", "proto", "content", "extract"])
         self.assertEqual(runtests.build_order(["shim"]), ["shim"])
         self.assertEqual(
-            runtests.build_order(["server", "client"]), ["shim", "proto", "core", "server", "client"]
+            runtests.build_order(["server", "client"]), ["shim", "formats", "proto", "core", "server", "client"]
         )
 
     def test_convergence_is_selected_only_by_name_and_comes_last(self):

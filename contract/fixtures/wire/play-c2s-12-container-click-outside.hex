@@ -1,0 +1,14 @@
+# Fixture: Container Click outside the window (slot -999)
+# Phase: play. Direction: serverbound (C->S). Packet id 0x12 (18).
+# Doc refs: 05c 0x12; 00 section 12.4 (HashedStack, HashedPatchMap)
+# Stated inputs:
+#   container 2, state id 1, slot -999 (SLOT_CLICKED_OUTSIDE), button 0, PICKUP; no changed slots; carried 3 x cobblestone
+
+12                                               # packet id: VarInt 0x12
+02                                               # Container id: VarInt 2
+01                                               # State id: VarInt 1
+fc 19                                            # Slot: Short -999
+00                                               # Button: Byte 0
+00                                               # Click type: VarInt 0
+00                                               # Changed slots: Map count 0
+01 3e 03 00 00                                   # Carried item: HashedStack

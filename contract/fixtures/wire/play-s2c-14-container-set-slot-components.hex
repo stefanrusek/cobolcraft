@@ -1,0 +1,16 @@
+# Fixture: Container Set Slot with data components
+# Phase: play. Direction: clientbound (S->C). Packet id 0x14 (20).
+# Doc refs: 05a 0x14; 00 section 12.1 (ItemStack) and 12.2 (DataComponentPatch); 46 section 8.1 (component ids 3 damage, 6 custom_name, 1 max_stack_size)
+# Stated inputs:
+#   container 0, state id 5, slot 36 (hotbar 0 of the 46-slot inventory menu); stack 1 x stone (item 1)
+#   patch: added damage (3) = VarInt 5 and custom_name (6) = text component plain String "Hi" (network NBT); removed max_stack_size (1)
+
+14                                               # packet id: VarInt 0x14
+00                                               # Container id: VarInt 0
+05                                               # State id: VarInt 5
+00 24                                            # Slot: Short 36
+01 01                                            # Item: Count 1, Item 1 (stone)
+02 01                                            # Patch: AddedCount 2, RemovedCount 1
+03 05                                            #   added[0]: damage (3) = VarInt 5
+06 08 00 02 48 69                                #   added[1]: custom_name (6) = network NBT String "Hi"
+01                                               #   removed[0]: max_stack_size (1)

@@ -1,0 +1,19 @@
+# Fixture: Container Click, shift-click (QUICK_MOVE)
+# Phase: play. Direction: serverbound (C->S). Packet id 0x12 (18).
+# Doc refs: 05c 0x12; 00 section 12.4 (HashedStack, HashedPatchMap)
+# Stated inputs:
+#   container 2 (crafting bench), state id 7, slot 9, button 0, click type 1 QUICK_MOVE
+#   changed: slot 9 -> empty, slot 36 -> 64 x stone with no components; carried item empty (Present false)
+
+12                                               # packet id: VarInt 0x12
+02                                               # Container id: VarInt 2
+07                                               # State id: VarInt 7
+00 09                                            # Slot: Short 9
+00                                               # Button: Byte 0
+01                                               # Click type: VarInt 1
+02                                               # Changed slots: Map count 2
+00 09                                            #   slot key: Short 9
+00                                               #   value: HashedStack
+00 24                                            #   slot key: Short 36
+01 01 40 00 00                                   #   value: HashedStack
+00                                               # Carried item: HashedStack

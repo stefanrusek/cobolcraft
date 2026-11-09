@@ -1,0 +1,12 @@
+# Fixture: Update Mob Effect, Haste
+# Phase: play. Direction: clientbound (S->C). Packet id 0x87 (135).
+# Doc refs: 05b 0x87; 46 worked example 1 (haste = 2)
+# Stated inputs:
+#   entity 300; effect haste (2); amplifier 1; duration 600 ticks; flags 0x07 (ambient, visible, show icon)
+
+87 01                                            # packet id: VarInt 0x87
+ac 02                                            # Entity id: VarInt 300
+02                                               # Effect: VarInt 2 (haste)
+01                                               # Amplifier: VarInt 1
+d8 04                                            # Duration: VarInt 600
+07                                               # Flags: Byte 0x07

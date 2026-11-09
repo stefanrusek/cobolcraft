@@ -1,0 +1,11 @@
+# Fixture: Recipe Book Settings
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4d (77).
+# Doc refs: 05b 0x4D
+# Stated inputs:
+#   crafting open true filtering false; furnace open false filtering true; blast furnace open true filtering true; smoker open false filtering false
+
+4d                                               # packet id: VarInt 0x4d
+01 00                                            # Crafting: open True, filtering False
+00 01                                            # Furnace: open False, filtering True
+01 01                                            # Blast furnace: open True, filtering True
+00 00                                            # Smoker: open False, filtering False

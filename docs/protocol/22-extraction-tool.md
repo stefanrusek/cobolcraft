@@ -250,6 +250,117 @@ Rebalance" (`en_us.json`). The game enables them only by feature flag (08 §2.6)
 
 The tool copies every file **byte for byte**. It never parses, reformats or re-encodes a JSON, PNG or NBT file.
 
+### 2.8.1 PNG survey and the decoder contract (closes Open question 7)
+
+Method: every PNG of both archives was read as bytes with a throwaway parser (signature, every chunk header, every chunk CRC, `IHDR` fields, the inflated size of the joined `IDAT` data against the size the header implies, and the filter byte of every scanline). Artifact: `minecraft-26.3-client.jar` (version 26.3, SHA-256 in 4.1) and `Faithful 32x - 26.3.zip`. The jar has 3,965 PNG files (3,964 under `assets/` plus `pack.png`); Faithful has 4,815 (3,931 under `assets/minecraft/textures/`, 859 under `assets/minecraft/optifine/`, 24 under the namespaces `modmenu`, `forge`, `neoforge` and `fabric`, and `pack.png`).
+
+**Structure facts that hold for all 8,780 files.** Every file starts with the 8-byte signature, has `IHDR` as its first chunk and `IEND` as its last, ends exactly at `IEND` (no trailing bytes), and has a correct CRC-32 on every chunk. Compression method and filter method are 0 everywhere. The inflated `IDAT` size equals (scanline bytes + 1) x height in every non-interlaced file. No `IDAT` run is split by another chunk (the `IDAT` chunks are always adjacent). `PLTE` occurs only in colour type 3 files, in both archives, and every colour type 3 file has one. No `tRNS` chunk is longer than the palette it belongs to (it is shorter in most files).
+
+**Colour type x bit depth x interlace (file counts).**
+
+| Colour type, depth | Interlace | Jar (3,965) | Faithful (4,815) |
+|---|---|---|---|
+| gray, 1 | none | 6 | 0 |
+| gray, 2 | none | 5 | 0 |
+| gray, 4 | none | 1 | 0 |
+| gray, 8 | none | 176 | 3 |
+| gray + alpha, 8 | none | 401 | 316 |
+| palette, 1 | none | 15 | 25 |
+| palette, 2 | none | 116 | 611 |
+| palette, 4 | none | 737 | 480 |
+| palette, 8 | none | 1,828 | 1,336 |
+| palette, 8 | **Adam7** | 0 | 1 (`textures/misc/spyglass_scope.png`, 512 x 512) |
+| RGB, 8 | none | 133 (132 under `assets/` plus `pack.png`) | 201 |
+| RGB, **16** | none | 0 | 1 (`textures/environment/celestial/end_flash.png`, 128 x 128) |
+| RGBA, 8 | none | 547 | 1,840 |
+| RGBA, 8 | **Adam7** | 0 | 1 (`textures/entity/shulker/shulker.png`, 128 x 128) |
+
+Never present in either archive: gray 16, gray-alpha 16, RGBA 16, palette 16, any interlaced image of depth 1, 2 or 4, gray-alpha or gray with depth below 8 and alpha. Both interlaced Faithful files and the 16-bit file replace a jar path that the game reads (all three exist in the jar, as non-interlaced 8-bit files); the jar itself has no interlaced and no 16-bit file. In Faithful the three unusual files are all under `textures/`, so they are in the part of the pack that the game loads (3 of 3,931).
+
+**Chunks.** Counts are files that contain at least one chunk of that type.
+
+| Chunk | Jar | Faithful | Notes |
+|---|---|---|---|
+| `IHDR`, `IDAT`, `IEND` | 3,965 each | 4,815 each | |
+| `PLTE` | 2,696 | 2,453 | palette images only (colour type 3) |
+| `tRNS` | 2,102 | 2,035 | see the next table |
+| `sRGB` | 0 | 2,914 | 1 byte |
+| `pHYs` | 0 | 2,074 | 9 bytes |
+| `gAMA` | 0 | 1,706 | 4 bytes |
+| `eXIf` | 0 | 1,493 | the only chunk that appears after `IDAT` (1,324 files); up to 184 bytes |
+| `tEXt` | 0 | 533 | up to 25 bytes |
+| `iTXt` | 0 | 345 | up to 7,779 bytes |
+| `iCCP` | 0 | 313 | up to 2,635 bytes |
+| `cHRM` | 0 | 214 | 32 bytes |
+| `sBIT` | 0 | 169 | 4 bytes |
+| `bKGD` | 0 | 30 | 6 bytes |
+| `tIME` | 0 | 28 | 7 bytes |
+| `zTXt` | 0 | 25 | up to 4,055 bytes |
+
+The jar has only the chunk order `IHDR`, optional `PLTE`, optional `tRNS`, `IDAT`, `IEND` (four orders: bare 1,133; `PLTE` 730; `PLTE` + `tRNS` 1,966; `tRNS` alone 136). Faithful has 70+ different orders (ancillary chunks before `PLTE`, between `PLTE` and `IDAT`, and `eXIf` after `IDAT`); a decoder must therefore skip unknown or unwanted chunks wherever they sit between `IHDR` and `IEND` and must not require a fixed order. `tRNS` is always before `IDAT` (and, where there is a `PLTE`, after it).
+
+**`tRNS` kinds.**
+
+| Image | Jar | Faithful |
+|---|---|---|
+| palette (any depth) | 1,966 files, 1 to 256 entries (1 entry in 1,259 + 552 + 51 + 11 of them), never more than the `PLTE` entry count | 2,035 files, 1 to 256 entries (1 entry in 471 files, 3 entries in 567 of the 2-bit files), never more than the `PLTE` count |
+| gray colour key (2-byte value) | 128 files: depth 8 119, depth 2 5, depth 1 4 | 0 |
+| RGB colour key (6 bytes) | 8 files, depth 8 | 0 |
+| gray-alpha, RGBA | never (not allowed by the format) | never |
+
+Palette sizes run from 2 to 256 entries. In both archives no low-depth palette has more than 2^depth entries (checked with the survey script).
+
+**`IDAT` count.** The jar: exactly one `IDAT` chunk in every file. Faithful: one in 4,774 files, two in 34, three in 5, four in 1, six in 1 (41 files with several, 39 of them under `textures/`). A decoder must therefore concatenate all `IDAT` payloads before inflating, ignoring the chunk boundaries (a deflate stream may be cut anywhere, including inside a block).
+
+**Filters.** Row filter types 0 (None), 1 (Sub), 2 (Up), 3 (Average) and 4 (Paeth) all occur in both archives (jar rows: 107,179 / 3,687 / 7,013 / 1,438 / 5,417; Faithful non-interlaced rows: 189,104 / 15,304 / 40,696 / 2,139 / 29,327). A filter byte above 4 occurs nowhere. The "bytes per pixel" distance of filters 1, 3 and 4 is the pixel size rounded up to one byte for depths below 8 (so 1 for gray and palette at depth 1, 2 and 4).
+
+**Sizes.** The largest side is 1,024 in the jar (three files, 2.8) and 2,048 in Faithful (`textures/block/water_flow.png`, 64 x 2,048); Faithful sides of 1,024 or more: 21 files in all. Non-square images are common (animation strips). No image is wider than 2,048 or taller than 2,048.
+
+**What the game's own reader checks (read from `NativeImage` and `net.minecraft.util.PngInfo`).** `NativeImage.read` first runs `PngInfo.validateHeader` on the buffer, and only then hands the bytes to the native `stbi_load_from_memory` (a library outside the jar) asking for 4 channels, so every accepted image becomes an 8-bit RGBA image whatever its kind. The Java pre-check looks only at the first 33 bytes and rejects, with an `IOException` carrying the text in the second column:
+
+| Test | Text |
+|---|---|
+| fewer than 33 bytes | `PNG header missing` |
+| first 8 bytes not the PNG signature | `Bad PNG Signature` |
+| length of the first chunk is not 13 | `Bad length for IHDR chunk!` |
+| type of the first chunk is not `IHDR` | `Bad type for IHDR chunk!` |
+| bit depth not one of 1, 2, 4, 8, 16 | `Invalid bit depth: <value>` |
+| colour type not one of 0, 2, 3, 4, 6 | `Invalid color type: <value>` |
+| bit depth 16 and 8 x width x height does not fit a signed 32-bit integer (the product is computed in 64 bits and compared with its 32-bit truncation, so 8 x width x height must be below 2^31, that is width x height at most 268,435,455; no test is made for the other depths) | `Bounds check failed, <w>x<h>@<depth>, type: <colour type>` |
+
+The pre-check does not look at: the interlace method, the compression and filter methods, any chunk after `IHDR`, a CRC, a palette, the pairing of colour type and depth (palette at depth 16 or RGB at depth 1, which the PNG format forbids, pass this pre-check), or a zero width or height. Those are left to the native decoder; a failure there gives `Could not load image: <reason from stb_image>` (an `IOException`). What the pack layer then does with an unreadable texture is in 08 §7.1 (the missing texture is used and a message is logged) and for `pack.png` in 08 §2 (a placeholder icon).
+
+**Not read from the artifact (recalled, not verified; Open question 17).** The behaviour of the native decoder itself is outside the jar. From memory only: it handles Adam7, depth 16 (keeping the high byte of each sample), low-depth gray scaled to 0..255, palette expansion with `tRNS` as alpha (entries not covered are opaque), gray and RGB colour keys as alpha 0 on matching pixels, and it ignores unknown ancillary chunks; whether it checks CRCs is not known to me. A CobolCraft decoder must not rely on that memory: the contract below is what must hold, and the four numbered rules after it say what to do with anything outside the surveyed set.
+
+**Minimum decoder contract (every PNG in both archives decodes with exactly this).**
+
+1. Signature and `IHDR` (13 bytes first), then chunks (length, type, data, CRC) until `IEND`.
+2. Colour types 0, 2, 3, 4 and 6; bit depths: 1, 2, 4 and 8 for gray and palette, 8 for gray-alpha and RGBA and RGB, **plus depth 16 for RGB** (one Faithful file). The 16-bit RGB end flash is the single surveyed, game-used file that rests on a recalled native-decoder rule (Open question 17). Reducing a 16-bit sample to 8 bits is by the high byte (inferred; recalled for the native decoder). Samples of depth 1, 2 and 4 are packed most significant bit first, each scanline padded to a whole byte; a gray sample v of depth d becomes v x 255 / (2^d - 1) (1 -> 255 for d = 1; 1, 2, 3 -> 85, 170, 255 for d = 2; v x 17 for d = 4; affects only the 12 low-depth gray jar files: 6 at depth 1, 5 at depth 2, 1 at depth 4, and no Faithful file; expected value under this rule: a depth-2 sample 2 becomes 170) (inferred from the PNG format, recalled; the artifact's native reader is not in the jar).
+3. Compression method 0 and filter method 0 only. All `IDAT` payloads, in order, joined and inflated as one zlib stream (zlib header, deflate, Adler-32; the Adler check may be skipped, inferred).
+4. Filter types 0 to 4 per scanline (all bytes mod 256; the definitions are PNG-format knowledge, recalled, not verified against the artifact). Let x be the byte being reconstructed, a the reconstructed byte one pixel to the left (0 at the row start), b the reconstructed byte above (0 on the first row) and c the byte above-left (0 when either is missing); the pixel distance is the pixel size in bytes, at least 1 (1 for depths below 8; 6 for RGB 16, 4 for RGBA 8). Type 0 None: output x. Type 1 Sub: x + a. Type 2 Up: x + b. Type 3 Average: x + floor((a + b) / 2) (the sum is not reduced first). Type 4 Paeth: x + the predictor of a, b and c, where p = a + b - c, pa = |p - a|, pb = |p - b|, pc = |p - c|; the predictor is a if pa <= pb and pa <= pc, else b if pb <= pc, else c (tie-break order a, b, c). Reconstruction uses the already reconstructed previous row. The survey decoded every non-interlaced file with exactly these rules without error.
+5. Interlace method 0 and **method 1 (Adam7)** (the pass table is PNG-format knowledge, recalled, not verified against the artifact): both surveyed Adam7 files are used by the game (shulker entity texture, spyglass scope). The image is split into seven passes; the pixel at (x, y) of pass k in the full image is (x0 + n x dx, y0 + m y dy) for its pass coordinates n, m. The passes, in the order they are stored:
+
+   | Pass | x0 | y0 | dx | dy |
+   |---|---|---|---|---|
+   | 1 | 0 | 0 | 8 | 8 |
+   | 2 | 4 | 0 | 8 | 8 |
+   | 3 | 0 | 4 | 4 | 8 |
+   | 4 | 2 | 0 | 4 | 4 |
+   | 5 | 0 | 2 | 2 | 4 |
+   | 6 | 1 | 0 | 2 | 2 |
+   | 7 | 0 | 1 | 1 | 2 |
+
+   Pass width = floor((W - x0 + dx - 1) / dx) and pass height = floor((H - y0 + dy - 1) / dy) (zero when W <= x0 or H <= y0). A pass with width or height 0 has no scanlines and no filter bytes at all. Each non-empty pass is its own little image: each scanline has its own filter byte, is padded to a whole byte for depths below 8, and is filtered independently (the "row above" of its first row is zeros, and the left/above neighbours are within the pass). The data of all passes is one concatenated inflated stream, pass 1 first. Example: 128 x 128 gives passes of 16 x 16, 16 x 16, 32 x 16, 32 x 32, 64 x 32, 64 x 64, 128 x 64. A decoder that supports only method 0 fails 2 of the 4,790 Faithful `assets/minecraft` PNGs and none in the jar. (The survey's filter and index checks did not cover the two interlaced files.)
+6. `PLTE` (3 to 768 bytes in multiples of 3, at most 256 entries) for colour type 3; `tRNS` for type 3 (alpha per entry, covering the first n entries, the rest 255), type 0 (one 2-byte gray value; a pixel equal to it gets alpha 0, others 255) and type 2 (three 2-byte values, same rule). The colour key is stored in 2 bytes per sample whatever the depth; the jar's keys are depth 8, 2 and 1 values, compared with the sample value (inferred from the PNG format, recalled). A pixel index at or above the `PLTE` entry count: none occurs in any non-interlaced palette file of either archive (checked with the survey script; the two interlaced files were not checked); the artifact's behaviour is not read, and a CobolCraft decoder fails the image (inferred).
+7. Every other chunk (`sRGB`, `gAMA`, `pHYs`, `cHRM`, `iCCP`, `sBIT`, `bKGD`, `tIME`, `tEXt`, `iTXt`, `zTXt`, `eXIf` and anything unknown) is skipped by its length wherever it sits. No colour correction is applied for `gAMA`, `sRGB` or `iCCP`: the Faithful files that carry them are used by the game with the raw samples (inferred: the Java reader does not touch them; the native decoder is recalled, not verified, to ignore them).
+8. Output: 8-bit RGBA, 4 bytes per pixel, row 0 at the top. Gray expands to R = G = B = gray; gray-alpha keeps its alpha; types 0, 2 and 3 without a `tRNS` match are opaque.
+
+**Outside the set.** The artifact's behaviour is: a failure of the Java pre-check or of the native decoder is an `IOException`, and the caller treats the texture as unreadable (08 §7.1). The same rule is recommended for CobolCraft (inferred): the decoder returns a failure for any file with a bad signature, a first chunk that is not a 13-byte `IHDR`, a depth or colour type outside the table (including illegal pairs such as RGB at depth 1), a compression or filter method other than 0, an interlace method other than 0 and 1, a filter byte above 4, a palette image without `PLTE`, a missing `IEND` or truncated data, or an inflated size smaller than the header implies, and never a partial image. A 16-bit gray, gray-alpha or RGBA file (never seen in the surveyed set) may be decoded by the same rules as the 16-bit RGB case (inferred) or rejected; rejecting is acceptable because no surveyed file needs it. A file with a bad chunk CRC is not treated as an error by anything read here (no CRC test in the Java pre-check); the surveyed files have none, so either choice is safe. No surveyed file has a missing pre-`IDAT` ancillary dependency (for example no file needs `gAMA`), so skipping them loses nothing the game uses (inferred; the game's own handling rests on the native decoder, Open question 17).
+
+**Worked examples.** (1) A 16 x 16 palette image at depth 2 with a 3-entry `PLTE` and a 1-entry `tRNS` of the value 0: pixel index 0 becomes (R, G, B, 0) of palette entry 0; indices 1 and 2 are opaque. Scanline size is 4 bytes (16 x 2 bits = 32 bits) plus the filter byte: 5 bytes per row, 80 bytes in all. (2) An 8-bit gray image with a `tRNS` of the 2 bytes `00 00`: gray value 0 pixels get alpha 0, all others alpha 255. (3) The 16-bit RGB end flash: 128 x 128, 6 bytes per pixel, 1 + 768 bytes per row; the filter distance for filters 1, 3 and 4 is 6 bytes (the pixel size at depth 16: 3 samples x 2 bytes). (4) A texture split into `IDAT` chunks of 8,192, 8,192 and 301 bytes inflates as one stream of 16,685 bytes: the boundaries mean nothing.
+
+**For the pack layer.** The PNG count per kind above is what T7 (section 12) may check beyond the signature. User packs other than Faithful may carry anything (interlace, depth 16 in any colour type, large images); the rules of this section apply to them, and 08 §7.1's fallback to the missing texture applies to a failure.
+
 ### 2.9 What the jar does not contain
 
 | Absent | Consequence |
@@ -897,8 +1008,7 @@ Checks an implementation of the tool and loaders must pass, with the expected nu
 6. **Shaders and other unused assets.** `shaders/`, `post_effect/`, `waypoint_style/`, `gpu_warnlist.json`, `regional_compliancies.json` and `texts/` are copied but
    whether the renderer or the screens read them is inferred from document 12 and 13. If an implementation never uses them they could be dropped from the tool, at the cost of the
    validation counts changing.
-7. **PNG decoder coverage.** 2.8 lists the PNG features present (bit depths 1, 2, 4 and 8; gray, RGB, palette, gray with alpha, RGBA; `tRNS` on palette, gray and RGB). Whether 08 and 14
-   already require a decoder for all of these was not re-read in this round.
+7. **PNG decoder coverage (closed).** Answered in 2.8.1: the PNG kinds of both archives (a complete table), what a decoder must support at minimum (8 numbered rules, including Adam7, depth 16 for RGB and multiple `IDAT`), what the artifact's Java-side reader rejects, and what happens outside the set. What 08 and 14 require of a decoder is the pointer added to 08 §7.1.
 8. **`.gitignore`.** The generated directory and any user-chosen directory must be ignored by git. The default `<game directory>/generated` is not covered by the current
    `/tmp/` rule unless the game directory is under `tmp/`. The operator or the planner must add the rule; this document does not edit that file.
 9. **Documents that do not exist yet.** The world-types document (RS2) is cited by role only. Documents 23 (registry loading), 24, 46, 33, 41 and 44 exist and are cross-referenced; 8.3 now defers to 23 §2 and §3. How 23 numbers the synchronized registries on the wire was not re-read in this round.
@@ -912,3 +1022,4 @@ Checks an implementation of the tool and loaders must pass, with the expected nu
 15. **Document 08 still says the client vanilla pack is fixed.** 2.4 gives the read value (required, BOTTOM, not fixed). 08 §3.1 ("Typical resulting
     order"; line 277 reads "built-in default pack (required, fixed BOTTOM)") and 08 §10 (line 905, "required and fixed at BOTTOM, inferred") are unchanged and wrong (re-confirmed against the jar: `VANILLA_SELECTION_CONFIG` is required true, BOTTOM, fixed false). The owner of 08 must correct them; this document cannot.
 16. **Feature-pack config and `PACKS_DIR` (closed).** Read: `ServerPacksSource.PACKS_DIR` is `minecraft:datapacks`, the in-jar built-in pack root (2.4); the world folder comes from `LevelResource.DATAPACK_DIR` (8.3). Still not traced: which pack-repository code applies the feature config to a pack stack when a feature is enabled (8.3 level 2 stays inferred).
+17. **Native PNG decoder behaviour.** `NativeImage.read` passes the bytes to `stbi_load_from_memory` (LWJGL, outside the jar). Its handling of 16-bit samples, low-depth gray scaling, colour keys, CRC checking, unknown chunks and corrupt data is recalled, not verified (2.8.1); only the Java pre-check (`PngInfo.validateHeader`) was read. No surveyed file depends on a point that is not read except the 16-bit RGB file, the two Adam7 files and the colour-key files.

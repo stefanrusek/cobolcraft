@@ -38,7 +38,7 @@ DEPENDENCIES = {
     "extract": ["shim", "proto", "formats", "content"],
     "core": ["shim", "proto"],
     "server": ["shim", "proto", "core"],
-    "client": ["shim", "proto", "core"],
+    "client": ["shim", "proto", "formats", "core"],
     CONVERGENCE: list(PACKAGES),
 }
 TEST_PREFIXES = ("acc_", "contract_", "test_")

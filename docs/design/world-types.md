@@ -7,10 +7,10 @@ are kept apart. It contains no game content rows. Section references use the for
 [README.md](README.md)), "22 §8.2" (docs/protocol/22-extraction-tool.md), "08 §1.6", "04 §5", "07 §9", "standin §1.1"
 ([standin-content.md](standin-content.md)), "ui §7" ([builtin-ui-art.md](builtin-ui-art.md)) and "CC-0001"
 (tickets/CC-0001-client-polish.md). Every judgement call is marked **Decision WT-n** with its reason. Decisions marked "adopted default" are not operator rulings: they are defaults this document adopts until the operator answers, and
-the README must say the same. **Pending, not done:** a search of README.md finds no `WT-` identifier, README Part 7 decisions 2, 3, 9 and 10 and Part 4 C10 and R1 still carry the older wording (jar, no seed, no WT-24 to WT-26), so the README is not yet consistent with this document. Section 9 lists the edit, and its README Part 7 row is to list every one of them: WT-12, WT-17 (a valid generated directory instead of the jar), WT-19, WT-20, WT-22, WT-23, WT-24, WT-25, WT-26 and the skin pack placement). Anything that is not
+the README must say the same. **Pending, not done:** a search of README.md finds no `WT-` identifier, README Part 7 decisions 2, 3, 9 and 10 and Part 4 C10 and R1 still carry the older wording (jar, no seed, no WT-24 to WT-26), so the README is not yet consistent with this document. Section 9 lists the edit, and its README Part 7 row is to list every one of them: WT-12, WT-17 (a valid generated directory instead of the jar), WT-19 (seed input; now the clean-room rule of 11 §12, not an adopted default), WT-20, WT-22, WT-23, WT-24, WT-25, WT-26 and the skin pack placement). Anything that is not
 settled is a numbered Open question at the end. Decision numbers are by order of writing, not of position: WT-1 to WT-4 in
 section 3, WT-5 to WT-7, WT-19, WT-24 and WT-26 in section 2.1, WT-20 in section 3.1, WT-8, WT-21 and WT-22 in sections 5 and 6.2, WT-9
-to WT-11, WT-13 and WT-25 in section 6, WT-14 to WT-16 and WT-23 in section 7, WT-17 and WT-18 in section 8, WT-12 in section 10.
+to WT-11, WT-13 and WT-25 in section 6, WT-14 to WT-16 and WT-23 in section 7, WT-17 and WT-18 in section 8, WT-12 in section 10, WT-27 to WT-32 in section 11.
 
 Sources of the rules used here: CC-0001 Decisions "Namespace", "Own world type", "Stand-in content", "Vanilla assets and
 data"; README Part 0 (R1 to R10), Part 4 (C1 to C14) and Part 7 (adopted defaults 2, 3, 6, 9, 11, 16, 18); 08 §1.6, §3.1,
@@ -47,7 +47,7 @@ The type is stored in `level.dat` (07 §9.2), as a new key.
 
 | Key | NBT type | Values | Meaning |
 |---|---|---|---|
-| `WorldType` | String | `standard`, `cobolcraft` | The type of the world. Written when the world is created. Never changed afterwards |
+| `WorldType` | String | `standard`, `cobolcraft`, `debug` | The type of the world. Written when the world is created. Never changed afterwards. `debug` is the hidden test-tool type of [debug-world.md](debug-world.md): it uses the standard content set, is never chosen by the default rule of section 3.2, never listed in the normal UI, and is created only by the Ctrl-click of the create-world screen or by `CS-WORLD-TYPE` (plan, "Operator addition: debug world"). Every rule of this document that names the standard type's content (sections 4, 6, 7, 8) applies to `debug` as to `standard` |
 | `Seed` | Long | any | The world seed. Used by the standard generator and, through `obfuscateSeed`, by the hashed seed of the Login packet (see below). Written for both types for a uniform schema (Decision WT-5). The cobolcraft generator uses no seed (standin §5.2: deterministic and stateless), so for a cobolcraft world the value is stored and never read |
 | `ContentJar` | String | lower-case hex SHA-256, or absent | For a standard world: the `jar-sha256` of the manifest of the generated directory at creation (22 §6.4). Absent for a cobolcraft world, also when valid generated packs exist at creation (E5): a cobolcraft world does not read them, so there is nothing to record. Informational in this version (Decision WT-6) |
 
@@ -57,11 +57,11 @@ The type is stored in `level.dat` (07 §9.2), as a new key.
 `level.dat` and no `dimensions/` content (empty, or holding only other files) holds no world: a creation may use it. A
 folder with no `level.dat` but with `dimensions/` content is **not opened and not used for creation**; the dedicated server
 prints "This folder holds world data but no level.dat." and exits with code 10, the single-player list shows the row with that
-second line and disables Play. Reason: creating over saved chunks would destroy them. This replaces the sentence of 07 §9.5 "A world folder without `level.dat` is created new, with all enabled dimensions" for a folder that holds `dimensions/` content (section 9).
+second line and disables Play. Reason: creating over saved chunks would destroy them. This replaces the sentence of 07 §9.5 "A world folder without `level.dat` is created new, with the dimension folders of all enabled dimensions made when the world is created" (current wording) for a folder that holds `dimensions/` content (section 9).
 
 Reading rules for a folder that has `level.dat`, in order:
 
-1. `WorldType` is `standard` or `cobolcraft`: that is the type.
+1. `WorldType` is `standard`, `cobolcraft` or the hidden `debug` (standard content set, test tool only, debug-world.md): that is the type.
 2. `WorldType` is absent and the world folder holds no `dimensions/minecraft/` folder: the type is `cobolcraft`. On the next
    save the server (the dedicated server or the single-player host; no other tool writes these keys, Decision WT-26) writes `WorldType = cobolcraft` and `Seed = 0` if `Seed` is absent, and leaves `ContentJar` absent
    (Decision WT-7). If the world is opened read-only nothing is written and this rule applies again at each open (Decision WT-26). Worlds of feature 001 follow 07 §9.1, which names no `minecraft` dimension folder, so they cannot hold one.
@@ -75,13 +75,12 @@ Reading rules for a folder that has `level.dat`, in order:
 
 **Seed rules.** At creation, `Seed` is the value the creator gave, or, when none was given, one random 64-bit value drawn at
 creation. The creator gives it on the Create New World screen (an optional text field) or
-in the server configuration (key `level-seed`, empty means draw). **Decision WT-19 (seed input, adopted default).** The text
-rule: a text that is an optional minus sign followed by **one or more** decimal digits (a lone `-` is not a number and is hashed), and fits a signed 64-bit integer, is that number. The text is taken exactly as typed or configured, with no trimming of whitespace (so a text with a space is not a number and is hashed); a leading `+` is not a minus sign, so `+5` is hashed; leading zeros are allowed and the value is the parsed one (`007` is 7, `-0` is 0); a text whose value is outside the signed 64-bit range is hashed. Any other
-non-empty text is hashed: `h = 0`; for each UTF-16 code unit `c` of the text, `h = (31 * h + c)` in 32-bit two's complement
-wrap-around; the seed is `h` sign-extended to 64 bits. The text is first turned into UTF-16 code units: a typed or configured UTF-8 text is decoded to code points, and each code point above U+FFFF becomes a surrogate pair (high surrogate first), so the hash is over those units. Test vectors: `a` gives 97, `ab` gives 3105, `abc` gives 96354, `hello` gives 99162322 (each below 2^31, so sign extension changes nothing). (This is the 32-bit string hash of the Java platform; whether vanilla uses it
-for the seed field is not read here, so equality with vanilla seeds is not claimed.) The random draw uses the platform's random source, uniform over all 64-bit values, and has no algorithm or test value to specify (any value is valid). Reason: a
-fixed, stated rule is needed to implement the field and the key, a number must stay a number so a seed copied from a vanilla
-game can be typed, and no README or spec text gives another. The field and key names are final in this document. On reading: a standard world whose `Seed` is absent is **not opened** (the generator cannot run without
+in the server configuration (key `level-seed`, empty means draw). **Decision WT-19 (seed input; superseded by the clean-room rule in 11 §12).** The seed text rule is now the one in
+[11 §12](../protocol/11-world-generation-caves-and-ores.md), read from the artifact, which is the reference and is adopted as is: (1) trim every UTF-16 unit
+<= 0x20 from both ends; (2) a blank result means no seed, so a random 64-bit value is drawn; (3) a trimmed text that is an optional `+` or `-` followed by one or more decimal digits (ASCII or Unicode
+decimal digits) and fits a signed 64-bit integer is that number (`+5` is 5, `007` is 7, `-0` is 0); (4) any other text, including an out-of-range number, a lone sign or a text with an inner
+space, gets the 32-bit Java string hash of the trimmed text over its UTF-16 units, sign-extended to 64 bits. Test vectors and edge cases: 11 §12.4 (for example `a b` gives 94307,
+`9223372036854775808` gives -1773151197, `  hello  ` gives 99162322). The decision number is kept; the earlier wording of this decision was removed and is superseded. The random draw is any uniform 64-bit value (11 §12.3). The field and key names are final in this document. On reading: a standard world whose `Seed` is absent is **not opened** (the generator cannot run without
 it), with the text "This world has no seed and cannot be opened." and the same exit code and list row treatment as rule 4. A
 cobolcraft world whose `Seed` is absent reads it as 0.
 
@@ -509,6 +508,25 @@ the shared stack).** Reason: the cobolcraft world must **behave** identically (g
 difference allowed is the standard `minecraft:` UI sprites and fonts, which the built-in pack must also supply so that the
 world runs with no pack (22 §9.1, README C11). Precedence of a path present in both packs: the generated pack replaces the built-in file of the same path (ui §0 and §10; 08 §3.2).
 
+### 8.3 A vanilla client against a cobolcraft-type server
+
+Recorded behaviour, not a new design (spec US21 acceptance scenario 2; the WT-16 behaviour of section 7.4; 04 §5, last
+paragraph of its "Cobolcraft world type" item). Nothing in this section adds a packet, a rule or a refusal.
+
+| Phase | What a vanilla 26.3 client does against a server of the cobolcraft type | Why |
+|---|---|---|
+| Handshake, status, login | Succeeds. Nothing in them depends on the world type | 09 §3.1; the wire has no world type field (section 7.4) |
+| Configuration | **Passes.** The server sends the Registry Data of 09 §3.1 (including `minecraft:dimension_type` with `cobolcraft:surface` and `cobolcraft:sunless`), Update Tags and Finish Configuration in the form of 04; a vanilla client accepts dynamic registry entries under any key and checks only that the vanilla keys it looks up directly exist (04 §3.2 item 6), which the standard core supplies (README C3) | 04 §5 ("a vanilla client can pass configuration for this world type"); 04 §3.2 |
+| Play | **Cannot be played.** Block, block state, item and entity type ids are the cobolcraft numbering (section 4), which does not match the client's built-in registries, so the world is drawn and handled by wrong ids. The other static registries keep the vanilla numbering (Decision WT-9), so the packets that name them decode | 04 §5; section 4 |
+| Detection | The server does not detect a vanilla client and does not refuse it: the type is read by the client from the `cobolcraft:surface` entry (Decision WT-16), a rule a vanilla client does not have. The server sends the same stream to every client | Decision WT-16 |
+
+What is not specified, and not tested: the exact failure a vanilla client shows once in play (a wrong picture, a
+disconnect on an id it cannot resolve). The automated half of the vanilla validation (`contract_vanilla_config`,
+`contract_vanilla_chunk`, plan) covers the **standard** type only; no test or manual run is defined against a
+cobolcraft-type server. Whether to refuse a vanilla client at login with a clear message is a new design and stays
+unadopted (it would need a way to recognise the client, which the protocol does not give a server except the brand
+payload of the configuration phase, 03).
+
 ---
 
 ## 9. Changes needed in other documents
@@ -517,8 +535,8 @@ These are not made here. Each is a statement for the owner of the document.
 
 | Document | Change |
 |---|---|
-| 07 §9.2 `level.dat` (T15) | Add `WorldType`, `Seed`, `ContentJar` of section 2.1, the reading rules, the Seed rules (Decision WT-19) and the folder rule of Decision WT-24. Nothing else is asked by this document; the layout questions of Decision WT-21 (33 §10 layout, `players/` slots) are Open question 12 |
-| 07 §9.5 | Replace "A world folder without `level.dat` is created new, with all enabled dimensions" by the folder rule of Decision WT-24 (a folder with `dimensions/` content and no `level.dat` is not opened and not used); add exit code 10 and the world-list row treatment of section 2.1 and Decision WT-26 |
+| 07 §9.2 `level.dat` (T15) | Add `WorldType` (values `standard`, `cobolcraft` and the hidden `debug`), `Seed`, `ContentJar` of section 2.1, the reading rules, the Seed rules (Decision WT-19) and the folder rule of Decision WT-24. Nothing else is asked by this document; the layout questions of Decision WT-21 (33 §10 layout, `players/` slots) are Open question 12 |
+| 07 §9.5 | (Done in the SAVE round: §9.5 now carries the folder rule.) Replace "A world folder without `level.dat` is created new, with all enabled dimensions" by the folder rule of Decision WT-24 (a folder with `dimensions/` content and no `level.dat` is not opened and not used); add exit code 10 and the world-list row treatment of section 2.1 and Decision WT-26 |
 | 07 §9.1, §9.3 | Dimension folder names of the standard dimensions; entity id of the item entity by role (`minecraft:item` standard, `cobolcraft:loose_item` cobolcraft; Decision WT-22). This is the one place this change is asked: the 07 §9.2 row asks only for the keys |
 | 33 §10 | Note where the keys of section 2.1 would sit under the 26.3 layout (the seed in `world_gen_settings.dat`); no migration is defined here (Decision WT-21, Open question 12) |
 | standin §4.6, §5.1 | State that they describe the cobolcraft type only; cite the dimension type keys and hashed seed 0 that Decision WT-16 and section 2.1 use |
@@ -533,7 +551,7 @@ These are not made here. Each is a statement for the owner of the document.
 | spec FR-009, `contracts/operator-surface.md` | Add `world-type` (values `auto`, `standard`, `cobolcraft`, default `auto`) and `level-seed`; the file-absent write rule; the invalid value (`FATAL configuration`, status 1) and missing key rules of Decision WT-20 are already the contract's forms. **Contract change:** a new exit status 10 for a world that cannot be created or opened (Decision WT-3, section 2.1) |
 | ui §7.1 | The key `WorldType` and values are final; remove "working names" |
 | README Part 4, C10; Part 7, decision 2 | Replace "jar" with "valid generated directory" (Decision WT-17), and mark it adopted until the operator answers |
-| README Part 7 | One entry per adopted default of this document, each marked as not an operator ruling: WT-12 (decision 3), WT-17 (a valid generated directory instead of the jar), WT-19 (seed input and text hash), WT-20 (configuration edge cases), WT-22 (role table, four roles), WT-23 (fail closed on foreign keys), WT-24 (a world is a folder with `level.dat`), WT-25 (reading of the namespace rule), WT-26 (reading edges and exit code 10), and the skin pack placement (decision 10). WT-21 states that whatever 07 §9 holds applies to both types and adds no change of its own (its open points are Open question 12) |
+| README Part 7 | One entry per adopted default of this document, each marked as not an operator ruling: WT-12 (decision 3), WT-17 (a valid generated directory instead of the jar), WT-19 (seed input; now the clean-room rule of 11 §12, read from the artifact, not an adopted default), WT-20 (configuration edge cases), WT-22 (role table, four roles), WT-23 (fail closed on foreign keys), WT-24 (a world is a folder with `level.dat`), WT-25 (reading of the namespace rule), WT-26 (reading edges and exit code 10), and the skin pack placement (decision 10). WT-21 states that whatever 07 §9 holds applies to both types and adds no change of its own (its open points are Open question 12) |
 | cobolcraft-standard-core.md §5 | Already holds the values of Decision WT-12 (section 10); standin §1, §2, §13 need only point to it |
 
 ---
@@ -562,6 +580,196 @@ standard-core.
 
 ---
 
+## 11. A single-player world opened to others
+
+Source and labels. Section 11.1 records what the 26.3 client artifact does when its integrated (single-player) server is opened
+to other players; it is **read** from the artifact recorded in docs/protocol/README.md (client jar, SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3), by static reading of the shipped bytecode
+(`javap`) and of `assets/minecraft/lang/en_us.json`, with no execution. Class and key names in backticks say where a fact was
+read; they are not the design. Anything not marked is read; "(inferred)" is deduced. Sections 11.2 and 11.3 are CobolCraft
+decisions and are marked **Decision WT-n** (adopted defaults, not operator rulings). The commands `/publish` and `/unpublish` are
+already described in 16 §11.15; this section adds the screen, the port rules, the effects and the rules around them.
+
+### 11.1 What the artifact does (read)
+
+**Where.** The pause menu has a button "World Options..." (`options.worldOptions.button`) that opens the screen
+`WorldOptionsScreen` (title "World Options"). It has a General section and a Multiplayer section
+(`options.worldOptions.multiplayer.title`); the Multiplayer section exists only when the client holds an integrated server. The
+language file still carries the older labels "Open to LAN" (`menu.shareToLan`, `menu.multiplayerOptions.button`), "Start LAN
+World" and "Settings for Other Players", but a search of every class in the jar finds no reference to those keys, so the older
+separate screen is not used (inferred: left over). The multiplayer scope has two values only, `OFF` and `LAN`; "Online" texts exist
+in the language file but no scope uses them.
+
+**Controls of the screen.**
+
+| Control (English label, key) | Shown to | Initial value | Rule |
+|---|---|---|---|
+| Default Game Mode (`options.worldOptions.game_mode`): cycle survival, creative, adventure, spectator | only the single-player owner (below) | the world's stored game type | Apply writes the stored game type (`GameType` in the world data) |
+| Personal Game Mode (`options.worldOptions.personal_game_mode`) | only the owner, and only while the owner's player exists | the owner's current mode | Apply sets the owner's own mode only |
+| Allow Cheats (`selectWorld.allowCommands`, on/off) | only the owner | the stored `allowCommands` | Disabled in a demo world; in a hardcore world disabled unless the local player has level 4. Apply writes `allowCommands` to the world data |
+| LAN (`menu.multiplayerOptions.lan`, on/off) | the owner, in the Multiplayer section | off unless already open | Tooltips: on "Players on the same network can join.", off "Nobody can join." |
+| Port Number (`lanServer.port`, text box) | in the Multiplayer section | blank while LAN is off; the open port while open | Enabled only while LAN is on. The hint shows the port that will be used |
+| Command Access (`options.worldOptions.guest.command_access`, on/off) | Multiplayer section | the server's guest flag, false at start | Active only when LAN is on **and** Allow Cheats is on; otherwise forced to off and disabled |
+| Force Game Mode (`options.worldOptions.guest.force_game_mode`, on/off) | Multiplayer section | true at start | Hardcore world: forced on, disabled. LAN off: forced on, disabled. Command Access on: forced off, disabled. Otherwise free |
+| Apply Changes / Cancel | | | Apply is enabled only when some value differs from its initial value and (LAN is off or the port text is valid) |
+
+The Default Game Mode, Personal Game Mode and Game Rules controls are active only when the local player exists, the world is not
+hardcore, and (the wanted Allow Cheats value if it was touched, else whether the player has level 2 or more) is true. Turning
+Allow Cheats off on the screen resets the wanted Default Game Mode to its initial value and the wanted Personal Game Mode to that
+value. There is no field for the message of the day, for the maximum number of players or for the world; the message of the day
+is fixed (below).
+
+**Order of Apply.** In this order: difficulty (sent as a packet) and its lock; Allow Cheats (stored, then permissions
+re-evaluated, below); Force Game Mode; Default Game Mode; Personal Game Mode; Command Access (stored, permissions re-sent); last, the
+network change. The network change runs when the scope changed, or when LAN stays on and the port changed: the server first closes
+what is open (if anything was open, the host's chat shows "This world is no longer open to multiplayer"), then, if the wanted scope is
+not OFF, opens it at the wanted port. So changing the port while open disconnects the guests (11.1 "Closing").
+
+**Port rules** (`WorldOptionsScreen`, `HttpUtil`).
+
+| Case | Result |
+|---|---|
+| Screen created | A default port is chosen by opening a server socket on port 0 and reading the port the system gave, then closing it; if that fails, 25564 |
+| Text blank (only white space counts as blank) | A fresh default port is chosen; no error |
+| Text is not an integer | A fresh default port is chosen and the error "Not a valid port." is shown |
+| Integer below 1024 or above 65535 | Error `lanServer.port.invalid`: "Not a valid port.\nLeave the edit box empty or enter a number between 1024 and 65535." (the two bounds are passed as arguments; the English text has the bounds inline) |
+| Integer in range, different from the port already open, and the test fails | Error `lanServer.port.unavailable`: "Port not available.\nLeave the edit box empty or enter a different number between 1024 and 65535." The test opens a server socket on that port and compares the port it got |
+| Integer in range and equal to the port already open | Accepted without the test |
+| Valid | Text colour 0xFFE0E0E0; invalid: 0xFFDF5050 with the error as tooltip |
+
+The command `/publish` (16 §11.15) takes a port of 0 to 65535 and runs no availability test; a failure to bind is reported as
+`commands.publish.failed` "Unable to host local game". With port 0 the artifact records and announces the number it was given
+(0), not the port the system would bind (inferred from the code path: the argument is stored as the open port and never read back).
+
+**What opening does** (`IntegratedServer.publishServer`). It does nothing and returns false if the scope is OFF or something is
+already open. Otherwise, in this order: the client starts its online-mode services and begins fetching the chat signing key pair;
+the server's connection listener binds a TCP listener on **all addresses** at the port (no bind address is given); the console logs
+"Published LAN server on port {}"; the port is recorded; the LAN announcer starts with the message of the day and the port; the scope
+is set. A failure to bind returns false with nothing recorded and no rollback of the first step. On success the host's chat shows,
+and the narrator reads, "This world is now open to LAN. The port number is %s" (the port is click-to-copy), and the window title
+changes (`Minecraft.updateTitle`: the single-player text is dropped while open). Opening does **not** change the world, its seed, difficulty, game rules,
+dimensions or content, and does not change the login mode.
+
+**The server is the same server either way.** These hold whether or not the world is open: the integrated server turns online mode
+**on** at start (`IntegratedServer.initServer`) (guests are authenticated by account); the message of the day is the text "<host profile name> - <world name>" (the
+world name alone when there is no profile); the maximum number of players is **8**, host included, and a login when 8 are online is
+refused with `multiplayer.disconnect.server_full` "The server is full!"; the view distance is the larger of 2 and the host's render
+distance, the simulation distance the larger of 2 and the host's simulation distance, both re-read every tick; entity tracking
+distance is scaled by the host's entity-distance setting; the packet-rate limit and the command and chat spam thresholds are 0; and
+the integrated server tells operators about command feedback. The Login packet's maximum-players field carries the same 8 and the
+view distance of the player list (read from `PlayerList.placeNewPlayer`).
+
+**Pause.** While open, the pause screen does **not** pause the game (the client pauses only when it has an integrated server that is
+not open); a closed single-player world pauses while the pause screen is up or while no player is present.
+
+**The host player and the owner name.** The owner is a player whose profile name equals the single-player profile name,
+**ignoring case** (`isSingleplayerOwner`). The host plays through an ordinary connection and is an ordinary player to guests. The
+world data may hold `singleplayer_uuid`; when the joining player is the owner and it is present, the owner's saved data is loaded
+from that UUID's file, otherwise from the joining player's own UUID. A guest whose name matches the owner's while the owner is
+online is refused with `multiplayer.disconnect.name_taken` "That name is already taken". The usual join checks still apply to
+guests (name ban, address ban, allow list, the 8-player limit).
+
+**Permission levels** (`getProfilePermissions`, `getCustomPermissionLevel`, `PlayerList.isOp`). Level names: all (0), moderators
+(1), gamemasters (2), admins (3), owners (4).
+
+| Player | Allow Cheats on | Allow Cheats off |
+|---|---|---|
+| The owner (host) | Level 4. (The owner counts as an operator while cheats are on) | Level 0, unless the operator list holds the name: then level 4 |
+| Any other player | Level 2 if Command Access is on, else level 0. The operator list is **not** consulted | The level of the operator-list entry (level 2, the integrated server's operator level, when no entry level is available); level 0 if not listed |
+
+When Allow Cheats or Command Access changes, the server re-evaluates every online player and sends each the permission notice
+(Entity Event of the player's own entity with the code 24 plus the level, so 24 to 28) and re-sends the command tree. `/publish` and
+`/unpublish` need level 4 (16 §11.15); an integrated server registers them, a dedicated one does not.
+
+**Game mode of guests** (`getForcedGameType`, `ServerPlayer.calculateGameModeForNewPlayer`, `updateGameModeBasedOnPermission`).
+The "forced game type" is the world's stored game type when Force Game Mode is on, the world is open and not hardcore, else none.
+A player entering the world gets the forced type if there is one and the player has less than level 2; otherwise the mode stored in
+the player's data, otherwise the world's stored game type. Whenever Force Game Mode, Allow Cheats, Command Access or the default game
+mode is applied and Force Game Mode is on (open or not), every online player with less than level 2 is set to the world's stored
+game type. So with the defaults (force on, no Command Access) a guest is always in the world's default mode, and a guest with level
+2 or more is never forced.
+
+**Closing** (`unpublishServer`, `stopServer`, `halt`). The TCP listener stops; every online player except the host (compared by UUID)
+is disconnected with `multiplayer.disconnect.server_shutdown` "Server closed"; the announcer stops; the port becomes -1 and the scope
+OFF. Saving and quitting the world does the same.
+
+**What persists.** The world data keeps `GameType` (default game mode), `allowCommands` and `singleplayer_uuid` (`PrimaryLevelData`);
+no key was found there for the scope, the port, Command Access or Force Game Mode, which live only in the integrated server object.
+Each session therefore starts closed, Command Access off, Force Game Mode on.
+
+**What other players see.**
+
+| Where | What |
+|---|---|
+| Local network | While open, a UDP datagram every 1500 ms to group 224.0.2.60, port 4445, text encoded UTF-8: `[MOTD]` + message of the day + `[/MOTD][AD]` + port + `[/AD]`. A client listens on 4445 in that group with a 1024-byte buffer and a 5000 ms receive timeout and lists the sender's address with the text; its multiplayer list has a LAN section headed "LAN World". The sender's address is the datagram's source address (inferred) |
+| Server list by address | The status reply carries the same message of the day, the version, 8 as the maximum, and the player count |
+| Joining | Account authentication; the usual configuration phase; the Login packet with max players 8 |
+| In the world | The host appears in the player list and as an entity like any player; the permission notice of the player's level; the host's chat messages as normal chat |
+| The world type | Nothing about the type: the artifact has no world type. Guests receive the host's registries and tags |
+
+### 11.2 What must stay identical, single-player and shared, for a cobolcraft world
+
+**Decision WT-27 (opening a world changes nothing about the world; adopted default, a consequence of WT-4, section 5 and WT-14).**
+Opening, changing the port and closing change no key of `level.dat`, and never `WorldType`, `Seed` or `ContentJar`; the two
+values the artifact persists on this screen (default game mode, cheats flag) are treated in Open question 18. For a cobolcraft world the following are the
+same open or closed, and the same as on a dedicated server: the world type and its content (section 4); the numbering and the
+registries (04 §5, WT-9, WT-22 roles); the dimension set `cobolcraft:main` and `cobolcraft:subroutine`; the generator and the
+seed handling; game rules, difficulty, time, weather, the day length and every row of section 5; the command set, the grammar, the
+argument parsers and the permission levels 0 to 4 (15, 16); chat; the save format (07 §9) and the player data keys; the Login
+packet and the registry packets of 09 §3, except the maximum-players field (WT-31) and the hashed seed 0; WT-16 type detection by
+the guest client (the guest reads `cobolcraft:surface` at Finish Configuration, so a guest client needs no setting to join a
+cobolcraft world). A shared engine therefore never asks "is the world open": the open state is a property of the host process
+(the connection listener, the cap, the permission mapping of WT-29 and the game-mode forcing of 11.1), and the world-type context of WT-14 is
+not consulted for it. A standard world opened to others is the same case with `minecraft:` content; whether a guest has the generated
+pack is the guest's business (Open question 10).
+
+**Decision WT-28 (login stays offline, and the host name is protected; adopted default).** The artifact turns online mode on for
+its integrated server; CobolCraft keeps offline login for both world types (09 §1: no encryption request, offline UUID, online
+mode false in the Login packet), so opening needs no accounts and no change of the login path. Because anyone can then claim any
+name, the artifact's owner-name rule is adopted: the owner is the player whose name equals the single-player name ignoring case; a
+guest with that name while the owner is online is refused with the existing key `cobolcraft.disconnect.name_is_host` (standin
+§12; the artifact's `multiplayer.disconnect.name_taken` is not used; the host stays connected). The guest's data file is named by
+the guest's offline UUID, so a guest never loads or overwrites the host's data. Reason: the host's name is the only thing that
+identifies the host to the permission mapping.
+
+**Decision WT-29 (permissions of the host and of guests; adopted default).** That level 2 is what guests get is a CobolCraft decision taken from the artifact's mapping; the core-host-api contract states only that the flag means guests may use operator commands, not a level. Mapping the artifact's table of 11.1 onto a game that
+has no Allow Cheats key (07 §9.2 has none) and keeps operator levels in `access.dat` (README decision 8): the host is level 4 as
+`/publish` requires (16 §11.15). While the world is open a guest is level 2 when the host's option "guests may use operator
+commands" is on (`CS-GUEST-OPERATOR`, set by `CORE-OPEN-TO-OTHERS` in specs/001-cobolcraft-complete/contracts/core-host-api.md; 08 key `cobolcraft.screen.open_to_others.operators`). This option is the counterpart of the artifact's `publishServer(scope, guestCommandAccess, port)` and of the `allowCommands` argument of `/publish` (16 §11.15), which both set the guest command access that gives guests level 2 and level 0 otherwise,
+and `access.dat` is not consulted for guests (this is the artifact's cheats-on column). When the world is closed, or on a dedicated
+server, `access.dat` decides as before. A change of the option re-evaluates every online guest and sends the permission notice and
+the command tree (11.1). Reason: it is the artifact's behaviour with cheats on, and it needs no new key.
+
+**Decision WT-30 (port choice; adopted default).** The host chooses the port when opening. The default is a free port found by
+asking the system for one (not the dedicated server's `port` default), with 25564 if that fails; the field accepts the integers
+1024 to 65535 with the error texts of 11.1 (CobolCraft keys for these two error texts are not in the 08 list; the artifact's `lanServer.port.invalid` and `lanServer.port.unavailable` texts are the reference, key names for the owner of 08 to propose). Listening is on all addresses. The same port as the one open is
+accepted without the test; any other port is tested by binding. `/publish` keeps its 0 to 65535 range and its two forms (16
+§11.15), but a port of 0 binds a free port and records and announces the port actually bound: this is the one deliberate departure from the
+artifact, which records 0. The success message shows the port. Reason: a port of 0 recorded as the open port is unusable, and a
+reader who copies the artifact's quirk would give guests the number 0.
+
+**Decision WT-31 (cap, message of the day, announcement; adopted default).** An opened world takes at most 8 players, host included,
+and refuses the ninth with `multiplayer.disconnect.server_full` "The server is full!"; its Login packet carries max players 8 (09 §3.2
+says 20 for the network profile; this is the one field that differs while a world is open, read: `PlayerList.placeNewPlayer` puts `getMaxPlayers`, which `IntegratedServer` fixes at 8, in the Login packet, and the status reply `MinecraftServer.buildPlayerStatus` uses the same method). The message of the day of the status reply is "<host name> - <world name>", not the dedicated server's `description`
+setting. The LAN announcement of 11.1 (group, port, text form) is **optional** here: feature 002 does not ask for it, and the
+five screen keys of 08 (`open_to_others.title`, `.mode`, `.operators`, `.start`, `.address` = "Others can join at %s", address and port) already show the address and port, but there is no port input field and no announcement control; whether to add them is Open question 19.
+
+**Decision WT-32 (a world that is open is never paused; closing disconnects guests; adopted default).** While open, the
+pause screen does not stop the simulation. Closing, changing the port, saving and quitting disconnect every guest; the guest sees the existing text
+`cobolcraft.disconnect.host_closed` (standin §12; the artifact's "Server closed" has the same meaning). The host stays.
+
+### 11.3 Where this section changes other documents' reading
+
+| Document | Reading |
+|---|---|
+| 07 §9.2 `GameMode` row | Owed edit to name the forcing rule. Its text ("guests get the guest mode chosen when the world is opened") is the artifact's Default Game Mode with forcing on (11.1 "Game mode of guests"): with forcing on, a guest below level 2 is put in the guest mode at entry and whenever it is applied; with forcing off a returning guest keeps the mode saved in the player's data and a new guest gets the guest mode. Force Game Mode is not a CobolCraft option in this version (it is always on, as the artifact's default); see Open question 18 |
+| 08 keys `cobolcraft.screen.open_to_others.*` | They cover title, guest mode, operator option, start and the "Others can join at %s" address line (`.address`, address and port). A port input field, an on/off for opening, a cheats option and a status line are not in the 08 key list; ui §7 owns any addition (Open question 19) |
+| 16 §11.15 | Add that a port of 0 binds a free port (WT-30) |
+| 09 §3.2 | Owed edit: max players is 8 while a world is open, 20 otherwise (WT-31) |
+| standin §12 | `name_is_host` and `host_closed` are the keys of WT-28 and WT-32 |
+
+---
+
 ## Open questions
 
 1. **22 §9.2 says the standard choice is disabled** while the packs are invalid; ui §7.2 keeps it selectable and explains on
@@ -579,18 +787,26 @@ standard-core.
 7. **Mob effects, enchantments and similar registries in the cobolcraft type**: resolved in content by
    cobolcraft-standard-core.md (GAP-35 closed there; searched: its §5 and its section 9 edit list). What remains is the 09 §3.1
    edit (section 9) and checking that the core's set satisfies 04 §3.2.
-8. **Vanilla client against a cobolcraft server**: passes configuration only (04 §5). Whether a vanilla client should be
-   refused at login with a clear message instead is not decided.
+8. **Vanilla client against a cobolcraft server**: resolved as to behaviour: it passes configuration only (04 §5) and
+   is neither detected nor refused, recorded in section 8.3. Whether it should be refused at login with a clear message
+   is a new design, out of scope for feature 002 (spec US21 scenario 2 asks only for the recorded behaviour).
 9. **Moving a world folder between machines with different generated packs**: a standard world on a machine without the
    packs follows section 8.2 (not opened). No export of the needed data is offered.
 10. **Single-player world opened to others**: guests join the world's type; the guest client needs a valid generated resource
-    pack for a standard world, or sees the missing-texture look (section 8.2). Whether the host should warn guests is open.
-11. **Seed input and text hash.** Fixed by Decision WT-19 as an adopted default (Java-style 32-bit string hash). Open: whether
-    vanilla uses the same hash, so that a typed seed word gives the same world. Searched: README Part 4 and 7, ui §7, 07 §9.2, spec FR-009 wording: none names a seed input; the jar was not opened for this document.
+    pack for a standard world, or sees the missing-texture look (section 8.2). Section 11 records what the artifact does and
+    the CobolCraft decisions WT-27 to WT-32. The artifact has no warning to guests (nothing in the opening path checks packs or
+    type), so whether the host should warn guests remains a CobolCraft design question, still open.
+11. **Seed input and text hash.** Closed: the artifact was read in round SEED and Decision WT-19 is superseded by the rule in 11 §12 (trim, blank means random, number with `+`/`-` and Unicode digits, else the 32-bit string hash of the trimmed text), so a typed seed word gives the vanilla world. The only residual is the unspecified entropy source of the random draw (11 Open question 12).
 12. **Save layout of 07 and 33** (Decision WT-21): 07 §9.2 (`Time` as time of day, per-dimension `Weather`, 36 inventory slots)
     and 33 §10 (game time, clocks, weather, game rules and border outside `level.dat`, seed in `world_gen_settings.dat`, a `Data`
     compound) disagree, and README Part 7 decision 9 says to keep the CobolCraft schemas. Whether to adopt the 26.3 layout, with a
     migration, and where `WorldType`, `Seed` and `ContentJar` then sit, belongs to the owners of 07 and 33. This document does not decide it.
+    **Closed for the layout question (clean-room round SAVE):** 07 §9.7 records what the 26.3 artifact does (flat `Data` wrapper in
+    `level.dat`, `dimensions/<namespace>/<path>/{region,entities,poi,data}`, world-wide `data/`, `players/data/<uuid>.dat`, the seed in
+    `world_gen_settings.dat`) and fixes the CobolCraft contract: no adoption of the 26.3 `level.dat` tree and no migration; the three keys sit
+    in the flat root of `level.dat`; three dimension folders for a standard world (two `cobolcraft/` folders for a cobolcraft world); keys, never
+    numeric ids, in palettes; WT-23 as written. Still open: the `players/` inventory slot count (36 in 07 §9.2 against 46 in README C5; 07 Open question 16, inferred reading there), and
+    07 Open question 15 (a key unknown to both types under WT-23).
 13. **Other roles for shared engines**: a floor block like bedrock, entity type tags such as the undead tag, and the 26.3
     fluids. Searched: standin §1, §3, README S24, cobolcraft-standard-core.md. The core has the `baseplate` block (the bedrock
     row) and says a tag file with `cobolcraft:` values is added for a mob such as the `abend`'s `undead`; whether the floor block
@@ -603,3 +819,14 @@ standard-core.
 17. **Operator confirmation of the namespace reading** (Decision WT-25): that CC-0001's "`minecraft:` for anything with a vanilla
     equivalent" does not apply to the invented cobolcraft content (greystone, operator, loose_item and the rest), and that the
     standard type and the cobolcraft type hold none of each other's content (Decision WT-9).
+18. **Persisted options and cheats flag** (section 11, WT-27, WT-29): the artifact stores the default game mode and a cheats flag in
+    the world data and keeps Command Access and Force Game Mode only in the running server. CobolCraft has `GameMode` (07 §9.2) and
+    no cheats key, so it has no cheats-off state for the host; whether to add a cheats flag and a Force Game Mode option (WT-29
+    follows the artifact's cheats-on column) is for the operator. Also to confirm against the core host contract: that the existing
+    guest-operator flag means level 2 for guests.
+19. **Screen and announcement scope** (WT-30, WT-31): the 08 keys cover title, mode, operators, start and the address line; whether the
+    Open to Others screen gets a port input field, an on/off for the opening and a status line, and whether the LAN announcement of 11.1
+    is built, belongs to the ui owner and the operator (feature 002 asks for neither).
+20. **Quirks of the artifact not copied** (section 11): the port 0 recorded by `/publish` (WT-30 departs from it); the operator list
+    being ignored for guests while cheats are on (WT-29 copies it as the only rule); the Online scope strings with no scope. The
+    sender address in the LAN list is inferred, not read.

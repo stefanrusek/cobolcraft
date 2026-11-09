@@ -1,0 +1,8 @@
+# Fixture: Recipe Book Remove
+# Phase: play. Direction: clientbound (S->C). Packet id 0x4c (76).
+# Doc refs: 05b 0x4C
+# Stated inputs:
+#   display ids [0, 1, 300]
+
+4c                                               # packet id: VarInt 0x4c
+03 00 01 ac 02                                   # Recipes: VarInt count 3 then 0, 1, 300
