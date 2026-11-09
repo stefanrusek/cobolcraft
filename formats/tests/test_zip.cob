@@ -70,15 +70,19 @@
      MOVE "zip a directory cannot be read (status 1, handle NULL)" TO TL-CASE
      PERFORM ASSERT-OPEN-FAILED-1
 
-*>   Files that are not readable zip archives: status 2 (08 §1.1).
+*>   Files that are not readable zip archives: status 2 (08 §1.1), 8 for a zip64 end record.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
          MOVE WS-UNREADABLE-NAME(WS-I) TO WS-FIXTURE
          PERFORM OPEN-FIXTURE
          MOVE SPACES TO TL-CASE
-         STRING "zip " FUNCTION TRIM(WS-FIXTURE) ".zip is not a readable zip archive (status 2, handle NULL)"
+         STRING "zip " FUNCTION TRIM(WS-FIXTURE) ".zip is not a readable zip archive (status 2, 8 for zip64, handle NULL)"
              DELIMITED BY SIZE INTO TL-CASE
          MOVE "T" TO TL-MODE
          MOVE "2 null" TO TL-EXPECTED
+*>       zip64eocd (the last name) is a zip64 archive: status 8, the reason of 22 §8.4 (FM-ZIP-ZIP64).
+         IF WS-I = 6
+             MOVE "8 null" TO TL-EXPECTED
+         END-IF
          PERFORM SHOW-OPEN
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM

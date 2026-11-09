@@ -1,6 +1,7 @@
 *> Test helpers of the formats package (test infrastructure, excluded from coverage). COPY after the
 *> END PROGRAM of a test program: TEST-HEX-OF (lowercase hex of up to 512 bytes) and TEST-READ-FILE
-*> (a whole file into an area; length -1 when it cannot be opened).
+*> (a whole file into an area; length -1 when it cannot be opened) and TEST-INPUT-PATH (the path of one
+*> of the operator's inputs: COBOLCRAFT_INPUTS or tmp, then the file name).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-HEX-OF.
@@ -63,3 +64,25 @@
      MOVE 0 TO RETURN-CODE
      GOBACK.
  END PROGRAM TEST-READ-FILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-INPUT-PATH.
+*> USING file name (PIC X(64), space padded), path out (PIC X(1100)), path length out: the operator's
+*> input folder is the environment variable COBOLCRAFT_INPUTS, or tmp when it is not set.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIRECTORY           PIC X(1000).
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(64).
+ 01 L-PATH                 PIC X(1100).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-PATH L-LENGTH.
+     MOVE SPACES TO WS-DIRECTORY L-PATH
+     ACCEPT WS-DIRECTORY FROM ENVIRONMENT "COBOLCRAFT_INPUTS"
+     IF WS-DIRECTORY = SPACES
+         MOVE "tmp" TO WS-DIRECTORY
+     END-IF
+     STRING FUNCTION TRIM(WS-DIRECTORY) "/" FUNCTION TRIM(L-NAME) DELIMITED BY SIZE INTO L-PATH
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO L-LENGTH
+     GOBACK.
+ END PROGRAM TEST-INPUT-PATH.

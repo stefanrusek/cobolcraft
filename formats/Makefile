@@ -7,6 +7,6 @@ SRC      := $(shell find src -name '*.cob' 2>/dev/null | sort)
 TESTS    := $(wildcard tests/acc_*.cob tests/contract_*.cob tests/test_*.cob)
 INCLUDES := -I copy -I tests
 DEPLIBS   = $(BUILD)/shim/libccshim.a
-LDLIBS    = -lz
+LDLIBS    = $(shell $(PKG_CONFIG) --libs libcrypto) -lz
 
 include ../tools/package.mk
