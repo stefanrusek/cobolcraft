@@ -1,0 +1,7 @@
+{"has_precipitation": true, "temperature": 0.8, "downfall": 0.9, "temperature_modifier": "frozen",
+ "effects": {"water_color": "#617B64", "grass_color_modifier": "swamp", "foliage_color": [1.0, 0.5, 0.0],
+             "dry_foliage_color": 1193046, "grass_color": "#00ff10"},
+ "attributes": {"minecraft:visual/fog_color": {"argument": "#c0d8ff", "modifier": "override"},
+                "minecraft:visual/water_fog_color": 329011},
+ "carvers": "minecraft:cave",
+ "features": [[]]}

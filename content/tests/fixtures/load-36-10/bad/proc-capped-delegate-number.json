@@ -1,0 +1,1 @@
+{"processors":[{"processor_type":"minecraft:capped","delegate":4,"limit":2}]}

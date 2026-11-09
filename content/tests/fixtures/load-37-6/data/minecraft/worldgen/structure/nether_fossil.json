@@ -1,0 +1,1 @@
+{"type":"minecraft:nether_fossil","biomes":"#minecraft:has_structure/nether_fossil","step":"underground_decoration","terrain_adaptation":"beard_thin","spawn_overrides":{},"height":{"type":"minecraft:uniform","min_inclusive":{"absolute":32},"max_inclusive":{"below_top":2}}}

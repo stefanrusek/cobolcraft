@@ -1,0 +1,6 @@
+{"sea_level": 0, "legacy_random_source": true, "disable_mob_generation": true,
+ "noise": {"min_y": 0, "height": 128},
+ "default_block": {"Name": "minecraft:end_stone"}, "default_fluid": {"Name": "minecraft:air"},
+ "material_rule": "minecraft:end", "spawn_target": [],
+ "noise_router": {"temperature": 0, "vegetation": 0, "continents": 0, "erosion": "minecraft:end/islands", "depth": 0,
+   "ridges": 0, "chunk_surface_level": 0, "final_density": "minecraft:end/base_3d_noise"}}

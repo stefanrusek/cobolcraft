@@ -1,0 +1,1 @@
+{"type":"minecraft:block_column","layers":[{"height":{"type":"minecraft:uniform","min_inclusive":1,"max_inclusive":3},"provider":{"Name":"minecraft:kelp_plant"}},{"height":1,"provider":{"Name":"minecraft:kelp"}}],"direction":"up","allowed_placement":{"type":"minecraft:matching_blocks","blocks":"minecraft:water"},"prioritize_tip":true}

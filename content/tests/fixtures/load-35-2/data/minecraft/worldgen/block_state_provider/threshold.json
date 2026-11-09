@@ -1,0 +1,1 @@
+{"type":"minecraft:noise_threshold","seed":1,"noise":{"base_octave":-4},"scale":1.0,"threshold":-0.8,"high_chance":0.01,"default_state":"minecraft:a","low_states":[],"high_states":[]}
