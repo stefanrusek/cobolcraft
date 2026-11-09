@@ -3,20 +3,21 @@
 # Shared rules: tools/package.mk. Skeleton: SRC and TESTS fill in with the lane.
 PKG      := extract
 LIBNAME  := libextract.a
-SRC      :=
-TESTS    :=
-INCLUDES := -I $(REPO)/content/copy -I $(REPO)/content/copy/gen -I $(REPO)/formats/copy
+SRC      := $(wildcard src/*.cob)
+TESTS    := $(wildcard tests/acc_*.cob tests/contract_*.cob tests/test_*.cob)
+INCLUDES := -I copy -I tests -I ../content/copy -I ../content/copy/gen -I ../formats/copy
 DEPLIBS   = $(BUILD)/content/libcontent.a $(BUILD)/formats/libformats.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
-LDLIBS    = -lz
+LDLIBS    = $(shell $(PKG_CONFIG) --libs libcrypto) -lz
 
 include ../tools/package.mk
 
 PROGRAM := $(BUILD)/bin/cobolcraft-extract
 
-# Until src/main.cob exists the program is only named, so `make build` stays green on the skeleton.
+# The recipe only names the program, so `make -n build` always shows build/bin/cobolcraft-extract
+# (tools/tests/acc_f2us1_gate_targets.py), also when it is up to date.
 .PHONY: bin
-bin: $(if $(wildcard src/main.cob),$(PROGRAM))
-	$(if $(wildcard src/main.cob),@true,@echo "extract: $(PROGRAM) is built once src/main.cob exists")
+bin: $(PROGRAM)
+	@echo "extract: $(PROGRAM)"
 
 $(OBJ)/main.o: src/main.cob $(COPYBOOKS)
 	@mkdir -p $(dir $@)
