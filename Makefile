@@ -6,28 +6,35 @@
 #   make lint            lint every package
 #   make coverage        instrumented test run, then fail on any never-executed production line
 #   make gate            lint + build + coverage (with the Convergence tests), plus the tools package's tests
-#   make gate-<pkg>      the same scoped to shim, proto, core, server, client or tools
+#   make gate-<pkg>      the same scoped to shim, formats, proto, content, extract, core, server, client or tools
+#   make gate-tables     generated registry copybooks match the generator (tools/gen/gen_tables.py --check)
 #   make gate-contract   wire fixtures parse, contract probes, lint of contract/
 #   make clean           remove build/
 
 PYTHON   := python3
 BUILD    := $(CURDIR)/build
 COVBUILD := $(BUILD)/coverage
-PKGS     := shim proto core server client
+PKGS     := shim formats proto content extract core server client
 
 # Packages each package links against, and each package's build targets.
 DEPS_shim   :=
+DEPS_formats := shim
 DEPS_proto  := shim
+DEPS_content := shim proto formats
+DEPS_extract := shim proto formats content
 DEPS_core   := shim proto
 DEPS_server := shim proto core
 DEPS_client := shim proto core
 TARGETS_shim   := lib
+TARGETS_formats := lib
 TARGETS_proto  := lib
+TARGETS_content := lib
+TARGETS_extract := lib bin
 TARGETS_core   := lib
 TARGETS_server := lib bin
 TARGETS_client := lib bin
 
-.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract clean $(addprefix gate-,$(PKGS))
+.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract gate-tables clean $(addprefix gate-,$(PKGS))
 .DEFAULT_GOAL := build
 
 build:
@@ -74,13 +81,17 @@ endef
 $(foreach p,$(PKGS),$(eval $(call GATE_RULE,$(p))))
 
 # The tools package is excluded from coverage and compiles nothing: its gate is lint and tests.
-gate-tools:
+gate-tools: gate-tables
 	$(MAKE) -C tools lint
 	$(MAKE) -C tools tests
 
+# The generated registry copybooks under content/copy/gen/ equal a fresh regeneration (drift gate).
+gate-tables:
+	$(PYTHON) tools/gen/gen_tables.py --check
+
 # Foundational gate: every wire fixture parses, every contract header and copybook compiles in a
 # probe program (tools/probe, once it exists), and the contract headers lint.
-gate-contract:
+gate-contract: gate-tables
 	$(PYTHON) tools/contract_check.py
 	$(if $(wildcard tools/probe/Makefile),$(MAKE) -C tools/probe run BUILD=$(BUILD))
 	$(PYTHON) tools/lint.py $(wildcard contract/include/*.h)

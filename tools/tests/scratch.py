@@ -14,7 +14,10 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 # else in them (fixture generators, helper copybooks) is kept, since package builds use it.
 TEST_DIRS = {
     os.path.join("shim", "tests"),
+    os.path.join("formats", "tests"),
     os.path.join("proto", "tests"),
+    os.path.join("content", "tests"),
+    os.path.join("extract", "tests"),
     os.path.join("core", "tests"),
     os.path.join("server", "tests"),
     os.path.join("client", "tests"),

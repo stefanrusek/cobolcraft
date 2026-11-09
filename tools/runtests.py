@@ -27,12 +27,15 @@ import subprocess
 import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PACKAGES = ["shim", "proto", "core", "server", "client"]
+PACKAGES = ["shim", "formats", "proto", "content", "extract", "core", "server", "client"]
 CONVERGENCE = "convergence"
 DIRECTORIES = {CONVERGENCE: "tests/convergence"}
 DEPENDENCIES = {
     "shim": [],
+    "formats": ["shim"],
     "proto": ["shim"],
+    "content": ["shim", "proto", "formats"],
+    "extract": ["shim", "proto", "formats", "content"],
     "core": ["shim", "proto"],
     "server": ["shim", "proto", "core"],
     "client": ["shim", "proto", "core"],
