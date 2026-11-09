@@ -110,11 +110,11 @@
      MOVE "cover: attributes of entity 10 are not found" TO TL-CASE
      PERFORM ASSERT-STATUS
 
-*>   ---- A cobolcraft set has no registry table: an entry is not found.
-     MOVE "dimension_type" TO WS-REGISTRY
+*>   ---- A cobolcraft set has no registry table: an entry of a registry no source holds is not found.
+     MOVE "no_such_registry" TO WS-REGISTRY
      MOVE 0 TO WS-ID
      PERFORM ENTRY-OF
-     MOVE "cover: a set without data-pack registries has no entry" TO TL-CASE
+     MOVE "cover: a set without data-pack registries has no entry of an unknown registry" TO TL-CASE
      PERFORM ASSERT-STATUS
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
      MOVE 0 TO CT-OPEN

@@ -187,8 +187,8 @@
      PERFORM ASSERT-NUMBER
      MOVE "dimension_type" TO WS-REGISTRY
      CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
-     MOVE "acceptance US2-cobolcraft: dimension_type is not loaded from files" TO TL-CASE
-     MOVE CT-NOT-FOUND TO TL-EXPECTED-N
+     MOVE "acceptance US2-cobolcraft: dimension_type is a registry source, not a file (T0281)" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
      PERFORM ASSERT-STATUS
      MOVE "cobolcraft:greystone" TO WS-KEY
      CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-BLOCK-ROW WS-STATUS

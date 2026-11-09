@@ -645,7 +645,8 @@
  PROGRAM-ID. CONTENT-REGISTRY-COUNT.
 *> USING registry (PIC X(64), the key with or without "minecraft:"), count out (BINARY-LONG: the entries of the
 *> registry, 0 when it is not found), status out (CT-OK; CT-NOT-FOUND for a registry the set has not loaded;
-*> CT-NOT-OPEN).
+*> CT-NOT-OPEN). A registry the table does not hold is asked of the registry sources (registry-sources.cob:
+*> block, item, entity_type, the static registries, game_rule, the cobolcraft set's own).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -653,6 +654,9 @@
  01 WS-KEY                 PIC X(64).
  01 WS-I                   BINARY-LONG.
  01 WS-HAS-NAMESPACE       BINARY-LONG.
+ 01 WS-ASK                 BINARY-LONG.
+ 01 WS-SOURCE-KEY          PIC X(64).
+ 01 WS-SOURCE-LENGTH       BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(64).
  01 L-COUNT                BINARY-LONG.
@@ -664,9 +668,6 @@
          GOBACK
      END-IF
      MOVE CT-NOT-FOUND TO L-STATUS
-     IF CT-REGISTRY-ADDR = NULL
-         GOBACK
-     END-IF
      MOVE 0 TO WS-HAS-NAMESPACE
      INSPECT L-REGISTRY TALLYING WS-HAS-NAMESPACE FOR ALL ":"
      MOVE SPACES TO WS-KEY
@@ -675,13 +676,19 @@
      ELSE
          MOVE L-REGISTRY TO WS-KEY
      END-IF
-     SET ADDRESS OF B-REGISTRIES TO CT-REGISTRY-ADDR
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CT-REGISTRY-COUNT OR L-STATUS = CT-OK
-         IF BR-KEY(WS-I) = WS-KEY
-             MOVE BR-ENTRY-COUNT(WS-I) TO L-COUNT
-             MOVE CT-OK TO L-STATUS
-         END-IF
-     END-PERFORM
+     IF CT-REGISTRY-ADDR NOT = NULL
+         SET ADDRESS OF B-REGISTRIES TO CT-REGISTRY-ADDR
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CT-REGISTRY-COUNT OR L-STATUS = CT-OK
+             IF BR-KEY(WS-I) = WS-KEY
+                 MOVE BR-ENTRY-COUNT(WS-I) TO L-COUNT
+                 MOVE CT-OK TO L-STATUS
+             END-IF
+         END-PERFORM
+     END-IF
+     IF L-STATUS NOT = CT-OK
+         MOVE -1 TO WS-ASK
+         CALL "REGISTRY-SOURCE-AT" USING L-REGISTRY WS-ASK WS-SOURCE-KEY WS-SOURCE-LENGTH L-COUNT L-STATUS
+     END-IF
      GOBACK.
  END PROGRAM CONTENT-REGISTRY-COUNT.
 
@@ -691,7 +698,8 @@
 *> (BINARY-LONG), payload area out (any size: the entry's strict JSON, or the network NBT tag bytes of a
 *> client set), capacity (BINARY-LONG bytes of the area), payload length out (BINARY-LONG), status out (CT-OK;
 *> CT-NOT-FOUND for an unknown registry or an id outside 0 to count - 1; CT-TOO-SMALL when the area is
-*> smaller than the payload, the length still given and the area left alone; CT-NOT-OPEN).
+*> smaller than the payload, the length still given and the area left alone; CT-NOT-OPEN). A registry the table does not
+*> hold is asked of the registry sources (registry-sources.cob), whose entries have no payload.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -701,6 +709,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-HAS-NAMESPACE       BINARY-LONG.
+ 01 WS-SOURCE-COUNT        BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(64).
  01 L-ID                   BINARY-LONG.
@@ -717,7 +726,7 @@
          GOBACK
      END-IF
      MOVE CT-NOT-FOUND TO L-STATUS
-     IF CT-REGISTRY-ADDR = NULL
+     IF L-ID < 0
          GOBACK
      END-IF
      MOVE 0 TO WS-HAS-NAMESPACE
@@ -728,14 +737,18 @@
      ELSE
          MOVE L-REGISTRY TO WS-KEY
      END-IF
-     SET ADDRESS OF B-REGISTRIES TO CT-REGISTRY-ADDR
      MOVE 0 TO WS-FOUND
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CT-REGISTRY-COUNT OR WS-FOUND > 0
-         IF BR-KEY(WS-I) = WS-KEY
-             MOVE WS-I TO WS-FOUND
-         END-IF
-     END-PERFORM
-     IF WS-FOUND = 0 OR L-ID < 0
+     IF CT-REGISTRY-ADDR NOT = NULL
+         SET ADDRESS OF B-REGISTRIES TO CT-REGISTRY-ADDR
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CT-REGISTRY-COUNT OR WS-FOUND > 0
+             IF BR-KEY(WS-I) = WS-KEY
+                 MOVE WS-I TO WS-FOUND
+             END-IF
+         END-PERFORM
+     END-IF
+*>   A registry the table does not hold: the registry sources (registry-sources.cob); their entries have no payload.
+     IF WS-FOUND = 0
+         CALL "REGISTRY-SOURCE-AT" USING L-REGISTRY L-ID L-KEY L-KEY-LENGTH WS-SOURCE-COUNT L-STATUS
          GOBACK
      END-IF
      IF L-ID >= BR-ENTRY-COUNT(WS-FOUND)
