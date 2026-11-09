@@ -14,11 +14,11 @@
 
 ### Session 2026-11-09
 
-No operator answers yet. Three decisions need the operator before tasks are generated (constitution Principle 1.3); they are the markers below and in the Requirements.
+Three decisions needed the operator before tasks are generated (constitution Principle 1.3); all are answered and recorded below.
 
-- [NEEDS CLARIFICATION: Standard world type while the generated packs are invalid. `docs/protocol/22-extraction-tool.md` §9.2 says the standard choice is disabled; `docs/design/builtin-ui-art.md` §7.2 keeps it selectable and explains on Create; `docs/design/world-types.md` Open question 1 sides with the latter. Which does the world-creation screen do: disabled, or selectable with an explanation on Create?] (see FR-003)
-- [NEEDS CLARIFICATION: Crafting bench in the cobolcraft world type. CC-0001 says the cobolcraft content stays "for now unchanged", but `docs/design/cobolcraft-standard-core.md` §5 adds one `cobolcraft:crafting_bench` block and item (README Part 7 decision 3; `world-types.md` Open question 16). Does the operator confirm this one addition, or must the cobolcraft type craft 3x3 recipes some other way?] (see FR-027)
-- [NEEDS CLARIFICATION: Namespace reading. Does CC-0001's "`minecraft:` for anything with a vanilla equivalent" leave the invented cobolcraft content (greystone, operator, loose_item and the rest) in `cobolcraft:`, with the two world types holding none of each other's content (`world-types.md` Decision WT-25, Open question 17)?] (see FR-005)
+- Q: While the generated vanilla packs are missing or invalid, should the standard world type on the world-creation screen be disabled, or selectable with an explanation shown when the Player presses Create? → A: B: The standard choice stays selectable; Create is refused with an explanation of how to build the packs (builtin-ui-art.md §7.2).
+- Q: Does the operator confirm adding one `cobolcraft:crafting_bench` block and item to the cobolcraft world type, or must that type craft 3x3 recipes some other way? → A: Confirmed, and any other cobolcraft content this feature needs to work in the cobolcraft type may be added; CC-0001's "unchanged" wording does not forbid necessary additions.
+- Q: Does CC-0001's "`minecraft:` for anything with a vanilla equivalent" leave the invented cobolcraft content (greystone, operator, loose_item and the rest) in `cobolcraft:`, with the two world types holding none of each other's content (`world-types.md` Decision WT-25, Open question 17)? → A: Yes, confirmed: invented content stays in `cobolcraft:`, the standard world uses only `minecraft:` content, and the two world types share no content.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -318,9 +318,9 @@ Values come from the named documents only (FR-042). "The standard" means documen
 
 - **FR-001**: The system MUST provide a tool, written in COBOL, that reads the user's own Minecraft 26.3 client jar and writes a vanilla resource pack and a vanilla data pack into the user's game directory, as specified in `docs/protocol/22-extraction-tool.md`; the jar and the generated packs MUST NOT be committed.
 - **FR-002**: The client and the server MUST load the generated packs through the loaders of `docs/protocol/23-registry-loading.md`; the standard world type's registries, tags, recipes, loot and worldgen data MUST come from them, unaltered.
-- **FR-003**: The world-creation screen MUST offer the standard and the cobolcraft world types, default standard when valid packs exist; when the packs are invalid the standard choice MUST behave as [NEEDS CLARIFICATION: disabled, or selectable with an explanation on Create; see Clarifications].
+- **FR-003**: The world-creation screen MUST offer the standard and the cobolcraft world types, default standard when valid packs exist; when the packs are invalid the standard choice MUST stay selectable, and pressing Create MUST be refused with an explanation of how to build the packs (`builtin-ui-art.md` §7.2; this supersedes the disabled reading of `docs/protocol/22-extraction-tool.md` §9.2).
 - **FR-004**: A world MUST record its type and reopen as that type; a standard world MUST NOT open without valid packs, and the game MUST state why.
-- **FR-005**: The standard type MUST use `minecraft:` for everything with a vanilla equivalent; the cobolcraft type MUST keep its invented `cobolcraft:` content, runnable with no jar and no packs, with the standard core of `docs/design/cobolcraft-standard-core.md`. Namespace reading: [NEEDS CLARIFICATION: confirm `world-types.md` Decision WT-25, see Clarifications].
+- **FR-005**: The standard type MUST use `minecraft:` for everything with a vanilla equivalent; the cobolcraft type MUST keep its invented `cobolcraft:` content, runnable with no jar and no packs, with the standard core of `docs/design/cobolcraft-standard-core.md`. Namespace reading (`world-types.md` Decision WT-25, confirmed): invented content stays in `cobolcraft:`, the standard world uses only `minecraft:` content, and the two world types share no content.
 - **FR-006**: The optional Faithful skin for the cobolcraft type (README Part 7 decision 10) is off by default and, when on, covers blocks and items only; its placement in the pack stack is `world-types.md` Open question 14.
 
 **Resource packs and look**
@@ -351,7 +351,7 @@ Values come from the named documents only (FR-042). "The standard" means documen
 - **FR-024**: The inventory screen MUST contain a 2x2 crafting grid, a result slot, and the recipe book; the recipe book MUST list known recipes, mark those makeable now, and fill the grid from the inventory on selection (`13` §3.5, §3.8, §3.9).
 - **FR-025**: Taking the crafted result MUST use up the ingredients (`13` §3.6).
 - **FR-026**: A crafting bench MUST be craftable, placeable as a block, and open a screen with the 3x3 grid, a result slot and the recipe book; recipes needing the large grid MUST be makeable only there.
-- **FR-027**: In the cobolcraft type the bench is [NEEDS CLARIFICATION: confirm the single `cobolcraft:crafting_bench` addition of `cobolcraft-standard-core.md` §5; see Clarifications].
+- **FR-027**: In the cobolcraft type the bench is the `cobolcraft:crafting_bench` block and item of `cobolcraft-standard-core.md` §5; any further cobolcraft content this feature needs to work in that type MAY be added, and each addition MUST be recorded in the design documents before it is implemented.
 - **FR-028**: Feature 001's crafting screen (US10, the C key) MUST be removed.
 
 **World**
@@ -415,6 +415,6 @@ Values come from the named documents only (FR-042). "The standard" means documen
 - The operator keeps the Faithful pack and the 26.3 jar in the git-ignored `tmp/` folder as inputs for clean-room rounds; neither is ever committed.
 - Documents 10 to 47 are taken as complete for implementation, with their Open questions recorded in `docs/design/README.md` Part 8; the open ones that bear on this feature and are not decided here are: options screen texts (`builtin-ui-art.md` 13), sprite sizes and sheet regions not yet read, tooltip frame and recipe-book tabs and toasts, per-biome grass tint, entity geometry for the cobolcraft skin, save layout of 07 versus 33 (`world-types.md` 12), seed text hash (11), a vanilla client against a cobolcraft server (8), a single-player world opened to others (10), `TestInstanceBlockEditScreen` (`40-menus-9` Open question 1), sound event helpers (`46` Open question 14), unknown jar (22 Open question 1). Each is resolved by a clean-room round before any implementation that needs it, never guessed.
 - A single-player world opened to others keeps the types and rules above; guests need valid packs for a standard world or see the missing-texture look.
-- The cobolcraft type's content is unchanged except for the bench decision and the standard core; extending it to cover more of what the vanilla pack covers is future work.
+- The cobolcraft type's content is unchanged except for the bench, the standard core and any other content this feature needs to work in that type (operator-confirmed); extending it to cover more of what the vanilla pack covers is future work.
 - Sounds, lighting, sky, fog and clouds (CC-0007) and `server.properties` are out of scope.
 - The feature is implemented as a whole in one run; the ticket is not split.
