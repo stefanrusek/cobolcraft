@@ -3,8 +3,10 @@
 *> fields encode to the same bytes. Phase 10 holds Block Destruction (play-s2c-05) and Player
 *> Action (play-c2s-29); Phase 11 holds the item stack with components (Container Set Slot, Set
 *> Content, Set Cursor Item), the container packets (Open Screen, Click, Close) and the recipe
-*> book packets (Place Recipe, Recipe Book Add, Remove, Settings, Change Settings, Seen). The
-*> expected fields are the "Stated inputs" of each fixture file.
+*> book packets (Place Recipe, Recipe Book Add, Remove, Settings, Change Settings, Seen). Phase 12
+*> holds the 24-section Level Chunk With Light (play-s2c-2e), the 26-index Light Update (play-s2c-31),
+*> every Registry Data fixture (config-s2c-07) and Update Tags (config-s2c-0e). The expected fields
+*> are the "Stated inputs" of each fixture file.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-PROVIDER.
  DATA DIVISION.
@@ -49,6 +51,8 @@
  01 WS-ID-TABLE.
     05 WS-ID               BINARY-LONG OCCURS 64 TIMES.
  01 WS-STATED-LONG         PIC X(300).
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-EQUAL               BINARY-LONG.
  01 WS-SLOT-TABLE.
     05 FILLER PIC X(100) VALUE "play-s2c-14-container-set-slot".
     05 FILLER PIC X(300) VALUE "0 2 0 63x2".
@@ -160,6 +164,114 @@
     05 WS-ACTION              OCCURS 10 TIMES.
        10 WS-A-NAME           PIC X(100).
        10 WS-A-FIELDS         PIC X(40).
+ 01 WS-REGISTRY-TABLE.
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-cat-sound-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:cat_sound_variant 1 cobolcraft:placeholder cobolcraft:placeholder 925".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-cat-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:cat_variant 1 cobolcraft:placeholder cobolcraft:placeholder 139".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-chat-type-standard".
+    05 FILLER PIC X(300) VALUE "minecraft:chat_type 3 minecraft:chat minecraft:msg_command_incoming 660".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-chat-type".
+    05 FILLER PIC X(300) VALUE "minecraft:chat_type 1 cobolcraft:say cobolcraft:say 217".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-chicken-sound-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:chicken_sound_variant 1 cobolcraft:placeholder cobolcraft:placeholder 451".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-chicken-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:chicken_variant 1 cobolcraft:placeholder cobolcraft:placeholder 159".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-cow-sound-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:cow_sound_variant 1 cobolcraft:placeholder cobolcraft:placeholder 236".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-cow-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:cow_variant 1 cobolcraft:placeholder cobolcraft:placeholder 155".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-damage-type".
+    05 FILLER PIC X(300) VALUE "minecraft:damage_type 32 cobolcraft:generic cobolcraft:hail 2893".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-dimension-type-standard".
+    05 FILLER PIC X(300) VALUE "minecraft:dimension_type 3 minecraft:overworld minecraft:the_end 1109".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-dimension-type".
+    05 FILLER PIC X(300) VALUE "minecraft:dimension_type 2 cobolcraft:surface cobolcraft:sunless 617".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-enchantment".
+    05 FILLER PIC X(300) VALUE "minecraft:enchantment 1 minecraft:efficiency minecraft:efficiency 527".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-frog-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:frog_variant 1 cobolcraft:placeholder cobolcraft:placeholder 93".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-painting-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:painting_variant 1 cobolcraft:placeholder cobolcraft:placeholder 136".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-pig-sound-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:pig_sound_variant 1 cobolcraft:placeholder cobolcraft:placeholder 533".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-pig-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:pig_variant 1 cobolcraft:placeholder cobolcraft:placeholder 155".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-timeline".
+    05 FILLER PIC X(300) VALUE "minecraft:timeline 2 minecraft:day minecraft:moon 3759".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-wolf-sound-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:wolf_sound_variant 1 cobolcraft:placeholder cobolcraft:placeholder 716".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-wolf-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:wolf_variant 1 cobolcraft:placeholder cobolcraft:placeholder 306".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-world-clock".
+    05 FILLER PIC X(300) VALUE "minecraft:world_clock 1 cobolcraft:daylight cobolcraft:daylight 47".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-worldgen-biome".
+    05 FILLER PIC X(300) VALUE "minecraft:worldgen/biome 3 minecraft:plains cobolcraft:ash_flats 500".
+    05 FILLER PIC X(100) VALUE "config-s2c-07-registry-data-zombie-nautilus-variant".
+    05 FILLER PIC X(300) VALUE "minecraft:zombie_nautilus_variant 1 cobolcraft:placeholder cobolcraft:placeholder 120".
+ 01 WS-REGISTRIES REDEFINES WS-REGISTRY-TABLE.
+    05 WS-RG                  OCCURS 22 TIMES.
+       10 WS-RG-NAME          PIC X(100).
+       10 WS-RG-FIELDS        PIC X(300).
+ 01 WS-TAGS-TABLE.
+    05 FILLER PIC X(100) VALUE "config-s2c-0e-update-tags".
+    05 FILLER PIC X(300) VALUE "0".
+    05 FILLER PIC X(100) VALUE "config-s2c-0e-update-tags-standard".
+    05 FILLER PIC X(300) VALUE "3 minecraft:block(2) minecraft:planks=13 minecraft:base_stone_overworld=1,12 minecraft:item(1) minecraft:planks=63 minecraft:dimension_type(1) minecraft:in_overworld=0".
+ 01 WS-TAGSS REDEFINES WS-TAGS-TABLE.
+    05 WS-TG                  OCCURS 2 TIMES.
+       10 WS-TG-NAME          PIC X(100).
+       10 WS-TG-FIELDS        PIC X(300).
+ 01 RG-NAME                PIC X(64).
+ 01 RG-NAME-CAP            BINARY-LONG VALUE 64.
+ 01 RG-NAME-LEN            BINARY-LONG.
+ 01 RG-COUNT               BINARY-LONG.
+ 01 RG-PRESENT             BINARY-LONG.
+ 01 RG-DATA                PIC X(8192).
+ 01 RG-DATA-CAP            BINARY-LONG VALUE 8192.
+ 01 RG-DATA-LEN            BINARY-LONG.
+ 01 RG-FIRST               PIC X(64).
+ 01 RG-FIRST-LEN           BINARY-LONG.
+ 01 RG-LAST                PIC X(64).
+ 01 RG-LAST-LEN            BINARY-LONG.
+ 01 RG-TAG-IDS.
+    05 RG-TAG-ID           BINARY-LONG OCCURS 256 TIMES.
+ 01 RG-ID-CAP              BINARY-LONG VALUE 256.
+ 01 RG-SAME                BINARY-LONG.
+ 01 RG-ZERO                BINARY-LONG VALUE 0.
+ 01 CH-SECTIONS            BINARY-LONG VALUE 24.
+ 01 CH-HM-BITS             BINARY-LONG VALUE 9.
+ 01 CH-HM-MASK             BINARY-LONG.
+ 01 CH-BLOCK-GBITS         BINARY-LONG VALUE 16.
+ 01 CH-BIOME-GBITS         BINARY-LONG VALUE 7.
+ 01 CH-BE-MAX              BINARY-LONG VALUE 16.
+ 01 CH-BE-DATA-MAX         BINARY-LONG VALUE 1024.
+ 01 CH-BE-COUNT            BINARY-LONG.
+ 01 CH-X                   BINARY-LONG.
+ 01 CH-Z                   BINARY-LONG.
+ 01 CH-SUM                 BINARY-DOUBLE.
+ 01 CH-SUM-2               BINARY-DOUBLE.
+ 01 CH-SUM-3               BINARY-DOUBLE.
+ 01 CH-LIGHT-COUNT         BINARY-LONG VALUE 26.
+ 01 CH-HM-VALUES.
+    05 CH-HM               BINARY-LONG OCCURS 1536 TIMES.
+ 01 CH-COUNTS.
+    05 CH-COUNT-ENTRY      BINARY-LONG OCCURS 48 TIMES.
+ 01 CH-STATES.
+    05 CH-STATE            BINARY-LONG OCCURS 98304 TIMES.
+ 01 CH-BIOMES.
+    05 CH-BIOME            BINARY-LONG OCCURS 1536 TIMES.
+ 01 CH-BE-HEADS.
+    05 CH-BE-HEAD          BINARY-LONG OCCURS 80 TIMES.
+ 01 CH-BE-DATA             PIC X(1024).
+ 01 CH-SKY-STATES.
+    05 CH-SKY-STATE        BINARY-LONG OCCURS 26 TIMES.
+ 01 CH-BLK-STATES.
+    05 CH-BLK-STATE        BINARY-LONG OCCURS 26 TIMES.
+ 01 CH-SKY-ARRAYS.
+    05 CH-SKY-ARRAY        PIC X(2048) OCCURS 26 TIMES.
+ 01 CH-BLK-ARRAYS.
+    05 CH-BLK-ARRAY        PIC X(2048) OCCURS 26 TIMES.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
@@ -223,9 +335,221 @@
          MOVE WS-AD-FIELDS(WS-I) TO WS-STATED-LONG
          PERFORM ADD-CASE
      END-PERFORM
+     MOVE "play-s2c-2e-level-chunk-with-light-standard-24-sections" TO WS-NAME
+     MOVE "0 0 50 0 73728 61782688 2434" TO WS-STATED-LONG
+     PERFORM CHUNK-CASE
+     MOVE "play-s2c-31-light-update-standard" TO WS-NAME
+     MOVE "-1 2 11111111111111111111111122 1112111111111111111111111" TO WS-STATED-LONG
+     PERFORM LIGHT-UPDATE-CASE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 22
+         MOVE WS-RG-NAME(WS-I) TO WS-NAME
+         MOVE WS-RG-FIELDS(WS-I) TO WS-STATED-LONG
+         PERFORM REGISTRY-CASE
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         MOVE WS-TG-NAME(WS-I) TO WS-NAME
+         MOVE WS-TG-FIELDS(WS-I) TO WS-STATED-LONG
+         PERFORM TAGS-CASE
+     END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
      STOP RUN.
+
+*> Level Chunk With Light, 24 sections: x z heightmap mask, block entities, the non-empty block total,
+*> the sums of every block state id and every biome id (read from the fixture with an independent
+*> decoder), then the same fields written again equal the fixture.
+ CHUNK-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-CHUNK-24" USING PB-BUFFER CH-X CH-Z CH-SECTIONS CH-HM-BITS CH-HM-MASK CH-HM-VALUES
+         CH-COUNTS CH-STATES CH-BIOMES CH-BLOCK-GBITS CH-BIOME-GBITS CH-BE-MAX CH-BE-DATA-MAX
+         CH-BE-COUNT CH-BE-HEADS CH-BE-DATA CH-SKY-STATES CH-SKY-ARRAYS CH-BLK-STATES
+         CH-BLK-ARRAYS
+     MOVE 0 TO CH-SUM CH-SUM-2 CH-SUM-3
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 24
+         ADD CH-COUNT-ENTRY(WS-J * 2 - 1) TO CH-SUM
+     END-PERFORM
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 98304
+         ADD CH-STATE(WS-J) TO CH-SUM-2
+     END-PERFORM
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 1536
+         ADD CH-BIOME(WS-J) TO CH-SUM-3
+     END-PERFORM
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED-LONG TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE CH-X TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-Z TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-HM-MASK TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-BE-COUNT TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-SUM TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-SUM-2 TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE CH-SUM-3 TO WS-EDIT
+     PERFORM ADD-FIELD
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-CHUNK-24" USING PK-BUFFER CH-X CH-Z CH-SECTIONS CH-HM-BITS CH-HM-MASK CH-HM-VALUES
+         CH-COUNTS CH-STATES CH-BIOMES CH-BLOCK-GBITS CH-BIOME-GBITS CH-BE-COUNT CH-BE-HEADS
+         CH-BE-DATA CH-SKY-STATES CH-SKY-ARRAYS CH-BLK-STATES CH-BLK-ARRAYS
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES-BIG.
+
+*> Light Update: VarInt chunk x and z, then the light of 26 indices; the stated fields are x z and
+*> the sky and block states of the indices as digits (0 none, 1 empty, 2 array).
+ LIGHT-UPDATE-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-X
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-Z
+     CALL "LIGHT-DECODE" USING PB-BUFFER CH-LIGHT-COUNT CH-SKY-STATES CH-SKY-ARRAYS
+         CH-BLK-STATES CH-BLK-ARRAYS
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED-LONG TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE WS-X TO WS-EDIT
+     PERFORM ADD-FIELD
+     MOVE WS-Z TO WS-EDIT
+     PERFORM ADD-FIELD
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 26
+         MOVE CH-SKY-STATE(WS-J) TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 25
+         MOVE CH-BLK-STATE(WS-J) TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-X
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-Z
+     CALL "LIGHT-ENCODE" USING PK-BUFFER CH-LIGHT-COUNT CH-SKY-STATES CH-SKY-ARRAYS
+         CH-BLK-STATES CH-BLK-ARRAYS
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES-BIG.
+
+*> Registry Data: registry key, entry count, first and last entry id and the packet length; the
+*> entries are written again one by one as they are read.
+ REGISTRY-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-REGISTRY-DATA-HEAD" USING PB-BUFFER RG-NAME RG-NAME-CAP RG-NAME-LEN RG-COUNT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-REGISTRY-DATA-HEAD" USING PK-BUFFER RG-NAME RG-NAME-LEN RG-COUNT
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED-LONG TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     STRING RG-NAME(1:RG-NAME-LEN) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE RG-COUNT TO WS-COUNT
+     MOVE RG-COUNT TO WS-EDIT
+     STRING " " FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-COUNT
+         CALL "PB-GET-REGISTRY-ENTRY" USING PB-BUFFER RG-FIRST RG-NAME-CAP RG-FIRST-LEN
+             RG-PRESENT RG-DATA RG-DATA-CAP RG-DATA-LEN
+         CALL "PB-PUT-REGISTRY-ENTRY" USING PK-BUFFER RG-FIRST RG-FIRST-LEN RG-PRESENT RG-DATA
+             RG-DATA-LEN
+         IF WS-J = 1
+             STRING RG-FIRST(1:RG-FIRST-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED
+                 WITH POINTER WS-PTR
+         END-IF
+         MOVE RG-FIRST TO RG-LAST
+         MOVE RG-FIRST-LEN TO RG-LAST-LEN
+     END-PERFORM
+     STRING RG-LAST(1:RG-LAST-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE PB-LENGTH TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES-BIG.
+
+*> Update Tags: the registry count, then per registry " <key>(<tag count>)" and per tag
+*> " <name>=<id>,<id>"; written again as read.
+ TAGS-CASE.
+     PERFORM LOAD-FIXTURE
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-TAGS-HEAD" USING PB-BUFFER WS-COUNT
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-UBYTE" USING PK-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-TAGS-HEAD" USING PK-BUFFER WS-COUNT
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " decodes to the stated fields"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-STATED-LONG TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE WS-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-COUNT TO WS-K
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-K
+         CALL "PB-GET-TAG-REGISTRY-HEAD" USING PB-BUFFER RG-NAME RG-NAME-CAP RG-NAME-LEN
+             RG-COUNT
+         CALL "PB-PUT-TAG-REGISTRY-HEAD" USING PK-BUFFER RG-NAME RG-NAME-LEN RG-COUNT
+         MOVE RG-COUNT TO WS-EDIT
+         STRING " " RG-NAME(1:RG-NAME-LEN) "(" FUNCTION TRIM(WS-EDIT) ")" DELIMITED BY SIZE
+             INTO TL-OBSERVED WITH POINTER WS-PTR
+         MOVE RG-COUNT TO WS-MAX
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MAX
+             CALL "PB-GET-TAG" USING PB-BUFFER RG-FIRST RG-NAME-CAP RG-FIRST-LEN RG-TAG-IDS
+                 RG-ID-CAP RG-COUNT
+             CALL "PB-PUT-TAG" USING PK-BUFFER RG-FIRST RG-FIRST-LEN RG-TAG-IDS RG-COUNT
+             STRING " " RG-FIRST(1:RG-FIRST-LEN) "=" DELIMITED BY SIZE INTO TL-OBSERVED
+                 WITH POINTER WS-PTR
+             PERFORM VARYING WS-LEN FROM 1 BY 1 UNTIL WS-LEN > RG-COUNT
+                 MOVE RG-TAG-ID(WS-LEN) TO WS-EDIT
+                 IF WS-LEN > 1
+                     STRING "," DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+                 END-IF
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+                     WITH POINTER WS-PTR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     IF PB-ERROR NOT = 0 OR PB-POS NOT = PB-LENGTH
+         STRING " unread-or-error" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-CASE
+     STRING "contract wire provider " FUNCTION TRIM(WS-NAME) " re-encodes to the fixture bytes"
+         DELIMITED BY SIZE INTO TL-CASE
+     PERFORM CHECK-SAME-BYTES-BIG.
 
  DESTRUCTION-CASE.
      PERFORM LOAD-FIXTURE
@@ -690,6 +1014,23 @@
          STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      END-IF
      STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+*> Whole-buffer form of CHECK-SAME-BYTES for fixtures above 512 bytes: no error, equal length and
+*> equal bytes ("0 0 1" is expected).
+ CHECK-SAME-BYTES-BIG.
+     MOVE 0 TO WS-OFFSET
+     CALL "TEST-SLICE-EQUALS" USING PB-BUFFER WS-OFFSET PK-BUFFER WS-EQUAL
+     MOVE "T" TO TL-MODE
+     MOVE "0 0 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE PK-ERROR TO WS-EDIT
+     PERFORM ADD-FIELD
+     COMPUTE WS-EDIT = PB-LENGTH - PK-LENGTH
+     PERFORM ADD-FIELD
+     MOVE WS-EQUAL TO WS-EDIT
+     PERFORM ADD-FIELD
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
 *> The encoder's buffer (PK) against the fixture's bytes (PB, still whole: PB-LENGTH is unchanged).
  CHECK-SAME-BYTES.
