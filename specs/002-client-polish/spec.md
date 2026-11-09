@@ -418,3 +418,4 @@ Values come from the named documents only (FR-042). "The standard" means documen
 - The cobolcraft type's content is unchanged except for the bench, the standard core and any other content this feature needs to work in that type (operator-confirmed); extending it to cover more of what the vanilla pack covers is future work.
 - Sounds, lighting, sky, fog and clouds (CC-0007) and `server.properties` are out of scope.
 - The feature is implemented as a whole in one run; the ticket is not split.
+- A hidden third `WorldType`, `debug`, exists only as a test tool added by operator decision after planning (plan "Operator addition: debug world"): it is not a user story, it is not shown in the normal UI, and it is not part of the "two world types" of FR-003 to FR-005, which count only the standard and cobolcraft types.

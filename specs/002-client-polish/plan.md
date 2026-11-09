@@ -313,6 +313,8 @@ package's `tests/`, run by every lane gate) is kept.
   with the 21,490-file generated directory.
 - **Document deliverables** (the clean-room rounds' document edits, the design-document records of FR-012 and
   FR-027, README) are verified by review tasks, not tests (4.1).
+- **Stories covered by their lanes only (intentional).** No Convergence test exists for US3, US4, US5, US6, US7, US11, US14, US15, US16, US17, US18, US20 and US21: each is observable at one package's layer (screen model and render list, physics state, pack stack, atlas readback, core entry points, the conformance bytes of US21) and their cross-package edges are covered by the contract tests of both sides plus the Convergence tests of US1, US2, US8, US9, US10, US12, US13 and US19. This is deliberate (constitution 5.4 asks for contract tests in lanes, not a Convergence test per story).
+- **Debug world.** The hidden `debug` WorldType is a test tool, not a story, and is not one of the "two" types of FR-003 to FR-005 (spec Assumptions).
 - **Test doubles**: none, except the Q-2 double the operator sanctioned. Real MoltenVK and GLFW windows, loopback sockets, real zlib and
   OpenSSL, the real jar and pack.
 - **Performance of the suite.** `acc_us3_streaming` already takes about 3 minutes (CC-0002). New engines must
