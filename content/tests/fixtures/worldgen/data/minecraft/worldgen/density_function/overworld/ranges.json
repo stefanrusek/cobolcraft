@@ -1,0 +1,6 @@
+{"type": "minecraft:interpolated", "cell_size_xz": 4, "cell_size_y": 8,
+ "input": {"type": "minecraft:squeeze", "input": {"type": "minecraft:blend_density",
+   "input": {"type": "minecraft:range_choice", "input": "minecraft:y", "min_inclusive": -0.5, "max_exclusive": 0.5,
+     "when_in_range": {"type": "minecraft:lerp", "alpha": 0.25, "first": 2.5, "second": "minecraft:overworld/sloped"},
+     "when_out_of_range": {"type": "minecraft:find_top_surface", "density": "minecraft:y", "upper_bound": 80,
+                           "lower_bound": -64, "cell_height": 8}}}}}
