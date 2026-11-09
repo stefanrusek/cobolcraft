@@ -24,22 +24,22 @@ settles the two process questions: workspace bootstrap is `make bootstrap`, defe
 Two decisions the plan phase has no authority to make remain open. The tasks phase MUST NOT start until both are
 recorded (constitution 1.3).
 
-- [NEEDS CLARIFICATION: Q-1 Vanilla-client verification (spec US21, FR-039, SC-013). The plan sets the scope as
+- Q-1 (operator accepted the manual run, 2026-11-09) Vanilla-client verification (spec US21, FR-039, SC-013). The plan sets the scope as
   (a) automated byte-level conformance tests of the standard server's configuration phase, Login and chunk data
   against the documents (`contract_vanilla_*`), plus (b) a manual run of a real vanilla 26.3 client through
   configuration into play, recorded once at the terminal phase (quickstart §9). No automated launch of a vanilla
   client can exist: the jar is not runnable without the launcher's libraries and nothing under `~/.minecraft`
   is present (research probe table). Does the operator accept the manual run as the verification of SC-013, or
-  require an automated harness (which needs the operator to supply and pin a launcher environment)? Recommended:
-  accept manual.]
-- [NEEDS CLARIFICATION: Q-2 Open Pack Folder test (spec US4, FR-008, SC-010). The button starts the system
+  require an automated harness (which needs the operator to supply and pin a launcher environment)? Decision:
+  accept manual.
+- Q-2 (operator sanctioned the test double, 2026-11-09) Open Pack Folder test (spec US4, FR-008, SC-010). The button starts the system
   opener on a folder. A test that runs the real `/usr/bin/open` opens a real Finder window on every gate run. A
   sanctioned double is the alternative: the client state names the opener program, production sets
   `/usr/bin/open`, and tests set a harmless real executable (`/usr/bin/true`) while a second test proves the
   production string and the missing-opener path through the shim contract test. Real-config debt of that double:
   none (`/usr/bin/open` exists on every macOS and the spike `command -v open` confirmed it), and the aggregated
   run-level signal is one line from the client test run naming the opener substituted. Does the operator sanction
-  this double, or require the real opener in the test? Recommended: sanction.]
+  this double, or require the real opener in the test? Decision: sanction.
 
 ## Summary
 
