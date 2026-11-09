@@ -361,3 +361,31 @@ def pa_stop():
 @fixture("play-c2s-29-player-action-swap-item-with-offhand")
 def pa_swap():
     return action("play-c2s-29-player-action-swap-item-with-offhand", 7, "SWAP_ITEM_WITH_OFFHAND", (0, 0, 0), 0, 0, " (block-free action: location (0, 0, 0), face 0, sequence 0)")
+
+
+# ---------------------------------------------------------------------------------------------
+# Block Event and Block Entity Data (T0157; 05a 0x07, 0x06; 46 sections 5.4 and 6 example 4)
+
+@fixture("play-s2c-07-block-event-standard")
+def block_event():
+    fx = Fixture("play-s2c-07-block-event-standard", head(
+        "Block Event, chest opened", "play", "clientbound (S->C)", 7, "05a 0x07; 00 section 4.1",
+        ["location (3, 64, -5); param 0 = 1; param 1 = 2; block registry id 300 (two-byte VarInt, a block id and not a state id)"]))
+    fx.field(wf.varint(7), "packet id: VarInt 0x07")
+    fx.field(wf.position(3, 64, -5), "Location: Position (3, 64, -5)")
+    fx.field(wf.ubyte(1), "Param 0: UByte 1")
+    fx.field(wf.ubyte(2), "Param 1: UByte 2")
+    fx.field(wf.varint(300), "Block: VarInt 300")
+    return fx
+
+
+@fixture("play-s2c-06-block-entity-data-standard")
+def block_entity_data():
+    fx = Fixture("play-s2c-06-block-entity-data-standard", head(
+        "Block Entity Data, sign", "play", "clientbound (S->C)", 6, "05a 0x06; 46 section 5.4 (sign = 7); 00 section 4.1; 07 section 1",
+        ["location (-8, 70, 21); block entity type 7 (sign); data: network NBT compound {is_waxed: Byte 1, note: String \"hi\"}"]))
+    fx.field(wf.varint(6), "packet id: VarInt 0x06")
+    fx.field(wf.position(-8, 70, 21), "Location: Position (-8, 70, 21)")
+    fx.field(wf.varint(7), "Block entity type: VarInt 7 (sign)")
+    fx.nbt(Compound([("is_waxed", Byte(1)), ("note", Str("hi"))]), "Data")
+    return fx
