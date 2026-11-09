@@ -48,9 +48,10 @@ int main(void) {
     tl_str("test cc_vk_texture_ex level 1 is one texel per quadrant", "FF0000FF00FF00FF0000FFFFFFFFFFFF", seen);
     uint8_t l2[4];
     read_level(CC_TEX_BLOCKS, 2, 1, 1, l2);
-    /* Average of red, green, blue, white = (127.5, 127.5, 127.5, 255): 7F or 80 per channel. */
-    int ok = (l2[0] == 0x7F || l2[0] == 0x80) && (l2[1] == 0x7F || l2[1] == 0x80) && (l2[2] == 0x7F || l2[2] == 0x80) && l2[3] == 0xFF;
-    tl_int("test cc_vk_texture_ex level 2 is the average of the four quadrants", 1, ok);
+    /* Linear-light mean (12 §2.3) of red, green, blue, white: each channel has two 255 and two 0, mean 0.5 linear
+     * = sRGB 188 (BC); alpha 255. */
+    hex(l2, 4, seen);
+    tl_str("test cc_vk_texture_ex level 2 is the linear-light average of the four quadrants", "BCBCBCFF", seen);
 
     cc_vk_shutdown();
     cc_win_close();

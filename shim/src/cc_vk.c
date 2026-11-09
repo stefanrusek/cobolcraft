@@ -6,6 +6,7 @@
  * VK_KHR_swapchain (+ VK_KHR_portability_subset when reported), FIFO swapchain on the surface's first
  * format at framebuffer extent, D32_SFLOAT depth, one frame in flight. Resources replaced or freed
  * while the GPU may still use them are destroyed after the next frame's commands have completed. */
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -572,29 +573,72 @@ static void submit_wait(VkCommandBuffer cmd, const char *what) {
     vkFreeCommandBuffers(cc_vk_state.device, cc_vk_state.commands, 1, &cmd);
 }
 
-/* Fills mip levels 1.. from level 0 by 2 x 2 box filter (linear blit at exactly half size), then leaves
- * every level readable by shaders. On entry every level is TRANSFER_DST_OPTIMAL and level 0 is written. */
-static void generate_mips(VkCommandBuffer cmd, VkImage image, int32_t w, int32_t h, uint32_t mips) {
+/* sRGB transfer function of 12 §2.3 (ARGB.meanLinear): 8-bit sRGB channel to linear light and back. */
+static double srgb_to_linear(int c) {
+    double v = c / 255.0;
+    return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4);
+}
+
+static uint8_t linear_to_srgb(double x) {
+    double v = x <= 0.0031308 ? 12.92 * x : 1.055 * pow(x, 1.0 / 2.4) - 0.055;
+    int c = (int)(v * 255.0 + 0.5);
+    return (uint8_t)(c < 0 ? 0 : c > 255 ? 255 : c);
+}
+
+/* Builds every mip level of a w x h RGBA image on the host, level after level, into one allocation (levels
+ * follow each other, level 0 first). Each pixel is the mean of a 2 x 2 block of the previous level (12 §2.3):
+ * colour channels averaged in linear light, alpha the integer mean (sum / 4). */
+static uint8_t *build_chain(const uint8_t *base, int32_t w, int32_t h, uint32_t mips, VkDeviceSize *total) {
+    double lut[256];
+    for (int i = 0; i < 256; i++) lut[i] = srgb_to_linear(i);
+    VkDeviceSize size = 0;
+    for (int32_t lw = w, lh = h, i = 0; i < (int32_t)mips; i++, lw = lw > 1 ? lw / 2 : 1, lh = lh > 1 ? lh / 2 : 1)
+        size += (VkDeviceSize)lw * (VkDeviceSize)lh * 4;
+    uint8_t *chain = malloc((size_t)size);
+    if (chain == NULL) cc_fatal("cc_vk_texture: out of memory");
+    memcpy(chain, base, (size_t)w * (size_t)h * 4);
+    const uint8_t *src = chain;
+    uint8_t *dst = chain + (size_t)w * (size_t)h * 4;
     int32_t lw = w, lh = h;
     for (uint32_t i = 1; i < mips; i++) {
-        barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-                       VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, i - 1, 1);
         int32_t nw = lw > 1 ? lw / 2 : 1, nh = lh > 1 ? lh / 2 : 1;
-        VkImageBlit blit = {
-            .srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1},
-            .srcOffsets = {{0, 0, 0}, {lw, lh, 1}},
-            .dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1},
-            .dstOffsets = {{0, 0, 0}, {nw, nh, 1}},
-        };
-        vkCmdBlitImage(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+        for (int32_t y = 0; y < nh; y++)
+            for (int32_t x = 0; x < nw; x++) {
+                int32_t x1 = 2 * x + 1 < lw ? 2 * x + 1 : lw - 1, y1 = 2 * y + 1 < lh ? 2 * y + 1 : lh - 1;
+                const uint8_t *p[4] = {src + (2 * y * lw + 2 * x) * 4, src + (2 * y * lw + x1) * 4, src + (y1 * lw + 2 * x) * 4,
+                                       src + (y1 * lw + x1) * 4};
+                uint8_t *o = dst + (y * nw + x) * 4;
+                for (int c = 0; c < 3; c++) o[c] = linear_to_srgb((lut[p[0][c]] + lut[p[1][c]] + lut[p[2][c]] + lut[p[3][c]]) / 4.0);
+                o[3] = (uint8_t)((p[0][3] + p[1][3] + p[2][3] + p[3][3]) / 4);
+            }
+        src = dst;
+        dst += (size_t)nw * (size_t)nh * 4;
         lw = nw;
         lh = nh;
     }
-    if (mips > 1)
-        barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,
-                       VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, mips - 1);
+    *total = size;
+    return chain;
+}
+
+/* Uploads every level of the chain (from build_chain) of a w x h image whose levels are all in
+ * TRANSFER_DST_OPTIMAL, then leaves every level readable by shaders. */
+static void upload_chain(VkCommandBuffer cmd, VkBuffer staging, VkImage image, int32_t w, int32_t h, uint32_t mips) {
+    VkBufferImageCopy regions[32];
+    VkDeviceSize offset = 0;
+    int32_t lw = w, lh = h;
+    for (uint32_t i = 0; i < mips; i++) {
+        regions[i] = (VkBufferImageCopy){
+            .bufferOffset = offset,
+            .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1},
+            .imageExtent = {(uint32_t)lw, (uint32_t)lh, 1},
+        };
+        offset += (VkDeviceSize)lw * (VkDeviceSize)lh * 4;
+        lw = lw > 1 ? lw / 2 : 1;
+        lh = lh > 1 ? lh / 2 : 1;
+    }
+    vkCmdCopyBufferToImage(cmd, staging, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mips, regions);
     barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-                   VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mips - 1, 1);
+                   VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, mips);
 }
 
 int32_t cc_vk_texture(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba) {
@@ -607,10 +651,15 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
     while ((longest >> most) > 0) most++;
     if (mip_levels < 1 || mip_levels > most) cc_fatal("cc_vk_texture_ex: invalid mip level count");
     uint32_t mips = (uint32_t)mip_levels;
-    VkDeviceSize size = (VkDeviceSize)w * (VkDeviceSize)h * 4;
+    VkDeviceSize size;
+    uint8_t *chain = build_chain(rgba, w, h, mips, &size);
     VkDeviceMemory staging_memory;
-    VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rgba, size, &staging_memory);
+    VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, chain, size, &staging_memory);
     texture_t t;
+    t.pixels = malloc((size_t)w * (size_t)h * 4);
+    if (t.pixels == NULL) cc_fatal("cc_vk_texture: out of memory");
+    memcpy(t.pixels, rgba, (size_t)w * (size_t)h * 4);
+    free(chain);
     t.mips = mips;
     t.width = w;
     t.height = h;
@@ -622,12 +671,7 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
     begin(cmd);
     barrier_levels(cmd, t.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, mips);
-    VkBufferImageCopy region = {
-        .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        .imageExtent = {(uint32_t)w, (uint32_t)h, 1},
-    };
-    vkCmdCopyBufferToImage(cmd, staging, t.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-    generate_mips(cmd, t.image, w, h, mips);
+    upload_chain(cmd, staging, t.image, w, h, mips);
     submit_wait(cmd, "cc_vk_texture");
     vkDestroyBuffer(cc_vk_state.device, staging, NULL);
     vkFreeMemory(cc_vk_state.device, staging_memory, NULL);
@@ -653,29 +697,28 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
     vkUpdateDescriptorSets(cc_vk_state.device, 1, &write, 0, NULL);
 
     texture_t *old = &cc_vk_state.textures[tex_id];
+    free(old->pixels);
     discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set});
     *old = t;
     return 0;
 }
 
-/* Replaces the rectangle (x, y, w, h) of the base level and regenerates the mip levels. */
+/* Replaces the rectangle (x, y, w, h) of the base level and regenerates the mip levels (12 §2.3). */
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
     if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_ENVIRONMENT || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
     texture_t *t = &cc_vk_state.textures[tex_id];
     if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > t->width || y + h > t->height) cc_fatal("cc_vk_texture_update: invalid rectangle");
+    for (int32_t row = 0; row < h; row++) memcpy(t->pixels + ((size_t)(y + row) * (size_t)t->width + (size_t)x) * 4, rgba + (size_t)row * (size_t)w * 4, (size_t)w * 4);
+    VkDeviceSize size;
+    uint8_t *chain = build_chain(t->pixels, t->width, t->height, t->mips, &size);
     VkDeviceMemory staging_memory;
-    VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rgba, (VkDeviceSize)w * (VkDeviceSize)h * 4, &staging_memory);
+    VkBuffer staging = host_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, chain, size, &staging_memory);
+    free(chain);
     VkCommandBuffer cmd = command_buffer();
     begin(cmd);
     barrier_levels(cmd, t->image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT,
                    VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, t->mips);
-    VkBufferImageCopy region = {
-        .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        .imageOffset = {x, y, 0},
-        .imageExtent = {(uint32_t)w, (uint32_t)h, 1},
-    };
-    vkCmdCopyBufferToImage(cmd, staging, t->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-    generate_mips(cmd, t->image, t->width, t->height, t->mips);
+    upload_chain(cmd, staging, t->image, t->width, t->height, t->mips);
     submit_wait(cmd, "cc_vk_texture_update");
     vkDestroyBuffer(cc_vk_state.device, staging, NULL);
     vkFreeMemory(cc_vk_state.device, staging_memory, NULL);
@@ -787,6 +830,8 @@ void cc_vk_shutdown(void) {
     for (int i = CC_TEX_BLOCKS; i <= CC_TEX_ENVIRONMENT; i++) {
         texture_t *t = &cc_vk_state.textures[i];
         discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set});
+        free(t->pixels);
+        t->pixels = NULL;
     }
     collect_garbage();
     free(cc_vk_state.garbage);

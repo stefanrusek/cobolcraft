@@ -41,6 +41,7 @@ typedef struct {
     VkDescriptorSet set;
     uint32_t mips;
     int32_t width, height;
+    uint8_t *pixels; /* level 0 on the host (RGBA), the source of the mip chain */
 } texture_t;
 
 /* A resource waiting for the GPU to finish with it (any field may be VK_NULL_HANDLE). */
