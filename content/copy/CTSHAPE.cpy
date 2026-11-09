@@ -10,7 +10,11 @@
 *>   T an object of the group named by the arg ("-" row of the group: no "type" member; else "type" names a row)
 *>   R an identifier or an object of the group    V a number or an object of the group
 *>   L an array of objects of the group    K an array of identifiers
+*>   P a number, an identifier or an object of the group (a provider: a constant, a registry entry or a typed object)
+*>   F an object of the group, an identifier, or an array of those (a function or condition list)
+*>   M an array whose elements are each of form P
 *>   H a holder set of the group: an identifier or "#tag", an object of the group, or an array of identifiers and objects
+*> A type row named "!" closes a group: an unknown type is an error also in a nested object (loot.cob).
 *> A type row named "-" is the shape of a group whose objects carry no "type" member (a placed feature, a pool).
  78 SH-MAX-TYPES           VALUE 2048.
  78 SH-MAX-ELEMENTS        VALUE 4096.

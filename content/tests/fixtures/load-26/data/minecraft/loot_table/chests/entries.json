@@ -1,0 +1,15 @@
+{"type": "minecraft:chest", "random_sequence": "minecraft:chests/entries",
+ "pools": [{"rolls": {"type": "minecraft:binomial", "n": 3, "p": 0.5},
+  "entries": [
+   {"type": "minecraft:empty", "weight": 2},
+   {"type": "minecraft:tag", "items": "#minecraft:planks", "expand": true},
+   {"type": "minecraft:loot_table", "value": "minecraft:chests/other"},
+   {"type": "minecraft:dynamic", "name": "minecraft:contents"},
+   {"type": "minecraft:slots", "slot_source": {"type": "minecraft:group", "terms": [
+     {"type": "minecraft:slot_range", "source": "minecraft:this", "slots": "container.*"},
+     {"type": "minecraft:limit_slots", "slot_source": {"type": "minecraft:empty"}, "limit": 3},
+     {"type": "minecraft:filtered", "slot_source": "minecraft:cached", "item_filter": {"items": "minecraft:stick"}},
+     {"type": "minecraft:contents", "slot_source": {"type": "minecraft:empty"}, "component": "minecraft:container"}]}},
+   {"type": "minecraft:sequence", "children": [{"type": "minecraft:item", "name": "minecraft:apple"}]},
+   {"type": "minecraft:group", "children": []}]}],
+ "modifier": {"type": "minecraft:set_name", "name": "Loot", "target": "item_name"}}

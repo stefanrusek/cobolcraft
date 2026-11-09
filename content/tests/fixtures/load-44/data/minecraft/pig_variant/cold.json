@@ -1,0 +1,1 @@
+{"model": "cold", "spawn_conditions": [{"priority": 1, "condition": {"type": "minecraft:biome", "biomes": ["minecraft:taiga", "minecraft:snowy_plains"]}}]}

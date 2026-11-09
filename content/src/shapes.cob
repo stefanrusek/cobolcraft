@@ -7,7 +7,8 @@
 *> <key>: <detail>"; any error fails the load as a whole (23 section 3.5): the status of SHAPE-END is CT-BAD-DATA and the
 *> elements since SHAPE-BEGIN are taken back. Members the shapes do not name are ignored (the codecs of the documents
 *> ignore unknown members). An object of a group whose type nobody registered is an error only for a strict load (the
-*> top-level file) and is accepted when it is nested inside another shape.
+*> top-level file) and is accepted when it is nested inside another shape, unless the group is closed: it has a type row
+*> named "!" (any field list), and then an unknown type is an error wherever the object is.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-FREE.
@@ -211,6 +212,7 @@
  01 WS-D                   PIC X VALUE "D".
  01 WS-T                   PIC X VALUE "T".
  01 WS-R                   PIC X VALUE "R".
+ 01 WS-P                   PIC X VALUE "P".
  LOCAL-STORAGE SECTION.
  01 LS-DETAIL              PIC X(120).
  01 LS-TEXT                PIC X(200).
@@ -328,6 +330,38 @@
                      STRING "member " FUNCTION TRIM(L-NAME) " must be a number or an object"
                          DELIMITED BY SIZE INTO LS-DETAIL
              END-EVALUATE
+         WHEN "P"
+             EVALUATE TRUE
+                 WHEN JN-TYPE(L-NODE) = JT-NUMBER
+                     CONTINUE
+                 WHEN JN-TYPE(L-NODE) = JT-STRING
+                     CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-D L-ARG L-NAME L-KEY L-STATUS
+                 WHEN JN-TYPE(L-NODE) = JT-OBJECT
+                     CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-T L-ARG L-NAME L-KEY L-STATUS
+                 WHEN OTHER
+                     STRING "member " FUNCTION TRIM(L-NAME) " must be a number, an identifier or an object"
+                         DELIMITED BY SIZE INTO LS-DETAIL
+             END-EVALUATE
+         WHEN "F"
+             IF JN-TYPE(L-NODE) = JT-ARRAY
+                 MOVE JN-FIRST(L-NODE) TO LS-CHILD
+                 PERFORM UNTIL LS-CHILD = 0
+                     CALL "SHAPE-VALUE" USING JSON-DOC LS-CHILD WS-R L-ARG L-NAME L-KEY L-STATUS
+                     MOVE JN-NEXT(LS-CHILD) TO LS-CHILD
+                 END-PERFORM
+             ELSE
+                 CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-R L-ARG L-NAME L-KEY L-STATUS
+             END-IF
+         WHEN "M"
+             IF JN-TYPE(L-NODE) = JT-ARRAY
+                 MOVE JN-FIRST(L-NODE) TO LS-CHILD
+                 PERFORM UNTIL LS-CHILD = 0
+                     CALL "SHAPE-VALUE" USING JSON-DOC LS-CHILD WS-P L-ARG L-NAME L-KEY L-STATUS
+                     MOVE JN-NEXT(LS-CHILD) TO LS-CHILD
+                 END-PERFORM
+             ELSE
+                 STRING "member " FUNCTION TRIM(L-NAME) " must be an array" DELIMITED BY SIZE INTO LS-DETAIL
+             END-IF
          WHEN "L"
              IF JN-TYPE(L-NODE) = JT-ARRAY
                  MOVE JN-FIRST(L-NODE) TO LS-CHILD
@@ -389,8 +423,10 @@
  WORKING-STORAGE SECTION.
  COPY CTSHAPE.
  01 WS-DASH                PIC X(48) VALUE "-".
+ 01 WS-BANG                PIC X(48) VALUE "!".
  LOCAL-STORAGE SECTION.
  01 LS-ROW                 BINARY-LONG.
+ 01 LS-CLOSED              BINARY-LONG.
  01 LS-FOUND               BINARY-LONG.
  01 LS-NAME                PIC X(32).
  01 LS-TEXT                PIC X(200).
@@ -432,7 +468,11 @@
                      MOVE LS-TEXT(11:) TO LS-TYPE
                  END-IF
                  CALL "SHAPE-TYPE-FIND" USING L-GROUP LS-TYPE LS-ROW
-                 IF LS-ROW = 0 AND L-STRICT = 1
+                 MOVE 0 TO LS-CLOSED
+                 IF LS-ROW = 0
+                     CALL "SHAPE-TYPE-FIND" USING L-GROUP WS-BANG LS-CLOSED
+                 END-IF
+                 IF LS-ROW = 0 AND (L-STRICT = 1 OR LS-CLOSED > 0)
                      STRING FUNCTION TRIM(L-GROUP) ": unknown type " FUNCTION TRIM(LS-TYPE)
                          DELIMITED BY SIZE INTO LS-DETAIL
                  END-IF
