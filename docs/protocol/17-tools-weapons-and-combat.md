@@ -738,6 +738,45 @@ State: foodLevel (0..20, new player 20), saturation (new player 5.0; saturation 
 - Eating: `FoodData.add(nutrition, saturation)` (read) sets food = clamp(food + nutrition, 0, 20) and saturation = clamp(saturation + s, 0, the new food level); `eat(FoodProperties)` passes the food's nutrition and absolute saturation, and `eat(int, float modifier)` passes saturation = `FoodConstants.saturationByModifier(nutrition, modifier)` (the factor 2 appears in it: nutrition x modifier x 2). `FoodConstants`: MAX_FOOD 20, MAX_SATURATION 20.0, START_SATURATION 5.0, SATURATION_FLOOR 2.5, EXHAUSTION_DROP 4.0, HEALTH_TICK_COUNT 80, HEALTH_TICK_COUNT_SATURATED 10, HEAL_LEVEL 18, SPRINT_LEVEL 6, STARVE_LEVEL 0.
 - A `ServerPlayer` is sent Set Health (0x6A) whenever health, food or saturation changed (`doTick`), and Set Experience (0x69) whenever experience changed.
 
+### 4.9a Periodic mob-effect ticks (`MobEffectInstance.tickServer`, `MobEffect.shouldApplyEffectTickThisTick`)
+
+Read in this round from `MobEffectInstance`, `LivingEntity.tickEffects` and the effect classes; the effect ids and colours are in 49 §2.4.
+
+**Per-tick order (server).** Once per entity tick, for every active effect instance (iteration order of the entity's effect map):
+1. If the instance has no remaining duration (`duration <= 0` and not infinite, `duration == -1` is infinite) it is removed without ticking.
+2. The tick duration `d` is the instance's `duration`, or the entity's `tickCount` when the duration is infinite.
+3. If the effect's `shouldApplyEffectTickThisTick(d, amplifier)` is true, `applyEffectTick(level, entity, amplifier)` runs (the return value false removes the instance; every effect listed below returns true).
+4. The duration is decremented by 1 (the hidden effect underneath, if any, is decremented too); when it reaches 0 and a hidden effect exists, the instance takes over the hidden effect's details.
+5. The instance survives while it has remaining duration; otherwise it is removed after this tick. Additionally, an instance whose duration is a multiple of 600 after the step sends an effect update to the clients.
+
+So the periodic effect fires **before** the decrement, with the duration the instance had at the start of the tick: an effect applied for `D` ticks sees `d = D, D-1, ..., 1` and never `d = 0`.
+
+**Interval rule.** The three periodic damage/heal effects compute `n = base >> amplifier` (arithmetic int shift; the JVM masks the shift count to its low 5 bits, so amplifier 32 shifts by 0 (inferred from the bytecode `ishr`, not tested)). If `n > 0` the effect fires on ticks where `d mod n == 0`; if `n <= 0` it fires **every tick**.
+
+| Effect | base | Interval by amplifier 0, 1, 2, 3, 4, 5, 6 | Action when it fires |
+|---|---|---|---|
+| `poison` | 25 (`DAMAGE_INTERVAL`) | 25, 12, 6, 3, 1, every tick (0), every tick | If health `> 1.0`: `hurtServer(magic, 1.0)`. At health `<= 1.0` nothing happens, so poison never kills |
+| `regeneration` | 50 | 50, 25, 12, 6, 3, 1, every tick (0) | If health `< max health`: `heal(1.0)` |
+| `wither` | 40 (`DAMAGE_INTERVAL`) | 40, 20, 10, 5, 2, 1, every tick (0) | `hurtServer(wither damage type, 1.0)`; there is **no** minimum-health rule, so wither can kill |
+| `hunger` | - | every tick (the effect's `shouldApply...` is constant true) | Players only: `causeFoodExhaustion(0.005 x (amplifier + 1))` (4.9) |
+
+All other effects (`speed`, `strength` and so on) keep the default `shouldApplyEffectTickThisTick`, which is false: they never run `applyEffectTick`, they act through attribute modifiers. `absorption` (modifier based), `bad_omen`, `raid_omen`, `infested`, `oozing`, `weaving` and `wind_charged` have their own triggers (hurt, death or the 20, 33 and 49 documents), not a periodic interval; whether `bad_omen` and `raid_omen` override the interval rule was not re-read here (see 20 for Bad Omen; Open question 1 of this section's round, listed below).
+
+The damage of poison and wither goes through the normal hurt path (4.4): the `magic` and `wither` damage types (4.12) bypass armor, and the hurt window (4.7) applies: a hit of 1.0 inside the invulnerability window that is not larger than the last damage is ignored, so with an interval of 1 tick the hurt rate is limited by the window, not by the effect. Health is changed by `heal` / `hurtServer` only; no other minimum health exists.
+
+**Instant effects** (`instant_health`, `instant_damage`, `saturation`) are `InstantaneousMobEffect`: `isInstantaneous` true, and `shouldApplyEffectTickThisTick(d, a)` is `d >= 1`. When applied by drinking or by a thrown potion (`PotionContents.applyToLivingEntity`, scale 1.0, the effect is never added as an instance) `applyInstantaneousEffect` runs once with scale `s`:
+
+| Effect | Amount at amplifier `a` |
+|---|---|
+| `instant_health` (not inverted, i.e. a living target that is not undead) | heal `int(s x (4 << a) + 0.5)` |
+| `instant_damage` (not inverted) | `hurtServer(magic, int(s x (6 << a) + 0.5))`; with a thrower / owner entity: the `indirect_magic` type with those two entities |
+| undead target (`isInvertedHealAndHarm`) | the two effects swap: instant health damages and instant damage heals, with the same amounts |
+| `saturation` | players only: `FoodData.eat(a + 1, 1.0)`, i.e. nutrition `a + 1` and the saturation modifier 1.0 (saturation gain `(a + 1) x 1.0 x 2`, 4.9) |
+
+When an instant effect instance is ticked through `applyEffectTick` instead (the base method, scale not applied) the amounts are `6 << a` damage and `max(4 << a, 0)` heal. At scale 1.0 both paths give the same numbers (`s x 6 << a + 0.5` truncates to `6 << a`).
+
+Worked examples: poison I (amplifier 0) with duration 100: fires at `d` = 100, 75, 50, 25 (4 times, 4.0 damage in total if the health stays above 1.0 and the hurt window allows it). Poison II for 60 ticks (interval 12): `d` = 60, 48, 36, 24, 12 (5 times). Regeneration I for 100 ticks: `d` = 100, 50 (2 times, 2.0 health in total). Regeneration II (interval 25) for 100 ticks: 4 times. Wither I (interval 40) for 100 ticks: `d` = 80, 40 (2 times; `d = 100` and `60` are not multiples of 40). A target at health 1.0 with poison: no damage at any tick; at health 1.5 the next poison tick hurts for 1.0, leaving 0.5.
+
 ### 4.10 Death, totem, respawn, drops, experience
 
 - **Totem of Undying** (`checkTotemDeathProtection`, only for damage not in `bypasses_invulnerability`): if either hand holds an item with `death_protection`, that stack shrinks by 1 (creative keeps it), the `item_used` stat and the totem advancement trigger fire, health is set to **1.0**, all effects are cleared, then **Regeneration II 900 ticks (amplifier 1), Absorption II 100 ticks (amplifier 1), Fire Resistance I 800 ticks (amplifier 0)** are applied, and Entity Event 35 is broadcast (the totem animation). The entity survives.
@@ -1061,6 +1100,7 @@ Follow-up round: every item that the first pass marked "recalled" or "not decode
 13. **Respawn**: bed `BedRule` evaluation (`BedRule$Rule.test`) per dimension was read only as field names; the rest of the respawn flow is read in 4.10.
 14. Item components not covered: `food` and `consumable` effect lists (only `milk_bucket`, spider eye and the default drink constants were read), `bundle_contents`, `potion_contents` effects, trim, instruments.
 16. **Verified in earlier rounds only** (not re-read in round 3): crossbow and bow numbers, anvil, grindstone and enchanting table, hunger and regeneration, XP orb behaviour, bucket internals, lead / name tag / saddle, elytra physics, and the resolved tag lists.
+17. **Periodic mob-effect rules (4.9a)**: the `applyEffectTick` overrides of `bad_omen` and `raid_omen` and the exact amplifier range cap were not re-read for 4.9a; the shift-count masking for amplifiers of 32 and above is deduced from the instruction, not tested (inferred).
 
 ## Appendix A. `mineable/*` block tags (complete, resolved)
 

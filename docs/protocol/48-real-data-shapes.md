@@ -1231,7 +1231,7 @@ The root `type` of a `recipe` file (2,042 files).
 | type | n | required members (in every instance) | optional members (instances having it) |
 |---|---|---|---|
 | blasting | 25 | cookingtime:int, experience:num, ingredient:arr[id] or id, result:o{id} | category:str{blocks} (2), group:str{coal/copper_ingot/diamond/emerald/gold_ingot/iron_ingot/lapis_lazuli/redstone} (20) |
-| brewing | 279 | input:obj, output:o{id}, reagent:obj | - |
+| brewing | 279 | input:o{item, potion_contents}, output:o{id, components}, reagent:o{item} | - (member shapes: section 7) |
 | campfire_cooking | 9 | category:str{food}, cookingtime:int, experience:num, ingredient:id, result:o{id} | - |
 | crafting_decorated_pot | 1 | back:tag, front:tag, left:tag, result:o{id}, right:tag | - |
 | crafting_dye | 6 | dye:tag, group:str{dyed_armor}, result:o{id}, target:id | - |
@@ -1320,3 +1320,101 @@ though document 10 §10.5 omits the member name of the `sequence` rule and the s
    unnamed sub-objects of those registries and of `recipe` and `predicate` (section 2.8), and the three feature packs were not censused for shape.
 8. **Count of mixed `weighted_list`.** Nine int `weighted_list` providers mix integers and provider objects in their `distribution[].data` (section 2.3); the census
    labels them "int, nested providers".
+
+## 7. Brewing recipe shapes (`recipe/brewing/*.json`, type `minecraft:brewing`)
+
+Added in a later reader round (same artifact, same method as the header; the files were read with a script over the jar entries, the codecs by `javap`: `BrewingRecipe`, `PotionIngredient`, `PotionsPredicate`, `BrewingInput`). Counts are over `unzip -Z1`, files only.
+
+### 7.1 Counts
+
+| Quantity | Value |
+|---|---|
+| Files under `data/minecraft/recipe/brewing/` | 279 (every one has `type` = `minecraft:brewing`; the other file matching `recipe/brewing` in a path search is `recipe/brewing_stand.json`, a crafting recipe, so a path search for "brewing" finds 280) |
+| Distinct "potion mixes" (input potion, reagent item, output potion) | 63; each exists once per container kind, so 63 x 3 = 189 recipe files |
+| Container conversions | 90 files: 45 `potion` -> `splash_potion` with reagent `gunpowder`, and 45 `splash_potion` -> `lingering_potion` with reagent `dragon_breath`; the potion type is unchanged (`input.potion_contents.potions` equals `output...potion` in all 90) |
+| Files per input container item | `potion` 108, `splash_potion` 108, `lingering_potion` 63 (the `lingering_potion` as input never converts further) |
+| Files per output item | `potion` 63, `splash_potion` 108, `lingering_potion` 108 |
+| Distinct input potion ids | 45 over all files (the conversions cover 45 potions); the 63 mixes use 23 distinct input potions: `water`, `awkward`, and 21 effect potions (7.4) |
+| Distinct output potion ids | 45 over all files (44 over the 63 mixes) |
+| Tag `brewing_potion_inputs` (`tags/item`) | `potion`, `splash_potion`, `lingering_potion`, `glass_bottle` (4 values; a stack in this tag may be placed in a bottle slot, 31-2 §4) |
+
+### 7.2 Member shapes
+
+Root object (no optional members, no `group` or `category`; the recipe is special, 27 §3.4):
+
+| Member | Kind | Shape |
+|---|---|---|
+| `type` | id | `minecraft:brewing` |
+| `input` | object | a potion ingredient (below): the bottle in a potion slot |
+| `reagent` | object | a potion ingredient: the item in the ingredient slot (3) |
+| `output` | object | an item stack template (below): what the bottle becomes |
+
+Potion ingredient (the same codec for `input` and `reagent`):
+
+| Member | Kind | Required | Meaning |
+|---|---|---|---|
+| `item` | id (the codec is the general ingredient form: an item id, a `#tag`, or an array of ids, 27 §1.3; in the 279 files it is always one plain item id) | yes | the stack's item must be this ingredient |
+| `potion_contents` | object, a potions predicate | no; present in all 279 `input` objects, absent in all 279 `reagent` objects | a condition on the stack's `potion_contents` component |
+
+Potions predicate (the value of `potion_contents`): members `potions` (optional; a holder set of potion ids: a single id, a `#tag` or an array of ids; in the files always one id string such as `minecraft:awkward`) and `effects` (optional; an effect collection predicate, never present in these files). The predicate holds when the stack has a `potion_contents` component whose potion is in the set (a stack without the component, or with no potion, fails when `potions` is given), and then, if `effects` is given, when the component's effects satisfy it. The match of a whole recipe is `input` matches the potion slot's stack and `reagent` matches the ingredient slot's stack (both always); the potion id of the input is therefore compared as the component's potion, and `item` as the item of the stack. Counts and any other components of the stacks are not examined.
+
+Item stack template (`output`): `id` (id, the container item, required) and `components` (object, here only `minecraft:potion_contents`, whose member `potion` is the output potion id); the optional `count` (default 1) is never written in these files. `assemble` creates one stack from the template; the new bottle keeps no component of the old one (the input stack is replaced, not edited).
+
+### 7.3 Examples (transcribed as data, member order of the files)
+
+Ingredient mix (a water bottle plus nether wart gives an awkward potion):
+
+    {"type":"minecraft:brewing",
+     "input":{"item":"minecraft:potion","potion_contents":{"potions":"minecraft:water"}},
+     "reagent":{"item":"minecraft:nether_wart"},
+     "output":{"id":"minecraft:potion","components":{"minecraft:potion_contents":{"potion":"minecraft:awkward"}}}}
+
+Upgrade on another container (file `splash_potion_healing_glowstone_dust`):
+
+    {"type":"minecraft:brewing",
+     "input":{"item":"minecraft:splash_potion","potion_contents":{"potions":"minecraft:healing"}},
+     "reagent":{"item":"minecraft:glowstone_dust"},
+     "output":{"id":"minecraft:splash_potion","components":{"minecraft:potion_contents":{"potion":"minecraft:strong_healing"}}}}
+
+Container conversion (file `potion_water_breathing_gunpowder`; the same potion before and after):
+
+    {"type":"minecraft:brewing",
+     "input":{"item":"minecraft:potion","potion_contents":{"potions":"minecraft:water_breathing"}},
+     "reagent":{"item":"minecraft:gunpowder"},
+     "output":{"id":"minecraft:splash_potion","components":{"minecraft:potion_contents":{"potion":"minecraft:water_breathing"}}}}
+
+File names are `<container>_<input potion>_<reagent>` with the container `potion`, `splash_potion` or `lingering_potion` (the container of the input); they carry no meaning for the data. Example: `lingering_potion_awkward_blaze_powder` has input `lingering_potion` with `awkward`, reagent `blaze_powder`, output `lingering_potion` with `strength`.
+
+### 7.4 The 63 mixes (identical for the three container kinds; `a>b` is input potion a giving output potion b, `minecraft:` omitted)
+
+| Reagent | n | Mixes |
+|---|---|---|
+| `nether_wart` | 1 | water>awkward |
+| `redstone` | 14 | fire_resistance>long_fire_resistance, invisibility>long_invisibility, leaping>long_leaping, night_vision>long_night_vision, poison>long_poison, regeneration>long_regeneration, slow_falling>long_slow_falling, slowness>long_slowness, strength>long_strength, swiftness>long_swiftness, turtle_master>long_turtle_master, water>mundane, water_breathing>long_water_breathing, weakness>long_weakness |
+| `glowstone_dust` | 10 | harming>strong_harming, healing>strong_healing, leaping>strong_leaping, poison>strong_poison, regeneration>strong_regeneration, slowness>strong_slowness, strength>strong_strength, swiftness>strong_swiftness, turtle_master>strong_turtle_master, water>thick |
+| `fermented_spider_eye` | 12 | healing>harming, leaping>slowness, long_leaping>long_slowness, long_night_vision>long_invisibility, long_poison>harming, long_swiftness>long_slowness, night_vision>invisibility, poison>harming, strong_healing>strong_harming, strong_poison>strong_harming, swiftness>slowness, water>weakness |
+| `blaze_powder` | 2 | awkward>strength, water>mundane |
+| `breeze_rod` | 2 | awkward>wind_charged, water>mundane |
+| `cobweb` | 2 | awkward>weaving, water>mundane |
+| `ghast_tear` | 2 | awkward>regeneration, water>mundane |
+| `glistering_melon_slice` | 2 | awkward>healing, water>mundane |
+| `magma_cream` | 2 | awkward>fire_resistance, water>mundane |
+| `rabbit_foot` | 2 | awkward>leaping, water>mundane |
+| `slime_block` | 2 | awkward>oozing, water>mundane |
+| `spider_eye` | 2 | awkward>poison, water>mundane |
+| `stone` | 2 | awkward>infested, water>mundane |
+| `sugar` | 2 | awkward>swiftness, water>mundane |
+| `golden_carrot` | 1 | awkward>night_vision |
+| `phantom_membrane` | 1 | awkward>slow_falling |
+| `pufferfish` | 1 | awkward>water_breathing |
+| `turtle_helmet` | 1 | awkward>turtle_master |
+| `gunpowder`, `dragon_breath` | 0 | no mixes: 45 conversions each (7.1) |
+
+Total: 1 + 14 + 10 + 12 + 11 x 2 + 4 x 1 = 63 mixes (the reagents with two rows, such as `blaze_powder`, are 11 in number: `blaze_powder`, `breeze_rod`, `cobweb`, `ghast_tear`, `glistering_melon_slice`, `magma_cream`, `rabbit_foot`, `slime_block`, `spider_eye`, `stone`, `sugar`). There are 21 distinct reagent items in the data (19 for mixes plus the two conversion items). The 63 mixes have 44 distinct output potions; with `water` (output of the conversions only, as the unchanged potion) the output potions of all files are 45. The input potions of mixes are the 23 listed in 7.1.
+
+(inferred) A mix is a pure function of (container kind, input potion id, reagent item): none of the 279 files has two records with the same triple. The three container kinds always have the same mixes (63 each); only the conversions differ.
+
+### 7.5 Open questions of this section
+
+1. The 63 rows of 7.4 were extracted by script from the `potion_*` files; the `splash_potion_*` and `lingering_potion_*` files were checked to carry the same triples (each triple occurs with exactly the 3 container kinds).
+2. The potion registry ids and the effects of each potion (which potion carries which effect and duration) are not part of this round (25-5).
