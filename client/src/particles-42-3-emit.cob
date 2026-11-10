@@ -320,11 +320,8 @@
              COMPUTE ER-Y = 0.5 + WS-STEP-Y * 0.6
          END-IF
          IF WS-STEP-Z = 0
-             EVALUATE WS-K
-                 WHEN 1 MOVE L-D1 TO ER-Z
-                 WHEN 2 MOVE L-D2 TO ER-Z
-                 WHEN OTHER MOVE L-D3 TO ER-Z
-             END-EVALUATE
+*>           A zero z step only happens with one other zero axis (the stepped axis is x or y), so it is the second draw.
+             MOVE L-D2 TO ER-Z
          ELSE
              COMPUTE ER-Z = 0.5 + WS-STEP-Z * 0.6
          END-IF
