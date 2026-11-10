@@ -130,7 +130,7 @@ GLFW headers.
 ## 9. `cc_vk` — Vulkan submission
 
 Pipelines: `CC_PIPE_OPAQUE = 0` (depth test+write, no blend), `CC_PIPE_TRANSLUCENT = 1` (depth test, no
-write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend). Vertex: 7 x `float32` = 28 bytes
+write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend), `CC_PIPE_CRUMBLING = 3` (the crack overlay of 12 section 4.3: depth test less-or-equal with a bias toward the camera, no depth write; colour = 2 x source x destination (blend factors DST_COLOR and SRC_COLOR), alpha = source alpha; a fragment whose texel alpha times vertex alpha is under 0.1 is discarded). Vertex: 7 x `float32` = 28 bytes
 (x, y, z, u, v, brightness, alpha) (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
 unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`, `CC_WRAP_REPEAT = 1`).
 

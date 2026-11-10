@@ -1,0 +1,12 @@
+TEST acceptance US13-1 the commands of the tree are suggested sorted by lower-cased text: howto, murmur, roster PASS
+TEST acceptance US13-1 Tab four times puts /howto, /murmur, /roster and /howto on the line (the list is kept while cycling) PASS
+TEST acceptance US13-1 while cycling the list stays: howto, murmur, roster PASS
+TEST acceptance US13-1 Backspace after the cycle gives /howt and the list made again: howto PASS
+TEST acceptance US13-1 typing x after the cycle gives the line /howtox with no suggestion PASS
+TEST acceptance US13-1 Backspace gives /howto and the suggestion howto PASS
+TEST acceptance US13-1 /HO suggests howto (the match ignores case) PASS
+TEST acceptance US13-1 Tab on /HO puts /howto on the line PASS
+TEST acceptance US13-1 the suggestions Bb, aa, Cc are sorted aa, Bb, Cc (lower-cased text) PASS
+TEST acceptance US13-1 Tab with no suggestion leaves the line /zz PASS
+TEST acceptance US13-1 Tab on /murmur Al takes the server's answer: the line is /murmur Alice FAIL expected=/murmur Alice observed=/Alice
+exit=0

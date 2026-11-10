@@ -1,0 +1,21 @@
+TEST acceptance US10-2 Open Screen of the crafting menu (type 12, container 2) shows the bench screen PASS
+TEST acceptance US10-2 a Container Set Content of container 5 (not open) does not change the bench's state id (1) PASS
+TEST acceptance US10-2 a Container Set Slot of container 5 (not open) changes no bench slot PASS
+TEST acceptance US10-2 bench slot 10 is player slot 9 (7 x 3) and bench slot 45 player slot 8 (8 x 4) FAIL expected=7003008004 observed=8004
+TEST acceptance US10-2 a Container Set Slot of the bench sets grid slot 9 (3 x 62) and the state id 4 PASS
+TEST acceptance US10-2 a Container Set Slot of container 0 slot 5 sets the helmet (inventory extra 1), not the bench PASS
+TEST acceptance US10-2 the result slot holds 1 x cobblestone (item 62) PASS
+TEST acceptance US10-2 grid slots 1 and 5 hold 1 x oak planks (item 63) PASS
+TEST acceptance US10-2 menu slot 37 is hotbar slot 0: 64 x stone PASS
+TEST acceptance US10-2 the bench screen has 46 slot widgets (36 + the result + 9 grid) PASS
+TEST acceptance US10-2 the bench has no armour and no off-hand slot PASS
+TEST acceptance US10-2 the crafting-table sheet is at (72, 37) PASS
+TEST acceptance US10-2 the slot widget of argument 105 is at its place of 12 5.6b PASS
+TEST acceptance US10-2 the slot widget of argument 106 is at its place of 12 5.6b PASS
+TEST acceptance US10-2 the slot widget of argument 114 is at its place of 12 5.6b PASS
+TEST acceptance US10-2 the slot widget of argument 9 is at its place of 12 5.6b PASS
+TEST acceptance US10-2 the slot widget of argument 0 is at its place of 12 5.6b PASS
+TEST acceptance US10-2 clicks send Container Click of container 2, state 4 and the bench slots 0, 1, 9, 10 and 37 PASS
+TEST acceptance US10-2 closing the bench sends Container Close of container 2 and shows the world PASS
+TEST acceptance US10-2 a Container Close from the server shows the world and sends nothing PASS
+exit=0

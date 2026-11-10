@@ -1,0 +1,185 @@
+TEST acceptance US16-1 the title screen has an Options button PASS
+TEST acceptance US16-1 Options opens the options screen with the seven options of page 1 (and 3 buttons) PASS
+TEST acceptance US16-1 the screen holds a title, seven options and Previous, Next and Done: 11 widgets PASS
+TEST acceptance US16-2 a click on view distance 12 makes it 15 PASS
+TEST acceptance US16-2 the button of the option reads renderDistance: 15 PASS
+TEST acceptance US16-2 options.txt holds renderDistance:15 at once PASS
+TEST acceptance US16-2 a click on the flag enableVsync turns it false PASS
+TEST acceptance US16-2 a click on graphicsPreset goes from fancy to fabulous PASS
+TEST acceptance US16-2 a click on fov (stored 0.0, step 0.2) applies 78 degrees at once PASS
+TEST acceptance US16-2 a click on mouseSensitivity (0.5 to 0.60) applies 0.2107 degrees per pixel PASS
+TEST acceptance US16-2 the guiScale option 1 limits the GUI scale of the 854 x 480 window to 1 (automatic: 2) PASS
+TEST acceptance US16-2 a click on view distance 30 goes round to the minimum 2 PASS
+TEST acceptance US16-1 the page index 23 of 23 pages is the last page, 23 FAIL expected=22 observed=23
+TEST acceptance US16-1 Next shows page 2 PASS
+TEST acceptance US16-1 Previous shows page 1 again PASS
+TEST acceptance US16-1 Previous on page 1 stays on page 1 (the last page is clamped likewise) PASS
+TEST acceptance US16-1 a page past the end is the last page, 23 PASS
+TEST acceptance US16-2 after a restart graphicsPreset has the value it was given PASS
+TEST acceptance US16-2 after a restart preferredGraphicsBackend has the value it was given PASS
+TEST acceptance US16-2 after a restart renderDistance has the value it was given PASS
+TEST acceptance US16-2 after a restart simulationDistance has the value it was given PASS
+TEST acceptance US16-2 after a restart entityDistanceScaling has the value it was given PASS
+TEST acceptance US16-2 after a restart maxFps has the value it was given PASS
+TEST acceptance US16-2 after a restart enableVsync has the value it was given PASS
+TEST acceptance US16-2 after a restart inactivityFpsLimit has the value it was given PASS
+TEST acceptance US16-2 after a restart fullscreen has the value it was given PASS
+TEST acceptance US16-2 after a restart exclusiveFullscreen has the value it was given PASS
+TEST acceptance US16-2 after a restart guiScale has the value it was given PASS
+TEST acceptance US16-2 after a restart gamma has the value it was given PASS
+TEST acceptance US16-2 after a restart fov has the value it was given PASS
+TEST acceptance US16-2 after a restart ao has the value it was given PASS
+TEST acceptance US16-2 after a restart biomeBlendRadius has the value it was given PASS
+TEST acceptance US16-2 after a restart renderClouds has the value it was given PASS
+TEST acceptance US16-2 after a restart cloudRange has the value it was given PASS
+TEST acceptance US16-2 after a restart weatherRadius has the value it was given PASS
+TEST acceptance US16-2 after a restart cutoutLeaves has the value it was given PASS
+TEST acceptance US16-2 after a restart vignette has the value it was given PASS
+TEST acceptance US16-2 after a restart improvedTransparency has the value it was given PASS
+TEST acceptance US16-2 after a restart particles has the value it was given PASS
+TEST acceptance US16-2 after a restart entityShadows has the value it was given PASS
+TEST acceptance US16-2 after a restart chunkSectionFadeInTime has the value it was given PASS
+TEST acceptance US16-2 after a restart prioritizeChunkUpdates has the value it was given PASS
+TEST acceptance US16-2 after a restart mipmapLevels has the value it was given PASS
+TEST acceptance US16-2 after a restart textureFiltering has the value it was given PASS
+TEST acceptance US16-2 after a restart maxAnisotropyBit has the value it was given PASS
+TEST acceptance US16-2 after a restart bobView has the value it was given PASS
+TEST acceptance US16-2 after a restart attackIndicator has the value it was given PASS
+TEST acceptance US16-2 after a restart glintSpeed has the value it was given PASS
+TEST acceptance US16-2 after a restart glintStrength has the value it was given PASS
+TEST acceptance US16-2 after a restart showAutosaveIndicator has the value it was given PASS
+TEST acceptance US16-2 after a restart overrideWidth has the value it was given PASS
+TEST acceptance US16-2 after a restart overrideHeight has the value it was given PASS
+TEST acceptance US16-2 after a restart mouseSensitivity has the value it was given PASS
+TEST acceptance US16-2 after a restart invertXMouse has the value it was given PASS
+TEST acceptance US16-2 after a restart invertYMouse has the value it was given PASS
+TEST acceptance US16-2 after a restart discrete_mouse_scroll has the value it was given PASS
+TEST acceptance US16-2 after a restart mouseWheelSensitivity has the value it was given PASS
+TEST acceptance US16-2 after a restart allowCursorChanges has the value it was given PASS
+TEST acceptance US16-2 after a restart quitShortcuts has the value it was given PASS
+TEST acceptance US16-2 after a restart ctrlClickEmulatesRightClick has the value it was given PASS
+TEST acceptance US16-2 after a restart autoJump has the value it was given PASS
+TEST acceptance US16-2 after a restart rotateWithMinecart has the value it was given PASS
+TEST acceptance US16-2 after a restart operatorItemsTab has the value it was given PASS
+TEST acceptance US16-2 after a restart toggleCrouch has the value it was given PASS
+TEST acceptance US16-2 after a restart toggleSprint has the value it was given PASS
+TEST acceptance US16-2 after a restart toggleAttack has the value it was given PASS
+TEST acceptance US16-2 after a restart toggleUse has the value it was given PASS
+TEST acceptance US16-2 after a restart sprintWindow has the value it was given PASS
+TEST acceptance US16-2 after a restart mainHand has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.forward has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.left has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.back has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.right has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.jump has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.sneak has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.sprint has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.inventory has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.swapOffhand has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.drop has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.1 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.2 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.3 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.4 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.5 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.6 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.7 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.8 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.hotbar.9 has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.saveToolbarActivator has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.loadToolbarActivator has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.use has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.attack has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.pickItem has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.chat has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.playerlist has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.command has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.socialInteractions has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.screenshot has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.togglePerspective has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.smoothCamera has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.fullscreen has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.advancements has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.quickActions has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.toggleGui has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.toggleSpectatorShaderEffects has the value it was given PASS
+TEST acceptance US16-2 after a restart key_key.spectatorOutlines has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_master has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_music has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_record has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_weather has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_block has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_hostile has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_neutral has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_player has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_ambient has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_voice has the value it was given PASS
+TEST acceptance US16-2 after a restart soundCategory_ui has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_cape has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_jacket has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_left_sleeve has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_right_sleeve has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_left_pants_leg has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_right_pants_leg has the value it was given PASS
+TEST acceptance US16-2 after a restart modelPart_hat has the value it was given PASS
+TEST acceptance US16-2 after a restart soundDevice has the value it was given PASS
+TEST acceptance US16-2 after a restart showSubtitles has the value it was given PASS
+TEST acceptance US16-2 after a restart directionalAudio has the value it was given PASS
+TEST acceptance US16-2 after a restart musicToast has the value it was given PASS
+TEST acceptance US16-2 after a restart musicFrequency has the value it was given PASS
+TEST acceptance US16-2 after a restart chatVisibility has the value it was given PASS
+TEST acceptance US16-2 after a restart chatColors has the value it was given PASS
+TEST acceptance US16-2 after a restart chatLinks has the value it was given PASS
+TEST acceptance US16-2 after a restart chatLinksPrompt has the value it was given PASS
+TEST acceptance US16-2 after a restart chatOpacity has the value it was given PASS
+TEST acceptance US16-2 after a restart chatLineSpacing has the value it was given PASS
+TEST acceptance US16-2 after a restart textBackgroundOpacity has the value it was given PASS
+TEST acceptance US16-2 after a restart backgroundForChatOnly has the value it was given PASS
+TEST acceptance US16-2 after a restart chatScale has the value it was given PASS
+TEST acceptance US16-2 after a restart chatWidth has the value it was given PASS
+TEST acceptance US16-2 after a restart chatHeightFocused has the value it was given PASS
+TEST acceptance US16-2 after a restart chatHeightUnfocused has the value it was given PASS
+TEST acceptance US16-2 after a restart chatDelay has the value it was given PASS
+TEST acceptance US16-2 after a restart autoSuggestions has the value it was given PASS
+TEST acceptance US16-2 after a restart hideMatchedNames has the value it was given PASS
+TEST acceptance US16-2 after a restart onlyShowSecureChat has the value it was given PASS
+TEST acceptance US16-2 after a restart saveChatDrafts has the value it was given PASS
+TEST acceptance US16-2 after a restart notificationDisplayTime has the value it was given PASS
+TEST acceptance US16-2 after a restart hideServerAddress has the value it was given PASS
+TEST acceptance US16-2 after a restart advancedItemTooltips has the value it was given PASS
+TEST acceptance US16-2 after a restart narrator has the value it was given PASS
+TEST acceptance US16-2 after a restart narratorHotkey has the value it was given PASS
+TEST acceptance US16-2 after a restart highContrast has the value it was given PASS
+TEST acceptance US16-2 after a restart highContrastBlockOutline has the value it was given PASS
+TEST acceptance US16-2 after a restart screenEffectScale has the value it was given PASS
+TEST acceptance US16-2 after a restart fovEffectScale has the value it was given PASS
+TEST acceptance US16-2 after a restart darknessEffectScale has the value it was given PASS
+TEST acceptance US16-2 after a restart damageTiltStrength has the value it was given PASS
+TEST acceptance US16-2 after a restart darkMojangStudiosBackground has the value it was given PASS
+TEST acceptance US16-2 after a restart hideLightningFlashes has the value it was given PASS
+TEST acceptance US16-2 after a restart hideSplashTexts has the value it was given PASS
+TEST acceptance US16-2 after a restart menuBackgroundBlurriness has the value it was given PASS
+TEST acceptance US16-2 after a restart panoramaScrollSpeed has the value it was given PASS
+TEST acceptance US16-2 after a restart reducedDebugInfo has the value it was given PASS
+TEST acceptance US16-2 after a restart lang has the value it was given PASS
+TEST acceptance US16-2 after a restart lastServer has the value it was given PASS
+TEST acceptance US16-2 after a restart pauseOnLostFocus has the value it was given PASS
+TEST acceptance US16-2 after a restart useNativeTransport has the value it was given PASS
+TEST acceptance US16-2 after a restart joinedFirstServer has the value it was given PASS
+TEST acceptance US16-2 after a restart skipMultiplayerWarning has the value it was given PASS
+TEST acceptance US16-2 after a restart onboardAccessibility has the value it was given PASS
+TEST acceptance US16-2 after a restart startedCleanly has the value it was given PASS
+TEST acceptance US16-2 after a restart syncChunkWrites has the value it was given PASS
+TEST acceptance US16-2 after a restart realmsNotifications has the value it was given PASS
+TEST acceptance US16-2 after a restart allowServerListing has the value it was given PASS
+TEST acceptance US16-2 after a restart inGameNotification has the value it was given PASS
+TEST acceptance US16-2 after a restart telemetryOptInExtra has the value it was given PASS
+TEST acceptance US16-2 after a restart forceUnicodeFont has the value it was given PASS
+TEST acceptance US16-2 after a restart the view distance is still 12 + 3 and applied FOV 70 + 40 x its stored value PASS
+TEST acceptance US16-2 a key option waits for a key PASS
+TEST acceptance US16-2 the waiting key option's button reads key_key.inventory: > Press a key < PASS
+TEST acceptance US16-2 the pressed key is the inventory key: key.keyboard.i, and applied (73) PASS
+TEST acceptance US16-2 Escape while a key is awaited unbinds it (key.keyboard.unknown) and stays on the screen PASS
+TEST acceptance US16-1 Done returns to the title screen PASS
+TEST acceptance US16-1 Options of the pause menu opens the screen and Escape returns to the pause menu PASS
+exit=0

@@ -128,6 +128,7 @@
  01 WS-B                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-T                   BINARY-LONG.
+ 01 WS-SAVED               PIC X(1024).
  01 WS-BOX.
     05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
@@ -166,6 +167,28 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   The local player's own model in the third-person modes (12 §7.3): the operator's boxes at the player's position and yaw, on the first free row.
+     IF CL-CAMERA > 0 AND EN-COUNT < CL-MAX-ENTITIES AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
+         COMPUTE WS-R = EN-COUNT + 1
+         MOVE EN-ENTITY(WS-R) TO WS-SAVED
+         MOVE PL-X TO EN-X(WS-R)
+         MOVE PL-Y TO EN-Y(WS-R)
+         MOVE PL-Z TO EN-Z(WS-R)
+         MOVE PL-YAW TO EN-YAW(WS-R)
+         MOVE 1 TO WS-B
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
+             MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
+         END-PERFORM
+         MOVE WS-MB-STRIP(WS-B) TO WS-STRIP-Y
+         MOVE WS-MB-TEX-W(WS-B) TO WS-TEX-W
+         MOVE WS-MB-TEX-H(WS-B) TO WS-TEX-H
+         MOVE EA-IM-X(1) TO WS-RECT-X
+         MOVE EA-IM-Y(1) TO WS-RECT-Y
+         MOVE EA-IM-W(1) TO WS-RECT-W
+         MOVE EA-IM-H(1) TO WS-RECT-H
+         CALL "ENTITY-BOX" USING CLIENT-STATE WS-R L-EYE-TABLE WS-BOX WS-SKIN
+         MOVE WS-SAVED TO EN-ENTITY(WS-R)
+     END-IF
      GOBACK.
  END PROGRAM ENTITIES-MESH.
 

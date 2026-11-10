@@ -56,6 +56,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_PIPE_OPAQUE      0 /* depth test and write, no blend */
 #define CC_PIPE_TRANSLUCENT 1 /* depth test, no write, alpha blend */
 #define CC_PIPE_UI          2 /* no depth, alpha blend */
+#define CC_PIPE_CRUMBLING   3 /* depth test (less or equal, biased), no write, rgb = 2 x src x dst, alpha = src, texels under alpha 0.1 discarded */
 
 /* Texture ids (§9). RGBA8, sampled NEAREST, clamp-to-edge unless cc_vk_texture_wrap set repeat. */
 #define CC_TEX_BLOCKS      0 /* block and item atlas */

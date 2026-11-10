@@ -1,0 +1,8 @@
+TEST acceptance US19-1 when F is pressed on the world screen then Player Action 7 swap item with off hand is sent PASS
+TEST acceptance US19-1 no local prediction: the off hand still holds its 3 PASS
+TEST acceptance US19-3 the off-hand slot is in the HUD, once FAIL expected=1 observed=0
+TEST acceptance US19-3 the off-hand slot is left of the hotbar PASS
+TEST acceptance US19-2 F over a hovered slot sends a Container Click (0x12) with button 40 and type SWAP (2) PASS
+TEST acceptance US19-2 the packet is a Container Click: it starts 12 00 PASS
+TEST acceptance US19-2 the slot now holds the off hand's 3 and the off hand the slot's 5 PASS
+exit=0

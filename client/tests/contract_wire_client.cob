@@ -12,6 +12,7 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
+ 01 WS-SCREEN-ID            BINARY-LONG.
  COPY CONTENT.
  COPY PROTO.
  COPY TESTLIB.
@@ -433,8 +434,7 @@
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract wire client abilities (walk 0.1), spawn (4, 54, 8), Set Time 6000, held slot "
          & "0 and the starting inventory decode" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -790,8 +790,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO PL-CARRIED-COUNT
      MOVE 3 TO PL-CARRIED-ITEM
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract wire client Container Set Content decodes: state id 1, slot 8 one pry_bar, slot "
          & "10 empty, the cursor empty" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -806,13 +805,49 @@
          INTO TL-OBSERVED
      MOVE "1 110 0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The 46-slot menu fixtures (13 section 3.5): content, a slot with components, the crafting bench.
+     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-46-slots.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Content of 46 slots decodes: state id 3, hotbar 0 64 stone, hotbar 4 damage 5, off hand "
+         & "1 x 62, cursor 5 x 63" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-INV-STATE-ID TO WS-EDIT
+     COMPUTE WS-EDIT2 = PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     COMPUTE WS-EDIT3 = PL-SLOT-DAMAGE(5)
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     COMPUTE WS-EDIT = PL-OFFHAND-COUNT * 100 + PL-OFFHAND-ITEM
+     COMPUTE WS-EDIT2 = PL-CARRIED-COUNT * 100 + PL-CARRIED-ITEM
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3 6401 5 162 563" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot-components.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Slot with components decodes: state id 5, slot 36 1 x stone, damage 5 (the custom name and the removed "
+         & "component are skipped)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-INV-STATE-ID TO WS-EDIT
+     COMPUTE WS-EDIT2 = PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     MOVE PL-SLOT-DAMAGE(1) TO WS-EDIT3
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5 101 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-3c-open-screen-crafting.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Open Screen of the crafting menu decodes: container 2 is the open bench" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BM-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SCR-WORLD TO WS-SCREEN-ID
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN-ID
      MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Container Set Slot decodes: state id 2, slot 0 holds 63 greystone"
+     MOVE "contract wire client Container Set Slot decodes: state id 2, menu slot 0 (the crafting result) holds 63 greystone"
          TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 26302 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = PL-INV-STATE-ID * 10000 + PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     COMPUTE TL-OBSERVED-N = PL-INV-STATE-ID * 10000 + IX-COUNT(5) * 100 + IX-ITEM(5)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO PL-HELD
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
@@ -1033,27 +1068,58 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   ---- play, crafting (US10) ----
      MOVE 0 TO WS-ID
+     MOVE 0 TO WS-J
+     MOVE 0 TO WS-K
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID
+     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID WS-K WS-J
      MOVE "contract wire client Place Recipe (container 0, display id 0, use max items false) "
          & "equals play-c2s-27-place-recipe.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-27-place-recipe.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 2 TO WS-ID
+     MOVE 300 TO WS-K
+     MOVE 1 TO WS-J
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID WS-K WS-J
+     MOVE "contract wire client Place Recipe (container 2, display id 300, use max true) "
+         & "equals play-c2s-27-place-recipe-standard.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-27-place-recipe-standard.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-RECIPE-SEEN" USING PB-BUFFER WS-K
+     MOVE "contract wire client Recipe Book Seen Recipe 300 equals play-c2s-30-recipe-book-seen-recipe.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-30-recipe-book-seen-recipe.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     MOVE 1 TO WS-ID
+     MOVE 0 TO WS-J
+     MOVE 1 TO WS-I
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-RECIPE-SETTINGS" USING PB-BUFFER WS-ID WS-I WS-J
+     MOVE "contract wire client Recipe Book Change Settings (furnace, open, not filtering) "
+         & "equals play-c2s-2f-recipe-book-change-settings.hex" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2f-recipe-book-change-settings.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 
-     MOVE "contract/fixtures/wire/play-s2c-4b-recipe-book-add.hex" TO WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-4b-recipe-book-add-standard.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Recipe Book Add decodes every standin §13 recipe (display id, "
-         & "ingredients, result) with its craftable flag: requirements present only for 0"
-         TO TL-CASE
+     MOVE "contract wire client Recipe Book Add (standard, five displays) keeps the display ids, types, "
+         & "categories, highlights, slot items and results" TO TL-CASE
      PERFORM RECIPES-TEXT
-     MOVE "9 0:4x2>2x9:1 1:4x5>2x7:0 2:3x2+1x6>1x10:0 3:2x2+1x6>1x11:0 4:1x7+1x15>2x8:0 "
-         & "5:4x4+1x3>1x14:0 6:2x12+1x8>2x13:0 7:4x9+2x15+1x8>1x16:0 8:2x6+2x7>1x15:0"
+     MOVE "5 0:t0c0h1+none+62>4x1:1 300:t1c0h1+63+63+63+63>1x1:0 301:t2c4h0+62+none>1x1:0 "
+         & "302:t3c10h0+62>2x1:0 303:t4c11h0+87+62+62>1x1:0"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Recipe Book Add with Replace true replaces the recipe book (the "
-         & "same nine recipes again, not eighteen)" TO TL-CASE
+     MOVE "contract wire client the same Add again (Replace false) replaces the entries by display id: still five" TO TL-CASE
      PERFORM RECIPES-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-4b-recipe-book-add-standard-tag-slots.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Recipe Book Add of potion, component and trim slots appends entry 7: items 63, 1, 1" TO TL-CASE
+     PERFORM RECIPES-TEXT
+     MOVE "6 0:t0c0h1+none+62>4x1:1 300:t1c0h1+63+63+63+63>1x1:0 301:t2c4h0+62+none>1x1:0 "
+         & "302:t3c10h0+62>2x1:0 303:t4c11h0+87+62+62>1x1:0 7:t0c3h0+63+1+1>1x1:0"
+         TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   ---- play, weather (US11; standin §14.1, §14.4; 09 §3.3 weather values) ----
 *>   Hailstorm: 1 (0.0), 7 (1.0), 8 (1.0), all three from their fixtures.
@@ -1347,24 +1413,29 @@
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-INDEX
-     MOVE RB-COUNT TO WS-EDIT
+     MOVE RK-COUNT TO WS-EDIT
      STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RB-COUNT
-         MOVE RB-ID(WS-I) TO WS-EDIT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-COUNT
+         MOVE RK-ID(WS-I) TO WS-EDIT
          STRING " " FUNCTION TRIM(WS-EDIT) ":" DELIMITED BY SIZE INTO TL-OBSERVED
              WITH POINTER WS-INDEX
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RB-IN-COUNT(WS-I)
-             IF WS-J > 1
-                 STRING "+" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+         MOVE RK-TYPE(WS-I) TO WS-EDIT
+         STRING "t" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+         MOVE RK-CATEGORY(WS-I) TO WS-EDIT
+         STRING "c" FUNCTION TRIM(WS-EDIT) "h" RK-HIGHLIGHT(WS-I) DELIMITED BY SIZE INTO TL-OBSERVED
+             WITH POINTER WS-INDEX
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RK-SLOTS(WS-I)
+             STRING "+" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+             IF RK-SLOT-ITEM(WS-I, WS-J) < 0
+                 STRING "none" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
+             ELSE
+                 MOVE RK-SLOT-ITEM(WS-I, WS-J) TO WS-EDIT2
+                 STRING FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
              END-IF
-             MOVE RB-IN-AMOUNT(WS-I, WS-J) TO WS-EDIT
-             MOVE RB-IN-ITEM(WS-I, WS-J) TO WS-EDIT2
-             STRING FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
-                 INTO TL-OBSERVED WITH POINTER WS-INDEX
          END-PERFORM
-         MOVE RB-RES-AMOUNT(WS-I) TO WS-EDIT
-         MOVE RB-RES-ITEM(WS-I) TO WS-EDIT2
-         STRING ">" FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) ":" RB-CRAFTABLE(WS-I)
+         MOVE RK-RES-COUNT(WS-I) TO WS-EDIT
+         MOVE RK-RES-ITEM(WS-I) TO WS-EDIT2
+         STRING ">" FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) ":" RK-REQ-PRESENT(WS-I)
              DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-INDEX
      END-PERFORM
      .

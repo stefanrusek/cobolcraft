@@ -1,0 +1,8 @@
+TEST swap empty: an empty hand with a stack in the off hand sends the swap PASS
+TEST swap empty: case 1 an empty off hand shows no stale stack in the HUD PASS
+TEST swap empty: a stack in hand with an empty off hand sends the swap FAIL expected=290700000000000000000000 observed=
+TEST swap empty: case 2 an empty off hand shows no stale stack in the HUD PASS
+TEST swap empty: both hands empty sends the swap FAIL expected=290700000000000000000000 observed=
+TEST swap empty: case 3 an empty off hand shows no stale stack in the HUD PASS
+TEST swap empty: a spectator sends nothing PASS
+exit=0

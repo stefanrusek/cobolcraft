@@ -67,8 +67,12 @@
      CALL STATIC "cc_vk_frame_begin" USING BY REFERENCE RL-CLEAR(1) RETURNING WS-RC
      IF WS-RC = 0
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
-             CALL STATIC "cc_vk_draw" USING BY VALUE RL-D-SLOT(WS-I) BY VALUE RL-D-PIPELINE(WS-I)
-                 BY VALUE RL-D-TEX(WS-I) BY REFERENCE RL-D-MATRIX(WS-I, 1)
+             IF RL-D-SLOT(WS-I) < 0
+                 CALL STATIC "cc_vk_clear_depth"
+             ELSE
+                 CALL STATIC "cc_vk_draw" USING BY VALUE RL-D-SLOT(WS-I) BY VALUE RL-D-PIPELINE(WS-I)
+                     BY VALUE RL-D-TEX(WS-I) BY REFERENCE RL-D-MATRIX(WS-I, 1)
+             END-IF
          END-PERFORM
          CALL STATIC "cc_vk_frame_end"
          MOVE 1 TO L-PRESENTED

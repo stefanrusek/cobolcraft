@@ -1,0 +1,4 @@
+TEST camera clip: open air behind the player, the camera is 4 blocks away FAIL expected=40 observed=50
+TEST camera clip: looking up, the floor pulls the camera in to 1.5 blocks (the eye is 1.6 above it, 0.1 clearance) PASS
+TEST camera clip: a wall at z -2 behind the player shortens the distance to 1.4 blocks (z 0.5 - 0.1 to the wall's face at -1) PASS
+exit=0

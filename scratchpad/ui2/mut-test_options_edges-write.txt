@@ -1,0 +1,16 @@
+TEST options edges: a number with a letter is refused PASS
+TEST options edges: a number of 11 characters is refused PASS
+TEST options edges: the pack list [abc] (case 1) changes nothing PASS
+TEST options edges: the pack list ["abc] (case 2) changes nothing PASS
+TEST options edges: the pack list ["a"x] (case 3) changes nothing PASS
+TEST options edges: the pack list ["a",] (case 4) changes nothing PASS
+TEST options edges: the pack list ["a" (case 5) changes nothing PASS
+TEST options edges: the pack list "a" (case 6) changes nothing PASS
+TEST options edges: an incompatible list that is no list is refused PASS
+TEST options edges: version reads 5023 PASS
+TEST options edges: resourcePacks reads back lowest first PASS
+TEST options edges: incompatibleResourcePacks reads back PASS
+TEST options edges: an unknown option is not found PASS
+TEST options edges: a line ending in a carriage return is read PASS
+TEST options edges: a game directory that cannot be written gives one ERROR line FAIL expected=ERROR options: cannot write options.txt observed=
+exit=0

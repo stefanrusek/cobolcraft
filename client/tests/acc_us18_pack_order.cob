@@ -1,5 +1,5 @@
 *> Acceptance test US18-2 (spec.md User Story 18 and its edge case "a local pack contains only some
-*> files"; 08 §3.1, §3.2; client-surface §2 options.dat; client/src/screens/pack-select.cob,
+*> files"; 08 §3.1, §3.2; client-surface §2 options.txt; client/src/screens/pack-select.cob,
 *> packs/stack.cob): packs enabled and ordered on the pack screen stack in that order, a higher
 *> pack's file wins, the built-in pack stays at the bottom, the choice and order are kept after a
 *> restart, and a pack's missing files come from the packs below.
@@ -51,8 +51,7 @@
          & "Then both are selected, the later one on top, above the built-in pack" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "Resource Packs|Selected|beta.zip|Beta pack|Compatible|alpha||Alpha pack|Compatible|"
-         & "Built-in pack|Available|Faithful Skin|Uses Faithful 32x textures for CobolCraft blocks and items. Needs the generated vanilla "
-         & "pack or a Faithful pack.|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
+         & "Built-in pack|Available|Faithful Skin|Uses Faithful 32x textures ...|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

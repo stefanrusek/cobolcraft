@@ -1,0 +1,17 @@
+TEST acceptance US9-1 the 46 slots set hotbar slot 0 to 64 x stone (item 1) PASS
+TEST acceptance US9-1 menu slot 40 is hotbar slot 4: 1 x stone with damage 5 PASS
+TEST acceptance US9-1 menu slot 45 is the off hand: 1 x cobblestone (item 62) PASS
+TEST acceptance US9-1 the cursor holds 5 x oak planks (item 63), state id 3 PASS
+TEST acceptance US9-1 the empty slots stay empty (no crafting result) PASS
+TEST acceptance US9-1 the inventory screen has 46 slot widgets of 46 menu slots (the hotbar 9, main 27, 4 armour, result, 4 grid, off hand) PASS
+TEST acceptance US9-1 every slot widget is bare and 18 x 18 PASS
+TEST acceptance US9-1 the inventory sheet is at (72, 37), 176 x 166 PASS
+TEST acceptance US9-1 the title is Crafting at (169, 43) PASS
+TEST acceptance US9-1 the slot widget of argument 37 is at its place of 12 5.6a PASS
+TEST acceptance US9-1 the slot widget of argument 101 is at its place of 12 5.6a PASS
+TEST acceptance US9-1 the slot widget of argument 106 is at its place of 12 5.6a PASS
+TEST acceptance US9-1 the slot widget of argument 105 is at its place of 12 5.6a PASS
+TEST acceptance US9-1 the slot widget of argument 9 is at its place of 12 5.6a PASS
+TEST acceptance US9-1 the slot widget of argument 0 is at its place of 12 5.6a PASS
+TEST acceptance US9-3 clicks send Container Click of container 0, state 3 and the menu slots 45, 5, 1, 0, 9 and 36 FAIL expected=120003002d 1200030005 1200030001 1200030000 1200030009 1200030024 observed=120003002d 1200030005 1200030001 1200030000 1200030009 1200030023
+exit=0

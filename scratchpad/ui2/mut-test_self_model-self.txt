@@ -1,0 +1,6 @@
+TEST self model: first person draws no model of the Player FAIL expected=0 observed=36
+TEST self model: behind draws the Player's box, 36 vertices PASS
+TEST self model: in front draws it too PASS
+TEST self model: the replica still has the rows it had PASS
+TEST self model: with every replica row taken there is no room for it PASS
+exit=0

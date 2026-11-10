@@ -1,0 +1,16 @@
+TEST acceptance US20-1 a block in the selected slot: the hand is a cube of 36 vertices PASS
+TEST acceptance US20-1 the hand is at the lower right in front of the view (x > 0, y < 0, z < 0) PASS
+TEST acceptance US20-1 the hand is drawn right after a depth clear (draw record slot -1) PASS
+TEST acceptance US20-1 a tool in the slot: a flat icon, 36 vertices PASS
+TEST acceptance US20-2 when the left button is pressed then the swing starts (now) PASS
+TEST acceptance US20-2 half way through the swing the hand is 0.2 further forward PASS
+TEST acceptance US20-2 after 300 ms the swing is over, the hand is back at rest PASS
+TEST acceptance US20-2 when the right button is pressed on a target (placing) then the swing starts PASS
+TEST acceptance US20-1 an empty hand draws no model PASS
+TEST acceptance US20-1 third person draws no hand PASS
+TEST acceptance US20-1 the inventory screen draws no hand PASS
+TEST acceptance US20-1 an item outside the registry draws no model PASS
+TEST acceptance US20-1 an item whose icon is not loaded draws no model PASS
+TEST acceptance US20-2 450 ms after the start the hand is at rest PASS
+TEST acceptance US20-2 a left click on the inventory screen starts no swing FAIL expected=0 observed=451
+exit=0
