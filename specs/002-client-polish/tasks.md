@@ -598,10 +598,10 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T0356 [US2-core] Write test `core/tests/test_itemphys_41_8.cob` for Differences from the stand-in rules (`docs/protocol/41-item-entity-physics.md` §8): every rule, table row, formula and worked case of the section; case names start `acceptance US2 41§8 Differences from the stand-in rules` (FR-037)
 - [ ] T0357 [US2-core] Implement Differences from the stand-in rules (§8 of `41-item-entity-physics.md`) in `core/src/itemphys-41.cob` so the test passes (create the file with the first section of the document)
 - [ ] T0358 [US2-core] Review task (mechanical, FR-037): run `for f in docs/protocol/41-*.md; do id=$(basename $f .md | awk -F- '{p=""; for(i=2;i<=NF;i++) if($i ~ /^([0-9]+|x1|x2)$/) p=$i; print (p==""?$1:$1"-"p)}'); grep -E '^## [0-9]' $f | grep -viE 'worked|validation|open question|reader|naming|checklist|closing' | awk '{n=$2; sub(/\.$/,"",n); print n}' | while read n; do grep -q "acceptance US2 ${id}§${n} " core/tests/*.cob || echo "MISSING ${id}§${n}"; done; done` and record that it prints nothing
-- [ ] T0359 [US2-core] Write test `core/tests/test_weather_shared.cob`: the weather mechanism of 33 for both types (`CS-WEATHER-CHANGES` maps to the gamerule)
-- [ ] T0360 [US2-core] Make the weather engine follow 33 in `core/src/weather.cob`
+- [x] T0359 [US2-core] Write test `core/tests/test_weather_shared.cob`: the weather mechanism of 33 for both types (`CS-WEATHER-CHANGES` maps to the gamerule) (red run: the core did not build without the new state, scratchpad/core4/red-test_weather_shared.txt; the retired schedule tests acc_us11_cycle, changes_off, no_weather, effect, acc_us12_travel, acc_us13_restore, acc_us14_cmd_set_weather, test_level_dat, test_play_join were rewritten to 33 section 4)
+- [x] T0360 [US2-core] Make the weather engine follow 33 in `core/src/weather.cob` (one shared WeatherData in CORESTATE, levels per dimension, advance_weather = CS-WEATHER-CHANGES, packet audiences; level.dat keeps the cobolcraft per-dimension entry and adds the five fields; the `skies` command sets the shared state through WEATHER-SET-KIND)
 - [x] T0361 [US2-core] Write implementation tests in `core/tests/test_us2_cover.cob` for the lines of the files above that the tests leave unexecuted
-- [ ] T0362 [US2-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0362 [US2-core] Gate: run `make gate-core` and record the command and real output (`make gate-core`: lint 249 files 0 failed, passed 1912 failed 0, coverage 51 objects 0 uncovered lines; scratchpad/core4/gate-core-c2.log)
 
 #### Phase 30: US7-core — survival abilities
 

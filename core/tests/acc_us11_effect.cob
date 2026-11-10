@@ -1,6 +1,6 @@
 *> Acceptance test, US11-3 core half (spec US11 scenario 3; tasks T563; standin-content §14.6,
 *> §10.2, §10.3, §9.5). The hailstorm is the kind with a gameplay effect: on every tick with Time
-*> mod 80 = 0 while cobolcraft:main's kind is hailstorm, every alive survival player (§9.5 step 4)
+*> mod 80 = 0 while cobolcraft:main is thundering (the hailstorm skin: rain and thunder levels at full strength), every alive survival player (§9.5 step 4)
 *> and every mob (step 6) that is exposed takes 1 damage of cause cobolcraft:hail (damage type 31,
 *> no source). Exposed: the biome cell of its position has has_precipitation 1 (lowland and upland,
 *> all of cobolcraft:main) and every cell of its column from floor(y + height) up to the top y (255)
@@ -20,6 +20,8 @@
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-TIME                BINARY-LONG VALUE 1000000.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-TYPE                BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
@@ -42,7 +44,7 @@
      MOVE "acceptance US11-3 given a hailstorm and survival Alice under the open sky when Time "
          & "reaches 80 then she takes 1 hail damage (type 31, no source)" TO TL-CASE
      PERFORM OPEN-AND-JOIN
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
@@ -52,7 +54,7 @@
      MOVE "acceptance US11-3 given a hailstorm when Time reaches 81 (not a multiple of 80) then "
          & "nothing happens" TO TL-CASE
      PERFORM OPEN-AND-JOIN
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 80 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
@@ -62,7 +64,7 @@
      MOVE "acceptance US11-3 given drizzle when Time reaches 80 then nothing happens (drizzle has "
          & "no gameplay effect)" TO TL-CASE
      PERFORM OPEN-AND-JOIN
-     MOVE WK-DRIZZLE TO CW-WEATHER-KIND(1)
+     PERFORM SET-DRIZZLE
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
@@ -72,7 +74,7 @@
      MOVE "acceptance US11-3 given a hailstorm and a block high above Alice's column when Time "
          & "reaches 80 then she is not exposed and takes no damage" TO TL-CASE
      PERFORM OPEN-AND-JOIN
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 4 TO WS-BX
      MOVE 200 TO WS-BY
      MOVE 8 TO WS-BZ
@@ -89,7 +91,7 @@
      MOVE 1 TO CS-DEFAULT-MODE
      PERFORM OPEN-AND-JOIN
      MOVE 0 TO CS-DEFAULT-MODE
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
@@ -100,7 +102,7 @@
          & "reaches 80 then it takes 1 hail damage (health 7) and Alice sees it hurt" TO TL-CASE
      PERFORM OPEN-AND-JOIN
      PERFORM SPAWN-MOB
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 1 TO PL-MODE(1)
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
@@ -121,7 +123,7 @@
          END-PERFORM
      END-PERFORM
      PERFORM SPAWN-MOB
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(1)
+     PERFORM SET-HAIL
      MOVE 1 TO PL-MODE(1)
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
@@ -132,6 +134,18 @@
      MOVE "mob health 8" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
+
+*> The hailstorm is thunder at full strength (the skin of 33 section 4: both flags set, both levels 1); drizzle is rain only.
+ SET-HAIL.
+     MOVE WK-HAILSTORM TO WS-KIND
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
+     MOVE 1 TO CW-RAIN-LEVEL(1) CW-RAIN-LEVEL-OLD(1) CW-THUNDER-LEVEL(1) CW-THUNDER-LEVEL-OLD(1).
+
+ SET-DRIZZLE.
+     MOVE WK-DRIZZLE TO WS-KIND
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
+     MOVE 1 TO CW-RAIN-LEVEL(1) CW-RAIN-LEVEL-OLD(1)
+     MOVE 0 TO CW-THUNDER-LEVEL(1) CW-THUNDER-LEVEL-OLD(1).
 
 *> Opens the world; Alice joins at the spawn point and is drained.
  OPEN-AND-JOIN.
