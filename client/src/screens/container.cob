@@ -523,6 +523,9 @@
          END-IF
          CALL "SLOT-TOOLTIP" USING CLIENT-STATE WS-ARG WS-PX WS-PY
      END-IF
+     IF BM-TYPE = 21
+         CALL "SMITHING-TOOLTIP" USING CLIENT-STATE WS-HOVER WS-PX WS-PY WS-LEFT WS-TOP WS-OWN
+     END-IF
      IF PL-CARRIED-COUNT > 0
          COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE - 8
          COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE - 8
@@ -580,3 +583,78 @@
      END-IF
      GOBACK.
  END PROGRAM SLOT-TOOLTIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SMITHING-TOOLTIP.
+*> USING CLIENT-STATE, hovered slot (-1 none, own slots from 0), pointer x, pointer y, left, top, own slots: 40-3 section 5.7 for the smithing table (white single lines, no title spacing): the
+*> pointer over the error box (65, 46, 28 x 21) with the error flag (data slot 0 is 1) gives container.upgrade.error_tooltip; a hovered own slot then overrides: with an empty template slot
+*> (slot 0) the slot 0 gives container.upgrade.missing_template_tooltip; with a smithing template (an item whose key ends in _smithing_template) in slot 0, an empty hovered slot 1 gives the
+*> template's base-slot description and slot 2 its addition-slot description (netherite_upgrade or armor_trim texts).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(100).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-LINE                PIC X(256).
+ 01 WS-RGB                 BINARY-LONG VALUE 16777215.
+ 01 WS-SHOW                BINARY-LONG.
+ 01 WS-KIND                PIC X(20).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-HOVER                BINARY-LONG.
+ 01 L-PX                   BINARY-LONG.
+ 01 L-PY                   BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ 01 L-OWN                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-HOVER L-PX L-PY L-LEFT L-TOP L-OWN.
+     MOVE SPACES TO WS-KEY
+     IF BM-DATA(1) = 1 AND L-PX >= L-LEFT + 65 AND L-PX < L-LEFT + 93 AND L-PY >= L-TOP + 46 AND L-PY < L-TOP + 67
+         MOVE "container.upgrade.error_tooltip" TO WS-KEY
+     END-IF
+     IF L-HOVER >= 0 AND L-HOVER < L-OWN
+         IF BX-COUNT(1) = 0
+             IF L-HOVER = 0
+                 MOVE "container.upgrade.missing_template_tooltip" TO WS-KEY
+             END-IF
+         ELSE
+             IF BX-COUNT(L-HOVER + 1) = 0 AND (L-HOVER = 1 OR L-HOVER = 2)
+                 MOVE BX-ITEM(1) TO WS-ITEM
+                 CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-LEN
+                 IF WS-KNOWN = 1 AND WS-LEN > 18 AND WS-PATH(WS-LEN - 17:18) = "_smithing_template"
+                     MOVE "armor_trim" TO WS-KIND
+                     IF WS-PATH(1:17) = "netherite_upgrade"
+                         MOVE "netherite_upgrade" TO WS-KIND
+                     END-IF
+                     IF L-HOVER = 1
+                         STRING "item.minecraft.smithing_template." FUNCTION TRIM(WS-KIND) ".base_slot_description" DELIMITED BY SIZE INTO WS-KEY
+                     ELSE
+                         STRING "item.minecraft.smithing_template." FUNCTION TRIM(WS-KIND) ".additions_slot_description" DELIMITED BY SIZE INTO WS-KEY
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     IF WS-KEY NOT = SPACES AND TT-COUNT = 0
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+         CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+         MOVE WS-OUT(1:256) TO WS-LINE
+         MOVE FUNCTION MIN(WS-OUT-LENGTH, 120) TO WS-OUT-LENGTH
+         MOVE L-PX TO TT-X
+         MOVE L-PY TO TT-Y
+         MOVE 0 TO TT-TITLE-GAP
+         CALL "TOOLTIP-ADD" USING CLIENT-STATE WS-LINE WS-OUT-LENGTH WS-RGB
+     END-IF
+     GOBACK.
+ END PROGRAM SMITHING-TOOLTIP.
