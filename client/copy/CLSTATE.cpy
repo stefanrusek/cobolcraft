@@ -268,7 +268,7 @@
        10 CR-TAB             BINARY-LONG.
        10 CR-SCROLL          FLOAT-SHORT.
        10 CR-COUNT           BINARY-LONG.
-       10 CR-STACK OCCURS 128 TIMES.
+       10 CR-STACK OCCURS 2048 TIMES.
           15 CR-STACK-ITEM   BINARY-LONG.
           15 CR-STACK-COUNT  BINARY-LONG.
           15 CR-STACK-LOCK   BINARY-LONG.
@@ -299,6 +299,7 @@
        10 BE-CURRENT         BINARY-LONG.
        10 BE-HAND            BINARY-LONG.
        10 BE-ACTIVE          BINARY-LONG.
+       10 BE-MODE            BINARY-LONG.
        10 BE-TITLE-LEN       BINARY-LONG.
        10 BE-TITLE           PIC X(32).
        10 BE-PAGE OCCURS 100 TIMES.
