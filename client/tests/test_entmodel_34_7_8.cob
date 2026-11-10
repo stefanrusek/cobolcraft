@@ -872,18 +872,207 @@
      MOVE -14.5 TO WS-E
      MOVE WS-DR TO WS-O
      PERFORM CHECK-NUM
-     MOVE 3 TO WS-HN
-     MOVE 0.25 TO WS-HT
+     MOVE 2 TO WS-HN
+     MOVE 0.5 TO WS-HT
      CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
-     MOVE "8.1 descending yaw history get(3, 0.25) yRot (wrap above 180)" TO WS-NAME
-     MOVE 105.75 TO WS-E
+     MOVE "8.1 descending yaw history get(2, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 59.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(4, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 133.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 6 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(6, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -152.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 8 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(8, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -78.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 10 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(10, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -4.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 12 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(12, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 69.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 14 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(14, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 143.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 16 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(16, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -142.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 18 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(18, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -68.5 TO WS-E
      MOVE WS-DR TO WS-O
      PERFORM CHECK-NUM
      MOVE 20 TO WS-HN
-     MOVE 0.75 TO WS-HT
+     MOVE 0.5 TO WS-HT
      CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
-     MOVE "8.1 descending yaw history get(20, 0.75) yRot (wrap above 180)" TO WS-NAME
-     MOVE -3.75 TO WS-E
+     MOVE "8.1 descending yaw history get(20, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 5.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 22 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(22, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 79.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 24 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(24, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 153.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 26 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(26, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -132.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 28 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(28, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -58.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 30 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(30, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 15.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 32 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(32, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 89.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 34 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(34, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -196.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 36 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(36, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -122.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 38 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(38, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -48.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 40 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(40, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 25.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 42 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(42, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 99.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 44 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(44, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -186.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 46 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(46, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -112.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 48 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(48, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -38.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 50 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(50, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 35.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 52 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(52, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE 109.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 54 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(54, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -176.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 56 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(56, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -102.5 TO WS-E
+     MOVE WS-DR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 58 TO WS-HN
+     MOVE 0.5 TO WS-HT
+     CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR
+     MOVE "8.1 descending yaw history get(58, 0.5) yRot (wrap above 180)" TO WS-NAME
+     MOVE -28.5 TO WS-E
      MOVE WS-DR TO WS-O
      PERFORM CHECK-NUM
      CALL "EF7-HIST-INIT" USING WS-HIST

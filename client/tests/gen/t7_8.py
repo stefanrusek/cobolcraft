@@ -35,7 +35,7 @@ for n,tt in ((0,0.5),(5,0.25),(6,1),(10,0),(11,0.75),(62,0.3)):
     y,r=h.geti(n,tt); t.raw('MOVE %d TO WS-HN'%n,'MOVE %s TO WS-HT'%lit(tt),'CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR'); t.num('8.1 get(%d, %s) y'%(n,tt),y,'WS-DY'); t.num('8.1 get(%d, %s) yRot'%(n,tt),r,'WS-DR')
 hist_load([(64+3*math.sin(k*0.4), wrap(-k*37.0)) for k in range(70)]); h2=Hist()
 for k in range(70): h2.record(64+3*math.sin(k*0.4), wrap(-k*37.0))
-for n,tt in ((0,0.5),(3,0.25),(20,0.75)):
+for n,tt in [(k,0.5) for k in range(0,60,2)]:
     y,r=h2.geti(n,tt); t.raw('MOVE %d TO WS-HN'%n,'MOVE %s TO WS-HT'%lit(tt),'CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR'); t.num('8.1 descending yaw history get(%d, %s) yRot (wrap above 180)'%(n,tt),r,'WS-DR')
 hist_load(SM)
 for i,ay,by,ld,sit,dist in ((3,60,62,1,0,100),(3,60,62,1,0,2),(4,60,62,0,1,100),(6,60,62,0,0,100),(2,60,62.5,0,0,100)):
