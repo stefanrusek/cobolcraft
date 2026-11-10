@@ -48,10 +48,10 @@
      MOVE 2 TO SM-W-LENGTH(1)
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE "ui a label is one quad per character: 'A' at window (20, 40) to (36, 56) with the cell "
-         & "(8, 16)-(16, 24) of the 128 x 88 UI atlas (font, icon cells, swatches); 'b' 12 "
+         & "(8, 16)-(16, 24) of the 200 x 126 UI atlas (font, icon cells, swatches); 'b' 12 "
          & "pixels further" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "12.00 20.00 40.00 0.06 0.18 36.00 56.00 0.13 0.27 1.00 1.00 32.00" TO TL-EXPECTED
+     MOVE "12.00 20.00 40.00 0.04 0.13 36.00 56.00 0.08 0.19 1.00 1.00 32.00" TO TL-EXPECTED
      MOVE SPACES TO WS-OUT
      MOVE 1 TO WS-PTR
      MOVE RL-UI-COUNT TO WS-E
@@ -90,9 +90,8 @@
      MOVE "y" TO SM-W-TEXT(3)
      MOVE 1 TO SM-W-LENGTH(3)
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "ui a button: background (0, 0)-(200, 40) on the centre of the button swatch, text "
-         & "centred (x 88); a focused field: field swatch, text, caret; a selected entry: selected "
-         & "swatch, text"
+     MOVE "ui a button: nine quads of the built-in button art from (0, 0), the first 6 window pixels "
+         & "square on the sprite corner; a focused field: field swatch, text, caret; a selected entry"
          TO TL-CASE
      MOVE SPACES TO WS-OUT
      MOVE 1 TO WS-PTR
@@ -109,8 +108,8 @@
      MOVE 37 TO WS-VERTEX
      CALL "TEST-UI-VERTEX" USING CLIENT-STATE WS-VERTEX WS-OUT WS-PTR
      MOVE WS-OUT TO TL-OBSERVED
-     MOVE "48.00 0.00 0.00 0.22 0.95 200.00 40.00 0.22 0.95 88.00 0.00 100.00 0.34 0.95"
-         & " 0.00 200.00 0.28 0.95" TO TL-EXPECTED
+     MOVE "96.00 0.00 0.00 0.00 0.63 6.00 6.00 0.01 0.66 6.00 0.00 6.00 0.00 0.66 0.00 34.00 0.00 0.77"
+         TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The edit-server screen with the address field holding its full 256 bytes: focused, the field

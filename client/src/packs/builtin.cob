@@ -15,6 +15,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLBUILTIN.
+ 01 WS-G                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-PATH                 PIC X(256).
@@ -28,6 +29,11 @@
          MOVE BI-FILE(L-INDEX) TO L-PATH
          MOVE FUNCTION LENGTH(FUNCTION TRIM(BI-FILE(L-INDEX))) TO L-LENGTH
      END-IF
+     IF L-INDEX > BI-FILE-COUNT
+*>       The generated GUI art (builtin-gui.cob) follows the listed files.
+         COMPUTE WS-G = L-INDEX - BI-FILE-COUNT
+         CALL "BGUI-PATH" USING WS-G L-PATH L-LENGTH L-FOUND
+     END-IF
      GOBACK.
  END PROGRAM BUILTIN-PATH.
 
@@ -38,6 +44,7 @@
  WORKING-STORAGE SECTION.
  COPY CLBUILTIN.
  01 WS-I                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-PATH                 PIC X(256).
  01 L-LENGTH               BINARY-LONG.
@@ -45,10 +52,16 @@
  PROCEDURE DIVISION USING L-PATH L-LENGTH L-INDEX.
      MOVE 0 TO L-INDEX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BI-FILE-COUNT OR L-INDEX > 0
-         IF BI-FILE(WS-I) = L-PATH(1:L-LENGTH) AND L-LENGTH <= 64
+         IF L-LENGTH <= 64 AND BI-FILE(WS-I) = L-PATH(1:L-LENGTH)
              MOVE WS-I TO L-INDEX
          END-IF
      END-PERFORM
+     IF L-INDEX = 0
+         CALL "BGUI-FIND" USING L-PATH L-LENGTH WS-G
+         IF WS-G > 0
+             COMPUTE L-INDEX = BI-FILE-COUNT + WS-G
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM BUILTIN-FIND.
 
@@ -65,6 +78,9 @@
  01 WS-K                   BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-TEXT                PIC X(32768).
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-META                PIC X(128).
+ 01 WS-META-LENGTH         BINARY-LONG.
  01 WS-Q                   PIC X VALUE X"22".
  01 WS-BS                  PIC X VALUE X"5C".
  01 WS-DIRS.
@@ -151,6 +167,15 @@
                      DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
              END-PERFORM
              STRING "}" DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+         WHEN WS-INDEX > BI-FILE-COUNT
+*>           The .mcmeta of a generated nine-slice sprite; a generated image is no JSON file.
+             COMPUTE WS-G = WS-INDEX - BI-FILE-COUNT
+             CALL "BGUI-META" USING WS-G WS-META WS-META-LENGTH
+             MOVE 0 TO L-FOUND
+             IF WS-META-LENGTH > 0
+                 MOVE 1 TO L-FOUND
+                 STRING WS-META(1:WS-META-LENGTH) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+             END-IF
          WHEN OTHER
              MOVE 0 TO L-FOUND
      END-EVALUATE
@@ -172,6 +197,9 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-STEM                PIC X(32).
  01 WS-IMAGE               PIC X(24576).
+ 01 WS-GIMAGE              PIC X(40000).
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-GOT                 BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 B-AREA                 PIC X(1073741824) BASED.
  LINKAGE SECTION.
@@ -195,6 +223,18 @@
          IF WS-BYTES <= L-CAPACITY
              MOVE 1 TO L-FOUND
              MOVE WS-IMAGE(1:WS-BYTES) TO B-AREA(1:WS-BYTES)
+         END-IF
+     END-IF
+     IF WS-INDEX > BI-FILE-COUNT
+*>       A generated GUI sprite, menu tile, pack icon or crack overlay (builtin-gui.cob).
+         COMPUTE WS-G = WS-INDEX - BI-FILE-COUNT
+         CALL "BGUI-DRAW" USING WS-G WS-GIMAGE L-W L-H WS-GOT
+         IF WS-GOT = 1
+             COMPUTE WS-BYTES = L-W * L-H * 4
+             IF WS-BYTES <= L-CAPACITY
+                 MOVE 1 TO L-FOUND
+                 MOVE WS-GIMAGE(1:WS-BYTES) TO B-AREA(1:WS-BYTES)
+             END-IF
          END-IF
      END-IF
      GOBACK.

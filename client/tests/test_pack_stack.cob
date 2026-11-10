@@ -37,10 +37,10 @@
              END-IF
          END-IF
      END-PERFORM
-     MOVE "pack stack with only the built-in pack: each of its 94 paths resolves to pack 1"
+     MOVE "pack stack with only the built-in pack: each of its 240 paths resolves to pack 1"
          TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "94 0" TO TL-EXPECTED
+     MOVE "240 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-COUNT TO WS-LENGTH
      CALL "TEST-PAIR" USING WS-LENGTH WS-BAD TL-OBSERVED

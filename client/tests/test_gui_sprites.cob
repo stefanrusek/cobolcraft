@@ -16,8 +16,8 @@
  PROCEDURE DIVISION.
      CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
      MOVE "N" TO TL-MODE
-     MOVE "gui sprites no pack gives none: widths 0 and 0" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "gui sprites no pack gives the built-in art: widths 200 and 18" TO TL-CASE
+     MOVE 218 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = GS-W(GSP-BUTTON) + GS-W(GSP-SLOT)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

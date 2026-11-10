@@ -397,10 +397,10 @@
              ADD 1 TO WS-COUNT
          END-IF
      END-PERFORM
-     MOVE "builtin pack lists 94 files (08 §10.9 kinds read in this version: item textures, "
+     MOVE "builtin pack lists 240 files (08 §10.9 kinds read in this version: item textures, "
          & "models and definitions included)" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 94 TO TL-EXPECTED-N
+     MOVE 240 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
