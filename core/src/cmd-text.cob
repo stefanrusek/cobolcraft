@@ -6,7 +6,6 @@
 *>   CMD-TEXT-KEY USING PB-TEXT, message (MESSAGES.cpy MK-* index): the same for a key of the system messages
 *>   CMD-TEXT-ARG USING PB-TEXT, area (UTF-8), byte length: adds a literal argument (at most 1024 bytes)
 *>   CMD-TEXT-INT USING PB-TEXT, integer (BINARY-LONG): adds it in decimal, `-` when negative
-*>   CMD-TEXT-DOUBLE USING PB-TEXT, double (FLOAT-LONG): adds it with two digits after the point, rounded half away from zero
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BX-KEY.
@@ -60,26 +59,6 @@
      CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-LENGTH
      GOBACK.
  END PROGRAM CMD-TEXT-INT.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. CMD-TEXT-DOUBLE.
-*> USING PB-TEXT, double (FLOAT-LONG): adds it with exactly two digits after the point, rounded half
-*> away from zero, `-` when negative (§16.1).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-EDIT                PIC -(10)9.99.
- 01 WS-TEXT                PIC X(16).
- 01 WS-LENGTH              BINARY-LONG.
- LINKAGE SECTION.
- COPY PROTO.
- 01 L-VALUE                FLOAT-LONG.
- PROCEDURE DIVISION USING PB-TEXT L-VALUE.
-     COMPUTE WS-EDIT ROUNDED = L-VALUE
-     MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
-     COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT))
-     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-LENGTH
-     GOBACK.
- END PROGRAM CMD-TEXT-DOUBLE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMD-TEXT-ARG.

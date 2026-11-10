@@ -91,6 +91,23 @@
      MOVE "argument.pos3d.incomplete() |" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE 30 TO PL-YAW(CN-PLAYER(WS-ID-OPAL))
+     MOVE 20 TO PL-PITCH(CN-PLAYER(WS-ID-OPAL))
+     MOVE "acceptance US13 /setworldspawn a rotation relative to the so" & "urce's" TO TL-CASE
+     MOVE "setworldspawn 1 2 3 ~10 ~5" TO WS-LINE
+     MOVE "commands.setworldspawn.success(1,2,3,40.0,25.0,cobolcraft:ma" & "in)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /setworldspawn a pitch above 90 is clamped" TO TL-CASE
+     MOVE "setworldspawn 1 2 3 0 100" TO WS-LINE
+     MOVE "commands.setworldspawn.success(1,2,3,0.0,90.0,cobolcraft:mai" & "n)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /setworldspawn a block outside the spawnable" & " bounds: Invalid position" TO TL-CASE
+     MOVE "setworldspawn 30000000 64 0" TO WS-LINE
+     MOVE "argument.pos.outofbounds()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /setworldspawn a player below level 2 does n" & "ot know the command" TO TL-CASE
      MOVE "setworldspawn 1 2 3" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED

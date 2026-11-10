@@ -4,8 +4,6 @@
 *> Entry points:
 *>   BX-FIND USING name (PIC X(32), space padded), index out (the argument entry of BR-R-ARG with that name, 0 = not in the context)
 *>   BX-LIT USING name, index out: the same for a literal node of the context
-*>   BX-STRING USING index, text out (PIC X(1024)), length out: the argument as a string: its text in the line, unquoted when it
-*>     was quoted (a word, phrase or greedy string)
 *>   BX-RESOLVE USING index, rows out (BX-ROWS group: BX-COUNT, BX-ROW(1 to 64): a player row, or the negated row of CORE-ENTITIES for
 *>     an entity that is not a player: a mob or a ground item): the entities an entity argument selects for the source BR-SRC (15 §7.6
 *>     over the player table and CORE-ENTITIES; @e and @n and a type= that names no player look at the entities, an argument of
@@ -56,26 +54,6 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BX-LIT.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BX-STRING.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY BRIGADIER.
- COPY BRRUN.
- 01 WS-QUOTED              BINARY-LONG VALUE 1.
- 01 WS-CURSOR              BINARY-LONG.
- LINKAGE SECTION.
- 01 L-INDEX                BINARY-LONG.
- 01 L-TEXT                 PIC X(1024).
- 01 L-LENGTH               BINARY-LONG.
- PROCEDURE DIVISION USING L-INDEX L-TEXT L-LENGTH.
-     MOVE BR-R-LINE TO BR-IN-TEXT
-     MOVE BR-R-LENGTH TO BR-IN-LENGTH
-     MOVE BA-START(L-INDEX) TO WS-CURSOR
-     CALL "BR-READ-STRING" USING WS-QUOTED WS-CURSOR L-TEXT L-LENGTH
-     GOBACK.
- END PROGRAM BX-STRING.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BX-RESOLVE.
@@ -145,7 +123,7 @@
  UNSUPPORTED.
      MOVE "cobolcraft.selector.unsupported" TO WS-KEY
      MOVE 1 TO WS-N-ARGS
-     MOVE SPACES TO WS-A1 WS-A2
+     MOVE SPACES TO WS-A2
      MOVE 0 TO WS-L2
      CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
      MOVE 1 TO BR-R-FAILED.
@@ -369,9 +347,6 @@
 *> The yaw is wrapped to degrees (-180 up to 180) before the range test.
  TEST-YROT.
      COMPUTE WS-YAW = FUNCTION MOD(PL-YAW(WS-ROW) + 180, 360)
-     IF WS-YAW < 0
-         ADD 360 TO WS-YAW
-     END-IF
      COMPUTE WS-YAW = WS-YAW - 180
      IF (SL-YROT-AUX = 1 OR SL-YROT-AUX = 3) AND WS-YAW < SL-YROT-MIN
          MOVE 0 TO WS-OK
@@ -510,9 +485,6 @@
 
  TEST-ENTITY-YROT.
      COMPUTE WS-YAW = FUNCTION MOD(EN-YAW(WS-ENTITY) + 180, 360)
-     IF WS-YAW < 0
-         ADD 360 TO WS-YAW
-     END-IF
      COMPUTE WS-YAW = WS-YAW - 180
      IF (SL-YROT-AUX = 1 OR SL-YROT-AUX = 3) AND WS-YAW < SL-YROT-MIN
          MOVE 0 TO WS-OK
@@ -624,18 +596,22 @@
      END-IF
      EVALUATE TRUE
          WHEN SL-NBT-COUNT > 0
+             MOVE SPACES TO WS-A1
              MOVE "nbt" TO WS-A1
              MOVE 3 TO WS-L1
              PERFORM UNSUPPORTED
          WHEN SL-SCORES-SET = 1
+             MOVE SPACES TO WS-A1
              MOVE "scores" TO WS-A1
              MOVE 6 TO WS-L1
              PERFORM UNSUPPORTED
          WHEN SL-ADV-SET = 1
+             MOVE SPACES TO WS-A1
              MOVE "advancements" TO WS-A1
              MOVE 12 TO WS-L1
              PERFORM UNSUPPORTED
          WHEN SL-PRED-COUNT > 0
+             MOVE SPACES TO WS-A1
              MOVE "predicate" TO WS-A1
              MOVE 9 TO WS-L1
              PERFORM UNSUPPORTED

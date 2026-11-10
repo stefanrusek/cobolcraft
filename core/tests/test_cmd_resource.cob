@@ -3,7 +3,7 @@
 *> argument whose node holds a registry key (BR-N-REG) must be an entry of that registry of the open content set (without a namespace
 *> it is in the namespace of the set: cobolcraft: here), else argument.resource.not_found [identifier, registry] with the cursor at the
 *> identifier; a tag (#) is not looked up, a registry the set does not hold is not checked, a node without a registry key either.
-*> rs: resource of minecraft:entity_type, rt: of a registry the set does not hold, ro: resource or tag of entity_type, rr: no registry key.
+*> rl: a loot table (identifier form), rs: resource of minecraft:entity_type, rt: of a registry the set does not hold, ro: resource or tag of entity_type, rr: no registry key.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CMD-RESOURCE.
  DATA DIVISION.
@@ -13,31 +13,35 @@
  COPY BRTRAIL REPLACING LEADING ==BT-== BY ==RS-==.
  COPY COREAPI.
  01 WS-CASES.
-    05 FILLER PIC X(60) VALUE "rs cobolcraft:sodgrazer$".
+    05 FILLER PIC X(100) VALUE "rs cobolcraft:sodgrazer$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "rs sodgrazer$".
+    05 FILLER PIC X(100) VALUE "rs sodgrazer$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "rs cobolcraft:abend$".
+    05 FILLER PIC X(100) VALUE "rs cobolcraft:abend$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "rs cobolcraft:nothing$".
+    05 FILLER PIC X(100) VALUE "rs cobolcraft:nothing$".
     05 FILLER PIC X(120) VALUE "err argument.resource.not_found|cobolcraft:nothing|minecraft:entity_type@3".
-    05 FILLER PIC X(60) VALUE "rs nothing$".
+    05 FILLER PIC X(100) VALUE "rs nothing$".
     05 FILLER PIC X(120) VALUE "err argument.resource.not_found|cobolcraft:nothing|minecraft:entity_type@3".
-    05 FILLER PIC X(60) VALUE "rs minecraft:zombie$".
+    05 FILLER PIC X(100) VALUE "rs minecraft:zombie$".
     05 FILLER PIC X(120) VALUE "err argument.resource.not_found|minecraft:zombie|minecraft:entity_type@3".
-    05 FILLER PIC X(60) VALUE "rt cobolcraft:anything$".
+    05 FILLER PIC X(100) VALUE "rt cobolcraft:anything$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "ro #foo:bar$".
+    05 FILLER PIC X(100) VALUE "ro #foo:bar$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "ro sodgrazer$".
+    05 FILLER PIC X(100) VALUE "ro sodgrazer$".
     05 FILLER PIC X(120) VALUE "ok".
-    05 FILLER PIC X(60) VALUE "ro nothing$".
+    05 FILLER PIC X(100) VALUE "ro nothing$".
     05 FILLER PIC X(120) VALUE "err argument.resource.not_found|cobolcraft:nothing|minecraft:entity_type@3".
-    05 FILLER PIC X(60) VALUE "rr nothing$".
+    05 FILLER PIC X(100) VALUE "rr nothing$".
     05 FILLER PIC X(120) VALUE "ok".
+    05 FILLER PIC X(100) VALUE "rl chests/a$".
+    05 FILLER PIC X(120) VALUE "ok".
+    05 FILLER PIC X(100) VALUE "rs cobolcraft:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$".
+    05 FILLER PIC X(120) VALUE "err argument.resource.not_found|cobolcraft:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|minecraft:entity_type@3".
  01 WS-TABLE REDEFINES WS-CASES.
-    05 WS-CASE OCCURS 11 TIMES.
-       10 WS-CASE-LINE PIC X(60).
+    05 WS-CASE OCCURS 13 TIMES.
+       10 WS-CASE-LINE PIC X(100).
        10 WS-CASE-EXPECTED PIC X(120).
 
  01 WS-LINE                PIC X(1024).
@@ -67,11 +71,14 @@
     05 FILLER PIC X(4) VALUE "ro".
     05 FILLER PIC S9(9) BINARY VALUE 44.
     05 FILLER PIC X(40) VALUE "minecraft:entity_type".
+    05 FILLER PIC X(4) VALUE "rl".
+    05 FILLER PIC S9(9) BINARY VALUE 52.
+    05 FILLER PIC X(40) VALUE SPACES.
     05 FILLER PIC X(4) VALUE "rr".
     05 FILLER PIC S9(9) BINARY VALUE 46.
     05 FILLER PIC X(40) VALUE SPACES.
  01 WS-TYPE-TABLE REDEFINES WS-TYPES.
-    05 WS-T OCCURS 4 TIMES.
+    05 WS-T OCCURS 5 TIMES.
        10 WS-T-LIT PIC X(4).
        10 WS-T-ID PIC S9(9) BINARY.
        10 WS-T-REG PIC X(40).
@@ -79,10 +86,10 @@
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "BR-TREE-RESET"
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          PERFORM ADD-TYPE
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 13
          MOVE WS-CASE-LINE(WS-I) TO WS-LINE
          PERFORM CHECK
      END-PERFORM

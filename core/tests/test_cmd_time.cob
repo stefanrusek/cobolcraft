@@ -252,6 +252,13 @@
      MOVE "command.unknown.command() |" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "standard" TO CW-WORLD-TYPE
+     MOVE "acceptance US13 /time a standard world's clock is minecraft:" & "overworld" TO TL-CASE
+     MOVE "time set 5000" TO WS-LINE
+     MOVE "commands.time.set.absolute(minecraft:overworld,5000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "cobolcraft" TO CW-WORLD-TYPE
      GOBACK.
  END PROGRAM TEST-CMD-TIME.
 

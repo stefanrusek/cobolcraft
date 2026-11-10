@@ -167,6 +167,31 @@
      MOVE AC-COUNT(1) TO WS-NUM
      MOVE 1 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /whitelist the allow list holds Cleo again" TO TL-CASE
+     MOVE "whitelist add Cleo" TO WS-LINE
+     MOVE "commands.whitelist.add.success(Cleo)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     CALL "ACCESS-DAT-WRITE"
+     MOVE "acceptance US13 /whitelist a second name that is not in the " & "saved file" TO TL-CASE
+     MOVE "whitelist add Yan" TO WS-LINE
+     MOVE "commands.whitelist.add.success(Yan)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /whitelist two names are listed" TO TL-CASE
+     MOVE AC-COUNT(3) TO WS-NUM
+     MOVE 2 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /whitelist reload with a saved access.dat re" & "ads it" TO TL-CASE
+     MOVE "whitelist reload" TO WS-LINE
+     MOVE "commands.whitelist.reloaded()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /whitelist the allow list is the saved one (" & "Cleo)" TO TL-CASE
+     MOVE AC-COUNT(3) TO WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      MOVE "acceptance US13 /whitelist a player without operator status " & "does not know the command" TO TL-CASE
      MOVE "whitelist list" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED
@@ -174,7 +199,7 @@
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /whitelist the console prints the English te" & "xt" TO TL-CASE
      MOVE "whitelist list" TO WS-LINE
-     MOVE "There are no whitelisted players" TO WS-EXPECTED
+     MOVE "There are 1 whitelisted player(s): Cleo" TO WS-EXPECTED
      CALL "TEST-RUN-CONSOLE" USING WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      GOBACK.

@@ -110,6 +110,20 @@
      MOVE "commands.clear.success.single(10,Bob)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "give Alice loam 5" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-DISCARD
+     MOVE "give Bob loam 5" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-DISCARD
+     MOVE "acceptance US13 /clear maxCount 0 over several players holdi" & "ng some: Found 10 matching items among 2 players" TO TL-CASE
+     MOVE "clear @a loam 0" TO WS-LINE
+     MOVE "commands.clear.test.multiple(10,2)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /clear remove what the count case found: Rem" & "oved 10 items from 2 players" TO TL-CASE
+     MOVE "clear @a" TO WS-LINE
+     MOVE "commands.clear.success.multiple(10,2)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /clear no items on any of three players" TO TL-CASE
      MOVE "clear @a" TO WS-LINE
      MOVE "clear.failed.multiple(3)" TO WS-EXPECTED

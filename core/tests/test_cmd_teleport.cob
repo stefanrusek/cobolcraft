@@ -207,6 +207,100 @@
      MOVE "An entity is required to run this command here" TO WS-EXPECTED
      CALL "TEST-RUN-CONSOLE" USING WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE 0 TO PL-X(CN-PLAYER(WS-ID-OPAL))
+     MOVE 64 TO PL-Y(CN-PLAYER(WS-ID-OPAL))
+     MOVE 0 TO PL-Z(CN-PLAYER(WS-ID-OPAL))
+     MOVE 0 TO PL-YAW(CN-PLAYER(WS-ID-OPAL))
+     MOVE 0 TO PL-PITCH(CN-PLAYER(WS-ID-OPAL))
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /teleport local coordinates are along the so" & "urce's view: two blocks ahead (yaw 0 looks along +z)" TO TL-CASE
+     MOVE "tp Alice ^ ^ ^2" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,2.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport local coordinates: one block to th" & "e left (yaw 0: +x)" TO TL-CASE
+     MOVE "tp Alice ^1 ^ ^" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,1.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport local coordinates: three blocks up" TO TL-CASE
+     MOVE "tp Alice ^ ^3 ^" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,67." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport local coordinates without a target" & " move the source" TO TL-CASE
+     MOVE "tp ^ ^ ^1" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Opal,0.000000,64.0" & "00000,1.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport a pitch below -90 is clamped" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 0 -100" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport the pitch is -90" TO TL-CASE
+     COMPUTE WS-NUM = PL-PITCH(CN-PLAYER(WS-ID-ALICE))
+     MOVE -90 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport a pitch above 90 is clamped" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 0 100" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport the pitch is 90" TO TL-CASE
+     COMPUTE WS-NUM = PL-PITCH(CN-PLAYER(WS-ID-ALICE))
+     MOVE 90 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport facing a point along +z" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing 0.0 64.0 5.0" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport yaw 0 along +z" TO TL-CASE
+     COMPUTE WS-NUM = PL-YAW(CN-PLAYER(WS-ID-ALICE))
+     MOVE 0 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport facing a point along -z" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing 0.0 64.0 -5.0" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport yaw -180 along -z" TO TL-CASE
+     COMPUTE WS-NUM = PL-YAW(CN-PLAYER(WS-ID-ALICE))
+     MOVE -180 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport facing the own point: yaw and pitc" & "h 0" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing 0.0 64.0 0.0" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport pitch 0 facing the own point" TO TL-CASE
+     COMPUTE WS-NUM = PL-PITCH(CN-PLAYER(WS-ID-ALICE))
+     MOVE 0 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport facing a point straight up" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing 0.0 74.0 0.0" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport pitch -90 looking up" TO TL-CASE
+     COMPUTE WS-NUM = PL-PITCH(CN-PLAYER(WS-ID-ALICE))
+     MOVE -90 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport facing a point along -x" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing -5.0 64.0 0.0" TO WS-LINE
+     MOVE "commands.teleport.success.location.single(Alice,0.000000,64." & "000000,0.000000)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /teleport yaw 90 along -x" TO TL-CASE
+     COMPUTE WS-NUM = PL-YAW(CN-PLAYER(WS-ID-ALICE))
+     MOVE 90 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /teleport only one facing" TO TL-CASE
+     MOVE "tp Alice 0.0 64.0 0.0 facing 0.0 64.0 0.0 facing 5.0 64.0 5." & "0" TO WS-LINE
+     MOVE "command.unknown.argument() |" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      GOBACK.
  END PROGRAM TEST-CMD-TELEPORT.
 
