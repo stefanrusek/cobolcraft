@@ -6,7 +6,7 @@ hdr='''*> Entity models part 7 (docs/protocol/34-entity-models-7-nether-end-boss
 *>   EF7-BOX-CORNERS IN(x y z w h d grow x y z mirror) OUT(corners A..H x y z); EF7-BOX-RECTS IN(u v w h d texture W H) OUT(six face rectangles down up west north east south: u min v min u max v max as fractions);
 *>   EF7-FACE-VERTS IN(face 0 down 1 up 2 west 3 north 4 east 5 south, mirror) OUT(four corner indexes 1 to 8 in vertex slot order); EF7-VERTEX-UV IN(slot, u min, v min, u max, v max) OUT(u, v); EF7-FACE-NORMAL IN(face, mirror) OUT(x y z);
 *>   EF7-SCALE-POINT IN(s, x, y, z) OUT(the point after MeshTransformer.scaling); EF7-INNER-ARMOR IN() OUT(0.5); EF7-MTH-SIN, EF7-MTH-COS IN(x) OUT(table value, via EF5-MTH-SIN and EF5-MTH-COS); EF7-WRAP-DEGREES IN(x) OUT(r); EF7-ROT-LERP, EF7-LERP IN(t a b) OUT(value);
-*>   EF7-RANDOM-SEQ IN(mode 1 next(bits) 2 nextFloat 3 nextInt(bound), seed, bits or bound, unused, count up to 60) OUT(the values): the 48-bit generator of 1.5 seeded with setSeed(seed);
+*>   EF7-RANDOM-SEQ IN(mode 1 next(bits) 2 nextFloat 3 nextInt(bound), seed, bits or bound, values to skip first, count up to 60) OUT(the values): the 48-bit generator of 1.5 seeded with setSeed(seed);
 *>   EF7-SETUP-ROTATIONS IN(shaking, ageInTicks, body yaw, death time, sleeping) OUT(ops: the rotations, the (-1, -1, 1) scale and the (0, -1.501, 0) translate); EF7-BODY-RENDER IN(translucent body, visible, glowing) OUT(mode 0 nothing 1 model render type 2 translucent cull 3 outline, tinted);
 *>   EF7-OVERLAY-PIXEL IN(x y) OUT(signed ARGB); EF7-OVERLAY-COORDS IN(white progress, has red overlay) OUT(u, v); EF7-LIGHT IN(block, sky, block light 15 override) OUT(light coords); EF7-SHADOW IN(radius, scale) OUT(radius x scale).
 '''
@@ -171,20 +171,25 @@ extra+=prog('EF7-ROT-LERP','''     COMPUTE WS-D = FUNCTION REM(L-I(3) - L-I(2), 
 ''',' 01 WS-D                   FLOAT-LONG.\n')
 extra+=prog('EF7-LERP','     COMPUTE L-O(1) = L-I(2) + L-I(1) * (L-I(3) - L-I(2))\n')
 extra+=prog('EF7-RANDOM-SEQ','''     PERFORM XOR-SEED
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > L-I(5)
+     COMPUTE WS-TOTAL = L-I(5) + L-I(4)
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-TOTAL
          EVALUATE L-I(1)
              WHEN 1
                  MOVE L-I(3) TO WS-BITS
                  PERFORM NEXT-BITS
-                 MOVE WS-V TO L-O(WS-J)
+                 MOVE WS-V TO WS-OUTV
              WHEN 2
                  MOVE 24 TO WS-BITS
                  PERFORM NEXT-BITS
-                 COMPUTE L-O(WS-J) = WS-V / 16777216
+                 COMPUTE WS-OUTV = WS-V / 16777216
              WHEN OTHER
                  PERFORM NEXT-INT
-                 MOVE WS-V TO L-O(WS-J)
+                 MOVE WS-V TO WS-OUTV
          END-EVALUATE
+         IF WS-J > L-I(4)
+             COMPUTE WS-IDX = WS-J - L-I(4)
+             MOVE WS-OUTV TO L-O(WS-IDX)
+         END-IF
      END-PERFORM
      GO TO PROGRAM-DONE.
 
@@ -234,7 +239,7 @@ extra+=prog('EF7-RANDOM-SEQ','''     PERFORM XOR-SEED
 
  PROGRAM-DONE.
      GOBACK.
-''',' 01 WS-J                   BINARY-LONG.\n 01 WS-BITS                BINARY-LONG.\n 01 WS-AGAIN               BINARY-LONG.\n 01 WS-A                   BINARY-DOUBLE.\n 01 WS-B                   BINARY-DOUBLE.\n 01 WS-P                   BINARY-DOUBLE.\n 01 WS-PW                  BINARY-DOUBLE.\n 01 WS-BA                  BINARY-LONG.\n 01 WS-BB                  BINARY-LONG.\n 01 WS-ST                  BINARY-DOUBLE.\n 01 WS-L                   BINARY-DOUBLE.\n 01 WS-H                   BINARY-DOUBLE.\n 01 WS-C                   BINARY-DOUBLE.\n 01 WS-V                   BINARY-DOUBLE.\n 01 WS-R                   BINARY-DOUBLE.\n 01 WS-M                   BINARY-DOUBLE.\n 01 WS-BOUND               BINARY-DOUBLE.\n',goback=False)
+''',' 01 WS-J                   BINARY-LONG.\n 01 WS-TOTAL               BINARY-LONG.\n 01 WS-IDX                 BINARY-LONG.\n 01 WS-OUTV                FLOAT-LONG.\n 01 WS-BITS                BINARY-LONG.\n 01 WS-AGAIN               BINARY-LONG.\n 01 WS-A                   BINARY-DOUBLE.\n 01 WS-B                   BINARY-DOUBLE.\n 01 WS-P                   BINARY-DOUBLE.\n 01 WS-PW                  BINARY-DOUBLE.\n 01 WS-BA                  BINARY-LONG.\n 01 WS-BB                  BINARY-LONG.\n 01 WS-ST                  BINARY-DOUBLE.\n 01 WS-L                   BINARY-DOUBLE.\n 01 WS-H                   BINARY-DOUBLE.\n 01 WS-C                   BINARY-DOUBLE.\n 01 WS-V                   BINARY-DOUBLE.\n 01 WS-R                   BINARY-DOUBLE.\n 01 WS-M                   BINARY-DOUBLE.\n 01 WS-BOUND               BINARY-DOUBLE.\n',goback=False)
 extra=extra.replace("""         MOVE WS-M TO WS-V
      END-IF.
      GOBACK.

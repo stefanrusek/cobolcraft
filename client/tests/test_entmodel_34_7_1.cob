@@ -2241,6 +2241,104 @@
      MOVE 884 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 432 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 16 TO WS-IV(4)
+     MOVE 8 TO WS-IV(5)
+     CALL "EF7-RANDOM-SEQ" USING WS-IN WS-OUT
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [1]" TO WS-NAME
+     MOVE 0.85062075 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [2]" TO WS-NAME
+     MOVE 0.287422241 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [3]" TO WS-NAME
+     MOVE 0.47471893 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [4]" TO WS-NAME
+     MOVE 0.687285783 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [5]" TO WS-NAME
+     MOVE 0.297860027 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [6]" TO WS-NAME
+     MOVE 0.135035992 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [7]" TO WS-NAME
+     MOVE 0.676409605 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 16, 8 values [8]" TO WS-NAME
+     MOVE 0.14610076 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 432 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 8 TO WS-IV(5)
+     CALL "EF7-RANDOM-SEQ" USING WS-IN WS-OUT
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [1]" TO WS-NAME
+     MOVE 0.763933661 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [2]" TO WS-NAME
+     MOVE 0.827584925 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [3]" TO WS-NAME
+     MOVE 0.848198536 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [4]" TO WS-NAME
+     MOVE 0.803539279 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [5]" TO WS-NAME
+     MOVE 0.767966273 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [6]" TO WS-NAME
+     MOVE 0.705038669 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [7]" TO WS-NAME
+     MOVE 0.671382787 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 432 after skipping 0, 8 values [8]" TO WS-NAME
+     MOVE 0.712294283 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 3 TO WS-IV(4)
+     MOVE 4 TO WS-IV(5)
+     CALL "EF7-RANDOM-SEQ" USING WS-IN WS-OUT
+     MOVE "1.5 nextFloat from seed 5 after skipping 3, 4 values [1]" TO WS-NAME
+     MOVE 0.611818077 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 5 after skipping 3, 4 values [2]" TO WS-NAME
+     MOVE 0.488904538 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 5 after skipping 3, 4 values [3]" TO WS-NAME
+     MOVE 0.944974605 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "1.5 nextFloat from seed 5 after skipping 3, 4 values [4]" TO WS-NAME
+     MOVE 0.461837174 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 3 TO WS-IV(1)
      MOVE 1660 TO WS-IV(2)
      MOVE 7 TO WS-IV(3)

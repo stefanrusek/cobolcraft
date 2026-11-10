@@ -62,6 +62,8 @@ for seed,n in ((1660,4),(7,3)):
     r=rng7.R(seed); t.call('EF7-RANDOM-SEQ',[2,seed,0,0,n],[r.nextFloat() for _ in range(n)],'1.5 nextFloat from seed %d, %d values'%(seed,n))
 for seed,bound,n in ((1660,7,9),(5,8,5),(99,10,6),(3,1,3),(42,1000,4)):
     r=rng7.R(seed); t.call('EF7-RANDOM-SEQ',[3,seed,bound,0,n],[r.nextInt(bound) for _ in range(n)],'1.5 nextInt(%d) from seed %d, %d values'%(bound,seed,n))
+for seed,skip,n in ((432,16,8),(432,0,8),(5,3,4)):
+    r=rng7.R(seed); [r.nextFloat() for _ in range(skip)]; t.call('EF7-RANDOM-SEQ',[2,seed,0,skip,n],[r.nextFloat() for _ in range(n)],'1.5 nextFloat from seed %d after skipping %d, %d values'%(seed,skip,n))
 r=rng7.R(1660); t.call('EF7-RANDOM-SEQ',[3,1660,7,0,9],[8-8+r.nextInt(7) for _ in range(9)],'1.5 the nextInt(7) values of the ghast tentacle lengths minus 8 (0, 5, 1, 3, 3, 2, 4, 1, 4)')
 def rotops(shake,age,body,death,sleep):
     ops=[]

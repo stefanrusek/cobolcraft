@@ -29,12 +29,22 @@ def mesh_program(layer):
     rows,w,h,sc=LAY[layer]
     r=rows
     assert all(len(x)<=100 for x in r),[x for x in r if len(x)>100]
-    assert len(r)<=80,len(r)
-    o=[' IDENTIFICATION DIVISION.',' PROGRAM-ID. %s.'%pname(layer),' DATA DIVISION.',' WORKING-STORAGE SECTION.',' 01 WS-ROWS.']
-    for x in r: o.append('    05 FILLER PIC X(100) VALUE "%s".'%x)
-    o.append('    05 FILLER PIC X(100) VALUE SPACES OCCURS %d TIMES.'%(80-len(r)))
-    o+=[' 01 WS-ROWS-R REDEFINES WS-ROWS.','    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.',' 01 WS-N                   BINARY-LONG VALUE %d.'%len(r),' 01 WS-ZERO                FLOAT-LONG VALUE 0.',' LINKAGE SECTION.',' COPY CLEMM.',
-        ' PROCEDURE DIVISION USING EMM-MODEL.','     CALL "EMM-INIT" USING EMM-MODEL','     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO','     MOVE %s TO MM-TEXW'%w,'     MOVE %s TO MM-TEXH'%h,'     GOBACK.',' END PROGRAM %s.'%pname(layer),'']
+    # chunks of at most 80 rows, split before a P row
+    chunks=[];cur=[]
+    for x in r:
+        if x[0]=='P' and len(cur)>=70: chunks.append(cur); cur=[]
+        cur.append(x)
+    chunks.append(cur)
+    o=[' IDENTIFICATION DIVISION.',' PROGRAM-ID. %s.'%pname(layer),' DATA DIVISION.',' WORKING-STORAGE SECTION.']
+    for k,ch in enumerate(chunks,1):
+        assert len(ch)<=80
+        o.append(' 01 WS-ROWS%d.'%k)
+        for x in ch: o.append('    05 FILLER PIC X(100) VALUE "%s".'%x)
+        o.append('    05 FILLER PIC X(100) VALUE SPACES OCCURS %d TIMES.'%(80-len(ch)))
+        o+=[' 01 WS-ROWS%d-R REDEFINES WS-ROWS%d.'%(k,k),'    05 WS-ROW%d             PIC X(100) OCCURS 80 TIMES.'%k,' 01 WS-N%d                  BINARY-LONG VALUE %d.'%(k,len(ch))]
+    o+=[' 01 WS-ZERO                FLOAT-LONG VALUE 0.',' LINKAGE SECTION.',' COPY CLEMM.',' PROCEDURE DIVISION USING EMM-MODEL.','     CALL "EMM-INIT" USING EMM-MODEL']
+    for k in range(1,len(chunks)+1): o.append('     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS%d-R WS-N%d WS-ZERO'%(k,k))
+    o+=['     MOVE %s TO MM-TEXW'%w,'     MOVE %s TO MM-TEXH'%h,'     GOBACK.',' END PROGRAM %s.'%pname(layer),'']
     return '\n'.join(o)
 STATE=HERE+'/state/layers7_done.json'
 def done(): return json.load(open(STATE)) if os.path.exists(STATE) else {}
