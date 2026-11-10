@@ -453,6 +453,7 @@
  01 WS-PTYPE               BINARY-LONG.
  01 WS-PFLAG               BINARY-LONG.
  01 WS-SINGLE              BINARY-LONG VALUE 0.
+ 01 WS-HANDLED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -471,7 +472,13 @@
      IF WS-OLD-TYPE >= 0
          CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
          IF WS-INDEX > 0
-             CALL "BE-DROP-CONTENTS" USING WS-INDEX
+             MOVE 0 TO WS-HANDLED
+             IF WS-OLD-TYPE = 24
+                 CALL "BE-SHULKER-DROP" USING WS-INDEX WS-OLD-BLOCK WS-HANDLED
+             END-IF
+             IF WS-HANDLED = 0
+                 CALL "BE-DROP-CONTENTS" USING WS-INDEX
+             END-IF
              MOVE 1 TO WS-FLAG
              CALL "BE-SET-REMOVED" USING WS-INDEX WS-FLAG
              MOVE 0 TO BE-USED(WS-INDEX)
@@ -493,6 +500,9 @@
      IF WS-NEW-TYPE >= 0
          CALL "BE-BLOCK-KEY" USING WS-NEW-BLOCK WS-KEY WS-LENGTH
          CALL "BE-CREATE" USING L-DIM L-X L-Y L-Z WS-NEW-TYPE WS-KEY WS-LENGTH WS-INDEX
+         IF WS-NEW-TYPE = 24 AND WS-INDEX > 0
+             CALL "BE-SHULKER-RESTORE" USING L-DIM L-X L-Y L-Z WS-INDEX
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BE-BLOCK-SET.
@@ -508,6 +518,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CBLOCKS.
+ COPY BESTATE.
  01 WS-DELTA-X.
     05 FILLER              PIC X(4) VALUE "1210".
  01 FILLER REDEFINES WS-DELTA-X.
@@ -591,6 +602,14 @@
              MOVE WS-FACE-TO-DIR(PSB-FACE + 1) TO WS-DIR
      END-EVALUATE
      CALL "BE-STATE-MAKE" USING WS-BLOCK WS-DIR WS-TYPE WS-FLAG L-STATE
+     IF WS-FAMILY = 4
+         MOVE 1 TO BP-SET
+         MOVE L-DIM TO BP-DIM
+         MOVE L-X TO BP-X
+         MOVE L-Y TO BP-Y
+         MOVE L-Z TO BP-Z
+         MOVE PL-SLOT-VAR(WS-ROW, PL-HELD(WS-ROW) + 1) TO BP-VAR
+     END-IF
      GOBACK.
  END PROGRAM BE-PLACE-STATE.
 
@@ -1061,3 +1080,158 @@
      CALL "VIEWERS-SEND" USING L-DIM WS-CX WS-CZ WS-NONE PB-BUFFER
      GOBACK.
  END PROGRAM BE-SOUND-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-CONTAINER-COMPONENT.
+*> USING id out: the registry id of the data component type minecraft:container (the vanilla table of 46).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-REGISTRY            PIC X(48) VALUE "minecraft:data_component_type".
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:container".
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     CALL "CONTENT-STATIC-ID" USING WS-REGISTRY WS-KEY L-ID WS-STATUS
+     GOBACK.
+ END PROGRAM BE-CONTAINER-COMPONENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-SHULKER-DROP.
+*> USING index, block id, handled out (31-1 section 13.4): a shulker box that holds items drops as one item entity of the box at the block centre (pickup
+*> delay 10) whose patch carries the container component (ItemContainerContents: a VarInt 27 then the 27 slots as wire stacks, an empty slot
+*> one 0 byte), so the contents travel in the item; handled is 1 then. An empty box drops nothing with contents (handled 1); contents that do
+*> not fit the 2048 bytes of a component value leave handled 0 (the caller scatters them).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CITEMS.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-BYTES               PIC X(8192) BASED.
+ 01 WS-VALUE               PIC X(2048).
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-SLOTS               BINARY-LONG VALUE 27.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-Z1                  FLOAT-LONG VALUE 0.
+ 01 WS-Z2                  FLOAT-LONG VALUE 0.
+ 01 WS-Z3                  FLOAT-LONG VALUE 0.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SHORT               PIC X(48).
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-BLOCK L-HANDLED.
+     MOVE 1 TO L-HANDLED
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 27
+         IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     IF WS-N = 0
+         GOBACK
+     END-IF
+     CALL "PB-INIT" USING WK-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING WK-BUFFER WS-SLOTS
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 27
+         CALL "SP-EXPORT" USING BE-SLOT-ITEM(L-INDEX, WS-S) BE-SLOT-COUNT(L-INDEX, WS-S) BE-SLOT-VAR(L-INDEX, WS-S)
+             WK-ITEMSTACK-X
+         CALL "PB-PUT-ITEM-STACK" USING WK-BUFFER WK-ITEMSTACK-X
+     END-PERFORM
+     MOVE WK-LENGTH TO WS-LENGTH
+     IF WS-LENGTH > 2048
+         CALL "PB-FREE" USING WK-BUFFER
+         MOVE 0 TO L-HANDLED
+         GOBACK
+     END-IF
+     SET ADDRESS OF WS-BYTES TO WK-ADDR
+     MOVE SPACES TO WS-VALUE
+     MOVE WS-BYTES(1:WS-LENGTH) TO WS-VALUE(1:WS-LENGTH)
+     CALL "PB-FREE" USING WK-BUFFER
+     CALL "BE-CONTAINER-COMPONENT" USING WS-TYPE
+     MOVE 0 TO WS-HANDLE
+     CALL "SP-SET-COMPONENT-X" USING WS-HANDLE WS-TYPE WS-VALUE WS-LENGTH
+*>   The item of the box: the item whose key is the block's key (with or without the namespace).
+     CALL "BE-BLOCK-KEY" USING L-BLOCK WS-KEY WS-S
+     MOVE SPACES TO WS-SHORT
+     COMPUTE WS-N = WS-S - 10
+     MOVE 0 TO WS-ITEM
+     IF WS-N > 0
+         MOVE WS-KEY(11:WS-N) TO WS-SHORT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
+         IF IT-KEY(WS-I) = WS-KEY OR IT-KEY(WS-I) = WS-SHORT
+             COMPUTE WS-ITEM = WS-I - 1
+         END-IF
+     END-PERFORM
+     COMPUTE WS-FX = BE-X(L-INDEX) + 0.5
+     COMPUTE WS-FY = BE-Y(L-INDEX) + 0.5
+     COMPUTE WS-FZ = BE-Z(L-INDEX) + 0.5
+     CALL "GI-SPAWN-X" USING BE-DIM(L-INDEX) WS-FX WS-FY WS-FZ WS-Z1 WS-Z2 WS-Z3 WS-ITEM WS-ONE WS-DELAY WS-ROW WS-HANDLE
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 27
+         MOVE 0 TO BE-SLOT-ITEM(L-INDEX, WS-S) BE-SLOT-COUNT(L-INDEX, WS-S) BE-SLOT-VAR(L-INDEX, WS-S)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE-SHULKER-DROP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-SHULKER-RESTORE.
+*> USING dim, x, y, z, index: the placed shulker box takes the container component of the stack BE-PLACE-STATE noted for this position (loadFromTag of the
+*> item placement path, 31-1 section 13.1): each of the 27 wire stacks becomes a slot (a stack that cannot be read ends the list).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-VALUE               PIC X(2048).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-INDEX.
+     IF BP-SET = 0 OR BP-DIM NOT = L-DIM OR BP-X NOT = L-X OR BP-Y NOT = L-Y OR BP-Z NOT = L-Z
+         GOBACK
+     END-IF
+     MOVE 0 TO BP-SET
+     CALL "BE-CONTAINER-COMPONENT" USING WS-TYPE
+     CALL "SP-GET-COMPONENT-X" USING BP-VAR WS-TYPE WS-VALUE WS-LENGTH WS-FOUND
+     IF WS-FOUND = 0
+         GOBACK
+     END-IF
+     CALL "PB-INIT" USING WK-BUFFER WS-CAPACITY
+     CALL "PB-APPEND-BYTES" USING WK-BUFFER WS-VALUE WS-LENGTH
+     CALL "PB-GET-VARINT" USING WK-BUFFER WS-N
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-N OR WS-S > 27 OR WK-ERROR = 1
+         CALL "PB-GET-ITEM-STACK" USING WK-BUFFER WK-ITEMSTACK-X
+         IF WK-ISX-COUNT > 0 AND WK-ERROR = 0
+             CALL "SP-INTERN" USING WK-ITEMSTACK-X WS-HANDLE
+             MOVE WK-ISX-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-S)
+             MOVE WK-ISX-COUNT TO BE-SLOT-COUNT(L-INDEX, WS-S)
+             MOVE WS-HANDLE TO BE-SLOT-VAR(L-INDEX, WS-S)
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING WK-BUFFER
+     CALL "BE-MARK-CHUNK" USING L-INDEX
+     GOBACK.
+ END PROGRAM BE-SHULKER-RESTORE.

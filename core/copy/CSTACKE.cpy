@@ -8,5 +8,5 @@
           10 SP-ADDED OCCURS 8 TIMES.
              15 SP-TYPE          BINARY-LONG.
              15 SP-LENGTH        BINARY-LONG.
-             15 SP-VALUE         PIC X(64).
+             15 SP-VALUE         PIC X(2048).
           10 SP-REMOVED         BINARY-LONG OCCURS 8 TIMES.

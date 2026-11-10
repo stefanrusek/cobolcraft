@@ -12,8 +12,8 @@
 *> Entry points:
 *>   SP-INTERN USING PB-ITEMSTACK-X, handle out        the patch of a wire stack as a handle (0 when it is empty)
 *>   SP-EXPORT USING item, count, handle, PB-ITEMSTACK-X out    the wire stack (count 0 is the empty stack)
-*>   SP-GET-COMPONENT USING handle, type, value out (X(64)), length out, found out (1 or 0)
-*>   SP-SET-COMPONENT USING handle in and out, type, value (X(64)), length   adds or replaces one component
+*>   SP-GET-COMPONENT USING handle, type, value out (X(64)), length out, found out (1 or 0); SP-GET-COMPONENT-X the same with X(2048)
+*>   SP-SET-COMPONENT USING handle in and out, type, value (X(64)), length   adds or replaces one component; SP-SET-COMPONENT-X value X(2048)
 *>   SP-GET-DAMAGE USING item, handle, damage out; SP-SET-DAMAGE USING handle in and out, damage
 *>   SP-GET-MAX-DAMAGE USING item, handle, max damage out (patch, else the content's, else 0)
 *>   SP-SET-NAME USING handle in and out, name (X(64)), length; SP-GET-NAME USING handle, name out, length out (0: none)
@@ -171,7 +171,7 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-ISX-ADDED-COUNT
          MOVE PB-ISX-TYPE(WS-I) TO WS-TYPE
          MOVE PB-ISX-VALUE-LENGTH(WS-I) TO WS-LEN
-         IF WS-LEN <= 64 AND NOT (WS-TYPE = 3 AND WS-LEN = 1 AND PB-ISX-VALUE(WS-I)(1:1) = X"00")
+         IF WS-LEN <= 2048 AND NOT (WS-TYPE = 3 AND WS-LEN = 1 AND PB-ISX-VALUE(WS-I)(1:1) = X"00")
              MOVE 1 TO WS-J
              PERFORM UNTIL WS-J > TP-ADDED-COUNT OR TP-TYPE(WS-J) >= WS-TYPE
                  ADD 1 TO WS-J
@@ -256,8 +256,8 @@
  END PROGRAM SP-EXPORT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. SP-GET-COMPONENT.
-*> USING handle, component type, value out (PIC X(64), space padded), length out, found out (1 when the patch adds the
+ PROGRAM-ID. SP-GET-COMPONENT-X.
+*> USING handle, component type, value out (PIC X(2048), space padded), length out, found out (1 when the patch adds the
 *> component, else 0 with length 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -266,7 +266,7 @@
  LINKAGE SECTION.
  01 L-HANDLE               BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
- 01 L-VALUE                PIC X(64).
+ 01 L-VALUE                PIC X(2048).
  01 L-LENGTH               BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING L-HANDLE L-TYPE L-VALUE L-LENGTH L-FOUND.
@@ -284,11 +284,29 @@
          END-IF
      END-IF
      GOBACK.
+ END PROGRAM SP-GET-COMPONENT-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SP-GET-COMPONENT.
+*> USING handle, component type, value out (PIC X(64)), length out, found out: SP-GET-COMPONENT-X, the value cut to 64 bytes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BIG                 PIC X(2048).
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-VALUE                PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-TYPE L-VALUE L-LENGTH L-FOUND.
+     CALL "SP-GET-COMPONENT-X" USING L-HANDLE L-TYPE WS-BIG L-LENGTH L-FOUND
+     MOVE WS-BIG TO L-VALUE
+     GOBACK.
  END PROGRAM SP-GET-COMPONENT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. SP-SET-COMPONENT.
-*> USING handle (in and out), component type, value (PIC X(64)), length: the patch with the component added (replacing an
+ PROGRAM-ID. SP-SET-COMPONENT-X.
+*> USING handle (in and out), component type, value (PIC X(2048), up to PB-ISX-VALUE-MAX bytes), length: the patch with the component added (replacing an
 *> added one of that type, and taken out of the removed list), interned; the new handle replaces the old one.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -301,7 +319,7 @@
  LINKAGE SECTION.
  01 L-HANDLE               BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
- 01 L-VALUE                PIC X(64).
+ 01 L-VALUE                PIC X(2048).
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING L-HANDLE L-TYPE L-VALUE L-LENGTH.
      CALL "SP-EXPORT" USING WS-ONE-ITEM WS-ONE L-HANDLE SX-ITEMSTACK-X
@@ -327,6 +345,23 @@
      END-PERFORM
      MOVE WS-J TO SX-ISX-REMOVED-COUNT
      CALL "SP-INTERN" USING SX-ITEMSTACK-X L-HANDLE
+     GOBACK.
+ END PROGRAM SP-SET-COMPONENT-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SP-SET-COMPONENT.
+*> USING handle (in and out), component type, value (PIC X(64)), length: SP-SET-COMPONENT-X for a value that fits 64 bytes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BIG                 PIC X(2048).
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-VALUE                PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-TYPE L-VALUE L-LENGTH.
+     MOVE L-VALUE TO WS-BIG
+     CALL "SP-SET-COMPONENT-X" USING L-HANDLE L-TYPE WS-BIG L-LENGTH
      GOBACK.
  END PROGRAM SP-SET-COMPONENT.
 

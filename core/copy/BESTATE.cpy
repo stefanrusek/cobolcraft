@@ -44,3 +44,12 @@
        10 ENDER-USED        BINARY-LONG.
        10 ENDER-UUID        PIC X(16).
        10 ENDER-BE          BINARY-LONG.
+*> The shulker box being placed (31-1 section 13.4): BE-PLACE-STATE notes the patch of the held stack and the position, and BE-BLOCK-SET gives the new
+*> entity the container component of that patch (BE-SHULKER-RESTORE).
+ 01 CORE-BE-PENDING EXTERNAL.
+    05 BP-SET               BINARY-LONG.
+    05 BP-DIM               BINARY-LONG.
+    05 BP-X                 BINARY-LONG.
+    05 BP-Y                 BINARY-LONG.
+    05 BP-Z                 BINARY-LONG.
+    05 BP-VAR               BINARY-LONG.

@@ -75,6 +75,7 @@
  01 WS-VALUE-START         BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SCRATCH             BINARY-LONG.
+ 01 WS-CONTAINED           BINARY-LONG.
  01 WS-FLOAT               FLOAT-SHORT.
  01 WS-BOOLEAN             BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
@@ -111,6 +112,28 @@
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
              WHEN 6
                  CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+*>           container (77, ItemContainerContents): a VarInt count of 0 to 256, then that many stacks, each a count (0 = empty) and, when
+*>           not empty, item, added and removed counts of 0 (a stack with components inside a container is not read)
+             WHEN 77
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINED
+                 IF WS-CONTAINED < 0 OR WS-CONTAINED > 256
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-CONTAINED
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-CONTAINED OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                     IF WS-SCRATCH > 0
+                         CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                         CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                         IF WS-SCRATCH NOT = 0
+                             MOVE 1 TO PB-ERROR
+                         END-IF
+                         CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                         IF WS-SCRATCH NOT = 0
+                             MOVE 1 TO PB-ERROR
+                         END-IF
+                     END-IF
+                 END-PERFORM
              WHEN 13 WHEN 45
                  CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
                  IF WS-SCRATCH < 0 OR WS-SCRATCH > PB-ISX-VALUE-MAX
