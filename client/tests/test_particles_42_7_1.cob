@@ -58,6 +58,13 @@
      MOVE "block f=00 10.50000 64.00000 -2.50000 n=0 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0.15"
          & "000 m=0 st=9 (0)" TO WS-EXP
      PERFORM RUN-CASE
+     MOVE "player fall negative is clamped to zero" TO WS-NAME
+     MOVE "player_fall" TO WS-CLASS
+     MOVE "-2.0 10.0 63.0 -3.0 9.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 64.00000 -2.50000 n=0 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0.15"
+         & "000 m=0 st=9 (0)" TO WS-EXP
+     PERFORM RUN-CASE
      MOVE "bubble column" TO WS-NAME
      MOVE "bubble_column" TO WS-CLASS
      MOVE "10.0 64.0 -3.0" TO WS-INT
