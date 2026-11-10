@@ -1,7 +1,7 @@
 *> The creative inventory screen (docs/protocol/40-menus-7-creative-inventory.md sections 1, 3, 5, 6, 7, 8, 9) on the engines of creative.cob: in creative mode the inventory key opens it (screens/
 *> common.cob) in place of the survival-style inventory screen. CREATIVE-OPEN selects the remembered tab; CREATIVE-BUILD draws the panel (195 x 136 at the screen centre), the displayed tabs, the
 *> title, the 45 grid slots (argument 901 to 945), the 9 hotbar slots (argument 0 to 8), the scroller, the carried stack and the slot tooltip; CREATIVE-INPUT takes the wheel, the scroller drag, the
-*> search text and clicks outside; CREATIVE-ACTION the tab, grid and hotbar clicks (left button, no shift); CREATIVE-LEAVE closes. The survival inventory tab shows no inventory slots (its wrapper
+*> search text and clicks outside; CREATIVE-ACTION the tab, grid and hotbar clicks (left button, no shift); The survival inventory tab shows no inventory slots (its wrapper
 *> layout, the delete slot and the player preview are not drawn), a tab is selected on press (not release) and the right button works only outside the image.
 
  IDENTIFICATION DIVISION.
@@ -102,6 +102,15 @@
  01 L-GW                   BINARY-LONG.
  01 L-GH                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     GO TO MAIN-FLOW.
+
+*> The tooltip of the slot widget just added (WS-K its argument, WS-X WS-Y its corner) when the pointer is in its cell and nothing is carried.
+ HOVER.
+     IF PL-CARRIED-COUNT = 0 AND WS-PX >= WS-X AND WS-PX < WS-X + 18 AND WS-PY >= WS-Y AND WS-PY < WS-Y + 18
+         CALL "SLOT-TOOLTIP" USING CLIENT-STATE WS-K WS-PX WS-PY
+     END-IF
+     .
+ MAIN-FLOW.
      COMPUTE WS-LEFT = (L-GW - 195) / 2
      COMPUTE WS-TOP = (L-GH - 136) / 2
      COMPUTE WS-PX = IN-CURSOR-X / CL-GUI-SCALE
@@ -202,28 +211,7 @@
      END-IF
      GOBACK.
 
-*> The tooltip of the slot widget just added (WS-K its argument, WS-X WS-Y its corner) when the pointer is in its cell and nothing is carried.
- HOVER.
-     IF PL-CARRIED-COUNT = 0 AND WS-PX >= WS-X AND WS-PX < WS-X + 18 AND WS-PY >= WS-Y AND WS-PY < WS-Y + 18
-         CALL "SLOT-TOOLTIP" USING CLIENT-STATE WS-K WS-PX WS-PY
-     END-IF
-     .
  END PROGRAM CREATIVE-BUILD.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. CREATIVE-LEAVE.
-*> USING CLIENT-STATE: the screen closes: the carried stack is client-only here and is dropped; the world screen.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CLCONST.
- 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
- LINKAGE SECTION.
- COPY CLSTATE.
- PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM CR-SCROLLING
-     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
-     GOBACK.
- END PROGRAM CREATIVE-LEAVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-ACTION.

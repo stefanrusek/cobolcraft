@@ -25,6 +25,11 @@
  01 WS-E1                  PIC -(7)9.
  01 WS-E2                  PIC -(7)9.
  01 WS-E3                  PIC -(7)9.
+ 01 WS-BODY                PIC X(8).
+ 01 WS-BLEN                BINARY-LONG VALUE 1.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-MILLI               BINARY-LONG.
  01 WS-EVENTS.
     05 WS-EVENT OCCURS 4 TIMES.
        10 WS-KIND          BINARY-LONG.
@@ -138,6 +143,49 @@
      COMPUTE TL-EXPECTED-N = 7 * 100 + 2
      COMPUTE TL-OBSERVED-N = CR-TAB * 100 + CR-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Backspace in the search box removes a character: flan leaves the search list.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE CC-KEY-BACKSPACE TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-7§8.1 Backspace in the search box refilters: flan finds the 2 flanks, the query is 4 characters" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 402
+     COMPUTE TL-OBSERVED-N = CR-QUERY-LEN * 100 + CR-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Hotbar clicks: take the stack back (the carried stack was dropped by the outside click: carry nothing), merge, top up, swap.
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE 75 TO WS-D1
+     MOVE 168 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§7.4 a click on a hotbar slot with an item and an empty cursor takes the stack: carried 10 x 1, the slot empty" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 10 * 100 + 1
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-ITEM * 100 + PL-CARRIED-COUNT + PL-SLOT-COUNT(1) * 10000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO PL-SLOT-ITEM(1)
+     MOVE 60 TO PL-SLOT-COUNT(1)
+     MOVE 3 TO PL-CARRIED-ITEM
+     MOVE 10 TO PL-CARRIED-COUNT
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§7.4 the same item tops the slot up to 64 and keeps the rest on the cursor: slot 64, cursor 6" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 64 * 100 + 6
+     COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(1) * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 60 TO PL-SLOT-COUNT(1)
+     MOVE 2 TO PL-CARRIED-COUNT
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§7.4 a stack that fits is put in whole: slot 62, the cursor empty" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 62 * 100 + 0
+     COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(1) * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO PL-CARRIED-ITEM
+     MOVE 5 TO PL-CARRIED-COUNT
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§7.4 another item swaps: the slot holds 4 x 5, the cursor 3 x 62" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 4 * 100000 + 5 * 1000 + 3 * 100 + 62
+     COMPUTE TL-OBSERVED-N = PL-SLOT-ITEM(1) * 100000 + PL-SLOT-COUNT(1) * 1000 + PL-CARRIED-ITEM * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
 *>   Escape closes (the inventory key would type into the search box).
      INITIALIZE WS-EVENTS
      MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
@@ -148,6 +196,72 @@
      MOVE SCR-WORLD TO TL-EXPECTED-N
      MOVE SM-SCREEN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A tab that is not displayed gives the default tab when the screen opens: the remembered tab 3 (natural blocks, empty).
+     MOVE 3 TO CR-TAB
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE CC-KEY-E TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-7§1 a remembered tab that is not displayed (natural blocks, empty) gives the default tab 1 when the screen opens" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = SCR-CREATIVE * 100 + 1
+     COMPUTE TL-OBSERVED-N = SM-SCREEN * 100 + CR-TAB
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A standard content set (an empty Update Tags opens it): the building blocks list is over 45, so the scroller shows, the wheel and a drag on it scroll.
+     MOVE X"00" TO WS-BODY(1:1)
+     MOVE 14 TO WS-PACKET-ID
+     CALL "CONTENT-CLIENT-REGISTRY-ADD" USING WS-PACKET-ID WS-BODY WS-BLEN WS-STATUS
+     MOVE 1 TO WS-I
+     CALL "CREATIVE-SELECT" USING CLIENT-STATE WS-I
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 12 AND SM-W-H(WS-I) = 15
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-7§6.2 with more than 45 stacks the scroller (12 x 15) is drawn at (left + 175, top + 18) = (237, 70)" TO TL-CASE
+     MOVE "237:70" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO WS-N
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-SCROLL TO WS-KIND(1)
+     MOVE -1.0 TO WS-EY(1)
+     PERFORM FRAME
+     MOVE "acceptance US12 40-7§5.2 a wheel step down scrolls: the scroll is above 0" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF CR-SCROLL > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     MOVE 480 TO WS-EX(1)
+     MOVE 160 TO WS-EY(1)
+     MOVE WS-EX(1) TO WS-EX(2)
+     MOVE WS-EY(1) TO WS-EY(2)
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     MOVE 480 TO WS-EX(1)
+     MOVE 300 TO WS-EY(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     COMPUTE WS-MILLI ROUNDED = CR-SCROLL * 1000
+     MOVE "acceptance US12 40-7§6.6 a press on the scroller and a drag to y 150: scroll (150 - 70 - 7.5) / 97 = 0.747" TO TL-CASE
+     MOVE 747 TO TL-EXPECTED-N
+     MOVE WS-MILLI TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CONTENT-CLOSE"
      STOP RUN.
 
  FRAME.
