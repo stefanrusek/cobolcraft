@@ -399,6 +399,9 @@
           15 CS-A-TEXT       PIC X(64).
           15 CS-A-LENGTH     BINARY-LONG.
        10 CS-SHOWN           BINARY-LONG.
+       10 CS-FROZEN          PIC 9.            *> 1 while Tab cycles: the list is kept as it was
+       10 CS-SELECTED        BINARY-LONG.      *> the suggestion Tab last took (1 to CS-COUNT + CS-ANSWERS), 0 none
+       10 CS-WORD-START      BINARY-LONG.      *> where the word being typed starts on the line (1-based)
 *>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
 *>       the recipes of the Recipe Book Adds received, in the order first received: display id,
 *>       craftable (crafting requirements present), ingredients (item, count) and result ----
