@@ -13,6 +13,7 @@
  COPY COREAPI.
  COPY CONTENT.
  COPY CBLOCKS.
+ COPY CTOOLS.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -233,18 +234,19 @@
      MOVE "hand 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US14 Use Item with a shield in hand puts it in the off-hand slot" TO TL-CASE
+     MOVE "acceptance US14 Use Item with a shield in hand raises it (it is not worn)" TO TL-CASE
      MOVE "shield" TO WS-ITEM-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ID WS-ROW WS-STATUS
      MOVE WS-ID TO PL-SLOT-ITEM(WS-ROWNO, 5)
      MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, 5)
      CALL "TEST-USE-ITEM" USING WS-ALICE
-     IF MN-EQUIP-ITEM(WS-ROWNO, 5) = WS-ID
-         MOVE "offhand shield" TO TL-OBSERVED
-     ELSE
-         MOVE "offhand other" TO TL-OBSERVED
+     MOVE 0 TO WS-E1
+     IF TS-BLOCK-START(WS-ROWNO) > 0 AND MN-EQUIP-COUNT(WS-ROWNO, 5) = 0
+         MOVE 1 TO WS-E1
      END-IF
-     MOVE "offhand shield" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "raised " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "raised 1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US14 Use Item with an empty hand wears nothing" TO TL-CASE

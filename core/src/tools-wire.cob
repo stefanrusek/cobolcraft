@@ -184,18 +184,38 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  01 WS-MENU-SLOT           BINARY-LONG.
+ 01 WS-OFF-KEY             PIC X(48).
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-DONE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ID L-DONE.
      MOVE 0 TO L-DONE
      MOVE CN-PLAYER(L-ID) TO WS-ROW
-     IF MN-WINDOW(WS-ROW) NOT = 0 OR PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) = 0
+     IF MN-WINDOW(WS-ROW) NOT = 0
+         GOBACK
+     END-IF
+*>   An empty main hand with a shield in the off-hand raises that shield (17 section 3.6); a shield in the main hand is raised, not worn.
+     IF PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) = 0
+         MOVE SPACES TO WS-OFF-KEY
+         IF MN-EQUIP-COUNT(WS-ROW, 5) > 0
+             CALL "TOOLUSE-KEY" USING MN-EQUIP-ITEM(WS-ROW, 5) WS-OFF-KEY
+         END-IF
+         IF WS-OFF-KEY = "shield"
+             CALL "COMBAT-BLOCK-RAISE" USING WS-ROW WS-ONE
+             MOVE 1 TO L-DONE
+         END-IF
          GOBACK
      END-IF
      MOVE PL-HELD(WS-ROW) TO WS-HELD
      CALL "MENU-EQUIP-KIND" USING PL-SLOT-ITEM(WS-ROW, WS-HELD + 1) WS-KIND
      IF WS-KIND < 1 OR WS-KIND > 5
+         GOBACK
+     END-IF
+     IF WS-KIND = 5
+         CALL "COMBAT-BLOCK-RAISE" USING WS-ROW WS-ZERO
+         MOVE 1 TO L-DONE
          GOBACK
      END-IF
      MOVE MN-EQUIP-ITEM(WS-ROW, WS-KIND) TO WS-ITEM
@@ -209,11 +229,7 @@
      MOVE WS-VAR TO PL-SLOT-VAR(WS-ROW, WS-HELD + 1)
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "INV-SLOT-SEND" USING L-ID WS-HELD
-     IF WS-KIND = 5
-         MOVE 45 TO WS-MENU-SLOT
-     ELSE
-         COMPUTE WS-MENU-SLOT = 9 - WS-KIND
-     END-IF
+     COMPUTE WS-MENU-SLOT = 9 - WS-KIND
      CALL "MENU-SLOT-SEND" USING L-ID WS-MENU-SLOT
      MOVE 1 TO L-DONE
      GOBACK.

@@ -7,3 +7,6 @@
        10 TS-OWNER            BINARY-LONG.
        10 TS-LAST-ATTACK      BINARY-DOUBLE.
        10 TS-LAST-HURT        BINARY-LONG.
+       10 TS-BLOCK-START      BINARY-DOUBLE.      *> CW-TICKS + 1 when the shield was raised, 0 down
+       10 TS-BLOCK-HAND       BINARY-LONG.        *> 0 the held slot, 1 the off-hand
+       10 TS-SHIELD-COOLDOWN  BINARY-DOUBLE.      *> CW-TICKS + 1 until which a disabled shield cannot be raised
