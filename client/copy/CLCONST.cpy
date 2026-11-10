@@ -20,6 +20,7 @@
  78 SCR-CREATE-WORLD        VALUE 14.
  78 SCR-CONFIRM-DELETE      VALUE 15.
  78 SCR-OPEN-TO-OTHERS      VALUE 16.
+ 78 SCR-CONTAINER           VALUE 20.  *> a generic container menu (chests, hopper, dispenser, shulker box; screens/container.cob)
  78 SCR-OPTIONS             VALUE 18.  *> the options pages (US16; screens/options.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 

@@ -24,6 +24,13 @@
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
  01 WS-MENU-TYPE           BINARY-LONG.
+ 01 WS-OWN                 BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-CENTRED             BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ 01 WS-TITLE               PIC X(512).
+ 01 WS-TITLE-LENGTH        BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -72,8 +79,26 @@
          WHEN 60
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-MENU-TYPE
+             CALL "CONTAINER-LAYOUT" USING WS-MENU-TYPE WS-OWN WS-HEIGHT WS-Y0 WS-CENTRED WS-KNOWN
+             IF PB-ERROR = 0 AND WS-KNOWN = 1 AND WS-CONTAINER > 0
+                 CALL "PB-GET-TEXT" USING PB-BUFFER WS-TEXT
+                 IF PB-ERROR = 0
+                     CALL "TEXT-RENDER" USING CLIENT-STATE WS-TEXT WS-TITLE WS-TITLE-LENGTH
+                     MOVE WS-TITLE(1:64) TO SM-CX-TITLE
+                     MOVE FUNCTION MIN(WS-TITLE-LENGTH, 64) TO SM-CX-TITLE-LENGTH
+                     MOVE WS-CONTAINER TO BM-ID
+                     MOVE WS-MENU-TYPE TO BM-TYPE
+                     MOVE 0 TO BM-STATE-ID
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+                         MOVE 0 TO BX-COUNT(WS-I) BX-ITEM(WS-I) BX-DAMAGE(WS-I)
+                     END-PERFORM
+                     MOVE SCR-CONTAINER TO WS-ARG
+                     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ARG
+                 END-IF
+             END-IF
              IF PB-ERROR = 0 AND WS-MENU-TYPE = 12 AND WS-CONTAINER > 0
                  MOVE WS-CONTAINER TO BM-ID
+                 MOVE 12 TO BM-TYPE
                  MOVE 0 TO BM-STATE-ID
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
                      MOVE 0 TO BX-COUNT(WS-I) BX-ITEM(WS-I) BX-DAMAGE(WS-I)
@@ -85,7 +110,7 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER
              IF PB-ERROR = 0 AND WS-CONTAINER > 0 AND WS-CONTAINER = BM-ID
                  MOVE 0 TO BM-ID
-                 IF SM-SCREEN = SCR-BENCH
+                 IF SM-SCREEN = SCR-BENCH OR SM-SCREEN = SCR-CONTAINER
                      MOVE SCR-WORLD TO WS-ARG
                      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ARG
                  END-IF

@@ -97,6 +97,8 @@
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
        10 SM-DEATH-CAUSE-LENGTH BINARY-LONG.
+       10 SM-CX-TITLE        PIC X(64).      *> container screen: the Open Screen title, rendered
+       10 SM-CX-TITLE-LENGTH BINARY-LONG.
 *>  ---- server list (client-surface §2 servers.dat; US2-1, US2-2) ----
     05 SL-STATE.
        10 SL-COUNT           BINARY-LONG.
@@ -195,7 +197,7 @@
           15 IX-COUNT        BINARY-LONG.
           15 IX-ITEM         BINARY-LONG.
           15 IX-DAMAGE       BINARY-LONG.
-       10 BX-STACK OCCURS 16 TIMES.
+       10 BX-STACK OCCURS 64 TIMES.
           15 BX-COUNT        BINARY-LONG.
           15 BX-ITEM         BINARY-LONG.
           15 BX-DAMAGE       BINARY-LONG.
@@ -205,6 +207,7 @@
           15 MX-MAX          BINARY-LONG.
        10 BM-ID              BINARY-LONG.
        10 BM-STATE-ID        BINARY-LONG.
+       10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
@@ -298,6 +301,7 @@
        10 PL-VEHICLE         BINARY-LONG.    *> entity id of the vehicle ridden, -1 none
        10 PL-MOUNT-HEARTS    BINARY-LONG.
        10 PL-MOUNT-HEALTH    BINARY-LONG.
+       10 LL-REASON          BINARY-LONG.    *> level-loading reason of the last Respawn: 0 none, 1 Nether portal, 2 End portal, 3 other (39 section 8.4)
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at

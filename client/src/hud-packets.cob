@@ -12,7 +12,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO HB-FLASH-ARMED HB-COOLDOWN HB-BLINK HB-BLINK-TIME PL-MOUNT-HEARTS PL-MOUNT-HEALTH
+     MOVE 0 TO HB-FLASH-ARMED HB-COOLDOWN HB-BLINK HB-BLINK-TIME PL-MOUNT-HEARTS PL-MOUNT-HEALTH LL-REASON
      MOVE -1 TO PL-VEHICLE
      GOBACK.
  END PROGRAM HUD-NEW-PLAYER.
@@ -188,3 +188,31 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM HUD-ENTITY-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LOADING-REASON.
+*> USING CLIENT-STATE, old dimension name, new dimension name (PIC X(64)): LL-REASON of a Respawn (39 section 8.4): none for the same dimension or
+*> while the player is dying (health 0 or less); else the Nether portal when either is the Nether, the End portal when either is the End, else other.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NETHER              PIC X(64) VALUE "minecraft:the_nether".
+ 01 WS-END                 PIC X(64) VALUE "minecraft:the_end".
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-OLD                  PIC X(64).
+ 01 L-NEW                  PIC X(64).
+ PROCEDURE DIVISION USING CLIENT-STATE L-OLD L-NEW.
+     MOVE 0 TO LL-REASON
+     IF L-OLD = L-NEW OR PL-HEALTH <= 0
+         GOBACK
+     END-IF
+     EVALUATE TRUE
+         WHEN L-OLD = WS-NETHER OR L-NEW = WS-NETHER
+             MOVE 1 TO LL-REASON
+         WHEN L-OLD = WS-END OR L-NEW = WS-END
+             MOVE 2 TO LL-REASON
+         WHEN OTHER
+             MOVE 3 TO LL-REASON
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM LOADING-REASON.
