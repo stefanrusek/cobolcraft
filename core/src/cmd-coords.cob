@@ -199,12 +199,13 @@
 *> The float run is past the largest finite float: the cursor goes after the run.
  NOT-FINITE.
      MOVE BR-E-CURSOR TO WS-RC
-     PERFORM UNTIL WS-RC >= BR-IN-LENGTH
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-RC >= BR-IN-LENGTH OR WS-DONE = 1
          MOVE BR-IN-TEXT(WS-RC + 1:1) TO WS-CH
          IF (WS-CH >= "0" AND WS-CH <= "9") OR WS-CH = "." OR WS-CH = "-"
              ADD 1 TO WS-RC
          ELSE
-             EXIT PERFORM
+             MOVE 1 TO WS-DONE
          END-IF
      END-PERFORM
      MOVE "argument.angle.invalid" TO WS-KEY

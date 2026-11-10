@@ -124,23 +124,7 @@
  01 L-SLOTS.
     05 L-SLOT              BINARY-LONG OCCURS 64 TIMES.
  PROCEDURE DIVISION USING L-TEXT L-LENGTH L-COUNT L-SLOTS.
-     MOVE 0 TO L-COUNT
-     IF L-LENGTH > 16 AND L-LENGTH > 0
-         PERFORM PREFIXED
-     ELSE
-         MOVE SPACES TO WS-NAME
-         MOVE L-TEXT(1:L-LENGTH) TO WS-NAME
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
-             IF WS-FX-NAME(WS-I) = WS-NAME AND L-LENGTH > 0
-                 MOVE 1 TO L-COUNT
-                 MOVE WS-FX-SLOT(WS-I) TO L-SLOT(1)
-             END-IF
-         END-PERFORM
-         IF L-COUNT = 0
-             PERFORM PREFIXED
-         END-IF
-     END-IF
-     GOBACK.
+     GO TO MAIN-LINE.
 
 *> The text is prefix "." tail; the dot is the last one.
  PREFIXED.
@@ -202,7 +186,27 @@
              END-IF
          END-IF
      END-IF.
- END PROGRAM BR-SLOT-LOOKUP.
+ 
+
+ MAIN-LINE.
+     MOVE 0 TO L-COUNT
+     IF L-LENGTH > 16 AND L-LENGTH > 0
+         PERFORM PREFIXED
+     ELSE
+         MOVE SPACES TO WS-NAME
+         MOVE L-TEXT(1:L-LENGTH) TO WS-NAME
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+             IF WS-FX-NAME(WS-I) = WS-NAME AND L-LENGTH > 0
+                 MOVE 1 TO L-COUNT
+                 MOVE WS-FX-SLOT(WS-I) TO L-SLOT(1)
+             END-IF
+         END-PERFORM
+         IF L-COUNT = 0
+             PERFORM PREFIXED
+         END-IF
+     END-IF
+     GOBACK.
+END PROGRAM BR-SLOT-LOOKUP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-ARG-EXT.

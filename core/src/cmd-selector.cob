@@ -68,7 +68,7 @@
  01 WS-ID-LENGTH           BINARY-LONG.
  01 WS-ID-FLAGS            BINARY-LONG.
  01 WS-IS-TAG              BINARY-LONG.
- 01 WS-NAME                PIC X(48).
+ 01 WS-NAME                PIC X(1040).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-SNBT-KIND           BINARY-LONG.
  01 WS-DEFAULT-NS          PIC X(10) VALUE "minecraft:".

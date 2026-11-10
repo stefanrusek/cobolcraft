@@ -51,47 +51,7 @@
  01 L-STR                  PIC X(1024).
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING L-CURSOR L-STR L-LENGTH.
-     MOVE 0 TO L-LENGTH
-     MOVE SPACES TO L-STR
-     IF L-CURSOR < BR-IN-LENGTH AND (BR-IN-TEXT(L-CURSOR + 1:1) = '"' OR BR-IN-TEXT(L-CURSOR + 1:1) = "'")
-         MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-QUOTE
-         ADD 1 TO L-CURSOR
-         MOVE 0 TO WS-DONE
-         PERFORM UNTIL WS-DONE = 1
-             IF L-CURSOR >= BR-IN-LENGTH
-                 MOVE "parsing.quote.expected.end" TO WS-KEY
-                 MOVE BR-IN-LENGTH TO WS-RC
-                 PERFORM RAISE-NOW
-                 MOVE 1 TO WS-DONE
-             ELSE
-                 MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
-                 ADD 1 TO L-CURSOR
-                 EVALUATE TRUE
-                     WHEN WS-CH = WS-QUOTE
-                         MOVE 1 TO WS-DONE
-                     WHEN WS-CH = "\"
-                         PERFORM DO-ESCAPE
-                     WHEN OTHER
-                         ADD 1 TO L-LENGTH
-                         MOVE WS-CH TO L-STR(L-LENGTH:1)
-                 END-EVALUATE
-             END-IF
-         END-PERFORM
-     ELSE
-         PERFORM UNTIL L-CURSOR >= BR-IN-LENGTH
-             MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
-             IF (WS-CH >= "0" AND WS-CH <= "9") OR (WS-CH >= "A" AND WS-CH <= "Z")
-                     OR (WS-CH >= "a" AND WS-CH <= "z") OR WS-CH = "_" OR WS-CH = "-" OR WS-CH = "."
-                     OR WS-CH = "+"
-                 ADD 1 TO L-LENGTH
-                 MOVE WS-CH TO L-STR(L-LENGTH:1)
-                 ADD 1 TO L-CURSOR
-             ELSE
-                 EXIT PERFORM
-             END-IF
-         END-PERFORM
-     END-IF
-     GOBACK.
+     GO TO MAIN-LINE.
 
 *> After a backslash: the character (cursor after it). \\ \" \' keep the character; b f n r s t map to control
 *> characters; x u U read 2, 4 or 8 hexadecimal digits as a code point (ASCII only is stored as itself, others as ?).
@@ -186,7 +146,51 @@
          PERFORM RAISE-NOW
          MOVE 1 TO WS-DONE
      END-IF.
- END PROGRAM BR-SNBT-STRING.
+ 
+
+ MAIN-LINE.
+     MOVE 0 TO L-LENGTH
+     MOVE SPACES TO L-STR
+     IF L-CURSOR < BR-IN-LENGTH AND (BR-IN-TEXT(L-CURSOR + 1:1) = '"' OR BR-IN-TEXT(L-CURSOR + 1:1) = "'")
+         MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-QUOTE
+         ADD 1 TO L-CURSOR
+         MOVE 0 TO WS-DONE
+         PERFORM UNTIL WS-DONE = 1
+             IF L-CURSOR >= BR-IN-LENGTH
+                 MOVE "parsing.quote.expected.end" TO WS-KEY
+                 MOVE BR-IN-LENGTH TO WS-RC
+                 PERFORM RAISE-NOW
+                 MOVE 1 TO WS-DONE
+             ELSE
+                 MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
+                 ADD 1 TO L-CURSOR
+                 EVALUATE TRUE
+                     WHEN WS-CH = WS-QUOTE
+                         MOVE 1 TO WS-DONE
+                     WHEN WS-CH = "\"
+                         PERFORM DO-ESCAPE
+                     WHEN OTHER
+                         ADD 1 TO L-LENGTH
+                         MOVE WS-CH TO L-STR(L-LENGTH:1)
+                 END-EVALUATE
+             END-IF
+         END-PERFORM
+     ELSE
+         PERFORM UNTIL L-CURSOR >= BR-IN-LENGTH
+             MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
+             IF (WS-CH >= "0" AND WS-CH <= "9") OR (WS-CH >= "A" AND WS-CH <= "Z")
+                     OR (WS-CH >= "a" AND WS-CH <= "z") OR WS-CH = "_" OR WS-CH = "-" OR WS-CH = "."
+                     OR WS-CH = "+"
+                 ADD 1 TO L-LENGTH
+                 MOVE WS-CH TO L-STR(L-LENGTH:1)
+                 ADD 1 TO L-CURSOR
+             ELSE
+                 EXIT PERFORM
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+END PROGRAM BR-SNBT-STRING.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-SNBT-VALUE RECURSIVE.

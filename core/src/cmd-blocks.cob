@@ -136,10 +136,8 @@
      MOVE 2 TO WS-N-ARGS
      MOVE SPACES TO WS-A1 WS-A2
      IF WS-ORDER = 1
+*>       The block of an order-1 error is a block of the table, whose key has at most 48 characters.
          MOVE WS-NAME-LENGTH TO WS-L1
-         IF WS-L1 > 64
-             MOVE 64 TO WS-L1
-         END-IF
          MOVE WS-NAME(1:WS-L1) TO WS-A1(1:WS-L1)
          MOVE WS-STR-LENGTH TO WS-L2
          IF WS-L2 > 64

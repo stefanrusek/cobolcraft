@@ -753,8 +753,6 @@
  01 WS-STR-LENGTH          BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-RUN-LENGTH          BINARY-LONG.
- 01 WS-RUN                 PIC X(1024).
  01 WS-KEY                 PIC X(48).
  01 WS-A1                  PIC X(64).
  01 WS-L1                  BINARY-LONG.
@@ -773,16 +771,6 @@
 *> ---- raising ------------------------------------------------------------------------------
  RAISE-NOW.
      CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC.
-
- RAISE-RUN.
-*> an exception with the run text (WS-RUN) as its one argument, at cursor WS-RC
-     MOVE 1 TO WS-N-ARGS
-     MOVE WS-RUN(1:WS-RUN-LENGTH) TO WS-A1
-     MOVE WS-RUN-LENGTH TO WS-L1
-     IF WS-L1 > 64
-         MOVE 64 TO WS-L1
-     END-IF
-     PERFORM RAISE-NOW.
 
 *> ---- readString / readUnquotedString (15a §1.4; BR-READ-STRING) ---------------------------------
 *> From WS-C; the value in WS-STR (WS-STR-LENGTH); a failure sets BR-E-KEY.
