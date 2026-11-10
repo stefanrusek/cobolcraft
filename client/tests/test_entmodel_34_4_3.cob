@@ -786,6 +786,12 @@
      MOVE -0.5 TO WS-E
      MOVE WS-OV(21) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 9 TO WS-IV(1)
+     CALL "EF4-MUSHROOM-OPS" USING WS-IN WS-OUT
+     MOVE "3.2 a copy number outside 1..3 has no operations (coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
      MOVE "MOOSHROOM" TO WS-LAYER
      CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
      MOVE 8 TO WS-IV(1)

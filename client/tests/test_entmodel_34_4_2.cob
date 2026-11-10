@@ -893,6 +893,12 @@
      MOVE 0 TO WS-E
      MOVE MM-CXROT(WS-P) TO WS-O
      PERFORM CHECK-NUM
+     MOVE "NOT_A_LAYER" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "an unknown layer id is not built (ok 0; coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
      STOP RUN.
 
  COPY EMCHKP.

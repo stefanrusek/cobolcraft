@@ -253,12 +253,7 @@
      MOVE 0 TO L-O(3)
      IF WS-I NOT = WS-J
          COMPUTE L-O(3) = (L-I(2) - L-I(2 + WS-I)) / (L-I(2 + WS-J) - L-I(2 + WS-I))
-         IF L-O(3) < 0
-             MOVE 0 TO L-O(3)
-         END-IF
-         IF L-O(3) > 1
-             MOVE 1 TO L-O(3)
-         END-IF
+         COMPUTE L-O(3) = FUNCTION MIN(1, FUNCTION MAX(0, L-O(3)))
      END-IF
      GOBACK.
  END PROGRAM EF5-KF-INDEX.
@@ -269,13 +264,21 @@
  WORKING-STORAGE SECTION.
  01 WS-MS                  BINARY-LONG.
  01 WS-K                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
  LINKAGE SECTION.
  01 L-IN.
     05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
  01 L-OUT.
     05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
  PROCEDURE DIVISION USING L-IN L-OUT.
-     CALL "EM5-WALK-TIME" USING L-I(1) L-I(2) L-I(3) L-I(4) WS-MS WS-K
+     MOVE L-I(1) TO WS-A
+     MOVE L-I(2) TO WS-B
+     MOVE L-I(3) TO WS-C
+     MOVE L-I(4) TO WS-D
+     CALL "EM5-WALK-TIME" USING WS-A WS-B WS-C WS-D WS-MS WS-K
      COMPUTE L-O(1) = WS-MS / 1000
      MOVE WS-K TO L-O(2)
      GOBACK.
