@@ -435,6 +435,50 @@
      MOVE "acceptance US12 40-5§3 pyramid level 2: the first two tiers are clickable: speed (98, 32), haste (122, 32), resistance (98, 57), jump boost (122, 57); strength (110, 82) is not" TO TL-CASE
      MOVE "54:98:32:1 54:122:32:3 54:98:57:11 54:122:57:8 57:235:117:0 " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   3.7 the payment strip: five real items at y top + 109 (netherite ingot, emerald, diamond, gold ingot, iron ingot at left + 20, 41, 63, 86, 108), the confirm and cancel
+*>   icons 18 x 18 at (+2, +2) of their buttons.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) >= 801 AND SM-W-ARG(WS-I) <= 805
+             MOVE SM-W-ARG(WS-I) TO WS-ARG
+             CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-D1 WS-D2 WS-D3
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             MOVE WS-D1 TO WS-E3
+             STRING FUNCTION TRIM(WS-E3) "@" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) " "
+                 DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 40-5§3.7 the five payment items (one of each) are drawn at y 119 and x 65, 86, 108, 131, 153 (netherite ingot, emerald, diamond, gold ingot, iron ingot)" TO TL-CASE
+     MOVE "1@65:119 1@86:119 1@108:119 1@131:119 1@153:119 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "grit            " TO WS-TOKEN
+     CALL "ITEM-BY-KEY" USING CLIENT-STATE WS-TOKEN WS-D1
+     MOVE "acceptance US12 40-5§3.7 an item is found by its key: grit is item 5 of the table" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-D1 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "emerald         " TO WS-TOKEN
+     CALL "ITEM-BY-KEY" USING CLIENT-STATE WS-TOKEN WS-D1
+     MOVE "acceptance US12 40-5§3.7 a key the table does not hold (the stand-in table has no emerald) gives item 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-D1 TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 18 AND SM-W-H(WS-I) = 18 AND SM-W-Y(WS-I) = 119
+             MOVE SM-W-X(WS-I) TO WS-E1
+             STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 40-5§3.7 the confirm and cancel buttons carry an 18 x 18 icon at (+2, +2): x 211 and 237, y 119" TO TL-CASE
+     MOVE "211 237 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-ARG
      MOVE ACT-BEACON-PRIMARY TO WS-ACTION
      CALL "MENU-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG

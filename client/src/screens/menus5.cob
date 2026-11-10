@@ -507,6 +507,11 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-PAY-KEYS             PIC X(80).
+ 01 WS-PAY-TABLE REDEFINES WS-PAY-KEYS.
+    05 WS-PAY-KEY          PIC X(16) OCCURS 5 TIMES.
+ 01 WS-PAY-DXS.
+    05 WS-PAY-DX           BINARY-LONG OCCURS 5 TIMES.
  01 WS-TABLE.
 *>   One row per power button: effect id, tier, x, y, secondary flag.
     05 WS-ROW OCCURS 6 TIMES.
@@ -733,8 +738,60 @@
      MOVE "gui.cancel" TO WS-KEY
      MOVE 10 TO WS-KEY-LENGTH
      PERFORM TOOLTIP-KEY
+*>   The icons of confirm and cancel (18 x 18 at (+2, +2); the sprites are not in the built-in pack: a swatch each).
+     MOVE 18 TO WS-W WS-H
+     COMPUTE WS-Y = L-TOP + 109
+     MOVE ACT-NONE TO WS-ACTION
+     MOVE WK-OVERLAY TO WS-KIND
+     MOVE SPACES TO WS-TEXT
+     MOVE 0 TO WS-LENGTH WS-STATE
+     COMPUTE WS-X = L-LEFT + 166
+     MOVE SW-SELECTED TO WS-SWATCH
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     COMPUTE WS-X = L-LEFT + 192
+     MOVE SW-HURT TO WS-SWATCH
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+*>   The payment strip: netherite ingot, emerald, diamond, gold ingot and iron ingot at y + 109 and x + 20, 41, 63, 86, 108, as bare items (display stacks 1 to 5).
+     MOVE "netherite_ingot  emerald          diamond          gold_ingot       iron_ingot       " TO WS-PAY-KEYS
+     MOVE 20 TO WS-PAY-DX(1)
+     MOVE 41 TO WS-PAY-DX(2)
+     MOVE 63 TO WS-PAY-DX(3)
+     MOVE 86 TO WS-PAY-DX(4)
+     MOVE 108 TO WS-PAY-DX(5)
+     MOVE WK-SLOT TO WS-KIND
+     MOVE 16 TO WS-W WS-H
+     MOVE 3 TO WS-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         CALL "ITEM-BY-KEY" USING CLIENT-STATE WS-PAY-KEY(WS-I) MC-DISP-ITEM(WS-I)
+         MOVE 1 TO MC-DISP-COUNT(WS-I)
+         COMPUTE WS-ARG = 800 + WS-I
+         COMPUTE WS-X = L-LEFT + WS-PAY-DX(WS-I)
+         COMPUTE WS-Y = L-TOP + 109
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     END-PERFORM
      GOBACK.
  END PROGRAM BEACON-DECOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-BY-KEY.
+*> USING CLIENT-STATE, item key (PIC X(16), without namespace), item id out (0 when no item has that key).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-KEY                  PIC X(16).
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-KEY L-ITEM.
+     MOVE 0 TO L-ITEM
+     PERFORM VARYING WS-I FROM CL-ITEM-COUNT BY -1 UNTIL WS-I < 1
+         IF CL-IT-KEY(WS-I) = L-KEY
+             COMPUTE L-ITEM = WS-I - 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ITEM-BY-KEY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LECTERN-DECOR.
