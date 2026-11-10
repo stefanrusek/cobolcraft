@@ -143,6 +143,8 @@
              IF WS-R-DAMAGE NOT = SPACES
                  MOVE FUNCTION TRIM(WS-R-DAMAGE) TO L-VALUE
                  MOVE CT-OK TO L-STATUS
+             ELSE
+                 CALL "ITEM-DEFAULT-COMPONENT" USING WS-ROW L-NAME L-VALUE L-STATUS
              END-IF
          WHEN OTHER
              MOVE 1 TO WS-POINTER

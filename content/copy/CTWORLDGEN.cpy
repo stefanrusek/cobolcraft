@@ -30,6 +30,8 @@
  01 WG-STORE EXTERNAL.
     05 WG-COUNTS.
        10 WG-COUNT          BINARY-LONG OCCURS 4 TIMES.
+*> Raised by every WG-ALLOC: a stamp for the caches that depend on the content (the node memo of core/src/density.cob).
+    05 WG-LOAD-GEN          BINARY-LONG.
     05 WGN-ROW OCCURS 32768 TIMES.
        10 WGN-DOMAIN        BINARY-LONG.
        10 WGN-TYPE          BINARY-LONG.
@@ -39,6 +41,7 @@
        10 WGN-INT           BINARY-LONG OCCURS 12 TIMES.
        10 WGN-TEXT-1        PIC X(160).
        10 WGN-TEXT-2        PIC X(112).
+       10 WGN-TEXT-3        PIC X(112).
     05 WSP-ROW OCCURS 16384 TIMES.
        10 WSP-COORD         BINARY-LONG.
        10 WSP-FIRST         BINARY-LONG.
