@@ -649,7 +649,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0398 [US9-core] Make the creative cursor throw work in `core/src/inventory.cob` (CC-0006)
 - [x] T0399 [US9-core] Remove the 001 crafting module programs `CRAFT-TRY`, `CRAFT-BOOK-BUILD`, `CRAFT-BOOK-SEND`, `CRAFT-PLACE` from `core/src/crafting.cob` and their tests (FR-028), keeping nothing the new modules do not use
 - [x] T0400 [US9-core] Write contract tests in `core/tests/contract_wire_server.cob` for the container and recipe-book fixtures
-- [ ] T0401 [US9-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0401 [US9-core] Gate: run `make gate-core` and record the command and real output (`make gate-core`: lint clean, passed 1775 failed 0, coverage 43 objects 0 uncovered lines; scratchpad/play3/gate_core_2.txt)
 
 #### Phase 33: US10-core — crafting bench menu
 
