@@ -480,3 +480,142 @@
      END-IF
      GOBACK.
  END PROGRAM EMD-HEAD-TRANSFORM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-SHADOW.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(24).
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> USING entity-type IN(scale, ageScale) OUT(shadow radius): the renderer constant (0.5, the giant 0.5 x 6.0, the armor stand 0) times the scale and, for a
+*> mob, the age scale (2.1, 5.2).
+ PROCEDURE DIVISION USING L-TYPE L-IN L-OUT.
+     EVALUATE L-TYPE
+         WHEN "armor_stand"
+             MOVE 0 TO L-O(1)
+         WHEN "giant"
+             COMPUTE L-O(1) = 0.5 * 6 * L-I(1) * L-I(2)
+         WHEN OTHER
+             COMPUTE L-O(1) = 0.5 * L-I(1) * L-I(2)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EMD-SHADOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-SHAKING.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(24).
+ 01 L-FROZEN               BINARY-LONG.
+ 01 L-CONVERTING           BINARY-LONG.
+ 01 L-STATE-SHAKING        BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+*> USING type fully-frozen converting skeleton-shaking flag: isShaking (2.2): the zombie, husk, drowned, piglin and piglin brute renderers shake when frozen or
+*> converting, the skeleton family by the state's own flag alone, every other renderer when frozen.
+ PROCEDURE DIVISION USING L-TYPE L-FROZEN L-CONVERTING L-STATE-SHAKING L-FLAG.
+     MOVE 0 TO L-FLAG
+     EVALUATE L-TYPE
+         WHEN "zombie" WHEN "husk" WHEN "drowned" WHEN "piglin" WHEN "piglin_brute"
+             IF L-FROZEN NOT = 0 OR L-CONVERTING NOT = 0
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN "skeleton" WHEN "stray" WHEN "bogged" WHEN "parched" WHEN "wither_skeleton"
+             IF L-STATE-SHAKING NOT = 0
+                 MOVE 1 TO L-FLAG
+             END-IF
+         WHEN OTHER
+             IF L-FROZEN NOT = 0
+                 MOVE 1 TO L-FLAG
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EMD-SHAKING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-ARMORSTAND-ROT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-KIND                FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(body rotation, wiggle) OUT(operation count, 4 numbers per operation as EM6-POSE-CHAIN): the armor stand's setupRotations: rotate Y by 180 - bodyRot, then
+*> when wiggle < 5 by sin(wiggle / 1.5 pi) x 3 degrees (2.2).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO WS-N
+     MOVE 3 TO WS-KIND
+     COMPUTE WS-A = 180 - L-I(1)
+     MOVE 0 TO WS-B WS-C
+     CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
+     IF L-I(2) < 5
+         COMPUTE WS-A = FUNCTION SIN(L-I(2) / 1.5 * 3.141592653589793) * 3
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
+     END-IF
+     MOVE WS-N TO L-O(1)
+     GOBACK.
+ END PROGRAM EMD-ARMORSTAND-ROT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-DROWNED-ROT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-KIND                FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(swim amount, xRot, bounding box height, scale) OUT(count, operations): the extra operations of the drowned's setupRotations after the base steps: with
+*> swimAmount > 0, rotate about X by lerp(swim, 0, -10 - xRot) degrees around the point (0, height / 2 / scale, 0) (2.2).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO WS-N
+     IF L-I(1) > 0
+         COMPUTE WS-H = L-I(3) / 2 / L-I(4)
+         MOVE 1 TO WS-KIND
+         MOVE 0 TO WS-A WS-C
+         MOVE WS-H TO WS-B
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
+         MOVE 5 TO WS-KIND
+         COMPUTE WS-A = L-I(1) * (-10 - L-I(2))
+         MOVE 0 TO WS-B
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
+         MOVE 1 TO WS-KIND
+         MOVE 0 TO WS-A
+         COMPUTE WS-B = -WS-H
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
+     END-IF
+     MOVE WS-N TO L-O(1)
+     GOBACK.
+ END PROGRAM EMD-DROWNED-ROT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-WALK-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(riding, alive, walk position, walk speed) OUT(position, speed): zero while riding or dead (2.3).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2)
+     IF L-I(1) = 0 AND L-I(2) NOT = 0
+         MOVE L-I(3) TO L-O(1)
+         MOVE L-I(4) TO L-O(2)
+     END-IF
+     GOBACK.
+ END PROGRAM EMD-WALK-STATE.
