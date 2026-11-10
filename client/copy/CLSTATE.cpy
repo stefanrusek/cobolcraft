@@ -263,6 +263,19 @@
 *>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
 *>     last sent (itemName; AN-SENT-NULL 1 = none yet).
 *>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
+*>     The creative inventory engines (40-7): the selected tab (1 to 14), the scroll (0 to 1), the picker's stacks (item, count, 1 = the locked paper of the hotbar tab), the drop
+*>     throttler counter (9.3), the saved hotbars (9 x 9 stacks, 10).
+       10 CR-TAB             BINARY-LONG.
+       10 CR-SCROLL          FLOAT-SHORT.
+       10 CR-COUNT           BINARY-LONG.
+       10 CR-STACK OCCURS 128 TIMES.
+          15 CR-STACK-ITEM   BINARY-LONG.
+          15 CR-STACK-COUNT  BINARY-LONG.
+          15 CR-STACK-LOCK   BINARY-LONG.
+       10 CR-THROTTLE        BINARY-LONG.
+       10 CR-HB OCCURS 81 TIMES.
+          15 CR-HB-ITEM      BINARY-LONG.
+          15 CR-HB-COUNT     BINARY-LONG.
        10 MT-ENTITY          BINARY-LONG.
        10 MT-KIND            BINARY-LONG.
        10 MT-SADDLE          BINARY-LONG.
