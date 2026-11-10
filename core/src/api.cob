@@ -424,6 +424,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-LOOT-STATUS         BINARY-LONG.
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -444,6 +445,10 @@
      MOVE CORE-WO-OK TO L-STATUS
      IF WS-STATUS NOT = CT-OK
          MOVE CORE-WO-PACKS-NOT-OK TO L-STATUS
+     ELSE
+*>       The loot tables of the set (world-loot.cob): a standard or debug set uses them, a cobolcraft set (and a set whose loot
+*>       data fails its shapes, with the errors on standard error) keeps the stand-in yield of BLOCK-DROPS.
+         CALL "WORLD-LOOT-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
      END-IF
      GOBACK.
  END PROGRAM WORLD-CONTENT-OPEN.
