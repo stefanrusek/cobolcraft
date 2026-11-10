@@ -15,7 +15,11 @@
  01 WS-CONN                BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ACTION              BINARY-LONG VALUE 7.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-Z1                  BINARY-LONG VALUE 0.
+ 01 WS-Z2                  BINARY-LONG VALUE 0.
+ 01 WS-Z3                  BINARY-LONG VALUE 0.
+ 01 WS-Z4                  BINARY-LONG VALUE 0.
+ 01 WS-Z5                  BINARY-LONG VALUE 0.
  01 WS-SLOT                BINARY-LONG.
  01 WS-BUTTON              BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
@@ -47,7 +51,7 @@
 
      MOVE "test offhand swap Player Action 7 exchanges the held slot (hotbar 3, menu slot 39) with the "
          & "off-hand and sends Set Slot for both with the state id raised once" TO TL-CASE
-     CALL "TEST-ACTION" USING WS-CONN WS-ACTION WS-ZERO WS-ZERO WS-ZERO WS-ZERO WS-ZERO
+     CALL "TEST-ACTION" USING WS-CONN WS-ACTION WS-Z1 WS-Z2 WS-Z3 WS-Z4 WS-Z5
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-TEXT-2
      MOVE PL-SLOT-ITEM(WS-ROW, 4) TO WS-EDIT

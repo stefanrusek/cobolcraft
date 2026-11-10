@@ -69,13 +69,17 @@
      MOVE "4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test blocks Player Action 7 (swap item with offhand) is not answered here" TO TL-CASE
+     MOVE "test blocks Player Action 7 (swap item with offhand) swaps the held slot with the off-hand "
+         & "and places no block" TO TL-CASE
      MOVE 7 TO WS-NUM
      MOVE 3 TO WS-SEQ
      CALL "TEST-ACTION" USING WS-CONN WS-NUM WS-X WS-Y WS-Z WS-FACE WS-SEQ
      PERFORM LIST-AND-STATE
-     MOVE "state 0" TO TL-EXPECTED
+     MOVE "20(2,36=0x0) 20(2,45=2x64) state 0" TO TL-EXPECTED
      PERFORM CHECK
+*>   The second swap puts the held stack back for the placement below.
+     CALL "TEST-ACTION" USING WS-CONN WS-NUM WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
 
      MOVE "test blocks a block placed in chunk (2, 0) next to the loaded but unlit chunk (3, 0) "
          & "sends Light Update for the lit chunk only" TO TL-CASE
