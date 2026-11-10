@@ -167,6 +167,7 @@
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-WORN                BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
 *> discarded unread in play (0x32 Resource Pack Response).
  01 WS-LATER               PIC X(69) VALUE
@@ -245,7 +246,10 @@
          WHEN L-PACKET-ID = 42
              CALL "MOVE-SPRINT" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 67
-             CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
+             CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
+             IF WS-WORN = 0
+                 CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
+             END-IF
          WHEN L-PACKET-ID = 39
              CALL "RECIPE-PLACE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 47

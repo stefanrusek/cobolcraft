@@ -271,6 +271,8 @@
      CALL "GI-BLOCK-YIELD" USING L-DIM L-X L-Y L-Z WS-BLOCK
      COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
      CALL "HUNGER-EXHAUST" USING L-ROW WS-EXHAUST
+*>   The held tool pays the durability of the broken block (17 section 5.1; tools-wire.cob).
+     CALL "COMBAT-BREAK-WEAR" USING L-ROW
      GOBACK.
  END PROGRAM BREAK-FINISH.
 

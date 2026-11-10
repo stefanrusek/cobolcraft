@@ -1,0 +1,196 @@
+*> Acceptance test, US14 tools through the real play path (docs/protocol/17 sections 3.1, 3.16 and 5.1; Player Action, Use Item On and Use Item in,
+*> block changes and Container Set Slot out): Alice breaks dirt with an iron_shovel (the held tool pays 1 durability), strips a log with an
+*> iron_axe, makes a path with the shovel, tills with an iron_hoe and wears an iron_helmet with Use Item. The world opens as the cobolcraft set and
+*> the core tables are rebuilt from the standard set (TEST-STANDARD-TABLES); the mineable/shovel tag is bound for the test. Alice stands at
+*> (20.5, 101, 20.5); the targets are at x 24, z 20 (y 101 and the ground at y 100).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US14-TOOLS-WIRE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CBLOCKS.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-ROWNO               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-MOVE                BINARY-LONG VALUE 31.
+ 01 WS-FX                  FLOAT-LONG VALUE 20.5.
+ 01 WS-FY                  FLOAT-LONG VALUE 101.
+ 01 WS-FZ                  FLOAT-LONG VALUE 20.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE -90.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-TICKS               BINARY-LONG VALUE 1.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW                 PIC X(270).
+ 01 WS-BROW                PIC X(819).
+ 01 WS-BLOCK-ID            BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:mineable/shovel".
+ 01 WS-MEMBERS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 2 TIMES.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SHOVEL              BINARY-LONG.
+ 01 WS-AXE                 BINARY-LONG.
+ 01 WS-HOE                 BINARY-LONG.
+ 01 WS-HELMET              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG VALUE 24.
+ 01 WS-Y                   BINARY-LONG VALUE 101.
+ 01 WS-Z                   BINARY-LONG VALUE 20.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG VALUE 1.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROWNO
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-STANDARD-TABLES"
+     MOVE "iron_shovel" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SHOVEL WS-ROW WS-STATUS
+     MOVE "iron_axe" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-AXE WS-ROW WS-STATUS
+     MOVE "iron_hoe" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-HOE WS-ROW WS-STATUS
+     MOVE "iron_helmet" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-HELMET WS-ROW WS-STATUS
+     MOVE WS-SHOVEL TO PL-SLOT-ITEM(WS-ROWNO, 1)
+     MOVE WS-AXE TO PL-SLOT-ITEM(WS-ROWNO, 2)
+     MOVE WS-HOE TO PL-SLOT-ITEM(WS-ROWNO, 3)
+     MOVE WS-HELMET TO PL-SLOT-ITEM(WS-ROWNO, 4)
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 4
+         MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, WS-SLOT)
+         MOVE 0 TO PL-SLOT-VAR(WS-ROWNO, WS-SLOT)
+     END-PERFORM
+     MOVE "dirt" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE WS-BLOCK-ID TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE 0 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+
+     MOVE "acceptance US14 Alice breaks dirt with an iron_shovel: the block is gone and the shovel has 1 damage" TO TL-CASE
+     MOVE 0 TO WS-ACTION
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 3 TO WS-ACTION
+     ADD 1 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+     MOVE PL-SLOT-VAR(WS-ROWNO, 1) TO WS-HANDLE
+     CALL "SP-GET-DAMAGE" USING WS-SHOVEL WS-HANDLE WS-DAMAGE
+     MOVE WS-STATE TO WS-E1
+     MOVE WS-DAMAGE TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING "state " FUNCTION TRIM(WS-E1) " damage " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "state 0 damage 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US14 the iron_axe strips an oak_log, keeping its axis, for 1 durability" TO TL-CASE
+     MOVE "oak_log" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 1 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block stripped_oak_log tool damage 1" TO TL-EXPECTED
+     MOVE 2 TO WS-SLOT
+     PERFORM OBSERVE-DAMAGE
+     PERFORM CHECK
+
+     MOVE "acceptance US14 the iron_shovel makes a dirt_path of grass_block under open air (top face)" TO TL-CASE
+     MOVE "grass_block" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 0 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block dirt_path tool damage 2" TO TL-EXPECTED
+     MOVE 1 TO WS-SLOT
+     PERFORM OBSERVE-DAMAGE
+     PERFORM CHECK
+
+     MOVE "acceptance US14 the iron_hoe tills dirt to farmland" TO TL-CASE
+     MOVE "dirt" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 2 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block farmland tool damage 1" TO TL-EXPECTED
+     MOVE 3 TO WS-SLOT
+     PERFORM OBSERVE-DAMAGE
+     PERFORM CHECK
+
+     MOVE "acceptance US14 the iron_hoe on a block it does not till (stone) changes nothing and costs nothing" TO TL-CASE
+     MOVE "stone" TO WS-KEY
+     PERFORM PUT-BLOCK
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block stone tool damage 1" TO TL-EXPECTED
+     MOVE 3 TO WS-SLOT
+     PERFORM OBSERVE-DAMAGE
+     PERFORM CHECK
+
+     MOVE "acceptance US14 Use Item with an iron_helmet in hand wears it: the helmet slot holds it and the hand slot is empty" TO TL-CASE
+     MOVE 3 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
+     MOVE MN-EQUIP-ITEM(WS-ROWNO, 4) TO WS-E1
+     MOVE PL-SLOT-COUNT(WS-ROWNO, 4) TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING "helmet " FUNCTION TRIM(WS-E1) " hand " FUNCTION TRIM(WS-E2) " ids " FUNCTION TRIM(WS-TEXT)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE WS-HELMET TO WS-E1
+     MOVE SPACES TO TL-EXPECTED
+     STRING "helmet " FUNCTION TRIM(WS-E1) " hand 0 ids 20x2" DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+*> Puts the block of the key (default state) at the target position; its block id in WS-BLOCK-ID.
+ PUT-BLOCK.
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK-ID WS-BROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-BLOCK-ID WS-STATE WS-STATUS
+     CALL "WORLD-SET-BLOCK" USING WS-ONE WS-X WS-Y WS-Z WS-STATE.
+
+ OBSERVE-BLOCK.
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+     MOVE SPACES TO TL-OBSERVED
+     STRING "block " FUNCTION TRIM(CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1)) DELIMITED BY SIZE INTO TL-OBSERVED.
+
+ OBSERVE-DAMAGE.
+     MOVE PL-SLOT-VAR(WS-ROWNO, WS-SLOT) TO WS-HANDLE
+     CALL "SP-GET-DAMAGE" USING PL-SLOT-ITEM(WS-ROWNO, WS-SLOT) WS-HANDLE WS-DAMAGE
+     MOVE WS-DAMAGE TO WS-E1
+     STRING FUNCTION TRIM(TL-OBSERVED) " tool damage " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US14-TOOLS-WIRE.
+
+ COPY CORETEST.
