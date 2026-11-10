@@ -40,6 +40,8 @@ def make_copy():
                 skipped.append(name)
             elif relative in TEST_DIRS and name.startswith(TEST_PREFIXES):
                 skipped.append(name)
+            elif relative == "contract" and name == "cases":
+                skipped.append(name)  # generated contract tests would add programs to the counts
         return skipped
 
     shutil.copytree(REPO, copy, ignore=ignore)
