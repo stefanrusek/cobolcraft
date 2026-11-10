@@ -1,0 +1,6 @@
+{
+ "type": "minecraft:enchanted_count_increase",
+ "enchantment": "minecraft:efficiency",
+ "count": 2.0,
+ "limit": 4
+}

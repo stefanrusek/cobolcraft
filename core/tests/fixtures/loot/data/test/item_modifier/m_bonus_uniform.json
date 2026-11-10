@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:apply_bonus",
+ "enchantment": "minecraft:efficiency",
+ "formula": "minecraft:uniform_bonus_count",
+ "parameters": {
+  "bonusMultiplier": 2
+ }
+}
