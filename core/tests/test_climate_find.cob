@@ -36,6 +36,12 @@
  01 WS-T0                  BINARY-DOUBLE.
  01 WS-REF-TIME            BINARY-DOUBLE.
  01 WS-FIND-TIME           BINARY-DOUBLE.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-MINS.
+    05 WS-MIN              BINARY-DOUBLE OCCURS 6 TIMES.
+ 01 WS-MAXS.
+    05 WS-MAX              BINARY-DOUBLE OCCURS 6 TIMES.
+ 01 WS-OFFSET              BINARY-DOUBLE.
  01 WS-EDIT                PIC -(9)9.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
@@ -81,6 +87,28 @@
          MOVE 0 TO TL-OBSERVED-N
      END-IF
      MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   three points of one group (equal temperature, humidity and depth intervals) with offsets 5, 2 and 9: the smaller offset wins at the centre
+     CALL "CLIMATE-POINTS-RESET"
+     MOVE "minecraft:plains" TO WS-NAME
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+         MOVE -100 TO WS-MIN(WS-K)
+         MOVE 100 TO WS-MAX(WS-K)
+     END-PERFORM
+     MOVE 5 TO WS-OFFSET
+     CALL "CLIMATE-POINT-ADD" USING WS-NAME WS-MINS WS-MAXS WS-OFFSET
+     MOVE 2 TO WS-OFFSET
+     CALL "CLIMATE-POINT-ADD" USING WS-NAME WS-MINS WS-MAXS WS-OFFSET
+     MOVE 9 TO WS-OFFSET
+     CALL "CLIMATE-POINT-ADD" USING WS-NAME WS-MINS WS-MAXS WS-OFFSET
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+         MOVE 0 TO WS-T(WS-K)
+     END-PERFORM
+     CALL "CLIMATE-FIND" USING WS-TARGET WS-INDEX WS-BIOME WS-FITNESS
+     MOVE "test climate find the point of the smallest offset in a group wins" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-INDEX * 1000 + WS-FITNESS
+     MOVE 2004 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      GOBACK.
 
