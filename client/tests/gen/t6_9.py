@@ -7,6 +7,7 @@ t.LP='EF6-LAYER'; t.extra_ws+='\n'+KWS
 mesh_checks(t,LAYERS,'9.1')
 keytests(t,'EF6B',None,NM,AN,'9.5')
 STOP=-2147483648
+def sh(s): return '/'.join('-' if x==STOP else str(x) for x in s)
 ORDER=[('IDLE',2),('SHOOT',3),('SLIDE',4),('SLIDE_BACK',5),('INHALE',6),('JUMP',7)]
 def breeze(layer,st):
     P=base_parts(layer); age=st[0]
@@ -29,7 +30,7 @@ def pchange(pose,tick,s):
     return [idle,shoot,slide,sback,inhale,jump]
 for pose in (0,1,2,3):
     for s in ((5,6,7,8,9,10),(STOP,STOP,STOP,STOP,STOP,STOP),(STOP,6,STOP,8,STOP,10)):
-        t.call('EF6-BREEZE-POSE-CHANGE',[pose,100]+list(s),pchange(pose,100,s),'9.3 pose change %d at tick 100 from %s (idle, shoot, slide, slide back, inhale, long jump)'%(pose,s))
+        t.call('EF6-BREEZE-POSE-CHANGE',[pose,100]+list(s),pchange(pose,100,s),'9.3 pose change %d at tick 100 from %s (idle, shoot, slide, slide back, inhale, jump; - stopped)'%(pose,sh(s)))
 def btick(sliding,ljump,tick,s):
     idle,shoot,slide,sback,inhale,jump=s
     if ljump and jump==STOP: jump=tick
@@ -39,7 +40,7 @@ def btick(sliding,ljump,tick,s):
 for sliding in (0,1):
     for ljump in (0,1):
         for s in ((STOP,STOP,STOP,STOP,STOP,STOP),(5,6,7,8,9,10),(STOP,STOP,7,STOP,STOP,10)):
-            t.call('EF6-BREEZE-TICK',[sliding,ljump,200]+list(s),btick(sliding,ljump,200,s),'9.3 tick sliding %d long jumping %d from %s (idle, shoot, slide, slide back, inhale, long jump)'%(sliding,ljump,s))
+            t.call('EF6-BREEZE-TICK',[sliding,ljump,200]+list(s),btick(sliding,ljump,200,s),'9.3 tick sliding %d long jumping %d from %s (idle, shoot, slide, slide back, inhale, jump; - stopped)'%(sliding,ljump,sh(s)))
 for k,e in ((0,'breeze.png'),(1,'breeze_wind.png'),(2,'breeze_eyes.png')): text_check(t,'EF6-BREEZE-TEXTURE',[k],'9.4 texture kind %d'%k,'textures/entity/breeze/'+e)
 for age in (0,10,50,51.5,123.25):
     t.call('EF6-BREEZE-WIND-U',[age],[(age*0.02)%1,0],'9.4 wind layer texture offset at age %s (u, v)'%age)

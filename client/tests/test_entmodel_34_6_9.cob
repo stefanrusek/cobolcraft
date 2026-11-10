@@ -17141,27 +17141,27 @@
      MOVE 9 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17174,27 +17174,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE -2147483648 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17207,27 +17207,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 0 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 0 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17240,27 +17240,27 @@
      MOVE 9 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17273,27 +17273,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE -2147483648 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17306,27 +17306,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 1 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 1 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17339,27 +17339,27 @@
      MOVE 9 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17372,27 +17372,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE -2147483648 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17405,27 +17405,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 2 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 2 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17438,27 +17438,27 @@
      MOVE 9 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17471,27 +17471,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE -2147483648 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17504,27 +17504,27 @@
      MOVE -2147483648 TO WS-IV(7)
      MOVE 10 TO WS-IV(8)
      CALL "EF6-BREEZE-POSE-CHANGE" USING WS-IN WS-OUT
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 100 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 pose change 3 at tick 100 from (-2147483648, 6, -2147483648, 8, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 pose change 3 at tick 100 from -/6/-/8/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17538,27 +17538,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE -2147483648 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17572,27 +17572,27 @@
      MOVE 9 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 5 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 6 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 9 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17606,27 +17606,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17640,27 +17640,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE -2147483648 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17674,27 +17674,27 @@
      MOVE 9 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 5 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 6 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 9 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17708,27 +17708,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 0 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 0 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17742,27 +17742,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE -2147483648 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17776,27 +17776,27 @@
      MOVE 9 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 5 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 6 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 9 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17810,27 +17810,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 0 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 0 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17844,27 +17844,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE -2147483648 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, -2147483648, -2147483648, -2147483648, -2147483648) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/-/-/-/- (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17878,27 +17878,27 @@
      MOVE 9 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 5 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE 6 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE 8 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE 9 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (5, 6, 7, 8, 9, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from 5/6/7/8/9/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
@@ -17912,27 +17912,27 @@
      MOVE -2147483648 TO WS-IV(8)
      MOVE 10 TO WS-IV(9)
      CALL "EF6-BREEZE-TICK" USING WS-IN WS-OUT
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [1]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [1]" TO WS-NAME
      MOVE 200 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [2]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [2]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [3]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [3]" TO WS-NAME
      MOVE 7 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [4]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [4]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(4) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [5]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [5]" TO WS-NAME
      MOVE -2147483648 TO WS-E
      MOVE WS-OV(5) TO WS-O
      PERFORM CHECK-NUM
-     MOVE "9.3 tick sliding 1 long jumping 1 from (-2147483648, -2147483648, 7, -2147483648, -2147483648, 10) (idle, shoot, slide, slide back, inhale, long jump) [6]" TO WS-NAME
+     MOVE "9.3 tick sliding 1 long jumping 1 from -/-/7/-/-/10 (idle, shoot, slide, slide back, inhale, jump; - stopped) [6]" TO WS-NAME
      MOVE 10 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
