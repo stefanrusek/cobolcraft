@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:conditional",
+ "condition": {
+  "type": "minecraft:killed_by_player"
+ },
+ "on_true": 7
+}

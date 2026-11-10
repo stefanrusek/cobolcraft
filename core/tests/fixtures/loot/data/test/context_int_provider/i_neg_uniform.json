@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:uniform",
+ "min": {
+  "type": "minecraft:negate",
+  "input": 3
+ },
+ "max": 3
+}
