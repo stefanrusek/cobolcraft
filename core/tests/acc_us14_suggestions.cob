@@ -108,7 +108,7 @@
      MOVE "/supply Alice " TO WS-LINE
      MOVE 14 TO WS-LENGTH
      MOVE "6 14 0 [baseplate,greystone,loam,turf,grit,cardstack,lucite,glowtube,ledger_tile,"
-         & "pry_bar,trowel,grazer_flank,seared_flank,sod_cake,dump_shard,goto_pad,slag]"
+         & "pry_bar,trowel,grazer_flank,seared_flank,sod_cake,dump_shard,goto_pad,slag,crafting_bench]"
          TO TL-EXPECTED
      PERFORM SUGGEST-OPERATOR
      MOVE "acceptance US14-1 item keys are matched without regard to case" TO TL-CASE
@@ -129,7 +129,7 @@
      MOVE "acceptance US14-1 /sweep with an empty word offers mobs and items first" TO TL-CASE
      MOVE "9 7 0 [mobs,items,sodgrazer,abend,baseplate,greystone,loam,turf,grit,cardstack,lucite,"
          & "glowtube,ledger_tile,pry_bar,trowel,grazer_flank,seared_flank,sod_cake,dump_shard,"
-         & "goto_pad,slag]" TO TL-EXPECTED
+         & "goto_pad,slag,crafting_bench]" TO TL-EXPECTED
      PERFORM SUGGEST-OPERATOR
 
      MOVE "acceptance US14-1 a player without operator status is offered nothing for an operator "

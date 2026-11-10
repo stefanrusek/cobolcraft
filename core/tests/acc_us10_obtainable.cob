@@ -12,10 +12,10 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CBLOCKS.
- COPY ITEMS.
+ COPY CITEMS.
+ COPY STARTKIT.
  COPY MOBS.
- COPY RECIPES.
-*> Blocks the generators place that survival breaking yields (baseplate refuses, §1.3): §5.2
+ *> Blocks the generators place that survival breaking yields (baseplate refuses, §1.3): §5.2
 *> greystone, loam, turf, grit, the marker pillars' cardstack, lucite and glowtube; §15.2
 *> greystone, slag and glowtube.
  01 WS-GENERATED-DATA.
@@ -59,7 +59,7 @@
          MOVE 1 TO WS-HAVE(SI-ITEM(WS-I) + 1)
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > ITEM-COUNT
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
              MOVE IT-PLACES-STATE(WS-J) TO WS-STATE
              IF WS-STATE >= 0
                  IF CB-S-BLOCK(WS-STATE + 1) = WS-GENERATED(WS-I)
@@ -76,7 +76,7 @@
      MOVE 1 TO WS-CHANGED
      PERFORM UNTIL WS-CHANGED = 0
          MOVE 0 TO WS-CHANGED
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RECIPE-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RP-COUNT
              MOVE 1 TO WS-ALL
              PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RP-LINE-COUNT(WS-I)
                  IF WS-HAVE(RP-IN-ITEM(WS-I, WS-K) + 1) = 0
@@ -93,7 +93,7 @@
 *> One case per recipe (its ingredients and result obtainable) and per food item.
  CHECK-ALL.
      MOVE "T" TO TL-MODE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RECIPE-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RP-COUNT
          MOVE SPACES TO TL-CASE
          COMPUTE WS-EDIT = WS-I - 1
          MOVE RP-RESULT-ITEM(WS-I) TO WS-ITEM
@@ -116,7 +116,7 @@
          END-IF
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > ITEM-COUNT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
          IF IT-FOOD(WS-J) > 0
              MOVE SPACES TO TL-CASE
              STRING "acceptance SC-008 given " FUNCTION TRIM(WS-SETTING) " when the content "

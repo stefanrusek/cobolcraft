@@ -10,7 +10,7 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY DIMENSIONS.
-  COPY ENTITYTYPES.
+ COPY ETIDS.
  01 WS-COPY                PIC X(128) VALUE
      "rm -rf build/core-test-copied-world && cp -R build/core-test-world build/core-test-copied-world".
  01 WS-REMOVE              PIC X(64) VALUE "rm -rf build/core-test-world".

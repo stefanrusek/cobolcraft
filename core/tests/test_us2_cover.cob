@@ -11,6 +11,7 @@
  COPY PROTO.
  COPY CONTENT.
  COPY CBLOCKS.
+ COPY CITEMS.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
  01 WS-TEXT                PIC X(64).
  01 WS-SEED                BINARY-DOUBLE.
@@ -108,6 +109,17 @@
      MOVE "test us2 cover a light text above 15 is no light" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE CB-S-LIGHT(31) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A set without the cobolcraft roles and recipes (the standard type is forced on the open set).
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "ENTITIES-OPEN"
+     CALL "RECIPES-OPEN"
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover a set without the cobolcraft entities has the four roles -1 and no recipes" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 - 4 + RP-COUNT * 1000
+     COMPUTE TL-OBSERVED-N = CR-OPERATOR + CR-LOOSE-ITEM + CR-SODGRAZER + CR-ABEND + RP-COUNT * 1000
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 2 TO WS-FILL-STATE
