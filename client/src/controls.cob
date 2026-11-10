@@ -64,6 +64,10 @@
      IF TG-HIT = 1
          CALL "WORLD-CELL" USING CLIENT-STATE TG-X TG-Y TG-Z WS-STATE WS-SKY WS-BLOCK
      END-IF
+*>   A command block used on the world screen opens its editor with the permission (40-9 section 2.1).
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND TG-HIT = 1
+         CALL "CMDBLOCK-USE-CHECK" USING CLIENT-STATE TG-X TG-Y TG-Z WS-STATE
+     END-IF
 *>   A writable book held on the world screen opens the book editor on the client's own (40-8 section 1.1).
      IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-ITEM > 0
          CALL "BOOK-USE-CHECK" USING CLIENT-STATE WS-ITEM

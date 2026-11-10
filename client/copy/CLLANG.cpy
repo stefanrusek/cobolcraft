@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 282.
+ 78 BI-LANG-COUNT           VALUE 292.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -572,7 +572,28 @@
     05 FILLER PIC X(128) VALUE "Operator Utilities".
     05 FILLER PIC X(48) VALUE "itemGroup.inventory".
     05 FILLER PIC X(128) VALUE "Survival Inventory".
+*>   The keys of the command block screen of docs/protocol/40-menus-9.
+    05 FILLER PIC X(48) VALUE "advMode.setCommand".
+    05 FILLER PIC X(128) VALUE "Set Console Command for Block".
+    05 FILLER PIC X(48) VALUE "advMode.command".
+    05 FILLER PIC X(128) VALUE "Console Command".
+    05 FILLER PIC X(48) VALUE "advMode.previousOutput".
+    05 FILLER PIC X(128) VALUE "Previous Output".
+    05 FILLER PIC X(48) VALUE "advMode.mode.sequence".
+    05 FILLER PIC X(128) VALUE "Chain".
+    05 FILLER PIC X(48) VALUE "advMode.mode.auto".
+    05 FILLER PIC X(128) VALUE "Repeat".
+    05 FILLER PIC X(48) VALUE "advMode.mode.redstone".
+    05 FILLER PIC X(128) VALUE "Impulse".
+    05 FILLER PIC X(48) VALUE "advMode.mode.conditional".
+    05 FILLER PIC X(128) VALUE "Conditional".
+    05 FILLER PIC X(48) VALUE "advMode.mode.unconditional".
+    05 FILLER PIC X(128) VALUE "Unconditional".
+    05 FILLER PIC X(48) VALUE "advMode.mode.autoexec.bat".
+    05 FILLER PIC X(128) VALUE "Always Active".
+    05 FILLER PIC X(48) VALUE "advMode.mode.redstoneTriggered".
+    05 FILLER PIC X(128) VALUE "Needs Redstone".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 282 TIMES.
+    05 BI-LANG OCCURS 292 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

@@ -349,6 +349,9 @@
 *>           finished (standin §11.6).
              CALL "PB-GET-INT" USING L-PACKET WS-ID
              CALL "PB-GET-BYTE" USING L-PACKET WS-VALUE
+             IF WS-ID = PL-ENTITY-ID AND WS-VALUE >= 24 AND WS-VALUE <= 28
+                 COMPUTE PL-PERM = WS-VALUE - 24
+             END-IF
              IF WS-ID = PL-ENTITY-ID AND WS-VALUE = 9
                  MOVE 0 TO PL-EATING
              END-IF

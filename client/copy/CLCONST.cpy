@@ -24,7 +24,8 @@
  78 SCR-OPTIONS             VALUE 18.  *> the options pages (US16; screens/options.cob)
  78 SCR-SIGN                VALUE 21.  *> the sign editor (Open Sign Editor 05a 0x3D; screens/signscreen.cob)
  78 SCR-BOOK                VALUE 22.  *> the writable book editor (screens/bookscreen.cob)
- 78 SCR-CREATIVE            VALUE 23.  *> the creative inventory (screens/creativescreen.cob)
+ 78 SCR-CREATIVE            VALUE 23.
+ 78 SCR-CMDBLOCK            VALUE 24.  *> the command block editor (screens/editblocks.cob)  *> the creative inventory (screens/creativescreen.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
@@ -115,6 +116,11 @@
  78 ACT-CREATIVE-TAB         VALUE 65.   *> the creative screen: select the tab of the argument
  78 ACT-CREATIVE-GRID        VALUE 66.   *> a grid slot (argument 901 to 945)
  78 ACT-CREATIVE-HOTBAR      VALUE 67.   *> a hotbar slot (argument 0 to 8)
+ 78 ACT-CMD-MODE             VALUE 68.
+ 78 ACT-CMD-TYPE             VALUE 69.
+ 78 ACT-CMD-TRIGGER          VALUE 70.
+ 78 ACT-CMD-TRACK            VALUE 71.
+ 78 ACT-CMD-DONE             VALUE 72.
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
