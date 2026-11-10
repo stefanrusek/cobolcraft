@@ -366,7 +366,7 @@
      MOVE "minecraft:enchantment.movement/feet m:x/mainhand" TO TL-EXPECTED
      PERFORM CHECK-DONE
 
-     MOVE "acceptance US14 28.6 location_changed with no slot does nothing; a slot where the enchantment is inactive removes its entry and deactivates (3); a matching effect not active before applies newly active (1), one already active applies (2); a no-longer matching active one deactivates (4)" TO TL-CASE
+     MOVE "acceptance US14 28.6 location_changed with no slot does nothing; a slot where the enchantment is inactive removes its entry and deactivates (3); a matching effect not active before applies newly active (1), one already active appl" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE 0 TO WS-I1
      MOVE 1 TO WS-I2

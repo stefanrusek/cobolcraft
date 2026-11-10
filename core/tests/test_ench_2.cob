@@ -101,7 +101,7 @@
      MOVE "0/1/4/1/1 12/1/2/13/1 30/5/0/31/1 0/0/0/0/0" TO TL-EXPECTED
      PERFORM CHECK-DONE
 
-     MOVE "acceptance US14 28.2 shapes and sets of rows: post_attack targeted (2) DAMAGE hook 7, equipment_drops drops form (3) hook 11, attributes attribute list (4) no set hook 25, crossbow_charge_time single value (5), crossbow_charging_sounds (7), trident_sound sound list (6), prevent_armor_change unit (8) hook 30, hit_block HIT_BLOCK set (5) hook 9, location_changed LOCATION set (3) hook 12, ammo_use ITEM set (1) hook 14" TO TL-CASE
+     MOVE "acceptance US14 28.2 shapes and sets of rows: post_attack targeted (2) DAMAGE hook 7, equipment_drops drops form (3) hook 11, attributes attribute list (4) no set hook 25, crossbow_charge_time single value (5), crossbow_charging_s" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE SPACES TO WS-T1
      MOVE "post_attack" TO WS-T1
@@ -427,7 +427,7 @@
      MOVE "0 1 2 3 4 5 -1 0 1 2 3 4 5 -1" TO TL-EXPECTED
      PERFORM CHECK-DONE
 
-     MOVE "acceptance US14 28.2 entity effect types: 15 starting all_of, apply_mob_effect, change_item_damage, damage_entity, explode, ignite, apply_impulse, apply_exhaustion, play_sound, replace_block, replace_disk, run_function, set_block_properties, spawn_particles, summon_entity; the location types add attribute at 2 (16 types)" TO TL-CASE
+     MOVE "acceptance US14 28.2 entity effect types: 15 starting all_of, apply_mob_effect, change_item_damage, damage_entity, explode, ignite, apply_impulse, apply_exhaustion, play_sound, replace_block, replace_disk, run_function, set_block_" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE 3 TO WS-I1
      MOVE SPACES TO WS-T1
