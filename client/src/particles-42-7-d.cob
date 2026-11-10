@@ -67,7 +67,7 @@
          WHEN "taming"
              PERFORM TAMING
      END-EVALUATE
-     GOBACK.
+     GO TO PROGRAM-DONE.
 
  SPRINT.
      IF L-I(11) = 0
@@ -343,4 +343,7 @@
      COMPUTE WS-V(5) = WS-A * 0.02
      CALL "P6-DRAW" USING P6-EMITS WS-A
      COMPUTE WS-V(6) = WS-A * 0.02.
+
+ PROGRAM-DONE.
+     GOBACK.
  END PROGRAM P7-BASE.

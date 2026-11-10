@@ -564,6 +564,12 @@
          & "71.00000 -7.50000 0.00000 0.00000 0.00000 c=16701260 s=0.00 "
          & "(0)" TO WS-EXP
      PERFORM RUN-CASE
+     MOVE -30.0 TO WS-IV(1)
+     CALL "P7-BELL-COUNT" USING WS-IN WS-OUT
+     MOVE "bell particle count for -30 raiders [1]" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 0.0 TO WS-IV(1)
      CALL "P7-BELL-COUNT" USING WS-IN WS-OUT
      MOVE "bell particle count for 0 raiders [1]" TO WS-NAME

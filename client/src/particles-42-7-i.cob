@@ -43,7 +43,7 @@
          WHEN "conduit" PERFORM CONDUIT
          WHEN "bell" PERFORM BELL
      END-EVALUATE
-     GOBACK.
+     GO TO PROGRAM-DONE.
 
  TRIAL-SMALL.
      COMPUTE WS-CX = L-I(2) + 0.5
@@ -201,6 +201,9 @@
      COMPUTE WS-V(2) = WS-CY + (WS-B - 0.5) * WS-S
      COMPUTE WS-V(3) = WS-CZ + (WS-C - 0.5) * WS-S
      MOVE 0 TO WS-V(4) WS-V(5) WS-V(6).
+
+ PROGRAM-DONE.
+     GOBACK.
  END PROGRAM P7-BLOCK.
 
  IDENTIFICATION DIVISION.

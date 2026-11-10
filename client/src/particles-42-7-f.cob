@@ -62,7 +62,7 @@
          WHEN "boat_bubble" PERFORM BOAT-BUBBLE
          WHEN "ravager_roar" PERFORM RAVAGER-ROAR
      END-EVALUATE
-     GOBACK.
+     GO TO PROGRAM-DONE.
 
  ARROW.
      COMPUTE WS-CNT = 2
@@ -466,4 +466,7 @@
          MOVE L-I(3) TO WS-V(3)
          CALL "P6-EMIT" USING P6-EMITS WS-N WS-PV
      END-PERFORM.
+
+ PROGRAM-DONE.
+     GOBACK.
  END PROGRAM P7-MOB.
