@@ -27,7 +27,6 @@
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY CBLOCKS.
- COPY REGISTRY.
  COPY CELLS.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
@@ -228,11 +227,11 @@
          MOVE "palette" TO WN MOVE 7 TO WL
          CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING WS-N
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT RB-KEY(WS-PAL(WS-K) + 1)
-                 RB-KEY-LENGTH(WS-PAL(WS-K) + 1)
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT CBI-KEY(WS-PAL(WS-K) + 1)
+                 CBI-KEY-LENGTH(WS-PAL(WS-K) + 1)
          END-PERFORM
          CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
-*>       At most RB-COUNT (3) biomes: 1 bit for 2 entries, 2 bits for 3 (07 §7.2 biome column).
+*>       At most CBI-MAX biomes: 1 bit for 2 entries, 2 bits for 3 (07 §7.2 biome column).
          MOVE 64 TO WS-ENTRIES
          IF WS-N > 1
              COMPUTE WS-BITS = FUNCTION MIN(2, WS-N - 1)

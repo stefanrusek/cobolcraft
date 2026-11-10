@@ -149,6 +149,21 @@
      MOVE "axis=y,punched=true||" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   The biomes of the set (BIOMES-OPEN): key and has_precipitation of each biome id.
+     MOVE "T" TO TL-MODE
+     MOVE "test block lookup the biome table holds the three biomes with their precipitation" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE CBI-COUNT TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > CBI-COUNT
+         MOVE CBI-KEY-LENGTH(WS-B) TO WS-LEN
+         MOVE CBI-PRECIPITATION(WS-B) TO WS-E2
+         STRING FUNCTION TRIM(TL-OBSERVED) " " CBI-KEY(WS-B)(1:WS-LEN) "=" FUNCTION TRIM(WS-E2)
+             DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
+     MOVE "3 minecraft:plains=1 cobolcraft:upland=1 cobolcraft:ash_flats=0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   No stand-in identifier of BLOCKS.cpy in any program of core/src (comment lines excluded).
      MOVE SPACES TO WS-COMMAND
      STRING "! grep -v '^ *[*]>' core/src/*.cob | grep -qE '(^|[^A-Z-])(ST|BLK|SB|BL)-[A-Z]'"

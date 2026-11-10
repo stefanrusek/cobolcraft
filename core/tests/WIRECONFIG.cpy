@@ -18,7 +18,6 @@
 *> Registry number (standin §4.2 #) and fixture name, in the order of 09 §3.1.
  01 WS-REGISTRY-ROWS.
     05 FILLER PIC X(48) VALUE "00worldgen-biome".
-    05 FILLER PIC X(48) VALUE "01chat-type".
     05 FILLER PIC X(48) VALUE "04wolf-variant".
     05 FILLER PIC X(48) VALUE "05wolf-sound-variant".
     05 FILLER PIC X(48) VALUE "06pig-variant".
@@ -32,18 +31,17 @@
     05 FILLER PIC X(48) VALUE "14chicken-variant".
     05 FILLER PIC X(48) VALUE "15zombie-nautilus-variant".
     05 FILLER PIC X(48) VALUE "16painting-variant".
-    05 FILLER PIC X(48) VALUE "18dimension-type".
-    05 FILLER PIC X(48) VALUE "19damage-type".
-    05 FILLER PIC X(48) VALUE "27world-clock".
+    05 FILLER PIC X(48) VALUE "21enchantment".
+    05 FILLER PIC X(48) VALUE "28timeline".
  01 WS-REGISTRY-TABLE REDEFINES WS-REGISTRY-ROWS.
-    05 WS-REGISTRY-ROW OCCURS 18 TIMES.
+    05 WS-REGISTRY-ROW OCCURS 16 TIMES.
        10 WS-ROW-NUMBER    PIC 99.
        10 WS-ROW-NAME      PIC X(46).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
 
-*>   Registry Data, one fixture per registry with entries (09 §3.1; standin §4.2).
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+*>   Registry Data, one fixture per registry that has one for the cobolcraft entries (09 §3.1; core 3).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          MOVE SPACES TO TL-CASE WS-PATH
          STRING "contract wire server config-s2c-07-registry-data-" DELIMITED BY SIZE
              FUNCTION TRIM(WS-ROW-NAME(WS-I)) DELIMITED BY SIZE
