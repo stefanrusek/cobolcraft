@@ -160,6 +160,9 @@
      MOVE EN-ID(L-ROW) TO IP-I-ID(L-ROW)
      MOVE IP-DEFAULT-HEALTH TO IP-I-HEALTH(L-ROW)
      CALL "IP-ITEM-SEED" USING EN-ID(L-ROW) IP-I-RNG(L-ROW)
+     MOVE EN-X(L-ROW) TO IP-I-SENT-X(L-ROW)
+     MOVE EN-Y(L-ROW) TO IP-I-SENT-Y(L-ROW)
+     MOVE EN-Z(L-ROW) TO IP-I-SENT-Z(L-ROW)
      GOBACK.
  END PROGRAM IP-INIT.
 
@@ -1478,7 +1481,7 @@
                  MOVE WS-NEW-VY TO WS-VY
              END-IF
          END-IF
-*>       The friction step: 0.98, on the ground 0.98 * the block's friction (x and z only), then the -0.5 backstop.
+*>       The friction step: 0.98, on the ground 0.98 * the block's friction (x and z only).
          MOVE WS-DRAG TO WS-FRICTION
          IF WS-GROUND = 1
              CALL "IP-FRICTION" USING EN-DIM(L-ROW) WS-X WS-Y WS-Z WS-FRICTION
@@ -1487,9 +1490,8 @@
          COMPUTE WS-VX = WS-VX * WS-FRICTION
          COMPUTE WS-VY = WS-VY * WS-DRAG
          COMPUTE WS-VZ = WS-VZ * WS-FRICTION
-         IF WS-GROUND = 1 AND WS-VY < 0
-             COMPUTE WS-VY = WS-VY * -0.5
-         END-IF
+*>       (The -0.5 rebound rule for an item on the ground with vy below 0 after this step cannot fire here: a landing sets vy by the
+*>       restitution of 3.3, which is never below 0.)
      END-IF
      MOVE WS-VX TO EN-VX(L-ROW)
      MOVE WS-VY TO EN-VY(L-ROW)
@@ -1753,14 +1755,8 @@
  COPY CORESTATE.
  COPY CITEMS.
  COPY CITEMPHYS.
- COPY PROTO.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-OTHER               BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
- 01 WS-RECEIVER            BINARY-LONG.
- 01 WS-DONOR               BINARY-LONG.
- 01 WS-MOVED               BINARY-LONG.
- 01 WS-MAX                 BINARY-LONG.
  01 WS-REACH               FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-ID                  BINARY-LONG.
@@ -1777,23 +1773,42 @@
              IF WS-OK = 1 AND FUNCTION ABS(EN-X(WS-OTHER) - EN-X(L-ROW)) < WS-REACH
                      AND FUNCTION ABS(EN-Z(WS-OTHER) - EN-Z(L-ROW)) < WS-REACH
                      AND FUNCTION ABS(EN-Y(WS-OTHER) - EN-Y(L-ROW)) < WS-HEIGHT
-                 PERFORM TRY-TO-MERGE
+                 CALL "IP-TRY-MERGE" USING L-ROW WS-OTHER
              END-IF
          END-IF
      END-PERFORM
      GOBACK.
+ END PROGRAM IP-MERGE.
 
- TRY-TO-MERGE.
-     CALL "IP-ENSURE" USING WS-OTHER
-     MOVE IT-MAX-STACK(EN-ITEM(WS-OTHER) + 1) TO WS-MAX
-     IF IP-I-HAS-OWNER(L-ROW) = IP-I-HAS-OWNER(WS-OTHER) AND IP-I-OWNER(L-ROW) = IP-I-OWNER(WS-OTHER)
-             AND EN-ITEM(L-ROW) = EN-ITEM(WS-OTHER) AND IP-I-VAR(L-ROW) = IP-I-VAR(WS-OTHER)
-             AND EN-ITEM-COUNT(L-ROW) + EN-ITEM-COUNT(WS-OTHER) <= WS-MAX
-         IF EN-ITEM-COUNT(WS-OTHER) < EN-ITEM-COUNT(L-ROW)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. IP-TRY-MERGE.
+*> USING tracker row (this), tracker row (other): ItemEntity.tryToMerge (41 section 4.4): equal owners, the same item and patch
+*> handle and a total within the item's maximum; the entity with the larger count (this one on a tie goes to the other) receives.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY CITEMPHYS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-RECEIVER            BINARY-LONG.
+ 01 WS-DONOR               BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-OTHER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-OTHER.
+     CALL "IP-ENSURE" USING L-OTHER
+     MOVE IT-MAX-STACK(EN-ITEM(L-OTHER) + 1) TO WS-MAX
+     IF IP-I-HAS-OWNER(L-ROW) = IP-I-HAS-OWNER(L-OTHER) AND IP-I-OWNER(L-ROW) = IP-I-OWNER(L-OTHER)
+             AND EN-ITEM(L-ROW) = EN-ITEM(L-OTHER) AND IP-I-VAR(L-ROW) = IP-I-VAR(L-OTHER)
+             AND EN-ITEM-COUNT(L-ROW) + EN-ITEM-COUNT(L-OTHER) <= WS-MAX
+         IF EN-ITEM-COUNT(L-OTHER) < EN-ITEM-COUNT(L-ROW)
              MOVE L-ROW TO WS-RECEIVER
-             MOVE WS-OTHER TO WS-DONOR
+             MOVE L-OTHER TO WS-DONOR
          ELSE
-             MOVE WS-OTHER TO WS-RECEIVER
+             MOVE L-OTHER TO WS-RECEIVER
              MOVE L-ROW TO WS-DONOR
          END-IF
          COMPUTE WS-MOVED = FUNCTION MIN(FUNCTION MIN(WS-MAX, 64) - EN-ITEM-COUNT(WS-RECEIVER), EN-ITEM-COUNT(WS-DONOR))
@@ -1809,8 +1824,9 @@
          IF EN-ITEM-COUNT(WS-DONOR) = 0
              CALL "ENTITY-REMOVE" USING WS-DONOR
          END-IF
-     END-IF.
- END PROGRAM IP-MERGE.
+     END-IF
+     GOBACK.
+ END PROGRAM IP-TRY-MERGE.
 
 *> Section 4.3, Inventory.add:
 *>   IP-INV-ADD USING player row, item, count (in and out: what is left), patch handle, result (1 = add returned true, 0 = false)
@@ -1828,10 +1844,7 @@
  COPY CITEMS.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-COUNT0              BINARY-LONG.
- 01 WS-SLOT                BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
- 01 WS-MOVED               BINARY-LONG.
  01 WS-FREE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
@@ -1849,8 +1862,8 @@
          CALL "SP-GET-DAMAGE" USING L-ITEM L-VAR WS-DAMAGE
      END-IF
      MOVE FUNCTION MIN(99, IT-MAX-STACK(L-ITEM + 1)) TO WS-MAX
-     PERFORM FIND-FREE
      IF WS-DAMAGE > 0
+         CALL "IP-FIND-FREE" USING L-PLAYER WS-FREE
          EVALUATE TRUE
              WHEN WS-FREE > 0
                  MOVE L-ITEM TO PL-SLOT-ITEM(L-PLAYER, WS-FREE)
@@ -1866,7 +1879,7 @@
      END-IF
      PERFORM UNTIL L-COUNT = 0
          MOVE L-COUNT TO WS-COUNT0
-         PERFORM ADD-RESOURCE
+         CALL "IP-ADD-RESOURCE" USING L-PLAYER L-ITEM L-COUNT L-VAR WS-MAX
          IF L-COUNT = WS-COUNT0
              EXIT PERFORM
          END-IF
@@ -1880,32 +1893,58 @@
          END-IF
      END-IF
      GOBACK.
+ END PROGRAM IP-INV-ADD.
 
-*> WS-FREE = the lowest empty slot (1 to 36), 0 when none.
- FIND-FREE.
-     MOVE 0 TO WS-FREE
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. IP-FIND-FREE.
+*> USING player row, slot out: the lowest empty slot of the 36 main slots (1 to 36), 0 when none (Inventory.getFreeSlot).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-S                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-FREE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-FREE.
+     MOVE 0 TO L-FREE
      PERFORM VARYING WS-S FROM 36 BY -1 UNTIL WS-S < 1
          IF PL-SLOT-COUNT(L-PLAYER, WS-S) = 0
-             MOVE WS-S TO WS-FREE
+             MOVE WS-S TO L-FREE
          END-IF
-     END-PERFORM.
+     END-PERFORM
+     GOBACK.
+ END PROGRAM IP-FIND-FREE.
 
-*> The selected slot, else the first slot with room, else the first free slot take what they can of L-COUNT.
- ADD-RESOURCE.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. IP-ADD-RESOURCE.
+*> USING player row, item, count (in and out), patch handle, maximum stack: Inventory.addResource: the selected slot, else the first
+*> slot with room, else the first free slot take what they can of the count.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ITEM L-COUNT L-VAR L-MAX.
      COMPUTE WS-SLOT = PL-HELD(L-PLAYER) + 1
      IF NOT (PL-SLOT-COUNT(L-PLAYER, WS-SLOT) > 0 AND PL-SLOT-ITEM(L-PLAYER, WS-SLOT) = L-ITEM
-             AND PL-SLOT-VAR(L-PLAYER, WS-SLOT) = L-VAR AND PL-SLOT-COUNT(L-PLAYER, WS-SLOT) < WS-MAX)
+             AND PL-SLOT-VAR(L-PLAYER, WS-SLOT) = L-VAR AND PL-SLOT-COUNT(L-PLAYER, WS-SLOT) < L-MAX)
          MOVE 0 TO WS-SLOT
          PERFORM VARYING WS-S FROM 36 BY -1 UNTIL WS-S < 1
              IF PL-SLOT-COUNT(L-PLAYER, WS-S) > 0 AND PL-SLOT-ITEM(L-PLAYER, WS-S) = L-ITEM
-                     AND PL-SLOT-VAR(L-PLAYER, WS-S) = L-VAR AND PL-SLOT-COUNT(L-PLAYER, WS-S) < WS-MAX
+                     AND PL-SLOT-VAR(L-PLAYER, WS-S) = L-VAR AND PL-SLOT-COUNT(L-PLAYER, WS-S) < L-MAX
                  MOVE WS-S TO WS-SLOT
              END-IF
          END-PERFORM
      END-IF
      IF WS-SLOT = 0
-         PERFORM FIND-FREE
-         MOVE WS-FREE TO WS-SLOT
+         CALL "IP-FIND-FREE" USING L-PLAYER WS-SLOT
          IF WS-SLOT > 0
              MOVE L-ITEM TO PL-SLOT-ITEM(L-PLAYER, WS-SLOT)
              MOVE L-VAR TO PL-SLOT-VAR(L-PLAYER, WS-SLOT)
@@ -1913,11 +1952,12 @@
          END-IF
      END-IF
      IF WS-SLOT > 0
-         COMPUTE WS-MOVED = FUNCTION MIN(L-COUNT, WS-MAX - PL-SLOT-COUNT(L-PLAYER, WS-SLOT))
+         COMPUTE WS-MOVED = FUNCTION MIN(L-COUNT, L-MAX - PL-SLOT-COUNT(L-PLAYER, WS-SLOT))
          ADD WS-MOVED TO PL-SLOT-COUNT(L-PLAYER, WS-SLOT)
          SUBTRACT WS-MOVED FROM L-COUNT
-     END-IF.
- END PROGRAM IP-INV-ADD.
+     END-IF
+     GOBACK.
+ END PROGRAM IP-ADD-RESOURCE.
 
 *> Section 7, the facts the client's renderer needs:
 *>   IP-RENDER-AMOUNT USING count, copies out         1 up to 1 item, 2 up to 16, 3 up to 32, 4 up to 48, else 5

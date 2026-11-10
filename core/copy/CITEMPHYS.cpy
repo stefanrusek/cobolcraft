@@ -9,7 +9,8 @@
 *> IP-I-HAS-OWNER is 1, IP-I-RNG the item's own random source (a 48-bit linear congruential generator with the constants of
 *> java.util.Random, seeded without the scramble from the entity id), IP-I-BOB the visual phase (bobOffs), IP-I-TICKS
 *> tickCount, IP-I-FIRE remainingFireTicks, IP-I-INVULN invulnerableTime, IP-I-WET the previous-tick water flag,
-*> IP-I-WATER-H and IP-I-LAVA-H the fluid heights of the last scan.
+*> IP-I-WATER-H and IP-I-LAVA-H the fluid heights of the last scan, IP-I-SENT-X/Y/Z the position the viewers last were told (Add
+*> Entity or Teleport Entity: a move below the wire resolution of 1/4096 block is not sent, 05a VecDelta).
 *> The level random source IP-LEVEL-RNG (popResource, dispenser) and one source per player row (IP-P-RNG: throws and death
 *> drops) are seeded on first use (IP-LEVEL-SEEDED, IP-P-SEEDED 1 once set; a test or a world open may set them). IP-P-THROTTLE
 *> is the creative-drop TickThrottler count. IP-NO-BLOCK-DROPS 1 is game rule block_drops false and IP-NO-MOB-GRIEFING 1
@@ -85,6 +86,9 @@
        10 IP-I-WET           BINARY-LONG.
        10 IP-I-WATER-H       FLOAT-LONG.
        10 IP-I-LAVA-H        FLOAT-LONG.
+       10 IP-I-SENT-X        FLOAT-LONG.
+       10 IP-I-SENT-Y        FLOAT-LONG.
+       10 IP-I-SENT-Z        FLOAT-LONG.
     05 IP-STATS OCCURS 64 TIMES.
        10 IP-S-PICKED        BINARY-LONG OCCURS 1500 TIMES.
        10 IP-S-DROPPED       BINARY-LONG OCCURS 1500 TIMES.

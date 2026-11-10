@@ -24,6 +24,7 @@
  01 WS-A                   PIC X(16).
  01 WS-B                   PIC X(16).
  01 WS-C                   PIC X(16).
+ 01 WS-D                   PIC X(16).
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-ITEM                BINARY-LONG VALUE 2.
  01 WS-COUNT               BINARY-LONG VALUE 1.
@@ -621,6 +622,83 @@
      MOVE SPACES TO WS-OBSERVED
      STRING FUNCTION TRIM(WS-A) FUNCTION TRIM(WS-B) DELIMITED BY SIZE INTO WS-OBSERVED
      MOVE "10" TO WS-EXPECTED
+     PERFORM CHECK
+
+*>   3.2 the fluid height of a cell: 1 when the same fluid is above (lava as well as water), 8/9 for a lone source.
+     MOVE 14 TO WS-STATE
+     MOVE 30 TO WS-BX
+     MOVE 98 TO WS-BY
+     PERFORM SET-BLOCK
+     MOVE 99 TO WS-BY
+     PERFORM SET-BLOCK
+     MOVE 6 TO WS-STATE
+     MOVE 31 TO WS-BX
+     MOVE 98 TO WS-BY
+     PERFORM SET-BLOCK
+     MOVE 30 TO WS-BX
+     MOVE 98 TO WS-BY
+     CALL "IP-FLUID-CELL" USING WS-DIM WS-BX WS-BY WS-BZ WS-N WS-F1
+     CALL "ITT-I" USING WS-N WS-A
+     CALL "ITT-F" USING WS-F1 WS-B
+     MOVE 31 TO WS-BX
+     CALL "IP-FLUID-CELL" USING WS-DIM WS-BX WS-BY WS-BZ WS-N WS-F1
+     CALL "ITT-I" USING WS-N WS-C
+     CALL "ITT-F" USING WS-F1 WS-D
+     MOVE SPACES TO WS-OBSERVED
+     STRING FUNCTION TRIM(WS-A) " " FUNCTION TRIM(WS-B) " " FUNCTION TRIM(WS-C) " " FUNCTION TRIM(WS-D)
+         DELIMITED BY SIZE INTO WS-OBSERVED
+     MOVE "acceptance US2 41§3 Tick behaviour fluid cells: lava under lava is kind 2 height 1, a lone water source kind 1 height 8/9"
+         TO WS-CASE
+     MOVE "2 1.00000 1 0.88889" TO WS-EXPECTED
+     PERFORM CHECK
+
+*>   3.3 block restitution values: a bed (any key ending in _bed) and shelf_mushroom 0.75, slime 1.0 (tested above), others 0.
+     MOVE CB-S-BLOCK(101) TO WS-BLOCK
+     MOVE "minecraft:shelf_mushroom" TO CB-KEY(WS-BLOCK + 1)
+     MOVE 24 TO CB-KEY-LENGTH(WS-BLOCK + 1)
+     MOVE CB-S-BLOCK(10) TO WS-BLOCK
+     MOVE "minecraft:white_bed" TO CB-KEY(WS-BLOCK + 1)
+     MOVE 19 TO CB-KEY-LENGTH(WS-BLOCK + 1)
+     MOVE 100 TO WS-STATE
+     MOVE 28 TO WS-BX
+     MOVE 98 TO WS-BY
+     MOVE 20 TO WS-BZ
+     PERFORM SET-BLOCK
+     MOVE 9 TO WS-STATE
+     MOVE 29 TO WS-BX
+     PERFORM SET-BLOCK
+     MOVE 28.5 TO WS-X
+     MOVE 99 TO WS-Y
+     MOVE 20.5 TO WS-Z
+     CALL "IP-BOUNCINESS" USING WS-DIM WS-X WS-Y WS-Z WS-F1
+     MOVE 29.5 TO WS-X
+     CALL "IP-BOUNCINESS" USING WS-DIM WS-X WS-Y WS-Z WS-F2
+     MOVE "acceptance US2 41§3 Tick behaviour the bounce restitution of shelf_mushroom and of a bed is 0.75" TO WS-CASE
+     MOVE WS-F1 TO WS-VX
+     CALL "ITT-V3" USING WS-F1 WS-F2 WS-VX WS-OBSERVED
+     IF CB-S-BLOCK(101) = CB-S-BLOCK(10)
+         MOVE "same block" TO WS-OBSERVED
+     END-IF
+     MOVE "0.75000,0.75000,0.75000" TO WS-EXPECTED
+     PERFORM CHECK
+
+*>   A wall to the north (z decreasing): the item stops flush at it and loses vz.
+     MOVE 2 TO WS-STATE
+     MOVE 29 TO WS-BX
+     MOVE 110 TO WS-BY
+     MOVE 19 TO WS-BZ
+     PERFORM SET-BLOCK
+     MOVE 29.5 TO WS-X
+     MOVE 110.5 TO WS-Y
+     MOVE 20.5 TO WS-Z
+     MOVE 0 TO WS-VX WS-VY
+     MOVE -0.5 TO WS-VZ
+     PERFORM SPAWN
+     MOVE 1 TO WS-TICKS
+     PERFORM TICK
+     MOVE "acceptance US2 41§3 Tick behaviour an item moving north into a wall stops flush at it (z = 20.125) and loses vz" TO WS-CASE
+     MOVE "29.50000,110.46000,20.12500 v 0.00000,-0.03920,0.00000 g 0" TO WS-EXPECTED
+     PERFORM OBSERVE
      PERFORM CHECK
      STOP RUN.
 

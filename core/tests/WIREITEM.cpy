@@ -57,6 +57,8 @@
      MOVE 1 TO WS-COUNT
      CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
          WS-ROW
+*>   The fixture states angles 0; a new item has a random yaw (41 section 1), so the test sets the row's yaw to the fixture's.
+     MOVE 0 TO EN-YAW(WS-ROW)
      CALL "PB-RESET" USING PB-BUFFER
      CALL "ENTITY-ADD-BUILD" USING WS-ROW PB-BUFFER
      MOVE "contract/fixtures/wire/play-s2c-01-add-entity-loose-item.hex" TO WS-PATH

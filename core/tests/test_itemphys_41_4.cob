@@ -391,6 +391,14 @@
          END-EVALUATE
          PERFORM CHECK
      END-PERFORM
+     MOVE "acceptance US2 41§4 Pickup Inventory.add of an empty stack returns false and changes nothing" TO WS-CASE
+     MOVE 0 TO WS-N
+     CALL "IP-INV-ADD" USING WS-PLAYER WS-ITEM WS-N WS-VAR WS-I
+     CALL "ITT-I" USING WS-I WS-A
+     MOVE SPACES TO WS-OBSERVED
+     STRING "result " FUNCTION TRIM(WS-A) DELIMITED BY SIZE INTO WS-OBSERVED
+     MOVE "result 0" TO WS-EXPECTED
+     PERFORM CHECK
      STOP RUN.
 
  SPAWN.

@@ -1,8 +1,10 @@
 *> Test of the creative cursor throw (CC-0006; core/src/inventory.cob INV-CREATIVE-SET; 05c 0x39 Set Creative Mode Slot with slot -1,
 *> the "drop" of the creative inventory screen: a stack carried by the cursor and clicked outside the window; T0397). Alice
 *> (entity 1, creative) stands at (20.5, 101, 20.5) on greystone at (20, 100, 20), facing east, so a thrown item appears
-*> at (20.50, 102.30, 20.50). The stack of the packet becomes a ground item (a count above the item's maximum stack is
-*> lowered to it); a count of 0, an unknown item and a survival player's packet throw nothing.
+*> at (20.50, 102.32, 20.50) (the eye 1.62 above the feet minus 0.3, 41 section 2.3). The stack of the packet becomes a ground
+*> item through every negative slot number; a count above the item's maximum stack is ignored, not lowered (41 section 2.3.1:
+*> also for the slots 1 to 45, which then stay as they were); a count of 0, an unknown item and a survival player's packet throw
+*> nothing.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CREATIVE-THROW.
  DATA DIVISION.
@@ -34,6 +36,8 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
  01 WS-EDIT                PIC -(9)9.
+ 01 WS-SUM                 BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 1 TO CS-DEFAULT-MODE
@@ -54,15 +58,44 @@
      MOVE 5 TO WS-COUNT
      PERFORM CREATIVE-SET
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "1(2,1@20.50,102.30,20.50) 101(2=3x5) 103(2)" TO TL-EXPECTED
+     MOVE "1(2,1@20.50,102.32,20.50) 101(2=3x5) 103(2)" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test creative throw a count of 100 is lowered to the item's maximum stack of 64" TO TL-CASE
+     MOVE "test creative throw every negative slot number drops the stack, not only -1" TO TL-CASE
+     MOVE -7 TO WS-SLOT
+     MOVE 2 TO WS-COUNT
+     PERFORM CREATIVE-SET
+     CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
+     MOVE "1(3,1@20.50,102.32,20.50) 101(3=3x2) 103(3)" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test creative throw a count of 100 above the item's maximum stack of 64 is ignored: "
+         & "nothing is thrown (41 section 2.3.1)" TO TL-CASE
+     MOVE -1 TO WS-SLOT
      MOVE 100 TO WS-COUNT
      PERFORM CREATIVE-SET
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "1(3,1@20.50,102.30,20.50) 101(3=3x64) 103(3)" TO TL-EXPECTED
+     MOVE CW-NEXT-ENTITY-ID TO WS-EDIT
+     MOVE SPACES TO WS-TEXT
+     STRING "next id " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "next id 4" TO TL-EXPECTED
      PERFORM CHECK
+
+     MOVE "test creative throw a count of 100 for the slot 12 is ignored too: the slot is not "
+         & "set to 64" TO TL-CASE
+     MOVE 12 TO WS-SLOT
+     PERFORM CREATIVE-SET
+     CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
+     MOVE 0 TO WS-SUM
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         ADD PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-SUM
+     END-PERFORM
+     MOVE WS-SUM TO WS-EDIT
+     MOVE SPACES TO WS-TEXT
+     STRING "items in the inventory " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "items in the inventory 0" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE -1 TO WS-SLOT
 
      MOVE "test creative throw a count of 0, an unknown item and a survival player's packet throw nothing"
          TO TL-CASE

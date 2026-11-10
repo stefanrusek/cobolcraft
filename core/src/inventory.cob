@@ -419,7 +419,7 @@
  PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-VAR.
      CALL "INV-ADD-RANGE-X" USING L-ROW L-ITEM L-COUNT WS-FIRST WS-LAST WS-LEFT L-VAR
      IF WS-LEFT > 0
-         CALL "GI-THROW-STACK" USING L-ROW L-ITEM WS-LEFT
+         CALL "GI-THROW-STACK-X" USING L-ROW L-ITEM WS-LEFT L-VAR
      END-IF
      GOBACK.
  END PROGRAM MENU-RETURN-STACK-X.
@@ -517,10 +517,12 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INV-CREATIVE-SET.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Set Creative Mode Slot, 05c 0x39): acted on only for a creative player
-*> (09 §3.2) whose menu is the inventory menu. Slot 1 to 45 (menu numbers: grid, armor, main, hotbar, off-hand; not the
-*> result slot 0) becomes the stack: count 0 empties it; an item id outside 1 to the item count is ignored; a count above
-*> the item's maximum stack is lowered to it; the stack's component patch (PSB-STACK-VAR) goes into the slot with it. Slot -1 (the creative inventory's drop, CC-0006) throws the stack as a
-*> ground item (the same limits); other slots are ignored. Nothing is echoed (the client set it).
+*> (09 §3.2) whose menu is the inventory menu (41 section 2.3.1). Slot 1 to 45 (menu numbers: grid, armor, main, hotbar,
+*> off-hand; not the result slot 0) becomes the stack: count 0 empties it; an item id outside 1 to the item count is ignored; a
+*> count above the item's maximum stack is ignored (not lowered); the stack's component patch (PSB-STACK-VAR) goes into the slot
+*> with it. Any negative slot (the creative inventory's drop, CC-0006) throws the stack as a ground item through GI-CREATIVE-DROP
+*> (thrown drop, delay 40, thrower, drop throttle; the same limits, the patch handle goes with it); slot 0 and the slots above
+*> 45 are ignored. Nothing is echoed (the client set it).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -537,12 +539,13 @@
      IF PL-MODE(WS-ROW) NOT = 1 OR MN-WINDOW(WS-ROW) NOT = 0
          GOBACK
      END-IF
-*>   Slot -1 is the drop of the creative inventory screen (CC-0006): the stack becomes a ground item.
-     IF PSB-SLOT = -1
+*>   A negative slot is the drop of the creative inventory screen (CC-0006): the stack becomes a ground item.
+     IF PSB-SLOT < 0
          IF PSB-STACK-COUNT > 0 AND PSB-STACK-ITEM >= 1 AND PSB-STACK-ITEM < IT-COUNT
+                 AND PSB-STACK-COUNT <= IT-MAX-STACK(PSB-STACK-ITEM + 1)
              MOVE PSB-STACK-ITEM TO WS-ITEM
-             MOVE FUNCTION MIN(PSB-STACK-COUNT, IT-MAX-STACK(PSB-STACK-ITEM + 1)) TO WS-COUNT
-             CALL "GI-THROW-STACK" USING WS-ROW WS-ITEM WS-COUNT
+             MOVE PSB-STACK-COUNT TO WS-COUNT
+             CALL "GI-CREATIVE-DROP" USING WS-ROW WS-ITEM WS-COUNT PSB-STACK-VAR
          END-IF
          GOBACK
      END-IF
@@ -554,11 +557,9 @@
              MOVE 0 TO WS-ITEM WS-COUNT
              CALL "MENU-SET" USING WS-ROW PSB-SLOT WS-ITEM WS-COUNT
          WHEN PSB-STACK-ITEM >= 1 AND PSB-STACK-ITEM < IT-COUNT
+                 AND PSB-STACK-COUNT <= IT-MAX-STACK(PSB-STACK-ITEM + 1)
              MOVE PSB-STACK-ITEM TO WS-ITEM
-             MOVE IT-MAX-STACK(PSB-STACK-ITEM + 1) TO WS-COUNT
-             IF PSB-STACK-COUNT < WS-COUNT
-                 MOVE PSB-STACK-COUNT TO WS-COUNT
-             END-IF
+             MOVE PSB-STACK-COUNT TO WS-COUNT
              CALL "MENU-SET-X" USING WS-ROW PSB-SLOT WS-ITEM WS-COUNT PSB-STACK-VAR
              CALL "MENU-CRAFT-UPDATE" USING WS-ROW
      END-EVALUATE

@@ -296,6 +296,23 @@
      STRING "5 1 0 " FUNCTION TRIM(WS-A) DELIMITED BY SIZE INTO WS-EXPECTED
      PERFORM CHECK
 
+*>   An item that does not fit (handleExtraItemsCreatedOnUse): thrown from the same place with delay 40, but no thrower and no statistics.
+     MOVE "acceptance US2 41§2 Spawning an item that did not fit is dropped like a throw with delay 40, with no thrower and no new "
+         & "item_dropped or drop statistic" TO WS-CASE
+     CALL "GI-DROP-EXTRA" USING WS-PLAYER WS-ITEM WS-COUNT WS-VAR
+     PERFORM FIND-LAST-ITEM
+     CALL "IP-STAT-GET" USING WS-PLAYER IP-STAT-DROPPED WS-ITEM WS-STAT
+     CALL "ITT-I" USING WS-STAT WS-A
+     CALL "IP-STAT-GET" USING WS-PLAYER IP-STAT-DROP WS-ITEM WS-STAT
+     CALL "ITT-I" USING WS-STAT WS-B
+     CALL "ITT-I" USING IP-I-THROWER(WS-ROW) WS-C
+     CALL "ITT-I" USING EN-DELAY(WS-ROW) WS-D
+     MOVE SPACES TO WS-OBSERVED
+     STRING "dropped " FUNCTION TRIM(WS-A) " drop " FUNCTION TRIM(WS-B) " thrower " FUNCTION TRIM(WS-C) " delay "
+         FUNCTION TRIM(WS-D) DELIMITED BY SIZE INTO WS-OBSERVED
+     MOVE "dropped 5 drop 1 thrower 0 delay 40" TO WS-EXPECTED
+     PERFORM CHECK
+
 *>   2.3.1 the creative drop throttle: 74 drops in a row are allowed (count 1480), the 75th is lost, each tick lowers the count by 1.
      MOVE "acceptance US2 41§2 Spawning the creative drop throttle allows 74 immediate drops (count 20 each, limit 1480), ignores "
          & "the 75th and allows one more after the count has fallen below 1480" TO WS-CASE
