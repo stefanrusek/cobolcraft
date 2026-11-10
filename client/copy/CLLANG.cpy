@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 223.
+ 78 BI-LANG-COUNT           VALUE 230.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -453,7 +453,21 @@
     05 FILLER PIC X(128) VALUE "Open Pack Folder".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.open_failed".
     05 FILLER PIC X(128) VALUE "Cannot start %s to open the pack folder".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.title.options".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.pause.options".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.title".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.previous".
+    05 FILLER PIC X(128) VALUE "Previous Page".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.next".
+    05 FILLER PIC X(128) VALUE "Next Page".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.page".
+    05 FILLER PIC X(128) VALUE "Options (page %s of %s)".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.press_key".
+    05 FILLER PIC X(128) VALUE "> Press a key <".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 223 TIMES.
+    05 BI-LANG OCCURS 230 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

@@ -123,6 +123,7 @@
  01 WS-MODS                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-THROW               BINARY-LONG VALUE 4.
+ 01 WS-KEYC                BINARY-LONG.
  01 WS-PICKUP              BINARY-LONG VALUE 0.
  01 WS-CHANGED             BINARY-LONG VALUE 1.
  01 WS-NONE                BINARY-LONG VALUE 0.
@@ -140,7 +141,8 @@
      COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE
      COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE
 *>   Q over a slot (the slot widget under the cursor) holding a stack.
-     IF IN-KEY-PRESSED(CC-KEY-Q + 1) = 1
+     MOVE KB-CODE(KB-DROP) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1
          MOVE -1 TO WS-SLOT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
              IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) <= 35

@@ -20,6 +20,7 @@
  78 SCR-CREATE-WORLD        VALUE 14.
  78 SCR-CONFIRM-DELETE      VALUE 15.
  78 SCR-OPEN-TO-OTHERS      VALUE 16.
+ 78 SCR-OPTIONS             VALUE 18.  *> the options pages (US16; screens/options.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
@@ -80,6 +81,11 @@
  78 ACT-PACKS-DONE          VALUE 39.  *> pack screen: save the choice, reload, the title screen
  78 ACT-WORLD-TYPE          VALUE 40.   *> create-world: cycle standard / cobolcraft (Ctrl: debug)
  78 ACT-OPEN-PACK-FOLDER    VALUE 41.   *> pack screen: open resourcepacks/ with the opener (US4)
+ 78 ACT-OPTIONS             VALUE 42.   *> title, pause menu: the options screen
+ 78 ACT-OPTION              VALUE 43.   *> options: change the option of row (the argument)
+ 78 ACT-OPTIONS-PREV        VALUE 44.   *> options: the previous page
+ 78 ACT-OPTIONS-NEXT        VALUE 45.   *> options: the next page
+ 78 ACT-OPTIONS-DONE        VALUE 46.   *> options: back to the screen it was opened from
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
  78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
@@ -225,6 +231,23 @@
        10 CL-ET-ATTACK      PIC 9.
        10 CL-ET-HALF        PIC 9V999.
        10 CL-ET-HEIGHT      PIC 9V99.
+
+*> Key bindings (13 §7.3): the index of a mapping in KB-CODE; KB-NAMES (OPTIONS-APPLY) names them in this order.
+ 78 KB-FORWARD              VALUE 1.
+ 78 KB-LEFT                 VALUE 2.
+ 78 KB-BACK                 VALUE 3.
+ 78 KB-RIGHT                VALUE 4.
+ 78 KB-JUMP                 VALUE 5.
+ 78 KB-SNEAK                VALUE 6.
+ 78 KB-SPRINT               VALUE 7.
+ 78 KB-INVENTORY            VALUE 8.
+ 78 KB-SWAP-OFFHAND         VALUE 9.
+ 78 KB-DROP                 VALUE 10.
+ 78 KB-HOTBAR-1             VALUE 11.   *> to KB-HOTBAR-1 + 8
+ 78 KB-CHAT                 VALUE 20.
+ 78 KB-COMMAND              VALUE 21.
+ 78 KB-PERSPECTIVE          VALUE 22.
+ 78 KB-COUNT                VALUE 22.
 
 *> GUI sprites of the UI atlas (GS-ROW rows).
  78 GSP-BUTTON              VALUE 1.

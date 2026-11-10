@@ -16,6 +16,11 @@
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
     05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
+    05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
+    05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
+    05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
+    05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
+       10 KB-CODE            BINARY-LONG OCCURS 24 TIMES.
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
@@ -444,6 +449,18 @@
        10 OP-ENABLED OCCURS 32 TIMES.
           15 OP-ID           PIC X(80).
           15 OP-ID-LENGTH    BINARY-LONG.
+*>     options.txt (options.cob; 13 §7): the options of the table CLOPTS.cpy by row, each in its stored form (OP-OPT-LEN 0 = the
+*>     empty string); the confirmed incompatible pack ids as the file's JSON list text; the optional fullscreen video mode line.
+       10 OP-OPT OCCURS 160 TIMES.
+          15 OP-OPT-VALUE    PIC X(64).
+          15 OP-OPT-LEN      BINARY-LONG.
+       10 OP-PAGE            BINARY-LONG.     *> the options screen: the page shown, from 0
+       10 OP-RETURN          BINARY-LONG.     *> the screen the options screen returns to
+       10 OP-REBIND          BINARY-LONG.     *> the key option row waiting for a key (0 = none)
+       10 OP-INCOMPAT        PIC X(512).
+       10 OP-INCOMPAT-LEN    BINARY-LONG.
+       10 OP-FULLSCREEN      PIC X(64).
+       10 OP-FULLSCREEN-LEN  BINARY-LONG.
        10 LP-CONFIRM         BINARY-LONG.    *> pack confirmation: the LP-ENTRY to enable
        10 LP-ICON-COUNT      BINARY-LONG.    *> icon cells in use
 *>  ---- server packs (US18-6 to US18-8; 08 §9; packs/download.cob, packs/cache.cob,
