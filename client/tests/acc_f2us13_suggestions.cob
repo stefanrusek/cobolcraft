@@ -163,6 +163,18 @@
      MOVE CH-LINE(1:CH-LINE-LENGTH) TO TL-OBSERVED
      MOVE "/murmur Alice" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   With the operator's 24 commands only the first 10 (sorted) are shown, as 10 lines above the input line (15 §14.5).
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "/" TO CH-LINE
+     MOVE 1 TO CH-LINE-LENGTH
+     MOVE 0 TO CS-FROZEN CS-SELECTED
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-SCREEN-TEXT
+     MOVE "acceptance US13-1 with 24 commands the chat shows the first 10 sorted: announce to homestead" TO TL-CASE
+     MOVE WS-SCREEN-TEXT TO TL-OBSERVED
+     MOVE "/|announce|bar|barlist|clock|conjure|demote|eject|empty|guestlist|homestead" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-F2US13-SUGGESTIONS.
  COPY CLTEST.

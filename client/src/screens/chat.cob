@@ -281,7 +281,7 @@
                          = FUNCTION LOWER-CASE(WS-WORD(1:WS-WORD-LENGTH))
                      MOVE 1 TO WS-MATCH
              END-EVALUATE
-             IF WS-MATCH = 1 AND CS-COUNT < CL-MAX-SUGGEST
+             IF WS-MATCH = 1 AND CS-COUNT < CL-MAX-COMMANDS
                  ADD 1 TO CS-COUNT
                  MOVE WS-NAME TO CS-TEXT(CS-COUNT)
                  MOVE WS-NAME-LENGTH TO CS-LENGTH(CS-COUNT)
@@ -353,7 +353,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHAT-TAB.
-*> USING CLIENT-STATE: Tab puts the first suggestion (the commands, then the server's answers; at most CL-MAX-SUGGEST are shown) in place of the
+*> USING CLIENT-STATE: Tab puts the first suggestion (the commands, then the server answers) in place of the
 *> word being typed (from CS-WORD-START to the end of the line), each further Tab the next one, round; the list is kept (CS-FROZEN) until
 *> the next typed character or Backspace. With no suggestion Tab does nothing.
  DATA DIVISION.
@@ -366,7 +366,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     COMPUTE WS-TOTAL = FUNCTION MIN(CS-COUNT + CS-ANSWERS, CL-MAX-SUGGEST)
+     COMPUTE WS-TOTAL = CS-COUNT + CS-ANSWERS
      IF WS-TOTAL > 0 AND CS-WORD-START > 0
          IF CS-FROZEN = 0
              MOVE 1 TO CS-FROZEN CS-SELECTED

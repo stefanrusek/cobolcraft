@@ -388,7 +388,7 @@
 *>     word being typed; the last Command Suggestion sent (transaction id, the line it asked about,
 *>     0 length = none outstanding) and the texts of its answer; the rows shown in the last frame.
        10 CS-COUNT           BINARY-LONG.
-       10 CS-ENTRY OCCURS 10 TIMES.
+       10 CS-ENTRY OCCURS 64 TIMES.
           15 CS-TEXT         PIC X(32).
           15 CS-LENGTH       BINARY-LONG.
        10 CS-TRANSACTION     BINARY-LONG.

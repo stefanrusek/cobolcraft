@@ -55,10 +55,11 @@
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
      CALL "COMMANDS-READ" USING CLIENT-STATE PB-BUFFER
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     MOVE "test command tree / with the operator tree suggests the first 10 of its 24 commands"
+     MOVE "test command tree / with the operator tree keeps all 24 commands, sorted by lower-cased text (the chat shows the first 10)"
          TO TL-CASE
      PERFORM SUGGESTED-TEXT
-     MOVE "10 howto roster murmur promote demote eject bar unbar barlist guestlist"
+     MOVE "24 announce bar barlist clock conjure demote eject empty guestlist homestead howto mode murmur persist promote "
+         & "ration relocate roster shutdown skies supply sweep unbar vitality"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
