@@ -1,0 +1,1 @@
+{"type": "minecraft:find_top_surface", "density": {"type": "minecraft:sub", "left": {"type": "minecraft:add", "left": 40.0, "right": {"type": "minecraft:mul", "left": "minecraft:t/xs", "right": 0.5}}, "right": "minecraft:y"}, "upper_bound": {"type": "minecraft:constant", "value": 100.0}, "lower_bound": -64, "cell_height": 8}

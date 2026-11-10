@@ -681,48 +681,48 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
 
-- [ ] T0405 [US11-core] Write test `core/tests/test_gen_queue.cob`: the chunk generation queue orders wanted chunks nearest first and obeys the per-tick budget (R12)
-- [ ] T0406 [US11-core] Implement the generation queue in `core/src/gen-queue.cob` and run it from `CORE-TICK` in `core/src/api.cob`
-- [ ] T0407 [US11-core] Measure one generated chunk with the `cc_f64` noise path (Risk R-P, first US11 task): add `core/tests/test_gen_cost.cob` that prints the elapsed time of one chunk and fails when it exceeds the per-tick budget recorded in `specs/002-client-polish/research.md` R12 (a result above the budget goes back to the plan, not to a hack)
-- [ ] T0408 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0405 [US11-core] Write test `core/tests/test_gen_queue.cob`: the chunk generation queue orders wanted chunks nearest first and obeys the per-tick budget (R12)
+- [x] T0406 [US11-core] Implement the generation queue in `core/src/gen-queue.cob` and run it from `CORE-TICK` in `core/src/api.cob`
+- [x] T0407 [US11-core] Measure one generated chunk with the `cc_f64` noise path (Risk R-P, first US11 task): add `core/tests/test_gen_cost.cob` that prints the elapsed time of one chunk and fails when it exceeds the per-tick budget recorded in `specs/002-client-polish/research.md` R12 (a result above the budget goes back to the plan, not to a hack). Re-done per the orchestrator decision (an atomic chunk cannot fit a 50 ms tick, one chunk's noise path alone measured 473 ms): generation is resumable and time-sliced (`core/src/gen-job.cob`, `gen-stages.cob`, `gen-queue.cob` `GEN-QUEUE-STEPS`); the test asserts a step-count budget per tick, completion after ceil(236 / 4) = 59 ticks and byte equality with the atomic reference, and prints the measured per-stage cost as evidence
+- [x] T0408 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 35: US11-core (b) — random sources, noise, climate, biome source
 
-- [ ] T0409 [US11-core] Write test `core/tests/test_random_sources.cob`: positional random splitters and seed forks of `docs/protocol/10-world-generation-terrain.md` with the worked examples (extends `core/src/rng.cob`)
-- [ ] T0410 [US11-core] Implement them in `core/src/rng.cob`
-- [ ] T0411 [US11-core] Write test `core/tests/test_noise.cob`: improved/perlin noise, octave and normal noise via `cc_f64_*` match the worked examples bit for bit (10)
-- [ ] T0412 [US11-core] Implement the noises in `core/src/noise.cob`
-- [ ] T0413 [US11-core] Write test `core/tests/test_climate.cob`: the six climate parameters at sample points and the multi-noise biome lookup (10, 37 part 3)
-- [ ] T0414 [US11-core] Implement climate and the biome source in `core/src/climate.cob`
-- [ ] T0415 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0409 [US11-core] Write test `core/tests/test_random_sources.cob`: positional random splitters and seed forks of `docs/protocol/10-world-generation-terrain.md` with the worked examples (extends `core/src/rng.cob`)
+- [x] T0410 [US11-core] Implement them in `core/src/rng.cob`
+- [x] T0411 [US11-core] Write test `core/tests/test_noise.cob`: improved/perlin noise, octave and normal noise via `cc_f64_*` match the worked examples bit for bit (10)
+- [x] T0412 [US11-core] Implement the noises in `core/src/noise.cob`
+- [x] T0413 [US11-core] Write test `core/tests/test_climate.cob`: the six climate parameters at sample points and the multi-noise biome lookup (10, 37 part 3)
+- [x] T0414 [US11-core] Implement climate and the biome source in `core/src/climate.cob`
+- [x] T0415 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 36: US11-core (c) — density, aquifers, surface
 
-- [ ] T0416 [US11-core] Write test `core/tests/test_density.cob`: the density function graph evaluation, cell interpolation and final density at sample points (10, 37 part 2)
-- [ ] T0417 [US11-core] Implement density evaluation in `core/src/density.cob`
-- [ ] T0418 [US11-core] Write test `core/tests/test_terrain_fill.cob`: the stone/water/air fill of a chunk from final density with the worked example columns
-- [ ] T0419 [US11-core] Implement the terrain fill in `core/src/terrain.cob`
-- [ ] T0420 [US11-core] Write test `core/tests/test_aquifer.cob`: aquifer fluid level and barrier decisions (10)
-- [ ] T0421 [US11-core] Implement aquifers in `core/src/aquifer.cob`
-- [ ] T0422 [US11-core] Write test `core/tests/test_surface_rules.cob`: the surface rule evaluation for badlands, desert, ocean floors and the default (10, 37 part 4)
-- [ ] T0423 [US11-core] Implement surface rules in `core/src/surface.cob`
-- [ ] T0424 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0416 [US11-core] Write test `core/tests/test_density.cob`: the density function graph evaluation, cell interpolation and final density at sample points (10, 37 part 2). Graph and cell interpolation: `test_density.cob`; final density at 15 sample points on a hand-authored fixture of the documented structure (noise leaves replaced by gradients), and grid mode equals direct evaluation: `test_density_final.cob`. The same check on the real overworld data is a Convergence test, later
+- [x] T0417 [US11-core] Implement density evaluation in `core/src/density.cob` (evaluator from the previous slice; this slice adds the chunk interpolation grids, `DNG-*` grid mode of the interpolated node)
+- [x] T0418 [US11-core] Write test `core/tests/test_terrain_fill.cob`: the stone/water/air fill of a chunk from final density with the worked example columns
+- [x] T0419 [US11-core] Implement the terrain fill in `core/src/terrain.cob`
+- [x] T0420 [US11-core] Write test `core/tests/test_aquifer.cob`: aquifer fluid level and barrier decisions (10). Formulas, surface scan, centres and decisions on hand-authored fixtures; the noise-driven values (barrier, floodedness, spread, lava) are a Convergence test on real data
+- [x] T0421 [US11-core] Implement aquifers in `core/src/aquifer.cob` (the fluid-update scheduling flag of 9.2 is not tracked yet: nothing consumes it before the fluid engine)
+- [x] T0422 [US11-core] Write test `core/tests/test_surface_rules.cob`: the surface rule evaluation for badlands, desert, ocean floors and the default (10, 37 part 4). Hand-authored fixture `core/tests/fixtures/surface` (the 10.9 structure reduced; surface noises of amplitude 0); expected zoom ids, bands and gradient floats from an independent Python evaluation; the real-data surface (noise values, ice, icebergs) is a Convergence test. Also `test_biome_table.cob` (CBI table raised from 64 to 128 entries, 67 biomes documented in 10 section 7.8)
+- [x] T0423 [US11-core] Implement surface rules in `core/src/surface.cob` (zoomed biome lookup, bands, rule interpreter, column procedure, eroded badlands pillars, the 164-step surface stage; NOT done: frozen ocean icebergs of 10.8 (needs simplex noise 3.5), block-state properties of block rules, ore_vein rule (document 11))
+- [x] T0424 [US11-core] Gate: run `make gate-core` and record the command and real output: lint 221 files 0 failed, passed 1780 failed 0, coverage 47 objects 0 uncovered lines (scratchpad/wg3/gate-t0424.txt)
 
 #### Phase 37: US11-core (d) — carvers and caves
 
-- [ ] T0425 [US11-core] Write test `core/tests/test_carvers.cob`: the cave and canyon carvers over the documented seed and chunk with the worked examples (11)
-- [ ] T0426 [US11-core] Implement the carvers in `core/src/carvers.cob`
-- [ ] T0427 [US11-core] Write test `core/tests/test_noise_caves.cob`: the large cavern, long tunnel and thin noodle passages from the density router (US11-1; 11)
-- [ ] T0428 [US11-core] Implement the noise caves in `core/src/noise-caves.cob`
-- [ ] T0429 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0425 [US11-core] Write test `core/tests/test_carvers.cob`: the cave and canyon carvers over the documented seed and chunk with the worked examples (11)
+- [x] T0426 [US11-core] Implement the carvers in `core/src/carvers.cob`
+- [x] T0427 [US11-core] Write test `core/tests/test_noise_caves.cob`: the large cavern, long tunnel and thin noodle passages from the density router (US11-1; 11). The caves are non-positive regions of final_density (11 section 2), already evaluated by the density stage (T0416, test_density_final covers the cheese, spaghetti, entrance, pillar and noodle terms); this test checks the fill of a chunk on the fixture `core/tests/fixtures/final`: stone exactly where the density is above 0 in 8 columns over 384 blocks, stone and open cells in deep rock. It passed on first run (no red possible: no new code is needed). The real-data check stays a Convergence test
+- [x] T0428 [US11-core] Implement the noise caves in `core/src/noise-caves.cob` (EVIDENCE ONLY: no `noise-caves.cob` exists or is needed; the caves are part of the density router functions (density.cob grids for cheese, spaghetti and noodle nodes) and the fill (terrain.cob); `test_noise_caves` passes)
+- [x] T0429 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 38: US11-core (e) — ores and ore drops
 
-- [ ] T0430 [US11-core] Write acceptance test `core/tests/acc_f2us11_ores.cob` (US11-2): each ore's height distribution (uniform or triangle), vein size and count per chunk, depth and biome limits (11) [FR-029, FR-030; SC-007]
-- [ ] T0431 [US11-core] Implement ore placement in `core/src/ores.cob`
-- [ ] T0432 [US11-core] Write edge-case test `core/tests/test_ore_edges.cob` (spec edge case): an ore exposed in a cave or aquifer keeps its exposure rule (11), and a vein crossing a chunk border is placed identically from either chunk
-- [ ] T0433 [US11-core] Write test `core/tests/test_ore_veins.cob`: the large ore vein and the copper/iron vein noise of 11
-- [ ] T0434 [US11-core] Implement the large veins in `core/src/ores.cob`
+- [x] T0430 [US11-core] Write acceptance test `core/tests/acc_f2us11_ores.cob` (US11-2): each ore's height distribution (uniform or triangle), vein size and count per chunk, depth and biome limits (11) [FR-029, FR-030; SC-007]
+- [x] T0431 [US11-core] Implement ore placement in `core/src/ores.cob`
+- [x] T0432 [US11-core] Write edge-case test `core/tests/test_ore_edges.cob` (spec edge case): an ore exposed in a cave or aquifer keeps its exposure rule (11), and a vein crossing a chunk border is placed identically from either chunk
+- [x] T0433 [US11-core] Write test `core/tests/test_ore_veins.cob`: the large ore vein and the copper/iron vein noise of 11 (fixture `core/tests/fixtures/veins`, independent Python evaluation `expected.py`; red output scratchpad/wg6/red-test-ore-veins.txt; real-data vein noise values are a Convergence test)
+- [x] T0434 [US11-core] Implement the large veins in `core/src/ores.cob` (implemented in the new `core/src/ore-veins.cob` (ORE-VEIN-ROOTS, ORE-VEIN-RULE) with hooks in surface.cob (rule type), gen-job.cob (grids), and the ore_vein fields in content/ (CTWORLDGEN WGN-TEXT-3, worldgen-types.cob))
 - [ ] T0435 [US11-core] Write acceptance test `core/tests/acc_f2us11_ore_drops.cob` (US11-3): ore blocks broken in survival drop their items through the loot tables (11 §9, 26) [FR-029, FR-030; SC-007]
 - [ ] T0436 [US11-core] Implement the loot engine of 26 (conditions, functions, rolls) in `core/src/loot.cob`
 - [ ] T0437 [US11-core] Implement block drops from loot tables in `core/src/block-drops.cob`
@@ -730,27 +730,27 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 39: US11-core (f) — generation pipeline and the 24-section stream
 
-- [ ] T0439 [US11-core] Write acceptance test `core/tests/acc_f2us11_world.cob` (US11-1): a fixed-seed standard world generates a chunk whose columns equal the worked examples of 10 and 11, including the status order and neighbour requirements [FR-029, FR-030; SC-007]
-- [ ] T0440 [US11-core] Implement the generation pipeline that calls biome, density, aquifer, surface, carver and ore stages in `core/src/worldgen-standard.cob`, selected by world type (the cobolcraft type keeps `core/src/worldgen.cob`, FR-033)
-- [ ] T0441 [US11-core] Write contract tests `core/tests/contract_vanilla_chunk.cob`: the chunk data of a standard world equals the bytes of the 06 worked examples (the automated half of Q-1)
-- [ ] T0442 [US11-core] Make the generated chunk stream pass `contract_vanilla_chunk` in `core/src/chunks-stream.cob`
-- [ ] T0443 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0439 [US11-core] Write acceptance test `core/tests/acc_f2us11_world.cob` (US11-1): a fixed-seed standard world generates a chunk whose columns equal the worked examples of 10 and 11, including the status order and neighbour requirements [FR-029, FR-030; SC-007] (`core/tests/acc_f2us11_world.cob`: WORLD-CHUNK through the world type, sea and air columns, the persisted CW-SEED (text 999, seed 7: 728 raw copper cells equal expected.py), stage order 1 to 8 once each, a chunk alone equals the chunk after its neighbours, another seed differs; it passed on its first run because the pipeline already existed, so no red was possible; the worked examples of 10 and 11 are fixture columns, the real-data check is a Convergence test)
+- [x] T0440 [US11-core] Implement the generation pipeline that calls biome, density, aquifer, surface, carver and ore stages in `core/src/worldgen-standard.cob`, selected by world type (the cobolcraft type keeps `core/src/worldgen.cob`, FR-033) (EVIDENCE ONLY: the pipeline of gen-job.cob, gen-stages.cob, terrain.cob, aquifer.cob, surface.cob, carvers.cob, ores.cob and ore-veins.cob is selected by world type in worldgen-standard.cob since the earlier phases; `acc_f2us11_world` passes)
+- [x] T0441 [US11-core] Write contract tests `core/tests/contract_vanilla_chunk.cob`: the chunk data of a standard world equals the bytes of the 06 worked examples (the automated half of Q-1). 06 holds structure tables, no worked-example bytes: the expected bytes are an independent Python encoder of 06 sections 3 to 6 (`core/tests/fixtures/veins/chunk_data.py`, `chunk-data.hex`) over the veins fixture chunk (the terrain pipeline up to the carvers; the ore stage places the table's blocks, which the encoder does not model); the light data follows and is not compared. Red: scratchpad/wg6/red-contract-vanilla-chunk.txt (crash in the ore biome cell index), red-contract-vanilla-chunk2.txt (fluid counts)
+- [x] T0442 [US11-core] Make the generated chunk stream pass `contract_vanilla_chunk` in `core/src/chunks-stream.cob` (fluid counts of water and lava per section in CHUNK-PACKET-BUILD; waterlogged states are not counted: gap; also fixed in `core/src/ores.cob`: the biome cell index of the ore biome test, and air is never an ore target)
+- [x] T0443 [US11-core] Gate: run `make gate-core` and record the command and real output: `make gate-core` lint 283 files 0 failed, passed 2188 failed 0, coverage 63 objects 0 uncovered lines (scratchpad/wg6/gate-core-final.log); gate-server passed 113 failed 0, gate-client passed 971 failed 0 (scratchpad/wg6/gate-*-final.log); gate-content passed 4793 failed 0
 
 #### Phase 40: US11-core (g) — debug world generator (test tool, plan "Operator addition: debug world")
 
 **Goal**: a hidden `debug` world type whose chunks hold every block state of the standard set in state-id order, per `docs/design/debug-world.md` (our own record; nothing from the jar). **Independent Test**: `test_debug_grid`, `test_debug_codec`.
 
-- [ ] T0444 [US11-core] Write test `core/tests/test_debug_grid.cob`: every block and every state of the standard set (counts of 24 §17 and 46) appears exactly once at the position the record's formula gives, in state-id order, and the cell next to the grid is air
-- [ ] T0445 [US11-core] Implement the generator in `core/src/worldgen-debug.cob` and select it by world type in `core/src/worldgen-standard.cob`
-- [ ] T0446 [US11-core] Write test `core/tests/test_debug_no_terrain.cob`: no noise, climate, density, carver, ore or feature stage runs for a debug chunk, and a chunk outside the grid is empty
-- [ ] T0447 [US11-core] Make `core/src/worldgen-debug.cob` call no terrain stage (satisfies `test_debug_no_terrain`)
-- [ ] T0448 [US11-core] Write test `core/tests/test_debug_no_ticks.cob`: in a debug world `CORE-TICK` runs no block update, fluid, growth, redstone, mob, weather, spawning or generation-queue work and the world time does not advance
-- [ ] T0449 [US11-core] Add the debug-type bypass of the world tick in `core/src/world-tick.cob` and `core/src/api.cob`
-- [ ] T0450 [US11-core] Write test `core/tests/test_debug_open.cob`: `CORE-WORLD-OPEN` with `CS-WORLD-TYPE` `debug` writes `WorldType = debug`, opens the content set of the standard type, is refused with the packs status word when the packs are not `ok`, and reopens as `debug`
-- [ ] T0451 [US11-core] Accept `debug` in `core/src/level-data.cob` and `core/src/api.cob` (opening the standard content set)
-- [ ] T0452 [US11-core] Write test `core/tests/test_debug_codec.cob`: the grid chunks round-trip through `PB-PUT-CHUNK-24` and `PB-GET-CHUNK-24` with every 16-bit state identical (palettes above 256 distinct states use the direct form)
-- [ ] T0453 [US11-core] Make `test_debug_codec` pass in `core/src/chunks-stream.cob`; if it already passes when written, record that evidence and mark this task done
-- [ ] T0454 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0444 [US11-core] Write test `core/tests/test_debug_grid.cob`: every block and every state of the standard set (counts of 24 §17 and 46) appears exactly once at the position the record's formula gives, in state-id order, and the cell next to the grid is air
+- [x] T0445 [US11-core] Implement the generator in `core/src/worldgen-debug.cob` and select it by world type in `core/src/worldgen-standard.cob`
+- [x] T0446 [US11-core] Write test `core/tests/test_debug_no_terrain.cob`: no noise, climate, density, carver, ore or feature stage runs for a debug chunk, and a chunk outside the grid is empty
+- [x] T0447 [US11-core] Make `core/src/worldgen-debug.cob` call no terrain stage (satisfies `test_debug_no_terrain`)
+- [x] T0448 [US11-core] Write test `core/tests/test_debug_no_ticks.cob`: in a debug world `CORE-TICK` runs no block update, fluid, growth, redstone, mob, weather, spawning or generation-queue work and the world time does not advance
+- [x] T0449 [US11-core] Add the debug-type bypass of the world tick in `core/src/world-tick.cob` and `core/src/api.cob`
+- [x] T0450 [US11-core] Write test `core/tests/test_debug_open.cob`: `CORE-WORLD-OPEN` with `CS-WORLD-TYPE` `debug` writes `WorldType = debug`, opens the content set of the standard type, is refused with the packs status word when the packs are not `ok`, and reopens as `debug` (`core/tests/test_debug_open.cob`; it passed on its first run: the debug open was already in api.cob and level-data.cob; the success path with packs ok cannot be built over fixture trees, asserted at level.dat and the type decision)
+- [x] T0451 [US11-core] Accept `debug` in `core/src/level-data.cob` and `core/src/api.cob` (opening the standard content set) (EVIDENCE ONLY: `WORLD-TYPE-DECIDE`, `WORLD-CONTENT-OPEN` and `LEVEL-DATA` accept debug already; `test_debug_open` and `acc_f2us2_world_type` pass)
+- [x] T0452 [US11-core] Write test `core/tests/test_debug_codec.cob`: the grid chunks round-trip through `PB-PUT-CHUNK-24` and `PB-GET-CHUNK-24` with every 16-bit state identical (palettes above 256 distinct states use the direct form)
+- [x] T0453 [US11-core] Make `test_debug_codec` pass in `core/src/chunks-stream.cob`; if it already passes when written, record that evidence and mark this task done
+- [x] T0454 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 41: US12-core (a) — block updates, fluids, world simulation
 

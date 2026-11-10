@@ -1,0 +1,1 @@
+{"type": "minecraft:add", "left": {"type": "minecraft:add", "left": {"type": "minecraft:sqrt", "input": "minecraft:t/positive"}, "right": {"type": "minecraft:reciprocal", "input": "minecraft:t/positive"}}, "right": {"type": "minecraft:add", "left": {"type": "minecraft:sign", "input": "minecraft:t/small"}, "right": {"type": "minecraft:log", "input": "minecraft:t/positive"}}}
