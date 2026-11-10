@@ -774,19 +774,30 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-BY-KEY.
-*> USING CLIENT-STATE, item key (PIC X(16), without namespace), item id out (0 when no item has that key).
+*> USING CLIENT-STATE, item key (PIC X(16), without namespace), item id out (0 when no item has that key): over the items of the open content set, else of the stand-in table.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CLCONST.
  01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-KEY                  PIC X(16).
  01 L-ITEM                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-KEY L-ITEM.
      MOVE 0 TO L-ITEM
-     PERFORM VARYING WS-I FROM CL-ITEM-COUNT BY -1 UNTIL WS-I < 1
-         IF CL-IT-KEY(WS-I) = L-KEY
+     CALL "CL-ITEM-COUNT-NOW" USING WS-COUNT
+     PERFORM VARYING WS-I FROM WS-COUNT BY -1 UNTIL WS-I < 1
+         COMPUTE WS-ID = WS-I - 1
+         CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ID WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
+         IF WS-KNOWN = 1 AND WS-PATH = L-KEY
              COMPUTE L-ITEM = WS-I - 1
          END-IF
      END-PERFORM
