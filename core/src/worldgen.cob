@@ -66,7 +66,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-CHUNK.
-*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CHUNKMEM.cpy layout; only the block states
+*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CELLS.cpy layout; only the block states
 *> are written), marker-y out (BINARY-LONG: y of the marker glowtube, -1 when the chunk has none).
 *> Layers per column (h = surface height): y 0 baseplate, 1 to h - 4 greystone, h - 3 to h - 1 loam,
 *> h turf when h >= 50 else grit, above void. Marker chunks (chunk x and z multiples of 4) get the
@@ -75,7 +75,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BLOCKS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-SINS.
@@ -100,7 +100,7 @@
  01 L-CHUNK                PIC X.
  01 L-MARKER-Y             BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-CHUNK L-MARKER-Y.
-     SET ADDRESS OF CM-CHUNK TO ADDRESS OF L-CHUNK
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF L-CHUNK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          COMPUTE WS-X = L-CX * 16 + WS-I - 1
          COMPUTE WS-Z = L-CZ * 16 + WS-I - 1
@@ -117,10 +117,10 @@
          END-IF
      END-PERFORM
 *>   Whole layers first: void everywhere, baseplate at y 0, greystone from y 1 to the lowest h - 4.
-     MOVE LOW-VALUES TO CM-STATES
-     MOVE ALL X"01" TO CM-STATES(1:256)
-     COMPUTE WS-LENGTH = (WS-MIN - 4) * 256
-     MOVE ALL X"02" TO CM-STATES(257:WS-LENGTH)
+     MOVE LOW-VALUES TO CE-STATES
+     MOVE ALL X"0100" TO CE-STATES(1:512)
+     COMPUTE WS-LENGTH = (WS-MIN - 4) * 512
+     MOVE ALL X"0200" TO CE-STATES(513:WS-LENGTH)
 *>   Then each column from the lowest h - 3 to its own h.
      COMPUTE WS-LOW = WS-MIN - 3
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
@@ -129,13 +129,13 @@
              COMPUTE WS-CELL = WS-Y * 256 + WS-C
              EVALUATE TRUE
                  WHEN WS-Y <= WS-TOP - 4
-                     MOVE ST-GREYSTONE TO CM-STATE(WS-CELL)
+                     MOVE ST-GREYSTONE TO CE-STATE(WS-CELL)
                  WHEN WS-Y < WS-TOP
-                     MOVE ST-LOAM TO CM-STATE(WS-CELL)
+                     MOVE ST-LOAM TO CE-STATE(WS-CELL)
                  WHEN WS-TOP >= 50
-                     MOVE ST-TURF TO CM-STATE(WS-CELL)
+                     MOVE ST-TURF TO CE-STATE(WS-CELL)
                  WHEN OTHER
-                     MOVE ST-GRIT TO CM-STATE(WS-CELL)
+                     MOVE ST-GRIT TO CE-STATE(WS-CELL)
              END-EVALUATE
          END-PERFORM
      END-PERFORM
@@ -143,11 +143,11 @@
      IF FUNCTION MOD(L-CX, 4) = 0 AND FUNCTION MOD(L-CZ, 4) = 0
          MOVE 137 TO WS-C
          COMPUTE WS-CELL = WS-H(WS-C) * 256 + WS-C
-         MOVE ST-CARDSTACK-Y TO CM-STATE(WS-CELL + 256)
-         MOVE ST-CARDSTACK-Y TO CM-STATE(WS-CELL + 512)
-         MOVE ST-CARDSTACK-Y-PUNCHED TO CM-STATE(WS-CELL + 768)
-         MOVE ST-LUCITE TO CM-STATE(WS-CELL + 1024)
-         MOVE ST-GLOWTUBE-LIT TO CM-STATE(WS-CELL + 1280)
+         MOVE ST-CARDSTACK-Y TO CE-STATE(WS-CELL + 256)
+         MOVE ST-CARDSTACK-Y TO CE-STATE(WS-CELL + 512)
+         MOVE ST-CARDSTACK-Y-PUNCHED TO CE-STATE(WS-CELL + 768)
+         MOVE ST-LUCITE TO CE-STATE(WS-CELL + 1024)
+         MOVE ST-GLOWTUBE-LIT TO CE-STATE(WS-CELL + 1280)
          COMPUTE L-MARKER-Y = WS-H(WS-C) + 5
      END-IF
      GOBACK.
@@ -211,7 +211,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-SUB-CHUNK.
-*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CHUNKMEM.cpy layout; only the block states
+*> USING chunk x, chunk z (BINARY-LONG), chunk memory (CELLS.cpy layout; only the block states
 *> are written), marker-y out (BINARY-LONG: y of the marker glowtube, -1 when the chunk has none).
 *> The §15.2 generator: per column (h = floor height) y 0 baseplate, 1 to h - 3 greystone, h - 2 to
 *> h slag, above void (up to the top of the chunk memory); in chunks whose chunk x and z are both
@@ -221,7 +221,7 @@
  WORKING-STORAGE SECTION.
  COPY BLOCKS.
  COPY DIMENSIONS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-ANGLE               FLOAT-LONG.
  01 WS-SINS.
     05 WS-SIN              FLOAT-LONG OCCURS 16 TIMES.
@@ -240,15 +240,15 @@
  01 L-CHUNK                PIC X.
  01 L-MARKER-Y             BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ L-CHUNK L-MARKER-Y.
-     SET ADDRESS OF CM-CHUNK TO ADDRESS OF L-CHUNK
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF L-CHUNK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          COMPUTE WS-ANGLE = (L-CX * 16 + WS-I - 1) / GEN-SUB-X-DIVISOR
          COMPUTE WS-SIN(WS-I) = FUNCTION SIN(WS-ANGLE)
          COMPUTE WS-ANGLE = (L-CZ * 16 + WS-I - 1) / GEN-SUB-Z-DIVISOR
          COMPUTE WS-COS(WS-I) = FUNCTION COS(WS-ANGLE)
      END-PERFORM
-     MOVE LOW-VALUES TO CM-STATES
-     MOVE ALL X"01" TO CM-STATES(1:256)
+     MOVE LOW-VALUES TO CE-STATES
+     MOVE ALL X"0100" TO CE-STATES(1:512)
      MOVE -1 TO L-MARKER-Y
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          COMPUTE WS-LZ = (WS-C - 1) / 16
@@ -258,15 +258,15 @@
          PERFORM VARYING WS-Y FROM 1 BY 1 UNTIL WS-Y > WS-H
              COMPUTE WS-CELL = WS-Y * 256 + WS-C
              IF WS-Y <= WS-H - 3
-                 MOVE ST-GREYSTONE TO CM-STATE(WS-CELL)
+                 MOVE ST-GREYSTONE TO CE-STATE(WS-CELL)
              ELSE
-                 MOVE ST-SLAG TO CM-STATE(WS-CELL)
+                 MOVE ST-SLAG TO CE-STATE(WS-CELL)
              END-IF
          END-PERFORM
          IF WS-C = 137 AND FUNCTION MOD(L-CX, GEN-SUB-MARKER-MOD) = 0
                  AND FUNCTION MOD(L-CZ, GEN-SUB-MARKER-MOD) = 0
              COMPUTE L-MARKER-Y = WS-H + 1
-             MOVE ST-GLOWTUBE-LIT TO CM-STATE(L-MARKER-Y * 256 + WS-C)
+             MOVE ST-GLOWTUBE-LIT TO CE-STATE(L-MARKER-Y * 256 + WS-C)
          END-IF
      END-PERFORM
      GOBACK.

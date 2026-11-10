@@ -560,8 +560,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 **Goal**: one set of rule engines fed by either content set; the type stored in the world (FR-002 to FR-005, FR-037, FR-040, FR-041). **Independent Test**: `acc_f2us2_*` in core: type recorded and refused correctly; health 20, food 20, day 24,000, hurt window and fall damage from the shared rules.
 
-- [ ] T0321 [US2-core] Write test `core/tests/test_cells.cob` for the `CELLS.cpy` layout: 2-byte state get and set, 4-bit light packing, sections derived from the dimension's `min_y` and `height` (24 in the overworld), three dimensions (`core/copy/CORESTATE.cpy` `CORE-MAX-DIMS` 3)
-- [ ] T0322 [US2-core] Replace `core/copy/CHUNKMEM.cpy` by `contract/copy/CELLS.cpy` in `core/src/world.cob` and `core/copy/CORESTATE.cpy` (cell width, section count, `CORE-MAX-DIMS` 3)
+- [x] T0321 [US2-core] Write test `core/tests/test_cells.cob` for the `CELLS.cpy` layout: 2-byte state get and set, 4-bit light packing, sections derived from the dimension's `min_y` and `height` (24 in the overworld), three dimensions (`core/copy/CORESTATE.cpy` `CORE-MAX-DIMS` 3)
+- [x] T0322 [US2-core] Replace `core/copy/CHUNKMEM.cpy` by `contract/copy/CELLS.cpy` in `core/src/world.cob` and `core/copy/CORESTATE.cpy` (cell width, section count, `CORE-MAX-DIMS` 3)
 - [ ] T0323 [US2-core] Write test `core/tests/test_chunks_stream24.cob`: the chunk packet the core builds for a case equals the 24-section fixture and loads through `PB-GET-CHUNK-24`
 - [ ] T0324 [US2-core] Switch `core/src/chunks-stream.cob` to `PB-PUT-CHUNK-24`
 - [ ] T0325 [US2-core] Write test `core/tests/test_block_lookup.cob`: world, blocks and worldgen code resolves block states only through `CONTENT-BLOCK-*` for both sets (no `ST-` or `BLK-` constants)

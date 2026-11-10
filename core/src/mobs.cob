@@ -106,12 +106,15 @@
  COPY BLOCKS.
  COPY DIMENSIONS.
  COPY MOBS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-STATE               BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
@@ -146,9 +149,17 @@
          COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
          COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
          CALL "WORLD-CHUNK" USING L-DIM WS-CX WS-CZ WS-CHUNK
-         SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-CHUNK)
-         IF CM-BLOCK((WS-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)
-                 > MS-LIGHT(L-RULE)
+         SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-CHUNK)
+         COMPUTE WS-CELL = (WS-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16
+             + L-X - WS-CX * 16 + 1
+         COMPUTE WS-BYTE = 2048 + (WS-CELL - 1) / 2 + 1
+         MOVE CE-BLOCK-LIGHT(WS-BYTE) TO WS-LIGHT
+         IF FUNCTION MOD(WS-CELL, 2) = 1
+             COMPUTE WS-LIGHT = FUNCTION MOD(WS-LIGHT, 16)
+         ELSE
+             COMPUTE WS-LIGHT = WS-LIGHT / 16
+         END-IF
+         IF WS-LIGHT > MS-LIGHT(L-RULE)
              GOBACK
          END-IF
      END-IF

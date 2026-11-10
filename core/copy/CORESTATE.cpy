@@ -6,11 +6,11 @@
 
  78 CORE-MAX-CONNS          VALUE 64.
  78 CORE-MAX-PLAYERS        VALUE 64.
- 78 CORE-MAX-DIMS           VALUE 2.
+ 78 CORE-MAX-DIMS           VALUE 3.
  78 CORE-MAX-CHUNKS         VALUE 4096.
  78 CORE-PB-SIZE            VALUE 21.     *> LENGTH OF PB-BUFFER
- 78 CORE-CHUNK-CELLS        VALUE 65536.  *> 16 x 256 x 16 cells, index y * 256 + z * 16 + x
- 78 CORE-CHUNK-BYTES        VALUE 196608. *> states, sky light, block light: one byte per cell each
+ 78 CORE-CHUNK-CELLS        VALUE 65536.  *> cells of a 256-high chunk (16 x 256 x 16); CELLS.cpy holds up to CE-STATE-CELLS
+ 78 CORE-CHUNK-BYTES        VALUE 304640. *> CE-CHUNK-BYTES (contract/copy/CELLS.cpy)
  78 CORE-MAX-ENTITIES       VALUE 1024.
 
 *> Connection phases (data-model §12; 01 §7.1).
@@ -55,11 +55,11 @@
     05 CW-SPAWN-Z            FLOAT-LONG.
     05 CW-SPAWN-YAW          FLOAT-SHORT.
     05 CW-DIM-COUNT          BINARY-LONG.        *> enabled dimensions, in Login order
-    05 CW-DIM                BINARY-LONG OCCURS 2 TIMES.   *> row of the DIMENSIONS.cpy table
+    05 CW-DIM                BINARY-LONG OCCURS 3 TIMES.   *> row of the DIMENSIONS.cpy table
 *>  Weather per dimension (standin §14.3; data-model §9; core/src/weather.cob), indexed by the
 *>  DIMENSIONS.cpy row: the kind (WEATHER.cpy WK-*; 0 for a dimension without weather) and the
 *>  remaining ticks (WEATHER-UNTIL-CHANGED, -1, = no countdown).
-    05 CW-WEATHER OCCURS 2 TIMES.
+    05 CW-WEATHER OCCURS 3 TIMES.
        10 CW-WEATHER-KIND    BINARY-LONG.
        10 CW-WEATHER-LEFT    BINARY-LONG.
     05 CW-RUN-STATE          PIC 9.              *> CST-RUN-STATE
@@ -165,8 +165,8 @@
        10 PL-TRAVEL-TICK     BINARY-DOUBLE.
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
-*> CORE-CHUNK-BYTES bytes: block states (cells 1 to 65536), sky light (65537 to 131072) and block
-*> light (131073 to 196608), cell index y * 256 + z * 16 + x (+ 1). CK-INDEX is a hash index into
+*> CORE-CHUNK-BYTES bytes laid out as contract/copy/CELLS.cpy (2-byte states, 4-bit light, biomes). The
+*> cell index is (y - min y) * 256 + z * 16 + x (+ 1). CK-INDEX is a hash index into
 *> the rows: bucket (hash of dim, x, z) holds the first row number, CK-NEXT chains rows; a row with
 *> CK-USED 0 is in no chain. CK-COUNT is the highest row number ever used. CK-SOURCES(s + 1) counts
 *> the light-emitting cells of block section s (world.cob keeps it; light.cob scans only those
@@ -183,7 +183,7 @@
        10 CK-ADDR            USAGE POINTER.
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
-       10 CK-SOURCES         BINARY-LONG OCCURS 16 TIMES.
+       10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
 *> entity in the world that other players can see: players once their join is sent (EN-PLAYER is

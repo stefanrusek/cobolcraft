@@ -1,6 +1,7 @@
 *> The light policies (standin-content §5.2; docs/protocol/09-cobolcraft-profile.md §3.4 rule 4;
 *> §15.3), selected by the chunk's dimension (DIMENSIONS.cpy DM-LIGHT-POLICY), over the chunk cache
-*> (world.cob, CHUNKMEM.cpy). DIM-LIGHT-BLOCK-ONLY has no sky light at all; otherwise sky light: 15 in every cell above its
+*> (world.cob, CELLS.cpy: light is 4 bits per cell,
+*> byte 2048 + (cell - 1) div 2 + 1, an odd cell in the low nibble). DIM-LIGHT-BLOCK-ONLY has no sky light at all; otherwise sky light: 15 in every cell above its
 *> column's topmost non-void block, 0 at or below it; no sideways spreading. Block light: a source of
 *> level L (SB-LIGHT) has L, a non-opaque cell has L minus the length of the shortest face-adjacent
 *> path from the source through non-opaque cells (never below 0), opaque cells other than sources
@@ -66,38 +67,51 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-TOPS.
     05 WS-TOP              BINARY-LONG OCCURS 256 TIMES.
  01 WS-MIN                 BINARY-LONG.
  01 WS-LOW                 BINARY-LONG.
  01 WS-C                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
+     MOVE LOW-VALUES TO CE-SKYS
      IF DM-LIGHT-POLICY(CK-DIM(L-ROW)) = DIM-LIGHT-BLOCK-ONLY
-         MOVE LOW-VALUES TO CM-SKYS
          GOBACK
      END-IF
      CALL "WORLD-COLUMN-TOPS" USING L-ROW WS-TOPS
-     MOVE 255 TO WS-MIN
+     COMPUTE WS-MIN = DM-HEIGHT(CK-DIM(L-ROW)) - 1
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          IF WS-TOP(WS-C) < WS-MIN
              MOVE WS-TOP(WS-C) TO WS-MIN
          END-IF
      END-PERFORM
-     MOVE ALL X"0F" TO CM-SKYS
-     COMPUTE WS-LENGTH = (WS-MIN + 1) * 256
+     COMPUTE WS-LENGTH = DM-HEIGHT(CK-DIM(L-ROW)) * 128
+     MOVE ALL X"FF" TO CE-SKYS(2049:WS-LENGTH)
+     COMPUTE WS-LENGTH = (WS-MIN + 1) * 128
      IF WS-LENGTH > 0
-         MOVE LOW-VALUES TO CM-SKYS(1:WS-LENGTH)
+         MOVE LOW-VALUES TO CE-SKYS(2049:WS-LENGTH)
      END-IF
      COMPUTE WS-LOW = WS-MIN + 1
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          PERFORM VARYING WS-Y FROM WS-LOW BY 1 UNTIL WS-Y > WS-TOP(WS-C)
-             MOVE 0 TO CM-SKY(WS-Y * 256 + WS-C)
+             COMPUTE WS-N = WS-Y * 256 + WS-C
+             COMPUTE WS-B = 2048 + (WS-N - 1) / 2 + 1
+             MOVE CE-SKY(WS-B) TO WS-V
+             IF FUNCTION MOD(WS-N, 2) = 1
+                 COMPUTE WS-HI = WS-V / 16
+                 COMPUTE CE-SKY(WS-B) = WS-HI * 16
+             ELSE
+                 COMPUTE CE-SKY(WS-B) = FUNCTION MOD(WS-V, 16)
+             END-IF
          END-PERFORM
      END-PERFORM
      GOBACK.
@@ -111,9 +125,11 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DIMENSIONS.
  COPY BLOCKS.
- COPY CHUNKMEM.
- COPY CHUNKMEM REPLACING LEADING ==CM-== BY ==CX-==.
+ COPY CELLS.
+ COPY CELLS REPLACING LEADING ==CE-== BY ==CX-==.
+ 01 WS-SECTIONS            BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-DX                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
@@ -136,9 +152,10 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
-     MOVE LOW-VALUES TO CM-BLOCKS
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
+     MOVE LOW-VALUES TO CE-BLOCK-LIGHTS
      MOVE CK-DIM(L-ROW) TO WS-DIM
+     COMPUTE WS-SECTIONS = DM-HEIGHT(WS-DIM) / 16
      COMPUTE WS-X0 = CK-X(L-ROW) * 16
      COMPUTE WS-Z0 = CK-Z(L-ROW) * 16
      PERFORM VARYING WS-DZ FROM -1 BY 1 UNTIL WS-DZ > 1
@@ -147,7 +164,7 @@
              COMPUTE WS-CZ = CK-Z(L-ROW) + WS-DZ
              CALL "WORLD-CHUNK-LOAD" USING WS-DIM WS-CX WS-CZ WS-ROW
              SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
                  IF CK-SOURCES(WS-ROW, WS-S) > 0
                      COMPUTE WS-LAST = WS-S * 4096
                      COMPUTE WS-FIRST = WS-LAST - 4095
@@ -195,9 +212,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DIMENSIONS.
  COPY BLOCKS.
- COPY CHUNKMEM.
- COPY CHUNKMEM REPLACING LEADING ==CM-== BY ==CX-==.
+ COPY CELLS.
+ COPY CELLS REPLACING LEADING ==CE-== BY ==CX-==.
  01 WS-STAMP-ID            BINARY-LONG VALUE 0.
  01 WS-STAMPS.
     05 WS-STAMP            BINARY-LONG OCCURS 29791 TIMES VALUE 0.
@@ -251,6 +269,10 @@
  01 WS-SEEN-CX             BINARY-LONG.
  01 WS-SEEN-CZ             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-TOP-Y               BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -258,8 +280,9 @@
  01 L-Z                    BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-LEVEL.
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      MOVE CK-DIM(L-ROW) TO WS-DIM
+     COMPUTE WS-TOP-Y = DM-HEIGHT(WS-DIM) - 1
      COMPUTE WS-X0 = CK-X(L-ROW) * 16
      COMPUTE WS-Z0 = CK-Z(L-ROW) * 16
      MOVE 2147483647 TO WS-SEEN-CX
@@ -278,14 +301,24 @@
          ADD 1 TO WS-HEAD
          IF WS-X >= WS-X0 AND WS-X <= WS-X0 + 15 AND WS-Z >= WS-Z0 AND WS-Z <= WS-Z0 + 15
              COMPUTE WS-CELL = WS-Y * 256 + (WS-Z - WS-Z0) * 16 + WS-X - WS-X0 + 1
-             IF CM-BLOCK(WS-CELL) < WS-L
-                 MOVE WS-L TO CM-BLOCK(WS-CELL)
+             COMPUTE WS-B = 2048 + (WS-CELL - 1) / 2 + 1
+             MOVE CE-BLOCK-LIGHT(WS-B) TO WS-V
+             IF FUNCTION MOD(WS-CELL, 2) = 1
+                 COMPUTE WS-HI = WS-V / 16
+                 IF FUNCTION MOD(WS-V, 16) < WS-L
+                     COMPUTE CE-BLOCK-LIGHT(WS-B) = WS-HI * 16 + WS-L
+                 END-IF
+             ELSE
+                 COMPUTE WS-HI = WS-V / 16
+                 IF WS-HI < WS-L
+                     COMPUTE CE-BLOCK-LIGHT(WS-B) = FUNCTION MOD(WS-V, 16) + WS-L * 16
+                 END-IF
              END-IF
          END-IF
          IF WS-L > 1
              PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
                  COMPUTE WS-NY = WS-Y + WS-STEP-Y(WS-D)
-                 IF WS-NY >= 0 AND WS-NY <= 255
+                 IF WS-NY >= 0 AND WS-NY <= WS-TOP-Y
                      COMPUTE WS-NX = WS-X + WS-STEP-X(WS-D)
                      COMPUTE WS-NZ = WS-Z + WS-STEP-Z(WS-D)
                      COMPUTE WS-W = WS-NX - L-X + 15 + (WS-NZ - L-Z + 15) * 31
@@ -338,7 +371,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-PACKET-ID           BINARY-LONG VALUE 49.
  01 WS-LIGHTS              BINARY-LONG.
  01 WS-SECTIONS            BINARY-LONG.
@@ -346,22 +379,21 @@
  01 WS-I                   BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  01 WS-SKY-STATES.
-    05 WS-SKY-STATE        BINARY-LONG OCCURS 18 TIMES.
+    05 WS-SKY-STATE        BINARY-LONG OCCURS 26 TIMES.
  01 WS-BLOCK-STATES.
-    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 18 TIMES.
+    05 WS-BLOCK-STATE      BINARY-LONG OCCURS 26 TIMES.
  01 WS-SKY-ARRAYS.
-    05 WS-SKY-ARRAY        OCCURS 18 TIMES.
-       10 WS-SKY-BYTE      BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
+    05 WS-SKY-ARRAY-X      PIC X(2048) OCCURS 26 TIMES.
  01 WS-BLOCK-ARRAYS.
-    05 WS-BLOCK-ARRAY      OCCURS 18 TIMES.
-       10 WS-BLOCK-BYTE    BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
+    05 WS-BLOCK-ARRAY-X    PIC X(2048) OCCURS 26 TIMES.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
- 01 L-CHANGED              PIC X(16).
+ 01 L-CHANGED              PIC X(24).
  PROCEDURE DIVISION USING L-ROW L-CHANGED PB-BUFFER.
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(L-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      COMPUTE WS-SECTIONS = DM-HEIGHT(CK-DIM(L-ROW)) / 16
      COMPUTE WS-LIGHTS = WS-SECTIONS + 2
      INITIALIZE WS-SKY-STATES WS-BLOCK-STATES
@@ -372,21 +404,14 @@
              IF DM-LIGHT-POLICY(CK-DIM(L-ROW)) NOT = DIM-LIGHT-BLOCK-ONLY
                  MOVE 1 TO WS-SKY-STATE(WS-S + 2)
              END-IF
-             IF CM-SKYS(WS-BASE + 1:4096) NOT = LOW-VALUES
+             COMPUTE WS-BYTE = (WS-S + 1) * 2048 + 1
+             IF CE-SKYS(WS-BYTE:2048) NOT = LOW-VALUES
                  MOVE 2 TO WS-SKY-STATE(WS-S + 2)
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
-                     COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
-                     COMPUTE WS-SKY-BYTE(WS-S + 2, WS-I)
-                         = CM-SKY(WS-CELL) + CM-SKY(WS-CELL + 1) * 16
-                 END-PERFORM
+                 MOVE CE-SKYS(WS-BYTE:2048) TO WS-SKY-ARRAY-X(WS-S + 2)
              END-IF
-             IF CM-BLOCKS(WS-BASE + 1:4096) NOT = LOW-VALUES
+             IF CE-BLOCK-LIGHTS(WS-BYTE:2048) NOT = LOW-VALUES
                  MOVE 2 TO WS-BLOCK-STATE(WS-S + 2)
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
-                     COMPUTE WS-CELL = WS-BASE + WS-I * 2 - 1
-                     COMPUTE WS-BLOCK-BYTE(WS-S + 2, WS-I)
-                         = CM-BLOCK(WS-CELL) + CM-BLOCK(WS-CELL + 1) * 16
-                 END-PERFORM
+                 MOVE CE-BLOCK-LIGHTS(WS-BYTE:2048) TO WS-BLOCK-ARRAY-X(WS-S + 2)
              END-IF
          END-IF
      END-PERFORM
@@ -409,7 +434,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY CHUNKMEM.
+ COPY CELLS.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
@@ -423,13 +448,14 @@
  01 WS-K                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG.
  01 WS-SECTIONS            BINARY-LONG.
  01 WS-ANY                 PIC 9.
- 01 WS-CHANGED             PIC X(16).
+ 01 WS-CHANGED             PIC X(24).
  01 WS-ROWS.
     05 WS-ROW              BINARY-LONG OCCURS 9 TIMES.
  01 WS-SNAPS.
-    05 WS-SNAP             PIC X(131072) OCCURS 9 TIMES.
+    05 WS-SNAP             PIC X(106496) OCCURS 9 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -448,8 +474,8 @@
              CALL "WORLD-FIND" USING L-DIM WS-X WS-Z WS-ROW(WS-K)
              IF WS-ROW(WS-K) > 0
                  IF CK-LIT(WS-ROW(WS-K)) = 1
-                     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW(WS-K))
-                     MOVE CM-CHUNK(65537:131072) TO WS-SNAP(WS-K)
+                     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW(WS-K))
+                     MOVE CE-CHUNK(196609:106496) TO WS-SNAP(WS-K)
                  ELSE
                      MOVE 0 TO WS-ROW(WS-K)
                  END-IF
@@ -460,14 +486,15 @@
      COMPUTE WS-SECTIONS = DM-HEIGHT(L-DIM) / 16
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
          IF WS-ROW(WS-K) > 0
-             SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW(WS-K))
+             SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW(WS-K))
              MOVE ALL "0" TO WS-CHANGED
              MOVE 0 TO WS-ANY
              PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
-                 COMPUTE WS-BASE = WS-S * 4096
-                 IF CM-SKYS(WS-BASE + 1:4096) NOT = WS-SNAP(WS-K)(WS-BASE + 1:4096)
-                         OR CM-BLOCKS(WS-BASE + 1:4096)
-                         NOT = WS-SNAP(WS-K)(65536 + WS-BASE + 1:4096)
+                 COMPUTE WS-BASE = (WS-S + 1) * 2048
+                 COMPUTE WS-OFF = 53248 + WS-BASE + 1
+                 IF CE-SKYS(WS-BASE + 1:2048) NOT = WS-SNAP(WS-K)(WS-BASE + 1:2048)
+                         OR CE-BLOCK-LIGHTS(WS-BASE + 1:2048)
+                         NOT = WS-SNAP(WS-K)(WS-OFF:2048)
                      MOVE "1" TO WS-CHANGED(WS-S + 1:1)
                      MOVE 1 TO WS-ANY
                  END-IF
