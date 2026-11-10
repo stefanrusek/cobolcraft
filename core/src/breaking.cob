@@ -292,10 +292,13 @@
  01 WS-TIER                BINARY-LONG.
  01 WS-CORRECT             BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
- 01 WS-NO-EFFECT           BINARY-LONG VALUE 0.
- 01 WS-NO-HASTE            BINARY-LONG VALUE 0.
- 01 WS-NO-FATIGUE          BINARY-LONG VALUE 0.
- 01 WS-NO-WATER            BINARY-LONG VALUE 0.
+ 01 WS-EFFICIENCY          BINARY-LONG.
+ 01 WS-HASTE               BINARY-LONG.
+ 01 WS-FATIGUE             BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-BLOCK-ID            BINARY-LONG.
+ 01 WS-RULE-SPEED          BINARY-LONG.
+ 01 WS-RULE-CORRECT        BINARY-LONG.
  01 WS-GROUND              BINARY-LONG.
  01 WS-STAGE               BINARY-LONG.
  01 WS-ACCEPTED            BINARY-LONG.
@@ -339,11 +342,19 @@
                      MOVE IT-TOOL-SPEED(WS-ITEM + 1) TO WS-SPEED
                  END-IF
              END-IF
+*>           The tool component's rules (tools.cob, 17 section 1.3) add what the class does not know: the axe, hoe,
+*>           sword and shears speeds, and a rule that says correct for drops (a tier that the block tags allow).
+             COMPUTE WS-BLOCK-ID = WS-BLOCK - 1
+             CALL "TOOL-BLOCK-SPEED" USING WS-ITEM WS-BLOCK-ID WS-RULE-SPEED WS-RULE-CORRECT
+             COMPUTE WS-SPEED = FUNCTION MAX(WS-SPEED, WS-RULE-SPEED)
+             COMPUTE WS-CLASS-OK = FUNCTION MAX(WS-CLASS-OK, WS-RULE-CORRECT)
+             COMPUTE WS-TIER = FUNCTION MAX(WS-TIER, 3 * WS-RULE-CORRECT)
              CALL "BREAK-CORRECT" USING CB-TOOL-REQ(WS-BLOCK) WS-CLASS-OK WS-TIER
                  CB-NEED-TIER(WS-BLOCK) WS-CORRECT
              MOVE PL-ON-GROUND(WS-ROW) TO WS-GROUND
-             CALL "BREAK-RATE" USING WS-HARDNESS WS-SPEED WS-CORRECT WS-NO-EFFECT WS-NO-HASTE
-                 WS-NO-FATIGUE WS-NO-WATER WS-GROUND PL-BREAK-RATE(WS-ROW)
+             CALL "TOOL-BREAK-MODS" USING WS-ROW WS-EFFICIENCY WS-HASTE WS-FATIGUE WS-WATER
+             CALL "BREAK-RATE" USING WS-HARDNESS WS-SPEED WS-CORRECT WS-EFFICIENCY WS-HASTE
+                 WS-FATIGUE WS-WATER WS-GROUND PL-BREAK-RATE(WS-ROW)
              IF PL-BREAK-RATE(WS-ROW) >= 1.0
                  CALL "BREAK-FINISH" USING WS-ROW WS-DIM PSB-BX PSB-BY PSB-BZ
              ELSE

@@ -255,18 +255,9 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-S                   BINARY-LONG.
- 01 WS-Q                   BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-X                   FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-Z                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG.
- 01 WS-VY                  FLOAT-LONG.
- 01 WS-VZ                  FLOAT-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-DELAY               BINARY-LONG VALUE 30.
- 01 WS-ITEM-ROW            BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  01 WS-THROW               BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -274,6 +265,7 @@
  01 L-ATTACKER             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-CAUSE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
+     CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
      MOVE L-CAUSE TO PL-DEATH-CAUSE(WS-ROW)
      MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
@@ -297,31 +289,24 @@
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
      CALL "CONSOLE-TEXT" USING PB-TEXT
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
-     MOVE PL-X(WS-ROW) TO WS-X
-     COMPUTE WS-Y = PL-Y(WS-ROW) + RULE-DEATH-DY-MILLI / 1000
-     MOVE PL-Z(WS-ROW) TO WS-Z
-     COMPUTE WS-VY = RULE-DEATH-LIFT-MILLI / 1000
+*>   Inventory.dropAll (41 section 2.4): every non-empty slot (main 0 to 35, armor and off-hand 36 to 40) in index order is
+*>   dropped with the circle motion of the player's own random source, pickup delay 40, no thrower; the patch handle goes with it.
      PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 40
          MOVE 0 TO WS-COUNT
          IF WS-S < 36
              MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
              MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
-             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1)
-                 PL-SLOT-VAR(WS-ROW, WS-S + 1)
+             MOVE PL-SLOT-VAR(WS-ROW, WS-S + 1) TO WS-VAR
+             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1) PL-SLOT-VAR(WS-ROW, WS-S + 1)
          ELSE
-*>           Armor and the off-hand (container slots 36 to 40) are dropped like the rest of the inventory.
              MOVE MN-EQUIP-ITEM(WS-ROW, WS-S - 35) TO WS-ITEM
              MOVE MN-EQUIP-COUNT(WS-ROW, WS-S - 35) TO WS-COUNT
+             MOVE MN-EQUIP-VAR(WS-ROW, WS-S - 35) TO WS-VAR
              MOVE 0 TO MN-EQUIP-ITEM(WS-ROW, WS-S - 35) MN-EQUIP-COUNT(WS-ROW, WS-S - 35)
                  MN-EQUIP-VAR(WS-ROW, WS-S - 35)
          END-IF
          IF WS-COUNT > 0
-             COMPUTE WS-Q = WS-S / 6
-             COMPUTE WS-VX = (FUNCTION MOD(WS-S, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
-             COMPUTE WS-VZ = (FUNCTION MOD(WS-Q, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
-             CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT
-                 WS-DELAY WS-ITEM-ROW
+             CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
          END-IF
      END-PERFORM
      CALL "MENU-RELEASE" USING WS-ROW WS-THROW
@@ -628,5 +613,6 @@
              CALL "WEATHER-HAIL-PLAYER" USING WS-ROW
          END-IF
      END-PERFORM
+     CALL "EFFECTS-TICK"
      GOBACK.
  END PROGRAM HEALTH-TICK.

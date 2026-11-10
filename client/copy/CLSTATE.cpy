@@ -15,6 +15,19 @@
     05 CL-NAME-LENGTH        BINARY-LONG.
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+    05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
+    05 CL-SWING-AT           BINARY-DOUBLE.   *> the clock when the hand last began to swing (0 = never)
+    05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
+    05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
+    05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
+    05 CL-FPS-AT             BINARY-DOUBLE.   *> the clock when CL-FPS was last measured
+    05 CL-FPS-FRAMES         BINARY-DOUBLE.   *> CL-FRAMES then
+    05 CL-SPEED              FLOAT-LONG.      *> blocks moved in the last client tick
+    05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
+    05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
+    05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
+    05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
+       10 KB-CODE            BINARY-LONG OCCURS 24 TIMES.
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
@@ -59,7 +72,7 @@
     05 SM-STATE.
        10 SM-SCREEN          BINARY-LONG.
        10 SM-WIDGET-COUNT    BINARY-LONG.
-       10 SM-WIDGET OCCURS 48 TIMES.
+       10 SM-WIDGET OCCURS 512 TIMES.
           15 SM-W-KIND       BINARY-LONG.
           15 SM-W-ACTION     BINARY-LONG.
           15 SM-W-ARG        BINARY-LONG.
@@ -67,9 +80,20 @@
           15 SM-W-Y          BINARY-LONG.
           15 SM-W-W          BINARY-LONG.
           15 SM-W-H          BINARY-LONG.
+          15 SM-W-SPRITE     BINARY-LONG.    *> WK-IMAGE: the GSP row drawn
           15 SM-W-STATE      BINARY-LONG.    *> 0 normal, 1 selected or focused, 2 disabled
           15 SM-W-LENGTH     BINARY-LONG.
           15 SM-W-TEXT       PIC X(256).
+          15 SM-W-COLOUR     BINARY-LONG.    *> text colour as an RGB integer; 0 = white (black is 1); drawn as its grey luminance (the vertex has one brightness)
+*>     The tooltip layer (12 section 5.8): the lines of the tooltip to draw this frame, the mouse in GUI pixels, the item-tooltip title gap.
+       10 TT-COUNT           BINARY-LONG.
+       10 TT-X               BINARY-LONG.
+       10 TT-Y               BINARY-LONG.
+       10 TT-TITLE-GAP       BINARY-LONG.
+       10 TT-LINE OCCURS 8 TIMES.
+          15 TT-L-LEN        BINARY-LONG.
+          15 TT-L-RGB        BINARY-LONG.
+          15 TT-L-TEXT       PIC X(120).
        10 SM-SELECTED        BINARY-LONG.    *> server list: selected entry, 0 none
        10 SM-FOCUS           BINARY-LONG.    *> edit server: 1 name field, 2 address field
        10 SM-EDIT-INDEX      BINARY-LONG.    *> edit server: entry edited, 0 = a new entry
@@ -83,6 +107,8 @@
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
        10 SM-DEATH-CAUSE-LENGTH BINARY-LONG.
+       10 SM-CX-TITLE        PIC X(64).      *> container screen: the Open Screen title, rendered
+       10 SM-CX-TITLE-LENGTH BINARY-LONG.
 *>  ---- server list (client-surface §2 servers.dat; US2-1, US2-2) ----
     05 SL-STATE.
        10 SL-COUNT           BINARY-LONG.
@@ -170,6 +196,139 @@
        10 PL-SLOT OCCURS 36 TIMES.
           15 PL-SLOT-COUNT   BINARY-LONG.
           15 PL-SLOT-ITEM    BINARY-LONG.
+       10 PL-OFFHAND-COUNT   BINARY-LONG.    *> the off-hand stack (menu slot 45, player inventory index 40)
+       10 PL-OFFHAND-ITEM    BINARY-LONG.
+       10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
+       10 PL-OFFHAND-DAMAGE  BINARY-LONG.
+*>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
+*>     chest, legs, feet), crafting result (IX 5) and 2 x 2 grid (IX 6 to 9), and the open bench menu's result (BX 5) and 3 x 3 grid
+*>     (BX 6 to 14); BM-ID is the bench's container id (0 = none open), BM-STATE-ID its state id.
+       10 IX-STACK OCCURS 16 TIMES.
+          15 IX-COUNT        BINARY-LONG.
+          15 IX-ITEM         BINARY-LONG.
+          15 IX-DAMAGE       BINARY-LONG.
+       10 BX-STACK OCCURS 64 TIMES.
+          15 BX-COUNT        BINARY-LONG.
+          15 BX-ITEM         BINARY-LONG.
+          15 BX-DAMAGE       BINARY-LONG.
+       10 MX-COUNT           BINARY-LONG.    *> max_damage components (2) the server's stacks carried: item and maximum, newest last
+       10 MX-ENTRY OCCURS 16 TIMES.
+          15 MX-ITEM         BINARY-LONG.
+          15 MX-MAX          BINARY-LONG.
+       10 BM-ID              BINARY-LONG.
+       10 BM-STATE-ID        BINARY-LONG.
+       10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
+       10 PL-XP-LEVEL        BINARY-LONG.    *> the player's experience level (Set Experience 05b 0x69)
+       10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
+*>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
+*>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
+*>     The beacon screen's chosen powers (effect id + 1, 0 none; 40-5 section 3.7) and the merchant screen (40-5 section 2.10): the offers of Merchant Offers
+*>     (up to 32), the villager level and XP, the progress and restock flags, the scroll offset, the selected offer, the scroller drag and the stacks the
+*>     rows show this frame (argument 801 + 3 x row + 0 first cost, 1 second cost, 2 result).
+       10 BC-PRIMARY         BINARY-LONG.
+       10 BC-SECONDARY       BINARY-LONG.
+       10 MC-COUNT           BINARY-LONG.
+       10 MC-LEVEL           BINARY-LONG.
+       10 MC-XP              BINARY-LONG.
+       10 MC-PROGRESS        BINARY-LONG.
+       10 MC-RESTOCK         BINARY-LONG.
+       10 MC-SCROLL          BINARY-LONG.
+       10 MC-SELECTED        BINARY-LONG.
+       10 MC-DRAGGING        BINARY-LONG.
+       10 MC-OFFER OCCURS 32 TIMES.
+          15 MO-A-ITEM       BINARY-LONG.
+          15 MO-A-COUNT      BINARY-LONG.
+          15 MO-B-ITEM       BINARY-LONG.
+          15 MO-B-COUNT      BINARY-LONG.
+          15 MO-R-ITEM       BINARY-LONG.
+          15 MO-R-COUNT      BINARY-LONG.
+          15 MO-OUT          BINARY-LONG.
+          15 MO-USES         BINARY-LONG.
+          15 MO-MAX          BINARY-LONG.
+          15 MO-XP           BINARY-LONG.
+          15 MO-SPECIAL      BINARY-LONG.
+          15 MO-DEMAND       BINARY-LONG.
+          15 MO-MULT         FLOAT-SHORT.
+       10 MC-DISP OCCURS 21 TIMES.
+          15 MC-DISP-ITEM    BINARY-LONG.
+          15 MC-DISP-COUNT   BINARY-LONG.
+       10 CX-DRAG-ON         BINARY-LONG.
+       10 CX-DRAG-BUTTON     BINARY-LONG.
+       10 CX-DRAG-N          BINARY-LONG.
+       10 CX-DRAG-SLOT       BINARY-LONG OCCURS 64 TIMES.
+       10 CX-SKIP-RELEASE    BINARY-LONG.
+       10 CX-PREV-SLOT       BINARY-LONG.
+       10 CX-PREV-MS         BINARY-DOUBLE.
+       10 CX-DOUBLE          BINARY-LONG.
+*>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
+*>     last sent (itemName; AN-SENT-NULL 1 = none yet).
+*>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
+*>     The creative inventory engines (40-7): the selected tab (1 to 14), the scroll (0 to 1), the picker's stacks (item, count, 1 = the locked paper of the hotbar tab), the drop
+*>     throttler counter (9.3), the saved hotbars (9 x 9 stacks, 10).
+       10 CR-TAB             BINARY-LONG.
+       10 CR-SCROLL          FLOAT-SHORT.
+       10 CR-COUNT           BINARY-LONG.
+       10 CR-STACK OCCURS 128 TIMES.
+          15 CR-STACK-ITEM   BINARY-LONG.
+          15 CR-STACK-COUNT  BINARY-LONG.
+          15 CR-STACK-LOCK   BINARY-LONG.
+       10 CR-THROTTLE        BINARY-LONG.
+       10 CR-HB OCCURS 81 TIMES.
+          15 CR-HB-ITEM      BINARY-LONG.
+          15 CR-HB-COUNT     BINARY-LONG.
+*>     The text engines of 40-8: the page editor (BK: value, indexes 0 based, selection anchor, wrap width and the limits, a fixed advance for tests (0 = the font), the display
+*>     lines, the clipboard), the book (BE: the pages, the shown page, the hand, the sign title) and the sign line editor (SG: four lines, the line being edited, cursor and anchor,
+*>     the width limit, the sign position, side and clipboard).
+       10 BK-VALUE           PIC X(1100).
+       10 BK-LEN             BINARY-LONG.
+       10 BK-CURSOR          BINARY-LONG.
+       10 BK-ANCHOR          BINARY-LONG.
+       10 BK-SELECTING       BINARY-LONG.
+       10 BK-WIDTH           BINARY-LONG.
+       10 BK-ADVANCE         BINARY-LONG.
+       10 BK-CHAR-LIMIT      BINARY-LONG.
+       10 BK-LINE-LIMIT      BINARY-LONG.
+       10 BK-LINE-COUNT      BINARY-LONG.
+       10 BK-OVERFLOW        BINARY-LONG.
+       10 BK-LINE OCCURS 64 TIMES.
+          15 BK-LB           BINARY-LONG.
+          15 BK-LE           BINARY-LONG.
+       10 BK-CLIP            PIC X(1100).
+       10 BK-CLIP-LEN        BINARY-LONG.
+       10 BE-PAGE-COUNT      BINARY-LONG.
+       10 BE-CURRENT         BINARY-LONG.
+       10 BE-HAND            BINARY-LONG.
+       10 BE-ACTIVE          BINARY-LONG.
+       10 BE-TITLE-LEN       BINARY-LONG.
+       10 BE-TITLE           PIC X(32).
+       10 BE-PAGE OCCURS 100 TIMES.
+          15 BE-PAGE-LEN     BINARY-LONG.
+          15 BE-PAGE-TEXT    PIC X(1024).
+       10 SG-LINE            BINARY-LONG.
+       10 SG-CURSOR          BINARY-LONG.
+       10 SG-ANCHOR          BINARY-LONG.
+       10 SG-MAXW            BINARY-LONG.
+       10 SG-X               BINARY-LONG.
+       10 SG-Y               BINARY-LONG.
+       10 SG-Z               BINARY-LONG.
+       10 SG-SIDE            BINARY-LONG.
+       10 SG-CLIP-LEN        BINARY-LONG.
+       10 SG-CLIP            PIC X(64).
+       10 SG-ROW OCCURS 4 TIMES.
+          15 SG-LEN          BINARY-LONG.
+          15 SG-LINE-TEXT    PIC X(64).
+       10 MT-ENTITY          BINARY-LONG.
+       10 MT-KIND            BINARY-LONG.
+       10 MT-SADDLE          BINARY-LONG.
+       10 MT-BODY            BINARY-LONG.
+       10 MT-ICON            BINARY-LONG.
+       10 AN-ID              BINARY-LONG.
+       10 AN-ITEM            BINARY-LONG.
+       10 AN-NAME-LENGTH     BINARY-LONG.
+       10 AN-NAME            PIC X(256).
+       10 AN-SENT-LENGTH     BINARY-LONG.
+       10 AN-SENT-NULL       BINARY-LONG.
+       10 AN-SENT            PIC X(256).
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
@@ -197,6 +356,7 @@
 *>     which the hurt indication shows (Damage Event or Hurt Animation for the local player).
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
@@ -234,6 +394,35 @@
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
        10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
+*>  ---- status effects and the heart-row state (client/src/effects.cob, hearts.cob; docs/protocol/49) ----
+    05 EF-STATE.
+       10 EF-COUNT           BINARY-LONG.    *> active effects of the local player
+       10 EF-ENTRY OCCURS 40 TIMES.
+          15 EF-ID           BINARY-LONG.    *> the effect's registry id
+          15 EF-AMP          BINARY-LONG.
+          15 EF-DUR          BINARY-LONG.    *> remaining ticks, -1 infinite
+          15 EF-FLAGS        BINARY-LONG.    *> 0x01 ambient, 0x02 visible, 0x04 show icon, 0x08 blend
+       10 HB-TICK            BINARY-LONG.    *> the HUD tick count
+       10 HB-COOLDOWN        BINARY-LONG.    *> the local player's damage cooldown time
+       10 HB-FLASH-ARMED     PIC 9.          *> 1 once a Set Health reached this local player
+       10 HB-LAST-HEALTH     BINARY-LONG.
+       10 HB-DISPLAY-HEALTH  BINARY-LONG.
+       10 HB-BLINK-TIME      BINARY-LONG.
+       10 HB-LAST-TIME       BINARY-DOUBLE.
+       10 HB-BLINK           PIC 9.
+       10 HB-RNG             BINARY-DOUBLE.  *> the random source of the frame (a 48-bit Java LCG state)
+       10 PL-MAX-HEALTH      FLOAT-SHORT.    *> max_health attribute value
+       10 PL-ARMOR           BINARY-LONG.    *> armor attribute value
+       10 PL-ABSORPTION      FLOAT-SHORT.
+       10 PL-AIR             BINARY-LONG.
+       10 PL-MAX-AIR         BINARY-LONG.
+       10 PL-EYES-WATER      PIC 9.
+       10 PL-TICKS-FROZEN    BINARY-LONG.
+       10 PL-HARDCORE        PIC 9.
+       10 PL-VEHICLE         BINARY-LONG.    *> entity id of the vehicle ridden, -1 none
+       10 PL-MOUNT-HEARTS    BINARY-LONG.
+       10 PL-MOUNT-HEALTH    BINARY-LONG.
+       10 LL-REASON          BINARY-LONG.    *> level-loading reason of the last Respawn: 0 none, 1 Nether portal, 2 End portal, 3 other (39 section 8.4)
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -265,6 +454,15 @@
        10 BD-Y               BINARY-LONG.
        10 BD-Z               BINARY-LONG.
        10 BD-PROGRESS        BINARY-LONG.
+*>     Block break progress by breaker (12 §4.2; break-overlay.cob): one entry per breaker entity id.
+       10 BDS-COUNT          BINARY-LONG.
+       10 BDS-ENTRY OCCURS 16 TIMES.
+          15 BDS-ENTITY      BINARY-LONG.
+          15 BDS-X           BINARY-LONG.
+          15 BDS-Y           BINARY-LONG.
+          15 BDS-Z           BINARY-LONG.
+          15 BDS-STAGE       BINARY-LONG.    *> 0 to 9
+          15 BDS-AT-MS       BINARY-DOUBLE.  *> clock of the last update (an entry expires after 20 s)
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
@@ -345,7 +543,7 @@
 *>     word being typed; the last Command Suggestion sent (transaction id, the line it asked about,
 *>     0 length = none outstanding) and the texts of its answer; the rows shown in the last frame.
        10 CS-COUNT           BINARY-LONG.
-       10 CS-ENTRY OCCURS 10 TIMES.
+       10 CS-ENTRY OCCURS 64 TIMES.
           15 CS-TEXT         PIC X(32).
           15 CS-LENGTH       BINARY-LONG.
        10 CS-TRANSACTION     BINARY-LONG.
@@ -356,20 +554,59 @@
           15 CS-A-TEXT       PIC X(64).
           15 CS-A-LENGTH     BINARY-LONG.
        10 CS-SHOWN           BINARY-LONG.
-*>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
-*>       the recipes of the Recipe Book Adds received, in the order first received: display id,
-*>       craftable (crafting requirements present), ingredients (item, count) and result ----
-    05 RB-STATE.
-       10 RB-COUNT           BINARY-LONG.
-       10 RB-RECIPE OCCURS 16 TIMES.
-          15 RB-ID           BINARY-LONG.
-          15 RB-CRAFTABLE    PIC 9.
-          15 RB-IN-COUNT     BINARY-LONG.
-          15 RB-IN OCCURS 9 TIMES.
-             20 RB-IN-ITEM   BINARY-LONG.
-             20 RB-IN-AMOUNT BINARY-LONG.
-          15 RB-RES-ITEM     BINARY-LONG.
-          15 RB-RES-AMOUNT   BINARY-LONG.
+       10 CS-FROZEN          PIC 9.            *> 1 while Tab cycles: the list is kept as it was
+       10 CS-SELECTED        BINARY-LONG.      *> the suggestion Tab last took (1 to CS-COUNT + CS-ANSWERS), 0 none
+       10 CS-WORD-START      BINARY-LONG.      *> where the word being typed starts on the line (1-based)
+*>  ---- the recipe book (13 section 3.9): the entries of Recipe Book Add, the settings, the panel's state ----
+    05 RK-STATE.
+       10 RK-COUNT           BINARY-LONG.
+       10 RK-ENTRY OCCURS 2048 TIMES.
+          15 RK-ID           BINARY-LONG.
+          15 RK-TYPE         BINARY-LONG.    *> 0 shapeless, 1 shaped, 2 to 4 other books (kept, not listed)
+          15 RK-CATEGORY     BINARY-LONG.    *> 46 section 9.3: 0 building, 1 redstone, 2 equipment, 3 misc for crafting
+          15 RK-GROUP        BINARY-LONG.    *> 0 none, else group index + 1
+          15 RK-WIDTH        BINARY-LONG.
+          15 RK-HEIGHT       BINARY-LONG.
+          15 RK-HIGHLIGHT    PIC 9.
+          15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
+          15 RK-REQ-PRESENT  PIC 9.
+          15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
+          15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
+          15 RK-RES-ITEM     BINARY-LONG.
+          15 RK-RES-COUNT    BINARY-LONG.
+          15 RK-CAN          PIC 9.          *> craftable now (RK-REFRESH)
+          15 RK-HEAD         BINARY-LONG.    *> the first entry of its collection (same category and group)
+          15 RK-MATCH        PIC 9.          *> 1 = the search text matches the result's name
+          15 RK-NDISP        BINARY-LONG.    *> head only: members that fit the grid
+          15 RK-NCAN         BINARY-LONG.    *> head only: members craftable now
+          15 RK-NMATCH       BINARY-LONG.    *> head only: members matching the search
+       10 RK-OPEN            PIC 9 OCCURS 4 TIMES.
+       10 RK-FILTERING       PIC 9 OCCURS 4 TIMES.
+       10 RK-TAB             BINARY-LONG.    *> 1 search, 2 equipment, 3 building, 4 misc, 5 redstone
+       10 RK-PAGE            BINARY-LONG.
+       10 RK-PAGES           BINARY-LONG.
+       10 RK-SEARCH          PIC X(50).
+       10 RK-SEARCH-LENGTH   BINARY-LONG.
+       10 RK-SEARCH-FOCUS    PIC 9.
+       10 RK-LAST-PLACED     BINARY-LONG.    *> display id of the last placed recipe, -1 none
+       10 RK-DIRTY           PIC 9.          *> 1 = craftability to be recomputed
+       10 RK-SDIRTY          PIC 9.          *> 1 = search matches to be recomputed
+       10 RK-TABHAS          PIC 9 OCCURS 5 TIMES.
+       10 RK-SIG             BINARY-LONG.    *> inventory signature of the last refresh
+       10 RK-GRID            BINARY-LONG.    *> grid size of the last refresh (2 or 3)
+       10 RK-CELL-COUNT      BINARY-LONG.
+       10 RK-CELL OCCURS 20 TIMES.
+          15 RK-CELL-ROW     BINARY-LONG.    *> the entry shown
+          15 RK-CELL-MANY    BINARY-LONG.    *> displayable recipes in the collection
+       10 RK-GHOST-CONTAINER BINARY-LONG.   *> -1 none
+       10 RK-GHOST-W         BINARY-LONG.
+       10 RK-GHOST-H         BINARY-LONG.
+       10 RK-GHOST-TYPE      BINARY-LONG.
+       10 RK-GHOST-SLOTS     BINARY-LONG.
+       10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
+       10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
+       10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server
@@ -434,6 +671,18 @@
        10 OP-ENABLED OCCURS 32 TIMES.
           15 OP-ID           PIC X(80).
           15 OP-ID-LENGTH    BINARY-LONG.
+*>     options.txt (options.cob; 13 §7): the options of the table CLOPTS.cpy by row, each in its stored form (OP-OPT-LEN 0 = the
+*>     empty string); the confirmed incompatible pack ids as the file's JSON list text; the optional fullscreen video mode line.
+       10 OP-OPT OCCURS 160 TIMES.
+          15 OP-OPT-VALUE    PIC X(64).
+          15 OP-OPT-LEN      BINARY-LONG.
+       10 OP-PAGE            BINARY-LONG.     *> the options screen: the page shown, from 0
+       10 OP-RETURN          BINARY-LONG.     *> the screen the options screen returns to
+       10 OP-REBIND          BINARY-LONG.     *> the key option row waiting for a key (0 = none)
+       10 OP-INCOMPAT        PIC X(512).
+       10 OP-INCOMPAT-LEN    BINARY-LONG.
+       10 OP-FULLSCREEN      PIC X(64).
+       10 OP-FULLSCREEN-LEN  BINARY-LONG.
        10 LP-CONFIRM         BINARY-LONG.    *> pack confirmation: the LP-ENTRY to enable
        10 LP-ICON-COUNT      BINARY-LONG.    *> icon cells in use
 *>  ---- server packs (US18-6 to US18-8; 08 §9; packs/download.cob, packs/cache.cob,
@@ -500,6 +749,24 @@
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
        10 UA-ICON-Y          BINARY-LONG.    *> first row of the pack icon cells (16 x 16 each)
+       10 UA-SPRITE-Y        BINARY-LONG.    *> first row of the GUI sprites (below the icon cells)
+*>     GUI sprites of the UI atlas (gui-sprites.cob; 12 §5.9): GSP-* rows. GS-W 0 = the pack gives none
+*>     (the swatch draws instead). GS-NINE 1 = a nine_slice .mcmeta: source size GS-LW x GS-LH, borders
+*>     left, top, right, bottom.
+       10 GS-TOTAL-H         BINARY-LONG.
+       10 GS-MAX-W           BINARY-LONG.
+       10 GS-ROW OCCURS 128 TIMES.
+          15 GS-X            BINARY-LONG.
+          15 GS-Y            BINARY-LONG.
+          15 GS-W            BINARY-LONG.
+          15 GS-H            BINARY-LONG.
+          15 GS-NINE         PIC 9.
+          15 GS-LW           BINARY-LONG.
+          15 GS-LH           BINARY-LONG.
+          15 GS-BL           BINARY-LONG.
+          15 GS-BT           BINARY-LONG.
+          15 GS-BR           BINARY-LONG.
+          15 GS-BB           BINARY-LONG.
        10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
@@ -592,7 +859,7 @@
        10 RL-UI-LAYER        PIC 9.
        10 RL-UT-COUNT        BINARY-LONG.
        10 RL-UT-UPLOADED     BINARY-LONG.
-       10 RL-UT-VERTEX OCCURS 1536 TIMES.
+       10 RL-UT-VERTEX OCCURS 6144 TIMES.
           15 RL-UT-X         FLOAT-SHORT.
           15 RL-UT-Y         FLOAT-SHORT.
           15 RL-UT-Z         FLOAT-SHORT.
@@ -610,6 +877,17 @@
           15 RL-HL-V         FLOAT-SHORT.
           15 RL-HL-B         FLOAT-SHORT.
           15 RL-HL-A         FLOAT-SHORT.
+*>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
+       10 RL-BO-COUNT        BINARY-LONG.
+       10 RL-BO-UPLOADED     BINARY-LONG.
+       10 RL-BO-VERTEX OCCURS 576 TIMES.
+          15 RL-BO-X         FLOAT-SHORT.
+          15 RL-BO-Y         FLOAT-SHORT.
+          15 RL-BO-Z         FLOAT-SHORT.
+          15 RL-BO-U         FLOAT-SHORT.
+          15 RL-BO-V         FLOAT-SHORT.
+          15 RL-BO-B         FLOAT-SHORT.
+          15 RL-BO-A         FLOAT-SHORT.
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.
@@ -621,6 +899,17 @@
           15 RL-GI-V         FLOAT-SHORT.
           15 RL-GI-B         FLOAT-SHORT.
           15 RL-GI-A         FLOAT-SHORT.
+*>     The hand (view space, texture 0; hand.cob).
+       10 RL-HAND-COUNT      BINARY-LONG.
+       10 RL-HAND-UPLOADED   BINARY-LONG.
+       10 RL-HAND-VERTEX OCCURS 36 TIMES.
+          15 RL-HAND-X       FLOAT-SHORT.
+          15 RL-HAND-Y       FLOAT-SHORT.
+          15 RL-HAND-Z       FLOAT-SHORT.
+          15 RL-HAND-U       FLOAT-SHORT.
+          15 RL-HAND-V       FLOAT-SHORT.
+          15 RL-HAND-B       FLOAT-SHORT.
+          15 RL-HAND-A       FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.
@@ -633,6 +922,8 @@
           15 RL-WX-B         FLOAT-SHORT.
           15 RL-WX-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
+       10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
+       10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
           15 RL-UI-Y         FLOAT-SHORT.

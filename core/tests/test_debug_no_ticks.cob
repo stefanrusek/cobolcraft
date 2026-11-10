@@ -1,0 +1,80 @@
+*> Implementation test (T0448; docs/design/debug-world.md section 6): in a debug world CORE-TICK runs no
+*> weather, mob, spawning or generation-queue work and the world time does not advance; the same ticks
+*> in a world of another type do advance them (the control that shows the test can see the work).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DEBUG-NO-TICKS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY GENQUEUE.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  BINARY-LONG VALUE 80.
+ 01 WS-CZ                  BINARY-LONG VALUE 80.
+ 01 WS-TICKS               BINARY-LONG VALUE 25.
+ 01 WS-TIME                BINARY-DOUBLE.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-GENERATED           BINARY-DOUBLE.
+ 01 WS-ENTITIES            BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "debug" TO CS-WORLD-TYPE
+     MOVE CORE-SETTINGS TO CW-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID
+     MOVE 1000 TO CW-TIME
+     MOVE 1 TO CW-RAINING
+     MOVE 500 TO CW-RAIN-TIME
+     CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE CW-TIME TO WS-TIME
+     MOVE CW-RAIN-TIME TO WS-LEFT
+     MOVE GQ-GENERATED TO WS-GENERATED
+     MOVE EN-COUNT TO WS-ENTITIES
+     CALL "TEST-TICKS" USING WS-TICKS
+
+     MOVE "test debug no ticks the world time does not advance" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = CW-TIME - WS-TIME
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test debug no ticks the weather does not count down" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-LEFT - CW-RAIN-TIME
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test debug no ticks the generation queue is not served" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = GQ-GENERATED - WS-GENERATED
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test debug no ticks no mob or item entity appears" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = EN-COUNT - WS-ENTITIES
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Control: a world of the cobolcraft type ticks.
+     MOVE "cobolcraft" TO CS-WORLD-TYPE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID
+     MOVE 1000 TO CW-TIME
+     MOVE 1 TO CW-RAINING
+     MOVE 500 TO CW-RAIN-TIME
+     CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE CW-TIME TO WS-TIME
+     MOVE CW-RAIN-TIME TO WS-LEFT
+     MOVE GQ-GENERATED TO WS-GENERATED
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "test debug no ticks control: another type advances the time by 25 ticks" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = CW-TIME - WS-TIME
+     MOVE 25 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test debug no ticks control: the weather counts down and the queue is served" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = (WS-LEFT - CW-RAIN-TIME) * 10 + (GQ-GENERATED - WS-GENERATED)
+     MOVE 251 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-DEBUG-NO-TICKS.
+
+ COPY CORETEST.

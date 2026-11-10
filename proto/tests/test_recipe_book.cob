@@ -39,6 +39,7 @@
      PERFORM ENTRY-PUT-CASES
      PERFORM ENTRY-GET-CASES
      PERFORM ENTRY-ERROR-CASES
+     PERFORM HOLDERSET-CASES
      CALL "PB-FREE" USING PB-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
      STOP RUN.
@@ -591,8 +592,8 @@
      MOVE "test recipe-book ENTRY get of a composite of 9 sets PB-ERROR, PB-POS 0, zeros"
          TO TL-CASE
      PERFORM GET-ENTRY-EXPECT-ERROR
-     MOVE "00 00 00 00 00 00 00 01 01 03 3e 00" TO WS-HEX
-     MOVE "test recipe-book ENTRY get of a requirement that is not one item sets PB-ERROR, zeros"
+     MOVE "00 00 00 00 00 00 00 01 01 01 00" TO WS-HEX
+     MOVE "test recipe-book ENTRY get of a requirement that is an empty list sets PB-ERROR, zeros"
          TO TL-CASE
      PERFORM GET-ENTRY-EXPECT-ERROR
      MOVE "00 00 00 00 00 00 00 01 0a" TO WS-HEX
@@ -613,6 +614,81 @@
      END-PERFORM
      MOVE "test recipe-book ENTRY get that needs more than 32 slot nodes sets PB-ERROR, zeros"
          TO TL-CASE
+     PERFORM GET-ENTRY-EXPECT-ERROR.
+
+*> ---- T3663: a requirement is a HolderSet<item>: one item, a list of up to 8 items, or a tag ----
+ HOLDERSET-CASES.
+     PERFORM BUILD-SHAPELESS-TAG
+     MOVE 3 TO PB-RE-REQ-COUNT
+     MOVE 62 TO PB-RE-REQ-ITEM(1)
+     MOVE 0 TO PB-RE-REQ-N(1)
+     MOVE 3 TO PB-RE-REQ-N(2)
+     MOVE 62 TO PB-RE-REQ-LIST(2, 1)
+     MOVE 63 TO PB-RE-REQ-LIST(2, 2)
+     MOVE 70 TO PB-RE-REQ-LIST(2, 3)
+     MOVE "minecraft:planks" TO PB-RE-REQ-TAG(3)
+     MOVE 16 TO PB-RE-REQ-TAG-LENGTH(3)
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-RECIPE-ENTRY" USING PB-BUFFER PB-RECIPE-ENTRY PB-SLOT-DISPLAY-TABLE
+     MOVE "test recipe-book HOLDERSET put of a requirement of one item, a list of three and a tag" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "000002" "0600106d696e6563726166743a706c616e6b73" "043e" "0501040000" "00" "0000" "01" "03"
+         "023e" "043e3f46" "0010" "6d696e6563726166743a706c616e6b73" "03"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-BYTES
+     MOVE "00 00 02 06 00 10 6d696e6563726166743a706c616e6b73 04 3e 05 01 04 00 00 00 00 00 01 03 02 3e 04 3e 3f 46 00 10 6d696e6563726166743a706c616e6b73 03"
+         TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-RECIPE-ENTRY" USING PB-BUFFER PB-RECIPE-ENTRY PB-SLOT-DISPLAY-TABLE
+     MOVE "test recipe-book HOLDERSET get of the same requirements: item, list of three, tag" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE PB-RE-REQ-COUNT TO WS-EDIT
+     STRING "R count=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-RE-REQ-COUNT
+         EVALUATE TRUE
+             WHEN PB-RE-REQ-TAG-LENGTH(WS-J) > 0
+                 STRING " tag=" PB-RE-REQ-TAG(WS-J)(1:PB-RE-REQ-TAG-LENGTH(WS-J)) DELIMITED BY SIZE
+                     INTO TL-OBSERVED WITH POINTER WS-PTR
+             WHEN PB-RE-REQ-N(WS-J) > 0
+                 STRING " list=" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+                 PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > PB-RE-REQ-N(WS-J)
+                     MOVE PB-RE-REQ-LIST(WS-J, WS-N) TO WS-EDIT
+                     IF WS-N > 1
+                         STRING "," DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+                     END-IF
+                     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+                 END-PERFORM
+             WHEN OTHER
+                 MOVE PB-RE-REQ-ITEM(WS-J) TO WS-EDIT
+                 STRING " item=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-EVALUATE
+     END-PERFORM
+     MOVE "R count=3 item=62 list=62,63,70 tag=minecraft:planks pos 59 error 0" TO TL-EXPECTED
+     PERFORM END-FIELDS
+*>   values the writer and the reader reject
+     PERFORM BUILD-SHAPELESS-TAG
+     MOVE 1 TO PB-RE-REQ-COUNT
+     MOVE 9 TO PB-RE-REQ-N(1)
+     PERFORM PUT-ENTRY-EXPECT-ERROR
+     MOVE "test recipe-book HOLDERSET put of a list of 9 sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-SHAPELESS-TAG
+     MOVE 1 TO PB-RE-REQ-COUNT
+     MOVE 2 TO PB-RE-REQ-N(1)
+     MOVE 62 TO PB-RE-REQ-LIST(1, 1)
+     MOVE -1 TO PB-RE-REQ-LIST(1, 2)
+     PERFORM PUT-ENTRY-EXPECT-ERROR
+     MOVE "test recipe-book HOLDERSET put of a list with the item -1 sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-SHAPELESS-TAG
+     MOVE 1 TO PB-RE-REQ-COUNT
+     MOVE -1 TO PB-RE-REQ-N(1)
+     PERFORM PUT-ENTRY-EXPECT-ERROR
+     MOVE "test recipe-book HOLDERSET put of a list count -1 sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE "00 00 00 00 00 00 00 01 01 0a 00" TO WS-HEX
+     MOVE "test recipe-book HOLDERSET get of a list of 9 sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
      PERFORM GET-ENTRY-EXPECT-ERROR.
 
 *> ---- builders: the records of a recipe entry, as a writer's caller fills them ----

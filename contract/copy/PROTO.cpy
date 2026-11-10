@@ -391,6 +391,7 @@
  78 PB-RT-SMITHING        VALUE 4.
  78 PB-RE-FLAG-NOTIFY     VALUE 1.
  78 PB-RE-FLAG-HIGHLIGHT  VALUE 2.
+ 78 PB-RE-REQ-MAX-LIST    VALUE 8.
  01 PB-RECIPE-ENTRY.
     05 PB-RE-DISPLAY-ID   BINARY-LONG.
     05 PB-RE-TYPE         BINARY-LONG.
@@ -407,6 +408,13 @@
     05 PB-RE-REQ-PRESENT  PIC 9.
     05 PB-RE-REQ-COUNT    BINARY-LONG.
     05 PB-RE-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+*>   A requirement is a HolderSet<item> (T3663): the tag PB-RE-REQ-TAG(i) when PB-RE-REQ-TAG-LENGTH(i) is above 0, else the
+*>   list PB-RE-REQ-LIST(i, 1..PB-RE-REQ-N(i)) of up to 8 item ids when PB-RE-REQ-N(i) is above 0, else the one item PB-RE-REQ-ITEM(i).
+    05 PB-RE-REQ-ALT      OCCURS 9 TIMES.
+       10 PB-RE-REQ-N          BINARY-LONG.
+       10 PB-RE-REQ-LIST       BINARY-LONG OCCURS 8 TIMES.
+       10 PB-RE-REQ-TAG-LENGTH BINARY-LONG.
+       10 PB-RE-REQ-TAG        PIC X(64).
     05 PB-RE-FLAGS        BINARY-LONG.   *> PB-RE-FLAG-*
 
 *> Recipe Book Settings (05b 0x4D): open and filtering for crafting, furnace, blast furnace, smoker.
@@ -414,3 +422,27 @@
     05 PB-RBS-TYPE        OCCURS 4 TIMES.
        10 PB-RBS-OPEN       PIC 9.
        10 PB-RBS-FILTERING  PIC 9.
+
+*> ---------------------------------------------------------------------------------------------
+*> UPDATE-RECIPES (05b 0x88, docs/protocol 27 4.3; T3662): the recipe property sets (a key such as minecraft:smithing_base and
+*> a list of item ids) and the stonecutter list: per entry the input HolderSet<item> (the tag PB-UC-TAG when PB-UC-TAG-LENGTH is
+*> above 0, else the PB-UC-INPUT-COUNT ids of PB-UC-INPUT) and the SlotDisplay of the option, a node number of the
+*> PB-SLOT-DISPLAY-TABLE the packet is written with or read into.
+ 78 PB-UR-MAX-SETS          VALUE 8.
+ 78 PB-UR-MAX-ITEMS         VALUE 256.
+ 78 PB-UR-MAX-CUTS          VALUE 32.
+ 78 PB-UR-MAX-INPUTS        VALUE 8.
+ 01 PB-UPDATE-RECIPES.
+    05 PB-UR-SET-COUNT    BINARY-LONG.
+    05 PB-UR-SET          OCCURS 8 TIMES.
+       10 PB-UR-KEY-LENGTH  BINARY-LONG.
+       10 PB-UR-KEY         PIC X(64).
+       10 PB-UR-ITEM-COUNT  BINARY-LONG.
+       10 PB-UR-ITEM        BINARY-LONG OCCURS 256 TIMES.
+    05 PB-UR-CUT-COUNT    BINARY-LONG.
+    05 PB-UR-CUT          OCCURS 32 TIMES.
+       10 PB-UC-TAG-LENGTH  BINARY-LONG.
+       10 PB-UC-TAG         PIC X(64).
+       10 PB-UC-INPUT-COUNT BINARY-LONG.
+       10 PB-UC-INPUT       BINARY-LONG OCCURS 8 TIMES.
+       10 PB-UC-DISPLAY     BINARY-LONG.

@@ -14,6 +14,7 @@
  COPY DIMENSIONS.
  COPY ETIDS.
  COPY RULES.
+ COPY CITEMPHYS.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-NAME                PIC X(16) VALUE "Alice".
@@ -72,6 +73,8 @@
      CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
          WS-GROUND
      MOVE 1200 TO EN-AGE(WS-GROUND)
+*>   A new item has a random yaw (41 section 1); the saved Rotation is what it is, so the test fixes it.
+     MOVE 0 TO EN-YAW(WS-GROUND)
      MOVE ET-ABEND TO WS-TYPE
      MOVE 100 TO WS-X WS-Z
      MOVE 0 TO WS-YAW
@@ -85,6 +88,7 @@
      CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
          WS-SUB
      MOVE 4000 TO EN-AGE(WS-SUB)
+     MOVE 0 TO EN-YAW(WS-SUB)
 
      MOVE DIM-MAIN TO WS-DIM
      MOVE 1 TO WS-CX
@@ -104,7 +108,7 @@
      PERFORM CHECK
 
      MOVE "test entity nbt read back: the same sodgrazer (type, position, yaw, health, vertical "
-         & "motion) and ground item (item, count, position, motion, Age 1200 = 3600 ticks left) in "
+         & "motion) and ground item (item, count, position, motion, Age 1200 = 4800 ticks left) in "
          & "cobolcraft:main" TO TL-CASE
      CALL "ENTITY-REMOVE" USING WS-MOB
      CALL "ENTITY-REMOVE" USING WS-GROUND
@@ -120,7 +124,7 @@
          END-IF
      END-PERFORM
      MOVE "outcome 0 | type 2 dim 1 at 20.500 55.000 37.250 yaw 90.000 health 5 vy -0.250 | "
-         & "type 1 dim 1 at 21.000 56.000 38.000 v 0.125 0.250 -0.375 item 3x7 left 3600"
+         & "type 1 dim 1 at 21.000 56.000 38.000 v 0.125 0.250 -0.375 item 3x7 left 4800"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -140,7 +144,7 @@
      END-PERFORM
      MOVE "[{id:cobolcraft:loose_item,Pos:[17.500,40.000,33.500],Motion:[0.000,0.000,0.000],"
          & "Rotation:[0.000,0.000],Item:{id:cobolcraft:slag,count:64},Age:4000}] | type 1 dim 2 "
-         & "at 17.500 40.000 33.500 v 0.000 0.000 0.000 item 17x64 left 800" TO TL-EXPECTED
+         & "at 17.500 40.000 33.500 v 0.000 0.000 0.000 item 17x64 left 2000" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test entity nbt a chunk without entities has an empty Entities list" TO TL-CASE
@@ -193,7 +197,7 @@
          MOVE EN-ITEM-COUNT(WS-ROW) TO WS-EDIT
          STRING FUNCTION TRIM(WS-OBSERVED) FUNCTION TRIM(WS-EDIT) " left" DELIMITED BY SIZE
              INTO WS-OBSERVED
-         COMPUTE WS-EDIT = RULE-GI-DESPAWN-AGE - EN-AGE(WS-ROW)
+         COMPUTE WS-EDIT = IP-LIFETIME - EN-AGE(WS-ROW)
          STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
              INTO WS-OBSERVED
      ELSE

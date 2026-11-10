@@ -59,8 +59,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-DEFEAT.
 *> USING tracker row (BINARY-LONG) of a mob whose health reached 0 (§12.5): it is removed (Remove
-*> Entities to its viewers) and its yield (§12.1) appears as one ground item at its position with no
-*> motion and the mob-defeat pickup delay (§9.1, RULES.cpy RULE-GI-BREAK-DELAY).
+*> Entities to its viewers) and its yield (§12.1) appears as one ground item at its position (Entity.spawnAtLocation,
+*> 41 section 2: the constructor's random motion, pickup delay 10: IP-AT-LOCATION).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -71,12 +71,10 @@
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG VALUE 0.
- 01 WS-VY                  FLOAT-LONG VALUE 0.
- 01 WS-VZ                  FLOAT-LONG VALUE 0.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 0.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-DELAY               BINARY-LONG.
  01 WS-ITEM-ROW            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -88,10 +86,8 @@
      MOVE EN-Z(L-ROW) TO WS-Z
      MOVE MB-YIELD-ITEM(WS-M) TO WS-ITEM
      MOVE MB-YIELD-COUNT(WS-M) TO WS-COUNT
-     MOVE RULE-GI-BREAK-DELAY TO WS-DELAY
      CALL "ENTITY-REMOVE" USING L-ROW
-     CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT
-         WS-DELAY WS-ITEM-ROW
+     CALL "IP-AT-LOCATION" USING WS-DIM WS-X WS-Y WS-Z WS-OFFSET WS-ITEM WS-COUNT WS-NONE WS-ITEM-ROW
      GOBACK.
  END PROGRAM MOB-DEFEAT.
 

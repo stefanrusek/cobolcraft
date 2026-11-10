@@ -349,7 +349,6 @@
 *> (09 §3.2; standin §9.1 inventory-screen throws: THROW 4, PICKUP 0 at -999).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-ID                  BINARY-LONG VALUE 18.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
@@ -364,8 +363,34 @@
  01 L-CARRIED-ITEM         BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-STATE-ID L-SLOT L-BUTTON L-TYPE L-CHANGED L-SLOT-COUNT
          L-SLOT-ITEM L-CARRIED-COUNT L-CARRIED-ITEM.
+     CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-ZERO L-STATE-ID L-SLOT L-BUTTON L-TYPE L-CHANGED
+         L-SLOT-COUNT L-SLOT-ITEM L-CARRIED-COUNT L-CARRIED-ITEM
+     GOBACK.
+ END PROGRAM CLP-CONTAINER-CLICK-AS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MENU-CLICK-AS.
+*> USING PB-BUFFER, container id, state id, slot, button, click type, changed, the slot's new count and item, the cursor's
+*> new count and item: Container Click (05c 0x12) of that container (the bench's id or 0), as CLP-CONTAINER-CLICK-AS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 18.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-BUTTON               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ 01 L-SLOT-COUNT           BINARY-LONG.
+ 01 L-SLOT-ITEM            BINARY-LONG.
+ 01 L-CARRIED-COUNT        BINARY-LONG.
+ 01 L-CARRIED-ITEM         BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-CONTAINER L-STATE-ID L-SLOT L-BUTTON L-TYPE L-CHANGED
+         L-SLOT-COUNT L-SLOT-ITEM L-CARRIED-COUNT L-CARRIED-ITEM.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
      CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
      CALL "PB-PUT-BYTE" USING PB-BUFFER L-BUTTON
@@ -377,22 +402,35 @@
      END-IF
      CALL "CLP-HASHED-STACK" USING PB-BUFFER L-CARRIED-COUNT L-CARRIED-ITEM
      GOBACK.
- END PROGRAM CLP-CONTAINER-CLICK-AS.
+ END PROGRAM CLP-MENU-CLICK-AS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-CONTAINER-CLOSE.
 *> USING PB-BUFFER: Container Close (05c 0x13) of container 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-ID                  BINARY-LONG VALUE 19.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER.
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "CLP-MENU-CLOSE" USING PB-BUFFER WS-ZERO
      GOBACK.
  END PROGRAM CLP-CONTAINER-CLOSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-MENU-CLOSE.
+*> USING PB-BUFFER, container id: Container Close (05c 0x13) of that container.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 19.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CONTAINER            BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-CONTAINER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     GOBACK.
+ END PROGRAM CLP-MENU-CLOSE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-HASHED-STACK.
@@ -505,23 +543,52 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-PLACE-RECIPE.
-*> USING PB-BUFFER, recipe display id: Place Recipe (05c 0x27) of container 0, use max items false
-*> (09 §3.3: craft one).
+*> USING PB-BUFFER, container id, recipe display id, use max items (0 or 1): Place Recipe (05c 0x27; 13 section 3.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ID                  BINARY-LONG VALUE 39.
- 01 WS-CONTAINER           BINARY-LONG VALUE 0.
- 01 WS-MAX                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-RECIPE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-CONTAINER L-RECIPE L-MAX.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-PLACE-RECIPE" USING PB-BUFFER L-CONTAINER L-RECIPE L-MAX
+     GOBACK.
+ END PROGRAM CLP-PLACE-RECIPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-RECIPE-SEEN.
+*> USING PB-BUFFER, recipe display id: Recipe Book Seen Recipe (05c 0x30).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 48.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-RECIPE               BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-RECIPE.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-CONTAINER
-     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RECIPE
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-MAX
+     CALL "PB-PUT-RECIPE-SEEN" USING PB-BUFFER L-RECIPE
      GOBACK.
- END PROGRAM CLP-PLACE-RECIPE.
+ END PROGRAM CLP-RECIPE-SEEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-RECIPE-SETTINGS.
+*> USING PB-BUFFER, book type (0 crafting), open, filtering: Recipe Book Change Settings (05c 0x2F).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 47.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-BOOK                 BINARY-LONG.
+ 01 L-OPEN                 BINARY-LONG.
+ 01 L-FILTERING            BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-BOOK L-OPEN L-FILTERING.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-RECIPE-BOOK-CHANGE" USING PB-BUFFER L-BOOK L-OPEN L-FILTERING
+     GOBACK.
+ END PROGRAM CLP-RECIPE-SETTINGS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-CHAT-COMMAND.
@@ -585,79 +652,307 @@
  END PROGRAM CLP-SEND-SIMPLE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RK-NODE-ITEM.
+*> USING PB-SLOT-DISPLAY-TABLE, node, item out (-1 = no single item), count out: the item a SlotDisplay shows, found by following one child:
+*> an item or item_stack is itself (the count of a stack, else 1), a composite its first member, a dyed display its target, a remainder,
+*> potion, component or trim display its source (the base); a tag, fuel, trim or empty display shows none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-SLOT-DISPLAY-TABLE L-NODE L-ITEM L-COUNT.
+     MOVE L-NODE TO WS-NODE
+     MOVE -1 TO L-ITEM
+     MOVE 1 TO L-COUNT
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 8 OR WS-NODE < 1 OR WS-NODE > PB-SDT-COUNT
+         EVALUATE PB-SDN-TYPE(WS-NODE)
+             WHEN PB-SDX-ITEM
+                 MOVE PB-SDN-ITEM(WS-NODE) TO L-ITEM
+                 MOVE 0 TO WS-NODE
+             WHEN PB-SDX-ITEM-STACK
+                 MOVE PB-SDN-ITEM(WS-NODE) TO L-ITEM
+                 MOVE PB-SDN-COUNT(WS-NODE) TO L-COUNT
+                 MOVE 0 TO WS-NODE
+             WHEN PB-SDX-COMPOSITE
+                 MOVE PB-SDN-LIST(WS-NODE, 1) TO WS-NODE
+             WHEN PB-SDX-DYED
+                 MOVE PB-SDN-CHILD-B(WS-NODE) TO WS-NODE
+             WHEN PB-SDX-SMITHING-TRIM
+             WHEN PB-SDX-WITH-REMAINDER
+             WHEN PB-SDX-WITH-ANY-POTION
+             WHEN PB-SDX-ONLY-WITH-COMPONENT
+                 MOVE PB-SDN-CHILD-A(WS-NODE) TO WS-NODE
+             WHEN OTHER
+                 MOVE 0 TO WS-NODE
+         END-EVALUATE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RK-NODE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-BOOK-HEADS.
+*> USING CLIENT-STATE: the first entry of each collection (13 section 3.9): the crafting entries of one category with the same non-empty
+*> group are one collection, every other entry is one of its own.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4096
+         MOVE 0 TO RK-GHEAD(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-COUNT
+         MOVE WS-I TO RK-HEAD(WS-I)
+         IF RK-GROUP(WS-I) > 0 AND RK-CATEGORY(WS-I) <= 3
+             COMPUTE WS-KEY = RK-CATEGORY(WS-I) * 1024 + FUNCTION MIN(RK-GROUP(WS-I), 1023) + 1
+             IF RK-GHEAD(WS-KEY) = 0
+                 MOVE WS-I TO RK-GHEAD(WS-KEY)
+             END-IF
+             MOVE RK-GHEAD(WS-KEY) TO RK-HEAD(WS-I)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RECIPE-BOOK-HEADS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-BOOK-READ.
-*> USING CLIENT-STATE, packet (Recipe Book Add, 05b 0x4B; 09 §3.3): each entry's display id,
-*> ingredients and result (an item_stack's count, else 1) and its craftable flag (crafting
-*> requirements present, 09 open question 3); the entry flags are not used. Replace (after the
-*> entries) empties the book first; an entry whose display id the book holds replaces it, any other
-*> is appended while there is room (CL-MAX-RECIPES; the rest are read and dropped). A malformed
-*> packet changes nothing.
+*> USING CLIENT-STATE, packet (Recipe Book Add, 05b 0x4B; 13 section 3.9): every entry is read with PB-GET-RECIPE-ENTRY into the book
+*> (RK-*): display id, type, category, group, size, the requirements, the item of each ingredient slot and of the result, the highlight
+*> (flag 2). Replace (after the entries) empties the book first; an entry whose display id the book holds replaces it, any other is
+*> appended while there is room (CL-RK-MAX; the rest are read and dropped). A flag-1 entry (notification) starts the toast for 5 seconds.
+*> A malformed packet changes nothing (the entries are read once to find Replace and to check them, then again to store them).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY PROTO REPLACING LEADING ==PB-== BY ==RX-==.
+ 01 WS-START               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-FLAGS               BINARY-LONG.
  01 WS-REPLACE             BINARY-LONG.
- 01 WS-NEW-AREA.
-    05 NW-RECIPE OCCURS 16 TIMES.
-       10 NW-ID              BINARY-LONG.
-       10 NW-CRAFTABLE       PIC 9.
-       10 NW-IN-COUNT        BINARY-LONG.
-       10 NW-IN OCCURS 9 TIMES.
-          15 NW-IN-ITEM      BINARY-LONG.
-          15 NW-IN-AMOUNT    BINARY-LONG.
-       10 NW-RES-ITEM        BINARY-LONG.
-       10 NW-RES-AMOUNT      BINARY-LONG.
+ 01 WS-NOTIFY              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
  PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
-     MOVE 0 TO WS-N
+     MOVE PB-POS TO WS-START
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
-         CALL "PB-GET-RECIPE-DISPLAY" USING PB-BUFFER RX-RECIPE-DISPLAY
-         CALL "PB-GET-BYTE" USING PB-BUFFER WS-FLAGS
-         IF WS-N < CL-MAX-RECIPES
-             ADD 1 TO WS-N
-             MOVE RX-RD-DISPLAY-ID TO NW-ID(WS-N)
-             MOVE RX-RD-REQ-PRESENT TO NW-CRAFTABLE(WS-N)
-             MOVE RX-RD-INGREDIENT-COUNT TO NW-IN-COUNT(WS-N)
-             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RX-RD-INGREDIENT-COUNT
-                 MOVE RX-RD-IN-ITEM(WS-J) TO NW-IN-ITEM(WS-N, WS-J)
-                 COMPUTE NW-IN-AMOUNT(WS-N, WS-J) = FUNCTION MAX(1, RX-RD-IN-COUNT(WS-J))
-             END-PERFORM
-             MOVE RX-RD-RES-ITEM TO NW-RES-ITEM(WS-N)
-             COMPUTE NW-RES-AMOUNT(WS-N) = FUNCTION MAX(1, RX-RD-RES-COUNT)
-         END-IF
+         CALL "PB-GET-RECIPE-ENTRY" USING PB-BUFFER RX-RECIPE-ENTRY RX-SLOT-DISPLAY-TABLE
      END-PERFORM
      CALL "PB-GET-BOOL" USING PB-BUFFER WS-REPLACE
-     IF PB-ERROR = 0
-         IF WS-REPLACE = 1
-             MOVE 0 TO RB-COUNT
-         END-IF
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-             MOVE 0 TO WS-ROW
-             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RB-COUNT
-                 IF RB-ID(WS-J) = NW-ID(WS-I)
-                     MOVE WS-J TO WS-ROW
-                 END-IF
-             END-PERFORM
-             IF WS-ROW = 0 AND RB-COUNT < CL-MAX-RECIPES
-                 ADD 1 TO RB-COUNT
-                 MOVE RB-COUNT TO WS-ROW
-             END-IF
-             IF WS-ROW > 0
-                 MOVE NW-RECIPE(WS-I) TO RB-RECIPE(WS-ROW)
+     IF PB-ERROR = 1
+         MOVE WS-START TO PB-POS
+         GOBACK
+     END-IF
+     MOVE WS-START TO PB-POS
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     MOVE 0 TO WS-NOTIFY
+     IF WS-REPLACE = 1
+         MOVE 0 TO RK-COUNT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         CALL "PB-GET-RECIPE-ENTRY" USING PB-BUFFER RX-RECIPE-ENTRY RX-SLOT-DISPLAY-TABLE
+         MOVE 0 TO WS-ROW
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RK-COUNT OR WS-REPLACE = 1
+             IF RK-ID(WS-J) = RX-RE-DISPLAY-ID
+                 MOVE WS-J TO WS-ROW
              END-IF
          END-PERFORM
+         IF WS-ROW = 0 AND RK-COUNT < CL-RK-MAX
+             ADD 1 TO RK-COUNT
+             MOVE RK-COUNT TO WS-ROW
+         END-IF
+         IF WS-ROW > 0
+             INITIALIZE RK-ENTRY(WS-ROW)
+             MOVE RX-RE-DISPLAY-ID TO RK-ID(WS-ROW)
+             MOVE RX-RE-TYPE TO RK-TYPE(WS-ROW)
+             MOVE RX-RE-CATEGORY TO RK-CATEGORY(WS-ROW)
+             MOVE RX-RE-GROUP TO RK-GROUP(WS-ROW)
+             MOVE RX-RE-WIDTH TO RK-WIDTH(WS-ROW)
+             MOVE RX-RE-HEIGHT TO RK-HEIGHT(WS-ROW)
+             COMPUTE RK-HIGHLIGHT(WS-ROW) = FUNCTION MOD(RX-RE-FLAGS / 2, 2)
+             MOVE RX-RE-REQ-PRESENT TO RK-REQ-PRESENT(WS-ROW)
+             MOVE RX-RE-REQ-COUNT TO RK-REQ-COUNT(WS-ROW)
+             MOVE RX-RE-INGREDIENT-COUNT TO RK-SLOTS(WS-ROW)
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9
+                 MOVE RX-RE-REQ-ITEM(WS-J) TO RK-REQ-ITEM(WS-ROW, WS-J)
+                 MOVE -1 TO RK-SLOT-ITEM(WS-ROW, WS-J)
+                 IF WS-J <= RX-RE-INGREDIENT-COUNT
+                     CALL "RK-NODE-ITEM" USING RX-SLOT-DISPLAY-TABLE RX-RE-INGREDIENT(WS-J) WS-ITEM WS-AMOUNT
+                     MOVE WS-ITEM TO RK-SLOT-ITEM(WS-ROW, WS-J)
+                 END-IF
+             END-PERFORM
+             CALL "RK-NODE-ITEM" USING RX-SLOT-DISPLAY-TABLE RX-RE-RESULT WS-ITEM WS-AMOUNT
+             MOVE WS-ITEM TO RK-RES-ITEM(WS-ROW)
+             MOVE WS-AMOUNT TO RK-RES-COUNT(WS-ROW)
+         END-IF
+         COMPUTE WS-NOTIFY = WS-NOTIFY + FUNCTION MOD(RX-RE-FLAGS, 2)
+     END-PERFORM
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-REPLACE
+     MOVE 1 TO RK-DIRTY RK-SDIRTY
+     CALL "RECIPE-BOOK-HEADS" USING CLIENT-STATE
+     IF WS-NOTIFY > 0
+         COMPUTE RK-TOAST-UNTIL = CL-NOW-MS + 5000
      END-IF
      GOBACK.
  END PROGRAM RECIPE-BOOK-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-BOOK-REMOVE-READ.
+*> USING CLIENT-STATE, packet (Recipe Book Remove, 05b 0x4C): the entries with those display ids leave the book (the others keep their
+*> order). A malformed packet changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-IDS.
+    05 WS-ID               BINARY-LONG OCCURS 2048 TIMES.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 2048.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ 01 WS-GONE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-RECIPE-BOOK-REMOVE" USING PB-BUFFER WS-IDS WS-CAPACITY WS-COUNT
+     IF PB-ERROR = 0
+         MOVE 0 TO WS-TO
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-COUNT
+             MOVE 0 TO WS-GONE
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-COUNT
+                 IF WS-ID(WS-J) = RK-ID(WS-I)
+                     MOVE 1 TO WS-GONE
+                 END-IF
+             END-PERFORM
+             IF WS-GONE = 0
+                 ADD 1 TO WS-TO
+                 MOVE RK-ENTRY(WS-I) TO RK-ENTRY(WS-TO)
+             END-IF
+         END-PERFORM
+         MOVE WS-TO TO RK-COUNT
+         MOVE 1 TO RK-DIRTY RK-SDIRTY
+         CALL "RECIPE-BOOK-HEADS" USING CLIENT-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM RECIPE-BOOK-REMOVE-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-BOOK-SETTINGS-READ.
+*> USING CLIENT-STATE, packet (Recipe Book Settings, 05b 0x4D): the four (open, filtering) pairs replace the book's.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==RS-==.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-RECIPE-BOOK-SETTINGS" USING PB-BUFFER RS-RECIPE-BOOK-SETTINGS
+     IF PB-ERROR = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE RS-RBS-OPEN(WS-I) TO RK-OPEN(WS-I)
+             MOVE RS-RBS-FILTERING(WS-I) TO RK-FILTERING(WS-I)
+         END-PERFORM
+         MOVE 1 TO RK-DIRTY
+     END-IF
+     GOBACK.
+ END PROGRAM RECIPE-BOOK-SETTINGS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPE-GHOST-READ.
+*> USING CLIENT-STATE, packet (Place Ghost Recipe, 05a 0x40; 13 section 3.9): the container id, then a RecipeDisplay. A shapeless or shaped
+*> crafting display becomes the ghost of the open screen: the item of each grid slot (-1 none), placed as the server places a recipe (13
+*> section 3.8: a shaped recipe of rw x rh in a gw x gh grid is top-left when rw >= gw / 2, else centred; a shapeless one fills from the
+*> first slot). The grid is 2 x 2 for container 0, 3 x 3 for any other. Another display type or a malformed packet clears the ghost.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==GH-==.
+ 01 WS-CONTAINER           BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-GRID                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG.
+ 01 WS-OY                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-SLOT-ITEM           BINARY-LONG OCCURS 9 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     MOVE 0 TO RK-GHOST-W
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-TYPE
+     MOVE 1 TO WS-W WS-H
+     IF WS-TYPE = 1
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-W
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-H
+     END-IF
+     MOVE 0 TO WS-COUNT
+     IF WS-TYPE <= 1
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-COUNT
+     END-IF
+     IF WS-COUNT < 0 OR WS-COUNT > 9
+         MOVE 1 TO PB-ERROR
+     END-IF
+     INITIALIZE GH-SLOT-DISPLAY-TABLE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+         CALL "PB-GET-SLOT-DISPLAY-NODE" USING PB-BUFFER GH-SLOT-DISPLAY-TABLE WS-NODE
+         CALL "RK-NODE-ITEM" USING GH-SLOT-DISPLAY-TABLE WS-NODE WS-ITEM WS-AMOUNT
+         MOVE WS-ITEM TO WS-SLOT-ITEM(WS-I)
+     END-PERFORM
+     IF PB-ERROR = 0 AND WS-TYPE <= 1 AND WS-W >= 1 AND WS-H >= 1
+         MOVE 2 TO WS-GRID
+         IF WS-CONTAINER > 0
+             MOVE 3 TO WS-GRID
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+             MOVE -1 TO RK-GHOST-ITEM(WS-I)
+         END-PERFORM
+         MOVE 0 TO WS-OX WS-OY
+         IF WS-TYPE = 1 AND WS-W * 2 < WS-GRID
+             COMPUTE WS-OX = (WS-GRID - WS-W) / 2
+         END-IF
+         IF WS-TYPE = 1 AND WS-H * 2 < WS-GRID
+             COMPUTE WS-OY = (WS-GRID - WS-H) / 2
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             IF WS-TYPE = 1
+                 COMPUTE WS-Y = (WS-I - 1) / WS-W
+                 COMPUTE WS-X = WS-I - 1 - WS-Y * WS-W
+                 COMPUTE WS-POS = (WS-Y + WS-OY) * WS-GRID + WS-X + WS-OX + 1
+             ELSE
+                 MOVE WS-I TO WS-POS
+             END-IF
+             IF WS-POS >= 1 AND WS-POS <= WS-GRID * WS-GRID
+                 MOVE WS-SLOT-ITEM(WS-I) TO RK-GHOST-ITEM(WS-POS)
+             END-IF
+         END-PERFORM
+         MOVE WS-CONTAINER TO RK-GHOST-CONTAINER
+         MOVE WS-GRID TO RK-GHOST-W
+     END-IF
+     GOBACK.
+ END PROGRAM RECIPE-GHOST-READ.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. COMMANDS-READ.

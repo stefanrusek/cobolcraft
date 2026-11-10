@@ -162,7 +162,7 @@
     05 FILLER PIC X(640) VALUE " ".
     05 FILLER PIC 99 VALUE 02.
     05 FILLER PIC X(32) VALUE "ore_vein".
-    05 FILLER PIC X(640) VALUE " ".
+    05 FILLER PIC X(640) VALUE "D density;D richness;D filler_gap;X ore_block;X raw_ore_block;X filler_block;N raw_ore_chance".
     05 FILLER PIC 99 VALUE 03.
     05 FILLER PIC X(32) VALUE "biome".
     05 FILLER PIC X(640) VALUE "H biome_is".

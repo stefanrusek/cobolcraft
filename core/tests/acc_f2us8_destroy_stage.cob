@@ -81,7 +81,7 @@
      MOVE 3 TO WS-ACTION
      PERFORM ACT
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
-     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 8(20,100,20=0)" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 103 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK-PREFIX
 
      MOVE "acceptance US8-2 given a started break when it is aborted then the viewers and the "
@@ -96,8 +96,7 @@
      MOVE 2 TO WS-ACTION
      PERFORM ACT
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
-     *>   The 128 is a packet the core sends every 20 ticks (not shown by name by TEST-DRAIN-BLOCKS).
-     MOVE "5(1,20,100,20=0) 5(1,20,100,20=1) 128 5(1,20,100,20=2) 5(1,20,100,20=255)" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=0) 5(1,20,100,20=1) 5(1,20,100,20=2) 5(1,20,100,20=255)" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US8-3 given Alice is breaking a block when Bobby breaks it first then Alice's "
@@ -114,7 +113,7 @@
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "8(20,100,20=0) 5(1,20,100,20=255) 128" TO TL-EXPECTED
+     MOVE "8(20,100,20=0) 5(1,20,100,20=255)" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 
@@ -129,6 +128,8 @@
 
  CHECK.
      MOVE "T" TO TL-MODE
+*>   Teleport Entity of a ground item that an earlier break left creeping or falling is not what these cases assert (41 section 3).
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 

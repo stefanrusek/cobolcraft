@@ -1,0 +1,336 @@
+*> Acceptance test US16-1, US16-2 (spec 002 FR-022, SC-009; 13 §7.2, §7.6): Options opens from the title screen and from the pause menu
+*> and returns there; an option's button shows "<name>: <value>" and changes the value at once (a flag, a named value, a number; view
+*> distance, sensitivity, FOV and GUI scale among them) and applies it (FOV degrees, turn per pixel, GUI scale limit); every option of
+*> the table (160) changed once is the same after a restart; a key option waits for a key and rebinds it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-F2US16-OPTIONS-SCREEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY CLOPTS.
+ COPY TESTLIB.
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-options-screen".
+ 01 WS-DIR-LENGTH          BINARY-LONG VALUE 32.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-VALUE-LENGTH        BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-D1                  PIC 9(5).
+ 01 WS-BEFORE.
+    05 WS-B-VALUE          PIC X(64) OCCURS 160 TIMES.
+ 01 WS-FILE-TEXT           PIC X(16384).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 16384.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-PATH                PIC X(256) VALUE "build/client-test-options-screen/options.txt".
+ 01 WS-LINE-VALUE          PIC X(64).
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-BIG                 PIC X(4096).
+ 01 WS-TURN                PIC 9V9999.
+ PROCEDURE DIVISION.
+     CALL "SYSTEM" USING "rm -rf build/client-test-options-screen && mkdir -p build/client-test-options-screen"
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE WS-DIR TO CL-GAME-DIR
+     MOVE WS-DIR-LENGTH TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     MOVE "N" TO TL-MODE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+
+*>   The title screen has an Options button; it opens the options screen on page 1.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-ACTION(WS-I) = ACT-OPTIONS
+             MOVE WS-I TO WS-FOUND
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US16-1 the title screen has an Options button" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE FUNCTION MIN(WS-FOUND, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-OPTIONS TO WS-ACTION
+     MOVE 0 TO WS-ARG
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-1 Options opens the options screen with the seven options of page 1 (and 3 buttons)" TO TL-CASE
+     MOVE SCR-OPTIONS TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16-1 the screen holds a title, seven options and Previous, Next and Done: 11 widgets" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE SM-WIDGET-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Render distance is row 3: one click makes it 15 at once, in the button, the memory and the file.
+     MOVE "renderDistance" TO WS-NAME
+     PERFORM FIND-ROW
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 a click on view distance 12 makes it 15" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "15" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-2 the button of the option reads renderDistance: 15" TO TL-CASE
+     MOVE "renderDistance: 15" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-ACTION(WS-I) = ACT-OPTION AND SM-W-ARG(WS-I) = WS-ROW
+             MOVE SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) TO TL-OBSERVED
+         END-IF
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-READ-FILE" USING WS-PATH WS-FILE-TEXT WS-CAPACITY WS-LENGTH
+     CALL "TEST-OPT-LINE" USING WS-FILE-TEXT WS-LENGTH WS-NAME WS-LINE-VALUE WS-FOUND
+     MOVE "acceptance US16-2 options.txt holds renderDistance:15 at once" TO TL-CASE
+     MOVE "15" TO TL-EXPECTED
+     MOVE WS-LINE-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A flag toggles, a named value goes on, FOV, sensitivity and GUI scale are applied.
+     MOVE "enableVsync" TO WS-NAME
+     PERFORM FIND-ROW
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 a click on the flag enableVsync turns it false" TO TL-CASE
+     MOVE "false" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "graphicsPreset" TO WS-NAME
+     PERFORM FIND-ROW
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 a click on graphicsPreset goes from fancy to fabulous" TO TL-CASE
+     MOVE '"fabulous"' TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "fov" TO WS-NAME
+     PERFORM FIND-ROW
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     MOVE "acceptance US16-2 a click on fov (stored 0.0, step 0.2) applies 78 degrees at once" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 78 TO TL-EXPECTED-N
+     MOVE CL-FOV-DEG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "mouseSensitivity" TO WS-NAME
+     PERFORM FIND-ROW
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     COMPUTE WS-TURN ROUNDED = CL-TURN
+     MOVE "acceptance US16-2 a click on mouseSensitivity (0.5 to 0.60) applies 0.2107 degrees per pixel" TO TL-CASE
+     MOVE 21070 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-TURN * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "guiScale" TO WS-NAME
+     PERFORM FIND-ROW
+     MOVE "1" TO WS-BIG
+     MOVE 1 TO WS-VALUE-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-BIG WS-VALUE-LENGTH WS-FOUND
+     CALL "OPTIONS-APPLY" USING CLIENT-STATE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-2 the guiScale option 1 limits the GUI scale of the 854 x 480 window to 1 (automatic: 2)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE CL-GUI-SCALE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "0" TO WS-BIG
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-BIG WS-VALUE-LENGTH WS-FOUND
+     CALL "OPTIONS-APPLY" USING CLIENT-STATE
+
+*>   An integer option past its maximum goes round to its minimum (30 + 3 > 32 gives 2); a page index equal to the page count is the last page.
+     MOVE "renderDistance" TO WS-NAME
+     PERFORM FIND-ROW
+     MOVE "30" TO WS-BIG
+     MOVE 2 TO WS-VALUE-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-BIG WS-VALUE-LENGTH WS-FOUND
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 a click on view distance 30 goes round to the minimum 2" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "2" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE 23 TO OP-PAGE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-1 the page index 23 of 23 pages is the last page, 23" TO TL-CASE
+     MOVE 22 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO OP-PAGE
+
+*>   Pages: Next and Previous; Previous is disabled on page 1 (state 2).
+     MOVE 0 TO OP-PAGE
+     MOVE ACT-OPTIONS-NEXT TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     MOVE "acceptance US16-1 Next shows page 2" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-OPTIONS-PREV TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     MOVE "acceptance US16-1 Previous shows page 1 again" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-OPTIONS-PREV TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-1 Previous on page 1 stays on page 1 (the last page is clamped likewise)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 99 TO OP-PAGE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-1 a page past the end is the last page, 23" TO TL-CASE
+     MOVE 22 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO OP-PAGE
+
+*>   Every option changed once is the same after a restart (SC-009).
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > OT-COUNT
+         IF OT-KIND(WS-ROW) NOT = "S" AND OT-KIND(WS-ROW) NOT = "K"
+             CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > OT-COUNT
+         MOVE OP-OPT-VALUE(WS-ROW) TO WS-B-VALUE(WS-ROW)
+     END-PERFORM
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "Alice" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE WS-DIR TO CL-GAME-DIR
+     MOVE WS-DIR-LENGTH TO CL-GAME-DIR-LENGTH
+     CALL "CL-START" USING CLIENT-STATE
+     MOVE "T" TO TL-MODE
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > OT-COUNT
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US16-2 after a restart " FUNCTION TRIM(OT-NAME(WS-ROW)) " has the value it was given"
+             DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-B-VALUE(WS-ROW) TO TL-EXPECTED
+         MOVE OP-OPT-VALUE(WS-ROW) TO TL-OBSERVED
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US16-2 after a restart the view distance is still 12 + 3 and applied FOV 70 + 40 x its stored value" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 1 TO TL-OBSERVED-N
+     IF CL-FOV-DEG < 70
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A key option waits for a key: inventory (E) is rebound to I.
+     MOVE "key_key.inventory" TO WS-NAME
+     PERFORM FIND-ROW
+     MOVE SCR-TITLE TO SM-SCREEN
+     MOVE ACT-OPTIONS TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     MOVE "acceptance US16-2 a key option waits for a key" TO TL-CASE
+     MOVE WS-ROW TO TL-EXPECTED-N
+     MOVE OP-REBIND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-2 the waiting key option's button reads key_key.inventory: > Press a key <" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "key_key.inventory: > Press a key <" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-ACTION(WS-I) = ACT-OPTION AND SM-W-ARG(WS-I) = WS-ROW
+             MOVE SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) TO TL-OBSERVED
+         END-IF
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO IN-KEY-PRESSED(CC-KEY-I + 1)
+     CALL "SCREEN-INPUT" USING CLIENT-STATE
+     MOVE 0 TO IN-KEY-PRESSED(CC-KEY-I + 1)
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 the pressed key is the inventory key: key.keyboard.i, and applied (73)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "key.keyboard.i 073" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE KB-CODE(KB-INVENTORY) TO WS-D1
+     STRING FUNCTION TRIM(WS-VALUE) " " WS-D1(3:3) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Escape while waiting unbinds; Done returns to the screen it was opened from; the pause menu has Options too.
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     MOVE 1 TO IN-KEY-PRESSED(CC-KEY-ESCAPE + 1)
+     CALL "SCREEN-INPUT" USING CLIENT-STATE
+     MOVE 0 TO IN-KEY-PRESSED(CC-KEY-ESCAPE + 1)
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 Escape while a key is awaited unbinds it (key.keyboard.unknown) and stays on the screen" TO TL-CASE
+     MOVE "key.keyboard.unknown 5" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-D1
+     STRING FUNCTION TRIM(WS-VALUE) " " WS-D1(5:1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE SCR-OPTIONS TO WS-W
+     MOVE WS-W TO WS-D1
+     MOVE "key.keyboard.unknown 8" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE ACT-OPTIONS-DONE TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US16-1 Done returns to the title screen" TO TL-CASE
+     MOVE SCR-TITLE TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SCR-PAUSE TO SM-SCREEN
+     MOVE ACT-OPTIONS TO WS-ACTION
+     CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+     MOVE 1 TO IN-KEY-PRESSED(CC-KEY-ESCAPE + 1)
+     CALL "SCREEN-INPUT" USING CLIENT-STATE
+     MOVE 0 TO IN-KEY-PRESSED(CC-KEY-ESCAPE + 1)
+     MOVE "acceptance US16-1 Options of the pause menu opens the screen and Escape returns to the pause menu" TO TL-CASE
+     MOVE SCR-PAUSE TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ FIND-ROW.
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > OT-COUNT
+         IF FUNCTION TRIM(OT-NAME(WS-I)) = FUNCTION TRIM(WS-NAME)
+             MOVE WS-I TO WS-ROW
+         END-IF
+     END-PERFORM.
+ END PROGRAM ACC-F2US16-OPTIONS-SCREEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLICK-OPTION.
+*> USING CLIENT-STATE, row: shows the page of the row on the options screen and clicks its button (SCREEN-ACTION with the widget's
+*> action and argument), as a click on it does.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW.
+     COMPUTE OP-PAGE = (L-ROW - 1) / 7
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE 0 TO WS-HIT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-ACTION(WS-I) = ACT-OPTION AND SM-W-ARG(WS-I) = L-ROW
+             MOVE WS-I TO WS-HIT
+         END-IF
+     END-PERFORM
+     IF WS-HIT > 0
+         CALL "SCREEN-ACTION" USING CLIENT-STATE SM-W-ACTION(WS-HIT) SM-W-ARG(WS-HIT)
+     END-IF
+     GOBACK.
+ END PROGRAM CLICK-OPTION.
+
+ COPY OPTTEST.
+ COPY CLTEST.

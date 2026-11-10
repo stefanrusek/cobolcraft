@@ -89,6 +89,42 @@ PACKS = {
         "assets/cobolcraft/textures/": b"",
         "assets/cobolcraft/.ds_store": b"junk",
     }),
+    # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
+    "cracks": ("folder", dict(
+        [("pack.mcmeta", new_style("Cracks pack"))]
+        + [("assets/minecraft/textures/block/destroy_stage_%d.png" % n, solid((20 * n, 0, 255 - 20 * n)))
+           for n in range(10)])),
+    # "guipack": GUI sprites (12 section 5.9): widget/button 24 x 8 with a nine_slice of border 3 (corners red,
+    # green, blue, yellow; edges grey; centre white), container/slot 18 x 18 plain.
+    "guipack": ("folder", {
+        "pack.mcmeta": new_style("GUI pack"),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": png(24, 8, lambda x, y: (
+            (255, 0, 0, 255) if x < 3 and y < 3 else (0, 255, 0, 255) if x >= 21 and y < 3 else
+            (0, 0, 255, 255) if x < 3 and y >= 5 else (255, 255, 0, 255) if x >= 21 and y >= 5 else
+            (128, 128, 128, 255) if x < 3 or x >= 21 or y < 3 or y >= 5 else (255, 255, 255, 255))),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "nine_slice", "width": 24, "height": 8, "border": 3}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((10, 160, 10), 18),
+    }),
+    # "guisides": container/slot with a nine_slice whose border is an object (left 1, top 2, right 3, bottom 4);
+    # "guitile": container/slot with a tile scaling and widget/button with a .mcmeta that is not JSON.
+    "guisides": ("folder", {
+        "pack.mcmeta": new_style("GUI sides pack"),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((10, 10, 160), 18),
+        "assets/minecraft/textures/gui/sprites/container/slot.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "nine_slice", "width": 18, "height": 18,
+                                 "border": {"left": 1, "top": 2, "right": 3, "bottom": 4}}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": solid((10, 10, 10), 8),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": b'{"other": 1}',
+    }),
+    "guitile": ("folder", {
+        "pack.mcmeta": new_style("GUI tile pack"),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((160, 10, 10), 18),
+        "assets/minecraft/textures/gui/sprites/container/slot.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "tile", "width": 18, "height": 18}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": solid((10, 10, 10), 8),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": b"not json",
+    }),
     "old": ("zip", {"pack.mcmeta": meta("Old pack", pack_format=10)}),
     "newer": ("folder", {"pack.mcmeta": meta("Newer pack", min_format=99, max_format=99)}),
     "mystery": ("folder", {"pack.mcmeta": meta("Mystery pack", min_format=97), "pack.png": b"not a png"}),

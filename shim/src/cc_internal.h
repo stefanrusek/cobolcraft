@@ -78,7 +78,7 @@ struct cc_vk_state {
     VkDescriptorSetLayout set_layout;
     VkDescriptorPool pool;
     VkPipelineLayout layout;
-    VkPipeline pipelines[3];
+    VkPipeline pipelines[4];
     VkSampler sampler;        /* clamp-to-edge */
     VkSampler repeat_sampler; /* repeat (cc_vk_texture_wrap) */
     VkSampler mip_sampler;        /* linear through the mip chain, clamp-to-edge */
