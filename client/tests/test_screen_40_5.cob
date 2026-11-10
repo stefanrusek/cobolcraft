@@ -94,6 +94,33 @@
      MOVE 64 TO TL-EXPECTED-N
      MOVE WS-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   40-5 section 1 (shared facts): 1.1 the type id opened is the merchant 19; 1.2 own slots and image height of merchant (3, 166) and beacon (1, 219); the wire form: the
+*>   out-of-stock flag of offer 3 (index 2) forces uses to max uses; the price comes from the base cost (1.3).
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-5§1 Shared facts: Open Screen type id 19 opens the merchant menu" TO TL-CASE
+     MOVE 19 TO TL-EXPECTED-N
+     MOVE BM-TYPE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 19 TO WS-D1
+     CALL "CONTAINER-LAYOUT" USING WS-D1 WS-D2 WS-D3 WS-D4 WS-N WS-OFFER
+     MOVE "acceptance US12 40-5§1 Shared facts: merchant has 3 own slots, image height 166, known" TO TL-CASE
+     MOVE 301661 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-D2 * 100000 + WS-D3 * 10 + WS-OFFER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-D1
+     CALL "CONTAINER-LAYOUT" USING WS-D1 WS-D2 WS-D3 WS-D4 WS-N WS-OFFER
+     MOVE "acceptance US12 40-5§1 Shared facts: beacon has 1 own slot, image height 219, known" TO TL-CASE
+     MOVE 102191 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-D2 * 100000 + WS-D3 * 10 + WS-OFFER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§1 Shared facts: an out-of-stock flag forces uses to max uses" TO TL-CASE
+     MOVE MO-MAX(3) TO TL-EXPECTED-N
+     MOVE MO-USES(3) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-5§1 Shared facts: the wire carries the base cost A (offer 1: 2), not the price" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE MO-A-COUNT(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      MOVE SPACES TO TL-OBSERVED
