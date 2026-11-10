@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 262.
+ 78 BI-LANG-COUNT           VALUE 282.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -531,7 +531,48 @@
     05 FILLER PIC X(128) VALUE "Primary Power".
     05 FILLER PIC X(48) VALUE "block.minecraft.beacon.secondary".
     05 FILLER PIC X(128) VALUE "Secondary Power".
+*>   The keys of the screens of docs/protocol/40-menus-7 (the tab titles) and 40-menus-8 (the sign and book editors).
+    05 FILLER PIC X(48) VALUE "sign.edit".
+    05 FILLER PIC X(128) VALUE "Edit Sign Message".
+    05 FILLER PIC X(48) VALUE "book.signButton".
+    05 FILLER PIC X(128) VALUE "Sign".
+    05 FILLER PIC X(48) VALUE "book.finalizeButton".
+    05 FILLER PIC X(128) VALUE "Sign and Close".
+    05 FILLER PIC X(48) VALUE "book.editTitle".
+    05 FILLER PIC X(128) VALUE "Enter Book Title:".
+    05 FILLER PIC X(48) VALUE "book.byAuthor".
+    05 FILLER PIC X(128) VALUE "by %1$s".
+    05 FILLER PIC X(48) VALUE "book.finalizeWarning".
+    05 FILLER PIC X(128) VALUE "Note! When you sign the book, it will no longer be editable.".
+    05 FILLER PIC X(48) VALUE "itemGroup.buildingBlocks".
+    05 FILLER PIC X(128) VALUE "Building Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.coloredBlocks".
+    05 FILLER PIC X(128) VALUE "Colored Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.natural".
+    05 FILLER PIC X(128) VALUE "Natural Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.functional".
+    05 FILLER PIC X(128) VALUE "Functional Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.redstone".
+    05 FILLER PIC X(128) VALUE "Redstone Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.hotbar".
+    05 FILLER PIC X(128) VALUE "Saved Hotbars".
+    05 FILLER PIC X(48) VALUE "itemGroup.search".
+    05 FILLER PIC X(128) VALUE "Search Items".
+    05 FILLER PIC X(48) VALUE "itemGroup.tools".
+    05 FILLER PIC X(128) VALUE "Tools & Utilities".
+    05 FILLER PIC X(48) VALUE "itemGroup.combat".
+    05 FILLER PIC X(128) VALUE "Combat".
+    05 FILLER PIC X(48) VALUE "itemGroup.foodAndDrink".
+    05 FILLER PIC X(128) VALUE "Food & Drinks".
+    05 FILLER PIC X(48) VALUE "itemGroup.ingredients".
+    05 FILLER PIC X(128) VALUE "Ingredients".
+    05 FILLER PIC X(48) VALUE "itemGroup.spawnEggs".
+    05 FILLER PIC X(128) VALUE "Spawn Eggs".
+    05 FILLER PIC X(48) VALUE "itemGroup.op".
+    05 FILLER PIC X(128) VALUE "Operator Utilities".
+    05 FILLER PIC X(48) VALUE "itemGroup.inventory".
+    05 FILLER PIC X(128) VALUE "Survival Inventory".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 262 TIMES.
+    05 BI-LANG OCCURS 282 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

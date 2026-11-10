@@ -80,13 +80,21 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RK-ITEM-NAME.
 *> USING CLIENT-STATE, item, text out (PIC X(512)), length out: the item's name from the language (08 section 10.8.1: an item that places a
-*> block by its block key, any other by its item key); an item outside the table is named as item 0.
+*> block by its block key, any other by its item key; the keys come from the open content set, else the stand-in table, CL-ITEM-INFO); an item
+*> the source does not know is named as item 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-ITEM                BINARY-LONG.
- 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY                 PIC X(100).
  01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ITEM                 BINARY-LONG.
@@ -94,14 +102,16 @@
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-TEXT L-LENGTH.
      MOVE L-ITEM TO WS-ITEM
-     IF WS-ITEM < 0 OR WS-ITEM >= CL-ITEM-COUNT
+     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
+     IF WS-KNOWN = 0
          MOVE 0 TO WS-ITEM
+         CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
      END-IF
      MOVE SPACES TO WS-KEY
-     IF CL-IT-STATE(WS-ITEM + 1) > 0
-         STRING "block.cobolcraft." FUNCTION TRIM(CL-IT-KEY(WS-ITEM + 1)) DELIMITED BY SIZE INTO WS-KEY
+     IF WS-BLOCK = 1
+         STRING "block." FUNCTION TRIM(WS-NS) "." FUNCTION TRIM(WS-PATH) DELIMITED BY SIZE INTO WS-KEY
      ELSE
-         STRING "item.cobolcraft." FUNCTION TRIM(CL-IT-KEY(WS-ITEM + 1)) DELIMITED BY SIZE INTO WS-KEY
+         STRING "item." FUNCTION TRIM(WS-NS) "." FUNCTION TRIM(WS-PATH) DELIMITED BY SIZE INTO WS-KEY
      END-IF
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
      CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH L-TEXT L-LENGTH

@@ -140,33 +140,45 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-MEMBER.
-*> USING tab, item, member out (1/0): the stand-in rule of the category tabs: building blocks the items that place a block, tools the tool classes, food and drinks the foods,
-*> ingredients the rest; item 0 is no stack; the other category tabs hold nothing.
+*> USING tab, item, member out (1/0): the stand-in rule of the category tabs over the item facts of CL-ITEM-INFO (the open content set, else the stand-in table): building blocks the items
+*> that place a block, tools the tool classes, food and drinks the foods, ingredients the rest; item 0 is no stack; the other category tabs hold nothing.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CLCONST.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ 01 WS-STATE.
+    05 FILLER              PIC X.
  LINKAGE SECTION.
+ COPY CLSTATE.
  01 L-TAB                  BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-MEMBER               BINARY-LONG.
- PROCEDURE DIVISION USING L-TAB L-ITEM L-MEMBER.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TAB L-ITEM L-MEMBER.
      MOVE 0 TO L-MEMBER
-     IF L-ITEM > 0 AND L-ITEM < CL-ITEM-COUNT
+     CALL "CL-ITEM-COUNT-NOW" USING WS-COUNT
+     IF L-ITEM > 0 AND L-ITEM < WS-COUNT
+         CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
          EVALUATE L-TAB
              WHEN 1
-                 IF CL-IT-STATE(L-ITEM + 1) > 0
+                 IF WS-BLOCK = 1
                      MOVE 1 TO L-MEMBER
                  END-IF
              WHEN 8
-                 IF CL-IT-TOOL(L-ITEM + 1) NOT = SPACE
+                 IF WS-TOOL NOT = SPACE
                      MOVE 1 TO L-MEMBER
                  END-IF
              WHEN 10
-                 IF CL-IT-FOOD(L-ITEM + 1) > 0
+                 IF WS-FOOD > 0
                      MOVE 1 TO L-MEMBER
                  END-IF
              WHEN 11
-                 IF CL-IT-STATE(L-ITEM + 1) = 0 AND CL-IT-TOOL(L-ITEM + 1) = SPACE AND CL-IT-FOOD(L-ITEM + 1) = 0
+                 IF WS-BLOCK = 0 AND WS-TOOL = SPACE AND WS-FOOD = 0
                      MOVE 1 TO L-MEMBER
                  END-IF
          END-EVALUATE
@@ -180,6 +192,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-ITEMS               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-MEMBER              BINARY-LONG.
  LINKAGE SECTION.
@@ -187,12 +200,13 @@
  01 L-TAB                  BINARY-LONG.
  01 L-SHOWN                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-TAB L-SHOWN.
+     CALL "CL-ITEM-COUNT-NOW" USING WS-ITEMS
      MOVE 0 TO L-SHOWN
      IF L-TAB = 6 OR L-TAB = 7 OR L-TAB = 14
          MOVE 1 TO L-SHOWN
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= CL-ITEM-COUNT
-         CALL "CREATIVE-MEMBER" USING L-TAB WS-I WS-MEMBER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-ITEMS
+         CALL "CREATIVE-MEMBER" USING CLIENT-STATE L-TAB WS-I WS-MEMBER
          IF WS-MEMBER = 1
              MOVE 1 TO L-SHOWN
          END-IF
@@ -209,6 +223,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-TAB                 BINARY-LONG.
+ 01 WS-ITEMS               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-MEMBER              BINARY-LONG.
  01 WS-Q                   PIC X(64).
@@ -225,6 +240,13 @@
  01 WS-J                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-KEEP                BINARY-LONG.
+ 01 WS-INS                 PIC X(16).
+ 01 WS-INP                 PIC X(40).
+ 01 WS-IMAX                BINARY-LONG.
+ 01 WS-IBLK                BINARY-LONG.
+ 01 WS-ITOOL               PIC X.
+ 01 WS-IFOOD               BINARY-LONG.
+ 01 WS-IKNOWN              BINARY-LONG.
  01 WS-NAMESPACE           PIC X(9) VALUE "minecraft".
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -250,8 +272,9 @@
      IF WS-KEEP = 1 AND WS-PLEN > 0
          CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-I WS-NAME WS-NAME-LENGTH
          MOVE FUNCTION LOWER-CASE(WS-NAME(1:WS-NAME-LENGTH)) TO WS-NAME
-         MOVE FUNCTION LOWER-CASE(CL-IT-KEY(WS-I + 1)) TO WS-KEY
-         MOVE 16 TO WS-KEY-LENGTH
+         CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-I WS-INS WS-INP WS-IMAX WS-IBLK WS-ITOOL WS-IFOOD WS-IKNOWN
+         MOVE FUNCTION LOWER-CASE(WS-INP) TO WS-KEY
+         MOVE 40 TO WS-KEY-LENGTH
          MOVE 0 TO WS-FOUND
          PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NAME-LENGTH - WS-PLEN + 1
              IF WS-NAME(WS-J:WS-PLEN) = WS-PATH(1:WS-PLEN)
@@ -269,6 +292,7 @@
      END-IF
      .
  MAIN-FLOW.
+     CALL "CL-ITEM-COUNT-NOW" USING WS-ITEMS
      MOVE 0 TO CR-COUNT
      MOVE 0 TO CR-SCROLL
      MOVE SPACES TO WS-Q WS-NS WS-PATH
@@ -302,11 +326,11 @@
      END-IF
      PERFORM VARYING WS-TAB FROM 1 BY 1 UNTIL WS-TAB > 13
          IF WS-TAB NOT = 6 AND WS-TAB NOT = 7
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= CL-ITEM-COUNT
-                 CALL "CREATIVE-MEMBER" USING WS-TAB WS-I WS-MEMBER
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-ITEMS
+                 CALL "CREATIVE-MEMBER" USING CLIENT-STATE WS-TAB WS-I WS-MEMBER
                  IF WS-MEMBER = 1
                      PERFORM FILTER
-                     IF WS-KEEP = 1 AND CR-COUNT < 128
+                     IF WS-KEEP = 1 AND CR-COUNT < 2048
                          ADD 1 TO CR-COUNT
                          MOVE WS-I TO CR-STACK-ITEM(CR-COUNT)
                          MOVE 1 TO CR-STACK-COUNT(CR-COUNT)
@@ -327,6 +351,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-ITEMS               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
@@ -347,6 +372,7 @@
  COPY CLSTATE.
  01 L-TAB                  BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-TAB.
+     CALL "CL-ITEM-COUNT-NOW" USING WS-ITEMS
      MOVE L-TAB TO CR-TAB
      MOVE 0 TO CR-COUNT
      MOVE 0 TO CR-SCROLL
@@ -376,9 +402,9 @@
              MOVE SPACES TO WS-QUERY
              CALL "CREATIVE-SEARCH" USING CLIENT-STATE WS-QUERY WS-QLEN
          WHEN 1
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= CL-ITEM-COUNT
-                 CALL "CREATIVE-MEMBER" USING L-TAB WS-I WS-MEMBER
-                 IF WS-MEMBER = 1 AND CR-COUNT < 128
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-ITEMS
+                 CALL "CREATIVE-MEMBER" USING CLIENT-STATE L-TAB WS-I WS-MEMBER
+                 IF WS-MEMBER = 1 AND CR-COUNT < 2048
                      ADD 1 TO CR-COUNT
                      MOVE WS-I TO CR-STACK-ITEM(CR-COUNT)
                      MOVE 1 TO CR-STACK-COUNT(CR-COUNT)
@@ -478,7 +504,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-COUNT L-BUTTON L-QUICK L-CLONE.
      MOVE 1 TO WS-MAX
      IF L-COUNT > 0
-         MOVE FUNCTION MAX(CL-IT-MAX(L-ITEM + 1), 1) TO WS-MAX
+         CALL "CREATIVE-MAX-STACK" USING CLIENT-STATE L-ITEM WS-MAX
      END-IF
      EVALUATE TRUE
          WHEN L-CLONE = 1
@@ -623,7 +649,7 @@
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-COUNT L-SLOT.
      IF L-COUNT > 0
-         MOVE FUNCTION MAX(CL-IT-MAX(L-ITEM + 1), 1) TO WS-MAX
+         CALL "CREATIVE-MAX-STACK" USING CLIENT-STATE L-ITEM WS-MAX
          MOVE L-ITEM TO PL-SLOT-ITEM(L-SLOT + 1)
          MOVE WS-MAX TO PL-SLOT-COUNT(L-SLOT + 1)
          MOVE 0 TO PL-SLOT-DAMAGE(L-SLOT + 1)
@@ -689,3 +715,25 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CREATIVE-HOTBAR-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREATIVE-MAX-STACK.
+*> USING CLIENT-STATE, item, maximum stack size out (at least 1): from the item facts (CL-ITEM-INFO).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-TOOL                PIC X.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-MAX.
+     CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-PATH WS-MAX WS-BLOCK WS-TOOL WS-FOOD WS-KNOWN
+     MOVE FUNCTION MAX(WS-MAX, 1) TO L-MAX
+     GOBACK.
+ END PROGRAM CREATIVE-MAX-STACK.
