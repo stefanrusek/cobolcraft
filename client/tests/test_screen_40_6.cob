@@ -273,6 +273,13 @@
      COMPUTE TL-EXPECTED-N = SCR-WORLD
      COMPUTE TL-OBSERVED-N = SM-SCREEN + BM-ID * 1000
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 258 TO WS-ENTITY
+     MOVE 6 TO WS-D2
+     PERFORM SEND-OPEN
+     MOVE "acceptance US12 40-6§4 a packet with 6 chest columns (above the 5 of the screen) is refused: no menu (coverage of the guard)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = SCR-WORLD
+     COMPUTE TL-OBSERVED-N = SM-SCREEN + BM-ID * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> "kind saddle body icon " of the entity type WS-TYPE in TL-OBSERVED, asserted.
