@@ -726,7 +726,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0435 [US11-core] Write acceptance test `core/tests/acc_f2us11_ore_drops.cob` (US11-3): ore blocks broken in survival drop their items through the loot tables (11 §9, 26) [FR-029, FR-030; SC-007]
 - [x] T0436 [US11-core] Implement the loot engine of 26 (conditions, functions, rolls) in `core/src/loot.cob`
 - [x] T0437 [US11-core] Implement block drops from loot tables in `core/src/block-drops.cob`
-- [ ] T0438 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0438 [US11-core] Gate: run `make gate-core` and record the command and real output (`make gate-core` on 002-lane-loot after merging 002-client-polish (ore files T0430-T0434 present): lint 425 files 0 failed, `passed 3338 failed 0`, `coverage: 99 objects, 0 uncovered lines`, exit 0; log scratchpad/loot2/gate-core-4.log)
 
 #### Phase 39: US11-core (f) — generation pipeline and the 24-section stream
 
