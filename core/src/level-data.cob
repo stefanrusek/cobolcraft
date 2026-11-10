@@ -18,8 +18,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LEVEL-DAT-WRITE.
 *> No parameters: writes <world>/level.dat (07 §9.2): DataVersion, LevelName, GameMode, Time,
-*> Spawn {Dimension (always cobolcraft:main, standin §5.2), X, Y, Z, Yaw} and Weather (an entry
-*> named by the dimension key, {Kind, Remaining}, for every enabled dimension that has weather).
+*> Spawn {Dimension (always cobolcraft:main, standin §5.2), X, Y, Z, Yaw} and Weather (the five fields of
+*> the shared state of 33 section 10 and an entry named by the dimension key, {Kind, Remaining}, for every enabled dimension
+*> that has weather; the kind is the skin of the flags).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -35,6 +36,8 @@
  01 WS-FLOAT               FLOAT-SHORT.
  01 WS-D                   BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -103,16 +106,39 @@
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      MOVE "Weather" TO WN MOVE 7 TO WL
      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+*>   The shared state of 33 section 10 (07 section 9.2 "Standard world"), then the cobolcraft entry of each dimension
+*>   with weather, its kind being the skin of the flags (07 section 9.2 "Cobolcraft world").
+     MOVE "clear_weather_time" TO WN MOVE 18 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL CW-CLEAR-TIME
+     MOVE "rain_time" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL CW-RAIN-TIME
+     MOVE "thunder_time" TO WN MOVE 12 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL CW-THUNDER-TIME
+     MOVE "raining" TO WN MOVE 7 TO WL
+     MOVE CW-RAINING TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+     MOVE "thundering" TO WN MOVE 10 TO WL
+     MOVE CW-THUNDERING TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+     MOVE WK-CLEAR TO WS-KIND
+     MOVE CW-CLEAR-TIME TO WS-LEFT
+     IF CW-RAINING = 1
+         MOVE WK-DRIZZLE TO WS-KIND
+         MOVE CW-RAIN-TIME TO WS-LEFT
+         IF CW-THUNDERING = 1
+             MOVE WK-HAILSTORM TO WS-KIND
+         END-IF
+     END-IF
      PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > CW-DIM-COUNT
          MOVE CW-DIM(WS-D) TO WS-DIM
          IF DM-WEATHER(WS-DIM) = 1
              CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER DM-KEY(WS-DIM)
                  DM-KEY-LENGTH(WS-DIM)
              MOVE "Kind" TO WN MOVE 4 TO WL
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WK-KEY(CW-WEATHER-KIND(WS-DIM))
-                 WK-KEY-LENGTH(CW-WEATHER-KIND(WS-DIM))
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WK-KEY(WS-KIND)
+                 WK-KEY-LENGTH(WS-KIND)
              MOVE "Remaining" TO WN MOVE 9 TO WL
-             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL CW-WEATHER-LEFT(WS-DIM)
+             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-LEFT
              CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
          END-IF
      END-PERFORM
@@ -154,6 +180,9 @@
  01 WS-TICKS               BINARY-DOUBLE.
  01 WS-HAS-TIME            PIC 9 VALUE 0.
  01 WS-HAS-CLOCK           PIC 9 VALUE 0.
+ 01 WS-HAS-WEATHER         PIC 9 VALUE 0.
+ 01 WS-LEGACY-KIND         BINARY-LONG.
+ 01 WS-LEGACY-LEFT         BINARY-LONG.
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -163,7 +192,7 @@
          MOVE 1 TO WS-READY
      END-IF
      CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
-     MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK
+     MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK WS-HAS-WEATHER WS-LEGACY-KIND
      CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
      PERFORM UNTIL PB-ERROR = 1
          MOVE SPACES TO WN
@@ -238,7 +267,8 @@
                      END-EVALUATE
                  END-PERFORM
              WHEN WN = "Weather" AND WS-TYPE = 10
-*>               One compound per dimension key: {Kind, Remaining}.
+*>               The five fields of the shared state, else one compound per dimension key: {Kind, Remaining}
+*>               (a world of the cobolcraft form before the shared state: the kind is read as the flags).
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
                      CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
@@ -246,45 +276,78 @@
                      IF WS-INNER-TYPE = 0
                          EXIT PERFORM
                      END-IF
-                     MOVE 0 TO WS-DIM WS-KIND
-                     MOVE WEATHER-UNTIL-CHANGED TO WS-LEFT
-                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
-                         IF DM-KEY(WS-I) = WN
-                             MOVE WS-I TO WS-DIM
-                         END-IF
-                     END-PERFORM
-                     PERFORM UNTIL PB-ERROR = 1
-                         MOVE SPACES TO WN
-                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
-                             WS-NAME-CAPACITY WL
-                         IF WS-INNER-TYPE = 0
-                             EXIT PERFORM
-                         END-IF
-                         EVALUATE TRUE
-                             WHEN WN = "Kind" AND WS-INNER-TYPE = 8
-                                 MOVE SPACES TO WS-KEY
-                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-NAME-CAPACITY
-                                     WS-KEY-LENGTH
-                                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WEATHER-KIND-COUNT
-                                     IF WK-KEY(WS-I) = WS-KEY
-                                         MOVE WS-I TO WS-KIND
-                                     END-IF
-                                 END-PERFORM
-                             WHEN WN = "Remaining" AND WS-INNER-TYPE = 3
-                                 CALL "PB-GET-INT" USING PB-BUFFER WS-LEFT
-                             WHEN OTHER
-                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
-                         END-EVALUATE
-                     END-PERFORM
-                     IF WS-DIM > 0 AND WS-KIND > 0
-                         MOVE WS-KIND TO CW-WEATHER-KIND(WS-DIM)
-                         MOVE WS-LEFT TO CW-WEATHER-LEFT(WS-DIM)
-                     END-IF
+                     EVALUATE TRUE
+                         WHEN WN = "clear_weather_time" AND WS-INNER-TYPE = 3
+                             CALL "PB-GET-INT" USING PB-BUFFER CW-CLEAR-TIME
+                             MOVE 1 TO WS-HAS-WEATHER
+                         WHEN WN = "rain_time" AND WS-INNER-TYPE = 3
+                             CALL "PB-GET-INT" USING PB-BUFFER CW-RAIN-TIME
+                         WHEN WN = "thunder_time" AND WS-INNER-TYPE = 3
+                             CALL "PB-GET-INT" USING PB-BUFFER CW-THUNDER-TIME
+                         WHEN WN = "raining" AND WS-INNER-TYPE = 1
+                             CALL "PB-GET-BYTE" USING PB-BUFFER WS-INT
+                             MOVE 0 TO CW-RAINING
+                             IF WS-INT NOT = 0
+                                 MOVE 1 TO CW-RAINING
+                             END-IF
+                         WHEN WN = "thundering" AND WS-INNER-TYPE = 1
+                             CALL "PB-GET-BYTE" USING PB-BUFFER WS-INT
+                             MOVE 0 TO CW-THUNDERING
+                             IF WS-INT NOT = 0
+                                 MOVE 1 TO CW-THUNDERING
+                             END-IF
+                         WHEN WS-INNER-TYPE = 10
+                             MOVE 0 TO WS-DIM WS-KIND
+                             MOVE WEATHER-UNTIL-CHANGED TO WS-LEFT
+                             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
+                                 IF DM-KEY(WS-I) = WN
+                                     MOVE WS-I TO WS-DIM
+                                 END-IF
+                             END-PERFORM
+                             PERFORM UNTIL PB-ERROR = 1
+                                 MOVE SPACES TO WN
+                                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                                     WS-NAME-CAPACITY WL
+                                 IF WS-INNER-TYPE = 0
+                                     EXIT PERFORM
+                                 END-IF
+                                 EVALUATE TRUE
+                                     WHEN WN = "Kind" AND WS-INNER-TYPE = 8
+                                         MOVE SPACES TO WS-KEY
+                                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-NAME-CAPACITY
+                                             WS-KEY-LENGTH
+                                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WEATHER-KIND-COUNT
+                                             IF WK-KEY(WS-I) = WS-KEY
+                                                 MOVE WS-I TO WS-KIND
+                                             END-IF
+                                         END-PERFORM
+                                     WHEN WN = "Remaining" AND WS-INNER-TYPE = 3
+                                         CALL "PB-GET-INT" USING PB-BUFFER WS-LEFT
+                                     WHEN OTHER
+                                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                                 END-EVALUATE
+                             END-PERFORM
+                             IF WS-DIM > 0 AND WS-KIND > 0
+                                 MOVE WS-KIND TO WS-LEGACY-KIND
+                                 MOVE WS-LEFT TO WS-LEGACY-LEFT
+                             END-IF
+                         WHEN OTHER
+                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                     END-EVALUATE
                  END-PERFORM
              WHEN OTHER
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
          END-EVALUATE
      END-PERFORM
+*>   A weather of the cobolcraft form of before the shared state: the kind is the flags, the remaining time the clear time or
+*>   the rain and thunder time (until changed: the longest time).
+     IF WS-HAS-WEATHER = 0 AND WS-LEGACY-KIND > 0
+         IF WS-LEGACY-LEFT < 0
+             MOVE 2147483647 TO WS-LEGACY-LEFT
+         END-IF
+         CALL "WEATHER-SET-KIND" USING WS-LEGACY-KIND WS-LEGACY-LEFT
+     END-IF
+     CALL "WEATHER-LEVELS-LOAD"
 *>   The time of day: the clock's total_ticks modulo the day, else the Time of a world of feature 001,
 *>   re-based onto the standard day.
      EVALUATE TRUE

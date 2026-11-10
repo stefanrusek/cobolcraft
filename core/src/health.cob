@@ -248,6 +248,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY RULES.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
@@ -257,6 +258,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
+ 01 WS-THROW               BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-CAUSE                BINARY-LONG.
@@ -286,17 +288,27 @@
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
      CALL "CONSOLE-TEXT" USING PB-TEXT
-*>   Inventory.dropAll (41 section 2.4): every non-empty main slot in index order is dropped with the circle motion of the
-*>   player's own random source, pickup delay 40, no thrower; the patch handle goes with the stack.
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 35
-         IF PL-SLOT-COUNT(WS-ROW, WS-S + 1) > 0
+*>   Inventory.dropAll (41 section 2.4): every non-empty slot (main 0 to 35, armor and off-hand 36 to 40) in index order is
+*>   dropped with the circle motion of the player's own random source, pickup delay 40, no thrower; the patch handle goes with it.
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 40
+         MOVE 0 TO WS-COUNT
+         IF WS-S < 36
              MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
              MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
              MOVE PL-SLOT-VAR(WS-ROW, WS-S + 1) TO WS-VAR
              MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1) PL-SLOT-VAR(WS-ROW, WS-S + 1)
+         ELSE
+             MOVE MN-EQUIP-ITEM(WS-ROW, WS-S - 35) TO WS-ITEM
+             MOVE MN-EQUIP-COUNT(WS-ROW, WS-S - 35) TO WS-COUNT
+             MOVE MN-EQUIP-VAR(WS-ROW, WS-S - 35) TO WS-VAR
+             MOVE 0 TO MN-EQUIP-ITEM(WS-ROW, WS-S - 35) MN-EQUIP-COUNT(WS-ROW, WS-S - 35)
+                 MN-EQUIP-VAR(WS-ROW, WS-S - 35)
+         END-IF
+         IF WS-COUNT > 0
              CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
          END-IF
      END-PERFORM
+     CALL "MENU-RELEASE" USING WS-ROW WS-THROW
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
@@ -547,6 +559,7 @@
      IF PSB-ACTION NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-DEAD
          GOBACK
      END-IF
+     CALL "MENU-FORCE-CLOSE" USING WS-ROW
      MOVE PS-ALIVE TO PL-STATE(WS-ROW)
      MOVE RULE-MAX-HEALTH TO PL-HEALTH(WS-ROW)
      MOVE RULE-MAX-FOOD TO PL-FOOD(WS-ROW)

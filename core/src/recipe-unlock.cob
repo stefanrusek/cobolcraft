@@ -6,7 +6,8 @@
 *> recipe becomes known when one criterion of its recipe advancement holds (27 5.9: the criteria are one OR group): a "tick"
 *> criterion at the join, an "inventory_changed" criterion when every item predicate of it is held by some inventory slot. The
 *> check runs at the join and whenever the inventory differs from the one the last check ran over (CRAFT-REFRESH-ALL, after
-*> every packet and tick). Persistence of the known set is not done here.
+*> every packet and tick). The known set, the highlight set and the
+*> settings of a returning player come from KX-BOOK-FETCH (core/src/player-state.cob) after the built-in recipes.
 *>
 *> Entry points:
 *>   RECBOOK-JOIN USING player row            an empty book, the recipes known from the start and the unlocks of the first
@@ -527,6 +528,7 @@
              CALL "RECBOOK-SEEN" USING L-ROW WS-K
          END-IF
      END-PERFORM
+     CALL "KX-BOOK-FETCH" USING L-ROW
      CALL "RECIPE-UNLOCK-CHECK" USING L-ROW
      MOVE PL-INVENTORY(L-ROW) TO RB-INVENTORY(L-ROW)
      INITIALIZE PB-RECIPE-BOOK-SETTINGS
