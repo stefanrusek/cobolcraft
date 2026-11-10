@@ -696,9 +696,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 38: US11-core (e) — ores and ore drops
 
-- [ ] T0430 [US11-core] Write acceptance test `core/tests/acc_f2us11_ores.cob` (US11-2): each ore's height distribution (uniform or triangle), vein size and count per chunk, depth and biome limits (11) [FR-029, FR-030; SC-007]
-- [ ] T0431 [US11-core] Implement ore placement in `core/src/ores.cob`
-- [ ] T0432 [US11-core] Write edge-case test `core/tests/test_ore_edges.cob` (spec edge case): an ore exposed in a cave or aquifer keeps its exposure rule (11), and a vein crossing a chunk border is placed identically from either chunk
+- [x] T0430 [US11-core] Write acceptance test `core/tests/acc_f2us11_ores.cob` (US11-2): each ore's height distribution (uniform or triangle), vein size and count per chunk, depth and biome limits (11) [FR-029, FR-030; SC-007]
+- [x] T0431 [US11-core] Implement ore placement in `core/src/ores.cob`
+- [x] T0432 [US11-core] Write edge-case test `core/tests/test_ore_edges.cob` (spec edge case): an ore exposed in a cave or aquifer keeps its exposure rule (11), and a vein crossing a chunk border is placed identically from either chunk
 - [ ] T0433 [US11-core] Write test `core/tests/test_ore_veins.cob`: the large ore vein and the copper/iron vein noise of 11
 - [ ] T0434 [US11-core] Implement the large veins in `core/src/ores.cob`
 - [ ] T0435 [US11-core] Write acceptance test `core/tests/acc_f2us11_ore_drops.cob` (US11-3): ore blocks broken in survival drop their items through the loot tables (11 §9, 26) [FR-029, FR-030; SC-007]
