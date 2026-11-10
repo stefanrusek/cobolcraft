@@ -34,8 +34,7 @@
     05 WS-DY               FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      CALL "TEST-STEP" USING CLIENT-STATE
@@ -79,7 +78,7 @@
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE "acceptance US4-6 given the starting inventory when E is pressed then the inventory "
-         & "screen shows its title and all 36 slots with their counts, an icon for each of the 10 "
+         & "screen shows its title and all 46 slots with their counts, an icon for each of the 10 "
          & "stacks" TO TL-CASE
      PERFORM SLOTS-TEXT
      MOVE TL-OBSERVED(1:40) TO WS-TEXT
@@ -105,7 +104,7 @@
      MOVE RL-IC-COUNT TO WS-E
      STRING FUNCTION TRIM(TL-OBSERVED) " icons " FUNCTION TRIM(WS-E) DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "screen 6 36 Inventory 8: 9: 10: icons 60" TO TL-EXPECTED
+     MOVE "screen 6 46 Crafting 8: 9: 10: icons 60" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 0 TO WS-ARG
@@ -124,7 +123,7 @@
          & "the 64 greystone go to the cursor and then into slot 10, each click sent as Container "
          & "Click with the changed slot and the cursor" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "12000100000000010000000102400000 0x0/64x2 120001000a000001000a010240000000 64x2/0x0"
+     MOVE "12000100240000010024000102400000 0x0/64x2 120001000a000001000a010240000000 64x2/0x0"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

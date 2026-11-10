@@ -11,6 +11,7 @@
  78 SCR-WORLD               VALUE 5.
  78 SCR-INVENTORY           VALUE 6.
  78 SCR-CRAFTING            VALUE 7.
+ 78 SCR-BENCH               VALUE 19.  *> the crafting-bench menu (Open Screen menu type 12; screens/bench.cob)
  78 SCR-CHAT                VALUE 8.
  78 SCR-PAUSE               VALUE 9.
  78 SCR-DEATH               VALUE 10.

@@ -1,0 +1,415 @@
+*> The inventory screen (US4-6, US9; client-surface §3 E; data-model §4 Inventory; 12 §5.6a; 13 §3.5; 09 §3.2 Container Click 0x12,
+*> Set Creative Mode Slot 0x39): the 46-slot inventory menu on the 176 x 166 sheet of the built-in pack (or the pack's inventory
+*> texture): the title "Crafting" at (97, 6), armour at (8, 8 + 18 i), the result at (154, 28), the 2 x 2 grid at (98 + 18 col, 18 + 18
+*> row), the main inventory at (8 + 18 col, 84 + 18 row), the hotbar at (8 + 18 i, 142) and the off hand at (77, 62), each an item slot
+*> widget (18 x 18 around the 16 x 16 icon cell, bare: the sheet carries the wells) that moves items when clicked, and the stack on
+*> the cursor drawn at the pointer. MENU-BUILD lays out either menu (type 0 the inventory menu, 12 the crafting bench, screens/bench.cob).
+*> The widget argument names the stack (menu.cob); the slot number that Container Click carries is the menu's (MENU-SLOT-WIRE).
+*> INVENTORY-CLICK carries out a left click on a slot: the click is predicted on the replica (INV-PICKUP), then sent, in survival as
+*> Container Click with the changed slot and the cursor, in creative as Set Creative Mode Slot of the changed slot (the cursor is the
+*> client's).
+*> INVENTORY-INPUT (each frame on this screen, in play) does the throws of standin §9.1 (client-surface §3): Q over a slot sends
+*> Container Click THROW (4) button 0, Ctrl+Q button 1, with the slot's predicted stack; a left (or right) button released outside
+*> the window while a stack is carried, which ends a click there or a drag out of it, sends PICKUP (0) at slot -999 button 0 (1), the
+*> whole carried stack (one item) predicted gone. The window is the sheet's rectangle.
+*> INVENTORY-CLOSE (when the screen is left, in play) puts the carried stack back into the slots as the server's INV-ADD does (stacks
+*> of its item first, then empty slots; the rest is thrown by the server), in creative sends Set Creative Mode Slot of each slot it
+*> went to, and sends Container Close.
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INVENTORY-BUILD.
+*> USING CLIENT-STATE, GUI width, GUI height.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GW                   BINARY-LONG.
+ 01 L-GH                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     CALL "MENU-BUILD" USING CLIENT-STATE L-GW L-GH WS-TYPE
+     GOBACK.
+ END PROGRAM INVENTORY-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SLOT-ADD.
+*> USING CLIENT-STATE, widget argument, left, top (the sheet's origin), slot x, slot y (the item cell, in the sheet): one bare
+*> item slot widget of 18 x 18 GUI pixels, 1 pixel out of the cell on each side.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG VALUE ACT-SLOT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SY                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-LEFT L-TOP L-SX L-SY.
+     COMPUTE WS-X = L-LEFT + L-SX - 1
+     COMPUTE WS-Y = L-TOP + L-SY - 1
+     CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE L-ARG WS-X WS-Y WS-ACTION
+     MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+     MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
+     GOBACK.
+ END PROGRAM MENU-SLOT-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-BUILD.
+*> USING CLIENT-STATE, GUI width, GUI height, menu type (0 inventory menu, 12 crafting bench).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE WK-LABEL.
+ 01 WS-KEY                 PIC X(80) VALUE "cobolcraft.screen.crafting.title".
+ 01 WS-KEY-LENGTH          BINARY-LONG VALUE 32.
+ 01 WS-NONE                BINARY-LONG VALUE ACT-NONE.
+ 01 WS-CURSOR              BINARY-LONG VALUE 36.
+ 01 WS-SHEET-KIND          BINARY-LONG VALUE WK-SHEET.
+ 01 WS-SHEET-ROW           BINARY-LONG.
+ 01 WS-W                   BINARY-LONG VALUE 176.
+ 01 WS-H                   BINARY-LONG VALUE 166.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-LENGTH              BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-Z1                  BINARY-LONG VALUE 0.
+ 01 WS-Z2                  BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GW                   BINARY-LONG.
+ 01 L-GH                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH L-TYPE.
+     COMPUTE WS-LEFT = (L-GW - 176) / 2
+     COMPUTE WS-TOP = (L-GH - 166) / 2
+     MOVE SPACES TO WS-TEXT
+     MOVE GSP-SHEET-INVENTORY TO WS-SHEET-ROW
+     IF L-TYPE = 12
+         MOVE GSP-SHEET-BENCH TO WS-SHEET-ROW
+     END-IF
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-SHEET-KIND WS-NONE WS-SHEET-ROW WS-LEFT WS-TOP WS-W WS-H
+         WS-TEXT WS-LENGTH WS-STATE
+*>   The title: "Crafting" at x 97 in the inventory, 29 in the bench; y 6.
+     COMPUTE WS-X = WS-LEFT + 97
+     IF L-TYPE = 12
+         COMPUTE WS-X = WS-LEFT + 29
+     END-IF
+     COMPUTE WS-Y = WS-TOP + 6
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z2 WS-KEY WS-KEY-LENGTH
+*>   The main inventory and the hotbar, the same in both menus.
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 35
+         IF WS-I < 9
+             MOVE WS-I TO WS-C
+             MOVE 142 TO WS-Y
+         ELSE
+             COMPUTE WS-R = (WS-I - 9) / 9
+             COMPUTE WS-C = WS-I - 9 - WS-R * 9
+             COMPUTE WS-Y = 84 + WS-R * 18
+         END-IF
+         COMPUTE WS-X = 8 + WS-C * 18
+         MOVE WS-I TO WS-ARG
+         CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+     END-PERFORM
+     IF L-TYPE = 12
+*>       The result and the 3 x 3 grid.
+         MOVE 105 TO WS-ARG
+         MOVE 124 TO WS-X
+         MOVE 35 TO WS-Y
+         CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
+             COMPUTE WS-ARG = 106 + WS-I
+             COMPUTE WS-R = WS-I / 3
+             COMPUTE WS-C = WS-I - WS-R * 3
+             COMPUTE WS-X = 30 + 18 * WS-C
+             COMPUTE WS-Y = 17 + 18 * WS-R
+             CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+         END-PERFORM
+     ELSE
+*>       Armour, the result, the 2 x 2 grid and the off hand.
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-ARG = 101 + WS-I
+             MOVE 8 TO WS-X
+             COMPUTE WS-Y = 8 + 18 * WS-I
+             CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+         END-PERFORM
+         MOVE 105 TO WS-ARG
+         MOVE 154 TO WS-X
+         MOVE 28 TO WS-Y
+         CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-ARG = 106 + WS-I
+             COMPUTE WS-R = WS-I / 2
+             COMPUTE WS-C = WS-I - WS-R * 2
+             COMPUTE WS-X = 98 + 18 * WS-C
+             COMPUTE WS-Y = 18 + 18 * WS-R
+             CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+         END-PERFORM
+         MOVE 37 TO WS-ARG
+         MOVE 77 TO WS-X
+         MOVE 62 TO WS-Y
+         CALL "MENU-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-LEFT WS-TOP WS-X WS-Y
+     END-IF
+     IF PL-CARRIED-COUNT > 0
+         COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE - 8
+         COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE - 8
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-CURSOR WS-X WS-Y WS-NONE
+     END-IF
+     GOBACK.
+ END PROGRAM MENU-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INVENTORY-CLICK.
+*> USING CLIENT-STATE, widget argument (menu.cob).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-WIRE                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-CONTAINER           BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ 01 WS-BUTTON              BINARY-LONG VALUE 0.
+ 01 WS-PICKUP              BINARY-LONG VALUE 0.
+ 01 WS-CHANGED             BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "MENU-SLOT-WIRE" USING CLIENT-STATE L-ARG WS-WIRE
+     IF WS-WIRE >= 0
+         CALL "INV-PICKUP" USING CLIENT-STATE L-ARG
+         CALL "MENU-STACK-GET" USING CLIENT-STATE L-ARG WS-COUNT WS-ITEM WS-DAMAGE
+         CALL "PB-RESET" USING PB-BUFFER
+         MOVE 0 TO WS-CONTAINER
+         MOVE PL-INV-STATE-ID TO WS-STATE-ID
+         IF SM-SCREEN = SCR-BENCH
+             MOVE BM-ID TO WS-CONTAINER
+             MOVE BM-STATE-ID TO WS-STATE-ID
+         END-IF
+         IF PL-MODE = 1
+             CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-WIRE WS-COUNT WS-ITEM
+         ELSE
+             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-WIRE WS-BUTTON
+                 WS-PICKUP WS-CHANGED WS-COUNT WS-ITEM PL-CARRIED-COUNT PL-CARRIED-ITEM
+         END-IF
+         CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM INVENTORY-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INVENTORY-INPUT.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-WIRE                BINARY-LONG.
+ 01 WS-BUTTON              BINARY-LONG.
+ 01 WS-MODS                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-NEW-COUNT           BINARY-LONG.
+ 01 WS-THROW               BINARY-LONG VALUE 4.
+ 01 WS-KEYC                BINARY-LONG.
+ 01 WS-OFF-BUTTON          BINARY-LONG VALUE 40.
+ 01 WS-SWAP-TYPE           BINARY-LONG VALUE 2.
+ 01 WS-PICKUP              BINARY-LONG VALUE 0.
+ 01 WS-CHANGED             BINARY-LONG VALUE 1.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ 01 WS-NONE3               BINARY-LONG VALUE 0.
+ 01 WS-OUTSIDE             BINARY-LONG VALUE -999.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-CONTAINER           BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ 01 WS-OFF-COUNT           BINARY-LONG.
+ 01 WS-OFF-ITEM            BINARY-LONG.
+ 01 WS-OFF-DAMAGE          BINARY-LONG.
+ 01 WS-OFF-ARG             BINARY-LONG VALUE 37.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE
+     COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE
+     CALL "MENU-CONTAINER" USING CLIENT-STATE WS-CONTAINER WS-STATE-ID
+*>   Q over a slot (the slot widget under the cursor) holding a stack.
+     MOVE KB-CODE(KB-DROP) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1
+         PERFORM FIND-SLOT
+         IF WS-ARG >= 0
+             CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+         END-IF
+         IF WS-ARG >= 0 AND WS-COUNT > 0
+             COMPUTE WS-MODS = IN-MODS / CC-MOD-CONTROL
+             MOVE 1 TO WS-I
+             MOVE 0 TO WS-BUTTON
+             IF FUNCTION MOD(WS-MODS, 2) = 1
+                 MOVE WS-COUNT TO WS-I
+                 MOVE 1 TO WS-BUTTON
+             END-IF
+             COMPUTE WS-NEW-COUNT = WS-COUNT - WS-I
+             CALL "MENU-STACK-PUT" USING CLIENT-STATE WS-ARG WS-NEW-COUNT WS-ITEM WS-DAMAGE
+             CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+             CALL "MENU-SLOT-WIRE" USING CLIENT-STATE WS-ARG WS-WIRE
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-WIRE WS-BUTTON
+                 WS-THROW WS-CHANGED WS-COUNT WS-ITEM PL-CARRIED-COUNT PL-CARRIED-ITEM
+             CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         END-IF
+     END-IF
+*>   F over a slot with an empty cursor swaps it with the off hand (13 section 4): Container Click SWAP (2) with button 40, the hovered
+*>   slot changed, predicted here.
+     MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND PL-CARRIED-COUNT = 0
+         PERFORM FIND-SLOT
+         IF WS-ARG >= 0 AND WS-ARG <= 35
+             CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+             CALL "MENU-STACK-GET" USING CLIENT-STATE WS-OFF-ARG WS-OFF-COUNT WS-OFF-ITEM WS-OFF-DAMAGE
+             CALL "MENU-STACK-PUT" USING CLIENT-STATE WS-OFF-ARG WS-COUNT WS-ITEM WS-DAMAGE
+             CALL "MENU-STACK-PUT" USING CLIENT-STATE WS-ARG WS-OFF-COUNT WS-OFF-ITEM WS-OFF-DAMAGE
+             CALL "MENU-SLOT-WIRE" USING CLIENT-STATE WS-ARG WS-WIRE
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-WIRE WS-OFF-BUTTON
+                 WS-SWAP-TYPE WS-CHANGED WS-OFF-COUNT WS-OFF-ITEM PL-CARRIED-COUNT PL-CARRIED-ITEM
+             CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         END-IF
+     END-IF
+*>   A button released outside the sheet while carrying.
+     IF PL-CARRIED-COUNT > 0
+             AND (IN-BUTTON-RELEASED(CC-BUTTON-LEFT + 1) = 1
+             OR IN-BUTTON-RELEASED(CC-BUTTON-RIGHT + 1) = 1)
+         COMPUTE WS-X0 = IN-WIN-W / CL-GUI-SCALE / 2 - 88
+         COMPUTE WS-Y0 = IN-WIN-H / CL-GUI-SCALE / 2 - 83
+         MOVE 0 TO WS-INSIDE
+         IF WS-X >= WS-X0 AND WS-X < WS-X0 + 176 AND WS-Y >= WS-Y0 AND WS-Y < WS-Y0 + 166
+             MOVE 1 TO WS-INSIDE
+         END-IF
+         IF WS-INSIDE = 0
+             MOVE 0 TO WS-BUTTON
+             MOVE PL-CARRIED-COUNT TO WS-COUNT
+             IF IN-BUTTON-RELEASED(CC-BUTTON-LEFT + 1) = 0
+                 MOVE 1 TO WS-BUTTON WS-COUNT
+             END-IF
+             SUBTRACT WS-COUNT FROM PL-CARRIED-COUNT
+             IF PL-CARRIED-COUNT = 0
+                 MOVE 0 TO PL-CARRIED-ITEM
+             END-IF
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-OUTSIDE WS-BUTTON
+                 WS-PICKUP WS-NONE WS-NONE2 WS-NONE3 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         END-IF
+     END-IF
+     GOBACK.
+*> WS-ARG: the argument of the slot widget under the cursor, -1 for none.
+ FIND-SLOT.
+     MOVE -1 TO WS-ARG
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) NOT = 36
+                 AND WS-X >= SM-W-X(WS-I) AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I)
+                 AND WS-Y >= SM-W-Y(WS-I) AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
+             MOVE SM-W-ARG(WS-I) TO WS-ARG
+         END-IF
+     END-PERFORM
+     .
+ END PROGRAM INVENTORY-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. INVENTORY-CLOSE.
+*> USING CLIENT-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-PASS                BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-CONTAINER           BINARY-LONG.
+ 01 WS-STATE-ID            BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE CL-IT-MAX(PL-CARRIED-ITEM + 1) TO WS-MAX
+*>   Pass 1: stacks of the carried item below the maximum; pass 2: empty slots.
+     PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36 OR PL-CARRIED-COUNT = 0
+             MOVE 0 TO WS-N
+             IF WS-PASS = 1 AND PL-SLOT-COUNT(WS-S) > 0
+                     AND PL-SLOT-ITEM(WS-S) = PL-CARRIED-ITEM
+                 COMPUTE WS-N = FUNCTION MIN(PL-CARRIED-COUNT, WS-MAX - PL-SLOT-COUNT(WS-S))
+             END-IF
+             IF WS-PASS = 2 AND PL-SLOT-COUNT(WS-S) = 0
+                 COMPUTE WS-N = FUNCTION MIN(PL-CARRIED-COUNT, WS-MAX)
+             END-IF
+             IF WS-N > 0
+                 MOVE PL-CARRIED-ITEM TO PL-SLOT-ITEM(WS-S)
+                 ADD WS-N TO PL-SLOT-COUNT(WS-S)
+                 SUBTRACT WS-N FROM PL-CARRIED-COUNT
+                 COMPUTE WS-ARG = WS-S - 1
+                 CALL "MENU-SLOT-WIRE" USING CLIENT-STATE WS-ARG WS-SLOT
+                 IF PL-MODE = 1
+                     CALL "PB-RESET" USING PB-BUFFER
+                     CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-SLOT PL-SLOT-COUNT(WS-S)
+                         PL-SLOT-ITEM(WS-S)
+                     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     CALL "MENU-CONTAINER" USING CLIENT-STATE WS-CONTAINER WS-STATE-ID
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "CLP-MENU-CLOSE" USING PB-BUFFER WS-CONTAINER
+     CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+     IF SM-SCREEN = SCR-BENCH
+         MOVE 0 TO BM-ID
+     END-IF
+     GOBACK.
+ END PROGRAM INVENTORY-CLOSE.

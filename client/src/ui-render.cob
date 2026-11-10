@@ -215,6 +215,9 @@
  01 WS-SWATCH              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-INSET               BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -237,17 +240,9 @@
  COPY CLSTATE.
  01 L-W                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
-     IF SM-W-ARG(L-W) = 36
-         MOVE PL-CARRIED-COUNT TO WS-COUNT
-         MOVE PL-CARRIED-ITEM TO WS-ITEM
-     ELSE
-         IF SM-W-ARG(L-W) = 37
-             MOVE PL-OFFHAND-COUNT TO WS-COUNT
-             MOVE PL-OFFHAND-ITEM TO WS-ITEM
-         ELSE
-             MOVE PL-SLOT-COUNT(SM-W-ARG(L-W) + 1) TO WS-COUNT
-             MOVE PL-SLOT-ITEM(SM-W-ARG(L-W) + 1) TO WS-ITEM
-         END-IF
+     MOVE SM-W-ARG(L-W) TO WS-ARG
+     CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+     IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
          IF SM-W-STATE(L-W) = 1
              MOVE SW-SELECTED TO WS-SWATCH
@@ -268,10 +263,12 @@
      END-IF
      IF WS-COUNT > 0 AND WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT
          MOVE IT-SPRITE(WS-ITEM + 1) TO WS-SPRITE
-         COMPUTE WS-X0 = (SM-W-X(L-W) + 2) * CL-GUI-SCALE
-         COMPUTE WS-Y0 = (SM-W-Y(L-W) + 2) * CL-GUI-SCALE
-         COMPUTE WS-X1 = (SM-W-X(L-W) + 18) * CL-GUI-SCALE
-         COMPUTE WS-Y1 = (SM-W-Y(L-W) + 18) * CL-GUI-SCALE
+*>       The icon cell is 16 x 16, centred in the slot (2 pixels in a 20 slot, 1 in an 18 slot).
+         COMPUTE WS-INSET = (SM-W-W(L-W) - 16) / 2
+         COMPUTE WS-X0 = (SM-W-X(L-W) + WS-INSET) * CL-GUI-SCALE
+         COMPUTE WS-Y0 = (SM-W-Y(L-W) + WS-INSET) * CL-GUI-SCALE
+         COMPUTE WS-X1 = (SM-W-X(L-W) + WS-INSET + 16) * CL-GUI-SCALE
+         COMPUTE WS-Y1 = (SM-W-Y(L-W) + WS-INSET + 16) * CL-GUI-SCALE
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-ZERO WS-ZERO2 WS-U0 WS-V0
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-SIXTEEN WS-SIXTEEN2 WS-U1 WS-V1
          MOVE 2 TO RL-UI-LAYER

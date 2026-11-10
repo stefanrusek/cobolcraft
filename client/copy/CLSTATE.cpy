@@ -72,7 +72,7 @@
     05 SM-STATE.
        10 SM-SCREEN          BINARY-LONG.
        10 SM-WIDGET-COUNT    BINARY-LONG.
-       10 SM-WIDGET OCCURS 48 TIMES.
+       10 SM-WIDGET OCCURS 128 TIMES.
           15 SM-W-KIND       BINARY-LONG.
           15 SM-W-ACTION     BINARY-LONG.
           15 SM-W-ARG        BINARY-LONG.
@@ -185,6 +185,21 @@
           15 PL-SLOT-ITEM    BINARY-LONG.
        10 PL-OFFHAND-COUNT   BINARY-LONG.    *> the off-hand stack (menu slot 45, player inventory index 40)
        10 PL-OFFHAND-ITEM    BINARY-LONG.
+       10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
+       10 PL-OFFHAND-DAMAGE  BINARY-LONG.
+*>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
+*>     chest, legs, feet), crafting result (IX 5) and 2 x 2 grid (IX 6 to 9), and the open bench menu's result (BX 5) and 3 x 3 grid
+*>     (BX 6 to 14); BM-ID is the bench's container id (0 = none open), BM-STATE-ID its state id.
+       10 IX-STACK OCCURS 16 TIMES.
+          15 IX-COUNT        BINARY-LONG.
+          15 IX-ITEM         BINARY-LONG.
+          15 IX-DAMAGE       BINARY-LONG.
+       10 BX-STACK OCCURS 16 TIMES.
+          15 BX-COUNT        BINARY-LONG.
+          15 BX-ITEM         BINARY-LONG.
+          15 BX-DAMAGE       BINARY-LONG.
+       10 BM-ID              BINARY-LONG.
+       10 BM-STATE-ID        BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
