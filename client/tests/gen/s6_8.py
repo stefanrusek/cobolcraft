@@ -200,4 +200,4 @@ extra+=prog('EF6-WARDEN-LAYER-ALPHA','''     MOVE 0 TO L-O(1) L-O(2)
          END-IF
      END-IF
 ''',' 01 WS-AL                  FLOAT-LONG.\n')
-write_section_src(8,hdr,IDS,extra+'\n'+kf); write_layers(IDS)
+write_section_src(8,hdr,['WARDEN'],extra+'\n'+kf); write_layers(IDS)

@@ -2,9 +2,10 @@ from g4 import *
 import doc6,json,os
 # layer id -> (rows, texture w, texture h, root scales); rows are doc6 rows (P and C records)
 LAY={}
-SRC={}; RET={}
+SRC={}; RET={}; TEXO={}
 def setlayer(i,rows,w,h,sc=(),src=None,retain=None):
     LAY[i]=(rows,w,h,list(sc)); SRC[i]=src or i; RET[i]=retain
+    TEXO[i]=[w,h] if (src and src in LAY and (LAY[src][1],LAY[src][2])!=(w,h)) else None
     if retain: LAY[i]=(retained(rows,*retain),w,h,list(sc))
 def retained(rows,mode,names):
     par={}
@@ -39,13 +40,15 @@ STATE=HERE+'/state/layers6_done.json'
 def done(): return json.load(open(STATE)) if os.path.exists(STATE) else {}
 def write_layers(new_ids):
     d=done()
-    for i in new_ids: d[i]=[LAY[i][3],SRC[i],RET[i]]
+    for i in new_ids: d[i]=[LAY[i][3],SRC[i],RET[i],TEXO[i]]
     json.dump(d,open(STATE,'w'))
     o=['*> Entity models part 6: EF6-LAYER model layer(X(32), the ModelLayers field name in upper case) ok(out): builds the model of a layer of 34-6 (ok 0 when the layer is not one of this document). Records: client/copy/CLEMM.cpy.','*> The mesh programs EF6-M-<name> are in client/src/entmodel-34-6-<n>.cob.','',
        ' IDENTIFICATION DIVISION.',' PROGRAM-ID. EF6-LAYER.',' DATA DIVISION.',' WORKING-STORAGE SECTION.',' 01 WS-S                   FLOAT-LONG.',' 01 WS-MODE                BINARY-LONG.',' 01 WS-CNT                 BINARY-LONG.',' 01 WS-NAMES.','    05 WS-NM                PIC X(24) OCCURS 8 TIMES.',' LINKAGE SECTION.',' COPY CLEMM.',' 01 L-LAYER                PIC X(32).',' 01 L-OK                   BINARY-LONG.',
        ' PROCEDURE DIVISION USING EMM-MODEL L-LAYER L-OK.','     MOVE 1 TO L-OK','     EVALUATE L-LAYER']
-    for i,(sc,src,ret) in d.items():
+    for i,(sc,src,ret,texo) in d.items():
         o.append('         WHEN "%s"'%i); o.append('             CALL "%s" USING EMM-MODEL'%pname(src))
+        if texo:
+            o.append('             MOVE %s TO MM-TEXW'%texo[0]); o.append('             MOVE %s TO MM-TEXH'%texo[1])
         if ret:
             for k,nm in enumerate(ret[1],1): o.append('             MOVE "%s" TO WS-NM(%d)'%(nm,k))
             o.append('             MOVE %d TO WS-CNT'%len(ret[1])); o.append('             MOVE %d TO WS-MODE'%ret[0]); o.append('             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT')

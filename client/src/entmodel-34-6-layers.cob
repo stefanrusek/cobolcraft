@@ -83,6 +83,27 @@
              MOVE 1 TO WS-CNT
              MOVE 1 TO WS-MODE
              CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "BREEZE"
+             CALL "EF6-M-BREEZE-BASE" USING EMM-MODEL
+             MOVE "head" TO WS-NM(1)
+             MOVE "rods" TO WS-NM(2)
+             MOVE 2 TO WS-CNT
+             MOVE 2 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "BREEZE_WIND"
+             CALL "EF6-M-BREEZE-BASE" USING EMM-MODEL
+             MOVE 128 TO MM-TEXW
+             MOVE 128 TO MM-TEXH
+             MOVE "wind_body" TO WS-NM(1)
+             MOVE 1 TO WS-CNT
+             MOVE 2 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "BREEZE_EYES"
+             CALL "EF6-M-BREEZE-BASE" USING EMM-MODEL
+             MOVE "eyes" TO WS-NM(1)
+             MOVE 1 TO WS-CNT
+             MOVE 2 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE
