@@ -2,8 +2,8 @@
 *> one row per key of the tables; the two group rows, the selector option tooltips and snbt.parser.*,
 *> are not here). A text has %s and %n$s positional arguments. Used by BR-LANG-TEXT
 *> (core/src/cmd-lang.cob) for console lines.
- 78 BL-COUNT               VALUE 173.
- 01 BL-TABLE.
+ 78 LG-COUNT               VALUE 173.
+ 01 LG-TABLE.
     05 FILLER PIC X(48) VALUE "command.unknown.command".
     05 FILLER PIC X(200) VALUE "Unknown or incomplete command. See below for error".
     05 FILLER PIC X(48) VALUE "command.unknown.argument".
@@ -380,7 +380,7 @@
     05 FILLER PIC X(48) VALUE "commands.function.error.parse".
     05 FILLER PIC X(200) VALUE "While instantiating macro %s: Command '%s' caused "
          & "error: %s".
- 01 BL-ROWS REDEFINES BL-TABLE.
-    05 BL-ROW               OCCURS 173 TIMES.
-       10 BL-KEY            PIC X(48).
-       10 BL-TEXT           PIC X(200).
+ 01 LG-ROWS REDEFINES LG-TABLE.
+    05 LG-ROW               OCCURS 173 TIMES.
+       10 LG-KEY            PIC X(48).
+       10 LG-TEXT           PIC X(200).
