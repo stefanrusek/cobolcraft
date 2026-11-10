@@ -619,7 +619,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0371 [US8-core] Write acceptance test `core/tests/acc_f2us8_destroy_stage.cob` (US8-1 to US8-3): Block Destruction stage 0 to 9 goes to the breaker and to other players who can see the block; abort and finish send stage -1; a block broken by another player ends the progress (13 §2.4) [FR-023; SC-006]
 - [x] T0372 [US8-core] Implement the stage broadcast in `core/src/breaking.cob`
 - [x] T0373 [US8-core] Write contract tests in `core/tests/contract_wire_server.cob` for the Block Destruction fixture
-- [ ] T0374 [US8-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0374 [US8-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 32: US9-core — inventory menu, crafting, recipe book
 
@@ -655,7 +655,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 - [x] T0402 [US10-core] Write test `core/tests/test_bench_menu.cob`: Use Item On a placed bench opens the 3x3 menu (12 §5.6b, 13 §3.5); a recipe that needs the large grid matches only in the bench menu (US10-3); the bench block places as an item
 - [x] T0403 [US10-core] Implement the bench menu and block interaction in `core/src/menu-bench.cob`
-- [ ] T0404 [US10-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0404 [US10-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
 
@@ -3229,7 +3229,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T2917 [US19-core] Write test `core/tests/test_offhand_swap.cob`: the Player Action swap exchanges the held hotbar item with slot 45 and sends Set Slot for both; Container Click swap with the off-hand slot in the inventory menu (13 §4, US19-1, US19-2)
 - [x] T2918 [US19-core] Write edge-case test `core/tests/test_offhand_empty.cob` (spec edge case): swap with an empty hand and a full off hand, a full hand and an empty off hand, and both empty (nothing changes, no packet error)
 - [x] T2919 [US19-core] Implement the swap in `core/src/menu-inventory.cob` and the Player Action handler
-- [ ] T2920 [US19-core] Gate: run `make gate-core` and record the command and real output
+- [x] T2920 [US19-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 51: US21-core — vanilla configuration conformance (automated half of Q-1)
 
