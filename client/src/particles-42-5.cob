@@ -107,10 +107,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P5-SCALE-RGB.
-*> Section 1.3 ARGB.scaleRGB: USING colour (ARGB, 0 to 4294967295), factors red, green, blue, colour out: each of the three
+*> Section 1.3 ARGB.scaleRGB: USING colour (ARGB as a signed Int or unsigned 0 to 4294967295; both name the same colour), factors red, green, blue, colour out: each of the three
 *> bytes times its factor, truncated and clamped to 255; the alpha byte is kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-U                   BINARY-DOUBLE.
  01 WS-A                   BINARY-DOUBLE.
  01 WS-R                   BINARY-DOUBLE.
  01 WS-G                   BINARY-DOUBLE.
@@ -122,10 +123,11 @@
  01 L-FB                   FLOAT-LONG.
  01 L-OUT                  BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-COLOR L-FR L-FG L-FB L-OUT.
-     COMPUTE WS-A = FUNCTION INTEGER-PART(L-COLOR / 16777216)
-     COMPUTE WS-R = FUNCTION INTEGER-PART(FUNCTION MOD(FUNCTION INTEGER-PART(L-COLOR / 65536), 256) * L-FR)
-     COMPUTE WS-G = FUNCTION INTEGER-PART(FUNCTION MOD(FUNCTION INTEGER-PART(L-COLOR / 256), 256) * L-FG)
-     COMPUTE WS-B = FUNCTION INTEGER-PART(FUNCTION MOD(L-COLOR, 256) * L-FB)
+     COMPUTE WS-U = FUNCTION MOD(L-COLOR, 4294967296)
+     COMPUTE WS-A = FUNCTION INTEGER-PART(WS-U / 16777216)
+     COMPUTE WS-R = FUNCTION INTEGER-PART(FUNCTION MOD(FUNCTION INTEGER-PART(WS-U / 65536), 256) * L-FR)
+     COMPUTE WS-G = FUNCTION INTEGER-PART(FUNCTION MOD(FUNCTION INTEGER-PART(WS-U / 256), 256) * L-FG)
+     COMPUTE WS-B = FUNCTION INTEGER-PART(FUNCTION MOD(WS-U, 256) * L-FB)
      IF WS-R > 255
          MOVE 255 TO WS-R
      END-IF
@@ -141,7 +143,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P5-SRGB-LERP.
-*> Section 1.3 ARGB.srgbLerp: USING t, colour a, colour b, colour out: each of the four bytes as a + floor(t * (b - a))
+*> Section 1.3 ARGB.srgbLerp: USING t, colour a, colour b (signed or unsigned), colour out (unsigned): each of the four bytes as a + floor(t * (b - a))
 *> (Mth.lerpInt; no gamma conversion).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -150,6 +152,8 @@
  01 WS-B                   BINARY-DOUBLE.
  01 WS-C                   BINARY-DOUBLE.
  01 WS-SCALE               BINARY-DOUBLE.
+ 01 WS-UA                  BINARY-DOUBLE.
+ 01 WS-UB                  BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-T                    FLOAT-LONG.
  01 L-A                    BINARY-DOUBLE.
@@ -157,10 +161,12 @@
  01 L-OUT                  BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-T L-A L-B L-OUT.
      MOVE 0 TO L-OUT
+     COMPUTE WS-UA = FUNCTION MOD(L-A, 4294967296)
+     COMPUTE WS-UB = FUNCTION MOD(L-B, 4294967296)
      MOVE 1 TO WS-SCALE
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
-         COMPUTE WS-A = FUNCTION MOD(FUNCTION INTEGER-PART(L-A / WS-SCALE), 256)
-         COMPUTE WS-B = FUNCTION MOD(FUNCTION INTEGER-PART(L-B / WS-SCALE), 256)
+         COMPUTE WS-A = FUNCTION MOD(FUNCTION INTEGER-PART(WS-UA / WS-SCALE), 256)
+         COMPUTE WS-B = FUNCTION MOD(FUNCTION INTEGER-PART(WS-UB / WS-SCALE), 256)
          COMPUTE WS-C = WS-A + FUNCTION INTEGER(L-T * (WS-B - WS-A))
          COMPUTE L-OUT = L-OUT + WS-C * WS-SCALE
          COMPUTE WS-SCALE = WS-SCALE * 256
