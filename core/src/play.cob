@@ -4,7 +4,7 @@
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph:
 *>   1. Login (0x32), then Commands (0x10, the tree the player may use, CMD-TREE-SEND,
-*>      core/src/commands.cob) and Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
+*>      core/src/commands.cob) and Recipe Book Settings and Add (0x4D, 0x4B, RECBOOK-JOIN, core/src/recipe-unlock.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
@@ -37,7 +37,7 @@
 *> INV-CREATIVE-SET (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
 *> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob) and 7 SWAP_ITEM_WITH_OFFHAND to MENU-OFFHAND-SWAP (core/src/menu-inventory.cob);
-*> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
+*> Place Recipe goes to RECIPE-PLACE (core/src/recipe-unlock.cob); Chat Command goes to CMD-RUN-PACKET and
 *> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
 *> A Cookie Response is
@@ -93,7 +93,7 @@
      CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "CMD-TREE-SEND" USING WS-ROW
-     CALL "CRAFT-BOOK-SEND" USING WS-ROW
+     CALL "RECBOOK-JOIN" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-ABILITIES-BUILD" USING PL-MODE(WS-ROW) PL-FLYING(WS-ROW) PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
@@ -247,7 +247,11 @@
          WHEN L-PACKET-ID = 67
              CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 39
-             CALL "CRAFT-PLACE" USING L-ID PLAY-SERVERBOUND
+             CALL "RECIPE-PLACE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 47
+             CALL "RECIPE-SETTINGS" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 48
+             CALL "RECIPE-SEEN" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 15
              CALL "CMD-SUGGEST" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 7
@@ -387,9 +391,10 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
          WHEN 57
              CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
-             CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
-             MOVE WK-IS-ITEM TO PSB-STACK-ITEM
-             MOVE WK-IS-COUNT TO PSB-STACK-COUNT
+             CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
+             MOVE WK-ISX-ITEM TO PSB-STACK-ITEM
+             MOVE WK-ISX-COUNT TO PSB-STACK-COUNT
+             CALL "SP-INTERN" USING WK-ITEMSTACK-X PSB-STACK-VAR
          WHEN 1
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
          WHEN 12
@@ -403,6 +408,10 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-SEQUENCE
              CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
              CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
+         WHEN 47
+             CALL "PB-GET-RECIPE-BOOK-CHANGE" USING PB-BUFFER PSB-BOOK-TYPE PSB-BOOK-OPEN PSB-BOOK-FILTER
+         WHEN 48
+             CALL "PB-GET-RECIPE-SEEN" USING PB-BUFFER PSB-RECIPE
          WHEN 39
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-RECIPE
@@ -562,9 +571,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-ABILITIES-BUILD.
-*> USING game mode (PIC 9: 0 survival, 1 creative), flying (PIC 9), PB-BUFFER: Player Abilities
-*> 0x41 (05a; 09 §3.2): creative flags 0x0D (invulnerable, can fly, instant build) plus 0x02 while
-*> flying, survival 0x00; flying speed 0.05, walking speed 0.1.
+*> USING game mode (PIC 9: 0 survival, 1 creative, 2 adventure, 3 spectator), flying (PIC 9), PB-BUFFER: Player Abilities
+*> 0x41 (05a; 09 §3.2; 13 §1.4): creative flags 0x0D (invulnerable, can fly, instant build) plus 0x02 while
+*> flying, spectator 0x07 (invulnerable, flying, can fly), survival and adventure 0x00; flying speed 0.05, walking speed 0.1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 65.
@@ -577,12 +586,15 @@
  01 L-FLYING               PIC 9.
  PROCEDURE DIVISION USING L-MODE L-FLYING PB-BUFFER.
      MOVE 0 TO WS-FLAGS
-     IF L-MODE = 1
-         MOVE 13 TO WS-FLAGS
-         IF L-FLYING = 1
-             ADD 2 TO WS-FLAGS
-         END-IF
-     END-IF
+     EVALUATE L-MODE
+         WHEN 1
+             MOVE 13 TO WS-FLAGS
+             IF L-FLYING = 1
+                 ADD 2 TO WS-FLAGS
+             END-IF
+         WHEN 3
+             MOVE 7 TO WS-FLAGS
+     END-EVALUATE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-BYTE" USING PB-BUFFER WS-FLAGS
      CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLY-SPEED
@@ -621,6 +633,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -635,14 +648,12 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-STATE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SLOTS
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 45
-         CALL "MENU-GET" USING L-ROW WS-I WS-ITEM WS-COUNT
-         MOVE WS-COUNT TO WK-IS-COUNT
-         MOVE WS-ITEM TO WK-IS-ITEM
-         CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
+         CALL "MENU-GET-X" USING L-ROW WS-I WS-ITEM WS-COUNT WS-VAR
+         CALL "SP-EXPORT" USING WS-ITEM WS-COUNT WS-VAR WK-ITEMSTACK-X
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
      END-PERFORM
-     MOVE PL-CARRIED-COUNT(L-ROW) TO WK-IS-COUNT
-     MOVE PL-CARRIED-ITEM(L-ROW) TO WK-IS-ITEM
-     CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
+     CALL "SP-EXPORT" USING PL-CARRIED-ITEM(L-ROW) PL-CARRIED-COUNT(L-ROW) PL-CARRIED-VAR(L-ROW) WK-ITEMSTACK-X
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
      GOBACK.
  END PROGRAM PLAY-CONTENT-BUILD.
 

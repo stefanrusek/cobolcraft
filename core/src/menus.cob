@@ -22,7 +22,7 @@
 *>   MENU-EQUIP-KIND USING item, kind out                       0 none, 1 boots, 2 leggings, 3 chestplate, 4 helmet, 5 off-hand
 *>   MENU-MAY-PLACE USING player row, menu slot, item, result out (1 or 0)
 *>   MENU-CONTAINER-SLOT USING player row, container slot (0 to 40), menu slot out   the menu slot of a player slot, -1 none
-*>   MENU-PLAYER-GET / MENU-PLAYER-SET USING row, container slot (0 to 40), item (out), count (out)
+*>   MENU-PLAYER-GET-X / MENU-PLAYER-SET-X USING row, container slot (0 to 40), item (out), count (out), patch handle (out)
 *>   MENU-MOVE-TO USING row, item, count (in and out: what is left), first, end, reverse (0 or 1), changed out
 *>   MENU-CLICK USING row, menu slot, button, click type          one Container Click applied to the player's menu
 
@@ -82,7 +82,8 @@
  END PROGRAM MENU-LOCATE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-GET.
+ PROGRAM-ID. MENU-GET-X.
+*> USING player row, menu slot, item out, count out, patch handle out (CSTACK.cpy; 0 = none, also for an empty slot).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -94,34 +95,57 @@
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
-     MOVE 0 TO L-ITEM L-COUNT
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT L-VAR.
+     MOVE 0 TO L-ITEM L-COUNT L-VAR
      CALL "MENU-LOCATE" USING L-ROW L-SLOT WS-KIND WS-INDEX
      EVALUATE WS-KIND
          WHEN 1
              MOVE PL-SLOT-ITEM(L-ROW, WS-INDEX) TO L-ITEM
              MOVE PL-SLOT-COUNT(L-ROW, WS-INDEX) TO L-COUNT
+             MOVE PL-SLOT-VAR(L-ROW, WS-INDEX) TO L-VAR
          WHEN 2
              MOVE MN-EQUIP-ITEM(L-ROW, WS-INDEX) TO L-ITEM
              MOVE MN-EQUIP-COUNT(L-ROW, WS-INDEX) TO L-COUNT
+             MOVE MN-EQUIP-VAR(L-ROW, WS-INDEX) TO L-VAR
          WHEN 3
              MOVE MN-IGRID-ITEM(L-ROW, WS-INDEX) TO L-ITEM
              MOVE MN-IGRID-COUNT(L-ROW, WS-INDEX) TO L-COUNT
+             MOVE MN-IGRID-VAR(L-ROW, WS-INDEX) TO L-VAR
          WHEN 4
              MOVE MN-RESULT-ITEM(L-ROW) TO L-ITEM
              MOVE MN-RESULT-COUNT(L-ROW) TO L-COUNT
+             MOVE MN-RESULT-VAR(L-ROW) TO L-VAR
          WHEN 5
              MOVE MN-BGRID-ITEM(L-ROW, WS-INDEX) TO L-ITEM
              MOVE MN-BGRID-COUNT(L-ROW, WS-INDEX) TO L-COUNT
+             MOVE MN-BGRID-VAR(L-ROW, WS-INDEX) TO L-VAR
      END-EVALUATE
      IF L-COUNT <= 0
-         MOVE 0 TO L-ITEM L-COUNT
+         MOVE 0 TO L-ITEM L-COUNT L-VAR
      END-IF
+     GOBACK.
+ END PROGRAM MENU-GET-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-GET.
+*> USING player row, menu slot, item out, count out: MENU-GET-X without the patch handle.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-VAR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
+     CALL "MENU-GET-X" USING L-ROW L-SLOT L-ITEM L-COUNT WS-VAR
      GOBACK.
  END PROGRAM MENU-GET.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-SET.
+ PROGRAM-ID. MENU-SET-X.
+*> USING player row, menu slot, item, count, patch handle (CSTACK.cpy): a count of 0 empties the slot (its item and handle 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -130,40 +154,71 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT L-VAR.
      MOVE L-ITEM TO WS-ITEM
      MOVE L-COUNT TO WS-COUNT
+     MOVE L-VAR TO WS-VAR
      IF WS-COUNT <= 0
-         MOVE 0 TO WS-ITEM WS-COUNT
+         MOVE 0 TO WS-ITEM WS-COUNT WS-VAR
      END-IF
      CALL "MENU-LOCATE" USING L-ROW L-SLOT WS-KIND WS-INDEX
      EVALUATE WS-KIND
          WHEN 1
              MOVE WS-ITEM TO PL-SLOT-ITEM(L-ROW, WS-INDEX)
              MOVE WS-COUNT TO PL-SLOT-COUNT(L-ROW, WS-INDEX)
+             MOVE WS-VAR TO PL-SLOT-VAR(L-ROW, WS-INDEX)
          WHEN 2
              MOVE WS-ITEM TO MN-EQUIP-ITEM(L-ROW, WS-INDEX)
              MOVE WS-COUNT TO MN-EQUIP-COUNT(L-ROW, WS-INDEX)
+             MOVE WS-VAR TO MN-EQUIP-VAR(L-ROW, WS-INDEX)
          WHEN 3
              MOVE WS-ITEM TO MN-IGRID-ITEM(L-ROW, WS-INDEX)
              MOVE WS-COUNT TO MN-IGRID-COUNT(L-ROW, WS-INDEX)
+             MOVE WS-VAR TO MN-IGRID-VAR(L-ROW, WS-INDEX)
          WHEN 4
              MOVE WS-ITEM TO MN-RESULT-ITEM(L-ROW)
              MOVE WS-COUNT TO MN-RESULT-COUNT(L-ROW)
+             MOVE WS-VAR TO MN-RESULT-VAR(L-ROW)
          WHEN 5
              MOVE WS-ITEM TO MN-BGRID-ITEM(L-ROW, WS-INDEX)
              MOVE WS-COUNT TO MN-BGRID-COUNT(L-ROW, WS-INDEX)
+             MOVE WS-VAR TO MN-BGRID-VAR(L-ROW, WS-INDEX)
      END-EVALUATE
+     GOBACK.
+ END PROGRAM MENU-SET-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SET.
+*> USING player row, menu slot, item, count (count 0 empties the slot; no rule is checked): MENU-SET-X for a stack whose patch
+*> does not change: the slot keeps its patch handle when the item stays, else the stack has none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OLD-ITEM            BINARY-LONG.
+ 01 WS-OLD-COUNT           BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-OLD-ITEM WS-OLD-COUNT WS-VAR
+     IF L-ITEM NOT = WS-OLD-ITEM
+         MOVE 0 TO WS-VAR
+     END-IF
+     CALL "MENU-SET-X" USING L-ROW L-SLOT L-ITEM L-COUNT WS-VAR
      GOBACK.
  END PROGRAM MENU-SET.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-PLAYER-GET.
+ PROGRAM-ID. MENU-PLAYER-GET-X.
 *> USING row, container slot 0 to 40 (hotbar 0 to 8, main 9 to 35, boots 36 ... helmet 39, off-hand 40), item out, count out.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -174,52 +229,60 @@
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
-     MOVE 0 TO L-ITEM L-COUNT
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT L-VAR.
+     MOVE 0 TO L-ITEM L-COUNT L-VAR
      EVALUATE TRUE
          WHEN L-SLOT >= 0 AND L-SLOT <= 35
              MOVE PL-SLOT-ITEM(L-ROW, L-SLOT + 1) TO L-ITEM
              MOVE PL-SLOT-COUNT(L-ROW, L-SLOT + 1) TO L-COUNT
+             MOVE PL-SLOT-VAR(L-ROW, L-SLOT + 1) TO L-VAR
          WHEN L-SLOT >= 36 AND L-SLOT <= 40
              MOVE MN-EQUIP-ITEM(L-ROW, L-SLOT - 35) TO L-ITEM
              MOVE MN-EQUIP-COUNT(L-ROW, L-SLOT - 35) TO L-COUNT
+             MOVE MN-EQUIP-VAR(L-ROW, L-SLOT - 35) TO L-VAR
      END-EVALUATE
      IF L-COUNT <= 0
-         MOVE 0 TO L-ITEM L-COUNT
+         MOVE 0 TO L-ITEM L-COUNT L-VAR
      END-IF
      GOBACK.
- END PROGRAM MENU-PLAYER-GET.
+ END PROGRAM MENU-PLAYER-GET-X.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-PLAYER-SET.
-*> USING row, container slot 0 to 40, item, count: see MENU-PLAYER-GET; a count of 0 empties the slot.
+ PROGRAM-ID. MENU-PLAYER-SET-X.
+*> USING row, container slot 0 to 40, item, count, patch handle: a count of 0 empties the slot.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CMENU.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT L-VAR.
      MOVE L-ITEM TO WS-ITEM
      MOVE L-COUNT TO WS-COUNT
+     MOVE L-VAR TO WS-VAR
      IF WS-COUNT <= 0
-         MOVE 0 TO WS-ITEM WS-COUNT
+         MOVE 0 TO WS-ITEM WS-COUNT WS-VAR
      END-IF
      EVALUATE TRUE
          WHEN L-SLOT >= 0 AND L-SLOT <= 35
              MOVE WS-ITEM TO PL-SLOT-ITEM(L-ROW, L-SLOT + 1)
              MOVE WS-COUNT TO PL-SLOT-COUNT(L-ROW, L-SLOT + 1)
+             MOVE WS-VAR TO PL-SLOT-VAR(L-ROW, L-SLOT + 1)
          WHEN L-SLOT >= 36 AND L-SLOT <= 40
              MOVE WS-ITEM TO MN-EQUIP-ITEM(L-ROW, L-SLOT - 35)
              MOVE WS-COUNT TO MN-EQUIP-COUNT(L-ROW, L-SLOT - 35)
+             MOVE WS-VAR TO MN-EQUIP-VAR(L-ROW, L-SLOT - 35)
      END-EVALUATE
      GOBACK.
- END PROGRAM MENU-PLAYER-SET.
+ END PROGRAM MENU-PLAYER-SET-X.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-CONTAINER-SLOT.
@@ -326,11 +389,11 @@
  END PROGRAM MENU-MAY-PLACE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-MOVE-TO.
+ PROGRAM-ID. MENU-MOVE-TO-X.
 *> USING row, item, count (in: the stack to move; out: what is left), first slot, end slot (exclusive), reverse (1 scans
 *> from end - 1 down), changed out (1 when anything moved): moveItemStackTo of 40-1 §3.5. Pass A merges into the
 *> stacks of the same item (only for an item that stacks), pass B puts what is left into the first empty slot that
-*> takes it (one slot per call).
+*> takes it (one slot per call). The stack has the patch handle USING last (a stack merges only into one with the same handle).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -345,6 +408,7 @@
  01 WS-MAY                 BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
@@ -353,7 +417,8 @@
  01 L-END                  BINARY-LONG.
  01 L-REVERSE              BINARY-LONG.
  01 L-CHANGED              BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-FIRST L-END L-REVERSE L-CHANGED.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-FIRST L-END L-REVERSE L-CHANGED L-VAR.
      MOVE 0 TO L-CHANGED
      IF L-COUNT <= 0 OR L-ITEM <= 0 OR L-ITEM >= IT-COUNT
          GOBACK
@@ -374,13 +439,13 @@
                  ELSE
                      COMPUTE WS-SLOT = L-FIRST + WS-I
                  END-IF
-                 CALL "MENU-GET" USING L-ROW WS-SLOT WS-ITEM WS-COUNT
+                 CALL "MENU-GET-X" USING L-ROW WS-SLOT WS-ITEM WS-COUNT WS-VAR
                  IF WS-PASS = 1
-                     IF WS-COUNT > 0 AND WS-ITEM = L-ITEM AND WS-COUNT < WS-MAX
+                     IF WS-COUNT > 0 AND WS-ITEM = L-ITEM AND WS-VAR = L-VAR AND WS-COUNT < WS-MAX
                          COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-MAX - WS-COUNT)
                          ADD WS-N TO WS-COUNT
                          SUBTRACT WS-N FROM L-COUNT
-                         CALL "MENU-SET" USING L-ROW WS-SLOT WS-ITEM WS-COUNT
+                         CALL "MENU-SET-X" USING L-ROW WS-SLOT WS-ITEM WS-COUNT L-VAR
                          MOVE 1 TO L-CHANGED
                          IF L-COUNT = 0
                              MOVE 1 TO WS-DONE
@@ -391,7 +456,7 @@
                          CALL "MENU-MAY-PLACE" USING L-ROW WS-SLOT L-ITEM WS-MAY
                          IF WS-MAY = 1
                              COMPUTE WS-N = FUNCTION MIN(L-COUNT, WS-MAX)
-                             CALL "MENU-SET" USING L-ROW WS-SLOT L-ITEM WS-N
+                             CALL "MENU-SET-X" USING L-ROW WS-SLOT L-ITEM WS-N L-VAR
                              SUBTRACT WS-N FROM L-COUNT
                              MOVE 1 TO L-CHANGED
                              MOVE 1 TO WS-DONE
@@ -401,6 +466,25 @@
              END-PERFORM
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM MENU-MOVE-TO-X.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-MOVE-TO.
+*> USING row, item, count (in and out), first slot, end slot, reverse, changed out: MENU-MOVE-TO-X for a stack without a patch.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-FIRST                BINARY-LONG.
+ 01 L-END                  BINARY-LONG.
+ 01 L-REVERSE              BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-FIRST L-END L-REVERSE L-CHANGED.
+     CALL "MENU-MOVE-TO-X" USING L-ROW L-ITEM L-COUNT L-FIRST L-END L-REVERSE L-CHANGED WS-NONE
      GOBACK.
  END PROGRAM MENU-MOVE-TO.
 
@@ -416,6 +500,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -428,7 +513,7 @@
      IF WS-MAY = 0
          GOBACK
      END-IF
-     CALL "MENU-GET" USING L-ROW L-SLOT WS-ITEM WS-COUNT
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
      COMPUTE WS-N = IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1) - WS-COUNT
      COMPUTE WS-N = FUNCTION MIN(WS-N, PL-CARRIED-COUNT(L-ROW), L-AMOUNT)
      IF WS-N <= 0
@@ -436,10 +521,10 @@
      END-IF
      MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
      ADD WS-N TO WS-COUNT
-     CALL "MENU-SET" USING L-ROW L-SLOT WS-ITEM WS-COUNT
+     CALL "MENU-SET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT PL-CARRIED-VAR(L-ROW)
      SUBTRACT WS-N FROM PL-CARRIED-COUNT(L-ROW)
      IF PL-CARRIED-COUNT(L-ROW) = 0
-         MOVE 0 TO PL-CARRIED-ITEM(L-ROW)
+         MOVE 0 TO PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM MENU-INSERT.
@@ -459,6 +544,7 @@
  01 WS-MAY                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -468,7 +554,7 @@
      IF WS-KIND = 0
          GOBACK
      END-IF
-     CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
      MOVE 0 TO WS-MAY
      IF PL-CARRIED-COUNT(L-ROW) > 0
          CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
@@ -491,13 +577,14 @@
              END-IF
              MOVE WS-SI TO PL-CARRIED-ITEM(L-ROW)
              MOVE WS-AMOUNT TO PL-CARRIED-COUNT(L-ROW)
+             MOVE WS-SV TO PL-CARRIED-VAR(L-ROW)
              SUBTRACT WS-AMOUNT FROM WS-SC
-             CALL "MENU-SET" USING L-ROW L-SLOT WS-SI WS-SC
+             CALL "MENU-SET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
              IF WS-KIND = 4
                  CALL "MENU-RESULT-TAKEN" USING L-ROW
              END-IF
          WHEN WS-MAY = 1
-             IF PL-CARRIED-ITEM(L-ROW) = WS-SI
+             IF PL-CARRIED-ITEM(L-ROW) = WS-SI AND PL-CARRIED-VAR(L-ROW) = WS-SV
                  IF L-BUTTON = 0
                      MOVE PL-CARRIED-COUNT(L-ROW) TO WS-AMOUNT
                  ELSE
@@ -506,15 +593,17 @@
                  CALL "MENU-INSERT" USING L-ROW L-SLOT WS-AMOUNT
              ELSE
                  IF PL-CARRIED-COUNT(L-ROW) <= IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1)
-                     CALL "MENU-SET" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-COUNT(L-ROW)
+                     CALL "MENU-SET-X" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) PL-CARRIED-COUNT(L-ROW)
+                         PL-CARRIED-VAR(L-ROW)
                      MOVE WS-SI TO PL-CARRIED-ITEM(L-ROW)
                      MOVE WS-SC TO PL-CARRIED-COUNT(L-ROW)
+                     MOVE WS-SV TO PL-CARRIED-VAR(L-ROW)
                  END-IF
              END-IF
          WHEN OTHER
 *>           The slot refuses the cursor's stack: the same item is taken up to the cursor's maximum (a result
 *>           slot adds its whole result when that fits, 13 §3.6).
-             IF PL-CARRIED-ITEM(L-ROW) = WS-SI
+             IF PL-CARRIED-ITEM(L-ROW) = WS-SI AND PL-CARRIED-VAR(L-ROW) = WS-SV
                  COMPUTE WS-N = IT-MAX-STACK(WS-SI + 1) - PL-CARRIED-COUNT(L-ROW)
                  IF WS-KIND = 4
                      IF WS-SC <= WS-N
@@ -528,7 +617,7 @@
                  IF WS-N > 0
                      ADD WS-N TO PL-CARRIED-COUNT(L-ROW)
                      SUBTRACT WS-N FROM WS-SC
-                     CALL "MENU-SET" USING L-ROW L-SLOT WS-SI WS-SC
+                     CALL "MENU-SET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
                      IF WS-KIND = 4
                          CALL "MENU-RESULT-TAKEN" USING L-ROW
                      END-IF
@@ -536,7 +625,7 @@
              END-IF
      END-EVALUATE
      IF PL-CARRIED-COUNT(L-ROW) = 0
-         MOVE 0 TO PL-CARRIED-ITEM(L-ROW)
+         MOVE 0 TO PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM MENU-CLICK-PICKUP.
@@ -555,6 +644,8 @@
  01 WS-SI                  BINARY-LONG.
  01 WS-SC                  BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
+ 01 WS-HV                  BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -568,8 +659,8 @@
      IF WS-KIND = 0
          GOBACK
      END-IF
-     CALL "MENU-PLAYER-GET" USING L-ROW L-BUTTON WS-HI WS-HC
-     CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+     CALL "MENU-PLAYER-GET-X" USING L-ROW L-BUTTON WS-HI WS-HC WS-HV
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
      IF WS-HC = 0 AND WS-SC = 0
          GOBACK
      END-IF
@@ -579,8 +670,8 @@
              GOBACK
          END-IF
      END-IF
-     CALL "MENU-SET" USING L-ROW L-SLOT WS-HI WS-HC
-     CALL "MENU-PLAYER-SET" USING L-ROW L-BUTTON WS-SI WS-SC
+     CALL "MENU-SET-X" USING L-ROW L-SLOT WS-HI WS-HC WS-HV
+     CALL "MENU-PLAYER-SET-X" USING L-ROW L-BUTTON WS-SI WS-SC WS-SV
      IF WS-KIND = 4
          CALL "MENU-RESULT-TAKEN" USING L-ROW
      END-IF
@@ -660,6 +751,7 @@
  01 WS-SC                  BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -674,8 +766,8 @@
                  COMPUTE WS-SLOT = 45 - WS-I
              END-IF
              IF WS-SLOT > 0
-                 CALL "MENU-GET" USING L-ROW WS-SLOT WS-SI WS-SC
-                 IF WS-SC > 0 AND WS-SI = PL-CARRIED-ITEM(L-ROW) AND (WS-PASS = 2 OR WS-SC < WS-MAX)
+                 CALL "MENU-GET-X" USING L-ROW WS-SLOT WS-SI WS-SC WS-SV
+                 IF WS-SC > 0 AND WS-SI = PL-CARRIED-ITEM(L-ROW) AND WS-SV = PL-CARRIED-VAR(L-ROW) AND (WS-PASS = 2 OR WS-SC < WS-MAX)
                      COMPUTE WS-N = FUNCTION MIN(WS-SC, WS-MAX - PL-CARRIED-COUNT(L-ROW))
                      ADD WS-N TO PL-CARRIED-COUNT(L-ROW)
                      SUBTRACT WS-N FROM WS-SC
@@ -700,6 +792,7 @@
  01 WS-SC                  BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -709,12 +802,12 @@
          MOVE 0 TO WS-OK
      END-IF
      IF WS-OK = 1
-         CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+         CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
          CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
          IF WS-MAY = 0
              MOVE 0 TO WS-OK
          END-IF
-         IF WS-SC > 0 AND WS-SI NOT = PL-CARRIED-ITEM(L-ROW)
+         IF WS-SC > 0 AND (WS-SI NOT = PL-CARRIED-ITEM(L-ROW) OR WS-SV NOT = PL-CARRIED-VAR(L-ROW))
              MOVE 0 TO WS-OK
          END-IF
          IF MN-DRAG-TYPE(L-ROW) < 2 AND PL-CARRIED-COUNT(L-ROW) < MN-DRAG-COUNT(L-ROW) + 1
@@ -752,6 +845,7 @@
  01 WS-REMAINING           BINARY-LONG.
  01 WS-BUTTON              BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -779,14 +873,14 @@
              MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MN-DRAG-COUNT(L-ROW)
                  MOVE MN-DRAG-SLOT(L-ROW, WS-I) TO WS-SLOT
-                 CALL "MENU-GET" USING L-ROW WS-SLOT WS-SI WS-SC
+                 CALL "MENU-GET-X" USING L-ROW WS-SLOT WS-SI WS-SC WS-SV
                  COMPUTE WS-PLACED = FUNCTION MIN(WS-PLACE + WS-SC, WS-MAX)
                  COMPUTE WS-REMAINING = WS-REMAINING - (WS-PLACED - WS-SC)
-                 CALL "MENU-SET" USING L-ROW WS-SLOT WS-ITEM WS-PLACED
+                 CALL "MENU-SET-X" USING L-ROW WS-SLOT WS-ITEM WS-PLACED PL-CARRIED-VAR(L-ROW)
              END-PERFORM
              MOVE WS-REMAINING TO PL-CARRIED-COUNT(L-ROW)
              IF WS-REMAINING <= 0
-                 MOVE 0 TO PL-CARRIED-COUNT(L-ROW) PL-CARRIED-ITEM(L-ROW)
+                 MOVE 0 TO PL-CARRIED-COUNT(L-ROW) PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW)
              END-IF
              MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
      END-EVALUATE
@@ -902,7 +996,7 @@
              END-IF
              SUBTRACT WS-COUNT FROM PL-CARRIED-COUNT(L-ROW)
              IF PL-CARRIED-COUNT(L-ROW) = 0
-                 MOVE 0 TO PL-CARRIED-ITEM(L-ROW)
+                 MOVE 0 TO PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW)
              END-IF
              CALL "GI-THROW-STACK" USING L-ROW WS-ITEM WS-COUNT
          END-IF
@@ -938,6 +1032,7 @@
  01 WS-LOOPS               BINARY-LONG.
  01 WS-MAY                 BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-SV                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -962,9 +1057,10 @@
          WHEN L-TYPE = 2 AND L-SLOT >= 0
              CALL "MENU-CLICK-SWAP" USING L-ROW L-SLOT L-BUTTON
          WHEN L-TYPE = 3 AND L-SLOT >= 0 AND PL-MODE(L-ROW) = 1 AND PL-CARRIED-COUNT(L-ROW) = 0
-             CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+             CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
              IF WS-SC > 0
                  MOVE WS-SI TO PL-CARRIED-ITEM(L-ROW)
+                 MOVE WS-SV TO PL-CARRIED-VAR(L-ROW)
                  MOVE IT-MAX-STACK(WS-SI + 1) TO PL-CARRIED-COUNT(L-ROW)
              END-IF
          WHEN L-TYPE = 4 AND L-SLOT >= 0 AND PL-CARRIED-COUNT(L-ROW) = 0 AND L-BUTTON >= 0
