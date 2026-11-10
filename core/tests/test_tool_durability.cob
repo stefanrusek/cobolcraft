@@ -590,6 +590,15 @@
      STRING FUNCTION TRIM(WS-E1) "/" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "0/1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US14 an empty slot takes no damage and does not break" TO TL-CASE
+     MOVE 5 TO WS-SLOT
+     CALL "TOOL-HURT-STACK" USING WS-CONN WS-SLOT WS-AMOUNT WS-BROKE
+     MOVE WS-BROKE TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US14 Unbreaking applied to 1000 pending points removes about the chance (level 1 about half, level 3 about three quarters), level 0 none" TO TL-CASE
      MOVE 1000 TO WS-AMOUNT
      MOVE 0 TO WS-ARMOR

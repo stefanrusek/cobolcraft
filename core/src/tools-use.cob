@@ -159,7 +159,7 @@
  END PROGRAM TOOL-STRIP-KEY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TOOL-TRANSFORM.
+ PROGRAM-ID. TOOL-TRANSFORM-AXE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-WAXED               BINARY-LONG.
@@ -168,37 +168,14 @@
  01 WS-STEP                BINARY-LONG.
  01 WS-OFF                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
- 01 L-KIND                 PIC X(8).
  01 L-KEY                  PIC X(48).
- 01 L-FACE                 BINARY-LONG.
- 01 L-AIR                  BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
  01 L-NEW                  PIC X(48).
  01 L-SOUND                PIC X(32).
  01 L-PARTICLE             PIC X(16).
- 01 L-LOOT                 PIC X(32).
  01 L-UPDATE               BINARY-LONG.
  01 L-COPY                 BINARY-LONG.
- PROCEDURE DIVISION USING L-KIND L-KEY L-FACE L-AIR L-FOUND L-NEW L-SOUND L-PARTICLE L-LOOT L-UPDATE L-COPY.
-     MOVE 0 TO L-FOUND L-COPY
-     MOVE 1 TO L-UPDATE
-     MOVE "-" TO L-NEW L-SOUND L-PARTICLE L-LOOT
-     EVALUATE L-KIND
-         WHEN "axe"
-             PERFORM AXE
-         WHEN "shovel"
-             IF L-AIR = 1 AND L-FACE NOT = 0 AND (L-KEY = "grass_block" OR "dirt" OR "podzol" OR "coarse_dirt"
-                     OR "mycelium" OR "rooted_dirt")
-                 MOVE 1 TO L-FOUND
-                 MOVE "dirt_path" TO L-NEW
-                 MOVE "item.shovel.flatten" TO L-SOUND
-             END-IF
-         WHEN OTHER
-             PERFORM HOE
-     END-EVALUATE
-     GOBACK.
-
- AXE.
+ PROCEDURE DIVISION USING L-KEY L-FOUND L-NEW L-SOUND L-PARTICLE L-UPDATE L-COPY.
      CALL "TOOL-STRIP-KEY" USING L-KEY L-NEW L-FOUND
      IF L-FOUND = 1
          MOVE "item.axe.strip" TO L-SOUND
@@ -225,9 +202,22 @@
                  MOVE 0 TO L-UPDATE
              END-IF
          END-IF
-     END-IF.
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-TRANSFORM-AXE.
 
- HOE.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TRANSFORM-HOE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-NEW                  PIC X(48).
+ 01 L-SOUND                PIC X(32).
+ 01 L-LOOT                 PIC X(32).
+ PROCEDURE DIVISION USING L-KEY L-AIR L-FACE L-FOUND L-NEW L-SOUND L-LOOT.
      EVALUATE TRUE
          WHEN L-KEY = "rooted_dirt"
              MOVE 1 TO L-FOUND
@@ -242,7 +232,49 @@
      END-EVALUATE
      IF L-FOUND = 1
          MOVE "item.hoe.till" TO L-SOUND
-     END-IF.
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-TRANSFORM-HOE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TRANSFORM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WAXED               BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-FAMILY              BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KIND                 PIC X(8).
+ 01 L-KEY                  PIC X(48).
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-NEW                  PIC X(48).
+ 01 L-SOUND                PIC X(32).
+ 01 L-PARTICLE             PIC X(16).
+ 01 L-LOOT                 PIC X(32).
+ 01 L-UPDATE               BINARY-LONG.
+ 01 L-COPY                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-KEY L-FACE L-AIR L-FOUND L-NEW L-SOUND L-PARTICLE L-LOOT L-UPDATE L-COPY.
+     MOVE 0 TO L-FOUND L-COPY
+     MOVE 1 TO L-UPDATE
+     MOVE "-" TO L-NEW L-SOUND L-PARTICLE L-LOOT
+     EVALUATE L-KIND
+         WHEN "axe"
+             CALL "TOOL-TRANSFORM-AXE" USING L-KEY L-FOUND L-NEW L-SOUND L-PARTICLE L-UPDATE L-COPY
+         WHEN "shovel"
+             IF L-AIR = 1 AND L-FACE NOT = 0 AND (L-KEY = "grass_block" OR "dirt" OR "podzol" OR "coarse_dirt"
+                     OR "mycelium" OR "rooted_dirt")
+                 MOVE 1 TO L-FOUND
+                 MOVE "dirt_path" TO L-NEW
+                 MOVE "item.shovel.flatten" TO L-SOUND
+             END-IF
+         WHEN OTHER
+             CALL "TOOL-TRANSFORM-HOE" USING L-KEY L-AIR L-FACE L-FOUND L-NEW L-SOUND L-LOOT
+     END-EVALUATE
+     GOBACK.
  END PROGRAM TOOL-TRANSFORM.
 
  IDENTIFICATION DIVISION.

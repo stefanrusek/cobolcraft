@@ -73,9 +73,6 @@
      IF L-SCALE > 1000
          MOVE 1000 TO L-SCALE
      END-IF
-     IF L-SCALE < 0
-         MOVE 0 TO L-SCALE
-     END-IF
      GOBACK.
  END PROGRAM TOOL-ATTACK-SCALE.
 
@@ -499,9 +496,6 @@
      COMPUTE WS-Q = WS-E / 25 - 0.15 * L-BREACH
      IF WS-Q < 0
          MOVE 0 TO WS-Q
-     END-IF
-     IF WS-Q > 1
-         MOVE 1 TO WS-Q
      END-IF
      COMPUTE L-OUT = WS-D * (1 - WS-Q) * 1000
      GOBACK.

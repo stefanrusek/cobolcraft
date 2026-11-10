@@ -175,22 +175,19 @@
              PERFORM VARYING WS-EFFECT FROM 0 BY 1 UNTIL WS-EFFECT >= EF-MAX-EFFECTS
                  COMPUTE WS-SLOT = WS-EFFECT + 1
                  IF EF-ON(WS-ROW, WS-SLOT) = 1
-                     PERFORM TICK-ONE
+                     EVALUATE TRUE
+                         WHEN EF-OWNER(WS-ROW, WS-SLOT) NOT = PL-ENTITY-ID(WS-ROW)
+                             MOVE 0 TO EF-ON(WS-ROW, WS-SLOT)
+                         WHEN EF-DURATION(WS-ROW, WS-SLOT) = -1
+                             CONTINUE
+                         WHEN EF-DURATION(WS-ROW, WS-SLOT) <= 1
+                             CALL "EFFECT-REMOVE" USING WS-ROW WS-EFFECT
+                         WHEN OTHER
+                             SUBTRACT 1 FROM EF-DURATION(WS-ROW, WS-SLOT)
+                     END-EVALUATE
                  END-IF
              END-PERFORM
          END-IF
      END-PERFORM
      GOBACK.
-
- TICK-ONE.
-     EVALUATE TRUE
-         WHEN EF-OWNER(WS-ROW, WS-SLOT) NOT = PL-ENTITY-ID(WS-ROW)
-             MOVE 0 TO EF-ON(WS-ROW, WS-SLOT)
-         WHEN EF-DURATION(WS-ROW, WS-SLOT) = -1
-             CONTINUE
-         WHEN EF-DURATION(WS-ROW, WS-SLOT) <= 1
-             CALL "EFFECT-REMOVE" USING WS-ROW WS-EFFECT
-         WHEN OTHER
-             SUBTRACT 1 FROM EF-DURATION(WS-ROW, WS-SLOT)
-     END-EVALUATE.
  END PROGRAM EFFECTS-TICK.
