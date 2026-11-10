@@ -315,7 +315,9 @@
  78 GSP-FOOD-EMPTY-HUNGER    VALUE 122.  *> hud/food_empty_hunger, food_half_hunger, food_full_hunger (49 section 5.4)
  78 GSP-FOOD-HALF-HUNGER     VALUE 123.
  78 GSP-FOOD-FULL-HUNGER     VALUE 124.
- 78 GSP-COUNT               VALUE 124.
+ 78 GSP-HIGHLIGHT-BACK      VALUE 125.  *> container/slot_highlight_back and _front, 24 x 24 (40-1 section 5.4)
+ 78 GSP-HIGHLIGHT-FRONT     VALUE 126.
+ 78 GSP-COUNT               VALUE 126.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 

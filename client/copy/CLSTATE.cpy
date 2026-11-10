@@ -208,6 +208,17 @@
        10 BM-ID              BINARY-LONG.
        10 BM-STATE-ID        BINARY-LONG.
        10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
+       10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
+*>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
+*>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
+       10 CX-DRAG-ON         BINARY-LONG.
+       10 CX-DRAG-BUTTON     BINARY-LONG.
+       10 CX-DRAG-N          BINARY-LONG.
+       10 CX-DRAG-SLOT       BINARY-LONG OCCURS 64 TIMES.
+       10 CX-SKIP-RELEASE    BINARY-LONG.
+       10 CX-PREV-SLOT       BINARY-LONG.
+       10 CX-PREV-MS         BINARY-DOUBLE.
+       10 CX-DOUBLE          BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)

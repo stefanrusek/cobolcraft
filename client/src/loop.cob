@@ -261,8 +261,11 @@
              CALL "CONTROLS-THROW" USING CLIENT-STATE
              CALL "CONTROLS-SWAP" USING CLIENT-STATE
          END-IF
-         IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH OR SM-SCREEN = SCR-CONTAINER
+         IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH
              CALL "INVENTORY-INPUT" USING CLIENT-STATE
+         END-IF
+         IF SM-SCREEN = SCR-CONTAINER
+             CALL "MENU-POINTER" USING CLIENT-STATE
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).

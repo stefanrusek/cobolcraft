@@ -11,7 +11,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INVENTORY-PACKET.
-*> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (17, 18, 20, 60, 107 or 110).
+*> USING CLIENT-STATE, packet PB-BUFFER (PB-POS after the id), packet id (17, 18, 19, 20, 60, 98, 107 or 110).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -92,6 +92,10 @@
                      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
                          MOVE 0 TO BX-COUNT(WS-I) BX-ITEM(WS-I) BX-DAMAGE(WS-I)
                      END-PERFORM
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+                         MOVE 0 TO BM-DATA(WS-I)
+                     END-PERFORM
+                     CALL "CX-RESET" USING CLIENT-STATE
                      MOVE SCR-CONTAINER TO WS-ARG
                      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ARG
                  END-IF
@@ -105,6 +109,24 @@
                  END-PERFORM
                  MOVE SCR-BENCH TO WS-ARG
                  CALL "SCREEN-OPEN" USING CLIENT-STATE WS-ARG
+             END-IF
+         WHEN 19
+*>           Container Set Data: property (Short), value (Short) of the open container's data slots.
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER
+             CALL "PB-GET-SHORT" USING PB-BUFFER WS-SLOT
+             CALL "PB-GET-SHORT" USING PB-BUFFER WS-COUNT
+             IF PB-ERROR = 0 AND WS-CONTAINER > 0 AND WS-CONTAINER = BM-ID AND WS-SLOT >= 0 AND WS-SLOT < 16
+                 MOVE WS-COUNT TO BM-DATA(WS-SLOT + 1)
+             END-IF
+         WHEN 98
+*>           Set Cursor Item: the carried stack.
+             CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WS-ITEMSTACK-X
+             IF PB-ERROR = 0
+                 MOVE WS-ISX-COUNT TO PL-CARRIED-COUNT
+                 MOVE WS-ISX-ITEM TO PL-CARRIED-ITEM
+                 IF WS-ISX-COUNT <= 0
+                     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+                 END-IF
              END-IF
          WHEN 17
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER

@@ -319,6 +319,10 @@
              IF WS-BLINK = 1
                  STRING "_blinking" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
              END-IF
+         WHEN L-ROW = GSP-HIGHLIGHT-BACK
+             MOVE "container/slot_highlight_back" TO WS-NAME
+         WHEN L-ROW = GSP-HIGHLIGHT-FRONT
+             MOVE "container/slot_highlight_front" TO WS-NAME
          WHEN L-ROW = GSP-FOOD-EMPTY-HUNGER
              MOVE "hud/food_empty_hunger" TO WS-NAME
          WHEN L-ROW = GSP-FOOD-HALF-HUNGER
