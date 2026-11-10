@@ -86,6 +86,7 @@
  01 WS-TEXT                PIC X(512).
  01 WS-Z1                  BINARY-LONG VALUE 0.
  01 WS-Z2                  BINARY-LONG VALUE 0.
+ 01 WS-Z3                  BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
@@ -107,7 +108,7 @@
          COMPUTE WS-X = WS-LEFT + 29
      END-IF
      COMPUTE WS-Y = WS-TOP + 6
-     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z2 WS-KEY WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY WS-KEY-LENGTH
 *>   The main inventory and the hotbar, the same in both menus.
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 35
          IF WS-I < 9
@@ -252,6 +253,7 @@
  01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-NONE3               BINARY-LONG VALUE 0.
  01 WS-OUTSIDE             BINARY-LONG VALUE -999.
+ 01 WS-OUTSIDE-DROP        BINARY-LONG VALUE -1.
  01 WS-INSIDE              BINARY-LONG.
  01 WS-CONTAINER           BINARY-LONG.
  01 WS-STATE-ID            BINARY-LONG.
@@ -272,7 +274,7 @@
 *>   Q over a slot (the slot widget under the cursor) holding a stack.
      MOVE KB-CODE(KB-DROP) TO WS-KEYC
      IF IN-KEY-PRESSED(WS-KEYC + 1) = 1
-         PERFORM FIND-SLOT
+         CALL "MENU-SLOT-AT" USING CLIENT-STATE WS-X WS-Y WS-ARG
          IF WS-ARG >= 0
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
          END-IF
@@ -298,7 +300,7 @@
 *>   slot changed, predicted here.
      MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
      IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND PL-CARRIED-COUNT = 0
-         PERFORM FIND-SLOT
+         CALL "MENU-SLOT-AT" USING CLIENT-STATE WS-X WS-Y WS-ARG
          IF WS-ARG >= 0 AND WS-ARG <= 35
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-OFF-ARG WS-OFF-COUNT WS-OFF-ITEM WS-OFF-DAMAGE
@@ -324,6 +326,7 @@
          IF WS-INSIDE = 0
              MOVE 0 TO WS-BUTTON
              MOVE PL-CARRIED-COUNT TO WS-COUNT
+             MOVE PL-CARRIED-ITEM TO WS-ITEM
              IF IN-BUTTON-RELEASED(CC-BUTTON-LEFT + 1) = 0
                  MOVE 1 TO WS-BUTTON WS-COUNT
              END-IF
@@ -332,24 +335,42 @@
                  MOVE 0 TO PL-CARRIED-ITEM
              END-IF
              CALL "PB-RESET" USING PB-BUFFER
-             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-OUTSIDE WS-BUTTON
-                 WS-PICKUP WS-NONE WS-NONE2 WS-NONE3 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             IF PL-MODE = 1
+*>               Creative: the cursor is the client's, so the drop is Set Creative Mode Slot -1 with what was thrown (40-menus-7 section 3.3).
+                 CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-OUTSIDE-DROP WS-COUNT WS-ITEM
+             ELSE
+                 CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-OUTSIDE WS-BUTTON
+                     WS-PICKUP WS-NONE WS-NONE2 WS-NONE3 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             END-IF
              CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
          END-IF
      END-IF
      GOBACK.
-*> WS-ARG: the argument of the slot widget under the cursor, -1 for none.
- FIND-SLOT.
-     MOVE -1 TO WS-ARG
+ END PROGRAM INVENTORY-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SLOT-AT.
+*> USING CLIENT-STATE, x, y (GUI pixels), argument out: the argument of the slot widget at that point (the cursor's stack excluded), -1 for none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-ARG.
+     MOVE -1 TO L-ARG
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
          IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) NOT = 36
-                 AND WS-X >= SM-W-X(WS-I) AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I)
-                 AND WS-Y >= SM-W-Y(WS-I) AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
-             MOVE SM-W-ARG(WS-I) TO WS-ARG
+                 AND L-X >= SM-W-X(WS-I) AND L-X < SM-W-X(WS-I) + SM-W-W(WS-I)
+                 AND L-Y >= SM-W-Y(WS-I) AND L-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
+             MOVE SM-W-ARG(WS-I) TO L-ARG
          END-IF
      END-PERFORM
-     .
- END PROGRAM INVENTORY-INPUT.
+     GOBACK.
+ END PROGRAM MENU-SLOT-AT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INVENTORY-CLOSE.
@@ -376,7 +397,7 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
-     MOVE CL-IT-MAX(PL-CARRIED-ITEM + 1) TO WS-MAX
+     CALL "ITEM-MAX-STACK" USING PL-CARRIED-ITEM WS-MAX
 *>   Pass 1: stacks of the carried item below the maximum; pass 2: empty slots.
      PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36 OR PL-CARRIED-COUNT = 0

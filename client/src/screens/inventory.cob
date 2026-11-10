@@ -253,6 +253,7 @@
  01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-NONE3               BINARY-LONG VALUE 0.
  01 WS-OUTSIDE             BINARY-LONG VALUE -999.
+ 01 WS-OUTSIDE-DROP        BINARY-LONG VALUE -1.
  01 WS-INSIDE              BINARY-LONG.
  01 WS-CONTAINER           BINARY-LONG.
  01 WS-STATE-ID            BINARY-LONG.
@@ -325,6 +326,7 @@
          IF WS-INSIDE = 0
              MOVE 0 TO WS-BUTTON
              MOVE PL-CARRIED-COUNT TO WS-COUNT
+             MOVE PL-CARRIED-ITEM TO WS-ITEM
              IF IN-BUTTON-RELEASED(CC-BUTTON-LEFT + 1) = 0
                  MOVE 1 TO WS-BUTTON WS-COUNT
              END-IF
@@ -333,8 +335,13 @@
                  MOVE 0 TO PL-CARRIED-ITEM
              END-IF
              CALL "PB-RESET" USING PB-BUFFER
-             CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-OUTSIDE WS-BUTTON
-                 WS-PICKUP WS-NONE WS-NONE2 WS-NONE3 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             IF PL-MODE = 1
+*>               Creative: the cursor is the client's, so the drop is Set Creative Mode Slot -1 with what was thrown (40-menus-7 section 3.3).
+                 CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-OUTSIDE-DROP WS-COUNT WS-ITEM
+             ELSE
+                 CALL "CLP-MENU-CLICK-AS" USING PB-BUFFER WS-CONTAINER WS-STATE-ID WS-OUTSIDE WS-BUTTON
+                     WS-PICKUP WS-NONE WS-NONE2 WS-NONE3 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             END-IF
              CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
          END-IF
      END-IF

@@ -3378,8 +3378,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T3018 [US9-client] Write acceptance test `client/tests/acc_f2us9_recipe_book.cob` (US9-2, SC-005): known recipes listed with makeable ones marked, tabs and toasts per Round GUI, choosing one sends Place Recipe and the grid fills (13 §3.8, §3.9) [FR-024, FR-025, FR-028]
 - [ ] T3019 [US9-client] Implement the recipe book panel in `client/src/screens/recipe-book.cob`
 - [ ] T3020 [US9-client] Write edge-case test `client/tests/test_recipe_book_edges.cob` (spec edge case): the recipe book with no known recipes shows the empty state; a bench-only recipe in the inventory screen is shown unavailable; a failed fill with a full inventory leaves the grid and shows nothing broken
-- [ ] T3021 [US9-client] Write acceptance test `client/tests/acc_f2us9_creative_throw.cob` (CC-0006): in creative a cursor stack released outside the window sends the drop [FR-024, FR-025, FR-028; SC-005]
-- [ ] T3022 [US9-client] Implement the creative throw in `client/src/screens/inventory.cob`
+- [X] T3021 [US9-client] Write acceptance test `client/tests/acc_f2us9_creative_throw.cob` (CC-0006): in creative a cursor stack released outside the window sends the drop [FR-024, FR-025, FR-028; SC-005]
+- [X] T3022 [US9-client] Implement the creative throw in `client/src/screens/inventory.cob`
 - [ ] T3023 [US9-client] Remove the 001 crafting screen and the C key (FR-028, US9-4): delete `client/src/screens/crafting.cob`, `client/tests/acc_us10_crafting_screen.cob`, `client/tests/test_crafting.cob`, the C key binding in `client/src/screens/common.cob`, and the 16-recipe client table (`CL-MAX-RECIPES`)
 - [X] T3024 [US9-client] Write contract test cases in `client/tests/contract_wire_client.cob` for the container and recipe-book fixtures
 - [ ] T3025 [US9-client] Gate: run `make gate-client` and record the command and real output
