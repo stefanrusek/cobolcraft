@@ -3,7 +3,7 @@
 *> opens) and GB-FALL-TICK runs the scheduled tick (BU-HOOK effect 6). The falling block ENTITY has no entity type in this core: a scheduled fall puts the block at its
 *> landing cell at once (the first cell whose cell below is not free), without the per-tick motion, the damage to entities, the landing events or the item drop of
 *> the entity; those rules of 4.1 to 4.8 stay helpers (GB-FALL-STEP, GB-LAND, GB-EXPIRY, GB-FALL-DAMAGE, GB-FALL-NBT, GB-FORCE-TICK). Sections 5 to 7 (the bone meal
-*> framework, crop helpers, saplings) are not in this file.
+*> framework, crop helpers, saplings) are helpers only, at the end of the file.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GB-PART.
@@ -614,3 +614,467 @@
      END-PERFORM
      GOBACK.
  END PROGRAM GB-RULES-OPEN.
+
+*> Sections 5 to 7 of 29b part 1 as helpers only: the bone meal framework, the crop helpers and saplings. Nothing here is called from the play path: the item flow needs a bone
+*> meal item and a growth block that this core's content does not have, and the random ticks of crops and saplings read the raw brightness at a position (the light engine of 32
+*> answers it) and the level random.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-BONEMEAL-ITEM.
+*> USING the clicked block is a valid bone meal target, isBonemealSuccess, server side, the clicked face is sturdy, growWaterPlant grew something (BINARY-LONG), performs out, shrinks
+*> out, level event 1505 data 15 out, result out (0 PASS, 1 success of growCrop, 2 success of growWaterPlant): BoneMealItem.useOn (5.3): a valid target always shrinks the stack on the
+*> server; performBonemeal runs only when the success test passes; the water plant branch is tried only when growCrop was not.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-PERFORMS             BINARY-LONG.
+ 01 L-SHRINKS              BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALID L-SUCCESS L-SERVER L-STURDY L-WATER L-PERFORMS L-SHRINKS L-EVENT L-RESULT.
+     MOVE 0 TO L-PERFORMS L-SHRINKS L-EVENT L-RESULT
+     IF L-VALID = 1
+         MOVE 1 TO L-RESULT
+         IF L-SERVER = 1
+             MOVE 1 TO L-SHRINKS L-EVENT
+             IF L-SUCCESS = 1
+                 MOVE 1 TO L-PERFORMS
+             END-IF
+         END-IF
+     ELSE
+         IF L-STURDY = 1 AND L-WATER = 1
+             MOVE 2 TO L-RESULT
+             IF L-SERVER = 1
+                 MOVE 1 TO L-EVENT
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GB-BONEMEAL-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-BUSH-SPREAD.
+*> USING per horizontal direction in the order north, east, south, west: the neighbour is air, the plant can survive there (eight BINARY-LONG in one group), the shuffled order of the four
+*> directions (four BINARY-LONG of 1 to 4 in one group), valid out, chosen out (0 none, else the direction 1 to 4): BushBlock bone meal (5.4): valid when some neighbour is air and
+*> survivable; the first direction of the shuffled order that is, is chosen.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-FLAGS.
+    05 L-AIR               BINARY-LONG OCCURS 4 TIMES.
+    05 L-SURVIVES          BINARY-LONG OCCURS 4 TIMES.
+ 01 L-ORDER.
+    05 L-DIRECTION         BINARY-LONG OCCURS 4 TIMES.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-CHOSEN               BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAGS L-ORDER L-VALID L-CHOSEN.
+     MOVE 0 TO L-VALID L-CHOSEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         IF L-AIR(WS-I) = 1 AND L-SURVIVES(WS-I) = 1
+             MOVE 1 TO L-VALID
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4 OR L-CHOSEN > 0
+         MOVE L-DIRECTION(WS-I) TO WS-D
+         IF L-AIR(WS-D) = 1 AND L-SURVIVES(WS-D) = 1
+             MOVE WS-D TO L-CHOSEN
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GB-BUSH-SPREAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-BEE-GATE.
+*> USING crops grown since pollination, the nextFloat draw (FLOAT-LONG), the bee has nectar, has a valid hive, the nextInt(30) draw (BINARY-LONG), continues out, ticks out: Bee$BeeGrowCropGoal
+*> (5.5): false at 10 or more crops or when the draw is below 0.3 (the float draw is made whatever the count), else true with nectar and a hive; the goal ticks on a draw of 0.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-GROWN                BINARY-LONG.
+ 01 L-DRAW                 FLOAT-LONG.
+ 01 L-NECTAR               BINARY-LONG.
+ 01 L-HIVE                 BINARY-LONG.
+ 01 L-TICK-DRAW            BINARY-LONG.
+ 01 L-CONTINUES            BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-GROWN L-DRAW L-NECTAR L-HIVE L-TICK-DRAW L-CONTINUES L-TICKS.
+     MOVE 0 TO L-CONTINUES L-TICKS
+     IF L-GROWN < 10 AND L-DRAW >= 0.3 AND L-NECTAR = 1 AND L-HIVE = 1
+         MOVE 1 TO L-CONTINUES
+     END-IF
+     IF L-TICK-DRAW = 0
+         MOVE 1 TO L-TICKS
+     END-IF
+     GOBACK.
+ END PROGRAM GB-BEE-GATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-BEE-GROW.
+*> USING the cell's kind (1 CropBlock, 2 StemBlock, 3 sweet_berry_bush, 4 cave vines and plant, 5 anything else, 6 pitcher crop), age, the largest age of the kind, the cave vines' MOB bone
+*> meal is valid (BINARY-LONG), new age out (-1 no new state), counted out (1 the level event 2011 and the counter): the growth branches of 5.5 in their order; a pitcher crop is never grown.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-COUNTED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-AGE L-MAX L-VALID L-NEW L-COUNTED.
+     MOVE -1 TO L-NEW
+     MOVE 0 TO L-COUNTED
+     EVALUATE TRUE
+         WHEN L-KIND = 1 AND L-AGE < L-MAX
+             COMPUTE L-NEW = L-AGE + 1
+         WHEN L-KIND = 2 AND L-AGE < 7
+             COMPUTE L-NEW = L-AGE + 1
+         WHEN L-KIND = 3 AND L-AGE < 3
+             COMPUTE L-NEW = L-AGE + 1
+         WHEN L-KIND = 4 AND L-VALID = 1
+             MOVE L-AGE TO L-NEW
+     END-EVALUATE
+     IF L-NEW >= 0
+         MOVE 1 TO L-COUNTED
+     END-IF
+     GOBACK.
+ END PROGRAM GB-BEE-GROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-CROP-STATE.
+*> USING age, the largest age, raw brightness at the position, the support below is in tag supports_crops (BINARY-LONG), max age out, randomly ticking out, enough light out, can survive out:
+*> the CropBlock predicates (6.1): light 8 for survival.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-SUPPORT              BINARY-LONG.
+ 01 L-IS-MAX               BINARY-LONG.
+ 01 L-TICKING              BINARY-LONG.
+ 01 L-ENOUGH               BINARY-LONG.
+ 01 L-SURVIVES             BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-MAX L-LIGHT L-SUPPORT L-IS-MAX L-TICKING L-ENOUGH L-SURVIVES.
+     MOVE 0 TO L-IS-MAX L-TICKING L-ENOUGH L-SURVIVES
+     IF L-AGE >= L-MAX
+         MOVE 1 TO L-IS-MAX
+     ELSE
+         MOVE 1 TO L-TICKING
+     END-IF
+     IF L-LIGHT >= 8
+         MOVE 1 TO L-ENOUGH
+         IF L-SUPPORT = 1
+             MOVE 1 TO L-SURVIVES
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GB-CROP-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-CROP-SPEED.
+*> USING nine cell classes (0 none, 1 grows_crops, 3 grows_crops with moisture above 0) in the order dx -1 to 1 outer and dz -1 to 1 inner, the same block along x (west or east), along z (north
+*> or south), at a diagonal (BINARY-LONG in one group of twelve), speed out (FLOAT-LONG): getGrowthSpeed (6.3): 1 plus each class (a quarter off the centre), halved once when along x and z both
+*> or a diagonal.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-CLASS             BINARY-LONG OCCURS 9 TIMES.
+    05 L-ALONG-X           BINARY-LONG.
+    05 L-ALONG-Z           BINARY-LONG.
+    05 L-DIAGONAL          BINARY-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-IN L-SPEED.
+     MOVE 1.0 TO L-SPEED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE L-CLASS(WS-I) TO WS-S
+         IF WS-I NOT = 5
+             COMPUTE WS-S = WS-S / 4
+         END-IF
+         ADD WS-S TO L-SPEED
+     END-PERFORM
+     IF (L-ALONG-X = 1 AND L-ALONG-Z = 1) OR L-DIAGONAL = 1
+         COMPUTE L-SPEED = L-SPEED / 2
+     END-IF
+     GOBACK.
+ END PROGRAM GB-CROP-SPEED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-CROP-TICK.
+*> USING raw brightness, age, the largest age (BINARY-LONG), speed (FLOAT-LONG), the nextInt draw (BINARY-LONG), bound out, grows out: CropBlock.randomTick (6.2): needs light 9 and age below the
+*> maximum; the bound is int(25.0f / speed) + 1 and the crop grows on a draw of 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Q                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-SPEED                FLOAT-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-BOUND                BINARY-LONG.
+ 01 L-GROWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIGHT L-AGE L-MAX L-SPEED L-DRAW L-BOUND L-GROWS.
+     MOVE 0 TO L-BOUND L-GROWS
+     IF L-LIGHT >= 9 AND L-AGE < L-MAX
+         COMPUTE WS-Q = 25.0 / L-SPEED
+         COMPUTE L-BOUND = FUNCTION INTEGER-PART(WS-Q) + 1
+         IF L-DRAW = 0
+             MOVE 1 TO L-GROWS
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GB-CROP-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-CROP-BONEMEAL.
+*> USING age, the largest age, the nextInt(4) draw (BINARY-LONG), valid out, new age out: CropBlock bone meal (6.4): valid below the maximum; newAge = min(max, age + U(2, 5)), U drawing nextInt(4) + 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-MAX L-DRAW L-VALID L-NEW.
+     MOVE 0 TO L-VALID
+     MOVE L-AGE TO L-NEW
+     IF L-AGE < L-MAX
+         MOVE 1 TO L-VALID
+         COMPUTE L-NEW = FUNCTION MIN(L-MAX, L-AGE + L-DRAW + 2)
+     END-IF
+     GOBACK.
+ END PROGRAM GB-CROP-BONEMEAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-SAPLING.
+*> USING max local raw brightness above, the nextInt(7) draw, stage (BINARY-LONG), server side, canGrow, the cell above the minimum height is inside the build height (BINARY-LONG), the nextFloat draw
+*> (FLOAT-LONG), random tick advances out, advance action out (0 stage 1 written with flags 260, 1 the tree grows), bone meal valid out, bone meal success out: SaplingBlock (7.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-STAGE                BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-CAN-GROW             BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ 01 L-FLOAT                FLOAT-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIGHT L-DRAW L-STAGE L-SERVER L-CAN-GROW L-INSIDE L-FLOAT L-TICK L-ACTION L-VALID L-SUCCESS.
+     MOVE 0 TO L-TICK L-VALID L-SUCCESS
+     IF L-LIGHT >= 9 AND L-DRAW = 0
+         MOVE 1 TO L-TICK
+     END-IF
+     MOVE L-STAGE TO L-ACTION
+     IF L-SERVER = 1 AND L-CAN-GROW = 1 AND L-INSIDE = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     IF L-FLOAT < 0.45
+         MOVE 1 TO L-SUCCESS
+     END-IF
+     GOBACK.
+ END PROGRAM GB-SAPLING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-WEIGHTED.
+*> USING the weights of the list entries in order (four BINARY-LONG in one group, 0 for an absent entry), the nextInt(total) draw (BINARY-LONG), entry out (1 to 4, 0 for an empty list), draws out
+*> (0 or 1): WeightedList.getRandom (7.2): an empty list draws nothing; the entry is the first whose cumulative range holds the draw.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WEIGHTS.
+    05 L-WEIGHT            BINARY-LONG OCCURS 4 TIMES.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WEIGHTS L-DRAW L-ENTRY L-DRAWS.
+     MOVE 0 TO L-ENTRY L-DRAWS WS-TOTAL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         ADD L-WEIGHT(WS-I) TO WS-TOTAL
+     END-PERFORM
+     IF WS-TOTAL > 0
+         MOVE 1 TO L-DRAWS
+         MOVE L-DRAW TO WS-LEFT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4 OR L-ENTRY > 0
+             IF L-WEIGHT(WS-I) > 0
+                 SUBTRACT L-WEIGHT(WS-I) FROM WS-LEFT
+                 IF WS-LEFT < 0
+                     MOVE WS-I TO L-ENTRY
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM GB-WEIGHTED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-GROWER.
+*> USING grower (1 OAK, 2 SPRUCE, 3 MANGROVE, 4 AZALEA, 5 BIRCH, 6 JUNGLE, 7 ACACIA, 8 CHERRY, 9 DARK_OAK, 10 PALE_OAK, 11 POPLAR), the total weight of trees, of megaTrees, of flowerTrees, has a
+*> shortestTreeType (BINARY-LONG out): the table of 7.4 (a single-entry list has weight 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+LINKAGE SECTION.
+ 01 L-GROWER               BINARY-LONG.
+ 01 L-TREES                BINARY-LONG.
+ 01 L-MEGA                 BINARY-LONG.
+ 01 L-FLOWERS              BINARY-LONG.
+ 01 L-SHORTEST             BINARY-LONG.
+ PROCEDURE DIVISION USING L-GROWER L-TREES L-MEGA L-FLOWERS L-SHORTEST.
+     EVALUATE L-GROWER
+         WHEN 1
+             MOVE 10 TO L-TREES
+             MOVE 0 TO L-MEGA
+             MOVE 10 TO L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+         WHEN 2
+             MOVE 1 TO L-TREES
+             MOVE 2 TO L-MEGA
+             MOVE 0 TO L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+         WHEN 3
+             MOVE 100 TO L-TREES
+             MOVE 0 TO L-MEGA L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+         WHEN 4
+             MOVE 1 TO L-TREES
+             MOVE 0 TO L-MEGA L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+         WHEN 5
+             MOVE 1 TO L-TREES
+             MOVE 0 TO L-MEGA
+             MOVE 1 TO L-FLOWERS L-SHORTEST
+         WHEN 6
+             MOVE 1 TO L-TREES L-MEGA L-SHORTEST
+             MOVE 0 TO L-FLOWERS
+         WHEN 7
+             MOVE 1 TO L-TREES
+             MOVE 0 TO L-MEGA L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+         WHEN 8
+             MOVE 1 TO L-TREES L-FLOWERS L-SHORTEST
+             MOVE 0 TO L-MEGA
+         WHEN 9
+             MOVE 0 TO L-TREES L-FLOWERS L-SHORTEST
+             MOVE 1 TO L-MEGA
+         WHEN 10
+             MOVE 0 TO L-TREES L-FLOWERS L-SHORTEST
+             MOVE 1 TO L-MEGA
+         WHEN OTHER
+             MOVE 3 TO L-TREES
+             MOVE 0 TO L-MEGA L-FLOWERS
+             MOVE 1 TO L-SHORTEST
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GB-GROWER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-TREE-CAN-GROW.
+*> USING the normal pick is null (the list is empty or the draw found nothing), the mega pick is not null, a 2 x 2 group of the sapling exists (BINARY-LONG), can grow out, and the dx, dz of the
+*> box test (BINARY-LONG; flowers within -2 to 2, -1 to 1, -2 to 2), inside out: TreeGrower.canGrow and hasFlowers (7.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-NORMAL-NULL          BINARY-LONG.
+ 01 L-MEGA                 BINARY-LONG.
+ 01 L-GROUP                BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-NORMAL-NULL L-MEGA L-GROUP L-DX L-DY L-DZ L-CAN L-INSIDE.
+     MOVE 1 TO L-CAN
+     IF L-NORMAL-NULL = 1 AND L-MEGA = 1
+         MOVE L-GROUP TO L-CAN
+     END-IF
+     MOVE 0 TO L-INSIDE
+     IF L-DX >= -2 AND L-DX <= 2 AND L-DY >= -1 AND L-DY <= 1 AND L-DZ >= -2 AND L-DZ <= 2
+         MOVE 1 TO L-INSIDE
+     END-IF
+     GOBACK.
+ END PROGRAM GB-TREE-CAN-GROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-TWO-BY-TWO.
+*> USING sixteen flags (the four candidate squares in the order (0, 0), (0, -1), (-1, 0), (-1, -1) of (dx, dz), four cells each, 1 when the cell holds the same block as the sapling), dx out, dz out,
+*> found out: findTwoByTwoSaplingPos (7.2): the first square whose four cells all match.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-ALL                 BINARY-LONG.
+ 01 WS-DXS                 PIC X(4) VALUE "0011".
+ 01 WS-DZS                 PIC X(4) VALUE "0101".
+ LINKAGE SECTION.
+ 01 L-FLAGS.
+    05 L-FLAG              BINARY-LONG OCCURS 16 TIMES.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAGS L-DX L-DZ L-FOUND.
+     MOVE 0 TO L-DX L-DZ L-FOUND
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 4 OR L-FOUND = 1
+         MOVE 1 TO WS-ALL
+         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+             IF L-FLAG((WS-S - 1) * 4 + WS-C) = 0
+                 MOVE 0 TO WS-ALL
+             END-IF
+         END-PERFORM
+         IF WS-ALL = 1
+             MOVE 1 TO L-FOUND
+             MOVE WS-DXS(WS-S:1) TO L-DX
+             MOVE WS-DZS(WS-S:1) TO L-DZ
+             COMPUTE L-DX = 0 - L-DX
+             COMPUTE L-DZ = 0 - L-DZ
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GB-TWO-BY-TWO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GB-GROW-TREE.
+*> USING the mega pick is not null, it is registered, a 2 x 2 group was found, the normal pick is not null, it is registered, place succeeded (BINARY-LONG), action out (0 nothing, 1 mega tree placed,
+*> 2 one-sapling tree placed), restore out (1 the removed saplings return with flags 260), result out, remove flags out (818): TreeGrower.growTree (7.3): the mega branch has no fallback to a
+*> single tree.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MEGA                 BINARY-LONG.
+ 01 L-REGISTERED           BINARY-LONG.
+ 01 L-GROUP                BINARY-LONG.
+ 01 L-NORMAL               BINARY-LONG.
+ 01 L-NORMAL-REGISTERED    BINARY-LONG.
+ 01 L-PLACE                BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-RESTORE              BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-REMOVE-FLAGS         BINARY-LONG.
+ PROCEDURE DIVISION USING L-MEGA L-REGISTERED L-GROUP L-NORMAL L-NORMAL-REGISTERED L-PLACE L-ACTION L-RESTORE L-RESULT L-REMOVE-FLAGS.
+     MOVE 0 TO L-ACTION L-RESTORE L-RESULT
+     MOVE 818 TO L-REMOVE-FLAGS
+     EVALUATE TRUE
+         WHEN L-MEGA = 1 AND L-REGISTERED = 1 AND L-GROUP = 1
+             MOVE 1 TO L-ACTION
+             MOVE L-PLACE TO L-RESULT
+             IF L-PLACE = 0
+                 MOVE 1 TO L-RESTORE
+             END-IF
+         WHEN L-NORMAL = 1 AND L-NORMAL-REGISTERED = 1
+             MOVE 2 TO L-ACTION
+             MOVE L-PLACE TO L-RESULT
+             IF L-PLACE = 0
+                 MOVE 1 TO L-RESTORE
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GB-GROW-TREE.
