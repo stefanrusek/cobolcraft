@@ -73,7 +73,7 @@
      MOVE "acceptance US7-4 given a survival player's health reaches zero when they die then "
          & "they are sent Player Combat Kill carrying the cause, the death message" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "damage 1 type 1 source 0 | hurt 1 | health 0 food 24 | kill 1 cobolcraft.death.fall("
+     MOVE "damage 1 type 1 source 0 | hurt 1 | health 0 food 20 | kill 1 cobolcraft.death.fall("
          & "Alice) | chat cobolcraft.death.fall(Alice)" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -124,12 +124,12 @@
          & "world spawn position" TO TL-CASE
      CALL "TEST-CLIENT-COMMAND" USING WS-ALICE WS-ACTION
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:main mode 0 keep 0 | health 30 food 24 | position 4.5 54.0 8.5"
+     MOVE "respawn cobolcraft:main mode 0 keep 0 | health 20 food 20 | position 4.5 54.0 8.5"
          TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-4 given a dead player when they respawn then they are alive in "
-         & "cobolcraft:main at the world spawn with health 30, food 24, survival, the inventory "
+         & "cobolcraft:main at the world spawn with health 20, food 20, survival, the inventory "
          & "empty and the starting items not given again" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
@@ -152,7 +152,7 @@
      END-PERFORM
      MOVE WS-SUM TO WS-E1
      STRING " items " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED POINTER WS-PTR
-     MOVE "state 1 dim 1 at 4.500 54.000 8.500 health 30 food 24 mode 0 items 0"
+     MOVE "state 1 dim 1 at 4.500 54.000 8.500 health 20 food 20 mode 0 items 0"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -176,7 +176,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-CAROL WS-TEXT
      MOVE PL-ENTITY-ID(WS-ROW) TO WS-E1
      MOVE SPACES TO TL-EXPECTED
-     STRING "health 0 food 24 | position 20.5 101.0 20.5 | kill " FUNCTION TRIM(WS-E1)
+     STRING "health 0 food 20 | position 20.5 101.0 20.5 | kill " FUNCTION TRIM(WS-E1)
          " cobolcraft.death.fall(Carol)" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US7-4 given a player who rejoined dead when they have loaded then they "
@@ -187,7 +187,7 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "state " FUNCTION TRIM(WS-E1) " then health " FUNCTION TRIM(WS-E2)
          DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "state 2 then health 30" TO TL-EXPECTED
+     MOVE "state 2 then health 20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

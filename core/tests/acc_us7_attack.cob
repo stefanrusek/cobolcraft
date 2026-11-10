@@ -48,7 +48,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
-     MOVE "damage 2 type 29 source 2 | hurt 2 | health 26 food 24" TO TL-EXPECTED
+     MOVE "damage 2 type 29 source 2 | hurt 2 | health 16 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-2 given another player hits survival Bobby when player combat is "
@@ -65,7 +65,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
-     MOVE "damage 2 type 29 source 2 | hurt 2 | health 25 food 24" TO TL-EXPECTED
+     MOVE "damage 2 type 29 source 2 | hurt 2 | health 15 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-5 given Alice holds nothing (bare hand) when she attacks Bobby then he "
@@ -75,7 +75,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
-     MOVE "damage 2 type 29 source 2 | hurt 2 | health 24 food 24" TO TL-EXPECTED
+     MOVE "damage 2 type 29 source 2 | hurt 2 | health 14 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-5 given Bobby's box is 3.9 blocks from Alice's eye point when she "
@@ -86,7 +86,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
-     MOVE "damage 2 type 29 source 2 | hurt 2 | health 23 food 24" TO TL-EXPECTED
+     MOVE "damage 2 type 29 source 2 | hurt 2 | health 13 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-5 given Bobby's box is 4.1 blocks from Alice's eye point when she "
@@ -120,6 +120,9 @@
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
      MOVE "Bobby" TO WS-NAME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
+*>   Food 17 and saturation 0 for both: no natural regeneration between the hits.
+     MOVE 17 TO PL-FOOD(CN-PLAYER(WS-BOB))
+     MOVE 0 TO PL-SATURATION(CN-PLAYER(WS-BOB))
 *>   Greystone under the players: a claim of the ground counts only with support (core/src/move-check.cob).
      PERFORM VARYING WS-FLOOR-X FROM 20 BY 1 UNTIL WS-FLOOR-X > 25
          CALL "WORLD-SET-BLOCK" USING WS-FLOOR-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-FLOOR-STATE

@@ -264,7 +264,7 @@
   06                                                 # flags 0x06
   00                                                 # children: count 0
   06 61 6d 6f 75 6e 74                               # name: String "amount"
-  03 03 00 00 00 00 00 00 00 1e                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 30
+  03 03 00 00 00 00 00 00 00 14                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 20
   # (no suggestions type: flag 0x10 clear)
 # [48] literal `full` *exec*
   05                                                 # flags 0x05
@@ -289,7 +289,7 @@
   06                                                 # flags 0x06
   00                                                 # children: count 0
   06 61 6d 6f 75 6e 74                               # name: String "amount"
-  03 03 00 00 00 00 00 00 00 18                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 24
+  03 03 00 00 00 00 00 00 00 14                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 20
   # (no suggestions type: flag 0x10 clear)
 # [53] literal `full` *exec*
   05                                                 # flags 0x05
@@ -414,7 +414,7 @@
   06                                                 # flags 0x06
   00                                                 # children: count 0
   05 74 69 63 6b 73                                  # name: String "ticks"
-  03 03 00 00 00 00 00 00 75 2f                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 29999
+  03 03 00 00 00 00 00 00 5d bf                      # parser 3 brigadier:integer, flags 0x03, min Int 0, max Int 23999
   # (no suggestions type: flag 0x10 clear)
 # [74] literal `skies`
   01                                                 # flags 0x01

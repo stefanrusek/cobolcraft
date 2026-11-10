@@ -349,6 +349,30 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER
      CALL "PB-FREE" USING PK-BUFFER
+
+*>   The settings and outcomes of feature 002 (core-host-delta.md sections 1 to 3): the re-derived size, the status words,
+*>   a new world records WorldType and Seed from CS-WORLD-TYPE and CS-SEED-TEXT.
+     MOVE "T" TO TL-MODE
+     MOVE "contract coreapi provider CORE-SETTINGS is CORE-SETTINGS-SIZE (3829) bytes and CORE-WO words are 0 to 3"
+         TO TL-CASE
+     MOVE LENGTH OF CORE-SETTINGS TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " CORE-WO-OK CORE-WO-PACKS-NOT-OK CORE-WO-NO-LEVEL-DAT CORE-WO-NO-WORLDTYPE
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3829 0123" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "cobolcraft" TO CS-WORLD-TYPE
+     MOVE "  42 " TO CS-SEED-TEXT
+     CALL "SYSTEM" USING WS-RM-OLD
+     CALL "CORE-WORLD-OPEN" USING WS-NEW-PATH CORE-SETTINGS WS-CREATED
+     MOVE "contract coreapi provider CORE-WORLD-OPEN of a new world records the type and the seed of the seed text"
+         TO TL-CASE
+     MOVE CW-SEED TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CW-WORLD-TYPE) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "cobolcraft 42" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> WS-LINES: the console lines drained now, separated by "|".

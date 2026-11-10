@@ -77,7 +77,7 @@
      MOVE 1 TO PL-HEALTH(WS-BOB-ROW)
      CALL "TEST-ATTACK" USING WS-ALICE WS-TARGET
      CALL "TEST-DRAIN-HEALTH" USING WS-BOB WS-TEXT
-     MOVE "damage 2 type 29 source 2 | hurt 2 | health 0 food 24 | kill 2 cobolcraft.death."
+     MOVE "damage 2 type 29 source 2 | hurt 2 | health 0 food 20 | kill 2 cobolcraft.death."
          & "player(Bobby,Alice) | chat cobolcraft.death.player(Bobby,Alice)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT

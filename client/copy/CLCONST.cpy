@@ -196,11 +196,13 @@
  78 CL-REACH                VALUE 5.
 *> Health (standin-content §10.1 maximum health; §10.4 attack reach in blocks from the eye) and how
 *> long the hurt indication shows, in milliseconds (a client choice).
- 78 CL-MAX-HEALTH           VALUE 30.
+ 78 CL-MAX-HEALTH           VALUE 20.
  78 CL-ATTACK-REACH         VALUE 4.
  78 CL-HURT-MS              VALUE 500.
 *> Hunger (standin-content §11.1 maximum food; §11.6 eating time, 30 ticks, in milliseconds).
- 78 CL-MAX-FOOD             VALUE 24.
+ 78 CL-MAX-FOOD             VALUE 20.
+*> A survival Player sprints only with food above 6 (17 section 4.9).
+ 78 CL-SPRINT-FOOD          VALUE 6.
  78 CL-EAT-MS               VALUE 1500.
 
 *> Entity types (standin-content §3).

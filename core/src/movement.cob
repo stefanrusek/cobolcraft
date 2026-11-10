@@ -19,15 +19,16 @@
 *> floor(D) >= 5 the player takes 2 x (floor(D) - 4) fall damage (HEALTH-DAMAGE, cause fall; a
 *> creative player takes none) after the move has been applied and sent.
 *>
-*> Exhaustion (standin §11.2; HUNGER-EXHAUST, core/src/hunger.cob, counts it only for an alive
-*> survival player): an accepted move with a position adds 0.02 per block of horizontal distance
-*> from the last accepted position (sqrt(dx^2 + dz^2)), 0.12 while the sprinting flag is set, and
-*> nothing while flying; a move with on-ground false after one with on-ground true and a higher feet
-*> y is a jump and adds 0.3.
+*> Exhaustion (17 section 4.9; HUNGER-EXHAUST, core/src/hunger.cob, counts it only for an alive
+*> survival player): an accepted move with a position adds 0.1 per block of horizontal distance
+*> from the last accepted position (sqrt(dx^2 + dz^2)) while the sprinting flag is set (walking adds
+*> nothing) and nothing while flying; a move with on-ground false after one with on-ground true and a
+*> higher feet y is a jump and adds 0.05, or 0.2 while sprinting.
 *>
 *> Sprinting (MOVE-SPRINT, Player Command 0x2A): action 1 START_SPRINTING sets the player's
-*> sprinting flag, action 2 STOP_SPRINTING clears it, other actions leave it (data-model §6). Death
-*> and respawn clear it (core/src/health.cob).
+*> sprinting flag, action 2 STOP_SPRINTING clears it, other actions leave it (data-model §6). A
+*> survival player with food of 6 or less cannot start sprinting (17 section 4.9). Death and respawn
+*> clear it (core/src/health.cob).
 *>
 *> Entry points:
 *>   MOVE-PLAYER USING connection id, packet id (30 to 33), PLAY-SERVERBOUND
@@ -105,7 +106,7 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-MOVED               PIC 9.
  01 WS-ON-GROUND           BINARY-LONG.
- 01 WS-FALL                BINARY-LONG.
+ 01 WS-FALL                FLOAT-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
@@ -180,7 +181,7 @@
      END-IF
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1
-         COMPUTE WS-FALL = FUNCTION INTEGER(PL-FALL-START(WS-ROW) - PL-Y(WS-ROW))
+         COMPUTE WS-FALL = PL-FALL-START(WS-ROW) - PL-Y(WS-ROW)
      END-IF
      IF PL-ON-GROUND(WS-ROW) = 1 OR PL-FLYING(WS-ROW) = 1 OR PL-MODE(WS-ROW) = 1
              OR PL-Y(WS-ROW) > PL-FALL-START(WS-ROW)
@@ -194,22 +195,25 @@
          CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
      END-IF
-*>   Exhaustion of walking or running, and of a jump (§11.2).
+*>   Exhaustion of sprinting (0.1 per metre; walking costs nothing) and of a jump (17 section 4.9).
      IF WS-MOVED = 1 AND PL-FLYING(WS-ROW) = 0
-         MOVE RULE-EXHAUST-WALK-MILLI TO WS-RATE
          IF PL-SPRINTING(WS-ROW) = 1
-             MOVE RULE-EXHAUST-SPRINT-MILLI TO WS-RATE
+             COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
+                 + (PL-Z(WS-ROW) - WS-OLD-Z) ** 2) * RULE-EXHAUST-SPRINT-MILLI / 1000
+             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          END-IF
-         COMPUTE WS-EXHAUST = FUNCTION SQRT((PL-X(WS-ROW) - WS-OLD-X) ** 2
-             + (PL-Z(WS-ROW) - WS-OLD-Z) ** 2) * WS-RATE / 1000
-         CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          IF WS-OLD-ON-GROUND = 1 AND PL-ON-GROUND(WS-ROW) = 0 AND PL-Y(WS-ROW) > WS-OLD-Y
-             COMPUTE WS-EXHAUST = RULE-EXHAUST-JUMP-MILLI / 1000
+             MOVE RULE-EXHAUST-JUMP-MILLI TO WS-RATE
+             IF PL-SPRINTING(WS-ROW) = 1
+                 MOVE RULE-EXHAUST-SPRINT-JUMP-MILLI TO WS-RATE
+             END-IF
+             COMPUTE WS-EXHAUST = WS-RATE / 1000
              CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
          END-IF
      END-IF
-     IF WS-FALL > RULE-SAFE-FALL
-         COMPUTE WS-AMOUNT = RULE-FALL-FACTOR * (WS-FALL - RULE-SAFE-FALL)
+*>   Fall damage (17 section 4.11): floor(distance + 1e-6 - 3).
+     COMPUTE WS-AMOUNT = FUNCTION INTEGER(WS-FALL + 0.000001 - RULE-SAFE-FALL)
+     IF WS-AMOUNT > 0
          MOVE CAUSE-FALL TO WS-CAUSE
          CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
      END-IF
@@ -250,15 +254,18 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-SPRINT.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Player Command 0x2A): action 1 sets the
-*> sprinting flag, action 2 clears it, any other action is ignored.
+*> sprinting flag (not for a survival player whose food is 6 or less), action 2 clears it, any
+*> other action is ignored.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY RULES.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
-     IF PSB-ACTION = 1
+     IF PSB-ACTION = 1 AND (PL-MODE(CN-PLAYER(L-ID)) = 1
+             OR PL-FOOD(CN-PLAYER(L-ID)) > RULE-SPRINT-FOOD)
          MOVE 1 TO PL-SPRINTING(CN-PLAYER(L-ID))
      END-IF
      IF PSB-ACTION = 2

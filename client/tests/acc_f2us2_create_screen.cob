@@ -107,6 +107,19 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SP-QUIT" USING CLIENT-STATE
 
+*>   Packs not ok: the create-world screen opens with the cobolcraft type as its default.
+     MOVE CT-PACKS-ABSENT TO CL-PACKS-STATUS
+     MOVE SCR-CREATE-WORLD TO WS-SCREEN
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
+     MOVE ZERO TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "World type: CobolCraft"
+     MOVE "acceptance US2-2 given packs not ok when the create-world screen opens then the world type "
+         & "control defaults to CobolCraft" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-HITS
+
 *>   Valid packs: the standard type creates (the settings carry the generated directory).
      MOVE CT-PACKS-OK TO CL-PACKS-STATUS
      MOVE SPACES TO CL-GENERATED-DIR
@@ -119,12 +132,13 @@
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE "acceptance US2-1 given valid packs when Create is clicked with standard chosen then the "
-         & "world is opened with the standard type and the generated directory" TO TL-CASE
+         & "core is asked for the standard type and directory and refuses (fixture is no real set)"
+         TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE SP-CREATE-REFUSED TO WS-E1
      STRING "refused " WS-E1 " type " FUNCTION TRIM(CS-WORLD-TYPE) " dir "
          FUNCTION TRIM(CS-GENERATED-DIR) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "refused 0 type standard dir build/client-test-create-screen/generated" TO TL-EXPECTED
+     MOVE "refused 1 type standard dir build/client-test-create-screen/generated" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

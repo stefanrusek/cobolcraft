@@ -98,6 +98,12 @@
      STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/saves/" L-FOLDER(1:L-FOLDER-LENGTH)
          DELIMITED BY SIZE INTO WS-PATH
      CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
+*>   A refused world (core-host-delta section 2: the flag is minus a CORE-WO status) is not hosted: the create
+*>   screen shows the refusal (builtin-ui-art 7.2) and nothing opens.
+     IF WS-CREATED < 0
+         MOVE 1 TO SP-CREATE-REFUSED
+         GOBACK
+     END-IF
      IF WS-CREATED = 1
          CALL "CORE-SAVE"
      END-IF

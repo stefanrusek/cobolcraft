@@ -33,7 +33,7 @@
 
      CALL "TEST-GAME-EVENT" USING CLIENT-STATE WS-CONN WS-EVENT WS-CREATIVE
      CALL "TEST-STEP" USING CLIENT-STATE
-     MOVE "acceptance US14-2 client half (set-mode): given survival with Health 17/30 and Food "
+     MOVE "acceptance US14-2 client half (set-mode): given survival with Health 17/20 and Food "
          & "9/24 when Game Event 3 changes the mode to creative then the health and food "
          & "displays are hidden" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -61,7 +61,7 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " flying " PL-FLYING DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "+||||||||||Health 12/30|Food 5/24 flying 0" TO TL-EXPECTED
+     MOVE "+||||||||||Health 12/20|Food 5/20 flying 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-KEY" USING CLIENT-STATE WS-SPACE

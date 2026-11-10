@@ -76,16 +76,16 @@
      PERFORM CHECK
 
      MOVE "acceptance US7-6 given a creative player when every cause of §10.3 would damage them "
-         & "then their health stays 30 and nothing is sent" TO TL-CASE
+         & "then their health stays 20 and nothing is sent" TO TL-CASE
      PERFORM VARYING WS-CAUSE FROM 1 BY 1 UNTIL WS-CAUSE > CAUSE-COUNT
          CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
      END-PERFORM
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE 30 TO WS-E1
+     MOVE 20 TO WS-E1
      PERFORM CHECK-QUIET
 
-     MOVE "US7 edge given a survival player hurt to 18 when they switch to creative and 100 "
-         & "ticks pass then the stored health stays 18 (no recovery, nothing sent)" TO TL-CASE
+     MOVE "US7 edge given a survival player hurt to 13 when they switch to creative and 100 "
+         & "ticks pass then the stored health stays 13 (no recovery, nothing sent)" TO TL-CASE
      MOVE 0 TO PL-MODE(WS-ROW)
      MOVE 12 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -95,16 +95,19 @@
      MOVE 100 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE 18 TO WS-E1
+     MOVE 13 TO WS-E1
      PERFORM CHECK-QUIET
 
      MOVE "US7 edge given a hurt player in creative when they switch back to survival then the "
-         & "health is the one they had, 18, and recovers again after 50 ticks" TO TL-CASE
+         & "health is the one they had, 13, and recovers again after 80 ticks (food 18)" TO TL-CASE
      MOVE 0 TO PL-MODE(WS-ROW)
-     MOVE 50 TO WS-TICKS
+     MOVE 18 TO PL-FOOD(WS-ROW)
+     MOVE 0 TO PL-SATURATION(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     MOVE 80 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 19 food 24" TO TL-EXPECTED
+     MOVE "health 14 food 18" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 
