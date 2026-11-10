@@ -723,9 +723,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T0432 [US11-core] Write edge-case test `core/tests/test_ore_edges.cob` (spec edge case): an ore exposed in a cave or aquifer keeps its exposure rule (11), and a vein crossing a chunk border is placed identically from either chunk
 - [ ] T0433 [US11-core] Write test `core/tests/test_ore_veins.cob`: the large ore vein and the copper/iron vein noise of 11
 - [ ] T0434 [US11-core] Implement the large veins in `core/src/ores.cob`
-- [ ] T0435 [US11-core] Write acceptance test `core/tests/acc_f2us11_ore_drops.cob` (US11-3): ore blocks broken in survival drop their items through the loot tables (11 §9, 26) [FR-029, FR-030; SC-007]
-- [ ] T0436 [US11-core] Implement the loot engine of 26 (conditions, functions, rolls) in `core/src/loot.cob`
-- [ ] T0437 [US11-core] Implement block drops from loot tables in `core/src/block-drops.cob`
+- [x] T0435 [US11-core] Write acceptance test `core/tests/acc_f2us11_ore_drops.cob` (US11-3): ore blocks broken in survival drop their items through the loot tables (11 §9, 26) [FR-029, FR-030; SC-007]
+- [x] T0436 [US11-core] Implement the loot engine of 26 (conditions, functions, rolls) in `core/src/loot.cob`
+- [x] T0437 [US11-core] Implement block drops from loot tables in `core/src/block-drops.cob`
 - [ ] T0438 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 39: US11-core (f) — generation pipeline and the 24-section stream
