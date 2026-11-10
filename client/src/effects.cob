@@ -1,5 +1,5 @@
 *> Status effects of the local player (docs/protocol/49 sections 1 to 3): EFFECTS-CLEAR empties the list; EFFECT-SET adds an effect or replaces the
-*> one of the same id (Update Mob Effect, 05b 0x87); EFFECT-REMOVE drops one (Remove Mob Effect, 05b 0x4F); HUD-TICK is one client tick of the HUD
+*> one of the same id (Update Mob Effect, 05b 0x87); CLIENT-EFFECT-REMOVE drops one (Remove Mob Effect, 05b 0x4F); HUD-TICK is one client tick of the HUD
 *> (the tick count, the damage cooldown and every duration down by one, hearts.cob); EFFECT-INFO reads a row of the table of section 2.4 (CLEFFECT.cpy);
 *> EFFECT-COMPARE and EFFECT-ORDER give the natural order of section 2.3; EFFECT-ALPHA the icon alpha of 2.5; EFFECT-NAME-TEXT and
 *> EFFECT-DURATION-TEXT the texts of 3.3 and 3.4 (a pack's lang keys effect.minecraft.<key>, enchantment.level.<n> and effect.duration.infinite
@@ -100,7 +100,7 @@
  END PROGRAM EFFECT-SET.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. EFFECT-REMOVE.
+ PROGRAM-ID. CLIENT-EFFECT-REMOVE.
 *> USING CLIENT-STATE, effect id: drops the entry (the later ones move up); an effect the player does not have is ignored.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -124,7 +124,7 @@
          SUBTRACT 1 FROM EF-COUNT
      END-IF
      GOBACK.
- END PROGRAM EFFECT-REMOVE.
+ END PROGRAM CLIENT-EFFECT-REMOVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUD-TICK.
