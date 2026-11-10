@@ -31,6 +31,8 @@
  01 WS-EDIT                PIC ZZZ9.
  01 WS-EV                  PIC 99.9999.
  01 B-ATLAS                PIC X(51200) BASED.
+ 01 WS-VT-LAYER            PIC XX VALUE "WX".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE 0 TO PK-COUNT
@@ -92,6 +94,13 @@
          & "quads from y 42 (cy - 8: below their tops' + 1) to 66, 24 images tall; the pillar "
          & "column (top 70, at or above cy + 16) gets none" TO TL-CASE
      MOVE "960 24.0000 24.0000 none" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the weather quads is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 2 TO WS-X WS-Z

@@ -34,6 +34,8 @@
  01 WS-EU                  PIC 9.9(4).
  01 WS-EV                  PIC 9.9(4).
  01 WS-UV                  PIC X(20).
+ 01 WS-VT-LAYER            PIC XX VALUE "GI".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
 *>   The icon of turf (item 4): the top-left of its sprite in the block and item atlas.
@@ -94,6 +96,13 @@
          " 1.00 2.15/-1.30/4.00 1.85/-1.60/4.00 " FUNCTION TRIM(WS-UV)
          " 1.00 10 1 2.5000/10.0000/4.5000 0.0/0.0/0.0 1" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the ground items is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 1 TO WS-AMOUNT

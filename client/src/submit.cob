@@ -15,6 +15,7 @@
  01 WS-TEX                 BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-WRAP                BINARY-LONG.
+ 01 WS-DAYLIGHT            FLOAT-SHORT.
  01 WS-CLEAR               FLOAT-SHORT OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -66,6 +67,9 @@
      MOVE 0 TO RL-UPLOAD-COUNT L-PRESENTED
      CALL STATIC "cc_vk_frame_begin" USING BY REFERENCE RL-CLEAR(1) RETURNING WS-RC
      IF WS-RC = 0
+*>       The daylight factor scales the sky term of the vertices at draw time (shim-abi section 9).
+         COMPUTE WS-DAYLIGHT = SK-U / 1000
+         CALL STATIC "cc_vk_daylight" USING BY REFERENCE WS-DAYLIGHT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
              IF RL-D-SLOT(WS-I) < 0
                  CALL STATIC "cc_vk_clear_depth"

@@ -285,6 +285,9 @@
                                  MOVE WS-C-U(WS-N) TO RL-WX-U(RL-WX-COUNT)
                                  MOVE WS-C-V(WS-N) TO RL-WX-V(RL-WX-COUNT)
                                  MOVE 1 TO RL-WX-B(RL-WX-COUNT) RL-WX-A(RL-WX-COUNT)
+                                 MOVE 0 TO RL-WX-SKY(RL-WX-COUNT)
+                                 MOVE 1 TO RL-WX-R(RL-WX-COUNT) RL-WX-G(RL-WX-COUNT)
+                                     RL-WX-BLUE(RL-WX-COUNT)
                              END-PERFORM
                          END-PERFORM
                      END-IF

@@ -121,7 +121,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-PUMP.
-*> USING CLIENT-STATE (hosting): the frame's core ticks (one per elapsed 50 ms of CL-NOW-MS; while
+*> USING CLIENT-STATE (hosting): the frame's core ticks (one per elapsed 50 ms of CL-NOW-MS, at most
+*> CL-MAX-PUMP-TICKS a frame, a debt over CL-PUMP-DEBT-MS dropped; while
 *> paused the tick clock is held, so resuming does not catch up), the console lines, and the end
 *> of hosting: run state 1 (the shutdown command) quits the world; a game connection that has
 *> ended (a Disconnect, or lost) stops the core, leaving the screen the disconnect chose. The
@@ -132,6 +133,7 @@
  COPY CLCONST.
  COPY COREAPI.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-RAN                 BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -150,11 +152,18 @@
              END-IF
          END-PERFORM
      END-IF
-     PERFORM UNTIL CL-NOW-MS < SP-NEXT-TICK
+*>   At most CL-MAX-PUMP-TICKS ticks a frame; the ticks still owed after them are run in the next
+*>   frames, unless they are more than CL-PUMP-DEBT-MS (a long tick or a stalled frame): those are dropped.
+     MOVE 0 TO WS-RAN
+     PERFORM UNTIL CL-NOW-MS < SP-NEXT-TICK OR WS-RAN >= CL-MAX-PUMP-TICKS
          CALL "CORE-TICK"
          ADD 1 TO SP-TICKS
+         ADD 1 TO WS-RAN
          ADD CL-TICK-MS TO SP-NEXT-TICK
      END-PERFORM
+     IF CL-NOW-MS - SP-NEXT-TICK > CL-PUMP-DEBT-MS
+         COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
+     END-IF
      CALL "GUESTS-FLUSH" USING CLIENT-STATE
      CALL "SP-CONSOLE"
      CALL "CORE-STATUS-GET" USING CORE-STATUS

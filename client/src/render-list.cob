@@ -467,6 +467,8 @@
                      MOVE WS-TV TO RL-HL-V(RL-HL-COUNT)
                      MOVE 0 TO RL-HL-B(RL-HL-COUNT)
                      MOVE 0.6 TO RL-HL-A(RL-HL-COUNT)
+                     MOVE 0 TO RL-HL-SKY(RL-HL-COUNT)
+                     MOVE 1 TO RL-HL-R(RL-HL-COUNT) RL-HL-G(RL-HL-COUNT) RL-HL-BLUE(RL-HL-COUNT)
                  END-PERFORM
              END-PERFORM
          END-PERFORM

@@ -17,6 +17,8 @@
  01 WS-Y                   BINARY-LONG VALUE 9.
  01 WS-Z                   BINARY-LONG VALUE 0.
  01 WS-STAGE               BINARY-LONG VALUE 3.
+ 01 WS-VT-LAYER            PIC XX VALUE "BO".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
 *>   The block atlas gets a sprite for stage 3 (a pack that has the images gives it; the built-in pack has none).
@@ -40,6 +42,13 @@
      MOVE "N" TO TL-MODE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-DRAW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the crack overlay is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-OVERLAY-DRAW.

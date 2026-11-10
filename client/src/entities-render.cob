@@ -342,6 +342,8 @@
              MOVE WS-CV(WS-N) TO RL-EN-V(RL-EN-COUNT)
              MOVE WS-BRIGHT TO RL-EN-B(RL-EN-COUNT)
              MOVE 1 TO RL-EN-A(RL-EN-COUNT)
+             MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
+             MOVE 1 TO RL-EN-R(RL-EN-COUNT) RL-EN-G(RL-EN-COUNT) RL-EN-BLUE(RL-EN-COUNT)
          END-PERFORM
      END-PERFORM
      GOBACK.
@@ -432,6 +434,8 @@
                  MOVE WS-C-V(WS-N) TO RL-GI-V(RL-GI-COUNT)
                  MOVE WS-LIGHT TO RL-GI-B(RL-GI-COUNT)
                  MOVE 1 TO RL-GI-A(RL-GI-COUNT)
+                 MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
+                 MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
              END-PERFORM
          END-IF
      END-PERFORM

@@ -29,7 +29,7 @@
          MOVE -1 TO CN-THRESHOLD(WS-I)
      END-PERFORM
      MOVE 1000 TO SK-U
-     MOVE -1 TO SK-MESHED-U
+     MOVE CL-MESH-BUDGET-US TO MB-BUDGET-US
      MOVE 2 TO CL-GUI-SCALE
      MOVE 20 TO PL-MAX-HEALTH
      MOVE 300 TO PL-MAX-AIR PL-AIR
@@ -183,8 +183,6 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-I                   BINARY-LONG.
- 01 WS-R                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-ID                  BINARY-LONG VALUE 13.
  01 WS-PX                  FLOAT-LONG.
@@ -279,16 +277,8 @@
          END-IF
      END-PERFORM
      CALL "PACKS-PUMP" USING CLIENT-STATE
-*>   Daylight changes the brightness baked into the meshes: every section is meshed again.
+*>   Daylight (SKY-UPDATE) is a draw-time uniform (SUBMIT-FRAME, cc_vk_daylight): no section is meshed again.
      CALL "SKY-UPDATE" USING CLIENT-STATE
-     IF SK-U NOT = SK-MESHED-U
-         MOVE SK-U TO SK-MESHED-U
-         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
-                 MOVE WR-USED(WS-R) TO WR-DIRTY(WS-R, WS-S)
-             END-PERFORM
-         END-PERFORM
-     END-IF
      CALL "ANIM-TICK" USING CLIENT-STATE CL-NOW-MS
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SCREEN-BUILD" USING CLIENT-STATE

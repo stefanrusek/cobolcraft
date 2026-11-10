@@ -165,6 +165,8 @@
                          MOVE WS-TV TO RL-BO-V(RL-BO-COUNT)
                          MOVE 1 TO RL-BO-B(RL-BO-COUNT)
                          MOVE 1 TO RL-BO-A(RL-BO-COUNT)
+                         MOVE 0 TO RL-BO-SKY(RL-BO-COUNT)
+                         MOVE 1 TO RL-BO-R(RL-BO-COUNT) RL-BO-G(RL-BO-COUNT) RL-BO-BLUE(RL-BO-COUNT)
                      END-PERFORM
                  END-PERFORM
              END-PERFORM

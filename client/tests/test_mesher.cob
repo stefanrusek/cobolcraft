@@ -134,8 +134,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 200 TO SK-U
-     CALL "MESH-SECTION" USING CLIENT-STATE WS-ROW WS-SECTION
-     MOVE "mesher by night (daylight 0.2) sky light 15 counts as 3: the top face is 0.20" TO TL-CASE
+     MOVE "mesher by night (daylight 0.2, the mesh not rebuilt) sky light 15 counts as 3: the top "
+         & "face is 0.20" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "0.20" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
@@ -303,6 +303,10 @@
  01 WS-B                   FLOAT-SHORT.
  01 WS-U                   FLOAT-SHORT.
  01 WS-V                   FLOAT-SHORT.
+ 01 WS-SKY                 FLOAT-SHORT.
+ 01 WS-R                   FLOAT-SHORT.
+ 01 WS-G                   FLOAT-SHORT.
+ 01 WS-BLUE                FLOAT-SHORT.
  01 WS-E                   PIC 9.99.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -321,11 +325,16 @@
      COMPUTE WS-Y = FUNCTION NUMVAL(L-Y)
      COMPUTE WS-Z = FUNCTION NUMVAL(L-Z)
      IF L-TRANSLUCENT = 0
-         CALL "TEST-MESH-FACE" USING WR-OP-ADDR(L-ROW, 1) WR-OP-COUNT(L-ROW, 1) WS-X WS-Y WS-Z
-             WS-FOUND WS-B WS-U WS-V
+         CALL "TEST-MESH-VERTEX" USING WR-OP-ADDR(L-ROW, 1) WR-OP-COUNT(L-ROW, 1) WS-X WS-Y WS-Z
+             WS-FOUND WS-B WS-U WS-V WS-SKY WS-R WS-G WS-BLUE
      ELSE
-         CALL "TEST-MESH-FACE" USING WR-TR-ADDR(L-ROW, 1) WR-TR-COUNT(L-ROW, 1) WS-X WS-Y WS-Z
-             WS-FOUND WS-B WS-U WS-V
+         CALL "TEST-MESH-VERTEX" USING WR-TR-ADDR(L-ROW, 1) WR-TR-COUNT(L-ROW, 1) WS-X WS-Y WS-Z
+             WS-FOUND WS-B WS-U WS-V WS-SKY WS-R WS-G WS-BLUE
+     END-IF
+*>   The drawn brightness: the shader's max(brightness, sky x daylight) at this state's daylight.
+     COMPUTE WS-SKY = WS-SKY * SK-U / 1000
+     IF WS-SKY > WS-B
+         MOVE WS-SKY TO WS-B
      END-IF
      COMPUTE WS-E ROUNDED = WS-B
      IF WS-FOUND = 1
