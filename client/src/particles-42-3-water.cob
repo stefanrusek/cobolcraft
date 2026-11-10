@@ -565,8 +565,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P3-INK-ARGB.
-*> 7 providers: USING kind (0 squid_ink, 1 glow_squid_ink), argb out: 0xFF000000, or (255, 51, 204, 153).
+*> 7 providers: USING kind (0 squid_ink, 1 glow_squid_ink), argb out: 0xFF000000, or
+*> ARGB.colorFromFloat(1.0, 0.2, 0.8, 0.6) through PART-COLOR-PACK (255, 51, 204, 153).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   COMP-2.
+ 01 WS-R                   COMP-2.
+ 01 WS-G                   COMP-2.
+ 01 WS-B                   COMP-2.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
  01 L-ARGB                 BINARY-DOUBLE.
@@ -574,7 +580,11 @@
      IF L-KIND = 0
          COMPUTE L-ARGB = 255 * 16777216
      ELSE
-         COMPUTE L-ARGB = 255 * 16777216 + 51 * 65536 + 204 * 256 + 153
+         MOVE 1.0 TO WS-A
+         MOVE 0.2 TO WS-R
+         MOVE 0.8 TO WS-G
+         MOVE 0.6 TO WS-B
+         CALL "PART-COLOR-PACK" USING WS-A WS-R WS-G WS-B L-ARGB
      END-IF
      GOBACK.
  END PROGRAM P3-INK-ARGB.

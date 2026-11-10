@@ -4,17 +4,27 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PART-CHANNEL.
-*> Section 1.1: USING channel (COMP-2, 0 to 1), byte out: as8BitChannel(c) = floor(c x 255)
-*> (Mth.floor: toward negative infinity), kept within 0..255.
+*> Section 1.1: USING channel (COMP-2, 0 to 1), byte out: as8BitChannel(c) = floor(c * 255.0f) in float32
+*> arithmetic (the channel is a binary32 value and the product is rounded to binary32 before
+*> Mth.floor), kept within 0..255. So 0.2 gives 51, not 50.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-V                   COMP-2.
+ 01 WS-C32                 COMP-2.
+ 01 WS-K                   COMP-2 VALUE 255.
+ 01 WS-P                   COMP-2.
+ 01 WS-P32                 COMP-2.
+ 01 WS-FL                  COMP-2.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-CHANNEL              COMP-2.
  01 L-BYTE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-CHANNEL L-BYTE.
-     COMPUTE WS-V = L-CHANNEL * 255
-     COMPUTE L-BYTE = FUNCTION MAX(0, FUNCTION MIN(255, FUNCTION INTEGER(WS-V)))
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE L-CHANNEL WS-C32
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-C32 WS-K WS-P
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-P WS-P32
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-P32 WS-FL
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-FL WS-I
+     COMPUTE L-BYTE = FUNCTION MAX(0, FUNCTION MIN(255, WS-I))
      GOBACK.
  END PROGRAM PART-CHANNEL.
 
