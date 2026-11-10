@@ -1,0 +1,1 @@
+Generators of the 29/29a decision tests; run from the repository root: for g in gen9 gen10 genfl genfl34; do python3 core/tests/gen/$g.py; done (rewrites core/tests/test_blockupd_29_9..12 and test_fluids_29a_1..4).
