@@ -54,3 +54,7 @@
     05 GJ-SF.
        10 GJ-SF-CSL         FLOAT-LONG OCCURS 4 TIMES.
        10 GJ-SF-RING        BINARY-LONG OCCURS 3456 TIMES.
+*>  the carver stage (carvers.cob): the carving mask of 11 section 5.5, one byte per (x, z, y) with y from -63 to 312 (376 layers):
+*>  "1" marked, LOW-VALUES not; index (y + 63) + (z + 16 * x) * 376 + 1
+    05 GJ-CV.
+       10 GJ-CV-MASK        PIC X OCCURS 96256 TIMES.

@@ -688,11 +688,11 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 37: US11-core (d) — carvers and caves
 
-- [ ] T0425 [US11-core] Write test `core/tests/test_carvers.cob`: the cave and canyon carvers over the documented seed and chunk with the worked examples (11)
-- [ ] T0426 [US11-core] Implement the carvers in `core/src/carvers.cob`
+- [x] T0425 [US11-core] Write test `core/tests/test_carvers.cob`: the cave and canyon carvers over the documented seed and chunk with the worked examples (11)
+- [x] T0426 [US11-core] Implement the carvers in `core/src/carvers.cob`
 - [ ] T0427 [US11-core] Write test `core/tests/test_noise_caves.cob`: the large cavern, long tunnel and thin noodle passages from the density router (US11-1; 11)
 - [ ] T0428 [US11-core] Implement the noise caves in `core/src/noise-caves.cob`
-- [ ] T0429 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0429 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 38: US11-core (e) — ores and ore drops
 

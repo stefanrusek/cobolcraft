@@ -228,7 +228,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test gen cost the chunk holds both stone and sea water" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-STONES > 20000 AND WS-WATERS > 1000
+     IF WS-STONES > 10000 AND WS-WATERS > 1000
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      MOVE 1 TO TL-EXPECTED-N

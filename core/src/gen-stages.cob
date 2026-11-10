@@ -114,20 +114,6 @@
  END PROGRAM GEN-STAGE-FILL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GEN-STAGE-CARVERS.
-*> Placeholder until the carvers of document 11 section 5 (carvers.cob): counts the step.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY GENSTAGE.
- LINKAGE SECTION.
- 01 L-JOB.
-    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
- PROCEDURE DIVISION USING L-JOB.
-     ADD 1 TO GS-CARVER
-     GOBACK.
- END PROGRAM GEN-STAGE-CARVERS.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-STAGE-ORES.
 *> Placeholder until the ores of document 11 sections 7 and 8 (ores.cob): counts the step.
  DATA DIVISION.
