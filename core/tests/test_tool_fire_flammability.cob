@@ -15,11 +15,13 @@
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  PROCEDURE DIVISION.
-     MOVE "acceptance US14 flammability (5, 5): logs, woods, stripped forms of the ten wood families, bamboo_block and coal_block" TO TL-CASE
+     MOVE "acceptance US14 flammability (5, 5): logs, woods, stripped forms (_log and _wood) of the ten wood families, bamboo_block and coal_block" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE "oak_log" TO WS-KEY
      PERFORM ODDS
      MOVE "stripped_poplar_wood" TO WS-KEY
+     PERFORM ODDS
+     MOVE "stripped_oak_log" TO WS-KEY
      PERFORM ODDS
      MOVE "mangrove_wood" TO WS-KEY
      PERFORM ODDS
@@ -29,7 +31,7 @@
      PERFORM ODDS
      MOVE "coal_block" TO WS-KEY
      PERFORM ODDS
-     MOVE "5/5 5/5 5/5 5/5 5/5 5/5" TO TL-EXPECTED
+     MOVE "5/5 5/5 5/5 5/5 5/5 5/5 5/5" TO TL-EXPECTED
      PERFORM CHECK-DONE
 
      MOVE "acceptance US14 flammability (5, 20): planks, slabs, fences, gates, stairs of the 11 wood families, bamboo mosaic, mangrove_roots, composter, beehive" TO TL-CASE

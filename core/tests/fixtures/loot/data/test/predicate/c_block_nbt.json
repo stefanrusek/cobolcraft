@@ -1,0 +1,5 @@
+{
+ "type": "minecraft:match_block",
+ "blocks": "cobolcraft:cardstack",
+ "nbt": "{a:1b}"
+}

@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:add",
+ "inputs": [
+  "test:i_const",
+  1
+ ]
+}

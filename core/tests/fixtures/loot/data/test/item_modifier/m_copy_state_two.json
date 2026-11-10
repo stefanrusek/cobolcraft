@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:copy_state",
+ "block": "cobolcraft:cardstack",
+ "properties": [
+  "axis",
+  "punched"
+ ]
+}

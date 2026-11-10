@@ -22,6 +22,9 @@
  78 SCR-OPEN-TO-OTHERS      VALUE 16.
  78 SCR-CONTAINER           VALUE 20.  *> a generic container menu (chests, hopper, dispenser, shulker box; screens/container.cob)
  78 SCR-OPTIONS             VALUE 18.  *> the options pages (US16; screens/options.cob)
+ 78 SCR-SIGN                VALUE 21.  *> the sign editor (Open Sign Editor 05a 0x3D; screens/signscreen.cob)
+ 78 SCR-BOOK                VALUE 22.  *> the writable book editor (screens/bookscreen.cob)
+ 78 SCR-CREATIVE            VALUE 23.  *> the creative inventory (screens/creativescreen.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
@@ -103,6 +106,15 @@
  78 ACT-BEACON-CONFIRM       VALUE 56.
  78 ACT-CLOSE-MENU           VALUE 57.   *> beacon cancel, lectern done: close the container
  78 ACT-TRADE-SELECT         VALUE 58.   *> merchant: the argument is the row 0 to 6
+ 78 ACT-SIGN-DONE            VALUE 59.   *> the sign editor's Done: close and send the lines
+ 78 ACT-BOOK-DONE            VALUE 60.   *> the book editor's Done
+ 78 ACT-BOOK-SIGN            VALUE 61.   *> the book editor's Sign button
+ 78 ACT-BOOK-PAGE            VALUE 62.   *> the book editor's page buttons: the argument 1 back, 2 forward
+ 78 ACT-BOOK-FINALIZE        VALUE 63.   *> Sign and Close
+ 78 ACT-BOOK-CANCEL          VALUE 64.   *> Cancel of the book signing
+ 78 ACT-CREATIVE-TAB         VALUE 65.   *> the creative screen: select the tab of the argument
+ 78 ACT-CREATIVE-GRID        VALUE 66.   *> a grid slot (argument 901 to 945)
+ 78 ACT-CREATIVE-HOTBAR      VALUE 67.   *> a hotbar slot (argument 0 to 8)
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

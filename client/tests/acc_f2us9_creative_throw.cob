@@ -31,9 +31,28 @@
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
-     MOVE 1 TO PL-MODE
+     MOVE 0 TO PL-MODE
      MOVE 640 TO IN-WIN-W
      MOVE 480 TO IN-WIN-H
+*>   The survival-style inventory screen when the game mode becomes creative while it is open: the outside drop is Set Creative Mode Slot -1 too (the creative screen is tested below).
+     MOVE CC-KEY-E TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE 1 TO PL-MODE
+     MOVE 0 TO IN-CAPTURED
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     MOVE 5 TO PL-CARRIED-COUNT
+     MOVE 3 TO PL-CARRIED-ITEM
+     MOVE CC-BUTTON-LEFT TO WS-BUTTON
+     MOVE 2 TO WS-AT-X WS-AT-Y
+     PERFORM CLICK-AT
+     MOVE "acceptance US9-3 the inventory screen in creative (mode changed while open): a left click outside sends Set Creative Mode Slot -1 with the whole stack, the cursor empty"
+         TO TL-CASE
+     PERFORM OBSERVE
+     MOVE "39ffff05030000 cursor 0x0" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE CC-KEY-ESCAPE TO WS-KEY
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+*>   The creative screen: in creative mode the inventory key opens it.
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE 0 TO IN-CAPTURED
@@ -62,10 +81,10 @@
      MOVE 5 TO PL-CARRIED-COUNT
      MOVE 3 TO PL-CARRIED-ITEM
      MOVE CC-BUTTON-LEFT TO WS-BUTTON
-     MOVE 480 TO WS-AT-X
-     MOVE 80 TO WS-AT-Y
+     MOVE 300 TO WS-AT-X
+     MOVE 116 TO WS-AT-Y
      PERFORM CLICK-AT
-     MOVE "acceptance US9-3 creative: a release inside the sheet sends no drop and keeps the cursor" TO TL-CASE
+     MOVE "acceptance US9-3 creative: a release inside the creative screen's panel (its title area, GUI (150, 58)) sends no drop and keeps the cursor" TO TL-CASE
      PERFORM OBSERVE
      MOVE "cursor 5x3" TO TL-EXPECTED
      PERFORM CHECK

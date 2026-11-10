@@ -154,6 +154,8 @@
      MOVE SCR-WORLD TO TL-EXPECTED-N
      MOVE SM-SCREEN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Back in survival: in creative mode the inventory key opens the creative screen instead (test_screen_40_7_screen).
+     MOVE 0 TO PL-MODE
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE SM-SCREEN TO WS-N

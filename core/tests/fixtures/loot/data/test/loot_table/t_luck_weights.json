@@ -1,0 +1,28 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:grit",
+     "weight": 10,
+     "quality": -2
+    },
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:loam",
+     "weight": 5,
+     "quality": 2
+    },
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:turf",
+     "weight": 85,
+     "quality": -1
+    }
+   ]
+  }
+ ]
+}

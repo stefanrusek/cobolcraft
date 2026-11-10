@@ -1,0 +1,10 @@
+{
+ "type": "minecraft:all_of",
+ "terms": [
+  "test:c_killed",
+  {
+   "type": "minecraft:inverted",
+   "term": "test:c_survives"
+  }
+ ]
+}

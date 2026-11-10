@@ -1,0 +1,14 @@
+{
+ "type": "minecraft:filtered",
+ "item_filter": {
+  "items": "cobolcraft:pry_bar"
+ },
+ "on_pass": {
+  "type": "minecraft:set_count",
+  "count": 9
+ },
+ "on_fail": {
+  "type": "minecraft:set_count",
+  "count": 1
+ }
+}

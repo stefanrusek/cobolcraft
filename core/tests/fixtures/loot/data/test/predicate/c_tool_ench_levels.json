@@ -1,0 +1,14 @@
+{
+ "type": "minecraft:match_tool",
+ "predicate": {
+  "predicates": {
+   "minecraft:enchantments": [
+    {
+     "levels": {
+      "max": 1
+     }
+    }
+   ]
+  }
+ }
+}

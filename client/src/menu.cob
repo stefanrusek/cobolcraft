@@ -94,6 +94,9 @@
              MOVE BX-COUNT(WS-N) TO L-COUNT
              MOVE BX-ITEM(WS-N) TO L-ITEM
              MOVE BX-DAMAGE(WS-N) TO L-DAMAGE
+         WHEN L-ARG >= 901 AND L-ARG <= 945
+*>           A grid slot of the creative screen: the stack of the picker's list at the scroll row (screens/creativescreen.cob).
+             CALL "CREATIVE-GRID-STACK" USING CLIENT-STATE L-ARG L-COUNT L-ITEM
          WHEN L-ARG >= 801 AND L-ARG <= 821
 *>           A merchant row's cost or result (screens/menus5.cob).
              COMPUTE WS-N = L-ARG - 800

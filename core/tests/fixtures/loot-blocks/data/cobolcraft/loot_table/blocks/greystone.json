@@ -1,0 +1,50 @@
+{
+ "type": "minecraft:block",
+ "random_sequence": "cobolcraft:blocks/greystone",
+ "pools": [
+  {
+   "rolls": 1,
+   "bonus_rolls": 0.0,
+   "entries": [
+    {
+     "type": "minecraft:alternatives",
+     "children": [
+      {
+       "type": "minecraft:item",
+       "name": "cobolcraft:loam",
+       "condition": {
+        "type": "minecraft:match_tool",
+        "predicate": {
+         "predicates": {
+          "minecraft:enchantments": [
+           {
+            "enchantments": "minecraft:efficiency",
+            "levels": {
+             "min": 4
+            }
+           }
+          ]
+         }
+        }
+       }
+      },
+      {
+       "type": "minecraft:item",
+       "name": "cobolcraft:dump_shard",
+       "modifier": [
+        {
+         "type": "minecraft:apply_bonus",
+         "enchantment": "minecraft:efficiency",
+         "formula": "minecraft:ore_drops"
+        },
+        {
+         "type": "minecraft:explosion_decay"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
