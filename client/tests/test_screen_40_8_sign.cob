@@ -28,6 +28,7 @@
  01 WS-MS                  BINARY-LONG VALUE 20.
  01 WS-E1                  PIC -(7)9.
  01 WS-E2                  PIC -(7)9.
+ 01 WS-KEYCODE             BINARY-LONG.
  01 WS-EVENTS.
     05 WS-EVENT OCCURS 4 TIMES.
        10 WS-KIND          BINARY-LONG.
@@ -120,6 +121,50 @@
      MOVE "000001" TO TL-EXPECTED
      MOVE WS-HEX(29:6) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-X
+     MOVE 2 TO WS-Y
+*>   Backspace, Up (wraps to line 3), Enter and keypad Enter (next lines), and the Done button: type ab, Backspace leaves a; the lines then are a, empty, empty, empty.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FRONT
+     MOVE 61 TO WS-PACKET
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-PACKET
+     MOVE 2 TO WS-N
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 97 TO WS-A(1)
+     MOVE 98 TO WS-A(2)
+     PERFORM FRAME
+     MOVE 259 TO WS-KEYCODE
+     PERFORM PRESS
+     MOVE 265 TO WS-KEYCODE
+     PERFORM PRESS
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§6.2 Up from line 0 selects line 3 (Backspace had left a on line 0)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 3 * 10 + 1
+     COMPUTE TL-OBSERVED-N = SG-LINE * 10 + SG-LEN(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 257 TO WS-KEYCODE
+     PERFORM PRESS
+     MOVE 335 TO WS-KEYCODE
+     PERFORM PRESS
+     MOVE "acceptance US12 40-8§6.2 Enter and keypad Enter move on: line 3 to 0 to 1" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE SG-LINE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     MOVE 100 TO WS-X
+     MOVE 210 TO WS-Y
+     PERFORM CLICK-GUI
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-8§6.2 the Done button closes the editor and sends Sign Update with the lines a and three empty ones" TO TL-CASE
+     MOVE "3e000000400000300201610000000" TO TL-EXPECTED
+     MOVE "3e0000004000003002016100000001" TO TL-EXPECTED
+     MOVE WS-HEX(1:30) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> One frame with the first WS-N events, then the screen is built.
@@ -130,6 +175,29 @@
      .
 
 *> TL-OBSERVED: each label as "x:y=text;".
+ PRESS.
+     MOVE 1 TO WS-N
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE WS-KEYCODE TO WS-A(1)
+     PERFORM FRAME
+     .
+
+*> A click on the GUI point (WS-X, WS-Y) (GUI scale 2).
+ CLICK-GUI.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     COMPUTE WS-EX(1) = WS-X * 2
+     COMPUTE WS-EY(1) = WS-Y * 2
+     MOVE WS-EX(1) TO WS-EX(2) WS-EX(3)
+     MOVE WS-EY(1) TO WS-EY(2) WS-EY(3)
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND(2)
+     MOVE CC-EV-BUTTON-UP TO WS-KIND(3)
+     MOVE 3 TO WS-N
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     INITIALIZE WS-EVENTS
+     .
+
  LABELS.
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR

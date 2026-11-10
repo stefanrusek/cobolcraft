@@ -180,6 +180,74 @@
      MOVE SCR-WORLD TO TL-EXPECTED-N
      MOVE SM-SCREEN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The editing keys and the page and title buttons: abc, Left, Backspace (ac), Delete (a), Enter (a LF), Up, Right, Down, Home, End, then z gives a LF z; Page Down and Page Up keep it.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND(1)
+     MOVE CC-BUTTON-RIGHT TO WS-A(1)
+     MOVE CC-EV-BUTTON-UP TO WS-KIND(2)
+     MOVE CC-BUTTON-RIGHT TO WS-A(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     MOVE 3 TO WS-N
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2) WS-KIND(3)
+     MOVE 97 TO WS-A(1)
+     MOVE 98 TO WS-A(2)
+     MOVE 99 TO WS-A(3)
+     PERFORM FRAME
+     MOVE 263 TO WS-D1
+     PERFORM PRESS
+     MOVE 259 TO WS-D1
+     PERFORM PRESS
+     MOVE 261 TO WS-D1
+     PERFORM PRESS
+     MOVE 257 TO WS-D1
+     PERFORM PRESS
+     MOVE 265 TO WS-D1
+     PERFORM PRESS
+     MOVE 262 TO WS-D1
+     PERFORM PRESS
+     MOVE 264 TO WS-D1
+     PERFORM PRESS
+     MOVE 268 TO WS-D1
+     PERFORM PRESS
+     MOVE 269 TO WS-D1
+     PERFORM PRESS
+     MOVE 1 TO WS-N
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     MOVE 122 TO WS-A(1)
+     PERFORM FRAME
+     MOVE 267 TO WS-D1
+     PERFORM PRESS
+     MOVE 266 TO WS-D1
+     PERFORM PRESS
+     MOVE "T" TO TL-MODE
+     PERFORM TEXT-LINES
+     MOVE "acceptance US12 40-8§2.5 the editing keys (Left, Backspace, Delete, Enter, Up, Right, Down, Home, End) and the page keys give the page a, line feed, z: lines a at y 32 and z at y 41" TO TL-CASE
+     MOVE "99:32=a;99:41=z;" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 70 TO WS-D1
+     MOVE 205 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE 1 TO WS-N
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     MOVE 81 TO WS-A(1)
+     PERFORM FRAME
+     MOVE 2 TO WS-N
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 98 TO WS-A(1)
+     MOVE 99 TO WS-A(2)
+     PERFORM FRAME
+     MOVE 259 TO WS-D1
+     PERFORM PRESS
+     MOVE 170 TO WS-D1
+     MOVE 205 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-8§4 Backspace in the title and Cancel: back to the pages (mode 0) with the title Qb kept" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE BE-MODE TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) ":" BE-TITLE(1:BE-TITLE-LEN) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0:Qb" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CONTENT-CLOSE"
      STOP RUN.
 
@@ -190,6 +258,14 @@
      .
 
 *> A click on the GUI point (WS-D1, WS-D2) (GUI scale 2).
+ PRESS.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE WS-D1 TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     .
+
  CLICK-GUI.
      INITIALIZE WS-EVENTS
      MOVE CC-EV-CURSOR TO WS-KIND(1)
