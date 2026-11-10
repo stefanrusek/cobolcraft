@@ -197,7 +197,7 @@
  01 WS-INDEX               BINARY-LONG.
  01 WS-STEM                PIC X(32).
  01 WS-IMAGE               PIC X(24576).
- 01 WS-GIMAGE              PIC X(40000).
+ 01 WS-GIMAGE              PIC X(262144).
  01 WS-G                   BINARY-LONG.
  01 WS-GOT                 BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.

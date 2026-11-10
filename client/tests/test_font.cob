@@ -55,7 +55,7 @@
      COMPUTE TL-OBSERVED-N = WS-X * 1000000 + WS-Y * 10000 + WS-W * 100 + WS-H
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The font image sits unchanged at the top-left of the UI atlas: 48 rows of 128 pixels (the atlas is 200 wide).
+*>   The font image sits unchanged at the top-left of the UI atlas: 48 rows of 128 pixels (the atlas is 256 wide: the widest GUI sprites are the 256-pixel sheets).
      CALL "TEST-READ-FILE" USING WS-FIXTURE WS-REFERENCE WS-CAPACITY WS-LENGTH
      SET ADDRESS OF B-ATLAS TO UA-ADDR
      MOVE 0 TO WS-DIFF
@@ -65,9 +65,9 @@
              ADD 1 TO WS-DIFF
          END-IF
      END-PERFORM
-     MOVE "font the UI atlas is 200 wide (the built-in button) and holds the font image ascii.png pixel for pixel"
+     MOVE "font the UI atlas is 256 wide (the built-in button) and holds the font image ascii.png pixel for pixel"
          TO TL-CASE
-     MOVE 200 TO TL-EXPECTED-N
+     MOVE 256 TO TL-EXPECTED-N
      MOVE UA-W TO TL-OBSERVED-N
      IF WS-DIFF > 0 OR WS-LENGTH NOT = 24576
          MOVE -1 TO TL-OBSERVED-N

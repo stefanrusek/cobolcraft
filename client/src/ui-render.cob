@@ -73,6 +73,9 @@
              WHEN SM-W-KIND(WS-W) = WK-METER
                  CALL "UI-METER" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-SHEET
+                 CALL "UI-SHEET-QUAD" USING CLIENT-STATE WS-W
+                 MOVE 0 TO WS-LENGTH
          END-EVALUATE
          IF WS-SWATCH >= 0
              IF SM-W-KIND(WS-W) = WK-BUTTON AND GS-W(GSP-BUTTON) > 0
@@ -103,6 +106,46 @@
      END-PERFORM
      GOBACK.
  END PROGRAM UI-RENDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-SHEET-QUAD.
+*> USING CLIENT-STATE, widget (a sheet region): one quad over the widget's rectangle on the region of the sheet from its origin
+*> (state 1: from (1, 1), the vanilla recipe-book panel) of the widget's size, in logical units of the 256 x 256 sheet (a sheet
+*> of a larger size scales them by its width / 256).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-W                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-W.
+     MOVE SM-W-ARG(L-W) TO WS-ROW
+     IF WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK
+         IF GS-W(WS-ROW) > 0
+             COMPUTE WS-F = GS-W(WS-ROW) / 256
+             COMPUTE WS-X0 = SM-W-X(L-W) * CL-GUI-SCALE
+             COMPUTE WS-Y0 = SM-W-Y(L-W) * CL-GUI-SCALE
+             COMPUTE WS-X1 = (SM-W-X(L-W) + SM-W-W(L-W)) * CL-GUI-SCALE
+             COMPUTE WS-Y1 = (SM-W-Y(L-W) + SM-W-H(L-W)) * CL-GUI-SCALE
+             COMPUTE WS-U0 = (GS-X(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-W
+             COMPUTE WS-V0 = (GS-Y(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-H
+             COMPUTE WS-U1 = (GS-X(WS-ROW) + (SM-W-STATE(L-W) + SM-W-W(L-W)) * WS-F) / UA-W
+             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
+             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM UI-SHEET-QUAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-METER.

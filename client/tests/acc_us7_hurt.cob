@@ -37,14 +37,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US7-2 client half the hurt overlay is drawn first, from the window's top-left "
-         & "corner, on the centre texel of the hurt swatch (u 0.26, atlas 200 wide)" TO TL-CASE
+         & "corner, on the centre texel of the hurt swatch (u 0.20, atlas 256 wide)" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE RL-UI-X(1) TO WS-E1
      MOVE RL-UI-Y(1) TO WS-E2
      MOVE RL-UI-U(1) TO WS-U
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " WS-U DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "0 0 0.25999" TO TL-EXPECTED
+     MOVE "0 0 0.20312" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS

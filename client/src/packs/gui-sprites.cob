@@ -26,8 +26,11 @@
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_empty.png".
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_full.png".
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_half.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/inventory.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/crafting_table.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/recipe_book.png".
  01 WS-PATH-TABLE REDEFINES WS-PATHS.
-    05 WS-SPRITE-PATH      PIC X(80) OCCURS 12 TIMES.
+    05 WS-SPRITE-PATH      PIC X(80) OCCURS 15 TIMES.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-META-PATH           PIC X(256).

@@ -1,5 +1,5 @@
 *> Check values of docs/design/builtin-ui-art.md sections 4.1 to 4.9 (path, size, non-transparent pixels, SHA-256 of the RGBA).
- 78 BC-COUNT               VALUE 131.
+ 78 BC-COUNT               VALUE 134.
  01 BC-DATA.
     05 FILLER PIC X(100) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar.png".
     05 FILLER PIC X(80) VALUE "1820220400064110cb3efc93bb6eb77e45aa52eddb5766e8122e7cc95ad45e2b50537b1e1d2".
@@ -263,8 +263,14 @@
     05 FILLER PIC X(80) VALUE "01601600211145a729d6bbf69f9a08048068296f37c59ef8cab19fb49cbe3673dd3e5547e81".
     05 FILLER PIC X(100) VALUE "assets/minecraft/textures/block/destroy_oit_stage_9.png".
     05 FILLER PIC X(80) VALUE "01601600231304cc5508fcbc594295777a531c5fca2172a6bab070b3a304eb376285310174c".
+    05 FILLER PIC X(100) VALUE "assets/minecraft/textures/gui/container/inventory.png".
+    05 FILLER PIC X(80) VALUE "256256292125f2c1695278c2442740905e00fcc2d694b53a63e97df56cedf9098c22e5bdd7e".
+    05 FILLER PIC X(100) VALUE "assets/minecraft/textures/gui/container/crafting_table.png".
+    05 FILLER PIC X(80) VALUE "2562562921201e90ebb452e902775db939381a925ed45b2eae701972f2afd1de88b7e6fa60a".
+    05 FILLER PIC X(100) VALUE "assets/minecraft/textures/gui/recipe_book.png".
+    05 FILLER PIC X(80) VALUE "25625624398b5debe5d431df026cb369fa0d80d9696ccdfbe5cc71f5a21aa379662dbf7f841".
  01 BC-TABLE REDEFINES BC-DATA.
-    05 BC-ROW OCCURS 131 TIMES.
+    05 BC-ROW OCCURS 134 TIMES.
        10 BC-PATH          PIC X(100).
        10 BC-W             PIC 999.
        10 BC-H             PIC 999.

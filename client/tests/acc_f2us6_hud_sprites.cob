@@ -163,6 +163,22 @@
      MOVE WS-LABELS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A health below zero (a stale value) shows no hearts filled, never a negative count.
+     MOVE -3 TO PL-HEALTH
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE -1 TO WS-AT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-METER AND SM-W-ARG(WS-I) = 1
+             MOVE SM-W-STATE(WS-I) TO WS-AT
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US6-5 a health of -3 gives a heart meter value of 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-AT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 17 TO PL-HEALTH
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+
 *>   Quads: the two meters add 15 + 9 + 12 + 10 = 46 quads (276 vertices) over the creative HUD.
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE RL-UI-COUNT TO WS-SURVIVAL-UI

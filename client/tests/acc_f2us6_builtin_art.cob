@@ -1,6 +1,6 @@
 *> Acceptance test US6-4 (spec 002 FR-013, FR-014, FR-015; SC-003; docs/design/builtin-ui-art.md sections 3, 4.1 to 4.9, 5.3,
-*> 10): with no pack at all the built-in pack serves the GUI art. It lists the 102 gui sprites, 20 crack overlays, 8 menu images, the
-*> pack icon and 15 nine-slice .mcmeta files (240 files with the 94 earlier ones); every image has the size, the number of non-transparent
+*> 10): with no pack at all the built-in pack serves the GUI art. It lists the 102 gui sprites, 20 crack overlays, 8 menu images, the 3 sheets (inventory, crafting table, recipe book), the
+*> pack icon and 15 nine-slice .mcmeta files (243 files with the 94 earlier ones); every image has the size, the number of non-transparent
 *> pixels and the SHA-256 of its RGBA that the document gives (the check values of BGUICHK.cpy); the nine-slice metadata is the text of
 *> section 3; and the sprites the screens ask for reach the client's GUI sprite rows without any pack (nothing falls back to a swatch).
  IDENTIFICATION DIVISION.
@@ -23,8 +23,8 @@
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
- 01 WS-IMAGE               PIC X(40000).
- 01 WS-CAPACITY            BINARY-LONG VALUE 40000.
+ 01 WS-IMAGE               PIC X(262144).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 262144.
  01 WS-W                   BINARY-LONG.
  01 WS-H                   BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
@@ -63,8 +63,8 @@
              END-IF
          END-IF
      END-PERFORM
-     MOVE "acceptance US6-4 the built-in pack lists 240 files, the GUI art after the 94 earlier ones" TO TL-CASE
-     MOVE 240 TO TL-EXPECTED-N
+     MOVE "acceptance US6-4 the built-in pack lists 243 files, the GUI art after the 94 earlier ones" TO TL-CASE
+     MOVE 243 TO TL-EXPECTED-N
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US6-4 the pack lists 102 gui sprites" TO TL-CASE
@@ -75,8 +75,8 @@
      MOVE 20 TO TL-EXPECTED-N
      MOVE WS-BLOCK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US6-4 the pack lists 8 menu images" TO TL-CASE
-     MOVE 8 TO TL-EXPECTED-N
+     MOVE "acceptance US6-4 the pack lists 11 menu images and sheets" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
      MOVE WS-MENU TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US6-4 the pack lists the pack icon" TO TL-CASE

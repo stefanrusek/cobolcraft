@@ -1,0 +1,46 @@
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob80329_0.c:2270:71: warning: illegal character encoding in character literal [-Winvalid-source-encoding]
+ 2270 |       b_427 + ((cob_s64_t)((*(int *)(b_397))) - 1))) - (unsigned char)'<FF>') != 0))
+      |                                                                       ^
+1 warning generated.
+In file included from /var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob86346_0.c:21:
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob86346_0.c.h:85:48: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+   85 | static const cob_field c_35     = {1, (cob_u8_ptr)"<FF>", &a_18};
+      |                                                    ^~~~
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob86346_0.c:1177:25: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+ 1177 |   memcpy (b_716 + 0LL, "<F0>.      ", 2);
+      |                         ^~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:234:40: note: expanded from macro 'memcpy'
+  234 | #define memcpy(...) __memcpy_chk_func (__VA_ARGS__)
+      |                                        ^~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:127:33: note: expanded from macro '__memcpy_chk_func'
+  127 |                 __builtin___memcpy_chk (dest, __VA_ARGS__, __darwin_obsz0 (dest))
+      |                                               ^~~~~~~~~~~
+2 warnings generated.
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob88646_0.c:3492:19: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+ 3492 |   memcpy (b_955, "<FF><FF><FF><FF>", 4);
+      |                   ^~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:234:40: note: expanded from macro 'memcpy'
+  234 | #define memcpy(...) __memcpy_chk_func (__VA_ARGS__)
+      |                                        ^~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:127:33: note: expanded from macro '__memcpy_chk_func'
+  127 |                 __builtin___memcpy_chk (dest, __VA_ARGS__, __darwin_obsz0 (dest))
+      |                                               ^~~~~~~~~~~
+1 warning generated.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+python3 tests/fixtures/gen_textures.py
+python3 tests/fixtures/gen_zips.py
+python3 tests/fixtures/gen_png.py
+python3 tests/fixtures/gen_packs.py
+FAIL acceptance US7-2 client half the hurt overlay is drawn first, from the window's top-left corner, on the centre texel of the hurt swatch (u 0.26, atlas 200 wide) expected=0 0 0.25999 observed=0 0 0.20312
+FAIL builtin pack lists 240 files (08 §10.9 kinds read in this version: item textures, models and definitions included) expected=240 observed=243
+FAIL font the UI atlas is 200 wide (the built-in button) and holds the font image ascii.png pixel for pixel expected=200 observed=256
+FAIL pack stack with only the built-in pack: each of its 240 paths resolves to pack 1 expected=240 0 observed=243 0
+FAIL ui a label is one quad per character: 'A' at window (20, 40) to (36, 56) with the cell (8, 16)-(16, 24) of the 200 x 264 UI atlas (font, icon cells, swatches, GUI sprites); 'b' 12 pixels further expected=12.00 20.00 40.00 0.04 0.06 36.00 56.00 0.08 0.09 1.00 1.00 32.00 observed=12.00 20.00 40.00 0.03 0.02 36.00 56.00 0.06 0.02 1.00 1.00 32.00
+FAIL ui a button: nine quads of the built-in button art from (0, 0), the first 6 window pixels square on the sprite corner; a focused field: field swatch, text, caret; a selected entry expected=96.00 0.00 0.00 0.00 0.30 6.00 6.00 0.01 0.31 6.00 0.00 6.00 0.00 0.31 0.00 34.00 0.00 0.37 observed=96.00 0.00 0.00 0.00 0.06 6.00 6.00 0.01 0.07 6.00 0.00 6.00 0.00 0.07 0.00 34.00 0.00 0.08
+passed 1729 failed 6
+done

@@ -35,6 +35,8 @@
  78 WK-ICON                 VALUE 7.   *> a pack icon: argument the icon cell (1 to CL-MAX-ICONS)
                                        *> of the UI atlas (pack-select.cob); never clicked
  78 WK-SPRITE               VALUE 8.   *> a GUI sprite (GSP-* row in the argument) drawn 1:1 at x, y; never clicked
+ 78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
+                                       *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
                                        *> action the maximum in half icons; hearts grow right from x, y (the bottom
                                        *> row), food grows left (x the first icon), rows of 10 going up 10 pixels
@@ -269,7 +271,10 @@
  78 GSP-FOOD-EMPTY          VALUE 10.
  78 GSP-FOOD-FULL           VALUE 11.
  78 GSP-FOOD-HALF           VALUE 12.
- 78 GSP-COUNT               VALUE 12.
+ 78 GSP-SHEET-INVENTORY     VALUE 13.   *> textures/gui/container/inventory.png (256 x 256 sheet, 4.11)
+ 78 GSP-SHEET-BENCH         VALUE 14.   *> textures/gui/container/crafting_table.png
+ 78 GSP-SHEET-BOOK          VALUE 15.   *> textures/gui/recipe_book.png
+ 78 GSP-COUNT               VALUE 15.
 
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.

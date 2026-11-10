@@ -130,7 +130,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BGUI-DRAW.
-*> USING generated file number (an image), RGBA out (PIC X(40000)), width out, height out, found out: the image of
+*> USING generated file number (an image), RGBA out (PIC X(262144)), width out, height out, found out: the image of
 *> the sprite, transparent where no step draws.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -142,7 +142,7 @@
  01 WS-BYTES               BINARY-LONG.
  LINKAGE SECTION.
  01 L-NUMBER               BINARY-LONG.
- 01 L-RGBA                 PIC X(40000).
+ 01 L-RGBA                 PIC X(262144).
  01 L-W                    BINARY-LONG.
  01 L-H                    BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
@@ -174,7 +174,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BGUI-OP.
-*> USING one step row (BG-OPROW), RGBA (PIC X(40000)), width, height: draws the step into the image
+*> USING one step row (BG-OPROW), RGBA (PIC X(262144)), width, height: draws the step into the image
 *> (section 2 of builtin-ui-art.md and standin-content 1.4.1: a later step overwrites, nothing blends).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -216,7 +216,7 @@
     05 L-O-N               PIC 999 OCCURS 6 TIMES.
     05 L-O-C               PIC X(8) OCCURS 4 TIMES.
     05 L-O-ARG             PIC 999.
- 01 L-RGBA                 PIC X(40000).
+ 01 L-RGBA                 PIC X(262144).
  01 L-W                    BINARY-LONG.
  01 L-H                    BINARY-LONG.
  PROCEDURE DIVISION USING L-OP L-RGBA L-W L-H.
@@ -270,27 +270,33 @@
                  END-PERFORM
              END-PERFORM
          WHEN "BV"
-*>           Bevel(W, H, O, HI, LO, F, b, r): outline, fill, highlight rows and columns, shade (which wins), corners.
+*>           Bevel(W, H, O, HI, LO, F, b, r) pasted at (x, y): W, H, b and r are numbers 1 to 4, the paste origin numbers 5 and 6
+*>           (a sprite's own bevel is W x H at 0, 0): outline, fill, highlight rows and columns, shade (which wins), corners.
              MOVE WS-NUM(3) TO WS-B
-             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= L-H
-                 PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X >= L-W
-                     MOVE WS-C(1) TO L-RGBA((WS-Y * L-W + WS-X) * 4 + 1:4)
-                     IF WS-X >= 1 AND WS-X <= L-W - 2 AND WS-Y >= 1 AND WS-Y <= L-H - 2
-                         MOVE WS-C(4) TO L-RGBA((WS-Y * L-W + WS-X) * 4 + 1:4)
+             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= WS-NUM(2)
+                 PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X >= WS-NUM(1)
+                     COMPUTE WS-P = (WS-NUM(6) + WS-Y) * L-W + WS-NUM(5) + WS-X
+                     MOVE WS-C(1) TO L-RGBA(WS-P * 4 + 1:4)
+                     IF WS-X >= 1 AND WS-X <= WS-NUM(1) - 2 AND WS-Y >= 1 AND WS-Y <= WS-NUM(2) - 2
+                         MOVE WS-C(4) TO L-RGBA(WS-P * 4 + 1:4)
                          IF WS-Y <= WS-B OR WS-X <= WS-B
-                             MOVE WS-C(2) TO L-RGBA((WS-Y * L-W + WS-X) * 4 + 1:4)
+                             MOVE WS-C(2) TO L-RGBA(WS-P * 4 + 1:4)
                          END-IF
-                         IF WS-Y >= L-H - 1 - WS-B OR WS-X >= L-W - 1 - WS-B
-                             MOVE WS-C(3) TO L-RGBA((WS-Y * L-W + WS-X) * 4 + 1:4)
+                         IF WS-Y >= WS-NUM(2) - 1 - WS-B OR WS-X >= WS-NUM(1) - 1 - WS-B
+                             MOVE WS-C(3) TO L-RGBA(WS-P * 4 + 1:4)
                          END-IF
                      END-IF
                  END-PERFORM
              END-PERFORM
              IF WS-NUM(4) = 1
-                 MOVE LOW-VALUES TO L-RGBA(1:4)
-                 MOVE LOW-VALUES TO L-RGBA((L-W - 1) * 4 + 1:4)
-                 MOVE LOW-VALUES TO L-RGBA((L-H - 1) * L-W * 4 + 1:4)
-                 MOVE LOW-VALUES TO L-RGBA(((L-H - 1) * L-W + L-W - 1) * 4 + 1:4)
+                 COMPUTE WS-P = WS-NUM(6) * L-W + WS-NUM(5)
+                 MOVE LOW-VALUES TO L-RGBA(WS-P * 4 + 1:4)
+                 COMPUTE WS-P = WS-NUM(6) * L-W + WS-NUM(5) + WS-NUM(1) - 1
+                 MOVE LOW-VALUES TO L-RGBA(WS-P * 4 + 1:4)
+                 COMPUTE WS-P = (WS-NUM(6) + WS-NUM(2) - 1) * L-W + WS-NUM(5)
+                 MOVE LOW-VALUES TO L-RGBA(WS-P * 4 + 1:4)
+                 COMPUTE WS-P = (WS-NUM(6) + WS-NUM(2) - 1) * L-W + WS-NUM(5) + WS-NUM(1) - 1
+                 MOVE LOW-VALUES TO L-RGBA(WS-P * 4 + 1:4)
              END-IF
          WHEN "TR"
 *>           T(A, B, C): the three edge values all >= 0 or all <= 0 (inclusive).
