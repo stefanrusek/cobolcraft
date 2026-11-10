@@ -83,7 +83,7 @@
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
      MOVE "T" TO TL-MODE
-     MOVE "" TO TL-EXPECTED
+     MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 7 TO WS-NUM
 *>   The second swap puts the held stack back for the placement below.
