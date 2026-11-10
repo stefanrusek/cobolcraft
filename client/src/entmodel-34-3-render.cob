@@ -7,6 +7,7 @@
 *>     after translateToArms (1.4).
 *>   EM3-PROF-TEXTURE path-name(X(24)) folder(X(24): type, profession, profession_level) key(X(40), "ns:name", spaces when it cannot be resolved) level(BINARY-LONG)
 *>     baby(BINARY-LONG) texture(X(100), out): 1.5. EM3-HAT-VALUE text(X(24)) value(BINARY-LONG, out 0 none, 1 partial, 2 full).
+*>   EM3-ZV-SHAKING IN(fully frozen, converting, age in ticks, body rotation) OUT(shaking, body rotation with the jitter): 2.
 *>   EM3-PROF-MODEL IN(type hat value, profession hat value) OUT(1 for the parent (full) model, 0 for the no-hat model): the model of the type overlay (1.5 step 3).
 *>   EM3-PROF-OVERLAYS IN(invisible, has villager data, baby, profession is none, profession is nitwit) OUT(type overlay, profession overlay, level overlay): which of
 *>     the three overlays are drawn (1.5 steps 1 to 5).
@@ -191,3 +192,23 @@
      END-IF
      GOBACK.
  END PROGRAM EM3-PROF-OVERLAYS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ZV-SHAKING.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(fully frozen, converting, age in ticks, body rotation degrees) OUT(shaking, body rotation after the jitter): 2 (the entity shakes when frozen or converting; the jitter is
+*> cos(floor(ageInTicks) * 3.25) * pi * 0.4 added to the body rotation).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     MOVE L-I(4) TO L-O(2)
+     IF L-I(1) NOT = 0 OR L-I(2) NOT = 0
+         MOVE 1 TO L-O(1)
+         COMPUTE L-O(2) = L-I(4) + FUNCTION COS(FUNCTION INTEGER-PART(L-I(3)) * 3.25) * 3.1415927 * 0.4
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-ZV-SHAKING.
