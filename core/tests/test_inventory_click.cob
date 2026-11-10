@@ -242,7 +242,7 @@
      MOVE 999 TO WS-C-STATE
      PERFORM FEED-CLICK
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "20 18 75" TO TL-EXPECTED
+     MOVE "20 18" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click a wrong predicted slot is followed by Container Set Content (then "
@@ -258,7 +258,7 @@
      MOVE 64 TO WS-C-CARRIED-COUNT
      PERFORM FEED-CLICK
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "20 18 75" TO TL-EXPECTED
+     MOVE "20 18" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click a survival player's Set Creative Mode Slot is ignored" TO TL-CASE

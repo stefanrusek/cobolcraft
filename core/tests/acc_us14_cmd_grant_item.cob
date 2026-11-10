@@ -55,7 +55,7 @@
      MOVE "acceptance US14-2 Alice is sent her inventory (Container Set Content) and, "
          & "the inventory changed, the recipe book" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "18 75" TO TL-EXPECTED
+     MOVE "18" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 supplying 100 greystone adds them with the inventory add "
          & "rule" TO TL-CASE

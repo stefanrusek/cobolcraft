@@ -4,7 +4,7 @@
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph:
 *>   1. Login (0x32), then Commands (0x10, the tree the player may use, CMD-TREE-SEND,
-*>      core/src/commands.cob) and Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
+*>      core/src/commands.cob) and Recipe Book Settings and Add (0x4D, 0x4B, RECBOOK-JOIN, core/src/recipe-unlock.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
@@ -37,7 +37,7 @@
 *> INV-CREATIVE-SET (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
 *> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob) and 7 SWAP_ITEM_WITH_OFFHAND to MENU-OFFHAND-SWAP (core/src/menu-inventory.cob);
-*> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
+*> Place Recipe goes to RECIPE-PLACE (core/src/recipe-unlock.cob); Chat Command goes to CMD-RUN-PACKET and
 *> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
 *> A Cookie Response is
@@ -93,7 +93,7 @@
      CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "CMD-TREE-SEND" USING WS-ROW
-     CALL "CRAFT-BOOK-SEND" USING WS-ROW
+     CALL "RECBOOK-JOIN" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-ABILITIES-BUILD" USING PL-MODE(WS-ROW) PL-FLYING(WS-ROW) PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
@@ -247,7 +247,7 @@
          WHEN L-PACKET-ID = 67
              CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 39
-             CALL "CRAFT-PLACE" USING L-ID PLAY-SERVERBOUND
+             CALL "RECIPE-PLACE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 15
              CALL "CMD-SUGGEST" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 7
