@@ -98,6 +98,7 @@
  78 ACT-RB-PAGE             VALUE 50.   *> recipe book: the argument 1 previous page, 2 next page
  78 ACT-RB-CELL             VALUE 51.   *> recipe book: place the recipe of the cell (argument 200 + cell 1 to 20)
  78 ACT-RB-SEARCH           VALUE 52.   *> recipe book: focus the search box
+ 78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
  78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
