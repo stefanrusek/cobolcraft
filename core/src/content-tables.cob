@@ -34,6 +34,28 @@
  END PROGRAM TABLES-NUMBER-AFTER.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-TOOL-TIER.
+*> USING item key (PIC X(48)), tier out (BINARY-LONG): the tool tier of 13 section 2.1 from the key of a tool whose
+*> rule names a block class: 0 for wooden_ and golden_, 1 for stone_ and copper_, 2 for iron_ and 3 for any other
+*> (diamond, netherite and the cobolcraft tools, whose blocks have no tier tags).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-TIER                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TIER.
+     MOVE 3 TO L-TIER
+     EVALUATE TRUE
+         WHEN L-KEY(1:10) = "minecraft:" AND (L-KEY(11:7) = "wooden_" OR L-KEY(11:7) = "golden_")
+             MOVE 0 TO L-TIER
+         WHEN L-KEY(1:10) = "minecraft:" AND (L-KEY(11:6) = "stone_" OR L-KEY(11:7) = "copper_")
+             MOVE 1 TO L-TIER
+         WHEN L-KEY(1:10) = "minecraft:" AND L-KEY(11:5) = "iron_"
+             MOVE 2 TO L-TIER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM ITEM-TOOL-TIER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEMS-OPEN.
 *> No parameters: fills CORE-ITEMS from CONTENT-ITEM-BY-ID for every item of the open set (rules of CITEMS.cpy).
  DATA DIVISION.
@@ -85,6 +107,18 @@
              INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "tool #minecraft:mineable/shovel"
              IF WS-HITS > 0
                  MOVE 2 TO IT-TOOL-CLASS(WS-INDEX)
+             END-IF
+             MOVE 0 TO IT-TOOL-SPEED(WS-INDEX) IT-TOOL-TIER(WS-INDEX)
+             IF IT-TOOL-CLASS(WS-INDEX) > 0
+                 MOVE "mineable/pickaxe " TO WS-MARKER
+                 IF IT-TOOL-CLASS(WS-INDEX) = 2
+                     MOVE "mineable/shovel " TO WS-MARKER
+                 END-IF
+                 CALL "TABLES-NUMBER-AFTER" USING WS-TEXT WS-MARKER WS-VALUE WS-FOUND
+                 IF WS-FOUND = 1
+                     MOVE WS-VALUE TO IT-TOOL-SPEED(WS-INDEX)
+                 END-IF
+                 CALL "ITEM-TOOL-TIER" USING IT-KEY(WS-INDEX) IT-TOOL-TIER(WS-INDEX)
              END-IF
              MOVE "food " TO WS-MARKER
              CALL "TABLES-NUMBER-AFTER" USING WS-TEXT WS-MARKER WS-VALUE WS-FOUND

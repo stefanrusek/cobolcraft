@@ -20,28 +20,11 @@
 *> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
 *>
-*> Player Action (BLOCK-ACTION; actions 0, 2, 3; play.cob sends 4 and 5 to GI-THROW and 6 to
-*> HUNGER-CANCEL, and BLOCK-ACTION ignores the others). Creative: START breaks at once (no item appears, FR-007). Survival: START records
-*> the break (position, start tick, the number of ticks it takes: the §1.1 hand break time, divided
-*> by 4 when the held item is the tool of the block's class (§2), at 50 ms per tick rounded down);
-*> STOP breaks the block when the same position has been broken for at least that many ticks, and
-*> otherwise leaves it (Block Update of the real state to the player); ABORT ends the break. A block
-*> without a break time (void, and the baseplate, which nobody may break) is never broken: Block
-*> Update of its real state to the player. Each answered action and every Use Item On end with Block
-*> Changed Ack of their sequence. A survival break leaves the block's item on the ground
-*> (GI-BLOCK-YIELD, core/src/ground-items.cob; standin §1.3) and adds 0.025 exhaustion to the
-*> breaker (HUNGER-EXHAUST, standin §11.2); a creative break leaves nothing.
-*>
-*> Break progress (BLOCKS-TICK, every tick): while a survival break lasts, the other players who see
-*> the block get Block Destruction (the breaker's entity id, the position, stage = elapsed ticks x 10
-*> / break ticks, at most 9) whenever the stage changes; when the break ends (abort, finish, early
-*> stop, a new start) after a stage was sent they get stage 255, outside 0 to 9, which removes the
-*> overlay (05a 0x05).
+*> Player Action, the break progress (BLOCK-ACTION, BLOCKS-TICK, BLOCK-BREAK-END) and the stage broadcast are
+*> in core/src/breaking.cob (13 section 2).
 *>
 *> Entry points:
 *>   BLOCK-USE-ON USING connection id, PLAY-SERVERBOUND        Use Item On
-*>   BLOCK-ACTION USING connection id, PLAY-SERVERBOUND        Player Action
-*>   BLOCKS-TICK                                               break progress (CORE-TICK)
 *>   BLOCK-CHANGE USING dim, x, y, z, state                    set a block, tell the viewers
 *>   VIEWERS-SEND USING dim, chunk x, chunk z, except player row (0 none), PB-BUFFER
 *> Builders (append id + body to the caller's PB-BUFFER):
@@ -381,147 +364,6 @@
      END-IF
      GOBACK.
  END PROGRAM BLOCK-USE-ON.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-BREAK-END.
-*> USING player row (BINARY-LONG): ends the player's survival break, if any; when a stage was sent,
-*> the viewers get stage 255 (overlay removed).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY PROTO.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-CLEAR               BINARY-LONG VALUE 255.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     MOVE L-ROW TO WS-ROW
-     IF PL-BREAKING(WS-ROW) = 1 AND PL-BREAK-STAGE(WS-ROW) >= 0
-         COMPUTE WS-CX = (PL-BREAK-X(WS-ROW) - FUNCTION MOD(PL-BREAK-X(WS-ROW), 16)) / 16
-         COMPUTE WS-CZ = (PL-BREAK-Z(WS-ROW) - FUNCTION MOD(PL-BREAK-Z(WS-ROW), 16)) / 16
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "BLOCK-DESTRUCTION-BUILD" USING PL-ENTITY-ID(WS-ROW) PL-BREAK-X(WS-ROW)
-             PL-BREAK-Y(WS-ROW) PL-BREAK-Z(WS-ROW) WS-CLEAR PB-BUFFER
-         CALL "VIEWERS-SEND" USING PL-DIM(WS-ROW) WS-CX WS-CZ WS-ROW PB-BUFFER
-         CALL "PB-FREE" USING PB-BUFFER
-     END-IF
-     MOVE 0 TO PL-BREAKING(WS-ROW)
-     MOVE -1 TO PL-BREAK-STAGE(WS-ROW)
-     GOBACK.
- END PROGRAM BLOCK-BREAK-END.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-ACTION.
-*> USING connection id, PLAY-SERVERBOUND (a decoded Player Action): the break rules above.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY RULES.
- COPY CBLOCKS.
- COPY CITEMS.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-STATE               BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-ITEM                BINARY-LONG.
- 01 WS-MS                  BINARY-LONG.
- 01 WS-VOID                BINARY-LONG VALUE 0.
- 01 WS-EXHAUST             FLOAT-LONG.
- LINKAGE SECTION.
- COPY PLAYPKT.
- 01 L-ID                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
-     IF PSB-ACTION NOT = 0 AND PSB-ACTION NOT = 2 AND PSB-ACTION NOT = 3
-         GOBACK
-     END-IF
-     MOVE CN-PLAYER(L-ID) TO WS-ROW
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
-     CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
-     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
-     EVALUATE TRUE
-         WHEN PSB-ACTION = 2
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-         WHEN CB-BREAK-MS(WS-BLOCK) <= 0
-             CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
-         WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
-             CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
-         WHEN PSB-ACTION = 0
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             MOVE CB-BREAK-MS(WS-BLOCK) TO WS-MS
-             MOVE 0 TO WS-ITEM
-             IF PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) > 0
-                 MOVE PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) TO WS-ITEM
-             END-IF
-             IF CB-CLASS(WS-BLOCK) NOT = CB-CLASS-NONE
-                     AND IT-TOOL-CLASS(WS-ITEM + 1) = CB-CLASS(WS-BLOCK)
-                 COMPUTE WS-MS = WS-MS / TOOL-BREAK-DIVISOR
-             END-IF
-             MOVE 1 TO PL-BREAKING(WS-ROW)
-             MOVE PSB-BX TO PL-BREAK-X(WS-ROW)
-             MOVE PSB-BY TO PL-BREAK-Y(WS-ROW)
-             MOVE PSB-BZ TO PL-BREAK-Z(WS-ROW)
-             MOVE CW-TICKS TO PL-BREAK-START(WS-ROW)
-             COMPUTE PL-BREAK-TICKS(WS-ROW) = WS-MS / CORE-TICK-MS
-             MOVE -1 TO PL-BREAK-STAGE(WS-ROW)
-         WHEN PL-MODE(WS-ROW) = 0 AND PL-BREAKING(WS-ROW) = 1 AND PSB-BX = PL-BREAK-X(WS-ROW)
-                 AND PSB-BY = PL-BREAK-Y(WS-ROW) AND PSB-BZ = PL-BREAK-Z(WS-ROW)
-                 AND CW-TICKS - PL-BREAK-START(WS-ROW) >= PL-BREAK-TICKS(WS-ROW)
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
-             COMPUTE WS-BLOCK = WS-BLOCK - 1
-             CALL "GI-BLOCK-YIELD" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-BLOCK
-             COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
-             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
-         WHEN OTHER
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
-     END-EVALUATE
-     CALL "BLOCK-ACK" USING L-ID PSB-SEQUENCE
-     GOBACK.
- END PROGRAM BLOCK-ACTION.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCKS-TICK.
-*> No parameters; called once per tick after CW-TICKS is raised: break progress (above).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-PLAYER              BINARY-LONG.
- 01 WS-STAGE               BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- PROCEDURE DIVISION.
-     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-BREAKING(WS-PLAYER) = 1
-                 AND PL-BREAK-TICKS(WS-PLAYER) > 0
-             COMPUTE WS-STAGE = FUNCTION MIN(9, (CW-TICKS - PL-BREAK-START(WS-PLAYER)) * 10
-                 / PL-BREAK-TICKS(WS-PLAYER))
-             IF WS-STAGE NOT = PL-BREAK-STAGE(WS-PLAYER)
-                 IF WS-READY = 0
-                     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-                     MOVE 1 TO WS-READY
-                 END-IF
-                 MOVE WS-STAGE TO PL-BREAK-STAGE(WS-PLAYER)
-                 COMPUTE WS-CX = (PL-BREAK-X(WS-PLAYER)
-                     - FUNCTION MOD(PL-BREAK-X(WS-PLAYER), 16)) / 16
-                 COMPUTE WS-CZ = (PL-BREAK-Z(WS-PLAYER)
-                     - FUNCTION MOD(PL-BREAK-Z(WS-PLAYER), 16)) / 16
-                 CALL "PB-RESET" USING PB-BUFFER
-                 CALL "BLOCK-DESTRUCTION-BUILD" USING PL-ENTITY-ID(WS-PLAYER)
-                     PL-BREAK-X(WS-PLAYER) PL-BREAK-Y(WS-PLAYER) PL-BREAK-Z(WS-PLAYER)
-                     WS-STAGE PB-BUFFER
-                 CALL "VIEWERS-SEND" USING PL-DIM(WS-PLAYER) WS-CX WS-CZ WS-PLAYER PB-BUFFER
-             END-IF
-         END-IF
-     END-PERFORM
-     GOBACK.
- END PROGRAM BLOCKS-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SECTION-BLOCKS-UPDATE-BUILD.

@@ -116,6 +116,8 @@
  01 WS-OLD-ON-GROUND       PIC 9.
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-RATE                BINARY-LONG.
+ 01 WS-SUPPORTED           BINARY-LONG.
+ 01 WS-CLIMBING            BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -128,6 +130,19 @@
      MOVE 0 TO WS-MOVED
      IF L-PACKET-ID = 30 OR L-PACKET-ID = 31
          CALL "MOVE-COLLIDES" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-HIT
+*>       A rise that claims the ground (on-ground 1) without support or a climbable block is refused
+*>       like a collision (move-check.cob): the endless climb of a client that claims the ground in
+*>       the air.
+         IF WS-HIT = 0 AND FUNCTION MOD(PSB-FLAGS, 2) = 1 AND PL-MODE(WS-ROW) = 0
+                 AND PL-FLYING(WS-ROW) = 0 AND PSB-Y > PL-Y(WS-ROW) + 0.00001
+             CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-SUPPORTED
+             IF WS-SUPPORTED = 0
+                 CALL "MOVE-CLIMBING" USING PL-DIM(WS-ROW) PSB-X PSB-Y PSB-Z WS-CLIMBING
+                 IF WS-CLIMBING = 0
+                     MOVE 1 TO WS-HIT
+                 END-IF
+             END-IF
+         END-IF
          IF WS-HIT = 1
              IF WS-READY = 0
                  CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -155,6 +170,14 @@
      END-IF
      MOVE PL-ON-GROUND(WS-ROW) TO WS-OLD-ON-GROUND
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO PL-ON-GROUND(WS-ROW)
+*>   The claim counts as ground only with support below the feet (move-check.cob).
+     IF PL-ON-GROUND(WS-ROW) = 1 AND PL-MODE(WS-ROW) = 0
+         CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
+             WS-SUPPORTED
+         IF WS-SUPPORTED = 0
+             MOVE 0 TO PL-ON-GROUND(WS-ROW)
+         END-IF
+     END-IF
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1
          COMPUTE WS-FALL = FUNCTION INTEGER(PL-FALL-START(WS-ROW) - PL-Y(WS-ROW))

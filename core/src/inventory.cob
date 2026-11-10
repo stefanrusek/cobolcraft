@@ -183,6 +183,10 @@
      IF L-SLOT >= 0 AND L-SLOT <= 8
          IF L-SLOT NOT = PL-HELD(CN-PLAYER(L-ID))
              CALL "HUNGER-CANCEL" USING CN-PLAYER(L-ID)
+*>           A changed held item ends a break in progress (13 section 2.4).
+             IF PL-BREAKING(CN-PLAYER(L-ID)) = 1
+                 CALL "BLOCK-BREAK-END" USING CN-PLAYER(L-ID)
+             END-IF
          END-IF
          MOVE L-SLOT TO PL-HELD(CN-PLAYER(L-ID))
      END-IF
