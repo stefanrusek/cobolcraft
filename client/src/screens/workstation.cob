@@ -115,6 +115,8 @@
                          WS-TEXT WS-LENGTH WS-STATE
                  END-IF
              END-IF
+         WHEN BM-TYPE >= 100
+             CALL "MOUNT-DECOR" USING CLIENT-STATE L-LEFT L-TOP
          WHEN BM-TYPE = 8 OR BM-TYPE = 15
 *>           3.8 the anvil's name field: the background 110 x 16 at (59, 20) (black when slot 0 has an item, else the panel colour of the disabled sprite) and, when editable,
 *>           the text at (62, 24).

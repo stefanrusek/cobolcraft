@@ -262,6 +262,12 @@
        10 CX-DOUBLE          BINARY-LONG.
 *>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
 *>     last sent (itemName; AN-SENT-NULL 1 = none yet).
+*>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
+       10 MT-ENTITY          BINARY-LONG.
+       10 MT-KIND            BINARY-LONG.
+       10 MT-SADDLE          BINARY-LONG.
+       10 MT-BODY            BINARY-LONG.
+       10 MT-ICON            BINARY-LONG.
        10 AN-ID              BINARY-LONG.
        10 AN-ITEM            BINARY-LONG.
        10 AN-NAME-LENGTH     BINARY-LONG.

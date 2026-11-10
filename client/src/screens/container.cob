@@ -40,6 +40,11 @@
              COMPUTE L-OWN = 9 * (L-TYPE + 1)
              COMPUTE L-H = 114 + 18 * (L-TYPE + 1)
              COMPUTE L-IY = 31 + 18 * (L-TYPE + 1)
+         WHEN L-TYPE >= 100 AND L-TYPE <= 105
+*>           A mount inventory (40-6): the pseudo type 100 + chest columns; saddle, body and 3 x columns chest slots.
+             COMPUTE L-OWN = 2 + 3 * (L-TYPE - 100)
+         WHEN L-TYPE = 110
+             MOVE 2 TO L-OWN
          WHEN L-TYPE = 6
              MOVE 9 TO L-OWN
              MOVE -1 TO L-TX
@@ -230,6 +235,13 @@
          WHEN L-TYPE = 7
              MOVE 134 TO L-X
              MOVE 35 TO L-Y
+         WHEN L-TYPE >= 100 AND L-TYPE <= 110 AND L-N < 2
+             MOVE 8 TO L-X
+             COMPUTE L-Y = 18 + 18 * L-N
+         WHEN L-TYPE >= 100 AND L-TYPE <= 105
+             COMPUTE WS-R = (L-N - 2) / (L-TYPE - 100)
+             COMPUTE L-X = 80 + 18 * (L-N - 2 - WS-R * (L-TYPE - 100))
+             COMPUTE L-Y = 18 + 18 * WS-R
          WHEN L-TYPE >= 0 AND (L-TYPE <= 5 OR L-TYPE = 20)
              COMPUTE WS-R = L-N / 9
              COMPUTE L-X = 8 + 18 * (L-N - WS-R * 9)
@@ -359,6 +371,7 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
+ 01 WS-ACTIVE              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG VALUE ACT-NONE.
  01 WS-PANEL               BINARY-LONG VALUE SW-PANEL.
@@ -390,11 +403,18 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
      GO TO MAIN-FLOW.
 *> The item cell (WS-X, WS-Y in the image) of slot WS-I: own slots first, then the 27 main and 9 hotbar slots of the player, with the player's argument
-*> in WS-ARG when it is one; a menu with no player inventory puts them at (-100, -100).
+*> in WS-ARG when it is one; a menu with no player inventory puts them at (-100, -100); an inactive mount slot (40-6 2.4) too, with WS-ACTIVE 0.
  SLOT-CELL.
+     MOVE 1 TO WS-ACTIVE
      EVALUATE TRUE
          WHEN WS-I < WS-OWN + WS-TAIL
              CALL "CONTAINER-SLOT-POS" USING BM-TYPE WS-I WS-X WS-Y
+             IF BM-TYPE >= 100
+                 CALL "MOUNT-SLOT-ACTIVE" USING CLIENT-STATE WS-I WS-ACTIVE
+                 IF WS-ACTIVE = 0
+                     MOVE -100 TO WS-X WS-Y
+                 END-IF
+             END-IF
          WHEN WS-IY < 0
              MOVE -100 TO WS-X WS-Y
          WHEN WS-I - WS-OWN - WS-TAIL < 9
@@ -479,7 +499,7 @@
          PERFORM SLOT-CELL
          COMPUTE WS-X = WS-LEFT + WS-X - 1
          COMPUTE WS-Y = WS-TOP + WS-Y - 1
-         IF WS-I < WS-OWN + WS-TAIL
+         IF WS-I < WS-OWN + WS-TAIL AND WS-ACTIVE = 1
              COMPUTE WS-ARG = 401 + WS-I
              CALL "CONTAINER-SLOT-ADD" USING CLIENT-STATE WS-ARG WS-X WS-Y
          END-IF
