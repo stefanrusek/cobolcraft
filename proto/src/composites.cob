@@ -14,6 +14,8 @@
  01 WS-NO-NAME             PIC X VALUE SPACE.
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-STRING-TYPE         BINARY-LONG VALUE 8.
+ 01 WS-COMPOUND-TYPE       BINARY-LONG VALUE 10.
+ 01 WS-VALUE-LENGTH        BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
@@ -41,10 +43,77 @@
                  CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
              END-IF
          END-IF
+         IF PB-TX-STYLED = 1
+             CALL "PB-PUT-STYLE" USING PB-BUFFER PB-TX-COLOR PB-TX-ITALIC PB-TX-UNDERLINED
+             IF PB-TX-CLICK-LENGTH > 0
+                 MOVE 11 TO WS-NAME-LENGTH
+                 CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER "click_event" WS-NAME-LENGTH
+                 MOVE 6 TO WS-NAME-LENGTH
+                 MOVE 15 TO WS-VALUE-LENGTH
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER "action" WS-NAME-LENGTH
+                     "suggest_command" WS-VALUE-LENGTH
+                 MOVE 7 TO WS-NAME-LENGTH
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER "command" WS-NAME-LENGTH
+                     PB-TX-CLICK PB-TX-CLICK-LENGTH
+                 CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             END-IF
+             IF PB-TX-EXTRA-COUNT > 0
+                 MOVE 5 TO WS-NAME-LENGTH
+                 CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER "extra" WS-NAME-LENGTH
+                     WS-COMPOUND-TYPE PB-TX-EXTRA-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-TX-EXTRA-COUNT
+                     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NO-NAME WS-ELEMENT
+                     IF PB-TXE-KIND(WS-I) = PB-TEXT-LITERAL
+                         MOVE 4 TO WS-NAME-LENGTH
+                         CALL "NBT-WRITE-STRING" USING PB-BUFFER "text" WS-NAME-LENGTH
+                             PB-TXE-VALUE(WS-I) PB-TXE-LENGTH(WS-I)
+                     ELSE
+                         MOVE 9 TO WS-NAME-LENGTH
+                         CALL "NBT-WRITE-STRING" USING PB-BUFFER "translate" WS-NAME-LENGTH
+                             PB-TXE-VALUE(WS-I) PB-TXE-LENGTH(WS-I)
+                     END-IF
+                     CALL "PB-PUT-STYLE" USING PB-BUFFER PB-TXE-COLOR(WS-I)
+                         PB-TXE-ITALIC(WS-I) PB-TXE-UNDERLINED(WS-I)
+                     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+                 END-PERFORM
+                 CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+             END-IF
+         END-IF
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      END-IF
      GOBACK.
  END PROGRAM PB-PUT-TEXT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-PUT-STYLE.
+*> USING PB-BUFFER, color (PIC X(12), spaces = none), italic, underlined (PIC 9, 1 = write true):
+*> the style entries color (String), italic and underlined (Byte 1) of the compound being written.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-VALUE-LENGTH        BINARY-LONG.
+ 01 WS-TRUE                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-COLOR                PIC X(12).
+ 01 L-ITALIC               PIC 9.
+ 01 L-UNDERLINED           PIC 9.
+ PROCEDURE DIVISION USING PB-BUFFER L-COLOR L-ITALIC L-UNDERLINED.
+     IF L-COLOR NOT = SPACES
+         MOVE 5 TO WS-NAME-LENGTH
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(L-COLOR)) TO WS-VALUE-LENGTH
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER "color" WS-NAME-LENGTH L-COLOR WS-VALUE-LENGTH
+     END-IF
+     IF L-ITALIC = 1
+         MOVE 6 TO WS-NAME-LENGTH
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER "italic" WS-NAME-LENGTH WS-TRUE
+     END-IF
+     IF L-UNDERLINED = 1
+         MOVE 10 TO WS-NAME-LENGTH
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER "underlined" WS-NAME-LENGTH WS-TRUE
+     END-IF
+     GOBACK.
+ END PROGRAM PB-PUT-STYLE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PB-GET-TEXT.
@@ -61,6 +130,9 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 1024.
+ 01 WS-COLOR-CAPACITY      BINARY-LONG VALUE 12.
+ 01 WS-COLOR-LENGTH        BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  01 WS-NAME.
     05 WS-NAME-FIRST       PIC X.
     05 FILLER              PIC X(63).
@@ -70,7 +142,9 @@
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER PB-TEXT.
      MOVE PB-TEXT-PLAIN TO PB-TX-KIND
-     MOVE 0 TO PB-TX-LENGTH PB-TX-ARG-COUNT WS-HAS-KEY
+     MOVE 0 TO PB-TX-LENGTH PB-TX-ARG-COUNT WS-HAS-KEY PB-TX-STYLED PB-TX-ITALIC
+         PB-TX-UNDERLINED PB-TX-CLICK-LENGTH PB-TX-EXTRA-COUNT
+     MOVE SPACES TO PB-TX-COLOR
      CALL "NBT-READ-ROOT" USING PB-BUFFER WS-NETWORK WS-TYPE
      EVALUATE WS-TYPE
          WHEN 8
@@ -104,6 +178,34 @@
                              END-PERFORM
                              MOVE WS-COUNT TO PB-TX-ARG-COUNT
                          END-IF
+                     WHEN WS-TYPE = 8 AND WS-NAME = "color"
+                         MOVE 1 TO PB-TX-STYLED
+                         CALL "NBT-READ-STRING" USING PB-BUFFER PB-TX-COLOR WS-COLOR-CAPACITY
+                             WS-COLOR-LENGTH
+                     WHEN WS-TYPE = 1 AND WS-NAME = "italic"
+                         MOVE 1 TO PB-TX-STYLED
+                         CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                         MOVE WS-BYTE TO PB-TX-ITALIC
+                     WHEN WS-TYPE = 1 AND WS-NAME = "underlined"
+                         MOVE 1 TO PB-TX-STYLED
+                         CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                         MOVE WS-BYTE TO PB-TX-UNDERLINED
+                     WHEN WS-TYPE = 10 AND WS-NAME = "click_event"
+                         MOVE 1 TO PB-TX-STYLED
+                         CALL "PB-GET-CLICK" USING PB-BUFFER PB-TEXT
+                     WHEN WS-TYPE = 9 AND WS-NAME = "extra"
+                         MOVE 1 TO PB-TX-STYLED
+                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                         IF WS-COUNT > PB-TEXT-MAX-EXTRA
+                                 OR (WS-COUNT > 0 AND WS-ELEMENT-TYPE NOT = 10)
+                             MOVE 1 TO PB-ERROR
+                             MOVE 0 TO WS-TYPE
+                         ELSE
+                             MOVE WS-COUNT TO PB-TX-EXTRA-COUNT
+                             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+                                 CALL "PB-GET-EXTRA" USING PB-BUFFER PB-TEXT WS-I
+                             END-PERFORM
+                         END-IF
                      WHEN WS-TYPE > 0
                          CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  END-EVALUATE
@@ -116,6 +218,96 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM PB-GET-TEXT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-CLICK.
+*> USING PB-BUFFER, PB-TEXT: the payload of a click_event compound; "command" is kept in
+*> PB-TX-CLICK (other entries are skipped).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-NAME.
+    05 WS-NAME-FIRST       PIC X.
+    05 FILLER              PIC X(63).
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 64.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER PB-TEXT.
+     PERFORM WITH TEST AFTER UNTIL WS-TYPE = 0
+         MOVE SPACES TO WS-NAME
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WS-NAME-FIRST
+             WS-NAME-CAPACITY WS-NAME-LENGTH
+         IF WS-TYPE = 8 AND WS-NAME = "command"
+             CALL "NBT-READ-STRING" USING PB-BUFFER PB-TX-CLICK WS-CAPACITY PB-TX-CLICK-LENGTH
+         ELSE
+             IF WS-TYPE > 0
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PB-GET-CLICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-GET-EXTRA.
+*> USING PB-BUFFER, PB-TEXT, index: one element compound of the "extra" list into PB-TX-EXTRA(index):
+*> text or translate, color, italic, underlined. A compound with neither text nor translate is
+*> PB-ERROR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-HAS-KEY             BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-COLOR-CAPACITY      BINARY-LONG VALUE 12.
+ 01 WS-COLOR-LENGTH        BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-NAME.
+    05 WS-NAME-FIRST       PIC X.
+    05 FILLER              PIC X(63).
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 64.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER PB-TEXT L-INDEX.
+     MOVE 0 TO WS-HAS-KEY PB-TXE-LENGTH(L-INDEX) PB-TXE-ITALIC(L-INDEX)
+         PB-TXE-UNDERLINED(L-INDEX)
+     MOVE SPACES TO PB-TXE-COLOR(L-INDEX)
+     MOVE PB-TEXT-LITERAL TO PB-TXE-KIND(L-INDEX)
+     PERFORM WITH TEST AFTER UNTIL WS-TYPE = 0
+         MOVE SPACES TO WS-NAME
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WS-NAME-FIRST
+             WS-NAME-CAPACITY WS-NAME-LENGTH
+         EVALUATE TRUE
+             WHEN WS-TYPE = 8 AND WS-NAME = "text"
+                 MOVE 1 TO WS-HAS-KEY
+                 CALL "NBT-READ-STRING" USING PB-BUFFER PB-TXE-VALUE(L-INDEX) WS-CAPACITY
+                     PB-TXE-LENGTH(L-INDEX)
+             WHEN WS-TYPE = 8 AND WS-NAME = "translate"
+                 MOVE 1 TO WS-HAS-KEY
+                 MOVE PB-TEXT-TRANSLATE TO PB-TXE-KIND(L-INDEX)
+                 CALL "NBT-READ-STRING" USING PB-BUFFER PB-TXE-VALUE(L-INDEX) WS-CAPACITY
+                     PB-TXE-LENGTH(L-INDEX)
+             WHEN WS-TYPE = 8 AND WS-NAME = "color"
+                 CALL "NBT-READ-STRING" USING PB-BUFFER PB-TXE-COLOR(L-INDEX)
+                     WS-COLOR-CAPACITY WS-COLOR-LENGTH
+             WHEN WS-TYPE = 1 AND WS-NAME = "italic"
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                 MOVE WS-BYTE TO PB-TXE-ITALIC(L-INDEX)
+             WHEN WS-TYPE = 1 AND WS-NAME = "underlined"
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                 MOVE WS-BYTE TO PB-TXE-UNDERLINED(L-INDEX)
+             WHEN WS-TYPE > 0
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     IF WS-HAS-KEY = 0
+         MOVE 1 TO PB-ERROR
+     END-IF
+     GOBACK.
+ END PROGRAM PB-GET-EXTRA.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PB-PUT-ITEMSTACK.
