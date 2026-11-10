@@ -131,3 +131,17 @@
      END-PERFORM
      GOBACK.
  END PROGRAM WORLDSIM-INITIAL-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDSIM-NEW-WORLD-SPAWN.
+*> No parameters: CORE-WORLD-OPEN of a new world; a standard world gets the spawn search of 33 section 6.2 (WORLDSIM-INITIAL-SPAWN); the cobolcraft world keeps the
+*> fixed spawn of standin-content.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ PROCEDURE DIVISION.
+     IF CW-WORLD-TYPE = "standard"
+         CALL "WORLDSIM-INITIAL-SPAWN"
+     END-IF
+     GOBACK.
+ END PROGRAM WORLDSIM-NEW-WORLD-SPAWN.

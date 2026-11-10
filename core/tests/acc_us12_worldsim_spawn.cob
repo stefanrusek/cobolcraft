@@ -38,7 +38,7 @@
 
      MOVE "acceptance US12 33 6.2 given a new world when the initial spawn is searched then it is the centre of the cell above the highest block of column (0, 0)"
          TO TL-CASE
-     CALL "WORLDSIM-INITIAL-SPAWN"
+     CALL "WORLDSIM-NEW-WORLD-SPAWN"
      PERFORM TOP-OF-COLUMN-0-0
      MOVE CW-SPAWN-X TO WS-N
      COMPUTE WS-EDIT = CW-SPAWN-X * 10
@@ -65,6 +65,18 @@
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "5 15" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 6.2 given a cobolcraft world when a new world is made then the fixed spawn stays" TO TL-CASE
+     MOVE SPACES TO CW-WORLD-TYPE
+     MOVE 77 TO CW-SPAWN-X
+     CALL "WORLDSIM-NEW-WORLD-SPAWN"
+     MOVE CW-SPAWN-X TO WS-N
+     MOVE WS-N TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "77" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "standard" TO CW-WORLD-TYPE
+     CALL "WORLDSIM-INITIAL-SPAWN"
 
      MOVE "acceptance US12 33 6.2 given the world spawn when a player joins then she stands at it" TO TL-CASE
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN

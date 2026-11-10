@@ -2224,7 +2224,7 @@
  PROGRAM-ID. WORLDSIM-RANDOM.
 *> USING dimension row (BINARY-LONG): ServerLevel.tickChunk step 2 for every chunk that ticks (33 section 2.2 step 5 and 2.4): for each section, bottom to
 *> top, whose counts say it holds randomly ticking blocks or fluids (BR-VISIT), random_tick_speed positions from randomBlockPos (WL-RANDOM-POS, the
-*> level's own randValue) each get BR-RANDOM-TICK. The ice and snow attempts of step 1 need the weather blocks of 29b and are not run.
+*> level's own randValue) each get BR-RANDOM-TICK. The ice and snow attempts of step 1 are WORLDSIM-PRECIPITATION (worldsim-33d.cob).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -2244,18 +2244,37 @@
  01 WS-Z                   BINARY-LONG.
  01 WS-MASK                BINARY-LONG VALUE 15.
  01 WS-LAST                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-ATTEMPT             BINARY-LONG.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-RAINING             BINARY-LONG.
+ 01 WS-THUNDERING          BINARY-LONG.
+ 01 WS-RAIN-LEVEL          FLOAT-LONG.
+ 01 WS-THUNDER-LEVEL       FLOAT-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM.
      CALL "WORLDSIM-ENSURE"
      COMPUTE WS-SECTIONS = DM-HEIGHT(L-DIM) / 16
      MOVE CK-COUNT TO WS-LAST
+     MOVE DM-WEATHER(L-DIM) TO WS-CAN
+     MOVE CW-RAIN-LEVEL(L-DIM) TO WS-RAIN-LEVEL
+     MOVE CW-THUNDER-LEVEL(L-DIM) TO WS-THUNDER-LEVEL
+     CALL "WW-IS" USING WS-CAN WS-RAIN-LEVEL WS-THUNDER-LEVEL WS-RAINING WS-THUNDERING
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > WS-LAST
          IF CK-USED(WS-ROW) = 1 AND CK-DIM(WS-ROW) = L-DIM
              CALL "BT-CHUNK-TICKS" USING L-DIM CK-X(WS-ROW) CK-Z(WS-ROW) WS-TICKING
              IF WS-TICKING = 1
                  COMPUTE WS-X0 = CK-X(WS-ROW) * 16
                  COMPUTE WS-Z0 = CK-Z(WS-ROW) * 16
+                 PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WSM-SPEED
+                     CALL "WL-RANDOM-POS" USING WSM-RAND(L-DIM) WS-X0 WS-Y0 WS-Z0 WS-MASK WS-X WS-Y WS-Z
+                     COMPUTE WS-DRAW = FUNCTION MOD(FUNCTION INTEGER(FUNCTION ABS(WSM-RAND(L-DIM)) / 65536), 48)
+                     CALL "WL-ICE-ATTEMPT" USING WS-DRAW WS-ATTEMPT
+                     IF WS-ATTEMPT = 1
+                         CALL "WORLDSIM-PRECIPITATION" USING L-DIM WS-X WS-Z WS-RAINING
+                     END-IF
+                 END-PERFORM
                  PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
                      CALL "BR-VISIT" USING WS-ROW WS-S WS-VISIT
                      IF WS-VISIT = 1
