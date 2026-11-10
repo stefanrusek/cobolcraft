@@ -88,6 +88,7 @@
  01 WS-Z2                  BINARY-LONG VALUE 0.
  01 WS-Z3                  BINARY-LONG VALUE 0.
  01 WS-PX                  BINARY-LONG.
+ 01 WS-SEE                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
@@ -96,6 +97,14 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH L-TYPE.
      CALL "RECIPE-BOOK-GEOMETRY" USING CLIENT-STATE L-GW L-GH WS-LEFT WS-TOP WS-PX
      MOVE SPACES TO WS-TEXT
+*>   The effects panel of the survival inventory (49 section 3), drawn first (under the container); where it has no room the
+*>   world HUD's icons are drawn instead (49 section 2.1).
+     IF L-TYPE = 0
+         CALL "EFFECTS-PANEL-ADD" USING CLIENT-STATE L-GW WS-LEFT WS-TOP WS-SEE
+         IF WS-SEE = 0
+             CALL "EFFECTS-HUD-ADD" USING CLIENT-STATE L-GW L-GH
+         END-IF
+     END-IF
      MOVE GSP-SHEET-INVENTORY TO WS-SHEET-ROW
      IF L-TYPE = 12
          MOVE GSP-SHEET-BENCH TO WS-SHEET-ROW

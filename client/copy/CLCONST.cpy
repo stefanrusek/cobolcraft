@@ -163,7 +163,7 @@
  78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
  78 CL-MAX-ADDRESSES        VALUE 8.   *> local addresses shown on the open-to-others screen
  78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
- 78 CL-MAX-WIDGETS          VALUE 192.
+ 78 CL-MAX-WIDGETS          VALUE 512.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
@@ -291,7 +291,31 @@
  78 GSP-RB-SLOT             VALUE 23.   *> slot_craftable
  78 GSP-RB-SLOT-NO          VALUE 24.   *> slot_uncraftable
  78 GSP-TOAST               VALUE 25.   *> toast/recipe
- 78 GSP-COUNT               VALUE 25.
+ 78 EF-TABLE-COUNT         VALUE 40.   *> status effects (CLEFFECT.cpy)
+ 78 GSP-MOB-EFFECT-0        VALUE 26.   *> mob_effect/<key> of effect id n at GSP-MOB-EFFECT-0 + n (EF-TABLE-COUNT rows, 49 section 1)
+ 78 GSP-EFFECT-BG            VALUE 66.   *> hud/effect_background and the ambient one (49 section 2.5)
+ 78 GSP-EFFECT-BG-AMBIENT    VALUE 67.
+ 78 GSP-INV-EFFECT-BG        VALUE 68.   *> container/inventory/effect_background and the ambient one (49 section 3.2)
+ 78 GSP-INV-EFFECT-BG-AMBIENT VALUE 69.
+ 78 GSP-ARMOR-EMPTY          VALUE 70.   *> hud/armor_empty, armor_half, armor_full (49 section 5.3)
+ 78 GSP-ARMOR-HALF           VALUE 71.
+ 78 GSP-ARMOR-FULL           VALUE 72.
+ 78 GSP-AIR                  VALUE 73.   *> hud/air, air_empty, air_bursting (49 section 5.5)
+ 78 GSP-AIR-EMPTY            VALUE 74.
+ 78 GSP-AIR-BURSTING         VALUE 75.
+ 78 GSP-VEHICLE-CONTAINER    VALUE 76.   *> hud/heart/vehicle_container, vehicle_full, vehicle_half (49 section 5.6)
+ 78 GSP-VEHICLE-FULL         VALUE 77.
+ 78 GSP-VEHICLE-HALF         VALUE 78.
+ 78 GSP-HEART-CONTAINER-BLINK VALUE 79.  *> hud/heart/container_blinking, container_hardcore, container_hardcore_blinking
+ 78 GSP-HEART-CONTAINER-HARDCORE VALUE 80.
+ 78 GSP-HEART-CONTAINER-HARDCORE-BLINK VALUE 81.
+ 78 GSP-HEART-VARIANT-0      VALUE 82.   *> the 40 heart sprites: row + ((type x 2 + hardcore) x 2 + half) x 2 + blinking, type 0 normal,
+                                        *> 1 poisoned, 2 withered, 3 frozen, 4 absorbing (49 section 5.2)
+ 78 GSP-FOOD-EMPTY-HUNGER    VALUE 122.  *> hud/food_empty_hunger, food_half_hunger, food_full_hunger (49 section 5.4)
+ 78 GSP-FOOD-HALF-HUNGER     VALUE 123.
+ 78 GSP-FOOD-FULL-HUNGER     VALUE 124.
+ 78 GSP-COUNT               VALUE 124.
+ 78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 
 

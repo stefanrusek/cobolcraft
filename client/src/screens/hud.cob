@@ -38,6 +38,9 @@
  01 WS-Z2                  BINARY-LONG VALUE 0.
  01 WS-Z3                  BINARY-LONG VALUE 0.
  01 WS-CLOSED              BINARY-LONG VALUE 0.
+ 01 WS-ROWS                BINARY-LONG.
+ 01 WS-ROW-HEIGHT          BINARY-LONG.
+ 01 WS-MOUNT-ROWS          BINARY-LONG.
  01 WS-OVERLAY             BINARY-LONG VALUE WK-OVERLAY.
  01 WS-HURT                BINARY-LONG VALUE SW-HURT.
  01 WS-TEXT                PIC X(512).
@@ -100,10 +103,24 @@
          CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
          MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
      END-IF
-*>   Survival: the heart meter from the left end of the hotbar and the food meter from the right end, both at
-*>   y = H - 39 (12 section 5.4); the value in half icons (health rounded up).
-     IF PL-MODE = 0
-         MOVE WK-METER TO WS-KIND
+*>   The heart rows (12 section 5.4; 49 section 5): in survival and adventure the armour row (from 1 armour), the hearts from the left end of the
+*>   hotbar and the food from the right end (not while a mount with hearts is ridden), the air bubbles above them; the mount's hearts in every mode.
+*>   Each is a meter widget (ui-render.cob, hearts.cob METER-ICON); the widgets are in the order of the frame's random numbers.
+     CALL "HEARTS-FRAME" USING CLIENT-STATE CL-NOW-MS
+     CALL "HEART-ROWS" USING CLIENT-STATE WS-ROWS WS-ROW-HEIGHT
+     MOVE WK-METER TO WS-KIND
+     MOVE 82 TO WS-W
+     MOVE 9 TO WS-H
+     COMPUTE WS-MOUNT-ROWS = FUNCTION MAX(1, (PL-MOUNT-HEARTS + 9) / 10)
+     IF PL-MODE = 0 OR PL-MODE = 2
+         IF PL-ARMOR > 0
+             MOVE 3 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 - 91
+             COMPUTE WS-Y = L-GH - 39 - (WS-ROWS - 1) * WS-ROW-HEIGHT - 10
+             MOVE 20 TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-ARMOR
+         END-IF
          MOVE 1 TO WS-ARG
          COMPUTE WS-X = L-GW / 2 - 91
          COMPUTE WS-Y = L-GH - 39
@@ -111,17 +128,39 @@
          IF WS-C < 0
              MOVE 0 TO WS-C
          END-IF
-         MOVE CL-MAX-HEALTH TO WS-ACTION
-         MOVE 82 TO WS-W
-         MOVE 9 TO WS-H
+         CALL "HEART-MAX" USING CLIENT-STATE WS-ACTION
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
              WS-TEXT WS-Z3 WS-C
-         MOVE 2 TO WS-ARG
-         COMPUTE WS-X = L-GW / 2 + 91 - 9
-         MOVE CL-MAX-FOOD TO WS-ACTION
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
-             WS-TEXT WS-Z3 PL-FOOD
+         IF PL-MOUNT-HEARTS = 0
+             MOVE 2 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 + 91 - 9
+             MOVE CL-MAX-FOOD TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-FOOD
+         END-IF
+         CALL "METER-AIR-SHOWN" USING CLIENT-STATE WS-C
+         IF WS-C = 1
+             MOVE 4 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 + 91 - 9
+             IF PL-MOUNT-HEARTS > 0
+                 COMPUTE WS-Y = L-GH - 49 - 10 * (WS-MOUNT-ROWS - 1)
+             ELSE
+                 COMPUTE WS-Y = L-GH - 49
+             END-IF
+             MOVE 20 TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-AIR
+         END-IF
      END-IF
+     IF PL-MOUNT-HEARTS > 0
+         MOVE 5 TO WS-ARG
+         COMPUTE WS-X = L-GW / 2 + 91 - 9
+         COMPUTE WS-Y = L-GH - 39
+         COMPUTE WS-ACTION = PL-MOUNT-HEARTS * 2
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-Z3 PL-MOUNT-HEALTH
+     END-IF
+     CALL "EFFECTS-HUD-ADD" USING CLIENT-STATE L-GW L-GH
      CALL "CHAT-AREA-ADD" USING CLIENT-STATE L-GW L-GH WS-CLOSED
      CALL "DEBUG-OVERLAY-ADD" USING CLIENT-STATE L-GW L-GH
      GOBACK.

@@ -72,7 +72,7 @@
     05 SM-STATE.
        10 SM-SCREEN          BINARY-LONG.
        10 SM-WIDGET-COUNT    BINARY-LONG.
-       10 SM-WIDGET OCCURS 192 TIMES.
+       10 SM-WIDGET OCCURS 512 TIMES.
           15 SM-W-KIND       BINARY-LONG.
           15 SM-W-ACTION     BINARY-LONG.
           15 SM-W-ARG        BINARY-LONG.
@@ -232,6 +232,7 @@
 *>     which the hurt indication shows (Damage Event or Hurt Animation for the local player).
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
@@ -269,6 +270,34 @@
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
        10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
+*>  ---- status effects and the heart-row state (client/src/effects.cob, hearts.cob; docs/protocol/49) ----
+    05 EF-STATE.
+       10 EF-COUNT           BINARY-LONG.    *> active effects of the local player
+       10 EF-ENTRY OCCURS 40 TIMES.
+          15 EF-ID           BINARY-LONG.    *> the effect's registry id
+          15 EF-AMP          BINARY-LONG.
+          15 EF-DUR          BINARY-LONG.    *> remaining ticks, -1 infinite
+          15 EF-FLAGS        BINARY-LONG.    *> 0x01 ambient, 0x02 visible, 0x04 show icon, 0x08 blend
+       10 HB-TICK            BINARY-LONG.    *> the HUD tick count
+       10 HB-COOLDOWN        BINARY-LONG.    *> the local player's damage cooldown time
+       10 HB-FLASH-ARMED     PIC 9.          *> 1 once a Set Health reached this local player
+       10 HB-LAST-HEALTH     BINARY-LONG.
+       10 HB-DISPLAY-HEALTH  BINARY-LONG.
+       10 HB-BLINK-TIME      BINARY-LONG.
+       10 HB-LAST-TIME       BINARY-DOUBLE.
+       10 HB-BLINK           PIC 9.
+       10 HB-RNG             BINARY-DOUBLE.  *> the random source of the frame (a 48-bit Java LCG state)
+       10 PL-MAX-HEALTH      FLOAT-SHORT.    *> max_health attribute value
+       10 PL-ARMOR           BINARY-LONG.    *> armor attribute value
+       10 PL-ABSORPTION      FLOAT-SHORT.
+       10 PL-AIR             BINARY-LONG.
+       10 PL-MAX-AIR         BINARY-LONG.
+       10 PL-EYES-WATER      PIC 9.
+       10 PL-TICKS-FROZEN    BINARY-LONG.
+       10 PL-HARDCORE        PIC 9.
+       10 PL-VEHICLE         BINARY-LONG.    *> entity id of the vehicle ridden, -1 none
+       10 PL-MOUNT-HEARTS    BINARY-LONG.
+       10 PL-MOUNT-HEALTH    BINARY-LONG.
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -601,7 +630,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 32 TIMES.
+       10 GS-ROW OCCURS 128 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
@@ -768,6 +797,7 @@
           15 RL-WX-B         FLOAT-SHORT.
           15 RL-WX-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
+       10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
           15 RL-UI-Y         FLOAT-SHORT.

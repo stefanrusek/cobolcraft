@@ -182,34 +182,35 @@
 *>   Quads: the two meters add 10 + 9 + 10 + 10 = 39 quads (234 vertices) over the creative HUD.
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE RL-UI-COUNT TO WS-SURVIVAL-UI
-*>   Which sprite fills a heart: the 8th (k = 7, vertex 109 on) is full, the 9th (k = 8, vertex 121) is half, the 10th (vertex 133)
-*>   has only its container (health 17 = 8 full hearts and a half); the first 18 vertices are the crosshair, hotbar and selection.
-     COMPUTE WS-U = GS-X(GSP-HEART-FULL) / UA-W
-     COMPUTE WS-V = GS-Y(GSP-HEART-FULL) / UA-H
+*>   Which sprite fills a heart: the hearts are drawn from the last slot down to slot 0 (49 section 5.2, the order of the random numbers), so
+*>   slot 9 (vertex 19) has only its container, slot 8 (vertex 25 container, 31 half) is half (health 17 = 8 full hearts and a half) and
+*>   slot 7 (vertex 37 container, 43 full) is full; the first 18 vertices are the crosshair, hotbar and selection.
+     COMPUTE WS-U = GS-X(GSP-HEART-VARIANT-0) / UA-W
+     COMPUTE WS-V = GS-Y(GSP-HEART-VARIANT-0) / UA-H
      MOVE "acceptance US6-5 heart 8 is filled with the full sprite" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-UI-U(109) > WS-U - 0.00001 AND RL-UI-U(109) < WS-U + 0.00001
-             AND RL-UI-V(109) > WS-V - 0.00001 AND RL-UI-V(109) < WS-V + 0.00001
+     IF RL-UI-U(43) > WS-U - 0.00001 AND RL-UI-U(43) < WS-U + 0.00001
+             AND RL-UI-V(43) > WS-V - 0.00001 AND RL-UI-V(43) < WS-V + 0.00001
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     COMPUTE WS-U = GS-X(GSP-HEART-HALF) / UA-W
-     COMPUTE WS-V = GS-Y(GSP-HEART-HALF) / UA-H
+     COMPUTE WS-U = GS-X(GSP-HEART-VARIANT-0 + 2) / UA-W
+     COMPUTE WS-V = GS-Y(GSP-HEART-VARIANT-0 + 2) / UA-H
      MOVE "acceptance US6-5 heart 9 is filled with the half sprite" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-UI-U(121) > WS-U - 0.00001 AND RL-UI-U(121) < WS-U + 0.00001
-             AND RL-UI-V(121) > WS-V - 0.00001 AND RL-UI-V(121) < WS-V + 0.00001
+     IF RL-UI-U(31) > WS-U - 0.00001 AND RL-UI-U(31) < WS-U + 0.00001
+             AND RL-UI-V(31) > WS-V - 0.00001 AND RL-UI-V(31) < WS-V + 0.00001
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-U = GS-X(GSP-HEART-CONTAINER) / UA-W
      COMPUTE WS-V = GS-Y(GSP-HEART-CONTAINER) / UA-H
-     MOVE "acceptance US6-5 heart 10 is a container alone (the next quad is heart 11's container)" TO TL-CASE
+     MOVE "acceptance US6-5 heart 10 (slot 9, drawn first) is a container alone (the next quad is slot 8's container)" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
-     IF RL-UI-U(127) > WS-U - 0.00001 AND RL-UI-U(127) < WS-U + 0.00001
-             AND RL-UI-V(127) > WS-V - 0.00001 AND RL-UI-V(127) < WS-V + 0.00001
-             AND RL-UI-U(133) > WS-U - 0.00001 AND RL-UI-U(133) < WS-U + 0.00001
+     IF RL-UI-U(19) > WS-U - 0.00001 AND RL-UI-U(19) < WS-U + 0.00001
+             AND RL-UI-V(19) > WS-V - 0.00001 AND RL-UI-V(19) < WS-V + 0.00001
+             AND RL-UI-U(25) > WS-U - 0.00001 AND RL-UI-U(25) < WS-U + 0.00001
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

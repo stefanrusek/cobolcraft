@@ -316,13 +316,26 @@
              CALL "TEXT-RENDER" USING CLIENT-STATE OUT-TEXT WS-TEXT WS-LENGTH
              CALL "CHAT-MESSAGE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH
          WHEN WS-PHASE = PH-PLAY AND L-ID = 106
-             CALL "PB-GET-FLOAT" USING L-PACKET PL-HEALTH
+             CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+             CALL "HEALTH-HURT-TO" USING CLIENT-STATE WS-FLOAT
              CALL "PB-GET-VARINT" USING L-PACKET PL-FOOD
+             CALL "PB-GET-FLOAT" USING L-PACKET PL-SATURATION
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 135
+             CALL "PLAY-EFFECT-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 79
+             CALL "PLAY-REMOVE-EFFECT-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 134
+             CALL "PLAY-ATTRIBUTES-READ" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 109
+             CALL "PLAY-PASSENGERS-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 25 OR L-ID = 43)
 *>           Damage Event or Hurt Animation: both start with the damaged entity's id.
              CALL "PB-GET-VARINT" USING L-PACKET WS-ID
              IF WS-ID = PL-ENTITY-ID
                  COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
+                 IF L-ID = 25
+                     MOVE 20 TO HB-COOLDOWN
+                 END-IF
              END-IF
          WHEN WS-PHASE = PH-PLAY AND L-ID = 34
 *>           Entity Event (an Int entity id, a Byte event): 9 for the local player is eating

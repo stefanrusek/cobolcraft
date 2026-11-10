@@ -36,7 +36,8 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER
+     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE
+     CALL "HB-RNG-SEED" USING CLIENT-STATE
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
          MOVE SM-W-LENGTH(WS-W) TO WS-LENGTH
@@ -65,8 +66,13 @@
                  MOVE SM-W-ARG(WS-W) TO WS-SPRITE-ROW
                  IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
                      IF GS-W(WS-SPRITE-ROW) > 0
+*>                       A sprite's state above 0 is its alpha in thousandths plus 1 (the fading effect icons).
+                         IF SM-W-STATE(WS-W) > 0
+                             COMPUTE RL-UI-FADE = 1 - (SM-W-STATE(WS-W) - 1) / 1000
+                         END-IF
                          CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
                              SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                         MOVE 0 TO RL-UI-FADE
                      END-IF
                  END-IF
                  MOVE 0 TO WS-LENGTH
@@ -156,58 +162,66 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-METER.
-*> USING CLIENT-STATE, widget (a meter): argument 1 hearts (icon k at x + 8 (k mod 10), y - 10 (k div 10): a container
-*> sprite, then full when 2k + 2 <= value, half when 2k + 1 = value) or 2 food (icon k at x - 8 (k mod 10): the empty
-*> sprite, then full or half likewise). The value is the state, the maximum the action (both in half icons).
+*> USING CLIENT-STATE, widget (a meter): its argument is the kind of row (hearts.cob: 1 hearts, 2 food, 3 armour, 4 air, 5 mount health), its position the
+*> anchor of icon 0 (hearts grow right, the others left or right as METER-ICON says). One 9 x 9 sprite quad per sprite row of an icon: base, absorption,
+*> ghost, current. The hearts are drawn from the last slot down to 0, the order of the random numbers of the frame.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-K                   BINARY-LONG.
- 01 WS-ICONS               BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-X                   BINARY-LONG.
- 01 WS-Y                   BINARY-LONG.
  01 WS-NINE                BINARY-LONG VALUE 9.
  01 WS-NINE2               BINARY-LONG VALUE 9.
- 01 WS-BASE                BINARY-LONG.
- 01 WS-FULL                BINARY-LONG.
- 01 WS-HALF                BINARY-LONG.
+ 01 WS-OUT.
+    05 WS-OX               BINARY-LONG.
+    05 WS-OY               BINARY-LONG.
+    05 WS-ROWS             BINARY-LONG OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-W                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
-     MOVE GSP-HEART-CONTAINER TO WS-BASE
-     MOVE GSP-HEART-FULL TO WS-FULL
-     MOVE GSP-HEART-HALF TO WS-HALF
-     IF SM-W-ARG(L-W) = 2
-         MOVE GSP-FOOD-EMPTY TO WS-BASE
-         MOVE GSP-FOOD-FULL TO WS-FULL
-         MOVE GSP-FOOD-HALF TO WS-HALF
-     END-IF
-     COMPUTE WS-ICONS = (SM-W-ACTION(L-W) + 1) / 2
-     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-ICONS
-         COMPUTE WS-Y = SM-W-Y(L-W) - 10 * (WS-K / 10)
-         IF SM-W-ARG(L-W) = 2
-             COMPUTE WS-X = SM-W-X(L-W) - 8 * FUNCTION MOD(WS-K, 10)
-         ELSE
-             COMPUTE WS-X = SM-W-X(L-W) + 8 * FUNCTION MOD(WS-K, 10)
-         END-IF
-         MOVE WS-BASE TO WS-ROW
-         IF GS-W(WS-ROW) > 0
-             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-NINE WS-NINE2
-         END-IF
-         MOVE 0 TO WS-ROW
-         IF 2 * WS-K + 2 <= SM-W-STATE(L-W)
-             MOVE WS-FULL TO WS-ROW
-         END-IF
-         IF 2 * WS-K + 1 = SM-W-STATE(L-W)
-             MOVE WS-HALF TO WS-ROW
-         END-IF
-         IF WS-ROW > 0
-             IF GS-W(WS-ROW) > 0
-                 CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-NINE WS-NINE2
+     MOVE SM-W-ARG(L-W) TO WS-KIND
+     MOVE 1 TO WS-STEP
+     EVALUATE WS-KIND
+         WHEN 1
+             CALL "HEART-MAX" USING CLIENT-STATE WS-M
+             COMPUTE WS-A = FUNCTION INTEGER(PL-ABSORPTION)
+             IF PL-ABSORPTION > WS-A
+                 ADD 1 TO WS-A
              END-IF
-         END-IF
+             COMPUTE WS-FIRST = (WS-M + 1) / 2
+             COMPUTE WS-I = (WS-A + 1) / 2
+             COMPUTE WS-FIRST = WS-FIRST + WS-I - 1
+             MOVE 0 TO WS-LAST
+             MOVE -1 TO WS-STEP
+         WHEN 4
+             MOVE 1 TO WS-FIRST
+             MOVE 10 TO WS-LAST
+         WHEN 5
+             MOVE 0 TO WS-FIRST
+             COMPUTE WS-LAST = PL-MOUNT-HEARTS - 1
+         WHEN OTHER
+             MOVE 0 TO WS-FIRST
+             MOVE 9 TO WS-LAST
+     END-EVALUATE
+     PERFORM VARYING WS-K FROM WS-FIRST BY WS-STEP UNTIL (WS-STEP = 1 AND WS-K > WS-LAST)
+             OR (WS-STEP = -1 AND WS-K < WS-LAST)
+         CALL "METER-ICON" USING CLIENT-STATE WS-KIND WS-K SM-W-X(L-W) SM-W-Y(L-W) WS-OUT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE WS-ROWS(WS-I) TO WS-ROW
+             IF WS-ROW > 0
+                 IF GS-W(WS-ROW) > 0
+                     CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-OX WS-OY WS-NINE WS-NINE2
+                 END-IF
+             END-IF
+         END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM UI-METER.
@@ -585,7 +599,8 @@
                  MOVE L-V1 TO B-V(WS-COUNT)
              END-IF
              MOVE 0 TO B-Z(WS-COUNT)
-             MOVE 1 TO B-B(WS-COUNT) B-A(WS-COUNT)
+             MOVE 1 TO B-B(WS-COUNT)
+             COMPUTE B-A(WS-COUNT) = 1 - RL-UI-FADE
          END-PERFORM
      END-IF
      EVALUATE RL-UI-LAYER
