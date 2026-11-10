@@ -59,13 +59,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Clientbound.
-     MOVE "contract wire server play-s2c-6a-set-health equals the core's Set Health of health "
-         & "20.0 and food 20 (saturation 5.0)" TO TL-CASE
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "SET-HEALTH-BUILD" USING WS-HEALTH WS-FOOD WS-SATURATION PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-6a-set-health.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-
+*>   Set Health is generated from contract/cases/wire-core.tsv.
      MOVE "contract wire server play-s2c-19-damage-event equals the core's Damage Event of "
          & "entity 1 hit by the abend entity 21 (damage type 28, source ids 22, no position)"
          TO TL-CASE

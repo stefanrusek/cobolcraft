@@ -29,3 +29,38 @@ references), never from running our own code (constitution Principle II).
 2. Add the ops and the owner template head/tail (`TEMPLATES`) it needs to `gen_contract.py`.
 3. Add a `contract-<group>` target to the Makefile like `contract-wire` (`--only-args <seam name prefix>`).
 4. `make contract-affected [BASE=main]` maps `git diff` plus untracked files to seams through the `# paths:` lines.
+
+## Seams on the branch
+
+| Table | Group target | What it pins |
+|---|---|---|
+| `wire-chat.tsv` | `make contract-wire` | chat packets, both sides of the same fixtures (core builds and decodes, client sends and reads) |
+| `wire-core.tsv` | `make contract-wire` | core to proto packets: Set Health, Update Mob Effect, Level Chunk With Light of the spawn chunk (no fixture with block entities exists yet; Container Set Content needs player state beyond the row inputs and stays in WIRECRAFT.cpy and WIREPLAY.cpy) |
+| `play-core-blocks.tsv` | `make contract-play` | what the core sends a player for Use Item On, Player Action and `BLOCK-CHANGE`, in the order of doc 29 §7 |
+| `content-recipes.tsv` | `make contract-content` | `PB-RECIPE-ENTRY` record size (copybook, table and probe must agree, computed from the copybook) and the Recipe Book Add of a player who knows no recipe |
+
+`make contract-affected [BASE=main]` runs the seams whose `# paths:` match the changed files. All three run in
+seconds once the libraries are built.
+
+## Known divergence rows
+
+A row id that starts with `!` records a behaviour the docs state and the code does not have. The generated case
+passes while the code differs (and prints a `DIVERGENCE` line with both values when the program is run
+directly) and fails as soon as the code matches the docs, so the `!` is then removed. Use it only for a
+documented rule, never to park a wrong expectation.
+
+## The unwired report
+
+`python3 tools/gen/gen_contract.py --unwired` writes `contract/cases/unwired.txt`: the core host contract entries
+(core-host-api.md, core-host-delta.md) with the hosts that call them, and every program of a `src/` that no
+`src/` file calls (`tests only` or `no caller`). Calls are textual (`CALL "NAME"`, `ENTRY "NAME"`), so a call
+through a data item or from C is not seen: a listed program is a candidate to check. A contract entry that a
+completed task (`- [X]`) of any `specs/*/tasks.md` names and no host calls is an error: it fails
+`gen_contract.py --check` (and so `gate-tables`); the other entries are warnings. Regenerate the file when a
+lane wires something up; it is not checked for freshness.
+
+## Record sizes
+
+`PB-RECIPE-ENTRY` grew from 125 to 1061 bytes (commit 7db9151) and the contract probe lagged it. A `copy-size`
+row (content-recipes.tsv) makes `gen_contract.py --check` sum the record's size from `contract/copy` itself and
+compare it with the row and with the probe's expectation, so any of the three drifting fails in seconds.

@@ -79,15 +79,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Clientbound.
-     MOVE "contract wire server play-s2c-4b-recipe-book-add-standard-replace-empty equals the core's Recipe "
-         & "Book Add (replace) of a player who knows no recipe" TO TL-CASE
-     INITIALIZE PL-ENTRY(WS-ROW)
-     CALL "RECBOOK-RESET" USING WS-ROW
-     CALL "PB-RESET" USING PB-BUFFER
-     MOVE 1 TO WS-REPLACE
-     CALL "RECBOOK-BUILD" USING WS-ROW WS-REPLACE PB-BUFFER WS-TOTAL
-     MOVE "contract/fixtures/wire/play-s2c-4b-recipe-book-add-standard-replace-empty.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+*>   Recipe Book Add of a player who knows no recipe is generated from contract/cases/content-recipes.tsv.
 
      MOVE "contract wire server play-s2c-12-container-set-content-crafting-bench equals the core's Container "
          & "Set Content of the bench menu 1 (state 1, result 1 x item 62, grid cells 1 and 5 one item 63, first "

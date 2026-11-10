@@ -20,6 +20,7 @@ under test (Principle II). Test infrastructure, stdlib only.
 import argparse
 import collections
 import os
+import re
 import subprocess
 import sys
 
@@ -200,6 +201,172 @@ def op_history_client(seam, row):
     return lines
 
 
+# ---------------------------------------------------------------- core world ops (play to core hooks, core to proto)
+
+def number_input(row, key):
+    need(row, key)
+    try:
+        return int(row.inputs[key])
+    except ValueError:
+        raise Problem("row %s (line %d): input %s is not an integer" % (row.id, row.line, key))
+
+
+def known_divergence(row):
+    return row.id.startswith("!")
+
+
+def clean_id(row):
+    return row.id.lstrip("!")
+
+
+def world_case_name(seam, row):
+    mark = " [known divergence from the docs]" if known_divergence(row) else ""
+    return literal("contract %s %s: %s %s%s" % (seam.name, clean_id(row), row.entry, row.op, mark))
+
+
+def assert_text(seam, row):
+    """Compare TL-OBSERVED with the row's expected text. A row whose id starts with `!` records a documented
+    behaviour the code does not have yet: it passes while the code differs and fails (naming the row) as soon
+    as the code matches the docs, so the mark is removed then (like a strict expected failure)."""
+    lines = ['     MOVE "T" TO TL-MODE', "     MOVE %s TO TL-EXPECTED" % literal(row.expected)]
+    if not known_divergence(row):
+        return lines + ["     CALL \"TEST-ASSERT\" USING TESTLIB-ASSERT"]
+    return lines + [
+        "     IF TL-OBSERVED = TL-EXPECTED",
+        "         MOVE \"known divergence still present: remove the ! mark of the row\" TO TL-EXPECTED",
+        "         MOVE \"the code now matches the documented value\" TO TL-OBSERVED",
+        "     ELSE",
+        "         DISPLAY \"DIVERGENCE %s documented=\" FUNCTION TRIM(TL-EXPECTED) \" code=\" FUNCTION TRIM(TL-OBSERVED)" % clean_id(row),
+        "         MOVE \"known divergence\" TO TL-EXPECTED",
+        "         MOVE \"known divergence\" TO TL-OBSERVED",
+        "     END-IF",
+        "     CALL \"TEST-ASSERT\" USING TESTLIB-ASSERT",
+    ]
+
+
+def drain_blocks(seam, row):
+    """Drain the player's connection into TL-OBSERVED (whole text, or the last packet with observe=last)."""
+    lines = [
+        "     MOVE SPACES TO WS-TEXT",
+        "     CALL \"TEST-DRAIN-BLOCKS\" USING WS-CONN WS-TEXT",
+    ]
+    if row.inputs.get("observe", "all") == "last":
+        lines += [
+            "     MOVE SPACES TO WS-LAST",
+            "     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT TRAILING))",
+            "     MOVE 1 TO WS-PTR",
+            "     PERFORM UNTIL WS-PTR > WS-LEN",
+            "         UNSTRING WS-TEXT DELIMITED BY SPACE INTO WS-LAST WITH POINTER WS-PTR",
+            "     END-PERFORM",
+            "     MOVE WS-LAST TO TL-OBSERVED",
+        ]
+    else:
+        lines.append("     MOVE FUNCTION TRIM(WS-TEXT TRAILING) TO TL-OBSERVED")
+    return lines
+
+
+def set_position(row):
+    return [
+        "     MOVE %d TO WS-X" % number_input(row, "x"),
+        "     MOVE %d TO WS-Y" % number_input(row, "y"),
+        "     MOVE %d TO WS-Z" % number_input(row, "z"),
+    ]
+
+
+def op_core_use_on(seam, row):
+    """Use Item On (BLOCK-USE-ON through the core's packet feed) with a held item; what the player is sent."""
+    need(row, "item", "face", "seq")
+    return [
+        "     MOVE %s TO TL-CASE" % world_case_name(seam, row),
+        "     MOVE %d TO PL-SLOT-ITEM(WS-ROW, 1)" % number_input(row, "item"),
+        "     MOVE 64 TO PL-SLOT-COUNT(WS-ROW, 1)",
+    ] + set_position(row) + [
+        "     MOVE %d TO WS-FACE" % number_input(row, "face"),
+        "     MOVE %d TO WS-SEQ" % number_input(row, "seq"),
+        "     CALL \"TEST-USE-ON\" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ",
+    ] + drain_blocks(seam, row) + assert_text(seam, row)
+
+
+def op_core_action(seam, row):
+    """Player Action (BLOCK-ACTION), after optionally setting a block with `setblock`; what the player is sent."""
+    need(row, "action", "face", "seq")
+    lines = ["     MOVE %s TO TL-CASE" % world_case_name(seam, row)] + set_position(row)
+    if "setblock" in row.inputs:
+        lines += ["     MOVE %d TO WS-STATE" % number_input(row, "setblock"),
+                  "     CALL \"WORLD-SET-BLOCK\" USING WS-DIM WS-X WS-Y WS-Z WS-STATE"]
+    return lines + [
+        "     MOVE %d TO WS-ACTION" % number_input(row, "action"),
+        "     MOVE %d TO WS-FACE" % number_input(row, "face"),
+        "     MOVE %d TO WS-SEQ" % number_input(row, "seq"),
+        "     CALL \"TEST-ACTION\" USING WS-CONN WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ",
+    ] + drain_blocks(seam, row) + assert_text(seam, row)
+
+
+def op_core_block_change(seam, row):
+    """BLOCK-CHANGE called directly (the hook every core system uses); what a viewer is sent."""
+    need(row, "state")
+    return [
+        "     MOVE %s TO TL-CASE" % world_case_name(seam, row),
+    ] + set_position(row) + [
+        "     MOVE %d TO WS-STATE" % number_input(row, "state"),
+        "     CALL \"BLOCK-CHANGE\" USING WS-DIM WS-X WS-Y WS-Z WS-STATE",
+    ] + drain_blocks(seam, row) + assert_text(seam, row)
+
+
+def op_build_core_set_health(seam, row):
+    """SET-HEALTH-BUILD of (health, food, saturation) equals the fixture's bytes."""
+    need(row, "health", "food", "saturation")
+    return [
+        "     MOVE %s TO TL-CASE" % case_name(seam, row),
+        "     MOVE %s TO WS-HEALTH" % row.inputs["health"],
+        "     MOVE %d TO WS-FOOD" % number_input(row, "food"),
+        "     MOVE %s TO WS-SATURATION" % row.inputs["saturation"],
+        "     CALL \"PB-RESET\" USING PB-BUFFER",
+        "     CALL \"SET-HEALTH-BUILD\" USING WS-HEALTH WS-FOOD WS-SATURATION PB-BUFFER",
+    ] + same_as_fixture(row)
+
+
+def op_build_proto_mob_effect(seam, row):
+    """Update Mob Effect: the packet id, then PB-PUT-UPDATE-MOB-EFFECT of (entity, effect, amplifier, duration, flags)."""
+    need(row, "entity", "effect", "amplifier", "duration", "flags")
+    lines = [
+        "     MOVE %s TO TL-CASE" % case_name(seam, row),
+        "     MOVE %d TO WS-PACKET-ID" % number_input(row, "packet"),
+        "     CALL \"PB-RESET\" USING PB-BUFFER",
+        "     CALL \"PB-PUT-VARINT\" USING PB-BUFFER WS-PACKET-ID",
+    ]
+    for key, field in [("entity", "WS-ENTITY"), ("effect", "WS-EFFECT"), ("amplifier", "WS-AMPLIFIER"),
+                       ("duration", "WS-DURATION"), ("flags", "WS-FLAGS")]:
+        lines.append("     MOVE %d TO %s" % (number_input(row, key), field))
+    lines.append("     CALL \"PB-PUT-UPDATE-MOB-EFFECT\" USING PB-BUFFER WS-ENTITY WS-EFFECT WS-AMPLIFIER WS-DURATION WS-FLAGS")
+    return lines + same_as_fixture(row)
+
+
+def op_build_core_recipe_book_empty(seam, row):
+    """RECBOOK-BUILD (replace) of a player who knows no recipe equals the fixture's bytes."""
+    return [
+        "     MOVE %s TO TL-CASE" % case_name(seam, row),
+        "     INITIALIZE PL-ENTRY(WS-ROW)",
+        "     CALL \"RECBOOK-RESET\" USING WS-ROW",
+        "     CALL \"PB-RESET\" USING PB-BUFFER",
+        "     MOVE 1 TO WS-REPLACE",
+        "     CALL \"RECBOOK-BUILD\" USING WS-ROW WS-REPLACE PB-BUFFER WS-TOTAL",
+    ] + same_as_fixture(row)
+
+
+def op_build_core_chunk(seam, row):
+    """CHUNK-PACKET-BUILD of the chunk (cx, cz) of the dimension row equals the fixture's bytes."""
+    need(row, "dim", "cx", "cz")
+    return [
+        "     MOVE %s TO TL-CASE" % case_name(seam, row),
+        "     MOVE %d TO WS-DIM" % number_input(row, "dim"),
+        "     MOVE %d TO WS-CX" % number_input(row, "cx"),
+        "     MOVE %d TO WS-CZ" % number_input(row, "cz"),
+        "     CALL \"PB-RESET\" USING PB-BUFFER",
+        "     CALL \"CHUNK-PACKET-BUILD\" USING WS-DIM WS-CX WS-CZ PB-BUFFER",
+    ] + same_as_fixture(row)
+
+
 # op name -> (owner package, template)
 OPS = {
     "decode-core-chat": ("core", op_decode_core_chat),
@@ -207,7 +374,17 @@ OPS = {
     "build-client-chat": ("client", op_build_client_chat),
     "build-client-chat-command": ("client", op_build_client_chat_command),
     "history-client": ("client", op_history_client),
+    "copy-size": ("proto", None),
+    "build-core-recipe-book-empty": ("core", op_build_core_recipe_book_empty),
+    "core-use-on": ("core", op_core_use_on),
+    "core-action": ("core", op_core_action),
+    "core-block-change": ("core", op_core_block_change),
+    "build-core-set-health": ("core", op_build_core_set_health),
+    "build-proto-mob-effect": ("core", op_build_proto_mob_effect),
+    "build-core-chunk": ("core", op_build_core_chunk),
 }
+# Ops that need an opened world and a joined player (the "world" head of the core program).
+WORLD_OPS = {"core-use-on", "core-action", "core-block-change", "build-core-chunk", "build-core-recipe-book-empty"}
 
 CORE_HEAD = """\
  IDENTIFICATION DIVISION.
@@ -217,7 +394,9 @@ CORE_HEAD = """\
  COPY TESTLIB.
  COPY PROTO.
  COPY PLAYPKT.
- 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-PACKET-ID           BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
@@ -228,9 +407,34 @@ CORE_HEAD = """\
  01 WS-MESSAGE             PIC X(768).
  01 WS-MESSAGE-LENGTH      BINARY-LONG.
  01 WS-PATH                PIC X(256).
+ 01 WS-HEALTH              FLOAT-SHORT.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-SATURATION          FLOAT-SHORT.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-EFFECT              BINARY-LONG.
+ 01 WS-AMPLIFIER           BINARY-LONG.
+ 01 WS-DURATION            BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG.
+ 01 WS-SEQ                 BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-REPLACE             BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-LAST                PIC X(64).
  PROCEDURE DIVISION.
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-"""
+{open_world}     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+{join}"""
 CORE_TAIL = """\
      CALL "PB-FREE" USING PB-BUFFER
      STOP RUN.
@@ -271,6 +475,17 @@ CLIENT_TAIL = """\
  COPY CLTEST.
 """
 TEMPLATES = {"core": (CORE_HEAD, CORE_TAIL), "client": (CLIENT_HEAD, CLIENT_TAIL)}
+OPEN_WORLD = """\
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+"""
+JOIN = """\
+     MOVE "Alice" TO WS-NAME
+     MOVE 5 TO WS-NAME-LENGTH
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+"""
 
 
 def program_name(seam, owner):
@@ -284,18 +499,108 @@ def generate(seam):
         if row.op not in OPS:
             raise Problem("row %s (line %d): unknown op %s" % (row.id, row.line, row.op))
         owner, template = OPS[row.op]
+        if template is None:
+            continue  # checked statically by --check (copy-size)
         if owner != row.owner:
             raise Problem("row %s (line %d): op %s belongs to the %s package" % (row.id, row.line, row.op, owner))
         by_owner.setdefault(owner, []).extend(template(seam, row))
+    world = any(r.op in WORLD_OPS for r in seam.rows)
     out = {}
     for owner, lines in by_owner.items():
         name = program_name(seam, owner)
         head, tail = TEMPLATES[owner]
         text = "*> GENERATED by tools/gen/gen_contract.py from %s; do not edit.\n" % os.path.relpath(seam.source, REPO)
-        text += head.format(program=name.upper().replace("_", "-")) + "\n".join(lines) + "\n"
+        text += head.format(program=name.upper().replace("_", "-"), open_world=OPEN_WORLD if world and owner == "core" else "",
+                            join=JOIN if world and owner == "core" else "") + "\n".join(lines) + "\n"
         text += tail.format(program=name.upper().replace("_", "-"))
         out["%s/tests/%s.cob" % (owner, name)] = text
     return out
+
+
+
+# ---------------------------------------------------------------- record sizes
+
+USAGE_BYTES = {"BINARY-LONG": 4, "BINARY-SHORT": 2, "BINARY-DOUBLE": 8, "BINARY-CHAR": 1, "FLOAT-SHORT": 4, "FLOAT-LONG": 8}
+
+
+def copybook_constants(text):
+    return {name: int(value) for name, value in re.findall(r"^\s*78\s+(\S+)\s+VALUE\s+(\d+)\s*\.", text, re.M)}
+
+
+def record_size(path, record):
+    """Bytes of the 01 record of a copybook, summed from the level numbers, PIC and USAGE clauses and OCCURS
+    counts (no REDEFINES, SYNC or edited pictures: a record that uses one is rejected with a Problem)."""
+    text = "\n".join(line.split("*>")[0] for line in read_text(path).split("\n"))
+    constants = copybook_constants(text)
+    items = []
+    inside = False
+    for statement in [x.strip() for x in re.split(r"\.\s*(?:\n|$)", text)]:
+        match = re.match(r"(\d+)\s+(\S+)(.*)$", statement, re.S)
+        if not match or statement.startswith("78"):
+            continue
+        level, name, rest = int(match.group(1)), match.group(2), " ".join(match.group(3).split())
+        if level == 1:
+            inside = name == record
+            if inside:
+                items = []
+        if not inside:
+            continue
+        if "REDEFINES" in rest or "SYNC" in rest:
+            raise Problem("%s: %s uses REDEFINES or SYNC in %s" % (path, record, name))
+        occurs = re.search(r"OCCURS\s+(\w+)", rest)
+        count = 1
+        if occurs:
+            count = int(occurs.group(1)) if occurs.group(1).isdigit() else constants[occurs.group(1)]
+        size = None
+        usage = re.search(r"(BINARY-LONG|BINARY-SHORT|BINARY-DOUBLE|BINARY-CHAR|FLOAT-SHORT|FLOAT-LONG)", rest)
+        picture = re.search(r"PIC(?:TURE)?\s+(?:IS\s+)?([9X])(?:\((\d+)\))?", rest)
+        if usage:
+            size = USAGE_BYTES[usage.group(1)]
+        elif picture:
+            size = int(picture.group(2) or 1)
+        items.append([level, size, count])
+    if not items:
+        raise Problem("%s: no 01 record %s" % (path, record))
+    total = []
+
+    def sum_group(index):
+        level, size, count = items[index]
+        if size is not None:
+            return size * count, index + 1
+        inner, nxt = 0, index + 1
+        while nxt < len(items) and items[nxt][0] > level:
+            part, nxt = sum_group(nxt)
+            inner += part
+        return inner * count, nxt
+
+    size, _ = sum_group(0)
+    return size
+
+
+def probe_length(repo, record):
+    """The length the contract probe expects for `record`, from the `contract <COPYBOOK> <record> length` case."""
+    text = read_text(os.path.join(repo, "tools", "probe", "probe_contract.cob"))
+    match = re.search(r'contract \w+ %s length" TO TL-CASE\s+MOVE (\d+) TO TL-EXPECTED-N' % re.escape(record), text)
+    return int(match.group(1)) if match else None
+
+
+def check_sizes(seam, repo=REPO):
+    """Problems for copy-size rows: the copybook's record size, the row's expected size and the probe's must agree."""
+    problems = []
+    for row in seam.rows:
+        if row.op != "copy-size":
+            continue
+        try:
+            actual = record_size(os.path.join(repo, "contract", "copy", row.inputs.get("copybook", "") + ".cpy"), row.entry)
+        except (Problem, OSError, KeyError) as error:
+            problems.append("%s: row %s: %s" % (seam.name, row.id, error))
+            continue
+        if actual != int(row.expected):
+            problems.append("%s: row %s: record %s is %d bytes in contract/copy, the row expects %s" % (seam.name, row.id, row.entry, actual, row.expected))
+        probe = probe_length(repo, row.entry)
+        if probe is not None and probe != int(row.expected):
+            problems.append("%s: row %s: the contract probe expects %d bytes for %s, the row %s" % (seam.name, row.id, probe, row.entry, row.expected))
+    return problems
 
 
 # ---------------------------------------------------------------- wiring
@@ -323,7 +628,7 @@ def call_site(repo, package, entry):
 def check_wiring(seam, repo=REPO):
     """Problems (one string each) for entries without a call site in their caller package."""
     return ["%s: contract entry %s has no CALL \"%s\" in %s/src (caller of row %s)" % (seam.name, r.entry, r.entry, r.caller, r.id)
-            for r in seam.rows if call_site(repo, r.caller, r.entry) is None]
+            for r in seam.rows if r.op != "copy-size" and call_site(repo, r.caller, r.entry) is None]
 
 
 def check_fixtures(seam, repo=REPO):
@@ -335,8 +640,125 @@ def manifest(seams, repo=REPO):
     lines = ["seam\tentry\towner\tcaller\tcall site\n"]
     for seam in seams:
         for row in seam.rows:
-            lines.append("%s\t%s\t%s\t%s\t%s\n" % (seam.name, row.entry, row.owner, row.caller, call_site(repo, row.caller, row.entry) or "MISSING"))
+            lines.append("%s\t%s\t%s\t%s\t%s\n" % (seam.name, row.entry, row.owner, row.caller,
+                         "record in contract/copy" if row.op == "copy-size" else call_site(repo, row.caller, row.entry) or "MISSING"))
     return "".join(lines)
+
+
+
+# ---------------------------------------------------------------- unwired report
+
+SRC_PACKAGES = ["shim", "formats", "proto", "content", "extract", "core", "server", "client"]
+HOSTS = ["server", "client"]
+CONTRACT_DOCS = ["specs/001-cobolcraft-complete/contracts/core-host-api.md", "specs/002-client-polish/contracts/core-host-delta.md"]
+UNWIRED = os.path.join(CASES, "unwired.txt")
+
+
+def read_text(path):
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        return handle.read()
+
+
+def src_text(repo, package):
+    """{relative path: source text without comments} of the package's src/ COBOL sources."""
+    out = {}
+    for path in sorted(source_files(repo, package)):
+        lines = [line.split("*>")[0] for line in read_text(path).split("\n")]
+        out[os.path.relpath(path, repo)] = "\n".join(lines)
+    return out
+
+
+def contract_entries(repo):
+    """Entry points the core host contract names: the CORE-* names in the first column of its tables."""
+    names = []
+    for doc in CONTRACT_DOCS:
+        path = os.path.join(repo, doc)
+        if os.path.isfile(path):
+            for line in read_text(path).split("\n"):
+                if line.startswith("| `CORE-"):
+                    name = line.split("`")[1]
+                    if name.isupper() or "-" in name:
+                        names.append(name)
+    return list(dict.fromkeys(names))
+
+
+def ticked_names(repo):
+    """Names that a completed task (`- [X]`) of any specs/*/tasks.md mentions."""
+    ticked = set()
+    specs = os.path.join(repo, "specs")
+    for feature in sorted(os.listdir(specs)) if os.path.isdir(specs) else []:
+        path = os.path.join(specs, feature, "tasks.md")
+        if os.path.isfile(path):
+            for line in read_text(path).split("\n"):
+                if line.startswith("- [X]") or line.startswith("- [x]"):
+                    ticked.update(re.findall(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+", line))
+    return ticked
+
+
+def call_pattern(name):
+    return re.compile(r'(CALL\s+(STATIC\s+)?|ENTRY\s+)"%s"' % re.escape(name))
+
+
+def contract_report(repo=REPO):
+    """(entries, strict): each contract entry with the hosts that call it and whether a src defines it; the
+    entries that a completed task names and no host calls (errors)."""
+    sources = {package: src_text(repo, package) for package in SRC_PACKAGES}
+    definitions = "\n".join(text for package in sources for text in sources[package].values())
+    entries = []
+    for name in contract_entries(repo):
+        pattern = call_pattern(name)
+        callers = sorted({path.split("/")[0] for package in HOSTS for path, text in sources[package].items() if pattern.search(text)})
+        entries.append((name, callers, re.search(r"PROGRAM-ID\.\s+%s\s*\." % re.escape(name), definitions) is not None))
+    ticked = ticked_names(repo)
+    return entries, [name for name, callers, defined in entries if not callers and name in ticked]
+
+
+def called_names(text):
+    return set(re.findall(r'(?:CALL\s+(?:STATIC\s+)?|ENTRY\s+)"([^"]+)"', text))
+
+
+def unwired_report(repo=REPO):
+    """(entries, strict, programs): contract_report plus the programs of every src/ that no src/ calls (a test may)."""
+    entries, strict = contract_report(repo)
+    sources = {package: src_text(repo, package) for package in SRC_PACKAGES}
+    called = called_names("\n".join(text for package in SRC_PACKAGES for text in sources[package].values()))
+    tests = ""
+    for package in SRC_PACKAGES:
+        directory = os.path.join(repo, package, "tests")
+        if os.path.isdir(directory):
+            for name in sorted(os.listdir(directory)):
+                if name.endswith((".cob", ".cpy")):
+                    tests += read_text(os.path.join(directory, name))
+    tested = called_names(tests)
+    programs = []
+    for package in SRC_PACKAGES:
+        for path, text in sources[package].items():
+            if path.endswith("/main.cob"):
+                continue
+            for name in re.findall(r"PROGRAM-ID\.\s+([A-Z0-9-]+)\s*\.", text):
+                if name not in called:
+                    programs.append((package, name, path, "tests only" if name in tested else "no caller"))
+    return entries, strict, programs
+
+
+def format_unwired(report):
+    entries, strict, programs = report
+    lines = ["# Unwired report (generated by tools/gen/gen_contract.py --unwired; do not edit).",
+             "# Library code that nothing calls. Calls are textual: CALL \"NAME\" or ENTRY \"NAME\" in a src/ file; a call through",
+             "# a data item or from C is not seen, so a listed program is a candidate to check, not proof.",
+             "",
+             "## Core host contract entries (core-host-api.md and core-host-delta.md), with the hosts that call them",
+             "# ERROR = a completed task (- [X]) names the entry and no host calls it; WARNING = no host calls it"]
+    for name, callers, defined in entries:
+        if not callers:
+            status = "ERROR" if name in strict else "WARNING"
+        else:
+            status = "ok"
+        lines.append("%s\t%s\tcallers: %s%s" % (status, name, ",".join(callers) or "none", "" if defined else "\t(no PROGRAM-ID in any src)"))
+    lines += ["", "## Programs no src/ file calls (%d); `tests only` = a test program calls it, `no caller` = nothing does" % len(programs)]
+    for package, name, path, kind in sorted(programs):
+        lines.append("WARNING\t%s\t%s\t%s\t%s" % (kind, name, package, path))
+    return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------- selection
@@ -390,6 +812,8 @@ def main(argv):
     mode.add_argument("--write", action="store_true")
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--only-args", nargs="?", const="", metavar="PREFIX")
+    mode.add_argument("--unwired", nargs="?", const=UNWIRED, metavar="FILE",
+                      help="write the unwired report (default contract/cases/unwired.txt); exit 1 when an entry that a completed task names has no host caller")
     mode.add_argument("--affected", action="store_true")
     mode.add_argument("--affected-args", action="store_true", help="like --affected, printing runtests.py --only arguments")
     parser.add_argument("--out", default=os.path.join(REPO, "build", "gen"))
@@ -402,10 +826,20 @@ def main(argv):
             write(seams, os.path.abspath(arguments.out))
             print("generated %d seams into %s" % (len(seams), arguments.out))
             return 0
+        if arguments.unwired:
+            report = unwired_report()
+            with open(arguments.unwired, "w", encoding="utf-8") as handle:
+                handle.write(format_unwired(report))
+            for name in report[1]:
+                print("ERROR contract entry %s is marked done in tasks.md and no host calls it" % name)
+            print("unwired: %d contract entries (%d without a host caller), %d programs without a src caller -> %s" % (
+                len(report[0]), sum(1 for e in report[0] if not e[1]), len(report[2]), os.path.relpath(arguments.unwired, REPO)))
+            return 1 if report[1] else 0
         if arguments.check:
             for seam in seams:
                 generate(seam)
-            problems = [p for seam in seams for p in check_fixtures(seam) + check_wiring(seam)]
+            problems = [p for seam in seams for p in check_fixtures(seam) + check_wiring(seam) + check_sizes(seam)]
+            problems += ["contract entry %s is marked done in tasks.md and no host calls it" % n for n in contract_report()[1]]
             for problem in problems:
                 print("ERROR " + problem)
             print("contract cases: %d seams, %d rows, %d problems" % (len(seams), sum(len(s.rows) for s in seams), len(problems)))
