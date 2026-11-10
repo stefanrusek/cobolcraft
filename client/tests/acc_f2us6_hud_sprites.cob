@@ -140,12 +140,12 @@
              MOVE SM-W-ACTION(WS-I) TO WS-WANT
          END-IF
      END-PERFORM
-     MOVE "acceptance US6-5 the heart meter is at (69, 201) holding 17 of 30 half hearts" TO TL-CASE
+     MOVE "acceptance US6-5 the heart meter is at (69, 201) holding 17 of 20 half hearts" TO TL-CASE
      MOVE 69201017 TO TL-EXPECTED-N
      MOVE WS-AT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US6-5 the heart meter's maximum is 30" TO TL-CASE
-     MOVE 30 TO TL-EXPECTED-N
+     MOVE "acceptance US6-5 the heart meter's maximum is 20" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
      MOVE WS-WANT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-AT WS-WANT
@@ -179,7 +179,7 @@
      MOVE 17 TO PL-HEALTH
      CALL "SCREEN-BUILD" USING CLIENT-STATE
 
-*>   Quads: the two meters add 15 + 9 + 12 + 10 = 46 quads (276 vertices) over the creative HUD.
+*>   Quads: the two meters add 10 + 9 + 10 + 10 = 39 quads (234 vertices) over the creative HUD.
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE RL-UI-COUNT TO WS-SURVIVAL-UI
 *>   Which sprite fills a heart: the 8th (k = 7, vertex 109 on) is full, the 9th (k = 8, vertex 121) is half, the 10th (vertex 133)
@@ -226,8 +226,8 @@
      MOVE WS-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "acceptance US6-5 the meters render 46 quads (276 vertices) of 9 x 9 sprites" TO TL-CASE
-     MOVE 276 TO TL-EXPECTED-N
+     MOVE "acceptance US6-5 the meters render 39 quads (234 vertices) of 9 x 9 sprites" TO TL-CASE
+     MOVE 234 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-SURVIVAL-UI - RL-UI-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

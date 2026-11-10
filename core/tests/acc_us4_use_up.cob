@@ -58,7 +58,7 @@
              MOVE 1 TO WS-FOUND
          END-IF
      END-PERFORM
-     MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
+     MOVE "core/tests/fixtures/play-s2c-14-container-set-slot-hotbar-36.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PK-BUFFER WS-PATH TESTLIB-ASSERT
 
      MOVE 1 TO CS-DEFAULT-MODE

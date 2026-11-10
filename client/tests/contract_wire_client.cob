@@ -957,14 +957,14 @@
      MOVE 0 TO PL-HEALTH
      MOVE "contract/fixtures/wire/play-s2c-6a-set-health.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Set Health decodes: health 30, food 24" TO TL-CASE
+     MOVE "contract wire client Set Health decodes: health 20, food 20" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-OBSERVED
      COMPUTE WS-EDIT ROUNDED = PL-HEALTH
      MOVE PL-FOOD TO WS-EDIT2
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "30 24" TO TL-EXPECTED
+     MOVE "20 20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 0 TO PL-HURT-UNTIL

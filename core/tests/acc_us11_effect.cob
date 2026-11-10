@@ -46,7 +46,7 @@
      MOVE 79 TO CW-TIME
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "damage 1 type 31 source 0 | hurt 1 | health 29 food 24" TO TL-EXPECTED
+     MOVE "damage 1 type 31 source 0 | hurt 1 | health 19 food 20" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US11-3 given a hailstorm when Time reaches 81 (not a multiple of 80) then "

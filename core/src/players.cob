@@ -6,7 +6,7 @@
 *> USING connection id, name (PIC X(16)), name length, offline UUID (PIC X(16)), player row out
 *> (BINARY-LONG; 0 when the table is full). A new player: the world spawn point facing its yaw
 *> (standin §5.2), the game mode of the settings (FR-007, FR-009; a guest of a world opened to
-*> others gets the guest mode, FR-017), full health and food (§10.1, §11.1), a new entity id, held
+*> others gets the guest mode, FR-017), full health 20, food 20 and saturation 5.0 (17 section 4.9), a new entity id, held
 *> slot 0, an empty inventory, state Joining. Operator status: ACCESS-OPERATOR-STATUS
 *> (core/src/access.cob: the operator list, the host, allowed guests). In a world
 *> hosted by the client (host kinds 1 and 2) new players get the world's GameMode (CW-GAME-MODE,
@@ -21,6 +21,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY RULES.
  COPY CITEMS.
  COPY STARTKIT.
@@ -44,7 +45,7 @@
          END-IF
      END-PERFORM
      IF L-ROW > 0
-         INITIALIZE PL-ENTRY(L-ROW)
+         INITIALIZE PL-ENTRY(L-ROW) MN-ENTRY(L-ROW)
          MOVE 1 TO PL-USED(L-ROW)
          MOVE L-CONN TO PL-CONN(L-ROW)
          MOVE L-ROW TO CN-PLAYER(L-CONN)
@@ -74,6 +75,7 @@
          CALL "ACCESS-OPERATOR-STATUS" USING L-ROW
          MOVE RULE-MAX-HEALTH TO PL-HEALTH(L-ROW)
          MOVE RULE-MAX-FOOD TO PL-FOOD(L-ROW)
+         MOVE RULE-START-SATURATION TO PL-SATURATION(L-ROW)
          MOVE CS-VIEW-DISTANCE TO PL-VIEW-DISTANCE(L-ROW)
          COMPUTE PL-CENTER-X(L-ROW) = FUNCTION INTEGER(PL-X(L-ROW) / 16)
          COMPUTE PL-CENTER-Z(L-ROW) = FUNCTION INTEGER(PL-Z(L-ROW) / 16)
@@ -93,6 +95,7 @@
                      MOVE KN-MODE(WS-I) TO PL-MODE(L-ROW)
                      MOVE KN-HEALTH(WS-I) TO PL-HEALTH(L-ROW)
                      MOVE KN-FOOD(WS-I) TO PL-FOOD(L-ROW)
+                     COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-SATURATION(L-ROW), PL-FOOD(L-ROW))
                      MOVE KN-HELD(WS-I) TO PL-HELD(L-ROW)
                      MOVE KN-INVENTORY(WS-I) TO PL-INVENTORY(L-ROW)
                  END-IF
@@ -181,6 +184,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
@@ -192,7 +196,7 @@
      IF PL-CONN(WS-ROW) > 0
          MOVE 0 TO CN-PLAYER(PL-CONN(WS-ROW))
      END-IF
-     INITIALIZE PL-ENTRY(WS-ROW)
+     INITIALIZE PL-ENTRY(WS-ROW) MN-ENTRY(WS-ROW)
      GOBACK.
  END PROGRAM PLAYER-LEAVE.
 

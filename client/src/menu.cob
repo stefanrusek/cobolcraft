@@ -4,7 +4,7 @@
 *> result, 6 to 9 or 6 to 14 the grid). MENU-STACK-GET and MENU-STACK-PUT read and write that stack; MENU-SLOT-WIRE gives the slot's
 *> number in the menu of the open screen (what Container Click carries): the inventory menu is 0 result, 1 to 4 grid, 5 to 8 armour,
 *> 9 to 35 main, 36 to 44 hotbar, 45 off hand; the bench menu is 0 result, 1 to 9 grid, 10 to 36 main, 37 to 45 hotbar.
-*> MENU-SET writes a stack received for a menu slot of a container: container 0 is the inventory menu, the bench's own id the bench;
+*> CL-MENU-SET writes a stack received for a menu slot of a container: container 0 is the inventory menu, the bench's own id the bench;
 *> any other container is not shown and changes nothing. STACK-DAMAGE reads the damage component (3) of an item stack.
 
  IDENTIFICATION DIVISION.
@@ -152,7 +152,7 @@
  END PROGRAM MENU-STACK-PUT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MENU-SET.
+ PROGRAM-ID. CL-MENU-SET.
 *> USING CLIENT-STATE, container id, menu slot, count, item, damage: the stack of that menu slot of the container (above); the
 *> player's slots a menu shows are the replica's own, so both menus write them.
  DATA DIVISION.
@@ -227,7 +227,7 @@
          END-IF
      END-IF
      GOBACK.
- END PROGRAM MENU-SET.
+ END PROGRAM CL-MENU-SET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-PLAYER-SET.

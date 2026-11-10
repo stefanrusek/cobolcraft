@@ -282,7 +282,7 @@
     05 FILLER PIC X(64) VALUE
         "    <player> | 7 0 0 0 1".
     05 FILLER PIC X(64) VALUE
-        "      <amount> *exec* | 3 0 0 30 0".
+        "      <amount> *exec* | 3 0 0 20 0".
     05 FILLER PIC X(64) VALUE
         "      full *exec*".
     05 FILLER PIC X(64) VALUE
@@ -292,7 +292,7 @@
     05 FILLER PIC X(64) VALUE
         "    <player> | 7 0 0 0 1".
     05 FILLER PIC X(64) VALUE
-        "      <amount> *exec* | 3 0 0 24 0".
+        "      <amount> *exec* | 3 0 0 20 0".
     05 FILLER PIC X(64) VALUE
         "      full *exec*".
     05 FILLER PIC X(64) VALUE
@@ -334,7 +334,7 @@
     05 FILLER PIC X(64) VALUE
         "  clock".
     05 FILLER PIC X(64) VALUE
-        "    <ticks> *exec* | 3 0 0 29999 0".
+        "    <ticks> *exec* | 3 0 0 23999 0".
     05 FILLER PIC X(64) VALUE
         "  skies".
     05 FILLER PIC X(64) VALUE
@@ -899,16 +899,16 @@
      MOVE "45 540 85 -90 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-*>   Player rules (§10.1, §11.1).
+*>   Player rules (17 §4.9, §4.10).
      MOVE "test content tables maximum health" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 30 TO TL-EXPECTED-N
+     MOVE 20 TO TL-EXPECTED-N
      MOVE RULE-MAX-HEALTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "test content tables maximum food" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 24 TO TL-EXPECTED-N
+     MOVE 20 TO TL-EXPECTED-N
      MOVE RULE-MAX-FOOD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -919,17 +919,17 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Health and death (§10.2 to §10.7; US7), lengths and amounts in thousandths.
-     MOVE "test content tables hurt cooldown and fall damage (§10.2: 12 ticks; §10.3: safe fall "
-         & "height 4, 2 x (floor(D) - 4))" TO TL-CASE
+     MOVE "test content tables hurt window and fall damage (17 §4.7: window 20, fresh at most 10; "
+         & "§4.11: safe fall distance 3)" TO TL-CASE
      PERFORM START-ROW
-     MOVE RULE-HURT-COOLDOWN TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-HURT-WINDOW TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-HURT-FRESH TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-SAFE-FALL TO WS-NUM PERFORM ADD-NUM
-     MOVE RULE-FALL-FACTOR TO WS-NUM PERFORM ADD-NUM
-     MOVE "12 4 2" TO TL-EXPECTED
+     MOVE "20 10 3" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables causes of damage (§10.3: per cause fall, abend, player, "
-         & "starvation, hail, command the damage type id and fixed amount)" TO TL-CASE
+         & "starvation, hail, command the damage type id, fixed amount and exhaustion)" TO TL-CASE
      PERFORM START-ROW
      MOVE CAUSE-FALL TO WS-NUM PERFORM ADD-NUM
      MOVE CAUSE-ABEND TO WS-NUM PERFORM ADD-NUM
@@ -940,27 +940,32 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CAUSE-COUNT
          MOVE RULE-CAUSE-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE RULE-CAUSE-AMOUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE RULE-CAUSE-EXHAUST(WS-I) TO WS-NUM PERFORM ADD-NUM
      END-PERFORM
-     MOVE "1 2 3 4 5 6 1 0 28 3 29 0 30 1 31 1 0 0" TO TL-EXPECTED
+     MOVE "1 2 3 4 5 6 1 0 0 28 3 100 29 0 100 30 1 0 31 1 100 0 0 0" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test content tables starvation and attacks (§10.3: every 60th tick; §10.4: reach 4.0 "
-         & "from the eye point feet + 1.6)" TO TL-CASE
+     MOVE "test content tables attacks (§10.4: reach 4.0 from the eye point feet + 1.6)" TO TL-CASE
      PERFORM START-ROW
-     MOVE RULE-STARVE-TICKS TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-ATTACK-REACH-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-ATTACK-EYE-MILLI TO WS-NUM PERFORM ADD-NUM
-     MOVE "60 4000 1600" TO TL-EXPECTED
+     MOVE "4000 1600" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test content tables recovery (§10.5: food at least 20, every 50 ticks 1 health and "
-         & "2.5 exhaustion)" TO TL-CASE
+     MOVE "test content tables FoodData (17 §4.9: exhaustion drop 4.0 and cap 40, regeneration "
+         & "every 10 and 80 ticks, saturation cap 6, heal level 18, slow exhaustion 6, sprint "
+         & "level 6, start saturation 5)" TO TL-CASE
      PERFORM START-ROW
-     MOVE RULE-RECOVER-FOOD TO WS-NUM PERFORM ADD-NUM
-     MOVE RULE-RECOVER-TICKS TO WS-NUM PERFORM ADD-NUM
-     MOVE RULE-RECOVER-AMOUNT TO WS-NUM PERFORM ADD-NUM
-     MOVE RULE-RECOVER-EXHAUST-MILLI TO WS-NUM PERFORM ADD-NUM
-     MOVE "20 50 1 2500" TO TL-EXPECTED
+     MOVE RULE-EXHAUST-DROP-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-CAP-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-REGEN-FAST-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-REGEN-TICKS TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-REGEN-SATURATION-CAP TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-HEAL-FOOD TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-REGEN-SLOW-EXHAUST TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-SPRINT-FOOD TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-START-SATURATION TO WS-NUM PERFORM ADD-NUM
+     MOVE "4000 40000 10 80 6 18 6 6 5" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables death drops (§10.6: feet + 0.5, spread 0.02, lift 0.2, pickup "
@@ -995,25 +1000,23 @@
 
 *>   Hunger and eating (§11.2, §11.3, §11.6; US8), exhaustion in thousandths. The movement speeds
 *>   of §11.4 are the client's (client-surface.md §3) and are not core rules.
-     MOVE "test content tables exhaustion (§11.2: per tick 0.005, per block walking 0.02 and "
-         & "running 0.12, per jump 0.3, per hit 0.15, per survival break 0.025)" TO TL-CASE
+     MOVE "test content tables exhaustion (17 §4.9: sprinting 0.1 per block, jump 0.05, sprinting "
+         & "jump 0.2, hit 0.1, survival break 0.005)" TO TL-CASE
      PERFORM START-ROW
-     MOVE RULE-EXHAUST-TICK-MILLI TO WS-NUM PERFORM ADD-NUM
-     MOVE RULE-EXHAUST-WALK-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EXHAUST-SPRINT-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EXHAUST-JUMP-MILLI TO WS-NUM PERFORM ADD-NUM
+     MOVE RULE-EXHAUST-SPRINT-JUMP-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EXHAUST-ATTACK-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EXHAUST-BREAK-MILLI TO WS-NUM PERFORM ADD-NUM
-     MOVE "5 20 120 300 150 25" TO TL-EXPECTED
+     MOVE "100 50 200 100 5" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
-     MOVE "test content tables food point removal and eating (§11.3: 5.0 exhaustion per food "
-         & "point; §11.6: eating time 30 ticks, Entity Event 9 eating finished)" TO TL-CASE
+     MOVE "test content tables eating (§11.6: eating time 30 ticks, Entity Event 9 eating finished)"
+         TO TL-CASE
      PERFORM START-ROW
-     MOVE RULE-EXHAUST-FOOD-MILLI TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EAT-TICKS TO WS-NUM PERFORM ADD-NUM
      MOVE RULE-EAT-EVENT TO WS-NUM PERFORM ADD-NUM
-     MOVE "5000 30 9" TO TL-EXPECTED
+     MOVE "30 9" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
 *>   Ground items (§9, §1.3), lengths and factors in thousandths.

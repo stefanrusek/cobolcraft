@@ -116,6 +116,8 @@
          CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      END-PERFORM
      MOVE SM-EDIT-NAME-LENGTH TO WS-E2
+*>   (the create screen's default type is standard; this world is a cobolcraft one, as Keep below)
+     MOVE 1 TO SP-CREATE-TYPE
      MOVE CC-KEY-ENTER TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT

@@ -66,13 +66,13 @@
 
      MOVE "test inventory throw survival THROW button 0 on a slot of 5 throws one item (slot "
          & "left with 4) as a Throw" TO TL-CASE
-     MOVE 5 TO WS-SLOT
+     MOVE 41 TO WS-SLOT
      MOVE 0 TO WS-BUTTON
      MOVE 4 TO WS-TYPE
      PERFORM CLICK
      MOVE 2 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(2,1@20.50,102.30,20.50) 101(2=2x1) 103(2) 20(5=2x4) motion 0.25000,0.12000,"
+     MOVE "1(2,1@20.50,102.30,20.50) 101(2=2x1) 103(2) 20(41=2x4) motion 0.25000,0.12000,"
          & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -81,7 +81,7 @@
      PERFORM CLICK
      MOVE 3 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(3,1@20.50,102.30,20.50) 101(3=2x4) 103(3) 20(5=0x0) motion 0.25000,0.12000,"
+     MOVE "1(3,1@20.50,102.30,20.50) 101(3=2x4) 103(3) 20(41=0x0) motion 0.25000,0.12000,"
          & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -131,7 +131,7 @@
      CALL "TEST-FEED" USING WS-ALICE WS-PATH
      MOVE 0 TO WS-CONTAINER
      PERFORM SHOW-NONE
-     MOVE "20(0=2x6) next id 6 cursor 0x0" TO TL-EXPECTED
+     MOVE "20(36=2x6) next id 6 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw survival PICKUP slot -999 with an empty cursor and Close "
@@ -158,14 +158,14 @@
      PERFORM CLOSE-CONTAINER
      MOVE 6 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(6,1@20.50,102.30,20.50) 101(6=2x3) 103(6) 20(7=2x64) motion 0.25000,0.12000,"
+     MOVE "1(6,1@20.50,102.30,20.50) 101(6=2x3) 103(6) 20(43=2x64) motion 0.25000,0.12000,"
          & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw creative THROW button 0 throws one item and button 1 the rest"
          TO TL-CASE
      MOVE 1 TO PL-MODE(WS-ROW)
-     MOVE 3 TO WS-SLOT
+     MOVE 39 TO WS-SLOT
      MOVE 4 TO WS-TYPE
      MOVE 0 TO WS-BUTTON
      PERFORM CLICK
@@ -173,8 +173,8 @@
      PERFORM CLICK
      MOVE 8 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(7,1@20.50,102.30,20.50) 101(7=3x1) 103(7) 20(3=3x63) 1(8,1@20.50,102.30,20.50) "
-         & "101(8=3x63) 103(8) 20(3=0x0) motion 0.25000,0.12000,0.00000 delay 30 cursor 0x0"
+     MOVE "1(7,1@20.50,102.30,20.50) 101(7=3x1) 103(7) 20(39=3x63) 1(8,1@20.50,102.30,20.50) "
+         & "101(8=3x63) 103(8) 20(39=0x0) motion 0.25000,0.12000,0.00000 delay 30 cursor 0x0"
          TO TL-EXPECTED
      PERFORM CHECK
 

@@ -165,12 +165,31 @@
      STRING "c1 i1 +4 +21=01 +7=3f800000 +19=ac02 +12=02 +6=0a0800047465787400014100 "
          "pos 30 error 0" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-GET
-*>   ---- values the reader rejects ----
-     MOVE "01 01 01 00 0d 00" TO WS-HEX
+*>   ItemEnchantments (13 and 45, 17 section 1.2): a count, then pairs of enchantment id and level
+     MOVE "01 01 02 00 0d 02 05 03 02 01 2d 00" TO WS-HEX
      PERFORM FILL
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
-     MOVE "test item-stack get of enchantments (13, layout not documented) sets PB-ERROR, PB-POS 0"
+     MOVE "test item-stack get of enchantments (two pairs) and empty stored enchantments" TO TL-CASE
+     MOVE "c1 i1 +13=0205030201 +45=00 pos 12 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+*>   ---- values the reader rejects ----
+     MOVE "01 01 01 00 10 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of attribute_modifiers (16, layout not read) sets PB-ERROR, PB-POS 0"
          TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 0d ff7f" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of enchantments with 16383 pairs sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 2d 02 05" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of stored enchantments cut short sets PB-ERROR, PB-POS 0" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET
      MOVE "01 01 01 00 03" TO WS-HEX

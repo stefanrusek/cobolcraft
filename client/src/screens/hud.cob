@@ -9,12 +9,12 @@
 *> less than 10 seconds ago; with chat open (chat.cob, above the input line and the CS-SHOWN
 *> command suggestions) the 10 ending CH-SCROLL messages before the newest, regardless of age.
 *> Health (US7-1, US7-6; standin-content §10.1; 08 §10.8.6 cobolcraft.hud.health): in survival a
-*> label "Health <current>/<maximum>" (the last Set Health as a whole number, maximum 30) above the
+*> label "Health <current>/<maximum>" (the last Set Health as a whole number, maximum 20) above the
 *> hotbar's left end; none in creative. The hurt indication (US7-2): while the clock is before
 *> PL-HURT-UNTIL, the first widget is an overlay over the whole screen on the hurt swatch (a red
 *> tint, drawn under the rest of the HUD).
 *> Food (US8-1, US8-6; standin-content §11.1; 08 §10.8.6 cobolcraft.hud.food): in survival a label
-*> "Food <current>/<maximum>" (the last Set Health's food, maximum 24) beside the health label, to
+*> "Food <current>/<maximum>" (the last Set Health's food, maximum 20) beside the health label, to
 *> its right above the hotbar's right half; none in creative.
 *> Both follow the current game mode (PL-MODE: Login, Respawn, Game Event 3, US14-2): they go when
 *> it becomes creative and come back in survival with the latest Set Health's values.

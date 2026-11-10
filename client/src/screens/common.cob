@@ -64,6 +64,10 @@
          MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
          MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
          MOVE 0 TO SP-CREATE-MODE SP-CREATE-TYPE SP-CREATE-REFUSED
+*>       Without good packs a standard world cannot be made: the control starts at cobolcraft (WT-24).
+         IF CL-PACKS-STATUS NOT = 0
+             MOVE 1 TO SP-CREATE-TYPE
+         END-IF
      END-IF
      IF L-SCREEN = SCR-OPEN-TO-OTHERS
          MOVE 0 TO SP-GUEST-MODE SP-GUEST-OPERATOR
