@@ -5,6 +5,34 @@
 *> BLOCKUPD.cpy (0 down, 1 up, 2 north, 3 south, 4 west, 5 east); results as in INTERACT.cpy.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FP-CMP.
+*> USING a, b (FLOAT-LONG), sign out (BINARY-LONG): -1, 0 or 1 as a is below, equal to or above b, exactly. A COBOL comparison of two
+*> floats has a relative tolerance (about 1e-7), which merges neighbouring single-precision values; the difference of two doubles
+*> is exact and its sign is read from the bit pattern.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-DIFF                FLOAT-LONG.
+ 01 WS-BITS                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-SIGN                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-SIGN.
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-A L-B WS-DIFF
+     CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-DIFF WS-BITS
+     EVALUATE TRUE
+         WHEN WS-BITS = 0
+             MOVE 0 TO L-SIGN
+         WHEN WS-BITS > 0
+             MOVE 1 TO L-SIGN
+         WHEN OTHER
+             MOVE -1 TO L-SIGN
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM FP-CMP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-RANGE-OK.
 *> USING eye x, y, z (FLOAT-LONG), block x, y, z (BINARY-LONG), block_interaction_range (FLOAT-LONG), ok out (BINARY-LONG):
 *> 9.1 step 4: 1 when the squared distance from the eye to the block's unit box is less than (range + 1.0) squared.
@@ -17,6 +45,8 @@
  01 WS-HIGH                FLOAT-LONG.
  01 WS-AXIS                BINARY-LONG.
  01 WS-EYE                 FLOAT-LONG.
+ 01 WS-RR                  FLOAT-LONG.
+ 01 WS-S                   BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  LINKAGE SECTION.
  01 L-EX                   FLOAT-LONG.
@@ -53,8 +83,10 @@
          END-EVALUATE
          COMPUTE WS-SQ = WS-SQ + WS-D * WS-D
      END-PERFORM
+     COMPUTE WS-RR = WS-R * WS-R
+     CALL "FP-CMP" USING WS-SQ WS-RR WS-S
      MOVE 0 TO L-OK
-     IF WS-SQ < WS-R * WS-R
+     IF WS-S < 0
          MOVE 1 TO L-OK
      END-IF
      GOBACK.
@@ -658,7 +690,11 @@
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-D                   BINARY-LONG.
- 01 WS-DUMMY               FLOAT-LONG.
+ 01 WS-S1                  BINARY-LONG.
+ 01 WS-S2                  BINARY-LONG.
+ 01 WS-S3                  BINARY-LONG.
+ 01 WS-S4                  BINARY-LONG.
+ 01 WS-S5                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-YAW                  FLOAT-LONG.
  01 L-PITCH                FLOAT-LONG.
@@ -689,24 +725,29 @@
      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-AZ WS-CP WS-BZ
      CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-BZ WS-RND
      MOVE WS-RND TO WS-BZ
+     CALL "FP-CMP" USING WS-AX WS-AZ WS-S1
+     CALL "FP-CMP" USING WS-AY WS-BX WS-S2
+     CALL "FP-CMP" USING WS-BZ WS-AY WS-S3
+     CALL "FP-CMP" USING WS-AY WS-BZ WS-S4
+     CALL "FP-CMP" USING WS-BX WS-AY WS-S5
      EVALUATE TRUE
-         WHEN WS-AX > WS-AZ AND WS-AY > WS-BX
+         WHEN WS-S1 > 0 AND WS-S2 > 0
              MOVE WS-Y TO L-DIR(1)
              MOVE WS-X TO L-DIR(2)
              MOVE WS-Z TO L-DIR(3)
-         WHEN WS-AX > WS-AZ AND WS-BZ > WS-AY
+         WHEN WS-S1 > 0 AND WS-S3 > 0
              MOVE WS-X TO L-DIR(1)
              MOVE WS-Z TO L-DIR(2)
              MOVE WS-Y TO L-DIR(3)
-         WHEN WS-AX > WS-AZ
+         WHEN WS-S1 > 0
              MOVE WS-X TO L-DIR(1)
              MOVE WS-Y TO L-DIR(2)
              MOVE WS-Z TO L-DIR(3)
-         WHEN WS-AY > WS-BZ
+         WHEN WS-S4 > 0
              MOVE WS-Y TO L-DIR(1)
              MOVE WS-Z TO L-DIR(2)
              MOVE WS-X TO L-DIR(3)
-         WHEN WS-BX > WS-AY
+         WHEN WS-S5 > 0
              MOVE WS-Z TO L-DIR(1)
              MOVE WS-X TO L-DIR(2)
              MOVE WS-Y TO L-DIR(3)
@@ -1059,15 +1100,20 @@
  WORKING-STORAGE SECTION.
  COPY CCSHIM.
  01 WS-MODULUS             FLOAT-LONG VALUE 360.0.
+ 01 WS-HALF                FLOAT-LONG VALUE 180.0.
+ 01 WS-NEG                 FLOAT-LONG VALUE -180.0.
+ 01 WS-S                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DEG                  FLOAT-LONG.
  01 L-OUT                  FLOAT-LONG.
  PROCEDURE DIVISION USING L-DEG L-OUT.
      CALL STATIC "cc_f64_fmod" USING BY REFERENCE L-DEG WS-MODULUS L-OUT
-     IF L-OUT >= 180
+     CALL "FP-CMP" USING L-OUT WS-HALF WS-S
+     IF WS-S >= 0
          COMPUTE L-OUT = L-OUT - 360
      END-IF
-     IF L-OUT < -180
+     CALL "FP-CMP" USING L-OUT WS-NEG WS-S
+     IF WS-S < 0
          COMPUTE L-OUT = L-OUT + 360
      END-IF
      GOBACK.
