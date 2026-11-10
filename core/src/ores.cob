@@ -834,6 +834,10 @@
  01 L-FLAG                 BINARY-LONG.
  PROCEDURE DIVISION USING L-JOB L-STATE L-ROW L-CUR L-X L-Y L-Z L-TARGET L-FLAG.
      MOVE 0 TO L-FLAG WS-RULE
+*>   air is never a target (a base stone the block table lacks resolves to state 0 and must not match it)
+     IF L-CUR = 0
+         GOBACK
+     END-IF
      IF OT-KIND(L-ROW) = 2
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
              IF L-CUR = OB-BASE(WS-I)
@@ -1331,7 +1335,7 @@
                      SET ADDRESS OF CE-CHUNK TO J-ADDR
                      COMPUTE WS-SECTION = (WS-Y + 64) / 16
                      COMPUTE WS-LY = FUNCTION MOD(WS-Y + 64, 16) / 4
-                     COMPUTE WS-CELL = WS-SECTION * 64 + WS-LY * 16 + (WS-LZ / 4) * 4 + WS-LX / 4 + 1
+                     COMPUTE WS-CELL = WS-SECTION * 64 + WS-LY * 16 + FUNCTION INTEGER(WS-LZ / 4) * 4 + FUNCTION INTEGER(WS-LX / 4) + 1
                      MOVE CE-BIOME(WS-CELL) TO WS-ID
                      COMPUTE WS-INDEX = WS-ID + 1
                      IF WS-ID < CBI-COUNT

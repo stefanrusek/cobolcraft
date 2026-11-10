@@ -729,8 +729,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 - [ ] T0439 [US11-core] Write acceptance test `core/tests/acc_f2us11_world.cob` (US11-1): a fixed-seed standard world generates a chunk whose columns equal the worked examples of 10 and 11, including the status order and neighbour requirements [FR-029, FR-030; SC-007]
 - [ ] T0440 [US11-core] Implement the generation pipeline that calls biome, density, aquifer, surface, carver and ore stages in `core/src/worldgen-standard.cob`, selected by world type (the cobolcraft type keeps `core/src/worldgen.cob`, FR-033)
-- [ ] T0441 [US11-core] Write contract tests `core/tests/contract_vanilla_chunk.cob`: the chunk data of a standard world equals the bytes of the 06 worked examples (the automated half of Q-1)
-- [ ] T0442 [US11-core] Make the generated chunk stream pass `contract_vanilla_chunk` in `core/src/chunks-stream.cob`
+- [x] T0441 [US11-core] Write contract tests `core/tests/contract_vanilla_chunk.cob`: the chunk data of a standard world equals the bytes of the 06 worked examples (the automated half of Q-1). 06 holds structure tables, no worked-example bytes: the expected bytes are an independent Python encoder of 06 sections 3 to 6 (`core/tests/fixtures/veins/chunk_data.py`, `chunk-data.hex`) over the veins fixture chunk (the terrain pipeline up to the carvers; the ore stage places the table's blocks, which the encoder does not model); the light data follows and is not compared. Red: scratchpad/wg6/red-contract-vanilla-chunk.txt (crash in the ore biome cell index), red-contract-vanilla-chunk2.txt (fluid counts)
+- [x] T0442 [US11-core] Make the generated chunk stream pass `contract_vanilla_chunk` in `core/src/chunks-stream.cob` (fluid counts of water and lava per section in CHUNK-PACKET-BUILD; waterlogged states are not counted: gap; also fixed in `core/src/ores.cob`: the biome cell index of the ore biome test, and air is never an ore target)
 - [ ] T0443 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 40: US11-core (g) — debug world generator (test tool, plan "Operator addition: debug world")
