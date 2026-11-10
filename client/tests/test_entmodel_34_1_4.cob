@@ -27,6 +27,9 @@
  01 WS-J                   BINARY-LONG.
  01 WS-ID2                 PIC X(60).
  01 WS-SAME                BINARY-LONG.
+ 01 WS-TABLE.
+    05 WS-T-ID             PIC X(60) OCCURS 361 TIMES.
+ 01 WS-TN                  BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "EM4-LAYER-COUNTS" USING WS-FIELDS WS-SINGLE WS-SETS WS-LAYERS
      MOVE "292 public fields" TO WS-NAME
@@ -142,6 +145,16 @@
      MOVE "no duplicate layer ids" TO WS-NAME
      MOVE WS-DUPS TO WS-O
      MOVE 0 TO WS-E
+     PERFORM CHECK-NUM
+*>   EM4-COUNT-DUPS finds equal pairs in a table: three equal ids make three pairs.
+     MOVE SPACES TO WS-TABLE
+     MOVE "a#main" TO WS-T-ID(1) WS-T-ID(3) WS-T-ID(4)
+     MOVE "b#main" TO WS-T-ID(2)
+     MOVE 4 TO WS-TN
+     CALL "EM4-COUNT-DUPS" USING WS-TABLE WS-TN WS-DUPS
+     MOVE "three equal ids make three duplicate pairs" TO WS-NAME
+     MOVE WS-DUPS TO WS-O
+     MOVE 3 TO WS-E
      PERFORM CHECK-NUM
 *>   every id has the text form <namespace:model>#<layer>.
      MOVE 0 TO WS-J

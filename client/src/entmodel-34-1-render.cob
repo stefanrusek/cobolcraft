@@ -304,11 +304,11 @@
          COMPUTE WS-C = -L-I(4) * WS-K
          MOVE 1 TO WS-KIND
          MOVE 0 TO WS-B
-         PERFORM ADD-OP
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      END-IF
      MOVE 2 TO WS-KIND
      MOVE L-I(7) TO WS-A WS-B WS-C
-     PERFORM ADD-OP
+     CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      MOVE L-I(8) TO WS-BODY
      IF L-I(16) NOT = 0
          COMPUTE WS-BODY = WS-BODY + FUNCTION COS(FUNCTION INTEGER(L-I(13)) * 3.25) * 3.141592653589793 * 0.4000000059604645
@@ -317,7 +317,7 @@
          MOVE 3 TO WS-KIND
          COMPUTE WS-A = 180 - WS-BODY
          MOVE 0 TO WS-B WS-C
-         PERFORM ADD-OP
+         CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      END-IF
      EVALUATE TRUE
          WHEN L-I(9) > 0
@@ -329,15 +329,15 @@
              MOVE 4 TO WS-KIND
              COMPUTE WS-A = WS-F * L-I(10)
              MOVE 0 TO WS-B WS-C
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
          WHEN L-I(11) NOT = 0
              MOVE 5 TO WS-KIND
              COMPUTE WS-A = -90 - L-I(12)
              MOVE 0 TO WS-B WS-C
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
              MOVE 3 TO WS-KIND
              COMPUTE WS-A = L-I(13) * -75
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
          WHEN L-I(1) NOT = 0
              MOVE 3 TO WS-KIND
              MOVE L-I(5) TO WS-A
@@ -345,41 +345,55 @@
                  MOVE WS-BODY TO WS-A
              END-IF
              MOVE 0 TO WS-B WS-C
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
              MOVE 4 TO WS-KIND
              MOVE L-I(10) TO WS-A
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
              MOVE 3 TO WS-KIND
              MOVE 270 TO WS-A
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
          WHEN L-I(14) NOT = 0
              MOVE 1 TO WS-KIND
              MOVE 0 TO WS-A WS-C
              COMPUTE WS-B = (L-I(15) + 0.1) / L-I(7)
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
              MOVE 4 TO WS-KIND
              MOVE 180 TO WS-A
              MOVE 0 TO WS-B
-             PERFORM ADD-OP
+             CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      END-EVALUATE
      MOVE 2 TO WS-KIND
      MOVE -1 TO WS-A WS-B
      MOVE 1 TO WS-C
-     PERFORM ADD-OP
+     CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      MOVE 1 TO WS-KIND
      MOVE 0 TO WS-A WS-C
      MOVE -1.501 TO WS-B
-     PERFORM ADD-OP
+     CALL "EM6-ADD-OP" USING L-OUT WS-N WS-KIND WS-A WS-B WS-C
      MOVE WS-N TO L-O(1)
      GOBACK.
-
- ADD-OP.
-     ADD 1 TO WS-N
-     MOVE WS-KIND TO L-O(WS-N * 4 - 2)
-     MOVE WS-A TO L-O(WS-N * 4 - 1)
-     MOVE WS-B TO L-O(WS-N * 4)
-     MOVE WS-C TO L-O(WS-N * 4 + 1).
  END PROGRAM EM6-POSE-CHAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM6-ADD-OP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ 01 L-N                    BINARY-LONG.
+ 01 L-KIND                 FLOAT-LONG.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-C                    FLOAT-LONG.
+*> USING out count kind a b c: appends one operation (4 numbers) to the operation list of EM6-POSE-CHAIN.
+ PROCEDURE DIVISION USING L-OUT L-N L-KIND L-A L-B L-C.
+     ADD 1 TO L-N
+     MOVE L-KIND TO L-O(L-N * 4 - 2)
+     MOVE L-A TO L-O(L-N * 4 - 1)
+     MOVE L-B TO L-O(L-N * 4)
+     MOVE L-C TO L-O(L-N * 4 + 1)
+     GOBACK.
+ END PROGRAM EM6-ADD-OP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EM6-CULL-BOX.
