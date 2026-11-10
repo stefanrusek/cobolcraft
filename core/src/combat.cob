@@ -369,6 +369,91 @@
  END PROGRAM COMBAT-KNOCKBACK-HIT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-SWEEP.
+*> USING attacker player row, target entity row, scaled weapon damage (thousandths), enchantment damage E (thousandths), attack strength scale
+*> (thousandths), weapon stack handle: 17 section 4.3. Every living entity of the target's dimension other than the attacker and the target that
+*> is within 3 blocks of the target and inside the target's box inflated by 1.0 horizontally (the box widths come from the entity type table) is
+*> hurt for (1.0 + Sweeping Edge ratio x damage + E) x scale, a player through HEALTH-HURT, any other row through HEALTH-MOB-DAMAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY RULES.
+ 01 WS-ID-KEY              PIC X(112) VALUE "minecraft:sweeping_edge".
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-RATIO               BINARY-LONG.
+ 01 WS-SWEEP               BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-HALF-T              FLOAT-LONG.
+ 01 WS-HALF-V              FLOAT-LONG.
+ 01 WS-D2                  BINARY-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-NO1                BINARY-LONG VALUE 0.
+ 01 WS-NO2                BINARY-LONG VALUE 0.
+ 01 WS-NO3                BINARY-LONG VALUE 0.
+ 01 WS-NO4                BINARY-LONG VALUE 0.
+ 01 WS-TYPE-T              BINARY-LONG.
+ 01 WS-TYPE-V              BINARY-LONG.
+ 01 WS-VICTIM              BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY COREAPI.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-SCALED               BINARY-LONG.
+ 01 L-ENCHANT              BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY L-SCALED L-ENCHANT L-SCALE L-HANDLE.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     CALL "TOOL-ENCHANT-ID" USING WS-ID-KEY WS-ID
+     MOVE 0 TO WS-LEVEL
+     IF WS-ID >= 0
+         CALL "SP-ENCHANT-LEVEL" USING L-HANDLE WS-ID WS-LEVEL
+     END-IF
+     CALL "TOOL-SWEEPING-RATIO" USING WS-LEVEL WS-RATIO
+     CALL "TOOL-SWEEP-DAMAGE" USING L-SCALED WS-RATIO WS-SWEEP
+     COMPUTE WS-AMOUNT = (WS-SWEEP + L-ENCHANT) * L-SCALE / 1000
+     COMPUTE WS-TYPE-T = EN-TYPE(L-ENTITY) + 1
+     COMPUTE WS-HALF-T = ET-WIDTH-MILLI(WS-TYPE-T) / 2000
+     PERFORM VARYING WS-VICTIM FROM 1 BY 1 UNTIL WS-VICTIM > EN-COUNT
+         COMPUTE WS-TYPE-V = EN-TYPE(WS-VICTIM) + 1
+         COMPUTE WS-HALF-V = ET-WIDTH-MILLI(WS-TYPE-V) / 2000
+         COMPUTE WS-DX = EN-X(WS-VICTIM) - EN-X(L-ENTITY)
+         COMPUTE WS-DY = EN-Y(WS-VICTIM) - EN-Y(L-ENTITY)
+         COMPUTE WS-DZ = EN-Z(WS-VICTIM) - EN-Z(L-ENTITY)
+         COMPUTE WS-D2 = (WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ) * 1000
+         MOVE 1 TO WS-HIT
+         IF EN-USED(WS-VICTIM) = 0 OR WS-VICTIM = L-ENTITY OR WS-VICTIM = PL-ENTITY-ROW(L-ROW)
+                 OR EN-DIM(WS-VICTIM) NOT = EN-DIM(L-ENTITY) OR EN-TYPE(WS-VICTIM) = CR-LOOSE-ITEM
+                 OR FUNCTION ABS(WS-DX) > WS-HALF-T + 1 + WS-HALF-V OR FUNCTION ABS(WS-DZ) > WS-HALF-T + 1 + WS-HALF-V
+             MOVE 0 TO WS-HIT
+         END-IF
+         IF WS-HIT = 1
+             CALL "TOOL-SWEEP-VICTIM" USING WS-NO1 WS-NO2 WS-NO3 WS-NO4 WS-D2 WS-HIT
+         END-IF
+         IF WS-HIT = 1
+             MOVE CAUSE-PLAYER TO WS-CAUSE
+             IF EN-PLAYER(WS-VICTIM) > 0
+                 IF CS-PLAYER-COMBAT = 1
+                     CALL "HEALTH-HURT" USING EN-PLAYER(WS-VICTIM) WS-AMOUNT WS-CAUSE PL-ENTITY-ID(L-ROW) L-ROW WS-RESULT
+                 END-IF
+             ELSE
+                 COMPUTE WS-E ROUNDED = FUNCTION MAX(1, WS-AMOUNT / 1000)
+                 CALL "HEALTH-MOB-DAMAGE" USING WS-VICTIM WS-E WS-CAUSE L-ROW
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM COMBAT-SWEEP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. COMBAT-ATTACK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -427,6 +512,16 @@
  01 WS-KB-LEVEL            BINARY-LONG.
  01 WS-MOB-AMOUNT          BINARY-LONG.
  01 WS-COMPONENT           PIC X(48).
+ 01 WS-FALLM               BINARY-LONG.
+ 01 WS-SMASH               BINARY-LONG.
+ 01 WS-DENSITY             BINARY-LONG.
+ 01 WS-ENCH-ID             BINARY-LONG.
+ 01 WS-ENCH-KEY            PIC X(112).
+ 01 WS-SCALED              BINARY-LONG.
+ 01 WS-SWORD               BINARY-LONG.
+ 01 WS-SWEEP               BINARY-LONG.
+ 01 WS-SPEED-NOW           BINARY-LONG VALUE 0.
+ 01 WS-MOVEMENT            BINARY-LONG VALUE 1000.
  01 WS-HASTE-ID            BINARY-LONG VALUE 2.
  01 WS-FATIGUE-ID          BINARY-LONG VALUE 3.
  01 WS-STRENGTH-ID         BINARY-LONG VALUE 4.
@@ -462,7 +557,8 @@
          MOVE 10000 TO WS-DAMAGE10K
          MOVE 40000 TO WS-SPEED10K
      END-IF
-     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY))
+     MOVE WS-KEY TO WS-SHORT
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-SHORT))
      COMPUTE WS-MODIFIER = (WS-SPEED10K - 40000) / 10
      CALL "EFFECT-LEVEL" USING L-ROW WS-HASTE-ID WS-HASTE WS-TICKS
      CALL "EFFECT-LEVEL" USING L-ROW WS-FATIGUE-ID WS-FATIGUE WS-TICKS
@@ -503,12 +599,28 @@
          MOVE 1 TO WS-FALL
      END-IF
      CALL "TOOL-BREAK-MODS" USING L-ROW WS-EFFICIENCY WS-HASTE WS-FATIGUE WS-WATER
-     MOVE 0 TO WS-BONUS
+     MOVE 0 TO WS-BONUS WS-SMASH WS-FALLM
+     IF PL-ON-GROUND(L-ROW) = 0 AND PL-FALL-START(L-ROW) > PL-Y(L-ROW)
+         COMPUTE WS-FALLM = (PL-FALL-START(L-ROW) - PL-Y(L-ROW)) * 1000
+     END-IF
+     IF WS-SHORT = "mace"
+         CALL "TOOL-MACE-CAN-SMASH" USING WS-FALLM WS-ZERO WS-SMASH
+         MOVE "minecraft:density" TO WS-ENCH-KEY
+         CALL "TOOL-ENCHANT-ID" USING WS-ENCH-KEY WS-ENCH-ID
+         MOVE 0 TO WS-DENSITY
+         IF WS-ENCH-ID >= 0
+             CALL "SP-ENCHANT-LEVEL" USING WS-HANDLE WS-ENCH-ID WS-DENSITY
+         END-IF
+         IF WS-SMASH = 1
+             CALL "TOOL-MACE-BONUS" USING WS-FALLM WS-DENSITY WS-BONUS
+         END-IF
+     END-IF
      CALL "TOOL-ATTACK-CALC" USING WS-BASE WS-ENCHANT WS-SCALE WS-SPRINTING WS-FALL WS-GROUND WS-CLIMB WS-WATER WS-BLIND
          WS-PASSENGER WS-ONE WS-BONUS WS-TOTAL WS-CRIT WS-SPRINT-KB WS-FULL
      IF WS-TOTAL <= 0
          GOBACK
      END-IF
+     COMPUTE WS-SCALED = WS-BASE * (200 + 800 * WS-SCALE * WS-SCALE / 1000000) / 1000 + WS-BONUS
      MOVE 0 TO WS-RESULT
      IF WS-TARGET = 0
          MOVE CAUSE-PLAYER TO WS-CAUSE
@@ -531,8 +643,21 @@
          CALL "COMBAT-KNOCKBACK-HIT" USING WS-TARGET L-ROW WS-K
      END-IF
 *>   The held tool wears (5.1): item_damage_per_attack 1 for a sword, mace, trident or spear, 2 for a pickaxe, axe, shovel or hoe.
+*>   A smash ends the fall (17 section 4.8); a charged ground sword hit that is no crit and no sprint hit sweeps (4.3).
+     IF WS-SMASH = 1
+         MOVE PL-Y(L-ROW) TO PL-FALL-START(L-ROW)
+     END-IF
+     MOVE 0 TO WS-SWORD
+     IF WS-LEN >= 6
+         IF WS-SHORT(WS-LEN - 5:6) = "_sword"
+             MOVE 1 TO WS-SWORD
+         END-IF
+     END-IF
+     CALL "TOOL-SWEEP-CHECK" USING WS-FULL WS-CRIT WS-SPRINT-KB WS-GROUND WS-SPEED-NOW WS-MOVEMENT WS-SWORD WS-SWEEP
+     IF WS-SWEEP = 1
+         CALL "COMBAT-SWEEP" USING L-ROW L-ENTITY WS-SCALED WS-ENCHANT WS-SCALE WS-HANDLE
+     END-IF
      MOVE 0 TO WS-COST
-     MOVE WS-KEY TO WS-SHORT
      COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-SHORT))
      IF WS-SHORT = "mace" OR "trident"
          MOVE 1 TO WS-COST
