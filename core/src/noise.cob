@@ -13,6 +13,8 @@
 *>     (BINARY-LONG), base amplitude (FLOAT-LONG), modifiers (32 FLOAT-LONG), modifier count (0 = all 1.0),
 *>     normalize (0 enabled, 1 disabled), handle out (BINARY-LONG)
 *>   NOISE-GET USING handle, x, y, z (FLOAT-LONG), result out (FLOAT-LONG, a float32 value)
+*>   NOISE-SMEARED-STACK USING state (XR-STATE), first octave (BINARY-LONG), y scale, amplitude base (FLOAT-LONG),
+*>     handle out: the octave stack of old_blended_noise (10 section 3.4, fbm)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NOISE-RESET.
@@ -632,3 +634,61 @@
      MOVE WS-ACC TO L-RESULT
      GOBACK.
  END PROGRAM NOISE-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NOISE-SMEARED-STACK.
+*> 10 section 3.4 fbm(r, firstOctave, yScale, ampBase): n = -firstOctave + 1 layers, highest frequency first (the
+*> first perlin made is the layer of frequency 1): a smeared perlin of scale yScale * freq, frequency freq, amplitude
+*> (float) ampBase, then freq / 2 and ampBase * 2; ampBase starts at ampBase / (2^n - 1). The draws come from the
+*> one generator passed in, in layer order.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY NOISE.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-TWO                 FLOAT-LONG VALUE 2.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-FREQ                FLOAT-LONG.
+ 01 WS-AMP                 FLOAT-LONG.
+ 01 WS-POW                 FLOAT-LONG.
+ 01 WS-DEN                 FLOAT-LONG.
+ 01 WS-FUDGE               FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-LAYER-AMP           FLOAT-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PERLIN              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-FIRST                BINARY-LONG.
+ 01 L-Y-SCALE              FLOAT-LONG.
+ 01 L-AMP                  FLOAT-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-FIRST L-Y-SCALE L-AMP L-HANDLE.
+     COMPUTE WS-N = 1 - L-FIRST
+     MOVE WS-ONE TO WS-POW
+     PERFORM WS-N TIMES
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-POW WS-TWO WS-T
+         MOVE WS-T TO WS-POW
+     END-PERFORM
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-POW WS-ONE WS-DEN
+     CALL STATIC "cc_f64_div" USING BY REFERENCE L-AMP WS-DEN WS-AMP
+     MOVE WS-ONE TO WS-FREQ
+     ADD 1 TO NZ-NOISE-COUNT
+     MOVE NZ-NOISE-COUNT TO L-HANDLE
+     COMPUTE NZ-FIRST(L-HANDLE) = NZ-LAYER-COUNT + 1
+     MOVE WS-N TO NZ-LAYER-N(L-HANDLE)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE L-Y-SCALE WS-FREQ WS-FUDGE
+         CALL "PERLIN-CREATE" USING L-STATE WS-FUDGE WS-PERLIN
+         CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-AMP WS-LAYER-AMP
+         ADD 1 TO NZ-LAYER-COUNT
+         MOVE WS-PERLIN TO NZ-L-PERLIN(NZ-LAYER-COUNT)
+         MOVE WS-FREQ TO NZ-L-FREQ(NZ-LAYER-COUNT)
+         MOVE WS-LAYER-AMP TO NZ-L-AMP(NZ-LAYER-COUNT)
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-FREQ WS-HALF WS-T
+         MOVE WS-T TO WS-FREQ
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-AMP WS-TWO WS-T
+         MOVE WS-T TO WS-AMP
+     END-PERFORM
+     GOBACK.
+ END PROGRAM NOISE-SMEARED-STACK.

@@ -670,9 +670,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0410 [US11-core] Implement them in `core/src/rng.cob`
 - [x] T0411 [US11-core] Write test `core/tests/test_noise.cob`: improved/perlin noise, octave and normal noise via `cc_f64_*` match the worked examples bit for bit (10)
 - [x] T0412 [US11-core] Implement the noises in `core/src/noise.cob`
-- [ ] T0413 [US11-core] Write test `core/tests/test_climate.cob`: the six climate parameters at sample points and the multi-noise biome lookup (10, 37 part 3)
-- [ ] T0414 [US11-core] Implement climate and the biome source in `core/src/climate.cob`
-- [ ] T0415 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0413 [US11-core] Write test `core/tests/test_climate.cob`: the six climate parameters at sample points and the multi-noise biome lookup (10, 37 part 3)
+- [x] T0414 [US11-core] Implement climate and the biome source in `core/src/climate.cob`
+- [x] T0415 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 36: US11-core (c) — density, aquifers, surface
 
