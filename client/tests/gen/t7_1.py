@@ -71,7 +71,7 @@ def rotops(shake,age,body,death,sleep):
     if death>0: ops.append((4,min(1,math.sqrt((death-1)/20*1.6))*90,0,0))
     ops.append((2,-1,-1,1)); ops.append((1,0,-1.501,0))
     return [len(ops)]+[v for o in ops for v in o]
-for a in ((0,10,30,0,0),(1,12.7,30,0,0),(0,10,-45,6,0),(1,3,0,21,0),(0,10,30,1,0),(0,5,90,0,1),(0,5,90,0.5,0)):
+for a in ((0,10,30,0,0),(1,12.7,30,0,0),(0,10,-45,6,0),(1,3,0,21,0),(0,10,30,1,0),(0,5,90,0,1),(0,5,90,2,0)):
     t.call('EF7-SETUP-ROTATIONS',list(a),rotops(*a),'1.6 setupRotations shaking %d age %s body yaw %s death %s sleeping %d (count; code 3 rotate Y deg, 4 rotate Z deg, 2 scale, 1 translate)'%a)
 for tr,vis,gl,e in ((1,0,0,(2,1)),(0,1,0,(1,0)),(0,0,1,(3,0)),(0,0,0,(0,0)),(1,1,1,(2,1))):
     t.call('EF7-BODY-RENDER',[tr,vis,gl],list(e),'1.6 body render translucent %d visible %d glowing %d (mode 0 none 1 model render type 2 translucent cull 3 outline; 1 when tinted 0x26FFFFFF)'%(tr,vis,gl))

@@ -18,7 +18,7 @@ extra+=prog('EF7-PART-OPS','''     MOVE 1 TO L-O(2)
      MOVE 1 TO WS-N
      IF L-I(4) NOT = 0 OR L-I(5) NOT = 0 OR L-I(6) NOT = 0
          ADD 1 TO WS-N
-         COMPUTE WS-K = WS-N * 4 - 3
+         COMPUTE WS-K = WS-N * 4 - 2
          MOVE 7 TO L-O(WS-K)
          MOVE L-I(6) TO L-O(WS-K + 1)
          MOVE L-I(5) TO L-O(WS-K + 2)
@@ -26,7 +26,7 @@ extra+=prog('EF7-PART-OPS','''     MOVE 1 TO L-O(2)
      END-IF
      IF L-I(7) NOT = 1 OR L-I(8) NOT = 1 OR L-I(9) NOT = 1
          ADD 1 TO WS-N
-         COMPUTE WS-K = WS-N * 4 - 3
+         COMPUTE WS-K = WS-N * 4 - 2
          MOVE 2 TO L-O(WS-K)
          MOVE L-I(7) TO L-O(WS-K + 1)
          MOVE L-I(8) TO L-O(WS-K + 2)
@@ -238,6 +238,76 @@ extra=extra.replace("""         MOVE WS-M TO WS-V
  END PROGRAM EF7-RANDOM-SEQ.""","""         MOVE WS-M TO WS-V
      END-IF.
  END PROGRAM EF7-RANDOM-SEQ.""")
-open('/tmp/_ignore','w').write('')
+
+extra+=prog('EF7-SETUP-ROTATIONS','''     MOVE L-I(3) TO WS-YAW
+     IF L-I(1) NOT = 0
+         COMPUTE WS-YAW = L-I(3) + FUNCTION COS(FUNCTION INTEGER(L-I(2)) * 3.25) * 3.141592653589793 * 0.4000000059604645
+     END-IF
+     MOVE 0 TO WS-N
+     IF L-I(5) = 0
+         ADD 1 TO WS-N
+         MOVE 3 TO L-O(2)
+         COMPUTE L-O(3) = 180 - WS-YAW
+         MOVE 0 TO L-O(4) L-O(5)
+     END-IF
+     IF L-I(4) > 0
+         ADD 1 TO WS-N
+         COMPUTE WS-K = WS-N * 4 - 2
+         MOVE 4 TO L-O(WS-K)
+         COMPUTE WS-Q = FUNCTION SQRT((L-I(4) - 1) / 20 * 1.6)
+         IF WS-Q > 1
+             MOVE 1 TO WS-Q
+         END-IF
+         COMPUTE L-O(WS-K + 1) = WS-Q * 90
+         MOVE 0 TO L-O(WS-K + 2) L-O(WS-K + 3)
+     END-IF
+     ADD 1 TO WS-N
+     COMPUTE WS-K = WS-N * 4 - 2
+     MOVE 2 TO L-O(WS-K)
+     MOVE -1 TO L-O(WS-K + 1) L-O(WS-K + 2)
+     MOVE 1 TO L-O(WS-K + 3)
+     ADD 1 TO WS-N
+     COMPUTE WS-K = WS-N * 4 - 2
+     MOVE 1 TO L-O(WS-K)
+     MOVE 0 TO L-O(WS-K + 1) L-O(WS-K + 3)
+     MOVE -1.501 TO L-O(WS-K + 2)
+     MOVE WS-N TO L-O(1)
+''',' 01 WS-YAW                 FLOAT-LONG.\n 01 WS-Q                   FLOAT-LONG.\n 01 WS-N                   BINARY-LONG.\n 01 WS-K                   BINARY-LONG.\n')
+extra+=prog('EF7-BODY-RENDER','''     MOVE 0 TO L-O(1) L-O(2)
+     EVALUATE TRUE
+         WHEN L-I(1) NOT = 0
+             MOVE 2 TO L-O(1)
+             MOVE 1 TO L-O(2)
+         WHEN L-I(2) NOT = 0
+             MOVE 1 TO L-O(1)
+         WHEN L-I(3) NOT = 0
+             MOVE 3 TO L-O(1)
+     END-EVALUATE
+''')
+extra+=prog('EF7-OVERLAY-PIXEL','''     IF L-I(2) < 8
+         MOVE -1291911168 TO L-O(1)
+     ELSE
+         COMPUTE WS-AL = FUNCTION INTEGER-PART((1 - L-I(1) / 15 * 0.75) * 255)
+         COMPUTE L-O(1) = WS-AL * 16777216 + 16777215
+         IF L-O(1) >= 2147483648
+             COMPUTE L-O(1) = L-O(1) - 4294967296
+         END-IF
+     END-IF
+''',' 01 WS-AL                  BINARY-LONG.\n')
+extra+=prog('EF7-OVERLAY-COORDS','''     COMPUTE L-O(1) = FUNCTION INTEGER-PART(L-I(1) * 15)
+     MOVE 10 TO L-O(2)
+     IF L-I(2) NOT = 0
+         MOVE 3 TO L-O(2)
+     END-IF
+''')
+extra+=prog('EF7-LIGHT','''     MOVE L-I(1) TO WS-B
+     IF L-I(3) NOT = 0
+         MOVE 15 TO WS-B
+     END-IF
+     COMPUTE L-O(1) = WS-B * 16 + L-I(2) * 1048576
+''',' 01 WS-B                   FLOAT-LONG.\n')
+extra+=prog('EF7-SHADOW','     COMPUTE L-O(1) = L-I(1) * L-I(2)\n')
+
+
 write=lambda n,h,x: open(REPO+'client/src/entmodel-34-7.cob','w').write(h+'\n'+x)
 write(1,hdr,extra)
