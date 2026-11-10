@@ -23,6 +23,8 @@
  01 WS-LABELS              BINARY-LONG.
  01 WS-SURVIVAL-UI         BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-U                   FLOAT-SHORT.
+ 01 WS-V                   FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      MOVE "contract/fixtures/wire/play-s2c-6a-set-health.hex" TO WS-PATH
@@ -164,6 +166,37 @@
 *>   Quads: the two meters add 15 + 9 + 12 + 10 = 46 quads (276 vertices) over the creative HUD.
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE RL-UI-COUNT TO WS-SURVIVAL-UI
+*>   Which sprite fills a heart: the 8th (k = 7, vertex 109 on) is full, the 9th (k = 8, vertex 121) is half, the 10th (vertex 133)
+*>   has only its container (health 17 = 8 full hearts and a half); the first 18 vertices are the crosshair, hotbar and selection.
+     COMPUTE WS-U = GS-X(GSP-HEART-FULL) / UA-W
+     COMPUTE WS-V = GS-Y(GSP-HEART-FULL) / UA-H
+     MOVE "acceptance US6-5 heart 8 is filled with the full sprite" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-UI-U(109) > WS-U - 0.00001 AND RL-UI-U(109) < WS-U + 0.00001
+             AND RL-UI-V(109) > WS-V - 0.00001 AND RL-UI-V(109) < WS-V + 0.00001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-U = GS-X(GSP-HEART-HALF) / UA-W
+     COMPUTE WS-V = GS-Y(GSP-HEART-HALF) / UA-H
+     MOVE "acceptance US6-5 heart 9 is filled with the half sprite" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-UI-U(121) > WS-U - 0.00001 AND RL-UI-U(121) < WS-U + 0.00001
+             AND RL-UI-V(121) > WS-V - 0.00001 AND RL-UI-V(121) < WS-V + 0.00001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-U = GS-X(GSP-HEART-CONTAINER) / UA-W
+     COMPUTE WS-V = GS-Y(GSP-HEART-CONTAINER) / UA-H
+     MOVE "acceptance US6-5 heart 10 is a container alone (the next quad is heart 11's container)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-UI-U(127) > WS-U - 0.00001 AND RL-UI-U(127) < WS-U + 0.00001
+             AND RL-UI-V(127) > WS-V - 0.00001 AND RL-UI-V(127) < WS-V + 0.00001
+             AND RL-UI-U(133) > WS-U - 0.00001 AND RL-UI-U(133) < WS-U + 0.00001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO PL-MODE
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      MOVE 0 TO WS-COUNT

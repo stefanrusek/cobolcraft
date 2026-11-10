@@ -1,0 +1,20 @@
+TEST acceptance US6-5 the built-in art has the heart, food and hotbar sprites (heart is 9 wide) PASS
+TEST acceptance US6-5 the crosshair sprite is at (152, 112), 15 x 15 PASS
+TEST acceptance US6-5 the hotbar sprite is at (69, 218), 182 x 22 PASS
+TEST acceptance US6-5 the selection frame of slot 0 is at (68, 217), 24 x 23 PASS
+TEST acceptance US6-5 the selection frame of slot 3 is at (128, 217) PASS
+TEST acceptance US6-5 nine bare hotbar slots PASS
+TEST acceptance US6-5 the icon cell of slot 8 is at (232, 221) PASS
+TEST acceptance US6-5 an empty off hand has no backing sprite PASS
+TEST acceptance US6-5 the off-hand backing is at (40, 217), 29 x 24 PASS
+TEST acceptance US6-5 the off-hand icon cell is at (43, 221) PASS
+TEST acceptance US6-5 the heart meter is at (69, 201) holding 17 of 30 half hearts PASS
+TEST acceptance US6-5 the heart meter's maximum is 30 PASS
+TEST acceptance US6-5 the food meter is at (242, 201) holding 20 half food PASS
+TEST acceptance US6-5 the HUD has no text labels PASS
+TEST acceptance US6-5 heart 8 is filled with the full sprite PASS
+TEST acceptance US6-5 heart 9 is filled with the half sprite PASS
+TEST acceptance US6-5 heart 10 is a container alone (the next quad is heart 11's container) PASS
+TEST acceptance US6-5 in creative no meter is built PASS
+TEST acceptance US6-5 the meters render 46 quads (276 vertices) of 9 x 9 sprites PASS
+exit=0
