@@ -10,6 +10,7 @@
  COPY COREAPI.
  COPY CONTENT.
  COPY ENCHCTX.
+ COPY JSONDOC.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/wire-registry".
  01 WS-STATUS              BINARY-LONG.
  01 WS-REGISTRY            PIC X(48) VALUE "entity_type".
@@ -24,6 +25,13 @@
  01 WS-RESULT              BINARY-LONG.
  01 WS-FOLD-STATUS         BINARY-LONG.
  01 WS-FIRST              BINARY-LONG.
+ 01 WS-JSON                PIC X(700).
+ 01 WS-JSON-LENGTH         BINARY-LONG.
+ 01 WS-OUT                 PIC X(200).
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-EFFECT-STATUS       BINARY-LONG.
+ 01 WS-REQ-RESULT          BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  PROCEDURE DIVISION.
@@ -103,7 +111,171 @@
      PERFORM FOLD
      MOVE "5000 0" TO TL-EXPECTED
      PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value number becomes its prefix expression" TO TL-CASE
+     MOVE '2.5' TO WS-JSON
+     MOVE "2.500000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value string (not an object) becomes its prefix expression" TO TL-CASE
+     MOVE '"x"' TO WS-JSON
+     MOVE "" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value levels_squared becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:levels_squared","added":1.0}' TO WS-JSON
+     MOVE "squared 1.000000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value constant becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:constant","value":3.0}' TO WS-JSON
+     MOVE "3.000000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value lookup becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:lookup","values":[1.0,2.0],"fallback":{"type":"minecraft:linear","base":1.0,"per_level_above_first":0.5}}' TO WS-JSON
+     MOVE "lookup 2 1.000000 2.000000 linear 1.000000 0.500000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value fraction becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:fraction","numerator":1.0,"denominator":2.0}' TO WS-JSON
+     MOVE "fraction 1.000000 2.000000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value clamped becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:clamped","min":0.0,"max":5.0,"value":{"type":"minecraft:linear","base":1.0,"per_level_above_first":1.0}}' TO WS-JSON
+     MOVE "clamped 0.000000 5.000000 linear 1.000000 1.000000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 level-based value exponent becomes its prefix expression" TO TL-CASE
+     MOVE '{"type":"minecraft:exponent","base":2.0,"power":3.0}' TO WS-JSON
+     MOVE "exponent 2.000000 3.000000" TO TL-EXPECTED
+     PERFORM RUN-LBV
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 effect multiply becomes its prefix text" TO TL-CASE
+     MOVE '{"type":"minecraft:multiply","value":2.0}' TO WS-JSON
+     PERFORM RUN-EFFECT
+     MOVE "multiply 2.000000 status 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 effect set becomes its prefix text" TO TL-CASE
+     MOVE '{"type":"minecraft:set","value":1.0}' TO WS-JSON
+     PERFORM RUN-EFFECT
+     MOVE "set 1.000000 status 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 effect exponential becomes its prefix text" TO TL-CASE
+     MOVE '{"type":"minecraft:exponential","base":2.0,"power":3.0}' TO WS-JSON
+     PERFORM RUN-EFFECT
+     MOVE "exponential 2.000000 3.000000 status 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 effect all_of becomes its prefix text" TO TL-CASE
+     MOVE '{"type":"minecraft:all_of","effects":[{"type":"minecraft:add","value":1.0},{"type":"minecraft:set","value":2.0}]}' TO WS-JSON
+     PERFORM RUN-EFFECT
+     MOVE "all_of add 1.000000 set 2.000000 status 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 effect remove_binomial (no word in the evaluator) becomes its prefix text" TO TL-CASE
+     MOVE '{"type":"minecraft:remove_binomial","chance":0.5}' TO WS-JSON
+     PERFORM RUN-EFFECT
+     MOVE " status 3" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement any_of with one matching term holds" TO TL-CASE
+     MOVE '{"condition":"minecraft:any_of","terms":[{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":false}},{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":true}}]}' TO WS-JSON
+     MOVE "1" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement any_of without a matching term fails" TO TL-CASE
+     MOVE '{"condition":"minecraft:any_of","terms":[{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":false}},{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":false}}]}' TO WS-JSON
+     MOVE "0" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement all_of with a failing term fails" TO TL-CASE
+     MOVE '{"condition":"minecraft:all_of","terms":[{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":true}},{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":false}}]}' TO WS-JSON
+     MOVE "0" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement inverted of a failing term holds" TO TL-CASE
+     MOVE '{"condition":"minecraft:inverted","term":{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":false}}}' TO WS-JSON
+     MOVE "1" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement inverted of a holding term fails" TO TL-CASE
+     MOVE '{"condition":"minecraft:inverted","term":{"condition":"minecraft:damage_source_properties","predicate":{"is_direct":true}}}' TO WS-JSON
+     MOVE "0" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement a source_entity predicate is undecided and does not apply" TO TL-CASE
+     MOVE '{"condition":"minecraft:damage_source_properties","predicate":{"source_entity":{}}}' TO WS-JSON
+     MOVE "0" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement a direct_entity predicate is undecided and does not apply" TO TL-CASE
+     MOVE '{"condition":"minecraft:damage_source_properties","predicate":{"direct_entity":{}}}' TO WS-JSON
+     MOVE "0" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement a damage tag without namespace expected true holds for player_attack" TO TL-CASE
+     MOVE '{"condition":"minecraft:damage_source_properties","predicate":{"tags":[{"id":"is_player_attack","expected":true}]}}' TO WS-JSON
+     MOVE "1" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+     MOVE "acceptance US14 requirement an entity type key matches the victim key" TO TL-CASE
+     MOVE '{"condition":"minecraft:entity_properties","entity":"this","predicate":{"type":"minecraft:zombie"}}' TO WS-JSON
+     MOVE "1" TO TL-EXPECTED
+     PERFORM RUN-REQ
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 a row without effects leaves the value unchanged" TO TL-CASE
+     MOVE 7 TO WS-ID
+     MOVE "minecraft:damage" TO WS-COMPONENT
+     MOVE 3 TO WS-LEVEL
+     MOVE 5000 TO WS-START
+     PERFORM FOLD
+     MOVE "5000 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 an id outside the registry is status 4 and leaves the value unchanged" TO TL-CASE
+     MOVE 99 TO WS-ID
+     PERFORM FOLD
+     MOVE "5000 4" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 a node 0 has no text and no effect" TO TL-CASE
+     MOVE 0 TO WS-NODE
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-POINTER
+     CALL "ENCH-LBV-TEXT" USING JSON-DOC WS-NODE WS-OUT WS-POINTER
+     CALL "ENCH-EFFECT-TEXT" USING JSON-DOC WS-NODE WS-OUT WS-POINTER WS-EFFECT-STATUS
+     MOVE WS-EFFECT-STATUS TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3" TO TL-EXPECTED
+     PERFORM CHECK-DONE
      STOP RUN.
+
+ PARSE-JSON.
+     COMPUTE WS-JSON-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-JSON TRAILING))
+     CALL "JSON-PARSE" USING JSON-DOC WS-JSON WS-JSON-LENGTH
+     MOVE 1 TO WS-NODE
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-POINTER.
+
+ RUN-LBV.
+     PERFORM PARSE-JSON
+     CALL "ENCH-LBV-TEXT" USING JSON-DOC WS-NODE WS-OUT WS-POINTER
+     MOVE WS-OUT TO TL-OBSERVED.
+
+ RUN-EFFECT.
+     PERFORM PARSE-JSON
+     CALL "ENCH-EFFECT-TEXT" USING JSON-DOC WS-NODE WS-OUT WS-POINTER WS-EFFECT-STATUS
+     MOVE WS-EFFECT-STATUS TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-OUT) " status " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED.
+
+ RUN-REQ.
+     PERFORM PARSE-JSON
+     MOVE "zombie" TO EC-VICTIM-KEY
+     CALL "ENCH-REQ-EVAL" USING JSON-DOC WS-NODE ENCH-CTX WS-REQ-RESULT
+     MOVE WS-REQ-RESULT TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED.
 
  FOLD.
      CALL "ENCH-FOLD" USING WS-ID WS-COMPONENT WS-LEVEL ENCH-CTX WS-START WS-RESULT WS-FOLD-STATUS

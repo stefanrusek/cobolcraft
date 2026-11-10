@@ -10,7 +10,7 @@
 *>     damage_source_properties (is_direct, tags of the damage type), entity_properties (this: type or "#" tag of the victim). Any other
 *>     term or predicate member does not match (documented assumption: a requirement this engine cannot decide does not apply)
 *>   ENCH-FOLD USING enchantment registry id, component key ("minecraft:damage", the namespace optional), level, ENCH-CTX, value in
-*>     (ten-thousandths), value out, status out (0 ok, 4 no such registry row, 5 the row is not JSON): folds the effects of the component in
+*>     (ten-thousandths), value out, status out (0 ok, 4 no such registry row; the loader keeps strict JSON only): folds the effects of the component in
 *>     list order, those whose requirements hold; a component the row does not define leaves the value unchanged
 
  IDENTIFICATION DIVISION.
@@ -41,6 +41,7 @@
  01 LS-NUM                 PIC X(16).
  01 LS-CHILD               BINARY-LONG.
  01 LS-COUNT               BINARY-LONG.
+ 01 LS-COUNT-EDIT          PIC Z(8)9.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
@@ -94,8 +95,8 @@
              MOVE 6 TO LS-KEY-LENGTH
              CALL "JSON-MEMBER" USING JSON-DOC L-NODE LS-KEY LS-KEY-LENGTH LS-MEMBER
              MOVE JN-COUNT(LS-MEMBER) TO LS-COUNT
-             MOVE LS-COUNT TO LS-NUM
-             STRING "lookup " FUNCTION TRIM(LS-NUM) " " DELIMITED BY SIZE INTO L-TEXT POINTER L-POINTER
+             MOVE LS-COUNT TO LS-COUNT-EDIT
+             STRING "lookup " FUNCTION TRIM(LS-COUNT-EDIT) " " DELIMITED BY SIZE INTO L-TEXT POINTER L-POINTER
              MOVE JN-FIRST(LS-MEMBER) TO LS-CHILD
              PERFORM UNTIL LS-CHILD = 0
                  CALL "ENCH-LBV-TEXT" USING JSON-DOC LS-CHILD L-TEXT L-POINTER
@@ -424,10 +425,6 @@
          GOBACK
      END-IF
      CALL "JSON-PARSE" USING JSON-DOC WS-AREA WS-LENGTH
-     IF JD-ERROR = 1
-         MOVE 5 TO L-STATUS
-         GOBACK
-     END-IF
      MOVE "effects" TO WS-NAME
      MOVE 7 TO WS-NAME-LENGTH
      MOVE 1 TO WS-NODE

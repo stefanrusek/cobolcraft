@@ -51,6 +51,9 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-HANDLE              BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-LONG-TICKS          BINARY-LONG VALUE 40.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-I                  BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  PROCEDURE DIVISION.
@@ -104,6 +107,7 @@
      STRING "state " FUNCTION TRIM(WS-E1) " damage " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "state 0 damage 1" TO TL-EXPECTED
      PERFORM CHECK
+     PERFORM CLEAR-DROPS
 
      MOVE "acceptance US14 the iron_axe strips an oak_log, keeping its axis, for 1 durability" TO TL-CASE
      MOVE "oak_log" TO WS-KEY
@@ -170,7 +174,114 @@
      MOVE SPACES TO TL-EXPECTED
      STRING "helmet " FUNCTION TRIM(WS-E1) " hand 0 ids 20x2" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
+     MOVE "acceptance US14 breaking dirt costs the held tool: sword 2, shears 1, mace 2, trident 2, pickaxe 1, axe 1, hoe 1" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "iron_sword" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "shears" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "mace" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "trident" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "iron_pickaxe" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "iron_axe" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "iron_hoe" TO WS-ITEM-KEY
+     PERFORM BREAK-WITH
+     MOVE "2 1 2 2 1 1 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US14 breaking dirt with an empty hand works and pays no durability" TO TL-CASE
+     MOVE 0 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     MOVE 4 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     MOVE "dirt" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 0 TO WS-ACTION
+     ADD 1 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-TICKS" USING WS-LONG-TICKS
+     MOVE 3 TO WS-ACTION
+     ADD 1 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block air" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM CLEAR-DROPS
+
+     MOVE "acceptance US14 a sword used on dirt is no block transformer: nothing changes" TO TL-CASE
+     MOVE "dirt" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE "iron_sword" TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ID TO PL-SLOT-ITEM(WS-ROWNO, 5)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROWNO, 5)
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-BLOCK
+     MOVE "block dirt" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US14 Use Item with a sword in hand wears nothing" TO TL-CASE
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     MOVE PL-SLOT-COUNT(WS-ROWNO, 5) TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "hand " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "hand 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US14 Use Item with a shield in hand puts it in the off-hand slot" TO TL-CASE
+     MOVE "shield" TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ID TO PL-SLOT-ITEM(WS-ROWNO, 5)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     IF MN-EQUIP-ITEM(WS-ROWNO, 5) = WS-ID
+         MOVE "offhand shield" TO TL-OBSERVED
+     ELSE
+         MOVE "offhand other" TO TL-OBSERVED
+     END-IF
+     MOVE "offhand shield" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
+
+*> Alice breaks dirt with the item of WS-ITEM-KEY (slot 4): its damage is appended to TL-OBSERVED.
+ BREAK-WITH.
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ID TO PL-SLOT-ITEM(WS-ROWNO, 5)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROWNO, 5)
+     MOVE 4 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT
+     MOVE "dirt" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 0 TO WS-ACTION
+     ADD 1 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-TICKS" USING WS-LONG-TICKS
+     MOVE 3 TO WS-ACTION
+     ADD 1 TO WS-SEQ
+     CALL "TEST-ACTION" USING WS-ALICE WS-ACTION WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE PL-SLOT-VAR(WS-ROWNO, 5) TO WS-HANDLE
+     CALL "SP-GET-DAMAGE" USING WS-ID WS-HANDLE WS-DAMAGE
+     MOVE WS-DAMAGE TO WS-E1
+     IF TL-OBSERVED = SPACES
+         STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     ELSE
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     PERFORM CLEAR-DROPS.
+
+*> The ground items that a break dropped are removed: the standard tables hold no loose-item entity type for their physics.
+ CLEAR-DROPS.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             MOVE 0 TO EN-USED(WS-I)
+         END-IF
+     END-PERFORM.
 
 *> Puts the block of the key (default state) at the target position; its block id in WS-BLOCK-ID.
  PUT-BLOCK.

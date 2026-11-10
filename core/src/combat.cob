@@ -495,10 +495,7 @@
      MOVE "minecraft:damage" TO WS-COMPONENT
      COMPUTE WS-START = WS-BASE * 10
      CALL "COMBAT-ENCHANT-SUM" USING WS-HANDLE WS-COMPONENT ENCH-CTX WS-START WS-SUM
-     COMPUTE WS-ENCHANT = (WS-SUM - WS-START) / 10
-     IF WS-ENCHANT < 0
-         MOVE 0 TO WS-ENCHANT
-     END-IF
+     COMPUTE WS-ENCHANT = FUNCTION MAX(0, (WS-SUM - WS-START) / 10)
      MOVE PL-SPRINTING(L-ROW) TO WS-SPRINTING
      MOVE 0 TO WS-FALL
      MOVE PL-ON-GROUND(L-ROW) TO WS-GROUND
@@ -538,12 +535,7 @@
      END-IF
 *>   The held tool wears (5.1): item_damage_per_attack 1 for a sword, mace, trident or spear, 2 for a pickaxe, axe, shovel or hoe.
      MOVE 0 TO WS-COST
-     MOVE SPACES TO WS-SHORT
-     IF WS-KEY(1:10) = "minecraft:"
-         MOVE WS-KEY(11:38) TO WS-SHORT
-     ELSE
-         MOVE WS-KEY TO WS-SHORT
-     END-IF
+     MOVE WS-KEY TO WS-SHORT
      COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-SHORT))
      IF WS-SHORT = "mace" OR "trident"
          MOVE 1 TO WS-COST
