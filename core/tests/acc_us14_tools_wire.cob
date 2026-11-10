@@ -55,6 +55,10 @@
  01 WS-LONG-TICKS          BINARY-LONG VALUE 40.
  01 WS-ITEM-KEY            PIC X(112).
  01 WS-I                  BINARY-LONG.
+ 01 WS-FX2                BINARY-LONG.
+ 01 WS-FY2                BINARY-LONG.
+ 01 WS-FZ2                BINARY-LONG.
+ 01 WS-FY3                BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  PROCEDURE DIVISION.
@@ -317,7 +321,73 @@
      PERFORM OBSERVE-ABOVE
      MOVE "above air" TO TL-EXPECTED
      PERFORM CHECK
+     MOVE "acceptance US14 flint_and_steel clicked on each face sets fire in the air block beside that face (down, north, south, west, east)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "flint_and_steel" TO WS-ITEM-KEY
+     PERFORM HOLD-ITEM
+     MOVE "stone" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 0 TO WS-FACE
+     PERFORM FACE-FIRE
+     MOVE 2 TO WS-FACE
+     PERFORM FACE-FIRE
+     MOVE 3 TO WS-FACE
+     PERFORM FACE-FIRE
+     MOVE 4 TO WS-FACE
+     PERFORM FACE-FIRE
+     MOVE 5 TO WS-FACE
+     PERFORM FACE-FIRE
+     MOVE "fire fire fire fire fire" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE 1 TO WS-FACE
+
+     MOVE "acceptance US14 Use Item with a window open (a menu) wears nothing" TO TL-CASE
+     MOVE "iron_helmet" TO WS-ITEM-KEY
+     PERFORM HOLD-ITEM
+     MOVE 1 TO MN-WINDOW(WS-ROWNO)
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     MOVE 0 TO MN-WINDOW(WS-ROWNO)
+     MOVE PL-SLOT-COUNT(WS-ROWNO, 5) TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "hand " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "hand 1" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
+
+*> Clicks the stone at the target position on the face WS-FACE; the air block beside that face gets a stone floor, then must hold fire (appended).
+ FACE-FIRE.
+     MOVE WS-X TO WS-FX2
+     MOVE WS-Y TO WS-FY2
+     MOVE WS-Z TO WS-FZ2
+     EVALUATE WS-FACE
+         WHEN 0
+             SUBTRACT 1 FROM WS-FY2
+         WHEN 2
+             SUBTRACT 1 FROM WS-FZ2
+         WHEN 3
+             ADD 1 TO WS-FZ2
+         WHEN 4
+             SUBTRACT 1 FROM WS-FX2
+         WHEN OTHER
+             ADD 1 TO WS-FX2
+     END-EVALUATE
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-ONE WS-FX2 WS-FY2 WS-FZ2 WS-STATE
+     MOVE "stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK-ID WS-BROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-BLOCK-ID WS-STATE WS-STATUS
+     COMPUTE WS-FY3 = WS-FY2 - 1
+     CALL "WORLD-SET-BLOCK" USING WS-ONE WS-FX2 WS-FY3 WS-FZ2 WS-STATE
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-BLOCK-AT" USING WS-FX2 WS-FY2 WS-FZ2 WS-STATE
+     IF TL-OBSERVED = SPACES
+         STRING FUNCTION TRIM(CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1)) DELIMITED BY SIZE INTO TL-OBSERVED
+     ELSE
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1)) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-ONE WS-FX2 WS-FY2 WS-FZ2 WS-STATE.
 
 *> The item of WS-ITEM-KEY, one of it, in slot 4 and held.
  HOLD-ITEM.
