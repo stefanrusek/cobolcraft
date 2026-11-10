@@ -1,0 +1,226 @@
+*> Acceptance test of docs/protocol/42-particles-6-emitters-blocks.md section 2 (Shared helper algorithms): the rules, table rows,
+*> formulas and worked cases of the section with the document's numbers; every float case compares
+*> the value times 100000 rounded. Draws are injected through the draw tables.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-6-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 W1                     FLOAT-LONG.
+ 01 W2                     FLOAT-LONG.
+ 01 W3                     FLOAT-LONG.
+ 01 W4                     FLOAT-LONG.
+ 01 W5                     FLOAT-LONG.
+ 01 W6                     FLOAT-LONG.
+ 01 W7                     FLOAT-LONG.
+ 01 W8                     FLOAT-LONG.
+ 01 I1                     BINARY-LONG.
+ 01 I2                     BINARY-LONG.
+ 01 I3                     BINARY-LONG.
+ 01 I4                     BINARY-LONG.
+ 01 I5                     BINARY-LONG.
+ 01 B1                     BINARY-DOUBLE.
+ 01 T1                     PIC X(80).
+ 01 Z1                     FLOAT-LONG VALUE 0.
+ 01 Z2                     FLOAT-LONG VALUE 0.
+ 01 Z3                     FLOAT-LONG VALUE 0.
+ 01 Z4                     FLOAT-LONG VALUE 0.
+ 01 Z5                     FLOAT-LONG VALUE 0.
+ 01 Z6                     FLOAT-LONG VALUE 0.
+ 01 WS-P.
+    05 WS-PP               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-U.
+    05 WS-UU               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-OUT.
+    05 WS-O                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-VEL.
+    05 WS-V                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-S.
+    05 WS-SS               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-G.
+    05 WS-GG               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-NAME8              PIC X(8).
+ 01 WS-F1                 BINARY-LONG.
+ 01 WS-F2                 BINARY-LONG.
+ 01 WS-FACE               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 10 TO WS-PP(1)
+     MOVE 64 TO WS-PP(2)
+     MOVE -3 TO WS-PP(3)
+     MOVE 0.3 TO W1
+     MOVE 0.7 TO W2
+     CALL "P4-SPAWN-BELOW-INT" USING WS-P W1 W2 WS-OUT
+     MOVE "2.1 spawnParticleBelow: x + rd" TO WS-NAME
+     MOVE 1030000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 spawnParticleBelow: y - 0.05" TO WS-NAME
+     MOVE 6395000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 spawnParticleBelow: z + rd (x draw first)" TO WS-NAME
+     MOVE -230000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(3)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0.75 TO WS-UU(1)
+     MOVE 0.5 TO WS-UU(2)
+     MOVE 0.25 TO WS-UU(3)
+     CALL "P6-RANDOM-SPEED" USING WS-U WS-S
+     MOVE "2.1 randomSpeedRanges x = rd - 0.5" TO WS-NAME
+     MOVE 25000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-SS(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 randomSpeedRanges y" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-SS(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 randomSpeedRanges z" TO WS-NAME
+     MOVE -25000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-SS(3)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-FACE
+     MOVE 0.55 TO W3
+     CALL "P5-FACE-POS" USING WS-P WS-FACE W3 WS-S WS-U WS-OUT WS-VEL
+     MOVE "2.1 spawnParticleOnFace: the face axis is centre + step * 0.55 (UP y)" TO WS-NAME
+     MOVE 6505000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 the free axis x is centre + (rd - 0.5)" TO WS-NAME
+     MOVE 1075000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 velocity on the free axis x is the speed draw - 0.5 (0.25 gives -0.25)" TO WS-NAME
+     MOVE -25000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 velocity on the face axis is 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-FACE
+     CALL "P6-DIRECTION-PICK" USING W1 WS-FACE
+     MOVE "2.2 Direction.getRandom: draw 0.3 gives index 1 (UP)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO W1
+     CALL "P6-DIRECTION-PICK" USING W1 WS-FACE
+     MOVE "2.2 draw 0.5 gives index 3 (SOUTH)" TO WS-NAME
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE
+     PERFORM ASSERT-NUMBER
+     MOVE 0.999 TO W1
+     CALL "P6-DIRECTION-PICK" USING W1 WS-FACE
+     MOVE "2.2 the largest draw gives index 5" TO WS-NAME
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-FACE
+     CALL "P6-DIRECTION-NAME" USING WS-FACE WS-NAME8
+     MOVE "2.1 Direction.values() order: DOWN first" TO WS-NAME
+     MOVE "down" TO TL-EXPECTED
+     MOVE WS-NAME8 TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 3 TO WS-FACE
+     CALL "P6-DIRECTION-NAME" USING WS-FACE WS-NAME8
+     MOVE "2.1 the fourth direction is south" TO WS-NAME
+     MOVE "south" TO TL-EXPECTED
+     MOVE WS-NAME8 TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 5 TO WS-FACE
+     CALL "P6-DIRECTION-NAME" USING WS-FACE WS-NAME8
+     MOVE "2.1 the last direction is east" TO WS-NAME
+     MOVE "east" TO TL-EXPECTED
+     MOVE WS-NAME8 TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 9 TO WS-FACE
+     CALL "P6-DIRECTION-NAME" USING WS-FACE WS-NAME8
+     MOVE "2.1 an index out of range has no name" TO WS-NAME
+     MOVE "        " TO TL-EXPECTED
+     MOVE WS-NAME8 TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 1 TO WS-GG(1)
+     MOVE 2 TO WS-GG(2)
+     MOVE -1 TO WS-GG(3)
+     MOVE 0.5 TO WS-UU(1)
+     MOVE 0.5 TO WS-UU(2)
+     MOVE 0.5 TO WS-UU(3)
+     MOVE 0.3 TO W1
+     MOVE 1.0 TO W2
+     MOVE 1 TO WS-F1
+     MOVE 0 TO WS-F2
+     CALL "P4-SPAWN-PARTICLE" USING WS-P W1 W2 WS-F1 WS-F2 WS-G WS-U WS-OUT WS-VEL I1
+     MOVE "2.1 spawnParticles: an emission with a free floor" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 spawnParticles: velocity = gaussian * 0.02" TO WS-NAME
+     MOVE 4000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 spawnParticles: y = Y + rd * height" TO WS-NAME
+     MOVE 6450000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-F1
+     MOVE 1 TO WS-F2
+     CALL "P4-SPAWN-PARTICLE" USING WS-P W1 W2 WS-F1 WS-F2 WS-G WS-U WS-OUT WS-VEL I1
+     MOVE "2.1 ignoreFloor false with air below skips the particle" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO I2
+     MOVE 0.5 TO W3
+     CALL "P4-IN-BLOCK-EXTENT" USING I2 W3 W4
+     MOVE "2.1 spawnParticleInBlock: height 1 for an air block" TO WS-NAME
+     MOVE 100000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO I2
+     CALL "P4-IN-BLOCK-EXTENT" USING I2 W3 W4
+     MOVE "2.1 spawnParticleInBlock: the shape max y otherwise" TO WS-NAME
+     MOVE 50000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0.75 TO WS-UU(1)
+     MOVE 0.25 TO WS-UU(2)
+     MOVE 0.5 TO WS-UU(3)
+     MOVE 0 TO WS-FACE
+     MOVE 0.125 TO W2
+     MOVE 0.75 TO W3
+     CALL "P4-AXIS-PARTICLE" USING WS-P WS-FACE W2 WS-U W3 WS-OUT WS-VEL
+     MOVE "2.1 spawnParticlesAlongAxis: the axis coordinate uses 0.5 (x)" TO WS-NAME
+     MOVE 1075000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 the other axes use the spread (y)" TO WS-NAME
+     MOVE 6443750 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "2.1 only the chosen axis has a velocity" TO WS-NAME
+     MOVE 50000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§2 Shared helper algorithms: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§2 Shared helper algorithms: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-6-2.
