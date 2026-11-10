@@ -6,6 +6,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-S                   FLOAT-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-CNT                 BINARY-LONG.
+ 01 WS-NAMES.
+    05 WS-NM                PIC X(24) OCCURS 8 TIMES.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-LAYER                PIC X(32).
@@ -43,6 +47,42 @@
              CALL "EF6-M-SULFUR-CUBE-SMALL" USING EMM-MODEL
          WHEN "SULFUR_CUBE_SMALL_INNER"
              CALL "EF6-M-SULFUR-CUBE-SMALL-INNER" USING EMM-MODEL
+         WHEN "WARDEN"
+             CALL "EF6-M-WARDEN" USING EMM-MODEL
+         WHEN "WARDEN_BIOLUMINESCENT"
+             CALL "EF6-M-WARDEN" USING EMM-MODEL
+             MOVE "head" TO WS-NM(1)
+             MOVE "left_arm" TO WS-NM(2)
+             MOVE "right_arm" TO WS-NM(3)
+             MOVE "left_leg" TO WS-NM(4)
+             MOVE "right_leg" TO WS-NM(5)
+             MOVE 5 TO WS-CNT
+             MOVE 1 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "WARDEN_PULSATING_SPOTS"
+             CALL "EF6-M-WARDEN" USING EMM-MODEL
+             MOVE "body" TO WS-NM(1)
+             MOVE "head" TO WS-NM(2)
+             MOVE "left_arm" TO WS-NM(3)
+             MOVE "right_arm" TO WS-NM(4)
+             MOVE "left_leg" TO WS-NM(5)
+             MOVE "right_leg" TO WS-NM(6)
+             MOVE 6 TO WS-CNT
+             MOVE 1 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "WARDEN_TENDRILS"
+             CALL "EF6-M-WARDEN" USING EMM-MODEL
+             MOVE "left_tendril" TO WS-NM(1)
+             MOVE "right_tendril" TO WS-NM(2)
+             MOVE 2 TO WS-CNT
+             MOVE 1 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "WARDEN_HEART"
+             CALL "EF6-M-WARDEN" USING EMM-MODEL
+             MOVE "body" TO WS-NM(1)
+             MOVE 1 TO WS-CNT
+             MOVE 1 TO WS-MODE
+             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE

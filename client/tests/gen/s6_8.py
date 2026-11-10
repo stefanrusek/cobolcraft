@@ -147,9 +147,10 @@ extra+=prog('EF6-WARDEN-POSE','''     MOVE L-I(3) TO L-O(1)
      MOVE L-I(5) TO L-O(3)
      MOVE L-I(6) TO L-O(4)
      IF L-I(1) >= 1 AND L-I(1) <= 4
-         MOVE L-I(2) TO L-O(L-I(1))
+         COMPUTE WS-IDX = L-I(1)
+         MOVE L-I(2) TO L-O(WS-IDX)
      END-IF
-''')
+''',' 01 WS-IDX                 BINARY-LONG.\n')
 extra+=r''' IDENTIFICATION DIVISION.
  PROGRAM-ID. EF6-WARDEN-TEXTURE.
  DATA DIVISION.
