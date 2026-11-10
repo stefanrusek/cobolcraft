@@ -404,6 +404,7 @@
  01 WS-S                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-INDEX                BINARY-LONG.
@@ -448,8 +449,10 @@
                          COMPUTE WS-SLOT = WS-S - 1
                          MOVE "Slot" TO WN MOVE 4 TO WL
                          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-SLOT
+                         CALL "KX-PATCH-KEEP" USING BE-SLOT-VAR(L-INDEX, WS-S) WS-KP
                          CALL "PNBT-STACK-WRITE" USING PB-BUFFER BE-SLOT-ITEM(L-INDEX, WS-S)
-                             BE-SLOT-COUNT(L-INDEX, WS-S) BE-SLOT-VAR(L-INDEX, WS-S)
+                             BE-SLOT-COUNT(L-INDEX, WS-S) WS-KP
+                         CALL "KX-PATCH-FREE" USING WS-KP
                          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
                      END-IF
                  END-PERFORM
@@ -500,6 +503,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-ICOUNT              BINARY-LONG.
  01 WS-KP                  BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
  01 WS-LOOT-SEEN           BINARY-LONG.
  01 WS-CAP48               BINARY-LONG VALUE 48.
  01 WS-CAP64               BINARY-LONG VALUE 64.
@@ -556,13 +560,13 @@
                  CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ET WS-COUNT
                  PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
                      CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-ICOUNT WS-KP
+                     CALL "KX-PATCH-TAKE" USING WS-KP WS-HANDLE
+                     CALL "KX-PATCH-FREE" USING WS-KP
                      IF WS-SLOT >= 0 AND WS-SLOT <= 26 AND WS-ITEM > 0 AND WS-ICOUNT > 0
                          COMPUTE WS-S = WS-SLOT + 1
                          MOVE WS-ITEM TO WS-T-ITEM(WS-S)
                          MOVE WS-ICOUNT TO WS-T-COUNT(WS-S)
-                         MOVE WS-KP TO WS-T-VAR(WS-S)
-                     ELSE
-                         CALL "KX-PATCH-FREE" USING WS-KP
+                         MOVE WS-HANDLE TO WS-T-VAR(WS-S)
                      END-IF
                  END-PERFORM
              WHEN OTHER
@@ -575,8 +579,6 @@
              MOVE WS-T-ITEM(WS-S) TO BE-SLOT-ITEM(L-INDEX, WS-S)
              MOVE WS-T-COUNT(WS-S) TO BE-SLOT-COUNT(L-INDEX, WS-S)
              MOVE WS-T-VAR(WS-S) TO BE-SLOT-VAR(L-INDEX, WS-S)
-         ELSE
-             CALL "KX-PATCH-FREE" USING WS-T-VAR(WS-S)
          END-IF
      END-PERFORM
      GOBACK.

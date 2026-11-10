@@ -4,9 +4,9 @@
 *> custom name (plain text), BE-LOCK the item key of the lock predicate, BE-LOOT/BE-SEED the loot table and its seed.
 *> BE-OPEN-* is the opener counter (section 8.2; the range in thousandths of a block), BE-STATUS/BE-PROGRESS the shulker box
 *> animation (section 13), BE-LID/BE-LID-OLD/BE-SHOULD-OPEN the lid controller of the chest and ender chest (section 10.3).
- 78 BE-MAX                VALUE 64.
+ 78 BE-MAX                VALUE 512.
  01 CORE-BE EXTERNAL.
-    05 BE-ENTRY OCCURS 64 TIMES.
+    05 BE-ENTRY OCCURS 512 TIMES.
        10 BE-USED           BINARY-LONG.
        10 BE-DIM            BINARY-LONG.
        10 BE-X              BINARY-LONG.
@@ -34,3 +34,11 @@
           15 BE-SLOT-ITEM   BINARY-LONG.
           15 BE-SLOT-COUNT  BINARY-LONG.
           15 BE-SLOT-VAR    BINARY-LONG.
+*> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
+*> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
+ 78 ENDER-MAX             VALUE 64.
+ 01 CORE-ENDER EXTERNAL.
+    05 ENDER-ENTRY OCCURS 64 TIMES.
+       10 ENDER-USED        BINARY-LONG.
+       10 ENDER-UUID        PIC X(16).
+       10 ENDER-BE          BINARY-LONG.
