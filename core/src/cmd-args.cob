@@ -6,9 +6,10 @@
 *>   BX-LIT USING name, index out: the same for a literal node of the context
 *>   BX-STRING USING index, text out (PIC X(1024)), length out: the argument as a string: its text in the line, unquoted when it
 *>     was quoted (a word, phrase or greedy string)
-*>   BX-RESOLVE USING index, rows out (BX-ROWS group: BX-COUNT, BX-ROW(1 to 64) player rows): the players an entity argument
-*>     selects for the source BR-SRC (15 §7.6 over the player table; the entities that are not players are not looked for), cut to
-*>     the limit and ordered; none selected raises argument.entity.notfound.player (the argument is a players argument) or
+*>   BX-RESOLVE USING index, rows out (BX-ROWS group: BX-COUNT, BX-ROW(1 to 64): a player row, or the negated row of CORE-ENTITIES for
+*>     an entity that is not a player: a mob or a ground item): the entities an entity argument selects for the source BR-SRC (15 §7.6
+*>     over the player table and CORE-ENTITIES; @e and @n and a type= that names no player look at the entities, an argument of
+*>     players only never gets one), cut to the limit and ordered; none selected raises argument.entity.notfound.player (the argument is a players argument) or
 *>     argument.entity.notfound.entity and sets BR-R-FAILED. A selector that uses nbt, scores, advancements or predicate raises
 *>     cobolcraft.selector.unsupported with the option name and sets BR-R-FAILED (BLOCKED: no entity data, scoreboard, advancement
 *>     or predicate store exists)
@@ -81,6 +82,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CITEMS.
  COPY BRIGADIER.
  COPY BRSEL.
  COPY BRRUN.
@@ -119,6 +121,10 @@
  01 WS-YAW                 FLOAT-LONG.
  01 WS-PLAYER-KEY          PIC X(16) VALUE "minecraft:player".
  01 WS-DEFAULT-NS          PIC X(10) VALUE "minecraft:".
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ET                  BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-TALL                FLOAT-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-ROWS.
@@ -374,6 +380,147 @@
          MOVE 0 TO WS-OK
      END-IF.
 
+*> WS-OK 0 when the entity WS-ENTITY (a mob or a ground item, alive) fails an option: the distance and the box over its size, a type,
+*> a name (an entity has none: a positive name fails), no team and no tag as for a player, the rotations.
+ TEST-ENTITY.
+     MOVE 1 TO WS-OK
+     IF EN-TYPE(WS-ENTITY) >= 0 AND EN-HEALTH(WS-ENTITY) <= 0 AND EN-TYPE(WS-ENTITY) NOT = CR-LOOSE-ITEM
+         MOVE 0 TO WS-OK
+     END-IF
+     COMPUTE WS-ET = EN-TYPE(WS-ENTITY) + 1
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-ET) / 2000
+     COMPUTE WS-TALL = ET-HEIGHT-MILLI(WS-ET) / 1000
+     IF WS-OK = 1 AND SL-DIST-AUX > 0
+         COMPUTE WS-DX = EN-X(WS-ENTITY) - WS-ORIGIN-X
+         COMPUTE WS-DY = EN-Y(WS-ENTITY) - WS-ORIGIN-Y
+         COMPUTE WS-DZ = EN-Z(WS-ENTITY) - WS-ORIGIN-Z
+         COMPUTE WS-DIST = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+         IF (SL-DIST-AUX = 1 OR SL-DIST-AUX = 3) AND WS-DIST < SL-DIST-MIN * SL-DIST-MIN
+             MOVE 0 TO WS-OK
+         END-IF
+         IF (SL-DIST-AUX = 2 OR SL-DIST-AUX = 3) AND WS-DIST > SL-DIST-MAX * SL-DIST-MAX
+             MOVE 0 TO WS-OK
+         END-IF
+     END-IF
+     IF WS-OK = 1 AND WS-HAS-BOX = 1
+         PERFORM TEST-ENTITY-BOX
+     END-IF
+     IF WS-OK = 1 AND SL-NAME-COUNT > 0
+         PERFORM TEST-ENTITY-NAMES
+     END-IF
+     IF WS-OK = 1 AND SL-TEAM-COUNT > 0
+         PERFORM TEST-TEAMS
+     END-IF
+     IF WS-OK = 1 AND SL-TAG-COUNT > 0
+         PERFORM TEST-TAGS
+     END-IF
+     IF WS-OK = 1 AND SL-TYPE-COUNT > 0
+         PERFORM TEST-ENTITY-TYPES
+     END-IF
+     IF WS-OK = 1 AND SL-XROT-AUX > 0
+         PERFORM TEST-ENTITY-XROT
+     END-IF
+     IF WS-OK = 1 AND SL-YROT-AUX > 0
+         PERFORM TEST-ENTITY-YROT
+     END-IF.
+
+ TEST-ENTITY-BOX.
+     MOVE 0 TO WS-DX
+     IF SL-HAS-POS(4) = 1
+         MOVE SL-POS(4) TO WS-DX
+     END-IF
+     IF WS-DX < 0
+         COMPUTE WS-LO = WS-ORIGIN-X + WS-DX
+         COMPUTE WS-HI = WS-ORIGIN-X + 1
+     ELSE
+         COMPUTE WS-LO = WS-ORIGIN-X
+         COMPUTE WS-HI = WS-ORIGIN-X + WS-DX + 1
+     END-IF
+     IF EN-X(WS-ENTITY) + WS-HALF <= WS-LO OR EN-X(WS-ENTITY) - WS-HALF >= WS-HI
+         MOVE 0 TO WS-OK
+     END-IF
+     MOVE 0 TO WS-DY
+     IF SL-HAS-POS(5) = 1
+         MOVE SL-POS(5) TO WS-DY
+     END-IF
+     IF WS-DY < 0
+         COMPUTE WS-LO = WS-ORIGIN-Y + WS-DY
+         COMPUTE WS-HI = WS-ORIGIN-Y + 1
+     ELSE
+         COMPUTE WS-LO = WS-ORIGIN-Y
+         COMPUTE WS-HI = WS-ORIGIN-Y + WS-DY + 1
+     END-IF
+     IF EN-Y(WS-ENTITY) + WS-TALL <= WS-LO OR EN-Y(WS-ENTITY) >= WS-HI
+         MOVE 0 TO WS-OK
+     END-IF
+     MOVE 0 TO WS-DZ
+     IF SL-HAS-POS(6) = 1
+         MOVE SL-POS(6) TO WS-DZ
+     END-IF
+     IF WS-DZ < 0
+         COMPUTE WS-LO = WS-ORIGIN-Z + WS-DZ
+         COMPUTE WS-HI = WS-ORIGIN-Z + 1
+     ELSE
+         COMPUTE WS-LO = WS-ORIGIN-Z
+         COMPUTE WS-HI = WS-ORIGIN-Z + WS-DZ + 1
+     END-IF
+     IF EN-Z(WS-ENTITY) + WS-HALF <= WS-LO OR EN-Z(WS-ENTITY) - WS-HALF >= WS-HI
+         MOVE 0 TO WS-OK
+     END-IF.
+
+*> An entity has no name: a positive name= fails, a negated one passes.
+ TEST-ENTITY-NAMES.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-NAME-COUNT
+         IF SL-NAME-NEG(WS-I) = 0
+             MOVE 0 TO WS-OK
+         END-IF
+     END-PERFORM.
+
+*> type=: the entity's type key must be one of the positive types, and none of the negated.
+ TEST-ENTITY-TYPES.
+     MOVE 0 TO WS-ANY-POSITIVE WS-MATCHED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-TYPE-COUNT
+         MOVE 0 TO WS-N
+         IF SL-TYPE-TAG(WS-I) = 0 AND SL-TYPE-LENGTH(WS-I) = ET-KEY-LENGTH(WS-ET)
+                 AND SL-TYPE-TEXT(WS-I)(1:ET-KEY-LENGTH(WS-ET)) = ET-KEY(WS-ET)(1:ET-KEY-LENGTH(WS-ET))
+             MOVE 1 TO WS-N
+         END-IF
+         IF SL-TYPE-NEG(WS-I) = 1
+             IF WS-N = 1
+                 MOVE 0 TO WS-OK
+             END-IF
+         ELSE
+             MOVE 1 TO WS-ANY-POSITIVE
+             IF WS-N = 1
+                 MOVE 1 TO WS-MATCHED
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-ANY-POSITIVE = 1 AND WS-MATCHED = 0
+         MOVE 0 TO WS-OK
+     END-IF.
+
+ TEST-ENTITY-XROT.
+     IF (SL-XROT-AUX = 1 OR SL-XROT-AUX = 3) AND EN-PITCH(WS-ENTITY) < SL-XROT-MIN
+         MOVE 0 TO WS-OK
+     END-IF
+     IF (SL-XROT-AUX = 2 OR SL-XROT-AUX = 3) AND EN-PITCH(WS-ENTITY) > SL-XROT-MAX
+         MOVE 0 TO WS-OK
+     END-IF.
+
+ TEST-ENTITY-YROT.
+     COMPUTE WS-YAW = FUNCTION MOD(EN-YAW(WS-ENTITY) + 180, 360)
+     IF WS-YAW < 0
+         ADD 360 TO WS-YAW
+     END-IF
+     COMPUTE WS-YAW = WS-YAW - 180
+     IF (SL-YROT-AUX = 1 OR SL-YROT-AUX = 3) AND WS-YAW < SL-YROT-MIN
+         MOVE 0 TO WS-OK
+     END-IF
+     IF (SL-YROT-AUX = 2 OR SL-YROT-AUX = 3) AND WS-YAW > SL-YROT-MAX
+         MOVE 0 TO WS-OK
+     END-IF.
+
 *> The players that pass the type and the options, ordered and cut to the limit.
  COLLECT.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > 64
@@ -399,6 +546,28 @@
              COMPUTE WS-D(BX-COUNT) = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
          END-IF
      END-PERFORM
+     IF SL-INCLUDES-ENTITIES = 1 AND (SL-TYPE = 5 OR SL-TYPE = 6)
+         PERFORM VARYING WS-ENTITY FROM 1 BY 1 UNTIL WS-ENTITY > EN-COUNT
+             MOVE 0 TO WS-OK
+             IF EN-USED(WS-ENTITY) = 1 AND EN-PLAYER(WS-ENTITY) = 0 AND BX-COUNT < 64
+                 MOVE 1 TO WS-OK
+                 IF SL-WORLD-LIMITED = 1 AND EN-DIM(WS-ENTITY) NOT = BS-DIM
+                     MOVE 0 TO WS-OK
+                 END-IF
+                 IF WS-OK = 1
+                     PERFORM TEST-ENTITY
+                 END-IF
+             END-IF
+             IF WS-OK = 1
+                 ADD 1 TO BX-COUNT
+                 COMPUTE BX-ROW(BX-COUNT) = 0 - WS-ENTITY
+                 COMPUTE WS-DX = EN-X(WS-ENTITY) - WS-ORIGIN-X
+                 COMPUTE WS-DY = EN-Y(WS-ENTITY) - WS-ORIGIN-Y
+                 COMPUTE WS-DZ = EN-Z(WS-ENTITY) - WS-ORIGIN-Z
+                 COMPUTE WS-D(BX-COUNT) = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+             END-IF
+         END-PERFORM
+     END-IF
      MOVE SL-SORT TO WS-SORT
      IF SL-TYPE = 1 OR SL-TYPE = 6
          MOVE 1 TO WS-SORT
@@ -477,7 +646,7 @@
          MOVE "argument.entity.notfound.entity" TO WS-KEY
          MOVE BA-NODE(L-INDEX) TO WS-NODE
          COMPUTE WS-N = BR-N-FLAGS(WS-NODE) / BR-F-PLAYERS
-         IF FUNCTION MOD(WS-N, 2) = 1 OR SL-INCLUDES-ENTITIES = 0
+         IF FUNCTION MOD(WS-N, 2) = 1
              MOVE "argument.entity.notfound.player" TO WS-KEY
          END-IF
          MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
@@ -624,15 +793,14 @@
  END PROGRAM BX-MESSAGE.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BX-TARGETS-OR-SELF.
-*> USING name (PIC X(32), space padded), rows out (BX-ROWS group as BX-RESOLVE): the players of the optional entity argument of that
-*> name; when the context has none they are the source itself, which must be a player (the console raises
-*> permissions.requires.player and BR-R-FAILED is set)
+ PROGRAM-ID. BX-TARGETS-OR-SELF-KEY.
+*> USING name (PIC X(32), space padded), rows out (BX-ROWS group as BX-RESOLVE), key (PIC X(48)): the players of the optional entity
+*> argument of that name; when the context has none they are the source itself, which must be a player (the console raises the
+*> exception key, permissions.requires.player or permissions.requires.entity, and BR-R-FAILED is set)
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRRUN.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-KEY                 PIC X(48) VALUE "permissions.requires.player".
  01 WS-A1                  PIC X(64).
  01 WS-A2                  PIC X(64).
  01 WS-N-ARGS              BINARY-LONG VALUE 0.
@@ -644,7 +812,8 @@
  01 L-ROWS.
     05 BX-COUNT             BINARY-LONG.
     05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
- PROCEDURE DIVISION USING L-NAME L-ROWS.
+ 01 L-KEY                  PIC X(48).
+ PROCEDURE DIVISION USING L-NAME L-ROWS L-KEY.
      MOVE 0 TO BX-COUNT
      CALL "BX-FIND" USING L-NAME WS-INDEX
      EVALUATE TRUE
@@ -652,12 +821,29 @@
              CALL "BX-RESOLVE" USING WS-INDEX L-ROWS
          WHEN BS-ROW = 0
              MOVE SPACES TO WS-A1 WS-A2
-             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             CALL "BR-RAISE" USING L-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
              MOVE 1 TO BR-R-FAILED
          WHEN OTHER
              MOVE 1 TO BX-COUNT
              MOVE BS-ROW TO BX-ROW(1)
      END-EVALUATE
+     GOBACK.
+ END PROGRAM BX-TARGETS-OR-SELF-KEY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BX-TARGETS-OR-SELF.
+*> USING name (PIC X(32), space padded), rows out (BX-ROWS group as BX-RESOLVE): BX-TARGETS-OR-SELF-KEY with
+*> permissions.requires.player
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(48) VALUE "permissions.requires.player".
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(32).
+ 01 L-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-NAME L-ROWS.
+     CALL "BX-TARGETS-OR-SELF-KEY" USING L-NAME L-ROWS WS-KEY
      GOBACK.
  END PROGRAM BX-TARGETS-OR-SELF.
 
@@ -758,3 +944,56 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BX-ROW-OF-UUID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BX-LOOK.
+*> USING from x, y, z, to x, y, z (FLOAT-LONG), yaw out, pitch out (FLOAT-SHORT): the rotation that looks from one point at the other
+*> (yaw = atan2(dz, dx) - 90 degrees wrapped to -180 up to 180, pitch = -atan2(dy, horizontal distance); 15 §8.6, Entity.lookAt)
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-PI                  FLOAT-LONG VALUE 3.14159265358979.
+ LINKAGE SECTION.
+ 01 L-FX                   FLOAT-LONG.
+ 01 L-FY                   FLOAT-LONG.
+ 01 L-FZ                   FLOAT-LONG.
+ 01 L-TX                   FLOAT-LONG.
+ 01 L-TY                   FLOAT-LONG.
+ 01 L-TZ                   FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-FX L-FY L-FZ L-TX L-TY L-TZ L-YAW L-PITCH.
+     COMPUTE WS-DX = L-TX - L-FX
+     COMPUTE WS-DY = L-TY - L-FY
+     COMPUTE WS-DZ = L-TZ - L-FZ
+     COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     EVALUATE TRUE
+         WHEN WS-DX = 0 AND WS-DZ > 0
+             MOVE 90 TO WS-A
+         WHEN WS-DX = 0 AND WS-DZ < 0
+             MOVE -90 TO WS-A
+         WHEN WS-DX = 0
+             MOVE 0 TO WS-A
+         WHEN OTHER
+             COMPUTE WS-A = FUNCTION ATAN(WS-DZ / WS-DX) * 180 / WS-PI
+             IF WS-DX < 0
+                 ADD 180 TO WS-A
+             END-IF
+     END-EVALUATE
+     COMPUTE L-YAW = FUNCTION MOD(WS-A - 90 + 180, 360) - 180
+     EVALUATE TRUE
+         WHEN WS-H = 0 AND WS-DY > 0
+             MOVE -90 TO L-PITCH
+         WHEN WS-H = 0 AND WS-DY < 0
+             MOVE 90 TO L-PITCH
+         WHEN WS-H = 0
+             MOVE 0 TO L-PITCH
+         WHEN OTHER
+             COMPUTE L-PITCH = 0 - FUNCTION ATAN(WS-DY / WS-H) * 180 / WS-PI
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BX-LOOK.

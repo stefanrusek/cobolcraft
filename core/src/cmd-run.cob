@@ -124,6 +124,16 @@
              CALL "CX-BANLIST"
          WHEN BC-KICK
              CALL "CX-KICK"
+         WHEN BC-GIVE
+             CALL "CX-GIVE"
+         WHEN BC-TELEPORT
+             CALL "CX-TELEPORT"
+         WHEN BC-SUMMON
+             CALL "CX-SUMMON"
+         WHEN BC-KILL
+             CALL "CX-KILL"
+         WHEN BC-CLEAR
+             CALL "CX-CLEAR"
          WHEN BC-WHITELIST
              CALL "CX-WHITELIST"
          WHEN BC-STOP

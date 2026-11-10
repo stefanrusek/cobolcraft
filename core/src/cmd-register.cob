@@ -10,7 +10,7 @@
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
 *>   blockstate, blockpred, item, itempred, component, style, message, nbt (compound), nbttag, nbtpath; objective, criteria,
 *>   operation, particle, team, slot, slots, resloc, function, anchor, intrange, floatrange, dimension, gamemode, uuid,
-*>   hexcolor, teamcolor; time (min ticks).
+*>   hexcolor, teamcolor; time (min ticks); entitytype (a resource of the registry minecraft:entity_type).
 *>
 *> Entry points:
 *>   BR-REG USING level (of the first word), command id, line (PIC X(256)): adds the nodes and sets the command of the last
@@ -46,6 +46,7 @@
  01 WS-SUGGEST             BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG.
  01 WS-STRING-KIND         BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(40).
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-LEVEL                BINARY-LONG.
@@ -135,12 +136,17 @@
          MOVE WS-SUGGEST TO BR-N-SUGGEST(WS-NODE)
          MOVE WS-FLAGS TO BR-N-FLAGS(WS-NODE)
          MOVE WS-STRING-KIND TO BR-N-STRING-KIND(WS-NODE)
+         IF WS-REGISTRY NOT = SPACES
+             MOVE WS-REGISTRY TO BR-N-REG(WS-NODE)
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-REGISTRY TRAILING)) TO BR-N-REG-LENGTH(WS-NODE)
+         END-IF
          PERFORM SET-LIMITS
      END-IF.
 
 *> The parser id, selector flags and string kind of the type word.
  TYPE-OF.
      MOVE 0 TO WS-FLAGS WS-STRING-KIND
+     MOVE SPACES TO WS-REGISTRY
      EVALUATE WS-TYPE-NAME
          WHEN "bool"        MOVE BR-P-BOOL TO WS-TYPE-ID
          WHEN "int"         MOVE BR-P-INTEGER TO WS-TYPE-ID
@@ -203,6 +209,9 @@
          WHEN "uuid"        MOVE BR-P-UUID TO WS-TYPE-ID
          WHEN "hexcolor"    MOVE BR-P-HEX-COLOR TO WS-TYPE-ID
          WHEN "teamcolor"   MOVE BR-P-TEAM-COLOR TO WS-TYPE-ID
+         WHEN "entitytype"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:entity_type" TO WS-REGISTRY
          WHEN OTHER         MOVE BR-P-TIME TO WS-TYPE-ID
      END-EVALUATE.
 

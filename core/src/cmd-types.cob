@@ -213,6 +213,20 @@ END PROGRAM BR-SLOT-LOOKUP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
+ COPY CONTENT.
+ 01 WS-REG-KEY             PIC X(112).
+ 01 WS-REG-COUNT           BINARY-LONG.
+ 01 WS-REG-STATUS          BINARY-LONG.
+ 01 WS-REG-ID              BINARY-LONG.
+ 01 WS-REG-ENTRY           PIC X(112).
+ 01 WS-REG-ENTRY-LENGTH    BINARY-LONG.
+ 01 WS-REG-PAYLOAD         PIC X.
+ 01 WS-REG-CAPACITY        BINARY-LONG VALUE 0.
+ 01 WS-REG-PAYLOAD-LENGTH  BINARY-LONG.
+ 01 WS-REG-WANT            PIC X(112).
+ 01 WS-REG-WANT-LENGTH     BINARY-LONG.
+ 01 WS-REG-FOUND           BINARY-LONG.
+ 01 WS-REG-HAS-COLON       BINARY-LONG.
  01 WS-LISTS.
     05 WS-L-GAMEMODE        PIC X(400) VALUE "survival creative adventure spectator".
     05 WS-L-ANCHOR          PIC X(400) VALUE "feet eyes".
@@ -631,7 +645,64 @@ END PROGRAM BR-SLOT-LOOKUP.
      IF BR-N-TYPE(L-NODE) = BR-P-RES-SELECTOR
          MOVE 2 TO WS-ID-FLAGS
      END-IF
-     CALL "BR-READ-ID" USING WS-ID-FLAGS WS-ID-START WS-ID-LENGTH.
+     CALL "BR-READ-ID" USING WS-ID-FLAGS WS-ID-START WS-ID-LENGTH
+     IF BR-E-KEY = SPACES AND BR-N-REG-LENGTH(L-NODE) > 0 AND (BR-N-TYPE(L-NODE) = BR-P-RESOURCE
+             OR BR-N-TYPE(L-NODE) = BR-P-RES-OR-TAG OR BR-N-TYPE(L-NODE) = BR-P-RES-OR-TAG-KEY)
+             AND NOT (WS-ID-START > 0 AND BR-IN-TEXT(WS-ID-START:1) = "#")
+         PERFORM CHECK-REGISTRY
+     END-IF.
+
+*> The identifier just read (WS-ID-START, WS-ID-LENGTH) must be an entry of the registry BR-N-REG of the node (15 §6.7: the content API,
+*> CONTENT-REGISTRY-COUNT and -ENTRY): without a namespace it is in the namespace of the content set (cobolcraft: for the cobolcraft
+*> set, else minecraft:); an unknown one is argument.resource.not_found [identifier, registry] with the cursor back at its start.
+*> A registry the open set does not hold is not checked.
+ CHECK-REGISTRY.
+     MOVE SPACES TO WS-REG-WANT WS-REG-KEY
+     MOVE BR-N-REG(L-NODE) TO WS-REG-KEY
+     MOVE 0 TO WS-REG-HAS-COLON
+     PERFORM VARYING WS-I FROM WS-ID-START BY 1 UNTIL WS-I >= WS-ID-START + WS-ID-LENGTH
+         IF BR-IN-TEXT(WS-I + 1:1) = ":"
+             MOVE 1 TO WS-REG-HAS-COLON
+         END-IF
+     END-PERFORM
+     IF WS-REG-HAS-COLON = 1
+         MOVE BR-IN-TEXT(WS-ID-START + 1:WS-ID-LENGTH) TO WS-REG-WANT
+         MOVE WS-ID-LENGTH TO WS-REG-WANT-LENGTH
+     ELSE
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+             STRING "cobolcraft:" BR-IN-TEXT(WS-ID-START + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-REG-WANT
+             COMPUTE WS-REG-WANT-LENGTH = WS-ID-LENGTH + 11
+         ELSE
+             STRING "minecraft:" BR-IN-TEXT(WS-ID-START + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-REG-WANT
+             COMPUTE WS-REG-WANT-LENGTH = WS-ID-LENGTH + 10
+         END-IF
+     END-IF
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REG-KEY WS-REG-COUNT WS-REG-STATUS
+     IF WS-REG-STATUS = CT-OK
+         MOVE 0 TO WS-REG-FOUND
+         PERFORM VARYING WS-REG-ID FROM 0 BY 1 UNTIL WS-REG-ID >= WS-REG-COUNT OR WS-REG-FOUND = 1
+             CALL "CONTENT-REGISTRY-ENTRY" USING WS-REG-KEY WS-REG-ID WS-REG-ENTRY WS-REG-ENTRY-LENGTH
+                 WS-REG-PAYLOAD WS-REG-CAPACITY WS-REG-PAYLOAD-LENGTH WS-REG-STATUS
+             IF WS-REG-ENTRY-LENGTH = WS-REG-WANT-LENGTH
+                     AND WS-REG-ENTRY(1:WS-REG-ENTRY-LENGTH) = WS-REG-WANT(1:WS-REG-WANT-LENGTH)
+                 MOVE 1 TO WS-REG-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-REG-FOUND = 0
+             MOVE "argument.resource.not_found" TO WS-KEY
+             MOVE 2 TO WS-N-ARGS
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-REG-WANT-LENGTH TO WS-L1
+             IF WS-L1 > 64
+                 MOVE 64 TO WS-L1
+             END-IF
+             MOVE WS-REG-WANT(1:WS-L1) TO WS-A1(1:WS-L1)
+             MOVE BR-N-REG-LENGTH(L-NODE) TO WS-L2
+             MOVE BR-N-REG(L-NODE)(1:WS-L2) TO WS-A2(1:WS-L2)
+             MOVE WS-ID-START TO WS-RC
+             PERFORM RAISE-NOW
+         END-IF
+     END-IF.
 
 *> Types that take an identifier, or an inline definition in braces (loot and provider types, dialog, feature); the
 *> context providers also take a number.
