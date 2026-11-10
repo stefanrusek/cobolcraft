@@ -20,17 +20,15 @@ def mesh_program(layer):
         ' PROCEDURE DIVISION USING EMM-MODEL.','     CALL "EMM-INIT" USING EMM-MODEL','     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO','     MOVE %s TO MM-TEXW'%w,'     MOVE %s TO MM-TEXH'%h,'     GOBACK.',' END PROGRAM %s.'%pname(layer),'']
     return '\n'.join(o)
 STATE=HERE+'/state/layers6_done.json'
-def done(): return json.load(open(STATE)) if os.path.exists(STATE) else []
+def done(): return json.load(open(STATE)) if os.path.exists(STATE) else {}
 def write_layers(new_ids):
     d=done()
-    for i in new_ids:
-        if i not in d: d.append(i)
+    for i in new_ids: d[i]=LAY[i][3]
     json.dump(d,open(STATE,'w'))
     o=['*> Entity models part 6: EF6-LAYER model layer(X(32), the ModelLayers field name in upper case) ok(out): builds the model of a layer of 34-6 (ok 0 when the layer is not one of this document). Records: client/copy/CLEMM.cpy.','*> The mesh programs EF6-M-<name> are in client/src/entmodel-34-6-<n>.cob.','',
        ' IDENTIFICATION DIVISION.',' PROGRAM-ID. EF6-LAYER.',' DATA DIVISION.',' WORKING-STORAGE SECTION.',' 01 WS-S                   FLOAT-LONG.',' LINKAGE SECTION.',' COPY CLEMM.',' 01 L-LAYER                PIC X(32).',' 01 L-OK                   BINARY-LONG.',
        ' PROCEDURE DIVISION USING EMM-MODEL L-LAYER L-OK.','     MOVE 1 TO L-OK','     EVALUATE L-LAYER']
-    for i in d:
-        rows,w,h,sc=LAY[i]
+    for i,sc in d.items():
         o.append('         WHEN "%s"'%i); o.append('             CALL "%s" USING EMM-MODEL'%pname(i))
         for s in sc: o.append('             MOVE %s TO WS-S'%lit(s)); o.append('             CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S')
     o+=['         WHEN OTHER','             MOVE 0 TO L-OK','     END-EVALUATE','     GOBACK.',' END PROGRAM EF6-LAYER.','']
@@ -57,3 +55,22 @@ def pose_check(t,layer,prog,st,P,vis=None,tag=''):
     for k,v in (vis or {}).items(): t.vis(k,v)
 def text_check(t,prog,args,name,expected_text):
     t.raw('MOVE SPACES TO WS-X120'); t.setin(args); t.raw('CALL "%s" USING WS-IN WS-X120'%prog); t.text(name,expected_text,'WS-X120')
+STATE_WS="""
+ 01 WS-ST.
+    05 WS-SV               FLOAT-LONG OCCURS 48 TIMES.
+ 01 WS-VAR                BINARY-LONG VALUE 0.
+ 01 WS-CAR                BINARY-LONG.
+ 01 WS-CRE                BINARY-LONG."""
+def humanoid_state(t,vals):
+    """vals: dict index (1-based) -> value of the 48-float humanoid state; the others are 0"""
+    t.raw('INITIALIZE WS-ST')
+    for k,v in sorted(vals.items()): t.raw('MOVE %s TO WS-SV(%d)'%(lit(v),k))
+def base_humanoid(P,xr,yr,wp,ws,sv,age):
+    PI=3.1415927
+    h=P['head']; h[3]=xr*0.017453292; h[4]=yr*0.017453292
+    ra,la,rl,ll=P['right_arm'],P['left_arm'],P['right_leg'],P['left_leg']
+    ra[3]=math.cos(wp*0.6662+PI)*2*ws*0.5/sv; la[3]=math.cos(wp*0.6662)*2*ws*0.5/sv
+    rl[3]=math.cos(wp*0.6662)*1.4*ws/sv; ll[3]=math.cos(wp*0.6662+PI)*1.4*ws/sv
+    rl[4]=0.005; ll[4]=-0.005; rl[5]=0.005; ll[5]=-0.005
+    z=math.cos(age*0.09)*0.05+0.05; x=math.sin(age*0.067)*0.05
+    ra[5]+=z; ra[3]+=x; la[5]-=z; la[3]-=x
