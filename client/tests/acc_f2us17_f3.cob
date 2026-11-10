@@ -1,0 +1,114 @@
+*> Acceptance test US17-1, US17-2 (spec 002 FR-018; 13 §5): F3 shows the overlay on the world screen with the game version, the position,
+*> block, chunk (and region file), facing, section-relative position, speed, frame rate, day, light and the targeted block from
+*> the replica and the physics state; F3 again hides it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-F2US17-F3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-TEXTS               PIC X(1024).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG VALUE 292.
+ 01 WS-TICKS               BINARY-LONG VALUE 25.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-CASES.
+    05 FILLER PIC X(48) VALUE "XYZ: 0.500 / 10.00000 / 0.500".
+    05 FILLER PIC X(48) VALUE "Block: 0 10 0".
+    05 FILLER PIC X(48) VALUE "Chunk: 0 0 0 [0 0 in r.0.0.mca]".
+    05 FILLER PIC X(48) VALUE "Facing: south (Towards positive Z) (0.0 / 0.0)".
+    05 FILLER PIC X(48) VALUE "Section-relative: 00 10 00".
+    05 FILLER PIC X(48) VALUE "Speed: ".
+    05 FILLER PIC X(48) VALUE " fps".
+    05 FILLER PIC X(48) VALUE "Day #0".
+    05 FILLER PIC X(48) VALUE "Client Light: 15 (15 sky, 0 block)".
+    05 FILLER PIC X(48) VALUE "CobolCraft (Minecraft 26.3)".
+ 01 WS-CASE-TABLE REDEFINES WS-CASES.
+    05 WS-CASE             PIC X(48) OCCURS 10 TIMES.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE "N" TO TL-MODE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "XYZ: "
+     MOVE "acceptance US17-1 given the world screen when no key was pressed then the overlay is not shown" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         MOVE 0 TO WS-HITS
+         INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-CASE(WS-I) TRAILING)
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance US17-1 when F3 is pressed then the overlay shows " FUNCTION TRIM(WS-CASE(WS-I) TRAILING)
+             DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE "acceptance US17-1 the frame rate was measured over a second (at least 1 fps)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE FUNCTION MIN(CL-FPS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "XYZ: "
+     MOVE "acceptance US17-2 when F3 is pressed again then the overlay is hidden" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Facing east, a target block and a position in a negative chunk and a far region.
+     CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE 270 TO PL-YAW
+     MOVE 1 TO TG-HIT
+     MOVE 3 TO TG-X
+     MOVE 4 TO TG-Y
+     MOVE 5 TO TG-Z
+     MOVE -40.5 TO PL-X
+     MOVE 700.5 TO PL-Z
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "Chunk: -3 0 43 [29 11 in r.-1.1.mca]"
+     MOVE "acceptance US17-1 a negative chunk x and a region 1 give chunk -3 0 43 [29 11 in r.-1.1.mca]" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "Facing: east (Towards positive X) (-90.0 / 0.0)"
+     MOVE "acceptance US17-1 yaw 270 faces east, shown as -90.0" TO TL-CASE
+     MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "Targeted Block: 3, 4, 5"
+     MOVE "acceptance US17-1 the targeted block is listed" TO TL-CASE
+     MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 180 TO PL-YAW
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "Facing: north (Towards negative Z) (-180.0 / 0.0)"
+     MOVE "acceptance US17-1 yaw 180 faces north" TO TL-CASE
+     MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 90 TO PL-YAW
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXTS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXTS TALLYING WS-HITS FOR ALL "Facing: west (Towards negative X) (90.0 / 0.0)"
+     MOVE "acceptance US17-1 yaw 90 faces west" TO TL-CASE
+     MOVE FUNCTION MIN(WS-HITS, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-F2US17-F3.
+
+ COPY CLTEST.

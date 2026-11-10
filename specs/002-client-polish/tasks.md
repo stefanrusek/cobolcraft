@@ -3954,31 +3954,31 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 72: US17-client — F3 overlay
 
-- [ ] T3573 [US17-client] Write acceptance test `client/tests/acc_f2us17_f3.cob` (US17-1, US17-2): F3 shows position, block, chunk, facing, dimension, frame rate and the other entries of 13 §5 from the replica and physics state; F3 again hides it [FR-018]
-- [ ] T3574 [US17-client] Implement the overlay in `client/src/debug-overlay.cob` and the F3 binding in `client/src/controls.cob`
-- [ ] T3575 [US17-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3573 [US17-client] Write acceptance test `client/tests/acc_f2us17_f3.cob` (US17-1, US17-2): F3 shows position, block, chunk, facing, dimension, frame rate and the other entries of 13 §5 from the replica and physics state; F3 again hides it [FR-018]
+- [X] T3574 [US17-client] Implement the overlay in `client/src/debug-overlay.cob` and the F3 binding in `client/src/controls.cob`
+- [X] T3575 [US17-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 73: US18-client — F5 camera
 
-- [ ] T3576 [US18-client] Write acceptance test `client/tests/acc_f2us18_f5.cob` (US18-1): repeated F5 cycles first person, behind, in front, first person (13 §6) [FR-019]
-- [ ] T3577 [US18-client] Write test `client/tests/test_camera_clip.cob` (US18-2, spec edge case): the third-person camera raycasts against blocks, and inside a one-block-high space it shortens rather than passing through blocks (12 §7)
-- [ ] T3578 [US18-client] Implement the camera modes and clipping in `client/src/camera.cob` and `client/src/raycast.cob`
-- [ ] T3579 [US18-client] Write test `client/tests/test_self_model.cob`: the Player's own model is drawn in third person and not in first person
-- [ ] T3580 [US18-client] Draw the own player model in `client/src/entities-render.cob`
-- [ ] T3581 [US18-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3576 [US18-client] Write acceptance test `client/tests/acc_f2us18_f5.cob` (US18-1): repeated F5 cycles first person, behind, in front, first person (13 §6) [FR-019]
+- [X] T3577 [US18-client] Write test `client/tests/test_camera_clip.cob` (US18-2, spec edge case): the third-person camera raycasts against blocks, and inside a one-block-high space it shortens rather than passing through blocks (12 §7)
+- [X] T3578 [US18-client] Implement the camera modes and clipping in `client/src/camera.cob` and `client/src/raycast.cob`
+- [X] T3579 [US18-client] Write test `client/tests/test_self_model.cob`: the Player's own model is drawn in third person and not in first person
+- [X] T3580 [US18-client] Draw the own player model in `client/src/entities-render.cob`
+- [X] T3581 [US18-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 74: US19-client — off-hand swap
 
-- [ ] T3582 [US19-client] Write acceptance test `client/tests/acc_f2us19_swap.cob` (US19-1 to US19-3): F with no screen sends the swap action; F over a hovered slot in the inventory screen sends a Container Click swap with slot 45; the off-hand slot draws beside the hotbar [FR-020]
-- [ ] T3583 [US19-client] Write edge-case test `client/tests/test_swap_empty.cob` (spec edge case): F with an empty hand, an empty off hand, or both sends the swap and the screen shows no stale stack
-- [ ] T3584 [US19-client] Implement the F key and the off-hand HUD in `client/src/controls.cob` and `client/src/screens/hud.cob`, and the hovered-slot swap in `client/src/screens/inventory.cob`
-- [ ] T3585 [US19-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3582 [US19-client] Write acceptance test `client/tests/acc_f2us19_swap.cob` (US19-1 to US19-3): F with no screen sends the swap action; F over a hovered slot in the inventory screen sends a Container Click swap with slot 45; the off-hand slot draws beside the hotbar [FR-020]
+- [X] T3583 [US19-client] Write edge-case test `client/tests/test_swap_empty.cob` (spec edge case): F with an empty hand, an empty off hand, or both sends the swap and the screen shows no stale stack
+- [X] T3584 [US19-client] Implement the F key and the off-hand HUD in `client/src/controls.cob` and `client/src/screens/hud.cob`, and the hovered-slot swap in `client/src/screens/inventory.cob`
+- [X] T3585 [US19-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 75: US20-client — hand and held item
 
-- [ ] T3586 [US20-client] Write acceptance test `client/tests/acc_f2us20_hand.cob` (US20-1, US20-2): in first person the hand is in the render list at the lower right holding the selected item or block as a small 3D model after a depth clear, and breaking, placing or attacking plays the swing (12 §6) [FR-021]
-- [ ] T3587 [US20-client] Implement the hand pass in `client/src/hand.cob` and its submit order in `client/src/submit.cob` with `cc_vk_clear_depth`
-- [ ] T3588 [US20-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3586 [US20-client] Write acceptance test `client/tests/acc_f2us20_hand.cob` (US20-1, US20-2): in first person the hand is in the render list at the lower right holding the selected item or block as a small 3D model after a depth clear, and breaking, placing or attacking plays the swing (12 §6) [FR-021]
+- [X] T3587 [US20-client] Implement the hand pass in `client/src/hand.cob` and its submit order in `client/src/submit.cob` with `cc_vk_clear_depth`
+- [X] T3588 [US20-client] Gate: run `make gate-client` and record the command and real output
 
 ---
 

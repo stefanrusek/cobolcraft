@@ -16,6 +16,13 @@
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
     05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
+    05 CL-SWING-AT           BINARY-DOUBLE.   *> the clock when the hand last began to swing (0 = never)
+    05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
+    05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
+    05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
+    05 CL-FPS-AT             BINARY-DOUBLE.   *> the clock when CL-FPS was last measured
+    05 CL-FPS-FRAMES         BINARY-DOUBLE.   *> CL-FRAMES then
+    05 CL-SPEED              FLOAT-LONG.      *> blocks moved in the last client tick
     05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
     05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
     05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
@@ -176,6 +183,8 @@
        10 PL-SLOT OCCURS 36 TIMES.
           15 PL-SLOT-COUNT   BINARY-LONG.
           15 PL-SLOT-ITEM    BINARY-LONG.
+       10 PL-OFFHAND-COUNT   BINARY-LONG.    *> the off-hand stack (menu slot 45, player inventory index 40)
+       10 PL-OFFHAND-ITEM    BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
@@ -677,6 +686,17 @@
           15 RL-GI-V         FLOAT-SHORT.
           15 RL-GI-B         FLOAT-SHORT.
           15 RL-GI-A         FLOAT-SHORT.
+*>     The hand (view space, texture 0; hand.cob).
+       10 RL-HAND-COUNT      BINARY-LONG.
+       10 RL-HAND-UPLOADED   BINARY-LONG.
+       10 RL-HAND-VERTEX OCCURS 36 TIMES.
+          15 RL-HAND-X       FLOAT-SHORT.
+          15 RL-HAND-Y       FLOAT-SHORT.
+          15 RL-HAND-Z       FLOAT-SHORT.
+          15 RL-HAND-U       FLOAT-SHORT.
+          15 RL-HAND-V       FLOAT-SHORT.
+          15 RL-HAND-B       FLOAT-SHORT.
+          15 RL-HAND-A       FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.

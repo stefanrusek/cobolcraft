@@ -36,6 +36,10 @@
                      MOVE WS-IS-COUNT TO PL-SLOT-COUNT(WS-I)
                      MOVE WS-IS-ITEM TO PL-SLOT-ITEM(WS-I)
                  END-IF
+                 IF WS-CONTAINER = 0 AND WS-I = 46
+                     MOVE WS-IS-COUNT TO PL-OFFHAND-COUNT
+                     MOVE WS-IS-ITEM TO PL-OFFHAND-ITEM
+                 END-IF
              END-PERFORM
              CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
              IF WS-CONTAINER = 0
@@ -51,11 +55,19 @@
              IF WS-CONTAINER = 0
                  MOVE WS-STATE-ID TO PL-INV-STATE-ID
                  CALL "INV-SLOT-SET" USING CLIENT-STATE WS-SLOT WS-ITEMSTACK
+                 IF WS-SLOT = 45
+                     MOVE WS-IS-COUNT TO PL-OFFHAND-COUNT
+                     MOVE WS-IS-ITEM TO PL-OFFHAND-ITEM
+                 END-IF
              END-IF
          WHEN 110
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-SLOT
              CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
              CALL "INV-SLOT-SET" USING CLIENT-STATE WS-SLOT WS-ITEMSTACK
+             IF WS-SLOT = 40
+                 MOVE WS-IS-COUNT TO PL-OFFHAND-COUNT
+                 MOVE WS-IS-ITEM TO PL-OFFHAND-ITEM
+             END-IF
          WHEN OTHER
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-SLOT
              IF WS-SLOT >= 0 AND WS-SLOT <= 8

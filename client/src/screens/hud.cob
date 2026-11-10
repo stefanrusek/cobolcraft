@@ -62,13 +62,23 @@
      END-IF
      COMPUTE WS-X = L-GW / 2 - 3
      COMPUTE WS-Y = L-GH / 2 - 4
-     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
-         WS-KEY-LENGTH
+*>   The crosshair is not drawn in the third-person modes (12 section 7.1).
+     IF CL-CAMERA = 0
+         CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
+             WS-KEY-LENGTH
+     END-IF
      COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 2
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 8
          COMPUTE WS-X = L-GW / 2 - 90 + WS-C * CL-SLOT-SIZE
          CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
      END-PERFORM
+*>   The off-hand slot beside the hotbar (13 §4; slot 37 of the widgets is the off hand), while the off hand holds a stack.
+     IF PL-OFFHAND-COUNT > 0
+         COMPUTE WS-X = L-GW / 2 - 90 - CL-SLOT-SIZE - 6
+         COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 2
+         MOVE 37 TO WS-C
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
+     END-IF
      IF PL-MODE = 0
          MOVE 2 TO LA-COUNT
          COMPUTE WS-C ROUNDED = PL-HEALTH
@@ -97,6 +107,7 @@
              WS-TEXT WS-LENGTH WS-STATE
      END-IF
      CALL "CHAT-AREA-ADD" USING CLIENT-STATE L-GW L-GH WS-CLOSED
+     CALL "DEBUG-OVERLAY-ADD" USING CLIENT-STATE L-GW L-GH
      GOBACK.
  END PROGRAM HUD-BUILD.
 
@@ -199,6 +210,9 @@
      MOVE PL-CARRIED-COUNT TO WS-COUNT
      IF L-SLOT < 36
          MOVE PL-SLOT-COUNT(L-SLOT + 1) TO WS-COUNT
+     END-IF
+     IF L-SLOT = 37
+         MOVE PL-OFFHAND-COUNT TO WS-COUNT
      END-IF
      MOVE 0 TO WS-STATE WS-LENGTH
      IF L-SLOT = PL-HELD

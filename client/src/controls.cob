@@ -443,3 +443,22 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-CTRL-DOWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SWAP.
+*> USING CLIENT-STATE (world screen, in play; US19; 13 §4): the swap key (F) pressed sends Player Action SWAP_ITEM_WITH_OFFHAND (7: position
+*> 0 0 0, face down, sequence 0), not for a spectator, with no local prediction: the server answers with the new contents of both hands.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG VALUE 7.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEY
+     IF IN-KEY-PRESSED(WS-KEY + 1) = 1 AND PL-MODE NOT = 3
+         CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-SWAP.

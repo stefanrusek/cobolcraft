@@ -128,6 +128,9 @@
  78 MESH-SLOT-WEATHER       VALUE 65005.
 *> The crack overlay of the frame (one mesh, eye-relative, texture 0).
  78 MESH-SLOT-BREAK         VALUE 65006.
+*> The hand in first person (one mesh, view space, texture 0; hand.cob), drawn after a depth clear.
+ 78 MESH-SLOT-HAND          VALUE 65007.
+ 78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
  78 WX-CLEAR                VALUE 0.

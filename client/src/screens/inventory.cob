@@ -124,6 +124,9 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-THROW               BINARY-LONG VALUE 4.
  01 WS-KEYC                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-OFF-BUTTON          BINARY-LONG VALUE 40.
+ 01 WS-SWAP-TYPE           BINARY-LONG VALUE 2.
  01 WS-PICKUP              BINARY-LONG VALUE 0.
  01 WS-CHANGED             BINARY-LONG VALUE 1.
  01 WS-NONE                BINARY-LONG VALUE 0.
@@ -166,6 +169,32 @@
              CALL "PB-RESET" USING PB-BUFFER
              CALL "CLP-CONTAINER-CLICK-AS" USING PB-BUFFER PL-INV-STATE-ID WS-SLOT WS-BUTTON
                  WS-THROW WS-CHANGED PL-SLOT-COUNT(WS-SLOT + 1) PL-SLOT-ITEM(WS-SLOT + 1)
+                 PL-CARRIED-COUNT PL-CARRIED-ITEM
+             CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         END-IF
+     END-IF
+*>   F over a slot with an empty cursor swaps it with the off hand (13 section 4): Container Click SWAP (2) with button 40, the hovered slot
+*>   changed, predicted here.
+     MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND PL-CARRIED-COUNT = 0
+         MOVE -1 TO WS-SLOT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+             IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) <= 35
+                     AND WS-X >= SM-W-X(WS-I) AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I)
+                     AND WS-Y >= SM-W-Y(WS-I) AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
+                 MOVE SM-W-ARG(WS-I) TO WS-SLOT
+             END-IF
+         END-PERFORM
+         IF WS-SLOT >= 0
+             MOVE PL-OFFHAND-COUNT TO WS-COUNT
+             MOVE PL-OFFHAND-ITEM TO WS-ITEM
+             MOVE PL-SLOT-COUNT(WS-SLOT + 1) TO PL-OFFHAND-COUNT
+             MOVE PL-SLOT-ITEM(WS-SLOT + 1) TO PL-OFFHAND-ITEM
+             MOVE WS-COUNT TO PL-SLOT-COUNT(WS-SLOT + 1)
+             MOVE WS-ITEM TO PL-SLOT-ITEM(WS-SLOT + 1)
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "CLP-CONTAINER-CLICK-AS" USING PB-BUFFER PL-INV-STATE-ID WS-SLOT WS-OFF-BUTTON
+                 WS-SWAP-TYPE WS-CHANGED PL-SLOT-COUNT(WS-SLOT + 1) PL-SLOT-ITEM(WS-SLOT + 1)
                  PL-CARRIED-COUNT PL-CARRIED-ITEM
              CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
          END-IF
