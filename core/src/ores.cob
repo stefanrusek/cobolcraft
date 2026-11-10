@@ -937,8 +937,11 @@
  01 WS-D                   FLOAT-LONG.
  01 WS-C                   FLOAT-LONG.
  01 WS-XD2                 FLOAT-LONG.
- 01 WS-YD2                 FLOAT-LONG.
- 01 WS-ZD2                 FLOAT-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-YD2T.
+    05 WS-YD2T-ITEM        FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-ZD2T.
+    05 WS-ZD2T-ITEM        FLOAT-LONG OCCURS 64 TIMES.
  01 WS-S2                  FLOAT-LONG.
  01 WS-S3                  FLOAT-LONG.
  01 WS-V                   FLOAT-LONG.
@@ -991,6 +994,25 @@
      CALL STATIC "cc_f64_add" USING BY REFERENCE L-BZ L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
      COMPUTE WS-ZHI = FUNCTION MAX(WS-A, WS-ZLO)
+*>   the squared distances along y and along z do not depend on the other axes: each once per layer, not once per block
+     PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
+         COMPUTE WS-K = WS-Y - WS-YLO + 1
+         MOVE WS-Y TO WS-V
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
+         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BY WS-A
+         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-BR WS-D
+         MOVE WS-D TO WS-C
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-YD2T-ITEM(WS-K)
+     END-PERFORM
+     PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+         COMPUTE WS-K = WS-Z - WS-ZLO + 1
+         MOVE WS-Z TO WS-V
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
+         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BZ WS-A
+         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-BR WS-D
+         MOVE WS-D TO WS-C
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-ZD2T-ITEM(WS-K)
+     END-PERFORM
      PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
          MOVE WS-X TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
@@ -1000,22 +1022,12 @@
          CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-XD2
          IF WS-XD2 < 1
              PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
-                 MOVE WS-Y TO WS-V
-                 CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
-                 CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BY WS-A
-                 CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-BR WS-D
-                 MOVE WS-D TO WS-C
-                 CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-YD2
-                 CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2 WS-S2
+                 COMPUTE WS-K = WS-Y - WS-YLO + 1
+                 CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2T-ITEM(WS-K) WS-S2
                  IF WS-S2 < 1
                      PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
-                         MOVE WS-Z TO WS-V
-                         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
-                         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BZ WS-A
-                         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-BR WS-D
-                         MOVE WS-D TO WS-C
-                         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-ZD2
-                         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-S2 WS-ZD2 WS-S3
+                         COMPUTE WS-K = WS-Z - WS-ZLO + 1
+                         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-S2 WS-ZD2T-ITEM(WS-K) WS-S3
                          IF WS-S3 < 1 AND WS-Y >= -64 AND WS-Y <= 319
                              COMPUTE WS-BIT = (WS-X - OB-START-X) + (WS-Y - OB-START-Y) * OB-WIDTH
                                  + (WS-Z - OB-START-Z) * OB-WIDTH * OB-HEIGHT + 1

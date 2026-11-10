@@ -895,26 +895,25 @@
      MOVE 0 TO WS-SP WS-DONE
      PERFORM UNTIL WS-DONE = 1
          MOVE WGN-TYPE(WS-NODE) TO WS-TYPE
-         MOVE 0 TO WS-TRUE
-*>       WS-TRUE 1: the node gave no block, go on with the next rule of the enclosing sequence
+*>       WS-TRUE 1: the node gave no block, go on with the next rule of the enclosing sequence (the default: a type the rules
+*>       below do not handle gives none); a reference that resolves and a sequence with rules go on with the node they name
+         MOVE 1 TO WS-TRUE
          EVALUATE TRUE
              WHEN WS-TYPE = 0
                  IF SF-N-REF(WS-NODE) = 0
                      MOVE WGN-TEXT-1(WS-NODE)(1:112) TO WS-KEY
                      CALL "WG-FIND" USING WS-KIND WS-KEY SF-N-REF(WS-NODE)
                  END-IF
-                 IF SF-N-REF(WS-NODE) = 0
-                     MOVE 1 TO WS-TRUE
-                 ELSE
+                 IF SF-N-REF(WS-NODE) NOT = 0
                      MOVE SF-N-REF(WS-NODE) TO WS-NODE
+                     MOVE 0 TO WS-TRUE
                  END-IF
              WHEN WS-TYPE = WS-R-SEQUENCE
-                 IF WGN-CHILD(WS-NODE, 1) = 0
-                     MOVE 1 TO WS-TRUE
-                 ELSE
+                 IF WGN-CHILD(WS-NODE, 1) NOT = 0
                      ADD 1 TO WS-SP
                      MOVE WGN-NEXT(WGN-CHILD(WS-NODE, 1)) TO WS-NEXT(WS-SP)
                      MOVE WGN-CHILD(WS-NODE, 1) TO WS-NODE
+                     MOVE 0 TO WS-TRUE
                  END-IF
              WHEN WS-TYPE = WS-R-CONDITION
                  CALL "SURFACE-COND" USING L-JOB WGN-CHILD(WS-NODE, 1) WS-TRUE
@@ -950,8 +949,6 @@
                  COMPUTE WS-INDEX = FUNCTION MOD(SC-Y + WS-ROUND + 192, 192) + 1
                  MOVE SF-BAND(WS-INDEX) TO L-STATE
                  MOVE 1 TO WS-DONE
-             WHEN OTHER
-                 MOVE 1 TO WS-TRUE
          END-EVALUATE
          PERFORM UNTIL WS-TRUE = 0 OR WS-DONE = 1
              IF WS-SP = 0
