@@ -62,7 +62,9 @@
 *> USING PB-BUFFER, PB-ITEMSTACK-X out: the layout of PB-PUT-ITEM-STACK. 00 §12.2 leaves each
 *> component's value to its own codec, so a value is read only for the types whose layout the
 *> documents give (17 §1.2): VarInt for 1, 2, 3, 12, 19, 31 and 75; no payload for 4, 22 and 34;
-*> Boolean for 21; Float for 7 and 54; a text component (00 §9, as PB-GET-TEXT reads it) for 6.
+*> Boolean for 21; Float for 7 and 54; a text component (00 §9, as PB-GET-TEXT reads it) for 6;
+*> ItemEnchantments for 13 and 45 (a VarInt count of 0 to PB-ISX-VALUE-MAX, then that many pairs of
+*> VarInt enchantment id and VarInt level).
 *> The bytes of the value are kept verbatim in PB-ISX-VALUE. Any other type, a count above
 *> PB-ISX-MAX-COMPONENTS or negative, a value longer than PB-ISX-VALUE-MAX or a short read sets
 *> PB-ERROR, leaves PB-POS where it was and yields an all-zero record.
@@ -76,6 +78,8 @@
  01 WS-FLOAT               FLOAT-SHORT.
  01 WS-BOOLEAN             BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-PAIRS               BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER PB-ITEMSTACK-X.
@@ -107,6 +111,16 @@
                  CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
              WHEN 6
                  CALL "PB-GET-TEXT" USING PB-BUFFER TX-TEXT
+             WHEN 13 WHEN 45
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH < 0 OR WS-SCRATCH > PB-ISX-VALUE-MAX
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-SCRATCH
+                 END-IF
+                 COMPUTE WS-PAIRS = WS-SCRATCH * 2
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-PAIRS OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 END-PERFORM
              WHEN OTHER
                  MOVE 1 TO PB-ERROR
          END-EVALUATE
