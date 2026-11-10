@@ -69,7 +69,7 @@
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 Alice is sent her emptied inventory" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "18 75" TO TL-EXPECTED
+     MOVE "18" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 emptying an empty inventory removes 0 items" TO TL-CASE
      MOVE "empty Alice" TO WS-LINE

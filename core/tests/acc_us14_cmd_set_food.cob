@@ -1,5 +1,5 @@
 *> Acceptance test, US14-2 ration (spec US14 scenario 2; FR-016; standin-content §16.2 row 21): the
-*> set-food command sets a survival player's food level to an amount (0 to 24), full (24) or zero
+*> set-food command sets a survival player's food level to an amount (0 to 20), full (20) or zero
 *> (0); the player is sent Set Health and the sender cobolcraft.command.ration.done [name, new
 *> food]. A creative player gets not_survival, a dead one not_alive.
  IDENTIFICATION DIVISION.
@@ -58,7 +58,7 @@
      PERFORM OPAL-CHECK
      MOVE "acceptance US14-2 Alice is sent Set Health with food 5" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 30 food 5" TO TL-EXPECTED
+     MOVE "health 20 food 5" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 ration zero sets food 0" TO TL-CASE
      MOVE "ration Alice zero" TO WS-LINE
@@ -66,15 +66,15 @@
      PERFORM OPAL-CHECK
      MOVE "acceptance US14-2 Alice is sent Set Health with food 0 and does not die" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 30 food 0" TO TL-EXPECTED
+     MOVE "health 20 food 0" TO TL-EXPECTED
      PERFORM CHECK-TEXT
-     MOVE "acceptance US14-2 ration full sets food 24" TO TL-CASE
+     MOVE "acceptance US14-2 ration full sets food 20" TO TL-CASE
      MOVE "ration Alice full" TO WS-LINE
-     MOVE "cobolcraft.command.ration.done(Alice,24)" TO TL-EXPECTED
+     MOVE "cobolcraft.command.ration.done(Alice,20)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
-     MOVE "acceptance US14-2 Alice is sent Set Health with food 24" TO TL-CASE
+     MOVE "acceptance US14-2 Alice is sent Set Health with food 20" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 30 food 24" TO TL-EXPECTED
+     MOVE "health 20 food 20" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 setting the food of a creative player sends not_survival" TO TL-CASE
      MOVE "ration Bob 5" TO WS-LINE
@@ -86,7 +86,7 @@
      MOVE "ration Alice 5" TO WS-LINE
      MOVE "cobolcraft.command.not_alive(Alice)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
-     MOVE "acceptance US14-2 an amount above 24 is an invalid argument" TO TL-CASE
+     MOVE "acceptance US14-2 an amount above 20 is an invalid argument" TO TL-CASE
      MOVE "ration Alice 25" TO WS-LINE
      MOVE "cobolcraft.command.invalid_argument(25,ration <player> <amount>)" TO TL-EXPECTED
      PERFORM OPAL-CHECK

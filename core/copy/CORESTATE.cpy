@@ -48,6 +48,9 @@
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).
     05 CW-GAME-MODE          PIC 9.              *> level.dat GameMode (07 §9.2): new players, host kinds 1-2
+    05 CW-WORLD-TYPE         PIC X(10).          *> level.dat WorldType: standard, cobolcraft or debug (world-types 2.1)
+    05 CW-SEED               BINARY-DOUBLE.      *> level.dat Seed
+    05 CW-CONTENT-JAR        PIC X(64).          *> level.dat ContentJar (informational, WT-6); spaces when absent
     05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 23999 (RULES.cpy RULE-DAY-LENGTH; 33 §3)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
     05 CW-SPAWN-X            FLOAT-LONG.
@@ -114,6 +117,7 @@
 *>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
 *>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).
        10 PL-EXHAUSTION      FLOAT-LONG.
+       10 PL-SATURATION      FLOAT-LONG.         *> 17 section 4.9: 0 to the food level, 5.0 for a new player
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
@@ -125,6 +129,10 @@
           15 PL-SLOT OCCURS 36 TIMES.            *> inventory slot n is PL-SLOT(n + 1)
              20 PL-SLOT-ITEM BINARY-LONG.
              20 PL-SLOT-COUNT BINARY-LONG.       *> 0 = empty
+*>     The data component patch handle of each slot (core/copy/CSTACK.cpy, core/src/stack-patch.cob; 0 = none), kept
+*>     outside PL-INVENTORY so the recipe book's inventory snapshot stays the items and counts.
+       10 PL-SLOT-VARS.
+          15 PL-SLOT-VAR BINARY-LONG OCCURS 36 TIMES.
 *>     Recipe book (standin §13; core/src/crafting.cob): 1 once the join has sent Recipe Book Add,
 *>     and the inventory that book was computed from; a different inventory re-sends it.
        10 PL-BOOK-SENT       PIC 9.
@@ -139,22 +147,27 @@
 *>     The item on the cursor of the inventory screen (Container Click; core/src/inventory.cob).
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.        *> 0 = nothing carried
+       10 PL-CARRIED-VAR     BINARY-LONG.        *> its patch handle (0 = none)
 *>     A Container Click drag (QUICK_CRAFT, 05c 0x12): its type (button / 4) and the slots added.
        10 PL-DRAG-ACTIVE     PIC 9.
        10 PL-DRAG-TYPE       BINARY-LONG.
        10 PL-DRAG-COUNT      BINARY-LONG.
        10 PL-DRAG-SLOT       BINARY-LONG OCCURS 36 TIMES.
-*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/blocks.cob).
+*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/breaking.cob).
        10 PL-BREAKING        PIC 9.
        10 PL-BREAK-X         BINARY-LONG.
        10 PL-BREAK-Y         BINARY-LONG.
        10 PL-BREAK-Z         BINARY-LONG.
        10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
-       10 PL-BREAK-TICKS     BINARY-LONG.        *> ticks the break takes
+       10 PL-BREAK-RATE      FLOAT-SHORT.        *> progress per tick (13 section 2.1), fixed at the start
+       10 PL-BREAK-ITEM      BINARY-LONG.        *> the held item at the start (0 = empty hand)
+       10 PL-BREAK-STATE     BINARY-LONG.        *> the target's block state at the start
+       10 PL-BREAK-DELAYED   PIC 9.              *> 1 after a STOP that came early (13 section 2.4)
        10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
 *>     Health (standin §10; core/src/health.cob). PL-DEATH-CAUSE is the RULES.cpy CAUSE-* of the
 *>     death while the player is dead (0 while alive); PL-KILLER-* name the attacker of a player kill.
-       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> ticks left in which damage is ignored (§10.2)
+       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> invulnerableTime (17 section 4.7): 20 after an accepted hit
+       10 PL-LAST-HURT       BINARY-LONG.        *> lastHurt: the damage of the last accepted hit
        10 PL-RECOVER-TICKS   BINARY-LONG.        *> consecutive ticks of the recovery condition (§10.5)
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
@@ -183,6 +196,7 @@
        10 CK-ADDR            USAGE POINTER.
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
+       10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
        10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
@@ -224,6 +238,7 @@
 *>     player row and its entity id (0 = none). EN-COOLDOWN: attack cooldown. None of it is saved.
        10 EN-HEALTH          BINARY-LONG.
        10 EN-HURT            BINARY-LONG.
+       10 EN-LAST-HURT       BINARY-LONG.
        10 EN-WANDER-X        FLOAT-LONG.
        10 EN-WANDER-Z        FLOAT-LONG.
        10 EN-FLEE            BINARY-LONG.

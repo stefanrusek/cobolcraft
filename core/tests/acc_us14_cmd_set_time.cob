@@ -1,5 +1,5 @@
 *> Acceptance test, US14-2 clock (spec US14 scenario 2; FR-016; standin-content §16.2 row 24, §4.8):
-*> the set-time command sets Time (0 to 29999), every player is sent Set Time, and the sender is sent
+*> the set-time command sets Time (0 to 23999), every player is sent Set Time, and the sender is sent
 *> cobolcraft.command.clock.done [ticks].
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US14-CMD-SET-TIME.
@@ -57,9 +57,9 @@
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      MOVE "115" TO TL-EXPECTED
      PERFORM CHECK-TEXT
-     MOVE "acceptance US14-2 ticks above 29999 are an invalid argument" TO TL-CASE
-     MOVE "clock 30000" TO WS-LINE
-     MOVE "cobolcraft.command.invalid_argument(30000,clock <ticks>)" TO TL-EXPECTED
+     MOVE "acceptance US14-2 ticks above 23999 are an invalid argument" TO TL-CASE
+     MOVE "clock 24000" TO WS-LINE
+     MOVE "cobolcraft.command.invalid_argument(24000,clock <ticks>)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
      STOP RUN.
 

@@ -9,7 +9,7 @@
 *> USING CLIENT-STATE, packet (play Login, 05a 0x32): the player's entity id, the dimension names
 *> (every dimension the server has, the first CL-MAX-LEVELS kept), view distance, the
 *> dimension and its type's height range and sky light (from the dimension_type registry), the game
-*> mode (health 30 until Set Health); the dimension is entered (DIMENSION-ENTER) and the entity
+*> mode (health 20 until Set Health); the dimension is entered (DIMENSION-ENTER) and the entity
 *> replica and player list emptied.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -48,7 +48,7 @@
      CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PL-DIM-NAME WS-CAP WS-LENGTH
      CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
      CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
-     MOVE 30 TO PL-HEALTH
+     MOVE 20 TO PL-HEALTH
      CALL "DIMENSION-ENTER" USING CLIENT-STATE
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      GOBACK.

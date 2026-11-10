@@ -47,18 +47,18 @@
      MOVE "3 words, cobolcraft.command.invalid_argument(,clock <ticks>)" TO TL-EXPECTED
      PERFORM CHECK-TEXT
 
-*>   Integer with bounds (clock <ticks>: 0 to 29999).
-     MOVE "test command parser integer: clock 29999 parses" TO TL-CASE
-     MOVE "clock 29999" TO WS-LINE
-     MOVE "ok clock 29999" TO TL-EXPECTED
+*>   Integer with bounds (clock <ticks>: 0 to 23999).
+     MOVE "test command parser integer: clock 23999 parses" TO TL-CASE
+     MOVE "clock 23999" TO WS-LINE
+     MOVE "ok clock 23999" TO TL-EXPECTED
      PERFORM PARSE-CHECK
      MOVE "test command parser integer: clock 0 parses (lower bound)" TO TL-CASE
      MOVE "clock 0" TO WS-LINE
      MOVE "ok clock 0" TO TL-EXPECTED
      PERFORM PARSE-CHECK
      MOVE "test command parser integer above its maximum is an invalid argument" TO TL-CASE
-     MOVE "clock 30000" TO WS-LINE
-     MOVE "cobolcraft.command.invalid_argument(30000,clock <ticks>)" TO TL-EXPECTED
+     MOVE "clock 24000" TO WS-LINE
+     MOVE "cobolcraft.command.invalid_argument(24000,clock <ticks>)" TO TL-EXPECTED
      PERFORM PARSE-CHECK
      MOVE "test command parser integer below its minimum is an invalid argument" TO TL-CASE
      MOVE "clock -1" TO WS-LINE

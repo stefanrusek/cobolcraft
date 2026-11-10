@@ -8,6 +8,8 @@
 *>   CB-OPAQUE   0 when the flags hold noOcclusion, noCollision or air, else 1 (until the light engine of 32).
 *>   CB-BREAK-MS the hardness in milliseconds (hardness x 1000, rounded; -1 for a negative hardness = unbreakable; 0 none).
 *>   CB-CLASS    tool class from the block tags: 1 minecraft:mineable/pickaxe, 2 minecraft:mineable/shovel, else 0.
+*>   CB-TOOL-REQ 1 when the row's "tool req." column is yes (13 section 2.6 "Req"); CB-NEED-TIER 3, 2 or 1 when the block is in
+*>               the tag minecraft:needs_diamond_tool, needs_iron_tool or needs_stone_tool (highest first), else 0.
 *>   CB-LIGHT    the light the default state emits; CB-S-LIGHT is the light of each state: a plain number in the
 *>               row's light text is that number for every state, "N ... if lit, else 0" is N where the state's
 *>               property lit is true; any other text is 0 (the light engine of 32 will define the rest).
@@ -26,6 +28,8 @@
        10 CB-LIGHT           BINARY-LONG.
        10 CB-BREAK-MS        BINARY-LONG.
        10 CB-CLASS           BINARY-LONG.
+       10 CB-TOOL-REQ        BINARY-LONG.
+       10 CB-NEED-TIER       BINARY-LONG.
        10 CB-FIRST-STATE     BINARY-LONG.
        10 CB-STATES          BINARY-LONG.
        10 CB-DEFAULT-STATE   BINARY-LONG.

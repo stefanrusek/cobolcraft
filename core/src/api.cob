@@ -3,7 +3,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-WORLD-OPEN.
-*> USING world folder path (z-string), CORE-SETTINGS, created-flag out (BINARY-LONG). Stores the
+*> USING world folder path (z-string), CORE-SETTINGS, created-flag out (BINARY-LONG: 1 created, 0 opened, or minus a
+*> CORE-WO-* status word when the world is refused: -1 packs not ok, -2 world data but no level.dat, -3 no or an
+*> unknown WorldType; the world is then not open). Stores the
 *> settings and empties every table (a world already open in this process is closed first). A
 *> folder without level.dat becomes a new in-memory world: the cobolcraft:main dimension and, while
 *> the extra-dimensions setting is on, every extra dimension (DIMENSIONS.cpy DM-EXTRA 1, standin
@@ -20,12 +22,11 @@
  COPY CONTENT.
  COPY PROTO.
  01 WS-I                   BINARY-LONG.
- 01 WS-TYPE                BINARY-LONG.
- 01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-FILE                PIC X(1040).
  01 WS-FILE-INFO           PIC X(16).
  01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-RANDOM              BINARY-LONG.
  01 B-PATH                 PIC X(1024) BASED.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -41,13 +42,6 @@
      INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
          CORE-KNOWN CORE-ACCESS
      MOVE "Y" TO CW-OPEN
-*>   The content set of the world and the block tables built from it (the world type choice comes with
-*>   T0334: until then every world is a cobolcraft world).
-     MOVE SPACES TO WS-DIR
-     MOVE CT-TYPE-COBOLCRAFT TO WS-TYPE
-     CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
-     CALL "BLOCKS-OPEN"
-     CALL "CORE-TABLES-OPEN"
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
      MOVE CS-DEFAULT-MODE TO CW-GAME-MODE
@@ -59,6 +53,18 @@
          END-IF
      END-PERFORM
      MOVE B-PATH(1:CW-FOLDER-LENGTH) TO CW-FOLDER
+*>   The world type (world-types section 2.1) and the content set it opens, before anything reads the world.
+     CALL "WORLD-TYPE-DECIDE" USING CS-WORLD-TYPE CW-WORLD-TYPE WS-STATUS
+     IF WS-STATUS = CORE-WO-OK
+         CALL "WORLD-CONTENT-OPEN" USING CW-WORLD-TYPE CS-GENERATED-DIR WS-STATUS
+     END-IF
+     IF WS-STATUS NOT = CORE-WO-OK
+         MOVE "N" TO CW-OPEN
+         COMPUTE L-CREATED = 0 - WS-STATUS
+         GOBACK
+     END-IF
+     CALL "BLOCKS-OPEN"
+     CALL "CORE-TABLES-OPEN"
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE PB-BUFFER TO CW-CONSOLE
      MOVE 0 TO CW-RUN-STATE CW-TIME CW-TICKS
@@ -84,6 +90,7 @@
          CALL "WORLD-LOAD"
      ELSE
          MOVE 1 TO L-CREATED
+         CALL "SEED-FROM-TEXT" USING CS-SEED-TEXT CW-SEED WS-RANDOM
      END-IF
      MOVE 0 TO RETURN-CODE
      CALL "PERSIST-DIRS"
@@ -93,7 +100,13 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-SAVE.
 *> No parameters: writes the whole world to its folder (FR-014; WORLD-SAVE, 07 §9.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  PROCEDURE DIVISION.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      CALL "WORLD-SAVE"
      GOBACK.
  END PROGRAM CORE-SAVE.
@@ -103,10 +116,16 @@
 *> USING kind (BINARY-LONG, CORE-CONN-NETWORK or CORE-CONN-MEMORY), connection id out
 *> (BINARY-LONG; 0 when the connection table is full).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-ID.
+     IF CW-OPEN NOT = "Y"
+         MOVE 0 TO L-ID
+         GOBACK
+     END-IF
      CALL "SESSION-OPEN" USING L-KIND L-ID
      GOBACK.
  END PROGRAM CORE-CONN-OPEN.
@@ -115,10 +134,15 @@
  PROGRAM-ID. CORE-CONN-INPUT.
 *> USING connection id, CORE-BUFFER (CB-LENGTH received bytes at CB-ADDR).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID CORE-BUFFER.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      CALL "SESSION-INPUT" USING L-ID CORE-BUFFER
      GOBACK.
  END PROGRAM CORE-CONN-INPUT.
@@ -128,11 +152,18 @@
 *> USING connection id, CORE-BUFFER (up to CB-CAPACITY bytes at CB-ADDR; CB-LENGTH out),
 *> close-flag out (BINARY-LONG).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ID                   BINARY-LONG.
  01 L-CLOSE                BINARY-LONG.
  PROCEDURE DIVISION USING L-ID CORE-BUFFER L-CLOSE.
+     IF CW-OPEN NOT = "Y"
+         MOVE 0 TO CB-LENGTH
+         MOVE 1 TO L-CLOSE
+         GOBACK
+     END-IF
      CALL "SESSION-OUTPUT" USING L-ID CORE-BUFFER L-CLOSE
      GOBACK.
  END PROGRAM CORE-CONN-OUTPUT.
@@ -141,9 +172,14 @@
  PROGRAM-ID. CORE-CONN-CLOSED.
 *> USING connection id: the transport closed; the player, if any, leaves.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      CALL "SESSION-CLOSED" USING L-ID
      GOBACK.
  END PROGRAM CORE-CONN-CLOSED.
@@ -161,6 +197,9 @@
  COPY CORESTATE.
  01 WS-DEBUG               BINARY-LONG.
  PROCEDURE DIVISION.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      ADD 1 TO CW-TICKS
 *>   A debug world runs no world work (debug-world.md section 6): only the connections' keep-alives.
      CALL "WORLD-IS-DEBUG" USING WS-DEBUG
@@ -186,9 +225,15 @@
 *> USING CORE-BUFFER: moves up to CB-CAPACITY bytes of pending console lines into the buffer
 *> (CB-LENGTH = bytes moved); the rest stays queued.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  COPY COREAPI.
  PROCEDURE DIVISION USING CORE-BUFFER.
+     IF CW-OPEN NOT = "Y"
+         MOVE 0 TO CB-LENGTH
+         GOBACK
+     END-IF
      CALL "CONSOLE-DRAIN" USING CORE-BUFFER
      GOBACK.
  END PROGRAM CORE-CONSOLE-DRAIN.
@@ -202,6 +247,11 @@
  LINKAGE SECTION.
  COPY COREAPI.
  PROCEDURE DIVISION USING CORE-STATUS.
+     IF CW-OPEN NOT = "Y"
+         MOVE 2 TO CST-RUN-STATE
+         MOVE 0 TO CST-PLAYERS-ONLINE
+         GOBACK
+     END-IF
      MOVE CW-RUN-STATE TO CST-RUN-STATE
      CALL "PLAYERS-ONLINE" USING CST-PLAYERS-ONLINE
      GOBACK.
@@ -213,9 +263,14 @@
 *> permission (US15-1, FR-016; CONSOLE-RUN); its result or error is queued as console lines for
 *> CORE-CONSOLE-DRAIN (US15-3).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  LINKAGE SECTION.
  01 L-LINE                 PIC X.
  PROCEDURE DIVISION USING L-LINE.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      CALL "CONSOLE-RUN" USING L-LINE
      GOBACK.
  END PROGRAM CORE-CONSOLE.
@@ -238,6 +293,9 @@
  LINKAGE SECTION.
  01 L-REASON               PIC X.
  PROCEDURE DIVISION USING L-REASON.
+     IF CW-OPEN NOT = "Y"
+         GOBACK
+     END-IF
      CALL "WORLD-SAVE"
      INITIALIZE PB-TEXT
      MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
@@ -282,3 +340,151 @@
      END-IF
      GOBACK.
  END PROGRAM CORE-OPEN-TO-OTHERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-TYPE-DECIDE.
+*> USING requested type (PIC X(10): CS-WORLD-TYPE, spaces = cobolcraft), type out (PIC X(10)), status out (BINARY-LONG,
+*> CORE-WO-*). The rules of world-types section 2.1 for the folder CW-FOLDER: a folder with level.dat takes the type
+*> of its WorldType (standard, cobolcraft, debug); an absent key with no dimensions/minecraft folder is an old
+*> world, cobolcraft (rule 2); an absent key with that folder, a key of another value or a tag of another type is
+*> refused CORE-WO-NO-WORLDTYPE (rules 3 and 4); a folder without level.dat that holds dimensions/ content is refused
+*> CORE-WO-NO-LEVEL-DAT (WT-24: any region or entities file counts, WORLD-HAS-DATA); otherwise a new world takes the requested type (an unknown one is refused).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-FILE                PIC X(1100).
+ 01 WS-INFO                PIC X(16).
+ 01 WS-HAS-LEVEL           PIC 9.
+ 01 WS-HAS-MINECRAFT       PIC 9.
+ 01 WS-HAS-DATA           BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-REQUEST              PIC X(10).
+ 01 L-TYPE                 PIC X(10).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-REQUEST L-TYPE L-STATUS.
+     MOVE CORE-WO-OK TO L-STATUS
+     MOVE SPACES TO L-TYPE WS-FILE
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/level.dat" X"00" DELIMITED BY SIZE INTO WS-FILE
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-INFO
+     MOVE 0 TO WS-HAS-LEVEL
+     IF RETURN-CODE = 0
+         MOVE 1 TO WS-HAS-LEVEL
+     END-IF
+     MOVE SPACES TO WS-FILE
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/dimensions/minecraft" X"00" DELIMITED BY SIZE INTO WS-FILE
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-INFO
+     MOVE 0 TO WS-HAS-MINECRAFT
+     IF RETURN-CODE = 0
+         MOVE 1 TO WS-HAS-MINECRAFT
+     END-IF
+     MOVE 0 TO RETURN-CODE
+     IF WS-HAS-LEVEL = 0
+         CALL "WORLD-HAS-DATA" USING WS-HAS-DATA
+         IF WS-HAS-DATA = 1
+             MOVE CORE-WO-NO-LEVEL-DAT TO L-STATUS
+             GOBACK
+         END-IF
+         MOVE L-REQUEST TO L-TYPE
+         IF L-TYPE = SPACES
+             MOVE "cobolcraft" TO L-TYPE
+         END-IF
+     ELSE
+         CALL "LEVEL-PEEK-TYPE" USING WS-FOUND WS-TEXT
+         EVALUATE TRUE
+             WHEN WS-FOUND = 1
+                 MOVE WS-TEXT TO L-TYPE
+             WHEN WS-FOUND = 0 AND WS-HAS-MINECRAFT = 0
+                 MOVE "cobolcraft" TO L-TYPE
+             WHEN OTHER
+                 MOVE CORE-WO-NO-WORLDTYPE TO L-STATUS
+                 GOBACK
+         END-EVALUATE
+     END-IF
+     IF L-TYPE NOT = "standard" AND L-TYPE NOT = "cobolcraft" AND L-TYPE NOT = "debug"
+         MOVE CORE-WO-NO-WORLDTYPE TO L-STATUS
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-TYPE-DECIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-CONTENT-OPEN.
+*> USING world type (PIC X(10), standard, cobolcraft or debug), generated directory (PIC X(1024), CS-GENERATED-DIR),
+*> status out (BINARY-LONG CORE-WO-*): opens the content set of the type (the cobolcraft set reads nothing from the
+*> directory; a standard or debug set needs the packs check ok and loads the generated data). A set that does not
+*> open is CORE-WO-PACKS-NOT-OK (FR-004): CT-PACKS-STATUS holds the packs answer.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY COREAPI.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-DIR                 PIC X(1100).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(10).
+ 01 L-DIR                  PIC X(1024).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-DIR L-STATUS.
+     MOVE SPACES TO WS-DIR
+     EVALUATE L-TYPE
+         WHEN "standard"
+             MOVE CT-TYPE-STANDARD TO WS-TYPE
+             MOVE L-DIR TO WS-DIR
+         WHEN "debug"
+             MOVE CT-TYPE-DEBUG TO WS-TYPE
+             MOVE L-DIR TO WS-DIR
+         WHEN OTHER
+             MOVE CT-TYPE-COBOLCRAFT TO WS-TYPE
+     END-EVALUATE
+     CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
+     MOVE CORE-WO-OK TO L-STATUS
+     IF WS-STATUS NOT = CT-OK
+         MOVE CORE-WO-PACKS-NOT-OK TO L-STATUS
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-CONTENT-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-HAS-DATA.
+*> USING found out (BINARY-LONG 1 or 0): 1 when a region or entities folder of any dimension of the table, in the
+*> world folder CW-FOLDER, holds a file (saved chunks or entities that creating a world over it would destroy).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-KIND                PIC X(8).
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-DIRZ                PIC X(1025).
+ 01 WS-LIST                PIC X(4096).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 4096.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOUND.
+     MOVE 0 TO L-FOUND
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > DIM-TABLE-ROWS
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+             MOVE "region" TO WS-KIND
+             IF WS-K = 2
+                 MOVE "entities" TO WS-KIND
+             END-IF
+             CALL "PERSIST-DIM-DIR" USING WS-D WS-KIND WS-DIR WS-LENGTH
+             MOVE LOW-VALUES TO WS-DIRZ
+             MOVE WS-DIR(1:WS-LENGTH) TO WS-DIRZ(1:WS-LENGTH)
+             MOVE 0 TO WS-LIST-COUNT
+             CALL STATIC "cc_fs_list" USING BY REFERENCE WS-DIRZ BY REFERENCE WS-LIST
+                 BY VALUE WS-LIST-CAPACITY BY REFERENCE WS-LIST-COUNT RETURNING WS-RC
+             IF WS-LIST-COUNT > 0
+                 MOVE 1 TO L-FOUND
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO RETURN-CODE
+     GOBACK.
+ END PROGRAM WORLD-HAS-DATA.

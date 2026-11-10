@@ -78,8 +78,8 @@
 *>   TEST-PLACE-RECIPE USING connection id, recipe display id: feeds Place Recipe (05c 0x27:
 *>     container 0, the display id, use max items false).
 *>   TEST-DRAIN-CRAFT USING connection id, text out (PIC X(4096)): drains the connection and lists
-*>     its crafting packets separated by " | ": Recipe Book Add "book <entries> craftable <display
-*>     ids with crafting requirements, space-separated> replace <0|1>" and Container Set Slot
+*>     its crafting packets separated by " | ": Recipe Book Settings "settings", Recipe Book Add "book
+*>     <entries> ids <display ids, space-separated> replace <0|1>" and Container Set Slot
 *>     "slot <s>=<item>x<count>"; other packets are left out.
 *>   TEST-DRAIN-WEATHER USING connection id, text out (PIC X(4096)): drains the connection and lists
 *>     its weather Game Events (events 1, 2, 7 and 8) separated by " | " as "<event> <value>" (one
@@ -736,14 +736,22 @@
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
-                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     CALL "PB-GET-ITEM-STACK" USING PK-BUFFER PK-ITEMSTACK-X
                      MOVE WS-A TO WS-E1
                      MOVE WS-B TO WS-E2
-                     MOVE PK-IS-ITEM TO WS-E3
-                     MOVE PK-IS-COUNT TO WS-E4
+                     MOVE PK-ISX-ITEM TO WS-E3
+                     MOVE PK-ISX-COUNT TO WS-E4
                      STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "="
-                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) ")" DELIMITED BY SIZE
+                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
+*>                   A stack with a component patch shows its counts: "{a<added>r<removed>}".
+                     IF PK-ISX-ADDED-COUNT > 0 OR PK-ISX-REMOVED-COUNT > 0
+                         MOVE PK-ISX-ADDED-COUNT TO WS-E1
+                         MOVE PK-ISX-REMOVED-COUNT TO WS-E2
+                         STRING "{a" FUNCTION TRIM(WS-E1) "r" FUNCTION TRIM(WS-E2) "}" DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                     STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  WHEN 49
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-B
@@ -1473,21 +1481,21 @@
                      PERFORM SEPARATE-ENTRY
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
                      MOVE WS-COUNT TO WS-E1
-                     STRING "book " FUNCTION TRIM(WS-E1) " craftable" DELIMITED BY SIZE
+                     STRING "book " FUNCTION TRIM(WS-E1) " ids" DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
                      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
-                         CALL "PB-GET-RECIPE-DISPLAY" USING PK-BUFFER PK-RECIPE-DISPLAY
-                         CALL "PB-GET-BYTE" USING PK-BUFFER WS-A
-                         IF PK-RD-REQ-PRESENT = 1
-                             MOVE PK-RD-DISPLAY-ID TO WS-E1
-                             STRING " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
-                                 INTO L-TEXT POINTER WS-PTR
-                         END-IF
+                         CALL "PB-GET-RECIPE-ENTRY" USING PK-BUFFER PK-RECIPE-ENTRY PK-SLOT-DISPLAY-TABLE
+                         MOVE PK-RE-DISPLAY-ID TO WS-E1
+                         STRING " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
                      END-PERFORM
                      CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
                      MOVE WS-A TO WS-E1
                      STRING " replace " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
+                 WHEN 77
+                     PERFORM SEPARATE-ENTRY
+                     STRING "settings" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  WHEN 20
                      PERFORM SEPARATE-ENTRY
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A

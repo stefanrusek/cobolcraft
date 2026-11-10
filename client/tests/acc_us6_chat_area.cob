@@ -44,7 +44,7 @@
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 24/24|message 3|message 4|message 5|message 6|message 7|"
+     MOVE "+||||||||||Health 20/20|Food 20/20|message 3|message 4|message 5|message 6|message 7|"
          & "message 8|message 9|"
          & "message 10|message 11|message 12" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -56,7 +56,7 @@
          & "hidden" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 24/24" TO TL-EXPECTED
+     MOVE "+||||||||||Health 20/20|Food 20/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE CC-KEY-T TO WS-KEY

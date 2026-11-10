@@ -21,7 +21,7 @@ of README Part 7 decision 16.
 | Program | Parameters | Behaviour |
 |---|---|---|
 | `CORE-PACKS-STATUS` | generated directory, OUT status word, OUT reason text (English, the console wording of 22 §9.2) | Delegates to `CONTENT-PACKS-CHECK`; the host prints it (dedicated server) or the client shows the built-in-language text (title banner, Create refusal, world list row). |
-| `CORE-WORLD-OPEN` | as before | New outcomes (each a defined status, not a crash): standard world and packs not `ok` -> refused with the status word (FR-004); a folder with `dimensions/` and no `level.dat`, or standard dimension folders and no `WorldType` -> refused (world-types.md §2.1 rules 3 and WT-24; exit code 10 on the server). New world: writes `WorldType`, `Seed`, `ContentJar`. |
+| `CORE-WORLD-OPEN` | as before | New outcomes (each a defined status, not a crash): standard world and packs not `ok` -> refused with the status word (FR-004); a folder with `dimensions/` and no `level.dat`, or standard dimension folders and no `WorldType` -> refused (world-types.md §2.1 rules 3 and WT-24; exit code 10 on the server). New world: writes `WorldType`, `Seed`, `ContentJar`. **Status return (core lane, T0334):** the created flag carries it: 1 created, 0 opened, or minus a `CORE-WO-*` word (-1 packs not ok, -2 world data but no `level.dat`, -3 no or an unknown `WorldType`); a refused world is not open. |
 | `CORE-TICK` | - | Also runs the chunk generation queue within its per-tick budget (R12) and the shared rule engines in the order of 33. |
 | All other entry points | unchanged | The connection, input, output, closed and console entry points keep their shapes; the packets change (wire-delta). |
 

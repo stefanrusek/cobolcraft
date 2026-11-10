@@ -1,0 +1,256 @@
+*> players/<offline-uuid>.dat (07 section 9.4): PLAYER-DAT-WRITE and PLAYER-DAT-READ. Split from persistence.cob (T0331).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-DAT-WRITE.
+*> USING known-player row (BINARY-LONG; CORESTATE CORE-KNOWN with its stored state): writes
+*> <world>/players/<offline-uuid>.dat (07 §9.2): DataVersion, Name, Dimension, Pos, Rotation,
+*> GameMode, Health, Food, Inventory (one {Slot, id, count} per non-empty slot, in slot order) and
+*> HeldSlot.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CITEMS.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-T-FLOAT             BINARY-LONG VALUE 5.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-INVENTORY.
+    05 WS-SLOT OCCURS 36 TIMES.
+       10 WS-SLOT-ITEM     BINARY-LONG.
+       10 WS-SLOT-COUNT    BINARY-LONG.
+ 01 WS-UUID-TEXT           PIC X(36).
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KNOWN.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE KN-INVENTORY(L-KNOWN) TO WS-INVENTORY
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "DataVersion" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DATA-VERSION
+     MOVE "Name" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL KN-NAME(L-KNOWN) KN-NAME-LENGTH(L-KNOWN)
+     MOVE "Dimension" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL DM-KEY(KN-DIM(L-KNOWN))
+         DM-KEY-LENGTH(KN-DIM(L-KNOWN))
+     MOVE "Pos" TO WN MOVE 3 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KN-X(L-KNOWN)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KN-Y(L-KNOWN)
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT KN-Z(L-KNOWN)
+     MOVE "Rotation" TO WN MOVE 8 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT KN-YAW(L-KNOWN)
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT KN-PITCH(L-KNOWN)
+     MOVE "GameMode" TO WN MOVE 8 TO WL
+     MOVE KN-MODE(L-KNOWN) TO WS-INT
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+     MOVE "Health" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL KN-HEALTH(L-KNOWN)
+     MOVE "Food" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KN-FOOD(L-KNOWN)
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF WS-SLOT-COUNT(WS-S) > 0
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "Inventory" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-COUNT
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF WS-SLOT-COUNT(WS-S) > 0
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+             MOVE "Slot" TO WN MOVE 4 TO WL
+             COMPUTE WS-INT = WS-S - 1
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+             MOVE "id" TO WN MOVE 2 TO WL
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL IT-KEY(WS-SLOT-ITEM(WS-S) + 1)
+                 IT-KEY-LENGTH(WS-SLOT-ITEM(WS-S) + 1)
+             MOVE "count" TO WN MOVE 5 TO WL
+             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-SLOT-COUNT(WS-S)
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+     MOVE "HeldSlot" TO WN MOVE 8 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL KN-HELD(L-KNOWN)
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "PERSIST-UUID-TEXT" USING KN-UUID(L-KNOWN) WS-UUID-TEXT
+     MOVE SPACES TO WS-SUFFIX
+     STRING "/players/" WS-UUID-TEXT ".dat" DELIMITED BY SIZE INTO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     GOBACK.
+ END PROGRAM PLAYER-DAT-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-DAT-READ.
+*> USING offline UUID (PIC X(16)), known-player row out (BINARY-LONG; 0 when the world has no file
+*> for that UUID, or the known-player table is full): reads players/<offline-uuid>.dat into a new
+*> known-player row: its stored state (KN-STORED 1, not dirty) and the place it left from
+*> (KN-PLACED 1; a Dimension the game does not know leaves KN-DIM 0, so the player starts at the
+*> world spawn). Stored with health 0, the player left while dead (standin §10.6); the file keeps no
+*> death cause, so the death screen shows the cause-less message of CAUSE-COMMAND (health set to 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CITEMS.
+ COPY RULES.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-NAME-SIZE           BINARY-LONG VALUE 16.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SLOT-NUMBER         BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-COUNT          BINARY-LONG.
+ 01 WS-KEY                 PIC X(32).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-INVENTORY.
+    05 WS-SLOT OCCURS 36 TIMES.
+       10 WS-SLOT-ITEM     BINARY-LONG.
+       10 WS-SLOT-COUNT    BINARY-LONG.
+ 01 WS-UUID-TEXT           PIC X(36).
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-FILE-INFO           PIC X(16).
+ LINKAGE SECTION.
+ 01 L-UUID                 PIC X(16).
+ 01 L-KNOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING L-UUID L-KNOWN.
+     MOVE 0 TO L-KNOWN
+     CALL "PERSIST-UUID-TEXT" USING L-UUID WS-UUID-TEXT
+     MOVE SPACES TO WS-SUFFIX
+     STRING "/players/" WS-UUID-TEXT ".dat" DELIMITED BY SIZE INTO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-PATH WS-FILE-INFO
+     IF RETURN-CODE NOT = 0 OR KN-COUNT >= CORE-MAX-KNOWN
+         MOVE 0 TO RETURN-CODE
+         GOBACK
+     END-IF
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     ADD 1 TO KN-COUNT
+     MOVE KN-COUNT TO L-KNOWN
+     INITIALIZE KN-PLACE(L-KNOWN) KN-STATE(L-KNOWN)
+     MOVE L-UUID TO KN-UUID(L-KNOWN)
+     MOVE 0 TO KN-DEATH-CAUSE(L-KNOWN) KN-KILLER-LENGTH(L-KNOWN)
+     MOVE SPACES TO KN-KILLER-NAME(L-KNOWN)
+     INITIALIZE WS-INVENTORY
+     CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WN = "Name" AND WS-TYPE = 8
+                 CALL "NBT-READ-STRING" USING PB-BUFFER KN-NAME(L-KNOWN) WS-NAME-SIZE
+                     KN-NAME-LENGTH(L-KNOWN)
+             WHEN WN = "Dimension" AND WS-TYPE = 8
+                 MOVE SPACES TO WS-KEY
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-NAME-CAPACITY WS-KEY-LENGTH
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
+                     IF DM-KEY(WS-I) = WS-KEY
+                         MOVE WS-I TO KN-DIM(L-KNOWN)
+                     END-IF
+                 END-PERFORM
+             WHEN WN = "Pos" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KN-X(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KN-Y(L-KNOWN)
+                 CALL "PB-GET-DOUBLE" USING PB-BUFFER KN-Z(L-KNOWN)
+             WHEN WN = "Rotation" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 CALL "PB-GET-FLOAT" USING PB-BUFFER KN-YAW(L-KNOWN)
+                 CALL "PB-GET-FLOAT" USING PB-BUFFER KN-PITCH(L-KNOWN)
+             WHEN WN = "GameMode" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                 MOVE WS-INT TO KN-MODE(L-KNOWN)
+             WHEN WN = "Health" AND WS-TYPE = 5
+                 CALL "PB-GET-FLOAT" USING PB-BUFFER KN-HEALTH(L-KNOWN)
+             WHEN WN = "Food" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER KN-FOOD(L-KNOWN)
+             WHEN WN = "HeldSlot" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER KN-HELD(L-KNOWN)
+             WHEN WN = "Inventory" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                     MOVE -1 TO WS-SLOT-NUMBER
+                     MOVE 0 TO WS-ITEM WS-ITEM-COUNT
+                     PERFORM UNTIL PB-ERROR = 1
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                             WS-NAME-CAPACITY WL
+                         IF WS-INNER-TYPE = 0
+                             EXIT PERFORM
+                         END-IF
+                         EVALUATE TRUE
+                             WHEN WN = "Slot" AND WS-INNER-TYPE = 1
+                                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-SLOT-NUMBER
+                             WHEN WN = "id" AND WS-INNER-TYPE = 8
+                                 MOVE SPACES TO WS-KEY
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-NAME-CAPACITY
+                                     WS-KEY-LENGTH
+                                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > IT-COUNT
+                                     IF IT-KEY(WS-K) = WS-KEY
+                                         COMPUTE WS-ITEM = WS-K - 1
+                                     END-IF
+                                 END-PERFORM
+                             WHEN WN = "count" AND WS-INNER-TYPE = 3
+                                 CALL "PB-GET-INT" USING PB-BUFFER WS-ITEM-COUNT
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+                     IF WS-SLOT-NUMBER >= 0 AND WS-SLOT-NUMBER <= 35 AND WS-ITEM > 0
+                         MOVE WS-ITEM TO WS-SLOT-ITEM(WS-SLOT-NUMBER + 1)
+                         MOVE WS-ITEM-COUNT TO WS-SLOT-COUNT(WS-SLOT-NUMBER + 1)
+                     END-IF
+                 END-PERFORM
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     MOVE WS-INVENTORY TO KN-INVENTORY(L-KNOWN)
+     MOVE 1 TO KN-STORED(L-KNOWN) KN-PLACED(L-KNOWN)
+     MOVE 0 TO KN-DIRTY(L-KNOWN)
+     IF KN-HEALTH(L-KNOWN) <= 0
+         MOVE CAUSE-COMMAND TO KN-DEATH-CAUSE(L-KNOWN)
+     END-IF
+     GOBACK.
+ END PROGRAM PLAYER-DAT-READ.
