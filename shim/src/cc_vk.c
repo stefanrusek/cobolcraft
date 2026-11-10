@@ -393,7 +393,7 @@ static void create_layouts(void) {
         .pBindings = &binding,
     };
     check(vkCreateDescriptorSetLayout(cc_vk_state.device, &set_info, NULL, &cc_vk_state.set_layout), "cc_vk_init: vkCreateDescriptorSetLayout failed");
-    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT, 0, 16 * sizeof(float)};
+    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT, 0, 17 * sizeof(float)}; /* matrix, daylight */
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
@@ -440,17 +440,19 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
         {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = frag, .pName = "main"},
     };
     VkVertexInputBindingDescription binding = {0, sizeof(cc_vertex), VK_VERTEX_INPUT_RATE_VERTEX};
-    VkVertexInputAttributeDescription attributes[4] = {
+    VkVertexInputAttributeDescription attributes[6] = {
         {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
         {1, 0, VK_FORMAT_R32G32_SFLOAT, 12},
         {2, 0, VK_FORMAT_R32_SFLOAT, 20},
         {3, 0, VK_FORMAT_R32_SFLOAT, 24},
+        {4, 0, VK_FORMAT_R32_SFLOAT, 28},
+        {5, 0, VK_FORMAT_R32G32B32_SFLOAT, 32},
     };
     VkPipelineVertexInputStateCreateInfo input = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &binding,
-        .vertexAttributeDescriptionCount = 4,
+        .vertexAttributeDescriptionCount = 6,
         .pVertexAttributeDescriptions = attributes,
     };
     VkPipelineInputAssemblyStateCreateInfo assembly = {
@@ -553,6 +555,7 @@ static void create_frame_objects(void) {
 }
 
 int32_t cc_vk_init(void) {
+    cc_vk_state.daylight = 1.0f;
     create_instance();
     create_device();
     create_render_pass();
@@ -788,7 +791,13 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
     vkCmdBindDescriptorSets(cc_vk_state.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.layout, 0, 1, &cc_vk_state.textures[tex_id].set, 0, NULL);
     vkCmdBindVertexBuffers(cc_vk_state.cmd, 0, 1, &m->buffer, &offset);
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 16 * sizeof(float), matrix);
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, VK_SHADER_STAGE_VERTEX_BIT, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
     vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
+}
+
+/* The daylight factor of the draws that follow (shim-abi §9). */
+void cc_vk_daylight(const float *daylight) {
+    cc_vk_state.daylight = *daylight;
 }
 
 /* Clears the depth attachment inside the open render pass (the hand pass of 12 §6 draws over the world). */

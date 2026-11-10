@@ -50,7 +50,7 @@
 
 *> Event record sizes (§8, §9).
  78 CC-EVENT-SIZE           VALUE 24.
- 78 CC-VERTEX-SIZE          VALUE 28.
+ 78 CC-VERTEX-SIZE          VALUE 44.
 
 *> Mouse buttons (§8).
  78 CC-BUTTON-LEFT          VALUE 0.
@@ -120,7 +120,8 @@
     05 CC-EV-X              FLOAT-SHORT.
     05 CC-EV-Y              FLOAT-SHORT.
 
-*> Vertex (§9, research R4): 7 x float32 = 28 bytes.
+*> Vertex (§9): 11 x float32 = 44 bytes. Colour drawn = texel x (CC-VX-R, G, B) x max(CC-VX-BRIGHTNESS,
+*> CC-VX-SKY x daylight); an untinted vertex has tint 1 1 1, one that ignores the daylight has sky 0.
  01 CC-VERTEX.
     05 CC-VX-X              FLOAT-SHORT.
     05 CC-VX-Y              FLOAT-SHORT.
@@ -129,6 +130,10 @@
     05 CC-VX-V              FLOAT-SHORT.
     05 CC-VX-BRIGHTNESS     FLOAT-SHORT.
     05 CC-VX-ALPHA          FLOAT-SHORT.
+    05 CC-VX-SKY            FLOAT-SHORT.
+    05 CC-VX-R              FLOAT-SHORT.
+    05 CC-VX-G              FLOAT-SHORT.
+    05 CC-VX-B              FLOAT-SHORT.
 
 *> CALL shapes of the additions of contract/include/ccshim.h sections 9 to 12 (CALL STATIC; a COBOL
 *> program cannot receive a C double, so every f64 operand is BY REFERENCE and the calls return nothing).
@@ -151,6 +156,7 @@
 *>     CALL STATIC "cc_vk_texture_ex" USING BY VALUE TEX-ID W H BY REFERENCE RGBA BY VALUE MIP-LEVELS
 *>         RETURNING RC
 *>     CALL STATIC "cc_vk_texture_update" USING BY VALUE TEX-ID X Y W H BY REFERENCE RGBA RETURNING RC
+*>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
 *>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
 *>   Open a path:    CALL STATIC "cc_open_path" USING BY REFERENCE OPENER-Z PATH-Z RETURNING RC
 *>                   (both z-strings; 0 at once, CC-NOTFOUND when the opener cannot start)

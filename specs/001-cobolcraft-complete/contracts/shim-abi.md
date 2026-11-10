@@ -130,8 +130,12 @@ GLFW headers.
 ## 9. `cc_vk` — Vulkan submission
 
 Pipelines: `CC_PIPE_OPAQUE = 0` (depth test+write, no blend), `CC_PIPE_TRANSLUCENT = 1` (depth test, no
-write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend), `CC_PIPE_CRUMBLING = 3` (the crack overlay of 12 section 4.3: depth test less-or-equal with a bias toward the camera, no depth write; colour = 2 x source x destination (blend factors DST_COLOR and SRC_COLOR), alpha = source alpha; a fragment whose texel alpha times vertex alpha is under 0.1 is discarded). Vertex: 7 x `float32` = 28 bytes
-(x, y, z, u, v, brightness, alpha) (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
+write, alpha blend), `CC_PIPE_UI = 2` (no depth, alpha blend), `CC_PIPE_CRUMBLING = 3` (the crack overlay of 12 section 4.3: depth test less-or-equal with a bias toward the camera, no depth write; colour = 2 x source x destination (blend factors DST_COLOR and SRC_COLOR), alpha = source alpha; a fragment whose texel alpha times vertex alpha is under 0.1 is discarded). Vertex: 11 x `float32` = 44 bytes
+(x, y, z, u, v, brightness, alpha, sky, r, g, b), field offsets 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40. The drawn colour is
+`texel.rgb x (r, g, b) x max(brightness, sky x daylight)` and the drawn alpha `texel.a x alpha` (the UI pipeline ignores brightness,
+sky and daylight: colour `texel.rgb x (r, g, b)`). An untinted vertex carries `r = g = b = 1`; a vertex that does not follow the
+daylight carries `sky = 0`. A mesh baked once (a terrain section) puts the light the daylight does not scale in `brightness` and the
+sky-light term in `sky`, so a change of daylight needs no new mesh (research R4). Textures are RGBA8, sampled NEAREST, clamp-to-edge
 unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`, `CC_WRAP_REPEAT = 1`).
 
 | Function | Behaviour |
@@ -141,6 +145,7 @@ unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`,
 | `int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap)` | Sets the wrap mode (`CC_WRAP_CLAMP` or `CC_WRAP_REPEAT`, both axes) used by the next `cc_vk_texture` of `tex_id`; a texture already uploaded keeps its mode until replaced. Default clamp-to-edge, and `cc_vk_shutdown` resets every id to it. 0; an invalid id or mode is fatal. |
 | `int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count)` | Creates, replaces or (with `vertex_count` = 0) frees vertex buffer `slot` (1 to 65535). 0. |
 | `int32_t cc_vk_frame_begin(const float clear_rgba[4])` | Acquires the next image (recreating the swapchain after a resize) and begins recording. 0, or `CC_AGAIN = 1` when the window is minimised (frame skipped). |
+| `void cc_vk_daylight(const float *daylight)` | Sets the daylight factor (0 to 1; 1 until set, and again after `cc_vk_init`) that the draws recorded afterwards use (push constant, with the matrix, read by the vertex shader). |
 | `void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16])` | Records a draw of the slot's triangles with the matrix as push constant (column-major). |
 | `void cc_vk_frame_end(void)` | Submits and presents (FIFO). |
 | `void cc_vk_shutdown(void)` | Waits idle and destroys everything. |

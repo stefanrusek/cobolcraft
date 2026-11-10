@@ -9,8 +9,8 @@
 
 #define S cc_vk_state
 
-static const float TRIANGLE[3 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.0f, 0.5f, 0.5f, 0.5f, 1, 1, 1,
+static const float TRIANGLE[3 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1, 0, 1, 1, 1,  0.0f, 0.5f, 0.5f, 0.5f, 1, 1, 1, 0, 1, 1, 1,
 };
 static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 static const float CLEAR[4] = {0.2f, 0.3f, 0.4f, 1};

@@ -429,9 +429,9 @@ static void window(void) {
 }
 
 /* One textured quad (two triangles) covering the clip-space square [-0.5, 0.5]. */
-static const float QUAD[6 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1,
+static const float QUAD[6 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1, 0, 1, 1, 1,
 };
 static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
@@ -461,6 +461,12 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_mesh free returns 0", 0, cc_vk_mesh(1, NULL, 0));
     tl_int("contract shim cc_vk_mesh highest slot returns 0", 0, cc_vk_mesh(CC_MESH_SLOT_MAX, QUAD, 6));
 
+    {
+        const float half = 0.5f, full = 1.0f;
+        cc_vk_daylight(&half);
+        cc_vk_daylight(&full);
+        tl_int("contract shim cc_vk_daylight takes a pointer to the factor and returns", 1, 1);
+    }
     static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling"};
     const float clear[4] = {0, 0, 0, 1};
     for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) {
