@@ -1024,11 +1024,26 @@
  01 WS-MY                  BINARY-LONG.
  01 WS-F                   FLOAT-LONG.
  01 WS-STEP                BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      IF BM-TYPE = 8
          CALL "ANVIL-INPUT" USING CLIENT-STATE
+     END-IF
+*>   4.7 the lectern's keys: Page Up (GLFW 266) presses the back button (visible from page 1), Page Down (267) the forward button.
+     IF BM-TYPE = 17
+         IF IN-KEY-PRESSED(CL-KEY-PAGE-UP + 1) = 1 AND BM-DATA(1) > 0
+             MOVE ACT-MENU-BUTTON TO WS-ACTION
+             MOVE 1 TO WS-ARG
+             CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+         END-IF
+         IF IN-KEY-PRESSED(CL-KEY-PAGE-DOWN + 1) = 1
+             MOVE ACT-MENU-BUTTON TO WS-ACTION
+             MOVE 2 TO WS-ARG
+             CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ARG
+         END-IF
      END-IF
      IF BM-TYPE = 19 AND MC-COUNT > 7
          COMPUTE WS-GW = FUNCTION MAX(IN-WIN-W / CL-GUI-SCALE, CL-MIN-GUI-W)

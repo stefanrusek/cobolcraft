@@ -165,6 +165,9 @@
  78 DIR-EAST                VALUE 6.
 
 *> Limits of the client state (CLSTATE.cpy).
+*> The lectern's page keys (GLFW codes; 40-5 section 4.7 leaves the key-code space open, Open question 6).
+ 78 CL-KEY-PAGE-UP         VALUE 266.
+ 78 CL-KEY-PAGE-DOWN       VALUE 267.
  78 CL-MAX-SERVERS          VALUE 32.
  78 CL-MAX-WORLDS           VALUE 32.
  78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
