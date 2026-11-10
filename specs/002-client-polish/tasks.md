@@ -680,8 +680,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0417 [US11-core] Implement density evaluation in `core/src/density.cob` (evaluator from the previous slice; this slice adds the chunk interpolation grids, `DNG-*` grid mode of the interpolated node)
 - [x] T0418 [US11-core] Write test `core/tests/test_terrain_fill.cob`: the stone/water/air fill of a chunk from final density with the worked example columns
 - [x] T0419 [US11-core] Implement the terrain fill in `core/src/terrain.cob`
-- [ ] T0420 [US11-core] Write test `core/tests/test_aquifer.cob`: aquifer fluid level and barrier decisions (10)
-- [ ] T0421 [US11-core] Implement aquifers in `core/src/aquifer.cob`
+- [x] T0420 [US11-core] Write test `core/tests/test_aquifer.cob`: aquifer fluid level and barrier decisions (10). Formulas, surface scan, centres and decisions on hand-authored fixtures; the noise-driven values (barrier, floodedness, spread, lava) are a Convergence test on real data
+- [x] T0421 [US11-core] Implement aquifers in `core/src/aquifer.cob` (the fluid-update scheduling flag of 9.2 is not tracked yet: nothing consumes it before the fluid engine)
 - [ ] T0422 [US11-core] Write test `core/tests/test_surface_rules.cob`: the surface rule evaluation for badlands, desert, ocean floors and the default (10, 37 part 4)
 - [ ] T0423 [US11-core] Implement surface rules in `core/src/surface.cob`
 - [ ] T0424 [US11-core] Gate: run `make gate-core` and record the command and real output

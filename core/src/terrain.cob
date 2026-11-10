@@ -53,7 +53,7 @@
                  IF WS-D > 0
                      MOVE 0 TO WS-KIND
                  ELSE
-                     CALL "AQUIFER-SUBSTANCE" USING WS-X WS-Y WS-Z WS-D WS-KIND
+                     CALL "AQUIFER-SUBSTANCE" USING L-JOB WS-X WS-Y WS-Z WS-D WS-KIND
                  END-IF
                  EVALUATE WS-KIND
                      WHEN 1

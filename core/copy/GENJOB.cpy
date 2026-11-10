@@ -18,3 +18,33 @@
        10 GJ-HM-OCEAN       BINARY-LONG OCCURS 256 TIMES.
     05 GJ-GRID.
        COPY GENGRID.
+*>  the aquifer of the chunk (aquifer.cob): READY 0 = no aquifer data (the global fluid picker alone), the positional factory
+*>  of minecraft:aquifer, skipSamplingAboveY, the noise handles and density roots it uses, the grid cells (3 x 3 columns of
+*>  cells from chunk x - 1 and chunk z - 1, 35 layers from cell y -7: centre and status, computed on first use) and the memo
+*>  of the preliminary surface level by quart column
+    05 GJ-AQ.
+       10 GJ-AQ-READY       BINARY-LONG.
+       10 GJ-AQ-FLO         BINARY-DOUBLE UNSIGNED.
+       10 GJ-AQ-FHI         BINARY-DOUBLE UNSIGNED.
+       10 GJ-AQ-SKIP-Y      BINARY-LONG.
+       10 GJ-AQ-MAX-SURFACE BINARY-LONG.
+       10 GJ-AQ-BARRIER     BINARY-LONG.
+       10 GJ-AQ-FLOOD       BINARY-LONG.
+       10 GJ-AQ-SPREAD      BINARY-LONG.
+       10 GJ-AQ-LAVA        BINARY-LONG.
+       10 GJ-AQ-ROOT-PSL    BINARY-LONG.
+       10 GJ-AQ-ROOT-ERO    BINARY-LONG.
+       10 GJ-AQ-ROOT-DEP    BINARY-LONG.
+       10 GJ-AQ-CELL OCCURS 315 TIMES.
+          15 GJ-AQ-HAVE     BINARY-LONG.
+          15 GJ-AQ-PX       BINARY-LONG.
+          15 GJ-AQ-PY       BINARY-LONG.
+          15 GJ-AQ-PZ       BINARY-LONG.
+          15 GJ-AQ-STAT     BINARY-LONG.
+          15 GJ-AQ-LEVEL    BINARY-LONG.
+          15 GJ-AQ-TYPE     BINARY-LONG.
+       10 GJ-AQ-SURF OCCURS 2048 TIMES.
+          15 GJ-AQ-S-USED   BINARY-LONG.
+          15 GJ-AQ-S-X      BINARY-LONG.
+          15 GJ-AQ-S-Z      BINARY-LONG.
+          15 GJ-AQ-S-VALUE  BINARY-LONG.

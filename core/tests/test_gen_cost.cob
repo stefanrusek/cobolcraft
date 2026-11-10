@@ -55,7 +55,7 @@
  01 WS-T1                  BINARY-LONG.
  01 WS-CUR-STAGE           BINARY-LONG.
  01 WS-STAGE-TIME.
-    05 WS-ST               BINARY-LONG OCCURS 7 TIMES.
+    05 WS-ST               BINARY-LONG OCCURS 8 TIMES.
  01 WS-EDIT                PIC Z(5)9.
  01 WS-JOB.
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==T-==.
