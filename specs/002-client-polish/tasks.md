@@ -2499,7 +2499,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T2174 [US14-core] Write test `core/tests/test_ench_8.cob` for the enchantment engine (levels, iteration, combining) (`docs/protocol/28-enchantment-effects.md` §8): every type, formula and worked example of the chapter; case names start `acceptance US14 28.8 ` (FR-035, SC-008) (done in ench-6/7/8.cob as decision and formula programs (the effect objects that act on the world are not run by the core yet))
 - [x] T2175 [US14-core] Implement the enchantment engine (levels, iteration, combining) in `core/src/ench-8.cob` so the test passes (done in ench-6/7/8.cob as decision and formula programs (the effect objects that act on the world are not run by the core yet))
 - [x] T2176 [US14-core] Review task (mechanical, SC-008): run `sed -n '/^### 2\.2/,/^## 3\./p' docs/protocol/17-tools-weapons-and-combat.md | grep -o '^| `[a-z_]*`' | tr -d '|` ' | while read i; do grep -q "$i" core/tests/test_tool_*.cob || echo "MISSING $i"; done` and record that it prints nothing (done: the command first printed MISSING pufferfish_bucket and MISSING bundle; both were added to test_tool_use_3_8.cob and the rerun prints nothing, output in scratchpad/tools2/t2176.txt)
-- [ ] T2177 [US14-core] Gate: run `make gate-core` and record the command and real output
+- [x] T2177 [US14-core] Gate: run `make gate-core` and record the command and real output (done: `make gate-core` passed 2422 failed 0, coverage 71 objects 0 uncovered lines; output scratchpad/tools2/gate-core-3.txt)
 
 #### Phase 49: US15-core — mobs
 
