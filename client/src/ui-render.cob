@@ -33,10 +33,11 @@
  01 WS-CARET-TEXT          PIC X(256) VALUE "_".
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-SPRITE-ROW          BINARY-LONG.
+ 01 WS-RGB                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE
+     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-DARK
      CALL "HB-RNG-SEED" USING CLIENT-STATE
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
@@ -110,13 +111,20 @@
              CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
              COMPUTE WS-X = SM-W-X(WS-W) + (SM-W-W(WS-W) - WS-WIDTH) / 2
          END-IF
-         CALL "UI-TEXT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y
+         MOVE SM-W-COLOUR(WS-W) TO WS-RGB
+         IF WS-RGB = 0
+             MOVE 16777215 TO WS-RGB
+         END-IF
+         CALL "UI-TEXT-C" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y WS-RGB
          IF WS-CARET = 1
              CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
              ADD WS-WIDTH TO WS-X
              CALL "UI-TEXT" USING CLIENT-STATE WS-CARET-TEXT WS-ONE WS-X WS-Y
          END-IF
      END-PERFORM
+     IF TT-COUNT > 0
+         CALL "TOOLTIP-DRAW" USING CLIENT-STATE
+     END-IF
      GOBACK.
  END PROGRAM UI-RENDER.
 
@@ -599,7 +607,7 @@
                  MOVE L-V1 TO B-V(WS-COUNT)
              END-IF
              MOVE 0 TO B-Z(WS-COUNT)
-             MOVE 1 TO B-B(WS-COUNT)
+             COMPUTE B-B(WS-COUNT) = 1 - RL-UI-DARK
              COMPUTE B-A(WS-COUNT) = 1 - RL-UI-FADE
          END-PERFORM
      END-IF
@@ -651,3 +659,138 @@
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
      GOBACK.
  END PROGRAM UI-ICON-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-TEXT-C.
+*> USING CLIENT-STATE, text, length, x, y, colour (RGB integer): UI-TEXT with the glyphs at the grey luminance of the colour (the
+*> vertex carries one brightness, so #404040 is 0.251 and white 1); the brightness is restored afterwards.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-RGB                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y L-RGB.
+     COMPUTE WS-R = L-RGB / 65536
+     COMPUTE WS-G = FUNCTION MOD(L-RGB / 256, 256)
+     COMPUTE WS-B = FUNCTION MOD(L-RGB, 256)
+     COMPUTE RL-UI-DARK = 1 - (WS-R * 299 + WS-G * 587 + WS-B * 114) / 255000
+     CALL "UI-TEXT" USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y
+     MOVE 0 TO RL-UI-DARK
+     GOBACK.
+ END PROGRAM UI-TEXT-C.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOLTIP-ADD.
+*> USING CLIENT-STATE, text (PIC X(256)), length, colour (RGB integer): appends a line to the tooltip (at most 8 lines, 120 bytes each).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-RGB                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-RGB.
+     IF TT-COUNT < 8
+         ADD 1 TO TT-COUNT
+         MOVE FUNCTION MIN(L-LENGTH, 120) TO TT-L-LEN(TT-COUNT)
+         MOVE L-RGB TO TT-L-RGB(TT-COUNT)
+         MOVE L-TEXT(1:120) TO TT-L-TEXT(TT-COUNT)
+     END-IF
+     GOBACK.
+ END PROGRAM TOOLTIP-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOLTIP-LAYOUT.
+*> USING CLIENT-STATE, GUI width, GUI height, x, y, width, height (all out; GUI pixels): 12 section 5.8: the text block is as wide as its widest line and 10 high
+*> per line (2 more when TT-TITLE-GAP is 1: item tooltips); it starts at the mouse (TT-X, TT-Y) + (12, -12); when x + width is over the GUI width, x becomes
+*> max(x - 24 - width, 4); when y + height + 3 is over the GUI height, y becomes GUI height - height - 3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GUIW                 BINARY-LONG.
+ 01 L-GUIH                 BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GUIW L-GUIH L-X L-Y L-W L-H.
+     MOVE 0 TO L-W
+     COMPUTE L-H = 10 * TT-COUNT + 2 * TT-TITLE-GAP
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TT-COUNT
+         MOVE TT-L-TEXT(WS-I) TO WS-TEXT
+         CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT TT-L-LEN(WS-I) WS-WIDTH
+         MOVE FUNCTION MAX(L-W, WS-WIDTH) TO L-W
+     END-PERFORM
+     COMPUTE L-X = TT-X + 12
+     COMPUTE L-Y = TT-Y - 12
+     IF L-X + L-W > L-GUIW
+         COMPUTE L-X = FUNCTION MAX(L-X - 24 - L-W, 4)
+     END-IF
+     IF L-Y + L-H + 3 > L-GUIH
+         COMPUTE L-Y = L-GUIH - L-H - 3
+     END-IF
+     GOBACK.
+ END PROGRAM TOOLTIP-LAYOUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOLTIP-DRAW.
+*> USING CLIENT-STATE: draws the tooltip of TT-* on the top layer: the background and frame sprites over (x - 12, y - 12) with (width + 24, height + 24) (a
+*> swatch over the padded text block when the sprites are not loaded), then the lines from (x, y), 10 down each (the first line 2 more with the title gap),
+*> each in its colour.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-GUIW                BINARY-LONG.
+ 01 WS-GUIH                BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-W2                  BINARY-LONG.
+ 01 WS-H2                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-GUIW = IN-WIN-W / CL-GUI-SCALE
+     COMPUTE WS-GUIH = IN-WIN-H / CL-GUI-SCALE
+     CALL "TOOLTIP-LAYOUT" USING CLIENT-STATE WS-GUIW WS-GUIH WS-X WS-Y WS-W WS-H
+     MOVE 1 TO RL-UI-LAYER
+     COMPUTE WS-X0 = WS-X - 12
+     COMPUTE WS-Y0 = WS-Y - 12
+     COMPUTE WS-W2 = WS-W + 24
+     COMPUTE WS-H2 = WS-H + 24
+     IF GS-W(GSP-TOOLTIP-BACK) > 0 AND GS-W(GSP-TOOLTIP-FRAME) > 0
+         MOVE GSP-TOOLTIP-BACK TO WS-ROW
+         CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X0 WS-Y0 WS-W2 WS-H2
+         MOVE GSP-TOOLTIP-FRAME TO WS-ROW
+         CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X0 WS-Y0 WS-W2 WS-H2
+     ELSE
+         COMPUTE WS-X0 = WS-X - 3
+         COMPUTE WS-Y0 = WS-Y - 3
+         COMPUTE WS-W2 = WS-W + 6
+         COMPUTE WS-H2 = WS-H + 6
+         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-W2 WS-H2 SW-PANEL
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TT-COUNT
+         MOVE TT-L-TEXT(WS-I) TO WS-TEXT
+         COMPUTE WS-Y0 = WS-Y + 10 * (WS-I - 1) + 2 * TT-TITLE-GAP * FUNCTION MIN(WS-I - 1, 1)
+         CALL "UI-TEXT-C" USING CLIENT-STATE WS-TEXT TT-L-LEN(WS-I) WS-X WS-Y0 TT-L-RGB(WS-I)
+     END-PERFORM
+     MOVE 0 TO RL-UI-LAYER
+     GOBACK.
+ END PROGRAM TOOLTIP-DRAW.

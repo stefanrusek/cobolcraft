@@ -323,6 +323,10 @@
              MOVE "container/slot_highlight_back" TO WS-NAME
          WHEN L-ROW = GSP-HIGHLIGHT-FRONT
              MOVE "container/slot_highlight_front" TO WS-NAME
+         WHEN L-ROW = GSP-TOOLTIP-BACK
+             MOVE "tooltip/background" TO WS-NAME
+         WHEN L-ROW = GSP-TOOLTIP-FRAME
+             MOVE "tooltip/frame" TO WS-NAME
          WHEN L-ROW = GSP-FOOD-EMPTY-HUNGER
              MOVE "hud/food_empty_hunger" TO WS-NAME
          WHEN L-ROW = GSP-FOOD-HALF-HUNGER

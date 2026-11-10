@@ -208,7 +208,7 @@
  78 CL-MIN-GUI-H            VALUE 240.
  78 CL-TICK-MS              VALUE 50.
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
- 78 CL-MAX-TOP-VERTICES     VALUE 1536.
+ 78 CL-MAX-TOP-VERTICES     VALUE 6144.
  78 CL-MAX-HL-VERTICES      VALUE 144.
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
  78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
@@ -318,7 +318,9 @@
  78 GSP-FOOD-FULL-HUNGER     VALUE 124.
  78 GSP-HIGHLIGHT-BACK      VALUE 125.  *> container/slot_highlight_back and _front, 24 x 24 (40-1 section 5.4)
  78 GSP-HIGHLIGHT-FRONT     VALUE 126.
- 78 GSP-COUNT               VALUE 126.
+ 78 GSP-TOOLTIP-BACK        VALUE 127.  *> tooltip/background and tooltip/frame, nine-slice (12 section 5.8)
+ 78 GSP-TOOLTIP-FRAME       VALUE 128.
+ 78 GSP-COUNT               VALUE 128.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 

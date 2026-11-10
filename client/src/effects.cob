@@ -501,7 +501,7 @@
 *> effects and room, every effect (show-icon flag or not) is a row in ascending natural order: stride 33, or 132 div (count - 1) from 6 effects; the
 *> row is the nine-slice background (32 high, bw = min(row width, max(32 + name, 32 + duration) + 7) wide; the row width is avail - 7 from 120, else 32),
 *> the icon at (x0 + 7, y + 7), and, when bw leaves text room (bw - 39 > 0), the name (clipped to that room) at (x0 + 32, y + 7) and the duration at
-*> (x0 + 32, y + 16). The tooltip of a compact or clipped row and the duration's grey are not drawn (no tooltip layer, labels have one colour).
+*> (x0 + 32, y + 16). The duration is drawn in its grey (#808080, as the grey luminance); the tooltip of a compact or clipped row is not drawn.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -516,6 +516,7 @@
  01 WS-STRIDE              BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-BW                  BINARY-LONG.
+ 01 WS-GREY                BINARY-LONG.
  01 WS-NAME                PIC X(64).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-DURATION            PIC X(64).
@@ -607,6 +608,9 @@
              MOVE WS-DURATION(1:WS-DURATION-LENGTH) TO WS-TEXT
              CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
                  WS-TEXT WS-DURATION-LENGTH WS-STATE
+*>           The duration is #808080 (49 section 3.3).
+             MOVE 8355712 TO WS-GREY
+             CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-GREY
          END-IF
      END-PERFORM
      GOBACK.

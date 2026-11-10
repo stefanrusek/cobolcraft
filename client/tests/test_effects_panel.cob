@@ -92,6 +92,17 @@
      MOVE "acceptance US14 49§3.2 the name and duration texts at x 335: y 44 Poison, 53 00:30, 77 Haste, 86 01:00, 110 Speed, 119 03:00" TO TL-CASE
      MOVE "44=Poison 53=00:30 77=Haste 86=01:00 110=Speed 119=03:00" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-X(WS-I) = 335
+             MOVE SM-W-COLOUR(WS-I) TO WS-E1
+             STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US14 49§3.3 the names are white (0) and the durations #808080 (8355712)" TO TL-CASE
+     MOVE "0 8355712 0 8355712 0 8355712" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   An ambient effect has the ambient background (speed, last in the ascending order: y 103).
      MOVE 0 TO WS-AMP

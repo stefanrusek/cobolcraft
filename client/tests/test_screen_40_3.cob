@@ -34,6 +34,8 @@
  01 WS-D4                  BINARY-LONG.
  01 WS-PROP                BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
+ 01 WS-CLR                BINARY-LONG.
+ 01 WS-CLRE               PIC -(9)9.
  01 WS-TEXT                PIC X(1024).
  01 WS-TOKEN               PIC X(1024).
  01 WS-OPTR                BINARY-LONG.
@@ -126,6 +128,22 @@
      MOVE "acceptance US12 40-3§3 cost 5 with a result: Enchantment Cost: 5 at (166 - width, 69) over a box from (x - 2, 67) to (168, 79)" TO TL-CASE
      PERFORM CHECK-COST
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO PL-XP-LEVEL
+     PERFORM CHECK-COST
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-CLR TO WS-CLRE
+     MOVE FUNCTION TRIM(WS-CLRE) TO TL-OBSERVED
+     MOVE "acceptance US12 40-3§3 cost 5 with level 4 (result not takeable): the label is red #FF6060" TO TL-CASE
+     MOVE "16736352" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO PL-XP-LEVEL
+     PERFORM CHECK-COST
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-CLR TO WS-CLRE
+     MOVE FUNCTION TRIM(WS-CLRE) TO TL-OBSERVED
+     MOVE "acceptance US12 40-3§3 cost 5 with level 5: the label is green #80FF20" TO TL-CASE
+     MOVE "8453920" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO BM-DATA(1)
      MOVE "acceptance US12 40-3§3 cost 0: no label" TO TL-CASE
      PERFORM CHECK-COST
@@ -146,6 +164,12 @@
          DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE "acceptance US12 40-3§3 cost 40 in survival: Too Expensive!" TO TL-CASE
      PERFORM CHECK-COST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-CLR TO WS-CLRE
+     MOVE FUNCTION TRIM(WS-CLRE) TO TL-OBSERVED
+     MOVE "acceptance US12 40-3§3 Too Expensive! is red #FF6060" TO TL-CASE
+     MOVE "16736352" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO PL-MODE
      MOVE "Enchantment Cost: 40" TO WS-TEXT
@@ -251,6 +275,7 @@
              STRING "label " FUNCTION TRIM(WS-E1) ":106 " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
              MOVE SM-W-TEXT(WS-I) TO WS-TOKEN
              MOVE SM-W-LENGTH(WS-I) TO WS-K
+             MOVE SM-W-COLOUR(WS-I) TO WS-CLR
          END-IF
      END-PERFORM
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > SM-WIDGET-COUNT

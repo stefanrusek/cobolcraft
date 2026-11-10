@@ -84,6 +84,16 @@
           15 SM-W-STATE      BINARY-LONG.    *> 0 normal, 1 selected or focused, 2 disabled
           15 SM-W-LENGTH     BINARY-LONG.
           15 SM-W-TEXT       PIC X(256).
+          15 SM-W-COLOUR     BINARY-LONG.    *> text colour as an RGB integer; 0 = white (black is 1); drawn as its grey luminance (the vertex has one brightness)
+*>     The tooltip layer (12 section 5.8): the lines of the tooltip to draw this frame, the mouse in GUI pixels, the item-tooltip title gap.
+       10 TT-COUNT           BINARY-LONG.
+       10 TT-X               BINARY-LONG.
+       10 TT-Y               BINARY-LONG.
+       10 TT-TITLE-GAP       BINARY-LONG.
+       10 TT-LINE OCCURS 8 TIMES.
+          15 TT-L-LEN        BINARY-LONG.
+          15 TT-L-RGB        BINARY-LONG.
+          15 TT-L-TEXT       PIC X(120).
        10 SM-SELECTED        BINARY-LONG.    *> server list: selected entry, 0 none
        10 SM-FOCUS           BINARY-LONG.    *> edit server: 1 name field, 2 address field
        10 SM-EDIT-INDEX      BINARY-LONG.    *> edit server: entry edited, 0 = a new entry
@@ -750,7 +760,7 @@
        10 RL-UI-LAYER        PIC 9.
        10 RL-UT-COUNT        BINARY-LONG.
        10 RL-UT-UPLOADED     BINARY-LONG.
-       10 RL-UT-VERTEX OCCURS 1536 TIMES.
+       10 RL-UT-VERTEX OCCURS 6144 TIMES.
           15 RL-UT-X         FLOAT-SHORT.
           15 RL-UT-Y         FLOAT-SHORT.
           15 RL-UT-Z         FLOAT-SHORT.
@@ -813,6 +823,7 @@
           15 RL-WX-B         FLOAT-SHORT.
           15 RL-WX-A         FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
+       10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.

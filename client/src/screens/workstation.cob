@@ -31,6 +31,7 @@
  01 WS-LINE-LENGTH         BINARY-LONG.
  01 WS-LINE-WIDTH          BINARY-LONG.
  01 WS-COST                PIC Z(8)9.
+ 01 WS-RGB                 BINARY-LONG.
  01 WS-LABEL-W             BINARY-LONG VALUE 160.
  01 WS-LABEL-H             BINARY-LONG VALUE 9.
  01 WS-ICON-W              BINARY-LONG VALUE 28.
@@ -154,6 +155,12 @@
                  MOVE 0 TO WS-SWATCH
                  CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-SWATCH WS-X WS-Y WS-LABEL-W WS-LABEL-H
                      WS-TEXT WS-LINE-LENGTH WS-STATE
+*>               Green #80FF20, red #FF6060 for "Too Expensive!" and when the player's level is under the cost (no infinite materials).
+                 MOVE 8453920 TO WS-RGB
+                 IF BM-DATA(1) >= 40 OR (PL-XP-LEVEL < BM-DATA(1) AND PL-MODE NOT = 1)
+                     MOVE 16736352 TO WS-RGB
+                 END-IF
+                 CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-RGB
              END-IF
          WHEN BM-TYPE = 13
 *>           2.9: the three option rows (108 x 19 at (60, 14 + 19 i)), the cost right-aligned to x 166 at y 23 + 19 i, and for an enabled row the click area (button i).
@@ -182,6 +189,12 @@
                      MOVE 0 TO WS-SWATCH
                      CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-SWATCH WS-X WS-Y WS-LABEL-W WS-LABEL-H
                          WS-TEXT WS-LINE-LENGTH WS-STATE
+*>                   The cost number: #80FF20 on an enabled row, #407F10 on a disabled one (40-4 2.9).
+                     MOVE 4226832 TO WS-RGB
+                     IF WS-CAN-ERROR = 1
+                         MOVE 8453920 TO WS-RGB
+                     END-IF
+                     CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-RGB
                      MOVE SPACES TO WS-TEXT
                  END-IF
                  IF WS-CAN-ERROR = 1

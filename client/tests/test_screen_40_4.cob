@@ -35,6 +35,7 @@
  01 WS-D4                  BINARY-LONG.
  01 WS-PROP                BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
+ 01 WS-CLRE               PIC -(9)9.
  01 WS-TEXT                PIC X(1024).
  01 WS-TOKEN               PIC X(1024).
  01 WS-OPTR                BINARY-LONG.
@@ -121,6 +122,17 @@
      PERFORM ROW-TEXTS
      MOVE "acceptance US12 40-4§2 the costs are right-aligned to x 166 (+ left 72) at y 23 + 19 i (+ top 37): 10 at row 0, 20 at row 1, 30 at row 2" TO TL-CASE
      PERFORM EXPECT-COSTS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-LABEL AND (SM-W-Y(WS-I) = 60 OR SM-W-Y(WS-I) = 79 OR SM-W-Y(WS-I) = 98)
+             MOVE SM-W-COLOUR(WS-I) TO WS-CLRE
+             STRING FUNCTION TRIM(WS-CLRE) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 40-4§2 cost numbers: #80FF20 on the enabled row 0, #407F10 on the disabled rows 1 and 2" TO TL-CASE
+     MOVE "8453920 4226832 4226832 " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM ROW-BUTTONS
      MOVE "acceptance US12 40-4§2 with 2 lapis and level 15 only row 0 (cost 10) is enabled: one clickable row at (132, 51), button 0" TO TL-CASE
