@@ -79,6 +79,7 @@
  78 ACT-PACK-DECLINE        VALUE 38.  *> pack prompt: decline the server's packs
  78 ACT-PACKS-DONE          VALUE 39.  *> pack screen: save the choice, reload, the title screen
  78 ACT-WORLD-TYPE          VALUE 40.   *> create-world: cycle standard / cobolcraft (Ctrl: debug)
+ 78 ACT-OPEN-PACK-FOLDER    VALUE 41.   *> pack screen: open resourcepacks/ with the opener (US4)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
  78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer

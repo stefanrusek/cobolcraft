@@ -3327,10 +3327,10 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 59: US4-client — Open Pack Folder
 
-- [ ] T2985 [US4-client] Write acceptance test `client/tests/acc_f2us4_open_folder.cob` (US4-1, US4-2, Q-2): the client state names the opener program; the test sets `/usr/bin/true`, presses Open Pack Folder, `resourcepacks/` is created if missing and the opener received the folder; a pack copied in is listed after refresh without a restart; one run line names the opener substituted [FR-008; SC-010]
-- [ ] T2986 [US4-client] Write contract test `client/tests/contract_opener_production.cob`: a fresh client state names exactly `/usr/bin/open`, and a missing opener gives the `CC-NOTFOUND` path shown on the screen without a crash
-- [ ] T2987 [US4-client] Implement the opener state, the button and `PACK-FOLDER-SCAN` refresh in `client/src/screens/pack-select.cob` and `client/copy/CLSTATE.cpy`
-- [ ] T2988 [US4-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2985 [US4-client] Write acceptance test `client/tests/acc_f2us4_open_folder.cob` (US4-1, US4-2, Q-2): the client state names the opener program; the test sets `/usr/bin/true`, presses Open Pack Folder, `resourcepacks/` is created if missing and the opener received the folder; a pack copied in is listed after refresh without a restart; one run line names the opener substituted [FR-008; SC-010]
+- [X] T2986 [US4-client] Write contract test `client/tests/contract_opener_production.cob`: a fresh client state names exactly `/usr/bin/open`, and a missing opener gives the `CC-NOTFOUND` path shown on the screen without a crash
+- [X] T2987 [US4-client] Implement the opener state, the button and `PACK-FOLDER-SCAN` refresh in `client/src/screens/pack-select.cob` and `client/copy/CLSTATE.cpy`
+- [X] T2988 [US4-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 60: US5-client — seamless textures
 
@@ -3355,12 +3355,12 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 62: US7-client — flight only in creative
 
-- [ ] T3004 [US7-client] Write acceptance test `client/tests/acc_f2us7_survival_climb.cob` first, reproducing the first run's survival climb (P-client-5): in survival, double Space in the air and Space held in the air never rises above one jump height from the ground and never starts flying; record the failing observation [FR-016, FR-017; SC-004]
-- [ ] T3005 [US7-client] Write acceptance test `client/tests/acc_f2us7_creative_flight.cob` (US7-1, SC-004): in creative double Space toggles flying 20 of 20 times; in survival 0 of 20; spectator follows `docs/protocol/13` §1.4 [FR-016, FR-017]
-- [ ] T3006 [US7-client] Fix the jump and flight rules in `client/src/physics.cob` (jump only while on ground; flight toggle only when the abilities grant it) so both tests pass. If the cause is a core acceptance of `on-ground`, stop and escalate to multi-package
-- [ ] T3007 [US7-client] Escalation path (constitution 3.6 plan-return): if `acc_f2us7_survival_climb` still fails after the client fix because the core accepts the client's `on-ground` claim, record the finding with the failing observation in the phase evidence, stop the lane's US7 slice and return to the orchestrator for a multi-package re-plan (a core slice and a Convergence test); otherwise mark this task done with the note `no core cause found`
-- [ ] T3008 [US7-client] Write test case in `client/tests/test_physics.cob` for held Space on the ground in survival: repeats jumps as before, never exceeds one jump height in the air (edge case)
-- [ ] T3009 [US7-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3004 [US7-client] Write acceptance test `client/tests/acc_f2us7_survival_climb.cob` first, reproducing the first run's survival climb (P-client-5): in survival, double Space in the air and Space held in the air never rises above one jump height from the ground and never starts flying; record the failing observation [FR-016, FR-017; SC-004]
+- [X] T3005 [US7-client] Write acceptance test `client/tests/acc_f2us7_creative_flight.cob` (US7-1, SC-004): in creative double Space toggles flying 20 of 20 times; in survival 0 of 20; spectator follows `docs/protocol/13` §1.4 [FR-016, FR-017]
+- [X] T3006 [US7-client] Fix the jump and flight rules in `client/src/physics.cob` (jump only while on ground; flight toggle only when the abilities grant it) so both tests pass. If the cause is a core acceptance of `on-ground`, stop and escalate to multi-package
+- [X] T3007 [US7-client] Escalation path (constitution 3.6 plan-return): if `acc_f2us7_survival_climb` still fails after the client fix because the core accepts the client's `on-ground` claim, record the finding with the failing observation in the phase evidence, stop the lane's US7 slice and return to the orchestrator for a multi-package re-plan (a core slice and a Convergence test); otherwise mark this task done with the note `no core cause found`
+- [X] T3008 [US7-client] Write test case in `client/tests/test_physics.cob` for held Space on the ground in survival: repeats jumps as before, never exceeds one jump height in the air (edge case)
+- [X] T3009 [US7-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 63: US8-client — break overlay
 

@@ -453,7 +453,7 @@
      MOVE "builtin lang/en_us.json is one object of the 211 keys of 08 §10.8 and the 9 "
          & "cobolcraft.packs.* and cobolcraft.world_type.* keys of 22 §9.2 and ui §7.2" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 220 TO TL-EXPECTED-N
+     MOVE 222 TO TL-EXPECTED-N
      MOVE JN-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

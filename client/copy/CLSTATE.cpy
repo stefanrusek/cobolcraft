@@ -18,6 +18,9 @@
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
+    05 CL-OPENER-LENGTH      BINARY-LONG.
+    05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
     05 CL-WORLD-TYPE         BINARY-LONG.     *> CT-TYPE-* the game connection's content set was opened as (WT-16)
     05 CL-PACKS-STATUS       BINARY-LONG.     *> CT-PACKS-* of the start-up check (CORE-PACKS-STATUS)
     05 CL-PACKS-REASON       PIC X(128).      *> its reason text (a log line, not shown)

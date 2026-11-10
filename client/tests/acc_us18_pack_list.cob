@@ -40,7 +40,7 @@
      MOVE "Resource Packs|Selected|Built-in pack|Available|alpha||Alpha pack|Compatible|beta.zip|"
          & "Beta pack|Compatible|mystery||Mystery pack|Version unknown|newer|Newer pack|Made for a"
          & " newer version|old.zip|Old pack|Made for an older version|Enable|Disable|Move Up|Move"
-         & " Down|Done" TO TL-EXPECTED
+         & " Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -44,7 +44,7 @@
      MOVE "Resource Packs|Selected|Built-in pack|Available|badmeta|badmeta cannot be used: pack."
          & "mcmeta has no usable pack section|badtex|Bad texture pack|Compatible|broken.zip|broken"
          & ".zip cannot be used: the pack cannot be read|nometa.zip|nometa.zip cannot be used: "
-         & "pack.mcmeta is missing|Enable|Disable|Move Up|Move Down|Done" TO TL-EXPECTED
+         & "pack.mcmeta is missing|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -107,7 +107,7 @@
      INSPECT WS-TEXT TALLYING WS-POS FOR CHARACTERS BEFORE INITIAL "|Done|"
      MOVE FUNCTION MIN(WS-POS + 2, 1024) TO WS-POS
      MOVE WS-TEXT(WS-POS:) TO TL-OBSERVED
-     MOVE "Done|badtex cannot be used: assets/cobolcraft/lang/en_us.json cannot be read|badtex "
+     MOVE "Done|Open Pack Folder|badtex cannot be used: assets/cobolcraft/lang/en_us.json cannot be read|badtex "
          & "cannot be used: assets/cobolcraft/textures/block/greystone.png cannot be read|badtex "
          & "cannot be used: assets/cobolcraft/textures/block/loam.png cannot be read|badtex cannot "
          & "be used: assets/cobolcraft/textures/block/grit.png cannot be read" TO TL-EXPECTED

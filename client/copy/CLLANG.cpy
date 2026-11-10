@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 220.
+ 78 BI-LANG-COUNT           VALUE 222.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -447,7 +447,11 @@
     05 FILLER PIC X(128) VALUE "World type: %s".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.world_list.type".
     05 FILLER PIC X(128) VALUE "Type: %s".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.open_folder".
+    05 FILLER PIC X(128) VALUE "Open Pack Folder".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.open_failed".
+    05 FILLER PIC X(128) VALUE "Cannot start %s to open the pack folder".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 220 TIMES.
+    05 BI-LANG OCCURS 222 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).
