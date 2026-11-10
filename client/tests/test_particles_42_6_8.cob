@@ -72,6 +72,13 @@
      MOVE "0.1 0.9" TO WS-DRT
      MOVE "block 10.66000 64.10000 -2.66000 -0.40000 1.50000 0.20000 st=9 (2)" TO WS-EXP
      PERFORM RUN-CASE
+     MOVE "sprint dust clamps below and above the block" TO WS-NAME
+     MOVE "sprint" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "9 9900 64000 -1900 600 100 -50 9 -2 0 0" TO WS-PRT
+     MOVE "0.1 0.9" TO WS-DRT
+     MOVE "block 10.00000 64.10000 -2.00000 -0.40000 1.50000 0.20000 st=9 (2)" TO WS-EXP
+     PERFORM RUN-CASE
      MOVE "honey slide" TO WS-NAME
      MOVE "honey" TO WS-CLASS
      MOVE "10 64 -3" TO WS-PT
