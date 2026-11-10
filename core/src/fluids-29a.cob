@@ -699,3 +699,367 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM FL-SPREAD-TO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-SHOULD-SPREAD.
+*> USING the five neighbours m (UP, NORTH, SOUTH, WEST, EAST: the opposites of DOWN, SOUTH, NORTH, EAST, WEST) as two groups of five
+*> BINARY-LONG flags, in order: the fluid at m is in tag water, then the block at m is blue_ice; the fluid (1 water, 2 lava), the block
+*> below is soul_soil, the lava at the position is a source (BINARY-LONG), action out (0 none, 1 obsidian, 2 cobblestone, 3 basalt;
+*> 1 to 3 are written with level event 1501), spread out (1 the caller schedules the fluid tick): LiquidBlock.shouldSpreadLiquid (3.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-WATER             BINARY-LONG OCCURS 5 TIMES.
+    05 L-ICE               BINARY-LONG OCCURS 5 TIMES.
+ 01 L-FLUID                BINARY-LONG.
+ 01 L-SOUL                 BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-SPREAD               BINARY-LONG.
+ PROCEDURE DIVISION USING L-IN L-FLUID L-SOUL L-SOURCE L-ACTION L-SPREAD.
+     MOVE 0 TO L-ACTION
+     MOVE 1 TO L-SPREAD
+     IF L-FLUID = 1
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-M FROM 1 BY 1 UNTIL WS-M > 5 OR L-ACTION NOT = 0
+         EVALUATE TRUE
+             WHEN L-WATER(WS-M) = 1 AND L-SOURCE = 1
+                 MOVE 1 TO L-ACTION
+             WHEN L-WATER(WS-M) = 1
+                 MOVE 2 TO L-ACTION
+             WHEN L-SOUL = 1 AND L-ICE(WS-M) = 1
+                 MOVE 3 TO L-ACTION
+         END-EVALUATE
+     END-PERFORM
+     IF L-ACTION NOT = 0
+         MOVE 0 TO L-SPREAD
+     END-IF
+     GOBACK.
+ END PROGRAM FL-SHOULD-SPREAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-AXPB.
+*> USING a, x, b (FLOAT-LONG), result out: the single-precision expression a * x + b (each operation rounded to float); the sound and
+*> pitch formulas of 3.3, 4.2 and 4.3 are instances of it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-Q                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-OUT                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-A L-X L-B L-OUT.
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE L-A WS-A
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE L-X WS-X
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE L-B WS-B
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-A WS-X WS-P
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-P WS-Q
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-Q WS-B WS-S
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-S L-OUT
+     GOBACK.
+ END PROGRAM FL-AXPB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-FIZZ-PITCH.
+*> USING two nextFloat draws (FLOAT-LONG), pitch out: level event 1501 (3.3): 2.6 + (r1 - r2) * 0.8 in single precision.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-SLOPE               FLOAT-LONG VALUE 0.8.
+ 01 WS-BASE                FLOAT-LONG VALUE 2.6.
+ LINKAGE SECTION.
+ 01 L-R1                   FLOAT-LONG.
+ 01 L-R2                   FLOAT-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-R1 L-R2 L-PITCH.
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-R1 L-R2 WS-D
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-D WS-E
+     CALL "FL-AXPB" USING WS-E WS-SLOPE WS-BASE L-PITCH
+     GOBACK.
+ END PROGRAM FL-FIZZ-PITCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-FIZZ-PARTICLE.
+*> USING block x, y, z (BINARY-LONG), x draw, z draw (FLOAT-LONG), particle x, y, z out (FLOAT-LONG): large_smoke at (x + nextDouble,
+*> y + 1.2, z + nextDouble), eight times (3.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ 01 L-PX                   FLOAT-LONG.
+ 01 L-PY                   FLOAT-LONG.
+ 01 L-PZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-DX L-DZ L-PX L-PY L-PZ.
+     COMPUTE L-PX = L-X + L-DX
+     COMPUTE L-PY = L-Y + 1.2
+     COMPUTE L-PZ = L-Z + L-DZ
+     GOBACK.
+ END PROGRAM FL-FIZZ-PARTICLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-CAN-SPREAD-FIRE.
+*> USING game rule fire_spread_radius_around_player, a player is close enough (BINARY-LONG), ok out: Level.canSpreadFireAround (4.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RULE                 BINARY-LONG.
+ 01 L-CLOSE                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-RULE L-CLOSE L-OK.
+     MOVE 0 TO L-OK
+     IF L-RULE = -1 OR L-CLOSE = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM FL-CAN-SPREAD-FIRE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-LAVA-STEP.
+*> USING branch (1 for n > 0, 0 for n = 0), position x, y, z, x draw, z draw (nextInt(3), BINARY-LONG), new x, y, z out: one offset of
+*> LavaFluid.randomTick (4.1): (draw - 1, branch, draw - 1) from the given position; with n > 0 each step starts from the last one.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BRANCH               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-NX                   BINARY-LONG.
+ 01 L-NY                   BINARY-LONG.
+ 01 L-NZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-BRANCH L-X L-Y L-Z L-DX L-DZ L-NX L-NY L-NZ.
+     COMPUTE L-NX = L-X + L-DX - 1
+     COMPUTE L-NY = L-Y + L-BRANCH
+     COMPUTE L-NZ = L-Z + L-DZ - 1
+     GOBACK.
+ END PROGRAM FL-LAVA-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-LAVA-DECIDE.
+*> USING branch (1 n > 0, 0 n = 0), position loaded, the block is air, a neighbour of p is flammable by lava, the cell above p is
+*> empty, p is flammable by lava, the block is in blocks_lava_fire_spread (BINARY-LONG), action out: 1 fire at p, 2 return, 3 fire at
+*> the cell above p (its state is still taken from p), 0 go on (4.1). n > 0 uses the six-neighbour test; n = 0 does not.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BRANCH               BINARY-LONG.
+ 01 L-LOADED               BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-NEIGHBOUR            BINARY-LONG.
+ 01 L-ABOVE-EMPTY          BINARY-LONG.
+ 01 L-FLAMMABLE            BINARY-LONG.
+ 01 L-BLOCKS               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BRANCH L-LOADED L-AIR L-NEIGHBOUR L-ABOVE-EMPTY L-FLAMMABLE L-BLOCKS L-ACTION.
+     MOVE 0 TO L-ACTION
+     EVALUATE TRUE
+         WHEN L-LOADED = 0
+             MOVE 2 TO L-ACTION
+         WHEN L-BRANCH = 1 AND L-AIR = 1 AND L-NEIGHBOUR = 1
+             MOVE 1 TO L-ACTION
+         WHEN L-BRANCH = 1 AND L-AIR = 0 AND L-BLOCKS = 1
+             MOVE 2 TO L-ACTION
+         WHEN L-BRANCH = 0 AND L-ABOVE-EMPTY = 1 AND L-FLAMMABLE = 1
+             MOVE 3 TO L-ACTION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM FL-LAVA-DECIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-IGNITE.
+*> USING fire-immune, current fire ticks (BINARY-LONG), new fire ticks out: lavaIgnite (4.2): igniteForSeconds(15) raises the fire
+*> ticks to at least 300; nothing for a fire-immune entity.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IMMUNE               BINARY-LONG.
+ 01 L-CURRENT              BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMMUNE L-CURRENT L-OUT.
+     MOVE L-CURRENT TO L-OUT
+     IF L-IMMUNE = 0 AND L-CURRENT < 300
+         MOVE 300 TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM FL-IGNITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-LAVA-HURT.
+*> USING fire-immune, server side, silent, shouldPlayLavaHurtSound (BINARY-LONG), damage in tenths out, play generic.burn out: lavaHurt
+*> (4.2): lava damage 4.0 on the server to an entity that is not fire-immune; the sound when it was applied, the entity is not silent.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IMMUNE               BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-SILENT               BINARY-LONG.
+ 01 L-SOUND-OK             BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMMUNE L-SERVER L-SILENT L-SOUND-OK L-DAMAGE L-SOUND.
+     MOVE 0 TO L-DAMAGE L-SOUND
+     IF L-IMMUNE = 0 AND L-SERVER = 1
+         MOVE 40 TO L-DAMAGE
+         IF L-SILENT = 0 AND L-SOUND-OK = 1
+             MOVE 1 TO L-SOUND
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM FL-LAVA-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-BURN-PITCH.
+*> USING a nextFloat draw (FLOAT-LONG), pitch out: the generic.burn pitch 2.0 + r * 0.4 (4.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG VALUE 0.4.
+ 01 WS-B                   FLOAT-LONG VALUE 2.0.
+ LINKAGE SECTION.
+ 01 L-R                    FLOAT-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-R L-PITCH.
+     CALL "FL-AXPB" USING L-R WS-X WS-B L-PITCH
+     GOBACK.
+ END PROGRAM FL-BURN-PITCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-EFFECTS.
+*> USING requested effects (five BINARY-LONG flags: FREEZE, CLEAR_FREEZE, FIRE_IGNITE, LAVA_IGNITE, EXTINGUISH), the entity is still
+*> alive after lavaHurt (BINARY-LONG), the applied sequence out (eight BINARY-LONG, 0 ends it): the collector order of 4.2; the numbers
+*> are 1 to 5 for the effects and 6 for lavaHurt, which runs right after LAVA_IGNITE; the pass stops once the entity is not alive.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-FLAGS.
+    05 L-FLAG              BINARY-LONG OCCURS 5 TIMES.
+ 01 L-ALIVE                BINARY-LONG.
+ 01 L-OUT.
+    05 L-STEP              BINARY-LONG OCCURS 8 TIMES.
+ PROCEDURE DIVISION USING L-FLAGS L-ALIVE L-OUT.
+     MOVE 0 TO L-STEP(1) L-STEP(2) L-STEP(3) L-STEP(4) L-STEP(5) L-STEP(6) L-STEP(7) L-STEP(8)
+     MOVE 0 TO WS-N WS-DONE
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 5 OR WS-DONE = 1
+         IF L-FLAG(WS-T) = 1
+             ADD 1 TO WS-N
+             MOVE WS-T TO L-STEP(WS-N)
+             IF WS-T = 4
+                 ADD 1 TO WS-N
+                 MOVE 6 TO L-STEP(WS-N)
+                 IF L-ALIVE = 0
+                     MOVE 1 TO WS-DONE
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FL-EFFECTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-LAVA-TICK.
+*> USING in lava (BINARY-LONG), fall distance (FLOAT-LONG), new fall distance out (FLOAT-LONG), skip the on_fire damage out: the lava
+*> part of Entity.baseTick (4.2): the fall distance is halved each tick and the burning damage is skipped.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN-LAVA              BINARY-LONG.
+ 01 L-FALL                 FLOAT-LONG.
+ 01 L-NEW                  FLOAT-LONG.
+ 01 L-SKIP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-IN-LAVA L-FALL L-NEW L-SKIP.
+     MOVE L-FALL TO L-NEW
+     MOVE 0 TO L-SKIP
+     IF L-IN-LAVA = 1
+         COMPUTE L-NEW = L-FALL * 0.5
+         MOVE 1 TO L-SKIP
+     END-IF
+     GOBACK.
+ END PROGRAM FL-LAVA-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-LAVA-AMBIENCE.
+*> USING air above and not a solid render block, nextInt(100) draw, nextInt(200) draw (BINARY-LONG), pop out (particle and lava.pop),
+*> ambient out (lava.ambient at the integer block coordinates): lava animateTick (4.3). The ambient sound does not depend on the
+*> block above ("independently", Open question).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-D100                 BINARY-LONG.
+ 01 L-D200                 BINARY-LONG.
+ 01 L-POP                  BINARY-LONG.
+ 01 L-AMBIENT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ABOVE L-D100 L-D200 L-POP L-AMBIENT.
+     MOVE 0 TO L-POP L-AMBIENT
+     IF L-ABOVE = 1 AND L-D100 = 0
+         MOVE 1 TO L-POP
+     END-IF
+     IF L-D200 = 0
+         MOVE 1 TO L-AMBIENT
+     END-IF
+     GOBACK.
+ END PROGRAM FL-LAVA-AMBIENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-WATER-AMBIENCE.
+*> USING source or falling state, nextInt(64) draw, nextInt(10) draw (BINARY-LONG), ambient.water sound out, underwater particle out:
+*> water animateTick (4.3): a flowing non-falling state plays the sound on 1 in 64; a source or falling state spawns the particle
+*> on 1 in 10.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STILL                BINARY-LONG.
+ 01 L-D64                  BINARY-LONG.
+ 01 L-D10                  BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-PARTICLE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-STILL L-D64 L-D10 L-SOUND L-PARTICLE.
+     MOVE 0 TO L-SOUND L-PARTICLE
+     IF L-STILL = 0 AND L-D64 = 0
+         MOVE 1 TO L-SOUND
+     END-IF
+     IF L-STILL = 1 AND L-D10 = 0
+         MOVE 1 TO L-PARTICLE
+     END-IF
+     GOBACK.
+ END PROGRAM FL-WATER-AMBIENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FL-SOUND-FORMULAS.
+*> USING r1, r2 (FLOAT-LONG nextFloat draws), lava.pop volume, lava.pop pitch, ambient.water volume, ambient.water pitch out (FLOAT-LONG):
+*> 4.3: 0.2 + r * 0.2, 0.9 + r * 0.15, r * 0.25 + 0.75 and r + 0.5 in single precision.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   FLOAT-LONG VALUE 0.2.
+ 01 WS-A2                  FLOAT-LONG VALUE 0.2.
+ 01 WS-B                   FLOAT-LONG VALUE 0.15.
+ 01 WS-C                   FLOAT-LONG VALUE 0.9.
+ 01 WS-D                   FLOAT-LONG VALUE 0.25.
+ 01 WS-E                   FLOAT-LONG VALUE 0.75.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.0.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ LINKAGE SECTION.
+ 01 L-R1                   FLOAT-LONG.
+ 01 L-R2                   FLOAT-LONG.
+ 01 L-POP-VOLUME           FLOAT-LONG.
+ 01 L-POP-PITCH            FLOAT-LONG.
+ 01 L-WATER-VOLUME         FLOAT-LONG.
+ 01 L-WATER-PITCH          FLOAT-LONG.
+ PROCEDURE DIVISION USING L-R1 L-R2 L-POP-VOLUME L-POP-PITCH L-WATER-VOLUME L-WATER-PITCH.
+     CALL "FL-AXPB" USING L-R1 WS-A WS-A2 L-POP-VOLUME
+     CALL "FL-AXPB" USING L-R2 WS-B WS-C L-POP-PITCH
+     CALL "FL-AXPB" USING L-R1 WS-D WS-E L-WATER-VOLUME
+     CALL "FL-AXPB" USING L-R2 WS-ONE WS-HALF L-WATER-PITCH
+     GOBACK.
+ END PROGRAM FL-SOUND-FORMULAS.
