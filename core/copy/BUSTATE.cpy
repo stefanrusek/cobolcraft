@@ -10,7 +10,7 @@
 *>   kind 5 redstone wire marker, 6 comparator marker (no effect: asked by BU-MARKED)
 *> BU-TRACE (while BU-TRACE-ON is 1) keeps one entry per hook call: a letter (P onPlace, R removal, N neighbour changed, S
 *> shape update, T tick, G random tick, F fluid tick, E block event), x y z, the state and two more numbers, separated by spaces, entry ended by ";".
- 78 BU-MAX-RULES                 VALUE 32.
+ 78 BU-MAX-RULES                 VALUE 512.
  78 BU-QUEUE-SIZE                VALUE 8192.
  01 BU-STATE EXTERNAL.
     05 BU-READY                  BINARY-LONG.
@@ -18,7 +18,7 @@
     05 BU-TRACE-LENGTH           BINARY-LONG.
     05 BU-TRACE                  PIC X(16384).
     05 BU-RULE-COUNT             BINARY-LONG.
-    05 BU-RULE OCCURS 32 TIMES.
+    05 BU-RULE OCCURS 512 TIMES.
        10 BU-R-KIND              BINARY-LONG.
        10 BU-R-BLOCK             BINARY-LONG.
        10 BU-R-EFFECT            BINARY-LONG.

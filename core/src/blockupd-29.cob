@@ -434,6 +434,9 @@
                  COMPUTE LS-NEXT-A = L-A + 1
                  CALL "BE-ADD" USING L-DIM L-X L-Y L-Z LS-BLOCK LS-NEXT-A L-B
              END-IF
+             IF BU-R-EFFECT(LS-I) = 6
+                 CALL "GB-FALL-TICK" USING L-DIM L-X L-Y L-Z
+             END-IF
              IF BU-R-EFFECT(LS-I) = 3
                  CALL "BT-SCHEDULE" USING L-DIM WS-SCHEDULE-TYPE LS-BLOCK L-X L-Y L-Z BU-R-FLAGS(LS-I) WS-NORMAL
                      LS-RESULT
