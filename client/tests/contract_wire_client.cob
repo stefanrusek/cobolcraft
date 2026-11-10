@@ -12,6 +12,7 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
+ 01 WS-SCREEN-ID            BINARY-LONG.
  COPY CONTENT.
  COPY PROTO.
  COPY TESTLIB.
@@ -433,8 +434,7 @@
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract wire client abilities (walk 0.1), spawn (4, 54, 8), Set Time 6000, held slot "
          & "0 and the starting inventory decode" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -790,8 +790,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO PL-CARRIED-COUNT
      MOVE 3 TO PL-CARRIED-ITEM
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract wire client Container Set Content decodes: state id 1, slot 8 one pry_bar, slot "
          & "10 empty, the cursor empty" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -806,13 +805,49 @@
          INTO TL-OBSERVED
      MOVE "1 110 0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The 46-slot menu fixtures (13 section 3.5): content, a slot with components, the crafting bench.
+     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-46-slots.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Content of 46 slots decodes: state id 3, hotbar 0 64 stone, hotbar 4 damage 5, off hand "
+         & "1 x 62, cursor 5 x 63" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-INV-STATE-ID TO WS-EDIT
+     COMPUTE WS-EDIT2 = PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     COMPUTE WS-EDIT3 = PL-SLOT-DAMAGE(5)
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     COMPUTE WS-EDIT = PL-OFFHAND-COUNT * 100 + PL-OFFHAND-ITEM
+     COMPUTE WS-EDIT2 = PL-CARRIED-COUNT * 100 + PL-CARRIED-ITEM
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "3 6401 5 162 563" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot-components.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Container Set Slot with components decodes: state id 5, slot 36 1 x stone, damage 5 (the custom name and the removed "
+         & "component are skipped)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE PL-INV-STATE-ID TO WS-EDIT
+     COMPUTE WS-EDIT2 = PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     MOVE PL-SLOT-DAMAGE(1) TO WS-EDIT3
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5 101 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-3c-open-screen-crafting.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Open Screen of the crafting menu decodes: container 2 is the open bench" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BM-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SCR-WORLD TO WS-SCREEN-ID
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN-ID
      MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client Container Set Slot decodes: state id 2, slot 0 holds 63 greystone"
+     MOVE "contract wire client Container Set Slot decodes: state id 2, menu slot 0 (the crafting result) holds 63 greystone"
          TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 26302 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = PL-INV-STATE-ID * 10000 + PL-SLOT-COUNT(1) * 100 + PL-SLOT-ITEM(1)
+     COMPUTE TL-OBSERVED-N = PL-INV-STATE-ID * 10000 + IX-COUNT(5) * 100 + IX-ITEM(5)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO PL-HELD
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH

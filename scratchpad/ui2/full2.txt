@@ -1,0 +1,38 @@
+In file included from /var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob61724_0.c:21:
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob61724_0.c.h:85:48: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+   85 | static const cob_field c_35     = {1, (cob_u8_ptr)"<FF>", &a_18};
+      |                                                    ^~~~
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob61724_0.c:1177:25: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+ 1177 |   memcpy (b_716 + 0LL, "<F0>.      ", 2);
+      |                         ^~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:234:40: note: expanded from macro 'memcpy'
+  234 | #define memcpy(...) __memcpy_chk_func (__VA_ARGS__)
+      |                                        ^~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:127:33: note: expanded from macro '__memcpy_chk_func'
+  127 |                 __builtin___memcpy_chk (dest, __VA_ARGS__, __darwin_obsz0 (dest))
+      |                                               ^~~~~~~~~~~
+2 warnings generated.
+/var/folders/fw/9trkd1md23xfj0rmmt57np000000gn/T/cob63310_0.c:3505:19: warning: illegal character encoding in string literal [-Winvalid-source-encoding]
+ 3505 |   memcpy (b_968, "<FF><FF><FF><FF>", 4);
+      |                   ^~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:234:40: note: expanded from macro 'memcpy'
+  234 | #define memcpy(...) __memcpy_chk_func (__VA_ARGS__)
+      |                                        ^~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h:127:33: note: expanded from macro '__memcpy_chk_func'
+  127 |                 __builtin___memcpy_chk (dest, __VA_ARGS__, __darwin_obsz0 (dest))
+      |                                               ^~~~~~~~~~~
+1 warning generated.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+make: Nothing to be done for `lib'.
+python3 tests/fixtures/gen_textures.py
+python3 tests/fixtures/gen_zips.py
+python3 tests/fixtures/gen_png.py
+python3 tests/fixtures/gen_packs.py
+FAIL contract wire client abilities (walk 0.1), spawn (4, 54, 8), Set Time 6000, held slot 0 and the starting inventory decode expected=10 54 6000 0 64 11 observed=10 54 6000 0 0 11
+FAIL contract wire client Container Set Content decodes: state id 1, slot 8 one pry_bar, slot 10 empty, the cursor empty expected=1 110 0 0 observed=1 0 0 0
+passed 1771 failed 2
+done

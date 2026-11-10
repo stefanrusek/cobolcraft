@@ -297,3 +297,31 @@
      END-IF
      GOBACK.
  END PROGRAM MENU-CONTAINER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-MAX-STACK.
+*> USING item id, maximum stack out: the content library's max_stack_size of the item when the content is open and has it, else the
+*> client's table of the built-in items (CL-IT-MAX) for an id it lists, else 64.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-NAME                PIC X(32) VALUE "max_stack_size".
+ 01 WS-VALUE               PIC X(100).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ITEM L-MAX.
+     MOVE 64 TO L-MAX
+     IF L-ITEM >= 0 AND L-ITEM < CL-ITEM-COUNT
+         MOVE CL-IT-MAX(L-ITEM + 1) TO L-MAX
+     END-IF
+     CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-VALUE WS-STATUS
+     IF WS-STATUS = 0 AND WS-VALUE NOT = SPACES
+         COMPUTE L-MAX = FUNCTION NUMVAL(WS-VALUE)
+     END-IF
+     IF L-MAX < 1
+         MOVE 64 TO L-MAX
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-MAX-STACK.
