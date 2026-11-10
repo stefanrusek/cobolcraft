@@ -260,6 +260,15 @@
        10 CX-PREV-SLOT       BINARY-LONG.
        10 CX-PREV-MS         BINARY-DOUBLE.
        10 CX-DOUBLE          BINARY-LONG.
+*>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
+*>     last sent (itemName; AN-SENT-NULL 1 = none yet).
+       10 AN-ID              BINARY-LONG.
+       10 AN-ITEM            BINARY-LONG.
+       10 AN-NAME-LENGTH     BINARY-LONG.
+       10 AN-NAME            PIC X(256).
+       10 AN-SENT-LENGTH     BINARY-LONG.
+       10 AN-SENT-NULL       BINARY-LONG.
+       10 AN-SENT            PIC X(256).
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)

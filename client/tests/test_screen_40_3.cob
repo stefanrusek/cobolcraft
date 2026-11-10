@@ -312,7 +312,8 @@
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-I) = WK-OVERLAY
+*>       The anvil's name field background (110 x 16) is asserted in test_screen_40_3_anvil.
+         IF SM-W-KIND(WS-I) = WK-OVERLAY AND NOT (SM-W-W(WS-I) = 110 AND SM-W-H(WS-I) = 16)
              MOVE SM-W-X(WS-I) TO WS-E1
              MOVE SM-W-Y(WS-I) TO WS-E2
              MOVE SM-W-W(WS-I) TO WS-E3

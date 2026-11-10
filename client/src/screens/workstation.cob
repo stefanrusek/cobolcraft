@@ -116,6 +116,28 @@
                  END-IF
              END-IF
          WHEN BM-TYPE = 8 OR BM-TYPE = 15
+*>           3.8 the anvil's name field: the background 110 x 16 at (59, 20) (black when slot 0 has an item, else the panel colour of the disabled sprite) and, when editable,
+*>           the text at (62, 24).
+             IF BM-TYPE = 8
+                 COMPUTE WS-X = L-LEFT + 59
+                 COMPUTE WS-Y = L-TOP + 20
+                 MOVE 110 TO WS-W
+                 MOVE 16 TO WS-H
+                 MOVE SW-PANEL TO WS-SWATCH
+                 IF BX-COUNT(1) > 0
+                     MOVE SW-BLACK TO WS-SWATCH
+                 END-IF
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H
+                     WS-TEXT WS-LENGTH WS-STATE
+                 IF BX-COUNT(1) > 0 AND AN-NAME-LENGTH > 0 AND AN-ID = BM-ID
+                     MOVE AN-NAME TO WS-TEXT
+                     COMPUTE WS-X = L-LEFT + 62
+                     COMPUTE WS-Y = L-TOP + 24
+                     MOVE 0 TO WS-SWATCH
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-SWATCH WS-X WS-Y WS-LABEL-W WS-LABEL-H
+                         WS-TEXT AN-NAME-LENGTH WS-STATE
+                 END-IF
+             END-IF
 *>           The error icon (28 x 21): an input item and no result; the anvil (99, 45), the grindstone (92, 31).
              MOVE 0 TO WS-CAN-ERROR
              IF (BX-COUNT(1) > 0 OR BX-COUNT(2) > 0) AND BX-COUNT(3) = 0
