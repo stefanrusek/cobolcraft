@@ -873,12 +873,8 @@
          PERFORM ASSERT-ROW
      END-PERFORM
 
-*>   The command set of standin §16 (COMMANDS.cpy; FR-016): each command with its permission (§16.2
-*>   "Who": 0 everyone, 1 operator) and its node in the tree; the tree of 09 §3.3 / standin §16.3
-*>   (depth-first pre-order, indented two spaces per level, *exec* where a usage string may end,
-*>   argument nodes with parser id, string kind, minimum, maximum and the ask_server flag); the
-*>   usage strings of §16.2 in table order; the §16 and §17 translation keys with the kinds of their
-*>   arguments (W a word or name, I an integer, D a double, L a name list, U a usage string, T text).
+*>   The §16 and §17 translation keys with the kinds of their arguments (W a word or name, I an integer, D a double,
+*>   L a name list, U a usage string, T text).
      MOVE "test content tables command and system messages: 67 keys" TO TL-CASE
      PERFORM START-ROW
      MOVE MK-COUNT TO WS-NUM PERFORM ADD-NUM
