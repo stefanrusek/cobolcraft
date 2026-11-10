@@ -4,7 +4,8 @@
 *> generated block rows (24 part 1 section 3: the last property varies fastest, a bool lists true first):
 *>   chest and trapped_chest 24 states facing[north/south/west/east] type[single/left/right] waterlogged, default north single dry,
 *>   ender_chest 8 states facing waterlogged, barrel 12 states facing[north/east/south/west/up/down] open, shulker_box 6 states facing, and
-*>   (keys without a namespace, as the standard table has them) bell 1 state, white_banner 16 states; hopper 10 states facing[down,north,south,west,east] enabled, dispenser and dropper 12 states
+*>   (keys without a namespace, as the standard table has them) bell 1 state, white_banner 16 states, chiseled_bookshelf 256 states facing[north/south/west/east] slot_0_occupied .. slot_5_occupied (default 63: north,
+*>   nothing occupied), and the item minecraft:book (places nothing); hopper 10 states facing[down,north,south,west,east] enabled, dispenser and dropper 12 states
 *>   facing[north/east/south/west/up/down] triggered.
 *> The tables are only appended once. The items place the default state of their block.
 *>   TEST-ADD-CONTAINERS                          appends the blocks and items
@@ -21,20 +22,21 @@
  COPY CBLOCKS.
  COPY CITEMS.
  01 WS-ROWS.
-    05 FILLER PIC X(31) VALUE "minecraft:chest          024001".
-    05 FILLER PIC X(31) VALUE "minecraft:trapped_chest  024001".
-    05 FILLER PIC X(31) VALUE "minecraft:ender_chest    008001".
-    05 FILLER PIC X(31) VALUE "minecraft:barrel         012001".
-    05 FILLER PIC X(31) VALUE "minecraft:shulker_box    006004".
-    05 FILLER PIC X(31) VALUE "minecraft:red_shulker_box006004".
-    05 FILLER PIC X(31) VALUE "bell                     001000".
-    05 FILLER PIC X(31) VALUE "white_banner             016000".
-    05 FILLER PIC X(31) VALUE "minecraft:hopper         010000".
-    05 FILLER PIC X(31) VALUE "minecraft:dispenser      012001".
-    05 FILLER PIC X(31) VALUE "minecraft:dropper        012001".
+    05 FILLER PIC X(34) VALUE "minecraft:chest             024001".
+    05 FILLER PIC X(34) VALUE "minecraft:trapped_chest     024001".
+    05 FILLER PIC X(34) VALUE "minecraft:ender_chest       008001".
+    05 FILLER PIC X(34) VALUE "minecraft:barrel            012001".
+    05 FILLER PIC X(34) VALUE "minecraft:shulker_box       006004".
+    05 FILLER PIC X(34) VALUE "minecraft:red_shulker_box   006004".
+    05 FILLER PIC X(34) VALUE "bell                        001000".
+    05 FILLER PIC X(34) VALUE "white_banner                016000".
+    05 FILLER PIC X(34) VALUE "minecraft:hopper            010000".
+    05 FILLER PIC X(34) VALUE "minecraft:dispenser         012001".
+    05 FILLER PIC X(34) VALUE "minecraft:dropper           012001".
+    05 FILLER PIC X(34) VALUE "minecraft:chiseled_bookshelf256063".
  01 FILLER REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 11 TIMES.
-       10 WS-KEY             PIC X(25).
+    05 WS-ROW OCCURS 12 TIMES.
+       10 WS-KEY             PIC X(28).
        10 WS-STATES          PIC 999.
        10 WS-DEFAULT         PIC 999.
  01 WS-I                   BINARY-LONG.
@@ -48,7 +50,7 @@
              GOBACK
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
          ADD 1 TO CB-BLOCK-COUNT
          MOVE CB-BLOCK-COUNT TO WS-B
          MOVE SPACES TO CB-KEY(WS-B)
@@ -78,6 +80,14 @@
          MOVE 0 TO IT-TOOL-CLASS(IT-COUNT) IT-FOOD(IT-COUNT) IT-TOOL-SPEED(IT-COUNT) IT-TOOL-TIER(IT-COUNT)
          MOVE 1 TO IT-ATTACK(IT-COUNT)
      END-PERFORM
+     ADD 1 TO IT-COUNT
+     MOVE SPACES TO IT-KEY(IT-COUNT)
+     MOVE "minecraft:book" TO IT-KEY(IT-COUNT)
+     MOVE 14 TO IT-KEY-LENGTH(IT-COUNT)
+     MOVE -1 TO IT-PLACES-STATE(IT-COUNT)
+     MOVE 64 TO IT-MAX-STACK(IT-COUNT)
+     MOVE 0 TO IT-TOOL-CLASS(IT-COUNT) IT-FOOD(IT-COUNT) IT-TOOL-SPEED(IT-COUNT) IT-TOOL-TIER(IT-COUNT)
+     MOVE 1 TO IT-ATTACK(IT-COUNT)
      GOBACK.
  END PROGRAM TEST-ADD-CONTAINERS.
 

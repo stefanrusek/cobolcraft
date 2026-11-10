@@ -128,6 +128,8 @@
              MOVE 2 TO L-FAMILY
          WHEN WS-KEY = "minecraft:barrel"
              MOVE 3 TO L-FAMILY
+         WHEN WS-KEY = "minecraft:chiseled_bookshelf"
+             MOVE 7 TO L-FAMILY
          WHEN WS-KEY = "minecraft:hopper"
              MOVE 5 TO L-FAMILY
          WHEN WS-KEY = "minecraft:dispenser" OR WS-KEY = "minecraft:dropper"
@@ -185,6 +187,18 @@
              COMPUTE L-DIR = WS-INDEX / 2
          WHEN 4
              MOVE WS-INDEX TO L-DIR
+*>       The chiseled bookshelf: facing[north/south/west/east] then slot_0_occupied .. slot_5_occupied (true first); the type out is the
+*>       occupancy mask (bit i set when slot i is occupied).
+         WHEN 7
+             COMPUTE WS-FACE = WS-INDEX / 64
+             MOVE WS-DIRECTION(WS-FACE + 1) TO L-DIR
+             COMPUTE WS-PICK = FUNCTION MOD(WS-INDEX, 64)
+             PERFORM VARYING WS-FACE FROM 0 BY 1 UNTIL WS-FACE > 5
+                 COMPUTE WS-INDEX = WS-PICK / (2 ** (5 - WS-FACE))
+                 IF FUNCTION MOD(WS-INDEX, 2) = 0
+                     COMPUTE L-TYPE = L-TYPE + 2 ** WS-FACE
+                 END-IF
+             END-PERFORM
      END-EVALUATE
      GOBACK.
  END PROGRAM BE-STATE-FIELDS.
@@ -197,6 +211,7 @@
  01 WS-FAMILY              BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-FACE                BINARY-LONG.
+ 01 WS-BITS                BINARY-LONG.
  01 WS-TO-PROP.
     05 FILLER              PIC X(4) VALUE "0312".
  01 FILLER REDEFINES WS-TO-PROP.
@@ -222,6 +237,15 @@
              COMPUTE WS-INDEX = L-DIR * 2 + 1 - L-FLAG
          WHEN 4
              MOVE L-DIR TO WS-INDEX
+         WHEN 7
+             MOVE WS-PROP(L-DIR + 1) TO WS-FACE
+             COMPUTE WS-INDEX = WS-FACE * 64 + 63
+             PERFORM VARYING WS-FACE FROM 0 BY 1 UNTIL WS-FACE > 5
+                 COMPUTE WS-BITS = L-TYPE / (2 ** WS-FACE)
+                 IF FUNCTION MOD(WS-BITS, 2) = 1
+                     COMPUTE WS-INDEX = WS-INDEX - 2 ** (5 - WS-FACE)
+                 END-IF
+             END-PERFORM
      END-EVALUATE
      COMPUTE L-STATE = CB-FIRST-STATE(L-BLOCK + 1) + WS-INDEX
      GOBACK.
@@ -280,36 +304,84 @@
  END PROGRAM BE-MARK-CHUNK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-DROP-STACK.
+*> Containers.dropItemStack (31-2 section 2 item 7): USING dim, x, y, z (block position), item, count, patch handle. The position inside the block
+*> box (w = 0.25, the item entity's width): x = floor(x) + d1 * 0.75 + 0.125, y = floor(y) + d2 * 0.75, z = floor(z) + d3 * 0.75 + 0.125 with the three
+*> nextDouble draws made first; then, while the stack lasts, one draw gives the stack size 10 + nextInt(21) and the item is spawned (pickup delay 10)
+*> with the velocity triangle(0, 0.11485), triangle(0.2, 0.11485), triangle(0, 0.11485) in the order x, y, z. The random source is the level's
+*> (IP-LEVEL-DOUBLE); nextInt(21) is floor(nextDouble * 21).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-SPAN                FLOAT-LONG VALUE 0.75.
+ 01 WS-SPREAD              FLOAT-LONG VALUE 0.11485.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-CHUNK               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ITEM L-COUNT L-VAR.
+     CALL "IP-LEVEL-DOUBLE" USING WS-D
+     COMPUTE WS-FX = L-X + WS-D * WS-SPAN + 0.125
+     CALL "IP-LEVEL-DOUBLE" USING WS-D
+     COMPUTE WS-FY = L-Y + WS-D * WS-SPAN
+     CALL "IP-LEVEL-DOUBLE" USING WS-D
+     COMPUTE WS-FZ = L-Z + WS-D * WS-SPAN + 0.125
+     MOVE L-COUNT TO WS-LEFT
+     PERFORM UNTIL WS-LEFT <= 0
+         CALL "IP-LEVEL-DOUBLE" USING WS-D
+         COMPUTE WS-CHUNK = 10 + FUNCTION INTEGER(WS-D * 21)
+         IF WS-CHUNK > WS-LEFT
+             MOVE WS-LEFT TO WS-CHUNK
+         END-IF
+         CALL "IP-LEVEL-DOUBLE" USING WS-D
+         CALL "IP-LEVEL-DOUBLE" USING WS-D2
+         COMPUTE WS-VX = WS-SPREAD * (WS-D - WS-D2)
+         CALL "IP-LEVEL-DOUBLE" USING WS-D
+         CALL "IP-LEVEL-DOUBLE" USING WS-D2
+         COMPUTE WS-VY = 0.2 + WS-SPREAD * (WS-D - WS-D2)
+         CALL "IP-LEVEL-DOUBLE" USING WS-D
+         CALL "IP-LEVEL-DOUBLE" USING WS-D2
+         COMPUTE WS-VZ = WS-SPREAD * (WS-D - WS-D2)
+         CALL "GI-SPAWN-X" USING L-DIM WS-FX WS-FY WS-FZ WS-VX WS-VY WS-VZ L-ITEM WS-CHUNK WS-DELAY WS-ROW L-VAR
+         SUBTRACT WS-CHUNK FROM WS-LEFT
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE-DROP-STACK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-DROP-CONTENTS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
  01 WS-S                   BINARY-LONG.
- 01 WS-FX                  FLOAT-LONG.
- 01 WS-FY                  FLOAT-LONG.
- 01 WS-FZ                  FLOAT-LONG.
- 01 WS-ZERO                FLOAT-LONG VALUE 0.
- 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
- 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
- 01 WS-DELAY               BINARY-LONG VALUE 10.
- 01 WS-ROW                 BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
-     COMPUTE WS-FX = BE-X(L-INDEX) + 0.5
-     COMPUTE WS-FY = BE-Y(L-INDEX) + 0.5
-     COMPUTE WS-FZ = BE-Z(L-INDEX) + 0.5
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 27
          IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
              MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-ITEM
              MOVE BE-SLOT-COUNT(L-INDEX, WS-S) TO WS-COUNT
              MOVE BE-SLOT-VAR(L-INDEX, WS-S) TO WS-VAR
              MOVE 0 TO BE-SLOT-ITEM(L-INDEX, WS-S) BE-SLOT-COUNT(L-INDEX, WS-S) BE-SLOT-VAR(L-INDEX, WS-S)
-             CALL "GI-SPAWN-X" USING BE-DIM(L-INDEX) WS-FX WS-FY WS-FZ WS-ZERO WS-ZERO-Y WS-ZERO-Z WS-ITEM WS-COUNT WS-DELAY
-                 WS-ROW WS-VAR
+             CALL "BE-DROP-STACK" USING BE-DIM(L-INDEX) BE-X(L-INDEX) BE-Y(L-INDEX) BE-Z(L-INDEX) WS-ITEM WS-COUNT WS-VAR
          END-IF
      END-PERFORM
      GOBACK.

@@ -45,6 +45,9 @@
  01 WS-CREATED             BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
  01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-KEY24               PIC X(24).
  01 WS-LEN24               BINARY-LONG.
@@ -347,8 +350,53 @@
      MOVE "chest void 0 high 0" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "test be world a removed chest's 64 items scatter as Containers.dropItemStack does: stacks of at most 30 (sum 64), inside the block box "
+         & "inset by 0.125 in x and z, vy 0.2 +- 0.115, vx and vz 0 +- 0.115" TO TL-CASE
+     MOVE 6 TO WS-X
+     MOVE 71 TO WS-Y
+     MOVE "minecraft:chest" TO WS-KEY
+     PERFORM SET-BY-KEY
+     MOVE 7 TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 64 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-COUNT
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-ENTITIES
+         IF EN-USED(WS-I) = 1 AND EN-ITEM(WS-I) = 7
+             ADD EN-ITEM-COUNT(WS-I) TO WS-COUNT
+             ADD 1 TO WS-A
+             IF EN-ITEM-COUNT(WS-I) > 30
+                 ADD 1 TO WS-B
+             END-IF
+             IF EN-X(WS-I) < WS-X + 0.125 OR EN-X(WS-I) > WS-X + 0.875 OR EN-Z(WS-I) < WS-Z + 0.125 OR EN-Z(WS-I) > WS-Z + 0.875
+                     OR EN-Y(WS-I) < WS-Y OR EN-Y(WS-I) > WS-Y + 0.75
+                 ADD 1 TO WS-B
+             END-IF
+             IF EN-VY(WS-I) < 0.085 OR EN-VY(WS-I) > 0.315 OR EN-VX(WS-I) < -0.115 OR EN-VX(WS-I) > 0.115
+                     OR EN-VZ(WS-I) < -0.115 OR EN-VZ(WS-I) > 0.115 OR EN-VY(WS-I) = 0
+                 ADD 1 TO WS-B
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE WS-COUNT TO WS-E1
+     MOVE WS-B TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     IF WS-A >= 3
+         MOVE "several" TO WS-TEXT
+     ELSE
+         MOVE "few" TO WS-TEXT
+     END-IF
+     STRING FUNCTION TRIM(WS-TEXT) " sum " FUNCTION TRIM(WS-E1) " bad " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-NAME
+     MOVE WS-NAME TO WS-TEXT
+     MOVE "several sum 64 bad 0" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "test be world a chunk that leaves the cache drops its entities (BE-CHUNK-DROP), those of other chunks stay" TO TL-CASE
      MOVE 8 TO WS-X
+     MOVE 70 TO WS-Y
      CALL "TEST-BE-AT" USING WS-DIM WS-X WS-Y WS-Z WS-BE
      MOVE WS-BE TO WS-FLAG
      CALL "BE-CHUNK-DROP" USING WS-DIM WS-ZERO WS-ZERO2
