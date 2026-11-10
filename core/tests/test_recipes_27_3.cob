@@ -60,7 +60,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US9 27§3 The other recipe families the crafting categories building 0, redstone 1, "
-         & "equipment 2, misc 3 (the cobolcraft built-ins use building, equipment and misc)" TO TL-CASE
+         & "equipment 2, misc 3 (the cobolcraft built-ins use building, equipment and misc); a brewing recipe 3" TO TL-CASE
      MOVE SPACES TO WS-TEXT
      MOVE 1 TO WS-SER
      MOVE "building" TO WS-CAT-NAME
@@ -71,7 +71,9 @@
      PERFORM ADD-CAT
      MOVE "misc" TO WS-CAT-NAME
      PERFORM ADD-CAT
-     MOVE "0 1 2 3" TO TL-EXPECTED
+     MOVE 20 TO WS-SER
+     PERFORM ADD-CAT
+     MOVE "0 1 2 3 3" TO TL-EXPECTED
      MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

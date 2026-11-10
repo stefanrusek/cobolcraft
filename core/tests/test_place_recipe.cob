@@ -14,6 +14,7 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY CMENU.
+ COPY CTRECIPE.
  COPY PLAYPKT.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG.
@@ -26,6 +27,10 @@
  01 WS-Z                   BINARY-LONG VALUE 0.
  01 WS-REC                 BINARY-LONG VALUE 1.
  01 WS-REMOVED             BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TWELVE              BINARY-LONG VALUE 12.
+ 01 WS-IDS                 PIC X(1024).
  01 WS-SAVED               PIC X(2048).
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
@@ -101,7 +106,88 @@
      PERFORM SHOW-STATE
      MOVE "grid 9x1 9x1 0x0 9x1 9x1 0x0 0x0 0x0 0x0 | slot0 2x64 | result 18x1" TO TL-EXPECTED
      PERFORM CHECK
+     PERFORM ADD-SHAPED-ROWS
+     MOVE "acceptance US9 13§3.8 a shaped 1 x 1 recipe is centred in the 3 x 3 grid (cell 5): a pattern less than "
+         & "half the grid is centred, not top-left" TO TL-CASE
+     MOVE MN-WINDOW(WS-ROW) TO PSB-CONTAINER
+     MOVE 10 TO PSB-RECIPE
+     CALL "RECIPE-PLACE" USING WS-ID PLAY-SERVERBOUND
+     PERFORM SHOW-STATE
+     MOVE "grid 0x0 0x0 0x0 0x0 2x1 0x0 0x0 0x0 0x0 | slot0 2x63 | result 14x1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US9 13§3.8 a shaped 3 x 3 recipe fills the whole bench grid, after the grid went back "
+         & "into the inventory" TO TL-CASE
+     MOVE 11 TO PSB-RECIPE
+     CALL "RECIPE-PLACE" USING WS-ID PLAY-SERVERBOUND
+     PERFORM SHOW-STATE
+     MOVE "grid 2x1 2x1 2x1 2x1 2x1 2x1 2x1 2x1 2x1 | slot0 2x55 | result 14x1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US9 13§3.8 a 3 x 3 recipe is not placed in the 2 x 2 grid of the inventory menu" TO TL-CASE
+     CALL "MENU-CLOSE" USING WS-ID
+     PERFORM SAVE-STATE
+     MOVE 0 TO PSB-CONTAINER
+     MOVE 11 TO PSB-RECIPE
+     CALL "RECIPE-PLACE" USING WS-ID PLAY-SERVERBOUND
+     PERFORM CHECK-SAME
+
+     MOVE "acceptance US9 13§3.8 use max items stops at the stack limit of the ingredient: the second set of a "
+         & "recipe that needs an unstackable pry_bar does not fit and is put back" TO TL-CASE
+     MOVE 10 TO PL-SLOT-ITEM(WS-ROW, 21) PL-SLOT-ITEM(WS-ROW, 22)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 21) PL-SLOT-COUNT(WS-ROW, 22)
+     MOVE 1 TO PSB-USE-MAX
+     MOVE 12 TO PSB-RECIPE
+     CALL "RECIPE-PLACE" USING WS-ID PLAY-SERVERBOUND
+     PERFORM SHOW-STATE
+     MOVE "grid 10x1 0x0 0x0 0x0 | slot0 2x64 | result 14x1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US9 13§3.8 Place Recipe arrives as the packet 0x27 and reaches RECIPE-PLACE" TO TL-CASE
+     MOVE 0 TO PSB-USE-MAX
+     CALL "TEST-HELD" USING WS-ID WS-ZERO
+     CALL "TEST-DRAIN-IDS" USING WS-ID WS-IDS
+     CALL "TEST-PLACE-RECIPE" USING WS-ID WS-TWELVE
+     CALL "TEST-DRAIN-IDS" USING WS-ID WS-IDS
+     MOVE SPACES TO WS-TEXT
+     MOVE WS-IDS TO WS-TEXT
+     MOVE "18" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
+
+*> Rows 11 to 13: a shaped 1 x 1 recipe (greystone), a shaped 3 x 3 one (nine greystone) and a shapeless one (pry_bar);
+*> the three are known (display ids 10 to 12).
+ ADD-SHAPED-ROWS.
+     ADD 1 TO RC-COUNT
+     INITIALIZE RC-ROW(RC-COUNT)
+     MOVE "cobolcraft:test_one" TO RR-KEY(RC-COUNT)
+     MOVE 0 TO RR-SERIALIZER(RC-COUNT)
+     MOVE 1 TO RR-WIDTH(RC-COUNT) RR-HEIGHT(RC-COUNT) RR-ING-COUNT(RC-COUNT) RR-RESULT-COUNT(RC-COUNT)
+     MOVE "cobolcraft:greystone" TO RR-ING(RC-COUNT, 1)
+     MOVE "cobolcraft:sod_cake" TO RR-RESULT-ID(RC-COUNT)
+     MOVE RC-COUNT TO WS-K
+     CALL "RECBOOK-ADD" USING WS-ROW WS-K WS-REMOVED
+     ADD 1 TO RC-COUNT
+     INITIALIZE RC-ROW(RC-COUNT)
+     MOVE "cobolcraft:test_nine" TO RR-KEY(RC-COUNT)
+     MOVE 0 TO RR-SERIALIZER(RC-COUNT)
+     MOVE 3 TO RR-WIDTH(RC-COUNT) RR-HEIGHT(RC-COUNT)
+     MOVE 9 TO RR-ING-COUNT(RC-COUNT)
+     MOVE 1 TO RR-RESULT-COUNT(RC-COUNT)
+     MOVE "cobolcraft:sod_cake" TO RR-RESULT-ID(RC-COUNT)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE "cobolcraft:greystone" TO RR-ING(RC-COUNT, WS-I)
+     END-PERFORM
+     MOVE RC-COUNT TO WS-K
+     CALL "RECBOOK-ADD" USING WS-ROW WS-K WS-REMOVED
+     ADD 1 TO RC-COUNT
+     INITIALIZE RC-ROW(RC-COUNT)
+     MOVE "cobolcraft:test_stack" TO RR-KEY(RC-COUNT)
+     MOVE 1 TO RR-SERIALIZER(RC-COUNT) RR-ING-COUNT(RC-COUNT) RR-RESULT-COUNT(RC-COUNT)
+     MOVE "cobolcraft:pry_bar" TO RR-ING(RC-COUNT, 1)
+     MOVE "cobolcraft:sod_cake" TO RR-RESULT-ID(RC-COUNT)
+     MOVE RC-COUNT TO WS-K
+     CALL "RECBOOK-ADD" USING WS-ROW WS-K WS-REMOVED.
 
 *> "grid <item>x<count> per cell | slot0 <item>x<count> | result <item>x<count>" of the player's open menu.
  SHOW-STATE.
