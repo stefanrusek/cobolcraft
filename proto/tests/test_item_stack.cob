@@ -250,6 +250,40 @@
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
      MOVE "test item-stack get of a 2100-byte text value sets PB-ERROR, PB-POS 0" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE "01 01 01 00 0d cc 08" TO WS-HEX
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     MOVE ALL X"01" TO WS-BIG
+     MOVE 2200 TO WS-LEN
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BIG WS-LEN
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of an enchantments value of 1100 pairs (2200 bytes) sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 03 00 01 02 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component (77) of three stacks, two empty, is read whole" TO TL-CASE
+     MOVE "c1 i1 +77=03000102000000 pos 12 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d ac 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component of 300 stacks sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 01 01 02 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component whose stack has an added component sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 01 01 02 00 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component whose stack has a removed component sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET.
 
 *> Asserts TL-EXPECTED against "c<count> i<item>", the components and "pos <PB-POS> error <PB-ERROR>".

@@ -287,7 +287,7 @@
      MOVE "same put error 0 get error 0 count 64" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test stack patch the patch is canonical: components in any order, repeated, a damage of 0, an oversized value "
+     MOVE "test stack patch the patch is canonical: components in any order, repeated, a damage of 0, an oversized value (2049 bytes) "
          & "and more than eight of each give the handle of the sorted, trimmed patch" TO TL-CASE
      PERFORM CLEAR-POOL
      MOVE 1 TO PB-ISX-COUNT
@@ -308,7 +308,7 @@
      END-PERFORM
      ADD 1 TO PB-ISX-ADDED-COUNT
      MOVE 6 TO PB-ISX-TYPE(PB-ISX-ADDED-COUNT)
-     MOVE 65 TO PB-ISX-VALUE-LENGTH(PB-ISX-ADDED-COUNT)
+     MOVE 2049 TO PB-ISX-VALUE-LENGTH(PB-ISX-ADDED-COUNT)
      MOVE 3 TO PB-ISX-REMOVED-COUNT
      MOVE 9 TO PB-ISX-REMOVED(1)
      MOVE 1 TO PB-ISX-REMOVED(2)

@@ -35,7 +35,8 @@
      MOVE "T" TO TL-MODE
 *>   A container component of 250 stacks of one item (count 1, item 2, no components): VarInt 250 then 250 x 4 bytes = 1002 bytes.
      MOVE SPACES TO WS-VALUE
-     MOVE X"FA01" TO WS-VALUE(1:2)
+     MOVE FUNCTION CHAR(251) TO WS-VALUE(1:1)
+     MOVE X"01" TO WS-VALUE(2:1)
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 249
          MOVE X"01020000" TO WS-VALUE(WS-I * 4 + 3:4)
      END-PERFORM
