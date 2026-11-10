@@ -8,6 +8,11 @@
 *>   EM1-POSE-OP op EM1-POSE args(3 floats) out(9 floats): 1 translated(dx dy dz), 2 scaled(s), 3 scaled(sx sy sz), 4 withScale(s) (1.5).
 *>   EM1-POINT EM1-POSE point(3 floats, pixels) out(3 floats, blocks): scale, rotate (Z-Y-X), translate, divided by 16 (1.5).
 *>   EM1-HEIGHT y(pixels) scale out: height above the feet in blocks of a model point (1.1). EM1-RADIANS degrees out.
+*>   EM2-MESH-INIT mesh; EM2-ADD-CHILD mesh parent name(X(24)) cubes pose(9 floats) out-index (2.1 replace rule); EM2-CLEAR-CHILD mesh parent name ok;
+*>     EM2-CLEAR-ALL mesh; EM2-RETAIN mesh mode(1 retainPartsAndChildren, 2 retainExactParts) set("a|b|c" part names); EM2-IN-SET name set found.
+*>   EM2-BABY-PARAMS variant(1 and 3 given values, 2 head-part-only defaults) scaleHead y z EM2-BABY; EM2-BABY-MESH mesh EM2-BABY head-set (2.3);
+*>     EM2-SCALING mesh s (2.2); EM2-SCALE-FACTOR layer(X(32): model name, armor sets with _armor) out (the table of 2.2, 1 when none);
+*>     EM2-DEFORM kind(X(24)) out(3 floats) (2.4); EM2-ARMOR-ID set-name slot(1 head, 2 chest, 3 legs, 4 feet) id(X(40)) (2.5).
 *>   EM1-DRAWS visible has-cuboids has-children out: whether a part is walked (1.5). EM1-PART-NAME name(X(24)) known, EM1-PART-NAME-COUNT n (1.6).
 
  IDENTIFICATION DIVISION.
@@ -473,3 +478,322 @@
      MOVE 106 TO L-COUNT
      GOBACK.
  END PROGRAM EM1-PART-NAME-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-MESH-INIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING EM2-MESH.
+     MOVE 1 TO MH-COUNT
+     MOVE "root" TO MH-NAME(1)
+     MOVE 0 TO MH-PARENT(1) MH-CUBES(1)
+     MOVE 0 TO MH-X(1) MH-Y(1) MH-Z(1) MH-XROT(1) MH-YROT(1) MH-ZROT(1)
+     MOVE 1 TO MH-XSCALE(1) MH-YSCALE(1) MH-ZSCALE(1)
+     GOBACK.
+ END PROGRAM EM2-MESH-INIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-ADD-CHILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-PARENT               BINARY-LONG.
+ 01 L-NAME                 PIC X(24).
+ 01 L-CUBES                BINARY-LONG.
+ 01 L-POSE                 PIC X(72).
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-PARENT L-NAME L-CUBES L-POSE L-OUT.
+     MOVE 0 TO L-OUT
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = L-PARENT AND MH-NAME(WS-I) = L-NAME
+             MOVE WS-I TO L-OUT
+         END-IF
+     END-PERFORM
+     IF L-OUT = 0
+         ADD 1 TO MH-COUNT
+         MOVE MH-COUNT TO L-OUT
+         MOVE L-NAME TO MH-NAME(L-OUT)
+         MOVE L-PARENT TO MH-PARENT(L-OUT)
+     END-IF
+     MOVE L-CUBES TO MH-CUBES(L-OUT)
+     MOVE L-POSE TO MH-POSE(L-OUT)
+     GOBACK.
+ END PROGRAM EM2-ADD-CHILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-CLEAR-CHILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-PARENT               BINARY-LONG.
+ 01 L-NAME                 PIC X(24).
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-PARENT L-NAME L-OK.
+     MOVE 0 TO L-OK
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = L-PARENT AND MH-NAME(WS-I) = L-NAME
+             MOVE 0 TO MH-CUBES(WS-I)
+             MOVE 1 TO L-OK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-CLEAR-CHILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-CLEAR-ALL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING EM2-MESH.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MH-COUNT
+         MOVE 0 TO MH-CUBES(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-CLEAR-ALL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-IN-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(26).
+ 01 WS-HAY                 PIC X(122).
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-SET                  PIC X(120).
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-SET L-FOUND.
+     MOVE SPACES TO WS-KEY WS-HAY
+     STRING "|" FUNCTION TRIM(L-NAME) "|" DELIMITED BY SIZE INTO WS-KEY
+     STRING "|" FUNCTION TRIM(L-SET) "|" DELIMITED BY SIZE INTO WS-HAY
+     MOVE 0 TO WS-N
+     INSPECT WS-HAY TALLYING WS-N FOR ALL FUNCTION TRIM(WS-KEY)
+     MOVE 0 TO L-FOUND
+     IF WS-N > 0
+         MOVE 1 TO L-FOUND
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-IN-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-RETAIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-SET                  PIC X(120).
+ PROCEDURE DIVISION USING EM2-MESH L-MODE L-SET.
+*>   state: 0 outside any named part, 1 inside a named part (2 = the named part itself, 3 a descendant of one)
+     MOVE 0 TO WS-STATE(1)
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         MOVE MH-PARENT(WS-I) TO WS-P
+         MOVE 0 TO WS-STATE(WS-I)
+         IF WS-STATE(WS-P) = 0
+             CALL "EM2-IN-SET" USING MH-NAME(WS-I) L-SET WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE 2 TO WS-STATE(WS-I)
+             ELSE
+                 MOVE 0 TO MH-CUBES(WS-I)
+             END-IF
+         ELSE
+             MOVE 3 TO WS-STATE(WS-I)
+             IF L-MODE = 2
+                 MOVE 0 TO MH-CUBES(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-RETAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-BABY-PARAMS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VARIANT              BINARY-LONG.
+ 01 L-SCALE-HEAD           BINARY-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ COPY CLEM2.
+ PROCEDURE DIVISION USING L-VARIANT L-SCALE-HEAD L-Y L-Z EM2-BABY.
+     MOVE 2 TO BB-HEAD-SCALE BB-BODY-SCALE
+     MOVE 24 TO BB-BODY-Y
+     IF L-VARIANT = 2
+         MOVE 0 TO BB-SCALE-HEAD
+         MOVE 5 TO BB-Y-HEAD
+         MOVE 2 TO BB-Z-HEAD
+     ELSE
+         MOVE L-SCALE-HEAD TO BB-SCALE-HEAD
+         MOVE L-Y TO BB-Y-HEAD
+         MOVE L-Z TO BB-Z-HEAD
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-BABY-PARAMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-BABY-MESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-SET                  PIC X(120).
+ PROCEDURE DIVISION USING EM2-MESH EM2-BABY L-SET.
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > MH-COUNT
+         IF MH-PARENT(WS-I) = 1
+             CALL "EM2-IN-SET" USING MH-NAME(WS-I) L-SET WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE BB-Y-HEAD TO WS-DY
+                 MOVE BB-Z-HEAD TO WS-DZ
+                 MOVE 1 TO WS-F
+                 IF BB-SCALE-HEAD NOT = 0
+                     COMPUTE WS-F = 1.5 / BB-HEAD-SCALE
+                 END-IF
+             ELSE
+                 MOVE BB-BODY-Y TO WS-DY
+                 MOVE 0 TO WS-DZ
+                 COMPUTE WS-F = 1 / BB-BODY-SCALE
+             END-IF
+             COMPUTE MH-Y(WS-I) = (MH-Y(WS-I) + WS-DY) * WS-F
+             COMPUTE MH-Z(WS-I) = (MH-Z(WS-I) + WS-DZ) * WS-F
+             COMPUTE MH-X(WS-I) = MH-X(WS-I) * WS-F
+             COMPUTE MH-XSCALE(WS-I) = MH-XSCALE(WS-I) * WS-F
+             COMPUTE MH-YSCALE(WS-I) = MH-YSCALE(WS-I) * WS-F
+             COMPUTE MH-ZSCALE(WS-I) = MH-ZSCALE(WS-I) * WS-F
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-BABY-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-SCALING.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEM2.
+ 01 L-S                    FLOAT-LONG.
+ PROCEDURE DIVISION USING EM2-MESH L-S.
+     IF L-S NOT = 1
+         COMPUTE MH-X(1) = MH-X(1) * L-S
+         COMPUTE MH-Y(1) = MH-Y(1) * L-S + 24.016 * (1 - L-S)
+         COMPUTE MH-Z(1) = MH-Z(1) * L-S
+         COMPUTE MH-XSCALE(1) = MH-XSCALE(1) * L-S
+         COMPUTE MH-YSCALE(1) = MH-YSCALE(1) * L-S
+         COMPUTE MH-ZSCALE(1) = MH-ZSCALE(1) * L-S
+     END-IF
+     GOBACK.
+ END PROGRAM EM2-SCALING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-SCALE-FACTOR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TABLE.
+    05 FILLER PIC X(40) VALUE "evoker                  0.9375".
+    05 FILLER PIC X(40) VALUE "illusioner              0.9375".
+    05 FILLER PIC X(40) VALUE "pillager                0.9375".
+    05 FILLER PIC X(40) VALUE "vindicator              0.9375".
+    05 FILLER PIC X(40) VALUE "villager                0.9375".
+    05 FILLER PIC X(40) VALUE "wandering_trader        0.9375".
+    05 FILLER PIC X(40) VALUE "villager_no_hat         0.9375".
+    05 FILLER PIC X(40) VALUE "witch                   0.9375".
+    05 FILLER PIC X(40) VALUE "cave_spider             0.7".
+    05 FILLER PIC X(40) VALUE "giant                   6".
+    05 FILLER PIC X(40) VALUE "giant_armor             6".
+    05 FILLER PIC X(40) VALUE "horse                   1.1".
+    05 FILLER PIC X(40) VALUE "horse_armor             1.1".
+    05 FILLER PIC X(40) VALUE "horse_saddle            1.1".
+    05 FILLER PIC X(40) VALUE "husk                    1.0625".
+    05 FILLER PIC X(40) VALUE "husk_armor              1.0625".
+    05 FILLER PIC X(40) VALUE "wither_skeleton         1.2".
+    05 FILLER PIC X(40) VALUE "wither_skeleton_armor   1.2".
+ 01 WS-TABLE-R REDEFINES WS-TABLE.
+    05 WS-ROW OCCURS 18 TIMES.
+       10 WS-ROW-NAME      PIC X(24).
+       10 WS-ROW-VALUE     PIC X(16).
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LAYER                PIC X(32).
+ 01 L-S                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-LAYER L-S.
+     MOVE 1 TO L-S
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 18
+         IF WS-ROW-NAME(WS-I) = L-LAYER(1:24)
+             COMPUTE L-S = FUNCTION NUMVAL(WS-ROW-VALUE(WS-I))
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM2-SCALE-FACTOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-DEFORM.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 PIC X(24).
+ 01 L-OUT.
+    05 L-G                 FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING L-KIND L-OUT.
+     MOVE 0 TO L-G(1) L-G(2) L-G(3)
+     EVALUATE L-KIND
+         WHEN "fish_pattern"
+             MOVE 0.008 TO L-G(1) L-G(2) L-G(3)
+         WHEN "outer_armor"
+             MOVE 1 TO L-G(1) L-G(2) L-G(3)
+         WHEN "inner_armor"
+             MOVE 0.5 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_outer_armor"
+             MOVE -0.1 TO L-G(1)
+             MOVE 0.5 TO L-G(2)
+             MOVE 0.3 TO L-G(3)
+         WHEN "baby_inner_armor"
+             MOVE -0.1 TO L-G(1)
+             MOVE 0.3 TO L-G(2) L-G(3)
+         WHEN "baby_piglin_inner"
+             MOVE 0.7 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_piglin_outer"
+             MOVE 0.7 TO L-G(1) L-G(2) L-G(3)
+         WHEN "piglin_inner"
+             MOVE 0.5 TO L-G(1) L-G(2) L-G(3)
+         WHEN "piglin_outer"
+             MOVE 1.02 TO L-G(1) L-G(2) L-G(3)
+         WHEN "baby_piglin_arm_offset"
+             MOVE 0.5 TO L-G(1)
+             MOVE -0.5 TO L-G(2)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM2-DEFORM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM2-ARMOR-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LAYER               PIC X(12).
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(24).
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ID                   PIC X(40).
+ PROCEDURE DIVISION USING L-NAME L-SLOT L-ID.
+     EVALUATE L-SLOT
+         WHEN 1 MOVE "helmet" TO WS-LAYER
+         WHEN 2 MOVE "chestplate" TO WS-LAYER
+         WHEN 3 MOVE "leggings" TO WS-LAYER
+         WHEN OTHER MOVE "boots" TO WS-LAYER
+     END-EVALUATE
+     MOVE SPACES TO L-ID
+     STRING "minecraft:" FUNCTION TRIM(L-NAME) "#" FUNCTION TRIM(WS-LAYER) DELIMITED BY SIZE INTO L-ID
+     GOBACK.
+ END PROGRAM EM2-ARMOR-ID.
