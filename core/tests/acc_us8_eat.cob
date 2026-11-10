@@ -61,7 +61,7 @@
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HUNGER" USING WS-ALICE WS-TEXT
-     MOVE "health 20 food 15 | slot 0=12x2 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 15 | slot 36=12x2 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US8-3 given Alice finished eating then Bobby, who sees her, is sent Entity "
@@ -74,7 +74,7 @@
          & "up to the maximum 20" TO TL-CASE
      MOVE 19 TO PL-FOOD(WS-ROW)
      PERFORM EAT
-     MOVE "health 20 food 20 | slot 0=12x1 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 20 | slot 36=12x1 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US8-4 given full food (20) when eat is held then nothing is eaten" TO TL-CASE
@@ -127,7 +127,7 @@
      MOVE "acceptance US8-3 given food 12 and the last grazer_flank held when it is eaten then "
          & "the slot becomes empty" TO TL-CASE
      PERFORM EAT
-     MOVE "health 20 food 15 | slot 0=0x0 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 15 | slot 36=0x0 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

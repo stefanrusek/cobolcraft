@@ -151,7 +151,8 @@
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 0 TO WS-ACTION
      PERFORM ACT
-     MOVE 30 TO WS-TICKS
+*>   31 ticks: by hand greystone is 0.0222 per tick and the server takes the stop at progress >= 0.7.
+     MOVE 31 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HUNGER" USING WS-ALICE WS-TEXT
      MOVE 0 TO PL-EXHAUSTION(WS-ROW)

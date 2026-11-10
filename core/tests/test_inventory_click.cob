@@ -25,6 +25,8 @@
  01 WS-PTR                 BINARY-LONG.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
 *> Click being built: container, state id, slot, button, type, predicted slots, predicted cursor.
  01 WS-C-CONTAINER         BINARY-LONG.
  01 WS-C-STATE             BINARY-LONG.
@@ -58,19 +60,19 @@
          & "another item and is put down whole on an empty slot" TO TL-CASE
      MOVE 0 TO WS-C-TYPE
      MOVE 1 TO WS-C-BUTTON
-     MOVE 0 TO WS-C-SLOT
+     MOVE 36 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 20 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM CLICK
      MOVE 0 TO WS-C-BUTTON
-     MOVE 1 TO WS-C-SLOT
+     MOVE 37 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 21 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 0:2x32 1:2x30 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "20:2x2 21:3x64" TO TL-EXPECTED
+     MOVE "cursor 0x0 9:11x1 20:2x2 21:3x64 36:2x32 37:2x30 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 "
+         & "43:9x64 44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click PICKUP left: an empty cursor takes a slot, a cursor tops up a "
@@ -78,34 +80,34 @@
          & "button other than 0 and 1 change nothing" TO TL-CASE
      MOVE 20 TO WS-C-SLOT
      PERFORM CLICK
-     MOVE 0 TO WS-C-SLOT
+     MOVE 36 TO WS-C-SLOT
      PERFORM CLICK
-     MOVE 1 TO WS-C-SLOT
+     MOVE 37 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM CLICK
      MOVE -999 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 7 TO WS-C-BUTTON
-     MOVE 3 TO WS-C-SLOT
+     MOVE 39 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 0:2x34 1:2x30 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "21:3x64" TO TL-EXPECTED
+     MOVE "cursor 0x0 9:11x1 21:3x64 36:2x34 37:2x30 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 43:9x64 "
+         & "44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click QUICK_MOVE moves a hotbar stack into the main inventory and a "
          & "main stack into the hotbar (first empty slot when no stack of its item)" TO TL-CASE
      MOVE 1 TO WS-C-TYPE
      MOVE 0 TO WS-C-BUTTON
-     MOVE 0 TO WS-C-SLOT
+     MOVE 36 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 21 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 30 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 0:3x64 1:2x30 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "10:2x34" TO TL-EXPECTED
+     MOVE "cursor 0x0 9:11x1 10:2x34 36:3x64 37:2x30 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 43:9x64 "
+         & "44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click QUICK_MOVE of a stack that does not fit leaves the rest" TO TL-CASE
@@ -114,7 +116,7 @@
          MOVE 64 TO PL-SLOT-COUNT(WS-ROW, WS-S)
      END-PERFORM
      MOVE 60 TO PL-SLOT-COUNT(WS-ROW, 12)
-     MOVE 3 TO WS-C-SLOT
+     MOVE 39 TO WS-C-SLOT
      PERFORM CLICK
      MOVE "N" TO TL-MODE
      COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(WS-ROW, 4) * 100 + PL-SLOT-COUNT(WS-ROW, 12)
@@ -139,14 +141,14 @@
      PERFORM CLICK
      MOVE 3 TO WS-C-TYPE
      MOVE 2 TO WS-C-BUTTON
-     MOVE 0 TO WS-C-SLOT
+     MOVE 36 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 4 TO WS-C-TYPE
      MOVE 2 TO WS-C-BUTTON
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 0:3x64 1:2x34 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "10:2x30" TO TL-EXPECTED
+     MOVE "cursor 0x0 9:11x1 10:2x30 36:3x64 37:2x34 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 43:9x64 "
+         & "44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click QUICK_CRAFT kind 0 splits the cursor evenly over the slots "
@@ -164,14 +166,14 @@
      PERFORM CLICK
      MOVE 22 TO WS-C-SLOT
      PERFORM CLICK
-     MOVE 2 TO WS-C-SLOT
+     MOVE 38 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 2 TO WS-C-BUTTON
      MOVE -999 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 0:3x64 1:2x34 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "22:2x15 23:2x15" TO TL-EXPECTED
+     MOVE "cursor 0x0 9:11x1 22:2x15 23:2x15 36:3x64 37:2x34 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 "
+         & "43:9x64 44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click QUICK_CRAFT kind 1 puts one item on each slot; kind 2 (full "
@@ -206,18 +208,18 @@
      MOVE 6 TO WS-C-BUTTON
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 2x13 0:3x64 1:2x34 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1 "
-         & "23:2x15 24:2x1 25:2x1" TO TL-EXPECTED
+     MOVE "cursor 2x13 9:11x1 23:2x15 24:2x1 25:2x1 36:3x64 37:2x34 38:4x64 39:5x64 40:6x64 41:7x64 "
+         & "42:8x64 43:9x64 44:10x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click PICKUP_ALL gathers the cursor's item from the slots up to a "
          & "full stack" TO TL-CASE
      MOVE 6 TO WS-C-TYPE
      MOVE 0 TO WS-C-BUTTON
-     MOVE 23 TO WS-C-SLOT
+     MOVE 30 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 2x64 0:3x64 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1"
+     MOVE "cursor 2x64 9:11x1 36:3x64 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 43:9x64 44:10x1"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -230,7 +232,7 @@
      MOVE 0 TO WS-C-CONTAINER
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      PERFORM SHOW
-     MOVE "cursor 2x64 0:3x64 2:4x64 3:5x64 4:6x64 5:7x64 6:8x64 7:9x64 8:10x1 9:11x1"
+     MOVE "cursor 2x64 9:11x1 36:3x64 38:4x64 39:5x64 40:6x64 41:7x64 42:8x64 43:9x64 44:10x1"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -278,54 +280,54 @@
      MOVE CN-PLAYER(WS-BOB) TO WS-ROW
 
      MOVE "test inventory click Set Creative Mode Slot lowers a count to the item's maximum "
-         & "stack; an unknown item, slot -1 and slot 36 are ignored; count 0 empties a slot"
+         & "stack; an unknown item, slot -1 and slot 46 are ignored; count 0 empties a slot"
          TO TL-CASE
-     MOVE 0 TO WS-NUM
+     MOVE 36 TO WS-NUM
      MOVE 12 TO WS-I
      MOVE 100 TO WS-S
      PERFORM CREATIVE-SET
-     MOVE 1 TO WS-NUM
+     MOVE 37 TO WS-NUM
      MOVE 99 TO WS-I
      MOVE 5 TO WS-S
      PERFORM CREATIVE-SET
      MOVE -1 TO WS-NUM
      MOVE 2 TO WS-I
      PERFORM CREATIVE-SET
-     MOVE 36 TO WS-NUM
+     MOVE 46 TO WS-NUM
      PERFORM CREATIVE-SET
-     MOVE 2 TO WS-NUM
+     MOVE 38 TO WS-NUM
      MOVE 7 TO WS-I
      MOVE 5 TO WS-S
      PERFORM CREATIVE-SET
-     MOVE 3 TO WS-NUM
+     MOVE 39 TO WS-NUM
      PERFORM CREATIVE-SET
      MOVE 0 TO WS-S
      PERFORM CREATIVE-SET
      PERFORM SHOW
-     MOVE "cursor 0x0 0:12x32 2:7x5" TO TL-EXPECTED
+     MOVE "cursor 0x0 36:12x32 38:7x5" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click CLONE in creative fills an empty cursor with a full stack of "
-         & "the slot's item; QUICK_CRAFT kind 2 gives each slot a full stack and keeps the "
-         & "cursor" TO TL-CASE
+         & "the slot's item; QUICK_CRAFT kind 2 gives each slot a full stack and, as "
+         & "every drag, takes the placed count off the cursor (40-1 §3.4 item 6)" TO TL-CASE
      MOVE 3 TO WS-C-TYPE
      MOVE 2 TO WS-C-BUTTON
-     MOVE 2 TO WS-C-SLOT
+     MOVE 38 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 5 TO WS-C-TYPE
      MOVE 8 TO WS-C-BUTTON
      MOVE -999 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 9 TO WS-C-BUTTON
-     MOVE 3 TO WS-C-SLOT
+     MOVE 39 TO WS-C-SLOT
      PERFORM CLICK
-     MOVE 4 TO WS-C-SLOT
+     MOVE 40 TO WS-C-SLOT
      PERFORM CLICK
      MOVE 10 TO WS-C-BUTTON
      MOVE -999 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 7x64 0:12x32 2:7x5 3:7x64 4:7x64" TO TL-EXPECTED
+     MOVE "cursor 0x0 36:12x32 38:7x5 39:7x64 40:7x64" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   Decoding.
@@ -463,11 +465,12 @@
      MOVE PL-CARRIED-COUNT(WS-ROW) TO WS-EDIT2
      STRING "cursor " FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
          INTO WS-TEXT POINTER WS-PTR
-     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
-         IF PL-SLOT-COUNT(WS-ROW, WS-S) > 0
-             COMPUTE WS-EDIT = WS-S - 1
-             MOVE PL-SLOT-ITEM(WS-ROW, WS-S) TO WS-EDIT2
-             MOVE PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-EDIT3
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 45
+         CALL "MENU-GET" USING WS-ROW WS-S WS-ITEM WS-COUNT
+         IF WS-COUNT > 0
+             MOVE WS-S TO WS-EDIT
+             MOVE WS-ITEM TO WS-EDIT2
+             MOVE WS-COUNT TO WS-EDIT3
              STRING " " FUNCTION TRIM(WS-EDIT) ":" FUNCTION TRIM(WS-EDIT2) "x"
                  FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
          END-IF

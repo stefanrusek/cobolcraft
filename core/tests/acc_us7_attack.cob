@@ -28,6 +28,11 @@
  01 WS-YAW                 FLOAT-SHORT VALUE -90.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
  01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-DIM           BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 100.
+ 01 WS-FLOOR-Z             BINARY-LONG VALUE 20.
+ 01 WS-FLOOR-STATE         BINARY-LONG VALUE 2.
  01 WS-TICKS               BINARY-LONG VALUE 12.
  01 WS-TEXT                PIC X(4096).
  PROCEDURE DIVISION.
@@ -118,6 +123,10 @@
 *>   Food 17 and saturation 0 for both: no natural regeneration between the hits.
      MOVE 17 TO PL-FOOD(CN-PLAYER(WS-BOB))
      MOVE 0 TO PL-SATURATION(CN-PLAYER(WS-BOB))
+*>   Greystone under the players: a claim of the ground counts only with support (core/src/move-check.cob).
+     PERFORM VARYING WS-FLOOR-X FROM 20 BY 1 UNTIL WS-FLOOR-X > 25
+         CALL "WORLD-SET-BLOCK" USING WS-FLOOR-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-FLOOR-STATE
+     END-PERFORM
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      MOVE 22.5 TO WS-BX
      CALL "TEST-MOVE" USING WS-BOB WS-MOVE WS-BX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS

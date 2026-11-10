@@ -56,10 +56,10 @@
      MOVE "acceptance US10-1 given a joined player when the inventory changes (the 64 greystone "
          & "of slot 0 taken onto the cursor) then the flags are re-sent: only 1, 5 and 8 are "
          & "craftable without greystone" TO TL-CASE
-     MOVE 0 TO WS-SLOT
+     MOVE 36 TO WS-SLOT
      CALL "TEST-CLICK" USING WS-ALICE WS-SLOT WS-BUTTON WS-CLICK
      CALL "TEST-DRAIN-CRAFT" USING WS-ALICE WS-TEXT
-     MOVE "slot 0=0x0 | book 9 craftable 1 5 8 replace 1" TO TL-EXPECTED
+     MOVE "slot 36=0x0 | book 9 craftable 1 5 8 replace 1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US10-1 given a first-time creative player (no starting items) when "
@@ -82,7 +82,7 @@
      CALL "TEST-DRAIN-CRAFT" USING WS-BOB WS-TEXT
      CALL "TEST-TICKS" USING WS-ONE
      CALL "TEST-DRAIN-CRAFT" USING WS-BOB WS-TEXT
-     MOVE "slot 0=2x4 | book 9 craftable 0 replace 1" TO TL-EXPECTED
+     MOVE "slot 36=2x4 | book 9 craftable 0 replace 1" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

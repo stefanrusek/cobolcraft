@@ -37,7 +37,7 @@
      MOVE 0 TO WS-RECIPE
      CALL "TEST-PLACE-RECIPE" USING WS-ALICE WS-RECIPE
      CALL "TEST-DRAIN-CRAFT" USING WS-ALICE WS-TEXT
-     MOVE "slot 0=2x60 | slot 10=9x2 | book 9 craftable 0 1 2 3 5 8 replace 1" TO TL-EXPECTED
+     MOVE "slot 36=2x60 | slot 10=9x2 | book 9 craftable 0 1 2 3 5 8 replace 1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US10-2 given 3 greystone and 1 cardstack when recipe 2 is crafted then "
@@ -46,7 +46,7 @@
      MOVE 2 TO WS-RECIPE
      CALL "TEST-PLACE-RECIPE" USING WS-ALICE WS-RECIPE
      CALL "TEST-DRAIN-CRAFT" USING WS-ALICE WS-TEXT
-     MOVE "slot 0=2x57 | slot 4=6x63 | slot 11=10x1 | book 9 craftable 0 1 2 3 5 8 replace 1"
+     MOVE "slot 36=2x57 | slot 40=6x63 | slot 11=10x1 | book 9 craftable 0 1 2 3 5 8 replace 1"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -99,7 +99,7 @@
      CALL "TEST-DRAIN-CRAFT" USING WS-BOB WS-TEXT
      CALL "TEST-PLACE-RECIPE" USING WS-BOB WS-RECIPE
      CALL "TEST-DRAIN-CRAFT" USING WS-BOB WS-TEXT
-     MOVE "slot 0=9x2 | book 9 craftable replace 1" TO TL-EXPECTED
+     MOVE "slot 36=9x2 | book 9 craftable replace 1" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

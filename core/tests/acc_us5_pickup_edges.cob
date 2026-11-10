@@ -34,7 +34,10 @@
  01 WS-FZ                  FLOAT-LONG VALUE 20.5.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
- 01 WS-FLAGS               BINARY-LONG VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Z             BINARY-LONG VALUE 20.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 100.
  01 WS-ROW                 BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-ENTITY              BINARY-LONG.
@@ -58,6 +61,10 @@
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
      MOVE 100 TO WS-Y
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   Greystone under the players: a break by a player in the air is five times slower (13 section 2.1).
+     PERFORM VARYING WS-FLOOR-X FROM 20 BY 1 UNTIL WS-FLOOR-X > 26
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-STATE
+     END-PERFORM
      MOVE 21 TO WS-X
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 22 TO WS-X
@@ -119,7 +126,7 @@
      PERFORM ADD-SLOT
      MOVE 5 TO WS-ENTITY
      PERFORM ADD-ITEM
-     MOVE "128(5)x6 127(5,3,10) 20(0=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
+     MOVE "128(5)x6 127(5,3,10) 20(36=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
          TO TL-EXPECTED
      PERFORM CHECK
 

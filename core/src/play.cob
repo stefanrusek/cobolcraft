@@ -36,7 +36,7 @@
 *> Click, Container Close and Set Creative Mode Slot go to INV-HELD, INV-CLICK, INV-CLOSE and
 *> INV-CREATIVE-SET (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
-*> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob);
+*> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob) and 7 SWAP_ITEM_WITH_OFFHAND to MENU-OFFHAND-SWAP (core/src/menu-inventory.cob);
 *> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
 *> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
@@ -222,6 +222,8 @@
              CALL "GI-THROW" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 41 AND PSB-ACTION = 6
              CALL "HUNGER-CANCEL" USING WS-ROW
+         WHEN L-PACKET-ID = 41 AND PSB-ACTION = 7
+             CALL "MENU-OFFHAND-SWAP" USING L-ID
          WHEN L-PACKET-ID = 41
              CALL "BLOCK-ACTION" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 66
@@ -605,28 +607,37 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-CONTENT-BUILD.
-*> USING player row, PB-BUFFER: Container Set Content 0x12 (05a; 09 §3.2): container 0, the
-*> player's state id, the 36 inventory slots in the 09 §3.2 numbering (PL-SLOT(n + 1) is slot n;
-*> count 0 = empty), then the item on the player's cursor (PL-CARRIED-*).
+*> USING player row, PB-BUFFER: Container Set Content 0x12 (05a; 09 §3.2; 40-1 §4.3): the container id and state id of the
+*> player's current menu, its 46 slots in the menu's numbering (menus.cob; count 0 = empty), then the item on the player's
+*> cursor (PL-CARRIED-*).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 18.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-SLOTS               BINARY-LONG VALUE 36.
+ 01 WS-SLOTS               BINARY-LONG VALUE 46.
  01 WS-I                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     IF MN-WINDOW(L-ROW) = 0
+         MOVE PL-STATE-ID(L-ROW) TO WS-STATE
+     ELSE
+         MOVE MN-STATE-ID(L-ROW) TO WS-STATE
+     END-IF
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-VARINT" USING PB-BUFFER PL-STATE-ID(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER MN-WINDOW(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-STATE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SLOTS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
-         MOVE PL-SLOT-COUNT(L-ROW, WS-I) TO WK-IS-COUNT
-         MOVE PL-SLOT-ITEM(L-ROW, WS-I) TO WK-IS-ITEM
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 45
+         CALL "MENU-GET" USING L-ROW WS-I WS-ITEM WS-COUNT
+         MOVE WS-COUNT TO WK-IS-COUNT
+         MOVE WS-ITEM TO WK-IS-ITEM
          CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
      END-PERFORM
      MOVE PL-CARRIED-COUNT(L-ROW) TO WK-IS-COUNT

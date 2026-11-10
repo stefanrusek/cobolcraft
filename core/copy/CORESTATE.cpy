@@ -148,13 +148,16 @@
        10 PL-DRAG-TYPE       BINARY-LONG.
        10 PL-DRAG-COUNT      BINARY-LONG.
        10 PL-DRAG-SLOT       BINARY-LONG OCCURS 36 TIMES.
-*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/blocks.cob).
+*>     A survival break in progress (Player Action 0 to 3; data-model §3; core/src/breaking.cob).
        10 PL-BREAKING        PIC 9.
        10 PL-BREAK-X         BINARY-LONG.
        10 PL-BREAK-Y         BINARY-LONG.
        10 PL-BREAK-Z         BINARY-LONG.
        10 PL-BREAK-START     BINARY-DOUBLE.      *> CW-TICKS of START_DESTROY_BLOCK
-       10 PL-BREAK-TICKS     BINARY-LONG.        *> ticks the break takes
+       10 PL-BREAK-RATE      FLOAT-SHORT.        *> progress per tick (13 section 2.1), fixed at the start
+       10 PL-BREAK-ITEM      BINARY-LONG.        *> the held item at the start (0 = empty hand)
+       10 PL-BREAK-STATE     BINARY-LONG.        *> the target's block state at the start
+       10 PL-BREAK-DELAYED   PIC 9.              *> 1 after a STOP that came early (13 section 2.4)
        10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
 *>     Health (standin §10; core/src/health.cob). PL-DEATH-CAUSE is the RULES.cpy CAUSE-* of the
 *>     death while the player is dead (0 while alive); PL-KILLER-* name the attacker of a player kill.
