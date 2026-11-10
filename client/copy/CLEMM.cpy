@@ -29,7 +29,7 @@
           15 MM-CYSCALE    FLOAT-LONG.
           15 MM-CZSCALE    FLOAT-LONG.
        10 MM-NCUBES        BINARY-LONG.
-       10 MM-CUBE OCCURS 4 TIMES.
+       10 MM-CUBE OCCURS 8 TIMES.
           15 MC-U          FLOAT-LONG.
           15 MC-V          FLOAT-LONG.
           15 MC-OX         FLOAT-LONG.
