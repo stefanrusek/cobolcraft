@@ -15,13 +15,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
- COPY ITEMS.
- COPY ENTITYTYPES.
+ COPY STARTKIT.
+ COPY CITEMS.
+ COPY ETIDS.
  COPY RULES.
  COPY MESSAGES.
  COPY DIMENSIONS.
  COPY MOBS.
- COPY RECIPES.
  COPY WEATHER.
  COPY CONSOLELANG.
  COPY COMMANDS.
@@ -670,33 +670,13 @@
        "minecraft:overworld 0 minecraft:overworld -64 384 63 3 1 1 1 -1 2 0 16 7".
  01 WS-DIMENSION-TABLE REDEFINES WS-DIMENSION-ROWS.
     05 WS-DIMENSION-ROW    PIC X(100) OCCURS 3 TIMES.
+ 01 WS-OPEN-TYPE          BINARY-LONG VALUE 1.
+ 01 WS-OPEN-DIR           PIC X(1100) VALUE SPACES.
+ 01 WS-OPEN-STATUS        BINARY-LONG.
  PROCEDURE DIVISION.
-*>   Item table (§2, §10.4, §11.5), one case per item.
-     MOVE "test content tables item count" TO TL-CASE
-     MOVE "N" TO TL-MODE
-     MOVE 18 TO TL-EXPECTED-N
-     MOVE ITEM-COUNT TO TL-OBSERVED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ITEM-COUNT
-         MOVE SPACES TO TL-CASE
-         COMPUTE WS-EDIT = WS-I - 1
-         STRING "test content tables item " DELIMITED BY SIZE
-             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
-         PERFORM START-ROW
-         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
-         PERFORM ADD-SPACE
-         STRING IT-KEY(WS-I)(1:IT-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
-             INTO WS-ROW WITH POINTER WS-PTR
-         MOVE IT-PLACES-STATE(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE IT-MAX-STACK(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE IT-TOOL-CLASS(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE IT-FOOD(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE IT-ATTACK(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE WS-ITEM-ROW(WS-I) TO TL-EXPECTED
-         PERFORM ASSERT-ROW
-     END-PERFORM
-
+     CALL "CONTENT-OPEN" USING WS-OPEN-TYPE WS-OPEN-DIR WS-OPEN-STATUS
+     CALL "BLOCKS-OPEN"
+     CALL "CORE-TABLES-OPEN"
 *>   Starting inventory (§2 "Starting inventory", US4-8): slot item count per row.
      MOVE "test content tables starting inventory (slots 0 to 7 items 2 to 9 x 64, slot 8 "
          & "pry_bar, slot 9 trowel)" TO TL-CASE
@@ -709,34 +689,6 @@
      MOVE "0 2 64 1 3 64 2 4 64 3 5 64 4 6 64 5 7 64 6 8 64 7 9 64 8 10 1 9 11 1"
          TO TL-EXPECTED
      PERFORM ASSERT-ROW
-
-*>   Entity type table (§3, §12.1).
-     MOVE "test content tables entity type id constants" TO TL-CASE
-     PERFORM START-ROW
-     MOVE ET-OPERATOR TO WS-NUM PERFORM ADD-NUM
-     MOVE ET-LOOSE-ITEM TO WS-NUM PERFORM ADD-NUM
-     MOVE ET-SODGRAZER TO WS-NUM PERFORM ADD-NUM
-     MOVE ET-ABEND TO WS-NUM PERFORM ADD-NUM
-     MOVE ENTITY-TYPE-COUNT TO WS-NUM PERFORM ADD-NUM
-     MOVE "0 1 2 3 4" TO TL-EXPECTED
-     PERFORM ASSERT-ROW
-
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ENTITY-TYPE-COUNT
-         MOVE SPACES TO TL-CASE
-         COMPUTE WS-EDIT = WS-I - 1
-         STRING "test content tables entity type " DELIMITED BY SIZE
-             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
-         PERFORM START-ROW
-         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
-         PERFORM ADD-SPACE
-         STRING ET-KEY(WS-I)(1:ET-KEY-LENGTH(WS-I)) DELIMITED BY SIZE
-             INTO WS-ROW WITH POINTER WS-PTR
-         MOVE ET-WIDTH-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE ET-HEIGHT-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE ET-EYE-MILLI(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE WS-ENTITY-ROW(WS-I) TO TL-EXPECTED
-         PERFORM ASSERT-ROW
-     END-PERFORM
 
 *>   Mob types (§12.1). Row: entity type, key, kind (0 passive, 1 hostile), maximum health, wander,
 *>   flee and pursue speeds, notice, give-up and attack reach (thousandths of a block), attack
@@ -831,37 +783,6 @@
      END-PERFORM
      MOVE "3 1 2 -1 5 3 1 1 4 -1 2 2 0 11 5 3" TO TL-EXPECTED
      PERFORM ASSERT-ROW
-
-*>   Recipes (§13): the count, then one case per recipe in display-id order.
-     MOVE "test content tables recipe count (§13: nine recipes, at most three ingredient lines)"
-         TO TL-CASE
-     PERFORM START-ROW
-     MOVE RECIPE-COUNT TO WS-NUM PERFORM ADD-NUM
-     MOVE RECIPE-MAX-LINES TO WS-NUM PERFORM ADD-NUM
-     MOVE "9 3" TO TL-EXPECTED
-     PERFORM ASSERT-ROW
-
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RECIPE-COUNT
-         MOVE SPACES TO TL-CASE
-         COMPUTE WS-EDIT = WS-I - 1
-         STRING "test content tables recipe " DELIMITED BY SIZE
-             FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-CASE
-         PERFORM START-ROW
-         COMPUTE WS-NUM = WS-I - 1 PERFORM ADD-NUM
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RP-LINE-COUNT(WS-I)
-             MOVE RP-IN-COUNT(WS-I, WS-J) TO WS-NUM PERFORM ADD-NUM
-             MOVE RP-IN-ITEM(WS-I, WS-J) TO WS-F
-             STRING "x" IT-KEY(WS-F + 1)(1:IT-KEY-LENGTH(WS-F + 1)) DELIMITED BY SIZE
-                 INTO WS-ROW WITH POINTER WS-PTR
-         END-PERFORM
-         STRING " ->" DELIMITED BY SIZE INTO WS-ROW WITH POINTER WS-PTR
-         MOVE RP-RESULT-COUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
-         MOVE RP-RESULT-ITEM(WS-I) TO WS-F
-         STRING "x" IT-KEY(WS-F + 1)(1:IT-KEY-LENGTH(WS-F + 1)) DELIMITED BY SIZE
-             INTO WS-ROW WITH POINTER WS-PTR
-         MOVE WS-RECIPE-ROW(WS-I) TO TL-EXPECTED
-         PERFORM ASSERT-ROW
-     END-PERFORM
 
 *>   Weather (§14): the constants, then one case per kind.
      MOVE "test content tables weather constants (§14.1 kinds, §14.3 start kind and time, until "

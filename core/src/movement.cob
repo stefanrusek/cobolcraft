@@ -41,7 +41,7 @@
 *> that position overlaps a solid block, else 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY ENTITYTYPES.
+ COPY CITEMS.
  COPY CBLOCKS.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
@@ -65,8 +65,8 @@
  01 L-HIT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
      MOVE 0 TO L-HIT
-     COMPUTE WS-HALF = ET-WIDTH-MILLI(ET-OPERATOR + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(ET-OPERATOR + 1) / 1000
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
 *>   First cell: floor(low edge + e); last cell: ceil(high edge - e) - 1. The tolerance e (1e-7
 *>   block) keeps a face that touches a cell face from counting as an overlap when the edge is not
 *>   exactly representable (x + 0.35).

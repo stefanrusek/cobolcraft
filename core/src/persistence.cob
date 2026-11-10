@@ -583,8 +583,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
- COPY ITEMS.
+ COPY CITEMS.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-ELEMENT             BINARY-LONG VALUE -1.
@@ -647,7 +646,7 @@
              CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-FLOAT WS-TWO
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-YAW(WS-ROW)
              CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WS-ELEMENT EN-PITCH(WS-ROW)
-             IF EN-TYPE(WS-ROW) = ET-LOOSE-ITEM
+             IF EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
                  MOVE "Item" TO WN MOVE 4 TO WL
                  CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
                  MOVE "id" TO WN MOVE 2 TO WL
@@ -720,9 +719,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
+ COPY CITEMS.
  COPY MOBS.
- COPY ITEMS.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 32.
@@ -765,7 +763,7 @@
              WHEN WN = "id" AND WS-TYPE = 8
                  MOVE SPACES TO WS-KEY
                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-CAPACITY WS-KEY-LENGTH
-                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ENTITY-TYPE-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
                      IF ET-KEY(WS-I) = WS-KEY
                          COMPUTE WS-ENTITY-TYPE = WS-I - 1
                      END-IF
@@ -801,7 +799,7 @@
                              MOVE SPACES TO WS-KEY
                              CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-CAPACITY
                                  WS-KEY-LENGTH
-                             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ITEM-COUNT
+                             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
                                  IF IT-KEY(WS-I) = WS-KEY
                                      COMPUTE WS-ITEM = WS-I - 1
                                  END-IF
@@ -819,7 +817,7 @@
      EVALUATE TRUE
          WHEN PB-ERROR = 1
              CONTINUE
-         WHEN WS-ENTITY-TYPE = ET-LOOSE-ITEM
+         WHEN WS-ENTITY-TYPE = CR-LOOSE-ITEM
              CALL "GI-SPAWN" USING L-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-ITEM-COUNT
                  WS-DELAY WS-ROW
              MOVE WS-AGE TO EN-AGE(WS-ROW)
@@ -1421,7 +1419,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY ITEMS.
+ COPY CITEMS.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
@@ -1526,7 +1524,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY ITEMS.
+ COPY CITEMS.
  COPY RULES.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
@@ -1637,7 +1635,7 @@
                                  MOVE SPACES TO WS-KEY
                                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-NAME-CAPACITY
                                      WS-KEY-LENGTH
-                                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > ITEM-COUNT
+                                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > IT-COUNT
                                      IF IT-KEY(WS-K) = WS-KEY
                                          COMPUTE WS-ITEM = WS-K - 1
                                      END-IF
