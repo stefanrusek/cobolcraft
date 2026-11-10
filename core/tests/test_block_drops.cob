@@ -14,6 +14,7 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY CONTENT.
+ COPY CBLOCKS.
  COPY CITEMS.
  COPY CSTACK.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/loot-blocks".
@@ -39,6 +40,8 @@
  01 WS-E                   BINARY-LONG.
  01 WS-F                   BINARY-LONG.
  01 WS-TEXT                PIC X(300).
+ 01 WS-BLOCK-ROW           BINARY-LONG.
+ 01 WS-SAVED-KEY           PIC X(48).
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
  01 WS-R1                  PIC -(6)9.99.
@@ -142,6 +145,17 @@
      CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-ID WS-LEVEL
      PERFORM SPAWN
      MOVE "test block drops greystone with an efficiency 5 tool takes the first alternative (loam)" TO TL-CASE
+     MOVE "3x1@7.50,64.25,9.50" TO TL-EXPECTED
+     PERFORM CHECK-DROPS
+
+     MOVE "cobolcraft:turf" TO WS-KEY
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     COMPUTE WS-BLOCK-ROW = CB-S-BLOCK(WS-STATE + 1) + 1
+     MOVE CB-KEY(WS-BLOCK-ROW) TO WS-SAVED-KEY
+     MOVE "pseudo_stone" TO CB-KEY(WS-BLOCK-ROW)
+     PERFORM SPAWN
+     MOVE WS-SAVED-KEY TO CB-KEY(WS-BLOCK-ROW)
+     MOVE "test block drops a block key without namespace (pseudo_stone) has the table minecraft:blocks/pseudo_stone" TO TL-CASE
      MOVE "3x1@7.50,64.25,9.50" TO TL-EXPECTED
      PERFORM CHECK-DROPS
      GOBACK.

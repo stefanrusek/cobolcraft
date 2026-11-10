@@ -77,8 +77,18 @@
     05 FILLER PIC X(60) VALUE "F|f_sqrt|0|0|-1|4000000".
     05 FILLER PIC X(60) VALUE "F|f_weighted|7|0|-1|750000".
     05 FILLER PIC X(60) VALUE "F|f_unsupported|0|0|-1|0".
+    05 FILLER PIC X(60) VALUE "I|i_avg_empty|0|0|-1|0".
+    05 FILLER PIC X(60) VALUE "I|i_ref_missing|0|0|-1|0".
+    05 FILLER PIC X(60) VALUE "I|i_weighted_empty|7|0|-1|0".
+    05 FILLER PIC X(60) VALUE "F|f_weighted_empty|7|0|-1|0".
+    05 FILLER PIC X(60) VALUE "F|f_ref_missing|0|0|-1|0".
+    05 FILLER PIC X(60) VALUE "I|i_bare_kind|0|0|-1|3".
+    05 FILLER PIC X(60) VALUE "I|i_ref_bare|0|0|-1|0".
+    05 FILLER PIC X(60) VALUE "F|f_ref_ok|0|0|-1|750000".
+    05 FILLER PIC X(60) VALUE "F|f_dispatch|0|1|-1|750000".
+    05 FILLER PIC X(60) VALUE "F|f_dispatch|0|0|-1|125000".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-CASE             PIC X(60) OCCURS 63 TIMES.
+    05 WS-CASE             PIC X(60) OCCURS 73 TIMES.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/loot".
  01 WS-STATUS              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -102,7 +112,7 @@
      MOVE CT-OK TO TL-EXPECTED-N
      MOVE WS-STATUS TO TL-OBSERVED-N
      PERFORM CHECK-NUM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 63
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 73
          MOVE SPACES TO WS-NAME WS-SEED WS-KILLER WS-ENCH WS-EXPECT
          UNSTRING WS-CASE(WS-I) DELIMITED BY "|" INTO WS-KIND WS-NAME WS-SEED WS-KILLER WS-ENCH WS-EXPECT
          INITIALIZE LOOT-CONTEXT

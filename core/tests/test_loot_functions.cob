@@ -18,58 +18,59 @@
  COPY CSTACK.
  COPY LOOTCTX.
  01 WS-CASES.
-    05 FILLER PIC X(80) VALUE "m_set_count|0|3|10|1|0|0|0|10 3 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_count_add|0|3|10|2|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_count_uniform|0|7|10|1|0|0|0|10 2 0 0 -|164".
-    05 FILLER PIC X(80) VALUE "m_set_count_cond|0|3|10|1|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_count_cond|1|3|10|1|0|0|0|10 7 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_count_ref|0|3|10|1|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_item|0|3|10|4|0|0|0|11 4 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_both|0|3|10|1|0|0|0|10 2 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_both|0|3|10|3|0|0|0|10 3 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_both|0|3|10|9|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_min|0|3|10|1|0|0|0|10 2 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_min|0|3|10|5|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_max|0|3|10|9|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_limit_max|0|3|10|3|0|0|0|10 3 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_decay|0|3|10|4|0|0|0|10 4 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_decay|23|5|10|4|0|0|0|10 2 0 0 -|506".
-    05 FILLER PIC X(80) VALUE "m_ench_count|22|5|10|3|0|0|0|10 5 0 0 -|92".
-    05 FILLER PIC X(80) VALUE "m_ench_count|0|5|10|3|0|0|0|10 3 0 0 -|487".
-    05 FILLER PIC X(80) VALUE "m_ench_count_limit|22|5|10|3|0|0|0|10 4 0 0 -|487".
-    05 FILLER PIC X(80) VALUE "m_bonus_ore|0|5|10|1|0|0|0|10 1 0 0 -|487".
-    05 FILLER PIC X(80) VALUE "m_bonus_ore|2|5|10|1|0|0|0|10 1 0 0 -|487".
-    05 FILLER PIC X(80) VALUE "m_bonus_ore|12|5|10|1|0|0|0|10 2 0 0 -|92".
-    05 FILLER PIC X(80) VALUE "m_bonus_ore|11|5|10|1|0|0|0|10 2 0 0 -|92".
-    05 FILLER PIC X(80) VALUE "m_bonus_uniform|20|5|10|1|0|0|0|10 3 0 0 -|92".
-    05 FILLER PIC X(80) VALUE "m_bonus_binomial|12|9|10|4|0|0|0|10 5 0 0 -|535".
-    05 FILLER PIC X(80) VALUE "m_bonus_other|12|9|10|4|0|0|0|10 4 0 0 -|989".
-    05 FILLER PIC X(80) VALUE "m_bonus_ore|12|5|10|1|0|0|0|10 2 0 0 -|92".
-    05 FILLER PIC X(80) VALUE "m_discard|0|3|10|5|0|0|0|10 0 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_sequence|0|3|10|1|0|0|0|11 2 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_sequence_cond|0|3|10|1|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_sequence_cond|1|3|10|1|0|0|0|10 2 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_sequence_ref|0|3|10|1|0|0|0|10 5 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_filtered|0|3|10|4|0|0|0|10 9 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_filtered|0|3|11|4|0|0|0|11 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_filtered_nopass|0|3|10|4|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_filtered_nopass|0|3|11|4|0|0|0|11 4 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench|0|3|10|1|0|0|0|10 1 0 3 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench|0|3|10|1|0|0|2|10 1 0 3 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench_add|0|3|10|1|0|0|2|10 1 0 5 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench_add|0|3|10|1|0|0|0|10 1 0 3 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench_big|0|3|10|1|0|0|2|10 1 0 255 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_ench_unknown|0|3|10|1|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_damage|0|3|10|1|0|100|0|10 1 75 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_damage_add|0|3|10|1|50|100|0|10 1 25 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_damage_add|0|3|10|1|40|100|0|10 1 14 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_damage|0|3|10|1|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_set_name|0|3|10|1|0|0|0|10 1 0 0 Hi|734".
-    05 FILLER PIC X(80) VALUE "m_set_name_item|0|3|10|1|0|0|0|10 1 0 0 item:Ore|734".
-    05 FILLER PIC X(80) VALUE "m_set_name_other|0|3|10|1|0|0|0|10 1 0 0 -|734".
-    05 FILLER PIC X(80) VALUE "m_identity|0|3|10|6|0|0|0|10 6 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_count|0|3|10|1|0|0|0|10 3 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_count_add|0|3|10|2|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_count_uniform|0|7|10|1|0|0|0|10 2 0 0 -|164".
+    05 FILLER PIC X(140) VALUE "m_set_count_cond|0|3|10|1|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_count_cond|1|3|10|1|0|0|0|10 7 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_count_ref|0|3|10|1|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_item|0|3|10|4|0|0|0|11 4 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_both|0|3|10|1|0|0|0|10 2 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_both|0|3|10|3|0|0|0|10 3 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_both|0|3|10|9|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_min|0|3|10|1|0|0|0|10 2 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_min|0|3|10|5|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_max|0|3|10|9|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_limit_max|0|3|10|3|0|0|0|10 3 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_decay|0|3|10|4|0|0|0|10 4 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_decay|23|5|10|4|0|0|0|10 2 0 0 -|506".
+    05 FILLER PIC X(140) VALUE "m_ench_count|22|5|10|3|0|0|0|10 5 0 0 -|92".
+    05 FILLER PIC X(140) VALUE "m_ench_count|0|5|10|3|0|0|0|10 3 0 0 -|487".
+    05 FILLER PIC X(140) VALUE "m_ench_count_limit|22|5|10|3|0|0|0|10 4 0 0 -|487".
+    05 FILLER PIC X(140) VALUE "m_bonus_ore|0|5|10|1|0|0|0|10 1 0 0 -|487".
+    05 FILLER PIC X(140) VALUE "m_bonus_ore|2|5|10|1|0|0|0|10 1 0 0 -|487".
+    05 FILLER PIC X(140) VALUE "m_bonus_ore|12|5|10|1|0|0|0|10 2 0 0 -|92".
+    05 FILLER PIC X(140) VALUE "m_bonus_ore|11|5|10|1|0|0|0|10 2 0 0 -|92".
+    05 FILLER PIC X(140) VALUE "m_bonus_uniform|20|5|10|1|0|0|0|10 3 0 0 -|92".
+    05 FILLER PIC X(140) VALUE "m_bonus_binomial|12|9|10|4|0|0|0|10 5 0 0 -|535".
+    05 FILLER PIC X(140) VALUE "m_bonus_other|12|9|10|4|0|0|0|10 4 0 0 -|989".
+    05 FILLER PIC X(140) VALUE "m_bonus_ore|12|5|10|1|0|0|0|10 2 0 0 -|92".
+    05 FILLER PIC X(140) VALUE "m_discard|0|3|10|5|0|0|0|10 0 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_sequence|0|3|10|1|0|0|0|11 2 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_sequence_cond|0|3|10|1|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_sequence_cond|1|3|10|1|0|0|0|10 2 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_sequence_ref|0|3|10|1|0|0|0|10 5 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_filtered|0|3|10|4|0|0|0|10 9 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_filtered|0|3|11|4|0|0|0|11 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_filtered_nopass|0|3|10|4|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_filtered_nopass|0|3|11|4|0|0|0|11 4 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench|0|3|10|1|0|0|0|10 1 0 3 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench|0|3|10|1|0|0|2|10 1 0 3 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench_add|0|3|10|1|0|0|2|10 1 0 5 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench_add|0|3|10|1|0|0|0|10 1 0 3 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench_big|0|3|10|1|0|0|2|10 1 0 255 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_ench_unknown|0|3|10|1|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_damage|0|3|10|1|0|100|0|10 1 75 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_damage_add|0|3|10|1|50|100|0|10 1 25 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_damage_add|0|3|10|1|40|100|0|10 1 14 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_damage|0|3|10|1|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_name|0|3|10|1|0|0|0|10 1 0 0 Hi|734".
+    05 FILLER PIC X(140) VALUE "m_set_name_item|0|3|10|1|0|0|0|10 1 0 0 item:Ore|734".
+    05 FILLER PIC X(140) VALUE "m_set_name_other|0|3|10|1|0|0|0|10 1 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_identity|0|3|10|6|0|0|0|10 6 0 0 -|734".
+    05 FILLER PIC X(140) VALUE "m_set_name_long|0|3|10|1|0|0|0|10 1 0 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx|734".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-CASE             PIC X(80) OCCURS 50 TIMES.
+    05 WS-CASE             PIC X(140) OCCURS 51 TIMES.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/loot".
  01 WS-STATUS              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -81,7 +82,7 @@
  01 WS-DAMAGE-TEXT         PIC X(6).
  01 WS-MAX-TEXT            PIC X(6).
  01 WS-ENCH-TEXT           PIC X(6).
- 01 WS-RESULT-TEXT         PIC X(30).
+ 01 WS-RESULT-TEXT         PIC X(80).
  01 WS-PROBE-TEXT          PIC X(8).
  01 WS-KEY                 PIC X(112).
  01 WS-FOUND               BINARY-LONG.
@@ -102,7 +103,8 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-NAME-OUT            PIC X(64).
  01 WS-NAME-LENGTH         BINARY-LONG.
- 01 WS-NAME-TEXT           PIC X(70).
+ 01 WS-NAME-TEXT           PIC X(100).
+ 01 WS-BUILD               PIC X(120).
  01 WS-FOUND2              BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
@@ -119,7 +121,7 @@
      PERFORM CHECK-NUM
      MOVE "cobolcraft:pry_bar" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-TOOL WS-ROW WS-STATUS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 50
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 51
          MOVE SPACES TO WS-NAME WS-SCENARIO WS-SEED WS-ITEM-TEXT WS-COUNT-TEXT WS-DAMAGE-TEXT WS-MAX-TEXT
              WS-ENCH-TEXT WS-RESULT-TEXT WS-PROBE-TEXT
          UNSTRING WS-CASE(WS-I) DELIMITED BY "|" INTO WS-NAME WS-SCENARIO WS-SEED WS-ITEM-TEXT WS-COUNT-TEXT
@@ -238,10 +240,10 @@
      MOVE WS-COUNT TO WS-EDIT2
      MOVE WS-DAMAGE TO WS-EDIT3
      MOVE WS-LEVEL TO WS-EDIT4
-     MOVE SPACES TO WS-VALUE
+     MOVE SPACES TO WS-BUILD
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) " "
-         FUNCTION TRIM(WS-EDIT4) " " FUNCTION TRIM(WS-NAME-TEXT) DELIMITED BY SIZE INTO WS-VALUE
-     MOVE WS-VALUE TO WS-NAME-TEXT.
+         FUNCTION TRIM(WS-EDIT4) " " FUNCTION TRIM(WS-NAME-TEXT) DELIMITED BY SIZE INTO WS-BUILD
+     MOVE WS-BUILD TO WS-NAME-TEXT.
 
  CHECK.
      MOVE "T" TO TL-MODE
