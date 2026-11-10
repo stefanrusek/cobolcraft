@@ -48,6 +48,9 @@
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).
     05 CW-GAME-MODE          PIC 9.              *> level.dat GameMode (07 §9.2): new players, host kinds 1-2
+    05 CW-WORLD-TYPE         PIC X(10).          *> level.dat WorldType: standard, cobolcraft or debug (world-types 2.1)
+    05 CW-SEED               BINARY-DOUBLE.      *> level.dat Seed
+    05 CW-CONTENT-JAR        PIC X(64).          *> level.dat ContentJar (informational, WT-6); spaces when absent
     05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 23999 (RULES.cpy RULE-DAY-LENGTH; 33 §3)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
     05 CW-SPAWN-X            FLOAT-LONG.
@@ -183,6 +186,7 @@
        10 CK-ADDR            USAGE POINTER.
        10 CK-CHANGED         PIC 9.              *> set by a block change (persist on save)
        10 CK-LIT             PIC 9.              *> light computed
+       10 CK-FOREIGN         PIC 9.              *> 1: its palette holds a key of another world type (WT-23): void, never saved
        10 CK-SOURCES         BINARY-LONG OCCURS 24 TIMES.
 
 *> Entity tracker (data-model §5 to §7; 09 §3.2 entity rows; core/src/entities.cob). One row per
