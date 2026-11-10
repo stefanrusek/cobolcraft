@@ -42,3 +42,18 @@ def mesh_checks(t,ids,tag):
     for i in ids:
         r,tex=expected(i); t.build(i); t.rows('%s %s'%(t.prefix,tag+' '+i),r)
         p,c=sizes(r); t.stats('%s %s'%(tag,i),p,c,float(tex[0]),float(tex[1]))
+import math
+FIELDS=('x','y','z','xrot','yrot','zrot','xs','ys','zs')
+def base_parts(layer):
+    P={}
+    for r in expected(layer)[0]:
+        x=r.split()
+        if x[0]=='P': P[x[1]]=[float(v) for v in x[3:9]]+[1,1,1]
+    return P
+def pose_check(t,layer,prog,st,P,vis=None,tag=''):
+    t.raw('MOVE "%s" TO WS-LAYER'%layer,'CALL "EF6-LAYER" USING EMM-MODEL WS-LAYER WS-OK'); t.raw('MOVE 3 TO MM-CXROT(2)'); t.setin(list(st)); t.raw('CALL "%s" USING EMM-MODEL WS-IN'%prog)
+    for part in sorted(P):
+        for kx,f in enumerate(FIELDS): t.cur(part,f,P[part][kx])
+    for k,v in (vis or {}).items(): t.vis(k,v)
+def text_check(t,prog,args,name,expected_text):
+    t.raw('MOVE SPACES TO WS-X120'); t.setin(args); t.raw('CALL "%s" USING WS-IN WS-X120'%prog); t.text(name,expected_text,'WS-X120')
