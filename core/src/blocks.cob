@@ -122,16 +122,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-CHANGE.
-*> USING dimension row, x, y, z, state (BINARY-LONG): Block Update to the viewers of the block's
-*> chunk, then the block is set and its light changes are sent (LIGHT-SET-BLOCK).
+*> USING dimension row, x, y, z, state (BINARY-LONG): Level.setBlock with flags 3 (LEVEL-SET-BLOCK, 29 section 2): the block is written, its light
+*> changes are sent at once (LIGHT-SET-BLOCK), the neighbours are told, and the position joins the tick's change set (BC-MARK, flag 2). The Block
+*> Update (or the Section Blocks Update of several changes in one section) reaches the viewers when the tick broadcasts its changes (BC-BROADCAST,
+*> 29 section 7.2; WORLDSIM-TICK and WORLDSIM-FLUSH), not here.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-NONE                BINARY-LONG VALUE 0.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 3.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-RESULT              BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -139,18 +138,25 @@
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
-     IF WS-READY = 0
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         MOVE 1 TO WS-READY
-     END-IF
-     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
-     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "BLOCK-UPDATE-BUILD" USING L-X L-Y L-Z L-STATE PB-BUFFER
-     CALL "VIEWERS-SEND" USING L-DIM WS-CX WS-CZ WS-NONE PB-BUFFER
-     CALL "LIGHT-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
+     CALL "WORLDSIM-ENSURE"
+     CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE WS-FLAGS WS-BUDGET WS-RESULT
      GOBACK.
  END PROGRAM BLOCK-CHANGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ACK-QUEUE.
+*> USING connection id, sequence (BINARY-LONG): ackBlockChangesUpTo (29 section 7.3): the highest sequence of the tick is kept (BC-ACK-SET); the
+*> Block Changed Ack is sent at the start of the connection's next tick (BC-ACK-TICK, WORLDSIM-ACKS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ACCEPTED            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SEQUENCE.
+     CALL "BC-ACK-SET" USING L-ID L-SEQUENCE WS-ACCEPTED
+     GOBACK.
+ END PROGRAM BLOCK-ACK-QUEUE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-TELL.
@@ -359,7 +365,7 @@
              COMPUTE WS-STATE = CR-GLOWTUBE-LIT + CR-GLOWTUBE-UNLIT - WS-STATE
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      END-EVALUATE
-     CALL "BLOCK-ACK" USING L-ID PSB-SEQUENCE
+     CALL "BLOCK-ACK-QUEUE" USING L-ID PSB-SEQUENCE
      IF WS-TRAVEL = 1
          CALL "DIM-USE-PAD" USING L-ID PSB-BX PSB-BY PSB-BZ
      END-IF

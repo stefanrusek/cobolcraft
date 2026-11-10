@@ -73,14 +73,14 @@
      MOVE 3 TO WS-ACTION
      PERFORM ACT
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
-     MOVE "5 8 49 1(4,1@20.50,100.25,20.50) 101(4=2x1)" TO TL-EXPECTED
+     MOVE "5 49 1(4,1@20.50,100.25,20.50) 101(4=2x1) 8" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US5-1 given survival when a block is broken then the breaking player sees "
          & "the same ground item between the Block Changed Acks of the start and the stop"
          TO TL-CASE
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "5 4 5x8 8 49 1(4,1@20.50,100.25,20.50) 101(4=2x1) 4" TO TL-EXPECTED
+     MOVE "5 4 5x8 49 1(4,1@20.50,100.25,20.50) 101(4=2x1) 8 4" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US5-1 given a player outside the view distance when the block is broken "

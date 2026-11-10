@@ -65,7 +65,7 @@
      PERFORM PLACE-PAD
      PERFORM USE-PAD
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "4 84 65 107 18 106 99 115 39 96 12 46x25 11 73" TO TL-EXPECTED
+     MOVE "84 65 107 18 106 99 115 39 96 12 46x25 11 73 4" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 then she is in cobolcraft:subroutine at (6.5, 36, 12.5) on a new "

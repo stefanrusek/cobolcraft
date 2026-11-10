@@ -230,6 +230,9 @@
      SET CB-ADDR TO FR-ADDR
      MOVE FR-LENGTH TO CB-CAPACITY CB-LENGTH
      CALL "CORE-CONN-INPUT" USING L-ID CORE-BUFFER
+*>   The block changes and acknowledgements the packet queued are sent by the next tick (29 section 7); a test drains right after feeding, so it
+*>   runs that part of the tick now (WORLDSIM-FLUSH) instead of a whole tick.
+     CALL "WORLDSIM-FLUSH"
      CALL "PB-FREE" USING FR-BUFFER
      GOBACK.
  END PROGRAM TEST-FEED-BUFFER.
@@ -655,6 +658,8 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
          CALL "CORE-TICK"
      END-PERFORM
+*>   What the last tick changed is broadcast by the next tick (29 section 7.2); a test drains right after, so that part runs now.
+     CALL "WORLDSIM-FLUSH"
      GOBACK.
  END PROGRAM TEST-TICKS.
 

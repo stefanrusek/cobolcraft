@@ -75,7 +75,7 @@
      MOVE "acceptance US5-2 given a ground item picked up by a creative player then the other "
          & "viewers, who saw it appear and fall, are sent Take Item Entity and Remove Entities too" TO TL-CASE
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "5 4 5x8 8 49 1(3,1@22.50,101.25,20.50) 101(3=2x1) 4 128(3)x4 127(3,2,1) 78(3)"
+     MOVE "5 4 5x8 49 1(3,1@22.50,101.25,20.50) 101(3=2x1) 8 4 128(3)x4 127(3,2,1) 78(3)"
          TO TL-EXPECTED
      PERFORM CHECK
 

@@ -119,8 +119,8 @@
      MOVE 7 TO WS-X
      MOVE 34 TO WS-Y
      PERFORM APPEND-BLOCK
-     MOVE "Alice 1(2,0@6.50,36.00,12.50) Bob 4 84 65 107 18 99 39 96 12 46x25 11 73 "
-         & "1(1,0@6.50,36.00,12.50) seen 1 1 block 0" TO TL-EXPECTED
+     MOVE "Alice 1(2,0@6.50,36.00,12.50) Bob 84 65 107 18 99 39 96 12 46x25 11 73 "
+         & "1(1,0@6.50,36.00,12.50) 4 seen 1 1 block 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "US12 edge given a sodgrazer and a ground item next to Alice in main when she travels "
