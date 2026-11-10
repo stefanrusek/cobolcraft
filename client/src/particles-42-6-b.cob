@@ -40,11 +40,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P6-EMIT.
-*> Append a particle: USING emits, name (PIC X(32)), six floats (x, y, z, vx, vy, vz); colour and scale are zeroed.
+*> Append a particle: USING emits, name (PIC X(40)), six floats (x, y, z, vx, vy, vz); colour and scale are zeroed.
  DATA DIVISION.
  LINKAGE SECTION.
  COPY CLP6EM.
- 01 L-NAME                 PIC X(32).
+ 01 L-NAME                 PIC X(40).
  01 L-PV.
     05 L-V                 FLOAT-LONG OCCURS 6 TIMES.
  PROCEDURE DIVISION USING P6-EMITS L-NAME L-PV.
@@ -80,11 +80,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P6-EMIT-SOUND.
-*> Append a sound event: USING emits, name (PIC X(32)).
+*> Append a sound event: USING emits, name (PIC X(40)).
  DATA DIVISION.
  LINKAGE SECTION.
  COPY CLP6EM.
- 01 L-NAME                 PIC X(32).
+ 01 L-NAME                 PIC X(40).
  PROCEDURE DIVISION USING P6-EMITS L-NAME.
      ADD 1 TO EM-SOUND-COUNT
      MOVE L-NAME TO EM-SOUND(EM-SOUND-COUNT)
@@ -96,7 +96,7 @@
 *> Append a `dust` particle with the REDSTONE option: USING emits, six floats, scale.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "dust".
+ 01 WS-N                   PIC X(40) VALUE "dust".
  01 WS-C                   BINARY-DOUBLE VALUE 16711680.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
@@ -149,7 +149,7 @@
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
- 01 L-NAME                 PIC X(32).
+ 01 L-NAME                 PIC X(40).
  PROCEDURE DIVISION USING L-KIND L-NAME.
      EVALUATE L-KIND
          WHEN 1
@@ -168,8 +168,8 @@
 *> (X + 0.5 + 0.27 ox, Y + 0.7 (+ 0.22 on a wall), Z + 0.5 + 0.27 oz); no draws.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32).
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40).
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
@@ -221,7 +221,7 @@
 *> ri(5); on 0 the `end_rod` at base + step * s with velocity (rg * 0.005) from three Gaussian draws.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "end_rod".
+ 01 WS-N                   PIC X(40) VALUE "end_rod".
  01 WS-R                   FLOAT-LONG.
  01 WS-S                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
@@ -262,8 +262,8 @@
 *> west, east, north, south, up), two `large_smoke` with the side's formula; draws x, y, z per particle.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "large_smoke".
- 01 WS-SOUND               PIC X(32) VALUE "fire.ambient".
+ 01 WS-N                   PIC X(40) VALUE "large_smoke".
+ 01 WS-SOUND               PIC X(40) VALUE "fire.ambient".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   FLOAT-LONG.
  01 WS-B                   FLOAT-LONG.
@@ -337,8 +337,8 @@
 *> draw ri(5) (r < 0.2: one `lava` at the centre with velocity (rf / 2, 0.00005, rf / 2), draws vx then vz).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "lava".
- 01 WS-SOUND               PIC X(32) VALUE "campfire.crackle".
+ 01 WS-N                   PIC X(40) VALUE "lava".
+ 01 WS-SOUND               PIC X(40) VALUE "campfire.crackle".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -377,9 +377,9 @@
 *> draw f; f < 0.3: `smoke` at P + offset, and f < 0.17 also the `candle.ambient` sound with two draws (volume, pitch); always `small_flame`.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32) VALUE "small_flame".
- 01 WS-SOUND               PIC X(32) VALUE "candle.ambient".
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40) VALUE "small_flame".
+ 01 WS-SOUND               PIC X(40) VALUE "candle.ambient".
  01 WS-TABLE               PIC X(60) VALUE "080808060708100807080510060708090807070509100709060706090806".
  01 WS-OFFSETS REDEFINES WS-TABLE.
     05 WS-OFF              PIC 99 OCCURS 30 TIMES.
@@ -442,9 +442,9 @@
 *> (X + 0.5 + x-off, Y + y-off, Z + 0.5 + z-off), the facing axis offset being step * 0.52.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32) VALUE "flame".
- 01 WS-SOUND               PIC X(32).
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40) VALUE "flame".
+ 01 WS-SOUND               PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-FREE                FLOAT-LONG.
  01 WS-PV.
@@ -493,8 +493,8 @@
 *> 3.2 SmokerBlock (PROPS 1 lit): lit: draw (r < 0.1: the `smoker.smoke` sound), one `smoke` at (X + 0.5, Y + 1.1, Z + 0.5).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-SOUND               PIC X(32) VALUE "smoker.smoke".
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-SOUND               PIC X(40) VALUE "smoker.smoke".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -549,7 +549,7 @@
 *> r >= 0.2 * len stops; else draw for t = from + len * rf2; `dust` (colour, scale 1) at P + 0.5 + 0.4375 * step(a) + t * step(b).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "dust".
+ 01 WS-N                   PIC X(40) VALUE "dust".
  01 WS-ONE                 FLOAT-LONG VALUE 1.0.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-R                   FLOAT-LONG.
@@ -750,7 +750,7 @@
 *> (a draw for each free axis, x first), y = Y + 0.25, then a draw for vy = rf * 0.04; `dust_color_transition` (the SCULK_TO_REDSTONE option is data).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "dust_color_transition".
+ 01 WS-N                   PIC X(40) VALUE "dust_color_transition".
  01 WS-R                   FLOAT-LONG.
  01 WS-DIR                 BINARY-LONG.
  01 WS-STEP.
@@ -795,7 +795,7 @@
 *> (1 + floor(r * 2)), then per particle three position draws and one velocity draw (Mth.nextDouble(-1, 1) = 2 r - 1; spread 0.5 on the axis).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "electric_spark".
+ 01 WS-N                   PIC X(40) VALUE "electric_spark".
  01 WS-R                   FLOAT-LONG.
  01 WS-DRAW                BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.

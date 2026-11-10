@@ -11,11 +11,11 @@
  PROGRAM-ID. P6-FLUID-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-UNDERWATER          PIC X(32) VALUE "underwater".
- 01 WS-LAVA                PIC X(32) VALUE "lava".
- 01 WS-S1                  PIC X(32) VALUE "water.ambient".
- 01 WS-S2                  PIC X(32) VALUE "lava.pop".
- 01 WS-S3                  PIC X(32) VALUE "lava.ambient".
+ 01 WS-UNDERWATER          PIC X(40) VALUE "underwater".
+ 01 WS-LAVA                PIC X(40) VALUE "lava".
+ 01 WS-S1                  PIC X(40) VALUE "water.ambient".
+ 01 WS-S2                  PIC X(40) VALUE "lava.pop".
+ 01 WS-S3                  PIC X(40) VALUE "lava.ambient".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-PV.

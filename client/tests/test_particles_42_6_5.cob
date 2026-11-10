@@ -11,10 +11,10 @@
  01 WS-CLASS               PIC X(24).
  01 WS-PT                  PIC X(80).
  01 WS-PRT                 PIC X(80).
- 01 WS-DRT                 PIC X(1500).
+ 01 WS-DRT                 PIC X(4000).
  01 WS-EXP                 PIC X(4000).
- 01 WS-OBS                 PIC X(4000).
- 01 WS-OBS2                PIC X(4000).
+ 01 WS-OBS                 PIC X(12000).
+ 01 WS-OBS2                PIC X(12000).
  01 WS-LEN                 BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-BLOCK.
@@ -22,9 +22,9 @@
  01 WS-PROPS.
     05 WS-PR               BINARY-LONG OCCURS 12 TIMES.
  01 WS-LIST.
-    05 WS-NUM              FLOAT-LONG OCCURS 140 TIMES.
+    05 WS-NUM              FLOAT-LONG OCCURS 520 TIMES.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-TEXT                PIC X(1500).
+ 01 WS-TEXT                PIC X(4000).
  01 WS-TOK                 PIC X(40).
  01 WS-PTR                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -32,6 +32,7 @@
  01 WS-ED                  PIC -(5)9.99999.
  01 WS-EDC                 PIC -(10)9.
  01 WS-EDS                 PIC 9.99.
+ 01 WS-EDR                 PIC 9.99999.
  01 WS-V                   FLOAT-LONG.
  PROCEDURE DIVISION.
      MOVE "water source underwater" TO WS-NAME
@@ -115,7 +116,7 @@
      END-PERFORM
      MOVE WS-DRT TO WS-TEXT
      PERFORM PARSE-LIST
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 128
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 512
          MOVE 0.5 TO EM-DRAW(WS-I)
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
@@ -132,7 +133,7 @@
          MOVE WS-OBS2 TO WS-OBS
      END-IF
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-6§5 lava covered: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-6§5 Fluid `animateTick`: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE WS-EXP TO TL-EXPECTED
@@ -141,7 +142,7 @@
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-6§5 lava covered: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-6§5 Fluid `animateTick`: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
@@ -149,7 +150,7 @@
  PARSE-LIST.
      MOVE 0 TO WS-COUNT
      MOVE 1 TO WS-PTR
-     PERFORM UNTIL WS-PTR > 1500 OR WS-TEXT(WS-PTR:) = SPACES
+     PERFORM UNTIL WS-PTR > 4000 OR WS-TEXT(WS-PTR:) = SPACES
          MOVE SPACES TO WS-TOK
          UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
          IF WS-TOK NOT = SPACES
@@ -182,6 +183,10 @@
              MOVE EM-COLOR(WS-I) TO WS-EDC
              MOVE EM-SCALE(WS-I) TO WS-EDS
              STRING " c=" FUNCTION TRIM(WS-EDC) " s=" WS-EDS DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-COLOR(WS-I) = 0 AND EM-SCALE(WS-I) NOT = 0
+             MOVE EM-SCALE(WS-I) TO WS-EDR
+             STRING " r=" WS-EDR DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
          END-IF
          IF EM-STATE(WS-I) NOT = 0
              MOVE EM-STATE(WS-I) TO WS-EDC

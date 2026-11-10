@@ -47,8 +47,8 @@
 *> from2DDataValue((slot + facing) mod 4) and its clockwise neighbour.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-N                   PIC X(32).
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-N                   PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-PASS                BINARY-LONG.
  01 WS-BOUND               BINARY-LONG.
@@ -158,8 +158,8 @@
 *> offsetRandom(0.9), draw ri(3) == 0: `smoke` at p; game time mod 20 = 0: draw n = ri(4) + 20, n `smoke` at centre + (0, 0.5, 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32).
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-K                   FLOAT-LONG.
  01 WS-OFF.
@@ -231,8 +231,8 @@
 *> 4.3 BaseSpawner.clientTick (PROPS 1: a player is near and a display entity exists): draws x, y, z (X + rd ...), `smoke` then `flame` there.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32) VALUE "flame".
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40) VALUE "flame".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-PV.
@@ -295,8 +295,8 @@
 *> deactivation: 20 times a centre-of-cage position, then three Gaussian draws * 0.02 as the velocity: the flame.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-SMOKE               PIC X(32) VALUE "smoke".
- 01 WS-FLAME               PIC X(32).
+ 01 WS-SMOKE               PIC X(40) VALUE "smoke".
+ 01 WS-FLAME               PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
@@ -362,7 +362,7 @@
 *> 2 + floor(r * 4); per particle three offsetRandom(1.0) draws; `vault_connection` at the keyhole with velocity target - keyhole + offset.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "vault_connection".
+ 01 WS-N                   PIC X(40) VALUE "vault_connection".
  01 WS-R                   FLOAT-LONG.
  01 WS-K                   FLOAT-LONG VALUE 1.0.
  01 WS-COUNT               BINARY-LONG.
@@ -432,9 +432,9 @@
 *> `geyser_eruption_active` (`geyser_eruption_continuous`) at the source centre.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-CLOUD               PIC X(32) VALUE "noxious_gas_cloud".
- 01 WS-GEYSER              PIC X(32) VALUE "geyser".
- 01 WS-SOUND               PIC X(32).
+ 01 WS-CLOUD               PIC X(40) VALUE "noxious_gas_cloud".
+ 01 WS-GEYSER              PIC X(40) VALUE "geyser".
+ 01 WS-SOUND               PIC X(40).
  01 WS-T                   BINARY-LONG.
  01 WS-ZERO-C              BINARY-DOUBLE VALUE 0.
  01 WS-ZERO-S              FLOAT-LONG VALUE 0.

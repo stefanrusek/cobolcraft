@@ -28,7 +28,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. P6-BELOW.
-*> ParticleUtils.spawnParticleBelow: USING block, name (PIC X(32)), emits: draws x then z, emits at (X + rd, Y - 0.05, Z + rd).
+*> ParticleUtils.spawnParticleBelow: USING block, name (PIC X(40)), emits: draws x then z, emits at (X + rd, Y - 0.05, Z + rd).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-R                   FLOAT-LONG.
@@ -36,7 +36,7 @@
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  COPY CLP6ARG.
- 01 L-NAME                 PIC X(32).
+ 01 L-NAME                 PIC X(40).
  COPY CLP6EM.
  PROCEDURE DIVISION USING L-P L-NAME P6-EMITS.
      INITIALIZE WS-PV
@@ -54,7 +54,7 @@
 *> 3.4 LeavesBlock: raining (PROPS 1): draw ri(15) == 1 and the block below is not (can occlude and sturdy top) (PROPS 2): `dripping_water` below.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "dripping_water".
+ 01 WS-N                   PIC X(40) VALUE "dripping_water".
  01 WS-R                   FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
@@ -77,7 +77,7 @@
 *> (PROPS 3): the leaf particle (PROPS 5) below; the tinted one carries the colour int PROPS 6.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32).
+ 01 WS-N                   PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-CHANCE              FLOAT-LONG.
  01 WS-COLOR               BINARY-DOUBLE.
@@ -118,7 +118,7 @@
 *> 3.4 MyceliumBlock: draw ri(10) == 0, then `mycelium` at (X + rd, Y + 1.1, Z + rd) (draws x, z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "mycelium".
+ 01 WS-N                   PIC X(40) VALUE "mycelium".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -145,8 +145,8 @@
 *> when the cell is not a full collision block (bit k of PROPS 1 clear): `spore_blossom_air` at (p + rd) per axis (draws x, y, z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N1                  PIC X(32) VALUE "falling_spore_blossom".
- 01 WS-N2                  PIC X(32) VALUE "spore_blossom_air".
+ 01 WS-N1                  PIC X(40) VALUE "falling_spore_blossom".
+ 01 WS-N2                  PIC X(40) VALUE "spore_blossom_air".
  01 WS-R                   FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-MASK                BINARY-DOUBLE.
@@ -195,7 +195,7 @@
 *> 3.4 FireflyBushBlock: raw brightness (PROPS 1) <= 13, then draw rd <= 0.7: `firefly` at (X + rd * 10 - 5, Y + rd * 5, Z + rd * 10 - 5).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "firefly".
+ 01 WS-N                   PIC X(40) VALUE "firefly".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -225,7 +225,7 @@
 *> cx, cz the centre of the shape bounds: PROPS 1-2 in thousandths).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "smoke".
+ 01 WS-N                   PIC X(40) VALUE "smoke".
  01 WS-R                   FLOAT-LONG.
  01 WS-T                   BINARY-LONG.
  01 WS-PV.
@@ -256,7 +256,7 @@
 *> at (X + rd, Y - 0.05, Z + rd).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "falling_dust".
+ 01 WS-N                   PIC X(40) VALUE "falling_dust".
  01 WS-R                   FLOAT-LONG.
  01 WS-ZERO-C              BINARY-DOUBLE VALUE 0.
  01 WS-ZERO-S              FLOAT-LONG VALUE 0.
@@ -280,7 +280,7 @@
 *> Crying obsidian: per axis step != 0 ? 0.5 + step * 0.6 : rd (draws in axis order).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32).
+ 01 WS-N                   PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-DIR                 BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -387,7 +387,7 @@
 *> attribute particle for an empty fluid.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32).
+ 01 WS-N                   PIC X(40).
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -423,7 +423,7 @@
 *> a draw s and then a draw rb: true at r >= 0.5), then the axis choice: z = Z + 0.5 + 0.25 s and vz = rf * 2 s (a draw), else x and vx. `portal`.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "portal".
+ 01 WS-N                   PIC X(40) VALUE "portal".
  01 WS-R                   FLOAT-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -486,7 +486,7 @@
 *> Z + 0.4 + rf * 0.2) (draws x, y, z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "smoke".
+ 01 WS-N                   PIC X(40) VALUE "smoke".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -521,7 +521,7 @@
 *> (rf - 0.5) * 0.125, rf * b); `portal` at (X + 0.5 + 0.25 a, y, Z + 0.5 + 0.25 b).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "portal".
+ 01 WS-N                   PIC X(40) VALUE "portal".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
@@ -564,7 +564,7 @@
 *> 3.4 NoteBlock client event: a tunable instrument (PROPS 1): one `note` at (X + 0.5, Y + 1.2, Z + 0.5), velocity (note / 24, 0, 0), note PROPS 2.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "note".
+ 01 WS-N                   PIC X(40) VALUE "note".
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
@@ -589,7 +589,7 @@
 *> off.z + rf - 0.5) (draws x, y, z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "enchant".
+ 01 WS-N                   PIC X(40) VALUE "enchant".
  01 WS-R                   FLOAT-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -636,7 +636,7 @@
 *> draws x, z, vy.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "reverse_portal".
+ 01 WS-N                   PIC X(40) VALUE "reverse_portal".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
@@ -665,7 +665,7 @@
 *> (X + lerp(rd, 0, 1), y, Z + lerp(rd, 0, 1)) (draws x, z).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "dripping_honey".
+ 01 WS-N                   PIC X(40) VALUE "dripping_honey".
  01 WS-R                   FLOAT-LONG.
  01 WS-GO                  BINARY-LONG.
  01 WS-YOFF                FLOAT-LONG.
@@ -707,8 +707,8 @@
 *> (0, 0.04, 0) and another at (X + rf, Y + rf, Z + rf) (draws x, y, z). The particles are always visible (a flag of the particle options).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N1                  PIC X(32) VALUE "current_down".
- 01 WS-N2                  PIC X(32) VALUE "bubble_column_up".
+ 01 WS-N1                  PIC X(40) VALUE "current_down".
+ 01 WS-N2                  PIC X(40) VALUE "bubble_column_up".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-PV.
@@ -743,7 +743,7 @@
 *> 3.4 PotentSulfurBlock (PROPS 1: not DRY and a water source above): two `sulfur_bubbles` at (X + rf, Y + 1 + rf, Z + rf), three draws each.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N                   PIC X(32) VALUE "sulfur_bubbles".
+ 01 WS-N                   PIC X(40) VALUE "sulfur_bubbles".
  01 WS-R                   FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-PV.
@@ -772,8 +772,8 @@
 *> (cx + (rf * 2 - 1) / 3, cy + 0.4, cz + (rf * 2 - 1) / 3), velocity (0, rf, 0) (draws x, z, vy).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-N1                  PIC X(32) VALUE "white_smoke".
- 01 WS-N2                  PIC X(32) VALUE "happy_villager".
+ 01 WS-N1                  PIC X(40) VALUE "white_smoke".
+ 01 WS-N2                  PIC X(40) VALUE "happy_villager".
  01 WS-R                   FLOAT-LONG.
  01 WS-PV.
     05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
