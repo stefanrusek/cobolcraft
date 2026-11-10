@@ -192,6 +192,72 @@
      MOVE "acceptance US12 40-1§8 shulker box: 27 slots as the chest, image 167, top 36 (top = (240 - 167) div 2): own 26 (223, 36 + 18 + 36 - 1 = 89); hotbar 0 (79, 36 + 142 - 1 = 177)" TO TL-CASE
      MOVE "223:89 79:177" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Clicks and writes: the menu slot of a widget argument (own 401 + n is n; main 9 + i is 27 + i; hotbar i is 54 + i), a stack put on an own slot, an emptied slot, a slot
+*>   outside the menu, and the cursor stack drawn at the pointer.
+     MOVE 2 TO WS-TYPE
+     PERFORM OPEN-TYPE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         EVALUATE WS-I
+             WHEN 1 MOVE 403 TO WS-ARG
+             WHEN 2 MOVE 9 TO WS-ARG
+             WHEN 3 MOVE 0 TO WS-ARG
+             WHEN 4 MOVE 428 TO WS-ARG
+             WHEN 5 MOVE 100 TO WS-ARG
+         END-EVALUATE
+         CALL "MENU-SLOT-WIRE" USING CLIENT-STATE WS-ARG WS-SLOT
+         MOVE WS-SLOT TO WS-E1
+         STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE "acceptance US12 40-1§3 widget arguments 403, 9, 0, 428 and 100 are menu slots 2, 27, 54, -1 and -1" TO TL-CASE
+     MOVE "2 27 54 -1 -1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 401 TO WS-ARG
+     MOVE 9 TO WS-LENGTH
+     MOVE 4 TO WS-TYPE
+     MOVE 0 TO WS-STATE
+     CALL "MENU-STACK-PUT" USING CLIENT-STATE WS-ARG WS-LENGTH WS-TYPE WS-STATE
+     CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-I WS-SLOT WS-ID
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-1§3 a stack put on own slot 0 is read back (9 of item 4)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 9 * 100 + 4
+     COMPUTE TL-OBSERVED-N = WS-I * 100 + WS-SLOT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 127 TO WS-ID
+     MOVE 9 TO WS-ID
+     MOVE 0 TO WS-SLOT
+     MOVE 0 TO WS-LENGTH
+     MOVE 0 TO WS-I
+     MOVE 0 TO WS-STATE
+     CALL "CL-MENU-SET" USING CLIENT-STATE WS-ID WS-SLOT WS-LENGTH WS-I WS-STATE
+     MOVE "acceptance US12 40-1§4 a Set Container Slot with count 0 empties the slot" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BX-COUNT(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 99 TO WS-SLOT
+     MOVE 5 TO WS-LENGTH
+     MOVE 2 TO WS-I
+     CALL "CL-MENU-SET" USING CLIENT-STATE WS-ID WS-SLOT WS-LENGTH WS-I WS-STATE
+     MOVE "acceptance US12 40-1§4 a menu slot outside the menu (99) changes nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BX-COUNT(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO PL-CARRIED-COUNT
+     MOVE 2 TO PL-CARRIED-ITEM
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-ID) = WK-SLOT AND SM-W-ARG(WS-ID) = 36
+             ADD 1 TO WS-I
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 40-1§5 a carried stack is drawn as one cursor widget" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-I TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE "T" TO TL-MODE
      STOP RUN.
 
 *> "x:y" of the slot widget WS-ARG, appended.

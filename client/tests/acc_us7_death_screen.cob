@@ -78,7 +78,7 @@
      MOVE WS-STATE TO WS-E1
      STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(PL-DIM-NAME) " "
          FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "5 |||||||||Health 20/20|Food 20/20 cobolcraft:main 0" TO TL-EXPECTED
+     MOVE "5 |Loading terrain...||||||||||Health 20/20|Food 20/20 cobolcraft:main 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 2 TO PL-ENTITY-ID
