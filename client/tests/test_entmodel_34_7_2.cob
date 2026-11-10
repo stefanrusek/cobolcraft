@@ -3666,6 +3666,12 @@
      MOVE "textures/entity/blaze/blaze.png" TO TL-EXPECTED
      MOVE WS-X120 TO TL-OBSERVED
      PERFORM CHECK-TEXT
+     MOVE "NO_SUCH_LAYER" TO WS-LAYER
+     CALL "EF7-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "2 a layer that is not of this document is not known (coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
      STOP RUN.
 
  COPY EMCHKP.

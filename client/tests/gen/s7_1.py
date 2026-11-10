@@ -186,7 +186,7 @@ extra+=prog('EF7-RANDOM-SEQ','''     PERFORM XOR-SEED
                  MOVE WS-V TO L-O(WS-J)
          END-EVALUATE
      END-PERFORM
-     GOBACK.
+     GO TO PROGRAM-DONE.
 
  XOR-SEED.
      MOVE L-I(2) TO WS-A
@@ -231,6 +231,9 @@ extra+=prog('EF7-RANDOM-SEQ','''     PERFORM XOR-SEED
          END-PERFORM
          MOVE WS-M TO WS-V
      END-IF.
+
+ PROGRAM-DONE.
+     GOBACK.
 ''',' 01 WS-J                   BINARY-LONG.\n 01 WS-BITS                BINARY-LONG.\n 01 WS-AGAIN               BINARY-LONG.\n 01 WS-A                   BINARY-DOUBLE.\n 01 WS-B                   BINARY-DOUBLE.\n 01 WS-P                   BINARY-DOUBLE.\n 01 WS-PW                  BINARY-DOUBLE.\n 01 WS-BA                  BINARY-LONG.\n 01 WS-BB                  BINARY-LONG.\n 01 WS-ST                  BINARY-DOUBLE.\n 01 WS-L                   BINARY-DOUBLE.\n 01 WS-H                   BINARY-DOUBLE.\n 01 WS-C                   BINARY-DOUBLE.\n 01 WS-V                   BINARY-DOUBLE.\n 01 WS-R                   BINARY-DOUBLE.\n 01 WS-M                   BINARY-DOUBLE.\n 01 WS-BOUND               BINARY-DOUBLE.\n',goback=False)
 extra=extra.replace("""         MOVE WS-M TO WS-V
      END-IF.

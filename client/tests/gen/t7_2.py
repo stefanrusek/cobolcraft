@@ -18,4 +18,5 @@ for st in ((10,-20,0),(0,0,10),(-15,40,33.25),(25,-90,7.5),(5,5,100)):
     pose_check(t,'BLAZE','EF7-BLAZE-ANIM',st,blaze(st))
 t.call('EF7-BLAZE-RENDER',[],[0.5,15],'2 shadow radius and block light level')
 text_check(t,'EF7-BLAZE-TEXTURE',[0],'2 texture','textures/entity/blaze/blaze.png')
+t.raw('MOVE "NO_SUCH_LAYER" TO WS-LAYER','CALL "EF7-LAYER" USING EMM-MODEL WS-LAYER WS-OK'); t.num('2 a layer that is not of this document is not known (coverage-only addition)',0,'WS-OK')
 save(t,7,2)
