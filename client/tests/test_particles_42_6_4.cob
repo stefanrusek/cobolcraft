@@ -312,6 +312,14 @@
      MOVE SPACES TO WS-DRT
      MOVE "geyser 10.50000 68.00000 -2.50000 0.00000 0.00000 0.00000 st=3 (0)" TO WS-EXP
      PERFORM RUN-CASE
+     MOVE "geyser active sound at t 40" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "100 60 1 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE "geyser 10.50000 68.00000 -2.50000 0.00000 0.00000 0.00000 st=3 # geyser_eruption_active (0"
+         & ")" TO WS-EXP
+     PERFORM RUN-CASE
      MOVE "geyser continuous at t 40" TO WS-NAME
      MOVE "geyser_plume" TO WS-CLASS
      MOVE "10 64 -3" TO WS-PT

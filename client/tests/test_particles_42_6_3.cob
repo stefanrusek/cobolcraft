@@ -274,6 +274,13 @@
      MOVE "0.5 0.75 0.5" TO WS-DRT
      MOVE "smoke 9.98000 64.28125 -2.35000 0.00000 0.00000 0.00000 (3)" TO WS-EXP
      PERFORM RUN-CASE
+     MOVE "blast sound" TO WS-NAME
+     MOVE "blast_furnace" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 0 -1" TO WS-PRT
+     MOVE "0.05 0.75 0.5" TO WS-DRT
+     MOVE "smoke 9.98000 64.28125 -2.35000 0.00000 0.00000 0.00000 # blast_furnace.fire_crackle (3)" TO WS-EXP
+     PERFORM RUN-CASE
      MOVE "smoker sound" TO WS-NAME
      MOVE "smoker" TO WS-CLASS
      MOVE "10 64 -3" TO WS-PT
@@ -539,6 +546,22 @@
      MOVE "0 0 0 100 5" TO WS-PRT
      MOVE "0.005 0.1 0.2" TO WS-DRT
      MOVE "yellow_poplar_leaves 10.10000 63.95000 -2.80000 0.00000 0.00000 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "red poplar" TO WS-NAME
+     MOVE "falling_leaves" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 0 100 3" TO WS-PRT
+     MOVE "0.005 0.1 0.2" TO WS-DRT
+     MOVE "red_poplar_leaves 10.10000 63.95000 -2.80000 0.00000 0.00000 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "ender chest other signs" TO WS-NAME
+     MOVE "ender_chest" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE SPACES TO WS-PRT
+     MOVE "0.2 0.7 0.5 0.6 0.5 0.4 0.2 0.7 0.5 0.6 0.5 0.4 0.2 0.7 0.5 0.6 0.5 0.4" TO WS-DRT
+     MOVE "portal 10.25000 64.50000 -2.25000 -0.60000 0.00000 0.40000 | portal 10.25000 64.50000 -2.2"
+         & "5000 -0.60000 0.00000 0.40000 | portal 10.25000 64.50000 -2.25000 -0.60000 0.00000 0.40000"
+         & " (18)" TO WS-EXP
      PERFORM RUN-CASE
      MOVE "mycelium" TO WS-NAME
      MOVE "mycelium" TO WS-CLASS
