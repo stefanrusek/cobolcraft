@@ -1,0 +1,144 @@
+*> Test of 31 section 5 (Client synchronisation; T0849): the update tag kind and packet flag of each type (5.2), the Block Entity Data
+*> packet (5.1: position, type id, trusted compound), and the chunk packet entry (5.3: packed xz, y, type, tag absent when empty).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-1-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-X                   BINARY-LONG VALUE 35.
+ 01 WS-Y                   BINARY-LONG VALUE 64.
+ 01 WS-Z                   BINARY-LONG VALUE -3.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-PACKET              BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-WRITTEN             BINARY-LONG.
+ 01 WS-DATA                PIC X(64).
+ 01 WS-DLEN                BINARY-LONG.
+ 01 WS-GX                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-GZ                  BINARY-LONG.
+ 01 WS-GT                  BINARY-LONG.
+ 01 WS-PACKED              BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-OUTP                PIC X(64).
+ 01 WS-BYTE                BINARY-LONG.
+
+ 01 WS-SIGN                BINARY-LONG.
+ 01 WS-CHEST               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-TEXT2               PIC X(8192).
+ 01 WS-EDIT5               PIC -(9)9.
+ 01 WS-EDIT6               PIC -(9)9.
+ 01 WS-CAP64               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "acceptance US12 31-1§5 sync: tag kind and packet flag per type (banner 2 1, spawner 3 1, brushable 4 1, campfire 5 1, shelf 6 1, trial spawner 7 1, vault 8 1, statue 0 1, piston 1 0, chest 0 0, beacon 1 1)" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-T FROM 0 BY 1 UNTIL WS-T > 48
+         CALL "BE-SYNC-INFO" USING WS-T WS-KIND WS-PACKET
+         IF WS-T = 20 OR WS-T = 9 OR WS-T = 40 OR WS-T = 32 OR WS-T = 39 OR WS-T = 43 OR WS-T = 44
+             OR WS-T = 47 OR WS-T = 11 OR WS-T = 1 OR WS-T = 15
+             MOVE WS-KIND TO WS-EDIT
+             MOVE WS-PACKET TO WS-EDIT2
+             STRING FUNCTION TRIM(WS-EDIT) FUNCTION TRIM(WS-EDIT2) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "00 31 10 11 21 51 61 41 71 81 01" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§5 sync: exactly 20 types send Block Entity Data (the others never do)" TO TL-CASE
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-T FROM 0 BY 1 UNTIL WS-T > 48
+         CALL "BE-SYNC-INFO" USING WS-T WS-KIND WS-PACKET
+         ADD WS-PACKET TO WS-I
+     END-PERFORM
+     MOVE WS-I TO WS-EDIT
+     MOVE SPACES TO WS-TEXT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
+     MOVE "20" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§5 sync: a sign sends Block Entity Data with its position, type 7 and an empty compound; a chest sends none" TO TL-CASE
+     MOVE "minecraft:oak_sign" TO WS-KEY
+     MOVE 18 TO WS-LEN
+     MOVE 7 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-SIGN
+     MOVE "minecraft:chest" TO WS-KEY
+     MOVE 15 TO WS-LEN
+     MOVE 1 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-CHEST
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-DATA-PACKET" USING WS-SIGN PB-BUFFER WS-WRITTEN
+     MOVE 0 TO PB-POS
+     MOVE 64 TO WS-CAP64
+     CALL "PB-GET-BLOCK-ENTITY-DATA" USING PB-BUFFER WS-GX WS-GY WS-GZ WS-GT WS-DATA WS-CAP64 WS-DLEN
+     MOVE WS-WRITTEN TO WS-EDIT
+     MOVE WS-GX TO WS-EDIT2
+     MOVE WS-GZ TO WS-EDIT3
+     MOVE WS-GT TO WS-EDIT4
+     MOVE WS-DLEN TO WS-EDIT5
+     MOVE FUNCTION ORD(WS-DATA(1:1)) TO WS-BYTE
+     MOVE WS-BYTE TO WS-EDIT6
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) " type "
+         FUNCTION TRIM(WS-EDIT4) " len " FUNCTION TRIM(WS-EDIT5) " tag " FUNCTION TRIM(WS-EDIT6) DELIMITED BY SIZE INTO WS-TEXT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-DATA-PACKET" USING WS-CHEST PB-BUFFER WS-WRITTEN
+     MOVE PB-LENGTH TO WS-EDIT
+     MOVE WS-WRITTEN TO WS-EDIT2
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO WS-TEXT2
+     STRING FUNCTION TRIM(WS-TEXT) " chest " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT2
+     MOVE WS-TEXT2 TO WS-TEXT
+     MOVE "1 35 -3 type 7 len 2 tag 11 chest 0 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§5 sync: chunk entries: packed xz 61 (x 3, z 13), y 64, type id; a chest and a data-less sign have no tag, a banner has one" TO TL-CASE
+     CALL "BE-CHUNK-ENTRY" USING WS-CHEST WS-PACKED WS-GY WS-GT WS-PRESENT
+     MOVE WS-PACKED TO WS-EDIT
+     MOVE WS-GY TO WS-EDIT2
+     MOVE WS-GT TO WS-EDIT3
+     MOVE WS-PRESENT TO WS-EDIT4
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) " " FUNCTION TRIM(WS-EDIT4) " "
+         DELIMITED BY SIZE INTO WS-TEXT
+     CALL "BE-CHUNK-ENTRY" USING WS-SIGN WS-PACKED WS-GY WS-GT WS-PRESENT
+     MOVE WS-PRESENT TO WS-EDIT4
+     MOVE "minecraft:white_banner" TO WS-KEY
+     MOVE 22 TO WS-LEN
+     MOVE 20 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-IDX
+     CALL "BE-CHUNK-ENTRY" USING WS-IDX WS-PACKED WS-GY WS-GT WS-PRESENT
+     MOVE WS-PRESENT TO WS-EDIT3
+     MOVE SPACES TO WS-TEXT2
+     STRING FUNCTION TRIM(WS-TEXT) " " FUNCTION TRIM(WS-EDIT4) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT2
+     MOVE WS-TEXT2 TO WS-TEXT
+     MOVE "61 64 1 0 0 1" TO TL-EXPECTED
+     PERFORM CHECK
+     GOBACK.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-BE-31-1-5.
+
+ COPY CORETEST.
