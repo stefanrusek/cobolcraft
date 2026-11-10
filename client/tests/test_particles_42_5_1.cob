@@ -1,0 +1,279 @@
+*> Acceptance test of docs/protocol/42-particles-5-sculk-trial-wind-geyser.md section 1 (Partition, leftover check, and shared helpers): the rules, table rows,
+*> formulas and worked cases of the section with the document's numbers; every float case compares
+*> the value times 100000 rounded. Draws are injected through the draw tables.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-5-1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 W1                     FLOAT-LONG.
+ 01 W2                     FLOAT-LONG.
+ 01 W3                     FLOAT-LONG.
+ 01 W4                     FLOAT-LONG.
+ 01 W5                     FLOAT-LONG.
+ 01 W6                     FLOAT-LONG.
+ 01 W7                     FLOAT-LONG.
+ 01 W8                     FLOAT-LONG.
+ 01 I1                     BINARY-LONG.
+ 01 I2                     BINARY-LONG.
+ 01 I3                     BINARY-LONG.
+ 01 I4                     BINARY-LONG.
+ 01 I5                     BINARY-LONG.
+ 01 B1                     BINARY-DOUBLE.
+ 01 T1                     PIC X(80).
+ 01 Z1                     FLOAT-LONG VALUE 0.
+ 01 Z2                     FLOAT-LONG VALUE 0.
+ 01 Z3                     FLOAT-LONG VALUE 0.
+ 01 Z4                     FLOAT-LONG VALUE 0.
+ 01 Z5                     FLOAT-LONG VALUE 0.
+ 01 Z6                     FLOAT-LONG VALUE 0.
+ 01 WS-NAME8              PIC X(32).
+ 01 WS-SEC                PIC X(8).
+ 01 WS-NAME2              PIC X(32).
+ 01 WS-OPT                PIC X(16).
+ 01 WS-PROV               PIC X(56).
+ 01 WS-OVR                BINARY-LONG.
+ 01 WS-SPR                BINARY-LONG.
+ 01 WS-PART               BINARY-LONG.
+ 01 WS-ID                 BINARY-LONG.
+ 01 WS-NOVR               BINARY-LONG VALUE 0.
+ 01 WS-NOK                BINARY-LONG VALUE 0.
+ 01 WS-LIGHT              BINARY-LONG.
+ 01 WS-C1                 BINARY-DOUBLE.
+ 01 WS-C2                 BINARY-DOUBLE.
+ 01 WS-C3                 BINARY-DOUBLE.
+ 01 WS-POS.
+    05 WS-PP               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-SPEED.
+    05 WS-SD               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-U.
+    05 WS-UU               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-OUT.
+    05 WS-O                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-VEL.
+    05 WS-V                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-VEC.
+    05 WS-VC               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "P5-TYPE-COUNT" USING I1
+     MOVE "1.2 the table has 29 types" TO WS-NAME
+     MOVE 29 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     PERFORM VARYING I2 FROM 1 BY 1 UNTIL I2 > 29
+         CALL "P5-TYPE-ID" USING I2 WS-ID
+         CALL "PART-TYPE" USING WS-ID WS-NAME2 WS-OPT WS-OVR WS-PROV WS-SPR WS-PART
+         IF WS-NAME2 NOT = SPACES
+             ADD 1 TO WS-NOK
+         END-IF
+         ADD WS-OVR TO WS-NOVR
+     END-PERFORM
+     MOVE "every row is a registry type" TO WS-NAME
+     MOVE 29 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-NOK
+     PERFORM ASSERT-NUMBER
+     MOVE "the override flag is yes for 16 rows" TO WS-NAME
+     MOVE 16 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-NOVR
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO I2
+     CALL "P5-TYPE-ID" USING I2 WS-ID
+     MOVE "first row sulfur_bubbles has id 4" TO WS-NAME
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ID
+     PERFORM ASSERT-NUMBER
+     MOVE 29 TO I2
+     CALL "P5-TYPE-ID" USING I2 WS-ID
+     MOVE "last row sulfur_cube_goo has id 127" TO WS-NAME
+     MOVE 127 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ID
+     PERFORM ASSERT-NUMBER
+     MOVE 30 TO I2
+     CALL "P5-TYPE-ID" USING I2 WS-ID
+     MOVE "a row out of range gives 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ID
+     PERFORM ASSERT-NUMBER
+     MOVE 117 TO WS-ID
+     CALL "P5-TYPE-SECTION" USING WS-ID WS-SEC
+     MOVE "dust_plume is section 2.10" TO WS-NAME
+     MOVE "2.10" TO TL-EXPECTED
+     MOVE WS-SEC TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 24 TO WS-ID
+     CALL "P5-TYPE-SECTION" USING WS-ID WS-SEC
+     MOVE "elder_guardian is held by 42-1 5.9" TO WS-NAME
+     MOVE "42-1 5.9" TO TL-EXPECTED
+     MOVE WS-SEC TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 99 TO WS-ID
+     CALL "P5-TYPE-SECTION" USING WS-ID WS-SEC
+     MOVE "an id that is not in the table has no section" TO WS-NAME
+     MOVE "    " TO TL-EXPECTED
+     MOVE WS-SEC TO TL-OBSERVED
+     PERFORM ASSERT-TEXT
+     MOVE 15728880 TO WS-LIGHT
+     MOVE 15 TO I2
+     CALL "P5-LIGHT-WITH-BLOCK" USING WS-LIGHT I2 I1
+     MOVE "withBlock(full bright, 15) stays 15728880" TO WS-NAME
+     MOVE 15728880 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO I2
+     CALL "P5-LIGHT-WITH-BLOCK" USING WS-LIGHT I2 I1
+     MOVE "withBlock(full bright, 0) gives full sky 15728640" TO WS-NAME
+     MOVE 15728640 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 5243120 TO WS-LIGHT
+     MOVE 15 TO I2
+     CALL "P5-LIGHT-WITH-BLOCK" USING WS-LIGHT I2 I1
+     MOVE "sky 5 is kept: 5 << 20 + 240" TO WS-NAME
+     MOVE 5243120 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 4286611584 TO WS-C1
+     MOVE 1.0 TO W1
+     MOVE 0.5 TO W2
+     MOVE 2.0 TO W3
+     CALL "P5-SCALE-RGB" USING WS-C1 W1 W2 W3 WS-C2
+     MOVE "scaleRGB: red x1 green x0.5 blue x2 clamped, alpha kept (FF8040FF)" TO WS-NAME
+     MOVE 4286595327 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-C2
+     PERFORM ASSERT-NUMBER
+     MOVE 4282756862 TO WS-C1
+     MOVE 4294967295 TO WS-C2
+     MOVE 0.5 TO W1
+     CALL "P5-SRGB-LERP" USING W1 WS-C1 WS-C2 WS-C3
+     MOVE "srgbLerp(0.5, light blue, white) = 0xFFA2D6FE" TO WS-NAME
+     MOVE 4288861950 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-C3
+     PERFORM ASSERT-NUMBER
+     MOVE 10 TO WS-C1
+     MOVE 5 TO WS-C2
+     CALL "P5-SRGB-LERP" USING W1 WS-C1 WS-C2 WS-C3
+     MOVE "lerpInt floors toward negative infinity (10 to 5 at 0.5 gives 7)" TO WS-NAME
+     MOVE 7 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-C3
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO W1
+     MOVE 3 TO I2
+     MOVE 5 TO I3
+     CALL "P5-NEXT-INT" USING I2 I3 W1 I1
+     MOVE "nextInt(a, b) = a + nextInt(b - a + 1): 0.5 gives 4" TO WS-NAME
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 2 TO W2
+     MOVE 6 TO W3
+     CALL "P5-NEXT-DOUBLE" USING W2 W3 W1 W4
+     MOVE "nextDouble(a, b) = a + r * (b - a)" TO WS-NAME
+     MOVE 400000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     CALL "P5-NEXT-DOUBLE" USING W3 W2 W1 W4
+     MOVE "nextDouble(a, b) with a >= b returns a" TO WS-NAME
+     MOVE 600000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE -0.5 TO W1
+     CALL "P5-CLAMPED-LERP" USING W1 W2 W3 W4
+     MOVE "clampedLerp below 0 gives a" TO WS-NAME
+     MOVE 200000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 1.5 TO W1
+     CALL "P5-CLAMPED-LERP" USING W1 W2 W3 W4
+     MOVE "clampedLerp above 1 gives b" TO WS-NAME
+     MOVE 600000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0.25 TO W1
+     CALL "P5-CLAMPED-LERP" USING W1 W2 W3 W4
+     MOVE "clampedLerp inside is lerp" TO WS-NAME
+     MOVE 300000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 5 TO W1
+     CALL "P5-INVERSE-LERP" USING W1 W2 W3 W4
+     MOVE "inverseLerp(5, 2, 6) = 0.75" TO WS-NAME
+     MOVE 75000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-VC(1)
+     MOVE 2 TO WS-VC(2)
+     MOVE 3 TO WS-VC(3)
+     MOVE 0.75 TO WS-UU(1)
+     MOVE 0.5 TO WS-UU(2)
+     MOVE 0.25 TO WS-UU(3)
+     MOVE 2 TO W1
+     CALL "P5-OFFSET-RANDOM" USING WS-VEC W1 WS-U WS-OUT
+     MOVE "offsetRandom x = x + (draw - 0.5) * s" TO WS-NAME
+     MOVE 150000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "offsetRandom y" TO WS-NAME
+     MOVE 200000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "offsetRandom z" TO WS-NAME
+     MOVE 250000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(3)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 10 TO WS-PP(1)
+     MOVE 64 TO WS-PP(2)
+     MOVE -3 TO WS-PP(3)
+     MOVE 0.9 TO WS-SD(1)
+     MOVE 0.9 TO WS-SD(2)
+     MOVE 0.1 TO WS-SD(3)
+     MOVE 0.65 TO W1
+     MOVE 1 TO I2
+     CALL "P5-FACE-POS" USING WS-POS I2 W1 WS-SPEED WS-U WS-OUT WS-VEL
+     MOVE "face emission with offset 0.65: UP y = centre + 0.65" TO WS-NAME
+     MOVE 6515000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "face emission: x offset uniform (-0.5 + 0.75)" TO WS-NAME
+     MOVE 1075000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "face emission: tangential velocity x = speed" TO WS-NAME
+     MOVE 40000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "face emission: normal velocity 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-V(2)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 4286611584 TO WS-C1
+     MOVE 2.0 TO W1
+     MOVE 2.0 TO W2
+     MOVE 2.0 TO W3
+     CALL "P5-SCALE-RGB" USING WS-C1 W1 W2 W3 WS-C2
+     MOVE "scaleRGB clamps every channel to 255 (FFFFFFFF)" TO WS-NAME
+     MOVE 4294967295 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-C2
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-5§1 Partition, leftover check, and shared helpers: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-5§1 Partition, leftover check, and shared helpers: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-5-1.
