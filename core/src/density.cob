@@ -302,8 +302,40 @@
              END-IF
          END-PERFORM
      END-IF
+*>   grid slot LS-SLOT, position inside the grids (cells of 4 by 8 by 4 anchored at the chunk's corner and y = -64; the grid of a
+*>   node holds 5 x 5 x 49 values, x the slowest, then z, then y): the grid index of the cell, its eight corners at the offsets of
+*>   one cell in x (245), z (49) and y (1).
      IF LS-SLOT > 0
-         PERFORM GRID-EVAL
+         COMPUTE LS-LX = L-X - DNG-X0
+         COMPUTE LS-LZ = L-Z - DNG-Z0
+         COMPUTE LS-LY = L-Y + 64
+         DIVIDE LS-LX BY 4 GIVING LS-CI REMAINDER LS-RX
+         DIVIDE LS-LZ BY 4 GIVING LS-CK REMAINDER LS-RZ
+         DIVIDE LS-LY BY 8 GIVING LS-CJ REMAINDER LS-RY
+         COMPUTE LS-GI = (LS-SLOT - 1) * 1225 + (LS-CI * 5 + LS-CK) * 49 + LS-CJ + 1
+         IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
+             MOVE DG-G-VAL(LS-GI) TO L-RESULT
+         ELSE
+             IF WS-INIT = 0
+                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 3
+                     CALL "DENSITY-FRACTION" USING LS-I WS-N4 WS-FXT(LS-I + 1)
+                     MOVE WS-FXT(LS-I + 1) TO WS-FZT(LS-I + 1)
+                 END-PERFORM
+                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
+                     CALL "DENSITY-FRACTION" USING LS-I WS-N8 WS-FYT(LS-I + 1)
+                 END-PERFORM
+                 MOVE 1 TO WS-INIT
+             END-IF
+             MOVE DG-G-VAL(LS-GI) TO LS-G-ITEM(1)
+             MOVE DG-G-VAL(LS-GI + 245) TO LS-G-ITEM(2)
+             MOVE DG-G-VAL(LS-GI + 1) TO LS-G-ITEM(3)
+             MOVE DG-G-VAL(LS-GI + 246) TO LS-G-ITEM(4)
+             MOVE DG-G-VAL(LS-GI + 49) TO LS-G-ITEM(5)
+             MOVE DG-G-VAL(LS-GI + 294) TO LS-G-ITEM(6)
+             MOVE DG-G-VAL(LS-GI + 50) TO LS-G-ITEM(7)
+             MOVE DG-G-VAL(LS-GI + 295) TO LS-G-ITEM(8)
+             CALL "NOISE-TRILERP" USING WS-FXT(LS-RX + 1) WS-FYT(LS-RY + 1) WS-FZT(LS-RZ + 1) LS-G L-RESULT
+         END-IF
          GOBACK
      END-IF
      COMPUTE LS-RX = FUNCTION MOD(L-X, LS-CX)
@@ -331,41 +363,6 @@
      END-PERFORM
      CALL "NOISE-TRILERP" USING LS-FX LS-FY LS-FZ LS-G L-RESULT
      GOBACK.
-
-*> Grid slot LS-SLOT, position inside the grids (cells of 4 by 8 by 4 anchored at the chunk's corner and y = -64; the grid of a
-*> node holds 5 x 5 x 49 values, x the slowest, then z, then y): the grid index of the cell, its eight corners at the offsets of
-*> one cell in x (245), z (49) and y (1).
- GRID-EVAL.
-     COMPUTE LS-LX = L-X - DNG-X0
-     COMPUTE LS-LZ = L-Z - DNG-Z0
-     COMPUTE LS-LY = L-Y + 64
-     DIVIDE LS-LX BY 4 GIVING LS-CI REMAINDER LS-RX
-     DIVIDE LS-LZ BY 4 GIVING LS-CK REMAINDER LS-RZ
-     DIVIDE LS-LY BY 8 GIVING LS-CJ REMAINDER LS-RY
-     COMPUTE LS-GI = (LS-SLOT - 1) * 1225 + (LS-CI * 5 + LS-CK) * 49 + LS-CJ + 1
-     IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
-         MOVE DG-G-VAL(LS-GI) TO L-RESULT
-     ELSE
-         IF WS-INIT = 0
-             PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 3
-                 CALL "DENSITY-FRACTION" USING LS-I WS-N4 WS-FXT(LS-I + 1)
-                 MOVE WS-FXT(LS-I + 1) TO WS-FZT(LS-I + 1)
-             END-PERFORM
-             PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
-                 CALL "DENSITY-FRACTION" USING LS-I WS-N8 WS-FYT(LS-I + 1)
-             END-PERFORM
-             MOVE 1 TO WS-INIT
-         END-IF
-         MOVE DG-G-VAL(LS-GI) TO LS-G-ITEM(1)
-         MOVE DG-G-VAL(LS-GI + 245) TO LS-G-ITEM(2)
-         MOVE DG-G-VAL(LS-GI + 1) TO LS-G-ITEM(3)
-         MOVE DG-G-VAL(LS-GI + 246) TO LS-G-ITEM(4)
-         MOVE DG-G-VAL(LS-GI + 49) TO LS-G-ITEM(5)
-         MOVE DG-G-VAL(LS-GI + 294) TO LS-G-ITEM(6)
-         MOVE DG-G-VAL(LS-GI + 50) TO LS-G-ITEM(7)
-         MOVE DG-G-VAL(LS-GI + 295) TO LS-G-ITEM(8)
-         CALL "NOISE-TRILERP" USING WS-FXT(LS-RX + 1) WS-FYT(LS-RY + 1) WS-FZT(LS-RZ + 1) LS-G L-RESULT
-     END-IF.
  END PROGRAM DENSITY-INTERPOLATED.
 
  IDENTIFICATION DIVISION.
