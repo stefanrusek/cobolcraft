@@ -12,6 +12,7 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
+ COPY CONTENT.
  COPY PROTO.
  COPY TESTLIB.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
@@ -1192,6 +1193,67 @@
          & "bfef95601890afd80709 0  step 2 screen 5 sent 32" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
+
+*>   T2945: the fixtures of the standard world type the client receives: the dimension types of the
+*>   standard overworld (min_y -64, height 384), the tags (accepted, nothing kept) and a chunk of
+*>   24 sections through the replica.
+     MOVE PH-CONFIG TO CN-PHASE(WS-CONN)
+     MOVE "contract/fixtures/wire/config-s2c-07-registry-data-dimension-type-standard.hex"
+         TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Registry Data (standard dimension types) keeps the three entries: "
+         & "overworld -64 / 384, the nether and the end 0 / 256" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RG-DIM-COUNT TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE RG-DIM-MIN-Y(WS-I) TO WS-EDIT
+         MOVE RG-DIM-HEIGHT(WS-I) TO WS-EDIT2
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(RG-DIM-NAME(WS-I)) " "
+             FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+             INTO TL-OBSERVED
+     END-PERFORM
+     MOVE "3 minecraft:overworld -64/384 minecraft:the_nether 0/256 minecraft:the_end 0/256"
+         TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/config-s2c-0e-update-tags-standard.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Update Tags (standard) is read without error and the connection stays "
+         & "in configuration" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE PH-CONFIG TO TL-EXPECTED-N
+     MOVE CN-PHASE(WS-CONN) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE PH-PLAY TO CN-PHASE(WS-CONN)
+     CALL "WORLD-CLEAR" USING CLIENT-STATE
+     MOVE -64 TO PL-MIN-Y
+     MOVE 384 TO PL-HEIGHT
+     MOVE 65 TO RG-BIOMES
+     MOVE 16 TO WR-BLOCK-BITS
+     MOVE 1 TO CT-OPEN
+     MOVE 35723 TO CT-STATE-COUNT
+     MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-standard-24-sections.hex"
+         TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Level Chunk With Light (standard, 24 sections) decodes into the replica: "
+         & "bedrock 88 at the bottom (y -64), stone at y 0, air at y 224, sky light 15 at y 240"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 0 TO WS-CX WS-CZ
+     MOVE -64 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE 0 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE 224 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE 240 TO WS-CY
+     CALL "TEST-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ TL-OBSERVED
+     MOVE "88/0/0 1/0/0 0/0/0 0/15/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CT-OPEN CT-STATE-COUNT WR-BLOCK-BITS
      STOP RUN.
 
  PACK-TEXT.

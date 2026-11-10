@@ -121,8 +121,8 @@
 *>       A forgotten chunk: every mesh slot of its row is freed (an upload with no vertices).
          IF WR-RELEASE(WS-R) = 1
                  AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - CL-UPLOAD-RESERVE - 32
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
-                 COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+                 COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * CL-MAX-SECTIONS + WS-S - 1) * 2
                  MOVE 0 TO WR-OP-COUNT(WS-R, WS-S) WR-TR-COUNT(WS-R, WS-S)
                      WR-UPLOAD(WS-R, WS-S)
                  ADD 1 TO RL-UPLOAD-COUNT
@@ -136,8 +136,8 @@
              END-PERFORM
              MOVE 0 TO WR-RELEASE(WS-R)
          END-IF
-         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
-             COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * 16 + WS-S - 1) * 2
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+             COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * CL-MAX-SECTIONS + WS-S - 1) * 2
              IF WR-UPLOAD(WS-R, WS-S) = 1
                      AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - CL-UPLOAD-RESERVE - 2
                  ADD 1 TO RL-UPLOAD-COUNT

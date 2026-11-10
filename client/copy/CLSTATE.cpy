@@ -220,7 +220,7 @@
           15 RG-DIM-HAS-SKY  PIC 9.
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
-       10 RG-BIOME-PRECIP    PIC 9 OCCURS 8 TIMES.   *> biome id + 1: has_precipitation
+       10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -254,13 +254,16 @@
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
+       10 WR-BLOCK-BITS      BINARY-LONG.    *> bits of the global block state palette of chunk
+                                             *> packets: 0 = derive (content set open: ceillog2 of
+                                             *> its state count, else 5, the 001 form)
        10 WR-CHUNK OCCURS 1089 TIMES.
           15 WR-USED         PIC 9.
           15 WR-CX           BINARY-LONG.
           15 WR-CZ           BINARY-LONG.
-          15 WR-ADDR         USAGE POINTER.  *> 3 x 65536 cells: states, sky light, block light
+          15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
-          15 WR-SECTION OCCURS 16 TIMES.
+          15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
              20 WR-OP-COUNT  BINARY-LONG.
@@ -481,8 +484,14 @@
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
+*>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
+    05 ST-STATE.
+       10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
+       10 ST-COUNT           BINARY-LONG.    *> states known: the set's, else the stand-in table's
+       10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
+       10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
 *>  ---- baked block models (08 §4, §5): quads per block state ----
-    05 BM-STATE OCCURS 18 TIMES.
+    05 BM-STATE OCCURS 320 TIMES.
        10 BM-QUAD-COUNT      BINARY-LONG.
        10 BM-QUAD OCCURS 24 TIMES.
           15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE

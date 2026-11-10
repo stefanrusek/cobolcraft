@@ -105,7 +105,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
- COPY CLCELLS.
+ COPY CELLS.
  01 WS-K                   BINARY-LONG.
  01 WS-SPEED               BINARY-LONG.
  01 WS-STEP                BINARY-LONG.
@@ -169,7 +169,7 @@
          COMPUTE WS-CX = FUNCTION INTEGER(L-EYE(1))
          COMPUTE WS-CY = FUNCTION INTEGER(L-EYE(2))
          COMPUTE WS-CZ = FUNCTION INTEGER(L-EYE(3))
-         COMPUTE WS-LAYERS = FUNCTION MIN(PL-HEIGHT, 256)
+         COMPUTE WS-LAYERS = FUNCTION MIN(PL-HEIGHT, CL-MAX-SECTIONS * 16)
          MOVE 0 TO WS-ROW
          COMPUTE WS-LAST-X = WS-CX + 1000
          COMPUTE WS-X-FROM = WS-CX - 8
@@ -188,14 +188,14 @@
                  END-IF
                  MOVE 255 TO WS-BIOME
                  IF WS-ROW > 0
-                     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
+                     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
                      COMPUTE WS-LX = WS-X - WS-CHUNK-X * 16
                      COMPUTE WS-LZ = WS-Z - WS-CHUNK-Z * 16
                      COMPUTE WS-COLUMN = WS-LZ * 16 + WS-LX + 1
 *>                   The highest non-void block (-1 when the column is all void).
                      PERFORM VARYING WS-LY FROM WS-LAYERS BY -1 UNTIL WS-LY < 1
                          COMPUTE WS-CELL = (WS-LY - 1) * 256 + WS-COLUMN
-                         IF RC-STATE(WS-CELL) NOT = 0
+                         IF CE-STATE(WS-CELL) NOT = 0
                              EXIT PERFORM
                          END-IF
                      END-PERFORM
@@ -206,7 +206,7 @@
                      DIVIDE WS-LX BY 4 GIVING WS-BX
                      DIVIDE WS-LZ BY 4 GIVING WS-BZ
                      COMPUTE WS-CELL = WS-BY * 16 + WS-BZ * 4 + WS-BX + 1
-                     MOVE RC-BIOME(WS-CELL) TO WS-BIOME
+                     MOVE CE-BIOME(WS-CELL) TO WS-BIOME
                  END-IF
                  COMPUTE WS-Y0 = FUNCTION MAX(WS-LY + 1 + PL-MIN-Y, WS-CY - 8)
                  COMPUTE WS-Y1 = WS-CY + 16

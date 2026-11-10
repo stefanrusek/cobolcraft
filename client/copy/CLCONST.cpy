@@ -103,8 +103,8 @@
  78 SLS-UNREACHABLE         VALUE 3.
 
 *> Mesh slots (cc_vk_mesh 1 to 65535): slot 1 is the user interface; each section of each replica
-*> chunk row has an opaque and a translucent slot (MESH-SLOT-BASE + ((row - 1) * 16 + section) * 2,
-*> + 1 for the translucent one).
+*> chunk row has an opaque and a translucent slot (MESH-SLOT-BASE + ((row - 1) * 24 + section) * 2,
+*> + 1 for the translucent one; 24 = CL-MAX-SECTIONS, 1089 rows end below MESH-SLOT-ENTITIES).
  78 MESH-SLOT-UI            VALUE 1.
  78 MESH-SLOT-BASE          VALUE 2.
 *> The entity figures of the frame (one mesh, eye-relative): above every section slot.
@@ -141,10 +141,12 @@
  78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
  78 CL-MAX-WIDGETS          VALUE 48.
  78 CL-MAX-CHUNKS           VALUE 1089.
- 78 CL-MAX-SECTIONS         VALUE 16.
+ 78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
  78 CL-MAX-SPRITES          VALUE 128.
- 78 CL-MAX-STATES           VALUE 18.
+ 78 CL-MAX-STATES           VALUE 65536. *> state ids are 16 bits (CE-STATE, contract/copy/CELLS.cpy)
+ 78 CL-STAND-STATES         VALUE 18.   *> states of the stand-in table below
+ 78 CL-MAX-BAKED            VALUE 320.  *> states with baked models (BM-STATE)
  78 CL-MAX-QUADS            VALUE 24.
  78 CL-MAX-DRAWS            VALUE 8192.
  78 CL-MAX-UPLOADS          VALUE 4096.
@@ -170,7 +172,7 @@
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-MAX-RECIPES          VALUE 16.
- 78 CL-MAX-BIOMES           VALUE 8.
+ 78 CL-MAX-BIOMES           VALUE 255.  *> biome ids are one byte; 255 is none known
 *> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
  78 CL-MAX-WX-VERTICES      VALUE 3468.
  78 CL-PROTOCOL             VALUE 777.

@@ -76,6 +76,17 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE SP-SETTINGS TO CORE-SETTINGS
+     MOVE "sp host the settings handed to the core carry the 002 fields: the world type (a new "
+         & "world is a cobolcraft one unless the create screen chose), the game directory, no seed text"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "cobolcraft build/client-test-sp-host []" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CS-WORLD-TYPE) " " FUNCTION TRIM(CS-GAME-DIR) " [" FUNCTION TRIM(CS-SEED-TEXT)
+         "]" DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE "build/client-test-sp-host/saves/First/access.dat" TO WS-PATH
      MOVE 48 TO WS-PATH-LENGTH
      MOVE "AllowListEnforced" TO WS-TAG
