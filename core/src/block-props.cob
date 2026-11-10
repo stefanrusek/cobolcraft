@@ -193,6 +193,9 @@
  01 WS-REGISTRY            PIC X(48) VALUE "block".
  01 WS-TAG-PICKAXE         PIC X(112) VALUE "minecraft:mineable/pickaxe".
  01 WS-TAG-SHOVEL          PIC X(112) VALUE "minecraft:mineable/shovel".
+ 01 WS-TAG-STONE-TIER     PIC X(112) VALUE "minecraft:needs_stone_tool".
+ 01 WS-TAG-IRON-TIER      PIC X(112) VALUE "minecraft:needs_iron_tool".
+ 01 WS-TAG-DIAMOND-TIER   PIC X(112) VALUE "minecraft:needs_diamond_tool".
  01 WS-TAGGED              BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-FLAGS               PIC X(149).
@@ -250,6 +253,23 @@
      CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG-PICKAXE L-ID WS-TAGGED
      IF WS-TAGGED = 1
          MOVE 1 TO CB-CLASS(WS-INDEX)
+     END-IF
+*>   Tool requirement and tier (13 section 2.6).
+     MOVE 0 TO CB-TOOL-REQ(WS-INDEX) CB-NEED-TIER(WS-INDEX)
+     IF CT-BR-TOOL-REQUIRED(1:3) = "yes"
+         MOVE 1 TO CB-TOOL-REQ(WS-INDEX)
+     END-IF
+     CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG-STONE-TIER L-ID WS-TAGGED
+     IF WS-TAGGED = 1
+         MOVE 1 TO CB-NEED-TIER(WS-INDEX)
+     END-IF
+     CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG-IRON-TIER L-ID WS-TAGGED
+     IF WS-TAGGED = 1
+         MOVE 2 TO CB-NEED-TIER(WS-INDEX)
+     END-IF
+     CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG-DIAMOND-TIER L-ID WS-TAGGED
+     IF WS-TAGGED = 1
+         MOVE 3 TO CB-NEED-TIER(WS-INDEX)
      END-IF
 *>   Light: a number first in the text, and whether it holds only where the property lit is true.
      MOVE SPACES TO WS-TOKEN

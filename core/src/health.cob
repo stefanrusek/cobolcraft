@@ -2,15 +2,18 @@
 *> docs/protocol/09-cobolcraft-profile.md §3.3 Health rows, §3.2 row 0x7C death message; 05a, 05b,
 *> 05c).
 *>
-*> Health is kept in PL-HEALTH (0 to 30, standin §10.1). Only survival players are hurt: a player in
+*> Health is kept in PL-HEALTH (0 to 20, 17 section 4.10). Only survival players are hurt: a player in
 *> creative takes no damage from any cause and keeps the health it had (US7-6, US7 edge case), and
 *> only survival players are sent Set Health.
 *>
-*> Damage (HEALTH-DAMAGE, §10.2): an alive survival player whose hurt cooldown is 0 loses the amount
-*> (never below 0) and the cooldown becomes 12 ticks; the player and every player that has its
+*> Damage (HEALTH-DAMAGE, 17 section 4.7): an alive survival player is hurt by a hit when its
+*> invulnerable time (PL-HURT-COOLDOWN) is at most 10: it loses the amount (never below 0), lastHurt
+*> (PL-LAST-HURT) is the amount and the time becomes 20; the player and every player that has its
 *> entity are sent Damage Event (the cause's damage type, §10.3; source ids = attacker entity id +
-*> 1, or 0 without an attacker) and Hurt Animation; the player is sent Set Health. At 0 the player
-*> dies (HEALTH-DIE). Fall damage is applied by MOVE-PLAYER (core/src/movement.cob).
+*> 1, or 0 without an attacker) and Hurt Animation. While the time is above 10 a hit of at most
+*> lastHurt is ignored and a stronger one loses only the excess (no events, no new window). Every
+*> accepted hit adds the damage type's exhaustion (RULES.cpy) and the player is sent Set Health. At
+*> 0 the player dies (HEALTH-DIE). Fall damage is applied by MOVE-PLAYER (core/src/movement.cob).
 *>
 *> Attack (HEALTH-ATTACK, 05c 0x01, §10.4): from an alive attacker, on an alive player of the same
 *> dimension (not the attacker) or a mob of that dimension, whose collision box is within 4.0
@@ -18,19 +21,17 @@
 *> item's attack damage (ITEMS.cpy IT-ATTACK, the bare hand 1), to a player only when
 *> `player-combat` is on. A ground item, an unknown entity or a target out of reach is not hit.
 *>
-*> Mob damage (HEALTH-MOB-DAMAGE, §10.2, US9-4, §14.6): a mob whose hurt cooldown is 0 loses the
-*> amount (never below 0) and the cooldown becomes 12 ticks; its viewers are sent Damage Event (the
+*> Mob damage (HEALTH-MOB-DAMAGE, 17 section 4.7, US9-4, §14.6): a mob takes the same hurt window
+*> (EN-HURT, EN-LAST-HURT) as a player; on a fresh hit it loses the amount (never below 0); its viewers are sent Damage Event (the
 *> cause's damage type: player_attack for a player's hit, hail for hail; source id = attacker entity
 *> id + 1, or 0 without an attacker) and Hurt Animation; a mob that can flee (MOBS.cpy MB-FLEE-MILLI
 *> above 0: the sodgrazer) flees from an attacker for 40 ticks (§12.3); at 0 health it is defeated
 *> (MOB-DEFEAT, core/src/mobs.cob).
 *>
-*> Recovery (HEALTH-TICK, step 4 of §9.5): every tick the hurt cooldown of each alive player
-*> decreases, then the hunger rules run (HUNGER-TICK, core/src/hunger.cob: eating, exhaustion from
-*> time, starvation); while an alive survival player's food is at least 20 and health below 30,
-*> every 50th consecutive tick gives 1 health, sends Set Health and adds 2.5 exhaustion (§10.5);
-*> last, hail (WEATHER-HAIL-PLAYER, core/src/weather.cob, §14.6).
-*> A hit adds 0.15 exhaustion to the attacker (§11.2).
+*> Recovery (HEALTH-TICK, step 4 of §9.5): every tick the hurt window of each alive player
+*> decreases, then the hunger rules run (HUNGER-TICK, core/src/hunger.cob: eating, the FoodData tick
+*> with natural regeneration and starvation, 17 section 4.9); last, hail (WEATHER-HAIL-PLAYER,
+*> core/src/weather.cob, §14.6). A hit adds 0.1 exhaustion to the attacker (17 section 4.9).
 *>
 *> Death (HEALTH-DIE, §10.6): the player is dead (PS-DEAD, PL-DEATH-CAUSE); a survival break in
 *> progress ends, eating stops and the sprinting flag and starvation count are cleared; the player is sent Player Combat Kill and every player in play, in any dimension,
@@ -42,8 +43,8 @@
 *> on the next join and is sent Player Combat Kill after the join sequence (HEALTH-DEATH-SCREEN,
 *> core/src/players.cob keeps the death).
 *>
-*> Respawn (HEALTH-RESPAWN, Client Command 0x0C action 0 from a dead player): health 30, food 24,
-*> exhaustion 0, every counter 0, the world spawn point and yaw in cobolcraft:main; game mode, held
+*> Respawn (HEALTH-RESPAWN, Client Command 0x0C action 0 from a dead player): health 20, food 20,
+*> saturation 5.0, exhaustion 0, every counter 0, the world spawn point and yaw in cobolcraft:main; game mode, held
 *> slot and inventory unchanged. The player is sent Respawn (data to keep 0x00), Player Abilities and
 *> the arrival part of the join sequence (PLAY-ARRIVE); its entity moves to the spawn point for the
 *> others and the player is sent the entities it now sees.
@@ -61,7 +62,7 @@
 *>   HEALTH-DEATH-SCREEN USING player row                 Player Combat Kill of its death
 *>   HEALTH-VIEWERS-SEND USING entity row, PB-BUFFER      to every player that has the entity
 *> Builders (append id + body to the caller's PB-BUFFER; DEATH-TEXT-BUILD fills a PB-TEXT):
-*>   SET-HEALTH-BUILD USING health (FLOAT-SHORT), food (BINARY-LONG), PB-BUFFER
+*>   SET-HEALTH-BUILD USING health (FLOAT-SHORT), food (BINARY-LONG), saturation (FLOAT-SHORT), PB-BUFFER
 *>   DAMAGE-EVENT-BUILD USING entity id, damage type, source id, PB-BUFFER
 *>   HURT-ANIMATION-BUILD USING entity id, PB-BUFFER
 *>   COMBAT-KILL-BUILD USING entity id, PB-TEXT, PB-BUFFER
@@ -69,21 +70,21 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SET-HEALTH-BUILD.
-*> USING health (FLOAT-SHORT), food (BINARY-LONG), PB-BUFFER: Set Health 0x6A (05b; 09 §3.3):
-*> Float health, VarInt food, Float saturation 0.0.
+*> USING health (FLOAT-SHORT), food (BINARY-LONG), saturation (FLOAT-SHORT), PB-BUFFER: Set Health
+*> 0x6A (05b; 09 §3.3): Float health, VarInt food, Float saturation.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 106.
- 01 WS-SATURATION          FLOAT-SHORT VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-HEALTH               FLOAT-SHORT.
  01 L-FOOD                 BINARY-LONG.
- PROCEDURE DIVISION USING L-HEALTH L-FOOD PB-BUFFER.
+ 01 L-SATURATION           FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-HEALTH L-FOOD L-SATURATION PB-BUFFER.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-FLOAT" USING PB-BUFFER L-HEALTH
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-FOOD
-     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-SATURATION
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER L-SATURATION
      GOBACK.
  END PROGRAM SET-HEALTH-BUILD.
 
@@ -201,17 +202,19 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-SEND.
-*> USING player row (BINARY-LONG): Set Health of the player's health and food to the player.
+*> USING player row (BINARY-LONG): Set Health of the player's health, food and saturation to the player.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-SATURATION          FLOAT-SHORT.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     MOVE PL-SATURATION(L-ROW) TO WS-SATURATION
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "SET-HEALTH-BUILD" USING PL-HEALTH(L-ROW) PL-FOOD(L-ROW) PB-BUFFER
+     CALL "SET-HEALTH-BUILD" USING PL-HEALTH(L-ROW) PL-FOOD(L-ROW) WS-SATURATION PB-BUFFER
      CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
@@ -245,6 +248,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY RULES.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
@@ -263,6 +267,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-DELAY               BINARY-LONG VALUE 30.
  01 WS-ITEM-ROW            BINARY-LONG.
+ 01 WS-THROW               BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-CAUSE                BINARY-LONG.
@@ -279,7 +284,7 @@
      END-IF
      CALL "BLOCK-BREAK-END" USING WS-ROW
      CALL "HUNGER-CANCEL" USING WS-ROW
-     MOVE 0 TO PL-SPRINTING(WS-ROW) PL-STARVE-TICKS(WS-ROW)
+     MOVE 0 TO PL-SPRINTING(WS-ROW)
      CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
      CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
          PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
@@ -297,18 +302,29 @@
      COMPUTE WS-Y = PL-Y(WS-ROW) + RULE-DEATH-DY-MILLI / 1000
      MOVE PL-Z(WS-ROW) TO WS-Z
      COMPUTE WS-VY = RULE-DEATH-LIFT-MILLI / 1000
-     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 35
-         IF PL-SLOT-COUNT(WS-ROW, WS-S + 1) > 0
-             COMPUTE WS-Q = WS-S / 6
-             COMPUTE WS-VX = (FUNCTION MOD(WS-S, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
-             COMPUTE WS-VZ = (FUNCTION MOD(WS-Q, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 40
+         MOVE 0 TO WS-COUNT
+         IF WS-S < 36
              MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
              MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
              MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1)
+                 PL-SLOT-VAR(WS-ROW, WS-S + 1)
+         ELSE
+*>           Armor and the off-hand (container slots 36 to 40) are dropped like the rest of the inventory.
+             MOVE MN-EQUIP-ITEM(WS-ROW, WS-S - 35) TO WS-ITEM
+             MOVE MN-EQUIP-COUNT(WS-ROW, WS-S - 35) TO WS-COUNT
+             MOVE 0 TO MN-EQUIP-ITEM(WS-ROW, WS-S - 35) MN-EQUIP-COUNT(WS-ROW, WS-S - 35)
+                 MN-EQUIP-VAR(WS-ROW, WS-S - 35)
+         END-IF
+         IF WS-COUNT > 0
+             COMPUTE WS-Q = WS-S / 6
+             COMPUTE WS-VX = (FUNCTION MOD(WS-S, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
+             COMPUTE WS-VZ = (FUNCTION MOD(WS-Q, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
              CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT
                  WS-DELAY WS-ITEM-ROW
          END-IF
      END-PERFORM
+     CALL "MENU-RELEASE" USING WS-ROW WS-THROW
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
@@ -331,6 +347,9 @@
  01 WS-SOURCE              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-ATTACKER            BINARY-LONG.
+ 01 WS-APPLY               BINARY-LONG.
+ 01 WS-FRESH               BINARY-LONG.
+ 01 WS-EXHAUST             FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -340,7 +359,9 @@
  PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-SOURCE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
      IF PL-MODE(WS-ROW) NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE
-             OR PL-HURT-COOLDOWN(WS-ROW) > 0
+         GOBACK
+     END-IF
+     IF PL-HURT-COOLDOWN(WS-ROW) > RULE-HURT-FRESH AND L-AMOUNT <= PL-LAST-HURT(WS-ROW)
          GOBACK
      END-IF
      MOVE L-CAUSE TO WS-CAUSE
@@ -349,18 +370,29 @@
      IF L-SOURCE > 0
          COMPUTE WS-SOURCE = L-SOURCE + 1
      END-IF
-     COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MAX(0, PL-HEALTH(WS-ROW) - L-AMOUNT)
-     MOVE RULE-HURT-COOLDOWN TO PL-HURT-COOLDOWN(WS-ROW)
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "DAMAGE-EVENT-BUILD" USING PL-ENTITY-ID(WS-ROW) RULE-CAUSE-TYPE(WS-CAUSE) WS-SOURCE
-         PB-BUFFER
-     CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
-     CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(WS-ROW) PB-BUFFER
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "HURT-ANIMATION-BUILD" USING PL-ENTITY-ID(WS-ROW) PB-BUFFER
-     CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
-     CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(WS-ROW) PB-BUFFER
-     CALL "PB-FREE" USING PB-BUFFER
+     MOVE 1 TO WS-FRESH
+     MOVE L-AMOUNT TO WS-APPLY
+     IF PL-HURT-COOLDOWN(WS-ROW) > RULE-HURT-FRESH
+         MOVE 0 TO WS-FRESH
+         COMPUTE WS-APPLY = L-AMOUNT - PL-LAST-HURT(WS-ROW)
+     END-IF
+     MOVE L-AMOUNT TO PL-LAST-HURT(WS-ROW)
+     COMPUTE WS-EXHAUST = RULE-CAUSE-EXHAUST(WS-CAUSE) / 1000
+     CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
+     COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MAX(0, PL-HEALTH(WS-ROW) - WS-APPLY)
+     IF WS-FRESH = 1
+         MOVE RULE-HURT-WINDOW TO PL-HURT-COOLDOWN(WS-ROW)
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "DAMAGE-EVENT-BUILD" USING PL-ENTITY-ID(WS-ROW) RULE-CAUSE-TYPE(WS-CAUSE) WS-SOURCE
+             PB-BUFFER
+         CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(WS-ROW) PB-BUFFER
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "HURT-ANIMATION-BUILD" USING PL-ENTITY-ID(WS-ROW) PB-BUFFER
+         CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(WS-ROW) PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
      CALL "HEALTH-SEND" USING WS-ROW
      IF PL-HEALTH(WS-ROW) <= 0
          CALL "HEALTH-DIE" USING WS-ROW WS-CAUSE WS-ATTACKER
@@ -381,6 +413,7 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SOURCE              BINARY-LONG.
+ 01 WS-APPLY               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -388,11 +421,20 @@
  01 L-ATTACKER             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
-     IF EN-HURT(WS-ROW) > 0
+     IF EN-HURT(WS-ROW) > RULE-HURT-FRESH
+         IF L-AMOUNT > EN-LAST-HURT(WS-ROW)
+             COMPUTE WS-APPLY = L-AMOUNT - EN-LAST-HURT(WS-ROW)
+             MOVE L-AMOUNT TO EN-LAST-HURT(WS-ROW)
+             COMPUTE EN-HEALTH(WS-ROW) = FUNCTION MAX(0, EN-HEALTH(WS-ROW) - WS-APPLY)
+             IF EN-HEALTH(WS-ROW) = 0
+                 CALL "MOB-DEFEAT" USING WS-ROW
+             END-IF
+         END-IF
          GOBACK
      END-IF
      COMPUTE EN-HEALTH(WS-ROW) = FUNCTION MAX(0, EN-HEALTH(WS-ROW) - L-AMOUNT)
-     MOVE RULE-HURT-COOLDOWN TO EN-HURT(WS-ROW)
+     MOVE L-AMOUNT TO EN-LAST-HURT(WS-ROW)
+     MOVE RULE-HURT-WINDOW TO EN-HURT(WS-ROW)
      MOVE 0 TO WS-SOURCE
      IF L-ATTACKER > 0
          COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
@@ -533,12 +575,14 @@
      IF PSB-ACTION NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-DEAD
          GOBACK
      END-IF
+     CALL "MENU-FORCE-CLOSE" USING WS-ROW
      MOVE PS-ALIVE TO PL-STATE(WS-ROW)
      MOVE RULE-MAX-HEALTH TO PL-HEALTH(WS-ROW)
      MOVE RULE-MAX-FOOD TO PL-FOOD(WS-ROW)
+     MOVE RULE-START-SATURATION TO PL-SATURATION(WS-ROW)
      MOVE 0 TO PL-EXHAUSTION(WS-ROW) PL-HURT-COOLDOWN(WS-ROW) PL-RECOVER-TICKS(WS-ROW)
          PL-DEATH-CAUSE(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PL-SPRINTING(WS-ROW)
-         PL-EATING-ITEM(WS-ROW) PL-FLYING(WS-ROW) PL-STARVE-TICKS(WS-ROW)
+         PL-EATING-ITEM(WS-ROW) PL-FLYING(WS-ROW) PL-LAST-HURT(WS-ROW)
      MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
      MOVE DIM-MAIN TO PL-DIM(WS-ROW)
      MOVE CW-SPAWN-X TO PL-X(WS-ROW)
@@ -572,7 +616,6 @@
  COPY CORESTATE.
  COPY RULES.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-EXHAUST             FLOAT-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
          IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
@@ -580,22 +623,6 @@
                  SUBTRACT 1 FROM PL-HURT-COOLDOWN(WS-ROW)
              END-IF
              CALL "HUNGER-TICK" USING WS-ROW
-         END-IF
-         IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
-             IF PL-MODE(WS-ROW) = 0 AND PL-FOOD(WS-ROW) >= RULE-RECOVER-FOOD
-                     AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
-                 ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
-                 IF PL-RECOVER-TICKS(WS-ROW) >= RULE-RECOVER-TICKS
-                     COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MIN(RULE-MAX-HEALTH,
-                         PL-HEALTH(WS-ROW) + RULE-RECOVER-AMOUNT)
-                     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
-                     CALL "HEALTH-SEND" USING WS-ROW
-                     COMPUTE WS-EXHAUST = RULE-RECOVER-EXHAUST-MILLI / 1000
-                     CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
-                 END-IF
-             ELSE
-                 MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
-             END-IF
          END-IF
          IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
              CALL "WEATHER-HAIL-PLAYER" USING WS-ROW

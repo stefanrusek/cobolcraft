@@ -2093,6 +2093,7 @@
      MOVE RULE-MAX-FOOD TO WS-FULL
      CALL "CMD-AMOUNT" USING WS-FULL WS-AMOUNT
      MOVE WS-AMOUNT TO PL-FOOD(WS-ROW)
+     COMPUTE PL-SATURATION(WS-ROW) = FUNCTION MIN(PL-SATURATION(WS-ROW), WS-AMOUNT)
      CALL "HEALTH-SEND" USING WS-ROW
      MOVE MK-RATION-DONE TO WS-MSG
      CALL "CMD-TEXT-KEY" USING PB-TEXT WS-MSG
@@ -2316,9 +2317,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMD-SKIES.
-*> skies <dimension> clear | drizzle | hailstorm [<seconds>] (§16.2 row 25, §14.3): the dimension's
-*> weather kind is set for seconds x 20 ticks, or until changed (no countdown) without seconds;
-*> its players are sent the §14.4 pair; skies.no_weather [dimension path] for a dimension without
+*> skies <dimension> clear | drizzle | hailstorm [<seconds>] (§16.2 row 25, §14.3): the shared
+*> weather state takes that kind (a skin of the standard levels) for seconds x 20 ticks, or for the longest time
+*> without seconds; the players are told by the levels' fade (33 section 4.2); skies.no_weather [dimension path] for a dimension without
 *> weather; the sender gets skies.timed [path, kind, seconds] or skies.held [path, kind].
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -2334,6 +2335,9 @@
  01 WS-NODE                BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-MSG                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-TIME                BINARY-LONG.
+ 01 WS-HELD                BINARY-LONG VALUE 2147483647.
  PROCEDURE DIVISION.
      MOVE 2 TO WS-WORD
      CALL "CMD-DIMENSION" USING WS-WORD WS-DIM
@@ -2350,16 +2354,17 @@
      MOVE CQ-STEP-NODE(2) TO WS-NODE
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WEATHER-KIND-COUNT
          IF WK-KEY(WS-K)(12:16) = CT-NAME(WS-NODE)
-             MOVE WS-K TO CW-WEATHER-KIND(WS-DIM)
+             MOVE WS-K TO WS-KIND
          END-IF
      END-PERFORM
-     MOVE WEATHER-UNTIL-CHANGED TO CW-WEATHER-LEFT(WS-DIM)
+     MOVE WS-HELD TO WS-TIME
      MOVE MK-SKIES-HELD TO WS-MSG
      IF CQ-STEP-COUNT >= 3
-         COMPUTE CW-WEATHER-LEFT(WS-DIM) = CQ-STEP-INT(3) * 20
+         COMPUTE WS-TIME = CQ-STEP-INT(3) * 20
          MOVE MK-SKIES-TIMED TO WS-MSG
      END-IF
-     CALL "WEATHER-BROADCAST" USING WS-DIM
+*>   The kind is a skin of the shared state (33 section 4.3): clear is clear time, drizzle rain, hailstorm rain and thunder.
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
      CALL "CMD-TEXT-KEY" USING PB-TEXT WS-MSG
      CALL "CMD-TEXT-DIM" USING PB-TEXT WS-DIM
      CALL "CMD-TEXT-ARG" USING PB-TEXT CT-NAME(WS-NODE) CT-NAME-LENGTH(WS-NODE)

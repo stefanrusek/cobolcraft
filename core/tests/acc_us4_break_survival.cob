@@ -40,26 +40,27 @@
      MOVE 16001 TO CW-TIME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
 
-     MOVE "acceptance US4-3 given survival and greystone (hand break time 1.5 s) when a block is "
-         & "broken then it takes 30 ticks and the block becomes void" TO TL-CASE
+     MOVE "acceptance US4-3 given survival and greystone (hardness 1.5, by hand 0.0222 per tick) when "
+         & "a block is broken after 31 ticks (progress 0.711, 13 §2.4 accepts from 0.7) then the "
+         & "block becomes void" TO TL-CASE
      MOVE 2 TO WS-STATE
-     MOVE 30 TO WS-TICKS
+     MOVE 31 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(2) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (pry_bar, hard class) when "
-         & "greystone is broken then it takes a quarter of the time (375 ms, 7 ticks)" TO TL-CASE
+         & "greystone is broken then it takes the tool speed 4.0 (rate 0.0889, accepted from 7 ticks)" TO TL-CASE
      MOVE 8 TO WS-SLOT
      CALL "TEST-HELD" USING WS-CONN WS-SLOT
      MOVE 2 TO WS-STATE
      MOVE 7 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(4) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(4) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (trowel, soft class) when loam "
-         & "(0.6 s) is broken then it takes 150 ms (3 ticks)" TO TL-CASE
+         & "(0.6 s) is broken then the tool speed 4.0 (rate 0.2667, accepted from 3 ticks)" TO TL-CASE
      MOVE 9 TO WS-SLOT
      MOVE 7 TO WS-BUTTON
      MOVE 2 TO WS-TYPE
@@ -69,7 +70,7 @@
      MOVE 3 TO WS-STATE
      MOVE 3 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "8(20,100,20=0) 49(1,1) 1 101 4(6) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(6) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and a tool of the other class (trowel on greystone) "
@@ -109,7 +110,9 @@
      PERFORM ADD-STATE
      MOVE 20 TO WS-X
      PERFORM ADD-STATE
-     MOVE "4(11) 8(21,100,20=2) 4(12) state 2 state 2" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 5(1,20,100,20=0) 4(11) 5(1,20,100,20=1) 5(1,20,100,20=2) "
+         & "5(1,20,100,20=3) 5(1,20,100,20=4) 5(1,20,100,20=5) 5(1,20,100,20=6) "
+         & "5(1,20,100,20=255) 8(21,100,20=2) 4(12) state 2 state 2" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4 edge given survival when the baseplate (y 0) is broken for any time "
@@ -141,7 +144,8 @@
      PERFORM ACT
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      PERFORM ADD-STATE
-     MOVE "4(15) 4(16) 8(20,100,20=2) 4(17) state 2" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=0) 4(15) 5(1,20,100,20=255) 4(16) 8(20,100,20=2) 4(17) state 2"
+         TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

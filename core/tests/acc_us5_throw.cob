@@ -67,7 +67,7 @@
      PERFORM ACT
      MOVE 2 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "20(0=2x63) 1(2,1@20.50,102.30,20.50) 101(2=2x1) 103(2) motion 0.25000,0.12000,"
+     MOVE "20(36=2x63) 1(2,1@20.50,102.30,20.50) 101(2=2x1) 103(2) motion 0.25000,0.12000,"
          & "0.00000 delay 30" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -97,7 +97,7 @@
      PERFORM ACT
      MOVE 3 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "20(0=0x0) 1(3,1@20.50,102.30,20.50) 101(3=2x63) 103(3) motion 0.25000,0.12000,"
+     MOVE "20(36=0x0) 1(3,1@20.50,102.30,20.50) 101(3=2x63) 103(3) motion 0.25000,0.12000,"
          & "0.00000 delay 30" TO TL-EXPECTED
      PERFORM CHECK
      MOVE 300 TO WS-TICKS
@@ -133,7 +133,7 @@
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "127(4,1,1) 20(1=3x64) 78(4)" TO TL-EXPECTED
+     MOVE "127(4,1,1) 20(37=3x64) 78(4)" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US5-3 given an empty held slot when throw is used then nothing happens"
