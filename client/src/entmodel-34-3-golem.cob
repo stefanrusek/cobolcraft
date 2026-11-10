@@ -553,3 +553,235 @@
      MOVE "textures/entity/snow_golem/snow_golem.png" TO L-PATH
      GOBACK.
  END PROGRAM EM3-SNOW-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-RA                  BINARY-LONG.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-WALK-POS            FLOAT-LONG.
+ 01 WS-WALK-SPEED          FLOAT-LONG.
+ 01 WS-TF                  FLOAT-LONG VALUE 2.
+ 01 WS-SF                  FLOAT-LONG VALUE 2.5.
+ 01 WS-MS                  BINARY-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-ORD                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ORDS.
+    05 FILLER              BINARY-LONG VALUE 2.
+    05 FILLER              BINARY-LONG VALUE 6.
+    05 FILLER              BINARY-LONG VALUE 7.
+    05 FILLER              BINARY-LONG VALUE 4.
+    05 FILLER              BINARY-LONG VALUE 5.
+ 01 WS-ORDS-R REDEFINES WS-ORDS.
+    05 WS-O                BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-T-IN.
+    05 WS-TI               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-T-OUT.
+    05 WS-TO               FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+*> USING model state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age in ticks, 6 right hand has an item, 7 left hand has an item, 8 to 12 the start ticks of the
+*> idle, get-item, get-no-item, drop-item and drop-no-item animation states, -2147483648 when stopped): CopperGolemModel.setupAnim (9.2).
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "right_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RA
+     MOVE "left_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LA
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     MOVE L-I(3) TO WS-WALK-POS
+     MOVE L-I(4) TO WS-WALK-SPEED
+     CALL "EM5-WALK-TIME" USING WS-WALK-POS WS-WALK-SPEED WS-TF WS-SF WS-MS WS-SCALE
+     MOVE 1 TO WS-ORD
+     IF L-I(6) NOT = 0 OR L-I(7) NOT = 0
+         MOVE 3 TO WS-ORD
+     END-IF
+     CALL "EM3-ANIM-APPLY" USING EMM-MODEL WS-ORD WS-MS WS-SCALE WS-OK
+     IF WS-ORD = 3
+         PERFORM HOLD-ARMS
+     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 5
+         MOVE L-I(5) TO WS-TI(1)
+         MOVE L-I(7 + WS-K) TO WS-TI(2)
+         MOVE 1 TO WS-TI(3)
+         CALL "EM3-STATE-TIME" USING WS-T-IN WS-T-OUT
+         IF WS-TO(2) NOT = 0
+             MOVE WS-O(WS-K) TO WS-ORD
+             COMPUTE WS-MS = WS-TO(1)
+             MOVE 1 TO WS-SCALE
+             CALL "EM3-ANIM-APPLY" USING EMM-MODEL WS-ORD WS-MS WS-SCALE WS-OK
+         END-IF
+     END-PERFORM
+     GOBACK.
+
+ HOLD-ARMS.
+     IF MM-CXROT(WS-RA) > -0.87266463
+         MOVE -0.87266463 TO MM-CXROT(WS-RA)
+     END-IF
+     IF MM-CXROT(WS-LA) > -0.87266463
+         MOVE -0.87266463 TO MM-CXROT(WS-LA)
+     END-IF
+     IF MM-CYROT(WS-RA) > -0.1134464
+         MOVE -0.1134464 TO MM-CYROT(WS-RA)
+     END-IF
+     IF MM-CYROT(WS-LA) < 0.1134464
+         MOVE 0.1134464 TO MM-CYROT(WS-LA)
+     END-IF
+     IF MM-CZROT(WS-RA) > -0.064577185
+         MOVE -0.064577185 TO MM-CZROT(WS-RA)
+     END-IF
+     IF MM-CZROT(WS-LA) < 0.064577185
+         MOVE 0.064577185 TO MM-CZROT(WS-LA)
+     END-IF.
+ END PROGRAM EM3-COPPER-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CREAKING-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-WALK-POS            FLOAT-LONG.
+ 01 WS-WALK-SPEED          FLOAT-LONG.
+ 01 WS-TF                  FLOAT-LONG VALUE 1.
+ 01 WS-SF                  FLOAT-LONG VALUE 1.
+ 01 WS-MS                  BINARY-LONG.
+ 01 WS-SCALE               FLOAT-LONG.
+ 01 WS-ORD                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-T-IN.
+    05 WS-TI               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-T-OUT.
+    05 WS-TO               FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+*> USING model state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age in ticks, 6 can move, 7 to 9 the start ticks of the attack, invulnerable and death
+*> animation states, -2147483648 when stopped): CreakingModel.setupAnim (10).
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     IF L-I(6) NOT = 0
+         MOVE L-I(3) TO WS-WALK-POS
+         MOVE L-I(4) TO WS-WALK-SPEED
+         CALL "EM5-WALK-TIME" USING WS-WALK-POS WS-WALK-SPEED WS-TF WS-SF WS-MS WS-SCALE
+         MOVE 8 TO WS-ORD
+         CALL "EM3-ANIM-APPLY" USING EMM-MODEL WS-ORD WS-MS WS-SCALE WS-OK
+     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         MOVE L-I(5) TO WS-TI(1)
+         MOVE L-I(6 + WS-K) TO WS-TI(2)
+         MOVE 1 TO WS-TI(3)
+         CALL "EM3-STATE-TIME" USING WS-T-IN WS-T-OUT
+         IF WS-TO(2) NOT = 0
+             COMPUTE WS-ORD = 8 + WS-K
+             COMPUTE WS-MS = WS-TO(1)
+             MOVE 1 TO WS-SCALE
+             CALL "EM3-ANIM-APPLY" USING EMM-MODEL WS-ORD WS-MS WS-SCALE WS-OK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM3-CREAKING-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ALLAY-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROOT                BINARY-LONG VALUE 2.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
+ 01 WS-RA                  BINARY-LONG.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-RW                  BINARY-LONG.
+ 01 WS-LW                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-FLAP                FLOAT-LONG.
+ 01 WS-BOB                 FLOAT-LONG.
+ 01 WS-M                   FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-K                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+*> USING model state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age in ticks, 6 dancing, 7 spinning, 8 spinning progress, 9 holding animation progress):
+*> AllayModel.setupAnim (11).
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "body" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-BODY
+     MOVE "right_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RA
+     MOVE "left_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LA
+     MOVE "right_wing" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RW
+     MOVE "left_wing" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LW
+     COMPUTE WS-FLAP = FUNCTION COS(L-I(5) * 20 * 0.017453292 + L-I(3)) * 3.1415927 * 0.15 + L-I(4)
+     COMPUTE WS-BOB = L-I(5) * 9 * 0.017453292
+     COMPUTE WS-M = L-I(4) / 0.3
+     IF WS-M > 1
+         MOVE 1 TO WS-M
+     END-IF
+     COMPUTE WS-R = 1 - WS-M
+     IF L-I(6) NOT = 0
+         COMPUTE WS-D = L-I(5) * 8 * 0.017453292 + L-I(4)
+         IF L-I(7) NOT = 0
+             COMPUTE MM-CYROT(WS-ROOT) = 12.566371 * L-I(8)
+         END-IF
+         COMPUTE MM-CZROT(WS-ROOT) = FUNCTION COS(WS-D) * 16 * 0.017453292 * (1 - L-I(8))
+         COMPUTE MM-CYROT(WS-HEAD) = FUNCTION COS(WS-D) * 30 * 0.017453292 * (1 - L-I(8))
+         COMPUTE MM-CZROT(WS-HEAD) = FUNCTION COS(WS-D) * 14 * 0.017453292 * (1 - L-I(8))
+     ELSE
+         COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+         COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     END-IF
+     COMPUTE MM-CXROT(WS-RW) = 0.43633232 * (1 - WS-M)
+     COMPUTE MM-CYROT(WS-RW) = -0.7853982 + WS-FLAP
+     COMPUTE MM-CXROT(WS-LW) = 0.43633232 * (1 - WS-M)
+     COMPUTE MM-CYROT(WS-LW) = 0.7853982 - WS-FLAP
+     COMPUTE MM-CXROT(WS-BODY) = WS-M * 0.7853982
+     COMPUTE WS-X = L-I(9) * (-1.0471976 + WS-M * (-1.134464 + 1.0471976))
+     COMPUTE MM-CY(WS-ROOT) = MM-CY(WS-ROOT) + FUNCTION COS(WS-BOB) * 0.25 * WS-R
+     MOVE WS-X TO MM-CXROT(WS-RA) MM-CXROT(WS-LA)
+     COMPUTE WS-K = WS-R * (1 - L-I(9))
+     COMPUTE WS-Z = 0.43633232 - FUNCTION COS(WS-BOB + 4.712389) * 3.1415927 * 0.075 * WS-K
+     COMPUTE MM-CZROT(WS-LA) = -WS-Z
+     MOVE WS-Z TO MM-CZROT(WS-RA)
+     COMPUTE MM-CYROT(WS-RA) = 0.27925268 * L-I(9)
+     COMPUTE MM-CYROT(WS-LA) = -0.27925268 * L-I(9)
+     GOBACK.
+ END PROGRAM EM3-ALLAY-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-STATUE-ANIM.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEMM.
+*> USING model: the statue models' setupAnim (9.5): root.y = 0 and root.zRot = pi (the layer root, part 1).
+ PROCEDURE DIVISION USING EMM-MODEL.
+     MOVE 0 TO MM-CY(1)
+     MOVE 3.1415927 TO MM-CZROT(1)
+     GOBACK.
+ END PROGRAM EM3-STATUE-ANIM.

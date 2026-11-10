@@ -579,3 +579,320 @@
      MOVE "textures/entity/illager/evoker_fangs.png" TO L-PATH
      GOBACK.
  END PROGRAM EM3-FANGS-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-HAND-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(arm +1 right -1 left, state is IDLE) OUT(operation count, then 4 per operation as EM6-POSE-CHAIN) after root, body and arm (9.3): IDLE rotates Y by -90 (right) or +90 (left)
+*> and translates (0, 0, 0.125); otherwise scale 0.55 and translate (-0.125, 0.3125, -0.1875).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 2 TO L-O(1)
+     IF L-I(2) NOT = 0
+         MOVE 3 TO L-O(2)
+         COMPUTE L-O(3) = -90 * L-I(1)
+         MOVE 0 TO L-O(4) L-O(5)
+         MOVE 1 TO L-O(6)
+         MOVE 0 TO L-O(7) L-O(8)
+         MOVE 0.125 TO L-O(9)
+     ELSE
+         MOVE 2 TO L-O(2)
+         MOVE 0.55 TO L-O(3) L-O(4) L-O(5)
+         MOVE 1 TO L-O(6)
+         MOVE -0.125 TO L-O(7)
+         MOVE 0.3125 TO L-O(8)
+         MOVE -0.1875 TO L-O(9)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-COPPER-HAND-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-HEAD-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> OUT(operation count 2: translate (0, 0.125, 0), scale 1.0625) after body and head: translateToHead (9.3).
+ PROCEDURE DIVISION USING L-OUT.
+     MOVE 2 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     MOVE 0.125 TO L-O(4)
+     MOVE 0 TO L-O(5)
+     MOVE 2 TO L-O(6)
+     MOVE 1.0625 TO L-O(7) L-O(8) L-O(9)
+     GOBACK.
+ END PROGRAM EM3-COPPER-HEAD-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-ANTENNA-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> OUT(operation count 1: translate (0, -1.75, 0)) after root, body and head: applyBlockOnAntennaTransform (9.3).
+ PROCEDURE DIVISION USING L-OUT.
+     MOVE 1 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     MOVE -1.75 TO L-O(4)
+     MOVE 0 TO L-O(5)
+     GOBACK.
+ END PROGRAM EM3-COPPER-ANTENNA-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-TEXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SUF                 PIC X(12).
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-TEXTURE              PIC X(100).
+ 01 L-EYES                 PIC X(100).
+*> IN(weathering 0 UNAFFECTED, 1 EXPOSED, 2 WEATHERED, 3 OXIDIZED) texture eyes-texture: CopperGolemOxidationLevels (9.4).
+ PROCEDURE DIVISION USING L-IN L-TEXTURE L-EYES.
+     MOVE SPACES TO WS-SUF L-TEXTURE L-EYES
+     EVALUATE L-I(1)
+         WHEN 1 MOVE "_exposed" TO WS-SUF
+         WHEN 2 MOVE "_weathered" TO WS-SUF
+         WHEN 3 MOVE "_oxidized" TO WS-SUF
+     END-EVALUATE
+     STRING "textures/entity/copper_golem/copper_golem" FUNCTION TRIM(WS-SUF) ".png" DELIMITED BY SIZE INTO L-TEXTURE
+     STRING "textures/entity/copper_golem/copper_golem_eyes" FUNCTION TRIM(WS-SUF) ".png" DELIMITED BY SIZE INTO L-EYES
+     GOBACK.
+ END PROGRAM EM3-COPPER-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-SOUND-SET.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(weathering) OUT(sound set 0 unweathered, 1 weathered, 2 oxidized): UNAFFECTED and EXPOSED share the unweathered sounds (9.4).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) > 1
+         COMPUTE L-O(1) = L-I(1) - 1
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-COPPER-SOUND-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-LAYER-ORDER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POS                  BINARY-LONG.
+ 01 L-NAME                 PIC X(40).
+ PROCEDURE DIVISION USING L-POS L-NAME.
+     MOVE SPACES TO L-NAME
+     EVALUATE L-POS
+         WHEN 1 MOVE "LivingEntityEmissiveLayer" TO L-NAME
+         WHEN 2 MOVE "ItemInHandLayer" TO L-NAME
+         WHEN 3 MOVE "BlockDecorationLayer" TO L-NAME
+         WHEN 4 MOVE "CustomHeadLayer" TO L-NAME
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-COPPER-LAYER-ORDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-COPPER-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(invisible) OUT(shadow radius, the emissive eyes layer draws): 9.4.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.5 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     IF L-I(1) NOT = 0
+         MOVE 0 TO L-O(2)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-COPPER-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ANTENNA-MAP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(x y z of a unit-cube point) OUT(the point after the matrix M of BlockDecorationLayer): (0.5 - x, 1 - y, z - 0.5) (9.4).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = 0.5 - L-I(1)
+     COMPUTE L-O(2) = 1 - L-I(2)
+     COMPUTE L-O(3) = L-I(3) - 0.5
+     GOBACK.
+ END PROGRAM EM3-ANTENNA-MAP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-STATUE-ROT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(FACING 1 north, 2 east, 3 south, 4 west) OUT(rotation about Y in degrees: the negated toYRot of the opposite direction, 0, -90, -180, -270): 9.5.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = (1 - L-I(1)) * 90
+     GOBACK.
+ END PROGRAM EM3-STATUE-ROT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-STATUE-LAYER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POSE                 BINARY-LONG.
+ 01 L-NAME                 PIC X(40).
+*> USING pose(1 STANDING, 2 RUNNING, 3 SITTING, 4 STAR) layer: the model of the statue block entity renderer (9.5).
+ PROCEDURE DIVISION USING L-POSE L-NAME.
+     MOVE SPACES TO L-NAME
+     EVALUATE L-POSE
+         WHEN 1 MOVE "COPPER_GOLEM" TO L-NAME
+         WHEN 2 MOVE "COPPER_GOLEM_RUNNING" TO L-NAME
+         WHEN 3 MOVE "COPPER_GOLEM_SITTING" TO L-NAME
+         WHEN 4 MOVE "COPPER_GOLEM_STAR" TO L-NAME
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-STATUE-LAYER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-STATUE-TEXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-IN.
+    05 WS-I                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EYES                PIC X(100).
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-TEXTURE              PIC X(100).
+*> IN(block is a weathering statue, weathering level) texture: the oxidation level's texture, UNAFFECTED when the block is not a weathering statue (9.5).
+ PROCEDURE DIVISION USING L-IN L-TEXTURE.
+     MOVE 0 TO WS-I(1)
+     IF L-I(1) NOT = 0
+         MOVE L-I(2) TO WS-I(1)
+     END-IF
+     CALL "EM3-COPPER-TEXTURE" USING WS-IN L-TEXTURE WS-EYES
+     GOBACK.
+ END PROGRAM EM3-STATUE-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CREAKING-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(is tearing down, has glowing eyes, is active, deathTime, has red overlay) OUT(shadow radius, eyesGlowing, deathTime, has red overlay): 10.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.6 TO L-O(1)
+     MOVE L-I(3) TO L-O(2)
+     MOVE L-I(4) TO L-O(3)
+     MOVE L-I(5) TO L-O(4)
+     IF L-I(1) NOT = 0
+         MOVE L-I(2) TO L-O(2)
+         MOVE 0 TO L-O(3) L-O(4)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-CREAKING-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CREAKING-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/creaking/creaking.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-CREAKING-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CREAKING-EYES-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/creaking/creaking_eyes.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-CREAKING-EYES-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CREAKING-EYES-ALPHA.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(eyes glowing) OUT(alpha 1 or 0, the layer draws: only when the alpha is above 1e-5, always visible): 10.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2)
+     IF L-I(1) NOT = 0
+         MOVE 1 TO L-O(1) L-O(2)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-CREAKING-EYES-ALPHA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ALLAY-HAND-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(the right arm's current xRot, radians) OUT(operations after root and body: translate (0, 0.0625, 0.1875), rotate X by that xRot (degrees), scale 0.7, translate (0.0625, 0, 0)): 11.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 4 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     MOVE 0.0625 TO L-O(4)
+     MOVE 0.1875 TO L-O(5)
+     MOVE 5 TO L-O(6)
+     COMPUTE L-O(7) = L-I(1) * 180 / 3.1415927
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 2 TO L-O(10)
+     MOVE 0.7 TO L-O(11) L-O(12) L-O(13)
+     MOVE 1 TO L-O(14)
+     MOVE 0.0625 TO L-O(15)
+     MOVE 0 TO L-O(16) L-O(17)
+     GOBACK.
+ END PROGRAM EM3-ALLAY-HAND-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ALLAY-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> OUT(shadow radius, block light level) 11.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.4 TO L-O(1)
+     MOVE 15 TO L-O(2)
+     GOBACK.
+ END PROGRAM EM3-ALLAY-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ALLAY-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/allay/allay.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-ALLAY-TEXTURE.
