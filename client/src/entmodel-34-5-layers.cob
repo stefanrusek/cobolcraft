@@ -37,6 +37,10 @@
              CALL "EF5-M-CAT-BABY-COLLAR" USING EMM-MODEL
              MOVE 1.01 TO WS-S
              CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S
+         WHEN "FOX"
+             CALL "EF5-M-FOX" USING EMM-MODEL
+         WHEN "FOX_BABY"
+             CALL "EF5-M-FOX-BABY" USING EMM-MODEL
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE
