@@ -31,7 +31,7 @@ def white(k):
     n=int(k*10)
     v=0 if n%2==0 else max(0.5,min(1,k))
     return [v,int(v*15)]
-for k in (0.05,0.15,0.55,0.5,1.0,0,0.25,0.95,0.35):
+for k in (0.05,0.15,0.55,0.5,1.0,0,0.25,0.95,0.35,1.15):
     t.call('EF6-CREEPER-WHITE',[k],white(k),'2.3 white overlay at swell %s (progress, u)'%k)
 for p,o,n,mx in ((0.5,10,12,20),(0,4,5,20),(1,18,20,30),(0.25,0,0,20)):
     t.call('EF6-CREEPER-SWELLING',[p,o,n,mx],[(o+p*(n-o))/(mx-2)],'2.3 swelling partial %s old %s swell %s max %s'%(p,o,n,mx))
@@ -41,4 +41,5 @@ for age in (0,25.5,100,137.25,0.01):
     t.call('EF6-CREEPER-SWIRL',[age],[m,m],'2.4 swirl offsets at age %s (u, v)'%age)
 text_check(t,'EF6-CREEPER-SWIRL-TEXTURE',[0],'2.4 swirl texture','textures/entity/creeper/creeper_armor.png')
 t.call('EF6-CREEPER-SWIRL-TINT',[],[-8355712,1],'2.4 swirl tint ARGB and draw order (tint, order)')
+t.raw('MOVE "NO_SUCH_LAYER" TO WS-LAYER','CALL "EF6-LAYER" USING EMM-MODEL WS-LAYER WS-OK'); t.num('2 a layer that is not of this document is not known',0,'WS-OK')
 save(t,6,2)

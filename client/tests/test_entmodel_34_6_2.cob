@@ -1988,6 +1988,16 @@
      MOVE 7 TO WS-E
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 1.15 TO WS-IV(1)
+     CALL "EF6-CREEPER-WHITE" USING WS-IN WS-OUT
+     MOVE "2.3 white overlay at swell 1.15 (progress, u) [1]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "2.3 white overlay at swell 1.15 (progress, u) [2]" TO WS-NAME
+     MOVE 15 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 0.5 TO WS-IV(1)
      MOVE 10 TO WS-IV(2)
      MOVE 12 TO WS-IV(3)
@@ -2096,6 +2106,12 @@
      MOVE "2.4 swirl tint ARGB and draw order (tint, order) [2]" TO WS-NAME
      MOVE 1 TO WS-E
      MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "NO_SUCH_LAYER" TO WS-LAYER
+     CALL "EF6-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "2 a layer that is not of this document is not known" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OK TO WS-O
      PERFORM CHECK-NUM
      STOP RUN.
 

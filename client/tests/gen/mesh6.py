@@ -2,9 +2,23 @@ from g4 import *
 import doc6,json,os
 # layer id -> (rows, texture w, texture h, root scales); rows are doc6 rows (P and C records)
 LAY={}
-SRC={}
-def setlayer(i,rows,w,h,sc=(),src=None):
-    LAY[i]=(rows,w,h,list(sc)); SRC[i]=src or i
+SRC={}; RET={}
+def setlayer(i,rows,w,h,sc=(),src=None,retain=None):
+    LAY[i]=(rows,w,h,list(sc)); SRC[i]=src or i; RET[i]=retain
+    if retain: LAY[i]=(retained(rows,*retain),w,h,list(sc))
+def retained(rows,mode,names):
+    par={}
+    for r in rows:
+        x=r.split()
+        if x[0]=='P': par[x[1]]=x[2]
+    def anc(n):
+        a=par.get(n)
+        while a and a!='root':
+            if a in names: return True
+            a=par.get(a)
+        return False
+    keep=set(n for n in par if (mode==1 and n in names and not anc(n)) or (mode==2 and (n in names or anc(n))))
+    return [r for r in rows if r.split()[0]=='P' or r.split()[1] in keep]
 def expected(layer):
     rows,w,h,sc=LAY[layer]; r=list(rows)
     for s in sc: r=scale_rows(r,s)
@@ -25,13 +39,16 @@ STATE=HERE+'/state/layers6_done.json'
 def done(): return json.load(open(STATE)) if os.path.exists(STATE) else {}
 def write_layers(new_ids):
     d=done()
-    for i in new_ids: d[i]=[LAY[i][3],SRC[i]]
+    for i in new_ids: d[i]=[LAY[i][3],SRC[i],RET[i]]
     json.dump(d,open(STATE,'w'))
     o=['*> Entity models part 6: EF6-LAYER model layer(X(32), the ModelLayers field name in upper case) ok(out): builds the model of a layer of 34-6 (ok 0 when the layer is not one of this document). Records: client/copy/CLEMM.cpy.','*> The mesh programs EF6-M-<name> are in client/src/entmodel-34-6-<n>.cob.','',
-       ' IDENTIFICATION DIVISION.',' PROGRAM-ID. EF6-LAYER.',' DATA DIVISION.',' WORKING-STORAGE SECTION.',' 01 WS-S                   FLOAT-LONG.',' LINKAGE SECTION.',' COPY CLEMM.',' 01 L-LAYER                PIC X(32).',' 01 L-OK                   BINARY-LONG.',
+       ' IDENTIFICATION DIVISION.',' PROGRAM-ID. EF6-LAYER.',' DATA DIVISION.',' WORKING-STORAGE SECTION.',' 01 WS-S                   FLOAT-LONG.',' 01 WS-MODE                BINARY-LONG.',' 01 WS-CNT                 BINARY-LONG.',' 01 WS-NAMES.','    05 WS-NM                PIC X(24) OCCURS 8 TIMES.',' LINKAGE SECTION.',' COPY CLEMM.',' 01 L-LAYER                PIC X(32).',' 01 L-OK                   BINARY-LONG.',
        ' PROCEDURE DIVISION USING EMM-MODEL L-LAYER L-OK.','     MOVE 1 TO L-OK','     EVALUATE L-LAYER']
-    for i,(sc,src) in d.items():
+    for i,(sc,src,ret) in d.items():
         o.append('         WHEN "%s"'%i); o.append('             CALL "%s" USING EMM-MODEL'%pname(src))
+        if ret:
+            for k,nm in enumerate(ret[1],1): o.append('             MOVE "%s" TO WS-NM(%d)'%(nm,k))
+            o.append('             MOVE %d TO WS-CNT'%len(ret[1])); o.append('             MOVE %d TO WS-MODE'%ret[0]); o.append('             CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT')
         for s in sc: o.append('             MOVE %s TO WS-S'%lit(s)); o.append('             CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S')
     o+=['         WHEN OTHER','             MOVE 0 TO L-OK','     END-EVALUATE','     GOBACK.',' END PROGRAM EF6-LAYER.','']
     open(REPO+'client/src/entmodel-34-6-layers.cob','w').write('\n'.join(o))

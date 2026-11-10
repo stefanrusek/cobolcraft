@@ -50,6 +50,8 @@ for baby,inv,n,sq,cont,fuse in ((0,0,1,0,0,0),(1,0,1,0,0,0),(0,0,2,0.5,0,5),(1,1
 t.call('EF6-SULFUR-SCALE-OPS',[0,0,1,0,0,5],sops(0,0,1,0,0,5),'7.7 example 15.14 adult swell at fuse 5')
 t.call('EF6-SULFUR-SWELL',[5],[0.01875],'7.7 example 15.14 swell at fuse 5')
 t.call('EF6-SULFUR-SWELL',[1],[0.19683],'7.7 example 15.14 swell at fuse 1')
+t.call('EF6-SULFUR-SWELL',[12],[0],'7.7 swell is clamped at 0 past the fuse range (coverage-only addition)')
+t.call('EF6-SULFUR-SWELL',[-3],[0.3*(1.3)**0 if False else 0.3],'7.7 swell is clamped at 1 for a negative fuse (coverage-only addition)')
 t.call('EF6-SULFUR-SWELL',[9],[0.00003],'7.7 example 15.14 swell at fuse 9')
 for f,r,e in ((3.2,1,1),(7.3,1,0),(0,1,1),(-1,1,0),(12,1,1),(3.2,0,0),(5,1,0)):
     t.call('EF6-SULFUR-LIT',[f,r],[e],'7.7 overlay white fuse %s fuse remaining positive %d'%(f,r))

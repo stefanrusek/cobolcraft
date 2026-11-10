@@ -4202,6 +4202,18 @@
      MOVE 0.19683 TO WS-E
      MOVE WS-OV(1) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 12 TO WS-IV(1)
+     CALL "EF6-SULFUR-SWELL" USING WS-IN WS-OUT
+     MOVE "7.7 swell is clamped at 0 past the fuse range (coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -3 TO WS-IV(1)
+     CALL "EF6-SULFUR-SWELL" USING WS-IN WS-OUT
+     MOVE "7.7 swell is clamped at 1 for a negative fuse (coverage-only addition)" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 9 TO WS-IV(1)
      CALL "EF6-SULFUR-SWELL" USING WS-IN WS-OUT
      MOVE "7.7 example 15.14 swell at fuse 9" TO WS-NAME

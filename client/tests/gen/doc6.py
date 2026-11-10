@@ -31,19 +31,22 @@ def rows_from(ch,heading,nth=0,D='0',parents=None):
     igrow=[i for i,h in enumerate(hd) if h.startswith('grow')]
     out=[];prevbox=None
     for c in t:
-        name=c[0].replace('`','').split()[0]
-        par=re.search(r'child of (\w+)',c[0]); parent=par.group(1) if par else (parents or {}).get(name,'root')
+        path=c[0].replace('`','').split()[0]
+        comps=path.split('/'); name=comps[-1]
+        par=re.search(r'child of (\w+)',c[0])
+        parent=par.group(1) if par else (comps[-2] if len(comps)>1 else (parents or {}).get(name,'root'))
         pv=triple(c[ipv[0]]) if ipv else None
         pv=pv or ['0','0','0']
         rot=triple(c[irot[0]]) if irot and triple(c[irot[0]]) else ['0','0','0']
         out.append('P %s %s %s %s'%(name,parent,' '.join(pv),' '.join(rot)))
         cell=c[ib]
+        if cell.strip().lower().startswith('none') or cell.strip().startswith('(no cubes'): continue
         if triple(cell) is None and prevbox: cell=prevbox
         prevbox=cell
         o=triple(cell)
         sz=re.search(NUM+r'\s*x\s*'+NUM+r'\s*x\s*'+NUM,cell)
         tx=re.search(r'\(\s*'+NUM+r'\s*,\s*'+NUM+r'\s*\)',c[itex])
-        g='0'; mir='1' if ('mirror' in cell.lower() or (igrow and 'mirror' in c[igrow[0]].lower())) else '0'
+        g='0'; mir='1' if any('mirror' in x.lower() for x in c[1:]) else '0'
         if igrow:
             gc=c[igrow[0]]
             if gc.strip()=='d': g=D
