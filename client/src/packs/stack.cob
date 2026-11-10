@@ -51,6 +51,18 @@
      END-PERFORM
      MOVE 0 TO PK-ERROR-COUNT
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
+*>   Level 2: the Faithful skin, a built-in pack of model overrides, when it is enabled (faithful-pack-
+*>   mapping 9.7): it sits directly above the built-in pack, below the generated pack and every user pack.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > OP-COUNT
+         IF OP-ID(WS-I)(1:OP-ID-LENGTH(WS-I)) = "cobolcraft_faithful_skin" AND PK-COUNT < CL-MAX-PACKS
+             ADD 1 TO PK-COUNT
+             INITIALIZE PK-PACK(PK-COUNT)
+             MOVE 3 TO PK-KIND(PK-COUNT)
+             MOVE 2 TO PK-LEVEL(PK-COUNT)
+             MOVE "cobolcraft_faithful_skin" TO PK-ID(PK-COUNT)
+             MOVE 24 TO PK-ID-LENGTH(PK-COUNT)
+         END-IF
+     END-PERFORM
 *>   Level 3: the generated vanilla resource pack, when the start-up check said ok (level 2, the skin,
 *>   is the built-in optional pack of the cobolcraft world type, absent unless enabled).
      IF CL-PACKS-STATUS = CT-PACKS-OK AND CL-GENERATED-DIR-LENGTH > 0
@@ -72,7 +84,7 @@
              CALL "PACK-ERROR-NAMED" USING CLIENT-STATE OP-ID(WS-I) OP-ID-LENGTH(WS-I) WS-MISSING-KEY
                  WS-MISSING-KEY-LENGTH WS-NO-ARG WS-NO-ARG-LENGTH
          END-IF
-         IF WS-ENTRY > 0 AND PK-COUNT < CL-MAX-PACKS
+         IF WS-ENTRY > 0 AND PK-COUNT < CL-MAX-PACKS AND LP-KIND(WS-ENTRY) NOT = 3
              IF LP-VALID(WS-ENTRY) = 1
                  ADD 1 TO PK-COUNT
                  INITIALIZE PK-PACK(PK-COUNT)
@@ -111,7 +123,9 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-I FROM PK-COUNT BY -1 UNTIL WS-I < 2
-         CALL "PACK-SOURCE-FILES" USING CLIENT-STATE WS-I
+         IF PK-KIND(WS-I) NOT = 3
+             CALL "PACK-SOURCE-FILES" USING CLIENT-STATE WS-I
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM PACK-STACK-BUILD.

@@ -44,7 +44,8 @@
      MOVE "Resource Packs|Selected|Built-in pack|Available|badmeta|badmeta cannot be used: pack."
          & "mcmeta has no usable pack section|badtex|Bad texture pack|Compatible|broken.zip|broken"
          & ".zip cannot be used: the pack cannot be read|nometa.zip|nometa.zip cannot be used: "
-         & "pack.mcmeta is missing|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
+         & "pack.mcmeta is missing|Faithful Skin|Uses Faithful 32x textures for CobolCraft blocks and items. Needs the generated vanilla "
+         & "pack or a Faithful pack.|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

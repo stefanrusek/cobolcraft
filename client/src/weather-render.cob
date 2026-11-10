@@ -34,6 +34,12 @@
     05 WS-SOURCE OCCURS 2 TIMES.
        10 WS-S-LENGTH        PIC 99.
        10 WS-S-PATH          PIC X(62).
+ 01 WS-SKIN-PATHS.
+    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/environment/rain.png".
+    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/environment/snow.png".
+ 01 WS-SKIN-TABLE REDEFINES WS-SKIN-PATHS.
+    05 WS-SKIN-PATH        PIC X(64) OCCURS 2 TIMES.
+ 01 WS-SKIN                BINARY-LONG.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-IMAGES.
@@ -57,12 +63,29 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO XA-W XA-H
+     MOVE 0 TO XA-W XA-H WS-SKIN
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PK-COUNT
+         IF PK-LEVEL(WS-K) = 2
+             MOVE 1 TO WS-SKIN
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
-         MOVE WS-S-PATH(WS-K) TO WS-PATH
-         MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
-         CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K) WS-CAPACITY
-             WS-W WS-H WS-FOUND
+         MOVE 0 TO WS-FOUND
+*>       With the skin on (level 2 of the stack), drizzle is the pack's rain and hailstorm its snow
+*>       (faithful-pack-mapping 6.2); a pack that has neither leaves the built-in images.
+         IF WS-SKIN = 1
+             MOVE SPACES TO WS-PATH
+             MOVE WS-SKIN-PATH(WS-K) TO WS-PATH
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
+             CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K)
+                 WS-CAPACITY WS-W WS-H WS-FOUND
+         END-IF
+         IF WS-FOUND = 0
+             MOVE WS-S-PATH(WS-K) TO WS-PATH
+             MOVE WS-S-LENGTH(WS-K) TO WS-PATH-LENGTH
+             CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE(WS-K)
+                 WS-CAPACITY WS-W WS-H WS-FOUND
+         END-IF
          IF WS-FOUND = 0
              MOVE 16 TO WS-W WS-H
              CALL "MISSING-TEXTURE" USING WS-W WS-H WS-IMAGE(WS-K)

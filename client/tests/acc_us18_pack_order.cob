@@ -51,7 +51,8 @@
          & "Then both are selected, the later one on top, above the built-in pack" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "Resource Packs|Selected|beta.zip|Beta pack|Compatible|alpha||Alpha pack|Compatible|"
-         & "Built-in pack|Available|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
+         & "Built-in pack|Available|Faithful Skin|Uses Faithful 32x textures for CobolCraft blocks and items. Needs the generated vanilla "
+         & "pack or a Faithful pack.|Compatible|Enable|Disable|Move Up|Move Down|Done|Open Pack Folder" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -850,3 +850,153 @@
      COMPUTE L-H = WS-HI + WS-LO * 65536
      GOBACK.
  END PROGRAM TEX-HASH-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SKIN-READ.
+*> USING path (PIC X(256)), path length, area, capacity, length out, found out: a file of the Faithful skin
+*> pack (faithful-pack-mapping 3, 4, 9.3, 9.7): the built-in block model or item model of the path with the
+*> texture ids the skin changes replaced by the minecraft: ids of the mapping (SKIN-MAP); found only when a
+*> replacement was made, so the skin supplies just the models that differ and ships no texture.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(32768).
+ 01 WS-TEXT-HEAD REDEFINES WS-TEXT PIC X.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-OUT                 PIC X(32768).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32768.
+ 01 WS-TURF                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-AREA                 PIC X.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-OUT-LENGTH           BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 B-AREA                 PIC X(1073741824) BASED.
+ PROCEDURE DIVISION USING L-PATH L-LENGTH L-AREA L-CAPACITY L-OUT-LENGTH L-FOUND.
+     MOVE 0 TO L-OUT-LENGTH L-FOUND
+     IF L-PATH(1:30) NOT = "assets/cobolcraft/models/block" AND L-PATH(1:29) NOT = "assets/cobolcraft/models/item"
+         GOBACK
+     END-IF
+*>   The turf models are not overridden (no tint: faithful-pack-mapping 8.2), though they name the loam.
+     MOVE 0 TO WS-TURF
+     INSPECT L-PATH(1:L-LENGTH) TALLYING WS-TURF FOR ALL "turf"
+     IF WS-TURF > 0
+         GOBACK
+     END-IF
+     CALL "BUILTIN-READ" USING L-PATH L-LENGTH WS-TEXT-HEAD WS-CAPACITY WS-LENGTH WS-FOUND
+     IF WS-FOUND = 0
+         GOBACK
+     END-IF
+     CALL "SKIN-MAP" USING WS-TEXT WS-LENGTH WS-OUT WS-OUT-LENGTH WS-CHANGED
+     IF WS-CHANGED = 1 AND WS-OUT-LENGTH <= L-CAPACITY
+         SET ADDRESS OF B-AREA TO ADDRESS OF L-AREA
+         MOVE WS-OUT(1:WS-OUT-LENGTH) TO B-AREA(1:WS-OUT-LENGTH)
+         MOVE WS-OUT-LENGTH TO L-OUT-LENGTH
+         MOVE 1 TO L-FOUND
+     END-IF
+     GOBACK.
+ END PROGRAM SKIN-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SKIN-FIND.
+*> USING path (PIC X(256)), path length, index out (1 = the skin pack has the file, 0 not): SKIN-READ would
+*> find it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-AREA                PIC X(32768).
+ 01 WS-AREA-HEAD REDEFINES WS-AREA PIC X.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 32768.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PATH L-LENGTH L-INDEX.
+     CALL "SKIN-READ" USING L-PATH L-LENGTH WS-AREA-HEAD WS-CAPACITY WS-LENGTH WS-FOUND
+     MOVE WS-FOUND TO L-INDEX
+     GOBACK.
+ END PROGRAM SKIN-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SKIN-MAP.
+*> USING text (PIC X(32768)), length, out text (PIC X(32768)), out length, changed out (1 when some id
+*> was replaced): each quoted texture id of the table below is replaced by its target (the skin's
+*> mapping of faithful-pack-mapping sections 3 and 4: 8 blocks, 7 block items and the 6 tools and foods).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PAIRS.
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/baseplate|minecraft:block/bedrock".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/greystone|minecraft:block/stone".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/loam|minecraft:block/dirt".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/grit|minecraft:block/sand".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/lucite|minecraft:block/glass".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/glowtube_lit|minecraft:block/redstone_lamp_on".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/glowtube_unlit|minecraft:block/redstone_lamp".
+    05 FILLER PIC X(80) VALUE "cobolcraft:block/slag|minecraft:block/netherrack".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/baseplate|minecraft:block/bedrock".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/greystone|minecraft:block/stone".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/loam|minecraft:block/dirt".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/grit|minecraft:block/sand".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/lucite|minecraft:block/glass".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/glowtube|minecraft:block/redstone_lamp_on".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/slag|minecraft:block/netherrack".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/pry_bar|minecraft:item/iron_pickaxe".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/trowel|minecraft:item/iron_shovel".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/grazer_flank|minecraft:item/beef".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/seared_flank|minecraft:item/cooked_beef".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/sod_cake|minecraft:item/cake".
+    05 FILLER PIC X(80) VALUE "cobolcraft:item/dump_shard|minecraft:item/amethyst_shard".
+ 01 WS-PAIR-TABLE REDEFINES WS-PAIRS.
+    05 WS-PAIR              PIC X(80) OCCURS 21 TIMES.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-FROM                PIC X(80).
+ 01 WS-FROM-LENGTH         BINARY-LONG.
+ 01 WS-TO                  PIC X(80).
+ 01 WS-TO-LENGTH           BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-WORK                PIC X(32768).
+ 01 WS-WORK-LENGTH         BINARY-LONG.
+ 01 WS-Q                   PIC X VALUE X"22".
+ 01 WS-PATTERN             PIC X(84).
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(32768).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-OUT                  PIC X(32768).
+ 01 L-OUT-LENGTH           BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-LENGTH L-OUT L-OUT-LENGTH L-CHANGED.
+     MOVE L-TEXT(1:L-LENGTH) TO WS-WORK(1:L-LENGTH)
+     MOVE L-LENGTH TO WS-WORK-LENGTH
+     MOVE 0 TO L-CHANGED
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 21
+         MOVE SPACES TO WS-FROM WS-TO
+         UNSTRING WS-PAIR(WS-K) DELIMITED BY "|" INTO WS-FROM WS-TO
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FROM)) TO WS-FROM-LENGTH
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TO)) TO WS-TO-LENGTH
+*>       The id as a whole JSON string: between quotes.
+         MOVE 0 TO WS-BEFORE
+         MOVE SPACES TO WS-PATTERN
+         STRING WS-Q WS-FROM(1:WS-FROM-LENGTH) WS-Q DELIMITED BY SIZE INTO WS-PATTERN
+         INSPECT WS-WORK(1:WS-WORK-LENGTH) TALLYING WS-BEFORE FOR CHARACTERS BEFORE INITIAL
+             WS-PATTERN(1:WS-FROM-LENGTH + 2)
+         IF WS-BEFORE < WS-WORK-LENGTH
+             COMPUTE WS-POS = WS-BEFORE + 2
+             MOVE SPACES TO L-OUT
+             STRING WS-WORK(1:WS-POS - 1) WS-TO(1:WS-TO-LENGTH)
+                 WS-WORK(WS-POS + WS-FROM-LENGTH:WS-WORK-LENGTH - WS-POS - WS-FROM-LENGTH + 1)
+                 DELIMITED BY SIZE INTO L-OUT
+             COMPUTE WS-WORK-LENGTH = WS-WORK-LENGTH - WS-FROM-LENGTH + WS-TO-LENGTH
+             MOVE L-OUT(1:WS-WORK-LENGTH) TO WS-WORK(1:WS-WORK-LENGTH)
+             MOVE 1 TO L-CHANGED
+         END-IF
+     END-PERFORM
+     MOVE WS-WORK(1:WS-WORK-LENGTH) TO L-OUT(1:WS-WORK-LENGTH)
+     MOVE WS-WORK-LENGTH TO L-OUT-LENGTH
+     GOBACK.
+ END PROGRAM SKIN-MAP.
