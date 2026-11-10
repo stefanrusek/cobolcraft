@@ -1,0 +1,121 @@
+*> Acceptance test of the permission model of docs/protocol/15-commands-framework.md §2 Permissions:
+*> §2.1 a level-based set holds the command levels up to its own and the entity-selector atom from
+*> level 2; the Entity Event id 24 + level; operator-list levels clamp to 0..4; §2.2 the console is
+*> level 4 and a player holds the default operator level 4 when an operator (the stored per-entry
+*> Level of 07 §9.2 is BLOCKED on core/src/persistence.cob), else 0; the defaults of the
+*> op-permission-level (4) and function-permission-level (2) properties.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CMD-15-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-HOLDER              BINARY-LONG.
+ 01 WS-REQUIRED            BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-SENDER              BINARY-LONG.
+ 01 WS-WHICH               BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US13 15§2 Permissions a set of level L holds level R exactly when L >= R"
+         TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-HOLDER FROM 0 BY 1 UNTIL WS-HOLDER > 4
+         PERFORM VARYING WS-REQUIRED FROM 0 BY 1 UNTIL WS-REQUIRED > 4
+             CALL "BR-HOLDS" USING WS-HOLDER WS-REQUIRED WS-OK
+             MOVE WS-OK TO WS-EDIT
+             STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+         END-PERFORM
+         STRING " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE "10000 11000 11100 11110 11111" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US13 15§2.3 Permissions the selector atom is held from level 2" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-HOLDER FROM 0 BY 1 UNTIL WS-HOLDER > 4
+         CALL "BR-SELECTORS-ALLOWED" USING WS-HOLDER WS-OK
+         MOVE WS-OK TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE "00111" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US13 15§2.2 Permissions Entity Event id is 24 + level" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-HOLDER FROM 0 BY 1 UNTIL WS-HOLDER > 4
+         CALL "BR-PERMISSION-EVENT" USING WS-HOLDER WS-VALUE
+         MOVE WS-VALUE TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE "24 25 26 27 28" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US13 15§2.2 Permissions a stored level clamps to 0..4" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-VALUE FROM -1 BY 5 UNTIL WS-VALUE > 9
+         CALL "BR-CLAMP-LEVEL" USING WS-VALUE WS-HOLDER
+         MOVE WS-HOLDER TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE "0 4 4 " TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US13 15§2.2 Permissions defaults op-permission-level 4, function-permission-level 2"
+         TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-WHICH FROM 1 BY 1 UNTIL WS-WHICH > 2
+         CALL "BR-DEFAULT-LEVEL" USING WS-WHICH WS-VALUE
+         MOVE WS-VALUE TO WS-EDIT
+         STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-POS
+     END-PERFORM
+     MOVE "4 2 " TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 0 TO WS-SENDER
+     CALL "BR-SOURCE-LEVEL" USING WS-SENDER WS-VALUE
+     MOVE "acceptance US13 15§2.2 Permissions the console source is level 4" TO TL-CASE
+     PERFORM ASSERT-LEVEL-4
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID
+     MOVE CN-PLAYER(WS-ID) TO WS-SENDER
+     CALL "BR-SOURCE-LEVEL" USING WS-SENDER WS-VALUE
+     MOVE "acceptance US13 15§2.2 Permissions a player who is not an operator is level 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PL-OPERATOR(WS-SENDER)
+     CALL "BR-SOURCE-LEVEL" USING WS-SENDER WS-VALUE
+     MOVE "acceptance US13 15§2.2 Permissions an operator holds the default operator level 4" TO TL-CASE
+     PERFORM ASSERT-LEVEL-4
+     STOP RUN.
+
+ ASSERT-LEVEL-4.
+     MOVE "N" TO TL-MODE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-CMD-15-2.
+
+ COPY CORETEST.

@@ -1,0 +1,94 @@
+*> The presentation of a command exception (docs/protocol/15-commands-framework.md §4.6, §10.4; the
+*> raw exception of BR-ERR and the input of BR-IN, core/copy/BRIGADIER.cpy).
+*>
+*> Entry point:
+*>   BR-ERROR-TEXT USING message (PB-TEXT out), context (PB-TEXT out), context flag out (1 when the
+*>     exception carries a cursor): the first System Chat line is the translated message with its
+*>     string arguments, red; the second is an empty gray component with the click event
+*>     suggest_command "/" + the input and the extras: "..." when the cursor c (limited to the input
+*>     length) is above 10, the up to ten characters before it gray, the rest of the input red and
+*>     underlined, then command.context.here red and italic. Empty segments are left out.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-ERROR-TEXT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-FROM                BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SEGMENT             PIC X(1024).
+ 01 WS-SEGMENT-LENGTH      BINARY-LONG.
+ 01 WS-SEGMENT-COLOR       PIC X(12).
+ LINKAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 L-HAS                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-TEXT PK-TEXT L-HAS.
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(BR-E-KEY)) TO PB-TX-LENGTH
+     MOVE BR-E-KEY TO PB-TX-VALUE
+     MOVE BR-E-ARG-COUNT TO PB-TX-ARG-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BR-E-ARG-COUNT
+         MOVE BR-E-ARG-LENGTH(WS-I) TO PB-TX-ARG-LENGTH(WS-I)
+         MOVE BR-E-ARG(WS-I) TO PB-TX-ARG-VALUE(WS-I)
+     END-PERFORM
+     MOVE 1 TO PB-TX-STYLED
+     MOVE "red" TO PB-TX-COLOR
+     MOVE 1 TO L-HAS
+     MOVE PB-TEXT-LITERAL TO PK-TX-KIND
+     MOVE 0 TO PK-TX-LENGTH
+     MOVE 1 TO PK-TX-STYLED
+     MOVE "gray" TO PK-TX-COLOR
+     MOVE "/" TO PK-TX-CLICK
+     MOVE BR-IN-LENGTH TO WS-LENGTH
+     IF WS-LENGTH > 1023
+         MOVE 1023 TO WS-LENGTH
+     END-IF
+     MOVE BR-IN-TEXT(1:WS-LENGTH) TO PK-TX-CLICK(2:WS-LENGTH)
+     COMPUTE PK-TX-CLICK-LENGTH = WS-LENGTH + 1
+     MOVE 0 TO PK-TX-EXTRA-COUNT
+     MOVE BR-E-CURSOR TO WS-C
+     IF WS-C > BR-IN-LENGTH
+         MOVE BR-IN-LENGTH TO WS-C
+     END-IF
+     IF WS-C > 10
+         MOVE "..." TO WS-SEGMENT
+         MOVE 3 TO WS-SEGMENT-LENGTH
+         MOVE SPACES TO WS-SEGMENT-COLOR
+         PERFORM ADD-LITERAL
+         COMPUTE WS-FROM = WS-C - 10
+     ELSE
+         MOVE 0 TO WS-FROM
+     END-IF
+     IF WS-C > WS-FROM
+         COMPUTE WS-SEGMENT-LENGTH = WS-C - WS-FROM
+         MOVE BR-IN-TEXT(WS-FROM + 1:WS-SEGMENT-LENGTH) TO WS-SEGMENT
+         MOVE "gray" TO WS-SEGMENT-COLOR
+         PERFORM ADD-LITERAL
+     END-IF
+     IF WS-C < BR-IN-LENGTH
+         COMPUTE WS-SEGMENT-LENGTH = BR-IN-LENGTH - WS-C
+         MOVE BR-IN-TEXT(WS-C + 1:WS-SEGMENT-LENGTH) TO WS-SEGMENT
+         MOVE "red" TO WS-SEGMENT-COLOR
+         PERFORM ADD-LITERAL
+         MOVE 1 TO PK-TXE-UNDERLINED(PK-TX-EXTRA-COUNT)
+     END-IF
+     ADD 1 TO PK-TX-EXTRA-COUNT
+     MOVE PB-TEXT-TRANSLATE TO PK-TXE-KIND(PK-TX-EXTRA-COUNT)
+     MOVE "command.context.here" TO PK-TXE-VALUE(PK-TX-EXTRA-COUNT)
+     MOVE 20 TO PK-TXE-LENGTH(PK-TX-EXTRA-COUNT)
+     MOVE "red" TO PK-TXE-COLOR(PK-TX-EXTRA-COUNT)
+     MOVE 1 TO PK-TXE-ITALIC(PK-TX-EXTRA-COUNT)
+     MOVE 0 TO PK-TXE-UNDERLINED(PK-TX-EXTRA-COUNT)
+     GOBACK.
+
+ ADD-LITERAL.
+     ADD 1 TO PK-TX-EXTRA-COUNT
+     MOVE PB-TEXT-LITERAL TO PK-TXE-KIND(PK-TX-EXTRA-COUNT)
+     MOVE WS-SEGMENT(1:WS-SEGMENT-LENGTH) TO PK-TXE-VALUE(PK-TX-EXTRA-COUNT)
+     MOVE WS-SEGMENT-LENGTH TO PK-TXE-LENGTH(PK-TX-EXTRA-COUNT)
+     MOVE WS-SEGMENT-COLOR TO PK-TXE-COLOR(PK-TX-EXTRA-COUNT)
+     MOVE 0 TO PK-TXE-ITALIC(PK-TX-EXTRA-COUNT) PK-TXE-UNDERLINED(PK-TX-EXTRA-COUNT).
+ END PROGRAM BR-ERROR-TEXT.

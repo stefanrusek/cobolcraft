@@ -1,0 +1,104 @@
+*> The permission model of the command framework (docs/protocol/15-commands-framework.md §2): the five
+*> levels 0 all, 1 moderators, 2 gamemasters, 3 admins, 4 owners; a level-based set holds every command
+*> level up to its own and the entity-selector atom from level 2.
+*>
+*> Entry points:
+*>   BR-HOLDS USING level of the set, required level, ok out (1 when level >= required)
+*>   BR-SELECTORS-ALLOWED USING level, ok out (the atom commands/entity_selectors: level 2 or more)
+*>   BR-PERMISSION-EVENT USING level, entity event id out (24 + level, sent to the player's own entity)
+*>   BR-CLAMP-LEVEL USING stored level, level out (07 §9.2 Level: clamped to 0..4)
+*>   BR-DEFAULT-LEVEL USING which (1 op-permission-level, 2 function-permission-level), level out
+*>   BR-SOURCE-LEVEL USING sender (player row, 0 = the console), level out: the console is 4; a player
+*>     holding operator status (CMD-PERMITTED) holds the default operator level 4, else 0
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-HOLDS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-REQUIRED             BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-REQUIRED L-OK.
+     MOVE 0 TO L-OK
+     IF L-LEVEL >= L-REQUIRED
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM BR-HOLDS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SELECTORS-ALLOWED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GAMEMASTERS         BINARY-LONG VALUE 2.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-OK.
+     CALL "BR-HOLDS" USING L-LEVEL WS-GAMEMASTERS L-OK
+     GOBACK.
+ END PROGRAM BR-SELECTORS-ALLOWED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-PERMISSION-EVENT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-EVENT.
+     COMPUTE L-EVENT = 24 + L-LEVEL
+     GOBACK.
+ END PROGRAM BR-PERMISSION-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-CLAMP-LEVEL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STORED               BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STORED L-LEVEL.
+     MOVE L-STORED TO L-LEVEL
+     IF L-LEVEL < 0
+         MOVE 0 TO L-LEVEL
+     END-IF
+     IF L-LEVEL > 4
+         MOVE 4 TO L-LEVEL
+     END-IF
+     GOBACK.
+ END PROGRAM BR-CLAMP-LEVEL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-DEFAULT-LEVEL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WHICH                BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WHICH L-LEVEL.
+     IF L-WHICH = 1
+         MOVE 4 TO L-LEVEL
+     ELSE
+         MOVE 2 TO L-LEVEL
+     END-IF
+     GOBACK.
+ END PROGRAM BR-DEFAULT-LEVEL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SOURCE-LEVEL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COMMANDS.
+ 01 WS-OPERATOR            BINARY-LONG.
+ 01 WS-REQUIRED            BINARY-LONG.
+ 01 WS-OPERATOR-WHICH      BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-SENDER               BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SENDER L-LEVEL.
+     MOVE CMD-OPERATOR TO WS-REQUIRED
+     CALL "CMD-PERMITTED" USING L-SENDER WS-REQUIRED WS-OPERATOR
+     MOVE 0 TO L-LEVEL
+     IF WS-OPERATOR = 1
+         CALL "BR-DEFAULT-LEVEL" USING WS-OPERATOR-WHICH L-LEVEL
+     END-IF
+     GOBACK.
+ END PROGRAM BR-SOURCE-LEVEL.
