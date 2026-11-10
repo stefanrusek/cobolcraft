@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 1 (): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 1 (Conventions used in this part): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -113,18 +113,24 @@
      MOVE 1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = PC-AGE
      PERFORM ASSERT-NUMBER
+     MOVE 9 TO I5
+     CALL "P4-CONV-FACTS" USING I5 I1
+     MOVE "an unknown fact gives 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§1 : " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§1 Conventions used in this part: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§1 : " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§1 Conventions used in this part: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

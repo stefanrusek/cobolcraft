@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 4 (Terrain particles): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 4 (`BlockMarker` and its emission): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -181,18 +181,24 @@
      MOVE 3050000 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W3) * 100000 + 0.5)
      PERFORM ASSERT-NUMBER
+     MOVE 9 TO I2
+     CALL "P4-SAMPLE-INFO" USING I2 I1
+     MOVE "an unknown sampling fact gives 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§4 Terrain particles: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§4 `BlockMarker` and its emission: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§4 Terrain particles: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§4 `BlockMarker` and its emission: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

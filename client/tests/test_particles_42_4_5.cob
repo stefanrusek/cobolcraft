@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 5 (`BlockMarker` and its emission): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 5 (`FallingDustParticle`): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -272,18 +272,27 @@
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = I2
      PERFORM ASSERT-NUMBER
+     MOVE -5 TO PC-AGE
+     MOVE 100 TO PC-LIFETIME
+     MOVE 0.1 TO PC-QUAD-SIZE
+     MOVE 0 TO W7
+     CALL "P4-GROW-SIZE" USING PCL W7 W8
+     MOVE "grow-in clamps a negative factor to 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W8) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§5 `BlockMarker` and its emission: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§5 `FallingDustParticle`: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§5 `BlockMarker` and its emission: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§5 `FallingDustParticle`: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

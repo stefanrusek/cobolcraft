@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 8 (Item break particles): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 8 (Falling leaves): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -297,18 +297,30 @@
      MOVE -1 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-ARGB
      PERFORM ASSERT-NUMBER
+     MOVE "red_poplar_leaves" TO WS-NAME8
+     CALL "P4-LEAF-CHANCE" USING WS-NAME8 W1 I2 WS-ARGB I3
+     MOVE "red poplar emits its own particle (43)" TO WS-NAME
+     MOVE 43 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I2
+     PERFORM ASSERT-NUMBER
+     MOVE "orange_poplar_leaves" TO WS-NAME8
+     CALL "P4-LEAF-CHANCE" USING WS-NAME8 W1 I2 WS-ARGB I3
+     MOVE "orange poplar emits its own particle (44)" TO WS-NAME
+     MOVE 44 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I2
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§8 Item break particles: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§8 Falling leaves: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§8 Item break particles: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§8 Falling leaves: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

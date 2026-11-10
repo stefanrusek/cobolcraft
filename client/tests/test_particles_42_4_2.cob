@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 2 (Conventions used in this part): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 2 (The 33 types of this part): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -174,18 +174,24 @@
      MOVE 250000 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W2) * 100000 + 0.5)
      PERFORM ASSERT-NUMBER
+     MOVE 34 TO I2
+     CALL "P4-TYPE-LIST" USING I2 T-ID
+     MOVE "a row out of range gives id 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = T-ID
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§2 Conventions used in this part: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§2 The 33 types of this part: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§2 Conventions used in this part: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§2 The 33 types of this part: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

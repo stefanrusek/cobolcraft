@@ -1,4 +1,4 @@
-*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 3 (The 33 types of this part): the rules, table rows,
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 3 (Terrain particles): the rules, table rows,
 *> formulas and worked cases of the section with the document's numbers; every float case compares
 *> the value times 100000 rounded. Draws are injected through the draw tables.
  IDENTIFICATION DIVISION.
@@ -393,18 +393,49 @@
      MOVE 50000 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((W4) * 100000 + 0.5)
      PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-B(1)
+     MOVE 0 TO WS-B(2)
+     MOVE 0 TO WS-B(3)
+     MOVE 2 TO WS-B(4)
+     MOVE 0.6 TO WS-B(5)
+     MOVE 0.3 TO WS-B(6)
+     CALL "P4-BREAK-COUNT" USING WS-BOX I1 WS-NX WS-NY WS-NZ
+     MOVE "3.6 an extent above 1 counts as 1 (nx = 4)" TO WS-NAME
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-NX
+     PERFORM ASSERT-NUMBER
+     MOVE "3.6 an extent of 0.6 gives ceil(2.4) = 3" TO WS-NAME
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-NY
+     PERFORM ASSERT-NUMBER
+     MOVE "3.6 total 4 x 3 x 2" TO WS-NAME
+     MOVE 24 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = I1
+     PERFORM ASSERT-NUMBER
+     MOVE 3 TO WS-FACE
+     CALL "P4-CRACK-POS" USING WS-P WS-BOX WS-FACE WS-U WS-POS
+     MOVE "3.7 SOUTH face: z = P.z + maxZ + 0.1" TO WS-NAME
+     MOVE -260000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(3)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 5 TO WS-FACE
+     CALL "P4-CRACK-POS" USING WS-P WS-BOX WS-FACE WS-U WS-POS
+     MOVE "3.7 EAST face: x = P.x + maxX + 0.1" TO WS-NAME
+     MOVE 1210000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-O(1)) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
      STOP RUN.
 
  ASSERT-NUMBER.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§3 The 33 types of this part: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§3 Terrain particles: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  ASSERT-TEXT.
      MOVE SPACES TO TL-CASE
-     STRING "acceptance US12 42-4§3 The 33 types of this part: " FUNCTION TRIM(WS-NAME)
+     STRING "acceptance US12 42-4§3 Terrain particles: " FUNCTION TRIM(WS-NAME)
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
