@@ -11,7 +11,7 @@
        10 CL-OFFSET         BINARY-DOUBLE.
 *> The memo of CLIMATE-BIOME-AT (core/src/climate.cob): the biome of a quart cell is read from the six router functions and the
 *> point table once, until the seed (DENSITY-SETUP) or the points (CLIMATE-POINTS-RESET, CLIMATE-POINT-ADD) change. Direct mapped:
-*> the entry of a cell holds its key and its answer, valid while its CM-STAMP is the generation CM-GEN (a reset raises the generation).
+*> the entry of a cell holds its key and its answer, valid while its CM-STAMP is the generation CM-GEN plus 1 (a reset raises the generation; a never written entry holds 0).
  78 CM-SIZE               VALUE 32768.
  01 CL-MEMO EXTERNAL.
     05 CM-GEN               BINARY-LONG.

@@ -244,15 +244,7 @@
  COPY DENSITY.
  01 DG-GRID BASED.
  COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
- 01 WS-FRACS.
-    05 WS-FRAC-ENTRY OCCURS 4096 TIMES.
-       10 WS-FRAC-OK       PIC 9 VALUE 0.
-       10 WS-FRAC          FLOAT-LONG.
  LOCAL-STORAGE SECTION.
- 01 LS-FR-R                BINARY-LONG.
- 01 LS-FR-C                BINARY-LONG.
- 01 LS-FR-I                BINARY-LONG.
- 01 LS-FR-V                FLOAT-LONG.
  01 LS-SLOT                BINARY-LONG.
  01 LS-GI                  BINARY-LONG.
  01 LS-RX                  BINARY-LONG.
@@ -311,18 +303,9 @@
      COMPUTE LS-Y0 = L-Y - LS-RY
      COMPUTE LS-Z0 = L-Z - LS-RZ
 *>   fractions: (float) remainder / (float) cell size, float32
-     MOVE LS-RX TO LS-FR-R
-     MOVE LS-CX TO LS-FR-C
-     PERFORM FRACTION
-     MOVE LS-FR-V TO LS-FX
-     MOVE LS-RY TO LS-FR-R
-     MOVE LS-CY TO LS-FR-C
-     PERFORM FRACTION
-     MOVE LS-FR-V TO LS-FY
-     MOVE LS-RZ TO LS-FR-R
-     MOVE LS-CX TO LS-FR-C
-     PERFORM FRACTION
-     MOVE LS-FR-V TO LS-FZ
+     CALL "DENSITY-FRACTION" USING LS-RX LS-CX LS-FX
+     CALL "DENSITY-FRACTION" USING LS-RY LS-CY LS-FY
+     CALL "DENSITY-FRACTION" USING LS-RZ LS-CX LS-FZ
 *>   corners 000 100 010 110 001 101 011 111
      PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
          COMPUTE LS-Q = LS-I / 2
@@ -339,19 +322,38 @@
      END-PERFORM
      CALL "NOISE-TRILERP" USING LS-FX LS-FY LS-FZ LS-G L-RESULT
      GOBACK.
-
-*> (float) remainder / (float) cell size in float32 (two conversions and one division), kept in a table of the remainders 0 to 63
-*> of the cell sizes 1 to 64 (the sizes of the worlds are 1, 2, 4 and 8) and computed once per pair
- FRACTION.
-     COMPUTE LS-FR-I = (LS-FR-C - 1) * 64 + LS-FR-R + 1
-     IF WS-FRAC-OK(LS-FR-I) = 0
-         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE LS-FR-R LS-A
-         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE LS-FR-C LS-B
-         CALL "DENSITY-F32" USING LS-OP-DIV LS-A LS-B WS-FRAC(LS-FR-I)
-         MOVE 1 TO WS-FRAC-OK(LS-FR-I)
-     END-IF
-     MOVE WS-FRAC(LS-FR-I) TO LS-FR-V.
  END PROGRAM DENSITY-INTERPOLATED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DENSITY-FRACTION.
+*> USING remainder (BINARY-LONG, 0 to 63), cell size (BINARY-LONG, 1 to 64), result out (FLOAT-LONG): (float) remainder / (float) cell size
+*> in float32 (two conversions and one division), kept in a table of the pairs (the cell sizes of the worlds are 1, 2, 4 and 8) and
+*> computed once per pair.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OP-DIV              BINARY-LONG VALUE 4.
+ 01 WS-FRACS.
+    05 WS-FRAC-ENTRY OCCURS 4096 TIMES.
+       10 WS-FRAC-OK       PIC 9 VALUE 0.
+       10 WS-FRAC          FLOAT-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-R                    BINARY-LONG.
+ 01 L-C                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-R L-C L-RESULT.
+     COMPUTE WS-I = (L-C - 1) * 64 + L-R + 1
+     IF WS-FRAC-OK(WS-I) = 0
+         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE L-R WS-A
+         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE L-C WS-B
+         CALL "DENSITY-F32" USING WS-OP-DIV WS-A WS-B WS-FRAC(WS-I)
+         MOVE 1 TO WS-FRAC-OK(WS-I)
+     END-IF
+     MOVE WS-FRAC(WS-I) TO L-RESULT
+     GOBACK.
+ END PROGRAM DENSITY-FRACTION.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-BLENDED.
