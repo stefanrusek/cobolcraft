@@ -9,7 +9,9 @@
 *> block leave every viewer with the last one (US4 edge case).
 *>
 *> Use Item On (BLOCK-USE-ON): on a goto_pad, with either hand, nothing is placed whatever is held
-*> and, after the Block Changed Ack, travel starts (DIM-USE-PAD, core/src/dimensions.cob); otherwise
+*> and, after the Block Changed Ack, travel starts (DIM-USE-PAD, core/src/dimensions.cob); on a crafting bench
+*> block, with either hand, nothing is placed whatever is held and, after the Ack, the bench menu opens
+*> (MENU-BENCH-OPEN, core/src/menu-bench.cob); otherwise
 *> the main hand only (the off hand does nothing): with a held block item (ITEMS.cpy IT-PLACES-STATE) the
 *> block is placed in the position next to the clicked face (face 0 down, 1 up, 2 north, 3 south,
 *> 4 west, 5 east) in its default state, a cardstack with the axis of the face (up/down y,
@@ -326,6 +328,7 @@
  01 WS-PLACES              BINARY-LONG.
  01 WS-PLACED              BINARY-LONG.
  01 WS-TRAVEL              BINARY-LONG.
+ 01 WS-BENCH               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY PLAYPKT.
@@ -342,9 +345,12 @@
      MOVE IT-PLACES-STATE(WS-ITEM + 1) TO WS-PLACES
      CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      MOVE 0 TO WS-TRAVEL
+     CALL "MENU-IS-BENCH" USING WS-STATE WS-BENCH
      EVALUATE TRUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
+         WHEN WS-BENCH = 1
+             CONTINUE
          WHEN PSB-HAND NOT = 0
              CONTINUE
          WHEN WS-PLACES >= 0
@@ -356,6 +362,9 @@
      CALL "BLOCK-ACK" USING L-ID PSB-SEQUENCE
      IF WS-TRAVEL = 1
          CALL "DIM-USE-PAD" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-BENCH = 1
+         CALL "MENU-BENCH-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ
      END-IF
      IF WS-PLACED = 1 AND PL-MODE(WS-ROW) = 0
          CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE

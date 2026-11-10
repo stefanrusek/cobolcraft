@@ -1,0 +1,33 @@
+*> Menu state of the player rows (docs/protocol/40-menus-1-model-and-containers.md §3, §4; 13 §3.5; core/src/menus.cob,
+*> menu-inventory.cob, menu-bench.cob); EXTERNAL, one entry per CORE-PLAYERS row (index MN-ENTRY by the player row).
+*> The 36 inventory slots stay in PL-SLOT of CORESTATE; the rest of the player's container (armor and off-hand,
+*> container slots 36 to 40: boots, leggings, chestplate, helmet, off-hand), the crafting grids and the result slot are
+*> here. MN-WINDOW is the container id of the open menu (0 = the inventory menu), MN-TYPE its menu type id of the
+*> registry (12 crafting; 0 for the inventory menu), MN-COUNTER the last container id given (1 to 100 cycling),
+*> MN-STATE-ID the state id of an open menu other than 0 (the state id of menu 0 is PL-STATE-ID). MN-BENCH-* is the
+*> block the bench menu was opened at (its position and dimension row).
+ 01 CORE-MENUS EXTERNAL.
+    05 MN-ENTRY OCCURS 64 TIMES.
+       10 MN-EQUIP OCCURS 5 TIMES.
+          15 MN-EQUIP-ITEM   BINARY-LONG.
+          15 MN-EQUIP-COUNT  BINARY-LONG.
+       10 MN-IGRID OCCURS 4 TIMES.                   *> 2 x 2 grid of the inventory menu, row-major
+          15 MN-IGRID-ITEM   BINARY-LONG.
+          15 MN-IGRID-COUNT  BINARY-LONG.
+       10 MN-BGRID OCCURS 9 TIMES.                   *> 3 x 3 grid of the crafting bench menu, row-major
+          15 MN-BGRID-ITEM   BINARY-LONG.
+          15 MN-BGRID-COUNT  BINARY-LONG.
+       10 MN-RESULT-ITEM     BINARY-LONG.
+       10 MN-RESULT-COUNT    BINARY-LONG.
+       10 MN-WINDOW          BINARY-LONG.
+       10 MN-TYPE            BINARY-LONG.
+       10 MN-COUNTER         BINARY-LONG.
+       10 MN-STATE-ID        BINARY-LONG.
+       10 MN-BENCH-DIM       BINARY-LONG.
+       10 MN-BENCH-X         BINARY-LONG.
+       10 MN-BENCH-Y         BINARY-LONG.
+       10 MN-BENCH-Z         BINARY-LONG.
+       10 MN-DRAG-ACTIVE     PIC 9.
+       10 MN-DRAG-TYPE       BINARY-LONG.
+       10 MN-DRAG-COUNT      BINARY-LONG.
+       10 MN-DRAG-SLOT       BINARY-LONG OCCURS 46 TIMES.

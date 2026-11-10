@@ -126,7 +126,7 @@
      PERFORM ADD-SLOT
      MOVE 5 TO WS-ENTITY
      PERFORM ADD-ITEM
-     MOVE "128(5)x6 127(5,3,10) 20(0=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
+     MOVE "128(5)x6 127(5,3,10) 20(36=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
          TO TL-EXPECTED
      PERFORM CHECK
 

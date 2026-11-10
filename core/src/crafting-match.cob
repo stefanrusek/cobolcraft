@@ -23,6 +23,8 @@
 *>     result item out (BINARY-LONG), result count out (BINARY-LONG)
 *>   CRAFT-TAKE USING width, height, items (table of 9), counts (table of 9): one item of each non-empty slot is
 *>     used up (an emptied slot gets item 0)
+*>   CRAFT-GRID-TAKE USING player row: CRAFT-TAKE over the grid of the player's current menu (2 x 2 of the inventory
+*>     menu, 3 x 3 of the bench menu; CMENU.cpy); the result slot is left to MENU-CRAFT-UPDATE (menu-inventory.cob)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CRAFT-ING-TEST.
@@ -311,3 +313,49 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CRAFT-TAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CRAFT-GRID-TAKE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-SIZE-H              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ITEMS.
+    05 WS-ITEM             BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-COUNTS.
+    05 WS-COUNT            BINARY-LONG OCCURS 9 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE 0 TO WS-ITEM(WS-I) WS-COUNT(WS-I)
+     END-PERFORM
+     IF MN-WINDOW(L-ROW) = 0
+         MOVE 2 TO WS-SIZE WS-SIZE-H
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE MN-IGRID-ITEM(L-ROW, WS-I) TO WS-ITEM(WS-I)
+             MOVE MN-IGRID-COUNT(L-ROW, WS-I) TO WS-COUNT(WS-I)
+         END-PERFORM
+     ELSE
+         MOVE 3 TO WS-SIZE WS-SIZE-H
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+             MOVE MN-BGRID-ITEM(L-ROW, WS-I) TO WS-ITEM(WS-I)
+             MOVE MN-BGRID-COUNT(L-ROW, WS-I) TO WS-COUNT(WS-I)
+         END-PERFORM
+     END-IF
+     CALL "CRAFT-TAKE" USING WS-SIZE WS-SIZE-H WS-ITEMS WS-COUNTS
+     IF MN-WINDOW(L-ROW) = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE WS-ITEM(WS-I) TO MN-IGRID-ITEM(L-ROW, WS-I)
+             MOVE WS-COUNT(WS-I) TO MN-IGRID-COUNT(L-ROW, WS-I)
+         END-PERFORM
+     ELSE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+             MOVE WS-ITEM(WS-I) TO MN-BGRID-ITEM(L-ROW, WS-I)
+             MOVE WS-COUNT(WS-I) TO MN-BGRID-COUNT(L-ROW, WS-I)
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM CRAFT-GRID-TAKE.

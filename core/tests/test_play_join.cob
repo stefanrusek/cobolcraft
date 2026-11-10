@@ -183,9 +183,9 @@
      PERFORM SAME-AS-FIXTURE
 
      MOVE "test play join: the inventory is Container Set Content equal to "
-         & "play-s2c-12-container-set-content-empty.hex (state id 1, 36 empty slots)" TO TL-CASE
+         & "play-s2c-12-container-set-content-empty-46.hex (state id 1, 46 empty slots)" TO TL-CASE
      MOVE 18 TO WS-WANTED
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-empty.hex" TO WS-PATH
+     MOVE "core/tests/fixtures/play-s2c-12-container-set-content-empty-46.hex" TO WS-PATH
      PERFORM SAME-AS-FIXTURE
 
      MOVE "test play join: Set Default Spawn Position equals "
