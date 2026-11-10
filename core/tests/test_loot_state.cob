@@ -37,6 +37,11 @@
  01 WS-VALUE               PIC X(32).
  01 WS-EXPECT              PIC X(8).
  01 WS-ORDINAL             BINARY-LONG.
+ 01 WS-SLOT-NUMBER         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-RESULT              BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21
@@ -49,5 +54,16 @@
          MOVE WS-ORDINAL TO TL-OBSERVED-N
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
+*>   No content set is open: the state has no row, so no property and no match (a state the set does not hold fails the range).
+     MOVE 1 TO WS-SLOT-NUMBER
+     MOVE 0 TO WS-NODE
+     MOVE 0 TO WS-STATE
+     MOVE "axis" TO WS-NAME
+     MOVE 1 TO WS-RESULT
+     CALL "LOOT-STATE-RANGE" USING WS-SLOT-NUMBER WS-NODE WS-STATE WS-NAME WS-RESULT
+     MOVE "test loot state a range over a state of no open set fails" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-LOOT-STATE.

@@ -111,7 +111,24 @@
              MOVE WS-TEXT(1:WS-TEXT-LENGTH) TO WS-NAME
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CTP-COUNT
                  IF CTP-NAME(WS-I) = WS-NAME
-                     PERFORM ADD-ENTRY
+*>                   Set (the name, the state's value) in the map: out of it when there, the rest closes up, then appended.
+                     MOVE 0 TO WS-HIT
+                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-COUNT
+                         IF WS-E-NAME(WS-J) = WS-NAME
+                             MOVE WS-J TO WS-HIT
+                         END-IF
+                     END-PERFORM
+                     IF WS-HIT > 0
+                         PERFORM VARYING WS-J FROM WS-HIT BY 1 UNTIL WS-J >= WS-COUNT
+                             MOVE WS-ENTRY(WS-J + 1) TO WS-ENTRY(WS-J)
+                         END-PERFORM
+                         SUBTRACT 1 FROM WS-COUNT
+                     END-IF
+                     ADD 1 TO WS-COUNT
+                     MOVE WS-NAME TO WS-E-NAME(WS-COUNT)
+                     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-NAME)) TO WS-E-NAME-LEN(WS-COUNT)
+                     MOVE CTP-VALUE(WS-I) TO WS-E-VALUE(WS-COUNT)
+                     MOVE FUNCTION LENGTH(FUNCTION TRIM(CTP-VALUE(WS-I))) TO WS-E-VALUE-LEN(WS-COUNT)
                  END-IF
              END-PERFORM
          END-IF
@@ -137,25 +154,4 @@
      COMPUTE WS-LENGTH = WS-POS - 1
      CALL "SP-SET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH
      GOBACK.
-
-*> Sets (WS-NAME, the state's value WS-I) in the map.
- ADD-ENTRY.
-     MOVE 0 TO WS-HIT
-     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-COUNT
-         IF WS-E-NAME(WS-J) = WS-NAME
-             MOVE WS-J TO WS-HIT
-         END-IF
-     END-PERFORM
-     IF WS-HIT > 0
-*>       out of the map, the rest closes up
-         PERFORM VARYING WS-J FROM WS-HIT BY 1 UNTIL WS-J >= WS-COUNT
-             MOVE WS-ENTRY(WS-J + 1) TO WS-ENTRY(WS-J)
-         END-PERFORM
-         SUBTRACT 1 FROM WS-COUNT
-     END-IF
-     ADD 1 TO WS-COUNT
-     MOVE WS-NAME TO WS-E-NAME(WS-COUNT)
-     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-NAME)) TO WS-E-NAME-LEN(WS-COUNT)
-     MOVE CTP-VALUE(WS-I) TO WS-E-VALUE(WS-COUNT)
-     MOVE FUNCTION LENGTH(FUNCTION TRIM(CTP-VALUE(WS-I))) TO WS-E-VALUE-LEN(WS-COUNT).
  END PROGRAM LOOT-COPY-STATE.
