@@ -62,21 +62,26 @@
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
  01 WS-A                   FLOAT-LONG.
+ 01 WS-A-BYTES REDEFINES WS-A PIC X(8).
  01 WS-M                   FLOAT-LONG.
  01 WS-CHECK               FLOAT-LONG.
+ 01 WS-CHECK-BYTES REDEFINES WS-CHECK PIC X(8).
  01 WS-SCALE               FLOAT-LONG.
  01 WS-R                   BINARY-DOUBLE.
  01 WS-K                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
+ 01 WS-E2                  BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-SHORT-A             FLOAT-SHORT.
+ 01 WS-SHORT-A-BYTES REDEFINES WS-SHORT-A PIC X(4).
  01 WS-SHORT-C             FLOAT-SHORT.
+ 01 WS-SHORT-C-BYTES REDEFINES WS-SHORT-C PIC X(4).
  01 WS-DIGITS              PIC X(24).
  01 WS-DIGITS-LENGTH       BINARY-LONG.
  01 WS-INT-PART            BINARY-DOUBLE.
  01 WS-FRAC-PART           BINARY-DOUBLE.
  01 WS-DIV                 BINARY-DOUBLE.
- 01 WS-EDIT                PIC -(18)9.
+ 01 WS-EDIT                PIC -(19)9.
  01 WS-FRAC-TEXT           PIC X(20).
  01 WS-FRAC-LENGTH         BINARY-LONG.
  01 WS-POS                 BINARY-LONG.
@@ -145,29 +150,28 @@
      STRING FUNCTION TRIM(WS-EDIT) "." DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-POS
      PERFORM EMIT-FRACTION.
 
-*> WS-FOUND = 1 when WS-CHECK reads back as WS-A in the type's precision (float: single precision).
+*> WS-FOUND = 1 when WS-CHECK reads back as WS-A in the type's precision (float: single precision);
+*> compared as bytes, because a floating comparison of the compiler has a tolerance.
  SAME-AS-A.
      IF L-KIND = BR-P-FLOAT
          MOVE WS-CHECK TO WS-SHORT-C
          MOVE WS-A TO WS-SHORT-A
-         IF WS-SHORT-C = WS-SHORT-A
+         IF WS-SHORT-C-BYTES = WS-SHORT-A-BYTES
              MOVE 1 TO WS-FOUND
          END-IF
      ELSE
-         IF WS-CHECK = WS-A
+         IF WS-CHECK-BYTES = WS-A-BYTES
              MOVE 1 TO WS-FOUND
          END-IF
      END-IF.
 
-*> The fraction WS-FRAC-PART of WS-K decimals, zero padded, trailing zeros dropped (one decimal kept).
+*> The fraction WS-FRAC-PART of WS-K decimals, zero padded (K is the least that reads back, so the last
+*> decimal is not 0 unless K = 1).
  EMIT-FRACTION.
      MOVE WS-FRAC-PART TO WS-EDIT
      MOVE ALL "0" TO WS-FRAC-TEXT
      MOVE FUNCTION TRIM(WS-EDIT) TO WS-FRAC-TEXT(WS-K - FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) + 1:)
      MOVE WS-K TO WS-FRAC-LENGTH
-     PERFORM UNTIL WS-FRAC-LENGTH = 1 OR WS-FRAC-TEXT(WS-FRAC-LENGTH:1) NOT = "0"
-         SUBTRACT 1 FROM WS-FRAC-LENGTH
-     END-PERFORM
      STRING WS-FRAC-TEXT(1:WS-FRAC-LENGTH) DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-POS.
 
 *> d.ddd E exponent: the exponent e = floor(log10 a), the mantissa m = a / 10^e, then as the plain form.
@@ -178,16 +182,10 @@
          COMPUTE WS-E = FUNCTION INTEGER(FUNCTION LOG10(WS-A))
          COMPUTE WS-SCALE = 10 ** WS-E
          COMPUTE WS-M = WS-A / WS-SCALE
-         IF WS-M >= 10
-             COMPUTE WS-M = WS-M / 10
-             ADD 1 TO WS-E
-             COMPUTE WS-SCALE = 10 ** WS-E
-         END-IF
-         IF WS-M < 1
-             COMPUTE WS-M = WS-M * 10
-             SUBTRACT 1 FROM WS-E
-             COMPUTE WS-SCALE = 10 ** WS-E
-         END-IF
+         COMPUTE WS-E2 = FUNCTION INTEGER(FUNCTION LOG10(WS-M))
+         ADD WS-E2 TO WS-E
+         COMPUTE WS-SCALE = 10 ** WS-E
+         COMPUTE WS-M = WS-A / WS-SCALE
          MOVE 0 TO WS-FOUND
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16 OR WS-FOUND = 1
              COMPUTE WS-R = FUNCTION INTEGER(WS-M * 10 ** WS-K + 0.5)
@@ -197,6 +195,11 @@
          SUBTRACT 1 FROM WS-K
          COMPUTE WS-DIV = 10 ** WS-K
          DIVIDE WS-R BY WS-DIV GIVING WS-INT-PART REMAINDER WS-FRAC-PART
+         IF WS-INT-PART >= 10
+             MOVE 1 TO WS-INT-PART
+             MOVE 0 TO WS-FRAC-PART
+             ADD 1 TO WS-E
+         END-IF
          MOVE WS-INT-PART TO WS-EDIT
          STRING FUNCTION TRIM(WS-EDIT) "." DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-POS
          PERFORM EMIT-FRACTION
@@ -295,6 +298,9 @@
      MOVE 1 TO WS-N-ARGS
      MOVE WS-RUN(1:WS-RUN-LENGTH) TO WS-A1
      MOVE WS-RUN-LENGTH TO WS-L1
+     IF WS-L1 > 64
+         MOVE 64 TO WS-L1
+     END-IF
      PERFORM RAISE-NOW.
 
 *> ---- the character classes of 15a §1.2 --------------------------------------------------------
@@ -409,6 +415,9 @@
                  MOVE 1 TO WS-N-ARGS
                  MOVE WS-STR(1:WS-STR-LENGTH) TO WS-A1
                  MOVE WS-STR-LENGTH TO WS-L1
+                 IF WS-L1 > 64
+                     MOVE 64 TO WS-L1
+                 END-IF
                  MOVE WS-START TO WS-RC
                  PERFORM RAISE-NOW
          END-EVALUATE
@@ -600,10 +609,11 @@
          COMPUTE WS-DOUBLE = FUNCTION NUMVAL(WS-RUN(1:WS-RUN-LENGTH))
      END-IF
      IF WS-KIND = BR-P-FLOAT AND WS-INF = 0
-         MOVE WS-DOUBLE TO WS-SHORT
-         MOVE WS-SHORT TO WS-DOUBLE
          IF WS-DOUBLE > WS-MAX-FLOAT * 1.0000000001 OR WS-DOUBLE < 0 - WS-MAX-FLOAT * 1.0000000001
              MOVE 1 TO WS-INF
+         ELSE
+             MOVE WS-DOUBLE TO WS-SHORT
+             MOVE WS-SHORT TO WS-DOUBLE
          END-IF
      END-IF
      MOVE WS-DOUBLE TO L-DOUBLE

@@ -27,7 +27,6 @@
  78 PB-TEXT-LITERAL        VALUE 1.   *> {"text": PB-TX-VALUE}
  78 PB-TEXT-TRANSLATE      VALUE 2.   *> {"translate": PB-TX-VALUE, "with": [PB-TX-ARG...]}
  78 PB-TEXT-MAX-ARGS       VALUE 8.
- 78 PB-TEXT-MAX-EXTRA      VALUE 8.
  01 PB-TEXT.
     05 PB-TX-KIND         PIC 9.
     05 PB-TX-LENGTH       BINARY-LONG.   *> bytes of PB-TX-VALUE used
@@ -36,26 +35,28 @@
     05 PB-TX-ARG          OCCURS 8 TIMES.
        10 PB-TX-ARG-LENGTH BINARY-LONG.
        10 PB-TX-ARG-VALUE  PIC X(1024).
-*> Style (15 §4.6, §10.3, §10.4 command feedback): honoured by PB-PUT-TEXT only when PB-TX-STYLED = 1
-*> (an INITIALIZEd PB-TEXT is unstyled). The color is a name ("red", "gray"; spaces = none), italic and
-*> underlined 1 = true (0 = unset), the click event is {action: suggest_command, command: PB-TX-CLICK}
-*> (length 0 = none), the extras are child components written as a List of Compounds in "extra":
-*> literal or translate (no arguments) with their own color, italic and underlined. PB-GET-TEXT sets
-*> PB-TX-STYLED to 1 when it read any style key and clears the fields otherwise.
-    05 PB-TX-STYLED       PIC 9.
-    05 PB-TX-COLOR        PIC X(12).
-    05 PB-TX-ITALIC       PIC 9.
-    05 PB-TX-UNDERLINED   PIC 9.
-    05 PB-TX-CLICK-LENGTH BINARY-LONG.
-    05 PB-TX-CLICK        PIC X(1024).
-    05 PB-TX-EXTRA-COUNT  BINARY-LONG.   *> 0 to PB-TEXT-MAX-EXTRA
-    05 PB-TX-EXTRA        OCCURS 8 TIMES.
-       10 PB-TXE-KIND       PIC 9.        *> PB-TEXT-LITERAL or PB-TEXT-TRANSLATE
-       10 PB-TXE-LENGTH     BINARY-LONG.
-       10 PB-TXE-VALUE      PIC X(1024).
-       10 PB-TXE-COLOR      PIC X(12).
-       10 PB-TXE-ITALIC     PIC 9.
-       10 PB-TXE-UNDERLINED PIC 9.
+
+*> Style of a text component (15 §4.6, §10.3, §10.4 command feedback), beside PB-TEXT so that PB-TEXT keeps
+*> its size: PB-PUT-STYLED-TEXT and PB-GET-STYLED-TEXT write and read it with the component. The color
+*> is a name ("red", "gray"; spaces = none), italic and underlined 1 = true (0 = unset), the click event is
+*> {action: suggest_command, command: PB-TS-CLICK} (length 0 = none), the extras are child components
+*> written as a List of Compounds in "extra": literal or translate (no arguments) with their own color,
+*> italic and underlined. An INITIALIZEd record is unstyled.
+ 78 PB-TEXT-MAX-EXTRA      VALUE 8.
+ 01 PB-TEXT-STYLE.
+    05 PB-TS-COLOR        PIC X(12).
+    05 PB-TS-ITALIC       PIC 9.
+    05 PB-TS-UNDERLINED   PIC 9.
+    05 PB-TS-CLICK-LENGTH BINARY-LONG.
+    05 PB-TS-CLICK        PIC X(1024).
+    05 PB-TS-EXTRA-COUNT  BINARY-LONG.   *> 0 to PB-TEXT-MAX-EXTRA
+    05 PB-TS-EXTRA        OCCURS 8 TIMES.
+       10 PB-TSE-KIND       PIC 9.        *> PB-TEXT-LITERAL or PB-TEXT-TRANSLATE
+       10 PB-TSE-LENGTH     BINARY-LONG.
+       10 PB-TSE-VALUE      PIC X(1024).
+       10 PB-TSE-COLOR      PIC X(12).
+       10 PB-TSE-ITALIC     PIC 9.
+       10 PB-TSE-UNDERLINED PIC 9.
 
 *> ---------------------------------------------------------------------------------------------
 *> ENTITY-METADATA entry (00 §13.1): one entry of a Set Entity Data list (UByte index, VarInt

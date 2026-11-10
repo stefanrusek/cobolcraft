@@ -52,3 +52,21 @@
     05 BR-E-ARG-LENGTH      BINARY-LONG OCCURS 2 TIMES.
     05 BR-E-ARG             PIC X(64) OCCURS 2 TIMES.
     05 BR-E-CURSOR          BINARY-LONG.
+*> Usage lines (15a §7): BR-ALL-USAGE fills one entry per full usage line; BR-SMART-USAGE one entry per
+*> usable child of the node, BR-U-NODE being that child.
+ 01 BR-USAGE EXTERNAL.
+    05 BR-U-COUNT           BINARY-LONG.
+    05 BR-U-ENTRY           OCCURS 128 TIMES.
+       10 BR-U-NODE          BINARY-LONG.
+       10 BR-U-LENGTH        BINARY-LONG.
+       10 BR-U-TEXT          PIC X(256).
+*> The suggestions of BR-SUGGEST (15a §6): the common range of the replaced text (start and length, 15a §6.5)
+*> and the entries (sorted, no duplicates).
+ 78 BR-SG-MAX              VALUE 128.
+ 01 BR-SUGGESTIONS EXTERNAL.
+    05 BR-SG-START          BINARY-LONG.
+    05 BR-SG-LENGTH         BINARY-LONG.
+    05 BR-SG-COUNT          BINARY-LONG.
+    05 BR-SG-ENTRY          OCCURS 128 TIMES.
+       10 BR-SG-TEXT-LENGTH  BINARY-LONG.
+       10 BR-SG-TEXT         PIC X(64).

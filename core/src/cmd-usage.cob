@@ -1,0 +1,291 @@
+*> Usage strings of the command framework (docs/protocol/15a-brigadier-command-library.md §7).
+*> Usage text of a node: root "", literal its name, argument <name>. Results go to BR-USAGE
+*> (core/copy/BRIGADIER.cpy).
+*>
+*> Entry points:
+*>   BR-ALL-USAGE USING node, source level, restricted (1 = hide nodes the source cannot use): the
+*>     full lines of getAllUsage (a line for the prefix of each node with a command, and for each node
+*>     with a redirect "prefix ..." to the root or "prefix -> <target usage>", the node's own usage
+*>     replacing an empty prefix; a redirected node does not descend)
+*>   BR-SMART-USAGE USING node, source level: getSmartUsage, one entry per usable child with its
+*>     smart usage ([ ] optional groups when the parent has a command, ( ) otherwise, alternatives
+*>     joined by |)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-USAGE-TEXT.
+*> USING node, text out (PIC X(64)), length out (0 for the root).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-TEXT                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-TEXT L-LENGTH.
+     MOVE SPACES TO L-TEXT
+     EVALUATE BR-N-KIND(L-NODE)
+         WHEN BR-LITERAL
+             MOVE BR-N-NAME-LENGTH(L-NODE) TO L-LENGTH
+             MOVE BR-N-NAME(L-NODE) TO L-TEXT
+         WHEN BR-ARGUMENT
+             COMPUTE L-LENGTH = BR-N-NAME-LENGTH(L-NODE) + 2
+             STRING "<" BR-N-NAME(L-NODE)(1:BR-N-NAME-LENGTH(L-NODE)) ">" DELIMITED BY SIZE
+                 INTO L-TEXT
+         WHEN OTHER
+             MOVE 0 TO L-LENGTH
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BR-USAGE-TEXT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-ALL-USAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ 01 WS-PREFIX              PIC X(256).
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-RESTRICTED           BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-LEVEL L-RESTRICTED.
+     MOVE 0 TO BR-U-COUNT
+     MOVE SPACES TO WS-PREFIX
+     CALL "BR-USAGE-WALK" USING L-NODE WS-PREFIX WS-ZERO L-LEVEL L-RESTRICTED
+     GOBACK.
+ END PROGRAM BR-ALL-USAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-USAGE-WALK RECURSIVE.
+*> USING node, prefix (PIC X(256)), prefix length, level, restricted: one node of getAllUsage (§7.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ LOCAL-STORAGE SECTION.
+ 01 LS-CHILD               BINARY-LONG.
+ 01 LS-PREFIX              PIC X(256).
+ 01 LS-LENGTH              BINARY-LONG.
+ 01 LS-TEXT                PIC X(64).
+ 01 LS-TEXT-LENGTH         BINARY-LONG.
+ 01 LS-TARGET-TEXT         PIC X(64).
+ 01 LS-TARGET-LENGTH       BINARY-LONG.
+ 01 LS-TARGET              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-PREFIX               PIC X(256).
+ 01 L-PREFIX-LENGTH        BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-RESTRICTED           BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-PREFIX L-PREFIX-LENGTH L-LEVEL L-RESTRICTED.
+     IF L-RESTRICTED = 1 AND L-LEVEL < BR-N-LEVEL(L-NODE)
+         GOBACK
+     END-IF
+     IF BR-N-COMMAND(L-NODE) > 0 AND BR-U-COUNT < 128
+         ADD 1 TO BR-U-COUNT
+         MOVE L-PREFIX-LENGTH TO BR-U-LENGTH(BR-U-COUNT)
+         MOVE L-PREFIX TO BR-U-TEXT(BR-U-COUNT)
+         MOVE 0 TO BR-U-NODE(BR-U-COUNT)
+     END-IF
+     IF BR-N-REDIRECT(L-NODE) > 0
+         PERFORM EMIT-REDIRECT
+     ELSE
+         MOVE BR-N-FIRST(L-NODE) TO LS-CHILD
+         PERFORM UNTIL LS-CHILD = 0
+             CALL "BR-USAGE-TEXT" USING LS-CHILD LS-TEXT LS-TEXT-LENGTH
+             MOVE SPACES TO LS-PREFIX
+             IF L-PREFIX-LENGTH = 0
+                 MOVE LS-TEXT(1:LS-TEXT-LENGTH) TO LS-PREFIX
+                 MOVE LS-TEXT-LENGTH TO LS-LENGTH
+             ELSE
+                 STRING L-PREFIX(1:L-PREFIX-LENGTH) " " LS-TEXT(1:LS-TEXT-LENGTH)
+                     DELIMITED BY SIZE INTO LS-PREFIX
+                 COMPUTE LS-LENGTH = L-PREFIX-LENGTH + 1 + LS-TEXT-LENGTH
+             END-IF
+             CALL "BR-USAGE-WALK" USING LS-CHILD LS-PREFIX LS-LENGTH L-LEVEL L-RESTRICTED
+             MOVE BR-N-NEXT(LS-CHILD) TO LS-CHILD
+         END-PERFORM
+     END-IF
+     GOBACK.
+
+*> PREFIX REDIR: the node's own usage text replaces an empty prefix.
+ EMIT-REDIRECT.
+     IF BR-U-COUNT < 128
+         ADD 1 TO BR-U-COUNT
+         MOVE 0 TO BR-U-NODE(BR-U-COUNT)
+         MOVE SPACES TO BR-U-TEXT(BR-U-COUNT)
+         MOVE L-PREFIX TO LS-PREFIX
+         MOVE L-PREFIX-LENGTH TO LS-LENGTH
+         IF LS-LENGTH = 0
+             CALL "BR-USAGE-TEXT" USING L-NODE LS-TEXT LS-TEXT-LENGTH
+             MOVE LS-TEXT TO LS-PREFIX
+             MOVE LS-TEXT-LENGTH TO LS-LENGTH
+         END-IF
+         MOVE BR-N-REDIRECT(L-NODE) TO LS-TARGET
+         IF LS-TARGET = 1
+             STRING LS-PREFIX(1:LS-LENGTH) " ..." DELIMITED BY SIZE INTO BR-U-TEXT(BR-U-COUNT)
+             COMPUTE BR-U-LENGTH(BR-U-COUNT) = LS-LENGTH + 4
+         ELSE
+             CALL "BR-USAGE-TEXT" USING LS-TARGET LS-TARGET-TEXT LS-TARGET-LENGTH
+             STRING LS-PREFIX(1:LS-LENGTH) " -> " LS-TARGET-TEXT(1:LS-TARGET-LENGTH)
+                 DELIMITED BY SIZE INTO BR-U-TEXT(BR-U-COUNT)
+             COMPUTE BR-U-LENGTH(BR-U-COUNT) = LS-LENGTH + 4 + LS-TARGET-LENGTH
+         END-IF
+     END-IF.
+ END PROGRAM BR-USAGE-WALK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SMART-USAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ 01 WS-CHILD               BINARY-LONG.
+ 01 WS-OPTIONAL            BINARY-LONG.
+ 01 WS-DEEP                BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-LEVEL.
+     MOVE 0 TO BR-U-COUNT WS-DEEP
+     MOVE 0 TO WS-OPTIONAL
+     IF BR-N-COMMAND(L-NODE) > 0
+         MOVE 1 TO WS-OPTIONAL
+     END-IF
+     MOVE BR-N-FIRST(L-NODE) TO WS-CHILD
+     PERFORM UNTIL WS-CHILD = 0
+         CALL "BR-SMART-NODE" USING WS-CHILD WS-OPTIONAL WS-DEEP L-LEVEL WS-TEXT WS-LENGTH
+         IF WS-LENGTH >= 0 AND BR-U-COUNT < 128
+             ADD 1 TO BR-U-COUNT
+             MOVE WS-CHILD TO BR-U-NODE(BR-U-COUNT)
+             MOVE WS-LENGTH TO BR-U-LENGTH(BR-U-COUNT)
+             MOVE WS-TEXT TO BR-U-TEXT(BR-U-COUNT)
+         END-IF
+         MOVE BR-N-NEXT(WS-CHILD) TO WS-CHILD
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BR-SMART-USAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SMART-NODE RECURSIVE.
+*> USING node, optional (0 or 1), deep (0 or 1), level, text out (PIC X(256)), length out (-1 = none:
+*> the source cannot use the node): smart(n, optional, deep) of 15a §7.2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ LOCAL-STORAGE SECTION.
+ 01 LS-SELF                PIC X(256).
+ 01 LS-SELF-LENGTH         BINARY-LONG.
+ 01 LS-PART                PIC X(64).
+ 01 LS-PART-LENGTH         BINARY-LONG.
+ 01 LS-KID                 BINARY-LONG.
+ 01 LS-KIDS                BINARY-LONG.
+ 01 LS-ONLY                BINARY-LONG.
+ 01 LS-CHILD-OPTIONAL      BINARY-LONG.
+ 01 LS-CHILD-DEEP          BINARY-LONG.
+ 01 LS-NO                  BINARY-LONG VALUE 0.
+ 01 LS-YES                 BINARY-LONG VALUE 1.
+ 01 LS-SUB                 PIC X(256).
+ 01 LS-SUB-LENGTH          BINARY-LONG.
+ 01 LS-FIRST-SUB           PIC X(256).
+ 01 LS-FIRST-LENGTH        BINARY-LONG.
+ 01 LS-DISTINCT            BINARY-LONG.
+ 01 LS-LIST                PIC X(256).
+ 01 LS-LIST-LENGTH         BINARY-LONG.
+ 01 LS-OPEN                PIC X.
+ 01 LS-CLOSE               PIC X.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-OPTIONAL             BINARY-LONG.
+ 01 L-DEEP                 BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-OPTIONAL L-DEEP L-LEVEL L-TEXT L-LENGTH.
+     MOVE SPACES TO L-TEXT
+     IF L-LEVEL < BR-N-LEVEL(L-NODE)
+         MOVE -1 TO L-LENGTH
+         GOBACK
+     END-IF
+     CALL "BR-USAGE-TEXT" USING L-NODE LS-PART LS-PART-LENGTH
+     MOVE SPACES TO LS-SELF
+     IF L-OPTIONAL = 1
+         STRING "[" LS-PART(1:LS-PART-LENGTH) "]" DELIMITED BY SIZE INTO LS-SELF
+         COMPUTE LS-SELF-LENGTH = LS-PART-LENGTH + 2
+     ELSE
+         MOVE LS-PART(1:LS-PART-LENGTH) TO LS-SELF
+         MOVE LS-PART-LENGTH TO LS-SELF-LENGTH
+     END-IF
+     MOVE 0 TO LS-CHILD-OPTIONAL
+     MOVE "(" TO LS-OPEN
+     MOVE ")" TO LS-CLOSE
+     IF BR-N-COMMAND(L-NODE) > 0
+         MOVE 1 TO LS-CHILD-OPTIONAL
+         MOVE "[" TO LS-OPEN
+         MOVE "]" TO LS-CLOSE
+     END-IF
+     MOVE LS-SELF TO L-TEXT
+     MOVE LS-SELF-LENGTH TO L-LENGTH
+     IF L-DEEP = 1
+         GOBACK
+     END-IF
+     IF BR-N-REDIRECT(L-NODE) > 0
+         IF BR-N-REDIRECT(L-NODE) = 1
+             STRING LS-SELF(1:LS-SELF-LENGTH) " ..." DELIMITED BY SIZE INTO L-TEXT
+             COMPUTE L-LENGTH = LS-SELF-LENGTH + 4
+         ELSE
+             MOVE BR-N-REDIRECT(L-NODE) TO LS-KID
+             CALL "BR-USAGE-TEXT" USING LS-KID LS-PART LS-PART-LENGTH
+             STRING LS-SELF(1:LS-SELF-LENGTH) " -> " LS-PART(1:LS-PART-LENGTH)
+                 DELIMITED BY SIZE INTO L-TEXT
+             COMPUTE L-LENGTH = LS-SELF-LENGTH + 4 + LS-PART-LENGTH
+         END-IF
+         GOBACK
+     END-IF
+     PERFORM COUNT-KIDS
+     IF LS-KIDS = 1
+         MOVE LS-CHILD-OPTIONAL TO LS-CHILD-DEEP
+         CALL "BR-SMART-NODE" USING LS-ONLY LS-CHILD-OPTIONAL LS-CHILD-DEEP L-LEVEL LS-SUB LS-SUB-LENGTH
+         IF LS-SUB-LENGTH >= 0
+             STRING LS-SELF(1:LS-SELF-LENGTH) " " LS-SUB(1:LS-SUB-LENGTH) DELIMITED BY SIZE INTO L-TEXT
+             COMPUTE L-LENGTH = LS-SELF-LENGTH + 1 + LS-SUB-LENGTH
+         END-IF
+     END-IF
+     IF LS-KIDS >= 2
+         PERFORM JOIN-KIDS
+         STRING LS-SELF(1:LS-SELF-LENGTH) " " LS-OPEN LS-LIST(1:LS-LIST-LENGTH) LS-CLOSE
+             DELIMITED BY SIZE INTO L-TEXT
+         COMPUTE L-LENGTH = LS-SELF-LENGTH + 3 + LS-LIST-LENGTH
+     END-IF
+     GOBACK.
+
+*> The usable children: their number and, for exactly one, the node.
+ COUNT-KIDS.
+     MOVE 0 TO LS-KIDS
+     MOVE BR-N-FIRST(L-NODE) TO LS-KID
+     PERFORM UNTIL LS-KID = 0
+         IF L-LEVEL >= BR-N-LEVEL(LS-KID)
+             ADD 1 TO LS-KIDS
+             MOVE LS-KID TO LS-ONLY
+         END-IF
+         MOVE BR-N-NEXT(LS-KID) TO LS-KID
+     END-PERFORM.
+
+*> The plain usage texts of the usable children joined by |.
+ JOIN-KIDS.
+     MOVE 0 TO LS-LIST-LENGTH
+     MOVE SPACES TO LS-LIST
+     MOVE BR-N-FIRST(L-NODE) TO LS-KID
+     PERFORM UNTIL LS-KID = 0
+         IF L-LEVEL >= BR-N-LEVEL(LS-KID)
+             CALL "BR-USAGE-TEXT" USING LS-KID LS-PART LS-PART-LENGTH
+             IF LS-LIST-LENGTH > 0
+                 ADD 1 TO LS-LIST-LENGTH
+                 MOVE "|" TO LS-LIST(LS-LIST-LENGTH:1)
+             END-IF
+             MOVE LS-PART(1:LS-PART-LENGTH) TO LS-LIST(LS-LIST-LENGTH + 1:LS-PART-LENGTH)
+             ADD LS-PART-LENGTH TO LS-LIST-LENGTH
+         END-IF
+         MOVE BR-N-NEXT(LS-KID) TO LS-KID
+     END-PERFORM.
+ END PROGRAM BR-SMART-NODE.
