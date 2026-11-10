@@ -309,6 +309,7 @@
          MOVE L-Y TO BE-Y(L-INDEX)
          MOVE L-Z TO BE-Z(L-INDEX)
          MOVE L-TYPE TO BE-TYPE(L-INDEX)
+         MOVE -1 TO BE-COOLDOWN(L-INDEX)
      END-IF
      GOBACK.
  END PROGRAM BE-CREATE.
@@ -411,7 +412,7 @@
  01 L-FORM                 BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX L-FORM PB-BUFFER.
      MOVE BE-TYPE(L-INDEX) TO WS-TYPE
-     IF WS-TYPE = 1 OR WS-TYPE = 2 OR WS-TYPE = 24 OR WS-TYPE = 26
+     IF WS-TYPE = 1 OR WS-TYPE = 2 OR WS-TYPE = 24 OR WS-TYPE = 26 OR WS-TYPE = 5 OR WS-TYPE = 6 OR WS-TYPE = 18
          IF BE-LOCK-LENGTH(L-INDEX) > 0
              MOVE "lock" TO WN MOVE 4 TO WL
              CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
@@ -437,7 +438,7 @@
                      ADD 1 TO WS-N
                  END-IF
              END-PERFORM
-             IF WS-N > 0 OR WS-TYPE NOT = 24
+             IF WS-N > 0 OR WS-TYPE = 1 OR WS-TYPE = 2 OR WS-TYPE = 26
                  MOVE "Items" TO WN MOVE 5 TO WL
                  IF WS-N = 0
                      CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-NONE WS-N
@@ -458,6 +459,10 @@
                  END-PERFORM
              END-IF
          END-IF
+     END-IF
+     IF WS-TYPE = 18
+         MOVE "TransferCooldown" TO WN MOVE 16 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL BE-COOLDOWN(L-INDEX)
      END-IF
      IF L-FORM NOT = 2
          MOVE "components" TO WN MOVE 10 TO WL
@@ -508,6 +513,7 @@
  01 WS-CAP48               BINARY-LONG VALUE 48.
  01 WS-CAP64               BINARY-LONG VALUE 64.
  01 WS-CONTAINER           BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
  01 WS-TEMP.
     05 WS-T-SLOT OCCURS 27 TIMES.
        10 WS-T-ITEM        BINARY-LONG.
@@ -519,9 +525,11 @@
  PROCEDURE DIVISION USING L-INDEX PB-BUFFER.
      MOVE BE-TYPE(L-INDEX) TO WS-S
      MOVE 0 TO WS-CONTAINER
-     IF WS-S = 1 OR WS-S = 2 OR WS-S = 24 OR WS-S = 26
+     IF WS-S = 1 OR WS-S = 2 OR WS-S = 24 OR WS-S = 26 OR WS-S = 5 OR WS-S = 6 OR WS-S = 18
          MOVE 1 TO WS-CONTAINER
      END-IF
+     CALL "BE-CONTAINER-SIZE" USING WS-S WS-SIZE
+     MOVE -1 TO BE-COOLDOWN(L-INDEX)
      MOVE SPACES TO BE-LOCK(L-INDEX) BE-NAME(L-INDEX) BE-LOOT(L-INDEX)
      MOVE 0 TO BE-LOCK-LENGTH(L-INDEX) BE-NAME-LENGTH(L-INDEX) BE-LOOT-LENGTH(L-INDEX) BE-SEED(L-INDEX)
      INITIALIZE WS-TEMP
@@ -556,13 +564,15 @@
                  END-IF
              WHEN WS-CONTAINER = 1 AND WN = "LootTableSeed" AND WS-TYPE = 4
                  CALL "PB-GET-LONG" USING PB-BUFFER BE-SEED(L-INDEX)
+             WHEN BE-TYPE(L-INDEX) = 18 AND WN = "TransferCooldown" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER BE-COOLDOWN(L-INDEX)
              WHEN WS-CONTAINER = 1 AND WN = "Items" AND WS-TYPE = 9
                  CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ET WS-COUNT
                  PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
                      CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-ICOUNT WS-KP
                      CALL "KX-PATCH-TAKE" USING WS-KP WS-HANDLE
                      CALL "KX-PATCH-FREE" USING WS-KP
-                     IF WS-SLOT >= 0 AND WS-SLOT <= 26 AND WS-ITEM > 0 AND WS-ICOUNT > 0
+                     IF WS-SLOT >= 0 AND WS-SLOT < WS-SIZE AND WS-ITEM > 0 AND WS-ICOUNT > 0
                          COMPUTE WS-S = WS-SLOT + 1
                          MOVE WS-ITEM TO WS-T-ITEM(WS-S)
                          MOVE WS-ICOUNT TO WS-T-COUNT(WS-S)
@@ -1264,9 +1274,9 @@
  01 L-SIGNAL               BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX L-SECOND L-SIGNAL.
      MOVE 0 TO WS-SUM L-SIGNAL
-     MOVE 27 TO WS-SIZE
+     CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) WS-SIZE
      IF L-SECOND > 0
-         MOVE 54 TO WS-SIZE
+         COMPUTE WS-SIZE = WS-SIZE * 2
      END-IF
      PERFORM VARYING WS-HALF FROM 1 BY 1 UNTIL WS-HALF > 2
          MOVE L-INDEX TO WS-ENTRY
@@ -1311,6 +1321,22 @@
              MOVE "container.shulkerBox" TO L-KEY
          WHEN 26
              MOVE "container.barrel" TO L-KEY
+         WHEN 0
+             MOVE "container.furnace" TO L-KEY
+         WHEN 5
+             MOVE "container.dispenser" TO L-KEY
+         WHEN 6
+             MOVE "container.dropper" TO L-KEY
+         WHEN 12
+             MOVE "container.brewing" TO L-KEY
+         WHEN 18
+             MOVE "container.hopper" TO L-KEY
+         WHEN 27
+             MOVE "container.smoker" TO L-KEY
+         WHEN 28
+             MOVE "container.blast_furnace" TO L-KEY
+         WHEN 42
+             MOVE "container.crafter" TO L-KEY
      END-EVALUATE
      MOVE FUNCTION LENGTH(FUNCTION TRIM(L-KEY)) TO L-LENGTH
      IF L-KEY = SPACES
@@ -1327,9 +1353,18 @@
  01 L-SIZE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-TYPE L-SIZE.
      MOVE 0 TO L-SIZE
-     IF L-TYPE = 1 OR L-TYPE = 2 OR L-TYPE = 3 OR L-TYPE = 24 OR L-TYPE = 26
-         MOVE 27 TO L-SIZE
-     END-IF
+     EVALUATE L-TYPE
+         WHEN 1 WHEN 2 WHEN 3 WHEN 24 WHEN 26
+             MOVE 27 TO L-SIZE
+         WHEN 0 WHEN 27 WHEN 28
+             MOVE 3 TO L-SIZE
+         WHEN 12 WHEN 18
+             MOVE 5 TO L-SIZE
+         WHEN 5 WHEN 6 WHEN 42
+             MOVE 9 TO L-SIZE
+         WHEN 38
+             MOVE 6 TO L-SIZE
+     END-EVALUATE
      GOBACK.
  END PROGRAM BE-CONTAINER-SIZE.
 

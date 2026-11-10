@@ -1,7 +1,7 @@
 *> The container menus of the chest family in the live window of a player (docs/protocol/40-menus-1-model-and-containers.md sections 3 to 8,
 *> 31-1 sections 8 to 13; US12): chest, trapped chest, double chest (generic_9x3 and generic_9x6), ender chest, barrel (generic_9x3) and
 *> shulker box (shulker_box), over the block entities of CORE-BE. A container menu is the player's menu when MN-WINDOW > 0 and
-*> MN-CSIZE > 0 (CMENU.cpy): menu slots 0 to MN-CSIZE - 1 are the container's, then the 27 main inventory slots and the 9 hotbar slots
+*> MN-CSIZE > 0 (CMENU.cpy; also the hopper menu with 5 slots, type 16, and the dispenser and dropper menu with 9, type 6, which count no openers): menu slots 0 to MN-CSIZE - 1 are the container's, then the 27 main inventory slots and the 9 hotbar slots
 *> (the slot table M2 of 40-1 section 7.2 and 8.2); MENU-LOCATE names a container slot with the kind 6 and the index slot + 1. A double chest
 *> is the first half's 27 slots then the second half's, the right half of the pair first (31-1 section 10.2: BE-CHEST-MERGE).
 *>
@@ -318,6 +318,14 @@
      IF WS-FAMILY = 4
          MOVE 20 TO WS-MENU-TYPE
      END-IF
+     IF WS-FAMILY = 5
+         MOVE 5 TO MN-CSIZE(WS-ROW)
+         MOVE 16 TO WS-MENU-TYPE
+     END-IF
+     IF WS-FAMILY = 6
+         MOVE 9 TO MN-CSIZE(WS-ROW)
+         MOVE 6 TO WS-MENU-TYPE
+     END-IF
      MOVE WS-MENU-TYPE TO MN-TYPE(WS-ROW)
      MOVE WS-FAMILY TO MN-CFAMILY(WS-ROW)
      MOVE WS-FIRST TO MN-CBE1(WS-ROW) MN-COPEN(WS-ROW, 1)
@@ -325,6 +333,10 @@
      IF WS-FAMILY = 2
          MOVE WS-BE TO MN-COPEN(WS-ROW, 1)
          MOVE 0 TO MN-COPEN(WS-ROW, 2)
+     END-IF
+*>   A hopper, dispenser or dropper has no opener counter.
+     IF WS-FAMILY > 4
+         MOVE 0 TO MN-COPEN(WS-ROW, 1) MN-COPEN(WS-ROW, 2)
      END-IF
      MOVE 1 TO MN-STATE-ID(WS-ROW)
      MOVE WS-DIM TO MN-BENCH-DIM(WS-ROW)
@@ -435,8 +447,17 @@
      IF WS-FAMILY NOT = MN-CFAMILY(L-ROW)
          MOVE 0 TO L-VALID
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
-         MOVE MN-COPEN(L-ROW, WS-I) TO WS-BE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE MN-CBE1(L-ROW) TO WS-BE
+             WHEN 2
+                 MOVE MN-CBE2(L-ROW) TO WS-BE
+             WHEN 3
+                 MOVE MN-COPEN(L-ROW, 1) TO WS-BE
+             WHEN OTHER
+                 MOVE MN-COPEN(L-ROW, 2) TO WS-BE
+         END-EVALUATE
          IF WS-BE > 0 AND (BE-USED(WS-BE) = 0 OR BE-REMOVED(WS-BE) = 1)
              MOVE 0 TO L-VALID
          END-IF

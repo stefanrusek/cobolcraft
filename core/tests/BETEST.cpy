@@ -4,7 +4,8 @@
 *> generated block rows (24 part 1 section 3: the last property varies fastest, a bool lists true first):
 *>   chest and trapped_chest 24 states facing[north/south/west/east] type[single/left/right] waterlogged, default north single dry,
 *>   ender_chest 8 states facing waterlogged, barrel 12 states facing[north/east/south/west/up/down] open, shulker_box 6 states facing, and
-*>   (keys without a namespace, as the standard table has them) bell 1 state, white_banner 16 states.
+*>   (keys without a namespace, as the standard table has them) bell 1 state, white_banner 16 states; hopper 10 states facing[down,north,south,west,east] enabled, dispenser and dropper 12 states
+*>   facing[north/east/south/west/up/down] triggered.
 *> The tables are only appended once. The items place the default state of their block.
 *>   TEST-ADD-CONTAINERS                          appends the blocks and items
 *>   TEST-ITEM-ID USING key (X(48)), id out       the item id of a key (0 when none)
@@ -28,8 +29,11 @@
     05 FILLER PIC X(31) VALUE "minecraft:red_shulker_box006004".
     05 FILLER PIC X(31) VALUE "bell                     001000".
     05 FILLER PIC X(31) VALUE "white_banner             016000".
+    05 FILLER PIC X(31) VALUE "minecraft:hopper         010000".
+    05 FILLER PIC X(31) VALUE "minecraft:dispenser      012001".
+    05 FILLER PIC X(31) VALUE "minecraft:dropper        012001".
  01 FILLER REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 8 TIMES.
+    05 WS-ROW OCCURS 11 TIMES.
        10 WS-KEY             PIC X(25).
        10 WS-STATES          PIC 999.
        10 WS-DEFAULT         PIC 999.
@@ -44,7 +48,7 @@
              GOBACK
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
          ADD 1 TO CB-BLOCK-COUNT
          MOVE CB-BLOCK-COUNT TO WS-B
          MOVE SPACES TO CB-KEY(WS-B)

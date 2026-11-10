@@ -30,6 +30,7 @@
        10 BE-LID            FLOAT-SHORT.
        10 BE-LID-OLD        FLOAT-SHORT.
        10 BE-SHOULD-OPEN    BINARY-LONG.
+       10 BE-COOLDOWN       BINARY-LONG.            *> hopper TransferCooldown (31-2 section 5.2), -1 on a fresh hopper
        10 BE-SLOT OCCURS 27 TIMES.
           15 BE-SLOT-ITEM   BINARY-LONG.
           15 BE-SLOT-COUNT  BINARY-LONG.

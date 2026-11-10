@@ -12,7 +12,8 @@
 *>   BE-RESET                                                    forgets every entity (a world was opened)
 *>   BE-BLOCK-KEY USING block id, key out (X(48), "minecraft:" + path when the table key has no namespace), length out
 *>   BE-BLOCK-TYPE USING block id, block entity type out (-1 none)    the type whose valid blocks hold the block (cached)
-*>   BE-BLOCK-FAMILY USING block id, family out                    0 none, 1 chest or trapped chest, 2 ender chest, 3 barrel, 4 shulker box
+*>   BE-BLOCK-FAMILY USING block id, family out                    0 none, 1 chest or trapped chest, 2 ender chest, 3 barrel, 4 shulker box,
+*>        5 hopper, 6 dispenser or dropper (their menus count no openers)
 *>   BE-STATE-FIELDS USING state, family out, direction out, chest type out, flag out
 *>        direction 0 north, 1 east, 2 south, 3 west, 4 up, 5 down; chest type 0 single, 1 left, 2 right; flag waterlogged (chest family,
 *>        ender chest) or open (barrel). The state index splits from the last property: a bool lists true first (24 part 1 section 3).
@@ -127,6 +128,10 @@
              MOVE 2 TO L-FAMILY
          WHEN WS-KEY = "minecraft:barrel"
              MOVE 3 TO L-FAMILY
+         WHEN WS-KEY = "minecraft:hopper"
+             MOVE 5 TO L-FAMILY
+         WHEN WS-KEY = "minecraft:dispenser" OR WS-KEY = "minecraft:dropper"
+             MOVE 6 TO L-FAMILY
          WHEN WS-LENGTH >= 21
              COMPUTE WS-START = WS-LENGTH - 10
              IF WS-KEY(WS-START:11) = "shulker_box"
