@@ -299,6 +299,7 @@
        10 BE-CURRENT         BINARY-LONG.
        10 BE-HAND            BINARY-LONG.
        10 BE-ACTIVE          BINARY-LONG.
+       10 BE-MODE            BINARY-LONG.
        10 BE-TITLE-LEN       BINARY-LONG.
        10 BE-TITLE           PIC X(32).
        10 BE-PAGE OCCURS 100 TIMES.

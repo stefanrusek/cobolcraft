@@ -53,6 +53,9 @@
  01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
  01 WS-ORDER REDEFINES WS-ORDER-DATA.
     05 WS-ORD              PIC 9 OCCURS 6 TIMES.
+ 01 WS-HBLOCK              BINARY-LONG.
+ 01 WS-HTOOL               PIC X.
+ 01 WS-HFOOD               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-F                   BINARY-LONG.
@@ -95,7 +98,8 @@
              COMPUTE WS-CENTRE(1) = 0.45 - 0.1 * WS-SWING
              COMPUTE WS-CENTRE(2) = -0.35 - 0.15 * WS-SWING
              COMPUTE WS-CENTRE(3) = -0.8 - 0.2 * WS-SWING
-             IF CL-IT-STATE(WS-ITEM + 1) > 0
+             CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-HBLOCK WS-HTOOL WS-HFOOD
+             IF WS-HBLOCK = 1
                  MOVE 0.2 TO WS-HALF(1) WS-HALF(2) WS-HALF(3)
              ELSE
                  MOVE 0.25 TO WS-HALF(1) WS-HALF(2)

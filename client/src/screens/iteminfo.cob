@@ -38,7 +38,14 @@
      CALL "CONTENT-ITEM-BY-ID" USING L-ITEM WS-ROW WS-STATUS
      IF WS-STATUS = 0
          MOVE 1 TO L-KNOWN
-         UNSTRING WS-KEY DELIMITED BY ":" INTO L-NS L-PATH
+         MOVE 0 TO WS-POS
+         INSPECT WS-KEY TALLYING WS-POS FOR ALL ":"
+         IF WS-POS > 0
+             UNSTRING WS-KEY DELIMITED BY ":" INTO L-NS L-PATH
+         ELSE
+             MOVE "minecraft" TO L-NS
+             MOVE WS-KEY TO L-PATH
+         END-IF
          IF WS-STACK NOT = SPACES
              MOVE FUNCTION NUMVAL(WS-STACK) TO L-MAX
          END-IF
@@ -105,3 +112,25 @@
      END-IF
      GOBACK.
  END PROGRAM CL-ITEM-COUNT-NOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CL-ITEM-FLAGS.
+*> USING CLIENT-STATE, item id, places a block out (1/0), tool class out (PIC X), food out: the facts the controls and the hand need, from CL-ITEM-INFO.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-NS                  PIC X(16).
+ 01 WS-PATH                PIC X(40).
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-TOOL                 PIC X.
+ 01 L-FOOD                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-BLOCK L-TOOL L-FOOD.
+     MOVE L-ITEM TO WS-ITEM
+     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX L-BLOCK L-TOOL L-FOOD WS-KNOWN
+     GOBACK.
+ END PROGRAM CL-ITEM-FLAGS.
