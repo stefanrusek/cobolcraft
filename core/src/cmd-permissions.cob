@@ -9,7 +9,7 @@
 *>   BR-CLAMP-LEVEL USING stored level, level out (07 §9.2 Level: clamped to 0..4)
 *>   BR-DEFAULT-LEVEL USING which (1 op-permission-level, 2 function-permission-level), level out
 *>   BR-SOURCE-LEVEL USING sender (player row, 0 = the console), level out: the console is 4; a player
-*>     holding operator status (CMD-PERMITTED) holds the default operator level 4, else 0
+*>     holding operator status (PL-OPERATOR) holds the default operator level 4, else 0
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-HOLDS.
@@ -86,19 +86,19 @@
  PROGRAM-ID. BR-SOURCE-LEVEL.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY COMMANDS.
- 01 WS-OPERATOR            BINARY-LONG.
- 01 WS-REQUIRED            BINARY-LONG.
+ COPY CORESTATE.
  01 WS-OPERATOR-WHICH      BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  01 L-SENDER               BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
  PROCEDURE DIVISION USING L-SENDER L-LEVEL.
-     MOVE CMD-OPERATOR TO WS-REQUIRED
-     CALL "CMD-PERMITTED" USING L-SENDER WS-REQUIRED WS-OPERATOR
      MOVE 0 TO L-LEVEL
-     IF WS-OPERATOR = 1
-         CALL "BR-DEFAULT-LEVEL" USING WS-OPERATOR-WHICH L-LEVEL
+     IF L-SENDER = 0
+         MOVE 4 TO L-LEVEL
+     ELSE
+         IF PL-OPERATOR(L-SENDER) = 1
+             CALL "BR-DEFAULT-LEVEL" USING WS-OPERATOR-WHICH L-LEVEL
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM BR-SOURCE-LEVEL.

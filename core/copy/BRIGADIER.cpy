@@ -4,7 +4,7 @@
 *> being parsed (BR-IN) and the last raised exception (BR-ERR). Cursors are 0-based offsets as in
 *> 15a, so the character at cursor c is BR-IN-TEXT(c + 1:1). Requirements are permission levels
 *> (15 §2.1: 0 all to 4 owners; a source holds level L or more).
- 78 BR-MAX-NODES           VALUE 1024.
+ 78 BR-MAX-NODES           VALUE 4096.
  78 BR-LINE-MAX            VALUE 1024.
  78 BR-LITERAL             VALUE 1.
  78 BR-ARGUMENT            VALUE 2.
@@ -79,10 +79,10 @@
  78 BR-S-GREEDY            VALUE 2.
  01 BR-TREE EXTERNAL.
     05 BR-NODE-COUNT        BINARY-LONG.
-    05 BR-NODE              OCCURS 1024 TIMES.
+    05 BR-NODE              OCCURS 4096 TIMES.
        10 BR-N-KIND          BINARY-LONG.   *> 0 root, BR-LITERAL, BR-ARGUMENT
        10 BR-N-NAME-LENGTH   BINARY-LONG.
-       10 BR-N-NAME          PIC X(32).
+       10 BR-N-NAME          PIC X(64).
        10 BR-N-LEVEL         BINARY-LONG.   *> requirement: permission level 0 to 4
        10 BR-N-COMMAND       BINARY-LONG.   *> 0 = not executable, else the command id
        10 BR-N-REDIRECT      BINARY-LONG.   *> target node, 0 = none

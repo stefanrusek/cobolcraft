@@ -1,0 +1,140 @@
+*> Test helpers of the command catalog tests (test infrastructure, excluded from coverage). COPY this after CORETEST.cpy
+*> (after the END PROGRAM of a test program); it adds these programs to the test executable:
+*>   TEST-JOIN-OP USING name (PIC X(16)), name length, connection id out: the name is put on the operator list (its offline
+*>     UUID) and then joins (TEST-JOIN): the player holds operator status (level 4) from the join.
+*>   TEST-RUN USING connection id, line (PIC X(768), no leading /), text out (PIC X(4096)): the player runs the line as a
+*>     Chat Command and the text is every System Chat the player was sent, as key(arg,arg) texts joined by " | ".
+*>   TEST-RUN-CONSOLE USING line (PIC X(768)), text out (PIC X(4096)): the console runs the line (CMD-RUN, sender 0) and the
+*>     text is every console line queued since the last drain (the lines the join and earlier commands queued are dropped
+*>     first), joined by " | ".
+*>   TEST-RUN-RESULT USING connection id, line (PIC X(768)), result out (BINARY-DOUBLE): the player runs the line (BR-EXECUTE)
+*>     and gets the result of 15a §4.3; what the player was sent stays queued (drain it with TEST-DRAIN-CHAT).
+*>   TEST-EXPECT USING case (PIC X(240)), expected (PIC X(1024)), observed (PIC X(4096)): one text assertion.
+*>   TEST-EXPECT-NUMBER USING case (PIC X(240)), expected (BINARY-DOUBLE), observed (BINARY-DOUBLE): one numeric assertion.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN-OP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-LENGTH L-ID.
+     CALL "LOGIN-OFFLINE-UUID" USING L-NAME L-LENGTH WS-UUID
+     MOVE ACCESS-OPERATORS TO WS-LIST
+     CALL "ACCESS-ADD" USING WS-LIST L-NAME L-LENGTH WS-UUID WS-OUTCOME
+     CALL "TEST-JOIN" USING L-NAME L-LENGTH L-ID
+     GOBACK.
+ END PROGRAM TEST-JOIN-OP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-RUN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-LINE                 PIC X(768).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-LINE L-TEXT.
+     CALL "TEST-COMMAND" USING L-ID L-LINE
+     CALL "TEST-DRAIN-CHAT" USING L-ID L-TEXT
+     GOBACK.
+ END PROGRAM TEST-RUN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-RUN-CONSOLE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY COREAPI.
+ 01 WS-CONSOLE             BINARY-LONG VALUE 0.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-AREA                PIC X(4096).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LINE                 PIC X(768).
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-LINE L-TEXT.
+     MOVE SPACES TO WS-AREA
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 4096 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(L-LINE TRAILING))
+     CALL "CMD-RUN" USING WS-CONSOLE L-LINE WS-LENGTH
+     MOVE SPACES TO WS-AREA L-TEXT
+     SET CB-ADDR TO ADDRESS OF WS-AREA
+     MOVE 4096 TO CB-CAPACITY
+     CALL "CORE-CONSOLE-DRAIN" USING CORE-BUFFER
+     MOVE 1 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-LENGTH
+         IF WS-AREA(WS-I:1) = X"0A"
+             IF WS-I < CB-LENGTH
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-N
+             END-IF
+         ELSE
+             STRING WS-AREA(WS-I:1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-N
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-RUN-CONSOLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EXPECT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(240).
+ 01 L-EXPECTED             PIC X(1024).
+ 01 L-OBSERVED             PIC X(4096).
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE L-OBSERVED TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-EXPECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EXPECT-NUMBER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(240).
+ 01 L-EXPECTED             BINARY-DOUBLE.
+ 01 L-OBSERVED             BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE L-CASE TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-EXPECT-NUMBER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-RUN-RESULT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-LINE                 PIC X(768).
+ 01 L-RESULT               BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-ID L-LINE L-RESULT.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(L-LINE TRAILING))
+     CALL "BR-EXECUTE" USING WS-ROW L-LINE WS-LENGTH WS-RESULT
+     MOVE WS-RESULT TO L-RESULT
+     GOBACK.
+ END PROGRAM TEST-RUN-RESULT.

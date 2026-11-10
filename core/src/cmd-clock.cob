@@ -1,0 +1,90 @@
+*> The world clock of the time command (docs/protocol/16-commands-catalog.md §4.5, §13 advance_time; core/copy/BRCLOCK.cpy).
+*>
+*> Entry points:
+*>   BR-CLOCK-ADVANCE (no arguments): called by WORLD-TIME-TICK once per tick instead of adding 1 to the time of day: the clock
+*>     advances by its rate (a fraction is carried) unless the game rule advance_time is false or the clock is paused; the time
+*>     of day wraps at the length of the day
+*>   BR-CLOCK-STATE USING paused out, rate out (FLOAT-LONG): the state after making it ready
+*>   BR-CLOCK-SET USING paused (BINARY-LONG), rate (FLOAT-LONG): the state (pause, resume and rate of the time command)
+*>   BR-SEND-TIME: Set Time with the time of day to every player whose join has been sent
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-CLOCK-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCLOCK.
+ LINKAGE SECTION.
+ 01 L-PAUSED               BINARY-LONG.
+ 01 L-RATE                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-PAUSED L-RATE.
+     IF CK-READY = 0
+         MOVE 1 TO CK-READY
+         MOVE 0 TO CK-PAUSED
+         MOVE 1 TO CK-RATE
+         MOVE 0 TO CK-PARTIAL
+     END-IF
+     MOVE CK-PAUSED TO L-PAUSED
+     MOVE CK-RATE TO L-RATE
+     GOBACK.
+ END PROGRAM BR-CLOCK-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-CLOCK-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCLOCK.
+ 01 WS-PAUSED              BINARY-LONG.
+ 01 WS-RATE                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PAUSED               BINARY-LONG.
+ 01 L-RATE                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-PAUSED L-RATE.
+     CALL "BR-CLOCK-STATE" USING WS-PAUSED WS-RATE
+     MOVE L-PAUSED TO CK-PAUSED
+     MOVE L-RATE TO CK-RATE
+     GOBACK.
+ END PROGRAM BR-CLOCK-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-CLOCK-ADVANCE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY BRCLOCK.
+ 01 WS-RULE                PIC X(40) VALUE "advance_time".
+ 01 WS-ADVANCE             BINARY-DOUBLE.
+ 01 WS-PAUSED              BINARY-LONG.
+ 01 WS-RATE                FLOAT-LONG.
+ 01 WS-WHOLE               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "BR-CLOCK-STATE" USING WS-PAUSED WS-RATE
+     CALL "BR-RULE-GET" USING WS-RULE WS-ADVANCE
+     IF WS-ADVANCE = 1 AND CK-PAUSED = 0
+         ADD CK-RATE TO CK-PARTIAL
+         COMPUTE WS-WHOLE = FUNCTION INTEGER(CK-PARTIAL)
+         SUBTRACT WS-WHOLE FROM CK-PARTIAL
+         COMPUTE CW-TIME = FUNCTION MOD(CW-TIME + WS-WHOLE, RULE-DAY-LENGTH)
+     END-IF
+     GOBACK.
+ END PROGRAM BR-CLOCK-ADVANCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-SEND-TIME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PLAY-TIME-BUILD" USING CW-TIME PB-BUFFER
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
+         IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0
+             CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM BR-SEND-TIME.

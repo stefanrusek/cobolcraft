@@ -1,0 +1,31 @@
+*> The ids of the commands of the standard tree (docs/protocol/16-commands-catalog.md §3): BR-N-COMMAND of an executable node is
+*> one of these, BR-CMD-CALL (core/src/cmds-call.cob) runs the CX- program of the id, core/src/cmd-tree-std.cob registers the forms.
+ 78 BC-SAY                VALUE 1.
+ 78 BC-ME                 VALUE 2.
+ 78 BC-MSG                VALUE 3.
+ 78 BC-LIST               VALUE 4.
+ 78 BC-HELP               VALUE 5.
+ 78 BC-OP                 VALUE 6.
+ 78 BC-DEOP               VALUE 7.
+ 78 BC-KICK               VALUE 8.
+ 78 BC-BAN                VALUE 9.
+ 78 BC-PARDON             VALUE 10.
+ 78 BC-BANLIST            VALUE 11.
+ 78 BC-WHITELIST          VALUE 12.
+ 78 BC-GAMEMODE           VALUE 13.
+ 78 BC-TELEPORT           VALUE 14.
+ 78 BC-GIVE               VALUE 15.
+ 78 BC-CLEAR              VALUE 16.
+ 78 BC-SUMMON             VALUE 17.
+ 78 BC-KILL               VALUE 18.
+ 78 BC-TIME               VALUE 19.
+ 78 BC-WEATHER            VALUE 20.
+ 78 BC-SETWORLDSPAWN      VALUE 21.
+ 78 BC-SPAWNPOINT         VALUE 22.
+ 78 BC-SAVE-ALL           VALUE 23.
+ 78 BC-STOP               VALUE 24.
+ 78 BC-DIFFICULTY         VALUE 25.
+ 78 BC-GAMERULE           VALUE 26.
+ 78 BC-SEED               VALUE 27.
+ 78 BC-VERSION            VALUE 28.
+ 78 BC-DEFAULTGAMEMODE    VALUE 29.
