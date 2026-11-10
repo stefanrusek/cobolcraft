@@ -7,8 +7,7 @@
 *> (damage_source_properties), the scoreboard (entity_scores with a score, int/float scores), environment attributes
 *> (environment_attribute_check), location predicates other than {} (location_check: needs the level), entity predicate members
 *> other than "type", item predicates with "components" or partial predicates other than enchantments (damage, custom_data, potion
-*> contents and the rest), block predicates with block entity parts (nbt, components: the engine has no block entity), and state
-*> property range matchers. An entity target other than this, attacker and attacking_player is absent (the context holds no
+*> contents and the rest), block predicates with block entity parts (nbt, components: the engine has no block entity). An entity target other than this, attacker and attacking_player is absent (the context holds no
 *> direct attacker, target or interacting entity).
 *> Entry points:
 *>   LOOT-COND-EVAL USING slot, node, result out (BINARY-LONG 1 or 0)
@@ -478,6 +477,7 @@
  01 WS-VALUE-LENGTH        BINARY-LONG.
  01 WS-NEEDLE              PIC X(200).
  01 WS-HITS                BINARY-LONG.
+ 01 WS-PROP-NAME           PIC X(24).
  LINKAGE SECTION.
  01 L-SLOT                 BINARY-LONG.
  01 L-NODE                 BINARY-LONG.
@@ -496,6 +496,11 @@
          CALL "LOOT-J-KEY" USING L-SLOT WS-CHILD WS-KEY WS-KEY-LENGTH
          CALL "LOOT-J-TEXT" USING L-SLOT WS-CHILD WS-VALUE WS-VALUE-LENGTH
          MOVE 0 TO WS-HITS
+         IF WS-VALUE-LENGTH = 0 AND LDS-JN-TYPE(L-SLOT, WS-CHILD) = JT-OBJECT
+*>           a range matcher {min, max} (loot-state.cob)
+             MOVE WS-KEY(1:24) TO WS-PROP-NAME
+             CALL "LOOT-STATE-RANGE" USING L-SLOT WS-CHILD L-STATE WS-PROP-NAME WS-HITS
+         END-IF
          IF WS-VALUE-LENGTH > 0
              MOVE SPACES TO WS-NEEDLE
              STRING "," WS-KEY(1:WS-KEY-LENGTH) "=" WS-VALUE(1:WS-VALUE-LENGTH) ","

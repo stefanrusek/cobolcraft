@@ -75,7 +75,6 @@
     05 FILLER PIC X(60) VALUE "c_block_state|14|3|0|734".
     05 FILLER PIC X(60) VALUE "c_block_state|5|3|0|734".
     05 FILLER PIC X(60) VALUE "c_block_state_missing|13|3|0|734".
-    05 FILLER PIC X(60) VALUE "c_block_state_range|13|3|0|734".
     05 FILLER PIC X(60) VALUE "c_block_nbt|13|3|0|734".
     05 FILLER PIC X(60) VALUE "c_weather_rain|6|3|1|734".
     05 FILLER PIC X(60) VALUE "c_weather_rain|0|3|0|734".
@@ -126,8 +125,48 @@
     05 FILLER PIC X(60) VALUE "c_random_chance|0|349056|1|330".
     05 FILLER PIC X(60) VALUE "c_table_bonus|0|349056|1|330".
     05 FILLER PIC X(60) VALUE "c_tool_unknown_item|2|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_block_state_range|13|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_block_state_range|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_block_state_range|20|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_block_state_range|21|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_min|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_min|14|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_min|20|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_min|21|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_max|13|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_max|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_max|20|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_max|21|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_open|13|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_open|14|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_open|20|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_open|21|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_min|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_min|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_min|20|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_min|21|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_max|13|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_max|14|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_max|20|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bool_max|21|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_min|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_min|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_min|20|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_min|21|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_max|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_max|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_max|20|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_bad_max|21|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_missing|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_missing|14|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_missing|20|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_missing|21|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_two|13|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_two|14|3|1|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_two|20|3|0|734".
+    05 FILLER PIC X(60) VALUE "c_state_range_two|21|3|0|734".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-CASE             PIC X(60) OCCURS 109 TIMES.
+    05 WS-CASE             PIC X(60) OCCURS 148 TIMES.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/loot".
  01 WS-STATUS              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -174,7 +213,7 @@
      MOVE -1 TO TL-EXPECTED-N
      MOVE WS-ENCH-ID TO TL-OBSERVED-N
      PERFORM CHECK-NUM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 109
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 148
          MOVE SPACES TO WS-NAME WS-SCENARIO WS-SEED WS-RESULT-TEXT WS-PROBE-TEXT
          UNSTRING WS-CASE(WS-I) DELIMITED BY "|" INTO WS-NAME WS-SCENARIO WS-SEED WS-RESULT-TEXT WS-PROBE-TEXT
          INITIALIZE LOOT-CONTEXT
@@ -208,7 +247,7 @@
 *> 4 explosion radius 4.0; 5 block greystone; 6 raining; 7 raining and thundering; 8 an attacker with efficiency 2; 9 clock at 12345
 *> ticks; 10 enchantment level 2 and active; 11 tool x5 with efficiency 5; 12 tool with efficiency 1; 13 block cardstack axis x;
 *> 14 cardstack axis z; 15 origin and this_entity sodgrazer; 16 this_entity abend, attacker sodgrazer, killed by a player;
-*> 17 killed by a player and radius 4.0; 19 enchantment inactive.
+*> 17 killed by a player and radius 4.0; 19 enchantment inactive; 20 cardstack axis y punched; 21 cardstack axis x punched.
  SETUP-SCENARIO.
      EVALUATE FUNCTION NUMVAL(WS-SCENARIO)
          WHEN 1
@@ -259,6 +298,14 @@
          WHEN 14
              MOVE "cobolcraft:cardstack" TO WS-BLOCK-KEY
              MOVE "axis=z,punched=false" TO WS-PAIRS
+             PERFORM SET-BLOCK
+         WHEN 20
+             MOVE "cobolcraft:cardstack" TO WS-BLOCK-KEY
+             MOVE "axis=y,punched=true" TO WS-PAIRS
+             PERFORM SET-BLOCK
+         WHEN 21
+             MOVE "cobolcraft:cardstack" TO WS-BLOCK-KEY
+             MOVE "axis=x,punched=true" TO WS-PAIRS
              PERFORM SET-BLOCK
          WHEN 15
              MOVE 1 TO LC-ORIGIN-SET LC-THIS-SET

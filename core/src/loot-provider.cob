@@ -568,7 +568,8 @@
                  CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-CHILD LS-TERM
                  ADD 1 TO LS-COUNT
                  IF LS-KIND = "length"
-                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-TERM BY REFERENCE LS-TERM BY REFERENCE LS-B
+                     MOVE LS-TERM TO LS-A
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-TERM BY REFERENCE LS-A BY REFERENCE LS-B
                      CALL "LOOT-F32" USING LS-B
                      MOVE LS-B TO LS-TERM
                  END-IF
