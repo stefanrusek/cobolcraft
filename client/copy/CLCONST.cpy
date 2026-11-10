@@ -145,7 +145,7 @@
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
- 78 CL-MAX-SPRITES          VALUE 128.
+ 78 CL-MAX-SPRITES          VALUE 4096. *> block and item atlas sprites (Faithful alone has 1,297 block sprites)
  78 CL-MAX-STATES           VALUE 65536. *> state ids are 16 bits (CE-STATE, contract/copy/CELLS.cpy)
  78 CL-STAND-STATES         VALUE 18.   *> states of the stand-in table below
  78 CL-MAX-BAKED            VALUE 320.  *> states with baked models (BM-STATE)

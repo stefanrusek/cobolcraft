@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 222.
+ 78 BI-LANG-COUNT           VALUE 223.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -357,6 +357,8 @@
     05 FILLER PIC X(128) VALUE "pack.mcmeta has no usable pack section".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.problem.bad_file".
     05 FILLER PIC X(128) VALUE "%s cannot be read".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.problem.missing".
+    05 FILLER PIC X(128) VALUE "the pack is missing".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.pack_confirm.title".
     05 FILLER PIC X(128) VALUE "Enable This Pack?".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.pack_confirm.too_old".
@@ -452,6 +454,6 @@
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.open_failed".
     05 FILLER PIC X(128) VALUE "Cannot start %s to open the pack folder".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 222 TIMES.
+    05 BI-LANG OCCURS 223 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

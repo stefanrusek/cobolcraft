@@ -461,7 +461,7 @@
        10 AT-H               BINARY-LONG.
        10 AT-ADDR            USAGE POINTER.  *> RGBA pixels, rows top to bottom
        10 AT-SPRITE-COUNT    BINARY-LONG.    *> sprite 1 is the missing texture
-       10 AT-SPRITE OCCURS 128 TIMES.
+       10 AT-SPRITE OCCURS 4096 TIMES.
           15 AT-NAME         PIC X(80).      *> sprite id, e.g. cobolcraft:block/greystone
           15 AT-NAME-LENGTH  BINARY-LONG.
           15 AT-X            BINARY-LONG.
@@ -469,6 +469,28 @@
           15 AT-SW           BINARY-LONG.
           15 AT-SH           BINARY-LONG.
           15 AT-TRANSLUCENT  PIC 9.          *> 1 = some pixel has alpha below 255 (08 §5.3)
+          15 AT-PACK         BINARY-LONG.    *> the pack that gave the image (0 = the missing texture)
+          15 AT-ANIM         BINARY-LONG.    *> its row of AN-ANIM, 0 = not animated
+*>     Animated sprites of the block atlas (packs/mcmeta.cob ANIM-PARSE, atlas.cob ANIM-TICK): the
+*>     frames of each (a vertical strip kept whole), the sequence, the frame shown (AN-CUR: its picture
+*>     and blend), and AN-OUT, the pixels last written into the atlas cell (AN-DIRTY 1 until submitted
+*>     with cc_vk_texture_update).
+       10 AN-COUNT            BINARY-LONG.
+       10 AN-START-MS         BINARY-DOUBLE.  *> clock of the first ANIM-TICK (0 = none yet)
+       10 AN-ANIM OCCURS 256 TIMES.
+          15 AN-SPRITE       BINARY-LONG.
+          15 AN-FRAME-W      BINARY-LONG.
+          15 AN-FRAME-H      BINARY-LONG.
+          15 AN-INTERPOLATE  PIC 9.
+          15 AN-ENTRIES      BINARY-LONG.
+          15 AN-TOTAL        BINARY-LONG.
+          15 AN-CUR          BINARY-LONG.
+          15 AN-DIRTY        PIC 9.
+          15 AN-PIXELS       USAGE POINTER.
+          15 AN-OUT          USAGE POINTER.
+          15 AN-SEQ OCCURS 32 TIMES.
+             20 AN-SEQ-INDEX BINARY-LONG.
+             20 AN-SEQ-TIME  BINARY-LONG.
        10 UA-W               BINARY-LONG.
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.

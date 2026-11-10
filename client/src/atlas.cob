@@ -14,6 +14,10 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY JSONDOC.
+ COPY CLMCMETA.
+ 01 WS-ANIMATED            BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 B-PIXELS               PIC X(1073741824) BASED.
  01 WS-DEFS.
     05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/blocks.json".
     05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/items.json".
@@ -50,8 +54,8 @@
  01 WS-REST-LENGTH         BINARY-LONG.
  01 WS-ID                  PIC X(80).
  01 WS-ID-LENGTH           BINARY-LONG.
- 01 WS-SPRITE-PATH         PIC X(256) OCCURS 128 TIMES.
- 01 WS-SPRITE-PATH-LENGTH  BINARY-LONG OCCURS 128 TIMES.
+ 01 WS-SPRITE-PATH         PIC X(256) OCCURS 4096 TIMES.
+ 01 WS-SPRITE-PATH-LENGTH  BINARY-LONG OCCURS 4096 TIMES.
  01 WS-IMAGE               PIC X(1048576).
  01 WS-IMAGE-CAP           BINARY-LONG VALUE 1048576.
  01 WS-W                   BINARY-LONG.
@@ -59,6 +63,7 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-ROW-H               BINARY-LONG.
+ 01 WS-AREA                BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 WS-SIXTEEN             BINARY-LONG VALUE 16.
  01 WS-SIXTEEN2            BINARY-LONG VALUE 16.
@@ -66,6 +71,11 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > AN-COUNT
+         FREE AN-PIXELS(WS-A)
+         FREE AN-OUT(WS-A)
+     END-PERFORM
+     MOVE 0 TO AN-COUNT AN-START-MS
      MOVE 1 TO AT-SPRITE-COUNT
      INITIALIZE AT-SPRITE(1)
      MOVE "missing" TO AT-NAME(1)
@@ -147,15 +157,54 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
-*>   Sizes, then rows of sprites in order, 128 pixels wide (wider when a sprite is).
+*>   Sizes, then rows of sprites in order, as wide as the pack's sprites need: 128 pixels, doubled
+*>   while the area of all the sprites would not fill a square of that width (at most 4096 pixels), and
+*>   at least as wide as the widest sprite.
      MOVE 128 TO AT-W
+     MOVE 0 TO WS-AREA
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
-         CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
-             WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND
-*>       A texture that cannot be decoded is drawn as the missing texture (US18-5).
+         CALL "ATLAS-LOAD-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
+             WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND AT-PACK(WS-S) WS-ANIMATED
+             ANIM-META
+*>       A texture no pack can give is drawn as the missing texture (US18-5).
          IF WS-FOUND = 0
              MOVE 16 TO AT-SW(WS-S) AT-SH(WS-S)
+             MOVE 0 TO AT-PACK(WS-S)
          END-IF
+         IF WS-FOUND = 1 AND WS-ANIMATED = 1
+*>           The sprite is animated: its strip and the schedule are kept (AN-ANIM row), the sprite is
+*>           one frame of the strip; past 256 animations a sprite shows its first frame only.
+         MOVE AM-FRAME-W TO AT-SW(WS-S)
+         MOVE AM-FRAME-H TO AT-SH(WS-S)
+         IF AN-COUNT < 256
+             ADD 1 TO AN-COUNT
+             MOVE AN-COUNT TO AT-ANIM(WS-S)
+             MOVE WS-S TO AN-SPRITE(AN-COUNT)
+             MOVE AM-FRAME-W TO AN-FRAME-W(AN-COUNT)
+             MOVE AM-FRAME-H TO AN-FRAME-H(AN-COUNT)
+             MOVE AM-INTERPOLATE TO AN-INTERPOLATE(AN-COUNT)
+             MOVE AM-COUNT TO AN-ENTRIES(AN-COUNT)
+             MOVE AM-TOTAL TO AN-TOTAL(AN-COUNT)
+             MOVE -1 TO AN-CUR(AN-COUNT)
+             MOVE 0 TO AN-DIRTY(AN-COUNT)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-COUNT
+                 MOVE AM-INDEX(WS-I) TO AN-SEQ-INDEX(AN-COUNT, WS-I)
+                 MOVE AM-TIME(WS-I) TO AN-SEQ-TIME(AN-COUNT, WS-I)
+             END-PERFORM
+             COMPUTE WS-BYTES = AM-FRAME-W * AM-PICTURES * AM-FRAME-H * 4
+             ALLOCATE WS-BYTES CHARACTERS RETURNING AN-PIXELS(AN-COUNT)
+             SET ADDRESS OF B-PIXELS TO AN-PIXELS(AN-COUNT)
+             MOVE WS-IMAGE(1:WS-BYTES) TO B-PIXELS(1:WS-BYTES)
+             COMPUTE WS-BYTES = AM-FRAME-W * AM-FRAME-H * 4
+             ALLOCATE WS-BYTES CHARACTERS INITIALIZED RETURNING AN-OUT(AN-COUNT)
+         END-IF
+         END-IF
+         COMPUTE WS-AREA = WS-AREA + AT-SW(WS-S) * AT-SH(WS-S)
+     END-PERFORM
+     PERFORM UNTIL AT-W * AT-W >= WS-AREA OR AT-W >= 4096
+         COMPUTE AT-W = AT-W * 2
+     END-PERFORM
+     PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          MOVE FUNCTION MAX(AT-W, AT-SW(WS-S)) TO AT-W
      END-PERFORM
      MOVE 0 TO WS-X WS-Y WS-ROW-H
@@ -179,11 +228,22 @@
      CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          IF WS-S > 1
-             CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S)
-                 WS-SPRITE-PATH-LENGTH(WS-S) WS-IMAGE WS-IMAGE-CAP WS-W WS-H WS-FOUND
-             IF WS-FOUND = 0
-                 CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
-             END-IF
+             EVALUATE TRUE
+                 WHEN AT-PACK(WS-S) = 0
+                     CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
+                 WHEN AT-ANIM(WS-S) > 0
+*>                   The first picture of the sequence; ANIM-TICK writes the schedule's frame.
+                     MOVE AT-ANIM(WS-S) TO WS-A
+                     COMPUTE WS-BYTES = AN-FRAME-W(WS-A) * AN-FRAME-H(WS-A) * 4
+                     SET ADDRESS OF B-PIXELS TO AN-PIXELS(WS-A)
+                     MOVE B-PIXELS(AN-SEQ-INDEX(WS-A, 1) * WS-BYTES + 1:WS-BYTES)
+                         TO WS-IMAGE(1:WS-BYTES)
+                     MOVE -1 TO AN-CUR(WS-A)
+                 WHEN OTHER
+                     CALL "PACK-SOURCE-IMAGE" USING CLIENT-STATE AT-PACK(WS-S)
+                         WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S) WS-IMAGE WS-IMAGE-CAP
+                         WS-W WS-H WS-FOUND
+             END-EVALUATE
          END-IF
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
              COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
@@ -310,3 +370,160 @@
      END-PERFORM
      GOBACK.
  END PROGRAM MISSING-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ANIM-TICK.
+*> USING CLIENT-STATE, clock (BINARY-DOUBLE ms): the animated sprites of the block atlas show the frame
+*> their schedule gives at this time: the clock of the first call is tick 0, a tick is 50 ms, the
+*> sequence of AN-SEQ repeats every AN-TOTAL ticks. With interpolation the shown pixels are the blend of
+*> the picture and the next entry's, by the share of the entry's time that has passed (per mille). A
+*> frame that differs from the one shown (AN-CUR) is written into AN-OUT and the atlas cell, and the cell
+*> is marked (AN-DIRTY) for cc_vk_texture_update (SUBMIT-FRAME).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-TICKS               BINARY-DOUBLE.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-SHARE               BINARY-LONG.
+ 01 WS-PICTURE             BINARY-LONG.
+ 01 WS-NEXT-PICTURE        BINARY-LONG.
+ 01 WS-BYTES               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-A-BYTE              BINARY-LONG.
+ 01 WS-B-BYTE              BINARY-LONG.
+ 01 B-PIXELS               PIC X(1073741824) BASED.
+ 01 B-OUT                  PIC X(1073741824) BASED.
+ 01 B-ATLAS                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-NOW                  BINARY-DOUBLE.
+ PROCEDURE DIVISION USING CLIENT-STATE L-NOW.
+     IF AN-COUNT = 0
+         GOBACK
+     END-IF
+     IF AN-START-MS = 0
+         MOVE L-NOW TO AN-START-MS
+     END-IF
+     COMPUTE WS-TICKS = (L-NOW - AN-START-MS) / 50
+     SET ADDRESS OF B-ATLAS TO AT-ADDR
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > AN-COUNT
+         COMPUTE WS-POS = FUNCTION MOD(WS-TICKS, AN-TOTAL(WS-A))
+*>       The entry holding the position, where it starts, and the entry after it.
+         MOVE 0 TO WS-START
+         MOVE 1 TO WS-E
+         PERFORM UNTIL WS-POS < WS-START + AN-SEQ-TIME(WS-A, WS-E)
+             ADD AN-SEQ-TIME(WS-A, WS-E) TO WS-START
+             ADD 1 TO WS-E
+         END-PERFORM
+         COMPUTE WS-NEXT = FUNCTION MOD(WS-E, AN-ENTRIES(WS-A)) + 1
+         MOVE AN-SEQ-INDEX(WS-A, WS-E) TO WS-PICTURE
+         MOVE AN-SEQ-INDEX(WS-A, WS-NEXT) TO WS-NEXT-PICTURE
+         MOVE 0 TO WS-SHARE
+         IF AN-INTERPOLATE(WS-A) = 1
+             COMPUTE WS-SHARE = (WS-POS - WS-START) * 1000 / AN-SEQ-TIME(WS-A, WS-E)
+         END-IF
+         COMPUTE WS-KEY = WS-PICTURE * 1000 + WS-SHARE
+         IF WS-KEY NOT = AN-CUR(WS-A)
+             MOVE WS-KEY TO AN-CUR(WS-A)
+             COMPUTE WS-BYTES = AN-FRAME-W(WS-A) * AN-FRAME-H(WS-A) * 4
+             SET ADDRESS OF B-PIXELS TO AN-PIXELS(WS-A)
+             SET ADDRESS OF B-OUT TO AN-OUT(WS-A)
+             IF WS-SHARE = 0
+                 MOVE B-PIXELS(WS-PICTURE * WS-BYTES + 1:WS-BYTES) TO B-OUT(1:WS-BYTES)
+             ELSE
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BYTES
+                     COMPUTE WS-A-BYTE = FUNCTION ORD(B-PIXELS(WS-PICTURE * WS-BYTES + WS-I:1)) - 1
+                     COMPUTE WS-B-BYTE =
+                         FUNCTION ORD(B-PIXELS(WS-NEXT-PICTURE * WS-BYTES + WS-I:1)) - 1
+                     COMPUTE WS-A-BYTE = (WS-A-BYTE * (1000 - WS-SHARE) + WS-B-BYTE * WS-SHARE)
+                         / 1000
+                     MOVE FUNCTION CHAR(WS-A-BYTE + 1) TO B-OUT(WS-I:1)
+                 END-PERFORM
+             END-IF
+             MOVE AN-SPRITE(WS-A) TO WS-S
+             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AN-FRAME-H(WS-A)
+                 COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
+                 MOVE B-OUT(WS-Y * AN-FRAME-W(WS-A) * 4 + 1:AN-FRAME-W(WS-A) * 4)
+                     TO B-ATLAS(WS-I:AN-FRAME-W(WS-A) * 4)
+             END-PERFORM
+             MOVE 1 TO AN-DIRTY(WS-A)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ANIM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-LOAD-IMAGE.
+*> USING CLIENT-STATE, path (PIC X(256)), path length, area, capacity, width out, height out, found out,
+*> pack out, animated out (1 = ANIM-META holds the animation), ANIM-META: the texture from the top-most
+*> pack that can give it, falling to the pack below when a pack's file cannot be decoded or its
+*> <path>.mcmeta is malformed (a texture whose animation file is broken is a static texture of the pack
+*> below, never a crash: FR-012; the animation file of a pack applies to that pack's own texture only).
+*> An animated texture's width and height are those of the whole strip; the caller sizes the sprite by
+*> AM-FRAME-W and AM-FRAME-H.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-IMAGE-OK            BINARY-LONG.
+ 01 WS-META-PATH           PIC X(256).
+ 01 WS-META-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(16384).
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 16384.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-PATH                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-AREA                 PIC X.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-PACK                 BINARY-LONG.
+ 01 L-ANIMATED             BINARY-LONG.
+ COPY CLMCMETA.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PATH L-LENGTH L-AREA L-CAPACITY L-W L-H L-FOUND L-PACK
+         L-ANIMATED ANIM-META.
+     MOVE 0 TO L-W L-H L-FOUND L-PACK L-ANIMATED
+     PERFORM VARYING WS-P FROM PK-COUNT BY -1 UNTIL WS-P < 1 OR L-FOUND = 1
+         CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P L-PATH L-LENGTH WS-HAS
+         IF WS-HAS = 1
+             CALL "PACK-SOURCE-IMAGE" USING CLIENT-STATE WS-P L-PATH L-LENGTH L-AREA L-CAPACITY
+                 L-W L-H WS-IMAGE-OK
+             IF WS-IMAGE-OK = 1
+                 MOVE SPACES TO WS-META-PATH
+                 STRING L-PATH(1:L-LENGTH) ".mcmeta" DELIMITED BY SIZE INTO WS-META-PATH
+                 COMPUTE WS-META-LENGTH = L-LENGTH + 7
+                 CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P WS-META-PATH WS-META-LENGTH WS-HAS
+                 MOVE 2 TO WS-RESULT
+                 IF WS-HAS = 1
+                     CALL "PACK-SOURCE-READ" USING CLIENT-STATE WS-P WS-META-PATH WS-META-LENGTH
+                         WS-TEXT WS-TEXT-CAP WS-TEXT-LENGTH WS-IMAGE-OK
+                     MOVE 0 TO WS-RESULT
+                     IF WS-IMAGE-OK = 1
+                         CALL "ANIM-PARSE" USING WS-TEXT WS-TEXT-LENGTH L-W L-H ANIM-META WS-RESULT
+                     END-IF
+                 END-IF
+                 IF WS-RESULT > 0
+                     MOVE 1 TO L-FOUND
+                     MOVE WS-P TO L-PACK
+                     IF WS-RESULT = 1
+                         MOVE 1 TO L-ANIMATED
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF L-FOUND = 0
+         MOVE 0 TO L-W L-H
+     END-IF
+     GOBACK.
+ END PROGRAM ATLAS-LOAD-IMAGE.

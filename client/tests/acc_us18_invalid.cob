@@ -88,12 +88,12 @@
      MOVE 21 TO WS-SPRITE-LENGTH
      CALL "TEST-PIXEL" USING CLIENT-STATE WS-SPRITE WS-SPRITE-LENGTH WS-PIXEL3
      MOVE "acceptance US18-5 Given an enabled pack with texture files the game cannot read When "
-         & "packs are loaded Then those textures are drawn with the missing-texture stripes"
+         & "packs are loaded Then those textures are the ones of the pack below (spec 002 edge case)"
          TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      STRING WS-PIXEL DELIMITED BY SPACE " " DELIMITED BY SIZE WS-PIXEL2 DELIMITED BY SPACE " "
          DELIMITED BY SIZE WS-PIXEL3 DELIMITED BY SPACE INTO TL-OBSERVED
-     MOVE "242,140,40,255 242,140,40,255 242,140,40,255" TO TL-EXPECTED
+     MOVE "125,127,134,255 122,86,52,255 74,63,58,255" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE ACT-PACKS TO WS-ACTION
