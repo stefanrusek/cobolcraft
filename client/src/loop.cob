@@ -30,6 +30,8 @@
      END-PERFORM
      MOVE 1000 TO SK-U
      MOVE -1 TO SK-MESHED-U
+     MOVE "/usr/bin/open" TO CL-OPENER
+     MOVE 13 TO CL-OPENER-LENGTH
      CALL "SP-DEFAULTS" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CL-INIT.
@@ -37,7 +39,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
 *> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
-*> (game directory, server list, the enabled packs of options.dat, the download cache trimmed,
+*> (game directory, the generated packs' status (PACKS-STATUS-CHECK), server list, the enabled packs of options.dat, the download cache trimmed,
 *> the local packs, the pack
 *> stack, language, font, block, entity and environment atlases,
 *> models).
@@ -49,6 +51,7 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      CALL "GAME-DIR-SETUP" USING CLIENT-STATE
+     CALL "PACKS-STATUS-CHECK" USING CLIENT-STATE
      CALL "SERVERS-LOAD" USING CLIENT-STATE
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
      CALL "PACK-CACHE-VACUUM" USING CLIENT-STATE
@@ -256,11 +259,12 @@
      IF SK-U NOT = SK-MESHED-U
          MOVE SK-U TO SK-MESHED-U
          PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
                  MOVE WR-USED(WS-R) TO WR-DIRTY(WS-R, WS-S)
              END-PERFORM
          END-PERFORM
      END-IF
+     CALL "ANIM-TICK" USING CLIENT-STATE CL-NOW-MS
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      CALL "UI-RENDER" USING CLIENT-STATE

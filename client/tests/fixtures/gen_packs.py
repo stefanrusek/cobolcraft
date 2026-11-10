@@ -165,6 +165,72 @@ PACKS = {
     }),
 }
 
+# "many": 300 blocks of 16 pixels (colour (n % 256, n // 256, 7)) and 6 of 32 pixels (colour (9, 9, 100 + k)),
+# for the atlas tests of any sprite size and more than 128 sprites (US3-3).
+MANY = {"pack.mcmeta": new_style("Many sprites")}
+for _n in range(300):
+    MANY["assets/many/textures/block/b%03d.png" % _n] = solid((_n % 256, _n // 256, 7))
+for _k in range(6):
+    MANY["assets/many/textures/block/big%d.png" % _k] = solid((9, 9, 100 + _k), 32)
+PACKS["many"] = ("folder", MANY)
+
+
+def strip(colours, size=16):
+    """A vertical strip of solid frames: frame k is colours[k], each size x size."""
+    return png(size, size * len(colours), lambda x, y: colours[y // size] + (255,))
+
+
+# Animated textures (08 §7.? animation): "animbase" holds the static yellow bad.png; "anim" holds
+# flow (red, green, blue; frames 0, 2 for 4 ticks, 1; frametime 2), mix (black, grey; frametime 4,
+# interpolated), bad (a malformed animation file over a two-frame strip: falls back to animbase's
+# yellow), oddsize (a 16 x 20 image: not a multiple of the frame size, nothing below: missing).
+PACKS["animbase"] = ("folder", {
+    "pack.mcmeta": new_style("Animation base"),
+    "assets/anim/textures/block/bad.png": solid((255, 255, 0)),
+    "assets/anim/textures/block/broken.png": solid((0, 255, 255)),
+})
+PACKS["anim"] = ("folder", {
+    "pack.mcmeta": new_style("Animations"),
+    "assets/anim/textures/block/flow.png": strip([(255, 0, 0), (0, 255, 0), (0, 0, 255)]),
+    "assets/anim/textures/block/flow.png.mcmeta": b'{"animation":{"frametime":2,"frames":[0,{"index":2,"time":4},1]}}',
+    "assets/anim/textures/block/mix.png": strip([(0, 0, 0), (200, 200, 200)]),
+    "assets/anim/textures/block/mix.png.mcmeta": b'{"animation":{"frametime":4,"interpolate":true}}',
+    "assets/anim/textures/block/bad.png": strip([(1, 1, 1), (2, 2, 2)]),
+    "assets/anim/textures/block/bad.png.mcmeta": b"{not json",
+    "assets/anim/textures/block/oddsize.png": png(16, 20, lambda x, y: (5, 5, 5, 255)),
+    "assets/anim/textures/block/oddsize.png.mcmeta": b'{"animation":{}}',
+    "assets/anim/textures/block/broken.png": b"\x89PNG\r\n\x1a\nbroken",
+    "assets/anim/textures/block/plain.png": solid((50, 60, 70)),
+    "assets/anim/textures/block/plain.png.mcmeta": b'{"texture":{"blur":true}}',
+})
+
+
+# "ctm": connected-texture rules in the formats other clients know (OptiFine, MCPatcher, Continuity); the
+# game does not support them and must ignore them without error (FR-010), loading the rest.
+PACKS["ctm"] = ("folder", {
+    "pack.mcmeta": new_style("Connected textures"),
+    "assets/minecraft/optifine/ctm/glass/glass.properties": b"method=ctm\ntiles=0-46\nmatchBlocks=glass\n",
+    "assets/minecraft/optifine/ctm/glass/0.png": solid((1, 2, 3)),
+    "assets/minecraft/mcpatcher/ctm/stone/stone.properties": b"method=random\ntiles=0-3\n",
+    "assets/minecraft/optifine/cit.properties": b"type=item\n",
+    "assets/ctm/models/block/glass.json": b'{"loader":"continuity:ctm","parent":"block/cube_all"}',
+    "assets/ctm/textures/block/after_ctm.png": solid((11, 22, 33)),
+})
+
+
+# Weather images of co-prime heights (CC-0003): 17 and 19 (least common multiple 323), 1000 and 999 (998,001).
+ENV = "assets/cobolcraft/textures/environment/"
+PACKS["weather"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 17 19"),
+    ENV + "drizzle.png": png(16, 17, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 19, lambda x, y: (40, 50, 60, 255)),
+})
+PACKS["weather2"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 1000 999"),
+    ENV + "drizzle.png": png(16, 1000, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 999, lambda x, y: (40, 50, 60, 255)),
+})
+
 
 def zip_bytes(files):
     out = io.BytesIO()

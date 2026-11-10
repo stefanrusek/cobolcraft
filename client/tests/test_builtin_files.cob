@@ -352,8 +352,20 @@
     05 FILLER PIC X(64) VALUE "assets/cobolcraft/lang/en_us.json".
     05 FILLER PIC X(48) VALUE "cobolcraft.chat.say".
     05 FILLER PIC X(48) VALUE "<%s> %s".
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/lang/en_us.json".
+    05 FILLER PIC X(48) VALUE "cobolcraft.world_type.standard".
+    05 FILLER PIC X(48) VALUE "Standard".
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/lang/en_us.json".
+    05 FILLER PIC X(48) VALUE "cobolcraft.world_type.cobolcraft".
+    05 FILLER PIC X(48) VALUE "CobolCraft".
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/lang/en_us.json".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.create_world.type".
+    05 FILLER PIC X(48) VALUE "World type: %s".
+    05 FILLER PIC X(64) VALUE "assets/cobolcraft/lang/en_us.json".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.world_list.type".
+    05 FILLER PIC X(48) VALUE "Type: %s".
  01 WS-ROW-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 114 TIMES.
+    05 WS-ROW OCCURS 118 TIMES.
        10 WS-R-FILE        PIC X(64).
        10 WS-R-PATH        PIC X(48).
        10 WS-R-VALUE       PIC X(48).
@@ -394,7 +406,7 @@
 
      MOVE SPACES TO WS-OBSERVED
      MOVE 0 TO WS-FAILED
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 114
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 118
          MOVE WS-R-FILE(WS-I) TO WS-PATH
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
          CALL "BUILTIN-READ" USING WS-PATH WS-PATH-LENGTH WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
@@ -438,9 +450,10 @@
      MOVE 33 TO WS-PATH-LENGTH
      CALL "BUILTIN-READ" USING WS-PATH WS-PATH-LENGTH WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
      CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LENGTH
-     MOVE "builtin lang/en_us.json is one object of the 211 keys of 08 §10.8" TO TL-CASE
+     MOVE "builtin lang/en_us.json is one object of the 211 keys of 08 §10.8 and the 9 "
+         & "cobolcraft.packs.* and cobolcraft.world_type.* keys of 22 §9.2 and ui §7.2" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 211 TO TL-EXPECTED-N
+     MOVE 223 TO TL-EXPECTED-N
      MOVE JN-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -49,5 +49,47 @@
      STRING CL-NAME(1:CL-NAME-LENGTH) "|" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CL-INIT" USING CLIENT-STATE
+     INITIALIZE CL-ARGS
+     MOVE 6 TO AR-COUNT
+     MOVE "--generated-dir" TO AR-TEXT(1)
+     MOVE 15 TO AR-LENGTH(1)
+     MOVE "build/client-test-generated" TO AR-TEXT(2)
+     MOVE 27 TO AR-LENGTH(2)
+     MOVE "--name" TO AR-TEXT(3)
+     MOVE 6 TO AR-LENGTH(3)
+     MOVE "Bob" TO AR-TEXT(4)
+     MOVE 3 TO AR-LENGTH(4)
+     MOVE "--gamedir" TO AR-TEXT(5)
+     MOVE 9 TO AR-LENGTH(5)
+     MOVE "build/client-test-dir" TO AR-TEXT(6)
+     MOVE 21 TO AR-LENGTH(6)
+     CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
+     MOVE "args --generated-dir <path> sets the generated directory (22 section 5.1), whatever the "
+         & "game directory is" TO TL-CASE
+     MOVE "build/client-test-generated|build/client-test-dir" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) "|" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "CL-INIT" USING CLIENT-STATE
+     INITIALIZE CL-ARGS
+     MOVE 4 TO AR-COUNT
+     MOVE "--name" TO AR-TEXT(1)
+     MOVE 6 TO AR-LENGTH(1)
+     MOVE "Bob" TO AR-TEXT(2)
+     MOVE 3 TO AR-LENGTH(2)
+     MOVE "--gamedir" TO AR-TEXT(3)
+     MOVE 9 TO AR-LENGTH(3)
+     MOVE "build/client-test-dir" TO AR-TEXT(4)
+     MOVE 21 TO AR-LENGTH(4)
+     CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
+     MOVE "args without --generated-dir the generated directory is <game directory>/generated"
+         TO TL-CASE
+     MOVE "build/client-test-dir/generated" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ARGS.

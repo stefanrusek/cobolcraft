@@ -296,7 +296,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDS-LIST.
 *> USING CLIENT-STATE: the world list from the directories of saves/ (cc_fs_list, byte order; at
-*> most CL-MAX-WORLDS): each folder's level.dat gives LevelName and GameMode (07 §9.2); a folder
+*> most CL-MAX-WORLDS): each folder's level.dat gives LevelName, GameMode (07 §9.2) and WorldType
+*> (world-types.md §2.1; a world with none is a cobolcraft world, rule 2); a folder
 *> whose level.dat cannot be read shows its folder name, survival.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -346,6 +347,7 @@
              MOVE WL-FOLDER(WL-COUNT) TO WL-NAME(WL-COUNT)
              MOVE FUNCTION MIN(WL-FOLDER-LENGTH(WL-COUNT), 64) TO WL-NAME-LENGTH(WL-COUNT)
              MOVE 0 TO WL-MODE(WL-COUNT)
+             MOVE "cobolcraft" TO WL-TYPE(WL-COUNT)
              MOVE SPACES TO WS-PATH
              STRING WS-DIRZ(1:CL-GAME-DIR-LENGTH + 6) "/" WS-ENTRY(2:WS-LENGTH - 1) "/level.dat"
                  DELIMITED BY SIZE INTO WS-PATH
@@ -367,6 +369,11 @@
                              WS-TEXT-LENGTH
                          MOVE WS-TEXT(1:64) TO WL-NAME(WL-COUNT)
                          MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WL-NAME-LENGTH(WL-COUNT)
+                     WHEN WN = "WorldType" AND WS-TYPE = 8
+                         CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP
+                             WS-TEXT-LENGTH
+                         MOVE SPACES TO WL-TYPE(WL-COUNT)
+                         MOVE WS-TEXT(1:16) TO WL-TYPE(WL-COUNT)
                      WHEN WN = "GameMode" AND WS-TYPE = 3
                          CALL "PB-GET-INT" USING PB-BUFFER WS-INT
                          MOVE WS-INT TO WL-MODE(WL-COUNT)

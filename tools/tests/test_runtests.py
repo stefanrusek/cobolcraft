@@ -45,12 +45,17 @@ class PackageSelection(unittest.TestCase):
         self.assertEqual(runtests.select_packages(["client", "proto"]), ["proto", "client"])
 
     def test_build_order_includes_dependencies(self):
-        self.assertEqual(runtests.build_order(["core"]), ["shim", "proto", "core"])
+        self.assertEqual(runtests.build_order(["core"]), ["shim", "formats", "proto", "content", "core"])
         self.assertEqual(runtests.build_order(["extract"]), ["shim", "formats", "proto", "content", "extract"])
         self.assertEqual(runtests.build_order(["shim"]), ["shim"])
         self.assertEqual(
-            runtests.build_order(["server", "client"]), ["shim", "formats", "proto", "core", "server", "client"]
+            runtests.build_order(["server", "client"]), ["shim", "formats", "proto", "content", "core", "server", "client"]
         )
+
+    def test_packages_build_the_libraries_their_makefile_links(self):
+        # a fresh gate must build content before core, server and client (DEPS_* of the root Makefile)
+        for package in ("core", "server", "client"):
+            self.assertIn("content", runtests.build_order([package]))
 
     def test_convergence_is_selected_only_by_name_and_comes_last(self):
         self.assertNotIn("convergence", runtests.select_packages([]))

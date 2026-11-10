@@ -3269,76 +3269,76 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 **Goal**: the client holds 16-bit states, any number of sections per dimension and three dimensions, decoding both the 001 and the 24-section chunk forms, so no later client gate sees a form it cannot read (lane note). **Independent Test**: `test_world_replica`, `test_mesher` over the 24-section fixture.
 
-- [ ] T2939 [US11-client] Write consumer test `client/tests/contract_content_consumer.cob`: opens a set through a `contract/fixtures/content/` tree, asserts status words and one block lookup
-- [ ] T2940 [US11-client] Write test cases in `client/tests/test_world_replica.cob` for a 24-section chunk through `PB-GET-CHUNK-24` (16-bit states, 4-bit light, biome containers, rows sized from the dimension's `min_y` and `height`) and for the 001 form
-- [ ] T2941 [US11-client] Re-base `client/src/world-replica.cob` on `contract/copy/CELLS.cpy` and delete `client/copy/CLCELLS.cpy`; size the replica from the dimension and the content set, no cap smaller than the standard content (`CL-MAX-SECTIONS`, `CL-MAX-STATES`, `CL-MAX-BIOMES` in `client/copy/CLCONST.cpy`)
-- [ ] T2942 [US11-client] Write test cases in `client/tests/test_mesher.cob` for a 24-section column: per-state opacity and cull tables built once at load from `CONTENT-*`, states above 255 mesh correctly, section height is the dimension's
-- [ ] T2943 [US11-client] Re-base `client/src/mesher.cob` on the new cell model and the per-state tables (rewrite of the "16-high section" assumption)
-- [ ] T2944 [US11-client] Update `client/src/protocol-client.cob` chunk handling to decode both forms and split the file by packet family into `client/src/protocol-world.cob`, `protocol-play.cob`, `protocol-config.cob` as it is touched (1,646 lines)
-- [ ] T2945 [US11-client] Write contract test cases in `client/tests/contract_wire_client.cob` for the chunk, registry and tags fixtures it receives
-- [ ] T2946 [US11-client] Update `client/src/sp-host.cob` for the new core API (settings, three dimensions) and its tests `client/tests/test_sp_host.cob`
-- [ ] T2947 [US11-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2939 [US11-client] Write consumer test `client/tests/contract_content_consumer.cob`: opens a set through a `contract/fixtures/content/` tree, asserts status words and one block lookup
+- [X] T2940 [US11-client] Write test cases in `client/tests/test_world_replica.cob` for a 24-section chunk through `PB-GET-CHUNK-24` (16-bit states, 4-bit light, biome containers, rows sized from the dimension's `min_y` and `height`) and for the 001 form
+- [X] T2941 [US11-client] Re-base `client/src/world-replica.cob` on `contract/copy/CELLS.cpy` and delete `client/copy/CLCELLS.cpy`; size the replica from the dimension and the content set, no cap smaller than the standard content (`CL-MAX-SECTIONS`, `CL-MAX-STATES`, `CL-MAX-BIOMES` in `client/copy/CLCONST.cpy`)
+- [X] T2942 [US11-client] Write test cases in `client/tests/test_mesher.cob` for a 24-section column: per-state opacity and cull tables built once at load from `CONTENT-*`, states above 255 mesh correctly, section height is the dimension's
+- [X] T2943 [US11-client] Re-base `client/src/mesher.cob` on the new cell model and the per-state tables (rewrite of the "16-high section" assumption)
+- [X] T2944 [US11-client] Update `client/src/protocol-client.cob` chunk handling to decode both forms and split the file by packet family into `client/src/protocol-world.cob`, `protocol-play.cob`, `protocol-config.cob` as it is touched (1,646 lines)
+- [X] T2945 [US11-client] Write contract test cases in `client/tests/contract_wire_client.cob` for the chunk, registry and tags fixtures it receives
+- [X] T2946 [US11-client] Update `client/src/sp-host.cob` for the new core API (settings, three dimensions) and its tests `client/tests/test_sp_host.cob`
+- [X] T2947 [US11-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 56: US1-client — start-up check and banner
 
-- [ ] T2948 [US1-client] Write test `client/tests/test_args.cob` cases for `--generated-dir` (22 §5.1) and the default `<game dir>/generated`
-- [ ] T2949 [US1-client] Add `--generated-dir` to `client/src/args.cob` and `client/copy/CLARGS.cpy`
-- [ ] T2950 [US1-client] Write acceptance test `client/tests/acc_f2us1_banner.cob` (US1-3): with no valid packs the title screen shows the built-in-language banner `cobolcraft.packs.*` (`docs/protocol/22-extraction-tool.md` §9.2) stating the status and how to build the packs; with valid packs the banner is absent; the cobolcraft type is unaffected [FR-001, FR-002; SC-012]
-- [ ] T2951 [US1-client] Implement the start-up `CORE-PACKS-STATUS` call, the banner state and the title screen banner in `client/src/main.cob` and `client/src/screens/title.cob`
-- [ ] T2952 [US1-client] Write acceptance test `client/tests/acc_f2us1_loaders.cob` (US1-4, real input): after a real extraction into `build/generated-test/` the client's content open of the standard set reports no loader error [FR-001, FR-002; SC-012]
-- [ ] T2953 [US1-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2948 [US1-client] Write test `client/tests/test_args.cob` cases for `--generated-dir` (22 §5.1) and the default `<game dir>/generated`
+- [X] T2949 [US1-client] Add `--generated-dir` to `client/src/args.cob` and `client/copy/CLARGS.cpy`
+- [X] T2950 [US1-client] Write acceptance test `client/tests/acc_f2us1_banner.cob` (US1-3): with no valid packs the title screen shows the built-in-language banner `cobolcraft.packs.*` (`docs/protocol/22-extraction-tool.md` §9.2) stating the status and how to build the packs; with valid packs the banner is absent; the cobolcraft type is unaffected [FR-001, FR-002; SC-012]
+- [X] T2951 [US1-client] Implement the start-up `CORE-PACKS-STATUS` call, the banner state and the title screen banner in `client/src/main.cob` and `client/src/screens/title.cob`
+- [X] T2952 [US1-client] Write acceptance test `client/tests/acc_f2us1_loaders.cob` (US1-4, real input): after a real extraction into `build/generated-test/` the client's content open of the standard set reports no loader error [FR-001, FR-002; SC-012]
+- [X] T2953 [US1-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 57: US2-client — world type choice, remembered type, refusal
 
-- [ ] T2954 [US2-client] Write acceptance test `client/tests/acc_f2us2_create_screen.cob` (US2-1, US2-2, FR-003): with valid packs both types are offered and standard is the default; with packs not `ok` the standard choice stays selectable and Create is refused with the explanation text `cobolcraft.world_type.*` of how to build the packs, and nothing is created; the cobolcraft type creates [SC-011]
-- [ ] T2955 [US2-client] Add the type choice, the refusal text and the settings fill (`CS-WORLD-TYPE`, `CS-SEED-TEXT`) to `client/src/screens/create-world.cob`
-- [ ] T2956 [US2-client] Write test `client/tests/test_debug_select.cob` (plan "Operator addition: debug world"): holding Ctrl while clicking the world-type button on the create-world screen selects `debug`; without Ctrl the button cycles only standard and cobolcraft; the word `debug` appears nowhere in the screen's render list or built-in language; Create with `debug` selected is refused with the packs explanation when the packs are not `ok`
-- [ ] T2957 [US2-client] Implement the hidden Ctrl-click selection in `client/src/screens/create-world.cob` and the Ctrl state read in `client/src/controls.cob`
-- [ ] T2958 [US2-client] Write acceptance test `client/tests/acc_f2us2_world_list.cob` (US2-3): the world list shows each world's type; opening a standard world with packs not `ok` is refused with the reason (`docs/design/world-types.md` §8.2) [FR-003, FR-004, FR-005, FR-037; SC-011]
-- [ ] T2959 [US2-client] Implement the type column and the refusal in `client/src/screens/world-list.cob` and `client/src/game-dir.cob`
-- [ ] T2960 [US2-client] Write test `client/tests/test_wt16.cob`: on a multiplayer join the client decides the world type from `minecraft:dimension_type` at Finish Configuration (WT-16) and opens the matching content set
-- [ ] T2961 [US2-client] Implement the WT-16 decision in `client/src/net-client.cob`
-- [ ] T2962 [US2-client] Add built-in-language entries `cobolcraft.packs.*` and `cobolcraft.world_type.*` to `client/src/packs/builtin.cob` (texts from `docs/design/builtin-ui-art.md` §7.2) with their test cases in `client/tests/test_builtin_files.cob`
-- [ ] T2963 [US2-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2954 [US2-client] Write acceptance test `client/tests/acc_f2us2_create_screen.cob` (US2-1, US2-2, FR-003): with valid packs both types are offered and standard is the default; with packs not `ok` the standard choice stays selectable and Create is refused with the explanation text `cobolcraft.world_type.*` of how to build the packs, and nothing is created; the cobolcraft type creates [SC-011]
+- [X] T2955 [US2-client] Add the type choice, the refusal text and the settings fill (`CS-WORLD-TYPE`, `CS-SEED-TEXT`) to `client/src/screens/create-world.cob`
+- [X] T2956 [US2-client] Write test `client/tests/test_debug_select.cob` (plan "Operator addition: debug world"): holding Ctrl while clicking the world-type button on the create-world screen selects `debug`; without Ctrl the button cycles only standard and cobolcraft; the word `debug` appears nowhere in the screen's render list or built-in language; Create with `debug` selected is refused with the packs explanation when the packs are not `ok`
+- [X] T2957 [US2-client] Implement the hidden Ctrl-click selection in `client/src/screens/create-world.cob` and the Ctrl state read in `client/src/controls.cob`
+- [X] T2958 [US2-client] Write acceptance test `client/tests/acc_f2us2_world_list.cob` (US2-3): the world list shows each world's type; opening a standard world with packs not `ok` is refused with the reason (`docs/design/world-types.md` §8.2) [FR-003, FR-004, FR-005, FR-037; SC-011]
+- [X] T2959 [US2-client] Implement the type column and the refusal in `client/src/screens/world-list.cob` and `client/src/game-dir.cob`
+- [X] T2960 [US2-client] Write test `client/tests/test_wt16.cob`: on a multiplayer join the client decides the world type from `minecraft:dimension_type` at Finish Configuration (WT-16) and opens the matching content set
+- [X] T2961 [US2-client] Implement the WT-16 decision in `client/src/net-client.cob`
+- [X] T2962 [US2-client] Add built-in-language entries `cobolcraft.packs.*` and `cobolcraft.world_type.*` to `client/src/packs/builtin.cob` (texts from `docs/design/builtin-ui-art.md` §7.2) with their test cases in `client/tests/test_builtin_files.cob`
+- [X] T2963 [US2-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 58: US3-client — pack stack and user packs
 
-- [ ] T2964 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_stack.cob` (US3-5, US3-6): stack order of `docs/design/faithful-pack-mapping.md` §9.1 bottom to top: built-in (1), optional skin (2, absent unless enabled), generated vanilla (3), the user's packs in the user's order (4), server packs (5); the top-most pack that has a path wins (08 §3.2); `minecraft:` anywhere a vanilla equivalent exists; a pack's `minecraft:` textures do not touch `cobolcraft:` content unless the optional skin is on (FR-006) [SC-001]
-- [ ] T2965 [US3-client] Extend `client/src/packs/stack.cob` with the five levels of §9.1 (generated vanilla at level 3, a slot for the skin at level 2) and by-path override across them
-- [ ] T2966 [US3-client] Write acceptance test `client/tests/acc_f2us3_user_pack.cob` (US3-1, US3-4, real input): the real Faithful zip lists on the pack screen, enables, moves and survives a restart; disabling returns the generated look [FR-007, FR-008, FR-009, FR-010; SC-001]
-- [ ] T2967 [US3-client] Make user packs from `resourcepacks/` load by zip or folder in `client/src/packs/local.cob`
-- [ ] T2968 [US3-client] Write test `client/tests/test_atlas.cob` cases for a generic sprite size (16 and 32 pixels from the packs, not a constant) and more than 128 sprites (1,297 block sprites for Faithful)
-- [ ] T2969 [US3-client] Rewrite `client/src/atlas.cob` stitching for any sprite size and count (`CL-MAX-SPRITES` sized from the packs)
-- [ ] T2970 [US3-client] Write test `client/tests/test_animation.cob`: `.mcmeta` animation files (frame order, frame time, interpolate) schedule frame updates per cell (14, FR-010); a malformed animation file falls back to the pack below
-- [ ] T2971 [US3-client] Implement animation timers in `client/src/packs/mcmeta.cob` and the per-frame `cc_vk_texture_update` calls in `client/src/render-list.cob`
-- [ ] T2972 [US3-client] Write edge-case test `client/tests/test_pack_bad_texture.cob` (spec edge case): a texture the client cannot decode makes that sprite fall back to the pack below it, the rest of the pack loads, nothing crashes
-- [ ] T2973 [US3-client] Write edge-case test `client/tests/test_pack_bad_animation.cob` (spec edge case): a malformed animation file leaves the sprite static from the pack below and the rest of the pack loads
-- [ ] T2974 [US3-client] Write edge-case test `client/tests/test_connected_ignored.cob` (spec edge case, FR-010): a connected-texture rule the client does not support is ignored without error
-- [ ] T2975 [US3-client] Make unsupported rules, undecodable textures and malformed animations non-fatal with fallback to the pack below in `client/src/packs/source.cob` and `client/src/packs/mcmeta.cob`
-- [ ] T2976 [US3-client] Write edge-case test `client/tests/test_pack_removed.cob` (spec edge case): a pack zip removed or renamed while enabled makes the stack fall back and the pack screen says so
-- [ ] T2977 [US3-client] Write edge-case test `client/tests/test_pack_same_path.cob` (spec edge case): two packs supplying the same path, the higher pack in the stack wins
-- [ ] T2978 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_screen.cob` (US3-1): the pack screen lists, enables, disables and reorders, and the removed-zip and same-path edge cases above show on it [FR-007, FR-008, FR-009, FR-010; SC-001]
-- [ ] T2979 [US3-client] Update `client/src/screens/pack-select.cob` for the new states
-- [ ] T2980 [US3-client] Write acceptance test `client/tests/acc_f2us3_skin.cob` (FR-006, FR-005): the optional Faithful skin is off by default; enabling it on the resource pack screen of a cobolcraft-type world inserts it at level 2; with it on, the cobolcraft blocks and items resolve the `minecraft:` texture ids of `docs/design/faithful-pack-mapping.md` §3 and §4 from the Faithful zip, while the `turf` models and the entity strips keep the built-in art; with it off, or in a standard world, `cobolcraft:` content is untouched; the choice persists across a restart [SC-001]
-- [ ] T2981 [US3-client] Implement the skin pack in `client/src/packs/builtin.cob` (the model overrides of §9.3, no texture shipped) and `client/src/packs/stack.cob` (level 2, off by default) and its toggle row in `client/src/screens/pack-select.cob`, persisted with the enabled packs
-- [ ] T2982 [US3-client] Write acceptance test `client/tests/acc_f2us3_coverage_walk.cob` (US3-2, SC-001): with the real Faithful zip, a checklist walk resolves blocks, items, mobs, GUI sprites, particles, weather and font from the pack and no resolved sprite is the missing-texture stripe where the pack covers it (FR-015 keeps the stripes elsewhere)
-- [ ] T2983 [US3-client] Make the walk pass: add the resolution paths for GUI, particle, weather and font sprites in `client/src/packs/stack.cob`, `client/src/ui-render.cob`, `client/src/weather-render.cob`
-- [ ] T2984 [US3-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2964 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_stack.cob` (US3-5, US3-6): stack order of `docs/design/faithful-pack-mapping.md` §9.1 bottom to top: built-in (1), optional skin (2, absent unless enabled), generated vanilla (3), the user's packs in the user's order (4), server packs (5); the top-most pack that has a path wins (08 §3.2); `minecraft:` anywhere a vanilla equivalent exists; a pack's `minecraft:` textures do not touch `cobolcraft:` content unless the optional skin is on (FR-006) [SC-001]
+- [X] T2965 [US3-client] Extend `client/src/packs/stack.cob` with the five levels of §9.1 (generated vanilla at level 3, a slot for the skin at level 2) and by-path override across them
+- [X] T2966 [US3-client] Write acceptance test `client/tests/acc_f2us3_user_pack.cob` (US3-1, US3-4, real input): the real Faithful zip lists on the pack screen, enables, moves and survives a restart; disabling returns the generated look [FR-007, FR-008, FR-009, FR-010; SC-001]
+- [X] T2967 [US3-client] Make user packs from `resourcepacks/` load by zip or folder in `client/src/packs/local.cob`
+- [X] T2968 [US3-client] Write test `client/tests/test_atlas.cob` cases for a generic sprite size (16 and 32 pixels from the packs, not a constant) and more than 128 sprites (1,297 block sprites for Faithful)
+- [X] T2969 [US3-client] Rewrite `client/src/atlas.cob` stitching for any sprite size and count (`CL-MAX-SPRITES` sized from the packs)
+- [X] T2970 [US3-client] Write test `client/tests/test_animation.cob`: `.mcmeta` animation files (frame order, frame time, interpolate) schedule frame updates per cell (14, FR-010); a malformed animation file falls back to the pack below
+- [X] T2971 [US3-client] Implement animation timers in `client/src/packs/mcmeta.cob` and the per-frame `cc_vk_texture_update` calls in `client/src/render-list.cob`
+- [X] T2972 [US3-client] Write edge-case test `client/tests/test_pack_bad_texture.cob` (spec edge case): a texture the client cannot decode makes that sprite fall back to the pack below it, the rest of the pack loads, nothing crashes
+- [X] T2973 [US3-client] Write edge-case test `client/tests/test_pack_bad_animation.cob` (spec edge case): a malformed animation file leaves the sprite static from the pack below and the rest of the pack loads
+- [X] T2974 [US3-client] Write edge-case test `client/tests/test_connected_ignored.cob` (spec edge case, FR-010): a connected-texture rule the client does not support is ignored without error
+- [X] T2975 [US3-client] Make unsupported rules, undecodable textures and malformed animations non-fatal with fallback to the pack below in `client/src/packs/source.cob` and `client/src/packs/mcmeta.cob`
+- [X] T2976 [US3-client] Write edge-case test `client/tests/test_pack_removed.cob` (spec edge case): a pack zip removed or renamed while enabled makes the stack fall back and the pack screen says so
+- [X] T2977 [US3-client] Write edge-case test `client/tests/test_pack_same_path.cob` (spec edge case): two packs supplying the same path, the higher pack in the stack wins
+- [X] T2978 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_screen.cob` (US3-1): the pack screen lists, enables, disables and reorders, and the removed-zip and same-path edge cases above show on it [FR-007, FR-008, FR-009, FR-010; SC-001]
+- [X] T2979 [US3-client] Update `client/src/screens/pack-select.cob` for the new states
+- [X] T2980 [US3-client] Write acceptance test `client/tests/acc_f2us3_skin.cob` (FR-006, FR-005): the optional Faithful skin is off by default; enabling it on the resource pack screen of a cobolcraft-type world inserts it at level 2; with it on, the cobolcraft blocks and items resolve the `minecraft:` texture ids of `docs/design/faithful-pack-mapping.md` §3 and §4 from the Faithful zip, while the `turf` models and the entity strips keep the built-in art; with it off, or in a standard world, `cobolcraft:` content is untouched; the choice persists across a restart [SC-001]
+- [X] T2981 [US3-client] Implement the skin pack in `client/src/packs/builtin.cob` (the model overrides of §9.3, no texture shipped) and `client/src/packs/stack.cob` (level 2, off by default) and its toggle row in `client/src/screens/pack-select.cob`, persisted with the enabled packs
+- [X] T2982 [US3-client] Write acceptance test `client/tests/acc_f2us3_coverage_walk.cob` (US3-2, SC-001): with the real Faithful zip, a checklist walk resolves blocks, items, mobs, GUI sprites, particles, weather and font from the pack and no resolved sprite is the missing-texture stripe where the pack covers it (FR-015 keeps the stripes elsewhere)
+- [X] T2983 [US3-client] Make the walk pass: add the resolution paths for GUI, particle, weather and font sprites in `client/src/packs/stack.cob`, `client/src/ui-render.cob`, `client/src/weather-render.cob`
+- [X] T2984 [US3-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 59: US4-client — Open Pack Folder
 
-- [ ] T2985 [US4-client] Write acceptance test `client/tests/acc_f2us4_open_folder.cob` (US4-1, US4-2, Q-2): the client state names the opener program; the test sets `/usr/bin/true`, presses Open Pack Folder, `resourcepacks/` is created if missing and the opener received the folder; a pack copied in is listed after refresh without a restart; one run line names the opener substituted [FR-008; SC-010]
-- [ ] T2986 [US4-client] Write contract test `client/tests/contract_opener_production.cob`: a fresh client state names exactly `/usr/bin/open`, and a missing opener gives the `CC-NOTFOUND` path shown on the screen without a crash
-- [ ] T2987 [US4-client] Implement the opener state, the button and `PACK-FOLDER-SCAN` refresh in `client/src/screens/pack-select.cob` and `client/copy/CLSTATE.cpy`
-- [ ] T2988 [US4-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2985 [US4-client] Write acceptance test `client/tests/acc_f2us4_open_folder.cob` (US4-1, US4-2, Q-2): the client state names the opener program; the test sets `/usr/bin/true`, presses Open Pack Folder, `resourcepacks/` is created if missing and the opener received the folder; a pack copied in is listed after refresh without a restart; one run line names the opener substituted [FR-008; SC-010]
+- [X] T2986 [US4-client] Write contract test `client/tests/contract_opener_production.cob`: a fresh client state names exactly `/usr/bin/open`, and a missing opener gives the `CC-NOTFOUND` path shown on the screen without a crash
+- [X] T2987 [US4-client] Implement the opener state, the button and `PACK-FOLDER-SCAN` refresh in `client/src/screens/pack-select.cob` and `client/copy/CLSTATE.cpy`
+- [X] T2988 [US4-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 60: US5-client — seamless textures
 
-- [ ] T2989 [US5-client] Write acceptance test `client/tests/acc_f2us5_seams.cob` (US5-1, SC-002): atlas readback shows padding around each cell per 12 §2.2 and §2.3 so a mip level of any cell never contains a neighbour's colour (fixtures with distinct cell colours at 16 and 32 pixels) [FR-011]
-- [ ] T2990 [US5-client] Implement padded stitching and the mip level count in `client/src/atlas.cob` and the `cc_vk_texture_ex` call in `client/src/render-list.cob`
-- [ ] T2991 [US5-client] Write test `client/tests/test_weather_atlas.cob` (CC-0003): rain and snow images of co-prime heights (17 and 19) produce a bounded weather atlas
-- [ ] T2992 [US5-client] Bound the weather atlas in `client/src/weather-render.cob` and `client/src/atlas.cob`
-- [ ] T2993 [US5-client] Gate: run `make gate-client` and record the command and real output
+- [X] T2989 [US5-client] Write acceptance test `client/tests/acc_f2us5_seams.cob` (US5-1, SC-002): atlas readback shows padding around each cell per 12 §2.2 and §2.3 so a mip level of any cell never contains a neighbour's colour (fixtures with distinct cell colours at 16 and 32 pixels) [FR-011]
+- [X] T2990 [US5-client] Implement padded stitching and the mip level count in `client/src/atlas.cob` and the `cc_vk_texture_ex` call in `client/src/render-list.cob`
+- [X] T2991 [US5-client] Write test `client/tests/test_weather_atlas.cob` (CC-0003): rain and snow images of co-prime heights (17 and 19) produce a bounded weather atlas
+- [X] T2992 [US5-client] Bound the weather atlas in `client/src/weather-render.cob` and `client/src/atlas.cob`
+- [X] T2993 [US5-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 61: US6-client — HUD and screens
 
@@ -3355,20 +3355,20 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 62: US7-client — flight only in creative
 
-- [ ] T3004 [US7-client] Write acceptance test `client/tests/acc_f2us7_survival_climb.cob` first, reproducing the first run's survival climb (P-client-5): in survival, double Space in the air and Space held in the air never rises above one jump height from the ground and never starts flying; record the failing observation [FR-016, FR-017; SC-004]
-- [ ] T3005 [US7-client] Write acceptance test `client/tests/acc_f2us7_creative_flight.cob` (US7-1, SC-004): in creative double Space toggles flying 20 of 20 times; in survival 0 of 20; spectator follows `docs/protocol/13` §1.4 [FR-016, FR-017]
-- [ ] T3006 [US7-client] Fix the jump and flight rules in `client/src/physics.cob` (jump only while on ground; flight toggle only when the abilities grant it) so both tests pass. If the cause is a core acceptance of `on-ground`, stop and escalate to multi-package
-- [ ] T3007 [US7-client] Escalation path (constitution 3.6 plan-return): if `acc_f2us7_survival_climb` still fails after the client fix because the core accepts the client's `on-ground` claim, record the finding with the failing observation in the phase evidence, stop the lane's US7 slice and return to the orchestrator for a multi-package re-plan (a core slice and a Convergence test); otherwise mark this task done with the note `no core cause found`
-- [ ] T3008 [US7-client] Write test case in `client/tests/test_physics.cob` for held Space on the ground in survival: repeats jumps as before, never exceeds one jump height in the air (edge case)
-- [ ] T3009 [US7-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3004 [US7-client] Write acceptance test `client/tests/acc_f2us7_survival_climb.cob` first, reproducing the first run's survival climb (P-client-5): in survival, double Space in the air and Space held in the air never rises above one jump height from the ground and never starts flying; record the failing observation [FR-016, FR-017; SC-004]
+- [X] T3005 [US7-client] Write acceptance test `client/tests/acc_f2us7_creative_flight.cob` (US7-1, SC-004): in creative double Space toggles flying 20 of 20 times; in survival 0 of 20; spectator follows `docs/protocol/13` §1.4 [FR-016, FR-017]
+- [X] T3006 [US7-client] Fix the jump and flight rules in `client/src/physics.cob` (jump only while on ground; flight toggle only when the abilities grant it) so both tests pass. If the cause is a core acceptance of `on-ground`, stop and escalate to multi-package
+- [X] T3007 [US7-client] Escalation path (constitution 3.6 plan-return): if `acc_f2us7_survival_climb` still fails after the client fix because the core accepts the client's `on-ground` claim, record the finding with the failing observation in the phase evidence, stop the lane's US7 slice and return to the orchestrator for a multi-package re-plan (a core slice and a Convergence test); otherwise mark this task done with the note `no core cause found`
+- [X] T3008 [US7-client] Write test case in `client/tests/test_physics.cob` for held Space on the ground in survival: repeats jumps as before, never exceeds one jump height in the air (edge case)
+- [X] T3009 [US7-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 63: US8-client — break overlay
 
 - [ ] T3010 [US8-client] Write acceptance test `client/tests/acc_f2us8_overlay.cob` (US8-1 to US8-4): Block Destruction stages 0 to 9 draw the crack overlay on the block, stage -1 and a released button remove it, another player's stage draws too, and the overlay uses the pack's break-stage textures (12 §4, `faithful-pack-mapping.md`) [FR-023; SC-006]
 - [ ] T3011 [US8-client] Implement the break overlay in `client/src/break-overlay.cob` and its draw in `client/src/render-list.cob`
 - [ ] T3012 [US8-client] Write edge-case test `client/tests/test_overlay_many.cob` (spec edge cases): several players break different blocks at once and each block shows its own stage; progress interrupted by a held-item change, a changed target or another player's break removes the overlay
-- [ ] T3013 [US8-client] Write test `client/tests/test_dig_actions.cob`: the client sends Player Action start, abort and finish with sequence ids (13 §2.3) and aborts on a held item change
-- [ ] T3014 [US8-client] Implement the dig action sending in `client/src/controls.cob`
+- [X] T3013 [US8-client] Write test `client/tests/test_dig_actions.cob`: the client sends Player Action start, abort and finish with sequence ids (13 §2.3) and aborts on a held item change
+- [X] T3014 [US8-client] Implement the dig action sending in `client/src/controls.cob`
 - [ ] T3015 [US8-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 64: US9-client — inventory screen and recipe book

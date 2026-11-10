@@ -78,6 +78,8 @@
  78 ACT-PACK-ACCEPT         VALUE 37.  *> pack prompt: accept the server's packs
  78 ACT-PACK-DECLINE        VALUE 38.  *> pack prompt: decline the server's packs
  78 ACT-PACKS-DONE          VALUE 39.  *> pack screen: save the choice, reload, the title screen
+ 78 ACT-WORLD-TYPE          VALUE 40.   *> create-world: cycle standard / cobolcraft (Ctrl: debug)
+ 78 ACT-OPEN-PACK-FOLDER    VALUE 41.   *> pack screen: open resourcepacks/ with the opener (US4)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
  78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
@@ -103,8 +105,8 @@
  78 SLS-UNREACHABLE         VALUE 3.
 
 *> Mesh slots (cc_vk_mesh 1 to 65535): slot 1 is the user interface; each section of each replica
-*> chunk row has an opaque and a translucent slot (MESH-SLOT-BASE + ((row - 1) * 16 + section) * 2,
-*> + 1 for the translucent one).
+*> chunk row has an opaque and a translucent slot (MESH-SLOT-BASE + ((row - 1) * 24 + section) * 2,
+*> + 1 for the translucent one; 24 = CL-MAX-SECTIONS, 1089 rows end below MESH-SLOT-ENTITIES).
  78 MESH-SLOT-UI            VALUE 1.
  78 MESH-SLOT-BASE          VALUE 2.
 *> The entity figures of the frame (one mesh, eye-relative): above every section slot.
@@ -141,10 +143,12 @@
  78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
  78 CL-MAX-WIDGETS          VALUE 48.
  78 CL-MAX-CHUNKS           VALUE 1089.
- 78 CL-MAX-SECTIONS         VALUE 16.
+ 78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
- 78 CL-MAX-SPRITES          VALUE 128.
- 78 CL-MAX-STATES           VALUE 18.
+ 78 CL-MAX-SPRITES          VALUE 4096. *> block and item atlas sprites (Faithful alone has 1,297 block sprites)
+ 78 CL-MAX-STATES           VALUE 65536. *> state ids are 16 bits (CE-STATE, contract/copy/CELLS.cpy)
+ 78 CL-STAND-STATES         VALUE 18.   *> states of the stand-in table below
+ 78 CL-MAX-BAKED            VALUE 320.  *> states with baked models (BM-STATE)
  78 CL-MAX-QUADS            VALUE 24.
  78 CL-MAX-DRAWS            VALUE 8192.
  78 CL-MAX-UPLOADS          VALUE 4096.
@@ -162,7 +166,7 @@
  78 CL-MAX-SERVER-PACKS     VALUE 8.   *> server-pushed packs of one connection (08 §9)
  78 CL-MAX-ICONS            VALUE 16.  *> pack icon cells of the UI atlas (16 x 16 each)
  78 CL-MAX-PACK-ERRORS      VALUE 8.   *> pack errors kept from the last reload (US18-5)
- 78 CL-MAX-PACK-FILES       VALUE 8192. *> files of one local or server pack
+ 78 CL-MAX-PACK-FILES       VALUE 16384. *> files of one local, generated or server pack (vanilla has 11,605)
  78 CL-PACK-SIZE-LIMIT      VALUE 262144000.  *> server pack download limit (08 §9.3)
  78 CL-MAX-UI-VERTICES      VALUE 24576.
  78 CL-MAX-ENTITIES         VALUE 256.
@@ -170,7 +174,7 @@
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-MAX-RECIPES          VALUE 16.
- 78 CL-MAX-BIOMES           VALUE 8.
+ 78 CL-MAX-BIOMES           VALUE 255.  *> biome ids are one byte; 255 is none known
 *> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
  78 CL-MAX-WX-VERTICES      VALUE 3468.
  78 CL-PROTOCOL             VALUE 777.

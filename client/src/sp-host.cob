@@ -27,10 +27,14 @@
 *> USING CLIENT-STATE: SP-SETTINGS for a hosted world: survival, the operator-surface §2 defaults
 *> (description, view distance 8, combat, hostile mobs, weather changes and extra dimensions on),
 *> no allow-list (a new single-player world seeds AllowListEnforced 0, 07 §9.2), no server pack,
-*> host kind 1 (SP-OPEN adds the host name, game mode and world name).
+*> host kind 1 (SP-OPEN adds the host name, game mode and world name, and the game directory), the
+*> world type cobolcraft (the create-world screen sets CS-WORLD-TYPE and CS-SEED-TEXT for a new
+*> world: core-host-delta §2; SP-CREATE-TYPE starts as cobolcraft, so a world opened without the
+*> screen is a cobolcraft one) and no seed text.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY COREAPI.
+ COPY CONTENT.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -41,6 +45,8 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED
      MOVE 1 TO CS-HOST-KIND
+     MOVE "cobolcraft" TO CS-WORLD-TYPE
+     MOVE CT-TYPE-COBOLCRAFT TO SP-CREATE-TYPE
      MOVE CORE-SETTINGS TO SP-SETTINGS
      GOBACK.
  END PROGRAM SP-DEFAULTS.
@@ -54,6 +60,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY COREAPI.
+ COPY CONTENT.
  01 WS-PATH                PIC X(1200).
  01 WS-CREATED             BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
@@ -74,6 +81,18 @@
      MOVE L-MODE TO CS-DEFAULT-MODE
      MOVE SPACES TO CS-NEW-WORLD-NAME
      MOVE L-NAME(1:L-NAME-LENGTH) TO CS-NEW-WORLD-NAME
+     MOVE SPACES TO CS-GAME-DIR
+     MOVE CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) TO CS-GAME-DIR
+     MOVE SPACES TO CS-GENERATED-DIR CS-SEED-TEXT
+     MOVE CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) TO CS-GENERATED-DIR
+     EVALUATE SP-CREATE-TYPE
+         WHEN CT-TYPE-STANDARD
+             MOVE "standard" TO CS-WORLD-TYPE
+         WHEN CT-TYPE-DEBUG
+             MOVE "debug" TO CS-WORLD-TYPE
+         WHEN OTHER
+             MOVE "cobolcraft" TO CS-WORLD-TYPE
+     END-EVALUATE
      MOVE CORE-SETTINGS TO SP-SETTINGS
      MOVE LOW-VALUES TO WS-PATH
      STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/saves/" L-FOLDER(1:L-FOLDER-LENGTH)

@@ -13,18 +13,32 @@
  01 WS-I                   BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  01 WS-TEX                 BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  01 WS-WRAP                BINARY-LONG.
  01 WS-CLEAR               FLOAT-SHORT OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-PRESENTED            BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-PRESENTED.
+     MOVE CC-TEX-BLOCKS TO WS-TEX
      IF AT-UPLOAD(1) = 1
-         MOVE CC-TEX-BLOCKS TO WS-TEX
-         CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE AT-W BY VALUE AT-H
-             BY VALUE AT-ADDR RETURNING WS-RC
+         CALL STATIC "cc_vk_texture_ex" USING BY VALUE WS-TEX BY VALUE AT-W BY VALUE AT-H
+             BY VALUE AT-ADDR BY VALUE AT-MIPS RETURNING WS-RC
          MOVE 0 TO AT-UPLOAD(1)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AN-COUNT
+             MOVE 0 TO AN-DIRTY(WS-I)
+         END-PERFORM
      END-IF
+*>   An animated sprite whose frame changed: just its cell (the whole atlas upload above has it already).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AN-COUNT
+         IF AN-DIRTY(WS-I) = 1
+             MOVE AN-SPRITE(WS-I) TO WS-S
+             CALL STATIC "cc_vk_texture_update" USING BY VALUE WS-TEX BY VALUE AT-X(WS-S)
+                 BY VALUE AT-Y(WS-S) BY VALUE AN-FRAME-W(WS-I) BY VALUE AN-FRAME-H(WS-I)
+                 BY VALUE AN-OUT(WS-I) RETURNING WS-RC
+             MOVE 0 TO AN-DIRTY(WS-I)
+         END-IF
+     END-PERFORM
      IF AT-UPLOAD(2) = 1
          MOVE CC-TEX-ENTITIES TO WS-TEX
          CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE EA-W BY VALUE EA-H

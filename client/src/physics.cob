@@ -26,7 +26,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-INPUT.
-*> USING CLIENT-STATE (world screen): look and the Space presses of this frame.
+*> USING CLIENT-STATE (world screen): look and the Space presses of this frame; a spectator with
+*> mayfly flies at once (13 section 1.4).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -38,10 +39,15 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
      COMPUTE PL-YAW = PL-YAW + IN-DELTA-X * 0.15
      COMPUTE PL-PITCH = FUNCTION MIN(90, FUNCTION MAX(-90, PL-PITCH + IN-DELTA-Y * 0.15))
+     COMPUTE WS-CAN-FLY = PL-ABILITIES / 4
+     COMPUTE WS-CAN-FLY = FUNCTION MOD(WS-CAN-FLY, 2)
+*>   Spectator (13 section 1.4): with mayfly set the Player flies at once, no double tap.
+     IF PL-MODE = 3 AND WS-CAN-FLY = 1 AND PL-FLYING = 0
+         MOVE 1 TO PL-FLYING
+         CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
+     END-IF
      IF IN-KEY-PRESSED(CC-KEY-SPACE + 1) = 1
          MOVE 1 TO PL-JUMP
-         COMPUTE WS-CAN-FLY = PL-ABILITIES / 4
-         COMPUTE WS-CAN-FLY = FUNCTION MOD(WS-CAN-FLY, 2)
          IF WS-CAN-FLY = 1 AND PL-SPACE-MS > 0 AND CL-NOW-MS - PL-SPACE-MS <= 300
              COMPUTE PL-FLYING = 1 - PL-FLYING
              MOVE 0 TO PL-SPACE-MS PL-JUMP PL-VY
@@ -74,6 +80,8 @@
  01 WS-BX                  BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-BELOW               FLOAT-LONG.
+ 01 WS-WAS-GROUND          BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -129,8 +137,15 @@
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS WS-HZ WS-BLOCKED
      COMPUTE PL-COLLIDED = FUNCTION MAX(WS-BX, WS-BLOCKED)
      COMPUTE WS-BELOW = PL-Y - 0.001
+     MOVE PL-ON-GROUND TO WS-WAS-GROUND
      CALL "PHYS-COLLIDES" USING CLIENT-STATE PL-X WS-BELOW PL-Z WS-HIT
      MOVE WS-HIT TO PL-ON-GROUND
+*>   Landing (13 section 1.4): a flying Player that comes down onto the ground stops flying (a spectator
+*>   keeps flying) and Player Abilities is sent.
+     IF PL-FLYING = 1 AND WS-WAS-GROUND = 0 AND PL-ON-GROUND = 1 AND PL-MODE NOT = 3
+         MOVE 0 TO PL-FLYING
+         CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
+     END-IF
      GOBACK.
  END PROGRAM PHYS-TICK.
 

@@ -15,6 +15,15 @@
     05 CL-NAME-LENGTH        BINARY-LONG.
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+    05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
+    05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
+    05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
+    05 CL-OPENER-LENGTH      BINARY-LONG.
+    05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
+    05 CL-WORLD-TYPE         BINARY-LONG.     *> CT-TYPE-* the game connection's content set was opened as (WT-16)
+    05 CL-PACKS-STATUS       BINARY-LONG.     *> CT-PACKS-* of the start-up check (CORE-PACKS-STATUS)
+    05 CL-PACKS-REASON       PIC X(128).      *> its reason text (a log line, not shown)
 *>  ---- run control ----
     05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
@@ -116,6 +125,9 @@
        10 SP-FOLDER          PIC X(80).      *> the hosted world's folder under saves/
        10 SP-FOLDER-LENGTH   BINARY-LONG.
        10 SP-CREATE-MODE     BINARY-LONG.    *> create-world screen: 0 survival, 1 creative
+       10 SP-CREATE-TYPE     BINARY-LONG.    *> create-world screen: world type, CT-TYPE-* (0 standard,
+                                             *> the default; 1 cobolcraft; 2 the hidden debug type)
+       10 SP-CREATE-REFUSED  PIC 9.          *> 1 = Create (or Play) was refused: the packs are not ok
 *>     Opening to others (US17; sp-host.cob, screens/open-to-others.cob): the screen's choices
 *>     (guest mode 0 survival or 1 creative; 1 = guests may use operator commands), the listener
 *>     (0 = not opened) and its port, the local addresses shown, and the guest connections: the
@@ -144,6 +156,7 @@
           15 WL-NAME         PIC X(64).      *> level.dat LevelName (the folder name without one)
           15 WL-NAME-LENGTH  BINARY-LONG.
           15 WL-MODE         BINARY-LONG.    *> level.dat GameMode
+          15 WL-TYPE         PIC X(16).      *> level.dat WorldType (cobolcraft when absent)
 *>  ---- local player and the joined world (05a Login, 03 registries) ----
     05 PL-STATE.
        10 PL-ENTITY-ID       BINARY-LONG.
@@ -220,7 +233,7 @@
           15 RG-DIM-HAS-SKY  PIC 9.
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
-       10 RG-BIOME-PRECIP    PIC 9 OCCURS 8 TIMES.   *> biome id + 1: has_precipitation
+       10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -240,6 +253,7 @@
        10 CT-BREAK-Y         BINARY-LONG.
        10 CT-BREAK-Z         BINARY-LONG.
        10 CT-BREAK-FACE      BINARY-LONG.
+       10 CT-BREAK-HELD      BINARY-LONG.    *> the held slot when the break began (a change aborts it)
        10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
@@ -254,13 +268,16 @@
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
+       10 WR-BLOCK-BITS      BINARY-LONG.    *> bits of the global block state palette of chunk
+                                             *> packets: 0 = derive (content set open: ceillog2 of
+                                             *> its state count, else 5, the 001 form)
        10 WR-CHUNK OCCURS 1089 TIMES.
           15 WR-USED         PIC 9.
           15 WR-CX           BINARY-LONG.
           15 WR-CZ           BINARY-LONG.
-          15 WR-ADDR         USAGE POINTER.  *> 3 x 65536 cells: states, sky light, block light
+          15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
-          15 WR-SECTION OCCURS 16 TIMES.
+          15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
              20 WR-OP-COUNT  BINARY-LONG.
@@ -363,6 +380,8 @@
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
        10 PK-PACK OCCURS 16 TIMES.
           15 PK-KIND         BINARY-LONG.    *> 0 built-in, 1 folder, 2 zip
+          15 PK-LEVEL        BINARY-LONG.    *> level of the stack: 1 built-in, 2 skin, 3 generated vanilla,
+                                             *> 4 user packs, 5 server packs (faithful-pack-mapping 9.1)
           15 PK-SERVER       BINARY-LONG.    *> server pack: its RP-PACK row, else 0
           15 PK-ID           PIC X(80).      *> file/<name>, server/<8 hex>/<uuid>
           15 PK-ID-LENGTH    BINARY-LONG.
@@ -445,7 +464,9 @@
        10 AT-H               BINARY-LONG.
        10 AT-ADDR            USAGE POINTER.  *> RGBA pixels, rows top to bottom
        10 AT-SPRITE-COUNT    BINARY-LONG.    *> sprite 1 is the missing texture
-       10 AT-SPRITE OCCURS 128 TIMES.
+       10 AT-PAD             BINARY-LONG.    *> padding around each sprite's slot, pixels (12 section 2.2)
+       10 AT-MIPS            BINARY-LONG.    *> mip levels of the atlas texture (levels below the first + 1)
+       10 AT-SPRITE OCCURS 4096 TIMES.
           15 AT-NAME         PIC X(80).      *> sprite id, e.g. cobolcraft:block/greystone
           15 AT-NAME-LENGTH  BINARY-LONG.
           15 AT-X            BINARY-LONG.
@@ -453,6 +474,28 @@
           15 AT-SW           BINARY-LONG.
           15 AT-SH           BINARY-LONG.
           15 AT-TRANSLUCENT  PIC 9.          *> 1 = some pixel has alpha below 255 (08 §5.3)
+          15 AT-PACK         BINARY-LONG.    *> the pack that gave the image (0 = the missing texture)
+          15 AT-ANIM         BINARY-LONG.    *> its row of AN-ANIM, 0 = not animated
+*>     Animated sprites of the block atlas (packs/mcmeta.cob ANIM-PARSE, atlas.cob ANIM-TICK): the
+*>     frames of each (a vertical strip kept whole), the sequence, the frame shown (AN-CUR: its picture
+*>     and blend), and AN-OUT, the pixels last written into the atlas cell (AN-DIRTY 1 until submitted
+*>     with cc_vk_texture_update).
+       10 AN-COUNT            BINARY-LONG.
+       10 AN-START-MS         BINARY-DOUBLE.  *> clock of the first ANIM-TICK (0 = none yet)
+       10 AN-ANIM OCCURS 256 TIMES.
+          15 AN-SPRITE       BINARY-LONG.
+          15 AN-FRAME-W      BINARY-LONG.
+          15 AN-FRAME-H      BINARY-LONG.
+          15 AN-INTERPOLATE  PIC 9.
+          15 AN-ENTRIES      BINARY-LONG.
+          15 AN-TOTAL        BINARY-LONG.
+          15 AN-CUR          BINARY-LONG.
+          15 AN-DIRTY        PIC 9.
+          15 AN-PIXELS       USAGE POINTER.
+          15 AN-OUT          USAGE POINTER.
+          15 AN-SEQ OCCURS 32 TIMES.
+             20 AN-SEQ-INDEX BINARY-LONG.
+             20 AN-SEQ-TIME  BINARY-LONG.
        10 UA-W               BINARY-LONG.
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
@@ -481,8 +524,14 @@
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
+*>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
+    05 ST-STATE.
+       10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
+       10 ST-COUNT           BINARY-LONG.    *> states known: the set's, else the stand-in table's
+       10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
+       10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
 *>  ---- baked block models (08 §4, §5): quads per block state ----
-    05 BM-STATE OCCURS 18 TIMES.
+    05 BM-STATE OCCURS 320 TIMES.
        10 BM-QUAD-COUNT      BINARY-LONG.
        10 BM-QUAD OCCURS 24 TIMES.
           15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE

@@ -13,6 +13,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLARGS.
  01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -103,6 +104,30 @@
          CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
              WS-KEY-LENGTH
      END-PERFORM
+*>   Open Pack Folder (US4) above the row of buttons; a line when its opener could not start.
+     MOVE 120 TO WS-W
+     COMPUTE WS-X = L-GW / 2 - 60
+     COMPUTE WS-Y = L-GH - 46
+     MOVE ACT-OPEN-PACK-FOLDER TO WS-ACTION
+     MOVE "cobolcraft.screen.packs.open_folder" TO WS-KEY
+     MOVE 35 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
+         WS-KEY-LENGTH
+     IF CL-OPEN-FAILED = 1
+         MOVE WK-LABEL TO WS-KIND
+         MOVE "cobolcraft.screen.packs.open_failed" TO WS-KEY
+         MOVE 35 TO WS-KEY-LENGTH
+         CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+         MOVE 1 TO LA-COUNT
+         MOVE CL-OPENER TO LA-TEXT(1)
+         MOVE CL-OPENER-LENGTH TO LA-LENGTH(1)
+         CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS WS-TEXT WS-LENGTH
+         MOVE 8 TO WS-X
+         COMPUTE WS-Y = L-GH - 56
+         MOVE 0 TO WS-STATE
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X WS-Y WS-Z3 WS-Z4 WS-TEXT
+             WS-LENGTH WS-STATE
+     END-IF
      MOVE WK-LABEL TO WS-KIND
      MOVE 8 TO WS-X
      MOVE 0 TO WS-STATE
@@ -285,3 +310,37 @@
      END-IF
      GOBACK.
  END PROGRAM PACK-SELECT-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PACK-FOLDER-OPEN.
+*> USING CLIENT-STATE: Open Pack Folder (US4): resourcepacks/ of the game directory is created when it is
+*> missing, the opener of CL-OPENER is started with it as its only argument (cc_open_path; CC-NOTFOUND when
+*> it cannot start sets CL-OPEN-FAILED, which the pack screen shows), a run line names the opener, and the
+*> local packs are listed again so a pack copied in shows without a restart.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-COMMAND             PIC X(1200).
+ 01 WS-OPENER              PIC X(300).
+ 01 WS-FOLDER              PIC X(1100).
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE LOW-VALUES TO WS-FOLDER WS-OPENER WS-COMMAND
+     STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/resourcepacks" DELIMITED BY SIZE INTO WS-FOLDER
+     STRING "mkdir -p '" CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/resourcepacks'" X"00"
+         DELIMITED BY SIZE INTO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     STRING CL-OPENER(1:CL-OPENER-LENGTH) DELIMITED BY SIZE INTO WS-OPENER
+     CALL STATIC "cc_open_path" USING BY REFERENCE WS-OPENER BY REFERENCE WS-FOLDER
+         RETURNING WS-RC
+     MOVE 0 TO CL-OPEN-FAILED
+     IF WS-RC NOT = 0
+         MOVE 1 TO CL-OPEN-FAILED
+     END-IF
+     DISPLAY "RUN " CL-OPENER(1:CL-OPENER-LENGTH) " " CL-GAME-DIR(1:CL-GAME-DIR-LENGTH)
+         "/resourcepacks" UPON SYSERR
+     CALL "LOCAL-PACKS-SCAN" USING CLIENT-STATE
+     GOBACK.
+ END PROGRAM PACK-FOLDER-OPEN.

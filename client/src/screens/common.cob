@@ -18,7 +18,7 @@
 *> USING CLIENT-STATE, screen id (SCR-*): nothing focused; the server list asks every entry for its
 *> status again; chat opens with an empty line, scrolled to the newest message; the world list is
 *> read from saves/ again, nothing selected; the create-world screen starts with the default name
-*> and survival; the open-to-others screen starts with survival guests and no guest operators; the
+*> survival and the standard type; the open-to-others screen starts with survival guests and no guest operators; the
 *> pack screen lists resourcepacks/ again (LOCAL-PACKS-SCAN), nothing selected. Leaving the
 *> inventory screen in play closes it (INVENTORY-CLOSE: the carried stack back, Container Close).
  DATA DIVISION.
@@ -53,13 +53,13 @@
      END-IF
      IF L-SCREEN = SCR-WORLD-LIST
          CALL "WORLDS-LIST" USING CLIENT-STATE
-         MOVE 0 TO SM-SELECTED
+         MOVE 0 TO SM-SELECTED SP-CREATE-REFUSED
      END-IF
      IF L-SCREEN = SCR-CREATE-WORLD
          CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
          MOVE WS-TEXT(1:64) TO SM-EDIT-NAME
          MOVE FUNCTION MIN(WS-LENGTH, 64) TO SM-EDIT-NAME-LENGTH
-         MOVE 0 TO SP-CREATE-MODE
+         MOVE 0 TO SP-CREATE-MODE SP-CREATE-TYPE SP-CREATE-REFUSED
      END-IF
      IF L-SCREEN = SCR-OPEN-TO-OTHERS
          MOVE 0 TO SP-GUEST-MODE SP-GUEST-OPERATOR
@@ -357,6 +357,10 @@
              CALL "CREATE-WORLD-CREATE" USING CLIENT-STATE
          WHEN ACT-WORLD-MODE
              COMPUTE SP-CREATE-MODE = 1 - SP-CREATE-MODE
+         WHEN ACT-WORLD-TYPE
+             CALL "CREATE-WORLD-TYPE" USING CLIENT-STATE
+         WHEN ACT-OPEN-PACK-FOLDER
+             CALL "PACK-FOLDER-OPEN" USING CLIENT-STATE
          WHEN ACT-CONFIRM-DELETE
              CALL "CONFIRM-DELETE-DELETE" USING CLIENT-STATE
          WHEN ACT-QUIT-WORLD

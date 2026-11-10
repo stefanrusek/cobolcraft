@@ -9,8 +9,8 @@
 *>   - the left button pressed sends start destroy. In creative the break is instant: nothing more.
 *>     In survival the break lasts the block's hand break time (a quarter of it with the tool of
 *>     the block's class; never for baseplate): stop destroy follows once it has passed while the
-*>     button is held on the same block, abort destroy when the button is released or the target
-*>     changes first. While the button stays held after a finished break, the next block aimed at
+*>     button is held on the same block, abort destroy when the button is released, the target
+*>     changes or the held slot changes first. While the button stays held after a finished break, the next block aimed at
 *>     (the one behind, once the server has broken this one) is started without a new press.
 *>   - the left button pressed while a player or mob is the target (RAYCAST's entity target, which
 *>     leaves no target block) sends Attack with its entity id (US7-5; standin-content §10.4, in
@@ -88,7 +88,8 @@
          MOVE 1 TO WS-SAME
      END-IF
      EVALUATE TRUE
-         WHEN CT-BREAKING = 1 AND (IN-BUTTON-DOWN(CC-BUTTON-LEFT + 1) = 0 OR WS-SAME = 0)
+         WHEN CT-BREAKING = 1 AND (IN-BUTTON-DOWN(CC-BUTTON-LEFT + 1) = 0 OR WS-SAME = 0
+                 OR PL-HELD NOT = CT-BREAK-HELD)
              MOVE 2 TO WS-ACTION
              CALL "CONTROLS-SEND-ACTION" USING CLIENT-STATE WS-ACTION
              MOVE 0 TO CT-BREAKING
@@ -120,6 +121,7 @@
          MOVE TG-Y TO CT-BREAK-Y
          MOVE TG-Z TO CT-BREAK-Z
          MOVE TG-FACE TO CT-BREAK-FACE
+         MOVE PL-HELD TO CT-BREAK-HELD
          MOVE 0 TO WS-ACTION
          CALL "CONTROLS-SEND-ACTION" USING CLIENT-STATE WS-ACTION
          IF PL-MODE NOT = 1
@@ -139,14 +141,36 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
  01 WS-CODE                BINARY-LONG.
  01 WS-B                   BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ROW                 PIC X(819).
+ 01 WS-HARDNESS            FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-MS                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-STATE L-ITEM L-MS.
+*>   The standard content set: hardness x 1.5 s by hand, x 5 s when the block needs the correct tool for
+*>   its drops, never for an unbreakable block (hardness below 0). The held item's tool speed is not
+*>   applied (it needs the item rules of 17).
+     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND CT-STATE-COUNT > 0
+         CALL "CONTENT-BLOCK-OF-STATE" USING L-STATE WS-CODE WS-INDEX WS-ROW WS-STATUS
+         MOVE WS-ROW TO CT-BLOCK-ROW
+         COMPUTE WS-HARDNESS = FUNCTION NUMVAL(CT-BR-HARDNESS)
+         EVALUATE TRUE
+             WHEN WS-HARDNESS < 0
+                 MOVE -1 TO L-MS
+             WHEN CT-BR-TOOL-REQUIRED = "yes"
+                 COMPUTE L-MS = WS-HARDNESS * 5000
+             WHEN OTHER
+                 COMPUTE L-MS = WS-HARDNESS * 1500
+         END-EVALUATE
+         GOBACK
+     END-IF
 *>   The block id is the hex digit of the state's row (0 to 9, A, B).
      COMPUTE WS-CODE = FUNCTION ORD(CL-BS-BLOCK(L-STATE + 1)) - 1
      COMPUTE WS-B = WS-CODE - 48
@@ -388,3 +412,23 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-SPRINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-CTRL-DOWN.
+*> USING CLIENT-STATE, down out (1 = a Ctrl key is held): the left Ctrl key is down, or the modifier
+*> bits of the last key event (IN-MODS) name Control. Screens read it for the Ctrl-click of the hidden
+*> debug world type.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DOWN                 PIC 9.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DOWN.
+     MOVE 0 TO L-DOWN
+     IF IN-KEY-DOWN(CC-KEY-LEFT-CONTROL + 1) = 1
+             OR FUNCTION MOD(IN-MODS / CC-MOD-CONTROL, 2) = 1
+         MOVE 1 TO L-DOWN
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-CTRL-DOWN.

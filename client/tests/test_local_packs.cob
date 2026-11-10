@@ -56,7 +56,7 @@
      MOVE "local packs resourcepacks/ zips and folders are listed with id file/<name>, kind and "
          & "validity" TO TL-CASE
      MOVE "file/alpha 1 1|file/badmeta 1 0|file/beta.zip 2 1|file/bigicon 1 1|file/broken.zip 2 "
-         & "0|file/nometa.zip 2 0|file/old.zip 2 1|" TO TL-EXPECTED
+         & "0|file/nometa.zip 2 0|file/old.zip 2 1|cobolcraft_faithful_skin 3 1|" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LP-COUNT
