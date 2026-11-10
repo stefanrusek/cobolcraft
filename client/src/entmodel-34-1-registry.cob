@@ -396,15 +396,23 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
- 01 WS-ID                  PIC X(60).
+ 01 WS-LOADED              BINARY-LONG VALUE 0.
+ 01 WS-CACHE.
+    05 WS-CID              PIC X(60) OCCURS 361 TIMES.
  LINKAGE SECTION.
  01 L-ID                   PIC X(60).
  01 L-INDEX                BINARY-LONG.
+*> The 361 ids are built once (the index) and searched by comparison afterwards.
  PROCEDURE DIVISION USING L-ID L-INDEX.
+     IF WS-LOADED = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 361
+             CALL "EM4-LAYER-ID" USING WS-I WS-CID(WS-I)
+         END-PERFORM
+         MOVE 1 TO WS-LOADED
+     END-IF
      MOVE 0 TO L-INDEX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 361
-         CALL "EM4-LAYER-ID" USING WS-I WS-ID
-         IF WS-ID = L-ID
+         IF WS-CID(WS-I) = L-ID
              MOVE WS-I TO L-INDEX
          END-IF
      END-PERFORM
