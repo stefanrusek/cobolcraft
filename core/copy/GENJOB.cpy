@@ -48,3 +48,9 @@
           15 GJ-AQ-S-X      BINARY-LONG.
           15 GJ-AQ-S-Z      BINARY-LONG.
           15 GJ-AQ-S-VALUE  BINARY-LONG.
+*>  the surface stage (surface.cob): the preliminary surface level at the chunk's four corners (10 section 6.3, north-west, north-east,
+*>  south-west, south-east) and the biome ids (plus 1, 0 = not computed) of the quart cells of the 6 x 6 columns around the chunk
+*>  at each of the 96 quart layers (index layer * 36 + (qz + 1) * 6 + qx + 2, qx and qz relative to the chunk's first quart cell)
+    05 GJ-SF.
+       10 GJ-SF-CSL         FLOAT-LONG OCCURS 4 TIMES.
+       10 GJ-SF-RING        BINARY-LONG OCCURS 3456 TIMES.

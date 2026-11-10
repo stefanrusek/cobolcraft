@@ -114,20 +114,6 @@
  END PROGRAM GEN-STAGE-FILL.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GEN-STAGE-SURFACE.
-*> Placeholder until the surface rules of 10 section 10 (surface.cob): counts the step.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY GENSTAGE.
- LINKAGE SECTION.
- 01 L-JOB.
-    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
- PROCEDURE DIVISION USING L-JOB.
-     ADD 1 TO GS-SURFACE
-     GOBACK.
- END PROGRAM GEN-STAGE-SURFACE.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-STAGE-CARVERS.
 *> Placeholder until the carvers of document 11 section 5 (carvers.cob): counts the step.
  DATA DIVISION.

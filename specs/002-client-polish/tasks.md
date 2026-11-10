@@ -682,9 +682,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0419 [US11-core] Implement the terrain fill in `core/src/terrain.cob`
 - [x] T0420 [US11-core] Write test `core/tests/test_aquifer.cob`: aquifer fluid level and barrier decisions (10). Formulas, surface scan, centres and decisions on hand-authored fixtures; the noise-driven values (barrier, floodedness, spread, lava) are a Convergence test on real data
 - [x] T0421 [US11-core] Implement aquifers in `core/src/aquifer.cob` (the fluid-update scheduling flag of 9.2 is not tracked yet: nothing consumes it before the fluid engine)
-- [ ] T0422 [US11-core] Write test `core/tests/test_surface_rules.cob`: the surface rule evaluation for badlands, desert, ocean floors and the default (10, 37 part 4)
-- [ ] T0423 [US11-core] Implement surface rules in `core/src/surface.cob`
-- [ ] T0424 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0422 [US11-core] Write test `core/tests/test_surface_rules.cob`: the surface rule evaluation for badlands, desert, ocean floors and the default (10, 37 part 4). Hand-authored fixture `core/tests/fixtures/surface` (the 10.9 structure reduced; surface noises of amplitude 0); expected zoom ids, bands and gradient floats from an independent Python evaluation; the real-data surface (noise values, ice, icebergs) is a Convergence test. Also `test_biome_table.cob` (CBI table raised from 64 to 128 entries, 67 biomes documented in 10 section 7.8)
+- [x] T0423 [US11-core] Implement surface rules in `core/src/surface.cob` (zoomed biome lookup, bands, rule interpreter, column procedure, eroded badlands pillars, the 164-step surface stage; NOT done: frozen ocean icebergs of 10.8 (needs simplex noise 3.5), block-state properties of block rules, ore_vein rule (document 11))
+- [x] T0424 [US11-core] Gate: run `make gate-core` and record the command and real output: lint 221 files 0 failed, passed 1780 failed 0, coverage 47 objects 0 uncovered lines (scratchpad/wg3/gate-t0424.txt)
 
 #### Phase 37: US11-core (d) — carvers and caves
 

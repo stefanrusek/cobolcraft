@@ -63,10 +63,10 @@
 
 *> The biomes of the open set (registry minecraft:worldgen/biome), read by BLOCKS-OPEN from the entries' payloads: the key
 *> (with namespace) and has_precipitation of each biome id (index = id + 1).
- 78 CBI-MAX                VALUE 64.
+ 78 CBI-MAX                VALUE 128.
  01 CORE-BIOMES EXTERNAL.
     05 CBI-COUNT             BINARY-LONG.
-    05 CBI-BIOME OCCURS 64 TIMES.
+    05 CBI-BIOME OCCURS 128 TIMES.
        10 CBI-KEY            PIC X(48).
        10 CBI-KEY-LENGTH     BINARY-LONG.
        10 CBI-PRECIPITATION  BINARY-LONG.
