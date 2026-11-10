@@ -133,9 +133,11 @@
 
      MOVE "test inventory throw closing the screen in creative while carrying sends Set Creative "
          & "Mode Slot of each slot the stack went to, then Container Close" TO TL-CASE
-     MOVE 1 TO PL-MODE
+*>   In creative mode the inventory key opens the creative screen (test_screen_40_7_screen), so this screen is opened in survival and the game mode changes to creative while it is open.
+     MOVE 0 TO PL-MODE
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
+     MOVE 1 TO PL-MODE
      MOVE 0 TO IN-CAPTURED
      MOVE 5 TO WS-SLOT
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-SLOT WS-FOUND

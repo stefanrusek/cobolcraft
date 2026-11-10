@@ -273,6 +273,9 @@
           15 CR-STACK-COUNT  BINARY-LONG.
           15 CR-STACK-LOCK   BINARY-LONG.
        10 CR-THROTTLE        BINARY-LONG.
+       10 CR-SCROLLING       BINARY-LONG.
+       10 CR-QUERY-LEN       BINARY-LONG.
+       10 CR-QUERY           PIC X(64).
        10 CR-HB OCCURS 81 TIMES.
           15 CR-HB-ITEM      BINARY-LONG.
           15 CR-HB-COUNT     BINARY-LONG.

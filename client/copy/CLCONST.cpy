@@ -112,6 +112,9 @@
  78 ACT-BOOK-PAGE            VALUE 62.   *> the book editor's page buttons: the argument 1 back, 2 forward
  78 ACT-BOOK-FINALIZE        VALUE 63.   *> Sign and Close
  78 ACT-BOOK-CANCEL          VALUE 64.   *> Cancel of the book signing
+ 78 ACT-CREATIVE-TAB         VALUE 65.   *> the creative screen: select the tab of the argument
+ 78 ACT-CREATIVE-GRID        VALUE 66.   *> a grid slot (argument 901 to 945)
+ 78 ACT-CREATIVE-HOTBAR      VALUE 67.   *> a hotbar slot (argument 0 to 8)
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

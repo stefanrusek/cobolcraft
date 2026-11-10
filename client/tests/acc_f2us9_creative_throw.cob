@@ -62,10 +62,10 @@
      MOVE 5 TO PL-CARRIED-COUNT
      MOVE 3 TO PL-CARRIED-ITEM
      MOVE CC-BUTTON-LEFT TO WS-BUTTON
-     MOVE 480 TO WS-AT-X
-     MOVE 80 TO WS-AT-Y
+     MOVE 300 TO WS-AT-X
+     MOVE 116 TO WS-AT-Y
      PERFORM CLICK-AT
-     MOVE "acceptance US9-3 creative: a release inside the sheet sends no drop and keeps the cursor" TO TL-CASE
+     MOVE "acceptance US9-3 creative: a release inside the creative screen's panel (its title area, GUI (150, 58)) sends no drop and keeps the cursor" TO TL-CASE
      PERFORM OBSERVE
      MOVE "cursor 5x3" TO TL-EXPECTED
      PERFORM CHECK
