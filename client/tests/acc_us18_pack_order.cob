@@ -32,6 +32,15 @@
      CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
      CALL "TEST-PIXEL" USING CLIENT-STATE WS-LOAM WS-LOAM-LENGTH WS-LOAM-BEFORE
      CALL "TEST-STEP" USING CLIENT-STATE
+*>   A pack's icon cell needs the UI atlas (LOCAL-PACK-ICON gives none without it): if this case ever fails, the atlas was not allocated and the pack list below loses its icon widgets.
+     MOVE "acceptance US18-2 precondition: the UI atlas exists when the pack list is scanned (a pack's icon cell needs it)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 1 TO TL-OBSERVED-N
+     IF UA-ADDR = NULL
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE ACT-PACKS TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
 
