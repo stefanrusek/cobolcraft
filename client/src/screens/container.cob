@@ -494,6 +494,15 @@
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SPRITE WS-HX WS-HY WS-24 WS-24H
              WS-TEXT WS-LENGTH WS-STATE
      END-IF
+*>   5.6 the tooltip of the hovered slot's item, with an empty carried stack.
+     IF WS-HOVER >= 0 AND PL-CARRIED-COUNT = 0
+         IF WS-HOVER < WS-OWN + WS-TAIL
+             COMPUTE WS-ARG = 401 + WS-HOVER
+         ELSE
+             COMPUTE WS-ARG = WS-HOVER - WS-OWN - WS-TAIL
+         END-IF
+         CALL "SLOT-TOOLTIP" USING CLIENT-STATE WS-ARG WS-PX WS-PY
+     END-IF
      IF PL-CARRIED-COUNT > 0
          COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE - 8
          COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE - 8
@@ -519,3 +528,35 @@
      MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
      GOBACK.
  END PROGRAM CONTAINER-SLOT-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SLOT-TOOLTIP.
+*> USING CLIENT-STATE, widget argument of a slot, pointer x, pointer y (GUI pixels): 40-1 section 5.6: the item tooltip of that slot's stack, as the first line of the tooltip
+*> layer (item name, white; rarity colours and the component lines are not drawn) at the pointer with the title spacing; nothing for an empty slot or when a tooltip is already set.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-NAME                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-LINE                PIC X(256).
+ 01 WS-RGB                 BINARY-LONG VALUE 16777215.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-X L-Y.
+     CALL "MENU-STACK-GET" USING CLIENT-STATE L-ARG WS-COUNT WS-ITEM WS-DAMAGE
+     IF WS-COUNT > 0 AND TT-COUNT = 0
+         CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-ITEM WS-NAME WS-LENGTH
+         MOVE WS-NAME(1:256) TO WS-LINE
+         MOVE FUNCTION MIN(WS-LENGTH, 120) TO WS-LENGTH
+         MOVE L-X TO TT-X
+         MOVE L-Y TO TT-Y
+         MOVE 1 TO TT-TITLE-GAP
+         CALL "TOOLTIP-ADD" USING CLIENT-STATE WS-LINE WS-LENGTH WS-RGB
+     END-IF
+     GOBACK.
+ END PROGRAM SLOT-TOOLTIP.

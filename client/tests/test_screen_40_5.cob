@@ -39,6 +39,7 @@
  01 WS-OPTR                BINARY-LONG.
  01 WS-LOOP                BINARY-LONG.
  01 WS-OFFER               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-E1                  PIC -(7)9.
  01 WS-E2                  PIC -(7)9.
@@ -153,9 +154,76 @@
                  DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
          END-IF
      END-PERFORM
-     MOVE "acceptance US12 40-5§2.10 row 0: first cost 3 at (32, 56), second cost 4 at (62, 56), result at (95, 56) with no count; row 1: 2 and the result (no second cost)" TO TL-CASE
-     MOVE "801@32:56=3 802@62:56=4 803@95:56= 804@32:76=2 806@95:76= " TO TL-EXPECTED
+     MOVE "acceptance US12 40-5§2.10 row 0: first cost (base count 2, shown as the base when the price differs) at (32, 56), second cost 4 at (62, 56), result at (95, 56) with no count; row 1: base 5, no second cost" TO TL-CASE
+     MOVE "801@32:56=2 802@62:56=4 803@95:56= 804@32:76=5 806@95:76= " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   2.10 first-cost decorations: the base count at x, the modified count right-aligned to x + 31 at y + 9, and the strike-through 9 x 2 at (x + 7, y + 12) over the base count.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-ARG(WS-I) >= 800 AND SM-W-Y(WS-I) < 100
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             STRING "count " SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) "@" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) " "
+                 DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 9 AND SM-W-H(WS-I) = 2 AND SM-W-Y(WS-I) < 100
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             STRING "strike@" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "3" TO WS-TEXT
+     MOVE 1 TO WS-LOOP
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LOOP WS-N
+     COMPUTE WS-D1 = 32 + 31 - WS-N
+     MOVE WS-D1 TO WS-E1
+     MOVE "2" TO WS-TEXT
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LOOP WS-N
+     COMPUTE WS-D1 = 32 + 31 - WS-N
+     MOVE WS-D1 TO WS-E2
+     MOVE SPACES TO TL-EXPECTED
+     STRING "count 3@" FUNCTION TRIM(WS-E1) ":65 strike@39:68 count 2@" FUNCTION TRIM(WS-E2) ":85 strike@39:88 " DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE "acceptance US12 40-5§2.10 a price that differs from the base: the modified count (3 and 2) is drawn at x + 31 - width, y + 9 and the discount strike-through 9 x 2 at (x + 7, y + 12)" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   2.10 row tooltips: the pointer over the first cost (button x < 20), the second cost (30 to 50) or the result (> 65) gives that item's tooltip; the gaps and the arrow none.
+     MOVE 5 TO WS-ITEM
+     CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-ITEM WS-TEXT WS-LOOP
+     MOVE SPACES TO TL-EXPECTED
+     STRING "1:" WS-TEXT(1:WS-LOOP) DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE 37 TO WS-D1
+     MOVE 60 TO WS-D2
+     PERFORM POINT-GUI
+     MOVE "acceptance US12 40-5§2.10 the pointer over the first cost of row 0 gives the item tooltip of its item" TO TL-CASE
+     PERFORM TIP-LIST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-ITEM
+     CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-ITEM WS-TEXT WS-LOOP
+     MOVE SPACES TO TL-EXPECTED
+     STRING "1:" WS-TEXT(1:WS-LOOP) DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE 62 TO WS-D1
+     PERFORM POINT-GUI
+     MOVE "acceptance US12 40-5§2.10 the pointer over the second cost (button x 35) gives its item tooltip" TO TL-CASE
+     PERFORM TIP-LIST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 7 TO WS-ITEM
+     CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-ITEM WS-TEXT WS-LOOP
+     MOVE SPACES TO TL-EXPECTED
+     STRING "1:" WS-TEXT(1:WS-LOOP) DELIMITED BY SIZE INTO TL-EXPECTED
+     MOVE 97 TO WS-D1
+     PERFORM POINT-GUI
+     MOVE "acceptance US12 40-5§2.10 the pointer over the result (button x 70) gives its item tooltip" TO TL-CASE
+     PERFORM TIP-LIST
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 52 TO WS-D1
+     PERFORM POINT-GUI
+     MOVE "acceptance US12 40-5§2.10 the pointer over the gap between the costs (button x 25) gives no tooltip" TO TL-CASE
+     PERFORM TIP-LIST
+     MOVE "0:" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-D1
+     MOVE 0 TO WS-D2
+     PERFORM POINT-GUI
 *>   XP bar (level 2, xp 20): background 102 x 5 at (158, 53), current int(102 / 60 x 10) = 17.
      PERFORM OVERLAY-LIST
      MOVE "acceptance US12 40-5§2.10 the XP bar: background 102 x 5 at (158, 53) and the current part 17 wide (xp 20 of 10 to 70)" TO TL-CASE
@@ -701,12 +769,34 @@
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      .
 
+*> The pointer to the GUI point (WS-D1, WS-D2) (GUI scale 2), one frame.
+ POINT-GUI.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     COMPUTE WS-X(1) = WS-D1 * 2
+     COMPUTE WS-Y(1) = WS-D2 * 2
+     MOVE 1 TO WS-N
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     .
+
+*> TL-OBSERVED: the tooltip line count and ":" and its first line.
+ TIP-LIST.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE TT-COUNT TO WS-E1
+     MOVE 1 TO WS-PTR
+     STRING FUNCTION TRIM(WS-E1) ":" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     IF TT-COUNT > 0
+         STRING TT-L-TEXT(1)(1:TT-L-LEN(1)) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-IF
+     .
+
 *> The label texts in widget order, space-terminated.
  LABEL-LIST.
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-I) = WK-LABEL
+         IF SM-W-KIND(WS-I) = WK-LABEL AND SM-W-ARG(WS-I) < 800
              STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
          END-IF
      END-PERFORM

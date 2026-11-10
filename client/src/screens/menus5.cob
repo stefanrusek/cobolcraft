@@ -227,7 +227,11 @@
          MOVE MO-R-ITEM(WS-I) TO MC-DISP-ITEM(WS-N + 2)
          MOVE MO-R-COUNT(WS-I) TO MC-DISP-COUNT(WS-N + 2)
          COMPUTE WS-X = L-LEFT + 10
-         PERFORM ITEM-WIDGET
+         IF WS-PRICE NOT = MO-A-COUNT(WS-I)
+             PERFORM DISCOUNT-WIDGET
+         ELSE
+             PERFORM ITEM-WIDGET
+         END-IF
          IF MO-B-COUNT(WS-I) > 0
              COMPUTE WS-X = L-LEFT + 40
              ADD 1 TO WS-N
@@ -248,6 +252,83 @@
          COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R
          ADD 2 TO WS-N
          PERFORM ITEM-WIDGET
+     END-PERFORM
+     PERFORM ROW-TOOLTIP
+     .
+
+*> 2.10 first-cost decorations of a changed price: the item with the base count (text "1" too) at x, the modified count right-aligned to x + 31 at y + 9 and the
+*> strike-through 9 x 2 at (x + 7, y + 12).
+ DISCOUNT-WIDGET.
+     MOVE MC-DISP-COUNT(WS-N) TO WS-PRICE
+     MOVE MO-A-COUNT(WS-I) TO MC-DISP-COUNT(WS-N)
+     MOVE SPACES TO WS-TEXT
+     MOVE MO-A-COUNT(WS-I) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-LENGTH
+     COMPUTE WS-ARG = 800 + WS-N
+     MOVE WK-SLOT TO WS-KIND
+     MOVE 16 TO WS-W WS-H
+     MOVE 3 TO WS-STATE
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     MOVE WS-PRICE TO MC-DISP-COUNT(WS-N)
+     MOVE WS-PRICE TO WS-EDIT
+     MOVE SPACES TO WS-OUT256
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-OUT256
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-LENGTH
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-OUT256 WS-LENGTH WS-WIDTH
+     MOVE WS-OUT256 TO WS-TEXT
+     COMPUTE WS-X = WS-X + 31 - WS-WIDTH
+     COMPUTE WS-Y = WS-Y + 9
+     MOVE WK-LABEL TO WS-KIND
+     MOVE WS-LABEL-W TO WS-W
+     MOVE WS-LABEL-H TO WS-H
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     COMPUTE WS-X = L-LEFT + 17
+     COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R + 12
+     MOVE 9 TO WS-W
+     MOVE 2 TO WS-H
+     MOVE SW-HURT TO WS-SWATCH
+     MOVE WK-OVERLAY TO WS-KIND
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+     COMPUTE WS-Y = L-TOP + 19 + 20 * WS-R
+     MOVE SPACES TO WS-TEXT
+     MOVE 0 TO WS-LENGTH WS-STATE WS-ARG
+     .
+
+*> 2.10 row tooltips: the pointer over a row button (88 x 20): x < 20 the first cost, 30 < x < 50 the second cost (when there is one), x > 65 the result: that item's name.
+ ROW-TOOLTIP.
+     COMPUTE WS-MX = IN-CURSOR-X / CL-GUI-SCALE
+     COMPUTE WS-MY = IN-CURSOR-Y / CL-GUI-SCALE
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 6 OR WS-R + MC-SCROLL >= MC-COUNT
+         COMPUTE WS-I = WS-R + MC-SCROLL + 1
+         COMPUTE WS-X = WS-MX - L-LEFT - 5
+         COMPUTE WS-Y = WS-MY - L-TOP - 18 - 20 * WS-R
+         MOVE 0 TO WS-N
+         IF WS-X >= 0 AND WS-X < 88 AND WS-Y >= 0 AND WS-Y < 20
+             EVALUATE TRUE
+                 WHEN WS-X < 20
+                     MOVE MO-A-ITEM(WS-I) TO WS-N
+                     ADD 1 TO WS-N
+                 WHEN WS-X > 30 AND WS-X < 50 AND MO-B-COUNT(WS-I) > 0
+                     MOVE MO-B-ITEM(WS-I) TO WS-N
+                     ADD 1 TO WS-N
+                 WHEN WS-X > 65
+                     MOVE MO-R-ITEM(WS-I) TO WS-N
+                     ADD 1 TO WS-N
+             END-EVALUATE
+         END-IF
+         IF WS-N > 0
+             SUBTRACT 1 FROM WS-N
+             CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-N WS-OUT WS-OUT-LENGTH
+             MOVE WS-OUT(1:256) TO WS-OUT256
+             MOVE FUNCTION MIN(WS-OUT-LENGTH, 120) TO WS-OUT-LENGTH
+             MOVE WS-MX TO TT-X
+             MOVE WS-MY TO TT-Y
+             MOVE 1 TO TT-TITLE-GAP
+             MOVE 16777215 TO WS-ARG
+             CALL "TOOLTIP-ADD" USING CLIENT-STATE WS-OUT256 WS-OUT-LENGTH WS-ARG
+             MOVE 0 TO WS-ARG
+         END-IF
      END-PERFORM
      .
 
