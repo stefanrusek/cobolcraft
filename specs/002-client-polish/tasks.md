@@ -3303,10 +3303,10 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 58: US3-client — pack stack and user packs
 
-- [ ] T2964 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_stack.cob` (US3-5, US3-6): stack order of `docs/design/faithful-pack-mapping.md` §9.1 bottom to top: built-in (1), optional skin (2, absent unless enabled), generated vanilla (3), the user's packs in the user's order (4), server packs (5); the top-most pack that has a path wins (08 §3.2); `minecraft:` anywhere a vanilla equivalent exists; a pack's `minecraft:` textures do not touch `cobolcraft:` content unless the optional skin is on (FR-006) [SC-001]
-- [ ] T2965 [US3-client] Extend `client/src/packs/stack.cob` with the five levels of §9.1 (generated vanilla at level 3, a slot for the skin at level 2) and by-path override across them
-- [ ] T2966 [US3-client] Write acceptance test `client/tests/acc_f2us3_user_pack.cob` (US3-1, US3-4, real input): the real Faithful zip lists on the pack screen, enables, moves and survives a restart; disabling returns the generated look [FR-007, FR-008, FR-009, FR-010; SC-001]
-- [ ] T2967 [US3-client] Make user packs from `resourcepacks/` load by zip or folder in `client/src/packs/local.cob`
+- [X] T2964 [US3-client] Write acceptance test `client/tests/acc_f2us3_pack_stack.cob` (US3-5, US3-6): stack order of `docs/design/faithful-pack-mapping.md` §9.1 bottom to top: built-in (1), optional skin (2, absent unless enabled), generated vanilla (3), the user's packs in the user's order (4), server packs (5); the top-most pack that has a path wins (08 §3.2); `minecraft:` anywhere a vanilla equivalent exists; a pack's `minecraft:` textures do not touch `cobolcraft:` content unless the optional skin is on (FR-006) [SC-001]
+- [X] T2965 [US3-client] Extend `client/src/packs/stack.cob` with the five levels of §9.1 (generated vanilla at level 3, a slot for the skin at level 2) and by-path override across them
+- [X] T2966 [US3-client] Write acceptance test `client/tests/acc_f2us3_user_pack.cob` (US3-1, US3-4, real input): the real Faithful zip lists on the pack screen, enables, moves and survives a restart; disabling returns the generated look [FR-007, FR-008, FR-009, FR-010; SC-001]
+- [X] T2967 [US3-client] Make user packs from `resourcepacks/` load by zip or folder in `client/src/packs/local.cob`
 - [X] T2968 [US3-client] Write test `client/tests/test_atlas.cob` cases for a generic sprite size (16 and 32 pixels from the packs, not a constant) and more than 128 sprites (1,297 block sprites for Faithful)
 - [X] T2969 [US3-client] Rewrite `client/src/atlas.cob` stitching for any sprite size and count (`CL-MAX-SPRITES` sized from the packs)
 - [X] T2970 [US3-client] Write test `client/tests/test_animation.cob`: `.mcmeta` animation files (frame order, frame time, interpolate) schedule frame updates per cell (14, FR-010); a malformed animation file falls back to the pack below

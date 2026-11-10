@@ -16,18 +16,21 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 1 TO PK-COUNT
      MOVE 0 TO PK-KIND(1)
+     MOVE 1 TO PK-LEVEL(1)
      GOBACK.
  END PROGRAM PACK-STACK-INIT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PACK-STACK-BUILD.
 *> USING CLIENT-STATE (LP-ENTRY scanned, OP-ENABLED and RP-PACK set): closes the packs of the old
-*> stack, then stacks the built-in pack, every enabled usable local pack (bottom first) and every
-*> active server pack (push order), opening each (PACK-SOURCE-OPEN; one that fails is a pack error
+*> stack, then stacks the built-in pack (level 1), the generated vanilla pack when the packs are ok
+*> (level 3), every enabled usable local pack (bottom first, level 4) and every active server pack
+*> (push order, level 5), opening each (PACK-SOURCE-OPEN; one that fails is a pack error
 *> and left out), then lists their files from the top down (filters hide files below).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
  01 WS-I                   BINARY-LONG.
  01 WS-ENTRY               BINARY-LONG.
  01 WS-HEX                 PIC X(16) VALUE "0123456789abcdef".
@@ -48,6 +51,20 @@
      END-PERFORM
      MOVE 0 TO PK-ERROR-COUNT
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
+*>   Level 3: the generated vanilla resource pack, when the start-up check said ok (level 2, the skin,
+*>   is the built-in optional pack of the cobolcraft world type, absent unless enabled).
+     IF CL-PACKS-STATUS = CT-PACKS-OK AND CL-GENERATED-DIR-LENGTH > 0
+         ADD 1 TO PK-COUNT
+         INITIALIZE PK-PACK(PK-COUNT)
+         MOVE 1 TO PK-KIND(PK-COUNT)
+         MOVE 3 TO PK-LEVEL(PK-COUNT)
+         MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+         MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+         STRING CL-GENERATED-DIR(1:CL-GENERATED-DIR-LENGTH) "/vanilla-resources" DELIMITED BY SIZE
+             INTO PK-ROOT(PK-COUNT)
+         COMPUTE PK-ROOT-LENGTH(PK-COUNT) = CL-GENERATED-DIR-LENGTH + 18
+         CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     END-IF
      PERFORM VARYING WS-I FROM OP-COUNT BY -1 UNTIL WS-I < 1
          CALL "LOCAL-PACK-FIND" USING CLIENT-STATE OP-ID(WS-I) OP-ID-LENGTH(WS-I) WS-ENTRY
          IF WS-ENTRY = 0
@@ -60,6 +77,7 @@
                  ADD 1 TO PK-COUNT
                  INITIALIZE PK-PACK(PK-COUNT)
                  MOVE LP-KIND(WS-ENTRY) TO PK-KIND(PK-COUNT)
+                 MOVE 4 TO PK-LEVEL(PK-COUNT)
                  MOVE LP-ID(WS-ENTRY) TO PK-ID(PK-COUNT)
                  MOVE LP-ID-LENGTH(WS-ENTRY) TO PK-ID-LENGTH(PK-COUNT)
                  STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/resourcepacks/"
@@ -78,6 +96,7 @@
              INITIALIZE PK-PACK(PK-COUNT)
              MOVE 2 TO PK-KIND(PK-COUNT)
              MOVE WS-I TO PK-SERVER(PK-COUNT)
+             MOVE 5 TO PK-LEVEL(PK-COUNT)
              MOVE RP-NUMBER(WS-I) TO WS-N
              PERFORM VARYING WS-K FROM 8 BY -1 UNTIL WS-K < 1
                  MOVE WS-HEX(FUNCTION MOD(WS-N, 16) + 1:1) TO WS-NUMBER(WS-K:1)

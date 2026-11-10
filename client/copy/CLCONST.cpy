@@ -166,7 +166,7 @@
  78 CL-MAX-SERVER-PACKS     VALUE 8.   *> server-pushed packs of one connection (08 §9)
  78 CL-MAX-ICONS            VALUE 16.  *> pack icon cells of the UI atlas (16 x 16 each)
  78 CL-MAX-PACK-ERRORS      VALUE 8.   *> pack errors kept from the last reload (US18-5)
- 78 CL-MAX-PACK-FILES       VALUE 8192. *> files of one local or server pack
+ 78 CL-MAX-PACK-FILES       VALUE 16384. *> files of one local, generated or server pack (vanilla has 11,605)
  78 CL-PACK-SIZE-LIMIT      VALUE 262144000.  *> server pack download limit (08 §9.3)
  78 CL-MAX-UI-VERTICES      VALUE 24576.
  78 CL-MAX-ENTITIES         VALUE 256.

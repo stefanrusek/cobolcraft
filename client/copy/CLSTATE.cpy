@@ -379,6 +379,8 @@
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
        10 PK-PACK OCCURS 16 TIMES.
           15 PK-KIND         BINARY-LONG.    *> 0 built-in, 1 folder, 2 zip
+          15 PK-LEVEL        BINARY-LONG.    *> level of the stack: 1 built-in, 2 skin, 3 generated vanilla,
+                                             *> 4 user packs, 5 server packs (faithful-pack-mapping 9.1)
           15 PK-SERVER       BINARY-LONG.    *> server pack: its RP-PACK row, else 0
           15 PK-ID           PIC X(80).      *> file/<name>, server/<8 hex>/<uuid>
           15 PK-ID-LENGTH    BINARY-LONG.
