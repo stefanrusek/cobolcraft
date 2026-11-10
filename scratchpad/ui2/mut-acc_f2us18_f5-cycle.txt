@@ -1,0 +1,11 @@
+TEST acceptance US18-1 the camera starts in first person (0) PASS
+TEST acceptance US18-1 F5 press 1 gives the next mode of first, behind, in front, first, behind PASS
+TEST acceptance US18-1 F5 press 2 gives the next mode of first, behind, in front, first, behind FAIL expected=2 observed=0
+TEST acceptance US18-1 F5 press 3 gives the next mode of first, behind, in front, first, behind FAIL expected=0 observed=1
+TEST acceptance US18-1 F5 press 4 gives the next mode of first, behind, in front, first, behind FAIL expected=1 observed=0
+TEST acceptance US18-1 the crosshair is drawn in first person PASS
+TEST acceptance US18-1 the crosshair is not drawn in third person PASS
+TEST acceptance US18-1 behind: the eye is 4 blocks behind the player (z -3.5) with the player's yaw 0 PASS
+TEST acceptance US18-1 in front: the eye is 4 blocks ahead (z 4.5) looking back (yaw 180) PASS
+TEST acceptance US18-1 first person: the eye is the player's (z 0.5) PASS
+exit=0

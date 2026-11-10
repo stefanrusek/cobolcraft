@@ -144,6 +144,28 @@
      CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-BIG WS-VALUE-LENGTH WS-FOUND
      CALL "OPTIONS-APPLY" USING CLIENT-STATE
 
+*>   An integer option past its maximum goes round to its minimum (30 + 3 > 32 gives 2); a page index equal to the page count is the last page.
+     MOVE "renderDistance" TO WS-NAME
+     PERFORM FIND-ROW
+     MOVE "30" TO WS-BIG
+     MOVE 2 TO WS-VALUE-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-NAME WS-BIG WS-VALUE-LENGTH WS-FOUND
+     CALL "CLICK-OPTION" USING CLIENT-STATE WS-ROW
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-VALUE-LENGTH WS-FOUND
+     MOVE "acceptance US16-2 a click on view distance 30 goes round to the minimum 2" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "2" TO TL-EXPECTED
+     MOVE WS-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE 23 TO OP-PAGE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "acceptance US16-1 the page index 23 of 23 pages is the last page, 23" TO TL-CASE
+     MOVE 22 TO TL-EXPECTED-N
+     MOVE OP-PAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO OP-PAGE
+
 *>   Pages: Next and Previous; Previous is disabled on page 1 (state 2).
      MOVE 0 TO OP-PAGE
      MOVE ACT-OPTIONS-NEXT TO WS-ACTION

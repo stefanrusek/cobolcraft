@@ -21,7 +21,7 @@
     05 FILLER PIC X(48) VALUE "Chunk: 0 0 0 [0 0 in r.0.0.mca]".
     05 FILLER PIC X(48) VALUE "Facing: south (Towards positive Z) (0.0 / 0.0)".
     05 FILLER PIC X(48) VALUE "Section-relative: 00 10 00".
-    05 FILLER PIC X(48) VALUE "Speed: ".
+    05 FILLER PIC X(48) VALUE "Speed: 0.000 blocks/tick".
     05 FILLER PIC X(48) VALUE " fps".
     05 FILLER PIC X(48) VALUE "Day #0".
     05 FILLER PIC X(48) VALUE "Client Light: 15 (15 sky, 0 block)".
