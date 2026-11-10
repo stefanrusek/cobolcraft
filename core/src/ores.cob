@@ -35,33 +35,26 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WGR-NEXT.
-*> next(bits): the top `bits` bits of the next long. The divisor 2^(64 - bits) comes from a table built on the first call.
+*> next(bits): the top `bits` bits of the next long (a right shift of the 64 bit word by 64 - bits: the cc_u64_shr glue of the shim).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-LONG                BINARY-DOUBLE UNSIGNED.
- 01 WS-INIT                BINARY-LONG VALUE 0.
- 01 WS-POWS.
-    05 WS-POW-ITEM         BINARY-DOUBLE UNSIGNED OCCURS 64 TIMES.
- 01 WS-I                   BINARY-LONG.
+ 01 WS-SHIFT               BINARY-LONG.
+ 01 WS-TOP                 BINARY-DOUBLE UNSIGNED.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-BITS                 BINARY-LONG.
  01 L-RESULT               BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-STATE L-BITS L-RESULT.
-     IF WS-INIT = 0
-         MOVE 1 TO WS-POW-ITEM(1)
-         PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 64
-             COMPUTE WS-POW-ITEM(WS-I) = WS-POW-ITEM(WS-I - 1) * 2
-         END-PERFORM
-         MOVE 1 TO WS-INIT
-     END-IF
      CALL "XORO-NEXT-LONG" USING L-STATE WS-LONG
-     DIVIDE WS-LONG BY WS-POW-ITEM(65 - L-BITS) GIVING L-RESULT
+     COMPUTE WS-SHIFT = 64 - L-BITS
+     CALL STATIC "cc_u64_shr" USING BY REFERENCE WS-LONG WS-SHIFT WS-TOP
+     MOVE WS-TOP TO L-RESULT
      IF L-BITS = 32 AND L-RESULT >= 2147483648
          SUBTRACT 4294967296 FROM L-RESULT
      END-IF
      GOBACK.
- END PROGRAM WGR-NEXT.
+  END PROGRAM WGR-NEXT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WGR-NEXT-INT-BOUND.

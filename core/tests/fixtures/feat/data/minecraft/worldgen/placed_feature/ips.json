@@ -1,0 +1,24 @@
+{
+ "feature": "minecraft:poppy",
+ "placement": [
+  {
+   "type": "minecraft:offset",
+   "x": {
+    "type": "minecraft:biased_to_bottom",
+    "min_inclusive": 0,
+    "max_inclusive": 5
+   },
+   "y": {
+    "type": "minecraft:very_biased_to_bottom",
+    "min_inclusive": 0,
+    "max_inclusive": 5
+   },
+   "z": {
+    "type": "minecraft:trapezoid",
+    "min": 0,
+    "max": 6,
+    "plateau": 2
+   }
+  }
+ ]
+}
