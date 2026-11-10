@@ -3369,7 +3369,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [X] T3012 [US8-client] Write edge-case test `client/tests/test_overlay_many.cob` (spec edge cases): several players break different blocks at once and each block shows its own stage; progress interrupted by a held-item change, a changed target or another player's break removes the overlay
 - [X] T3013 [US8-client] Write test `client/tests/test_dig_actions.cob`: the client sends Player Action start, abort and finish with sequence ids (13 §2.3) and aborts on a held item change
 - [X] T3014 [US8-client] Implement the dig action sending in `client/src/controls.cob`
-- [ ] T3015 [US8-client] Gate: run `make gate-client` and record the command and real output
+- [X] T3015 [US8-client] Gate: run `make gate-client` and record the command and real output
 
 #### Phase 64: US9-client — inventory screen and recipe book
 
