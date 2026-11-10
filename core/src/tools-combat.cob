@@ -771,3 +771,753 @@
      MOVE 3500 TO L-RADIUS
      GOBACK.
  END PROGRAM TOOL-MACE-INFO.
+
+*> Section 4.9 (hunger, saturation, exhaustion, regeneration; the player-facing rules stay in hunger.cob, these are the formulas of the section):
+*>   TOOL-FOOD-EXHAUST USING exhaustion, saturation (thousandths), food, peaceful, new exhaustion out, new saturation out, new food out
+*>   TOOL-FOOD-REGEN USING food, saturation, hurt, timer, difficulty, health (thousandths), action out (0 none, 1 heal, 2 starve), heal out,
+*>     exhaustion added out, new timer out
+*>   TOOL-FOOD-EAT USING food, saturation, nutrition, saturation added (thousandths), new food out, new saturation out
+*>   TOOL-FOOD-SAT-MODIFIER USING nutrition, modifier (thousandths), saturation out (nutrition x modifier x 2)
+*>   TOOL-EXHAUSTION USING action (1 block, 2 attack, 3 jump, 4 sprint jump, 5 sprinting metre, 6 swimming metre, 7 Hunger level per tick), amount out
+*>   TOOL-FOOD-SPRINT USING food, can sprint out (above 6)
+*>   TOOL-FOOD-INFO USING max food, max saturation, start saturation, saturation floor, exhaustion drop, health tick count, saturated tick count,
+*>     heal level, sprint level, starve level
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-EXHAUST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EXHAUSTION           BINARY-LONG.
+ 01 L-SATURATION           BINARY-LONG.
+ 01 L-FOOD                 BINARY-LONG.
+ 01 L-PEACEFUL             BINARY-LONG.
+ 01 L-NEW-EXHAUSTION       BINARY-LONG.
+ 01 L-NEW-SATURATION       BINARY-LONG.
+ 01 L-NEW-FOOD             BINARY-LONG.
+ PROCEDURE DIVISION USING L-EXHAUSTION L-SATURATION L-FOOD L-PEACEFUL L-NEW-EXHAUSTION L-NEW-SATURATION L-NEW-FOOD.
+     MOVE L-EXHAUSTION TO L-NEW-EXHAUSTION
+     MOVE L-SATURATION TO L-NEW-SATURATION
+     MOVE L-FOOD TO L-NEW-FOOD
+     IF L-EXHAUSTION >= 4000
+         SUBTRACT 4000 FROM L-NEW-EXHAUSTION
+         IF L-SATURATION > 0
+             COMPUTE L-NEW-SATURATION = L-SATURATION - 1000
+             IF L-NEW-SATURATION < 0
+                 MOVE 0 TO L-NEW-SATURATION
+             END-IF
+         ELSE
+             IF L-PEACEFUL = 0 AND L-FOOD > 0
+                 SUBTRACT 1 FROM L-NEW-FOOD
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FOOD-EXHAUST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-REGEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SAT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-FOOD                 BINARY-LONG.
+ 01 L-SATURATION           BINARY-LONG.
+ 01 L-HURT                 BINARY-LONG.
+ 01 L-TIMER                BINARY-LONG.
+ 01 L-DIFFICULTY           BINARY-LONG.
+ 01 L-HEALTH               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-HEAL                 BINARY-LONG.
+ 01 L-EXHAUSTION           BINARY-LONG.
+ 01 L-NEW-TIMER            BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOOD L-SATURATION L-HURT L-TIMER L-DIFFICULTY L-HEALTH L-ACTION L-HEAL L-EXHAUSTION L-NEW-TIMER.
+     MOVE 0 TO L-ACTION L-HEAL L-EXHAUSTION L-NEW-TIMER
+     MOVE L-SATURATION TO WS-SAT
+     IF WS-SAT > 6000
+         MOVE 6000 TO WS-SAT
+     END-IF
+     EVALUATE TRUE
+         WHEN L-SATURATION > 0 AND L-HURT = 1 AND L-FOOD >= 20
+             COMPUTE L-NEW-TIMER = L-TIMER + 1
+             IF L-NEW-TIMER >= 10
+                 MOVE 1 TO L-ACTION
+                 COMPUTE L-HEAL = WS-SAT / 6
+                 MOVE WS-SAT TO L-EXHAUSTION
+                 MOVE 0 TO L-NEW-TIMER
+             END-IF
+         WHEN L-FOOD >= 18 AND L-HURT = 1
+             COMPUTE L-NEW-TIMER = L-TIMER + 1
+             IF L-NEW-TIMER >= 80
+                 MOVE 1 TO L-ACTION
+                 MOVE 1000 TO L-HEAL
+                 MOVE 6000 TO L-EXHAUSTION
+                 MOVE 0 TO L-NEW-TIMER
+             END-IF
+         WHEN L-FOOD <= 0
+             COMPUTE L-NEW-TIMER = L-TIMER + 1
+             IF L-NEW-TIMER >= 80
+                 IF L-DIFFICULTY > 0 AND (L-HEALTH > 10000 OR L-DIFFICULTY = 3 OR (L-DIFFICULTY = 2 AND L-HEALTH > 1000))
+                     MOVE 2 TO L-ACTION
+                 END-IF
+                 MOVE 0 TO L-NEW-TIMER
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-FOOD-REGEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-EAT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FOOD                 BINARY-LONG.
+ 01 L-SATURATION           BINARY-LONG.
+ 01 L-NUTRITION            BINARY-LONG.
+ 01 L-ADDED                BINARY-LONG.
+ 01 L-NEW-FOOD             BINARY-LONG.
+ 01 L-NEW-SATURATION       BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOOD L-SATURATION L-NUTRITION L-ADDED L-NEW-FOOD L-NEW-SATURATION.
+     COMPUTE L-NEW-FOOD = L-FOOD + L-NUTRITION
+     IF L-NEW-FOOD > 20
+         MOVE 20 TO L-NEW-FOOD
+     END-IF
+     COMPUTE L-NEW-SATURATION = L-SATURATION + L-ADDED
+     IF L-NEW-SATURATION > L-NEW-FOOD * 1000
+         COMPUTE L-NEW-SATURATION = L-NEW-FOOD * 1000
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FOOD-EAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-SAT-MODIFIER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-NUTRITION            BINARY-LONG.
+ 01 L-MODIFIER             BINARY-LONG.
+ 01 L-SATURATION           BINARY-LONG.
+ PROCEDURE DIVISION USING L-NUTRITION L-MODIFIER L-SATURATION.
+     COMPUTE L-SATURATION = L-NUTRITION * L-MODIFIER * 2
+     GOBACK.
+ END PROGRAM TOOL-FOOD-SAT-MODIFIER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-EXHAUSTION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ACTION L-AMOUNT.
+     EVALUATE L-ACTION
+         WHEN 1
+             MOVE 5 TO L-AMOUNT
+         WHEN 2
+             MOVE 100 TO L-AMOUNT
+         WHEN 3
+             MOVE 50 TO L-AMOUNT
+         WHEN 4
+             MOVE 200 TO L-AMOUNT
+         WHEN 5
+             MOVE 100 TO L-AMOUNT
+         WHEN 6
+             MOVE 10 TO L-AMOUNT
+         WHEN OTHER
+             MOVE 5 TO L-AMOUNT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-EXHAUSTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-SPRINT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FOOD                 BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOOD L-CAN.
+     MOVE 0 TO L-CAN
+     IF L-FOOD > 6
+         MOVE 1 TO L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FOOD-SPRINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FOOD-INFO.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MAX-FOOD             BINARY-LONG.
+ 01 L-MAX-SATURATION       BINARY-LONG.
+ 01 L-START                BINARY-LONG.
+ 01 L-FLOOR                BINARY-LONG.
+ 01 L-DROP                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-SATURATED            BINARY-LONG.
+ 01 L-HEAL                 BINARY-LONG.
+ 01 L-SPRINT               BINARY-LONG.
+ 01 L-STARVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-MAX-FOOD L-MAX-SATURATION L-START L-FLOOR L-DROP L-COUNT L-SATURATED L-HEAL L-SPRINT L-STARVE.
+     MOVE 20 TO L-MAX-FOOD
+     MOVE 20000 TO L-MAX-SATURATION
+     MOVE 5000 TO L-START
+     MOVE 2500 TO L-FLOOR
+     MOVE 4000 TO L-DROP
+     MOVE 80 TO L-COUNT
+     MOVE 10 TO L-SATURATED
+     MOVE 18 TO L-HEAL
+     MOVE 6 TO L-SPRINT
+     MOVE 0 TO L-STARVE
+     GOBACK.
+ END PROGRAM TOOL-FOOD-INFO.
+
+*> Section 4.10 (death, totem, experience):
+*>   TOOL-TOTEM-USE USING main hand holds a totem, off hand holds a totem, creative, damage bypasses invulnerability, saved out, hand shrunk out
+*>     (0 none, 1 main, 2 off), health out (1000)
+*>   TOOL-TOTEM-EFFECT USING index (1 to 3), effect key out, amplifier out, duration out; TOOL-TOTEM-EVENT USING entity event out (35)
+*>   TOOL-XP-NEEDED USING level, points to the next level out
+*>   TOOL-DEATH-XP USING level, keep inventory, experience out (min(level x 7, 100))
+*>   TOOL-ORB-VALUE USING amount, orb value out (the largest tier of 2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1 not above it)
+*>   TOOL-DEATH-VELOCITY USING has a damage source, hurt direction, yaw (thousandths of a degree), vx out, vy out, vz out (thousandths)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TOTEM-USE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MAIN                 BINARY-LONG.
+ 01 L-OFF                  BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-BYPASS               BINARY-LONG.
+ 01 L-SAVED                BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
+ 01 L-HEALTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-MAIN L-OFF L-CREATIVE L-BYPASS L-SAVED L-HAND L-HEALTH.
+     MOVE 0 TO L-SAVED L-HAND L-HEALTH
+     IF L-BYPASS = 0 AND (L-MAIN = 1 OR L-OFF = 1)
+         MOVE 1 TO L-SAVED
+         MOVE 1000 TO L-HEALTH
+         IF L-CREATIVE = 0
+             IF L-MAIN = 1
+                 MOVE 1 TO L-HAND
+             ELSE
+                 MOVE 2 TO L-HAND
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-TOTEM-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TOTEM-EFFECT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-KEY                  PIC X(48).
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-KEY L-AMPLIFIER L-DURATION.
+     MOVE "-" TO L-KEY
+     MOVE 0 TO L-AMPLIFIER L-DURATION
+     EVALUATE L-INDEX
+         WHEN 1
+             MOVE "regeneration" TO L-KEY
+             MOVE 1 TO L-AMPLIFIER
+             MOVE 900 TO L-DURATION
+         WHEN 2
+             MOVE "absorption" TO L-KEY
+             MOVE 1 TO L-AMPLIFIER
+             MOVE 100 TO L-DURATION
+         WHEN 3
+             MOVE "fire_resistance" TO L-KEY
+             MOVE 800 TO L-DURATION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-TOTEM-EFFECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TOTEM-EVENT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-EVENT.
+     MOVE 35 TO L-EVENT
+     GOBACK.
+ END PROGRAM TOOL-TOTEM-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-XP-NEEDED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-POINTS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-POINTS.
+     EVALUATE TRUE
+         WHEN L-LEVEL < 15
+             COMPUTE L-POINTS = 7 + 2 * L-LEVEL
+         WHEN L-LEVEL < 30
+             COMPUTE L-POINTS = 37 + 5 * (L-LEVEL - 15)
+         WHEN OTHER
+             COMPUTE L-POINTS = 112 + 9 * (L-LEVEL - 30)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-XP-NEEDED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DEATH-XP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-KEEP                 BINARY-LONG.
+ 01 L-XP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-KEEP L-XP.
+     MOVE 0 TO L-XP
+     IF L-KEEP = 0
+         COMPUTE L-XP = L-LEVEL * 7
+         IF L-XP > 100
+             MOVE 100 TO L-XP
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-DEATH-XP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ORB-VALUE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TIERS.
+    05 FILLER              PIC 9(4) VALUE 2477.
+    05 FILLER              PIC 9(4) VALUE 1237.
+    05 FILLER              PIC 9(4) VALUE 0617.
+    05 FILLER              PIC 9(4) VALUE 0307.
+    05 FILLER              PIC 9(4) VALUE 0149.
+    05 FILLER              PIC 9(4) VALUE 0073.
+    05 FILLER              PIC 9(4) VALUE 0037.
+    05 FILLER              PIC 9(4) VALUE 0017.
+    05 FILLER              PIC 9(4) VALUE 0007.
+    05 FILLER              PIC 9(4) VALUE 0003.
+    05 FILLER              PIC 9(4) VALUE 0001.
+ 01 WS-TIERS-R REDEFINES WS-TIERS.
+    05 WS-TIER             PIC 9(4) OCCURS 11 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AMOUNT L-VALUE.
+     MOVE 0 TO L-VALUE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11 OR L-VALUE > 0
+         IF L-AMOUNT >= WS-TIER(WS-I)
+             MOVE WS-TIER(WS-I) TO L-VALUE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TOOL-ORB-VALUE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DEATH-VELOCITY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RAD                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-HURT-DIRECTION       BINARY-LONG.
+ 01 L-YAW                  BINARY-LONG.
+ 01 L-VX                   BINARY-LONG.
+ 01 L-VY                   BINARY-LONG.
+ 01 L-VZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SOURCE L-HURT-DIRECTION L-YAW L-VX L-VY L-VZ.
+     MOVE 0 TO L-VX L-VZ
+     MOVE 100 TO L-VY
+     IF L-SOURCE = 1
+         COMPUTE WS-RAD = (L-HURT-DIRECTION + L-YAW) * 0.017453292 / 1000
+         COMPUTE L-VX ROUNDED = 0 - FUNCTION COS(WS-RAD) * 100
+         COMPUTE L-VZ ROUNDED = 0 - FUNCTION SIN(WS-RAD) * 100
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-DEATH-VELOCITY.
+
+*> Section 4.11 (environmental and special damage):
+*>   TOOL-FALL-DAMAGE USING distance (thousandths), multiplier (thousandths), damage out (floor((d + 1.0E-6 - 3.0) x multiplier))
+*>   TOOL-ENV-DAMAGE USING source key (lava, fire, soul_fire, campfire, soul_campfire, magma_block, drown, void, starve, cactus, in_wall,
+*>     lightning), amount out (thousandths), ignite seconds out
+*>   TOOL-EXPLOSION-DAMAGE USING radius, distance, seen fraction (thousandths), damage out ((u u + u) / 2 x 7 D + 1, 0 beyond D = 2 r)
+*>   TOOL-AIR-STEP USING air, underwater, Respiration level, roll (0 to 999), new air out, damage out
+*>   TOOL-BURN-STEP USING fire ticks, in water, new ticks out, damage out
+*>   TOOL-IGNITE USING seconds, ticks out
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FALL-DAMAGE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-MULTIPLIER           BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DISTANCE L-MULTIPLIER L-DAMAGE.
+     COMPUTE L-DAMAGE = ((L-DISTANCE - 3000) / 1000 + 0.000001) * L-MULTIPLIER / 1000
+     IF L-DAMAGE < 0
+         MOVE 0 TO L-DAMAGE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FALL-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ENV-DAMAGE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-IGNITE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-AMOUNT L-IGNITE.
+     MOVE 0 TO L-AMOUNT L-IGNITE
+     EVALUATE L-KEY
+         WHEN "lava"
+             MOVE 4000 TO L-AMOUNT
+             MOVE 15 TO L-IGNITE
+         WHEN "fire"
+             MOVE 1000 TO L-AMOUNT
+             MOVE 8 TO L-IGNITE
+         WHEN "soul_fire"
+             MOVE 2000 TO L-AMOUNT
+             MOVE 8 TO L-IGNITE
+         WHEN "campfire" WHEN "magma_block" WHEN "starve" WHEN "cactus" WHEN "in_wall"
+             MOVE 1000 TO L-AMOUNT
+         WHEN "soul_campfire" WHEN "drown"
+             MOVE 2000 TO L-AMOUNT
+         WHEN "void"
+             MOVE 4000 TO L-AMOUNT
+         WHEN "lightning"
+             MOVE 5000 TO L-AMOUNT
+             MOVE 8 TO L-IGNITE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-ENV-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-EXPLOSION-DAMAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-RADIUS               BINARY-LONG.
+ 01 L-DISTANCE             BINARY-LONG.
+ 01 L-SEEN                 BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-RADIUS L-DISTANCE L-SEEN L-DAMAGE.
+     MOVE 0 TO L-DAMAGE
+     IF L-DISTANCE <= 2 * L-RADIUS
+         COMPUTE WS-D = 2 * L-RADIUS / 1000
+         COMPUTE WS-U = (1 - L-DISTANCE / (2 * L-RADIUS)) * L-SEEN / 1000
+         COMPUTE L-DAMAGE ROUNDED = ((WS-U * WS-U + WS-U) / 2 * 7 * WS-D + 1) * 1000
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-EXPLOSION-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-AIR-STEP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-UNDERWATER           BINARY-LONG.
+ 01 L-RESPIRATION          BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-UNDERWATER L-RESPIRATION L-ROLL L-NEW L-DAMAGE.
+     MOVE L-AIR TO L-NEW
+     MOVE 0 TO L-DAMAGE
+     IF L-UNDERWATER = 1
+         IF L-RESPIRATION = 0 OR L-ROLL * (L-RESPIRATION + 1) < 1000
+             SUBTRACT 1 FROM L-NEW
+         END-IF
+         IF L-NEW <= -20
+             MOVE 0 TO L-NEW
+             MOVE 2000 TO L-DAMAGE
+         END-IF
+     ELSE
+         ADD 4 TO L-NEW
+         IF L-NEW > 300
+             MOVE 300 TO L-NEW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-AIR-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-BURN-STEP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-WATER L-NEW L-DAMAGE.
+     MOVE 0 TO L-NEW L-DAMAGE
+     IF L-WATER = 0 AND L-TICKS > 0
+         COMPUTE L-NEW = L-TICKS - 1
+         IF FUNCTION MOD(L-TICKS, 20) = 0
+             MOVE 1000 TO L-DAMAGE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-BURN-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-IGNITE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SECONDS              BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SECONDS L-TICKS.
+     COMPUTE L-TICKS = 20 * L-SECONDS
+     GOBACK.
+ END PROGRAM TOOL-IGNITE.
+
+*> Section 4.12 (damage types):
+*>   TOOL-DAMAGE-TYPE USING key, found out, exhaustion out (thousandths), always scales out (1 scaling always, 0 when caused by a living non-player)
+*>   TOOL-DAMAGE-EFFECTS USING key, effects out (PIC X(12): burning, drowning, freezing, poking, thorns, "-"), death message type out (fall_variants,
+*>     intentional_game_design, default)
+*>   TOOL-DAMAGE-TAG USING key, tag (PIC X(32)), member out (the tags of the section; an unknown tag has no member)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DAMAGE-TYPE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 TYPE-ROWS.
+    05 FILLER              PIC X(32) VALUE "cramming                       A".
+    05 FILLER              PIC X(32) VALUE "dragon_breath                  A".
+    05 FILLER              PIC X(32) VALUE "drown                          A".
+    05 FILLER              PIC X(32) VALUE "ender_pearl                    A".
+    05 FILLER              PIC X(32) VALUE "fall                           A".
+    05 FILLER              PIC X(32) VALUE "fly_into_wall                  A".
+    05 FILLER              PIC X(32) VALUE "freeze                         A".
+    05 FILLER              PIC X(32) VALUE "generic                        A".
+    05 FILLER              PIC X(32) VALUE "generic_kill                   A".
+    05 FILLER              PIC X(32) VALUE "in_wall                        A".
+    05 FILLER              PIC X(32) VALUE "indirect_magic                 A".
+    05 FILLER              PIC X(32) VALUE "magic                          A".
+    05 FILLER              PIC X(32) VALUE "on_fire                        A".
+    05 FILLER              PIC X(32) VALUE "out_of_world                   A".
+    05 FILLER              PIC X(32) VALUE "outside_border                 A".
+    05 FILLER              PIC X(32) VALUE "stalagmite                     A".
+    05 FILLER              PIC X(32) VALUE "starve                         A".
+    05 FILLER              PIC X(32) VALUE "wither                         A".
+    05 FILLER              PIC X(32) VALUE "sonic_boom                     B".
+    05 FILLER              PIC X(32) VALUE "bad_respawn_point              C".
+    05 FILLER              PIC X(32) VALUE "explosion                      C".
+    05 FILLER              PIC X(32) VALUE "player_explosion               C".
+    05 FILLER              PIC X(32) VALUE "campfire                       D".
+    05 FILLER              PIC X(32) VALUE "fireball                       D".
+    05 FILLER              PIC X(32) VALUE "hot_floor                      D".
+    05 FILLER              PIC X(32) VALUE "in_fire                        D".
+    05 FILLER              PIC X(32) VALUE "lava                           D".
+    05 FILLER              PIC X(32) VALUE "sulfur_cube_hot                D".
+    05 FILLER              PIC X(32) VALUE "unattributed_fireball          D".
+    05 FILLER              PIC X(32) VALUE "arrow                          E".
+    05 FILLER              PIC X(32) VALUE "cactus                         E".
+    05 FILLER              PIC X(32) VALUE "dry_out                        E".
+    05 FILLER              PIC X(32) VALUE "falling_anvil                  E".
+    05 FILLER              PIC X(32) VALUE "falling_block                  E".
+    05 FILLER              PIC X(32) VALUE "falling_stalactite             E".
+    05 FILLER              PIC X(32) VALUE "fireworks                      E".
+    05 FILLER              PIC X(32) VALUE "lightning_bolt                 E".
+    05 FILLER              PIC X(32) VALUE "mace_smash                     E".
+    05 FILLER              PIC X(32) VALUE "mob_attack                     E".
+    05 FILLER              PIC X(32) VALUE "mob_attack_no_aggro            E".
+    05 FILLER              PIC X(32) VALUE "mob_projectile                 E".
+    05 FILLER              PIC X(32) VALUE "player_attack                  E".
+    05 FILLER              PIC X(32) VALUE "spear                          E".
+    05 FILLER              PIC X(32) VALUE "spit                           E".
+    05 FILLER              PIC X(32) VALUE "sting                          E".
+    05 FILLER              PIC X(32) VALUE "sweet_berry_bush               E".
+    05 FILLER              PIC X(32) VALUE "thorns                         E".
+    05 FILLER              PIC X(32) VALUE "thrown                         E".
+    05 FILLER              PIC X(32) VALUE "trident                        E".
+    05 FILLER              PIC X(32) VALUE "wind_charge                    E".
+    05 FILLER              PIC X(32) VALUE "wither_skull                   E".
+ 01 TYPE-R REDEFINES TYPE-ROWS.
+    05 TYPE-ROW OCCURS 51 TIMES.
+       10 TYPE-NAME         PIC X(31).
+       10 TYPE-GROUP        PIC X.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-EXHAUSTION           BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-FOUND L-EXHAUSTION L-ALWAYS.
+     MOVE 0 TO L-FOUND L-EXHAUSTION L-ALWAYS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 51
+         IF L-KEY = TYPE-NAME(WS-I)
+             MOVE 1 TO L-FOUND
+             IF TYPE-GROUP(WS-I) NOT = "A" AND "B"
+                 MOVE 100 TO L-EXHAUSTION
+             END-IF
+             IF TYPE-GROUP(WS-I) = "B" OR "C"
+                 MOVE 1 TO L-ALWAYS
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TOOL-DAMAGE-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DAMAGE-EFFECTS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-EFFECTS              PIC X(12).
+ 01 L-MESSAGE              PIC X(32).
+ PROCEDURE DIVISION USING L-KEY L-EFFECTS L-MESSAGE.
+     MOVE "-" TO L-EFFECTS
+     MOVE "default" TO L-MESSAGE
+     EVALUATE TRUE
+         WHEN L-KEY = "campfire" OR "fireball" OR "hot_floor" OR "in_fire" OR "lava" OR "on_fire" OR "sulfur_cube_hot" OR "unattributed_fireball"
+             MOVE "burning" TO L-EFFECTS
+         WHEN L-KEY = "drown"
+             MOVE "drowning" TO L-EFFECTS
+         WHEN L-KEY = "freeze"
+             MOVE "freezing" TO L-EFFECTS
+         WHEN L-KEY = "sweet_berry_bush"
+             MOVE "poking" TO L-EFFECTS
+         WHEN L-KEY = "thorns"
+             MOVE "thorns" TO L-EFFECTS
+     END-EVALUATE
+     IF L-KEY = "ender_pearl" OR "fall"
+         MOVE "fall_variants" TO L-MESSAGE
+     END-IF
+     IF L-KEY = "bad_respawn_point"
+         MOVE "intentional_game_design" TO L-MESSAGE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-DAMAGE-EFFECTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DAMAGE-TAG.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 TAG-1-NAME PIC X(32) VALUE "bypasses_armor".
+ 01 TAG-1-TEXT.
+    05 TAG-1-TEXT-0 PIC X(60) VALUE " on_fire in_wall cramming drown fly_into_wall generic wither".
+    05 TAG-1-TEXT-1 PIC X(60) VALUE " dragon_breath starve fall ender_pearl freeze stalagmite mag".
+    05 TAG-1-TEXT-2 PIC X(60) VALUE "ic indirect_magic out_of_world generic_kill sonic_boom outsi".
+    05 TAG-1-TEXT-3 PIC X(60) VALUE "de_border ".
+ 01 TAG-2-NAME PIC X(32) VALUE "bypasses_effects".
+ 01 TAG-2-TEXT.
+    05 TAG-2-TEXT-0 PIC X(60) VALUE " starve ".
+ 01 TAG-3-NAME PIC X(32) VALUE "bypasses_enchantments".
+ 01 TAG-3-TEXT.
+    05 TAG-3-TEXT-0 PIC X(60) VALUE " sonic_boom ".
+ 01 TAG-4-NAME PIC X(32) VALUE "bypasses_resistance".
+ 01 TAG-4-TEXT.
+    05 TAG-4-TEXT-0 PIC X(60) VALUE " out_of_world generic_kill ".
+ 01 TAG-5-NAME PIC X(32) VALUE "bypasses_invulnerability".
+ 01 TAG-5-TEXT.
+    05 TAG-5-TEXT-0 PIC X(60) VALUE " out_of_world generic_kill ".
+ 01 TAG-6-NAME PIC X(32) VALUE "bypasses_cooldown".
+ 01 TAG-6-TEXT.
+    05 TAG-6-TEXT-0 PIC X(60) VALUE " ".
+ 01 TAG-7-NAME PIC X(32) VALUE "bypasses_shield".
+ 01 TAG-7-TEXT.
+    05 TAG-7-TEXT-0 PIC X(60) VALUE " on_fire in_wall cramming drown fly_into_wall generic wither".
+    05 TAG-7-TEXT-1 PIC X(60) VALUE " dragon_breath starve fall ender_pearl freeze stalagmite mag".
+    05 TAG-7-TEXT-2 PIC X(60) VALUE "ic indirect_magic out_of_world generic_kill sonic_boom outsi".
+    05 TAG-7-TEXT-3 PIC X(60) VALUE "de_border cactus campfire dry_out falling_anvil falling_stal".
+    05 TAG-7-TEXT-4 PIC X(60) VALUE "actite hot_floor sulfur_cube_hot in_fire lava lightning_bolt".
+    05 TAG-7-TEXT-5 PIC X(60) VALUE " sweet_berry_bush ".
+ 01 TAG-8-NAME PIC X(32) VALUE "damages_helmet".
+ 01 TAG-8-TEXT.
+    05 TAG-8-TEXT-0 PIC X(60) VALUE " falling_anvil falling_block falling_stalactite ".
+ 01 TAG-9-NAME PIC X(32) VALUE "is_fire".
+ 01 TAG-9-TEXT.
+    05 TAG-9-TEXT-0 PIC X(60) VALUE " in_fire campfire on_fire lava hot_floor sulfur_cube_hot una".
+    05 TAG-9-TEXT-1 PIC X(60) VALUE "ttributed_fireball fireball ".
+ 01 TAG-10-NAME PIC X(32) VALUE "is_fall".
+ 01 TAG-10-TEXT.
+    05 TAG-10-TEXT-0 PIC X(60) VALUE " fall ender_pearl stalagmite ".
+ 01 TAG-11-NAME PIC X(32) VALUE "is_drowning".
+ 01 TAG-11-TEXT.
+    05 TAG-11-TEXT-0 PIC X(60) VALUE " drown ".
+ 01 TAG-12-NAME PIC X(32) VALUE "is_freezing".
+ 01 TAG-12-TEXT.
+    05 TAG-12-TEXT-0 PIC X(60) VALUE " freeze ".
+ 01 TAG-13-NAME PIC X(32) VALUE "is_lightning".
+ 01 TAG-13-TEXT.
+    05 TAG-13-TEXT-0 PIC X(60) VALUE " lightning_bolt ".
+ 01 TAG-14-NAME PIC X(32) VALUE "is_explosion".
+ 01 TAG-14-TEXT.
+    05 TAG-14-TEXT-0 PIC X(60) VALUE " fireworks explosion player_explosion bad_respawn_point ".
+ 01 TAG-15-NAME PIC X(32) VALUE "is_projectile".
+ 01 TAG-15-TEXT.
+    05 TAG-15-TEXT-0 PIC X(60) VALUE " arrow trident mob_projectile unattributed_fireball fireball".
+    05 TAG-15-TEXT-1 PIC X(60) VALUE " wither_skull thrown wind_charge ".
+ 01 TAG-16-NAME PIC X(32) VALUE "is_player_attack".
+ 01 TAG-16-TEXT.
+    05 TAG-16-TEXT-0 PIC X(60) VALUE " player_attack spear mace_smash ".
+ 01 TAG-17-NAME PIC X(32) VALUE "no_knockback".
+ 01 TAG-17-TEXT.
+    05 TAG-17-TEXT-0 PIC X(60) VALUE " explosion player_explosion bad_respawn_point in_fire lightn".
+    05 TAG-17-TEXT-1 PIC X(60) VALUE "ing_bolt on_fire lava hot_floor sulfur_cube_hot in_wall cram".
+    05 TAG-17-TEXT-2 PIC X(60) VALUE "ming drown starve cactus fall ender_pearl fly_into_wall out_".
+    05 TAG-17-TEXT-3 PIC X(60) VALUE "of_world generic magic wither dragon_breath dry_out sweet_be".
+    05 TAG-17-TEXT-4 PIC X(60) VALUE "rry_bush freeze stalagmite outside_border generic_kill campf".
+    05 TAG-17-TEXT-5 PIC X(60) VALUE "ire spear ".
+ 01 TAG-18-NAME PIC X(32) VALUE "no_impact".
+ 01 TAG-18-TEXT.
+    05 TAG-18-TEXT-0 PIC X(60) VALUE " drown ".
+ 01 TAG-19-NAME PIC X(32) VALUE "no_anger".
+ 01 TAG-19-TEXT.
+    05 TAG-19-TEXT-0 PIC X(60) VALUE " mob_attack_no_aggro ".
+ 01 TAG-20-NAME PIC X(32) VALUE "always_hurts_ender_dragons".
+ 01 TAG-20-TEXT.
+    05 TAG-20-TEXT-0 PIC X(60) VALUE " fireworks explosion player_explosion bad_respawn_point ".
+ 01 WS-NEEDLE               PIC X(50).
+ 01 WS-HITS                 BINARY-LONG.
+ 01 WS-LEN                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-TAG                  PIC X(32).
+ 01 L-MEMBER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TAG L-MEMBER.
+     MOVE 0 TO L-MEMBER WS-HITS
+     MOVE SPACES TO WS-NEEDLE
+     STRING " " FUNCTION TRIM(L-KEY) " " DELIMITED BY SIZE INTO WS-NEEDLE
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-KEY)) + 2
+     EVALUATE L-TAG
+         WHEN TAG-1-NAME
+             INSPECT TAG-1-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-2-NAME
+             INSPECT TAG-2-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-3-NAME
+             INSPECT TAG-3-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-4-NAME
+             INSPECT TAG-4-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-5-NAME
+             INSPECT TAG-5-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-6-NAME
+             CONTINUE
+         WHEN TAG-7-NAME
+             INSPECT TAG-7-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-8-NAME
+             INSPECT TAG-8-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-9-NAME
+             INSPECT TAG-9-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-10-NAME
+             INSPECT TAG-10-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-11-NAME
+             INSPECT TAG-11-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-12-NAME
+             INSPECT TAG-12-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-13-NAME
+             INSPECT TAG-13-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-14-NAME
+             INSPECT TAG-14-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-15-NAME
+             INSPECT TAG-15-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-16-NAME
+             INSPECT TAG-16-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-17-NAME
+             INSPECT TAG-17-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-18-NAME
+             INSPECT TAG-18-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-19-NAME
+             INSPECT TAG-19-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+         WHEN TAG-20-NAME
+             INSPECT TAG-20-TEXT TALLYING WS-HITS FOR ALL WS-NEEDLE(1:WS-LEN)
+     END-EVALUATE
+     IF WS-HITS > 0
+         MOVE 1 TO L-MEMBER
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-DAMAGE-TAG.
