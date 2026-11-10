@@ -1,5 +1,5 @@
 *> Acceptance test, US14-2 vitality (spec US14 scenario 2; FR-016; standin-content §16.2 row 20, §10.3,
-*> §10.6): the set-health command sets a survival player's health to an amount (0 to 30), full (30)
+*> §10.6): the set-health command sets a survival player's health to an amount (0 to 20), full (20)
 *> or zero (0); the player is sent Set Health and the sender cobolcraft.command.vitality.done [name,
 *> new health]; at 0 the player dies (cause cobolcraft.death.command) after the confirmation is
 *> sent (US7-4). A creative player gets not_survival, a dead one not_alive.
@@ -59,15 +59,15 @@
      PERFORM OPAL-CHECK
      MOVE "acceptance US14-2 Alice is sent Set Health with health 10" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 10 food 24" TO TL-EXPECTED
+     MOVE "health 10 food 20" TO TL-EXPECTED
      PERFORM CHECK-TEXT
-     MOVE "acceptance US14-2 vitality full sets health 30" TO TL-CASE
+     MOVE "acceptance US14-2 vitality full sets health 20" TO TL-CASE
      MOVE "vitality Alice full" TO WS-LINE
-     MOVE "cobolcraft.command.vitality.done(Alice,30)" TO TL-EXPECTED
+     MOVE "cobolcraft.command.vitality.done(Alice,20)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
-     MOVE "acceptance US14-2 Alice is sent Set Health with health 30" TO TL-CASE
+     MOVE "acceptance US14-2 Alice is sent Set Health with health 20" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 30 food 24" TO TL-EXPECTED
+     MOVE "health 20 food 20" TO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 vitality zero sets health 0: the confirmation is sent, "
          & "then the player dies with the command death message" TO TL-CASE
@@ -80,7 +80,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
      MOVE PL-ENTITY-ID(CN-PLAYER(WS-ALICE)) TO WS-EDIT
      MOVE SPACES TO TL-EXPECTED
-     STRING "health 0 food 24 | kill " FUNCTION TRIM(WS-EDIT) " cobolcraft.death.command(Alice)"
+     STRING "health 0 food 20 | kill " FUNCTION TRIM(WS-EDIT) " cobolcraft.death.command(Alice)"
          " | chat cobolcraft.death.command(Alice)" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "acceptance US14-2 setting the health of a dead player sends not_alive" TO TL-CASE
@@ -92,9 +92,9 @@
      MOVE "vitality Bob 5" TO WS-LINE
      MOVE "cobolcraft.command.not_survival(Bob)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
-     MOVE "acceptance US14-2 an amount above 30 is an invalid argument" TO TL-CASE
-     MOVE "vitality Bob 31" TO WS-LINE
-     MOVE "cobolcraft.command.invalid_argument(31,vitality <player> <amount>)" TO TL-EXPECTED
+     MOVE "acceptance US14-2 an amount above 20 is an invalid argument" TO TL-CASE
+     MOVE "vitality Bob 21" TO WS-LINE
+     MOVE "cobolcraft.command.invalid_argument(21,vitality <player> <amount>)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
      MOVE "acceptance US14-2 naming a player who is not online changes nothing and "
          & "sends the §16 player-not-found message (§16 target rule)" TO TL-CASE

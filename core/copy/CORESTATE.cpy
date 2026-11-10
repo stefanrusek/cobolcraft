@@ -117,6 +117,7 @@
 *>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
 *>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).
        10 PL-EXHAUSTION      FLOAT-LONG.
+       10 PL-SATURATION      FLOAT-LONG.         *> 17 section 4.9: 0 to the food level, 5.0 for a new player
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
@@ -157,7 +158,8 @@
        10 PL-BREAK-STAGE     BINARY-LONG.        *> last Block Destruction stage sent, -1 none
 *>     Health (standin §10; core/src/health.cob). PL-DEATH-CAUSE is the RULES.cpy CAUSE-* of the
 *>     death while the player is dead (0 while alive); PL-KILLER-* name the attacker of a player kill.
-       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> ticks left in which damage is ignored (§10.2)
+       10 PL-HURT-COOLDOWN   BINARY-LONG.        *> invulnerableTime (17 section 4.7): 20 after an accepted hit
+       10 PL-LAST-HURT       BINARY-LONG.        *> lastHurt: the damage of the last accepted hit
        10 PL-RECOVER-TICKS   BINARY-LONG.        *> consecutive ticks of the recovery condition (§10.5)
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
@@ -228,6 +230,7 @@
 *>     player row and its entity id (0 = none). EN-COOLDOWN: attack cooldown. None of it is saved.
        10 EN-HEALTH          BINARY-LONG.
        10 EN-HURT            BINARY-LONG.
+       10 EN-LAST-HURT       BINARY-LONG.
        10 EN-WANDER-X        FLOAT-LONG.
        10 EN-WANDER-Z        FLOAT-LONG.
        10 EN-FLEE            BINARY-LONG.

@@ -21,20 +21,20 @@
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "acceptance US7-1 given survival and Set Health 30 when the Player is in the world then "
-         & "the HUD shows Health 30/30 after the crosshair and the hotbar" TO TL-CASE
+         & "the HUD shows Health 20/20 after the crosshair and the hotbar" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 24/24" TO TL-EXPECTED
+     MOVE "+||||||||||Health 20/20|Food 20/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-SET-HEALTH" USING CLIENT-STATE WS-CONN WS-HEALTH WS-FOOD
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "acceptance US7-1 given survival when Set Health 17 arrives then the HUD shows the "
-         & "current and maximum health Health 17/30" TO TL-CASE
+         & "current and maximum health Health 17/20" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
+     MOVE "+||||||||||Health 17/20|Food 20/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The server made the player creative (Game Event 3, decoded in contract_wire_client).
@@ -53,7 +53,7 @@
          & "value it had" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
+     MOVE "+||||||||||Health 17/20|Food 20/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-US7-HEALTH-HUD.

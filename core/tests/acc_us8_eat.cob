@@ -1,7 +1,7 @@
 *> Acceptance test, US8-3 and US8-4 core half (spec US8 scenarios 3 and 4, US8 edge case "eating is
 *> interrupted"; tasks T514; standin-content §11.5, §11.6; 09 §3.3 rows 0x43, 0x29 action 6, 0x22):
-*> Use Item with a food item held and food below 24 starts eating; after the eating time of 30 ticks
-*> one item leaves the held slot, food rises by the item's value up to 24, and the player is sent
+*> Use Item with a food item held and food below 20 starts eating; after the eating time of 30 ticks
+*> one item leaves the held slot, food rises by the item's value up to 20, and the player is sent
 *> Set Health, Container Set Slot of the slot and Entity Event 9, which the players who see it are
 *> sent too. With food at 24, without a food item held, after Player Action 6 RELEASE_USE_ITEM or a
 *> change of the held slot before the eating time, nothing is eaten. Alice (entity 1) and Bobby are
@@ -44,9 +44,9 @@
      CALL "TEST-DRAIN-HUNGER" USING WS-BOB WS-TEXT
      MOVE 12 TO PL-SLOT-ITEM(WS-ROW, 1)
      MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 1)
-     MOVE 20 TO PL-FOOD(WS-ROW)
+     MOVE 12 TO PL-FOOD(WS-ROW)
 
-     MOVE "acceptance US8-3 given food 20 and a held grazer_flank when eat has been held for 29 "
+     MOVE "acceptance US8-3 given food 12 and a held grazer_flank when eat has been held for 29 "
          & "ticks then nothing is eaten yet" TO TL-CASE
      CALL "TEST-USE-ITEM" USING WS-ALICE
      MOVE 29 TO WS-TICKS
@@ -55,13 +55,13 @@
      MOVE SPACES TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8-3 given food 20 and a held grazer_flank when eat is held for the eating "
+     MOVE "acceptance US8-3 given food 12 and a held grazer_flank when eat is held for the eating "
          & "time (30 ticks) then one item is used, food rises by 3 and Set Health, the slot and "
          & "Entity Event 9 are sent" TO TL-CASE
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HUNGER" USING WS-ALICE WS-TEXT
-     MOVE "health 30 food 23 | slot 0=12x2 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 15 | slot 0=12x2 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US8-3 given Alice finished eating then Bobby, who sees her, is sent Entity "
@@ -70,22 +70,22 @@
      MOVE "event 1 9" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8-3 given food 22 when a grazer_flank (3) is eaten then food rises only "
-         & "up to the maximum 24" TO TL-CASE
-     MOVE 22 TO PL-FOOD(WS-ROW)
+     MOVE "acceptance US8-3 given food 19 when a grazer_flank (3) is eaten then food rises only "
+         & "up to the maximum 20" TO TL-CASE
+     MOVE 19 TO PL-FOOD(WS-ROW)
      PERFORM EAT
-     MOVE "health 30 food 24 | slot 0=12x1 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 20 | slot 0=12x1 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8-4 given full food (24) when eat is held then nothing is eaten" TO TL-CASE
+     MOVE "acceptance US8-4 given full food (20) when eat is held then nothing is eaten" TO TL-CASE
      PERFORM EAT
      PERFORM ADD-STATE
-     MOVE "food 24 slot 12x1" TO TL-EXPECTED
+     MOVE "food 20 slot 12x1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8 edge given food 20 when eat is released (Player Action 6) before the "
+     MOVE "acceptance US8 edge given food 12 when eat is released (Player Action 6) before the "
          & "eating time then nothing is eaten" TO TL-CASE
-     MOVE 20 TO PL-FOOD(WS-ROW)
+     MOVE 12 TO PL-FOOD(WS-ROW)
      CALL "TEST-USE-ITEM" USING WS-ALICE
      MOVE 10 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -94,10 +94,10 @@
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HUNGER" USING WS-ALICE WS-TEXT
      PERFORM ADD-STATE
-     MOVE "food 20 slot 12x1" TO TL-EXPECTED
+     MOVE "food 12 slot 12x1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8 edge given food 20 when the held slot changes before the eating time "
+     MOVE "acceptance US8 edge given food 12 when the held slot changes before the eating time "
          & "then nothing is eaten" TO TL-CASE
      CALL "TEST-USE-ITEM" USING WS-ALICE
      MOVE 10 TO WS-TICKS
@@ -110,10 +110,10 @@
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HUNGER" USING WS-ALICE WS-TEXT
      PERFORM ADD-STATE
-     MOVE "food 20 slot 12x1" TO TL-EXPECTED
+     MOVE "food 12 slot 12x1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8-3 given food 20 and a held item that is not food (pry_bar) when eat is "
+     MOVE "acceptance US8-3 given food 12 and a held item that is not food (pry_bar) when eat is "
          & "held then nothing is eaten" TO TL-CASE
      MOVE 8 TO WS-SLOT
      CALL "TEST-HELD" USING WS-ALICE WS-SLOT
@@ -121,13 +121,13 @@
      MOVE 0 TO WS-SLOT
      CALL "TEST-HELD" USING WS-ALICE WS-SLOT
      PERFORM ADD-STATE
-     MOVE "food 20 slot 12x1" TO TL-EXPECTED
+     MOVE "food 12 slot 12x1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US8-3 given food 20 and the last grazer_flank held when it is eaten then "
+     MOVE "acceptance US8-3 given food 12 and the last grazer_flank held when it is eaten then "
          & "the slot becomes empty" TO TL-CASE
      PERFORM EAT
-     MOVE "health 30 food 23 | slot 0=0x0 | event 1 9" TO TL-EXPECTED
+     MOVE "health 20 food 15 | slot 0=0x0 | event 1 9" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

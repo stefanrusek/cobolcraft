@@ -20,8 +20,9 @@
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
  01 WS-EDIT3               PIC -(9)9.
- 01 WS-HEALTH              FLOAT-SHORT VALUE 30.
- 01 WS-FOOD                BINARY-LONG VALUE 24.
+ 01 WS-HEALTH              FLOAT-SHORT VALUE 20.
+ 01 WS-FOOD                BINARY-LONG VALUE 20.
+ 01 WS-SATURATION          FLOAT-SHORT VALUE 5.
  01 WS-ALICE-ID            BINARY-LONG VALUE 1.
  01 WS-TYPE                BINARY-LONG VALUE 28.
  01 WS-SOURCE              BINARY-LONG VALUE 22.
@@ -59,9 +60,9 @@
 
 *>   Clientbound.
      MOVE "contract wire server play-s2c-6a-set-health equals the core's Set Health of health "
-         & "30.0 and food 24 (saturation 0.0)" TO TL-CASE
+         & "20.0 and food 20 (saturation 5.0)" TO TL-CASE
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "SET-HEALTH-BUILD" USING WS-HEALTH WS-FOOD PB-BUFFER
+     CALL "SET-HEALTH-BUILD" USING WS-HEALTH WS-FOOD WS-SATURATION PB-BUFFER
      MOVE "contract/fixtures/wire/play-s2c-6a-set-health.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 

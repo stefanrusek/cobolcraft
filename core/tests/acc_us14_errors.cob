@@ -58,8 +58,8 @@
 
      MOVE "acceptance US14-4 given an operator when an argument is out of range then they are "
          & "sent the invalid-argument message" TO TL-CASE
-     MOVE "clock 30000" TO WS-LINE
-     MOVE "cobolcraft.command.invalid_argument(30000,clock <ticks>)" TO TL-EXPECTED
+     MOVE "clock 24000" TO WS-LINE
+     MOVE "cobolcraft.command.invalid_argument(24000,clock <ticks>)" TO TL-EXPECTED
      PERFORM OPAL-CHECK
      MOVE "acceptance US14-4 an invalid argument changes nothing: the time of day is unchanged"
          TO TL-CASE
