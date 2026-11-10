@@ -276,6 +276,47 @@
        10 CR-HB OCCURS 81 TIMES.
           15 CR-HB-ITEM      BINARY-LONG.
           15 CR-HB-COUNT     BINARY-LONG.
+*>     The text engines of 40-8: the page editor (BK: value, indexes 0 based, selection anchor, wrap width and the limits, a fixed advance for tests (0 = the font), the display
+*>     lines, the clipboard), the book (BE: the pages, the shown page, the hand, the sign title) and the sign line editor (SG: four lines, the line being edited, cursor and anchor,
+*>     the width limit, the sign position, side and clipboard).
+       10 BK-VALUE           PIC X(1100).
+       10 BK-LEN             BINARY-LONG.
+       10 BK-CURSOR          BINARY-LONG.
+       10 BK-ANCHOR          BINARY-LONG.
+       10 BK-SELECTING       BINARY-LONG.
+       10 BK-WIDTH           BINARY-LONG.
+       10 BK-ADVANCE         BINARY-LONG.
+       10 BK-CHAR-LIMIT      BINARY-LONG.
+       10 BK-LINE-LIMIT      BINARY-LONG.
+       10 BK-LINE-COUNT      BINARY-LONG.
+       10 BK-OVERFLOW        BINARY-LONG.
+       10 BK-LINE OCCURS 64 TIMES.
+          15 BK-LB           BINARY-LONG.
+          15 BK-LE           BINARY-LONG.
+       10 BK-CLIP            PIC X(1100).
+       10 BK-CLIP-LEN        BINARY-LONG.
+       10 BE-PAGE-COUNT      BINARY-LONG.
+       10 BE-CURRENT         BINARY-LONG.
+       10 BE-HAND            BINARY-LONG.
+       10 BE-ACTIVE          BINARY-LONG.
+       10 BE-TITLE-LEN       BINARY-LONG.
+       10 BE-TITLE           PIC X(32).
+       10 BE-PAGE OCCURS 100 TIMES.
+          15 BE-PAGE-LEN     BINARY-LONG.
+          15 BE-PAGE-TEXT    PIC X(1024).
+       10 SG-LINE            BINARY-LONG.
+       10 SG-CURSOR          BINARY-LONG.
+       10 SG-ANCHOR          BINARY-LONG.
+       10 SG-MAXW            BINARY-LONG.
+       10 SG-X               BINARY-LONG.
+       10 SG-Y               BINARY-LONG.
+       10 SG-Z               BINARY-LONG.
+       10 SG-SIDE            BINARY-LONG.
+       10 SG-CLIP-LEN        BINARY-LONG.
+       10 SG-CLIP            PIC X(64).
+       10 SG-ROW OCCURS 4 TIMES.
+          15 SG-LEN          BINARY-LONG.
+          15 SG-LINE-TEXT    PIC X(64).
        10 MT-ENTITY          BINARY-LONG.
        10 MT-KIND            BINARY-LONG.
        10 MT-SADDLE          BINARY-LONG.
