@@ -1,0 +1,555 @@
+*> Entity models part 3 (docs/protocol/34-entity-models-3-villagers-illagers-golems-misc.md) sections 5 to 8: the setupAnim, state values and renderer constants of the ravager, the vex,
+*> the iron golem and the snow golem, on models built by EM3-LAYER (client/src/entmodel-34-3-mesh.cob; current pose MM-C* of client/copy/CLEMM.cpy). Each setupAnim resets the pose first.
+*> Entry points for the integrator (inputs; the table programs take IN of 16 and OUT of 64 FLOAT-LONG):
+*>   EM3-RAVAGER-ANIM EMM-MODEL state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 stunnedTicksRemaining, 6 attackTicksRemaining, 7 roarAnimation): 5.
+*>   EM3-RAVAGER-STATE IN(stunnedTick, attackTick, roarTick, partial) OUT(stunnedTicksRemaining, attackTicksRemaining, roarAnimation); EM3-RAVAGER-RENDERER OUT(shadow radius);
+*>     EM3-RAVAGER-TEXTURE path(X(100), out).
+*>   EM3-VEX-ANIM EMM-MODEL state(1 xRot, 2 yRot, 3 age, 4 is charging, 5 right hand has an item, 6 left hand has an item): 6. EM3-VEX-HAND-OPS IN(arm sign +1 right -1 left)
+*>     OUT(operation count, then 4 per operation as EM6-POSE-CHAIN: the scale 0.55 and the translation after root, body and arm). EM3-VEX-RENDERER IN(is charging) OUT(shadow radius,
+*>     block light level) texture(X(100), out).
+*>   EM3-IRON-GOLEM-ANIM EMM-MODEL state(1 xRot, 2 yRot, 3 walk position, 4 walk speed, 5 attackTicksRemaining, 6 offerFlowerTick): 7. EM3-GOLEM-ROLL IN(walk position, walk speed)
+*>     OUT(applies, roll degrees about Z). EM3-CRACKINESS IN(health, max health) OUT(0 NONE, 1 LOW, 2 MEDIUM, 3 HIGH); EM3-CRACK-TEXTURE IN(level) path(out, spaces for NONE);
+*>     EM3-GOLEM-DRAW-CRACK IN(invisible, level) OUT(draws); EM3-FLOWER-OPS OUT(operations of the flower layer); EM3-IRON-REMAIN IN(attackAnimationTick, partial) OUT(remaining);
+*>     EM3-IRON-RENDERER OUT(shadow radius); EM3-IRON-TEXTURE path(out).
+*>   EM3-SNOW-GOLEM-ANIM EMM-MODEL state(1 xRot, 2 yRot): 8. EM3-SNOW-HEAD-DRAW IN(has pumpkin, invisible, glowing) OUT(draws); EM3-SNOW-HEAD-OPS OUT(operations of the head layer);
+*>     EM3-SNOW-RENDERER IN(invisible, glowing) OUT(shadow radius, draws, outline); EM3-SNOW-TEXTURE path(out).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-RAVAGER-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NECK                BINARY-LONG.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-MOUTH               BINARY-LONG.
+ 01 WS-RH                  BINARY-LONG.
+ 01 WS-LH                  BINARY-LONG.
+ 01 WS-RF                  BINARY-LONG.
+ 01 WS-LF                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-T-IN.
+    05 WS-TI               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-T-OUT.
+    05 WS-TO               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "neck" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-NECK
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "mouth" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-MOUTH
+     MOVE "right_hind_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RH
+     MOVE "left_hind_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LH
+     MOVE "right_front_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RF
+     MOVE "left_front_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LF
+     IF L-I(6) > 0
+         MOVE L-I(6) TO WS-TI(1)
+         MOVE 10 TO WS-TI(2)
+         CALL "EM3-TRIANGLE" USING WS-T-IN WS-T-OUT
+         COMPUTE WS-F = (1 + WS-TO(1)) * 0.5
+         COMPUTE WS-G = WS-F * WS-F * WS-F * 12
+         COMPUTE MM-CZ(WS-NECK) = -6.5 + WS-G
+         COMPUTE MM-CY(WS-NECK) = -7 - WS-G * FUNCTION SIN(MM-CXROT(WS-NECK))
+         IF L-I(6) > 5
+             COMPUTE MM-CXROT(WS-MOUTH) = FUNCTION SIN((-4 + L-I(6)) / 4) * 3.1415927 * 0.4
+         ELSE
+             COMPUTE MM-CXROT(WS-MOUTH) = 0.15707964 * FUNCTION SIN(3.1415927 * L-I(6) / 10)
+         END-IF
+     ELSE
+         MOVE 0 TO MM-CX(WS-NECK) MM-CXROT(WS-NECK) MM-CXROT(WS-MOUTH)
+         COMPUTE MM-CY(WS-NECK) = -7 + FUNCTION SIN(MM-CXROT(WS-NECK))
+         MOVE 5.5 TO MM-CZ(WS-NECK)
+         COMPUTE MM-CXROT(WS-MOUTH) = 3.1415927 * 0.01
+         IF L-I(5) > 0
+             MOVE 0.21991149 TO MM-CXROT(WS-NECK)
+             COMPUTE MM-CXROT(WS-MOUTH) = 3.1415927 * 0.05
+             COMPUTE MM-CX(WS-NECK) = FUNCTION SIN(L-I(5) / 40 * 10) * 3
+         ELSE
+             IF L-I(7) > 0
+                 COMPUTE MM-CXROT(WS-MOUTH) = 1.5707964 * FUNCTION SIN(L-I(7) * 3.1415927 * 0.25)
+             END-IF
+         END-IF
+     END-IF
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     COMPUTE WS-V = 0.4 * L-I(4)
+     COMPUTE MM-CXROT(WS-RH) = FUNCTION COS(L-I(3) * 0.6662) * WS-V
+     COMPUTE MM-CXROT(WS-LH) = FUNCTION COS(L-I(3) * 0.6662 + 3.1415927) * WS-V
+     COMPUTE MM-CXROT(WS-RF) = FUNCTION COS(L-I(3) * 0.6662 + 3.1415927) * WS-V
+     COMPUTE MM-CXROT(WS-LF) = FUNCTION COS(L-I(3) * 0.6662) * WS-V
+     GOBACK.
+ END PROGRAM EM3-RAVAGER-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-RAVAGER-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2) L-O(3)
+     IF L-I(1) > 0
+         COMPUTE L-O(1) = L-I(1) - L-I(4)
+     END-IF
+     IF L-I(2) > 0
+         COMPUTE L-O(2) = L-I(2) - L-I(4)
+     END-IF
+     IF L-I(3) > 0
+         COMPUTE L-O(3) = (20 - L-I(3) + L-I(4)) / 20
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-RAVAGER-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-RAVAGER-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1.1 TO L-O(1)
+     GOBACK.
+ END PROGRAM EM3-RAVAGER-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-RAVAGER-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/illager/ravager.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-RAVAGER-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-VEX-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
+ 01 WS-RA                  BINARY-LONG.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-LW                  BINARY-LONG.
+ 01 WS-RW                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "body" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-BODY
+     MOVE "right_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RA
+     MOVE "left_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LA
+     MOVE "left_wing" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LW
+     MOVE "right_wing" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RW
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE WS-B = FUNCTION COS(L-I(3) * 5.5 * 0.017453292) * 0.1
+     COMPUTE MM-CZROT(WS-RA) = 0.62831855 + WS-B
+     COMPUTE MM-CZROT(WS-LA) = -(0.62831855 + WS-B)
+     IF L-I(4) NOT = 0
+         MOVE 0 TO MM-CXROT(WS-BODY)
+         IF L-I(5) = 0 AND L-I(6) = 0
+             MOVE -1.2217305 TO MM-CXROT(WS-RA) MM-CXROT(WS-LA)
+             MOVE 0.2617994 TO MM-CYROT(WS-RA)
+             MOVE -0.2617994 TO MM-CYROT(WS-LA)
+             COMPUTE MM-CZROT(WS-RA) = -0.47123888 - WS-B
+             COMPUTE MM-CZROT(WS-LA) = 0.47123888 + WS-B
+         ELSE
+             IF L-I(5) NOT = 0
+                 MOVE 3.6651914 TO MM-CXROT(WS-RA)
+                 MOVE 0.2617994 TO MM-CYROT(WS-RA)
+                 COMPUTE MM-CZROT(WS-RA) = -0.47123888 - WS-B
+             END-IF
+             IF L-I(6) NOT = 0
+                 MOVE 3.6651914 TO MM-CXROT(WS-LA)
+                 MOVE -0.2617994 TO MM-CYROT(WS-LA)
+                 COMPUTE MM-CZROT(WS-LA) = 0.47123888 + WS-B
+             END-IF
+         END-IF
+     ELSE
+         MOVE 0.15707964 TO MM-CXROT(WS-BODY)
+     END-IF
+     COMPUTE MM-CYROT(WS-LW) = 1.0995574 + FUNCTION COS(L-I(3) * 45.836624 * 0.017453292) * 0.017453292 * 16.2
+     COMPUTE MM-CYROT(WS-RW) = -MM-CYROT(WS-LW)
+     MOVE 0.47123888 TO MM-CXROT(WS-LW) MM-CXROT(WS-RW)
+     MOVE -0.47123888 TO MM-CZROT(WS-LW)
+     MOVE 0.47123888 TO MM-CZROT(WS-RW)
+     GOBACK.
+ END PROGRAM EM3-VEX-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-VEX-HAND-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 2 TO L-O(1)
+     MOVE 2 TO L-O(2)
+     MOVE 0.55 TO L-O(3) L-O(4) L-O(5)
+     MOVE 1 TO L-O(6)
+     COMPUTE L-O(7) = L-I(1) * 0.046875
+     MOVE -0.15625 TO L-O(8)
+     MOVE 0.078125 TO L-O(9)
+     GOBACK.
+ END PROGRAM EM3-VEX-HAND-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-VEX-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-IN L-OUT L-PATH.
+     MOVE 0.3 TO L-O(1)
+     MOVE 15 TO L-O(2)
+     MOVE "textures/entity/illager/vex.png" TO L-PATH
+     IF L-I(1) NOT = 0
+         MOVE "textures/entity/illager/vex_charging.png" TO L-PATH
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-VEX-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-IRON-GOLEM-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RA                  BINARY-LONG.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-RL                  BINARY-LONG.
+ 01 WS-LL                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-T-IN.
+    05 WS-TI               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-T-OUT.
+    05 WS-TO               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-W                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "right_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RA
+     MOVE "left_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LA
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "right_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RL
+     MOVE "left_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LL
+     MOVE L-I(3) TO WS-TI(1)
+     MOVE 13 TO WS-TI(2)
+     CALL "EM3-TRIANGLE" USING WS-T-IN WS-T-OUT
+     MOVE WS-TO(1) TO WS-W
+     IF L-I(5) > 0
+         MOVE L-I(5) TO WS-TI(1)
+         MOVE 10 TO WS-TI(2)
+         CALL "EM3-TRIANGLE" USING WS-T-IN WS-T-OUT
+         COMPUTE MM-CXROT(WS-RA) = -2 + 1.5 * WS-TO(1)
+         MOVE MM-CXROT(WS-RA) TO MM-CXROT(WS-LA)
+     ELSE
+         IF L-I(6) > 0
+             MOVE L-I(6) TO WS-TI(1)
+             MOVE 70 TO WS-TI(2)
+             CALL "EM3-TRIANGLE" USING WS-T-IN WS-T-OUT
+             COMPUTE MM-CXROT(WS-RA) = -0.8 + 0.025 * WS-TO(1)
+             MOVE 0 TO MM-CXROT(WS-LA)
+         ELSE
+             COMPUTE MM-CXROT(WS-RA) = (-0.2 + 1.5 * WS-W) * L-I(4)
+             COMPUTE MM-CXROT(WS-LA) = (-0.2 - 1.5 * WS-W) * L-I(4)
+         END-IF
+     END-IF
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CXROT(WS-RL) = -1.5 * WS-W * L-I(4)
+     COMPUTE MM-CXROT(WS-LL) = 1.5 * WS-W * L-I(4)
+     MOVE 0 TO MM-CYROT(WS-RL) MM-CYROT(WS-LL)
+     GOBACK.
+ END PROGRAM EM3-IRON-GOLEM-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-GOLEM-ROLL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-ROLL                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2)
+     IF L-I(2) >= 0.01
+         MOVE 1 TO L-O(1)
+         COMPUTE WS-U = L-I(1) + 6
+         COMPUTE WS-U = WS-U - 13 * FUNCTION INTEGER-PART(WS-U / 13)
+         COMPUTE WS-ROLL = (FUNCTION ABS(WS-U - 6.5) - 3.25) / 3.25
+         COMPUTE L-O(2) = 6.5 * WS-ROLL
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-GOLEM-ROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CRACKINESS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-F                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-F = L-I(1) / L-I(2)
+     MOVE 0 TO L-O(1)
+     EVALUATE TRUE
+         WHEN WS-F < 0.25
+             MOVE 3 TO L-O(1)
+         WHEN WS-F < 0.5
+             MOVE 2 TO L-O(1)
+         WHEN WS-F < 0.75
+             MOVE 1 TO L-O(1)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-CRACKINESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-CRACK-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-IN L-PATH.
+     MOVE SPACES TO L-PATH
+     EVALUATE L-I(1)
+         WHEN 1
+             MOVE "textures/entity/iron_golem/iron_golem_crackiness_low.png" TO L-PATH
+         WHEN 2
+             MOVE "textures/entity/iron_golem/iron_golem_crackiness_medium.png" TO L-PATH
+         WHEN 3
+             MOVE "textures/entity/iron_golem/iron_golem_crackiness_high.png" TO L-PATH
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-CRACK-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-GOLEM-DRAW-CRACK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1 TO L-O(1)
+     IF L-I(1) NOT = 0 OR L-I(2) = 0
+         MOVE 0 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-GOLEM-DRAW-CRACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-FLOWER-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-OUT.
+     MOVE 5 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE -1.1875 TO L-O(3)
+     MOVE 1.0625 TO L-O(4)
+     MOVE -0.9375 TO L-O(5)
+     MOVE 1 TO L-O(6)
+     MOVE 0.5 TO L-O(7) L-O(8) L-O(9)
+     MOVE 2 TO L-O(10)
+     MOVE 0.5 TO L-O(11) L-O(12) L-O(13)
+     MOVE 5 TO L-O(14)
+     MOVE -90 TO L-O(15)
+     MOVE 0 TO L-O(16) L-O(17)
+     MOVE 1 TO L-O(18)
+     MOVE -0.5 TO L-O(19) L-O(20) L-O(21)
+     GOBACK.
+ END PROGRAM EM3-FLOWER-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-IRON-REMAIN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) > 0
+         COMPUTE L-O(1) = L-I(1) - L-I(2)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-IRON-REMAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-IRON-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.7 TO L-O(1)
+     GOBACK.
+ END PROGRAM EM3-IRON-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-IRON-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/iron_golem/iron_golem.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-IRON-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SNOW-GOLEM-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-UB                  BINARY-LONG.
+ 01 WS-LA                  BINARY-LONG.
+ 01 WS-RA                  BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "upper_body" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-UB
+     MOVE "left_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LA
+     MOVE "right_arm" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RA
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CYROT(WS-UB) = L-I(2) * 0.017453292 * 0.25
+     COMPUTE WS-S = FUNCTION SIN(MM-CYROT(WS-UB))
+     COMPUTE WS-C = FUNCTION COS(MM-CYROT(WS-UB))
+     MOVE MM-CYROT(WS-UB) TO MM-CYROT(WS-LA)
+     COMPUTE MM-CYROT(WS-RA) = MM-CYROT(WS-UB) + 3.1415927
+     COMPUTE MM-CX(WS-LA) = WS-C * 5
+     COMPUTE MM-CZ(WS-LA) = -WS-S * 5
+     COMPUTE MM-CX(WS-RA) = -WS-C * 5
+     COMPUTE MM-CZ(WS-RA) = WS-S * 5
+     GOBACK.
+ END PROGRAM EM3-SNOW-GOLEM-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SNOW-HEAD-DRAW.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1 TO L-O(1)
+     IF L-I(1) = 0 OR (L-I(2) NOT = 0 AND L-I(3) = 0)
+         MOVE 0 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-SNOW-HEAD-DRAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SNOW-HEAD-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-OUT.
+     MOVE 4 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     MOVE -0.34375 TO L-O(4)
+     MOVE 0 TO L-O(5)
+     MOVE 3 TO L-O(6)
+     MOVE 180 TO L-O(7)
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 2 TO L-O(10)
+     MOVE 0.625 TO L-O(11)
+     MOVE -0.625 TO L-O(12) L-O(13)
+     MOVE 1 TO L-O(14)
+     MOVE -0.5 TO L-O(15) L-O(16) L-O(17)
+     GOBACK.
+ END PROGRAM EM3-SNOW-HEAD-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SNOW-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+*> IN(invisible, glowing) OUT(shadow radius, draws, outline): 8 (the head layer's outline only when glowing and invisible).
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.5 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     IF L-I(1) NOT = 0 AND L-I(2) NOT = 0
+         MOVE 1 TO L-O(3)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-SNOW-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-SNOW-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/snow_golem/snow_golem.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-SNOW-TEXTURE.
