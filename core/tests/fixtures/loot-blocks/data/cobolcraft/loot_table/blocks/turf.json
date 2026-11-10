@@ -1,0 +1,27 @@
+{
+ "type": "minecraft:block",
+ "random_sequence": "cobolcraft:blocks/turf",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:loam",
+     "condition": {
+      "type": "minecraft:survives_explosion"
+     },
+     "modifier": [
+      {
+       "type": "minecraft:set_count",
+       "count": 4
+      },
+      {
+       "type": "minecraft:explosion_decay"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
