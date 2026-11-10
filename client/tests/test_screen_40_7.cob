@@ -478,6 +478,33 @@
      MOVE "39002407050000" TO TL-EXPECTED
      MOVE WS-TEXT(1:14) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Coverage of the remaining branches: a left-aligned tab is hit from its tabX (the building blocks tab at 0), the hotbar tab lists a saved hotbar's stacks, and a right click
+*>   on an empty grid slot lowers the carried stack by one (coverage-only additions).
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO WS-I
+     MOVE 0 TO WS-X
+     MOVE -32 TO WS-Y
+     CALL "CREATIVE-TAB-HIT" USING WS-I WS-X WS-Y WS-HIT
+     MOVE "acceptance US12 40-7§3.2 a left-aligned tab (building blocks, tabX 0) is hit at its corner (0, -32)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HIT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-I
+     CALL "CREATIVE-SELECT" USING CLIENT-STATE WS-I
+     MOVE "acceptance US12 40-7§6.5 a saved hotbar (3) lists its stacks: entry 27 of the tab is the saved 5x7 and entry 35 the saved 6x1, no locked paper in that row" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 5 * 1000000 + 7 * 10000 + 6 * 100 + 1
+     COMPUTE TL-OBSERVED-N = CR-STACK-ITEM(28) * 1000000 + CR-STACK-COUNT(28) * 10000 + CR-STACK-ITEM(36) * 100 + CR-STACK-COUNT(36) + CR-STACK-LOCK(28) + CR-STACK-LOCK(36)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO PL-CARRIED-ITEM
+     MOVE 5 TO PL-CARRIED-COUNT
+     MOVE 0 TO WS-ITEM WS-COUNT
+     MOVE 1 TO WS-BUTTON
+     MOVE 0 TO WS-QUICK WS-CLONE
+     CALL "CREATIVE-GRID-CLICK" USING CLIENT-STATE WS-ITEM WS-COUNT WS-BUTTON WS-QUICK WS-CLONE
+     MOVE "acceptance US12 40-7§7.3 a right click on an empty grid slot lowers the carried stack: 5 becomes 4" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE PL-CARRIED-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> TL-OBSERVED: "item" x "count" of the carried stack.

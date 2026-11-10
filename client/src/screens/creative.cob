@@ -231,6 +231,44 @@
  01 L-QUERY                PIC X(64).
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-QUERY L-LENGTH.
+     GO TO MAIN-FLOW.
+
+*> WS-KEEP for the item WS-I: the namespace part is contained in "minecraft" and the path part in the lower-cased name or key.
+ FILTER.
+     MOVE 1 TO WS-KEEP
+     IF WS-NSLEN > 0
+         MOVE 0 TO WS-FOUND
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9 - WS-NSLEN + 1
+             IF WS-NAMESPACE(WS-J:WS-NSLEN) = WS-NS(1:WS-NSLEN)
+                 MOVE 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 0
+             MOVE 0 TO WS-KEEP
+         END-IF
+     END-IF
+     IF WS-KEEP = 1 AND WS-PLEN > 0
+         CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-I WS-NAME WS-NAME-LENGTH
+         MOVE FUNCTION LOWER-CASE(WS-NAME(1:WS-NAME-LENGTH)) TO WS-NAME
+         MOVE FUNCTION LOWER-CASE(CL-IT-KEY(WS-I + 1)) TO WS-KEY
+         MOVE 16 TO WS-KEY-LENGTH
+         MOVE 0 TO WS-FOUND
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NAME-LENGTH - WS-PLEN + 1
+             IF WS-NAME(WS-J:WS-PLEN) = WS-PATH(1:WS-PLEN)
+                 MOVE 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-KEY-LENGTH - WS-PLEN + 1
+             IF WS-KEY(WS-J:WS-PLEN) = WS-PATH(1:WS-PLEN)
+                 MOVE 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 0
+             MOVE 0 TO WS-KEEP
+         END-IF
+     END-IF
+     .
+ MAIN-FLOW.
      MOVE 0 TO CR-COUNT
      MOVE 0 TO CR-SCROLL
      MOVE SPACES TO WS-Q WS-NS WS-PATH
@@ -280,41 +318,6 @@
      END-PERFORM
      GOBACK.
 
-*> WS-KEEP for the item WS-I: the namespace part is contained in "minecraft" and the path part in the lower-cased name or key.
- FILTER.
-     MOVE 1 TO WS-KEEP
-     IF WS-NSLEN > 0
-         MOVE 0 TO WS-FOUND
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9 - WS-NSLEN + 1
-             IF WS-NAMESPACE(WS-J:WS-NSLEN) = WS-NS(1:WS-NSLEN)
-                 MOVE 1 TO WS-FOUND
-             END-IF
-         END-PERFORM
-         IF WS-FOUND = 0
-             MOVE 0 TO WS-KEEP
-         END-IF
-     END-IF
-     IF WS-KEEP = 1 AND WS-PLEN > 0
-         CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-I WS-NAME WS-NAME-LENGTH
-         MOVE FUNCTION LOWER-CASE(WS-NAME(1:WS-NAME-LENGTH)) TO WS-NAME
-         MOVE FUNCTION LOWER-CASE(CL-IT-KEY(WS-I + 1)) TO WS-KEY
-         MOVE 16 TO WS-KEY-LENGTH
-         MOVE 0 TO WS-FOUND
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NAME-LENGTH - WS-PLEN + 1
-             IF WS-NAME(WS-J:WS-PLEN) = WS-PATH(1:WS-PLEN)
-                 MOVE 1 TO WS-FOUND
-             END-IF
-         END-PERFORM
-         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-KEY-LENGTH - WS-PLEN + 1
-             IF WS-KEY(WS-J:WS-PLEN) = WS-PATH(1:WS-PLEN)
-                 MOVE 1 TO WS-FOUND
-             END-IF
-         END-PERFORM
-         IF WS-FOUND = 0
-             MOVE 0 TO WS-KEEP
-         END-IF
-     END-IF
-     .
  END PROGRAM CREATIVE-SEARCH.
 
  IDENTIFICATION DIVISION.
