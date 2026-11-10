@@ -4,8 +4,7 @@
 *> replaces it; an entry not updated for 20 s (400 ticks) is dropped; of several breakers on one block the
 *> highest stage is drawn; only blocks within 32 blocks of the camera. The mesh is the six faces of the
 *> block, each carrying the whole image of the stage (block atlas sprite minecraft:block/destroy_stage_N),
-*> eye-relative, alpha-blended (the shim has no multiply-blend pipeline: the crack is drawn, not blended 2 x
-*> source x destination as the original does; 12 §4.3).
+*> eye-relative, drawn with the crumbling pipeline (2 x source x destination, 12 §4.3).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BREAK-OVERLAY-SET.
