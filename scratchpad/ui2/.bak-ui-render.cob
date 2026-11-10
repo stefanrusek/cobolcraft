@@ -73,6 +73,9 @@
              WHEN SM-W-KIND(WS-W) = WK-METER
                  CALL "UI-METER" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-SHEET
+                 CALL "UI-SHEET-QUAD" USING CLIENT-STATE WS-W
+                 MOVE 0 TO WS-LENGTH
          END-EVALUATE
          IF WS-SWATCH >= 0
              IF SM-W-KIND(WS-W) = WK-BUTTON AND GS-W(GSP-BUTTON) > 0
@@ -103,6 +106,46 @@
      END-PERFORM
      GOBACK.
  END PROGRAM UI-RENDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-SHEET-QUAD.
+*> USING CLIENT-STATE, widget (a sheet region): one quad over the widget's rectangle on the region of the sheet from its origin
+*> (state 1: from (1, 1), the vanilla recipe-book panel) of the widget's size, in logical units of the 256 x 256 sheet (a sheet
+*> of a larger size scales them by its width / 256).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-W                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-W.
+     MOVE SM-W-ARG(L-W) TO WS-ROW
+     IF WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK
+         IF GS-W(WS-ROW) > 0
+             COMPUTE WS-F = GS-W(WS-ROW) / 256
+             COMPUTE WS-X0 = SM-W-X(L-W) * CL-GUI-SCALE
+             COMPUTE WS-Y0 = SM-W-Y(L-W) * CL-GUI-SCALE
+             COMPUTE WS-X1 = (SM-W-X(L-W) + SM-W-W(L-W)) * CL-GUI-SCALE
+             COMPUTE WS-Y1 = (SM-W-Y(L-W) + SM-W-H(L-W)) * CL-GUI-SCALE
+             COMPUTE WS-U0 = (GS-X(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-W
+             COMPUTE WS-V0 = (GS-Y(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-H
+             COMPUTE WS-U1 = (GS-X(WS-ROW) + (SM-W-STATE(L-W) + SM-W-W(L-W)) * WS-F) / UA-W
+             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
+             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM UI-SHEET-QUAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-METER.
@@ -172,6 +215,15 @@
  01 WS-SWATCH              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-INSET               BINARY-LONG.
+ 01 WS-MAXDMG              BINARY-LONG.
+ 01 WS-BARW                BINARY-LONG.
+ 01 WS-BARSW               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THIRTEEN            BINARY-LONG VALUE 13.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -194,17 +246,9 @@
  COPY CLSTATE.
  01 L-W                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
-     IF SM-W-ARG(L-W) = 36
-         MOVE PL-CARRIED-COUNT TO WS-COUNT
-         MOVE PL-CARRIED-ITEM TO WS-ITEM
-     ELSE
-         IF SM-W-ARG(L-W) = 37
-             MOVE PL-OFFHAND-COUNT TO WS-COUNT
-             MOVE PL-OFFHAND-ITEM TO WS-ITEM
-         ELSE
-             MOVE PL-SLOT-COUNT(SM-W-ARG(L-W) + 1) TO WS-COUNT
-             MOVE PL-SLOT-ITEM(SM-W-ARG(L-W) + 1) TO WS-ITEM
-         END-IF
+     MOVE SM-W-ARG(L-W) TO WS-ARG
+     CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+     IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
          IF SM-W-STATE(L-W) = 1
              MOVE SW-SELECTED TO WS-SWATCH
@@ -225,10 +269,12 @@
      END-IF
      IF WS-COUNT > 0 AND WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT
          MOVE IT-SPRITE(WS-ITEM + 1) TO WS-SPRITE
-         COMPUTE WS-X0 = (SM-W-X(L-W) + 2) * CL-GUI-SCALE
-         COMPUTE WS-Y0 = (SM-W-Y(L-W) + 2) * CL-GUI-SCALE
-         COMPUTE WS-X1 = (SM-W-X(L-W) + 18) * CL-GUI-SCALE
-         COMPUTE WS-Y1 = (SM-W-Y(L-W) + 18) * CL-GUI-SCALE
+*>       The icon cell is 16 x 16, centred in the slot (2 pixels in a 20 slot, 1 in an 18 slot).
+         COMPUTE WS-INSET = (SM-W-W(L-W) - 16) / 2
+         COMPUTE WS-X0 = (SM-W-X(L-W) + WS-INSET) * CL-GUI-SCALE
+         COMPUTE WS-Y0 = (SM-W-Y(L-W) + WS-INSET) * CL-GUI-SCALE
+         COMPUTE WS-X1 = (SM-W-X(L-W) + WS-INSET + 16) * CL-GUI-SCALE
+         COMPUTE WS-Y1 = (SM-W-Y(L-W) + WS-INSET + 16) * CL-GUI-SCALE
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-ZERO WS-ZERO2 WS-U0 WS-V0
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-SIXTEEN WS-SIXTEEN2 WS-U1 WS-V1
          MOVE 2 TO RL-UI-LAYER
@@ -253,6 +299,22 @@
          MOVE 1 TO RL-UI-LAYER
          CALL "UI-TEXT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y
          MOVE 0 TO RL-UI-LAYER
+*>       The durability bar of a damaged stack (17 section 5.7): a black bar 13 x 2 pixels at (2, 13) of the icon cell, the coloured
+*>       part over it, 1 pixel high.
+         IF WS-DAMAGE > 0
+             CALL "ITEM-MAX-DAMAGE" USING CLIENT-STATE WS-ITEM WS-MAXDMG
+             CALL "ITEM-BAR" USING WS-DAMAGE WS-MAXDMG WS-BARW WS-BARSW
+             IF WS-BARW >= 0
+                 COMPUTE WS-X = SM-W-X(L-W) + WS-INSET + 2
+                 COMPUTE WS-Y = SM-W-Y(L-W) + WS-INSET + 13
+                 MOVE 1 TO RL-UI-LAYER
+                 CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-THIRTEEN WS-TWO SW-BLACK
+                 IF WS-BARW > 0
+                     CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-BARW WS-ONE WS-BARSW
+                 END-IF
+                 MOVE 0 TO RL-UI-LAYER
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM UI-SLOT.

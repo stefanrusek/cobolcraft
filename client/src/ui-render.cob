@@ -218,6 +218,12 @@
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
  01 WS-INSET               BINARY-LONG.
+ 01 WS-MAXDMG              BINARY-LONG.
+ 01 WS-BARW                BINARY-LONG.
+ 01 WS-BARSW               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THIRTEEN            BINARY-LONG VALUE 13.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -293,6 +299,22 @@
          MOVE 1 TO RL-UI-LAYER
          CALL "UI-TEXT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y
          MOVE 0 TO RL-UI-LAYER
+*>       The durability bar of a damaged stack (17 section 5.7): a black bar 13 x 2 pixels at (2, 13) of the icon cell, the coloured
+*>       part over it, 1 pixel high.
+         IF WS-DAMAGE > 0
+             CALL "ITEM-MAX-DAMAGE" USING CLIENT-STATE WS-ITEM WS-MAXDMG
+             CALL "ITEM-BAR" USING WS-DAMAGE WS-MAXDMG WS-BARW WS-BARSW
+             IF WS-BARW >= 0
+                 COMPUTE WS-X = SM-W-X(L-W) + WS-INSET + 2
+                 COMPUTE WS-Y = SM-W-Y(L-W) + WS-INSET + 13
+                 MOVE 1 TO RL-UI-LAYER
+                 CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-THIRTEEN WS-TWO SW-BLACK
+                 IF WS-BARW > 0
+                     CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-BARW WS-ONE WS-BARSW
+                 END-IF
+                 MOVE 0 TO RL-UI-LAYER
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM UI-SLOT.

@@ -95,6 +95,8 @@
 *>   TEST-FEED-CLOSE USING CLIENT-STATE, connection, container id: hands PROTO-PACKET a Container Close (0x11) of that container.
 *>   TEST-FEED-SET-SLOT USING CLIENT-STATE, connection, container id, state id, slot, count, item: hands PROTO-PACKET a Container
 *>     Set Slot (0x14) with that stack (no components).
+*>   TEST-FEED-DAMAGED-SLOT USING CLIENT-STATE, connection, container id, state id, slot, item, damage, max damage: hands PROTO-PACKET a
+*>     Container Set Slot (0x14) of 1 of that item with the components damage (3) and max_damage (2).
 *>   TEST-FIGURE-FACE USING CLIENT-STATE, spec (PIC X(40): label, then the eye-relative face
 *>     centre x y z), text (appended): " <label> <u>/<v> <brightness>" of the entity-mesh quad
 *>     with that centre (u and v of its top-left corner), or " <label> none".
@@ -1527,6 +1529,49 @@
      CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
      GOBACK.
  END PROGRAM TEST-FEED-SET-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-DAMAGED-SLOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 20.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-CONTAINER            BINARY-LONG.
+ 01 L-STATE-ID             BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-CONTAINER L-STATE-ID L-SLOT L-ITEM L-DAMAGE L-MAX.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-CONTAINER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-STATE-ID
+     CALL "PB-PUT-SHORT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TWO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-THREE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-DAMAGE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TWO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-MAX
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-DAMAGED-SLOT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-FIGURE-FACE.

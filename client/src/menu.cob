@@ -325,3 +325,115 @@
      END-IF
      GOBACK.
  END PROGRAM ITEM-MAX-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STACK-NOTE-MAX.
+*> USING CLIENT-STATE, PB-ITEMSTACK-X: when the stack's patch adds the max_damage component (2, a VarInt), the item's maximum is
+*> remembered (MX-ENTRY, the newest of 16 items; the item's content gives it when no stack has said).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-SHIFT               BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-ITEMSTACK-X.
+     IF PB-ISX-COUNT > 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-ISX-ADDED-COUNT
+             IF PB-ISX-TYPE(WS-I) = 2
+                 MOVE 0 TO WS-MAX
+                 MOVE 1 TO WS-SHIFT
+                 MOVE 0 TO WS-DONE
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-VALUE-LENGTH(WS-I) OR WS-K > 4 OR WS-DONE = 1
+                     COMPUTE WS-BYTE = FUNCTION ORD(PB-ISX-VALUE(WS-I)(WS-K:1)) - 1
+                     COMPUTE WS-MAX = WS-MAX + FUNCTION MOD(WS-BYTE, 128) * WS-SHIFT
+                     COMPUTE WS-SHIFT = WS-SHIFT * 128
+                     IF WS-BYTE < 128
+                         MOVE 1 TO WS-DONE
+                     END-IF
+                 END-PERFORM
+                 MOVE 0 TO WS-AT
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > MX-COUNT
+                     IF MX-ITEM(WS-K) = PB-ISX-ITEM
+                         MOVE WS-K TO WS-AT
+                     END-IF
+                 END-PERFORM
+                 IF WS-AT = 0 AND MX-COUNT < 16
+                     ADD 1 TO MX-COUNT
+                     MOVE MX-COUNT TO WS-AT
+                 END-IF
+                 IF WS-AT = 0
+                     MOVE 16 TO WS-AT
+                 END-IF
+                 MOVE PB-ISX-ITEM TO MX-ITEM(WS-AT)
+                 MOVE WS-MAX TO MX-MAX(WS-AT)
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM STACK-NOTE-MAX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-MAX-DAMAGE.
+*> USING CLIENT-STATE, item id, maximum damage out (0: the item is not damageable as far as the client knows): what a stack's patch said
+*> (MX-ENTRY), else the content library's max_damage of the item.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-NAME                PIC X(32) VALUE "max_damage".
+ 01 WS-VALUE               PIC X(100).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-MAX.
+     MOVE 0 TO L-MAX
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > MX-COUNT
+         IF MX-ITEM(WS-K) = L-ITEM
+             MOVE MX-MAX(WS-K) TO L-MAX
+         END-IF
+     END-PERFORM
+     IF L-MAX = 0
+         CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-VALUE WS-STATUS
+         IF WS-STATUS = 0 AND WS-VALUE NOT = SPACES
+             COMPUTE L-MAX = FUNCTION NUMVAL(WS-VALUE)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-MAX-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-BAR.
+*> USING damage, maximum damage, width out, swatch out (17 §5.7 itemBar): for a damaged stack (damage > 0, maximum > 0) the bar is
+*> clamp(round(13 - damage x 13 / maximum), 0, 13) pixels wide, in the swatch SW-BAR-0 + round(23 x (maximum - damage) / maximum)
+*> (hue (maximum - damage) / maximum / 3: red worn, green new); width -1 for no bar.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-SWATCH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DAMAGE L-MAX L-WIDTH L-SWATCH.
+     MOVE -1 TO L-WIDTH
+     MOVE SW-BAR-0 TO L-SWATCH
+     IF L-DAMAGE > 0 AND L-MAX > 0
+         COMPUTE WS-F = (L-MAX - L-DAMAGE) / L-MAX
+         IF WS-F < 0
+             MOVE 0 TO WS-F
+         END-IF
+         COMPUTE WS-W ROUNDED = 13 - L-DAMAGE * 13 / L-MAX
+         MOVE FUNCTION MAX(0, FUNCTION MIN(13, WS-W)) TO L-WIDTH
+         COMPUTE L-SWATCH ROUNDED = SW-BAR-0 + 23 * WS-F
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-BAR.

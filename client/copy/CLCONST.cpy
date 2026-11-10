@@ -285,7 +285,9 @@
  78 SW-SELECTED             VALUE 4.
  78 SW-FIELD                VALUE 5.
  78 SW-HURT                 VALUE 6.
- 78 SW-COUNT                VALUE 7.
+ 78 SW-BLACK                VALUE 7.
+ 78 SW-BAR-0                VALUE 8.   *> 24 swatches SW-BAR-0 to SW-BAR-0 + 23: the durability bar colours, red to green
+ 78 SW-COUNT                VALUE 32.
 
 *> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
 *> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack

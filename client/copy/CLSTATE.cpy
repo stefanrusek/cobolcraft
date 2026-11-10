@@ -198,6 +198,10 @@
           15 BX-COUNT        BINARY-LONG.
           15 BX-ITEM         BINARY-LONG.
           15 BX-DAMAGE       BINARY-LONG.
+       10 MX-COUNT           BINARY-LONG.    *> max_damage components (2) the server's stacks carried: item and maximum, newest last
+       10 MX-ENTRY OCCURS 16 TIMES.
+          15 MX-ITEM         BINARY-LONG.
+          15 MX-MAX          BINARY-LONG.
        10 BM-ID              BINARY-LONG.
        10 BM-STATE-ID        BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
