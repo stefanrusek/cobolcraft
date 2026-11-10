@@ -1,5 +1,0 @@
-TEST offhand replica Container Set Slot 45 sets the off hand: 7 x item 4 FAIL expected=704 observed=0
-TEST offhand replica Set Player Inventory 40 sets the off hand: 2 x item 5 PASS
-TEST offhand replica Container Set Content entry 46 sets the off hand: 9 x item 6 PASS
-TEST offhand replica a Container Set Slot 45 of container 1 leaves the off hand as it was PASS
-exit=0

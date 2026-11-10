@@ -1,4 +1,0 @@
-TEST acceptance US9-3 creative: a left click outside the sheet sends Set Creative Mode Slot -1 with the whole stack, the cursor empty FAIL expected=39ffff05030000 cursor 0x0 observed=39fffe05030000 cursor 0x0
-TEST acceptance US9-3 creative: a right click outside drops one item and keeps 4 on the cursor FAIL expected=39ffff01030000 cursor 4x3 observed=39fffe01030000 cursor 4x3
-TEST acceptance US9-3 creative: a release inside the sheet sends no drop and keeps the cursor PASS
-exit=0

@@ -1,6 +1,0 @@
-TEST options migration: options.dat gives the two enabled packs, top first FAIL expected=2 vanilla file/Faithful 32x - 26.3.zip observed=0
-TEST options migration: a save leaves options.dat as it was PASS
-TEST options migration: with options.txt present the options.dat is not read again FAIL expected=2 observed=0
-TEST options migration: an options.dat with other tags gives its one pack FAIL expected=1 observed=0
-TEST options migration: an options.dat that cannot be read gives no packs and the game starts PASS
-exit=0

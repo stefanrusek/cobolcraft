@@ -1,5 +1,0 @@
-TEST acceptance US14 17 5.7 bar width and swatch at 0 of 100, a missing maximum, 5%, 25%, 50%, 100% and 200% worn PASS
-TEST acceptance US14 a damaged stack draws two bar quads on the layer over the icons (12 vertices) FAIL expected=12 observed=0
-TEST acceptance US14 the black bar is 13 x 2 GUI pixels at (74, 234) and the coloured part 7 x 1 FAIL expected=1 observed=0
-TEST acceptance US14 an undamaged stack has no bar PASS
-exit=0
