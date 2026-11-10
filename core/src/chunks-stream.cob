@@ -65,6 +65,7 @@
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY CELLS.
+ COPY CBLOCKS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG VALUE 46.
  01 WS-X                   BINARY-LONG.
@@ -82,6 +83,10 @@
  01 WS-I                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-CELLS               BINARY-LONG.
+ 01 WS-WATER-FIRST         BINARY-LONG.
+ 01 WS-WATER-END           BINARY-LONG.
+ 01 WS-LAVA-FIRST          BINARY-LONG.
+ 01 WS-LAVA-END            BINARY-LONG.
  01 WS-BYTE                BINARY-LONG.
  01 WS-NON-EMPTY           BINARY-LONG.
  01 WS-TOPS.
@@ -137,11 +142,27 @@
 *>   States, biomes and the non-empty count of each section.
      COMPUTE WS-CELLS = WS-SECTIONS * 4096
      INITIALIZE WS-COUNTS
+     MOVE 0 TO WS-WATER-FIRST WS-WATER-END WS-LAVA-FIRST WS-LAVA-END
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
+         IF CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "minecraft:water"
+             MOVE CB-FIRST-STATE(WS-I) TO WS-WATER-FIRST
+             COMPUTE WS-WATER-END = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I)
+         END-IF
+         IF CB-KEY(WS-I)(1:CB-KEY-LENGTH(WS-I)) = "minecraft:lava"
+             MOVE CB-FIRST-STATE(WS-I) TO WS-LAVA-FIRST
+             COMPUTE WS-LAVA-END = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
          MOVE CE-STATE(WS-I) TO WS-STATE(WS-I)
          IF WS-STATE(WS-I) NOT = 0
              COMPUTE WS-S = (WS-I - 1) / 4096
              ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 1)
+*>           the fluid count: every state of water and of lava (waterlogged states are not counted)
+             IF (WS-STATE(WS-I) >= WS-WATER-FIRST AND WS-STATE(WS-I) < WS-WATER-END)
+                 OR (WS-STATE(WS-I) >= WS-LAVA-FIRST AND WS-STATE(WS-I) < WS-LAVA-END)
+                 ADD 1 TO WS-COUNT-ENTRY(WS-S * 2 + 2)
+             END-IF
          END-IF
      END-PERFORM
      COMPUTE WS-CELLS = WS-SECTIONS * 64

@@ -171,7 +171,7 @@
     05 FILLER PIC X(100) VALUE "iron_ingot|tool|-".
     05 FILLER PIC X(100) VALUE "iron_ingot|armor|-".
     05 FILLER PIC X(100) VALUE "iron_ingot|enchantable|-".
-    05 FILLER PIC X(100) VALUE "iron_horse_armor|armor|-".
+    05 FILLER PIC X(100) VALUE "iron_horse_armor|armor|5".
     05 FILLER PIC X(100) VALUE "bow|tool|-".
  01 WS-STANDARD-TABLE REDEFINES WS-STANDARD-CASES.
     05 WS-STANDARD-CASE    PIC X(100) OCCURS 161 TIMES.
