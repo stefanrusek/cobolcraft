@@ -104,6 +104,8 @@
              MOVE 1 TO WS-CNT
              MOVE 2 TO WS-MODE
              CALL "EF6-RETAIN" USING EMM-MODEL WS-MODE WS-NAMES WS-CNT
+         WHEN "PHANTOM"
+             CALL "EF6-M-PHANTOM" USING EMM-MODEL
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE
