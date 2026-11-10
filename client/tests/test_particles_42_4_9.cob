@@ -1,0 +1,167 @@
+*> Acceptance test of docs/protocol/42-particles-4-block-item-dust-ambient.md section 9 (Falling leaves): the rules, table rows,
+*> formulas and worked cases of the section with the document's numbers; every float case compares
+*> the value times 100000 rounded. Draws are injected through the draw tables.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-4-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 W1                     FLOAT-LONG.
+ 01 W2                     FLOAT-LONG.
+ 01 W3                     FLOAT-LONG.
+ 01 W4                     FLOAT-LONG.
+ 01 W5                     FLOAT-LONG.
+ 01 W6                     FLOAT-LONG.
+ 01 W7                     FLOAT-LONG.
+ 01 W8                     FLOAT-LONG.
+ 01 I1                     BINARY-LONG.
+ 01 I2                     BINARY-LONG.
+ 01 I3                     BINARY-LONG.
+ 01 I4                     BINARY-LONG.
+ 01 I5                     BINARY-LONG.
+ 01 B1                     BINARY-DOUBLE.
+ 01 T1                     PIC X(80).
+ 01 Z1                     FLOAT-LONG VALUE 0.
+ 01 Z2                     FLOAT-LONG VALUE 0.
+ 01 Z3                     FLOAT-LONG VALUE 0.
+ 01 Z4                     FLOAT-LONG VALUE 0.
+ 01 Z5                     FLOAT-LONG VALUE 0.
+ 01 Z6                     FLOAT-LONG VALUE 0.
+ 01 WS-AX                 FLOAT-LONG.
+ 01 WS-AY                 FLOAT-LONG.
+ 01 WS-AZ                 FLOAT-LONG.
+ 01 WS-R6.
+    05 WS-R                FLOAT-LONG OCCURS 6 TIMES.
+ PROCEDURE DIVISION.
+     PERFORM VARYING I1 FROM 1 BY 1 UNTIL I1 > 16
+         MOVE 0.5 TO WS-D(I1)
+     END-PERFORM
+     MOVE 0.75 TO WS-D(2)
+     MOVE 0 TO W1
+     CALL "P4-ASH-NEW" USING PCL Z1 Z2 Z3 WS-DRAWS
+     MOVE "ash: x damped to a tenth (0.12 * 0.1)" TO WS-NAME
+     MOVE 1200 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-XD) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: y inverted and damped ((0 + 0.1) * -0.1)" TO WS-NAME
+     MOVE -1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-YD) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: grey = draw * 0.5 on all channels" TO WS-NAME
+     MOVE 25000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-RCOL) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: grey on blue too" TO WS-NAME
+     MOVE 25000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-BCOL) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: lifetime (int)(20 / (0.5 * 0.8 + 0.2)) = 33" TO WS-NAME
+     MOVE 33 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: gravity 0.1" TO WS-NAME
+     MOVE 10000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-GRAVITY) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: friction 0.96" TO WS-NAME
+     MOVE 96000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-FRICTION) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: no physics" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-HAS-PHYSICS
+     PERFORM ASSERT-NUMBER
+     MOVE "ash: quad size 0.15 * 0.75" TO WS-NAME
+     MOVE 11250 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-QUAD-SIZE) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 1.0 TO WS-D(9)
+     CALL "P4-ASH-NEW" USING PCL Z1 Z2 Z3 WS-DRAWS
+     MOVE "ash: lifetime 20 at the top of the draw" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-D(9)
+     CALL "P4-ASH-NEW" USING PCL Z1 Z2 Z3 WS-DRAWS
+     MOVE "ash: lifetime 100 at the bottom" TO WS-NAME
+     MOVE 100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     PERFORM VARYING I1 FROM 1 BY 1 UNTIL I1 > 6
+         MOVE 0.5 TO WS-R(I1)
+     END-PERFORM
+     CALL "P4-WHITE-ASH-PROVIDER" USING WS-R6 WS-AX WS-AY WS-AZ
+     MOVE "white ash ax = (r1 * -1.9) * r2 * 0.1" TO WS-NAME
+     MOVE -4750 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-AX) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash ay = ((r3 * -0.5) * r4 * 0.1) * 5.0" TO WS-NAME
+     MOVE -6250 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-AY) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash az = (r5 * -1.9) * r6 * 0.1" TO WS-NAME
+     MOVE -4750 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-AZ) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-R(1)
+     MOVE 1 TO WS-R(2)
+     CALL "P4-WHITE-ASH-PROVIDER" USING WS-R6 WS-AX WS-AY WS-AZ
+     MOVE "white ash ax lower bound -0.19" TO WS-NAME
+     MOVE -19000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((WS-AX) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO WS-D(9)
+     MOVE 0.5 TO WS-R(1)
+     MOVE 0.5 TO WS-R(2)
+     CALL "P4-WHITE-ASH-NEW" USING PCL Z1 Z2 Z3 WS-DRAWS WS-R6
+     MOVE "white ash: vx = burst * 0.1 + ax (0.012 - 0.0475)" TO WS-NAME
+     MOVE -3550 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-XD) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: vy = burst y * -0.1 + ay (-0.01 - 0.0625)" TO WS-NAME
+     MOVE -7250 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-YD) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: red 186 / 255" TO WS-NAME
+     MOVE 72941 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-RCOL) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: green 177 / 255" TO WS-NAME
+     MOVE 69412 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-GCOL) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: blue 194 / 255" TO WS-NAME
+     MOVE 76078 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-BCOL) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: gravity 0.0125" TO WS-NAME
+     MOVE 1250 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER((PC-GRAVITY) * 100000 + 0.5)
+     PERFORM ASSERT-NUMBER
+     MOVE "white ash: lifetime 33 as for ash" TO WS-NAME
+     MOVE 33 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-4§9 Falling leaves: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-4§9 Falling leaves: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-4-9.
