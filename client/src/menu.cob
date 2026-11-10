@@ -71,6 +71,20 @@
              MOVE PL-OFFHAND-COUNT TO L-COUNT
              MOVE PL-OFFHAND-ITEM TO L-ITEM
              MOVE PL-OFFHAND-DAMAGE TO L-DAMAGE
+         WHEN L-ARG >= 201 AND L-ARG <= 220
+*>           A recipe book cell (screens/recipe-book.cob): the result of the recipe it shows.
+             COMPUTE WS-N = L-ARG - 200
+             IF WS-N <= RK-CELL-COUNT
+                 MOVE RK-RES-COUNT(RK-CELL-ROW(WS-N)) TO L-COUNT
+                 MOVE RK-RES-ITEM(RK-CELL-ROW(WS-N)) TO L-ITEM
+             END-IF
+         WHEN L-ARG >= 301 AND L-ARG <= 309
+*>           A ghost item of Place Ghost Recipe: one item.
+             COMPUTE WS-N = L-ARG - 300
+             IF RK-GHOST-ITEM(WS-N) >= 0
+                 MOVE 1 TO L-COUNT
+                 MOVE RK-GHOST-ITEM(WS-N) TO L-ITEM
+             END-IF
          WHEN L-ARG >= 101 AND L-ARG <= 116
              COMPUTE WS-N = L-ARG - 100
              IF SM-SCREEN = SCR-BENCH

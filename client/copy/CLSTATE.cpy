@@ -72,7 +72,7 @@
     05 SM-STATE.
        10 SM-SCREEN          BINARY-LONG.
        10 SM-WIDGET-COUNT    BINARY-LONG.
-       10 SM-WIDGET OCCURS 128 TIMES.
+       10 SM-WIDGET OCCURS 192 TIMES.
           15 SM-W-KIND       BINARY-LONG.
           15 SM-W-ACTION     BINARY-LONG.
           15 SM-W-ARG        BINARY-LONG.
@@ -80,6 +80,7 @@
           15 SM-W-Y          BINARY-LONG.
           15 SM-W-W          BINARY-LONG.
           15 SM-W-H          BINARY-LONG.
+          15 SM-W-SPRITE     BINARY-LONG.    *> WK-IMAGE: the GSP row drawn
           15 SM-W-STATE      BINARY-LONG.    *> 0 normal, 1 selected or focused, 2 disabled
           15 SM-W-LENGTH     BINARY-LONG.
           15 SM-W-TEXT       PIC X(256).
@@ -402,20 +403,56 @@
        10 CS-FROZEN          PIC 9.            *> 1 while Tab cycles: the list is kept as it was
        10 CS-SELECTED        BINARY-LONG.      *> the suggestion Tab last took (1 to CS-COUNT + CS-ANSWERS), 0 none
        10 CS-WORD-START      BINARY-LONG.      *> where the word being typed starts on the line (1-based)
-*>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
-*>       the recipes of the Recipe Book Adds received, in the order first received: display id,
-*>       craftable (crafting requirements present), ingredients (item, count) and result ----
-    05 RB-STATE.
-       10 RB-COUNT           BINARY-LONG.
-       10 RB-RECIPE OCCURS 16 TIMES.
-          15 RB-ID           BINARY-LONG.
-          15 RB-CRAFTABLE    PIC 9.
-          15 RB-IN-COUNT     BINARY-LONG.
-          15 RB-IN OCCURS 9 TIMES.
-             20 RB-IN-ITEM   BINARY-LONG.
-             20 RB-IN-AMOUNT BINARY-LONG.
-          15 RB-RES-ITEM     BINARY-LONG.
-          15 RB-RES-AMOUNT   BINARY-LONG.
+*>  ---- the recipe book (13 section 3.9): the entries of Recipe Book Add, the settings, the panel's state ----
+    05 RK-STATE.
+       10 RK-COUNT           BINARY-LONG.
+       10 RK-ENTRY OCCURS 2048 TIMES.
+          15 RK-ID           BINARY-LONG.
+          15 RK-TYPE         BINARY-LONG.    *> 0 shapeless, 1 shaped, 2 to 4 other books (kept, not listed)
+          15 RK-CATEGORY     BINARY-LONG.    *> 46 section 9.3: 0 building, 1 redstone, 2 equipment, 3 misc for crafting
+          15 RK-GROUP        BINARY-LONG.    *> 0 none, else group index + 1
+          15 RK-WIDTH        BINARY-LONG.
+          15 RK-HEIGHT       BINARY-LONG.
+          15 RK-HIGHLIGHT    PIC 9.
+          15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
+          15 RK-REQ-PRESENT  PIC 9.
+          15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
+          15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
+          15 RK-RES-ITEM     BINARY-LONG.
+          15 RK-RES-COUNT    BINARY-LONG.
+          15 RK-CAN          PIC 9.          *> craftable now (RK-REFRESH)
+          15 RK-HEAD         BINARY-LONG.    *> the first entry of its collection (same category and group)
+          15 RK-MATCH        PIC 9.          *> 1 = the search text matches the result's name
+          15 RK-NDISP        BINARY-LONG.    *> head only: members that fit the grid
+          15 RK-NCAN         BINARY-LONG.    *> head only: members craftable now
+          15 RK-NMATCH       BINARY-LONG.    *> head only: members matching the search
+       10 RK-OPEN            PIC 9 OCCURS 4 TIMES.
+       10 RK-FILTERING       PIC 9 OCCURS 4 TIMES.
+       10 RK-TAB             BINARY-LONG.    *> 1 search, 2 equipment, 3 building, 4 misc, 5 redstone
+       10 RK-PAGE            BINARY-LONG.
+       10 RK-PAGES           BINARY-LONG.
+       10 RK-SEARCH          PIC X(50).
+       10 RK-SEARCH-LENGTH   BINARY-LONG.
+       10 RK-SEARCH-FOCUS    PIC 9.
+       10 RK-LAST-PLACED     BINARY-LONG.    *> display id of the last placed recipe, -1 none
+       10 RK-DIRTY           PIC 9.          *> 1 = craftability to be recomputed
+       10 RK-SDIRTY          PIC 9.          *> 1 = search matches to be recomputed
+       10 RK-TABHAS          PIC 9 OCCURS 5 TIMES.
+       10 RK-SIG             BINARY-LONG.    *> inventory signature of the last refresh
+       10 RK-GRID            BINARY-LONG.    *> grid size of the last refresh (2 or 3)
+       10 RK-CELL-COUNT      BINARY-LONG.
+       10 RK-CELL OCCURS 20 TIMES.
+          15 RK-CELL-ROW     BINARY-LONG.    *> the entry shown
+          15 RK-CELL-MANY    BINARY-LONG.    *> displayable recipes in the collection
+       10 RK-GHOST-CONTAINER BINARY-LONG.   *> -1 none
+       10 RK-GHOST-W         BINARY-LONG.
+       10 RK-GHOST-H         BINARY-LONG.
+       10 RK-GHOST-TYPE      BINARY-LONG.
+       10 RK-GHOST-SLOTS     BINARY-LONG.
+       10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
+       10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
+       10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server
@@ -564,7 +601,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 24 TIMES.
+       10 GS-ROW OCCURS 32 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.

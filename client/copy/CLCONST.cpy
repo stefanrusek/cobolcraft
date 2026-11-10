@@ -10,7 +10,6 @@
  78 SCR-CONNECTING          VALUE 4.
  78 SCR-WORLD               VALUE 5.
  78 SCR-INVENTORY           VALUE 6.
- 78 SCR-CRAFTING            VALUE 7.
  78 SCR-BENCH               VALUE 19.  *> the crafting-bench menu (Open Screen menu type 12; screens/bench.cob)
  78 SCR-CHAT                VALUE 8.
  78 SCR-PAUSE               VALUE 9.
@@ -36,6 +35,7 @@
  78 WK-ICON                 VALUE 7.   *> a pack icon: argument the icon cell (1 to CL-MAX-ICONS)
                                        *> of the UI atlas (pack-select.cob); never clicked
  78 WK-SPRITE               VALUE 8.   *> a GUI sprite (GSP-* row in the argument) drawn 1:1 at x, y; never clicked
+ 78 WK-IMAGE                VALUE 11.  *> a clickable GUI sprite: the sprite row in SM-W-SPRITE, the action's argument in the argument
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
                                        *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
@@ -60,8 +60,6 @@
  78 ACT-DISCONNECT          VALUE 14.
  78 ACT-SLOT                VALUE 15.  *> inventory slot click; the widget's argument is the slot
  78 ACT-RESPAWN             VALUE 16.  *> death screen: Client Command PERFORM_RESPAWN
- 78 ACT-CRAFT               VALUE 17.  *> crafting screen: Place Recipe; the argument is the
-                                       *> recipe's display id
  78 ACT-SINGLE-PLAYER       VALUE 18.  *> the world list (title Single-player; Cancel of the
                                        *> create-world and confirm-delete screens)
  78 ACT-PLAY-WORLD          VALUE 19.  *> world list: open the selected world
@@ -93,6 +91,12 @@
  78 ACT-OPTIONS-PREV        VALUE 44.   *> options: the previous page
  78 ACT-OPTIONS-NEXT        VALUE 45.   *> options: the next page
  78 ACT-OPTIONS-DONE        VALUE 46.   *> options: back to the screen it was opened from
+ 78 ACT-RB-BOOK             VALUE 47.   *> the recipe book button: open or close the panel
+ 78 ACT-RB-TAB              VALUE 48.   *> recipe book tab; the argument is the tab 1 to 5
+ 78 ACT-RB-FILTER           VALUE 49.   *> recipe book: toggle showing craftable only
+ 78 ACT-RB-PAGE             VALUE 50.   *> recipe book: the argument 1 previous page, 2 next page
+ 78 ACT-RB-CELL             VALUE 51.   *> recipe book: place the recipe of the cell (argument 200 + cell 1 to 20)
+ 78 ACT-RB-SEARCH           VALUE 52.   *> recipe book: focus the search box
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
  78 RPS-PROMPT              VALUE 1.   *> waiting for the prompt's answer
@@ -159,7 +163,7 @@
  78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
  78 CL-MAX-ADDRESSES        VALUE 8.   *> local addresses shown on the open-to-others screen
  78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
- 78 CL-MAX-WIDGETS          VALUE 128.
+ 78 CL-MAX-WIDGETS          VALUE 192.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
@@ -192,7 +196,6 @@
  78 CL-MAX-PLAYER-INFO      VALUE 64.
  78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
- 78 CL-MAX-RECIPES          VALUE 16.
  78 CL-MAX-BIOMES           VALUE 255.  *> biome ids are one byte; 255 is none known
 *> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
  78 CL-MAX-WX-VERTICES      VALUE 3468.
@@ -276,7 +279,19 @@
  78 GSP-SHEET-INVENTORY     VALUE 13.   *> textures/gui/container/inventory.png (256 x 256 sheet, 4.11)
  78 GSP-SHEET-BENCH         VALUE 14.   *> textures/gui/container/crafting_table.png
  78 GSP-SHEET-BOOK          VALUE 15.   *> textures/gui/recipe_book.png
- 78 GSP-COUNT               VALUE 15.
+ 78 GSP-RB-BUTTON           VALUE 16.   *> recipe_book/button
+ 78 GSP-RB-TAB              VALUE 17.
+ 78 GSP-RB-TAB-SEL          VALUE 18.
+ 78 GSP-RB-FILTER-ON        VALUE 19.
+ 78 GSP-RB-FILTER-OFF       VALUE 20.
+ 78 GSP-RB-FORWARD          VALUE 21.
+ 78 GSP-RB-BACKWARD         VALUE 22.
+ 78 GSP-RB-SLOT             VALUE 23.   *> slot_craftable
+ 78 GSP-RB-SLOT-NO          VALUE 24.   *> slot_uncraftable
+ 78 GSP-TOAST               VALUE 25.   *> toast/recipe
+ 78 GSP-COUNT               VALUE 25.
+ 78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
+
 
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.

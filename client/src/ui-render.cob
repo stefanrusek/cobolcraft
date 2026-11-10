@@ -70,6 +70,13 @@
                      END-IF
                  END-IF
                  MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-IMAGE
+                 MOVE SM-W-SPRITE(WS-W) TO WS-SPRITE-ROW
+                 IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT AND GS-W(WS-SPRITE-ROW) > 0
+                     CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
+                         SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                 END-IF
+                 MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-METER
                  CALL "UI-METER" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH

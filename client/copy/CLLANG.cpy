@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 230.
+ 78 BI-LANG-COUNT           VALUE 242.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -467,7 +467,31 @@
     05 FILLER PIC X(128) VALUE "Options (page %s of %s)".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.press_key".
     05 FILLER PIC X(128) VALUE "> Press a key <".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.common.search_hint".
+    05 FILLER PIC X(128) VALUE "Search...".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.filter_on".
+    05 FILLER PIC X(128) VALUE "Showing Craftable".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.filter_off".
+    05 FILLER PIC X(128) VALUE "Showing All".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.more".
+    05 FILLER PIC X(128) VALUE "Right Click for More".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.page".
+    05 FILLER PIC X(128) VALUE "%s/%s".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.search".
+    05 FILLER PIC X(128) VALUE "Search".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.equipment".
+    05 FILLER PIC X(128) VALUE "Equipment".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.building".
+    05 FILLER PIC X(128) VALUE "Building Blocks".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.misc".
+    05 FILLER PIC X(128) VALUE "Misc".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.redstone".
+    05 FILLER PIC X(128) VALUE "Redstone".
+    05 FILLER PIC X(48) VALUE "recipe.toast.title".
+    05 FILLER PIC X(128) VALUE "New Recipe(s) Unlocked!".
+    05 FILLER PIC X(48) VALUE "recipe.toast.description".
+    05 FILLER PIC X(128) VALUE "Check your recipe book".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 230 TIMES.
+    05 BI-LANG OCCURS 242 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

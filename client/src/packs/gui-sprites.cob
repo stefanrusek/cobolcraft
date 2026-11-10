@@ -29,8 +29,18 @@
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/inventory.png".
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/crafting_table.png".
     05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/recipe_book.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/button.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/tab.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/tab_selected.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/filter_enabled.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/filter_disabled.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/page_forward.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/page_backward.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/slot_craftable.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/slot_uncraftable.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/toast/recipe.png".
  01 WS-PATH-TABLE REDEFINES WS-PATHS.
-    05 WS-SPRITE-PATH      PIC X(80) OCCURS 15 TIMES.
+    05 WS-SPRITE-PATH      PIC X(80) OCCURS 25 TIMES.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-META-PATH           PIC X(256).

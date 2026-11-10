@@ -45,7 +45,7 @@
          CALL "INVENTORY-CLOSE" USING CLIENT-STATE
      END-IF
      MOVE L-SCREEN TO SM-SCREEN
-     MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT
+     MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT RK-SEARCH-FOCUS RK-GHOST-W
      IF L-SCREEN = SCR-SERVER-LIST
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-COUNT
              MOVE SLS-NONE TO SL-STATUS(WS-I)
@@ -112,8 +112,6 @@
              CALL "HUD-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-INVENTORY
              CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
-         WHEN SCR-CRAFTING
-             CALL "CRAFTING-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-BENCH
              CALL "BENCH-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-CHAT
@@ -137,6 +135,9 @@
          WHEN SCR-OPTIONS
              CALL "OPTIONS-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
+     IF CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "RECIPE-TOAST-BUILD" USING CLIENT-STATE WS-GW
+     END-IF
      GOBACK.
  END PROGRAM SCREEN-BUILD.
 
@@ -150,7 +151,7 @@
 *> the server list and the world list for the title screen, and the create-world and confirm-delete
 *> screens for the world list; typed text goes to the create-world name (create-world.cob);
 *> Escape leaves the pack screen as Done does and the pack confirmation for the pack screen;
-*> Escape and E close the inventory screen, E opens it from the world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
+*> Escape and E close the inventory screen, E opens it from the world; T opens chat
 *> from the world (the screen the frame began on, so the T typed with it and a line just sent do
 *> not reopen it), / opens it the same way with / typed, Escape closes chat; on the chat screen
 *> the frame's typed text, keys and wheel go to the chat line (chat.cob).
@@ -177,11 +178,11 @@
          COMPUTE WS-X = IN-CLICK-X / CL-GUI-SCALE
          COMPUTE WS-Y = IN-CLICK-Y / CL-GUI-SCALE
          MOVE 0 TO WS-HIT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT OR WS-HIT > 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
              IF SM-W-KIND(WS-I) NOT = WK-LABEL AND SM-W-KIND(WS-I) NOT = WK-OVERLAY
                      AND SM-W-KIND(WS-I) NOT = WK-SPRITE AND SM-W-KIND(WS-I) NOT = WK-METER
                      AND SM-W-KIND(WS-I) NOT = WK-SHEET
-                     AND SM-W-STATE(WS-I) NOT = 2
+                     AND SM-W-STATE(WS-I) NOT = 2 AND SM-W-ACTION(WS-I) NOT = ACT-NONE
                      AND WS-X >= SM-W-X(WS-I)
                      AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I) AND WS-Y >= SM-W-Y(WS-I)
                      AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
@@ -218,18 +219,6 @@
          MOVE 1 TO CH-LINE-LENGTH
          CALL "CHAT-SUGGEST" USING CLIENT-STATE
      END-IF
-     IF IN-KEY-PRESSED(CC-KEY-C + 1) = 1 AND WS-WAS = SM-SCREEN
-         MOVE 0 TO WS-SCREEN
-         EVALUATE SM-SCREEN
-             WHEN SCR-WORLD
-                 MOVE SCR-CRAFTING TO WS-SCREEN
-             WHEN SCR-CRAFTING
-                 MOVE SCR-WORLD TO WS-SCREEN
-         END-EVALUATE
-         IF WS-SCREEN > 0
-             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
-         END-IF
-     END-IF
      IF IN-KEY-PRESSED(CC-KEY-ESCAPE + 1) = 1
          MOVE 0 TO WS-SCREEN
          EVALUATE SM-SCREEN
@@ -255,7 +244,6 @@
              WHEN SCR-CONFIRM-DELETE
                  MOVE SCR-WORLD-LIST TO WS-SCREEN
              WHEN SCR-INVENTORY
-             WHEN SCR-CRAFTING
              WHEN SCR-BENCH
              WHEN SCR-CHAT
                  MOVE SCR-WORLD TO WS-SCREEN
@@ -264,8 +252,11 @@
              CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
          END-IF
      END-IF
+     IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH
+         CALL "RECIPE-BOOK-INPUT" USING CLIENT-STATE
+     END-IF
      MOVE KB-CODE(KB-INVENTORY) TO WS-KEYC
-     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND RK-SEARCH-FOCUS = 0
          MOVE 0 TO WS-SCREEN
          EVALUATE SM-SCREEN
              WHEN SCR-WORLD
@@ -370,8 +361,13 @@
              CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
          WHEN ACT-RESPAWN
              CALL "DEATH-RESPAWN" USING CLIENT-STATE
-         WHEN ACT-CRAFT
-             CALL "CRAFTING-CRAFT" USING CLIENT-STATE L-ARG
+         WHEN ACT-RB-BOOK
+         WHEN ACT-RB-TAB
+         WHEN ACT-RB-FILTER
+         WHEN ACT-RB-PAGE
+         WHEN ACT-RB-CELL
+         WHEN ACT-RB-SEARCH
+             CALL "RECIPE-BOOK-ACTION" USING CLIENT-STATE L-ACTION L-ARG
          WHEN ACT-SINGLE-PLAYER
              MOVE SCR-WORLD-LIST TO WS-SCREEN
          WHEN ACT-PLAY-WORLD
@@ -506,6 +502,7 @@
          MOVE L-TEXT TO SM-W-TEXT(SM-WIDGET-COUNT)
          MOVE FUNCTION MIN(L-LENGTH, 256) TO SM-W-LENGTH(SM-WIDGET-COUNT)
          MOVE L-STATE TO SM-W-STATE(SM-WIDGET-COUNT)
+         MOVE 0 TO SM-W-SPRITE(SM-WIDGET-COUNT)
      END-IF
      GOBACK.
  END PROGRAM WIDGET-ADD.
