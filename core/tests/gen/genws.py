@@ -113,7 +113,7 @@ def cyc(clear,tt,rt,th,ra,ts,rs):
         if rt==0: ra=1-ra
     else: rd=1; rt=rs
     return clear,tt,rt,th,ra,td,rd
-cy=[(0,0,0,0,0,15000,20000),(0,2,3,0,0,1,1),(0,1,1,0,0,9,9),(0,0,0,1,1,5000,7000),(1,0,0,1,0,9,9),(2,5,5,0,1,9,9),(6000,0,0,0,0,9,9),(0,1,0,1,1,5000,3600),(0,0,1,0,0,12345,999)]
+cy=[(0,0,0,0,0,15000,20000),(0,2,3,0,0,1,1),(0,1,1,0,0,9,9),(0,1,1,0,1,9,9),(0,1,1,1,0,9,9),(0,0,0,1,1,5000,7000),(1,0,0,1,0,9,9),(2,5,5,0,1,9,9),(6000,0,0,0,0,9,9),(0,1,0,1,1,5000,3600),(0,0,1,0,0,12345,999)]
 g.run('the weather cycle A: a clear countdown leaves thunderTime and rainTime 1 (0 for flags that were on) with both flags off, so a storm follows; otherwise timers count down and toggle at 0 without a draw, and a timer at 0 draws duration (flag on) or delay (flag off)',[S(*c) for c in cy],
  'MOVE WS-I(1) TO WS-R(1)\nMOVE WS-I(2) TO WS-R(2)\nMOVE WS-I(3) TO WS-R(3)\nMOVE WS-I(4) TO WS-R(4)\nMOVE WS-I(5) TO WS-R(5)\nCALL "WW-CYCLE" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-I(6) WS-I(7) WS-R(6) WS-R(7)',7," ".join("/".join(str(v) for v in cyc(*c)) for c in cy))
 def smooth(l,fl):
@@ -276,7 +276,7 @@ g.write(OUT+'/test_worldsim_33_6.cob')
 # ============ 7
 g=GG(7,7,'World border',('T0511','static and moving extents, the per-tick lerp, geometry, damage and the close-to-border test.'))
 def ext(c,s,a): return max(-a,min(a,c-s/2)),max(-a,min(a,c+s/2))
-ec=[(0,100,29999984),(10,100,29999984),(0,59999968,29999984),(0,59999968,100),(-20,10,5),(0,1,29999984)]
+ec=[(100000000,100,29999984),(0,100,29999984),(10,100,29999984),(0,59999968,29999984),(0,59999968,100),(-20,10,5),(0,1,29999984)]
 g.run('a static extent: clamp(c - S / 2, -A, A) and clamp(c + S / 2, -A, A)',[S(*c) for c in ec],'CALL "WB-EXTENT" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-RF(1) WS-RF(2)\n'+RF(1,10)+'\n'+RF(2,10),2," ".join("%d/%d"%(m(ext(*c)[0],10),m(ext(*c)[1],10)) for c in ec))
 def mov(fr,to,du,pr):
     pr-=1; size=fr+(du-pr)/du*(to-fr); st=0
@@ -293,7 +293,7 @@ def geo(x,z,mg,b):
     cx=min(max(x,mnx),mxx-eps); cz=min(max(z,mnz),mxz-eps)
     return w,d,cx,cz
 B=(-50,50,-50,50)
-gc=[(10,0,0),(-50,0,0),(50,0,0),(49.999,0,0),(60,0,0),(60,0,15),(0,-70,0),(10,0,2)]
+gc=[(-60,0,0),(0,70,0),(10,0,0),(-50,0,0),(50,0,0),(49.999,0,0),(60,0,0),(60,0,15),(0,-70,0),(10,0,2)]
 g.run('geometry: the minimum edge is inside and the maximum edge outside; the distance to the border is the smallest of the four (example 8: 40 at x = 10); the clamp keeps 1.0E-5f inside the maximum edge',["%s %s %s -50 50 -50 50"%c for c in gc],'CALL "WB-GEOMETRY" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-FX(4) WS-FX(5) WS-FX(6) WS-FX(7) WS-R(1) WS-RF(1) WS-RF(2) WS-RF(3)\nCOMPUTE WS-R(2) ROUNDED = WS-RF(1) * 1000\nCOMPUTE WS-R(3) ROUNDED = WS-RF(2) * 100000\nCOMPUTE WS-R(4) ROUNDED = WS-RF(3) * 100000',4,
  " ".join("%d/%d/%d/%d"%(geo(c[0],c[1],c[2],B)[0],m(geo(c[0],c[1],c[2],B)[1],1000),m(geo(c[0],c[1],c[2],B)[2],100000),m(geo(c[0],c[1],c[2],B)[3],100000)) for c in gc))
 def dmg(pl,wall,w,d,sf,pb):

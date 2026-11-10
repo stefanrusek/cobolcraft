@@ -78,7 +78,7 @@ g=Gen('TEST-FLUIDS-29A-8','29a§8','Entity fluid interaction','Test of 29a secti
 g.run('the fluid box is the bounding box deflated by 0.001; the cells run from floor(min) to ceil(max) - 1',["0.001 0","1.0 1","-0.5 0"],'CALL "EF-DEFLATE" USING WS-FX(1) WS-I(2) WS-RF(1)\n'+RF(1),1,"%d %d %d"%(m(0.002),m(0.999),m(-0.499)))
 g.run('cell range: floor of the minimum to ceil of the maximum minus one',["0.0 1.0","0.2 0.8","-0.5 1.5","3.0 4.2","0.999 1.001"],'CALL "EF-RANGE" USING WS-FX(1) WS-FX(2) WS-R(1) WS-R(2)',2,"0/0 0/0 -1/1 3/4 0/1")
 g.run('an idle tracker (height 0 and not eyes inside) is removed; any other is reset and stays',["0 0","0.5 0","0 1","0.1 1"],'CALL "EF-IDLE" USING WS-FX(1) WS-I(2) WS-R(1)',1,"1 0 0 0")
-cell=[(64,0.5,0.5,64.2,64.0,64.62,1,0.0,0),(64,0.5,0.5,64.6,64.0,64.62,1,0.0,0),(64,0.9,0.9,64.0,63.5,64.62,0,0.2,0),(64,0.9,0.9,64.0,63.5,65.0,1,0.0,0),(63,0.9,0.9,64.0,63.5,63.95,1,0.1,0),(64,0.5,0.5,64.5,64.0,64.62,1,0.0,0)]
+cell=[(64,0.5,0.5,64.2,64.0,64.62,1,0.0,0),(64,0.5,0.5,64.6,64.0,64.62,1,0.0,0),(64,0.9,0.9,64.0,63.5,64.62,0,0.2,0),(64,0.9,0.9,64.0,63.5,65.0,1,0.0,0),(63,0.9,0.9,64.0,63.5,63.95,1,0.1,0),(64,0.5,0.5,64.5,64.0,64.62,1,0.0,0),(64,0.9,0.9,64.0,63.5,64.4,1,0.0,0)]
 def cellx(y,h,cam,bmin,emin,eye,col,tr,eyes):
     top=y+h
     if top<bmin: return tr,eyes,0
@@ -105,7 +105,7 @@ def cur(sx,sy,sz,n,pl,st,vx,vz):
     if abs(vx)<0.003 and abs(vz)<0.003 and math.sqrt(px*px+py*py+pz*pz)<0.0045000000000000005:
         k=0.0045000000000000005/math.sqrt(px*px+py*py+pz*pz); px,py,pz=px*k,py*k,pz*k
     return px,py,pz
-cc=[(0,0,0,0,0,0.014,0,0),(0.001,0,0,1,0,0.014,0,0),(3,0,4,2,0,0.014,0.1,0.1),(3,0,4,2,1,0.014,0.1,0.1),(1,-6,0,1,0,0.0023333333333333335,0.1,0.0),(1,0,0,1,0,0.014,0.0,0.0),(1,0,0,1,0,0.014,0.5,0.0),(2,0,0,3,1,0.007,0.001,0.001)]
+cc=[(0,0,0,0,0,0.014,0,0),(0.001,0,0,1,0,0.014,0,0),(3,0,4,2,0,0.014,0.1,0.1),(3,0,4,2,1,0.014,0.1,0.1),(1,-6,0,1,0,0.0023333333333333335,0.1,0.0),(1,0,0,1,0,0.014,0.0,0.0),(1,0,0,1,0,0.014,0.5,0.0),(2,0,0,3,1,0.007,0.001,0.001),(1,0,0,1,0,0.0023333333333333335,0.0,0.0),(0,2,0,1,0,0.002,0.001,0.001)]
 g.run('applyCurrentTo: nothing for no flow; a player takes the average, others the normalised flow, times the strength; a slow entity is given at least 0.0045',
  ["%s %s %s %d %d %s %s %s"%c for c in cc],'CALL "EF-CURRENT" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-I(4) WS-I(5) WS-FX(6) WS-FX(7) WS-FX(8) WS-RF(1) WS-RF(2) WS-RF(3)\n'+RF(1,100000000)+'\n'+RF(2,100000000)+'\n'+RF(3,100000000),3,
  " ".join("/".join(str(m(v,100000000)) for v in cur(*c)) for c in cc))
@@ -180,7 +180,7 @@ def uv(x,z):
     if x==0 and z==0: return None
     a=math.atan2(z,x)-math.pi/2; s=math.sin(a)*0.25; c=math.cos(a)*0.25
     return (0.5-c-s,0.5-c+s,0.5-c+s,0.5+c+s,0.5+c+s,0.5+c-s,0.5+c-s,0.5-c-s)
-fl=[(1,0),(0,1),(-1,0),(0,-1),(1,1),(-2,1),(0.5,-0.25)]
+fl=[(1,0),(0,1),(-1,0),(0,-1),(1,1),(-2,1),(0.5,-0.25),(-1,-1)]
 def uvexp(x,z):
     u=uv(x,z)
     return "1/0/0/0/0/0/0/0/0" if u is None else "0/"+"/".join(str(m(v,10000)) for v in u)

@@ -115,6 +115,24 @@
  END PROGRAM FLUID-STATE-ID.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-KEY-IS.
+*> USING block state, key (PIC X(48)), flag out (BINARY-LONG): 1 when the state's block has that key.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-KEY                  PIC X(48).
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-KEY L-FLAG.
+     MOVE 0 TO L-FLAG
+     IF CB-KEY(CB-S-BLOCK(L-STATE + 1) + 1) = L-KEY
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM FLUID-KEY-IS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FLUID-CELL.
 *> USING dimension row, x, y, z (BINARY-LONG), block state out, fluid out (0 none, 1 water, 2 lava), kind out, amount out, falling out, solid out
 *> (1 when the block has a collision shape: the cached isSolid and the full-block shape of this approximation), holds out (canHoldAnyFluid: air, a
@@ -710,11 +728,12 @@
  01 WS-S-FALLING           BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
  01 WS-HOLDS               BINARY-LONG.
- 01 WS-WATERS.
+ 01 WS-IN.
     05 WS-WATER-FLAG       BINARY-LONG OCCURS 5 TIMES.
- 01 WS-ICES.
     05 WS-ICE-FLAG         BINARY-LONG OCCURS 5 TIMES.
  01 WS-BELOW-SOIL          BINARY-LONG VALUE 0.
+ 01 WS-SOIL-KEY            PIC X(48) VALUE "minecraft:soul_soil".
+ 01 WS-ICE-KEY             PIC X(48) VALUE "minecraft:blue_ice".
  01 WS-LAVA-SOURCE         BINARY-LONG.
  01 WS-STONE               BINARY-LONG.
  01 WS-FIZZ                BINARY-LONG.
@@ -763,16 +782,20 @@
                      COMPUTE WS-NZ = L-Z + WS-DZ
                      CALL "FLUID-CELL" USING L-DIM WS-NX WS-NY WS-NZ WS-STATE WS-S-FLUID WS-S-KIND WS-S-AMOUNT WS-S-FALLING WS-SOLID
                          WS-HOLDS
-                     MOVE 0 TO WS-WATER-FLAG(WS-D) WS-ICE-FLAG(WS-D)
+                     MOVE 0 TO WS-WATER-FLAG(WS-D)
+                     CALL "FLUID-KEY-IS" USING WS-STATE WS-ICE-KEY WS-ICE-FLAG(WS-D)
                      IF WS-S-FLUID = 1
                          MOVE 1 TO WS-WATER-FLAG(WS-D)
                      END-IF
                  END-PERFORM
+                 COMPUTE WS-NY = L-Y - 1
+                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-NY L-Z WS-STATE
+                 CALL "FLUID-KEY-IS" USING WS-STATE WS-SOIL-KEY WS-BELOW-SOIL
                  MOVE 0 TO WS-LAVA-SOURCE
                  IF WS-KIND = 4
                      MOVE 1 TO WS-LAVA-SOURCE
                  END-IF
-                 CALL "FL-SHOULD-SPREAD" USING WS-WATERS WS-ICES WS-FLUID WS-BELOW-SOIL WS-LAVA-SOURCE WS-ACTION WS-SPREAD
+                 CALL "FL-SHOULD-SPREAD" USING WS-IN WS-FLUID WS-BELOW-SOIL WS-LAVA-SOURCE WS-ACTION WS-SPREAD
                  IF WS-ACTION > 0
                      EVALUATE WS-ACTION
                          WHEN 1
