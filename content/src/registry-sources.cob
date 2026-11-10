@@ -9,8 +9,9 @@
 *>   the synchronized registries of the cobolcraft set (cobolcraft-standard-core.md sections 2 and 3: 3 biomes, 8 chat
 *>   types, 13 variant placeholders, 2 dimension types, 52 damage types, 1 enchantment, 1 clock, 2 timelines): keys
 *>   only, and every other world registry of the 51 is empty (count 0, CT-OK).
-*> Entries of a source carry no payload (length 0): the Registry Data payloads of the cobolcraft set are built by the
-*> core's own phase. Keys carry their namespace: a generated row key without one is "minecraft:" plus the key.
+*> Entries of a source carry no payload (length 0). The cobolcraft synchronized registries are the exception:
+*> CONTENT-REGISTRY-ENTRY asks the built-in entries (builtin-registry.cob) first, and the keys here fix their order.
+*> Keys carry their namespace: a generated row key without one is "minecraft:" plus the key.
 *>
 *> DOCUMENTED ASSUMPTIONS (no document states them):
 *>  A1. The id of a game rule is its position in the table of 16 section 13 (the document gives no registration
@@ -21,8 +22,8 @@
 *>      vocabulary, standin section 0).
 *>  A4. The static registries of the cobolcraft set are the same as the standard set's, as WT-9 says; game rules
 *>      follow it.
-*>  A5. Payload-free entries: the keys of the cobolcraft synchronized registries are listed without the entry data
-*>      (core section 3 rows are written by a later phase).
+*>  A5. Payload-free entries: the keys of the cobolcraft synchronized registries are listed without the entry data;
+*>      the payloads of core section 3 come from builtin-registry.cob.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. REGISTRY-GAME-RULE-AT.

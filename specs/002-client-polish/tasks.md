@@ -564,8 +564,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0322 [US2-core] Replace `core/copy/CHUNKMEM.cpy` by `contract/copy/CELLS.cpy` in `core/src/world.cob` and `core/copy/CORESTATE.cpy` (cell width, section count, `CORE-MAX-DIMS` 3)
 - [x] T0323 [US2-core] Write test `core/tests/test_chunks_stream24.cob`: the chunk packet the core builds for a case equals the 24-section fixture and loads through `PB-GET-CHUNK-24`
 - [x] T0324 [US2-core] Switch `core/src/chunks-stream.cob` to `PB-PUT-CHUNK-24`
-- [ ] T0325 [US2-core] Write test `core/tests/test_block_lookup.cob`: world, blocks and worldgen code resolves block states only through `CONTENT-BLOCK-*` for both sets (no `ST-` or `BLK-` constants)
-- [ ] T0326 [US2-core] Replace the `ST-` references in `core/src/blocks.cob`, `core/src/world.cob`, `core/src/worldgen.cob`, `core/src/chunks-stream.cob` by `CONTENT-*` lookups and delete `core/copy/BLOCKS.cpy`
+- [x] T0325 [US2-core] Write test `core/tests/test_block_lookup.cob`: world, blocks and worldgen code resolves block states only through `CONTENT-BLOCK-*` for both sets (no `ST-` or `BLK-` constants)
+- [x] T0326 [US2-core] Replace the `ST-` references in `core/src/blocks.cob`, `core/src/world.cob`, `core/src/worldgen.cob`, `core/src/chunks-stream.cob` by `CONTENT-*` lookups and delete `core/copy/BLOCKS.cpy`
 - [ ] T0327 [US2-core] Replace the `ST-`/item/recipe/mob constants in `core/src/registries.cob`, `core/src/login.cob`, `core/src/config-phase.cob` by registries from `CONTENT-REGISTRY-*` and delete `core/copy/REGISTRY.cpy`, `ITEMS.cpy`, `RECIPES.cpy`, `MOBS.cpy`, `ENTITYTYPES.cpy` (the cobolcraft values now live in the content package's built-in layer)
 - [ ] T0328 [US2-core] Replace the `ST-` references in `core/src/movement.cob`, `core/src/health.cob`, `core/src/hunger.cob`, `core/src/mobs.cob`, `core/src/players.cob`, `core/src/session.cob` by `CONTENT-*` lookups
 - [ ] T0329 [US2-core] Replace the `ST-` references in `core/src/access.cob`, `core/src/api.cob`, `core/src/commands.cob` by `CONTENT-*` lookups

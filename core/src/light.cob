@@ -129,7 +129,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY CELLS.
  COPY CELLS REPLACING LEADING ==CE-== BY ==CX-==.
  01 WS-SECTIONS            BINARY-LONG.
@@ -172,7 +172,7 @@
                      COMPUTE WS-LAST = WS-S * 4096
                      COMPUTE WS-FIRST = WS-LAST - 4095
                      PERFORM VARYING WS-CELL FROM WS-FIRST BY 1 UNTIL WS-CELL > WS-LAST
-                         MOVE SB-LIGHT(CX-STATE(WS-CELL) + 1) TO WS-LEVEL
+                         MOVE CB-S-LIGHT(CX-STATE(WS-CELL) + 1) TO WS-LEVEL
                          IF WS-LEVEL > 0
                              COMPUTE WS-Y = (WS-CELL - 1) / 256
                              COMPUTE WS-REST = WS-CELL - 1 - WS-Y * 256
@@ -216,7 +216,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY CELLS.
  COPY CELLS REPLACING LEADING ==CE-== BY ==CX-==.
  01 WS-STAMP-ID            BINARY-LONG VALUE 0.
@@ -273,6 +273,8 @@
  01 WS-SEEN-CZ             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TOP-Y               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
@@ -347,7 +349,9 @@
                          END-IF
                          COMPUTE WS-CELL = WS-NY * 256 + (WS-NZ - WS-CZ * 16) * 16
                              + WS-NX - WS-CX * 16 + 1
-                         IF SB-OPAQUE(CX-STATE(WS-CELL) + 1) = 0
+                         MOVE CX-STATE(WS-CELL) TO WS-STATE
+                         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                         IF CB-OPAQUE(WS-BLK + 1) = 0
                              ADD 1 TO WS-TAIL
                              MOVE WS-NX TO WS-QX(WS-TAIL)
                              MOVE WS-NY TO WS-QY(WS-TAIL)

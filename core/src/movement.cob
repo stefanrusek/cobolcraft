@@ -42,7 +42,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY ENTITYTYPES.
- COPY BLOCKS.
+ COPY CBLOCKS.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -56,6 +56,7 @@
  01 WS-BY                  BINARY-LONG.
  01 WS-BZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -79,7 +80,8 @@
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1 OR L-HIT = 1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1 OR L-HIT = 1
                  CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
-                 IF SB-SOLID(WS-STATE + 1) = 1
+                 MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+                 IF CB-SOLID(WS-BLK + 1) = 1
                      MOVE 1 TO L-HIT
                  END-IF
              END-PERFORM

@@ -65,6 +65,40 @@
  END PROGRAM WORLDGEN-SINCOS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDGEN-FILL.
+*> USING state (BINARY-LONG), first byte (1-based), byte count (BINARY-LONG; even), chunk memory: writes the 2-byte
+*> cell of that state repeatedly over the given bytes of CE-STATES (CELLS.cpy), by doubling the written part.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CELLS.
+ 01 WS-PATTERN-STATE       BINARY-SHORT UNSIGNED.
+ 01 WS-PATTERN REDEFINES WS-PATTERN-STATE PIC X(2).
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-COPY                BINARY-LONG.
+ 01 WS-TO                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-START                BINARY-LONG.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-CHUNK                PIC X.
+ PROCEDURE DIVISION USING L-STATE L-START L-LENGTH L-CHUNK.
+     IF L-LENGTH < 2
+         GOBACK
+     END-IF
+     SET ADDRESS OF CE-CHUNK TO ADDRESS OF L-CHUNK
+     MOVE L-STATE TO WS-PATTERN-STATE
+     MOVE WS-PATTERN TO CE-STATES(L-START:2)
+     MOVE 2 TO WS-DONE
+     PERFORM UNTIL WS-DONE >= L-LENGTH
+         COMPUTE WS-COPY = FUNCTION MIN(WS-DONE, L-LENGTH - WS-DONE)
+         COMPUTE WS-TO = L-START + WS-DONE
+         MOVE CE-STATES(L-START:WS-COPY) TO CE-STATES(WS-TO:WS-COPY)
+         ADD WS-COPY TO WS-DONE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLDGEN-FILL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDGEN-CHUNK.
 *> USING chunk x, chunk z (BINARY-LONG), chunk memory (CELLS.cpy layout; only the block states
 *> are written), marker-y out (BINARY-LONG: y of the marker glowtube, -1 when the chunk has none).
@@ -74,10 +108,11 @@
 *> lit glowtube at h + 5. The sines and cosines are taken once per row and column of the chunk.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY CELLS.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
  01 WS-SINS.
     05 WS-SIN              FLOAT-LONG OCCURS 16 TIMES.
  01 WS-COSS.
@@ -118,9 +153,12 @@
      END-PERFORM
 *>   Whole layers first: void everywhere, baseplate at y 0, greystone from y 1 to the lowest h - 4.
      MOVE LOW-VALUES TO CE-STATES
-     MOVE ALL X"0100" TO CE-STATES(1:512)
+     MOVE 1 TO WS-START
+     MOVE 512 TO WS-LENGTH
+     CALL "WORLDGEN-FILL" USING CR-BASEPLATE WS-START WS-LENGTH L-CHUNK
+     MOVE 513 TO WS-START
      COMPUTE WS-LENGTH = (WS-MIN - 4) * 512
-     MOVE ALL X"0200" TO CE-STATES(513:WS-LENGTH)
+     CALL "WORLDGEN-FILL" USING CR-GREYSTONE WS-START WS-LENGTH L-CHUNK
 *>   Then each column from the lowest h - 3 to its own h.
      COMPUTE WS-LOW = WS-MIN - 3
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
@@ -129,13 +167,13 @@
              COMPUTE WS-CELL = WS-Y * 256 + WS-C
              EVALUATE TRUE
                  WHEN WS-Y <= WS-TOP - 4
-                     MOVE ST-GREYSTONE TO CE-STATE(WS-CELL)
+                     MOVE CR-GREYSTONE TO CE-STATE(WS-CELL)
                  WHEN WS-Y < WS-TOP
-                     MOVE ST-LOAM TO CE-STATE(WS-CELL)
+                     MOVE CR-LOAM TO CE-STATE(WS-CELL)
                  WHEN WS-TOP >= 50
-                     MOVE ST-TURF TO CE-STATE(WS-CELL)
+                     MOVE CR-TURF TO CE-STATE(WS-CELL)
                  WHEN OTHER
-                     MOVE ST-GRIT TO CE-STATE(WS-CELL)
+                     MOVE CR-GRIT TO CE-STATE(WS-CELL)
              END-EVALUATE
          END-PERFORM
      END-PERFORM
@@ -143,11 +181,11 @@
      IF FUNCTION MOD(L-CX, 4) = 0 AND FUNCTION MOD(L-CZ, 4) = 0
          MOVE 137 TO WS-C
          COMPUTE WS-CELL = WS-H(WS-C) * 256 + WS-C
-         MOVE ST-CARDSTACK-Y TO CE-STATE(WS-CELL + 256)
-         MOVE ST-CARDSTACK-Y TO CE-STATE(WS-CELL + 512)
-         MOVE ST-CARDSTACK-Y-PUNCHED TO CE-STATE(WS-CELL + 768)
-         MOVE ST-LUCITE TO CE-STATE(WS-CELL + 1024)
-         MOVE ST-GLOWTUBE-LIT TO CE-STATE(WS-CELL + 1280)
+         MOVE CR-CARDSTACK-Y TO CE-STATE(WS-CELL + 256)
+         MOVE CR-CARDSTACK-Y TO CE-STATE(WS-CELL + 512)
+         MOVE CR-CARDSTACK-Y-PUNCHED TO CE-STATE(WS-CELL + 768)
+         MOVE CR-LUCITE TO CE-STATE(WS-CELL + 1024)
+         MOVE CR-GLOWTUBE-LIT TO CE-STATE(WS-CELL + 1280)
          COMPUTE L-MARKER-Y = WS-H(WS-C) + 5
      END-IF
      GOBACK.
@@ -160,7 +198,8 @@
 *> surface height at the cell's lowest-x, lowest-z corner column is 55 or more, else plains (0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
+ COPY CBLOCKS.
+ COPY BIOMES.
  01 WS-I                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -219,9 +258,11 @@
 *> sines and cosines are taken once per row and column of the chunk.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY DIMENSIONS.
  COPY CELLS.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
  01 WS-ANGLE               FLOAT-LONG.
  01 WS-SINS.
     05 WS-SIN              FLOAT-LONG OCCURS 16 TIMES.
@@ -248,7 +289,9 @@
          COMPUTE WS-COS(WS-I) = FUNCTION COS(WS-ANGLE)
      END-PERFORM
      MOVE LOW-VALUES TO CE-STATES
-     MOVE ALL X"0100" TO CE-STATES(1:512)
+     MOVE 1 TO WS-START
+     MOVE 512 TO WS-LENGTH
+     CALL "WORLDGEN-FILL" USING CR-BASEPLATE WS-START WS-LENGTH L-CHUNK
      MOVE -1 TO L-MARKER-Y
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          COMPUTE WS-LZ = (WS-C - 1) / 16
@@ -258,15 +301,15 @@
          PERFORM VARYING WS-Y FROM 1 BY 1 UNTIL WS-Y > WS-H
              COMPUTE WS-CELL = WS-Y * 256 + WS-C
              IF WS-Y <= WS-H - 3
-                 MOVE ST-GREYSTONE TO CE-STATE(WS-CELL)
+                 MOVE CR-GREYSTONE TO CE-STATE(WS-CELL)
              ELSE
-                 MOVE ST-SLAG TO CE-STATE(WS-CELL)
+                 MOVE CR-SLAG TO CE-STATE(WS-CELL)
              END-IF
          END-PERFORM
          IF WS-C = 137 AND FUNCTION MOD(L-CX, GEN-SUB-MARKER-MOD) = 0
                  AND FUNCTION MOD(L-CZ, GEN-SUB-MARKER-MOD) = 0
              COMPUTE L-MARKER-Y = WS-H + 1
-             MOVE ST-GLOWTUBE-LIT TO CE-STATE(L-MARKER-Y * 256 + WS-C)
+             MOVE CR-GLOWTUBE-LIT TO CE-STATE(L-MARKER-Y * 256 + WS-C)
          END-IF
      END-PERFORM
      GOBACK.

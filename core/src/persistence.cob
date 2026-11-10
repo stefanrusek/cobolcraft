@@ -26,8 +26,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY BLOCKS.
- COPY REGISTRY.
+ COPY CBLOCKS.
  COPY CELLS.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
@@ -61,7 +60,7 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-ENTRIES             BINARY-LONG.
  01 WS-PAL-INDEXES.
-    05 WS-PAL-INDEX        BINARY-LONG OCCURS 256 TIMES.
+    05 WS-PAL-INDEX        BINARY-LONG OCCURS 40000 TIMES.
  01 WS-PALETTE.
     05 WS-PAL              BINARY-LONG OCCURS 4096 TIMES.
  01 WS-INDEXES.
@@ -79,7 +78,7 @@
     05 WS-HMS              BINARY-DOUBLE OCCURS 256 TIMES.
  01 WS-BIOME-COLUMNS.
     05 WS-BIOME-COLUMN     BINARY-LONG OCCURS 16 TIMES.
- 01 WS-PROPS               PIC X(24).
+ 01 WS-PROPS               PIC X(64).
  01 WS-PTR                 BINARY-LONG.
  01 WS-PNAME               PIC X(24).
  01 WS-PNAME-LENGTH        BINARY-LONG.
@@ -133,7 +132,7 @@
                  ADD 1 TO WS-N
                  MOVE WS-N TO WS-PAL-INDEX(WS-STATE + 1)
                  MOVE WS-STATE TO WS-PAL(WS-N)
-                 IF BL-DEFAULT-STATE(SB-BLOCK(WS-STATE + 1) + 1) NOT = WS-STATE
+                 IF CB-DEFAULT-STATE(CB-S-BLOCK(WS-STATE + 1) + 1) NOT = WS-STATE
                      ADD 1 TO WS-OTHERS
                  END-IF
              END-IF
@@ -147,27 +146,27 @@
          CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-TYPE WS-N
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
              MOVE WS-PAL(WS-K) TO WS-STATE
-             MOVE SB-BLOCK(WS-STATE + 1) TO WS-BLOCK
+             MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
              EVALUATE TRUE
                  WHEN WS-OTHERS = 0
-                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT BL-KEY(WS-BLOCK + 1)
-                         BL-KEY-LENGTH(WS-BLOCK + 1)
-                 WHEN BL-DEFAULT-STATE(WS-BLOCK + 1) = WS-STATE
+                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT CB-KEY(WS-BLOCK + 1)
+                         CB-KEY-LENGTH(WS-BLOCK + 1)
+                 WHEN CB-DEFAULT-STATE(WS-BLOCK + 1) = WS-STATE
                      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
                      MOVE 0 TO WL
-                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BL-KEY(WS-BLOCK + 1)
-                         BL-KEY-LENGTH(WS-BLOCK + 1)
+                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL CB-KEY(WS-BLOCK + 1)
+                         CB-KEY-LENGTH(WS-BLOCK + 1)
                      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
                  WHEN OTHER
                      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
                      MOVE "id" TO WN MOVE 2 TO WL
-                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BL-KEY(WS-BLOCK + 1)
-                         BL-KEY-LENGTH(WS-BLOCK + 1)
+                     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL CB-KEY(WS-BLOCK + 1)
+                         CB-KEY-LENGTH(WS-BLOCK + 1)
                      MOVE "properties" TO WN MOVE 10 TO WL
                      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-                     MOVE SB-PROPS(WS-STATE + 1) TO WS-PROPS
+                     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
                      MOVE 1 TO WS-PTR
-                     PERFORM UNTIL WS-PTR > 24
+                     PERFORM UNTIL WS-PTR > 64
                          MOVE SPACES TO WS-PNAME WS-PVALUE
                          MOVE 0 TO WS-PNAME-LENGTH WS-PVALUE-LENGTH
                          UNSTRING WS-PROPS DELIMITED BY "=" OR "," OR SPACE
@@ -228,11 +227,11 @@
          MOVE "palette" TO WN MOVE 7 TO WL
          CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-STRING WS-N
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT RB-KEY(WS-PAL(WS-K) + 1)
-                 RB-KEY-LENGTH(WS-PAL(WS-K) + 1)
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WS-ELEMENT CBI-KEY(WS-PAL(WS-K) + 1)
+                 CBI-KEY-LENGTH(WS-PAL(WS-K) + 1)
          END-PERFORM
          CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
-*>       At most RB-COUNT (3) biomes: 1 bit for 2 entries, 2 bits for 3 (07 §7.2 biome column).
+*>       At most CBI-MAX biomes: 1 bit for 2 entries, 2 bits for 3 (07 §7.2 biome column).
          MOVE 64 TO WS-ENTRIES
          IF WS-N > 1
              COMPUTE WS-BITS = FUNCTION MIN(2, WS-N - 1)
@@ -302,7 +301,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY CELLS.
  01 WS-CELLS               BINARY-LONG.
  01 WN                     PIC X(32).
@@ -341,7 +340,7 @@
      END-PERFORM
      COMPUTE WS-CELLS = DM-HEIGHT(CK-DIM(L-ROW)) * 256
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
-         IF SB-LIGHT(CE-STATE(WS-I) + 1) > 0
+         IF CB-S-LIGHT(CE-STATE(WS-I) + 1) > 0
              ADD 1 TO CK-SOURCES(L-ROW, (WS-I - 1) / 4096 + 1)
          END-IF
      END-PERFORM
@@ -557,51 +556,20 @@
 *> any order, else its default state (also when there are no properties).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
- 01 WS-B                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-MATCHED             BINARY-LONG.
- 01 WS-EQUALS              BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
- 01 WS-PTR                 BINARY-LONG.
- 01 WS-PAIR                PIC X(32).
- 01 WS-PAIR-LENGTH         BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-PAIRS               PIC X(64).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(32).
  01 L-PAIRS                PIC X(64).
  01 L-PAIR-COUNT           BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-PAIRS L-PAIR-COUNT L-STATE.
-     MOVE 0 TO WS-BLOCK
-     PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > BLOCK-COUNT
-         IF BL-KEY(WS-B) = L-KEY
-             COMPUTE WS-BLOCK = WS-B - 1
-         END-IF
-     END-PERFORM
-     MOVE BL-DEFAULT-STATE(WS-BLOCK + 1) TO L-STATE
-     PERFORM VARYING WS-S FROM BL-FIRST-STATE(WS-BLOCK + 1) BY 1
-             UNTIL WS-S >= BL-FIRST-STATE(WS-BLOCK + 1) + BL-STATE-COUNT(WS-BLOCK + 1)
-                 OR L-PAIR-COUNT = 0
-         MOVE 0 TO WS-MATCHED WS-EQUALS
-         INSPECT SB-PROPS(WS-S + 1) TALLYING WS-EQUALS FOR ALL "="
-         MOVE 1 TO WS-PTR
-         PERFORM L-PAIR-COUNT TIMES
-             MOVE SPACES TO WS-PAIR
-             UNSTRING L-PAIRS DELIMITED BY "," OR SPACE INTO WS-PAIR COUNT WS-PAIR-LENGTH
-                 WITH POINTER WS-PTR
-             END-UNSTRING
-             MOVE 0 TO WS-FOUND
-             INSPECT SB-PROPS(WS-S + 1) TALLYING WS-FOUND
-                 FOR ALL WS-PAIR(1:WS-PAIR-LENGTH)
-             IF WS-FOUND > 0
-                 ADD 1 TO WS-MATCHED
-             END-IF
-         END-PERFORM
-         IF WS-MATCHED = L-PAIR-COUNT AND WS-EQUALS = L-PAIR-COUNT
-             MOVE WS-S TO L-STATE
-         END-IF
-     END-PERFORM
+     MOVE SPACES TO WS-KEY WS-PAIRS
+     MOVE L-KEY TO WS-KEY
+     IF L-PAIR-COUNT > 0
+         MOVE L-PAIRS TO WS-PAIRS
+     END-IF
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS L-STATE
      GOBACK.
  END PROGRAM CHUNK-NBT-BLOCK-STATE.
 

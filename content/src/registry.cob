@@ -699,7 +699,8 @@
 *> client set), capacity (BINARY-LONG bytes of the area), payload length out (BINARY-LONG), status out (CT-OK;
 *> CT-NOT-FOUND for an unknown registry or an id outside 0 to count - 1; CT-TOO-SMALL when the area is
 *> smaller than the payload, the length still given and the area left alone; CT-NOT-OPEN). A registry the table does not
-*> hold is asked of the registry sources (registry-sources.cob), whose entries have no payload.
+*> hold is asked of the built-in entries of the cobolcraft set (builtin-registry.cob: network NBT), then of the
+*> registry sources (registry-sources.cob), whose entries have no payload.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -710,6 +711,7 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-HAS-NAMESPACE       BINARY-LONG.
  01 WS-SOURCE-COUNT        BINARY-LONG.
+ 01 WS-SHORT               PIC X(48).
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(112).
  01 L-ID                   BINARY-LONG.
@@ -748,6 +750,16 @@
      END-IF
 *>   A registry the table does not hold: the registry sources (registry-sources.cob); their entries have no payload.
      IF WS-FOUND = 0
+*>       The cobolcraft set carries the payload of the entries the document writes out (builtin-registry.cob).
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT AND WS-KEY(1:10) = "minecraft:"
+             MOVE WS-KEY(11:48) TO WS-SHORT
+             CALL "BUILTIN-REGISTRY-ENTRY" USING WS-SHORT L-ID L-KEY L-PAYLOAD L-CAPACITY L-LENGTH
+                 L-STATUS
+             IF L-STATUS = CT-OK OR L-STATUS = CT-TOO-SMALL
+                 INSPECT L-KEY TALLYING L-KEY-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+                 GOBACK
+             END-IF
+         END-IF
          CALL "REGISTRY-SOURCE-AT" USING L-REGISTRY L-ID L-KEY L-KEY-LENGTH WS-SOURCE-COUNT L-STATUS
          GOBACK
      END-IF

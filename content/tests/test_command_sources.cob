@@ -182,6 +182,8 @@
 *>   The cobolcraft set.
      MOVE SPACES TO WS-DIR
      MOVE CT-TYPE-COBOLCRAFT TO WS-TYPE
+*>   The synchronized registries of the cobolcraft set carry their payload (builtin-registry.cob).
+     MOVE 1 TO WS-PAYLOADS
      CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
      MOVE "sources: the cobolcraft set opens" TO TL-CASE
      MOVE CT-OK TO TL-EXPECTED-N
@@ -297,7 +299,8 @@
      MOVE 0 TO WS-BAD
      PERFORM VARYING WS-ID FROM 0 BY 1 UNTIL WS-ID >= WS-COUNT
          PERFORM ENTRY-OF
-         IF WS-STATUS NOT = CT-OK OR WS-KEY = SPACES OR (WS-LENGTH NOT = 0 AND WS-PAYLOADS = 0)
+         IF (WS-STATUS NOT = CT-OK AND NOT (WS-STATUS = CT-TOO-SMALL AND WS-PAYLOADS = 1)) OR WS-KEY = SPACES
+                 OR (WS-LENGTH NOT = 0 AND WS-PAYLOADS = 0)
              ADD 1 TO WS-BAD
          END-IF
          MOVE 0 TO WS-N
