@@ -9,7 +9,7 @@
 *> enchanting table selection), copy_name, copy_state, copy_components, set_components, set_custom_data, copy_custom_data,
 *> set_attributes, the potion, stew, instrument, dye, banner, book, firework, custom model data, tooltip, player head, map, container and
 *> loot table functions. Gaps inside the evaluated ones: set_enchantments does not convert a book to an enchanted book and a level
-*> of 0 does not remove an enchantment; set_name does not resolve selector, score or NBT components.
+*> of 0 does not remove an enchantment (loot-function-data.cob adds set_ominous_bottle_amplifier and copy_state); set_name does not resolve selector, score or NBT components.
 *> Entry points:
 *>   LOOT-FN-APPLY USING slot, node, item, count, handle (BINARY-LONG; the stack, in and out)
 *>   LOOT-APPLY-CHAIN USING item, count, handle (in and out): the modifiers of LW-CHAIN, innermost first (5.1 step 3, 5.3 step 5)
@@ -422,6 +422,10 @@
              CALL "LOOT-SET-DAMAGE" USING LS-SLOT LS-NODE L-ITEM L-HANDLE
          WHEN "set_name"
              CALL "LOOT-SET-NAME" USING LS-SLOT LS-NODE L-HANDLE
+         WHEN "set_ominous_bottle_amplifier"
+             CALL "LOOT-SET-OMINOUS" USING LS-SLOT LS-NODE L-HANDLE
+         WHEN "copy_state"
+             CALL "LOOT-COPY-STATE" USING LS-SLOT LS-NODE L-HANDLE
          WHEN OTHER
              CONTINUE
      END-EVALUATE
