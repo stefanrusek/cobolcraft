@@ -36,7 +36,7 @@ t.cur('left_leg','xrot',0.32386); t.cur('right_leg','xrot',-0.32386); t.cur('bod
 # example 15.11: the emerge body rotation channel (channel 1) at t = 0.26 s
 t.call('EF6W-ANIM-EVAL',[1,1,0.26,1],[0,0,-0.212712],'8.6 example 15.11 emerge body rotation at 0.26 s')
 t.call('EF6-WARDEN-RENDER-STATE',[0.5,4,6,2,8],[(4+0.5*2)/10,(2+0.5*6)/10],'8.3 render state tendril and heart animation lerp / 10 (partial 0.5, tendril 4 to 6, heart 2 to 8) [heart is old 2 current 8]')
-for anger,e in ((0,40),(40,25),(80,10),(160,10),(20,32),(79,11)):
+for anger,e in ((-10,40),(0,40),(40,25),(80,10),(160,10),(20,32),(79,11)):
     t.call('EF6-WARDEN-HEARTBEAT',[anger],[40-math.floor(min(1,max(0,anger/80))*30)],'8.3 heartbeat delay anger %d'%anger)
 def wtick(tc,delay,tend,heart):
     beat=1 if tc%delay==0 else 0

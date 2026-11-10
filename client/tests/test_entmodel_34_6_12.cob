@@ -1455,6 +1455,20 @@
      MOVE 0 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 1.2 TO WS-IV(1)
+     MOVE 100 TO WS-IV(2)
+     CALL "EF6-SHULKER-PEEK" USING WS-IN WS-OUT
+     MOVE "12.3 peek amount current 1.2 raw 100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -0.2 TO WS-IV(1)
+     MOVE 100 TO WS-IV(2)
+     CALL "EF6-SHULKER-PEEK" USING WS-IN WS-OUT
+     MOVE "12.3 peek amount current -0.2 raw 100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 0 TO WS-IV(1)
      MOVE 100 TO WS-IV(2)
      CALL "EF6-SHULKER-PEEK" USING WS-IN WS-OUT
@@ -1812,6 +1826,44 @@
      MOVE "textures/entity/shulker/shulker.png" TO TL-EXPECTED
      MOVE WS-X120 TO TL-OBSERVED
      PERFORM CHECK-TEXT
+     MOVE 1 TO WS-IV(1)
+     MOVE 10 TO WS-IV(2)
+     MOVE 60 TO WS-IV(3)
+     MOVE 2 TO WS-IV(4)
+     MOVE 2 TO WS-IV(5)
+     MOVE 70 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 1 TO WS-IV(9)
+     CALL "EF6-SHULKER-CULLBOX" USING WS-IN WS-OUT
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [1]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [2]" TO WS-NAME
+     MOVE 2.0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [3]" TO WS-NAME
+     MOVE 60.0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [4]" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [5]" TO WS-NAME
+     MOVE 10.5 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [6]" TO WS-NAME
+     MOVE 71.0 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "12.3 cull box has render position 1 position (10, 60, 2) block (2, 70, 1) height 1 width 1 (candidate, min xyz, max xyz) [7]" TO WS-NAME
+     MOVE 2.5 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 1 TO WS-IV(1)
      MOVE 1 TO WS-IV(2)
      MOVE 64 TO WS-IV(3)

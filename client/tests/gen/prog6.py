@@ -1,7 +1,7 @@
-def prog(name,body,ws=''):
+def prog(name,body,ws='',goback=True):
     s=' IDENTIFICATION DIVISION.\n PROGRAM-ID. %s.\n DATA DIVISION.\n'%name
     if ws: s+=' WORKING-STORAGE SECTION.\n'+ws
-    s+=' LINKAGE SECTION.\n 01 L-IN.\n    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.\n 01 L-OUT.\n    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.\n PROCEDURE DIVISION USING L-IN L-OUT.\n'+body+'     GOBACK.\n END PROGRAM %s.\n\n'%name
+    s+=' LINKAGE SECTION.\n 01 L-IN.\n    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.\n 01 L-OUT.\n    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.\n PROCEDURE DIVISION USING L-IN L-OUT.\n'+body+('     GOBACK.\n' if goback else '')+' END PROGRAM %s.\n\n'%name
     return s
 def pathprog(name,cases,default=None):
     """cases: list of (value,path); EVALUATE L-I(1)"""

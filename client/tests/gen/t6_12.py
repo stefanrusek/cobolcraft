@@ -31,7 +31,7 @@ def peek(cur,raw):
     if cur>tg: return min(1,max(tg,cur-0.05))
     if cur<tg: return max(0,min(tg,cur+0.05))
     return cur
-for cur,raw in ((0,100),(0.97,100),(1,100),(0.5,0),(0.02,0),(0.3,30),(0.33,30),(0.5,20),(0.52,50),(0.2,50)):
+for cur,raw in ((1.2,100),(-0.2,100),(0,100),(0.97,100),(1,100),(0.5,0),(0.02,0),(0.3,30),(0.33,30),(0.5,20),(0.52,50),(0.2,50)):
     t.call('EF6-SHULKER-PEEK',[cur,raw],[peek(cur,raw)],'12.3 peek amount current %s raw %s'%(cur,raw))
 for face,e in ((0,(0,0,0)),(1,(PI,0,0)),(2,(PI/2,0,0)),(3,(PI/2,0,PI)),(4,(PI/2,0,-PI/2)),(5,(PI/2,0,PI/2))):
     t.call('EF6-SHULKER-ROT',[face],list(e)+[0,0.5,0],'12.3 attach face %d rotationXYZ (x, y, z) about (0, 0.5, 0)'%face)
@@ -39,7 +39,7 @@ t.call('EF6-SHULKER-BODYROT',[30],[210],'12.3 setupRotations adds 180 to the bod
 DYE=['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black']
 for i,n in enumerate(DYE): text_check(t,'EF6-SHULKER-TEXTURE',[i],'12.3 dye %d texture'%i,'textures/entity/shulker/shulker_%s.png'%n)
 text_check(t,'EF6-SHULKER-TEXTURE',[16],'12.3 no colour (dye 16) default texture','textures/entity/shulker/shulker.png')
-for has,rp,bp,h,w in ((1,(1,64,2),(3,60,1),1,1),(0,(0,0,0),(3,60,1),1,1),(1,(-5,70,9),(-5,70,9),1,1)):
+for has,rp,bp,h,w in ((1,(10,60,2),(2,70,1),1,1),(1,(1,64,2),(3,60,1),1,1),(0,(0,0,0),(3,60,1),1,1),(1,(-5,70,9),(-5,70,9),1,1)):
     if not has: o=[0]+[0]*6
     else:
         a=(rp[0],rp[1]+h/2,rp[2]); b=(bp[0]+0.5,bp[1]+h/2,bp[2]+0.5)
