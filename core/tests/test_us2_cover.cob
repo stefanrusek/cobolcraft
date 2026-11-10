@@ -9,6 +9,8 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY PROTO.
+ COPY CONTENT.
+ COPY CBLOCKS.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
  01 WS-TEXT                PIC X(64).
  01 WS-SEED                BINARY-DOUBLE.
@@ -18,6 +20,19 @@
  01 WS-LONG                BINARY-DOUBLE.
  01 WS-FILE-PATH           PIC X(1100).
  01 WS-FILE-LENGTH         BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG VALUE 1.
+ 01 WS-DIR                 PIC X(1100) VALUE SPACES.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-TEXT-OUT            PIC X(64).
+ 01 WS-ROW                 PIC X(819).
+ 01 WS-BLOCK-NUMBER        BINARY-LONG VALUE 5.
+ 01 WS-FILL-STATE          BINARY-LONG.
+ 01 WS-FILL-START          BINARY-LONG.
+ 01 WS-FILL-LENGTH         BINARY-LONG.
+ 01 WS-AREA                PIC X(4).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      MOVE SPACES TO WS-TEXT
@@ -57,6 +72,53 @@
      MOVE "test us2 cover a Clocks entry of another clock is skipped, the overworld clock is read" TO TL-CASE
      MOVE 600 TO TL-EXPECTED-N
      MOVE CW-TIME TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Block tables (T0326): properties of an unknown state, the namespace of the standard set, a light text above 15,
+*>   a fill of no bytes.
+     CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
+     CALL "BLOCKS-OPEN"
+     MOVE 99999 TO WS-STATE
+     MOVE "x" TO WS-TEXT-OUT
+     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-TEXT-OUT
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover the properties of an unknown state are empty" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:cobolcraft:greystone" TO WS-KEY
+     CALL "BLOCKS-ID-OF" USING WS-KEY WS-ID
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover a standard set strips the optional minecraft: namespace of a key" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE SPACES TO CT-BLOCK-ROW
+     UNSTRING "5|cobolcraft:bright|Block||1|30|30|1.0|1.0|no|20|NONE|STONE|PUSH_PULL|HARP|" DELIMITED BY "|"
+         INTO CT-BR-ID CT-BR-KEY CT-BR-CLASS CT-BR-PROPS CT-BR-STATE-COUNT CT-BR-FIRST-STATE
+             CT-BR-DEFAULT-STATE CT-BR-HARDNESS CT-BR-BLAST CT-BR-TOOL-REQUIRED CT-BR-LIGHT
+             CT-BR-MAP-COLOUR CT-BR-SOUND-TYPE CT-BR-PUSH CT-BR-INSTRUMENT CT-BR-FLAGS
+     MOVE CT-BLOCK-ROW TO WS-ROW
+     CALL "BLOCKS-FILL" USING WS-BLOCK-NUMBER WS-ROW
+     MOVE "test us2 cover a light text above 15 is no light" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE CB-S-LIGHT(31) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 2 TO WS-FILL-STATE
+     MOVE 1 TO WS-FILL-START
+     MOVE 0 TO WS-FILL-LENGTH
+     MOVE "abcd" TO WS-AREA
+     CALL "WORLDGEN-FILL" USING WS-FILL-STATE WS-FILL-START WS-FILL-LENGTH WS-AREA
+     MOVE "T" TO TL-MODE
+     MOVE "test us2 cover a fill of no bytes writes nothing" TO TL-CASE
+     MOVE "abcd" TO TL-EXPECTED
+     MOVE WS-AREA TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-US2-COVER.

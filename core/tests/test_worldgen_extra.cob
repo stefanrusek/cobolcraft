@@ -63,7 +63,13 @@
     05 WS-SAMPLE OCCURS 10 TIMES.
        10 WS-SAMPLE-X      BINARY-LONG.
        10 WS-SAMPLE-Z      BINARY-LONG.
+ 01 WS-OPEN-TYPE          BINARY-LONG VALUE 1.
+ 01 WS-OPEN-DIR           PIC X(1100) VALUE SPACES.
+ 01 WS-OPEN-STATUS        BINARY-LONG.
  PROCEDURE DIVISION.
+*>   The generators read the ids of their blocks from the open content set (BLOCKS-OPEN roles).
+     CALL "CONTENT-OPEN" USING WS-OPEN-TYPE WS-OPEN-DIR WS-OPEN-STATUS
+     CALL "BLOCKS-OPEN"
      MOVE "test worldgen extra subroutine floor height of sample columns" TO TL-CASE
      PERFORM START-ROW
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10

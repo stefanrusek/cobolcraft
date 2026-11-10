@@ -139,11 +139,12 @@
 *> chunk is not loaded or its block is solid (BLOCKS.cpy SB-SOLID; void outside the height range).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY BLOCKS.
+ COPY CBLOCKS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -157,7 +158,8 @@
      MOVE 1 TO L-SOLID
      IF WS-ROW > 0
          CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
-         MOVE SB-SOLID(WS-STATE + 1) TO L-SOLID
+         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLK
+         MOVE CB-SOLID(WS-BLK + 1) TO L-SOLID
      END-IF
      GOBACK.
  END PROGRAM GI-SOLID-CELL.

@@ -57,7 +57,13 @@
     05 WS-SAMPLE OCCURS 10 TIMES.
        10 WS-SAMPLE-X      BINARY-LONG.
        10 WS-SAMPLE-Z      BINARY-LONG.
+ 01 WS-OPEN-TYPE          BINARY-LONG VALUE 1.
+ 01 WS-OPEN-DIR           PIC X(1100) VALUE SPACES.
+ 01 WS-OPEN-STATUS        BINARY-LONG.
  PROCEDURE DIVISION.
+*>   The generators read the ids of their blocks from the open content set (BLOCKS-OPEN roles).
+     CALL "CONTENT-OPEN" USING WS-OPEN-TYPE WS-OPEN-DIR WS-OPEN-STATUS
+     CALL "BLOCKS-OPEN"
      MOVE "test worldgen surface height of column (4, 8) is 53" TO TL-CASE
      MOVE 4 TO WS-X
      MOVE 8 TO WS-Z

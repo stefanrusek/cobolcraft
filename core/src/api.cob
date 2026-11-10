@@ -17,8 +17,12 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY DIMENSIONS.
+ COPY CONTENT.
  COPY PROTO.
  01 WS-I                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-DIR                 PIC X(1100).
+ 01 WS-STATUS              BINARY-LONG.
  01 WS-FILE                PIC X(1040).
  01 WS-FILE-INFO           PIC X(16).
  01 WS-CAPACITY            BINARY-LONG VALUE 1024.
@@ -37,6 +41,12 @@
      INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
          CORE-KNOWN CORE-ACCESS
      MOVE "Y" TO CW-OPEN
+*>   The content set of the world and the block tables built from it (the world type choice comes with
+*>   T0334: until then every world is a cobolcraft world).
+     MOVE SPACES TO WS-DIR
+     MOVE CT-TYPE-COBOLCRAFT TO WS-TYPE
+     CALL "CONTENT-OPEN" USING WS-TYPE WS-DIR WS-STATUS
+     CALL "BLOCKS-OPEN"
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
      MOVE CS-DEFAULT-MODE TO CW-GAME-MODE
