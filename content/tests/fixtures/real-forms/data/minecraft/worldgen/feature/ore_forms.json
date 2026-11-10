@@ -1,0 +1,3 @@
+{"type": "minecraft:ore", "size": 17, "discard_chance_on_air_exposure": 0.0, "targets": [
+  {"state": "minecraft:coal_ore", "target": {"predicate_type": "minecraft:tag_match", "tag": "minecraft:stone_ore_replaceables"}},
+  {"state": {"id": "minecraft:copper_ore"}, "target": {"predicate_type": "minecraft:all_of", "rules": [{"predicate_type": "minecraft:always_true"}, {"predicate_type": "minecraft:random_block_match", "block": "minecraft:stone", "probability": 0.5}, {"predicate_type": "minecraft:blockstate_match", "block_state": {"id": "minecraft:stone"}}, {"predicate_type": "minecraft:not", "rule": {"predicate_type": "minecraft:height_match", "min_inclusive": 0, "max_inclusive": 8}}]}}]}

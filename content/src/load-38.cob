@@ -85,7 +85,9 @@
     05 FILLER PIC X(600) VALUE "R structure=structure;I weight=1..".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "random_spread".
-    05 FILLER PIC X(600) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangular;n frequency=0..1;a locate_offset;s frequency_reduction_method;o exclusion_zone".
+    05 FILLER PIC X(600) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangu" &
+        "lar;n frequency=0..1;a locate_offset;s frequency_reduction_method;o exclusion_" &
+        "zone".
  01 WS-ROW-COUNT           BINARY-LONG VALUE 22.
  01 WS-FEATURE             PIC X(48) VALUE "worldgen/feature".
  01 WS-FEATURE-GROUP       PIC X(24) VALUE "feature".

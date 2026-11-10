@@ -9,7 +9,7 @@
  COPY TESTLIB.
  COPY CONTENT.
  COPY CTPROPS.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
@@ -34,7 +34,7 @@
     05 WS-R-INSTRUMENT     PIC X(15).
     05 WS-R-FLAGS          PIC X(147).
  01 WS-TAG-REGISTRY        PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-RESULT              BINARY-LONG.
  01 WS-MEMBERS.
     05 WS-MEMBER           BINARY-LONG OCCURS 16 TIMES.

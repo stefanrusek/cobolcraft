@@ -2,7 +2,7 @@
 *> SHAPE-TYPE-ADD USING group (PIC X(24)), type (PIC X(48)), fields (PIC X(600)), status out (0, 1 when the table is
 *> full) registers a type row once. SHAPE-BEGIN, SHAPE-LOAD USING root (PIC X(1100)), registry (PIC X(48)), group (PIC
 *> X(24)), strict (BINARY-LONG: 1 an unknown type is an error), SHAPE-END USING status out (CT-OK, or CT-BAD-DATA with
-*> every error on standard error and the elements of the load taken back), SHAPE-FIND USING registry, key (PIC X(64)),
+*> every error on standard error and the elements of the load taken back), SHAPE-FIND USING registry, key (PIC X(112)),
 *> row out, SHAPE-FREE. Every field form of CTSHAPE.cpy has an accept case (fixture tree content/tests/fixtures/shapes)
 *> and each of its failures a reject case written into a fresh copy of the tree.
  IDENTIFICATION DIVISION.
@@ -19,7 +19,7 @@
  01 WS-FIELDS              PIC X(600).
  01 WS-STATUS              BINARY-LONG.
  01 WS-STRICT              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(600).
  01 WS-BODY                PIC X(300).
@@ -71,8 +71,8 @@
     05 FILLER PIC X(300) VALUE '{"type":"alpha","name":"x","ref":"a:"}'.
     05 FILLER PIC X(40) VALUE "an identifier of a bad namespace".
     05 FILLER PIC X(300) VALUE '{"type":"alpha","name":"x","ref":"A:b"}'.
-    05 FILLER PIC X(40) VALUE "an identifier of 65 bytes".
-    05 FILLER PIC X(300) VALUE '{"type":"alpha","name":"x","ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'.
+    05 FILLER PIC X(40) VALUE "an identifier of 113 bytes".
+    05 FILLER PIC X(300) VALUE '{"type":"alpha","name":"x","ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'.
     05 FILLER PIC X(40) VALUE "an object that is an array".
     05 FILLER PIC X(300) VALUE '{"type":"alpha","name":"x","obj":[]}'.
     05 FILLER PIC X(40) VALUE "an array that is an object".
@@ -267,7 +267,7 @@
 
 *>   A full element table.
      MOVE "content/tests/fixtures/shapes" TO WS-DIR
-     MOVE 4095 TO SH-ELEMENT-COUNT
+     MOVE 16383 TO SH-ELEMENT-COUNT
      CALL "SHAPE-BEGIN"
      CALL "SHAPE-LOAD" USING WS-DIR WS-REGISTRY WS-GROUP WS-STRICT
      MOVE 0 TO WS-STRICT
@@ -277,7 +277,7 @@
      MOVE WS-STATUS TO TL-OBSERVED-N
      PERFORM ASSERT-NUM
      MOVE "a full element table is as it was" TO TL-CASE
-     MOVE 4095 TO TL-EXPECTED-N
+     MOVE 16383 TO TL-EXPECTED-N
      MOVE SH-ELEMENT-COUNT TO TL-OBSERVED-N
      PERFORM ASSERT-NUM
      MOVE 0 TO SH-ELEMENT-COUNT

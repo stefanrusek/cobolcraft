@@ -14,8 +14,8 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-TYPE                BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
@@ -37,13 +37,13 @@
     05 FILLER              PIC X(41).
  01 WS-NAME                PIC X(32).
  01 WS-VALUE               PIC X(100).
- 01 WS-ENTRY-KEY           PIC X(64).
+ 01 WS-ENTRY-KEY           PIC X(112).
  01 WS-ENTRY-LENGTH        BINARY-LONG.
  01 WS-PAYLOAD             PIC X(1000).
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-PAYLOAD-LENGTH      BINARY-LONG.
  01 WS-TAG-REGISTRY        PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-PACK                PIC X(32).
  01 WS-JSON                PIC X(400).
  01 WS-JSON-LENGTH         BINARY-LONG.

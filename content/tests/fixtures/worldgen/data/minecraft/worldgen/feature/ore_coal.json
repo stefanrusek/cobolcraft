@@ -1,8 +1,8 @@
-{"type": "minecraft:ore", "config": {"size": 17, "discard_chance_on_air_exposure": 0.0, "targets": [
-  {"state": {"Name": "minecraft:coal_ore"}, "target": {"predicate_type": "minecraft:any_of", "predicates": [
-     {"predicate_type": "minecraft:all_of", "predicates": [{"predicate_type": "minecraft:block_match", "block": "minecraft:tuff"},
-        {"predicate_type": "minecraft:height_match", "min_inclusive": {"absolute": 0}, "max_inclusive": 2031}]},
-     {"predicate_type": "minecraft:all_of", "predicates": [
-        {"predicate_type": "minecraft:not", "predicate": {"predicate_type": "minecraft:block_match", "block": "minecraft:tuff"}},
+{"type": "minecraft:ore", "size": 17, "discard_chance_on_air_exposure": 0.0, "targets": [
+  {"state": "minecraft:coal_ore", "target": {"predicate_type": "minecraft:any_of", "rules": [
+     {"predicate_type": "minecraft:all_of", "rules": [{"predicate_type": "minecraft:block_match", "block": "minecraft:tuff"},
+        {"predicate_type": "minecraft:height_match", "min_inclusive": 0, "max_inclusive": 2031}]},
+     {"predicate_type": "minecraft:all_of", "rules": [
+        {"predicate_type": "minecraft:not", "rule": {"predicate_type": "minecraft:block_match", "block": "minecraft:tuff"}},
         {"predicate_type": "minecraft:tag_match", "tag": "minecraft:stone_ore_replaceables"}]}]}},
-  {"state": {"Name": "minecraft:deepslate_coal_ore"}, "target": {"predicate_type": "minecraft:tag_match", "tag": "minecraft:deepslate_ore_replaceables"}}]}}
+  {"state": {"id": "minecraft:deepslate_coal_ore"}, "target": {"predicate_type": "minecraft:tag_match", "tag": "minecraft:deepslate_ore_replaceables"}}]}

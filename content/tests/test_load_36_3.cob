@@ -11,7 +11,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-T                   PIC X(70).
@@ -20,27 +20,27 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ACCEPTS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:village".
+    05 FILLER PIC X(112) VALUE "minecraft:village".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:aliased".
+    05 FILLER PIC X(112) VALUE "minecraft:aliased".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:other_type".
+    05 FILLER PIC X(112) VALUE "minecraft:other_type".
     05 FILLER PIC X(48).
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:empty".
+    05 FILLER PIC X(112) VALUE "minecraft:empty".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:village/plains/town_centers".
+    05 FILLER PIC X(112) VALUE "minecraft:village/plains/town_centers".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:mixed".
+    05 FILLER PIC X(112) VALUE "minecraft:mixed".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPTS.
     05 WS-ACCEPT OCCURS 6 TIMES.
        10 WS-A-REGISTRY    PIC X(48).
-       10 WS-A-KEY         PIC X(64).
+       10 WS-A-KEY         PIC X(112).
        10 WS-A-TYPE        PIC X(48).
  01 WS-REJECTS.
     05 FILLER PIC X(70) VALUE "a jigsaw without start_pool".

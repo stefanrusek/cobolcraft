@@ -8,25 +8,25 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-ITEM-BY-KEY.
-*> USING key (PIC X(64), space padded; "minecraft:" is optional in the standard set), item id out
+*> USING key (PIC X(112), space padded; "minecraft:" is optional in the standard set), item id out
 *> (BINARY-LONG), row out (PIC X(270), CT-ITEM-ROW), status out (CT-OK, CT-NOT-FOUND with id 0 and the
 *> row of item 0, CT-NOT-OPEN with the row left as it was).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
- 01 WS-REST                PIC X(64).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-REST                PIC X(112).
  01 WS-ROW                 PIC X(270).
  01 WS-VIEW REDEFINES WS-ROW.
     05 FILLER              PIC X(4).
     05 WS-R-KEY            PIC X(38).
     05 FILLER              PIC X(228).
- 01 WS-ROW-KEY             PIC X(64).
+ 01 WS-ROW-KEY             PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ID                   BINARY-LONG.
  01 L-ROW                  PIC X(270).
  01 L-STATUS               BINARY-LONG.

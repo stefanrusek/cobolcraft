@@ -13,7 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-LABEL               PIC X(70).
  01 WS-NAME                PIC X(40).
@@ -22,33 +22,33 @@
  01 WS-COMMAND             PIC X(600).
  01 WS-FINDS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:ocean_ruin_cold".
+    05 FILLER PIC X(112) VALUE "minecraft:ocean_ruin_cold".
     05 FILLER PIC X(48) VALUE "ocean_ruin".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:ocean_ruin_warm".
+    05 FILLER PIC X(112) VALUE "minecraft:ocean_ruin_warm".
     05 FILLER PIC X(48) VALUE "ocean_ruin".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:shipwreck".
+    05 FILLER PIC X(112) VALUE "minecraft:shipwreck".
     05 FILLER PIC X(48) VALUE "shipwreck".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:shipwreck_beached".
+    05 FILLER PIC X(112) VALUE "minecraft:shipwreck_beached".
     05 FILLER PIC X(48) VALUE "shipwreck".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:monument".
+    05 FILLER PIC X(112) VALUE "minecraft:monument".
     05 FILLER PIC X(48) VALUE "ocean_monument".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:ocean_ruins".
+    05 FILLER PIC X(112) VALUE "minecraft:ocean_ruins".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:shipwrecks".
+    05 FILLER PIC X(112) VALUE "minecraft:shipwrecks".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:ocean_monuments".
+    05 FILLER PIC X(112) VALUE "minecraft:ocean_monuments".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-FIND-TABLE REDEFINES WS-FINDS.
     05 WS-FIND OCCURS 8 TIMES.
        10 WS-F-REGISTRY   PIC X(48).
-       10 WS-F-KEY        PIC X(64).
+       10 WS-F-KEY        PIC X(112).
        10 WS-F-TYPE       PIC X(48).
  01 WS-BADS.
     05 FILLER PIC X(40) VALUE "an ocean ruin without biome_temp".

@@ -56,10 +56,10 @@
  01 WS-DATA                PIC X(2097152).
  01 WS-DATA-CAPACITY       BINARY-LONG VALUE 2097152.
  01 WS-DATA-LENGTH         BINARY-LONG.
- 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 112.
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-REGISTRY-LENGTH     BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PRESENT             BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
@@ -220,15 +220,15 @@
  01 WS-ID-CAPACITY         BINARY-LONG VALUE 65536.
  01 WS-ID-COUNT            BINARY-LONG.
  01 WS-KEPT                BINARY-LONG.
- 01 WS-REGISTRY-KEY        PIC X(64).
+ 01 WS-REGISTRY-KEY        PIC X(112).
  01 WS-REGISTRY-LENGTH     BINARY-LONG.
- 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 64.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 112.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-TAG-KEY             PIC X(64).
+ 01 WS-TAG-KEY             PIC X(112).
  01 WS-TAG-LENGTH          BINARY-LONG.
  01 WS-REGISTRY-COUNT      BINARY-LONG.
  01 WS-TAG-COUNT           BINARY-LONG.
- 01 WS-FULL                PIC X(64).
+ 01 WS-FULL                PIC X(112).
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
  01 WS-R                   BINARY-LONG.
@@ -323,8 +323,8 @@
  01 WS-J                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SURFACE             BINARY-LONG.
- 01 WS-DIMENSION           PIC X(64) VALUE "minecraft:dimension_type".
- 01 WS-SURFACE-KEY         PIC X(64) VALUE "cobolcraft:surface".
+ 01 WS-DIMENSION           PIC X(112) VALUE "minecraft:dimension_type".
+ 01 WS-SURFACE-KEY         PIC X(112) VALUE "cobolcraft:surface".
  LINKAGE SECTION.
  01 L-TYPE                 BINARY-LONG.
  01 L-STATUS               BINARY-LONG.

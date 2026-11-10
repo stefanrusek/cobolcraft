@@ -1,5 +1,5 @@
 *> Test of content/src/items.cob (T0192; content-api section 2; 25 part 1 section 13 worked examples 1 to 4 and 5):
-*> CONTENT-ITEM-BY-KEY USING key (PIC X(64)), item id out, row out (PIC X(270), CT-ITEM-ROW), status;
+*> CONTENT-ITEM-BY-KEY USING key (PIC X(112)), item id out, row out (PIC X(270), CT-ITEM-ROW), status;
 *> CONTENT-ITEM-BY-ID USING item id, row out, status; CONTENT-ITEM-COMPONENT USING item id, component name
 *> (PIC X(32)), value out (PIC X(100)), status. Components are the stack size and damage columns by their
 *> component names (max_stack_size, max_damage) and the "name value" entries of the row's summary. An
@@ -10,7 +10,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROW                 PIC X(270).

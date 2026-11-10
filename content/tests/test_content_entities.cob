@@ -1,6 +1,6 @@
 *> Test of content/src/entities.cob (T0194; content-api section 2; 46 section 11 and 15): CONTENT-ENTITY-BY-KEY USING
-*> key (PIC X(64)), entity id out, row out (PIC X(66), CT-ENTITY-ROW), status; CONTENT-STATIC-ID USING registry
-*> (PIC X(48)), key (PIC X(64)), id out, status. The static registries keep the vanilla numbering; the block,
+*> key (PIC X(112)), entity id out, row out (PIC X(66), CT-ENTITY-ROW), status; CONTENT-STATIC-ID USING registry
+*> (PIC X(48)), key (PIC X(112)), id out, status. The static registries keep the vanilla numbering; the block,
 *> item and entity_type registries answer by the lookups of the set. An unknown key is CT-NOT-FOUND with id 0.
 *> The set is made by setting CT-SET.
  IDENTIFICATION DIVISION.
@@ -9,7 +9,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.

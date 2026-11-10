@@ -11,7 +11,7 @@
  COPY TESTLIB.
  COPY CONTENT.
  COPY CTRECIPE.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROW                 PIC X(819).
@@ -41,7 +41,7 @@
     05 WS-I-STACK          PIC X(2).
     05 FILLER              PIC X(198).
  01 WS-TAG-REGISTRY        PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-RESULT              BINARY-LONG.
  01 WS-MEMBERS.
     05 WS-MEMBER           BINARY-LONG OCCURS 16 TIMES.
@@ -50,14 +50,14 @@
  01 WS-S                   BINARY-LONG.
  01 WS-NUM                 PIC 9.
  01 WS-TAG-NAMES.
-    05 FILLER PIC X(64) VALUE "minecraft:mineable/pickaxe".
-    05 FILLER PIC X(64) VALUE "minecraft:causes_suffocation".
-    05 FILLER PIC X(64) VALUE "minecraft:blocks_motion".
-    05 FILLER PIC X(64) VALUE "minecraft:blocks_motion_no_leaves".
-    05 FILLER PIC X(64) VALUE "minecraft:blocks_motion_in_heightmap".
-    05 FILLER PIC X(64) VALUE "minecraft:blocks_motion_in_heightmap_no_leaves".
+    05 FILLER PIC X(112) VALUE "minecraft:mineable/pickaxe".
+    05 FILLER PIC X(112) VALUE "minecraft:causes_suffocation".
+    05 FILLER PIC X(112) VALUE "minecraft:blocks_motion".
+    05 FILLER PIC X(112) VALUE "minecraft:blocks_motion_no_leaves".
+    05 FILLER PIC X(112) VALUE "minecraft:blocks_motion_in_heightmap".
+    05 FILLER PIC X(112) VALUE "minecraft:blocks_motion_in_heightmap_no_leaves".
  01 WS-TAG-TABLE REDEFINES WS-TAG-NAMES.
-    05 WS-TAG-NAME         PIC X(64) OCCURS 6 TIMES.
+    05 WS-TAG-NAME         PIC X(112) OCCURS 6 TIMES.
  PROCEDURE DIVISION.
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE

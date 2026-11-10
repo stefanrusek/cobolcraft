@@ -22,9 +22,9 @@
  01 WS-BODY-LENGTH         BINARY-LONG.
  01 WS-PACKET-ID           BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-REGISTRY-LENGTH     BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-DATA                PIC X(16).
  01 WS-DATA-LENGTH         BINARY-LONG.
@@ -33,10 +33,10 @@
  01 WS-IDS.
     05 WS-ID               BINARY-LONG OCCURS 64 TIMES.
  01 WS-ID-COUNT            BINARY-LONG.
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-TAG-LENGTH          BINARY-LONG.
  01 WS-TAG-REGISTRY        PIC X(48).
- 01 WS-PAYLOAD             PIC X(64).
+ 01 WS-PAYLOAD             PIC X(112).
  01 WS-PAYLOAD-LENGTH      BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-ENTRY-ID            BINARY-LONG.

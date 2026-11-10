@@ -9,7 +9,7 @@
     05 TG-ENTRY-COUNT        BINARY-LONG.
     05 TG-ERRORS             BINARY-LONG.
     05 TG-TAG OCCURS 4096 TIMES.
-       10 TG-T-KEY           PIC X(64).
+       10 TG-T-KEY           PIC X(112).
        10 TG-T-REGISTRY      PIC X(48).
        10 TG-T-STATE         PIC 9.         *> 0 not built, 1 being built, 2 built, 3 failed
        10 TG-T-MARK          PIC 9.         *> visited mark of TAG-REACHES
@@ -18,5 +18,5 @@
        10 TG-E-KIND          PIC X.         *> E element, T tag reference
        10 TG-E-REQUIRED      PIC X.         *> Y or N
        10 TG-E-ALIVE         PIC X.         *> Y, or N after a later file's replace
-       10 TG-E-ID            PIC X(64).     *> namespace:path
+       10 TG-E-ID            PIC X(112).     *> namespace:path
        10 TG-E-PACK          PIC X(32).     *> the pack the entry came from

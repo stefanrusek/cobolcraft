@@ -10,7 +10,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REG                 PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(2000).
@@ -20,45 +20,45 @@
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-ACCEPT.
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:amethyst_geode".
+    05 FILLER PIC X(112) VALUE "minecraft:amethyst_geode".
     05 FILLER PIC X(48) VALUE "geode".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:pointed_dripstone_a".
+    05 FILLER PIC X(112) VALUE "minecraft:pointed_dripstone_a".
     05 FILLER PIC X(48) VALUE "speleothem".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:dripstone_cluster".
+    05 FILLER PIC X(112) VALUE "minecraft:dripstone_cluster".
     05 FILLER PIC X(48) VALUE "speleothem_cluster".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sulfur_spike_cluster".
+    05 FILLER PIC X(112) VALUE "minecraft:sulfur_spike_cluster".
     05 FILLER PIC X(48) VALUE "speleothem_cluster".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:large_dripstone".
+    05 FILLER PIC X(112) VALUE "minecraft:large_dripstone".
     05 FILLER PIC X(48) VALUE "large_dripstone".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sculk_patch_deep_dark".
+    05 FILLER PIC X(112) VALUE "minecraft:sculk_patch_deep_dark".
     05 FILLER PIC X(48) VALUE "sculk_patch".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:monster_room".
+    05 FILLER PIC X(112) VALUE "minecraft:monster_room".
     05 FILLER PIC X(48) VALUE "monster_room".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:fossil_coal".
+    05 FILLER PIC X(112) VALUE "minecraft:fossil_coal".
     05 FILLER PIC X(48) VALUE "fossil".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:fossil_diamonds".
+    05 FILLER PIC X(112) VALUE "minecraft:fossil_diamonds".
     05 FILLER PIC X(48) VALUE "fossil".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sulfur_spring_a".
+    05 FILLER PIC X(112) VALUE "minecraft:sulfur_spring_a".
     05 FILLER PIC X(48) VALUE "template".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:desert_well_part".
+    05 FILLER PIC X(112) VALUE "minecraft:desert_well_part".
     05 FILLER PIC X(48) VALUE "template".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sulfur_pool_seq".
+    05 FILLER PIC X(112) VALUE "minecraft:sulfur_pool_seq".
     05 FILLER PIC X(48) VALUE SPACES.
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPT.
     05 WS-A OCCURS 12 TIMES.
        10 WS-A-REG     PIC X(48).
-       10 WS-A-KEY     PIC X(64).
+       10 WS-A-KEY     PIC X(112).
        10 WS-A-TYPE    PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "a geode without blocks".
@@ -82,7 +82,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""invalid_blocks"":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack" &
         """:{""generate_crack_chance"":0.95},""invalid_blocks_threshold"":1,""outer_wall_distan" &
         "ce"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_inclusive"":8},""use_altern" &
@@ -92,8 +92,8 @@
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:geode"",""blocks"":{""filling_provider"":3,""inner_layer_provider"":" &
         "{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_provider"":{""id"":""minecr" &
         "aft:budding_amethyst""},""middle_layer_provider"":{""id"":""minecraft:calcite""},""outer" &
-        "_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_placements"":[{""Name"":""m" &
-        "inecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_cluster""}],""cannot_rep" &
+        "_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_placements"":[{""id""  :""m" &
+        "inecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_cluster""}],""cannot_rep" &
         "lace"":""#minecraft:features_cannot_replace"",""invalid_blocks"":""#minecraft:geode_in" &
         "valid_blocks""},""layers"":{},""crack"":{""generate_crack_chance"":0.95},""invalid_block" &
         "s_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uniform"",""min_inclusive""" &
@@ -126,7 +126,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":3},""layers"":{},""crack"":{""generate_crack_chance"":0.95},""invalid_blocks_threshold" &
         """:1,""outer_wall_distance"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_inc" &
@@ -137,7 +137,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""crack"":{""generate_crack_chance"":0.95},""inva" &
         "lid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uniform"",""min_i" &
@@ -148,7 +148,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{""filling"":50.5},""crack"":{""generate" &
         "_crack_chance"":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":" &
@@ -160,7 +160,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{""inner_layer"":0.001},""crack"":{""gen" &
         "erate_crack_chance"":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""t" &
@@ -172,7 +172,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""invalid_blocks_threshold"":1,""ou" &
         "ter_wall_distance"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_inclusive""" &
@@ -183,7 +183,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":1.5},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:unif" &
@@ -194,7 +194,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""base_crack_size"":6},""i" &
         "nvalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uniform"",""mi" &
@@ -205,7 +205,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""crack_point_offset"":11" &
         "},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uniform""" &
@@ -216,7 +216,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""crack_point_offset"":1." &
         "5},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uniform" &
@@ -227,7 +227,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uni" &
@@ -239,7 +239,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uni" &
@@ -250,7 +250,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":0.95},""outer_wall_distance"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_" &
@@ -261,7 +261,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uni" &
@@ -273,7 +273,7 @@
         "nner_layer_provider"":{""id"":""minecraft:amethyst_block""},""alternate_inner_layer_pr" &
         "ovider"":{""id"":""minecraft:budding_amethyst""},""middle_layer_provider"":{""id"":""minec" &
         "raft:calcite""},""outer_layer_provider"":{""id"":""minecraft:smooth_basalt""},""inner_pl" &
-        "acements"":[{""Name"":""minecraft:small_amethyst_bud""},{""Name"":""minecraft:amethyst_c" &
+        "acements"":[{""id""  :""minecraft:small_amethyst_bud""},{""id""  :""minecraft:amethyst_c" &
         "luster""}],""cannot_replace"":""#minecraft:features_cannot_replace"",""invalid_blocks""" &
         ":""#minecraft:geode_invalid_blocks""},""layers"":{},""crack"":{""generate_crack_chance""" &
         ":0.95},""invalid_blocks_threshold"":1,""outer_wall_distance"":{""type"":""minecraft:uni" &

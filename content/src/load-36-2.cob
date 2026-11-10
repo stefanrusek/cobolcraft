@@ -15,40 +15,78 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "processor_list".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "L processors=processor".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "L processors=processor".
     05 FILLER PIC X(24) VALUE "processor".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "S processor_type;l rules=processor_rule;l blocks=block_state;h rottable_blocks=block;n integrity=0..1;h value=block;t de".
-    05 FILLER PIC X(120) VALUE "legate=processor;v limit=int_provider;s heightmap;i offset;n mossiness".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "processor_type".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_rot".
+    05 FILLER PIC X(600) VALUE "N integrity=0..1;h rottable_blocks=block".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "capped".
+    05 FILLER PIC X(600) VALUE "T delegate=processor;V limit=int_provider".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "protected_blocks".
+    05 FILLER PIC X(600) VALUE "H value=block".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "rule".
+    05 FILLER PIC X(600) VALUE "L rules=processor_rule".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "gravity".
+    05 FILLER PIC X(600) VALUE "s heightmap;i offset".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_ignore".
+    05 FILLER PIC X(600) VALUE "l blocks=block_state".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_age".
+    05 FILLER PIC X(600) VALUE "n mossiness".
     05 FILLER PIC X(24) VALUE "processor_rule".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "T input_predicate=rule_test;T location_predicate=rule_test;x position_predicate;T output_state=block_state;x block_entit".
-    05 FILLER PIC X(120) VALUE "y_modifier".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "T input_predicate=rule_test;T location_predicate=rule_test;Q output_state;x po" &
+        "sition_predicate;x block_entity_modifier".
     05 FILLER PIC X(24) VALUE "rule_test".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "S predicate_type;d block;t block_state=block_state;s tag;n probability=0..1;i min_inclusive;i max_inclusive;l rules=rule".
-    05 FILLER PIC X(120) VALUE "_test;t rule=rule_test".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "predicate_type".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "always_true".
+    05 FILLER PIC X(600) VALUE SPACES.
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "all_of".
+    05 FILLER PIC X(600) VALUE "L rules=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "any_of".
+    05 FILLER PIC X(600) VALUE "L rules=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "block_match".
+    05 FILLER PIC X(600) VALUE "D block".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "blockstate_match".
+    05 FILLER PIC X(600) VALUE "Q block_state".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "height_match".
+    05 FILLER PIC X(600) VALUE "I min_inclusive;I max_inclusive".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "not".
+    05 FILLER PIC X(600) VALUE "T rule=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "random_block_match".
+    05 FILLER PIC X(600) VALUE "D block;N probability=0..1".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "tag_match".
+    05 FILLER PIC X(600) VALUE "D tag".
     05 FILLER PIC X(24) VALUE "block_state".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "D Name;o Properties".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
- 01 WS-COUNT              BINARY-LONG VALUE 5.
+    05 FILLER PIC X(600) VALUE "D id;o properties".
+    05 FILLER PIC X(24) VALUE "pos_rule_test".
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "predicate_type".
+    05 FILLER PIC X(24) VALUE "pos_rule_test".
+    05 FILLER PIC X(48) VALUE "axis_aligned_linear_pos".
+    05 FILLER PIC X(600) VALUE "n min_chance=0..1;N max_chance=0..1;i min_dist;I max_dist;e axis=x|y|z".
+    05 FILLER PIC X(24) VALUE "pos_rule_test".
+    05 FILLER PIC X(48) VALUE "linear_pos".
+    05 FILLER PIC X(600) VALUE "n min_chance=0..1;n max_chance=0..1;i min_dist;i max_dist".
+ 01 WS-COUNT              BINARY-LONG VALUE 24.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/processor_list".
  01 WS-GROUP-1            PIC X(24) VALUE "processor_list".
  01 WS-STRICT-1           BINARY-LONG VALUE 1.

@@ -1,1 +1,1 @@
-{"type":"minecraft:noise","seed":2345,"noise":{"base_octave":0,"base_amplitude":1.0},"scale":0.005,"states":[{"Name":"minecraft:a"},{"Name":"minecraft:b"}]}
+{"type":"minecraft:noise","seed":2345,"noise":{"base_octave":0,"base_amplitude":1.0},"scale":0.005,"states":["minecraft:a","minecraft:b"]}

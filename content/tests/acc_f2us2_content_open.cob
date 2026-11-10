@@ -17,9 +17,9 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
- 01 WS-REGISTRY            PIC X(64).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-REGISTRY            PIC X(112).
+ 01 WS-TAG                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-RESULT              BINARY-LONG.

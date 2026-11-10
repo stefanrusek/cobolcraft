@@ -22,24 +22,24 @@
     05 RC-COUNT              BINARY-LONG.
     05 RC-UNLOCK-COUNT       BINARY-LONG.
     05 RC-ROW OCCURS 4096 TIMES.
-       10 RR-KEY             PIC X(64).
+       10 RR-KEY             PIC X(112).
        10 RR-SERIALIZER      BINARY-LONG.
        10 RR-SPECIAL         BINARY-LONG.
        10 RR-GROUP           PIC X(48).
        10 RR-CATEGORY        PIC X(24).
        10 RR-NOTIFY          BINARY-LONG.
-       10 RR-RESULT-ID       PIC X(64).
+       10 RR-RESULT-ID       PIC X(112).
        10 RR-RESULT-COUNT    BINARY-LONG.
        10 RR-WIDTH           BINARY-LONG.
        10 RR-HEIGHT          BINARY-LONG.
        10 RR-ING-COUNT       BINARY-LONG.
-       10 RR-ING             PIC X(160) OCCURS 9 TIMES.
+       10 RR-ING             PIC X(800) OCCURS 9 TIMES.
        10 RR-MATERIAL-MIN    BINARY-LONG.
        10 RR-MATERIAL-MAX    BINARY-LONG.
        10 RR-ADD-COUNT       BINARY-LONG.
        10 RR-COOK-TIME       BINARY-LONG.
        10 RR-EXPERIENCE      FLOAT-LONG.
-       10 RR-EXTRA           PIC X(64).
+       10 RR-EXTRA           PIC X(112).
        10 RR-UNLOCK-FIRST    BINARY-LONG.
        10 RR-UNLOCK-N        BINARY-LONG.
     05 RC-UNLOCK OCCURS 4096 TIMES.

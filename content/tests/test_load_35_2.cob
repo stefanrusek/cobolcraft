@@ -18,92 +18,92 @@
  01 WS-LABEL               PIC X(60).
  01 WS-ELEMENTS.
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:simple".
+    05 FILLER PIC X(112) VALUE "minecraft:simple".
     05 FILLER PIC X(48) VALUE "simple".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:cave_vines_head".
+    05 FILLER PIC X(112) VALUE "minecraft:cave_vines_head".
     05 FILLER PIC X(48) VALUE "weighted".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:random".
+    05 FILLER PIC X(112) VALUE "minecraft:random".
     05 FILLER PIC X(48) VALUE "random_block".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:tagged".
+    05 FILLER PIC X(112) VALUE "minecraft:tagged".
     05 FILLER PIC X(48) VALUE "random_block".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:rotated".
+    05 FILLER PIC X(112) VALUE "minecraft:rotated".
     05 FILLER PIC X(48) VALUE "rotated".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:copy".
+    05 FILLER PIC X(112) VALUE "minecraft:copy".
     05 FILLER PIC X(48) VALUE "copy_properties".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:randomized".
+    05 FILLER PIC X(112) VALUE "minecraft:randomized".
     05 FILLER PIC X(48) VALUE "randomized_int".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:soil_beneath_tree".
+    05 FILLER PIC X(112) VALUE "minecraft:soil_beneath_tree".
     05 FILLER PIC X(48) VALUE "rule_based".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:noise".
+    05 FILLER PIC X(112) VALUE "minecraft:noise".
     05 FILLER PIC X(48) VALUE "noise".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:dual".
+    05 FILLER PIC X(112) VALUE "minecraft:dual".
     05 FILLER PIC X(48) VALUE "dual_noise".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(64) VALUE "minecraft:threshold".
+    05 FILLER PIC X(112) VALUE "minecraft:threshold".
     05 FILLER PIC X(48) VALUE "noise_threshold".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_matching".
+    05 FILLER PIC X(112) VALUE "minecraft:p_matching".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_blocks_list".
+    05 FILLER PIC X(112) VALUE "minecraft:p_blocks_list".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_tag".
+    05 FILLER PIC X(112) VALUE "minecraft:p_tag".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_fluids".
+    05 FILLER PIC X(112) VALUE "minecraft:p_fluids".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_biomes".
+    05 FILLER PIC X(112) VALUE "minecraft:p_biomes".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_sturdy".
+    05 FILLER PIC X(112) VALUE "minecraft:p_sturdy".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_solid".
+    05 FILLER PIC X(112) VALUE "minecraft:p_solid".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_replaceable".
+    05 FILLER PIC X(112) VALUE "minecraft:p_replaceable".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_survive".
+    05 FILLER PIC X(112) VALUE "minecraft:p_survive".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_inside".
+    05 FILLER PIC X(112) VALUE "minecraft:p_inside".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_any".
+    05 FILLER PIC X(112) VALUE "minecraft:p_any".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_all".
+    05 FILLER PIC X(112) VALUE "minecraft:p_all".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_not".
+    05 FILLER PIC X(112) VALUE "minecraft:p_not".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_height".
+    05 FILLER PIC X(112) VALUE "minecraft:p_height".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:p_volume".
+    05 FILLER PIC X(112) VALUE "minecraft:p_volume".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-ELEMENT-TABLE REDEFINES WS-ELEMENTS.
     05 WS-E OCCURS 26 TIMES.
        10 WS-E-REGISTRY      PIC X(48).
-       10 WS-E-KEY           PIC X(64).
+       10 WS-E-KEY           PIC X(112).
        10 WS-E-TYPE          PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "a provider without a type".
     05 FILLER PIC X(48) VALUE "worldgen/block_state_provider".
-    05 FILLER PIC X(60) VALUE '{"state":{"Name":"minecraft:stone"}}'.
+    05 FILLER PIC X(60) VALUE '{"state":{"id"  :"minecraft:stone"}}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.

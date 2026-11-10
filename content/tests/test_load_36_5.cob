@@ -11,7 +11,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-T                   PIC X(70).
@@ -20,24 +20,24 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ACCEPTS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:mineshaft".
+    05 FILLER PIC X(112) VALUE "minecraft:mineshaft".
     05 FILLER PIC X(48) VALUE "mineshaft".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:mineshaft_mesa".
+    05 FILLER PIC X(112) VALUE "minecraft:mineshaft_mesa".
     05 FILLER PIC X(48) VALUE "mineshaft".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:stronghold".
+    05 FILLER PIC X(112) VALUE "minecraft:stronghold".
     05 FILLER PIC X(48) VALUE "stronghold".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:mineshafts".
+    05 FILLER PIC X(112) VALUE "minecraft:mineshafts".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:strongholds".
+    05 FILLER PIC X(112) VALUE "minecraft:strongholds".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPTS.
     05 WS-ACCEPT OCCURS 5 TIMES.
        10 WS-A-REGISTRY    PIC X(48).
-       10 WS-A-KEY         PIC X(64).
+       10 WS-A-KEY         PIC X(112).
        10 WS-A-TYPE        PIC X(48).
  01 WS-REJECTS.
     05 FILLER PIC X(70) VALUE "a mineshaft without mineshaft_type".

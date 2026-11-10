@@ -13,18 +13,18 @@
 *>     condition is of type biome (biomes), structure (structures) or moon_brightness (range).
 *> A list is kept as the file wrote it (duplicate entries stay two items, 44 section 7.2: the overlay of 44 section 7.3
 *> is the engine's matter). The accessors read the stored file on every call:
-*>   SPAWN-LIST-COUNT USING biome key (PIC X(64)), category (PIC X(32)), count out (BINARY-LONG: the entries of the list, 0 for a
+*>   SPAWN-LIST-COUNT USING biome key (PIC X(112)), category (PIC X(32)), count out (BINARY-LONG: the entries of the list, 0 for a
 *>     category the biome lists empty, -1 for a category it does not define, 44 section 7.3), status out (CT-OK, CT-NOT-FOUND for
 *>     a biome that is not stored, with count -1);
-*>   SPAWN-LIST-ENTRY USING biome key, category, index (1-based), type out (PIC X(64)), weight, minimum, maximum (BINARY-LONG; a
+*>   SPAWN-LIST-ENTRY USING biome key, category, index (1-based), type out (PIC X(112)), weight, minimum, maximum (BINARY-LONG; a
 *>     bare integer count is both bounds, uniform gives min_inclusive and max_inclusive, constant its value, 18 section 6.5
 *>     step 5), status out (CT-OK, CT-NOT-FOUND);
-*>   SPAWN-COST USING biome key, entity key (PIC X(64), as the file names it), charge, energy budget (FLOAT-LONG), status out
+*>   SPAWN-COST USING biome key, entity key (PIC X(112), as the file names it), charge, energy budget (FLOAT-LONG), status out
 *>     (CT-OK, CT-NOT-FOUND for a biome or an entity without a cost);
 *>   SPAWN-VARIANT-COUNT USING registry (PIC X(48), such as "wolf_variant"), key, count out, status out (CT-OK, CT-NOT-FOUND with
 *>     count 0): the selectors of the variant;
 *>   SPAWN-VARIANT-SELECTOR USING registry, key, index (1-based), priority out, kind out (0 no condition, 1 biome, 2 structure,
-*>     3 moon_brightness), argument out (PIC X(64): the first identifier or #tag of biomes or structures, spaces otherwise),
+*>     3 moon_brightness), argument out (PIC X(112): the first identifier or #tag of biomes or structures, spaces otherwise),
 *>     status out (CT-OK, CT-NOT-FOUND). The moon_brightness range stays in the stored file for the engine.
 *> Documented assumptions: S1 a biome without the attribute, or a biome whose attribute does not name a category, has no natural
 *> spawns of it (-1, 44 section 7.3); S2 the entries and costs are required to carry all their members (type, weight and count;
@@ -42,7 +42,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ATTRIBUTES          PIC X(32) VALUE "attributes".
- 01 WS-KEY                 PIC X(64) VALUE "minecraft:gameplay/natural_mob_spawns".
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:gameplay/natural_mob_spawns".
  01 WS-KEY-LENGTH          BINARY-LONG VALUE 37.
  01 WS-ROOT                BINARY-LONG VALUE 1.
  01 WS-NODE                BINARY-LONG.
@@ -81,7 +81,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-CATEGORIES-CHECK.
-*> USING JSON-DOC, the spawns_by_category object, biome key (PIC X(64)): every category is one of the 8 mob categories with a
+*> USING JSON-DOC, the spawns_by_category object, biome key (PIC X(112)): every category is one of the 8 mob categories with a
 *> list of entries of the shape spawn_entry (one error each otherwise, WG-FAIL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -106,12 +106,12 @@
  01 WS-OK                  BINARY-LONG.
  01 WS-NAME-POS            BINARY-LONG.
  01 WS-NAME-LENGTH         BINARY-LONG.
- 01 WS-NAME                PIC X(64).
+ 01 WS-NAME                PIC X(112).
  01 WS-DETAIL              PIC X(120).
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-MAP                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  PROCEDURE DIVISION USING JSON-DOC L-MAP L-KEY.
      SET ADDRESS OF B-TEXT TO JD-ADDR
      MOVE JN-FIRST(L-MAP) TO WS-MEMBER
@@ -119,7 +119,7 @@
          MOVE JN-KEY-POS(WS-MEMBER) TO WS-NAME-POS
          MOVE JN-KEY-LENGTH(WS-MEMBER) TO WS-NAME-LENGTH
          MOVE SPACES TO WS-NAME
-         IF WS-NAME-LENGTH <= 64
+         IF WS-NAME-LENGTH <= 112
              MOVE B-TEXT(WS-NAME-POS:WS-NAME-LENGTH) TO WS-NAME
          END-IF
          MOVE 0 TO WS-OK
@@ -151,7 +151,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-VALUE-CHECK.
-*> USING JSON-DOC, the value of the attribute natural_mob_spawns, biome key (PIC X(64)): the value and its argument are objects,
+*> USING JSON-DOC, the value of the attribute natural_mob_spawns, biome key (PIC X(112)): the value and its argument are objects,
 *> the settings pass the shape spawn_settings, the categories pass SPAWN-CATEGORIES-CHECK and every spawn cost passes the shape
 *> spawn_cost (errors reported with WG-FAIL).
  DATA DIVISION.
@@ -169,7 +169,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-VALUE                BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  PROCEDURE DIVISION USING JSON-DOC L-VALUE L-KEY.
      MOVE 0 TO WS-SETTINGS
      IF JN-TYPE(L-VALUE) = JT-OBJECT
@@ -214,7 +214,7 @@
  01 WS-E                   BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  PROCEDURE DIVISION.
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > SH-ELEMENT-COUNT
          IF WS-E > SH-MARK AND SH-E-REGISTRY(WS-E) = "worldgen/biome"
@@ -309,7 +309,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-CATEGORY-NODE.
-*> USING JSON-DOC, biome key (PIC X(64)), category (PIC X(32)), list node out (BINARY-LONG: the list of the category, 0 when the
+*> USING JSON-DOC, biome key (PIC X(112)), category (PIC X(32)), list node out (BINARY-LONG: the list of the category, 0 when the
 *> biome does not define it), settings node out (BINARY-LONG: the settings object, 0 when the biome has no spawn data),
 *> status out (CT-OK, CT-NOT-FOUND for a biome that is not stored). The biome file is parsed into the document.
  DATA DIVISION.
@@ -325,7 +325,7 @@
  01 B-TEXT                 PIC X(268435456) BASED.
  LINKAGE SECTION.
  COPY JSONDOC.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-CATEGORY             PIC X(32).
  01 L-LIST                 BINARY-LONG.
  01 L-SETTINGS             BINARY-LONG.
@@ -351,7 +351,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-LIST-COUNT.
-*> USING biome key (PIC X(64)), category (PIC X(32)), count out, status out: the header of this file.
+*> USING biome key (PIC X(112)), category (PIC X(32)), count out, status out: the header of this file.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -359,7 +359,7 @@
  01 WS-LIST                BINARY-LONG.
  01 WS-SETTINGS            BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-CATEGORY             PIC X(32).
  01 L-COUNT                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -374,7 +374,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-LIST-ENTRY.
-*> USING biome key, category, index (1-based), type out (PIC X(64)), weight, minimum, maximum (BINARY-LONG), status out: the
+*> USING biome key, category, index (1-based), type out (PIC X(112)), weight, minimum, maximum (BINARY-LONG), status out: the
 *> header of this file.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -397,10 +397,10 @@
  01 WS-LOW                 USAGE FLOAT-LONG.
  01 WS-HIGH                USAGE FLOAT-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-CATEGORY             PIC X(32).
  01 L-INDEX                BINARY-LONG.
- 01 L-TYPE                 PIC X(64).
+ 01 L-TYPE                 PIC X(112).
  01 L-WEIGHT               BINARY-LONG.
  01 L-MIN                  BINARY-LONG.
  01 L-MAX                  BINARY-LONG.
@@ -444,7 +444,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-COST.
-*> USING biome key (PIC X(64)), entity key (PIC X(64)), charge, energy budget (FLOAT-LONG), status out: the header of this file.
+*> USING biome key (PIC X(112)), entity key (PIC X(112)), charge, energy budget (FLOAT-LONG), status out: the header of this file.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -460,8 +460,8 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
- 01 L-ENTITY               PIC X(64).
+ 01 L-KEY                  PIC X(112).
+ 01 L-ENTITY               PIC X(112).
  01 L-CHARGE               USAGE FLOAT-LONG.
  01 L-BUDGET               USAGE FLOAT-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -486,7 +486,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-VARIANT-NODE.
-*> USING JSON-DOC, registry (PIC X(48)), key (PIC X(64)), list node out (BINARY-LONG: spawn_conditions of the stored variant, 0
+*> USING JSON-DOC, registry (PIC X(48)), key (PIC X(112)), list node out (BINARY-LONG: spawn_conditions of the stored variant, 0
 *> when the variant is not stored). The variant file is parsed into the document.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -499,7 +499,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-LIST                 BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-REGISTRY L-KEY L-LIST.
      MOVE 0 TO L-LIST
@@ -515,7 +515,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-VARIANT-COUNT.
-*> USING registry (PIC X(48)), key (PIC X(64)), count out, status out: the header of this file.
+*> USING registry (PIC X(48)), key (PIC X(112)), count out, status out: the header of this file.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -523,7 +523,7 @@
  01 WS-LIST                BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-KEY L-COUNT L-STATUS.
@@ -539,7 +539,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-VARIANT-SELECTOR.
-*> USING registry (PIC X(48)), key (PIC X(64)), index (1-based), priority out, kind out, argument out (PIC X(64)), status out:
+*> USING registry (PIC X(48)), key (PIC X(112)), index (1-based), priority out, kind out, argument out (PIC X(112)), status out:
 *> the header of this file.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -561,11 +561,11 @@
  01 WS-NUMBER              USAGE FLOAT-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-INDEX                BINARY-LONG.
  01 L-PRIORITY             BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
- 01 L-ARGUMENT             PIC X(64).
+ 01 L-ARGUMENT             PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-KEY L-INDEX L-PRIORITY L-KIND L-ARGUMENT L-STATUS.
      MOVE 0 TO L-PRIORITY L-KIND WS-ITEM WS-HOLDER
@@ -611,7 +611,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPAWN-HOLDER-TEXT.
-*> USING JSON-DOC, holder set node, text out (PIC X(64)): the identifier or #tag of a string, or of the first element of an
+*> USING JSON-DOC, holder set node, text out (PIC X(112)): the identifier or #tag of a string, or of the first element of an
 *> array; spaces for anything else.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -621,7 +621,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-HOLDER               BINARY-LONG.
- 01 L-TEXT                 PIC X(64).
+ 01 L-TEXT                 PIC X(112).
  PROCEDURE DIVISION USING JSON-DOC L-HOLDER L-TEXT.
      MOVE SPACES TO L-TEXT
      MOVE L-HOLDER TO WS-NODE

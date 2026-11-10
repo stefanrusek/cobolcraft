@@ -1,6 +1,6 @@
 {"sea_level": 63, "legacy_random_source": false, "disable_mob_generation": false,
  "noise": {"min_y": -64, "height": 384},
- "default_block": {"Name": "minecraft:stone"}, "default_fluid": {"Name": "minecraft:water", "Properties": {"level": "0"}},
+ "default_block": {"id": "minecraft:stone"}, "default_fluid": {"id": "minecraft:water", "properties": {"level": "0"}},
  "material_rule": "minecraft:overworld",
  "noise_router": {"temperature": "minecraft:overworld/temperature", "vegetation": "minecraft:overworld/vegetation",
    "continents": "minecraft:overworld/continents", "erosion": "minecraft:overworld/erosion", "depth": "minecraft:overworld/depth",
@@ -10,5 +10,5 @@
    "fluid_level_floodedness": "minecraft:aquifer_floodedness", "fluid_level_spread": "minecraft:aquifer_spread",
    "lava": "minecraft:aquifer_lava", "exclusion": 0.0, "surface_level": "minecraft:overworld/chunk_surface_level"},
  "spawn_target": [
-   {"continentalness": [-0.11, 1.0], "erosion": [-1.0, 1.0], "temperature": [-1.0, 1.0], "vegetation": [-1.0, 1.0], "ridges": [-1.0, -0.16]},
-   {"continentalness": [-0.11, 1.0], "erosion": [-1.0, 1.0], "temperature": [-1.0, 1.0], "vegetation": [-1.0, 1.0], "ridges": [0.16, 1.0]}]}
+   {"minecraft:overworld/continents": [-0.11, 1.0], "minecraft:overworld/erosion": [-1.0, 1.0], "minecraft:overworld/temperature": [-1.0, 1.0], "minecraft:overworld/vegetation": [-1.0, 1.0], "minecraft:overworld/ridges": [-1.0, -0.16]},
+   {"minecraft:overworld/continents": [-0.11, 1.0], "minecraft:overworld/erosion": [-1.0, 1.0], "minecraft:overworld/temperature": [-1.0, 1.0], "minecraft:overworld/vegetation": [-1.0, 1.0], "minecraft:overworld/ridges": [0.16, 1.0]}]}

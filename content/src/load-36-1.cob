@@ -13,158 +13,74 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "buried_treasure".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "desert_pyramid".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "end_city".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "fortress".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "igloo".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "jigsaw".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "jungle_temple".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "mineshaft".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "nether_fossil".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "ocean_monument".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "ocean_ruin".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "ruined_portal".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "shipwreck".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "stronghold".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "swamp_hut".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "woodland_mansion".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure_set".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "L structures=structure_entry;T placement=structure_placement".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "L structures=structure_entry;T placement=structure_placement".
     05 FILLER PIC X(24) VALUE "structure_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "R structure=structure;I weight=1..".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "R structure=structure;I weight=1..".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "random_spread".
-    05 FILLER PIC X(120) VALUE "a locate_offset;s frequency_reduction_method;n frequency=0..1;I salt=0..;t exclusion_zone=exclusion_zone;I spacing=0..40".
-    05 FILLER PIC X(120) VALUE "96;I separation=0..4096;e spread_type=linear|triangular".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "a locate_offset;s frequency_reduction_method;n frequency=0..1;I salt=0..;t exc" &
+        "lusion_zone=exclusion_zone;I spacing=0..4096;I separation=0..4096;e spread_typ" &
+        "e=linear|triangular".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "concentric_rings".
-    05 FILLER PIC X(120) VALUE "a locate_offset;s frequency_reduction_method;n frequency=0..1;I salt=0..;t exclusion_zone=exclusion_zone;I distance=0..1".
-    05 FILLER PIC X(120) VALUE "023;I spread=0..1023;I count=1..4095;H preferred_biomes=biome".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "a locate_offset;s frequency_reduction_method;n frequency=0..1;I salt=0..;t exc" &
+        "lusion_zone=exclusion_zone;I distance=0..1023;I spread=0..1023;I count=1..4095" &
+        ";H preferred_biomes=biome".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "dimension_origin".
-    05 FILLER PIC X(120) VALUE "x type".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "exclusion_zone".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "R other_set=structure_set;I chunk_count=1..16".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "R other_set=structure_set;I chunk_count=1..16".
  01 WS-COUNT              BINARY-LONG VALUE 22.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/structure".
  01 WS-GROUP-1            PIC X(24) VALUE "structure".

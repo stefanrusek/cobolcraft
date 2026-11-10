@@ -37,7 +37,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-NAME                PIC X(40).
  01 WS-GOT                 PIC X(100).
  01 WS-POS                 BINARY-LONG.

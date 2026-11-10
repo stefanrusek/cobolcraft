@@ -99,7 +99,7 @@
 *> A registry (23 section 3.4): the key, and its entries in id order (CT-ENTRY table at
 *> CTR-ENTRY-ADDR). Payloads are the strict-JSON or NBT bytes of the entry, kept in one buffer.
  01 CT-REGISTRY.
-    05 CTR-KEY               PIC X(64).
+    05 CTR-KEY               PIC X(112).
     05 CTR-KEY-LENGTH        BINARY-LONG.
     05 CTR-ENTRY-COUNT       BINARY-LONG.
     05 CTR-ENTRY-ADDR        USAGE POINTER.     *> CTR-ENTRY-COUNT CT-ENTRY rows, id order
@@ -107,14 +107,14 @@
     05 CTR-PAYLOAD-LENGTH    BINARY-LONG.
 *> One entry: the id is its index in the table plus 0 (the table is in id order).
  01 CT-ENTRY.
-    05 CTE-KEY               PIC X(64).
+    05 CTE-KEY               PIC X(112).
     05 CTE-KEY-LENGTH        BINARY-LONG.
     05 CTE-PAYLOAD-OFFSET    BINARY-LONG.       *> 0-based, into CTR-PAYLOAD-ADDR
     05 CTE-PAYLOAD-LENGTH    BINARY-LONG.
 *> A resolved tag (23 section 6.3): the key and the member ids (BINARY-LONG table, ascending
 *> order of the tag file, 23 section 6.4).
  01 CT-TAG.
-    05 CTT-KEY               PIC X(64).
+    05 CTT-KEY               PIC X(112).
     05 CTT-KEY-LENGTH        BINARY-LONG.
     05 CTT-REGISTRY          PIC X(48).         *> the registry the members belong to
     05 CTT-MEMBER-COUNT      BINARY-LONG.

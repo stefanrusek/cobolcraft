@@ -11,7 +11,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-T                   PIC X(70).
@@ -20,27 +20,27 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ACCEPTS.
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:empty".
+    05 FILLER PIC X(112) VALUE "minecraft:empty".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:mossify".
+    05 FILLER PIC X(112) VALUE "minecraft:mossify".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:rot".
+    05 FILLER PIC X(112) VALUE "minecraft:rot".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:capped".
+    05 FILLER PIC X(112) VALUE "minecraft:capped".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:tests".
+    05 FILLER PIC X(112) VALUE "minecraft:tests".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:others".
+    05 FILLER PIC X(112) VALUE "minecraft:others".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPTS.
     05 WS-ACCEPT OCCURS 6 TIMES.
        10 WS-A-REGISTRY    PIC X(48).
-       10 WS-A-KEY         PIC X(64).
+       10 WS-A-KEY         PIC X(112).
        10 WS-A-TYPE        PIC X(48).
  01 WS-REJECTS.
     05 FILLER PIC X(70) VALUE "a list without processors".
@@ -94,7 +94,7 @@
     05 FILLER PIC X(70) VALUE "a rule without input_predicate".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"location_predicate":{"predicate_type":"minecraft:always_tru'.
-    05 FILLER PIC X(120) VALUE 'e"},"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE 'e"},"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -102,7 +102,7 @@
     05 FILLER PIC X(70) VALUE "a rule without location_predicate".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:always_true"}'.
-    05 FILLER PIC X(120) VALUE ',"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE ',"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -118,7 +118,7 @@
     05 FILLER PIC X(70) VALUE "an output_state without Name".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:always_true"}'.
-    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Properties":{}}}]}]}'.
+    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"properties":{}}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -126,15 +126,15 @@
     05 FILLER PIC X(70) VALUE "an output_state whose Name is no id".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:always_true"}'.
-    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Name":"No Id"}}]}]}'.
+    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"id"  :"No Id"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(100).
-    05 FILLER PIC X(70) VALUE "an output_state that is a string".
+    05 FILLER PIC X(70) VALUE "an output_state that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:always_true"}'.
-    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":"a:b"}]}]}'.
+    05 FILLER PIC X(120) VALUE ',"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":  7}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -142,7 +142,7 @@
     05 FILLER PIC X(70) VALUE "a rule test without predicate_type".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"block":"a:b"},"location_predicate":{"pre'.
-    05 FILLER PIC X(120) VALUE 'dicate_type":"minecraft:always_true"},"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE 'dicate_type":"minecraft:always_true"},"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -151,14 +151,14 @@
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:random_block_'.
     05 FILLER PIC X(120) VALUE 'match","block":"a:b","probability":1.5},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{'.
-    05 FILLER PIC X(120) VALUE '"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE '"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(100).
     05 FILLER PIC X(70) VALUE "a rule test with a bad block id".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:block_match",'.
-    05 FILLER PIC X(120) VALUE '"block":"No Id"},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE '"block":"No Id"},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -167,14 +167,14 @@
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:height_match"'.
     05 FILLER PIC X(120) VALUE ',"min_inclusive":0.5,"max_inclusive":3},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{'.
-    05 FILLER PIC X(120) VALUE '"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE '"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(100).
     05 FILLER PIC X(70) VALUE "an all_of whose rules has a bad rule".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:all_of","rule'.
-    05 FILLER PIC X(120) VALUE 's":[{"block":"a:b"}]},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE 's":[{"block":"a:b"}]},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -182,7 +182,7 @@
     05 FILLER PIC X(70) VALUE "a not whose rule is a number".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:not","rule":3'.
-    05 FILLER PIC X(120) VALUE '},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Name":"a:b"}}]}]}'.
+    05 FILLER PIC X(120) VALUE '},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"id"  :"a:b"}}]}]}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).
@@ -190,7 +190,7 @@
     05 FILLER PIC X(70) VALUE "a block_state_match whose block_state has no Name".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
     05 FILLER PIC X(120) VALUE '{"processors":[{"processor_type":"minecraft:rule","rules":[{"input_predicate":{"predicate_type":"minecraft:blockstate_ma'.
-    05 FILLER PIC X(120) VALUE 'tch","block_state":{}},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"Name":"a:b"}}]}]'.
+    05 FILLER PIC X(120) VALUE 'tch","block_state":{}},"location_predicate":{"predicate_type":"minecraft:always_true"},"output_state":{"id"  :"a:b"}}]}]'.
     05 FILLER PIC X(120) VALUE '}'.
     05 FILLER PIC X(120).
     05 FILLER PIC X(120).

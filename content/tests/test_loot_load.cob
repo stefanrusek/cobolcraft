@@ -16,7 +16,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(600).
  01 WS-T                   PIC X(60).

@@ -14,7 +14,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-REG                 PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(1100).
@@ -26,7 +26,7 @@
     05 FILLER PIC X(60) VALUE "noise settings without sea_level".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"default_block":{"Name'.
-    05 FILLER PIC X(115) VALUE '":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"material_rule":"min'.
+    05 FILLER PIC X(115) VALUE '":"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"material_rule":"min'.
     05 FILLER PIC X(115) VALUE 'ecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":'.
     05 FILLER PIC X(115) VALUE '0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functions":[{"label":'.
     05 FILLER PIC X(115) VALUE '"N","function":"minecraft:nether/base_3d_noise"}]}                                                                 '.
@@ -35,7 +35,7 @@
     05 FILLER PIC X(60) VALUE "a sea_level that is a string".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":"32","legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"defa'.
-    05 FILLER PIC X(115) VALUE 'ult_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"ma'.
+    05 FILLER PIC X(115) VALUE 'ult_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"ma'.
     05 FILLER PIC X(115) VALUE 'terial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"er'.
     05 FILLER PIC X(115) VALUE 'osion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_func'.
     05 FILLER PIC X(115) VALUE 'tions":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                                '.
@@ -44,7 +44,7 @@
     05 FILLER PIC X(60) VALUE "a noise.min_y above 2031".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":2032,"height":128},"def'.
-    05 FILLER PIC X(115) VALUE 'ault_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"m'.
+    05 FILLER PIC X(115) VALUE 'ault_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"m'.
     05 FILLER PIC X(115) VALUE 'aterial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"e'.
     05 FILLER PIC X(115) VALUE 'rosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_fun'.
     05 FILLER PIC X(115) VALUE 'ctions":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                               '.
@@ -53,7 +53,7 @@
     05 FILLER PIC X(60) VALUE "a noise.height above 4064".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":4080},"defau'.
-    05 FILLER PIC X(115) VALUE 'lt_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"mat'.
+    05 FILLER PIC X(115) VALUE 'lt_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"mat'.
     05 FILLER PIC X(115) VALUE 'erial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"ero'.
     05 FILLER PIC X(115) VALUE 'sion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_funct'.
     05 FILLER PIC X(115) VALUE 'ions":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                                 '.
@@ -62,7 +62,7 @@
     05 FILLER PIC X(60) VALUE "a noise.min_y that is no multiple of 16 (value check)".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":8,"height":128},"defaul'.
-    05 FILLER PIC X(115) VALUE 't_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"mate'.
+    05 FILLER PIC X(115) VALUE 't_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"mate'.
     05 FILLER PIC X(115) VALUE 'rial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"eros'.
     05 FILLER PIC X(115) VALUE 'ion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functi'.
     05 FILLER PIC X(115) VALUE 'ons":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                                  '.
@@ -70,8 +70,8 @@
     05 FILLER PIC X(10) VALUE '          '.
     05 FILLER PIC X(60) VALUE "noise settings without noise".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
-    05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"default_block":{"Name":"minecraft:nethe'.
-    05 FILLER PIC X(115) VALUE 'rrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"material_rule":"minecraft:nether","sp'.
+    05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"default_block":{"id"  :"minecraft:nethe'.
+    05 FILLER PIC X(115) VALUE 'rrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"material_rule":"minecraft:nether","sp'.
     05 FILLER PIC X(115) VALUE 'awn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chun'.
     05 FILLER PIC X(115) VALUE 'k_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functions":[{"label":"N","function":"mi'.
     05 FILLER PIC X(115) VALUE 'necraft:nether/base_3d_noise"}]}                                                                                   '.
@@ -80,7 +80,7 @@
     05 FILLER PIC X(60) VALUE "a default_block without Name".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"defaul'.
-    05 FILLER PIC X(115) VALUE 't_block":{"Properties":{}},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"material_rule":"mi'.
+    05 FILLER PIC X(115) VALUE 't_block":{"properties":{}},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"material_rule":"mi'.
     05 FILLER PIC X(115) VALUE 'necraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth"'.
     05 FILLER PIC X(115) VALUE ':0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functions":[{"label"'.
     05 FILLER PIC X(115) VALUE ':"N","function":"minecraft:nether/base_3d_noise"}]}                                                                '.
@@ -89,7 +89,7 @@
     05 FILLER PIC X(60) VALUE "a router without final_density".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"defaul'.
-    05 FILLER PIC X(115) VALUE 't_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"mate'.
+    05 FILLER PIC X(115) VALUE 't_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"mate'.
     05 FILLER PIC X(115) VALUE 'rial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"eros'.
     05 FILLER PIC X(115) VALUE 'ion":0,"depth":0,"ridges":0,"chunk_surface_level":0},"debug_functions":[{"label":"N","function":"minecraft:nether/b'.
     05 FILLER PIC X(115) VALUE 'ase_3d_noise"}]}                                                                                                   '.
@@ -98,7 +98,7 @@
     05 FILLER PIC X(60) VALUE "a spawn_target that is an object".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"defaul'.
-    05 FILLER PIC X(115) VALUE 't_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"mate'.
+    05 FILLER PIC X(115) VALUE 't_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"mate'.
     05 FILLER PIC X(115) VALUE 'rial_rule":"minecraft:nether","spawn_target":{},"noise_router":{"temperature":0,"vegetation":0,"continents":0,"eros'.
     05 FILLER PIC X(115) VALUE 'ion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functi'.
     05 FILLER PIC X(115) VALUE 'ons":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                                  '.
@@ -107,7 +107,7 @@
     05 FILLER PIC X(60) VALUE "a debug_functions member that is an object".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":true,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"defaul'.
-    05 FILLER PIC X(115) VALUE 't_block":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"mate'.
+    05 FILLER PIC X(115) VALUE 't_block":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"mate'.
     05 FILLER PIC X(115) VALUE 'rial_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"eros'.
     05 FILLER PIC X(115) VALUE 'ion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functi'.
     05 FILLER PIC X(115) VALUE 'ons":{}}                                                                                                           '.
@@ -116,7 +116,7 @@
     05 FILLER PIC X(60) VALUE "a legacy_random_source that is a number".
     05 FILLER PIC X(130) VALUE "build/content-test/load-37-2/t/data/minecraft/worldgen/noise_settings/bad.json".
     05 FILLER PIC X(115) VALUE '{"sea_level":32,"legacy_random_source":1,"disable_mob_generation":false,"noise":{"min_y":0,"height":128},"default_b'.
-    05 FILLER PIC X(115) VALUE 'lock":{"Name":"minecraft:netherrack"},"default_fluid":{"Name":"minecraft:lava","Properties":{"level":"0"}},"materia'.
+    05 FILLER PIC X(115) VALUE 'lock":{"id"  :"minecraft:netherrack"},"default_fluid":{"id"  :"minecraft:lava","properties":{"level":"0"}},"materia'.
     05 FILLER PIC X(115) VALUE 'l_rule":"minecraft:nether","spawn_target":[],"noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion'.
     05 FILLER PIC X(115) VALUE '":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":"minecraft:nether/base_3d_noise"},"debug_functions'.
     05 FILLER PIC X(115) VALUE '":[{"label":"N","function":"minecraft:nether/base_3d_noise"}]}                                                     '.

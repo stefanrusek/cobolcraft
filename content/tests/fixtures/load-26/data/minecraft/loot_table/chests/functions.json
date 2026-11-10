@@ -3,12 +3,12 @@
   {"type": "minecraft:item", "name": "minecraft:book", "modifier": [
    {"type": "minecraft:set_item", "item": "minecraft:enchanted_book"},
    {"type": "minecraft:limit_count", "limit": {"min": 1, "max": {"type": "minecraft:uniform", "min": 2, "max": 4}}},
-   {"type": "minecraft:furnace_smelt", "use_input_count": false},
+   {"type": "minecraft:furnace_smelt", "use_input_count": false, "condition": {"type": "minecraft:killed_by_player"}},
    {"type": "minecraft:discard"},
    {"type": "minecraft:sequence", "functions": [{"type": "minecraft:set_count", "count": 2, "add": true}]},
    {"type": "minecraft:filtered", "item_filter": {}, "on_pass": {"type": "minecraft:discard"}, "on_fail": "minecraft:mod"},
    {"type": "minecraft:enchant_with_levels", "levels": {"type": "minecraft:constant", "value": 30}, "options": "#minecraft:in_enchanting_table"},
-   {"type": "minecraft:enchant_randomly", "only_compatible": false},
+   {"type": "minecraft:enchant_randomly", "options": "#minecraft:on_random_loot", "only_compatible": false},
    {"type": "minecraft:set_enchantments", "enchantments": {"minecraft:sharpness": 3}, "add": true},
    {"type": "minecraft:set_damage", "damage": {"type": "minecraft:uniform", "min": 0.1, "max": 0.5}},
    {"type": "minecraft:set_lore", "lore": ["a"], "mode": "append"},
@@ -40,4 +40,4 @@
    {"type": "minecraft:set_contents", "component": "minecraft:container", "entries": [{"type": "minecraft:empty"}]},
    {"type": "minecraft:modify_contents", "component": "minecraft:container", "modifier": {"type": "minecraft:discard"}},
    {"type": "minecraft:set_loot_table", "loot_table_id": "minecraft:chests/other", "seed": 7},
-   {"type": "minecraft:set_name", "name": {"text": "x"}, "condition": {"type": "minecraft:weather_check", "raining": true}}]}]}]}
+   {"type": "minecraft:set_name", "name": {"text": "x"}, "target": "item_name", "condition": {"type": "minecraft:weather_check", "raining": true}}]}]}]}

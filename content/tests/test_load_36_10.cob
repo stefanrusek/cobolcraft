@@ -13,7 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-LABEL               PIC X(70).
  01 WS-NAME                PIC X(40).
@@ -22,39 +22,39 @@
  01 WS-COMMAND             PIC X(600).
  01 WS-FINDS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:ancient_city".
+    05 FILLER PIC X(112) VALUE "minecraft:ancient_city".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:trial_chambers".
+    05 FILLER PIC X(112) VALUE "minecraft:trial_chambers".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:trail_ruins".
+    05 FILLER PIC X(112) VALUE "minecraft:trail_ruins".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:ancient_cities".
+    05 FILLER PIC X(112) VALUE "minecraft:ancient_cities".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:trial_chambers".
+    05 FILLER PIC X(112) VALUE "minecraft:trial_chambers".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:trail_ruins".
+    05 FILLER PIC X(112) VALUE "minecraft:trail_ruins".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:ancient_city/city_center".
+    05 FILLER PIC X(112) VALUE "minecraft:ancient_city/city_center".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:ancient_city/sculk".
+    05 FILLER PIC X(112) VALUE "minecraft:ancient_city/sculk".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:ancient_city/walls".
+    05 FILLER PIC X(112) VALUE "minecraft:ancient_city/walls".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:trail_ruins_roads_archaeology".
+    05 FILLER PIC X(112) VALUE "minecraft:trail_ruins_roads_archaeology".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-FIND-TABLE REDEFINES WS-FINDS.
     05 WS-FIND OCCURS 10 TIMES.
        10 WS-F-REGISTRY   PIC X(48).
-       10 WS-F-KEY        PIC X(64).
+       10 WS-F-KEY        PIC X(112).
        10 WS-F-TYPE       PIC X(48).
  01 WS-BADS.
     05 FILLER PIC X(40) VALUE "an ancient city without start_pool".

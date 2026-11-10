@@ -38,7 +38,7 @@
        10 WGN-NUM           FLOAT-LONG OCCURS 10 TIMES.
        10 WGN-INT           BINARY-LONG OCCURS 12 TIMES.
        10 WGN-TEXT-1        PIC X(160).
-       10 WGN-TEXT-2        PIC X(64).
+       10 WGN-TEXT-2        PIC X(112).
     05 WSP-ROW OCCURS 16384 TIMES.
        10 WSP-COORD         BINARY-LONG.
        10 WSP-FIRST         BINARY-LONG.
@@ -50,7 +50,7 @@
        10 WPT-VALUE         BINARY-LONG.
     05 WGF-ROW OCCURS 4096 TIMES.
        10 WGF-KIND          BINARY-LONG.
-       10 WGF-KEY           PIC X(64).
+       10 WGF-KEY           PIC X(112).
        10 WGF-ROOT          BINARY-LONG.
 
 *> The loader's own state: the label of the registry being read (error text "ERROR registry: <label> <key>: <detail>"),

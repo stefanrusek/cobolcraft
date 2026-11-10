@@ -1,5 +1,5 @@
 *> Test of content/src/blocks.cob (T0190; content-api section 2; 24 part 1 section 3 and its worked examples
-*> 1 to 4): CONTENT-BLOCK-BY-KEY USING key (PIC X(64)), block id out, row out (CT-BLOCK-ROW), status;
+*> 1 to 4): CONTENT-BLOCK-BY-KEY USING key (PIC X(112)), block id out, row out (CT-BLOCK-ROW), status;
 *> CONTENT-BLOCK-OF-STATE USING state id, block id out, state index out, row out, status;
 *> CONTENT-STATE-PROPS USING state id, CT-PROPS (CTPROPS.cpy) out, status; CONTENT-STATE-DEFAULT USING block id,
 *> default state id out, status. State rows are never stored: the state id rule gives the block, the index
@@ -12,7 +12,7 @@
  COPY TESTLIB.
  COPY CONTENT.
  COPY CTPROPS.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.

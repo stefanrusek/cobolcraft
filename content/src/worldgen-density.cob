@@ -21,7 +21,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-FIND.
-*> USING kind (BINARY-LONG, 1 to 10: CTWORLDGEN.cpy), key (PIC X(64), "namespace:path"), root out (BINARY-LONG: the root
+*> USING kind (BINARY-LONG, 1 to 10: CTWORLDGEN.cpy), key (PIC X(112), "namespace:path"), root out (BINARY-LONG: the root
 *> node of the element, 0 when there is none).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -29,7 +29,7 @@
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ROOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-KEY L-ROOT.
      MOVE 0 TO L-ROOT
@@ -43,7 +43,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-CHECK.
-*> USING kind (BINARY-LONG), key (PIC X(64)), root node (BINARY-LONG), status out (BINARY-LONG: 0, or 1 after an error was
+*> USING kind (BINARY-LONG), key (PIC X(112)), root node (BINARY-LONG), status out (BINARY-LONG: 0, or 1 after an error was
 *> reported): the checks a file's values must pass once read. Noise (10 3.3): octave_count 1 to 32, as many modifiers
 *> as octaves when there are any, each 0 to 1000000. Noise settings (37-2 2.1): noise.min_y and noise.height multiples of
 *> 16, min_y from -2032 to 2031, height from 0 to 4064, min_y + height at most 2032. Dimension type (04 section 6,
@@ -58,7 +58,7 @@
  01 WS-DETAIL              PIC X(120).
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ROOT                 BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-KEY L-ROOT L-STATUS.
@@ -116,7 +116,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-FILE-ADD.
-*> USING JSON-DOC, kind (BINARY-LONG), key (PIC X(64)), text address (POINTER), length (BINARY-LONG), status out
+*> USING JSON-DOC, kind (BINARY-LONG), key (PIC X(112)), text address (POINTER), length (BINARY-LONG), status out
 *> (BINARY-LONG: 0, or 1 after an error was reported): reads one file that the strict reader accepted into the
 *> store as a function row of the kind. A configured feature of a type other than minecraft:ore is left out (kind
 *> 5 keeps the ore features only).
@@ -139,7 +139,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-KIND                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ADDR                 USAGE POINTER.
  01 L-LENGTH               BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -204,7 +204,7 @@
  01 WS-DOMAIN              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-PAYLOAD             USAGE POINTER.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.

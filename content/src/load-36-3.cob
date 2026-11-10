@@ -4,7 +4,7 @@
 *> only element_type required) and the pool alias bindings of 3.4 (member type: direct, random, random_group). start_height (a height provider
 *> without "type" is an anchor object) and max_distance_from_center (an int or an object) and dimension_padding (an int or an object) are only checked
 *> to be present or any value. Jigsaw block entity data of 3.5 lives in structure NBT files and is not loaded here.
-*> ASSUMPTION: alias binding random: the weight of a targets entry (member data, weight) is an integer of at least 1; 3.4 says only int.
+*> 48 2.8 (structure / targets) and 3.14: a random binding's targets entry has data (an id) and weight (an integer), both required; the minimum weight 1 is from 36-3 and is not in 48.
 *> USING root (PIC X(1100): the folder that holds data/), status out (BINARY-LONG: CT-OK, or CT-BAD-DATA with every error on
 *> standard error as "ERROR registry: <registry> <key>: <detail>" and nothing of the load kept). Engine: shapes.cob.
  IDENTIFICATION DIVISION.
@@ -14,61 +14,55 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "jigsaw".
-    05 FILLER PIC X(120) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation;R start_pool=template_pool;d start_jigsaw_name;I size=0..20".
-    05 FILLER PIC X(120) VALUE ";X start_height;B use_expansion_hack;s project_start_to_heightmap;X max_distance_from_center;l pool_aliases=pool_alias;x".
-    05 FILLER PIC X(120) VALUE " dimension_padding;e liquid_settings=ignore_waterlogging|apply_waterlogging".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;S step;s terrain_adaptation;R start_pool=temp" &
+        "late_pool;d start_jigsaw_name;I size=0..20;X start_height;B use_expansion_hack" &
+        ";s project_start_to_heightmap;X max_distance_from_center;l pool_aliases=pool_a" &
+        "lias;x dimension_padding;e liquid_settings=ignore_waterlogging|apply_waterlogg" &
+        "ing".
     05 FILLER PIC X(24) VALUE "template_pool".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "L elements=pool_entry;R fallback=template_pool".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "L elements=pool_entry;R fallback=template_pool".
     05 FILLER PIC X(24) VALUE "pool_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "T element=pool_element;I weight=1..150".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "T element=pool_element;I weight=1..150".
     05 FILLER PIC X(24) VALUE "pool_element".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "S element_type;d location;r processors=processor_list;e projection=rigid|terrain_matching;e override_liquid_settings=ign".
-    05 FILLER PIC X(120) VALUE "ore_waterlogging|apply_waterlogging;l elements=pool_element;r feature=placed_feature".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "element_type".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "empty_pool_element".
+    05 FILLER PIC X(600) VALUE SPACES.
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "feature_pool_element".
+    05 FILLER PIC X(600) VALUE "R feature=placed_feature;E projection=rigid|terrain_matching;e override_liquid" &
+        "_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "legacy_single_pool_element".
+    05 FILLER PIC X(600) VALUE "D location;R processors=processor_list;E projection=rigid|terrain_matching;e o" &
+        "verride_liquid_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "single_pool_element".
+    05 FILLER PIC X(600) VALUE "D location;R processors=processor_list;E projection=rigid|terrain_matching;e o" &
+        "verride_liquid_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "list_pool_element".
+    05 FILLER PIC X(600) VALUE "L elements=pool_element;E projection=rigid|terrain_matching;e override_liquid_" &
+        "settings=ignore_waterlogging|apply_waterlogging".
     05 FILLER PIC X(24) VALUE "pool_alias".
     05 FILLER PIC X(48) VALUE "direct".
-    05 FILLER PIC X(120) VALUE "D alias;D target".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "D alias;D target".
     05 FILLER PIC X(24) VALUE "pool_alias".
     05 FILLER PIC X(48) VALUE "random".
-    05 FILLER PIC X(120) VALUE "D alias;L targets=pool_target".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "D alias;L targets=pool_target".
     05 FILLER PIC X(24) VALUE "pool_alias".
     05 FILLER PIC X(48) VALUE "random_group".
-    05 FILLER PIC X(120) VALUE "A groups".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
+    05 FILLER PIC X(600) VALUE "L groups=pool_alias_group".
+    05 FILLER PIC X(24) VALUE "pool_alias_group".
+    05 FILLER PIC X(48) VALUE "-".
+    05 FILLER PIC X(600) VALUE "L data=pool_alias;I weight=1..".
     05 FILLER PIC X(24) VALUE "pool_target".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(120) VALUE "D data;I weight=1..".
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
-    05 FILLER PIC X(120).
- 01 WS-COUNT              BINARY-LONG VALUE 8.
+    05 FILLER PIC X(600) VALUE "D data;I weight=1..".
+ 01 WS-COUNT              BINARY-LONG VALUE 14.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/structure".
  01 WS-GROUP-1            PIC X(24) VALUE "structure".
  01 WS-STRICT-1           BINARY-LONG VALUE 0.

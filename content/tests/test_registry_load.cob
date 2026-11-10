@@ -3,8 +3,8 @@
 *> with every error printed on standard error as "ERROR registry: ..."): loads the 51 world registries from
 *> <dir>/vanilla-data/data/<namespace>/<registry path>/**/*.json: strict JSON (23 3.2), entry ids in the order
 *> of the element id, path first and then namespace (23 3.4, 1), the 13 non-empty validators (23 2.1),
-*> identifier rules (23 1). CONTENT-REGISTRY-COUNT USING registry (PIC X(64)), count out, status;
-*> CONTENT-REGISTRY-ENTRY USING registry, id, key out (PIC X(64)), key length out, payload area (any size),
+*> identifier rules (23 1). CONTENT-REGISTRY-COUNT USING registry (PIC X(112)), count out, status;
+*> CONTENT-REGISTRY-ENTRY USING registry, id, key out (PIC X(112)), key length out, payload area (any size),
 *> capacity, payload length out, status. REGISTRY-FREE releases everything. Trees: build/content-test/reg, a
 *> copy of content/tests/fixtures/std (the contract's valid tree plus the 13 variant registries and
 *> elements in several namespaces) altered per case.
@@ -16,10 +16,10 @@
  COPY CONTENT.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-COUNT               BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PAYLOAD             PIC X(2000).
  01 WS-CAPACITY            BINARY-LONG.
@@ -254,9 +254,22 @@
      CALL "SYSTEM" USING "mkdir -p build/content-test/reg/t/vanilla-data/data/Bad/worldgen/biome && printf '{}' > build/content-test/reg/t/vanilla-data/data/Bad/worldgen/biome/x.json"
      PERFORM LOAD-FAILS
      PERFORM FRESH-TREE
-     MOVE "bad id: a key over 64 bytes" TO WS-T
-     CALL "SYSTEM" USING "f=$(printf 'a%.0s' $(seq 1 70)); printf '{}' > build/content-test/reg/t/vanilla-data/data/minecraft/worldgen/biome/$f.json"
+     MOVE "bad id: a key over 112 bytes" TO WS-T
+     CALL "SYSTEM" USING "f=$(printf 'a%.0s' $(seq 1 120)); printf '{}' > build/content-test/reg/t/vanilla-data/data/minecraft/worldgen/biome/$f.json"
      PERFORM LOAD-FAILS
+     PERFORM FRESH-TREE
+     MOVE "a key of 100 bytes (real keys: 88, 112)" TO WS-T
+     CALL "SYSTEM" USING "f=$(printf 'a%.0s' $(seq 1 100)); printf '{}' > build/content-test/reg/t/vanilla-data/data/minecraft/worldgen/biome/$f.json"
+     PERFORM LOAD-TREE
+     MOVE "registry: a key of 100 bytes loads" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     PERFORM ASSERT-STATUS
+     MOVE "worldgen/biome" TO WS-REGISTRY
+     PERFORM COUNT-OF
+     MOVE "registry: ... the biome count includes it" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     PERFORM ASSERT-COUNT
+     CALL "REGISTRY-FREE"
      PERFORM FRESH-TREE
      MOVE "a validator: wolf_variant is empty" TO WS-T
      CALL "SYSTEM" USING "rm build/content-test/reg/t/vanilla-data/data/minecraft/wolf_variant/test.json"

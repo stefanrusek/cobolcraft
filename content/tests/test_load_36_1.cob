@@ -11,7 +11,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-T                   PIC X(70).
@@ -20,42 +20,42 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ACCEPTS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:desert_pyramid".
+    05 FILLER PIC X(112) VALUE "minecraft:desert_pyramid".
     05 FILLER PIC X(48) VALUE "desert_pyramid".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:buried_treasure".
+    05 FILLER PIC X(112) VALUE "minecraft:buried_treasure".
     05 FILLER PIC X(48) VALUE "buried_treasure".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:swamp_hut".
+    05 FILLER PIC X(112) VALUE "minecraft:swamp_hut".
     05 FILLER PIC X(48) VALUE "swamp_hut".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:fortress".
+    05 FILLER PIC X(112) VALUE "minecraft:fortress".
     05 FILLER PIC X(48) VALUE "fortress".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:stronghold".
+    05 FILLER PIC X(112) VALUE "minecraft:stronghold".
     05 FILLER PIC X(48) VALUE "stronghold".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:desert_pyramids".
+    05 FILLER PIC X(112) VALUE "minecraft:desert_pyramids".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:buried_treasures".
+    05 FILLER PIC X(112) VALUE "minecraft:buried_treasures".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:strongholds".
+    05 FILLER PIC X(112) VALUE "minecraft:strongholds".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:origin".
+    05 FILLER PIC X(112) VALUE "minecraft:origin".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:excluding".
+    05 FILLER PIC X(112) VALUE "minecraft:excluding".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:inline".
+    05 FILLER PIC X(112) VALUE "minecraft:inline".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPTS.
     05 WS-ACCEPT OCCURS 11 TIMES.
        10 WS-A-REGISTRY    PIC X(48).
-       10 WS-A-KEY         PIC X(64).
+       10 WS-A-KEY         PIC X(112).
        10 WS-A-TYPE        PIC X(48).
  01 WS-REJECTS.
     05 FILLER PIC X(70) VALUE "a structure without biomes".

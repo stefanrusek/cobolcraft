@@ -65,13 +65,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-FAIL.
-*> USING key (PIC X(64)), detail (PIC X(120)): prints "ERROR registry: recipe <key>: <detail>" on standard error
+*> USING key (PIC X(112)), detail (PIC X(120)): prints "ERROR registry: recipe <key>: <detail>" on standard error
 *> and counts the error (RS-ERROR).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-MESSAGE             PIC X(200).
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-DETAIL               PIC X(120).
  PROCEDURE DIVISION USING L-KEY L-DETAIL.
      MOVE SPACES TO WS-MESSAGE
@@ -156,22 +156,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-INGREDIENT.
-*> USING JSON-DOC, node (BINARY-LONG; 0 = absent), text out (PIC X(160)), status out (BINARY-LONG): an ingredient
+*> USING JSON-DOC, node (BINARY-LONG; 0 = absent), text out (PIC X(800)), status out (BINARY-LONG): an ingredient
 *> (27 1.3) is an item id or "#tag" string or a non-empty array of id strings; the text is the ids separated by
 *> single spaces. Status 0 read; 1 an empty list; 2 not a string or list of strings, or an empty string; 3 more
-*> than 160 bytes; 4 absent.
+*> than 800 bytes; 4 absent.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-CAPACITY            BINARY-LONG VALUE 160.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 800.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-CHILD               BINARY-LONG.
  01 WS-POS                 BINARY-LONG.
  01 WS-START               BINARY-LONG.
- 01 WS-ITEM                PIC X(160).
+ 01 WS-ITEM                PIC X(800).
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-TEXT                 PIC X(160).
+ 01 L-TEXT                 PIC X(800).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-TEXT L-STATUS.
      MOVE SPACES TO L-TEXT
@@ -204,7 +204,7 @@
                  IF WS-POS > 1
                      ADD 1 TO WS-START
                  END-IF
-                 IF L-STATUS = 0 AND WS-START + WS-LENGTH > 161
+                 IF L-STATUS = 0 AND WS-START + WS-LENGTH > 801
                      MOVE 3 TO L-STATUS
                  END-IF
                  IF L-STATUS = 0
@@ -224,13 +224,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-ING-ERROR.
-*> USING key (PIC X(64)), field name (PIC X(32)), status (BINARY-LONG, not 0: a RECIPE-INGREDIENT status):
+*> USING key (PIC X(112)), field name (PIC X(32)), status (BINARY-LONG, not 0: a RECIPE-INGREDIENT status):
 *> prints the error of a bad ingredient (RECIPE-FAIL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-DETAIL              PIC X(120).
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-NAME                 PIC X(32).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-NAME L-STATUS.
@@ -239,7 +239,7 @@
          WHEN 1
              STRING FUNCTION TRIM(L-NAME) " is an empty list" DELIMITED BY SIZE INTO WS-DETAIL
          WHEN 3
-             STRING FUNCTION TRIM(L-NAME) " is over 160 bytes" DELIMITED BY SIZE INTO WS-DETAIL
+             STRING FUNCTION TRIM(L-NAME) " is over 800 bytes" DELIMITED BY SIZE INTO WS-DETAIL
          WHEN 4
              STRING FUNCTION TRIM(L-NAME) " is missing" DELIMITED BY SIZE INTO WS-DETAIL
          WHEN OTHER
@@ -252,19 +252,19 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-SET-ING.
-*> USING JSON-DOC, ingredient node, row (BINARY-LONG), slot (BINARY-LONG, 1 to 9), key (PIC X(64)), field name
+*> USING JSON-DOC, ingredient node, row (BINARY-LONG), slot (BINARY-LONG, 1 to 9), key (PIC X(112)), field name
 *> (PIC X(32)), status out (BINARY-LONG: 0 stored in RR-ING(row, slot); 1 reported by RECIPE-ING-ERROR).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTRECIPE.
- 01 WS-TEXT                PIC X(160).
+ 01 WS-TEXT                PIC X(800).
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-NAME                 PIC X(32).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-ROW L-SLOT L-KEY L-NAME L-STATUS.
@@ -281,7 +281,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-SHAPELESS.
-*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(64)), status out (BINARY-LONG: 0 read, 1 reported): the
+*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(112)), status out (BINARY-LONG: 0 read, 1 reported): the
 *> "ingredients" list of 1 to 9 ingredients (27 2.2) into RR-ING in order.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -296,7 +296,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW L-KEY L-STATUS.
      MOVE 1 TO L-STATUS
@@ -328,7 +328,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-GENERIC.
-*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(64)), serializer index (BINARY-LONG, 1 to 22), status out
+*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(112)), serializer index (BINARY-LONG, 1 to 22), status out
 *> (BINARY-LONG: 0 read, 1 reported): the ingredient fields of the serializer (RECIPE-TYPE-AT) into RR-ING in
 *> order; a field marked optional that is absent leaves its slot empty.
  DATA DIVISION.
@@ -347,7 +347,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW L-KEY L-INDEX L-STATUS.
@@ -382,7 +382,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-SHAPED.
-*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(64)), status out (BINARY-LONG: 0 read, 1 reported): a shaped
+*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(112)), status out (BINARY-LONG: 0 read, 1 reported): a shaped
 *> recipe (13 3.1, 3.2): "pattern" of 1 to 3 rows of 1 to 3 characters of one length (a space is an empty cell),
 *> "key" of at most nine one-character names (not a space) each with an ingredient; every character of the
 *> pattern must have a key and every key must be used. The pattern is trimmed to the bounding box of its
@@ -426,7 +426,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW L-KEY L-STATUS.
      MOVE 1 TO L-STATUS
@@ -572,7 +572,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-TRANSMUTE.
-*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(64)), status out (BINARY-LONG: 0 read, 1 reported): the
+*> USING JSON-DOC, row (BINARY-LONG), key (PIC X(112)), status out (BINARY-LONG: 0 read, 1 reported): the
 *> material_count (a number, or an object with min and max; default exactly 1; within 1 to 8, 27 2.4) and
 *> add_material_count_to_result (default false) of a transmute recipe.
  DATA DIVISION.
@@ -587,7 +587,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW L-KEY L-STATUS.
      MOVE 1 TO L-STATUS
@@ -635,7 +635,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-FILL.
-*> USING JSON-DOC, row (BINARY-LONG: the row to fill, already cleared and keyed), key (PIC X(64)), status out
+*> USING JSON-DOC, row (BINARY-LONG: the row to fill, already cleared and keyed), key (PIC X(112)), status out
 *> (BINARY-LONG: 0 filled, 1 an error was reported): the common fields of 27 1.2 (group, category, show_notification
 *> and, for the special serializers, no notification and group ""), the serializer's own fields, the result
 *> (a template {id, count} named "result", "output" for brewing; the id is required when RECIPE-TYPE-AT says so),
@@ -661,7 +661,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-ROW                  BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-ROW L-KEY L-STATUS.
      MOVE 1 TO L-STATUS
@@ -788,7 +788,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-PARSE.
-*> USING key (PIC X(64), "namespace:path"), text address (POINTER), length (BINARY-LONG), status out (BINARY-LONG:
+*> USING key (PIC X(112), "namespace:path"), text address (POINTER), length (BINARY-LONG), status out (BINARY-LONG:
 *> 0 the recipe was added as the next row of RC-STORE, 1 an error was reported and no row was added): parses one
 *> recipe file that the strict reader accepted.
  DATA DIVISION.
@@ -799,7 +799,7 @@
  01 WS-DETAIL              PIC X(120).
  01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ADDR                 USAGE POINTER.
  01 L-LENGTH               BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -830,13 +830,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-FIND.
-*> USING key (PIC X(64), "namespace:path"), row out (BINARY-LONG: the 1-based row of RC-STORE, 0 when not found).
+*> USING key (PIC X(112), "namespace:path"), row out (BINARY-LONG: the 1-based row of RC-STORE, 0 when not found).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTRECIPE.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-ROW.
      MOVE 0 TO L-ROW
@@ -850,7 +850,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-UNLOCK-ITEMS.
-*> USING JSON-DOC, criterion node (BINARY-LONG), key (PIC X(64)), text out (PIC X(200)), status out (BINARY-LONG: 0
+*> USING JSON-DOC, criterion node (BINARY-LONG), key (PIC X(112)), text out (PIC X(200)), status out (BINARY-LONG: 0
 *> read, 1 reported): the item predicates of an inventory_changed criterion (conditions.items[*].items, 27 5.2):
 *> the ids of one predicate separated by spaces, the predicates by " & "; a predicate without items adds nothing.
  DATA DIVISION.
@@ -860,7 +860,7 @@
  01 WS-LIST                BINARY-LONG.
  01 WS-PREDICATE           BINARY-LONG.
  01 WS-IDS                 BINARY-LONG.
- 01 WS-IDS-TEXT            PIC X(160).
+ 01 WS-IDS-TEXT            PIC X(800).
  01 WS-LENGTH              BINARY-LONG.
  01 WS-POS                 BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
@@ -868,7 +868,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-CRITERION            BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-TEXT                 PIC X(200).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-CRITERION L-KEY L-TEXT L-STATUS.
@@ -916,7 +916,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-UNLOCK-PARSE.
-*> USING key (PIC X(64): the advancement), text address (POINTER), length (BINARY-LONG), status out (BINARY-LONG: 0
+*> USING key (PIC X(112): the advancement), text address (POINTER), length (BINARY-LONG), status out (BINARY-LONG: 0
 *> read, 1 an error was reported): one recipe advancement file (27 5.9) that the strict reader accepted. The recipe
 *> is rewards.recipes[0]; an advancement without one (the root) or for a recipe that is not loaded is ignored (27
 *> 4.6: keys that the manager does not know are ignored). Each criterion whose trigger is not recipe_unlocked
@@ -933,7 +933,7 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 200.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-TEXT                PIC X(200).
- 01 WS-RECIPE              PIC X(64).
+ 01 WS-RECIPE              PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  01 WS-CRITERION           BINARY-LONG.
  01 WS-NAME                PIC X(32).
@@ -942,7 +942,7 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-DETAIL              PIC X(120).
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ADDR                 USAGE POINTER.
  01 L-LENGTH               BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -1037,7 +1037,7 @@
  01 WS-NAME                PIC X(48).
  01 WS-I                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-PAYLOAD             USAGE POINTER.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.

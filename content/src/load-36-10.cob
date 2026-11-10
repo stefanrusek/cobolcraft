@@ -9,10 +9,10 @@
 *> members of every kind as optional; enum lists longer than 40 bytes (step, terrain_adaptation, the heightmap names) are checked as an
 *> identifier or a string; max_distance_from_center, dimension_padding and start_height are not checked inside; spacing greater than
 *> separation is not checked.
-*> ASSUMPTION: pool_alias_binding random_group member groups is any array (the weighted list of binding lists is not checked inside).
-*> ASSUMPTION: pool_alias_target members data and weight: the document says weighted list of pool keys and names the pair {data: key, weight: int} (36-3 section 3.4); weight is checked as an integer of at least 1.
-*> ASSUMPTION: pool element members other than element_type are all optional (requiredness per element kind cannot be expressed in a dispatch-free row).
-*> ASSUMPTION: processor members delegate and limit follow 36-10 section 2.7; limit is any value (an int provider); rule_test and pos_rule_test members as in 36-2 sections 8.3 and 8.4, all optional.
+*> 48 2.8 (structure / groups) and 3.14: a random_group binding's groups is an array of {data, weight} entries, data an array of bindings, weight an integer; both required.
+*> 48 2.8 (structure / targets): pool_alias_target members data (an id) and weight (an integer) are both required; the minimum weight 1 is from 36-3 and is not in 48.
+*> 48 3.15: a pool element is dispatched on element_type (the row "@" of the group names that member): single and legacy_single elements require location, processors and projection, a feature element feature and projection, a list element elements and projection, an empty element nothing.
+*> 48 3.16 to 3.18: processors are dispatched on processor_type, rule tests and position tests on predicate_type, with the members the census lists per type (capped: delegate, limit; protected_blocks: value; rule: rules; block_rot: integrity, rottable_blocks optional); types that the data does not hold keep the rows of 36-2.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOAD-36-10.
  DATA DIVISION.
@@ -20,189 +20,157 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "jigsaw".
-    05 FILLER PIC X(100) VALUE "H biomes=biome;O spawn_overrides;D step;d terrain_adaptation;R start_pool=template_pool;d start_jigs".
-    05 FILLER PIC X(100) VALUE "aw_name;I size=0..20;O start_height;B use_expansion_hack;s project_start_to_heightmap;X max_distance".
-    05 FILLER PIC X(100) VALUE "_from_center;l pool_aliases=pool_alias_binding;x dimension_padding;e liquid_settings=ignore_waterlog".
-    05 FILLER PIC X(100) VALUE "ging|apply_waterlogging                                                                             ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;D step;d terrain_adaptation;R start_pool=temp" &
+        "late_pool;d start_jigsaw_name;I size=0..20;O start_height;B use_expansion_hack" &
+        ";s project_start_to_heightmap;X max_distance_from_center;l pool_aliases=pool_a" &
+        "lias_binding;x dimension_padding;e liquid_settings=ignore_waterlogging|apply_w" &
+        "aterlogging".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "random_spread".
-    05 FILLER PIC X(100) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangular;n frequency=0..1;d".
-    05 FILLER PIC X(100) VALUE " frequency_reduction_method;t exclusion_zone=exclusion_zone;a locate_offset                         ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangu" &
+        "lar;n frequency=0..1;d frequency_reduction_method;t exclusion_zone=exclusion_z" &
+        "one;a locate_offset".
     05 FILLER PIC X(24) VALUE "exclusion_zone".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R other_set=structure_set;I chunk_count=1..16                                                       ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "R other_set=structure_set;I chunk_count=1..16".
     05 FILLER PIC X(24) VALUE "structure_set".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "L structures=structure_entry;T placement=structure_placement                                        ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "L structures=structure_entry;T placement=structure_placement".
     05 FILLER PIC X(24) VALUE "structure_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R structure=structure;I weight=1..                                                                  ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "R structure=structure;I weight=1..".
     05 FILLER PIC X(24) VALUE "pool_alias_binding".
     05 FILLER PIC X(48) VALUE "direct".
-    05 FILLER PIC X(100) VALUE "D alias;D target                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "D alias;D target".
     05 FILLER PIC X(24) VALUE "pool_alias_binding".
     05 FILLER PIC X(48) VALUE "random".
-    05 FILLER PIC X(100) VALUE "D alias;L targets=pool_alias_target                                                                 ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "D alias;L targets=pool_alias_target".
     05 FILLER PIC X(24) VALUE "pool_alias_binding".
     05 FILLER PIC X(48) VALUE "random_group".
-    05 FILLER PIC X(100) VALUE "A groups                                                                                            ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "L groups=pool_alias_binding_group".
+    05 FILLER PIC X(24) VALUE "pool_alias_binding_group".
+    05 FILLER PIC X(48) VALUE "-".
+    05 FILLER PIC X(600) VALUE "L data=pool_alias_binding;I weight=1..".
     05 FILLER PIC X(24) VALUE "pool_alias_target".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D data;I weight=1..                                                                                 ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "D data;I weight=1..".
     05 FILLER PIC X(24) VALUE "template_pool".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "L elements=pool_entry;R fallback=template_pool                                                      ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "L elements=pool_entry;R fallback=template_pool".
     05 FILLER PIC X(24) VALUE "pool_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "T element=pool_element;I weight=1..150                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "T element=pool_element;I weight=1..150".
     05 FILLER PIC X(24) VALUE "pool_element".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D element_type;d location;r processors=processor_list;e projection=rigid|terrain_matching;l elements".
-    05 FILLER PIC X(100) VALUE "=pool_element;r feature=placed_feature;e override_liquid_settings=ignore_waterlogging|apply_waterlog".
-    05 FILLER PIC X(100) VALUE "ging                                                                                                ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "element_type".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "empty_pool_element".
+    05 FILLER PIC X(600) VALUE SPACES.
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "feature_pool_element".
+    05 FILLER PIC X(600) VALUE "R feature=placed_feature;E projection=rigid|terrain_matching;e override_liquid" &
+        "_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "legacy_single_pool_element".
+    05 FILLER PIC X(600) VALUE "D location;R processors=processor_list;E projection=rigid|terrain_matching;e o" &
+        "verride_liquid_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "single_pool_element".
+    05 FILLER PIC X(600) VALUE "D location;R processors=processor_list;E projection=rigid|terrain_matching;e o" &
+        "verride_liquid_settings=ignore_waterlogging|apply_waterlogging".
+    05 FILLER PIC X(24) VALUE "pool_element".
+    05 FILLER PIC X(48) VALUE "list_pool_element".
+    05 FILLER PIC X(600) VALUE "L elements=pool_element;E projection=rigid|terrain_matching;e override_liquid_" &
+        "settings=ignore_waterlogging|apply_waterlogging".
     05 FILLER PIC X(24) VALUE "placed_feature".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R feature=feature;L placement=placement_modifier                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "R feature=feature;L placement=placement_modifier".
     05 FILLER PIC X(24) VALUE "processor_list".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "L processors=processor                                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "L processors=processor".
     05 FILLER PIC X(24) VALUE "processor".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D processor_type;l rules=processor_rule;n integrity=0..1;h rottable_blocks=block;t delegate=processo".
-    05 FILLER PIC X(100) VALUE "r;x limit;d loot_table;h value=block;s heightmap;i offset;a blocks                                  ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "processor_type".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_rot".
+    05 FILLER PIC X(600) VALUE "N integrity=0..1;h rottable_blocks=block".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "capped".
+    05 FILLER PIC X(600) VALUE "T delegate=processor;V limit=int_provider".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "protected_blocks".
+    05 FILLER PIC X(600) VALUE "H value=block".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "rule".
+    05 FILLER PIC X(600) VALUE "L rules=processor_rule".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "gravity".
+    05 FILLER PIC X(600) VALUE "s heightmap;i offset".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_ignore".
+    05 FILLER PIC X(600) VALUE "l blocks=block_state".
+    05 FILLER PIC X(24) VALUE "processor".
+    05 FILLER PIC X(48) VALUE "block_age".
+    05 FILLER PIC X(600) VALUE "n mossiness".
     05 FILLER PIC X(24) VALUE "processor_rule".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "T input_predicate=rule_test;T location_predicate=rule_test;T output_state=block_state;t position_pre".
-    05 FILLER PIC X(100) VALUE "dicate=pos_rule_test;t block_entity_modifier=block_entity_modifier                                  ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "T input_predicate=rule_test;T location_predicate=rule_test;Q output_state;t po" &
+        "sition_predicate=pos_rule_test;t block_entity_modifier=block_entity_modifier".
     05 FILLER PIC X(24) VALUE "rule_test".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D predicate_type;d block;t block_state=block_state;d tag;n probability;i min_inclusive;i max_inclusi".
-    05 FILLER PIC X(100) VALUE "ve;l rules=rule_test;t rule=rule_test                                                               ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "predicate_type".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "always_true".
+    05 FILLER PIC X(600) VALUE SPACES.
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "all_of".
+    05 FILLER PIC X(600) VALUE "L rules=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "any_of".
+    05 FILLER PIC X(600) VALUE "L rules=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "block_match".
+    05 FILLER PIC X(600) VALUE "D block".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "blockstate_match".
+    05 FILLER PIC X(600) VALUE "Q block_state".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "height_match".
+    05 FILLER PIC X(600) VALUE "I min_inclusive;I max_inclusive".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "not".
+    05 FILLER PIC X(600) VALUE "T rule=rule_test".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "random_block_match".
+    05 FILLER PIC X(600) VALUE "D block;N probability=0..1".
+    05 FILLER PIC X(24) VALUE "rule_test".
+    05 FILLER PIC X(48) VALUE "tag_match".
+    05 FILLER PIC X(600) VALUE "D tag".
     05 FILLER PIC X(24) VALUE "pos_rule_test".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D predicate_type;n min_chance;n max_chance;i min_dist;i max_dist;e axis=x|y|z                       ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(48) VALUE "@".
+    05 FILLER PIC X(600) VALUE "predicate_type".
+    05 FILLER PIC X(24) VALUE "pos_rule_test".
+    05 FILLER PIC X(48) VALUE "axis_aligned_linear_pos".
+    05 FILLER PIC X(600) VALUE "n min_chance=0..1;N max_chance=0..1;i min_dist;I max_dist;e axis=x|y|z".
+    05 FILLER PIC X(24) VALUE "pos_rule_test".
+    05 FILLER PIC X(48) VALUE "linear_pos".
+    05 FILLER PIC X(600) VALUE "n min_chance=0..1;n max_chance=0..1;i min_dist;i max_dist".
     05 FILLER PIC X(24) VALUE "block_state".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "D Name;o Properties                                                                                 ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "D id;o properties".
     05 FILLER PIC X(24) VALUE "block_entity_modifier".
     05 FILLER PIC X(48) VALUE "passthrough".
-    05 FILLER PIC X(100) VALUE "x type                                                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "block_entity_modifier".
     05 FILLER PIC X(48) VALUE "clear".
-    05 FILLER PIC X(100) VALUE "x type                                                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "block_entity_modifier".
     05 FILLER PIC X(48) VALUE "append_static".
-    05 FILLER PIC X(100) VALUE "O data                                                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "O data".
     05 FILLER PIC X(24) VALUE "block_entity_modifier".
     05 FILLER PIC X(48) VALUE "append_loot".
-    05 FILLER PIC X(100) VALUE "D loot_table                                                                                        ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
- 01 WS-ROW-COUNT           BINARY-LONG VALUE 23.
+    05 FILLER PIC X(600) VALUE "D loot_table".
+ 01 WS-ROW-COUNT           BINARY-LONG VALUE 47.
  01 WS-NOT-STRICT          BINARY-LONG VALUE 0.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/structure".
  01 WS-GROUP-1            PIC X(24) VALUE "structure".

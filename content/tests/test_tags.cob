@@ -1,6 +1,6 @@
 *> Test of tag loading and resolution (T0198; docs/protocol/23-registry-loading.md section 6, worked examples 6.7).
 *> TAGS-BEGIN (no parameters) forgets the collected tag files. TAG-ADD-FILE USING registry (PIC X(48)), tag key
-*> (PIC X(64)), pack name (PIC X(32), for messages), text area, length, status adds one pack's tag file in
+*> (PIC X(112)), pack name (PIC X(32), for messages), text area, length, status adds one pack's tag file in
 *> pack order, lowest priority first (6.2, 6.3 step A): CT-OK, or CT-BAD-DATA when the file is ignored (the
 *> one place a bad data file is not fatal, 6.3); a file that fails to parse leaves no trace, one that
 *> fails to decode leaves the tag existing with what the other packs gave it. TAGS-BUILD USING registry,
@@ -18,7 +18,7 @@
  COPY TESTLIB.
  COPY CONTENT.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-PACK                PIC X(32).
  01 WS-JSON                PIC X(1500).
  01 WS-LENGTH              BINARY-LONG.
@@ -28,7 +28,7 @@
     05 WS-ID               BINARY-LONG OCCURS 64 TIMES.
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-RESULT              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-BLOCK-ID            BINARY-LONG.
  01 WS-BLOCK-ROW           PIC X(819).
  01 WS-LOOKUP-STATUS       BINARY-LONG.
@@ -432,10 +432,18 @@
      PERFORM ADD-FILE
      PERFORM EXPECT-BAD
      MOVE "minecraft:longid" TO WS-TAG
-     MOVE '{"values": ["minecraft:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]}'
+     MOVE '{"values": ["minecraft:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]}'
          TO WS-JSON
      PERFORM ADD-FILE
      PERFORM EXPECT-BAD
+*>   48 section 1.3: a tag key may be 68 bytes (tags/worldgen) and an entry id longer than 64 bytes.
+     MOVE "minecraft:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" TO WS-TAG
+     MOVE '{"values": ["minecraft:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}' TO WS-JSON
+     PERFORM ADD-FILE
+     MOVE "tags: a tag key of 70 bytes with an entry of 80 bytes is read" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
      MOVE "minecraft:withbad" TO WS-TAG
      MOVE '{"values": ["minecraft:stone"]}' TO WS-JSON
      PERFORM ADD-FILE

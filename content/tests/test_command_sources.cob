@@ -1,8 +1,8 @@
 *> Test of the registry sources the commands name (T0280; docs/protocol/16-commands-catalog.md section 13 and the argument
 *> types of 15-commands-framework.md 6.7: item, block, entity_type, mob_effect, enchantment, attribute, biome, structure,
 *> particle_type, game_rule, point_of_interest_type, world_clock, timeline, dialog, feature, template_pool, sound_event).
-*> CONTENT-REGISTRY-COUNT USING registry (PIC X(64)), count out, status; CONTENT-REGISTRY-ENTRY USING registry, id,
-*> key out (PIC X(64)), key length out, payload area, capacity, payload length out, status: every one of these registries
+*> CONTENT-REGISTRY-COUNT USING registry (PIC X(112)), count out, status; CONTENT-REGISTRY-ENTRY USING registry, id,
+*> key out (PIC X(112)), key length out, payload area, capacity, payload length out, status: every one of these registries
 *> enumerates in id order, for the standard set (opened over content/tests/fixtures/std, copied to
 *> build/content-test/cmdsrc) and for the cobolcraft set. Counts and keys are those of 46 (static registries), 24/25/21
 *> (block, item, entity type), 16 section 13 (game rules) and cobolcraft-standard-core.md sections 2 and 3 (the
@@ -17,19 +17,19 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-TYPE                BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-STATIC-REGISTRY     PIC X(48).
  01 WS-COUNT               BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-BACK-ID             BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PAYLOAD             PIC X(2000).
  01 WS-CAPACITY            BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-WANT-COUNT          BINARY-LONG.
- 01 WS-FIRST               PIC X(64).
- 01 WS-LAST                PIC X(64).
+ 01 WS-FIRST               PIC X(112).
+ 01 WS-LAST                PIC X(112).
  01 WS-BAD                 BINARY-LONG.
  01 WS-PAYLOADS            BINARY-LONG VALUE 0.
  01 WS-LABEL               PIC X(60).

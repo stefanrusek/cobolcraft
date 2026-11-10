@@ -20,7 +20,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
@@ -36,13 +36,13 @@
  01 WS-POS                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-N                   PIC Z(5)9.
- 01 WS-REGISTRY            PIC X(64).
+ 01 WS-REGISTRY            PIC X(112).
  01 WS-REGISTRY-48         PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-PACK                PIC X(32) VALUE "pack".
  01 WS-JSON                PIC X(120000).
  01 WS-LENGTH              BINARY-LONG.
- 01 WS-ENTRY-KEY           PIC X(64).
+ 01 WS-ENTRY-KEY           PIC X(112).
  01 WS-ENTRY-LENGTH        BINARY-LONG.
  01 WS-PAYLOAD             PIC X(100).
  01 WS-CAPACITY            BINARY-LONG.
@@ -219,19 +219,24 @@
      MOVE "cover: a tag entry over 128 bytes is ignored" TO TL-CASE
      PERFORM ASSERT-STATUS
      MOVE SPACES TO WS-JSON
-     STRING '{"values": ["' WS-BIG(1:65) '"]}' DELIMITED BY SIZE INTO WS-JSON
+     STRING '{"values": ["' WS-BIG(1:113) '"]}' DELIMITED BY SIZE INTO WS-JSON
      PERFORM ADD-TAG
-     MOVE "cover: a path of 65 bytes is ignored" TO TL-CASE
+     MOVE "cover: a path of 113 bytes is ignored" TO TL-CASE
      PERFORM ASSERT-STATUS
      MOVE SPACES TO WS-JSON
-     STRING '{"values": ["' WS-BIG(1:64) ':x"]}' DELIMITED BY SIZE INTO WS-JSON
+     STRING '{"values": ["x:' WS-BIG(1:113) '"]}' DELIMITED BY SIZE INTO WS-JSON
      PERFORM ADD-TAG
-     MOVE "cover: a namespace of 64 bytes is ignored" TO TL-CASE
+     MOVE "cover: a path of 113 bytes after a namespace is ignored" TO TL-CASE
      PERFORM ASSERT-STATUS
      MOVE SPACES TO WS-JSON
-     STRING '{"values": ["' WS-BIG(1:40) ':' WS-BIG(1:40) '"]}' DELIMITED BY SIZE INTO WS-JSON
+     STRING '{"values": ["' WS-BIG(1:113) ':x"]}' DELIMITED BY SIZE INTO WS-JSON
      PERFORM ADD-TAG
-     MOVE "cover: a key of 81 bytes is ignored" TO TL-CASE
+     MOVE "cover: a namespace of 113 bytes is ignored" TO TL-CASE
+     PERFORM ASSERT-STATUS
+     MOVE SPACES TO WS-JSON
+     STRING '{"values": ["' WS-BIG(1:56) ':' WS-BIG(1:56) '"]}' DELIMITED BY SIZE INTO WS-JSON
+     PERFORM ADD-TAG
+     MOVE "cover: a key of 113 bytes is ignored" TO TL-CASE
      PERFORM ASSERT-STATUS
      MOVE '{"values": ["minecraft:"]}' TO WS-JSON
      PERFORM ADD-TAG

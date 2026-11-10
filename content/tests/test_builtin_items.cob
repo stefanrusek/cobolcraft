@@ -9,7 +9,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROW                 PIC X(270).
@@ -27,7 +27,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-NUM                 PIC 99.
  01 WS-TAG-REGISTRY        PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-RESULT              BINARY-LONG.
 *> Key, block it places (empty: none) and stack size of each item (standin 2, core 5.2).
  01 WS-ITEMS.

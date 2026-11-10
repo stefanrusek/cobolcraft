@@ -7,10 +7,9 @@
 *> that phase 22 already loads are also loaded by NOISE-SETTINGS-LOAD, NOISES-LOAD, DENSITY-FUNCTIONS-LOAD
 *> (worldgen-*.cob, dimensions.cob), whose errors count for this loader; their store (CTWORLDGEN.cpy) is put back when
 *> the part fails. Constraints the shape forms cannot state are noted in the test.
-*> ASSUMPTION: noise_settings member debug_functions is an array (the document says three labelled entries N, T, V; the
-*> member names of an entry are not stated, so entries are not checked).
-*> ASSUMPTION: the noise_router members are the eight keys of section 6.9, each a number, a reference string or an object
-*> (form X, not checked further).
+*> 48 2.7 and 2.8: noise_settings requires debug_functions (an array of {function, label}, both required, function an id or a
+*> density function object), default_block and default_fluid (block states: a block id or {id, properties?}, form Q), and the eight
+*> noise_router members (each a number, a reference id or an object, form X); the spawn_target boxes are read by NOISE-SETTINGS-LOAD.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOAD-37-2.
  DATA DIVISION.
@@ -20,44 +19,23 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "noise_settings".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "I sea_level;B legacy_random_source;b disable_mob_generation;T noise=noise_bounds;T default_block=blo".
-    05 FILLER PIC X(100) VALUE "ck_state;T default_fluid=block_state;R material_rule=material_rule;T noise_router=noise_router;a spa".
-    05 FILLER PIC X(100) VALUE "wn_target;a debug_functions;o aquifers                                                              ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "I sea_level;B legacy_random_source;B disable_mob_generation;T noise=noise_boun" &
+        "ds;Q default_block;Q default_fluid;R material_rule=material_rule;T noise_route" &
+        "r=noise_router;A spawn_target;L debug_functions=debug_function;o aquifers".
     05 FILLER PIC X(24) VALUE "noise_bounds".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "I min_y=-2032..2031;I height=0..4064                                                                ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(24) VALUE "block_state".
+    05 FILLER PIC X(600) VALUE "I min_y=-2032..2031;I height=0..4064".
+    05 FILLER PIC X(24) VALUE "debug_function".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "S Name;o Properties                                                                                 ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "X function;S label".
     05 FILLER PIC X(24) VALUE "noise_router".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "X temperature;X vegetation;X continents;X erosion;X depth;X ridges;X chunk_surface_level;X final_den".
-    05 FILLER PIC X(100) VALUE "sity                                                                                                ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "X temperature;X vegetation;X continents;X erosion;X depth;X ridges;X chunk_sur" &
+        "face_level;X final_density".
     05 FILLER PIC X(24) VALUE "noise".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "I base_octave;i octave_count=1..32;N base_amplitude;a amplitude_modifiers;e normalize=enabled|disabl".
-    05 FILLER PIC X(100) VALUE "ed|legacy                                                                                           ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "I base_octave;i octave_count=1..32;N base_amplitude;a amplitude_modifiers;e no" &
+        "rmalize=enabled|disabled|legacy".
  01 WS-ROW-COUNT           BINARY-LONG VALUE 5.
  01 WS-REG-1              PIC X(48) VALUE "worldgen/noise_settings".
  01 WS-GROUP-1            PIC X(24) VALUE "noise_settings".

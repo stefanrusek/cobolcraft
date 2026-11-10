@@ -1,1 +1,1 @@
-{"type":"minecraft:simple_block","to_place":{"type":"minecraft:simple","state":{"Name":"minecraft:short_grass"}},"schedule_tick":false}
+{"type":"minecraft:simple_block","to_place":{"type":"minecraft:simple","state":{"id":"minecraft:short_grass"}},"schedule_tick":false}

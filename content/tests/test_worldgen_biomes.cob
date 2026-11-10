@@ -18,7 +18,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-NODE                BINARY-LONG.
  01 WS-NODE-2              BINARY-LONG.
  01 WS-LABEL               PIC X(70).

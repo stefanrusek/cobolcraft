@@ -16,44 +16,21 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "structure".
     05 FILLER PIC X(48) VALUE "woodland_mansion".
-    05 FILLER PIC X(100) VALUE "H biomes=biome;O spawn_overrides;D step;d terrain_adaptation                                        ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "H biomes=biome;O spawn_overrides;D step;d terrain_adaptation".
     05 FILLER PIC X(24) VALUE "structure_placement".
     05 FILLER PIC X(48) VALUE "random_spread".
-    05 FILLER PIC X(100) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangular;n frequency=0..1;d".
-    05 FILLER PIC X(100) VALUE " frequency_reduction_method;t exclusion_zone=exclusion_zone;a locate_offset                         ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "I spacing=0..4096;I separation=0..4096;I salt=0..;e spread_type=linear|triangu" &
+        "lar;n frequency=0..1;d frequency_reduction_method;t exclusion_zone=exclusion_z" &
+        "one;a locate_offset".
     05 FILLER PIC X(24) VALUE "exclusion_zone".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R other_set=structure_set;I chunk_count=1..16                                                       ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "R other_set=structure_set;I chunk_count=1..16".
     05 FILLER PIC X(24) VALUE "structure_set".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "L structures=structure_entry;T placement=structure_placement                                        ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "L structures=structure_entry;T placement=structure_placement".
     05 FILLER PIC X(24) VALUE "structure_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R structure=structure;I weight=1..                                                                  ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
-    05 FILLER PIC X(100) VALUE "                                                                                                    ".
+    05 FILLER PIC X(600) VALUE "R structure=structure;I weight=1..".
  01 WS-ROW-COUNT           BINARY-LONG VALUE 5.
  01 WS-NOT-STRICT          BINARY-LONG VALUE 0.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/structure".

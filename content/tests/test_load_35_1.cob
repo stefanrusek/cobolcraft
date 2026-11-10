@@ -18,51 +18,51 @@
  01 WS-LABEL               PIC X(60).
  01 WS-ELEMENTS.
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:trees_plains".
+    05 FILLER PIC X(112) VALUE "minecraft:trees_plains".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:flower_plain".
+    05 FILLER PIC X(112) VALUE "minecraft:flower_plain".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:glow_lichen".
+    05 FILLER PIC X(112) VALUE "minecraft:glow_lichen".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:cave_vines".
+    05 FILLER PIC X(112) VALUE "minecraft:cave_vines".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_platform".
+    05 FILLER PIC X(112) VALUE "minecraft:end_platform".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/placed_feature".
-    05 FILLER PIC X(64) VALUE "minecraft:empty".
+    05 FILLER PIC X(112) VALUE "minecraft:empty".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:nothing".
+    05 FILLER PIC X(112) VALUE "minecraft:nothing".
     05 FILLER PIC X(48) VALUE "no_op".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:trees_plains".
+    05 FILLER PIC X(112) VALUE "minecraft:trees_plains".
     05 FILLER PIC X(48) VALUE "random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:simple_sel".
+    05 FILLER PIC X(112) VALUE "minecraft:simple_sel".
     05 FILLER PIC X(48) VALUE "simple_random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:tag_sel".
+    05 FILLER PIC X(112) VALUE "minecraft:tag_sel".
     05 FILLER PIC X(48) VALUE "simple_random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:boolean".
+    05 FILLER PIC X(112) VALUE "minecraft:boolean".
     05 FILLER PIC X(48) VALUE "random_boolean_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:weighted".
+    05 FILLER PIC X(112) VALUE "minecraft:weighted".
     05 FILLER PIC X(48) VALUE "weighted_random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sequence".
+    05 FILLER PIC X(112) VALUE "minecraft:sequence".
     05 FILLER PIC X(48) VALUE "sequence".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:other_part".
+    05 FILLER PIC X(112) VALUE "minecraft:other_part".
     05 FILLER PIC X(48) VALUE "unregistered".
  01 WS-ELEMENT-TABLE REDEFINES WS-ELEMENTS.
     05 WS-E OCCURS 14 TIMES.
        10 WS-E-REGISTRY      PIC X(48).
-       10 WS-E-KEY           PIC X(64).
+       10 WS-E-KEY           PIC X(112).
        10 WS-E-TYPE          PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "a placed feature without a feature".

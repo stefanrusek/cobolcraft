@@ -102,7 +102,7 @@
 *> the tag with TAG-PUT. Shared by the built-in block and item layers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-LIST                PIC X(100).
  01 WS-POINTER             BINARY-LONG.
  01 WS-TOKEN               PIC X(12).

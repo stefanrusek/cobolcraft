@@ -4,7 +4,7 @@
 *> reads data/<namespace>/recipe/**/*.json through the registry loader (strict JSON, identifiers, listing order:
 *> path first, then namespace) and parses each file into a row of RC-STORE (CTRECIPE.cpy); the recipe advancements
 *> data/<namespace>/advancement/recipes/**/*.json give each recipe its unlock conditions (27 5.9). RECIPE-FIND USING
-*> key (PIC X(64)), row out (BINARY-LONG, 0 when not found). RECIPES-FREE empties the store. The fixture tree is
+*> key (PIC X(112)), row out (BINARY-LONG, 0 when not found). RECIPES-FREE empties the store. The fixture tree is
 *> content/tests/fixtures/recipes (31 recipes of every serializer family, three namespaces' worth of ordering, four
 *> recipe advancements); the failing trees are copies of it under build/content-test/recipes altered per case.
  IDENTIFICATION DIVISION.
@@ -16,7 +16,7 @@
  COPY CTRECIPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  01 WS-LABEL               PIC X(60).
  01 WS-GOT-N               BINARY-LONG.
@@ -879,10 +879,20 @@
      PERFORM FRESH-TREE
      CALL "SYSTEM" USING "printf '{""type"":""minecraft:crafting_shapeless"",""ingredients"":[""""],""result"":{""id"":""minecraft:b""}}' > build/content-test/recipes/t/data/minecraft/recipe/bad.json"
      PERFORM LOAD-FAILS
-     MOVE "an ingredient list over 160 bytes" TO WS-T
+     MOVE "an ingredient list over 800 bytes" TO WS-T
      PERFORM FRESH-TREE
-     CALL "SYSTEM" USING "(printf '{""type"":""minecraft:crafting_shapeless"",""ingredients"":[['; for i in $(seq 1 12); do printf '""minecraft:long_item_name_%s"",' $i; done; printf '""x""]],""result"":{""id"":""minecraft:b""}}') > build/content-test/recipes/t/data/minecraft/recipe/bad.json"
+     CALL "SYSTEM" USING "(printf '{""type"":""minecraft:crafting_shapeless"",""ingredients"":[['; for i in $(seq 1 40); do printf '""minecraft:long_item_name_%s"",' $i; done; printf '""x""]],""result"":{""id"":""minecraft:b""}}') > build/content-test/recipes/t/data/minecraft/recipe/bad.json"
      PERFORM LOAD-FAILS
+*>   48 section 4.7: an ingredient may be a list of 16 ids (a choice, 783 bytes at most) and a recipe id may be 88 bytes long.
+     MOVE "a choice ingredient of 16 ids and a recipe key of 88 bytes" TO WS-T
+     PERFORM FRESH-TREE
+     CALL "SYSTEM" USING "f=$(printf 'r%.0s' $(seq 1 88)); (printf '{""type"":""minecraft:crafting_shapeless"",""ingredients"":[['; for i in $(seq 1 15); do printf '""minecraft:iron_pickaxe_%s"",' $i; done; printf '""x""]],""result"":{""id"":""minecraft:b""}}') > build/content-test/recipes/t/data/minecraft/recipe/$f.json"
+     CALL "RECIPES-LOAD" USING WS-DIR WS-STATUS
+     MOVE "recipes: a choice ingredient of 16 ids and a key of 88 bytes loads" TO TL-CASE
+     MOVE CT-OK TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     PERFORM ASSERT-NUM
+     CALL "RECIPES-FREE"
      MOVE "a smelting recipe without cookingtime" TO WS-T
      PERFORM FRESH-TREE
      CALL "SYSTEM" USING "printf '{""type"":""minecraft:smelting"",""ingredient"":""minecraft:a"",""result"":{""id"":""minecraft:b""}}' > build/content-test/recipes/t/data/minecraft/recipe/bad.json"

@@ -3,7 +3,7 @@
 *> data/), status out (CT-OK, or CT-BAD-DATA with every error printed on standard error as "ERROR registry: noise <key>:
 *> <detail>" or "... density function <key>: ..."; nothing of the failed registry stays loaded): the files of
 *> data/<namespace>/worldgen/noise and worldgen/density_function become function rows (WGF-ROW of CTWORLDGEN.cpy,
-*> kinds 8 and 1, listing order) over trees of nodes. WG-FIND USING kind, key (PIC X(64)), root node out (0 when not
+*> kinds 8 and 1, listing order) over trees of nodes. WG-FIND USING kind, key (PIC X(112)), root node out (0 when not
 *> found); WG-TYPE-AT USING type index, domain out, name out (PIC X(32)), field list out (PIC X(640)); WORLDGEN-FREE
 *> empties the store. Numbers are read with cc_f64_from_text, so the bits of a double are those of its decimal text.
 *> The fixture tree is content/tests/fixtures/worldgen (3 noises, 8 density functions); the failing trees are copies
@@ -18,7 +18,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-NODE                BINARY-LONG.
  01 WS-NODE-2              BINARY-LONG.
  01 WS-NODE-3              BINARY-LONG.

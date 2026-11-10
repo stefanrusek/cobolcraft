@@ -5,21 +5,18 @@
 *> Registry worldgen/feature (23 section 2.1): the feature types 35-7 owns: delta_feature (3), stepped_column_cluster (4), end_spike (8.1),
 *> chorus_plant (9, no members), end_island (10.1), end_platform (10.2), end_podium (10.3), end_gateway (10.4), void_start_platform (10.5), and the
 *> ones section 6.2 and 11 restate: replace_single_block (6.2), bonus_chest (11.1, no members) and template (11.3). Not strict: the other feature
-*> types belong to the sibling parts. Groups shared with sibling parts (identical rows everywhere): block_state (S Name;o Properties), template_entry,
+*> types belong to the sibling parts. Groups shared with sibling parts (identical rows everywhere): block_state (D id;o properties), template_entry,
 *> template_weighted. The block member of stepped_column_cluster is a state provider value, a registry reference or a bare state (35-2 section 4), so it
 *> is checked as any value. The RuleTest of replace_single_block is not read by the document (Open question 2): its target is checked as an object.
-*> ASSUMPTION: replace_single_block.targets entries are objects with members target (an object) and state (a block state), both required (35-7 section 6.2 names them: {target: RuleTest, state}).
-*> ASSUMPTION: end_gateway.exit and end_spike.crystal_beam_target are arrays (35-7 states a block position [x, y, z]; the three-element length and integer entries are not checked).
-*> ASSUMPTION: delta_feature.size/rim_size and stepped_column_cluster provider members accept a number or an object of the provider group; their documented ranges (0..16, 1..150 ...) are limits of the provider value and are not checked.
+*> 48 2.8 (feature / targets): an entry has the members state (a block state: a block id or {id, properties?}, form Q) and target (a rule test object), both required.
+*> 48 3.1: end_gateway.exit is an array of integers (optional, 1 of 2) and exact is required; end_spike.spikes is an array (empty in the data), crystal_beam_target an array (the three-element length and integer entries are not checked).
+*> 48 3.1: delta_feature size and rim_size are provider objects, contents and rim block ids; stepped_column_cluster has block (a state), integers cluster_reach and column_count, column_reach an integer or a provider; their documented ranges (0..16, 1..150 ...) are limits of the provider value and are not checked.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOAD-35-7.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  01 WS-ROWS.
-    05 FILLER PIC X(24) VALUE "block_state".
-    05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(600) VALUE "S Name;o Properties".
     05 FILLER PIC X(24) VALUE "template_entry".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(600) VALUE "D id;a rotations".
@@ -31,16 +28,15 @@
     05 FILLER PIC X(600) VALUE "i centerX;i centerZ;i radius;i height;b guarded".
     05 FILLER PIC X(24) VALUE "block_replacement".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(600) VALUE "O target;T state=block_state".
+    05 FILLER PIC X(600) VALUE "O target;Q state".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "delta_feature".
-    05 FILLER PIC X(600) VALUE "T contents=block_state;T rim=block_state;V size=int_provider;V rim_size=int_prov" &
-        "ider".
+    05 FILLER PIC X(600) VALUE "D contents;D rim;V size=int_provider;V rim_size=int_provider".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "stepped_column_cluster".
-    05 FILLER PIC X(600) VALUE "X block;T continue_through=block_predicate;T can_replace=block_predicate;H canno" &
-        "t_place_on=block;V cluster_reach=int_provider;V column_count=int_provider;V colu" &
-        "mn_reach=int_provider;V height=int_provider".
+    05 FILLER PIC X(600) VALUE "Q block;T continue_through=block_predicate;T can_replace=block_predicate;H can" &
+        "not_place_on=block;I cluster_reach;I column_count;V column_reach=int_provider;" &
+        "V height=int_provider".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "end_spike".
     05 FILLER PIC X(600) VALUE "L spikes=end_spike_entry;b crystal_invulnerable;a crystal_beam_target".
@@ -70,8 +66,8 @@
     05 FILLER PIC X(600) VALUE SPACES.
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "template".
-    05 FILLER PIC X(600) VALUE "L templates=template_weighted;x processors".
- 01 WS-ROW-COUNT           BINARY-LONG VALUE 17.
+    05 FILLER PIC X(600) VALUE "L templates=template_weighted;o processors".
+ 01 WS-ROW-COUNT           BINARY-LONG VALUE 16.
  01 WS-REGISTRY-1         PIC X(48) VALUE "worldgen/feature".
  01 WS-GROUP-1            PIC X(24) VALUE "feature".
  01 WS-STRICT-1           BINARY-LONG VALUE 0.

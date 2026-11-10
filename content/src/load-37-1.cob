@@ -7,8 +7,8 @@
 *> that phase 22 already loads are also loaded by DIMENSION-TYPES-LOAD (worldgen-*.cob, dimensions.cob), whose errors
 *> count for this loader; their store (CTWORLDGEN.cpy) is put back when the part fails. Constraints the shape forms
 *> cannot state are noted in the test.
-*> ASSUMPTION: worldgen/world_preset element is an object with a required member dimensions (an object keyed by level
-*> key); the document names the file (normal.json) and the wiring but not the JSON members.
+*> 48 2.7: a worldgen/world_preset file is an object with the required member dimensions (an object keyed by level key, each
+*> value a typed object: 48 3.23); a dimension_type file requires the members of 48 2.7 as the rows below name them.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LOAD-37-1.
  DATA DIVISION.

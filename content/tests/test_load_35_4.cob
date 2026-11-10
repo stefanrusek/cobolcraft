@@ -18,75 +18,75 @@
  01 WS-LABEL               PIC X(60).
  01 WS-ELEMENTS.
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:tree_all_decorators".
+    05 FILLER PIC X(112) VALUE "minecraft:tree_all_decorators".
     05 FILLER PIC X(48) VALUE "tree".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:tree_attached".
+    05 FILLER PIC X(112) VALUE "minecraft:tree_attached".
     05 FILLER PIC X(48) VALUE "tree".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:grass".
+    05 FILLER PIC X(112) VALUE "minecraft:grass".
     05 FILLER PIC X(48) VALUE "simple_block".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:flower".
+    05 FILLER PIC X(112) VALUE "minecraft:flower".
     05 FILLER PIC X(48) VALUE "simple_block".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:kelp".
+    05 FILLER PIC X(112) VALUE "minecraft:kelp".
     05 FILLER PIC X(48) VALUE "block_column".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:bamboo".
+    05 FILLER PIC X(112) VALUE "minecraft:bamboo".
     05 FILLER PIC X(48) VALUE "bamboo".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:vines".
+    05 FILLER PIC X(112) VALUE "minecraft:vines".
     05 FILLER PIC X(48) VALUE "vines".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:pillar".
+    05 FILLER PIC X(112) VALUE "minecraft:pillar".
     05 FILLER PIC X(48) VALUE "single_block_pillar".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:pillar_full".
+    05 FILLER PIC X(112) VALUE "minecraft:pillar_full".
     05 FILLER PIC X(48) VALUE "single_block_pillar".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:glowstone_extra".
+    05 FILLER PIC X(112) VALUE "minecraft:glowstone_extra".
     05 FILLER PIC X(48) VALUE "random_neighbor_spread".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:weeping_vines".
+    05 FILLER PIC X(112) VALUE "minecraft:weeping_vines".
     05 FILLER PIC X(48) VALUE "overlay".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:replace".
+    05 FILLER PIC X(112) VALUE "minecraft:replace".
     05 FILLER PIC X(48) VALUE "replace_single_block".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:basalt_pillar".
+    05 FILLER PIC X(112) VALUE "minecraft:basalt_pillar".
     05 FILLER PIC X(48) VALUE "projected_random_patchy_square".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:glow_lichen".
+    05 FILLER PIC X(112) VALUE "minecraft:glow_lichen".
     05 FILLER PIC X(48) VALUE "multiface_growth".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:glow_lichen_min".
+    05 FILLER PIC X(112) VALUE "minecraft:glow_lichen_min".
     05 FILLER PIC X(48) VALUE "multiface_growth".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:moss_patch".
+    05 FILLER PIC X(112) VALUE "minecraft:moss_patch".
     05 FILLER PIC X(48) VALUE "vegetation_patch".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:clay_pool".
+    05 FILLER PIC X(112) VALUE "minecraft:clay_pool".
     05 FILLER PIC X(48) VALUE "waterlogged_vegetation_patch".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:azalea".
+    05 FILLER PIC X(112) VALUE "minecraft:azalea".
     05 FILLER PIC X(48) VALUE "root_system".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:brown".
+    05 FILLER PIC X(112) VALUE "minecraft:brown".
     05 FILLER PIC X(48) VALUE "huge_brown_mushroom".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:red".
+    05 FILLER PIC X(112) VALUE "minecraft:red".
     05 FILLER PIC X(48) VALUE "huge_red_mushroom".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:crimson_fungus".
+    05 FILLER PIC X(112) VALUE "minecraft:crimson_fungus".
     05 FILLER PIC X(48) VALUE "huge_fungus".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:other_part".
+    05 FILLER PIC X(112) VALUE "minecraft:other_part".
     05 FILLER PIC X(48) VALUE "unregistered".
  01 WS-ELEMENT-TABLE REDEFINES WS-ELEMENTS.
     05 WS-E OCCURS 22 TIMES.
        10 WS-E-REGISTRY      PIC X(48).
-       10 WS-E-KEY           PIC X(64).
+       10 WS-E-KEY           PIC X(112).
        10 WS-E-TYPE          PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "trunk_vine as a number".
@@ -210,7 +210,7 @@
     05 FILLER PIC X(60) VALUE '","radius":1},"minimum_size":{"type":"minecraft:two_layers_f'.
     05 FILLER PIC X(60) VALUE 'eature_size"},"below_trunk_provider":"a:c","decorators":[{"t'.
     05 FILLER PIC X(60) VALUE 'ype":"minecraft:attached_to_logs","probability":0.5,"block_p'.
-    05 FILLER PIC X(60) VALUE 'rovider":{"Name":"a"}}]}'.
+    05 FILLER PIC X(60) VALUE 'rovider":{"id"  :"a"}}]}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -224,7 +224,7 @@
     05 FILLER PIC X(60) VALUE '","radius":1},"minimum_size":{"type":"minecraft:two_layers_f'.
     05 FILLER PIC X(60) VALUE 'eature_size"},"below_trunk_provider":"a:c","decorators":[{"t'.
     05 FILLER PIC X(60) VALUE 'ype":"minecraft:attached_to_logs","probability":0.5,"block_p'.
-    05 FILLER PIC X(60) VALUE 'rovider":{"Name":"a"},"directions":["Up"]}]}'.
+    05 FILLER PIC X(60) VALUE 'rovider":{"id"  :"a"},"directions":["Up"]}]}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -239,7 +239,7 @@
     05 FILLER PIC X(60) VALUE 'eature_size"},"below_trunk_provider":"a:c","decorators":[{"t'.
     05 FILLER PIC X(60) VALUE 'ype":"minecraft:attached_to_leaves","probability":0.1,"exclu'.
     05 FILLER PIC X(60) VALUE 'sion_radius_xz":17,"exclusion_radius_y":0,"block_provider":{'.
-    05 FILLER PIC X(60) VALUE '"Name":"a"},"required_empty_blocks":2,"directions":["down"]}'.
+    05 FILLER PIC X(60) VALUE '"id"  :"a"},"required_empty_blocks":2,"directions":["down"]}'.
     05 FILLER PIC X(60) VALUE ']}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -266,7 +266,7 @@
     05 FILLER PIC X(60) VALUE '","radius":1},"minimum_size":{"type":"minecraft:two_layers_f'.
     05 FILLER PIC X(60) VALUE 'eature_size"},"below_trunk_provider":"a:c","decorators":[{"t'.
     05 FILLER PIC X(60) VALUE 'ype":"minecraft:place_on_ground","tries":0,"block_state_prov'.
-    05 FILLER PIC X(60) VALUE 'ider":{"Name":"a"}}]}'.
+    05 FILLER PIC X(60) VALUE 'ider":{"id"  :"a"}}]}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -280,7 +280,7 @@
     05 FILLER PIC X(60) VALUE '","radius":1},"minimum_size":{"type":"minecraft:two_layers_f'.
     05 FILLER PIC X(60) VALUE 'eature_size"},"below_trunk_provider":"a:c","decorators":[{"t'.
     05 FILLER PIC X(60) VALUE 'ype":"minecraft:place_on_ground","radius":-1,"block_state_pr'.
-    05 FILLER PIC X(60) VALUE 'ovider":{"Name":"a"}}]}'.
+    05 FILLER PIC X(60) VALUE 'ovider":{"id"  :"a"}}]}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -329,7 +329,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "simple_block schedule_tick a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:simple_block","to_place":{"Name":"a"},"sc'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:simple_block","to_place":{"id"  :"a"},"sc'.
     05 FILLER PIC X(60) VALUE 'hedule_tick":1}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -441,7 +441,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "single_block_pillar direction north".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"Name":"a"}'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"id"  :"a"}'.
     05 FILLER PIC X(60) VALUE ',"direction":"north"}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -455,7 +455,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "single_block_pillar chance_to_continue 2".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"Name":"a"}'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"id"  :"a"}'.
     05 FILLER PIC X(60) VALUE ',"direction":"up","chance_to_continue":2}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -469,7 +469,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "single_block_pillar cap_feature bad".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"Name":"a"}'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:single_block_pillar","block":{"id"  :"a"}'.
     05 FILLER PIC X(60) VALUE ',"direction":"up","cap_feature":3}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -483,7 +483,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "random_neighbor_spread without attempts".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:random_neighbor_spread","block":{"Name":"'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:random_neighbor_spread","block":{"id"  :"'.
     05 FILLER PIC X(60) VALUE 'a"},"accepted_neighbors":"minecraft:a","can_replace":{"type"'.
     05 FILLER PIC X(60) VALUE ':"minecraft:true"},"xz_offset":1,"y_offset":1}'.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -497,7 +497,7 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "random_neighbor_spread without can_replace".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:random_neighbor_spread","block":{"Name":"'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:random_neighbor_spread","block":{"id"  :"'.
     05 FILLER PIC X(60) VALUE 'a"},"accepted_neighbors":"minecraft:a","attempts":1,"xz_offs'.
     05 FILLER PIC X(60) VALUE 'et":1,"y_offset":1}'.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -568,7 +568,7 @@
     05 FILLER PIC X(60) VALUE "projected_random_patchy_square without size".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:projected_random_patchy_square","block":{'.
-    05 FILLER PIC X(60) VALUE '"Name":"a"},"project_through":{"type":"minecraft:true"},"max'.
+    05 FILLER PIC X(60) VALUE '"id"  :"a"},"project_through":{"type":"minecraft:true"},"max'.
     05 FILLER PIC X(60) VALUE '_projection_height":3}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -582,7 +582,7 @@
     05 FILLER PIC X(60) VALUE "max_projection_height negative".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:projected_random_patchy_square","block":{'.
-    05 FILLER PIC X(60) VALUE '"Name":"a"},"project_through":{"type":"minecraft:true"},"siz'.
+    05 FILLER PIC X(60) VALUE '"id"  :"a"},"project_through":{"type":"minecraft:true"},"siz'.
     05 FILLER PIC X(60) VALUE 'e":3,"max_projection_height":-1}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -680,7 +680,7 @@
     05 FILLER PIC X(60) VALUE "vegetation_patch surface wall".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:vegetation_patch","replaceable":"#minecra'.
-    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"Name":"minecraft:moss_'.
+    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"id"  :"minecraft:moss_'.
     05 FILLER PIC X(60) VALUE 'block"},"vegetation_feature":"minecraft:moss_vegetation","su'.
     05 FILLER PIC X(60) VALUE 'rface":"wall","depth":1,"extra_bottom_block_chance":0.0,"ver'.
     05 FILLER PIC X(60) VALUE 'tical_range":5,"vegetation_chance":0.8,"xz_radius":{"type":"'.
@@ -694,7 +694,7 @@
     05 FILLER PIC X(60) VALUE "vegetation_patch vertical_range 257".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:vegetation_patch","replaceable":"#minecra'.
-    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"Name":"minecraft:moss_'.
+    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"id"  :"minecraft:moss_'.
     05 FILLER PIC X(60) VALUE 'block"},"vegetation_feature":"minecraft:moss_vegetation","su'.
     05 FILLER PIC X(60) VALUE 'rface":"floor","depth":1,"extra_bottom_block_chance":0.0,"ve'.
     05 FILLER PIC X(60) VALUE 'rtical_range":257,"vegetation_chance":0.8,"xz_radius":{"type'.
@@ -708,7 +708,7 @@
     05 FILLER PIC X(60) VALUE "vegetation_patch vegetation_chance 2".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:vegetation_patch","replaceable":"#minecra'.
-    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"Name":"minecraft:moss_'.
+    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"id"  :"minecraft:moss_'.
     05 FILLER PIC X(60) VALUE 'block"},"vegetation_feature":"minecraft:moss_vegetation","su'.
     05 FILLER PIC X(60) VALUE 'rface":"floor","depth":1,"extra_bottom_block_chance":0.0,"ve'.
     05 FILLER PIC X(60) VALUE 'rtical_range":5,"vegetation_chance":2,"xz_radius":{"type":"m'.
@@ -722,7 +722,7 @@
     05 FILLER PIC X(60) VALUE "vegetation_patch without depth".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:vegetation_patch","replaceable":"#minecra'.
-    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"Name":"minecraft:moss_'.
+    05 FILLER PIC X(60) VALUE 'ft:moss_replaceable","ground_state":{"id"  :"minecraft:moss_'.
     05 FILLER PIC X(60) VALUE 'block"},"vegetation_feature":"minecraft:moss_vegetation","su'.
     05 FILLER PIC X(60) VALUE 'rface":"floor","extra_bottom_block_chance":0.0,"vertical_ran'.
     05 FILLER PIC X(60) VALUE 'ge":5,"vegetation_chance":0.8,"xz_radius":{"type":"minecraft'.
@@ -736,7 +736,7 @@
     05 FILLER PIC X(60) VALUE "vegetation_patch without replaceable".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:waterlogged_vegetation_patch","ground_sta'.
-    05 FILLER PIC X(60) VALUE 'te":{"Name":"minecraft:moss_block"},"vegetation_feature":"mi'.
+    05 FILLER PIC X(60) VALUE 'te":{"id"  :"minecraft:moss_block"},"vegetation_feature":"mi'.
     05 FILLER PIC X(60) VALUE 'necraft:moss_vegetation","surface":"floor","depth":1,"extra_'.
     05 FILLER PIC X(60) VALUE 'bottom_block_chance":0.0,"vertical_range":5,"vegetation_chan'.
     05 FILLER PIC X(60) VALUE 'ce":0.8,"xz_radius":{"type":"minecraft:uniform","min_inclusi'.
@@ -780,10 +780,10 @@
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:root_system","required_vertical_space_for'.
     05 FILLER PIC X(60) VALUE '_tree":2,"level_test_distance":2,"max_level_deviation":3,"ro'.
     05 FILLER PIC X(60) VALUE 'ot_radius":3,"root_replaceable":"#minecraft:azalea_root_repl'.
-    05 FILLER PIC X(60) VALUE 'aceable","root_state_provider":{"Name":"minecraft:rooted_dir'.
+    05 FILLER PIC X(60) VALUE 'aceable","root_state_provider":{"id"  :"minecraft:rooted_dir'.
     05 FILLER PIC X(60) VALUE 't"},"root_placement_attempts":20,"root_column_max_height":10'.
     05 FILLER PIC X(60) VALUE '0,"hanging_root_radius":3,"hanging_roots_vertical_span":2,"h'.
-    05 FILLER PIC X(60) VALUE 'anging_root_state_provider":{"Name":"minecraft:hanging_roots'.
+    05 FILLER PIC X(60) VALUE 'anging_root_state_provider":{"id"  :"minecraft:hanging_roots'.
     05 FILLER PIC X(60) VALUE '"},"hanging_root_placement_attempts":20,"allowed_vertical_wa'.
     05 FILLER PIC X(60) VALUE 'ter_for_tree":2,"allowed_tree_position":{"type":"minecraft:t'.
     05 FILLER PIC X(60) VALUE 'rue"}}'.
@@ -811,7 +811,7 @@
     05 FILLER PIC X(60) VALUE 'minecraft:azalea_root_replaceable","root_state_provider":{"N'.
     05 FILLER PIC X(60) VALUE 'ame":"minecraft:rooted_dirt"},"root_placement_attempts":0,"r'.
     05 FILLER PIC X(60) VALUE 'oot_column_max_height":100,"hanging_root_radius":3,"hanging_'.
-    05 FILLER PIC X(60) VALUE 'roots_vertical_span":2,"hanging_root_state_provider":{"Name"'.
+    05 FILLER PIC X(60) VALUE 'roots_vertical_span":2,"hanging_root_state_provider":{"id"  '.
     05 FILLER PIC X(60) VALUE ':"minecraft:hanging_roots"},"hanging_root_placement_attempts'.
     05 FILLER PIC X(60) VALUE '":20,"allowed_vertical_water_for_tree":2,"allowed_tree_posit'.
     05 FILLER PIC X(60) VALUE 'ion":{"type":"minecraft:true"}}'.
@@ -833,8 +833,8 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "huge mushroom foliage_radius fractional".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_red_mushroom","cap_provider":{"Name"'.
-    05 FILLER PIC X(60) VALUE ':"a"},"stem_provider":{"Name":"b"},"foliage_radius":2.5,"can'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_red_mushroom","cap_provider":{"id"  '.
+    05 FILLER PIC X(60) VALUE ':"a"},"stem_provider":{"id"  :"b"},"foliage_radius":2.5,"can'.
     05 FILLER PIC X(60) VALUE '_place_on":{"type":"minecraft:true"}}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -848,7 +848,7 @@
     05 FILLER PIC X(60) VALUE "huge mushroom without can_place_on".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_brown_mushroom","cap_provider":{"Nam'.
-    05 FILLER PIC X(60) VALUE 'e":"a"},"stem_provider":{"Name":"b"}}'.
+    05 FILLER PIC X(60) VALUE 'e":"a"},"stem_provider":{"id"  :"b"}}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -861,9 +861,9 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "huge_fungus without stem_state".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_fungus","valid_base_block":{"Name":"'.
-    05 FILLER PIC X(60) VALUE 'minecraft:crimson_nylium"},"hat_state":{"Name":"minecraft:ne'.
-    05 FILLER PIC X(60) VALUE 'ther_wart_block"},"decor_state":{"Name":"minecraft:shroomlig'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_fungus","valid_base_block":{"id"  :"'.
+    05 FILLER PIC X(60) VALUE 'minecraft:crimson_nylium"},"hat_state":{"id"  :"minecraft:ne'.
+    05 FILLER PIC X(60) VALUE 'ther_wart_block"},"decor_state":{"id"  :"minecraft:shroomlig'.
     05 FILLER PIC X(60) VALUE 'ht"},"replaceable_blocks":{"type":"minecraft:true"},"planted'.
     05 FILLER PIC X(60) VALUE '":true}'.
     05 FILLER PIC X(60) VALUE SPACES.
@@ -875,10 +875,10 @@
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE "huge_fungus planted a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_fungus","valid_base_block":{"Name":"'.
-    05 FILLER PIC X(60) VALUE 'minecraft:crimson_nylium"},"stem_state":{"Name":"minecraft:c'.
-    05 FILLER PIC X(60) VALUE 'rimson_stem"},"hat_state":{"Name":"minecraft:nether_wart_blo'.
-    05 FILLER PIC X(60) VALUE 'ck"},"decor_state":{"Name":"minecraft:shroomlight"},"replace'.
+    05 FILLER PIC X(60) VALUE '{"type":"minecraft:huge_fungus","valid_base_block":{"id"  :"'.
+    05 FILLER PIC X(60) VALUE 'minecraft:crimson_nylium"},"stem_state":{"id"  :"minecraft:c'.
+    05 FILLER PIC X(60) VALUE 'rimson_stem"},"hat_state":{"id"  :"minecraft:nether_wart_blo'.
+    05 FILLER PIC X(60) VALUE 'ck"},"decor_state":{"id"  :"minecraft:shroomlight"},"replace'.
     05 FILLER PIC X(60) VALUE 'able_blocks":{"type":"minecraft:true"},"planted":1}'.
     05 FILLER PIC X(60) VALUE SPACES.
     05 FILLER PIC X(60) VALUE SPACES.

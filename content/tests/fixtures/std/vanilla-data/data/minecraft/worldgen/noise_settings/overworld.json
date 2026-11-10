@@ -2,6 +2,6 @@
   "sea_level": 63,
   "legacy_random_source": false,
   "default_block": {
-    "Name": "minecraft:stone"
+    "id": "minecraft:stone"
   }
 }

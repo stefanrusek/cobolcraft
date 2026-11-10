@@ -13,7 +13,7 @@
     05 RS-REGISTRY           PIC X(48).
     05 RS-NS                 PIC X(32).
     05 RS-ELEMENT OCCURS 8192 TIMES.
-       10 RS-E-PATH          PIC X(64).
+       10 RS-E-PATH          PIC X(112).
        10 RS-E-NS            PIC X(32).
        10 RS-E-OFFSET        BINARY-LONG.
        10 RS-E-LENGTH        BINARY-LONG.

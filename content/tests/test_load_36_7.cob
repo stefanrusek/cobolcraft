@@ -13,7 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-LABEL               PIC X(70).
  01 WS-NAME                PIC X(40).
@@ -22,15 +22,15 @@
  01 WS-COMMAND             PIC X(600).
  01 WS-FINDS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:mansion".
+    05 FILLER PIC X(112) VALUE "minecraft:mansion".
     05 FILLER PIC X(48) VALUE "woodland_mansion".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:woodland_mansions".
+    05 FILLER PIC X(112) VALUE "minecraft:woodland_mansions".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-FIND-TABLE REDEFINES WS-FINDS.
     05 WS-FIND OCCURS 2 TIMES.
        10 WS-F-REGISTRY   PIC X(48).
-       10 WS-F-KEY        PIC X(64).
+       10 WS-F-KEY        PIC X(112).
        10 WS-F-TYPE       PIC X(48).
  01 WS-BADS.
     05 FILLER PIC X(40) VALUE "a mansion without biomes".

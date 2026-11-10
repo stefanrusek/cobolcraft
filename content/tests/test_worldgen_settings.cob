@@ -19,7 +19,7 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-NODE                BINARY-LONG.
  01 WS-NODE-2              BINARY-LONG.
  01 WS-NODE-3              BINARY-LONG.
@@ -577,58 +577,58 @@
 *>   Noise settings failures (10 5, 37-2 2.1 guards).
      MOVE "settings without sea_level" TO WS-T
      MOVE "noise_settings" TO WS-DIR-NAME
-     MOVE '{"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a height of 100" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":100},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":100},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a min_y of 8" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":8,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":8,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a min_y of 2032" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":2032,"height":16},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":2032,"height":16},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a height of 4080" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":-2032,"height":4080},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":-2032,"height":4080},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings above 2032" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":2000,"height":64},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":2000,"height":64},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings without a router entry" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings without a default_block" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a default_block that is a number" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":3,"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":3,"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a state without a name" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Properties":{}},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"properties":{}},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a state whose properties are a list" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b","Properties":[]},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b","properties":[]},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a property value that is a number" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b","Properties":{"p":1}},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b","properties":{"p":1}},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a state over 160 bytes" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b","Properties":{"p1":"0123456789012345678901234567890123456789","p2":"0123456789012345678901234567890123456789","p3":"0123456789012345678901234567890123456789","p4":"0123456789012345678901234567890123456789"}},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b","properties":{"p1":"0123456789012345678901234567890123456789","p2":"0123456789012345678901234567890123456789","p3":"0123456789012345678901234567890123456789","p4":"0123456789012345678901234567890123456789"}},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
-     MOVE "settings with a fluid state over 64 bytes" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"0123456789012345678901234567890123456789012345678901234567890123456789"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
+     MOVE "settings with a fluid state over 112 bytes" TO WS-T
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0}}' TO WS-BODY
      PERFORM SETTINGS-FAILS
-     MOVE "settings with a spawn box without erosion" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"continentalness":[0,1]}]}' TO WS-BODY
+     MOVE "settings with a spawn box without ridges" TO WS-T
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"minecraft:overworld/continents":[0,1]}]}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a spawn range of three numbers" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"continentalness":[0,1,2],"erosion":[0,1],"temperature":[0,1],"vegetation":[0,1],"ridges":[0,1]}]}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"minecraft:overworld/continents":[0,1,2],"minecraft:overworld/erosion":[0,1],"minecraft:overworld/temperature":[0,1],"minecraft:overworld/vegetation":[0,1],"minecraft:overworld/ridges":[0,1]}]}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a spawn range of texts" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"continentalness":["a","b"],"erosion":[0,1],"temperature":[0,1],"vegetation":[0,1],"ridges":[0,1]}]}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":[{"minecraft:overworld/continents":["a","b"],"minecraft:overworld/erosion":[0,1],"minecraft:overworld/temperature":[0,1],"minecraft:overworld/vegetation":[0,1],"minecraft:overworld/ridges":[0,1]}]}' TO WS-BODY
      PERFORM SETTINGS-FAILS
      MOVE "settings with a spawn target that is not a list" TO WS-T
-     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"Name":"a:b"},"default_fluid":{"Name":"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":3}' TO WS-BODY
+     MOVE '{"sea_level":1,"noise":{"min_y":0,"height":128},"default_block":{"id"  :"a:b"},"default_fluid":{"id"  :"a:b"},"material_rule":"a:b","noise_router":{"temperature":0,"vegetation":0,"continents":0,"erosion":0,"depth":0,"ridges":0,"chunk_surface_level":0,"final_density":0},"spawn_target":3}' TO WS-BODY
      PERFORM SETTINGS-FAILS
 
 *>   Surface rule failures (10 10.4, 10.5, 23 7.3.1).
@@ -640,10 +640,10 @@
      MOVE '3' TO WS-BODY
      PERFORM RULES-FAIL
      MOVE "a rule with a sequence that is no list" TO WS-T
-     MOVE '{"type":"minecraft:sequence","rules":1}' TO WS-BODY
+     MOVE '{"type":"minecraft:sequence","sequence":1}' TO WS-BODY
      PERFORM RULES-FAIL
      MOVE "a rule with a sequence element that is a number" TO WS-T
-     MOVE '{"type":"minecraft:sequence","rules":[1]}' TO WS-BODY
+     MOVE '{"type":"minecraft:sequence","sequence":[1]}' TO WS-BODY
      PERFORM RULES-FAIL
      MOVE "a condition rule without if_true" TO WS-T
      MOVE '{"type":"minecraft:condition","then_run":"a:b"}' TO WS-BODY
@@ -726,32 +726,32 @@
 
 *>   Ore feature failures.
      MOVE "feature" TO WS-DIR-NAME
-     MOVE "an ore feature without config" TO WS-T
+     MOVE "an ore feature without size" TO WS-T
      MOVE '{"type":"minecraft:ore"}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore feature without targets" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore feature with targets that is no list" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":3}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":3}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore target that is no object" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":[3]}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":[3]}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore target without a state" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"target":{"predicate_type":"minecraft:tag_match","tag":"a:b"}}]}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"target":{"predicate_type":"minecraft:tag_match","tag":"a:b"}}]}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore rule test of an unknown type" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"Name":"a:b"},"target":{"predicate_type":"minecraft:bogus"}}]}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"id"  :"a:b"},"target":{"predicate_type":"minecraft:bogus"}}]}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore rule test without a predicate_type" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"Name":"a:b"},"target":{"tag":"a:b"}}]}}' TO WS-BODY
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"id"  :"a:b"},"target":{"tag":"a:b"}}]}' TO WS-BODY
      PERFORM ORE-FAILS
-     MOVE "an all_of whose predicates are no list" TO WS-T
-     MOVE '{"type":"minecraft:ore","config":{"size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"Name":"a:b"},"target":{"predicate_type":"minecraft:all_of","predicates":1}}]}}' TO WS-BODY
+     MOVE "an all_of whose rules are no list" TO WS-T
+     MOVE '{"type":"minecraft:ore","size":3,"discard_chance_on_air_exposure":0.0,"targets":[{"state":{"id"  :"a:b"},"target":{"predicate_type":"minecraft:all_of","rules":1}}]}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore feature without a type" TO WS-T
-     MOVE '{"config":{}}' TO WS-BODY
+     MOVE '{"size":3}' TO WS-BODY
      PERFORM ORE-FAILS
      MOVE "an ore feature file that is no object" TO WS-T
      MOVE '[]' TO WS-BODY

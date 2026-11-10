@@ -115,13 +115,13 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-ID.
 *> USING text (PIC X(200), an identifier up to the first space), tag mark allowed (BINARY-LONG: 1 when a leading "#" is
-*> part of the form), ok out (BINARY-LONG: 1 valid, 0 not): 23 section 1: "namespace:path" or "path", at most 64 bytes.
+*> part of the form), ok out (BINARY-LONG: 1 valid, 0 not): 23 section 1: "namespace:path" or "path", at most 112 bytes (48 1.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-COLON               BINARY-LONG.
- 01 WS-PART                PIC X(64).
+ 01 WS-PART                PIC X(112).
  01 WS-PART-LENGTH         BINARY-LONG.
  01 WS-MODE                BINARY-LONG.
  LINKAGE SECTION.
@@ -135,7 +135,7 @@
      IF L-HASH = 1 AND L-TEXT(1:1) = "#"
          MOVE 2 TO WS-START
      END-IF
-     IF WS-LENGTH > 64 OR WS-LENGTH < WS-START
+     IF WS-LENGTH > 112 OR WS-LENGTH < WS-START
          MOVE 0 TO L-OK
      END-IF
      IF L-OK = 1
@@ -201,7 +201,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-VALUE IS RECURSIVE.
-*> USING JSON-DOC, node, form letter (PIC X, capital), arg (PIC X(40)), member name (PIC X(32)), key (PIC X(64)), status
+*> USING JSON-DOC, node, form letter (PIC X, capital), arg (PIC X(40)), member name (PIC X(32)), key (PIC X(112)), status
 *> (BINARY-LONG, set to 1 after an error was reported, else left alone): checks one value against one form of CTSHAPE.cpy.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -213,6 +213,8 @@
  01 WS-T                   PIC X VALUE "T".
  01 WS-R                   PIC X VALUE "R".
  01 WS-P                   PIC X VALUE "P".
+ 01 WS-Q                   PIC X VALUE "Q".
+ 01 WS-W                   PIC X VALUE "W".
  LOCAL-STORAGE SECTION.
  01 LS-DETAIL              PIC X(120).
  01 LS-TEXT                PIC X(200).
@@ -234,7 +236,7 @@
  01 L-LETTER               PIC X.
  01 L-ARG                  PIC X(40).
  01 L-NAME                 PIC X(32).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-LETTER L-ARG L-NAME L-KEY L-STATUS.
      MOVE SPACES TO LS-DETAIL LS-TEXT
@@ -382,6 +384,60 @@
              ELSE
                  STRING "member " FUNCTION TRIM(L-NAME) " must be an array" DELIMITED BY SIZE INTO LS-DETAIL
              END-IF
+         WHEN "W"
+             IF JN-TYPE(L-NODE) = JT-OBJECT
+                 MOVE JN-FIRST(L-NODE) TO LS-CHILD
+                 PERFORM UNTIL LS-CHILD = 0
+                     IF JN-TYPE(LS-CHILD) NOT = JT-STRING
+                         STRING "member " FUNCTION TRIM(L-NAME) " must be an object of strings"
+                             DELIMITED BY SIZE INTO LS-DETAIL
+                     END-IF
+                     MOVE JN-NEXT(LS-CHILD) TO LS-CHILD
+                 END-PERFORM
+             ELSE
+                 STRING "member " FUNCTION TRIM(L-NAME) " must be an object of strings" DELIMITED BY SIZE INTO LS-DETAIL
+             END-IF
+         WHEN "Q"
+*>           A block state slot (48 section 2.2): a block id, or an object {id, properties?}.
+             EVALUATE TRUE
+                 WHEN JN-TYPE(L-NODE) = JT-STRING
+                     CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-D L-ARG L-NAME L-KEY L-STATUS
+                 WHEN JN-TYPE(L-NODE) = JT-OBJECT
+                     MOVE "id" TO LS-NAME
+                     CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE LS-NAME LS-CHILD
+                     IF LS-CHILD = 0
+                         STRING "member " FUNCTION TRIM(L-NAME) " must have the member id" DELIMITED BY SIZE
+                             INTO LS-DETAIL
+                     ELSE
+                         CALL "SHAPE-VALUE" USING JSON-DOC LS-CHILD WS-D L-ARG LS-NAME L-KEY L-STATUS
+                         MOVE "properties" TO LS-NAME
+                         CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE LS-NAME LS-CHILD
+                         IF LS-CHILD > 0
+                             CALL "SHAPE-VALUE" USING JSON-DOC LS-CHILD WS-W L-ARG LS-NAME L-KEY L-STATUS
+                         END-IF
+                     END-IF
+                 WHEN OTHER
+                     STRING "member " FUNCTION TRIM(L-NAME) " must be a block id or a block state object"
+                         DELIMITED BY SIZE INTO LS-DETAIL
+             END-EVALUATE
+         WHEN "G"
+*>           A block state provider slot (48 section 2.2): the id of a provider file, a state object without a type,
+*>           or a typed provider object of the group the argument names.
+             EVALUATE TRUE
+                 WHEN JN-TYPE(L-NODE) = JT-STRING
+                     CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-D L-ARG L-NAME L-KEY L-STATUS
+                 WHEN JN-TYPE(L-NODE) = JT-OBJECT
+                     MOVE "type" TO LS-NAME
+                     CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE LS-NAME LS-CHILD
+                     IF LS-CHILD > 0
+                         CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-T L-ARG L-NAME L-KEY L-STATUS
+                     ELSE
+                         CALL "SHAPE-VALUE" USING JSON-DOC L-NODE WS-Q L-ARG L-NAME L-KEY L-STATUS
+                     END-IF
+                 WHEN OTHER
+                     STRING "member " FUNCTION TRIM(L-NAME) " must be an identifier or an object"
+                         DELIMITED BY SIZE INTO LS-DETAIL
+             END-EVALUATE
          WHEN "H"
              EVALUATE TRUE
                  WHEN JN-TYPE(L-NODE) = JT-STRING
@@ -416,7 +472,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-VALIDATE IS RECURSIVE.
-*> USING JSON-DOC, node, group (PIC X(24)), key (PIC X(64), the element id), strict (BINARY-LONG), status out (BINARY-LONG:
+*> USING JSON-DOC, node, group (PIC X(24)), key (PIC X(112), the element id), strict (BINARY-LONG), status out (BINARY-LONG:
 *> 0, or 1 after an error was reported): checks an object against the shape of its type in the group: the "-" row of the
 *> group when it has one, else the row its "type" member names. Every member of the field list is checked by SHAPE-VALUE.
  DATA DIVISION.
@@ -424,8 +480,11 @@
  COPY CTSHAPE.
  01 WS-DASH                PIC X(48) VALUE "-".
  01 WS-BANG                PIC X(48) VALUE "!".
+ 01 WS-AT                  PIC X(48) VALUE "@".
+ 01 WS-TILDE               PIC X(48) VALUE "~".
  LOCAL-STORAGE SECTION.
  01 LS-ROW                 BINARY-LONG.
+ 01 LS-DISC                BINARY-LONG.
  01 LS-CLOSED              BINARY-LONG.
  01 LS-FOUND               BINARY-LONG.
  01 LS-NAME                PIC X(32).
@@ -435,7 +494,8 @@
  01 LS-LENGTH              BINARY-LONG.
  01 LS-POS                 BINARY-LONG.
  01 LS-TOKEN               PIC X(120).
- 01 LS-FIELD               PIC X(32).
+ 01 LS-FIELD               PIC X(64).
+ 01 LS-FIELD-32            PIC X(32).
  01 LS-ARG                 PIC X(40).
  01 LS-MEMBER              BINARY-LONG.
  01 LS-LETTER              PIC X.
@@ -445,21 +505,39 @@
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
  01 L-GROUP                PIC X(24).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-STRICT               BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-GROUP L-KEY L-STRICT L-STATUS.
      MOVE 0 TO L-STATUS LS-ROW LS-LENGTH
      MOVE SPACES TO LS-DETAIL LS-SPEC
      IF JN-TYPE(L-NODE) NOT = JT-OBJECT
-         STRING FUNCTION TRIM(L-GROUP) ": the value must be an object" DELIMITED BY SIZE INTO LS-DETAIL
+*>       A group with a row "~" also accepts a bare number as its value (a context provider file, 48 2.7): the first
+*>       letter of the field list of that row is the form of the number.
+         MOVE 0 TO LS-DISC
+         IF JN-TYPE(L-NODE) = JT-NUMBER
+             CALL "SHAPE-TYPE-FIND" USING L-GROUP WS-TILDE LS-DISC
+         END-IF
+         IF LS-DISC > 0
+             MOVE SH-T-FIELDS(LS-DISC) TO LS-SPEC
+             MOVE LS-SPEC(1:1) TO LS-UP
+             MOVE SPACES TO LS-ARG LS-NAME
+             CALL "SHAPE-VALUE" USING JSON-DOC L-NODE LS-UP LS-ARG LS-NAME L-KEY L-STATUS
+         ELSE
+             STRING FUNCTION TRIM(L-GROUP) ": the value must be an object" DELIMITED BY SIZE INTO LS-DETAIL
+         END-IF
      ELSE
          CALL "SHAPE-TYPE-FIND" USING L-GROUP WS-DASH LS-ROW
          IF LS-ROW = 0
              MOVE "type" TO LS-NAME
+*>           A group whose objects name their type in another member has a row "@" whose field list is that member.
+             CALL "SHAPE-TYPE-FIND" USING L-GROUP WS-AT LS-DISC
+             IF LS-DISC > 0
+                 MOVE SH-T-FIELDS(LS-DISC) TO LS-NAME
+             END-IF
              CALL "RECIPE-GET-TEXT" USING JSON-DOC L-NODE LS-NAME LS-TEXT LS-FOUND
              IF LS-FOUND = 0
-                 STRING FUNCTION TRIM(L-GROUP) ": the member type is missing or not a string"
+                 STRING FUNCTION TRIM(L-GROUP) ": the member " FUNCTION TRIM(LS-NAME) " is missing or not a string"
                      DELIMITED BY SIZE INTO LS-DETAIL
              ELSE
                  MOVE LS-TEXT TO LS-TYPE
@@ -493,10 +571,12 @@
              MOVE LS-TOKEN(1:1) TO LS-LETTER
              MOVE FUNCTION UPPER-CASE(LS-LETTER) TO LS-UP
              UNSTRING LS-TOKEN(3:118) DELIMITED BY "=" INTO LS-FIELD LS-ARG
-             CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE LS-FIELD LS-MEMBER
+*>           A member name may be longer than the 32 bytes of RECIPE-MEMBER (underwater_magma, 48 3.1).
+             CALL "WG-MEMBER-NAMED" USING JSON-DOC L-NODE LS-FIELD LS-MEMBER
+             MOVE LS-FIELD TO LS-FIELD-32
              EVALUATE TRUE
                  WHEN LS-MEMBER > 0
-                     CALL "SHAPE-VALUE" USING JSON-DOC LS-MEMBER LS-UP LS-ARG LS-FIELD L-KEY L-STATUS
+                     CALL "SHAPE-VALUE" USING JSON-DOC LS-MEMBER LS-UP LS-ARG LS-FIELD-32 L-KEY L-STATUS
                  WHEN LS-LETTER = LS-UP
                      MOVE SPACES TO LS-DETAIL
                      STRING FUNCTION TRIM(L-GROUP) ": the member " FUNCTION TRIM(LS-FIELD) " is missing"
@@ -549,7 +629,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-FIND.
-*> USING registry (PIC X(48)), key (PIC X(64), "namespace:path"), row out (BINARY-LONG: the element row, 0 when there is
+*> USING registry (PIC X(48)), key (PIC X(112), "namespace:path"), row out (BINARY-LONG: the element row, 0 when there is
 *> none).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -557,7 +637,7 @@
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-KEY L-ROW.
      MOVE 0 TO L-ROW
@@ -571,7 +651,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SHAPE-FILE-ADD.
-*> USING JSON-DOC, registry (PIC X(48)), group (PIC X(24)), key (PIC X(64)), text address (POINTER), length (BINARY-LONG),
+*> USING JSON-DOC, registry (PIC X(48)), group (PIC X(24)), key (PIC X(112)), text address (POINTER), length (BINARY-LONG),
 *> strict (BINARY-LONG): checks one file the strict reader accepted and stores it as an element when it passes; errors
 *> are reported and counted.
  DATA DIVISION.
@@ -593,7 +673,7 @@
  COPY JSONDOC.
  01 L-REGISTRY             PIC X(48).
  01 L-GROUP                PIC X(24).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ADDR                 USAGE POINTER.
  01 L-LENGTH               BINARY-LONG.
  01 L-STRICT               BINARY-LONG.
@@ -656,7 +736,7 @@
  01 WS-SAVED-COUNT         BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-PAYLOAD             USAGE POINTER.
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.

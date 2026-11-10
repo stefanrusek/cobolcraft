@@ -88,7 +88,7 @@
  01 WS-SOURCE              PIC X(40).
  01 WS-PRESET              PIC X(40).
  01 WS-SETTINGS-KEY        PIC X(40).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-TYPE-KIND           BINARY-LONG VALUE 10.
  01 WS-SETTINGS-KIND       BINARY-LONG VALUE 6.
  01 WS-TYPE-ROOT           BINARY-LONG.

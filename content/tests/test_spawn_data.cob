@@ -3,12 +3,12 @@
 *> SPAWN-DATA-LOAD USING root (PIC X(1100): the folder that holds data/), status out (CT-OK, or CT-BAD-DATA with every error on
 *> standard error and nothing of the load staying): the biome files of data/<namespace>/worldgen/biome (the attribute
 *> minecraft:gameplay/natural_mob_spawns: spawns_by_category and spawn_costs) and the seven variant registries with spawn_conditions
-*> are checked through the shape engine. Accessors: SPAWN-LIST-COUNT USING biome key (PIC X(64)), category (PIC X(32)), count out
+*> are checked through the shape engine. Accessors: SPAWN-LIST-COUNT USING biome key (PIC X(112)), category (PIC X(32)), count out
 *> (BINARY-LONG; -1 when the biome does not define the category, 0 when it defines it empty), status out (CT-OK, CT-NOT-FOUND for
-*> an unknown biome); SPAWN-LIST-ENTRY USING biome key, category, index (1-based), type out (PIC X(64)), weight, minimum, maximum
-*> (BINARY-LONG), status; SPAWN-COST USING biome key, entity key (PIC X(64)), charge, energy budget (FLOAT-LONG), status;
+*> an unknown biome); SPAWN-LIST-ENTRY USING biome key, category, index (1-based), type out (PIC X(112)), weight, minimum, maximum
+*> (BINARY-LONG), status; SPAWN-COST USING biome key, entity key (PIC X(112)), charge, energy budget (FLOAT-LONG), status;
 *> SPAWN-VARIANT-COUNT USING registry (PIC X(48)), key, count out, status; SPAWN-VARIANT-SELECTOR USING registry, key, index,
-*> priority out, kind out (0 no condition, 1 biome, 2 structure, 3 moon_brightness), argument out (PIC X(64): the first identifier
+*> priority out, kind out (0 no condition, 1 biome, 2 structure, 3 moon_brightness), argument out (PIC X(112): the first identifier
 *> or #tag of the biomes or structures), status. The CT-ENTITY-ROW size and category of 21 section 2 are asked of
 *> CONTENT-ENTITY-BY-KEY. The fixture tree is content/tests/fixtures/load-44; each reject case copies a file of
 *> content/tests/fixtures/load-44-bad into a fresh copy of the tree.
@@ -21,19 +21,19 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-BIOME               PIC X(64).
+ 01 WS-BIOME               PIC X(112).
  01 WS-CATEGORY            PIC X(32).
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-COUNT               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 WS-TYPE                PIC X(64).
+ 01 WS-TYPE                PIC X(112).
  01 WS-WEIGHT              BINARY-LONG.
  01 WS-MIN                 BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
  01 WS-PRIORITY            BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
- 01 WS-ARGUMENT            PIC X(64).
+ 01 WS-ARGUMENT            PIC X(112).
  01 WS-CHARGE              USAGE FLOAT-LONG.
  01 WS-BUDGET              USAGE FLOAT-LONG.
  01 WS-EDITED              PIC -9.99.

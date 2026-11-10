@@ -10,7 +10,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REG                 PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(2000).
@@ -20,78 +20,78 @@
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-ACCEPT.
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:lake_lava".
+    05 FILLER PIC X(112) VALUE "minecraft:lake_lava".
     05 FILLER PIC X(48) VALUE "lake".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:spring_water".
+    05 FILLER PIC X(112) VALUE "minecraft:spring_water".
     05 FILLER PIC X(48) VALUE "spring_feature".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:spring_nether_closed".
+    05 FILLER PIC X(112) VALUE "minecraft:spring_nether_closed".
     05 FILLER PIC X(48) VALUE "spring_feature".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:ice_patch".
+    05 FILLER PIC X(112) VALUE "minecraft:ice_patch".
     05 FILLER PIC X(48) VALUE "disk".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:forest_rock".
+    05 FILLER PIC X(112) VALUE "minecraft:forest_rock".
     05 FILLER PIC X(48) VALUE "block_blob".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:blackstone_blobs".
+    05 FILLER PIC X(112) VALUE "minecraft:blackstone_blobs".
     05 FILLER PIC X(48) VALUE "netherrack_replace_blobs".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:freeze_top_layer".
+    05 FILLER PIC X(112) VALUE "minecraft:freeze_top_layer".
     05 FILLER PIC X(48) VALUE "freeze_top_layer".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:iceberg_packed".
+    05 FILLER PIC X(112) VALUE "minecraft:iceberg_packed".
     05 FILLER PIC X(48) VALUE "iceberg".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:blue_ice".
+    05 FILLER PIC X(112) VALUE "minecraft:blue_ice".
     05 FILLER PIC X(48) VALUE "blue_ice".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:fill".
+    05 FILLER PIC X(112) VALUE "minecraft:fill".
     05 FILLER PIC X(48) VALUE "fill_layer".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:pile_ice".
+    05 FILLER PIC X(112) VALUE "minecraft:pile_ice".
     05 FILLER PIC X(48) VALUE "block_pile".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:coral_tree_a".
+    05 FILLER PIC X(112) VALUE "minecraft:coral_tree_a".
     05 FILLER PIC X(48) VALUE "coral_tree".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:coral_claw_a".
+    05 FILLER PIC X(112) VALUE "minecraft:coral_claw_a".
     05 FILLER PIC X(48) VALUE "coral_claw".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:underwater_magma".
+    05 FILLER PIC X(112) VALUE "minecraft:underwater_magma".
     05 FILLER PIC X(48) VALUE "underwater_magma".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:ice_spike".
+    05 FILLER PIC X(112) VALUE "minecraft:ice_spike".
     05 FILLER PIC X(48) VALUE "spike".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:bonus_chest".
+    05 FILLER PIC X(112) VALUE "minecraft:bonus_chest".
     05 FILLER PIC X(48) VALUE "bonus_chest".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:desert_well".
+    05 FILLER PIC X(112) VALUE "minecraft:desert_well".
     05 FILLER PIC X(48) VALUE "overlay".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:seq".
+    05 FILLER PIC X(112) VALUE "minecraft:seq".
     05 FILLER PIC X(48) VALUE "sequence".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:pick".
+    05 FILLER PIC X(112) VALUE "minecraft:pick".
     05 FILLER PIC X(48) VALUE "simple_random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:seagrass_short".
+    05 FILLER PIC X(112) VALUE "minecraft:seagrass_short".
     05 FILLER PIC X(48) VALUE "weighted_random_selector".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:sea_pickle".
+    05 FILLER PIC X(112) VALUE "minecraft:sea_pickle".
     05 FILLER PIC X(48) VALUE "simple_block".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:kelp".
+    05 FILLER PIC X(112) VALUE "minecraft:kelp".
     05 FILLER PIC X(48) VALUE "block_column".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:desert_well_part".
+    05 FILLER PIC X(112) VALUE "minecraft:desert_well_part".
     05 FILLER PIC X(48) VALUE "template".
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPT.
     05 WS-A OCCURS 23 TIMES.
        10 WS-A-REG     PIC X(48).
-       10 WS-A-KEY     PIC X(64).
+       10 WS-A-KEY     PIC X(112).
        10 WS-A-TYPE    PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "a feature without a type".
@@ -115,19 +115,19 @@
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{},""valid_blocks"":""minecraft:stone""}".
     05 FILLER PIC X(60) VALUE "a spring valid_blocks that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""Name"":""minecraft:lava""},""valid_bloc" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""id""  :""minecraft:lava""},""valid_bloc" &
         "ks"":3}".
     05 FILLER PIC X(60) VALUE "a spring valid_blocks tag that is no identifier".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""Name"":""minecraft:lava""},""valid_bloc" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""id""  :""minecraft:lava""},""valid_bloc" &
         "ks"":""#Bad Id""}".
     05 FILLER PIC X(60) VALUE "a spring requires_block_below that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""Name"":""minecraft:lava""},""valid_bloc" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""id""  :""minecraft:lava""},""valid_bloc" &
         "ks"":""a:b"",""requires_block_below"":1}".
     05 FILLER PIC X(60) VALUE "a spring rock_count that is fractional".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""Name"":""minecraft:lava""},""valid_bloc" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spring_feature"",""state"":{""id""  :""minecraft:lava""},""valid_bloc" &
         "ks"":""a:b"",""rock_count"":4.5}".
     05 FILLER PIC X(60) VALUE "a disk without a radius".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
@@ -147,20 +147,20 @@
         ",""radius"":""2"",""half_height"":1}".
     05 FILLER PIC X(60) VALUE "a block_blob without can_place_on".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:block_blob"",""state"":{""Name"":""minecraft:stone""}}".
-    05 FILLER PIC X(60) VALUE "a netherrack_replace_blobs target that is a string".
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:block_blob"",""state"":{""id""  :""minecraft:stone""}}".
+    05 FILLER PIC X(60) VALUE "a netherrack_replace_blobs target that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:netherrack_replace_blobs"",""target"":""minecraft:netherrack"",""st" &
-        "ate"":{""Name"":""minecraft:stone""},""radius"":2}".
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:netherrack_replace_blobs"",""target"":7,""st" &
+        "ate"":{""id""  :""minecraft:stone""},""radius"":2}".
     05 FILLER PIC X(60) VALUE "an iceberg without a state".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:iceberg""}".
     05 FILLER PIC X(60) VALUE "a fill_layer height above 4064".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:fill_layer"",""height"":4065,""state"":{""Name"":""minecraft:stone""}}".
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:fill_layer"",""height"":4065,""state"":{""id""  :""minecraft:stone""}}".
     05 FILLER PIC X(60) VALUE "a fill_layer height below 0".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:fill_layer"",""height"":-1,""state"":{""Name"":""minecraft:stone""}}".
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:fill_layer"",""height"":-1,""state"":{""id""  :""minecraft:stone""}}".
     05 FILLER PIC X(60) VALUE "a coral_tree feature that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:coral_tree"",""feature"":5}".
@@ -177,7 +177,7 @@
         "ty_per_valid_position"":0.5,""placement_radius_around_floor"":65}".
     05 FILLER PIC X(60) VALUE "a spike without can_replace".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spike"",""state"":{""Name"":""minecraft:stone""},""can_place_on"":{""ty" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:spike"",""state"":{""id""  :""minecraft:stone""},""can_place_on"":{""ty" &
         "pe"":""a:b""}}".
     05 FILLER PIC X(60) VALUE "an overlay features that is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
@@ -199,9 +199,9 @@
     05 FILLER PIC X(48) VALUE "worldgen/feature".
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:block_column"",""layers"":[],""direction"":""sideways"",""allowed_pla" &
         "cement"":{""type"":""a:b""},""prioritize_tip"":true}".
-    05 FILLER PIC X(60) VALUE "a block_column layer without a provider".
+    05 FILLER PIC X(60) VALUE "a block_column layer whose provider is a number".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:block_column"",""layers"":[{""height"":1}],""direction"":""up"",""allow" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:block_column"",""layers"":[{""height"":1,""provider"":3}],""direction"":""up"",""allow" &
         "ed_placement"":{""type"":""a:b""},""prioritize_tip"":true}".
     05 FILLER PIC X(60) VALUE "a block_column layer height that is a string".
     05 FILLER PIC X(48) VALUE "worldgen/feature".

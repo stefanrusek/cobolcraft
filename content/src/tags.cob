@@ -24,16 +24,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-NORMALIZE.
-*> USING registry (PIC X(48), in and out), tag key (PIC X(64), in and out): the registry without "minecraft:",
+*> USING registry (PIC X(48), in and out), tag key (PIC X(112), in and out): the registry without "minecraft:",
 *> the tag key with a namespace ("minecraft:" when it has none). A key that holds no ":" is the path.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-COLONS              BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  PROCEDURE DIVISION USING L-REGISTRY L-KEY.
      IF L-REGISTRY(1:10) = "minecraft:"
          MOVE SPACES TO WS-REGISTRY
@@ -53,24 +53,24 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-ID-PARSE.
 *> USING text (PIC X(128)), length (BINARY-LONG), kind out (PIC X: E an element, T a tag after a leading "#"),
-*> id out (PIC X(64): namespace ":" path, "minecraft" when the text has no namespace), ok out (BINARY-LONG 1 or
+*> id out (PIC X(112): namespace ":" path, "minecraft" when the text has no namespace), ok out (BINARY-LONG 1 or
 *> 0). 23 section 1: split at the first ":" (a ":" at index 0 gives "minecraft"); namespace of a-z 0-9 _ - .
-*> (not ".."), path of those and "/"; "##a:b", "a:#b" and "#" alone fail; the id is at most 64 bytes.
+*> (not ".."), path of those and "/"; "##a:b", "a:#b" and "#" alone fail; the id is at most 112 bytes (48 1.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-START               BINARY-LONG.
  01 WS-REST                BINARY-LONG.
  01 WS-COLON               BINARY-LONG.
- 01 WS-NS                  PIC X(64).
+ 01 WS-NS                  PIC X(112).
  01 WS-NS-LENGTH           BINARY-LONG.
- 01 WS-PATH                PIC X(64).
+ 01 WS-PATH                PIC X(112).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-MODE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-TEXT                 PIC X(128).
  01 L-LENGTH               BINARY-LONG.
  01 L-KIND                 PIC X.
- 01 L-ID                   PIC X(64).
+ 01 L-ID                   PIC X(112).
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-LENGTH L-KIND L-ID L-OK.
      MOVE 0 TO L-OK
@@ -96,7 +96,7 @@
              MOVE "minecraft" TO WS-NS
              MOVE 9 TO WS-NS-LENGTH
              MOVE WS-REST TO WS-PATH-LENGTH
-             IF WS-REST > 64
+             IF WS-REST > 112
                  GOBACK
              END-IF
              MOVE L-TEXT(WS-START:WS-REST) TO WS-PATH
@@ -105,14 +105,14 @@
                  MOVE "minecraft" TO WS-NS
                  MOVE 9 TO WS-NS-LENGTH
              ELSE
-                 IF WS-COLON > 63
+                 IF WS-COLON > 111
                      GOBACK
                  END-IF
                  MOVE L-TEXT(WS-START:WS-COLON) TO WS-NS
                  MOVE WS-COLON TO WS-NS-LENGTH
              END-IF
              COMPUTE WS-PATH-LENGTH = WS-REST - WS-COLON - 1
-             IF WS-PATH-LENGTH > 64
+             IF WS-PATH-LENGTH > 112
                  GOBACK
              END-IF
              IF WS-PATH-LENGTH > 0
@@ -126,7 +126,7 @@
      END-IF
      MOVE 2 TO WS-MODE
      CALL "RS-ID-VALID" USING WS-PATH WS-PATH-LENGTH WS-MODE
-     IF WS-MODE = 0 OR WS-NS-LENGTH + 1 + WS-PATH-LENGTH > 64
+     IF WS-MODE = 0 OR WS-NS-LENGTH + 1 + WS-PATH-LENGTH > 112
          GOBACK
      END-IF
      STRING WS-NS(1:WS-NS-LENGTH) ":" WS-PATH(1:WS-PATH-LENGTH) DELIMITED BY SIZE INTO L-ID
@@ -136,11 +136,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-IGNORE.
-*> USING tag key (PIC X(64)), pack name (PIC X(32)), reason (PIC X(200)): prints the line of 23 6.3 step A on
+*> USING tag key (PIC X(112)), pack name (PIC X(32)), reason (PIC X(200)): prints the line of 23 6.3 step A on
 *> standard error for a tag file that is ignored.
  DATA DIVISION.
  LINKAGE SECTION.
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-PACK                 PIC X(32).
  01 L-MESSAGE              PIC X(200).
  PROCEDURE DIVISION USING L-TAG L-PACK L-MESSAGE.
@@ -151,7 +151,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-ADD-FILE.
-*> USING registry (PIC X(48)), tag key (PIC X(64)), pack name (PIC X(32)), text area (any size), length
+*> USING registry (PIC X(48)), tag key (PIC X(112)), pack name (PIC X(32)), text area (any size), length
 *> (BINARY-LONG), status out (CT-OK; CT-BAD-DATA when the file is ignored, with a line "ERROR tags: Couldn't
 *> read tag list ..." on standard error). Collects one pack's file of a tag (23 6.3 step A): the strict
 *> reader first (a failure leaves no trace); then the tag exists; then the file decodes (an object with
@@ -174,7 +174,7 @@
     05 WS-LEN-REQUIRED     BINARY-LONG VALUE 8.
     05 WS-LEN-TEXT         BINARY-LONG VALUE 128.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-TAG                 PIC X(64).
+ 01 WS-TAG                 PIC X(112).
  01 WS-OFFSET              BINARY-LONG.
  01 WS-REASON              BINARY-LONG.
  01 WS-ROOT                BINARY-LONG VALUE 1.
@@ -190,7 +190,7 @@
  01 WS-N                   BINARY-LONG.
  01 WS-BAD                 BINARY-LONG.
  01 WS-KIND                PIC X.
- 01 WS-ID                  PIC X(64).
+ 01 WS-ID                  PIC X(112).
  01 WS-OK                  BINARY-LONG.
  01 WS-REQUIRED            PIC X.
  01 WS-MESSAGE             PIC X(200).
@@ -198,10 +198,10 @@
     05 WS-P-ENTRY OCCURS 4096 TIMES.
        10 WS-P-KIND        PIC X.
        10 WS-P-REQUIRED    PIC X.
-       10 WS-P-ID          PIC X(64).
+       10 WS-P-ID          PIC X(112).
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-PACK                 PIC X(32).
  01 L-TEXT                 PIC X.
  01 L-LENGTH               BINARY-LONG.
@@ -348,7 +348,7 @@
  COPY CONTENT.
  COPY CTTAGS.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
@@ -401,7 +401,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-NOTE-FAILURE.
 *> USING list (PIC X(300), the text so far), position (BINARY-LONG, the next byte of the list), kind (PIC X: T a
-*> tag reference, E an element), entry id (PIC X(64)), pack (PIC X(32)): appends "<entry> (from <pack>)" to
+*> tag reference, E an element), entry id (PIC X(112)), pack (PIC X(32)): appends "<entry> (from <pack>)" to
 *> the list of references a tag is missing, ", " apart (6.3 step C).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -410,7 +410,7 @@
  01 L-LIST                 PIC X(300).
  01 L-POS                  BINARY-LONG.
  01 L-KIND                 PIC X.
- 01 L-ID                   PIC X(64).
+ 01 L-ID                   PIC X(112).
  01 L-PACK                 PIC X(32).
  PROCEDURE DIVISION USING L-LIST L-POS L-KIND L-ID L-PACK.
      MOVE SPACES TO WS-SHOWN
@@ -455,11 +455,11 @@
  01 LS-STATUS              BINARY-LONG.
  01 LS-REACHES             BINARY-LONG.
  01 LS-REGISTRY            PIC X(48).
- 01 LS-KEY                 PIC X(64).
+ 01 LS-KEY                 PIC X(112).
  01 LS-LIST                PIC X(300).
  01 LS-POS                 BINARY-LONG.
  01 LS-REQUIRED            PIC X.
- 01 LS-WHAT                PIC X(64).
+ 01 LS-WHAT                PIC X(112).
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
@@ -622,21 +622,21 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-ELEMENT-ID.
-*> USING registry (PIC X(48)), element key (PIC X(64), namespace:path), id out (BINARY-LONG), found out (1 or 0),
+*> USING registry (PIC X(48)), element key (PIC X(112), namespace:path), id out (BINARY-LONG), found out (1 or 0),
 *> kind out (1 the registry is loaded from data in this set, 2 a static registry): the id of an element in the
 *> entries of a loaded registry (the order of 23 3.4) or in the set's static tables (CONTENT-STATIC-ID).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  COPY CTSTORE.
- 01 WS-FULL                PIC X(64).
+ 01 WS-FULL                PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ID                   BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
@@ -675,18 +675,18 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-FIND.
-*> USING registry (PIC X(48)), tag key (PIC X(64)), row out (BINARY-LONG: the 1-based row of the bound tag, 0
+*> USING registry (PIC X(48)), tag key (PIC X(112)), row out (BINARY-LONG: the 1-based row of the bound tag, 0
 *> when there is none). Both names are taken as given by a caller (namespaces optional).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  COPY CTSTORE.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-TAG L-ROW.
      MOVE 0 TO L-ROW
@@ -707,7 +707,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TAG-PUT.
-*> USING registry (PIC X(48)), tag key (PIC X(64)), member count (BINARY-LONG), ids (a table of BINARY-LONG), status
+*> USING registry (PIC X(48)), tag key (PIC X(112)), member count (BINARY-LONG), ids (a table of BINARY-LONG), status
 *> out (CT-OK; CT-TOO-SMALL when the set's tag table of 4096 tags is full): binds one resolved tag to the set,
 *> replacing a tag of the same registry and key (23 6.3 step D, 6.6).
  DATA DIVISION.
@@ -716,13 +716,13 @@
  COPY CTSTORE.
  01 B-SOURCE-IDS           PIC X(4194304) BASED.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  01 WS-ADDR                USAGE POINTER.
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  01 L-IDS                  BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -769,7 +769,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-TAG-HAS.
-*> USING registry (PIC X(48)), tag key (PIC X(64)), entry id (BINARY-LONG), result out (BINARY-LONG: 1 when the
+*> USING registry (PIC X(48)), tag key (PIC X(112)), entry id (BINARY-LONG), result out (BINARY-LONG: 1 when the
 *> element is a member of the tag; 0 otherwise, also for an unknown tag or without an open set).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -779,7 +779,7 @@
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-ID                   BINARY-LONG.
  01 L-RESULT               BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-TAG L-ID L-RESULT.
@@ -805,7 +805,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-TAG-MEMBERS.
-*> USING registry (PIC X(48)), tag key (PIC X(64)), count out (BINARY-LONG), ids out (a table of BINARY-LONG), capacity
+*> USING registry (PIC X(48)), tag key (PIC X(112)), count out (BINARY-LONG), ids out (a table of BINARY-LONG), capacity
 *> (BINARY-LONG entries), status out (CT-OK; CT-NOT-FOUND for an unknown tag, count 0; CT-TOO-SMALL when the
 *> table holds fewer ids than the tag has, the count still given and the table left alone; CT-NOT-OPEN).
  DATA DIVISION.
@@ -817,7 +817,7 @@
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-TAG                  PIC X(64).
+ 01 L-TAG                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  01 L-IDS                  BINARY-LONG.
  01 L-CAPACITY             BINARY-LONG.
@@ -881,7 +881,7 @@
  COPY CONTENT.
  COPY CTSTORE.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-KEPT                BINARY-LONG.
  LINKAGE SECTION.

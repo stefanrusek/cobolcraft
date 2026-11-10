@@ -13,7 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-LABEL               PIC X(70).
  01 WS-NAME                PIC X(40).
@@ -22,30 +22,30 @@
  01 WS-COMMAND             PIC X(600).
  01 WS-FINDS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:fortress".
+    05 FILLER PIC X(112) VALUE "minecraft:fortress".
     05 FILLER PIC X(48) VALUE "fortress".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:end_city".
+    05 FILLER PIC X(112) VALUE "minecraft:end_city".
     05 FILLER PIC X(48) VALUE "end_city".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:bastion_remnant".
+    05 FILLER PIC X(112) VALUE "minecraft:bastion_remnant".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:nether_complexes".
+    05 FILLER PIC X(112) VALUE "minecraft:nether_complexes".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:end_cities".
+    05 FILLER PIC X(112) VALUE "minecraft:end_cities".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:bastion/starts".
+    05 FILLER PIC X(112) VALUE "minecraft:bastion/starts".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:empty".
+    05 FILLER PIC X(112) VALUE "minecraft:empty".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-FIND-TABLE REDEFINES WS-FINDS.
     05 WS-FIND OCCURS 7 TIMES.
        10 WS-F-REGISTRY   PIC X(48).
-       10 WS-F-KEY        PIC X(64).
+       10 WS-F-KEY        PIC X(112).
        10 WS-F-TYPE       PIC X(48).
  01 WS-BADS.
     05 FILLER PIC X(40) VALUE "a fortress without biomes".

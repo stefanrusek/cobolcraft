@@ -1,1 +1,1 @@
-{"type":"minecraft:spike","state":{"Name":"minecraft:packed_ice"},"can_place_on":{"type":"minecraft:matching_blocks","blocks":"minecraft:snow_block"},"can_replace":{"type":"minecraft:matching_blocks","blocks":"minecraft:ice"}}
+{"type":"minecraft:spike","state":{"id":"minecraft:packed_ice"},"can_place_on":{"type":"minecraft:matching_blocks","blocks":"minecraft:snow_block"},"can_replace":{"type":"minecraft:matching_blocks","blocks":"minecraft:ice"}}

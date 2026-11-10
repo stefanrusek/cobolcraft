@@ -1,4 +1,6 @@
 {
+  "attributes": {},
+  "timelines": "#minecraft:in_overworld",
   "has_fixed_time": false,
   "has_skylight": true,
   "has_ceiling": false,

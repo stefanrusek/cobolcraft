@@ -14,16 +14,16 @@
 *> provider fields (a bare number, an id of the data registry, or an object: 9.1) and the condition and function lists (a list
 *> is a sequence, a string names an entry of the registry: section 1). The type of a loot table is one of the 31 parameter sets
 *> of 3.2 (LOOT-TABLE-TYPES-CHECK).
-*> Documented assumptions: L1 a provider file of context_int_provider and context_float_provider is an object with a type
-*> (section 1 does not state the form of those files); L2 members that a section names without saying whether they are optional
+*> Documented assumptions: L1 (replaced by 48 2.7) a provider file of context_int_provider and context_float_provider is an object with a type or
+*> a bare number (a row "~" of the group: an integer file, a decimal file); L2 members that a section names without saying whether they are optional
 *> are optional, except those whose absence leaves the type without meaning (count of set_count, name of an item entry, rolls of
 *> a pool, and so on: the capital letters of the rows); L3 the members whose value the sections leave to other documents are
 *> accepted as any value or any object (item, entity, block, location and damage source predicates 10, text components,
 *> component patches, NBT, list operation members, slot ranges, structure and block entity target names), the list operation
 *> mode of 7.5 is a string; L4 the validation problems of 6.1 and 13.1 (Empty children list, Unreachable entry!, parameters
 *> not provided, recursive references, unresolved holders) are not load errors here, because 23 section 10 V18 and 26 Open
-*> question 5 do not say which are fatal; L5 the member include_additional_cost_component (33 bytes) is longer than the
-*> 32 bytes of a shape member name and is not checked; L6 enum members over 40 bytes (list operation mode, container
+*> question 5 do not say which are fatal; L5 (replaced: a shape member name may be 64 bytes) the member include_additional_cost_component
+*> (33 bytes) is checked; L6 enum members over 40 bytes (list operation mode, container
 *> component) are strings; L7 a slot source field, a function field and a condition list also accept an identifier (a registry
 *> entry) as sections 1 and 6.2 say for the fields of that kind.
 
@@ -80,7 +80,7 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-TEXT                PIC X(200).
  01 WS-SHORT               PIC X(200).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-DETAIL              PIC X(120).
  01 B-TEXT                 PIC X(268435456) BASED.
  PROCEDURE DIVISION.
@@ -128,7 +128,8 @@
     05 FILLER PIC X(600) VALUE "d type;d random_sequence;l pools=loot_pool;f modifier=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_pool".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(600) VALUE "L entries=loot_entry;r condition=loot_cond;f modifier=loot_fn;P rolls=loot_int;p bonus_rolls=loot_float".
+    05 FILLER PIC X(600) VALUE "L entries=loot_entry;r condition=loot_cond;f modifier=loot_fn;P rolls=loot_int" &
+        ";p bonus_rolls=loot_float".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "item".
     05 FILLER PIC X(600) VALUE "D name;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
@@ -137,19 +138,22 @@
     05 FILLER PIC X(600) VALUE "x type;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "tag".
-    05 FILLER PIC X(600) VALUE "H items=item;b expand;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
+    05 FILLER PIC X(600) VALUE "H items=item;B expand;i weight;i quality;r condition=loot_cond;f modifier=loot" &
+        "_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "loot_table".
-    05 FILLER PIC X(600) VALUE "H value=loot_table;b expand;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
+    05 FILLER PIC X(600) VALUE "H value=loot_table;b expand;i weight;i quality;r condition=loot_cond;f modifie" &
+        "r=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "dynamic".
     05 FILLER PIC X(600) VALUE "D name;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "slots".
-    05 FILLER PIC X(600) VALUE "F slot_source=loot_slot;i weight;i quality;r condition=loot_cond;f modifier=loot_fn".
+    05 FILLER PIC X(600) VALUE "F slot_source=loot_slot;i weight;i quality;r condition=loot_cond;f modifier=lo" &
+        "ot_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "alternatives".
-    05 FILLER PIC X(600) VALUE "l children=loot_entry;r condition=loot_cond;f modifier=loot_fn".
+    05 FILLER PIC X(600) VALUE "L children=loot_entry;r condition=loot_cond;f modifier=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_entry".
     05 FILLER PIC X(48) VALUE "sequence".
     05 FILLER PIC X(600) VALUE "l children=loot_entry;r condition=loot_cond;f modifier=loot_fn".
@@ -194,13 +198,13 @@
     05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "enchanted_count_increase".
-    05 FILLER PIC X(600) VALUE "P count=loot_float;d enchantment;i limit;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "P count=loot_float;D enchantment;i limit;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "apply_bonus".
     05 FILLER PIC X(600) VALUE "D enchantment;S formula;o parameters;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "furnace_smelt".
-    05 FILLER PIC X(600) VALUE "b use_input_count;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "b use_input_count;R condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "discard".
     05 FILLER PIC X(600) VALUE "x type".
@@ -209,13 +213,15 @@
     05 FILLER PIC X(600) VALUE "F functions=loot_fn;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "filtered".
-    05 FILLER PIC X(600) VALUE "O item_filter;f on_pass=loot_fn;f on_fail=loot_fn".
+    05 FILLER PIC X(600) VALUE "O item_filter;f on_pass=loot_fn;F on_fail=loot_fn".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "enchant_with_levels".
-    05 FILLER PIC X(600) VALUE "P levels=loot_int;h options=enchantment;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "P levels=loot_int;H options=enchantment;b include_additional_cost_component;r " &
+        "condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "enchant_randomly".
-    05 FILLER PIC X(600) VALUE "h options=enchantment;b only_compatible;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "H options=enchantment;b only_compatible;b include_additional_cost_component;r " &
+        "condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_enchantments".
     05 FILLER PIC X(600) VALUE "O enchantments;b add;r condition=loot_cond".
@@ -224,7 +230,7 @@
     05 FILLER PIC X(600) VALUE "P damage=loot_float;b add;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_name".
-    05 FILLER PIC X(600) VALUE "x name;s entity;e target=custom_name|item_name;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "O name;s entity;E target=custom_name|item_name;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_lore".
     05 FILLER PIC X(600) VALUE "A lore;s mode;i offset;i size;s entity;r condition=loot_cond".
@@ -236,7 +242,7 @@
     05 FILLER PIC X(600) VALUE "D block;K properties;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "copy_components".
-    05 FILLER PIC X(600) VALUE "S source;k include;k exclude;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "S source;K include;k exclude;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_components".
     05 FILLER PIC X(600) VALUE "O components;r condition=loot_cond".
@@ -254,7 +260,7 @@
     05 FILLER PIC X(600) VALUE "D id;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_random_potion".
-    05 FILLER PIC X(600) VALUE "h options=potion;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "H options=potion;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_stew_effect".
     05 FILLER PIC X(600) VALUE "L effects=loot_stew;r condition=loot_cond".
@@ -296,7 +302,8 @@
     05 FILLER PIC X(600) VALUE "S entity;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "exploration_map".
-    05 FILLER PIC X(600) VALUE "H destination=structure;s decoration;i zoom;i search_radius;b skip_existing_chunks;r condition=loot_cond".
+    05 FILLER PIC X(600) VALUE "H destination=structure;s decoration;i zoom;i search_radius;b skip_existing_ch" &
+        "unks;r condition=loot_cond".
     05 FILLER PIC X(24) VALUE "loot_fn".
     05 FILLER PIC X(48) VALUE "set_contents".
     05 FILLER PIC X(600) VALUE "S component;L entries=loot_entry;r condition=loot_cond".
@@ -356,22 +363,22 @@
     05 FILLER PIC X(600) VALUE "D enchantment;A chances".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "match_tool".
-    05 FILLER PIC X(600) VALUE "o predicate".
+    05 FILLER PIC X(600) VALUE "O predicate".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "match_block".
     05 FILLER PIC X(600) VALUE "x blocks;o state;x nbt;x components".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "damage_source_properties".
-    05 FILLER PIC X(600) VALUE "o predicate".
+    05 FILLER PIC X(600) VALUE "O predicate".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "entity_properties".
-    05 FILLER PIC X(600) VALUE "S entity;o predicate".
+    05 FILLER PIC X(600) VALUE "S entity;O predicate".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "entity_scores".
     05 FILLER PIC X(600) VALUE "S entity;O scores".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "location_check".
-    05 FILLER PIC X(600) VALUE "o predicate;i offsetX;i offsetY;i offsetZ".
+    05 FILLER PIC X(600) VALUE "O predicate;i offsetX;i offsetY;i offsetZ".
     05 FILLER PIC X(24) VALUE "loot_cond".
     05 FILLER PIC X(48) VALUE "weather_check".
     05 FILLER PIC X(600) VALUE "b raining;b thundering".
@@ -577,8 +584,14 @@
     05 FILLER PIC X(48) VALUE "enchantment_level".
     05 FILLER PIC X(600) VALUE "V amount=loot_level".
     05 FILLER PIC X(24) VALUE "loot_int".
+    05 FILLER PIC X(48) VALUE "~".
+    05 FILLER PIC X(600) VALUE "I".
+    05 FILLER PIC X(24) VALUE "loot_int".
     05 FILLER PIC X(48) VALUE "!".
     05 FILLER PIC X(600) VALUE "x type".
+    05 FILLER PIC X(24) VALUE "loot_float".
+    05 FILLER PIC X(48) VALUE "~".
+    05 FILLER PIC X(600) VALUE "N".
     05 FILLER PIC X(24) VALUE "loot_float".
     05 FILLER PIC X(48) VALUE "!".
     05 FILLER PIC X(600) VALUE "x type".
@@ -594,8 +607,7 @@
     05 FILLER PIC X(24) VALUE "loot_cflt".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(600) VALUE "R condition=loot_cond;P value=loot_float".
-
- 01 WS-ROW-COUNT           BINARY-LONG VALUE 157.
+ 01 WS-ROW-COUNT           BINARY-LONG VALUE 159.
  01 WS-TABLE               PIC X(48) VALUE "loot_table".
  01 WS-TABLE-GROUP         PIC X(24) VALUE "loot_table".
  01 WS-PREDICATE           PIC X(48) VALUE "predicate".

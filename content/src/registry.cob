@@ -193,10 +193,10 @@
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-BASE-LENGTH         BINARY-LONG.
  01 WS-REGISTRY-LENGTH     BINARY-LONG.
- 01 WS-NS                  PIC X(64).
+ 01 WS-NS                  PIC X(112).
  01 WS-OK                  BINARY-LONG.
  01 WS-DIR                 PIC X(1101).
- 01 WS-PREFIX              PIC X(64).
+ 01 WS-PREFIX              PIC X(112).
  01 WS-MESSAGE             PIC X(200).
  LINKAGE SECTION.
  01 L-BASE                 PIC X(1101).
@@ -243,7 +243,7 @@
                      CALL "REGISTRY-SCAN-DIR" USING WS-DIR WS-PREFIX WS-OK
                  ELSE
                      MOVE SPACES TO WS-MESSAGE
-                     MOVE B-LIST(WS-POS + 1:FUNCTION MIN(WS-NAME-LENGTH, 64)) TO WS-NS
+                     MOVE B-LIST(WS-POS + 1:FUNCTION MIN(WS-NAME-LENGTH, 112)) TO WS-NS
                      STRING "invalid namespace folder " FUNCTION TRIM(WS-NS) DELIMITED BY SIZE
                          INTO WS-MESSAGE
                      CALL "RS-ERROR" USING WS-MESSAGE
@@ -261,7 +261,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. REGISTRY-SCAN-DIR IS RECURSIVE.
-*> USING folder (z-string, PIC X(1101)), prefix (PIC X(64): the element path of the folder with its closing
+*> USING folder (z-string, PIC X(1101)), prefix (PIC X(112): the element path of the folder with its closing
 *> "/", spaces for the registry's own folder), a scratch word (BINARY-LONG, not used by the caller): reads
 *> every ".json" file below the folder as an element of RS-NS and enters the subfolders; other files are
 *> not elements. A folder that cannot be listed is not a folder (a file of the registry's name): nothing.
@@ -300,14 +300,14 @@
  01 LS-SHOW-LENGTH         BINARY-LONG.
  01 LS-CHILD               PIC X(1101).
  01 LS-CHILD-PATH          PIC X(1100).
- 01 LS-CHILD-PREFIX        PIC X(64).
- 01 LS-PATH                PIC X(64).
- 01 LS-TAG-KEY             PIC X(64).
- 01 LS-NAME                PIC X(64).
+ 01 LS-CHILD-PREFIX        PIC X(112).
+ 01 LS-PATH                PIC X(112).
+ 01 LS-TAG-KEY             PIC X(112).
+ 01 LS-NAME                PIC X(112).
  01 LS-MESSAGE             PIC X(200).
  LINKAGE SECTION.
  01 L-DIR                  PIC X(1101).
- 01 L-PREFIX               PIC X(64).
+ 01 L-PREFIX               PIC X(112).
  01 L-SCRATCH              BINARY-LONG.
  PROCEDURE DIVISION USING L-DIR L-PREFIX L-SCRATCH.
      CALL "RS-LIST-DIR" USING L-DIR LS-LIST-ADDR LS-COUNT LS-STATUS
@@ -327,14 +327,14 @@
          END-PERFORM
          COMPUTE LS-NAME-LENGTH = LS-END - LS-POS - 1
          MOVE SPACES TO LS-NAME
-         MOVE FUNCTION MIN(LS-NAME-LENGTH, 64) TO LS-SHOW-LENGTH
+         MOVE FUNCTION MIN(LS-NAME-LENGTH, 112) TO LS-SHOW-LENGTH
          MOVE B-LIST(LS-POS + 1:LS-SHOW-LENGTH) TO LS-NAME
          EVALUATE TRUE
              WHEN B-LIST(LS-POS:1) = "D"
 *>               A subfolder: its names are path segments (23 1: a-z 0-9 _ - . and /).
                  COMPUTE LS-STEM-LENGTH = LS-PREFIX-LENGTH + LS-NAME-LENGTH + 1
                  MOVE 0 TO LS-OK
-                 IF LS-STEM-LENGTH <= 63
+                 IF LS-STEM-LENGTH <= 111
                      MOVE SPACES TO LS-CHILD-PREFIX
                      IF LS-PREFIX-LENGTH > 0
                          MOVE L-PREFIX(1:LS-PREFIX-LENGTH) TO LS-CHILD-PREFIX(1:LS-PREFIX-LENGTH)
@@ -361,9 +361,9 @@
                  MOVE SPACES TO LS-PATH
                  MOVE SPACES TO LS-MESSAGE
                  COMPUTE LS-PATH-LENGTH = LS-PREFIX-LENGTH + LS-STEM-LENGTH
-                 IF LS-PATH-LENGTH + LS-NS-LENGTH + 1 > 64
+                 IF LS-PATH-LENGTH + LS-NS-LENGTH + 1 > 112
                      STRING FUNCTION TRIM(RS-REGISTRY) " " FUNCTION TRIM(RS-NS) ": the key of " LS-NAME(1:LS-SHOW-LENGTH)
-                         " is over 64 bytes" DELIMITED BY SIZE INTO LS-MESSAGE
+                         " is over 112 bytes" DELIMITED BY SIZE INTO LS-MESSAGE
                      CALL "RS-ERROR" USING LS-MESSAGE
                  ELSE
                      IF LS-PREFIX-LENGTH > 0
@@ -464,7 +464,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RS-ID-VALID.
-*> USING text (PIC X(64)), length (BINARY-LONG), mode and result (BINARY-LONG, one word: in 1 namespace, 2
+*> USING text (PIC X(112)), length (BINARY-LONG), mode and result (BINARY-LONG, one word: in 1 namespace, 2
 *> path; out 1 valid, 0 not): 23 section 1: a namespace holds a-z 0-9 _ - . and is not ".."; a path holds
 *> those and "/"; neither is empty.
  DATA DIVISION.
@@ -473,7 +473,7 @@
  01 WS-C                   PIC X.
  01 WS-MODE                BINARY-LONG.
  LINKAGE SECTION.
- 01 L-TEXT                 PIC X(64).
+ 01 L-TEXT                 PIC X(112).
  01 L-LENGTH               BINARY-LONG.
  01 L-MODE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-LENGTH L-MODE.
@@ -555,9 +555,9 @@
  01 WS-J                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-HELD                BINARY-LONG.
- 01 WS-PATH-A              PIC X(64).
+ 01 WS-PATH-A              PIC X(112).
  01 WS-NS-A                PIC X(32).
- 01 WS-PATH-B              PIC X(64).
+ 01 WS-PATH-B              PIC X(112).
  01 WS-NS-B                PIC X(32).
  01 WS-AFTER               BINARY-LONG.
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -643,7 +643,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-REGISTRY-COUNT.
-*> USING registry (PIC X(64), the key with or without "minecraft:"), count out (BINARY-LONG: the entries of the
+*> USING registry (PIC X(112), the key with or without "minecraft:"), count out (BINARY-LONG: the entries of the
 *> registry, 0 when it is not found), status out (CT-OK; CT-NOT-FOUND for a registry the set has not loaded;
 *> CT-NOT-OPEN). A registry the table does not hold is asked of the registry sources (registry-sources.cob:
 *> block, item, entity_type, the static registries, game_rule, the cobolcraft set's own).
@@ -651,14 +651,14 @@
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  COPY CTSTORE.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-HAS-NAMESPACE       BINARY-LONG.
  01 WS-ASK                 BINARY-LONG.
- 01 WS-SOURCE-KEY          PIC X(64).
+ 01 WS-SOURCE-KEY          PIC X(112).
  01 WS-SOURCE-LENGTH       BINARY-LONG.
  LINKAGE SECTION.
- 01 L-REGISTRY             PIC X(64).
+ 01 L-REGISTRY             PIC X(112).
  01 L-COUNT                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-COUNT L-STATUS.
@@ -694,7 +694,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-REGISTRY-ENTRY.
-*> USING registry (PIC X(64)), entry id (BINARY-LONG), key out (PIC X(64), with namespace), key length out
+*> USING registry (PIC X(112)), entry id (BINARY-LONG), key out (PIC X(112), with namespace), key length out
 *> (BINARY-LONG), payload area out (any size: the entry's strict JSON, or the network NBT tag bytes of a
 *> client set), capacity (BINARY-LONG bytes of the area), payload length out (BINARY-LONG), status out (CT-OK;
 *> CT-NOT-FOUND for an unknown registry or an id outside 0 to count - 1; CT-TOO-SMALL when the area is
@@ -705,15 +705,15 @@
  COPY CONTENT.
  COPY CTSTORE.
  01 B-DST                  PIC X(268435456) BASED.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-HAS-NAMESPACE       BINARY-LONG.
  01 WS-SOURCE-COUNT        BINARY-LONG.
  LINKAGE SECTION.
- 01 L-REGISTRY             PIC X(64).
+ 01 L-REGISTRY             PIC X(112).
  01 L-ID                   BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-KEY-LENGTH           BINARY-LONG.
  01 L-PAYLOAD              PIC X.
  01 L-CAPACITY             BINARY-LONG.

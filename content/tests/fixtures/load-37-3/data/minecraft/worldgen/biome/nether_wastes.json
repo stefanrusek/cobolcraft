@@ -1,3 +1,4 @@
 {"has_precipitation": false, "temperature": 2.0, "downfall": 0.0,
  "effects": {"water_color": "#3f76e4", "grass_color_modifier": "dark_forest"},
+ "attributes": {},
  "carvers": "minecraft:nether_cave", "features": [[], [], [], [], [], [], [], ["minecraft:spring_open", "minecraft:patch_fire"]]}

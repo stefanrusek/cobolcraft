@@ -11,7 +11,7 @@
 *>                   follow WGN-NEXT)
 *>   M               an array of numbers (WGN-CHILD: the first constant node; WGN-INT the count)
 *>   F               the placed features of a biome: an array per decoration step (domain 14 nodes in WGN-CHILD / WGN-NEXT)
-*>   N G             a number, a pair of numbers (WGN-NUM)
+*>   N G             a number, a pair of numbers (WGN-NUM); a G field may name a second spelling of its member after "="
 *>   I B E C A       an integer, a boolean, an enum ("name=a|b|c": the 0-based position), a colour (24 bit RGB, -1 when
 *>                   left out), an anchor (kind, value) (WGN-INT); "i name=n" is an integer that defaults to n
 *>   T X H           a string, a block state ("name k=v k=v"), a string or a list of strings joined by spaces (WGN-TEXT)
@@ -147,7 +147,7 @@
     05 FILLER PIC X(640) VALUE " ".
     05 FILLER PIC 99 VALUE 02.
     05 FILLER PIC X(32) VALUE "sequence".
-    05 FILLER PIC X(640) VALUE "S rules".
+    05 FILLER PIC X(640) VALUE "S sequence".
     05 FILLER PIC 99 VALUE 02.
     05 FILLER PIC X(32) VALUE "condition".
     05 FILLER PIC X(640) VALUE "K if_true;R then_run".
@@ -207,13 +207,22 @@
     05 FILLER PIC X(640) VALUE "A min_inclusive;A max_inclusive".
     05 FILLER PIC 99 VALUE 04.
     05 FILLER PIC X(32) VALUE "all_of".
-    05 FILLER PIC X(640) VALUE "U predicates".
+    05 FILLER PIC X(640) VALUE "U rules".
     05 FILLER PIC 99 VALUE 04.
     05 FILLER PIC X(32) VALUE "any_of".
-    05 FILLER PIC X(640) VALUE "U predicates".
+    05 FILLER PIC X(640) VALUE "U rules".
     05 FILLER PIC 99 VALUE 04.
     05 FILLER PIC X(32) VALUE "not".
-    05 FILLER PIC X(640) VALUE "Q predicate".
+    05 FILLER PIC X(640) VALUE "Q rule".
+    05 FILLER PIC 99 VALUE 04.
+    05 FILLER PIC X(32) VALUE "always_true".
+    05 FILLER PIC X(640) VALUE " ".
+    05 FILLER PIC 99 VALUE 04.
+    05 FILLER PIC X(32) VALUE "random_block_match".
+    05 FILLER PIC X(640) VALUE "T block;N probability".
+    05 FILLER PIC 99 VALUE 04.
+    05 FILLER PIC X(32) VALUE "blockstate_match".
+    05 FILLER PIC X(640) VALUE "X block_state".
     05 FILLER PIC 99 VALUE 05.
     05 FILLER PIC X(32) VALUE "constant".
     05 FILLER PIC X(640) VALUE "I value".
@@ -268,7 +277,7 @@
         & "shape.width_smoothness;L shape.y_scale".
     05 FILLER PIC 99 VALUE 09.
     05 FILLER PIC X(32) VALUE "ore".
-    05 FILLER PIC X(640) VALUE "I config.size;N config.discard_chance_on_air_exposure;W config.targets".
+    05 FILLER PIC X(640) VALUE "I size;N discard_chance_on_air_exposure;W targets".
     05 FILLER PIC 99 VALUE 10.
     05 FILLER PIC X(32) VALUE "-".
     05 FILLER PIC X(640) VALUE "X state;Q target".
@@ -282,7 +291,10 @@
         & "aquifers.exclusion;d aquifers.surface_level;y spawn_target".
     05 FILLER PIC 99 VALUE 12.
     05 FILLER PIC X(32) VALUE "-".
-    05 FILLER PIC X(640) VALUE "G continentalness;G erosion;G temperature;G vegetation;G ridges".
+    05 FILLER PIC X(640) VALUE "g minecraft:overworld/continents=minecraft:overworld_large_biomes/continents;g "
+        & "minecraft:overworld/erosion=minecraft:overworld_large_biomes/erosion;g minecraft:overworld/temperature="
+        & "minecraft:overworld_large_biomes/temperature;g minecraft:overworld/vegetation="
+        & "minecraft:overworld_large_biomes/vegetation;G minecraft:overworld/ridges".
     05 FILLER PIC 99 VALUE 13.
     05 FILLER PIC X(32) VALUE "-".
     05 FILLER PIC X(640) VALUE "N temperature;N downfall;B has_precipitation;e temperature_modifier=none|frozen;C "
@@ -303,7 +315,7 @@
         & "height;I logical_height;t infiniburn;N ambient_light;J monster_spawn_light_level;I "
         & "monster_spawn_block_light_limit;e skybox=overworld|none|end;e cardinal_light=default|nether".
  01 WS-TYPE-TABLE REDEFINES WS-TYPES.
-    05 WS-TYPE OCCURS 87 TIMES.
+    05 WS-TYPE OCCURS 90 TIMES.
        10 WS-T-DOMAIN        PIC 99.
        10 WS-T-NAME          PIC X(32).
        10 WS-T-SPEC          PIC X(640).
@@ -319,7 +331,7 @@
  PROCEDURE DIVISION USING L-INDEX L-DOMAIN L-NAME L-SPEC.
      MOVE 0 TO L-DOMAIN
      MOVE SPACES TO L-NAME L-SPEC
-     IF L-INDEX >= 1 AND L-INDEX <= 87
+     IF L-INDEX >= 1 AND L-INDEX <= 90
          MOVE WS-T-DOMAIN(L-INDEX) TO L-DOMAIN
          MOVE WS-T-NAME(L-INDEX) TO L-NAME
          MOVE WS-T-SPEC(L-INDEX) TO L-SPEC
@@ -327,7 +339,7 @@
      GOBACK.
      ENTRY "WG-TYPE-FIND" USING L-F-DOMAIN L-F-NAME L-F-ROW.
      MOVE 0 TO L-F-ROW
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 87 OR L-F-ROW > 0
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 90 OR L-F-ROW > 0
          IF WS-T-DOMAIN(WS-I) = L-F-DOMAIN AND WS-T-NAME(WS-I) = L-F-NAME
              MOVE WS-I TO L-F-ROW
          END-IF

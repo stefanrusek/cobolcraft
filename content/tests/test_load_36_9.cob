@@ -13,7 +13,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-LABEL               PIC X(70).
  01 WS-NAME                PIC X(40).
@@ -22,42 +22,42 @@
  01 WS-COMMAND             PIC X(600).
  01 WS-FINDS.
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:village_plains".
+    05 FILLER PIC X(112) VALUE "minecraft:village_plains".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:village_taiga".
+    05 FILLER PIC X(112) VALUE "minecraft:village_taiga".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure".
-    05 FILLER PIC X(64) VALUE "minecraft:pillager_outpost".
+    05 FILLER PIC X(112) VALUE "minecraft:pillager_outpost".
     05 FILLER PIC X(48) VALUE "jigsaw".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:villages".
+    05 FILLER PIC X(112) VALUE "minecraft:villages".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/structure_set".
-    05 FILLER PIC X(64) VALUE "minecraft:pillager_outposts".
+    05 FILLER PIC X(112) VALUE "minecraft:pillager_outposts".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:village/plains/town_centers".
+    05 FILLER PIC X(112) VALUE "minecraft:village/plains/town_centers".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:village/plains/decor".
+    05 FILLER PIC X(112) VALUE "minecraft:village/plains/decor".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/template_pool".
-    05 FILLER PIC X(64) VALUE "minecraft:pillager_outpost/base_plates".
+    05 FILLER PIC X(112) VALUE "minecraft:pillager_outpost/base_plates".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:mossify_10_percent".
+    05 FILLER PIC X(112) VALUE "minecraft:mossify_10_percent".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:street_plains".
+    05 FILLER PIC X(112) VALUE "minecraft:street_plains".
     05 FILLER PIC X(48) VALUE "-".
     05 FILLER PIC X(48) VALUE "worldgen/processor_list".
-    05 FILLER PIC X(64) VALUE "minecraft:outpost_rot".
+    05 FILLER PIC X(112) VALUE "minecraft:outpost_rot".
     05 FILLER PIC X(48) VALUE "-".
  01 WS-FIND-TABLE REDEFINES WS-FINDS.
     05 WS-FIND OCCURS 11 TIMES.
        10 WS-F-REGISTRY   PIC X(48).
-       10 WS-F-KEY        PIC X(64).
+       10 WS-F-KEY        PIC X(112).
        10 WS-F-TYPE       PIC X(48).
  01 WS-BADS.
     05 FILLER PIC X(40) VALUE "a village without start_pool".

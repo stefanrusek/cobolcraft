@@ -10,14 +10,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-FAIL.
-*> USING key (PIC X(64)), detail (PIC X(120)): prints "ERROR registry: <label> <key>: <detail>" and counts the error
+*> USING key (PIC X(112)), detail (PIC X(120)): prints "ERROR registry: <label> <key>: <detail>" and counts the error
 *> (RS-ERROR). The label is that of the registry being loaded (WG-LABEL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
  01 WS-MESSAGE             PIC X(200).
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-DETAIL               PIC X(120).
  PROCEDURE DIVISION USING L-KEY L-DETAIL.
      MOVE SPACES TO WS-MESSAGE
@@ -30,7 +30,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-ALLOC.
 *> USING table (BINARY-LONG: WGK-NODE, WGK-SPLINE, WGK-POINT or WGK-FUNCTION), rows wanted (BINARY-LONG), key (PIC
-*> X(64), for the error), first row out (BINARY-LONG), status out (BINARY-LONG, set to 1 and reported when the
+*> X(112), for the error), first row out (BINARY-LONG), status out (BINARY-LONG, set to 1 and reported when the
 *> table of the store (32768, 16384, 24576 or 4096 rows) cannot take the rows; left alone otherwise).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -46,7 +46,7 @@
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
  01 L-N                    BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-WHICH L-N L-KEY L-INDEX L-STATUS.
@@ -144,7 +144,7 @@
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
  01 B-TEXT                 PIC X(268435456) BASED.
- 01 WS-Z                   PIC X(64).
+ 01 WS-Z                   PIC X(112).
  01 WS-POS                 BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
@@ -369,8 +369,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-BLOCK-STATE.
 *> USING JSON-DOC, node, limit (BINARY-LONG, at most 199), text out (PIC X(200), space padded), ok out (BINARY-LONG): a
-*> block state object (04 section 6: the name in "Name" or "id", the properties as an object of strings in "Properties"
-*> or "properties") as the name followed by " name=value" for each property, at most limit bytes.
+*> block state slot (48 section 2.2): a plain block id string, or an object with the member id (a string, required) and the
+*> member properties (an object of string values, optional), as the name followed by " name=value" for each property, at
+*> most limit bytes. The keys Name and Properties do not occur in the data (48 section 2.1) and are not read.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-KEY-NAME            PIC X(32).
@@ -392,25 +393,21 @@
  01 L-TEXT                 PIC X(200).
  01 L-OK                   BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-LIMIT L-TEXT L-OK.
-     MOVE SPACES TO L-TEXT WS-OUT
+     MOVE SPACES TO L-TEXT WS-OUT WS-NAME
      MOVE 0 TO L-OK WS-FOUND
-     IF JN-TYPE(L-NODE) = JT-OBJECT
-         MOVE "Name" TO WS-KEY-NAME
-         CALL "RECIPE-GET-TEXT" USING JSON-DOC L-NODE WS-KEY-NAME WS-NAME WS-FOUND
-         IF WS-FOUND = 0
+     EVALUATE JN-TYPE(L-NODE)
+         WHEN JT-STRING
+             CALL "WG-STRING" USING JSON-DOC L-NODE L-LIMIT L-TEXT L-OK
+             GOBACK
+         WHEN JT-OBJECT
              MOVE "id" TO WS-KEY-NAME
              CALL "RECIPE-GET-TEXT" USING JSON-DOC L-NODE WS-KEY-NAME WS-NAME WS-FOUND
-         END-IF
-     END-IF
+     END-EVALUATE
      IF WS-FOUND = 1
          MOVE 1 TO L-OK WS-PTR
          STRING FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
-         MOVE "Properties" TO WS-KEY-NAME
+         MOVE "properties" TO WS-KEY-NAME
          CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE WS-KEY-NAME WS-PROPS
-         IF WS-PROPS = 0
-             MOVE "properties" TO WS-KEY-NAME
-             CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE WS-KEY-NAME WS-PROPS
-         END-IF
          IF WS-PROPS > 0
              IF JN-TYPE(WS-PROPS) = JT-OBJECT
                  MOVE JN-FIRST(WS-PROPS) TO WS-ELEM
@@ -489,23 +486,43 @@
  END PROGRAM WG-LIST-TEXT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. WG-MEMBER-PATH.
-*> USING JSON-DOC, object node, path (PIC X(64): a name, or two names separated by "."), member node out (0 when
+ PROGRAM-ID. WG-MEMBER-NAMED.
+*> USING JSON-DOC, object node, name (PIC X(64), space padded: the member names that are density function ids, such as the
+*> keys of a spawn_target box (48 section 2.5), are longer than the 32 bytes of RECIPE-MEMBER), member node out (0 when
 *> there is none).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-FIRST               PIC X(32).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-OBJECT               BINARY-LONG.
+ 01 L-NAME                 PIC X(64).
+ 01 L-NODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-OBJECT L-NAME L-NODE.
+     MOVE 0 TO WS-LENGTH
+     INSPECT L-NAME TALLYING WS-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+     CALL "JSON-MEMBER" USING JSON-DOC L-OBJECT L-NAME WS-LENGTH L-NODE
+     GOBACK.
+ END PROGRAM WG-MEMBER-NAMED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WG-MEMBER-PATH.
+*> USING JSON-DOC, object node, path (PIC X(112): a name, or two names separated by "."), member node out (0 when
+*> there is none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FIRST               PIC X(64).
  01 WS-SECOND              PIC X(32).
  01 WS-OUTER               BINARY-LONG.
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-PATH                 PIC X(64).
+ 01 L-PATH                 PIC X(112).
  01 L-MEMBER               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-PATH L-MEMBER.
      MOVE SPACES TO WS-FIRST WS-SECOND
      UNSTRING L-PATH DELIMITED BY "." INTO WS-FIRST WS-SECOND
-     CALL "RECIPE-MEMBER" USING JSON-DOC L-NODE WS-FIRST L-MEMBER
+     CALL "WG-MEMBER-NAMED" USING JSON-DOC L-NODE WS-FIRST L-MEMBER
      IF WS-SECOND NOT = SPACES
          MOVE L-MEMBER TO WS-OUTER
          MOVE 0 TO L-MEMBER
@@ -518,7 +535,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-READ-FEATURES.
-*> USING JSON-DOC, node (the "features" array: an array per decoration step of placed feature ids), key (PIC X(64)),
+*> USING JSON-DOC, node (the "features" array: an array per decoration step of placed feature ids), key (PIC X(112)),
 *> first out (BINARY-LONG: the first node of the chain of domain 14 nodes in listing order, 0 when there is none), ok
 *> out (BINARY-LONG: 0 when a value is not of the form), status out (BINARY-LONG: 1 when the store is full).
  DATA DIVISION.
@@ -537,7 +554,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-FIRST                BINARY-LONG.
  01 L-OK                   BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
@@ -583,7 +600,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-READ-NODE IS RECURSIVE.
-*> USING JSON-DOC, node (BINARY-LONG), domain (BINARY-LONG), key (PIC X(64), the element id, for the errors), index
+*> USING JSON-DOC, node (BINARY-LONG), domain (BINARY-LONG), key (PIC X(112), the element id, for the errors), index
 *> out (BINARY-LONG: the node made, 0 on failure), status out (BINARY-LONG: 0, or 1 after an error was reported):
 *> reads one value of the domain: a number gives a constant (density, int and float providers), a string a
 *> reference (density, surface rule and condition) and an object a node of the type its "type" names (its
@@ -595,7 +612,7 @@
  01 WS-NODE-TABLE          BINARY-LONG VALUE 1.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-LIMIT-160           BINARY-LONG VALUE 160.
- 01 WS-LIMIT-64            BINARY-LONG VALUE 64.
+ 01 WS-LIMIT-112           BINARY-LONG VALUE 112.
  LOCAL-STORAGE SECTION.
  01 LS-MODE                BINARY-LONG.
  01 LS-ROW                 BINARY-LONG.
@@ -612,8 +629,9 @@
  01 LS-TOKEN               PIC X(80).
  01 LS-LETTER              PIC X.
  01 LS-UP                  PIC X.
- 01 LS-PATH                PIC X(64).
+ 01 LS-PATH                PIC X(112).
  01 LS-EXTRA               PIC X(80).
+ 01 LS-ALT                 PIC X(64).
  01 LS-MEMBER              BINARY-LONG.
  01 LS-CI                  BINARY-LONG.
  01 LS-NI                  BINARY-LONG.
@@ -635,7 +653,7 @@
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
  01 L-DOMAIN               BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-DOMAIN L-KEY L-INDEX L-STATUS.
@@ -715,6 +733,12 @@
              ELSE
                  CALL "WG-MEMBER-PATH" USING JSON-DOC L-NODE LS-PATH LS-MEMBER
              END-IF
+*>           A G field may name a second spelling of its member after "=" (a spawn_target box of the large biomes
+*>           noise settings names the density functions of overworld_large_biomes).
+             IF LS-MEMBER = 0 AND LS-UP = "G"
+                 MOVE LS-EXTRA TO LS-ALT
+                 CALL "WG-MEMBER-NAMED" USING JSON-DOC L-NODE LS-ALT LS-MEMBER
+             END-IF
              IF LS-MEMBER = 0
 *>               A field that is left out: an error when it is required, else its slot takes the default (the
 *>               optional forms in use are D R K Q J L V S U W Y F M, I B E P C and T X H).
@@ -727,6 +751,8 @@
                              ADD 1 TO LS-CI
                          WHEN "M"
                              ADD 1 TO LS-CI LS-II
+                         WHEN "G"
+                             ADD 2 TO LS-NI
                          WHEN "I"
                              ADD 1 TO LS-II
                              COMPUTE WGN-INT(LS-IDX, LS-II) = FUNCTION NUMVAL(LS-EXTRA)
@@ -835,7 +861,7 @@
                          MOVE LS-INT TO WGN-INT(LS-IDX, LS-II)
                      WHEN "E"
                          MOVE 0 TO LS-INT
-                         CALL "WG-STRING" USING JSON-DOC LS-MEMBER WS-LIMIT-64 LS-TEXT LS-OK
+                         CALL "WG-STRING" USING JSON-DOC LS-MEMBER WS-LIMIT-112 LS-TEXT LS-OK
                          IF LS-OK = 1
                              CALL "WG-ENUM" USING LS-TEXT LS-EXTRA LS-INT
                              IF LS-INT < 0
@@ -859,11 +885,11 @@
                          ADD 1 TO LS-II
                          MOVE LS-CHILD TO WGN-INT(LS-IDX, LS-II)
                      WHEN OTHER
-*>                       T, X and H: the first text slot holds 160 bytes, the second 64.
+*>                       T, X and H: the first text slot holds 160 bytes, the second 112.
                          IF LS-TI = 0
                              MOVE WS-LIMIT-160 TO LS-LIMIT
                          ELSE
-                             MOVE WS-LIMIT-64 TO LS-LIMIT
+                             MOVE WS-LIMIT-112 TO LS-LIMIT
                          END-IF
                          EVALUATE LS-UP
                              WHEN "T"
@@ -898,7 +924,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WG-READ-SPLINE IS RECURSIVE.
-*> USING JSON-DOC, node, key (PIC X(64)), index out (BINARY-LONG: the row of WSP made, 0 on failure), status out
+*> USING JSON-DOC, node, key (PIC X(112)), index out (BINARY-LONG: the row of WSP made, 0 on failure), status out
 *> (BINARY-LONG): a spline (10 section 4.3) is a number (a constant) or an object with a coordinate density function
 *> and a non-empty array of points, each an object with a location, a derivative and a spline as value; the
 *> locations must increase strictly.
@@ -931,7 +957,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-KEY L-INDEX L-STATUS.

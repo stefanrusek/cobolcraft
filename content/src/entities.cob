@@ -7,25 +7,25 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-ENTITY-BY-KEY.
-*> USING key (PIC X(64), space padded; "minecraft:" is optional in the standard set), entity id out
+*> USING key (PIC X(112), space padded; "minecraft:" is optional in the standard set), entity id out
 *> (BINARY-LONG), row out (PIC X(66), CT-ENTITY-ROW), status out (CT-OK, CT-NOT-FOUND with id 0 and the
 *> row of entity 0, CT-NOT-OPEN with the row left as it was).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
- 01 WS-REST                PIC X(64).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-REST                PIC X(112).
  01 WS-ROW                 PIC X(66).
  01 WS-VIEW REDEFINES WS-ROW.
     05 FILLER              PIC X(3).
     05 WS-R-KEY            PIC X(22).
     05 FILLER              PIC X(41).
- 01 WS-ROW-KEY             PIC X(64).
+ 01 WS-ROW-KEY             PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ID                   BINARY-LONG.
  01 L-ROW                  PIC X(66).
  01 L-STATUS               BINARY-LONG.
@@ -87,7 +87,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTENT-STATIC-ID.
-*> USING registry (PIC X(48), "minecraft:" optional), key (PIC X(64), "minecraft:" optional), id out
+*> USING registry (PIC X(48), "minecraft:" optional), key (PIC X(112), "minecraft:" optional), id out
 *> (BINARY-LONG), status out (CT-OK; CT-NOT-FOUND with id 0 for an unknown registry or key, and for a key
 *> of another registry; CT-NOT-OPEN). block, item and entity_type answer through the lookups of the set
 *> (a cobolcraft set has its own numbering); every other registry is the vanilla table of 46.
@@ -96,19 +96,19 @@
  COPY CONTENT.
  COPY STATICIDS.
  01 WS-REGISTRY            PIC X(48).
- 01 WS-KEY                 PIC X(64).
- 01 WS-REST                PIC X(64).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-REST                PIC X(112).
  01 WS-BLOCK-ROW           PIC X(819).
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-ENTITY-ROW          PIC X(66).
  01 WS-ROW-REGISTRY        PIC X(48).
- 01 WS-ROW-KEY             PIC X(64).
+ 01 WS-ROW-KEY             PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-ID-TEXT             PIC X(4).
  LINKAGE SECTION.
  01 L-REGISTRY             PIC X(48).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-ID                   BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-REGISTRY L-KEY L-ID L-STATUS.

@@ -10,7 +10,7 @@
  COPY CTSHAPE.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REG                 PIC X(48).
  01 WS-ROW                 BINARY-LONG.
  01 WS-COMMAND             PIC X(2000).
@@ -20,87 +20,87 @@
  01 WS-WANT-TYPE           PIC X(48).
  01 WS-ACCEPT.
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:delta".
+    05 FILLER PIC X(112) VALUE "minecraft:delta".
     05 FILLER PIC X(48) VALUE "delta_feature".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:basalt_columns_small".
+    05 FILLER PIC X(112) VALUE "minecraft:basalt_columns_small".
     05 FILLER PIC X(48) VALUE "stepped_column_cluster".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_spike".
+    05 FILLER PIC X(112) VALUE "minecraft:end_spike".
     05 FILLER PIC X(48) VALUE "end_spike".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_spike_listed".
+    05 FILLER PIC X(112) VALUE "minecraft:end_spike_listed".
     05 FILLER PIC X(48) VALUE "end_spike".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:chorus_plant".
+    05 FILLER PIC X(112) VALUE "minecraft:chorus_plant".
     05 FILLER PIC X(48) VALUE "chorus_plant".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_island".
+    05 FILLER PIC X(112) VALUE "minecraft:end_island".
     05 FILLER PIC X(48) VALUE "end_island".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_platform".
+    05 FILLER PIC X(112) VALUE "minecraft:end_platform".
     05 FILLER PIC X(48) VALUE "end_platform".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_podium_active".
+    05 FILLER PIC X(112) VALUE "minecraft:end_podium_active".
     05 FILLER PIC X(48) VALUE "end_podium".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_podium_inactive".
+    05 FILLER PIC X(112) VALUE "minecraft:end_podium_inactive".
     05 FILLER PIC X(48) VALUE "end_podium".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_gateway_return".
+    05 FILLER PIC X(112) VALUE "minecraft:end_gateway_return".
     05 FILLER PIC X(48) VALUE "end_gateway".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:end_gateway_delayed".
+    05 FILLER PIC X(112) VALUE "minecraft:end_gateway_delayed".
     05 FILLER PIC X(48) VALUE "end_gateway".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:void_start_platform".
+    05 FILLER PIC X(112) VALUE "minecraft:void_start_platform".
     05 FILLER PIC X(48) VALUE "void_start_platform".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:replace".
+    05 FILLER PIC X(112) VALUE "minecraft:replace".
     05 FILLER PIC X(48) VALUE "replace_single_block".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:bonus_chest".
+    05 FILLER PIC X(112) VALUE "minecraft:bonus_chest".
     05 FILLER PIC X(48) VALUE "bonus_chest".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:template_a".
+    05 FILLER PIC X(112) VALUE "minecraft:template_a".
     05 FILLER PIC X(48) VALUE "template".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(64) VALUE "minecraft:basalt_pillar".
+    05 FILLER PIC X(112) VALUE "minecraft:basalt_pillar".
     05 FILLER PIC X(48) VALUE SPACES.
  01 WS-ACCEPT-TABLE REDEFINES WS-ACCEPT.
     05 WS-A OCCURS 16 TIMES.
        10 WS-A-REG     PIC X(48).
-       10 WS-A-KEY     PIC X(64).
+       10 WS-A-KEY     PIC X(112).
        10 WS-A-TYPE    PIC X(48).
  01 WS-CASES.
     05 FILLER PIC X(60) VALUE "a feature without a type".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""rim"":{""Name"":""a:b""}}".
+    05 FILLER PIC X(1500) VALUE "{""rim"":{""id""  :""a:b""}}".
     05 FILLER PIC X(60) VALUE "a delta_feature without rim".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""Name"":""minecraft:lava""},""size"":{""" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""id""  :""minecraft:lava""},""size"":{""" &
         "type"":""minecraft:uniform"",""min_inclusive"":2,""max_inclusive"":8},""rim_size"":3}".
     05 FILLER PIC X(60) VALUE "a delta_feature without contents".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""rim"":{""Name"":""minecraft:magma_block""},""size"":" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""rim"":{""id""  :""minecraft:magma_block""},""size"":" &
         "{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_inclusive"":8},""rim_size"":3}".
     05 FILLER PIC X(60) VALUE "a delta_feature rim state without Name".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""Name"":""minecraft:lava""},""rim"":{}," &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""id""  :""minecraft:lava""},""rim"":{}," &
         """size"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_inclusive"":8},""rim_siz" &
         "e"":3}".
     05 FILLER PIC X(60) VALUE "a delta_feature contents that is a string".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":""minecraft:lava"",""rim"":{""Name"":""min" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":""minecraft:lava"",""rim"":{""id""  :""min" &
         "ecraft:magma_block""},""size"":{""type"":""minecraft:uniform"",""min_inclusive"":2,""max_i" &
         "nclusive"":8},""rim_size"":3}".
     05 FILLER PIC X(60) VALUE "a delta_feature size that is a string".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""Name"":""minecraft:lava""},""rim"":{""N" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""id""  :""minecraft:lava""},""rim"":{""N" &
         "ame"":""minecraft:magma_block""},""size"":""3"",""rim_size"":3}".
     05 FILLER PIC X(60) VALUE "a delta_feature without rim_size".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""Name"":""minecraft:lava""},""rim"":{""N" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:delta_feature"",""contents"":{""id""  :""minecraft:lava""},""rim"":{""N" &
         "ame"":""minecraft:magma_block""},""size"":{""type"":""minecraft:uniform"",""min_inclusive""" &
         ":2,""max_inclusive"":8}}".
     05 FILLER PIC X(60) VALUE "a stepped_column_cluster without continue_through".
@@ -216,7 +216,7 @@
     05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:replace_single_block"",""targets"":{}}".
     05 FILLER PIC X(60) VALUE "a replace_single_block target that is an array".
     05 FILLER PIC X(48) VALUE "worldgen/feature".
-    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:replace_single_block"",""targets"":[{""target"":[],""state"":{""Name""" &
+    05 FILLER PIC X(1500) VALUE "{""type"":""minecraft:replace_single_block"",""targets"":[{""target"":[],""state"":{""id""  " &
         ":""a:b""}}]}".
     05 FILLER PIC X(60) VALUE "a replace_single_block replacement without state".
     05 FILLER PIC X(48) VALUE "worldgen/feature".

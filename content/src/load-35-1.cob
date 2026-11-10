@@ -19,220 +19,87 @@
  01 WS-ROWS.
     05 FILLER PIC X(24) VALUE "placed_feature".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R feature=feature;L placement=placement_modifier".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "R feature=feature;L placement=placement_modifier".
     05 FILLER PIC X(24) VALUE "weighted_placed_feature".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R feature=placed_feature;N chance=0..1".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "R feature=placed_feature;N chance=0..1".
     05 FILLER PIC X(24) VALUE "weighted_entry".
     05 FILLER PIC X(48) VALUE "-".
-    05 FILLER PIC X(100) VALUE "R data=placed_feature;I weight=0..".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "R data=placed_feature;I weight=0..".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "no_op".
-    05 FILLER PIC X(100) VALUE "x type".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "random_selector".
-    05 FILLER PIC X(100) VALUE "L features=weighted_placed_feature;R default=placed_feature".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "L features=weighted_placed_feature;R default=placed_feature".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "simple_random_selector".
-    05 FILLER PIC X(100) VALUE "H features=placed_feature".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "H features=placed_feature".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "random_boolean_selector".
-    05 FILLER PIC X(100) VALUE "R feature_true=placed_feature;R feature_false=placed_feature".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "R feature_true=placed_feature;R feature_false=placed_feature".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "weighted_random_selector".
-    05 FILLER PIC X(100) VALUE "L features=weighted_entry".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "L features=weighted_entry".
     05 FILLER PIC X(24) VALUE "feature".
     05 FILLER PIC X(48) VALUE "sequence".
-    05 FILLER PIC X(100) VALUE "H features=placed_feature".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "H features=placed_feature".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "count".
-    05 FILLER PIC X(100) VALUE "V count=int_provider".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "V count=int_provider".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "in_square".
-    05 FILLER PIC X(100) VALUE "x type".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "biome".
-    05 FILLER PIC X(100) VALUE "x type".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "x type".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "block_predicate_filter".
-    05 FILLER PIC X(100) VALUE "T predicate=block_predicate".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "T predicate=block_predicate".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "rarity_filter".
-    05 FILLER PIC X(100) VALUE "I chance=1..".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "I chance=1..".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "random_chance".
-    05 FILLER PIC X(100) VALUE "N chance=0..1".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "N chance=0..1".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "surface_relative_threshold_filter".
-    05 FILLER PIC X(100) VALUE "S heightmap;i min_inclusive;i max_inclusive".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "S heightmap;i min_inclusive;i max_inclusive".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "surface_water_depth_filter".
-    05 FILLER PIC X(100) VALUE "I max_water_depth".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "I max_water_depth".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "noise_based_count".
-    05 FILLER PIC X(100) VALUE "I noise_to_count_ratio;N noise_factor;n noise_offset".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "I noise_to_count_ratio;N noise_factor;n noise_offset".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "noise_threshold_count".
-    05 FILLER PIC X(100) VALUE "N noise_level;I below_noise;I above_noise".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "N noise_level;I below_noise;I above_noise".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "count_on_every_layer".
-    05 FILLER PIC X(100) VALUE "V count=int_provider".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "I count".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "cuboid".
-    05 FILLER PIC X(100) VALUE "V xz_size=int_provider;V y_size=int_provider;b include_edges;b include_interior".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "V xz_size=int_provider;V y_size=int_provider;b include_edges;b include_interio" &
+        "r".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "environment_scan".
-    05 FILLER PIC X(100) VALUE "E direction_of_search=up|down;T target_condition=block_predicate;t allowed_search_condition=block_pr".
-    05 FILLER PIC X(100) VALUE "edicate;I max_steps=1..32".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "E direction_of_search=up|down;T target_condition=block_predicate;t allowed_sea" &
+        "rch_condition=block_predicate;I max_steps=1..32".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "heightmap".
-    05 FILLER PIC X(100) VALUE "S heightmap".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "S heightmap".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "height_range".
-    05 FILLER PIC X(100) VALUE "X height".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "X height".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "offset".
-    05 FILLER PIC X(100) VALUE "V x=int_provider;V y=int_provider;V z=int_provider".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "V x=int_provider;V y=int_provider;V z=int_provider".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "randomly_selected".
-    05 FILLER PIC X(100) VALUE "L placements=placement_modifier".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "L placements=placement_modifier".
     05 FILLER PIC X(24) VALUE "placement_modifier".
     05 FILLER PIC X(48) VALUE "fixed_placement".
-    05 FILLER PIC X(100) VALUE "A positions".
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
-    05 FILLER PIC X(100) VALUE SPACES.
+    05 FILLER PIC X(600) VALUE "A positions".
  01 WS-ROW-COUNT           BINARY-LONG VALUE 27.
  01 WS-REG-1              PIC X(48) VALUE "worldgen/placed_feature".
  01 WS-GROUP-1            PIC X(24) VALUE "placed_feature".

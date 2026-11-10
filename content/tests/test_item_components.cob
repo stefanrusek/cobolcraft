@@ -207,14 +207,14 @@
     05 WS-COBOLCRAFT-CASE  PIC X(100) OCCURS 27 TIMES.
  01 WS-CASE                PIC X(100).
  01 WS-I                   BINARY-LONG.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-ROW                 PIC X(270).
  01 WS-STATUS              BINARY-LONG.
  01 WS-NAME                PIC X(32).
  01 WS-VALUE               PIC X(100).
  01 WS-WANT                PIC X(100).
- 01 WS-ITEM                PIC X(64).
+ 01 WS-ITEM                PIC X(112).
  PROCEDURE DIVISION.
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE

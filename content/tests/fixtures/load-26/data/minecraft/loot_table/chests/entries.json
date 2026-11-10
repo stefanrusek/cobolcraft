@@ -12,4 +12,4 @@
      {"type": "minecraft:contents", "slot_source": {"type": "minecraft:empty"}, "component": "minecraft:container"}]}},
    {"type": "minecraft:sequence", "children": [{"type": "minecraft:item", "name": "minecraft:apple"}]},
    {"type": "minecraft:group", "children": []}]}],
- "modifier": {"type": "minecraft:set_name", "name": "Loot", "target": "item_name"}}
+ "modifier": {"type": "minecraft:set_name", "name": {"text": "Loot"}, "target": "item_name"}}

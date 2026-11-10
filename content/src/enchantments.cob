@@ -26,7 +26,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENCHANT-EFFECT-KEYS.
-*> USING JSON-DOC, effects node (an object), element key (PIC X(64)): one error (WG-FAIL) for each member key that is not
+*> USING JSON-DOC, effects node (an object), element key (PIC X(112)): one error (WG-FAIL) for each member key that is not
 *> one of the 31 effect component types of 28 section 2.2.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -76,7 +76,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-KEY.
      SET ADDRESS OF B-TEXT TO JD-ADDR
      MOVE JN-FIRST(L-NODE) TO WS-CHILD
@@ -111,7 +111,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENCHANT-ENUM-VALUE.
 *> USING JSON-DOC, string node, allowed (PIC X(200): the values, each between "|"), member name (PIC X(24)), element key
-*> (PIC X(64)): one error (WG-FAIL) when the string is not one of the values.
+*> (PIC X(112)): one error (WG-FAIL) when the string is not one of the values.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-TEXT                PIC X(200).
@@ -125,7 +125,7 @@
  01 L-NODE                 BINARY-LONG.
  01 L-ALLOWED              PIC X(200).
  01 L-MEMBER               PIC X(24).
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-ALLOWED L-MEMBER L-KEY.
      MOVE SPACES TO WS-TEXT WS-PROBE
      CALL "JSON-STRING" USING JSON-DOC L-NODE WS-TEXT WS-CAPACITY WS-LENGTH
@@ -176,7 +176,7 @@
  01 WS-MEMBER              BINARY-LONG.
  01 WS-CHILD               BINARY-LONG.
  01 WS-NAME                PIC X(32).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(24).
  01 WS-ALLOWED             PIC X(200).
  01 WS-LABEL-NAME          PIC X(24).

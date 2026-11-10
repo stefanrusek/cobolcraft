@@ -10,7 +10,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CONTENT.
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-REGISTRY            PIC X(48).
  01 WS-ID                  BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.

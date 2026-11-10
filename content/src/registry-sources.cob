@@ -27,7 +27,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. REGISTRY-GAME-RULE-AT.
 *> USING registry name (PIC X(48), ignored: the caller asks for game_rule only), id (BINARY-LONG, 0 or more), key out
-*> (PIC X(64), written when the id exists), count out (BINARY-LONG, 59). Rules of 16 section 13, table order (A1).
+*> (PIC X(112), written when the id exists), count out (BINARY-LONG, 59). Rules of 16 section 13, table order (A1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-RULES.
@@ -96,7 +96,7 @@
  LINKAGE SECTION.
  01 L-NAME                 PIC X(48).
  01 L-ID                   BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-NAME L-ID L-KEY L-COUNT.
      MOVE 59 TO L-COUNT
@@ -121,7 +121,7 @@
  LINKAGE SECTION.
  01 L-NAME                 PIC X(48).
  01 L-ID                   BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-NAME L-ID L-KEY L-COUNT.
      MOVE 0 TO L-COUNT
@@ -241,7 +241,7 @@
  LINKAGE SECTION.
  01 L-NAME                 PIC X(48).
  01 L-ID                   BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-NAME L-ID L-KEY L-COUNT.
      MOVE 0 TO L-COUNT
@@ -268,16 +268,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. REGISTRY-SOURCE-AT.
-*> USING registry (PIC X(64), "minecraft:" optional), id (BINARY-LONG; -1 asks only for the count), key out (PIC X(64),
+*> USING registry (PIC X(112), "minecraft:" optional), id (BINARY-LONG; -1 asks only for the count), key out (PIC X(112),
 *> with namespace, written when the id exists), key length out (BINARY-LONG), count out (BINARY-LONG; 0 for an unknown
 *> registry), status out (CT-OK; CT-NOT-FOUND for an unknown registry, or an id outside 0 to count - 1 with the count
 *> given). Caller checks CT-OPEN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
- 01 WS-FULL                PIC X(64).
+ 01 WS-FULL                PIC X(112).
  01 WS-NAME                PIC X(48).
- 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY                 PIC X(112).
  01 WS-ASK                 BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-COLONS              BINARY-LONG.
@@ -298,9 +298,9 @@
     05 FILLER              PIC X(41).
  01 WS-ROW-STATUS          BINARY-LONG.
  LINKAGE SECTION.
- 01 L-REGISTRY             PIC X(64).
+ 01 L-REGISTRY             PIC X(112).
  01 L-ID                   BINARY-LONG.
- 01 L-KEY                  PIC X(64).
+ 01 L-KEY                  PIC X(112).
  01 L-KEY-LENGTH           BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
