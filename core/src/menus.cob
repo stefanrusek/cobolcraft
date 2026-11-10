@@ -688,6 +688,115 @@
  END PROGRAM MENU-CLICK-PICKUP-ALL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-DRAG-ADD.
+*> USING row, menu slot: header 1 of a drag: adds the slot when the slot takes the cursor's item, is not in the set and the
+*> cursor is large enough (40-1 section 3.4 item 6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SI                  BINARY-LONG.
+ 01 WS-SC                  BINARY-LONG.
+ 01 WS-MAY                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     MOVE 1 TO WS-OK
+     IF L-SLOT < 0 OR L-SLOT > 45
+         MOVE 0 TO WS-OK
+     END-IF
+     IF WS-OK = 1
+         CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+         CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
+         IF WS-MAY = 0
+             MOVE 0 TO WS-OK
+         END-IF
+         IF WS-SC > 0 AND WS-SI NOT = PL-CARRIED-ITEM(L-ROW)
+             MOVE 0 TO WS-OK
+         END-IF
+         IF MN-DRAG-TYPE(L-ROW) < 2 AND PL-CARRIED-COUNT(L-ROW) < MN-DRAG-COUNT(L-ROW) + 1
+             MOVE 0 TO WS-OK
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MN-DRAG-COUNT(L-ROW)
+             IF MN-DRAG-SLOT(L-ROW, WS-I) = L-SLOT
+                 MOVE 0 TO WS-OK
+             END-IF
+         END-PERFORM
+     END-IF
+     IF WS-OK = 1
+         ADD 1 TO MN-DRAG-COUNT(L-ROW)
+         MOVE L-SLOT TO MN-DRAG-SLOT(L-ROW, MN-DRAG-COUNT(L-ROW))
+     END-IF.
+     GOBACK.
+ END PROGRAM MENU-DRAG-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-DRAG-END.
+*> USING row: header 2 of a drag: no slot ends with nothing, one slot is a PICKUP with the drag kind as button, several
+*> share the cursor (40-1 section 3.4 item 6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CITEMS.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-SI                  BINARY-LONG.
+ 01 WS-SC                  BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-PLACE               BINARY-LONG.
+ 01 WS-PLACED              BINARY-LONG.
+ 01 WS-REMAINING           BINARY-LONG.
+ 01 WS-BUTTON              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1) TO WS-MAX
+     EVALUATE TRUE
+         WHEN MN-DRAG-COUNT(L-ROW) = 0
+             CONTINUE
+         WHEN MN-DRAG-COUNT(L-ROW) = 1
+             MOVE MN-DRAG-SLOT(L-ROW, 1) TO WS-SLOT
+             MOVE MN-DRAG-TYPE(L-ROW) TO WS-BUTTON
+             MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
+             IF WS-BUTTON < 2
+                 CALL "MENU-CLICK-PICKUP" USING L-ROW WS-SLOT WS-BUTTON
+             END-IF
+         WHEN OTHER
+             EVALUATE MN-DRAG-TYPE(L-ROW)
+                 WHEN 0
+                     COMPUTE WS-PLACE = PL-CARRIED-COUNT(L-ROW) / MN-DRAG-COUNT(L-ROW)
+                 WHEN 1
+                     MOVE 1 TO WS-PLACE
+                 WHEN OTHER
+                     MOVE WS-MAX TO WS-PLACE
+             END-EVALUATE
+             MOVE PL-CARRIED-COUNT(L-ROW) TO WS-REMAINING
+             MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MN-DRAG-COUNT(L-ROW)
+                 MOVE MN-DRAG-SLOT(L-ROW, WS-I) TO WS-SLOT
+                 CALL "MENU-GET" USING L-ROW WS-SLOT WS-SI WS-SC
+                 COMPUTE WS-PLACED = FUNCTION MIN(WS-PLACE + WS-SC, WS-MAX)
+                 COMPUTE WS-REMAINING = WS-REMAINING - (WS-PLACED - WS-SC)
+                 CALL "MENU-SET" USING L-ROW WS-SLOT WS-ITEM WS-PLACED
+             END-PERFORM
+             MOVE WS-REMAINING TO PL-CARRIED-COUNT(L-ROW)
+             IF WS-REMAINING <= 0
+                 MOVE 0 TO PL-CARRIED-COUNT(L-ROW) PL-CARRIED-ITEM(L-ROW)
+             END-IF
+             MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
+     END-EVALUATE
+     IF MN-DRAG-ACTIVE(L-ROW) = 1 AND MN-DRAG-COUNT(L-ROW) = 0
+         MOVE 0 TO MN-DRAG-ACTIVE(L-ROW)
+     END-IF.
+     GOBACK.
+ END PROGRAM MENU-DRAG-END.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-CLICK-DRAG.
 *> USING row, menu slot, button: QUICK_CRAFT of 40-1 §3.4 item 6. The header (button mod 4) 0 starts a drag, 1 adds a
 *> slot, 2 ends it; the kind (button / 4) 0 splits the cursor evenly, 1 puts one item in each slot, 2 (creative
@@ -731,81 +840,83 @@
                  MOVE WS-KIND TO MN-DRAG-TYPE(L-ROW)
              END-IF
          WHEN WS-HEADER = 1 AND MN-DRAG-ACTIVE(L-ROW) = 1
-             PERFORM DRAG-ADD
+             CALL "MENU-DRAG-ADD" USING L-ROW L-SLOT
          WHEN WS-HEADER = 2 AND MN-DRAG-ACTIVE(L-ROW) = 1
-             PERFORM DRAG-END
+             CALL "MENU-DRAG-END" USING L-ROW
          WHEN OTHER
              MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
      END-EVALUATE
      GOBACK.
-
- DRAG-ADD.
-     MOVE 1 TO WS-OK
-     IF L-SLOT < 0 OR L-SLOT > 45
-         MOVE 0 TO WS-OK
-     END-IF
-     IF WS-OK = 1
-         CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
-         CALL "MENU-MAY-PLACE" USING L-ROW L-SLOT PL-CARRIED-ITEM(L-ROW) WS-MAY
-         IF WS-MAY = 0
-             MOVE 0 TO WS-OK
-         END-IF
-         IF WS-SC > 0 AND WS-SI NOT = PL-CARRIED-ITEM(L-ROW)
-             MOVE 0 TO WS-OK
-         END-IF
-         IF MN-DRAG-TYPE(L-ROW) < 2 AND PL-CARRIED-COUNT(L-ROW) < MN-DRAG-COUNT(L-ROW) + 1
-             MOVE 0 TO WS-OK
-         END-IF
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MN-DRAG-COUNT(L-ROW)
-             IF MN-DRAG-SLOT(L-ROW, WS-I) = L-SLOT
-                 MOVE 0 TO WS-OK
-             END-IF
-         END-PERFORM
-     END-IF
-     IF WS-OK = 1
-         ADD 1 TO MN-DRAG-COUNT(L-ROW)
-         MOVE L-SLOT TO MN-DRAG-SLOT(L-ROW, MN-DRAG-COUNT(L-ROW))
-     END-IF.
-
- DRAG-END.
-     EVALUATE TRUE
-         WHEN MN-DRAG-COUNT(L-ROW) = 0
-             CONTINUE
-         WHEN MN-DRAG-COUNT(L-ROW) = 1
-             MOVE MN-DRAG-SLOT(L-ROW, 1) TO WS-SLOT
-             MOVE MN-DRAG-TYPE(L-ROW) TO WS-BUTTON
-             MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
-             IF WS-BUTTON < 2
-                 CALL "MENU-CLICK-PICKUP" USING L-ROW WS-SLOT WS-BUTTON
-             END-IF
-         WHEN OTHER
-             EVALUATE MN-DRAG-TYPE(L-ROW)
-                 WHEN 0
-                     COMPUTE WS-PLACE = PL-CARRIED-COUNT(L-ROW) / MN-DRAG-COUNT(L-ROW)
-                 WHEN 1
-                     MOVE 1 TO WS-PLACE
-                 WHEN OTHER
-                     MOVE WS-MAX TO WS-PLACE
-             END-EVALUATE
-             MOVE PL-CARRIED-COUNT(L-ROW) TO WS-REMAINING
-             MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MN-DRAG-COUNT(L-ROW)
-                 MOVE MN-DRAG-SLOT(L-ROW, WS-I) TO WS-SLOT
-                 CALL "MENU-GET" USING L-ROW WS-SLOT WS-SI WS-SC
-                 COMPUTE WS-PLACED = FUNCTION MIN(WS-PLACE + WS-SC, WS-MAX)
-                 COMPUTE WS-REMAINING = WS-REMAINING - (WS-PLACED - WS-SC)
-                 CALL "MENU-SET" USING L-ROW WS-SLOT WS-ITEM WS-PLACED
-             END-PERFORM
-             MOVE WS-REMAINING TO PL-CARRIED-COUNT(L-ROW)
-             IF WS-REMAINING <= 0
-                 MOVE 0 TO PL-CARRIED-COUNT(L-ROW) PL-CARRIED-ITEM(L-ROW)
-             END-IF
-             MOVE 0 TO MN-DRAG-ACTIVE(L-ROW) MN-DRAG-COUNT(L-ROW)
-     END-EVALUATE
-     IF MN-DRAG-ACTIVE(L-ROW) = 1 AND MN-DRAG-COUNT(L-ROW) = 0
-         MOVE 0 TO MN-DRAG-ACTIVE(L-ROW)
-     END-IF.
  END PROGRAM MENU-CLICK-DRAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-QUICK-LOOP.
+*> USING row, menu slot: QUICK_MOVE of 40-1 section 3.4 item 1: quickMoveStack repeated while the slot still holds the item
+*> that was moved.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SI                  BINARY-LONG.
+ 01 WS-SC                  BINARY-LONG.
+ 01 WS-RET-ITEM            BINARY-LONG.
+ 01 WS-RET-COUNT           BINARY-LONG.
+ 01 WS-LOOPS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT.
+     MOVE 0 TO WS-LOOPS
+     CALL "MENU-QUICK-MOVE" USING L-ROW L-SLOT WS-RET-ITEM WS-RET-COUNT
+     PERFORM UNTIL WS-RET-COUNT = 0 OR WS-LOOPS > 4096
+         ADD 1 TO WS-LOOPS
+         CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
+         IF WS-SC > 0 AND WS-SI = WS-RET-ITEM
+             CALL "MENU-QUICK-MOVE" USING L-ROW L-SLOT WS-RET-ITEM WS-RET-COUNT
+         ELSE
+             MOVE 0 TO WS-RET-COUNT
+         END-IF
+     END-PERFORM.
+     GOBACK.
+ END PROGRAM MENU-QUICK-LOOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-CLICK-PICK.
+*> USING row, menu slot, button (0 or 1), click type (0 PICKUP, 1 QUICK_MOVE): the slot -999 throw from the cursor, a PICKUP
+*> or a QUICK_MOVE of a slot (40-1 section 3.4 item 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-BUTTON               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-BUTTON L-TYPE.
+     IF L-SLOT = -999
+         IF PL-CARRIED-COUNT(L-ROW) > 0
+             MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
+             MOVE PL-CARRIED-COUNT(L-ROW) TO WS-COUNT
+             IF L-BUTTON = 1
+                 MOVE 1 TO WS-COUNT
+             END-IF
+             SUBTRACT WS-COUNT FROM PL-CARRIED-COUNT(L-ROW)
+             IF PL-CARRIED-COUNT(L-ROW) = 0
+                 MOVE 0 TO PL-CARRIED-ITEM(L-ROW)
+             END-IF
+             CALL "GI-THROW-STACK" USING L-ROW WS-ITEM WS-COUNT
+         END-IF
+     ELSE
+         IF L-SLOT >= 0
+             IF L-TYPE = 0
+                 CALL "MENU-CLICK-PICKUP" USING L-ROW L-SLOT L-BUTTON
+             ELSE
+                 CALL "MENU-QUICK-LOOP" USING L-ROW L-SLOT
+             END-IF
+         END-IF
+     END-IF.
+     GOBACK.
+ END PROGRAM MENU-CLICK-PICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-CLICK.
@@ -847,7 +958,7 @@
      END-IF
      EVALUATE TRUE
          WHEN (L-TYPE = 0 OR L-TYPE = 1) AND L-BUTTON >= 0 AND L-BUTTON <= 1
-             PERFORM PICKUP-OR-QUICK-MOVE
+             CALL "MENU-CLICK-PICK" USING L-ROW L-SLOT L-BUTTON L-TYPE
          WHEN L-TYPE = 2 AND L-SLOT >= 0
              CALL "MENU-CLICK-SWAP" USING L-ROW L-SLOT L-BUTTON
          WHEN L-TYPE = 3 AND L-SLOT >= 0 AND PL-MODE(L-ROW) = 1 AND PL-CARRIED-COUNT(L-ROW) = 0
@@ -867,43 +978,6 @@
      END-EVALUATE
      CALL "MENU-CRAFT-UPDATE" USING L-ROW
      GOBACK.
-
- PICKUP-OR-QUICK-MOVE.
-     IF L-SLOT = -999
-         IF PL-CARRIED-COUNT(L-ROW) > 0
-             MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
-             MOVE PL-CARRIED-COUNT(L-ROW) TO WS-COUNT
-             IF L-BUTTON = 1
-                 MOVE 1 TO WS-COUNT
-             END-IF
-             SUBTRACT WS-COUNT FROM PL-CARRIED-COUNT(L-ROW)
-             IF PL-CARRIED-COUNT(L-ROW) = 0
-                 MOVE 0 TO PL-CARRIED-ITEM(L-ROW)
-             END-IF
-             CALL "GI-THROW-STACK" USING L-ROW WS-ITEM WS-COUNT
-         END-IF
-     ELSE
-         IF L-SLOT >= 0
-             IF L-TYPE = 0
-                 CALL "MENU-CLICK-PICKUP" USING L-ROW L-SLOT L-BUTTON
-             ELSE
-                 PERFORM QUICK-MOVE-LOOP
-             END-IF
-         END-IF
-     END-IF.
-
- QUICK-MOVE-LOOP.
-     MOVE 0 TO WS-LOOPS
-     CALL "MENU-QUICK-MOVE" USING L-ROW L-SLOT WS-RET-ITEM WS-RET-COUNT
-     PERFORM UNTIL WS-RET-COUNT = 0 OR WS-LOOPS > 4096
-         ADD 1 TO WS-LOOPS
-         CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
-         IF WS-SC > 0 AND WS-SI = WS-RET-ITEM
-             CALL "MENU-QUICK-MOVE" USING L-ROW L-SLOT WS-RET-ITEM WS-RET-COUNT
-         ELSE
-             MOVE 0 TO WS-RET-COUNT
-         END-IF
-     END-PERFORM.
  END PROGRAM MENU-CLICK.
 
  IDENTIFICATION DIVISION.

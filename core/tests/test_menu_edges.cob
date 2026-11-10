@@ -122,6 +122,7 @@
      PERFORM BENCH-CASES
      PERFORM CLICK-EDGE-CASES
      PERFORM WIRE-CASES
+     PERFORM COVER-CASES
      GOBACK.
 
  BENCH-CASES.
@@ -428,9 +429,8 @@
      MOVE "cursor 3x64 9:3x36" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test menu edges QUICK_CRAFT: a survival kind 2 drag never starts; a creative one gives each slot "
-         & "a full stack; a creative kind 2 drag over one slot places nothing; a drag with no slot ends "
-         & "with nothing; another click type or header 3 cancels a drag" TO TL-CASE
+     MOVE "test menu edges QUICK_CRAFT: a survival kind 2 drag never starts; a creative one fills each "
+         & "slot; over one slot it places nothing; no slot, another click or header 3 ends it" TO TL-CASE
      PERFORM CLEAR
      MOVE 2 TO PL-CARRIED-ITEM(WS-ROW)
      MOVE 10 TO PL-CARRIED-COUNT(WS-ROW)
@@ -647,6 +647,138 @@
      MOVE SPACES TO WS-TEXT
      STRING "breaking " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT
      MOVE "breaking 0" TO TL-EXPECTED
+     PERFORM CHECK.
+
+ COVER-CASES.
+     MOVE 0 TO MN-WINDOW(WS-ROW) MN-TYPE(WS-ROW)
+     MOVE "test menu edges entry points on bad input: no equipment kind for item 0, a key under 6 bytes, "
+         & "no place in slot 46, no insert from an empty cursor or into a full slot, no pick-up or swap of "
+         & "slot 46, no swap of two empty slots" TO TL-CASE
+     PERFORM CLEAR
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-ITEM
+     CALL "MENU-EQUIP-KIND" USING WS-ITEM WS-KIND
+     MOVE WS-KIND TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE 3 TO IT-KEY-LENGTH(4)
+     MOVE 2 TO WS-ITEM
+     CALL "MENU-EQUIP-KIND" USING WS-ITEM WS-KIND
+     MOVE WS-KIND TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE 46 TO WS-SLOT
+     MOVE 3 TO WS-ITEM
+     CALL "MENU-MAY-PLACE" USING WS-ROW WS-SLOT WS-ITEM WS-KIND
+     MOVE WS-KIND TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     MOVE 1 TO WS-COUNT
+     MOVE 9 TO WS-SLOT
+     CALL "MENU-INSERT" USING WS-ROW WS-SLOT WS-COUNT
+     MOVE 10 TO PL-CARRIED-ITEM(WS-ROW)
+     MOVE 1 TO PL-CARRIED-COUNT(WS-ROW)
+     MOVE 10 TO WS-ITEM
+     MOVE 5 TO WS-SLOT
+     CALL "MENU-SET" USING WS-ROW WS-SLOT WS-ITEM WS-COUNT
+     CALL "MENU-INSERT" USING WS-ROW WS-SLOT WS-COUNT
+     MOVE 46 TO WS-SLOT
+     MOVE 0 TO WS-BUTTON
+     CALL "MENU-CLICK-PICKUP" USING WS-ROW WS-SLOT WS-BUTTON
+     CALL "MENU-CLICK-SWAP" USING WS-ROW WS-SLOT WS-BUTTON
+     MOVE 9 TO WS-SLOT
+     CALL "MENU-CLICK-SWAP" USING WS-ROW WS-SLOT WS-Z1
+     MOVE WS-TEXT TO WS-TEXT-2
+     PERFORM SHOW
+     PERFORM APPEND-TEXT
+     MOVE WS-TEXT-2 TO WS-TEXT
+     MOVE "0 0 0 | cursor 10x1 5:10x1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test menu edges QUICK_MOVE of an empty bench slot does nothing; a drag with an empty cursor "
+         & "does nothing; the stack throw of a result crafts twice" TO TL-CASE
+     PERFORM CLEAR
+     MOVE 1 TO MN-WINDOW(WS-ROW)
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE 12 TO WS-SLOT
+     PERFORM CLICK
+     MOVE 0 TO MN-WINDOW(WS-ROW)
+     MOVE 5 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE -999 TO WS-SLOT
+     PERFORM CLICK
+     MOVE 2 TO WS-ITEM
+     MOVE 2 TO WS-COUNT
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 4
+         PERFORM PUT
+     END-PERFORM
+     CALL "MENU-CRAFT-UPDATE" USING WS-ROW
+     MOVE CW-NEXT-ENTITY-ID TO WS-ENT0
+     MOVE 4 TO WS-TYPE
+     MOVE 1 TO WS-BUTTON
+     MOVE 0 TO WS-SLOT
+     PERFORM CLICK
+     PERFORM SHOW
+     COMPUTE WS-NUM = CW-NEXT-ENTITY-ID - WS-ENT0
+     MOVE WS-NUM TO WS-EDIT3
+     MOVE SPACES TO WS-TEXT-2
+     STRING FUNCTION TRIM(WS-TEXT) " thrown " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT-2
+     MOVE WS-TEXT-2 TO WS-TEXT
+     MOVE "cursor 0x0 thrown 2" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test menu edges the result slot quick-moved into a nearly full inventory: one item fits, the "
+         & "other is dropped" TO TL-CASE
+     PERFORM CLEAR
+     MOVE 3 TO WS-ITEM
+     MOVE 64 TO WS-COUNT
+     PERFORM VARYING WS-SLOT FROM 9 BY 1 UNTIL WS-SLOT > 44
+         PERFORM PUT
+     END-PERFORM
+     MOVE 9 TO WS-ITEM
+     MOVE 63 TO WS-COUNT
+     MOVE 44 TO WS-SLOT
+     PERFORM PUT
+     MOVE 2 TO WS-ITEM
+     MOVE 1 TO WS-COUNT
+     PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 4
+         PERFORM PUT
+     END-PERFORM
+     CALL "MENU-CRAFT-UPDATE" USING WS-ROW
+     MOVE CW-NEXT-ENTITY-ID TO WS-ENT0
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE 0 TO WS-SLOT
+     PERFORM CLICK
+     MOVE 44 TO WS-S
+     CALL "MENU-GET" USING WS-ROW WS-S WS-ITEM WS-COUNT
+     COMPUTE WS-NUM = CW-NEXT-ENTITY-ID - WS-ENT0
+     MOVE WS-NUM TO WS-EDIT3
+     MOVE WS-COUNT TO WS-EDIT
+     MOVE SPACES TO WS-TEXT
+     STRING "slot44 " FUNCTION TRIM(WS-EDIT) " thrown " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE
+         INTO WS-TEXT
+     MOVE "slot44 64 thrown 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test menu edges Container Close of the inventory menu with items in the 2x2 grid returns them"
+         TO TL-CASE
+     PERFORM CLEAR
+     MOVE 2 TO MN-IGRID-ITEM(WS-ROW, 1)
+     MOVE 3 TO MN-IGRID-COUNT(WS-ROW, 1)
+     MOVE 0 TO WS-CONTAINER
+     PERFORM SEND-CLOSE
+     MOVE 0 TO WS-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         IF PL-SLOT-ITEM(WS-ROW, WS-I) = 2
+             ADD PL-SLOT-COUNT(WS-ROW, WS-I) TO WS-NUM
+         END-IF
+     END-PERFORM
+     MOVE WS-NUM TO WS-EDIT
+     MOVE MN-IGRID-COUNT(WS-ROW, 1) TO WS-EDIT2
+     MOVE SPACES TO WS-TEXT
+     STRING "returned " FUNCTION TRIM(WS-EDIT) " grid " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+         INTO WS-TEXT
+     MOVE "returned 3 grid 0" TO TL-EXPECTED
      PERFORM CHECK.
 
 *> Feeds a Container Click (0x12) of container WS-CONTAINER with state id WS-STATE-ID on slot WS-SLOT (button

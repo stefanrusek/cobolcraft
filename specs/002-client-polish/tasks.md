@@ -618,17 +618,17 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0370 [US8-core] Implement the sequence handling in `core/src/breaking.cob`
 - [x] T0371 [US8-core] Write acceptance test `core/tests/acc_f2us8_destroy_stage.cob` (US8-1 to US8-3): Block Destruction stage 0 to 9 goes to the breaker and to other players who can see the block; abort and finish send stage -1; a block broken by another player ends the progress (13 §2.4) [FR-023; SC-006]
 - [x] T0372 [US8-core] Implement the stage broadcast in `core/src/breaking.cob`
-- [ ] T0373 [US8-core] Write contract tests in `core/tests/contract_wire_server.cob` for the Block Destruction fixture
+- [x] T0373 [US8-core] Write contract tests in `core/tests/contract_wire_server.cob` for the Block Destruction fixture
 - [ ] T0374 [US8-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 32: US9-core — inventory menu, crafting, recipe book
 
-- [ ] T0375 [US9-core] Write test `core/tests/test_inventory_menu.cob`: the 46-slot inventory menu (2x2 grid, result, armor, off-hand slot 45; `docs/protocol/40-menus-1-model-and-containers.md`, 12 §5.6a) with Container Click modes (pickup, quick move, swap, throw, drag, double click)
-- [ ] T0376 [US9-core] Implement the inventory menu in `core/src/menu-inventory.cob` and the shared menu model in `core/src/menus.cob`, replacing the stand-in logic of `core/src/inventory.cob`
+- [x] T0375 [US9-core] Write test `core/tests/test_inventory_menu.cob`: the 46-slot inventory menu (2x2 grid, result, armor, off-hand slot 45; `docs/protocol/40-menus-1-model-and-containers.md`, 12 §5.6a) with Container Click modes (pickup, quick move, swap, throw, drag, double click)
+- [x] T0376 [US9-core] Implement the inventory menu in `core/src/menu-inventory.cob` and the shared menu model in `core/src/menus.cob`, replacing the stand-in logic of `core/src/inventory.cob`
 - [x] T0377 [US9-core] Write test `core/tests/test_crafting_match.cob`: shaped (mirror, trimmed), shapeless and special matching and the result slot over a 2x2 and a 3x3 grid (13 §3.2, §3.3) with the recipes from `CONTENT` for both sets
 - [x] T0378 [US9-core] Implement crafting matching in `core/src/crafting-match.cob`
-- [ ] T0379 [US9-core] Write acceptance test `core/tests/acc_f2us9_take_result.cob` (US9-1): taking the result consumes one of each ingredient, shift-click crafts repeatedly, leftover items (13 §3.6) [FR-024, FR-025, FR-028; SC-005]
-- [ ] T0380 [US9-core] Implement result taking in `core/src/crafting-match.cob`
+- [x] T0379 [US9-core] Write acceptance test `core/tests/acc_f2us9_take_result.cob` (US9-1): taking the result consumes one of each ingredient, shift-click crafts repeatedly, leftover items (13 §3.6) [FR-024, FR-025, FR-028; SC-005]
+- [x] T0380 [US9-core] Implement result taking in `core/src/crafting-match.cob`
 - [ ] T0381 [US9-core] Write test `core/tests/test_recipes_27_1.cob` for Recipe model (`docs/protocol/27-recipes-and-unlocks.md` §1): every rule, table row, formula and worked case of the section; case names start `acceptance US9 27§1 Recipe model` (FR-024, FR-025)
 - [ ] T0382 [US9-core] Implement Recipe model (§1 of `27-recipes-and-unlocks.md`) in `core/src/recipes-27.cob` so the test passes (create the file with the first section of the document)
 - [ ] T0383 [US9-core] Write test `core/tests/test_recipes_27_2.cob` for Crafting recipes (`docs/protocol/27-recipes-and-unlocks.md` §2): every rule, table row, formula and worked case of the section; case names start `acceptance US9 27§2 Crafting recipes` (FR-024, FR-025)
@@ -645,16 +645,16 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T0394 [US9-core] Write test `core/tests/test_place_recipe.cob`: Place Recipe fills the grid from the inventory with the choice of ingredients of 13 §3.8, replacing what is in the grid (US9-2)
 - [ ] T0395 [US9-core] Implement Place Recipe in `core/src/recipe-unlock.cob`
 - [ ] T0396 [US9-core] Write edge-case test `core/tests/test_recipe_book_edges.cob` (spec edge case): a recipe book with no known recipes lists none; a bench-only recipe opened in the 2x2 inventory is shown unavailable; Place Recipe with a full inventory returns what the grid held without losing items and reports the failure per 13 §3.8
-- [ ] T0397 [US9-core] Write test `core/tests/test_creative_throw.cob` (CC-0006): in creative a stack carried by the cursor and clicked outside the window becomes a ground item through Set Creative Mode Slot with the drop flag
-- [ ] T0398 [US9-core] Make the creative cursor throw work in `core/src/inventory.cob` (CC-0006)
+- [x] T0397 [US9-core] Write test `core/tests/test_creative_throw.cob` (CC-0006): in creative a stack carried by the cursor and clicked outside the window becomes a ground item through Set Creative Mode Slot with the drop flag
+- [x] T0398 [US9-core] Make the creative cursor throw work in `core/src/inventory.cob` (CC-0006)
 - [ ] T0399 [US9-core] Remove the 001 crafting module programs `CRAFT-TRY`, `CRAFT-BOOK-BUILD`, `CRAFT-BOOK-SEND`, `CRAFT-PLACE` from `core/src/crafting.cob` and their tests (FR-028), keeping nothing the new modules do not use
 - [ ] T0400 [US9-core] Write contract tests in `core/tests/contract_wire_server.cob` for the container and recipe-book fixtures
 - [ ] T0401 [US9-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 33: US10-core — crafting bench menu
 
-- [ ] T0402 [US10-core] Write test `core/tests/test_bench_menu.cob`: Use Item On a placed bench opens the 3x3 menu (12 §5.6b, 13 §3.5); a recipe that needs the large grid matches only in the bench menu (US10-3); the bench block places as an item
-- [ ] T0403 [US10-core] Implement the bench menu and block interaction in `core/src/menu-bench.cob`
+- [x] T0402 [US10-core] Write test `core/tests/test_bench_menu.cob`: Use Item On a placed bench opens the 3x3 menu (12 §5.6b, 13 §3.5); a recipe that needs the large grid matches only in the bench menu (US10-3); the bench block places as an item
+- [x] T0403 [US10-core] Implement the bench menu and block interaction in `core/src/menu-bench.cob`
 - [ ] T0404 [US10-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
@@ -3226,9 +3226,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 50: US19-core — off-hand swap
 
-- [ ] T2917 [US19-core] Write test `core/tests/test_offhand_swap.cob`: the Player Action swap exchanges the held hotbar item with slot 45 and sends Set Slot for both; Container Click swap with the off-hand slot in the inventory menu (13 §4, US19-1, US19-2)
-- [ ] T2918 [US19-core] Write edge-case test `core/tests/test_offhand_empty.cob` (spec edge case): swap with an empty hand and a full off hand, a full hand and an empty off hand, and both empty (nothing changes, no packet error)
-- [ ] T2919 [US19-core] Implement the swap in `core/src/menu-inventory.cob` and the Player Action handler
+- [x] T2917 [US19-core] Write test `core/tests/test_offhand_swap.cob`: the Player Action swap exchanges the held hotbar item with slot 45 and sends Set Slot for both; Container Click swap with the off-hand slot in the inventory menu (13 §4, US19-1, US19-2)
+- [x] T2918 [US19-core] Write edge-case test `core/tests/test_offhand_empty.cob` (spec edge case): swap with an empty hand and a full off hand, a full hand and an empty off hand, and both empty (nothing changes, no packet error)
+- [x] T2919 [US19-core] Implement the swap in `core/src/menu-inventory.cob` and the Player Action handler
 - [ ] T2920 [US19-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 51: US21-core — vanilla configuration conformance (automated half of Q-1)
