@@ -429,6 +429,14 @@
              CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT256 WS-LENGTH WS-WIDTH
              COMPUTE WS-X = WS-LEFT + (WS-W - WS-WIDTH) / 2
          END-IF
+*>       The merchant's title is "<title> - <level>" at 49 + (276 - width) / 2 (40-5 section 2.10).
+         IF BM-TYPE = 19
+             MOVE SM-CX-TITLE TO WS-TEXT256
+             CALL "MERCHANT-TITLE" USING CLIENT-STATE WS-TEXT256 WS-LENGTH
+             MOVE WS-TEXT256 TO WS-TEXT
+             CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT256 WS-LENGTH WS-WIDTH
+             COMPUTE WS-X = WS-LEFT + 49 + (WS-W - WS-WIDTH) / 2
+         END-IF
          COMPUTE WS-Y = WS-TOP + WS-TY
          MOVE WK-LABEL TO WS-KIND
          MOVE 0 TO WS-ARG

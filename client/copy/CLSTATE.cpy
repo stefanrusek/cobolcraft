@@ -222,6 +222,36 @@
        10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
 *>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
 *>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
+*>     The beacon screen's chosen powers (effect id + 1, 0 none; 40-5 section 3.7) and the merchant screen (40-5 section 2.10): the offers of Merchant Offers
+*>     (up to 32), the villager level and XP, the progress and restock flags, the scroll offset, the selected offer, the scroller drag and the stacks the
+*>     rows show this frame (argument 801 + 3 x row + 0 first cost, 1 second cost, 2 result).
+       10 BC-PRIMARY         BINARY-LONG.
+       10 BC-SECONDARY       BINARY-LONG.
+       10 MC-COUNT           BINARY-LONG.
+       10 MC-LEVEL           BINARY-LONG.
+       10 MC-XP              BINARY-LONG.
+       10 MC-PROGRESS        BINARY-LONG.
+       10 MC-RESTOCK         BINARY-LONG.
+       10 MC-SCROLL          BINARY-LONG.
+       10 MC-SELECTED        BINARY-LONG.
+       10 MC-DRAGGING        BINARY-LONG.
+       10 MC-OFFER OCCURS 32 TIMES.
+          15 MO-A-ITEM       BINARY-LONG.
+          15 MO-A-COUNT      BINARY-LONG.
+          15 MO-B-ITEM       BINARY-LONG.
+          15 MO-B-COUNT      BINARY-LONG.
+          15 MO-R-ITEM       BINARY-LONG.
+          15 MO-R-COUNT      BINARY-LONG.
+          15 MO-OUT          BINARY-LONG.
+          15 MO-USES         BINARY-LONG.
+          15 MO-MAX          BINARY-LONG.
+          15 MO-XP           BINARY-LONG.
+          15 MO-SPECIAL      BINARY-LONG.
+          15 MO-DEMAND       BINARY-LONG.
+          15 MO-MULT         FLOAT-SHORT.
+       10 MC-DISP OCCURS 21 TIMES.
+          15 MC-DISP-ITEM    BINARY-LONG.
+          15 MC-DISP-COUNT   BINARY-LONG.
        10 CX-DRAG-ON         BINARY-LONG.
        10 CX-DRAG-BUTTON     BINARY-LONG.
        10 CX-DRAG-N          BINARY-LONG.

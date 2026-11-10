@@ -98,6 +98,11 @@
  78 ACT-RB-PAGE             VALUE 50.   *> recipe book: the argument 1 previous page, 2 next page
  78 ACT-RB-CELL             VALUE 51.   *> recipe book: place the recipe of the cell (argument 200 + cell 1 to 20)
  78 ACT-RB-SEARCH           VALUE 52.   *> recipe book: focus the search box
+ 78 ACT-BEACON-PRIMARY       VALUE 54.   *> beacon: the argument is the effect id + 1 (40-5 section 3.7)
+ 78 ACT-BEACON-SECONDARY     VALUE 55.   *> beacon: the argument is the effect id + 1 (0: the upgrade button, the current primary)
+ 78 ACT-BEACON-CONFIRM       VALUE 56.
+ 78 ACT-CLOSE-MENU           VALUE 57.   *> beacon cancel, lectern done: close the container
+ 78 ACT-TRADE-SELECT         VALUE 58.   *> merchant: the argument is the row 0 to 6
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

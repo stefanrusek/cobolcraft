@@ -266,6 +266,7 @@
          END-IF
          IF SM-SCREEN = SCR-CONTAINER
              CALL "MENU-POINTER" USING CLIENT-STATE
+             CALL "MENU-EXTRA-INPUT" USING CLIENT-STATE
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).

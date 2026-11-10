@@ -117,6 +117,13 @@
              CALL "PB-GET-SHORT" USING PB-BUFFER WS-COUNT
              IF PB-ERROR = 0 AND WS-CONTAINER > 0 AND WS-CONTAINER = BM-ID AND WS-SLOT >= 0 AND WS-SLOT < 16
                  MOVE WS-COUNT TO BM-DATA(WS-SLOT + 1)
+*>               The beacon screen's powers follow the data slots 1 and 2 (40-5 section 3.7).
+                 IF BM-TYPE = 9 AND WS-SLOT = 1
+                     MOVE WS-COUNT TO BC-PRIMARY
+                 END-IF
+                 IF BM-TYPE = 9 AND WS-SLOT = 2
+                     MOVE WS-COUNT TO BC-SECONDARY
+                 END-IF
              END-IF
          WHEN 98
 *>           Set Cursor Item: the carried stack.

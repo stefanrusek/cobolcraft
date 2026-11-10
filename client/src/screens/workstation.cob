@@ -32,6 +32,11 @@
  01 WS-LINE-WIDTH          BINARY-LONG.
  01 WS-COST                PIC Z(8)9.
  01 WS-RGB                 BINARY-LONG.
+ COPY CLARGS.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
  01 WS-LABEL-W             BINARY-LONG VALUE 160.
  01 WS-LABEL-H             BINARY-LONG VALUE 9.
  01 WS-ICON-W              BINARY-LONG VALUE 28.
@@ -134,12 +139,21 @@
                  WHEN BM-TYPE NOT = 8 OR BM-DATA(1) <= 0
                      CONTINUE
                  WHEN BM-DATA(1) >= 40 AND PL-MODE NOT = 1
-                     MOVE "Too Expensive!" TO WS-LINE
-                     MOVE 14 TO WS-LINE-LENGTH
+                     MOVE "container.repair.expensive" TO WS-KEY
+                     MOVE 26 TO WS-KEY-LENGTH
+                     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+                     MOVE WS-OUT(1:WS-OUT-LENGTH) TO WS-LINE
+                     MOVE WS-OUT-LENGTH TO WS-LINE-LENGTH
                  WHEN BX-COUNT(3) > 0
                      MOVE BM-DATA(1) TO WS-COST
-                     STRING "Enchantment Cost: " FUNCTION TRIM(WS-COST) DELIMITED BY SIZE INTO WS-LINE
-                     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE)) TO WS-LINE-LENGTH
+                     MOVE 1 TO LA-COUNT
+                     MOVE FUNCTION TRIM(WS-COST) TO LA-TEXT(1)
+                     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-COST)) TO LA-LENGTH(1)
+                     MOVE "container.repair.cost" TO WS-KEY
+                     MOVE 21 TO WS-KEY-LENGTH
+                     CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS WS-OUT WS-OUT-LENGTH
+                     MOVE WS-OUT(1:WS-OUT-LENGTH) TO WS-LINE
+                     MOVE WS-OUT-LENGTH TO WS-LINE-LENGTH
              END-EVALUATE
              IF WS-LINE-LENGTH > 0
                  CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-LINE WS-LINE-LENGTH WS-LINE-WIDTH
@@ -215,6 +229,12 @@
                  CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-ICON-W WS-ICON-H
                      WS-TEXT WS-LENGTH WS-STATE
              END-IF
+         WHEN BM-TYPE = 19
+             CALL "MERCHANT-DECOR" USING CLIENT-STATE L-LEFT L-TOP
+         WHEN BM-TYPE = 9
+             CALL "BEACON-DECOR" USING CLIENT-STATE L-LEFT L-TOP
+         WHEN BM-TYPE = 17
+             CALL "LECTERN-DECOR" USING CLIENT-STATE L-GW
          WHEN BM-TYPE = 7
 *>           7.3: a disabled crafting slot (data i = 1) is the 18 x 18 disabled-slot sprite at the slot widget; the indicator 16 x 16 at (GW / 2 + 9, GH / 2 - 48).
              PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8

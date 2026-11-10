@@ -2,8 +2,8 @@
 *> tables 10.8.1 to 10.8.6, in table order), transcribed for assets/cobolcraft/lang/en_us.json of
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
-*> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 242.
+*> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
+ 78 BI-LANG-COUNT           VALUE 262.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -491,7 +491,47 @@
     05 FILLER PIC X(128) VALUE "New Recipe(s) Unlocked!".
     05 FILLER PIC X(48) VALUE "recipe.toast.description".
     05 FILLER PIC X(128) VALUE "Check your recipe book".
+    05 FILLER PIC X(48) VALUE "container.repair.cost".
+    05 FILLER PIC X(128) VALUE "Enchantment Cost: %1$s".
+    05 FILLER PIC X(48) VALUE "container.repair.expensive".
+    05 FILLER PIC X(128) VALUE "Too Expensive!".
+    05 FILLER PIC X(48) VALUE "container.upgrade".
+    05 FILLER PIC X(128) VALUE "Upgrade Gear".
+    05 FILLER PIC X(48) VALUE "container.upgrade.error_tooltip".
+    05 FILLER PIC X(128) VALUE "Item can't be upgraded this way".
+    05 FILLER PIC X(48) VALUE "container.upgrade.missing_template_tooltip".
+    05 FILLER PIC X(128) VALUE "Add Smithing Template".
+    05 FILLER PIC X(48) VALUE "container.inventory".
+    05 FILLER PIC X(128) VALUE "Inventory".
+    05 FILLER PIC X(48) VALUE "gui.done".
+    05 FILLER PIC X(128) VALUE "Done".
+    05 FILLER PIC X(48) VALUE "gui.cancel".
+    05 FILLER PIC X(128) VALUE "Cancel".
+    05 FILLER PIC X(48) VALUE "merchant.trades".
+    05 FILLER PIC X(128) VALUE "Trades".
+    05 FILLER PIC X(48) VALUE "merchant.title".
+    05 FILLER PIC X(128) VALUE "%s - %s".
+    05 FILLER PIC X(48) VALUE "merchant.level.1".
+    05 FILLER PIC X(128) VALUE "Novice".
+    05 FILLER PIC X(48) VALUE "merchant.level.2".
+    05 FILLER PIC X(128) VALUE "Apprentice".
+    05 FILLER PIC X(48) VALUE "merchant.level.3".
+    05 FILLER PIC X(128) VALUE "Journeyman".
+    05 FILLER PIC X(48) VALUE "merchant.level.4".
+    05 FILLER PIC X(128) VALUE "Expert".
+    05 FILLER PIC X(48) VALUE "merchant.level.5".
+    05 FILLER PIC X(128) VALUE "Master".
+    05 FILLER PIC X(48) VALUE "merchant.deprecated".
+    05 FILLER PIC X(128) VALUE "Villagers restock up to two times per day.".
+    05 FILLER PIC X(48) VALUE "lectern.take_book".
+    05 FILLER PIC X(128) VALUE "Take Book".
+    05 FILLER PIC X(48) VALUE "book.pageIndicator".
+    05 FILLER PIC X(128) VALUE "Page %1$s of %2$s".
+    05 FILLER PIC X(48) VALUE "block.minecraft.beacon.primary".
+    05 FILLER PIC X(128) VALUE "Primary Power".
+    05 FILLER PIC X(48) VALUE "block.minecraft.beacon.secondary".
+    05 FILLER PIC X(128) VALUE "Secondary Power".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 242 TIMES.
+    05 BI-LANG OCCURS 262 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

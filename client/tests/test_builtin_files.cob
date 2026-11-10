@@ -451,9 +451,9 @@
      CALL "BUILTIN-READ" USING WS-PATH WS-PATH-LENGTH WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
      CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LENGTH
      MOVE "builtin lang/en_us.json is one object of the 211 keys of 08 §10.8 and the 9 "
-         & "cobolcraft.packs.* and cobolcraft.world_type.* keys of 22 §9.2 and ui §7.2, the 7 options keys and the 12 recipe book keys" TO TL-CASE
+         & "cobolcraft.packs.* and cobolcraft.world_type.* keys of 22 §9.2 and ui §7.2, the 7 options keys, the 12 recipe book keys and the 20 menu keys of 40-3 and 40-5" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 242 TO TL-EXPECTED-N
+     MOVE 262 TO TL-EXPECTED-N
      MOVE JN-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

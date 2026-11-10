@@ -94,6 +94,11 @@
              MOVE BX-COUNT(WS-N) TO L-COUNT
              MOVE BX-ITEM(WS-N) TO L-ITEM
              MOVE BX-DAMAGE(WS-N) TO L-DAMAGE
+         WHEN L-ARG >= 801 AND L-ARG <= 821
+*>           A merchant row's cost or result (screens/menus5.cob).
+             COMPUTE WS-N = L-ARG - 800
+             MOVE MC-DISP-COUNT(WS-N) TO L-COUNT
+             MOVE MC-DISP-ITEM(WS-N) TO L-ITEM
          WHEN L-ARG >= 101 AND L-ARG <= 116
              COMPUTE WS-N = L-ARG - 100
              IF SM-SCREEN = SCR-BENCH
