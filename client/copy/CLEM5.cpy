@@ -4,7 +4,7 @@
     05 AD-LENGTH           FLOAT-LONG.
     05 AD-LOOP             BINARY-LONG.
     05 AD-CHANNELS         BINARY-LONG.
-    05 AD-CHANNEL OCCURS 16 TIMES.
+    05 AD-CHANNEL OCCURS 24 TIMES.
        10 AC-BONE          PIC X(24).
        10 AC-TARGET        BINARY-LONG.
        10 AC-KEYS          BINARY-LONG.
