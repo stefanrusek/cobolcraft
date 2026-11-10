@@ -58,3 +58,5 @@ al('PANDA',429,64,64); al('PANDA_BABY',440,64,64); al('POLAR_BEAR',517,128,64,sc
 al('PARROT',555,32,32)
 # bat
 al('BAT',620,32,32)
+# bee
+al('BEE',651,64,64); al('BEE_BABY',667,32,32); al('BEE_STINGER',682,16,16)

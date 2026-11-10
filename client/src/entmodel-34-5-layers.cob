@@ -55,6 +55,12 @@
              CALL "EF5-M-PARROT" USING EMM-MODEL
          WHEN "BAT"
              CALL "EF5-M-BAT" USING EMM-MODEL
+         WHEN "BEE"
+             CALL "EF5-M-BEE" USING EMM-MODEL
+         WHEN "BEE_BABY"
+             CALL "EF5-M-BEE-BABY" USING EMM-MODEL
+         WHEN "BEE_STINGER"
+             CALL "EF5-M-BEE-STINGER" USING EMM-MODEL
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE
