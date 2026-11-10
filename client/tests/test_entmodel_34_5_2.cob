@@ -7730,6 +7730,12 @@
      MOVE 0 TO WS-E
      MOVE WS-OV(6) TO WS-O
      PERFORM CHECK-NUM
+     MOVE "NOT_A_LAYER" TO WS-LAYER
+     CALL "EF5-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "an unknown layer id is not built (ok 0; coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
      STOP RUN.
 
  COPY EMCHKP.
