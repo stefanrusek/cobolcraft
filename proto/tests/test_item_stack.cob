@@ -203,6 +203,24 @@
      MOVE "test item-stack get of written_book_content with generation 4 sets PB-ERROR, PB-POS 0" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET
+     MOVE "01 01 01 00 39 01 54 01 01 74 01 41 00 00 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of written_book_content with a filtered title and no pages" TO TL-CASE
+     MOVE "c1 i1 +57=01540101740141000001 pos 15 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 39 01 54 00 01 41 00 01 08 0001 61 01 08 0001 62 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of written_book_content with a filtered page, not resolved" TO TL-CASE
+     MOVE "c1 i1 +57=0154000141000108000161010800016200 pos 22 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 39 01 54 00 01 41 00 65" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of written_book_content with 101 pages sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
 *>   ---- values the reader rejects ----
      MOVE "01 01 01 00 10 00" TO WS-HEX
      PERFORM FILL
