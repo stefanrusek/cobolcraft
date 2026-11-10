@@ -120,6 +120,8 @@
  78 MESH-SLOT-GROUND-ITEMS  VALUE 65004.
 *> The weather quads of the frame (one mesh, eye-relative, texture 3).
  78 MESH-SLOT-WEATHER       VALUE 65005.
+*> The crack overlay of the frame (one mesh, eye-relative, texture 0).
+ 78 MESH-SLOT-BREAK         VALUE 65006.
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
  78 WX-CLEAR                VALUE 0.

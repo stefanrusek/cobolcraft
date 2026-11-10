@@ -290,10 +290,11 @@
          WHEN WS-PHASE = PH-PLAY AND L-ID = 4
              CALL "PB-GET-VARINT" USING L-PACKET CT-ACK
          WHEN WS-PHASE = PH-PLAY AND L-ID = 5
-*>           Block Destruction: another player's break progress (kept; nothing is drawn for it).
+*>           Block Destruction: a breaker's progress (kept, and drawn as the crack overlay).
              CALL "PB-GET-VARINT" USING L-PACKET BD-ENTITY
              CALL "PB-GET-POSITION" USING L-PACKET BD-X BD-Y BD-Z
              CALL "PB-GET-UBYTE" USING L-PACKET BD-PROGRESS
+             CALL "BREAK-OVERLAY-SET" USING CLIENT-STATE BD-ENTITY BD-X BD-Y BD-Z BD-PROGRESS
          WHEN WS-PHASE = PH-PLAY AND L-ID = 46
              CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 38

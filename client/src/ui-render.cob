@@ -140,7 +140,19 @@
          MOVE SM-W-TEXT(L-W) TO WS-TEXT
          MOVE SM-W-LENGTH(L-W) TO WS-LENGTH
          CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
-         COMPUTE WS-X = SM-W-X(L-W) + SM-W-W(L-W) - WS-WIDTH - 1
+*>       Count rule (FR-014): right-aligned at the slot's bottom edge, inside the slot (a glyph cell
+*>       reaches 2 GUI pixels past its advance, and 1 pixel is kept free at the left); a count too wide for
+*>       the slot loses digits from the right and ends with "+".
+         PERFORM UNTIL WS-WIDTH <= SM-W-W(L-W) - 4 OR WS-LENGTH <= 1
+             IF WS-TEXT(WS-LENGTH:1) = "+"
+                 SUBTRACT 1 FROM WS-LENGTH
+             END-IF
+             SUBTRACT 1 FROM WS-LENGTH
+             MOVE "+" TO WS-TEXT(WS-LENGTH + 1:1)
+             ADD 1 TO WS-LENGTH
+             CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
+         END-PERFORM
+         COMPUTE WS-X = SM-W-X(L-W) + SM-W-W(L-W) - WS-WIDTH - 3
          COMPUTE WS-Y = SM-W-Y(L-W) + SM-W-H(L-W) - FN-HEIGHT - 1
          MOVE 1 TO RL-UI-LAYER
          CALL "UI-TEXT" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y

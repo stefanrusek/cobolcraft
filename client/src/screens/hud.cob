@@ -205,7 +205,8 @@
          MOVE 1 TO WS-STATE
      END-IF
      MOVE SPACES TO WS-TEXT
-     IF WS-COUNT > 0
+*>   A single item shows no count (FR-014).
+     IF WS-COUNT > 1
          MOVE WS-COUNT TO WS-EDIT
          MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-LENGTH

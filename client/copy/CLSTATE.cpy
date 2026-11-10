@@ -266,6 +266,15 @@
        10 BD-Y               BINARY-LONG.
        10 BD-Z               BINARY-LONG.
        10 BD-PROGRESS        BINARY-LONG.
+*>     Block break progress by breaker (12 §4.2; break-overlay.cob): one entry per breaker entity id.
+       10 BDS-COUNT          BINARY-LONG.
+       10 BDS-ENTRY OCCURS 16 TIMES.
+          15 BDS-ENTITY      BINARY-LONG.
+          15 BDS-X           BINARY-LONG.
+          15 BDS-Y           BINARY-LONG.
+          15 BDS-Z           BINARY-LONG.
+          15 BDS-STAGE       BINARY-LONG.    *> 0 to 9
+          15 BDS-AT-MS       BINARY-DOUBLE.  *> clock of the last update (an entry expires after 20 s)
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
@@ -611,6 +620,17 @@
           15 RL-HL-V         FLOAT-SHORT.
           15 RL-HL-B         FLOAT-SHORT.
           15 RL-HL-A         FLOAT-SHORT.
+*>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
+       10 RL-BO-COUNT        BINARY-LONG.
+       10 RL-BO-UPLOADED     BINARY-LONG.
+       10 RL-BO-VERTEX OCCURS 576 TIMES.
+          15 RL-BO-X         FLOAT-SHORT.
+          15 RL-BO-Y         FLOAT-SHORT.
+          15 RL-BO-Z         FLOAT-SHORT.
+          15 RL-BO-U         FLOAT-SHORT.
+          15 RL-BO-V         FLOAT-SHORT.
+          15 RL-BO-B         FLOAT-SHORT.
+          15 RL-BO-A         FLOAT-SHORT.
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.

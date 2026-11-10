@@ -3343,9 +3343,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 #### Phase 61: US6-client — HUD and screens
 
 - [X] T2994 [US6-client] Write acceptance test `client/tests/acc_f2us6_layout.cob` (US6-1, SC-003): the HUD, inventory and menus at every GUI scale from 1 to the maximum, at the smallest supported window size and below it (edge case) have no overlapping or clipped element (render list bounds) [FR-013, FR-014, FR-015]
-- [ ] T2995 [US6-client] Implement the layout rules (alignment, spacing, GUI scale, minimum window size from Round GUI) in `client/src/ui-render.cob`
-- [ ] T2996 [US6-client] Write acceptance test `client/tests/acc_f2us6_counts.cob` (US6-2, FR-014): edge cases: a slot with 1 item shows no count, and the cases 2, 64 and a count too wide for the slot each show it aligned and unclipped (four named cases) [SC-003]
-- [ ] T2997 [US6-client] Implement the count rule in `client/src/ui-render.cob`
+- [X] T2995 [US6-client] Implement the layout rules (alignment, spacing, GUI scale, minimum window size from Round GUI) in `client/src/ui-render.cob`
+- [X] T2996 [US6-client] Write acceptance test `client/tests/acc_f2us6_counts.cob` (US6-2, FR-014): edge cases: a slot with 1 item shows no count, and the cases 2, 64 and a count too wide for the slot each show it aligned and unclipped (four named cases) [SC-003]
+- [X] T2997 [US6-client] Implement the count rule in `client/src/ui-render.cob`
 - [ ] T2998 [US6-client] Write acceptance test `client/tests/acc_f2us6_nine_slice.cob` (US6-3): with the Faithful fixture the screens' sprites, nine-slice scaling and font follow the pack's GUI textures (12 §5, 14 §6) [FR-013, FR-014, FR-015; SC-003]
 - [ ] T2999 [US6-client] Implement nine-slice drawing and pack font use in `client/src/ui-render.cob` and `client/src/packs/font.cob`
 - [ ] T3000 [US6-client] Write acceptance test `client/tests/acc_f2us6_builtin_art.cob` (US6-4): in a cobolcraft world with no pack the screens use the built-in art, font and language and nothing is blank (`docs/design/builtin-ui-art.md`) [FR-013, FR-014, FR-015; SC-003]
@@ -3364,9 +3364,9 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 63: US8-client — break overlay
 
-- [ ] T3010 [US8-client] Write acceptance test `client/tests/acc_f2us8_overlay.cob` (US8-1 to US8-4): Block Destruction stages 0 to 9 draw the crack overlay on the block, stage -1 and a released button remove it, another player's stage draws too, and the overlay uses the pack's break-stage textures (12 §4, `faithful-pack-mapping.md`) [FR-023; SC-006]
-- [ ] T3011 [US8-client] Implement the break overlay in `client/src/break-overlay.cob` and its draw in `client/src/render-list.cob`
-- [ ] T3012 [US8-client] Write edge-case test `client/tests/test_overlay_many.cob` (spec edge cases): several players break different blocks at once and each block shows its own stage; progress interrupted by a held-item change, a changed target or another player's break removes the overlay
+- [X] T3010 [US8-client] Write acceptance test `client/tests/acc_f2us8_overlay.cob` (US8-1 to US8-4): Block Destruction stages 0 to 9 draw the crack overlay on the block, stage -1 and a released button remove it, another player's stage draws too, and the overlay uses the pack's break-stage textures (12 §4, `faithful-pack-mapping.md`) [FR-023; SC-006]
+- [X] T3011 [US8-client] Implement the break overlay in `client/src/break-overlay.cob` and its draw in `client/src/render-list.cob`
+- [X] T3012 [US8-client] Write edge-case test `client/tests/test_overlay_many.cob` (spec edge cases): several players break different blocks at once and each block shows its own stage; progress interrupted by a held-item change, a changed target or another player's break removes the overlay
 - [X] T3013 [US8-client] Write test `client/tests/test_dig_actions.cob`: the client sends Player Action start, abort and finish with sequence ids (13 §2.3) and aborts on a held item change
 - [X] T3014 [US8-client] Implement the dig action sending in `client/src/controls.cob`
 - [ ] T3015 [US8-client] Gate: run `make gate-client` and record the command and real output

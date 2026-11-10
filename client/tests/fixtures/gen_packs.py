@@ -89,6 +89,11 @@ PACKS = {
         "assets/cobolcraft/textures/": b"",
         "assets/cobolcraft/.ds_store": b"junk",
     }),
+    # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
+    "cracks": ("folder", dict(
+        [("pack.mcmeta", new_style("Cracks pack"))]
+        + [("assets/minecraft/textures/block/destroy_stage_%d.png" % n, solid((20 * n, 0, 255 - 20 * n)))
+           for n in range(10)])),
     "old": ("zip", {"pack.mcmeta": meta("Old pack", pack_format=10)}),
     "newer": ("folder", {"pack.mcmeta": meta("Newer pack", min_format=99, max_format=99)}),
     "mystery": ("folder", {"pack.mcmeta": meta("Mystery pack", min_format=97), "pack.png": b"not a png"}),
