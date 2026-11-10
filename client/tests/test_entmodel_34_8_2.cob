@@ -6375,6 +6375,23 @@
      MOVE -10 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
+     MOVE 2.5 TO WS-IV(1)
+     MOVE 0.1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     CALL "EF8-SQUID-TENTACLE" USING WS-IN WS-OUT
+     MOVE "2 client tentacle update movement 2.5 speed 0.1 in water 1 rotate speed 0.5 (movement, angle, rotate speed) [1]" TO WS-NAME
+     MOVE 2.6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "2 client tentacle update movement 2.5 speed 0.1 in water 1 rotate speed 0.5 (movement, angle, rotate speed) [2]" TO WS-NAME
+     MOVE 0.656534773 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "2 client tentacle update movement 2.5 speed 0.1 in water 1 rotate speed 0.5 (movement, angle, rotate speed) [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 0 TO WS-IV(1)
      MOVE 0.15 TO WS-IV(2)
      MOVE 1 TO WS-IV(3)
@@ -6877,6 +6894,13 @@
      MOVE "squid/glow_squid_baby.png" TO TL-EXPECTED
      MOVE WS-X120 TO TL-OBSERVED
      PERFORM CHECK-TEXT
+     MOVE -5 TO WS-IV(1)
+     MOVE 3 TO WS-IV(2)
+     CALL "EF8-GLOW-LIGHT" USING WS-IN WS-OUT
+     MOVE "2.2 glow squid block light dark ticks -5 normal 3" TO WS-NAME
+     MOVE 15 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
      MOVE 5 TO WS-IV(1)
      MOVE 3 TO WS-IV(2)
      CALL "EF8-GLOW-LIGHT" USING WS-IN WS-OUT
@@ -6946,6 +6970,12 @@
      MOVE "2.2 counter 10 gives 0" TO WS-NAME
      MOVE 0 TO WS-E
      MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "NO_SUCH_LAYER" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "2 a layer that is not of this document is not known (coverage-only addition)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OK TO WS-O
      PERFORM CHECK-NUM
      STOP RUN.
 

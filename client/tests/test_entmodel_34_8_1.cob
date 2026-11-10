@@ -835,6 +835,22 @@
      MOVE "axolotl/axolotl_blue_baby.png" TO TL-EXPECTED
      MOVE WS-X60 TO TL-OBSERVED
      PERFORM CHECK-TEXT
+     MOVE 9 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE SPACES TO WS-X60
+     CALL "EF8-AXOLOTL-TEXTURE" USING WS-IN WS-X60
+     MOVE "1.2 axolotl variant lucy baby 0" TO WS-NAME
+     MOVE "axolotl/axolotl_lucy.png" TO TL-EXPECTED
+     MOVE WS-X60 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 9 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE SPACES TO WS-X60
+     CALL "EF8-AXOLOTL-TEXTURE" USING WS-IN WS-X60
+     MOVE "1.2 axolotl variant lucy baby 1" TO WS-NAME
+     MOVE "axolotl/axolotl_lucy_baby.png" TO TL-EXPECTED
+     MOVE WS-X60 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
      MOVE "oak" TO WS-X24
      MOVE 0 TO WS-FL
      MOVE SPACES TO WS-X60

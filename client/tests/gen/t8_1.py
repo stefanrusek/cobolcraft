@@ -16,7 +16,7 @@ t.raw('MOVE "squid" TO WS-X24','MOVE 9 TO WS-FL','MOVE "x" TO WS-X32','CALL "EF8
 for e,ks in TEX:
     for k,p in ks:
         t.raw('MOVE "%s" TO WS-X24'%e,'MOVE %d TO WS-FL'%k,'MOVE SPACES TO WS-X60','CALL "EF8-TEXTURE" USING WS-X24 WS-FL WS-X60'); t.text('1.2 %s texture kind %d'%(e,k),p,'WS-X60')
-for i,v in enumerate(VARIANTS,1):
+for i,v in list(enumerate(VARIANTS,1))+[(9,'lucy')]:
     for baby in (0,1):
         t.raw('MOVE %d TO WS-IV(1)'%i,'MOVE %d TO WS-IV(2)'%baby,'MOVE SPACES TO WS-X60','CALL "EF8-AXOLOTL-TEXTURE" USING WS-IN WS-X60'); t.text('1.2 axolotl variant %s baby %d'%(v,baby),'axolotl/axolotl_%s%s.png'%(v,'_baby' if baby else ''),'WS-X60')
 for w in WOODS:
