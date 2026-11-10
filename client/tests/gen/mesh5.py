@@ -56,3 +56,5 @@ al('FOX',341,48,32); al('FOX_BABY',356,32,32)
 # panda 429/440, polar bear 517 (scaled 1.2)/528
 al('PANDA',429,64,64); al('PANDA_BABY',440,64,64); al('POLAR_BEAR',517,128,64,sc=[1.2]); al('POLAR_BEAR_BABY',528,64,64)
 al('PARROT',555,32,32)
+# bat
+al('BAT',620,32,32)
