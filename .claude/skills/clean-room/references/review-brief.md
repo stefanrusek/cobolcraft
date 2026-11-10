@@ -21,6 +21,9 @@ not read or edit repository code, and do not edit the docs.
    line by line, rather than describing behaviour in its own terms. Look for long verbatim excerpts of artifact
    strings or data beyond the constants and names an implementation needs. Quote each offending passage, with its
    section.
+   Data schemas (JSON Schema, schema-style tables, grammars, byte layouts) and short example snippets of a data
+   file are not contamination: they describe an interface. Flag a schema only if it is padded with bulk copies of
+   data files, or if an example stands in for a rule that the text never states.
 2. **Sufficiency.** For each scope question: could an implementer who never sees the artifact build it exactly from
    this text? List each missing constant, table, ordering rule, random-number detail or edge case.
 3. **Accuracy.** Spot-check at least five concrete claims (constants, formulas, orderings) against the artifact.
