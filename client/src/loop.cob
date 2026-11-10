@@ -37,7 +37,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
 *> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
-*> (game directory, server list, the enabled packs of options.dat, the download cache trimmed,
+*> (game directory, the generated packs' status (PACKS-STATUS-CHECK), server list, the enabled packs of options.dat, the download cache trimmed,
 *> the local packs, the pack
 *> stack, language, font, block, entity and environment atlases,
 *> models).
@@ -49,6 +49,7 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      CALL "GAME-DIR-SETUP" USING CLIENT-STATE
+     CALL "PACKS-STATUS-CHECK" USING CLIENT-STATE
      CALL "SERVERS-LOAD" USING CLIENT-STATE
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
      CALL "PACK-CACHE-VACUUM" USING CLIENT-STATE

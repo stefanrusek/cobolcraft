@@ -1496,6 +1496,8 @@
      MOVE L-DIR TO CL-GAME-DIR
      MOVE L-LENGTH TO CL-GAME-DIR-LENGTH
      CALL "CL-START" USING CLIENT-STATE
+*>   The tests that start a hosted world do not look at the packs banner of the title screen.
+     MOVE 0 TO CL-PACKS-STATUS
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
      MOVE 0 TO CS-HOSTILE-MOBS

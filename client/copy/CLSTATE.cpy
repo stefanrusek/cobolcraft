@@ -15,6 +15,10 @@
     05 CL-NAME-LENGTH        BINARY-LONG.
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+    05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
+    05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
+    05 CL-PACKS-STATUS       BINARY-LONG.     *> CT-PACKS-* of the start-up check (CORE-PACKS-STATUS)
+    05 CL-PACKS-REASON       PIC X(128).      *> its reason text (a log line, not shown)
 *>  ---- run control ----
     05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)

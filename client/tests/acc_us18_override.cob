@@ -60,6 +60,7 @@
 
      MOVE "file/ov_lang" TO WS-IDS
      PERFORM COMPARE
+     MOVE 0 TO CL-PACKS-STATUS
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-SCREEN-TEXT
      MOVE "acceptance US18-3 Given an enabled pack replacing one language entry When the game is "
