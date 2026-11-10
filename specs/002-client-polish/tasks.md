@@ -3342,7 +3342,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 61: US6-client — HUD and screens
 
-- [ ] T2994 [US6-client] Write acceptance test `client/tests/acc_f2us6_layout.cob` (US6-1, SC-003): the HUD, inventory and menus at every GUI scale from 1 to the maximum, at the smallest supported window size and below it (edge case) have no overlapping or clipped element (render list bounds) [FR-013, FR-014, FR-015]
+- [X] T2994 [US6-client] Write acceptance test `client/tests/acc_f2us6_layout.cob` (US6-1, SC-003): the HUD, inventory and menus at every GUI scale from 1 to the maximum, at the smallest supported window size and below it (edge case) have no overlapping or clipped element (render list bounds) [FR-013, FR-014, FR-015]
 - [ ] T2995 [US6-client] Implement the layout rules (alignment, spacing, GUI scale, minimum window size from Round GUI) in `client/src/ui-render.cob`
 - [ ] T2996 [US6-client] Write acceptance test `client/tests/acc_f2us6_counts.cob` (US6-2, FR-014): edge cases: a slot with 1 item shows no count, and the cases 2, 64 and a count too wide for the slot each show it aligned and unclipped (four named cases) [SC-003]
 - [ ] T2997 [US6-client] Implement the count rule in `client/src/ui-render.cob`
