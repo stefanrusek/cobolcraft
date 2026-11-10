@@ -118,7 +118,7 @@
      PERFORM CHECK-DONE
      MOVE "acceptance US14 level-based value string (not an object) becomes its prefix expression" TO TL-CASE
      MOVE '"x"' TO WS-JSON
-     MOVE "" TO TL-EXPECTED
+     MOVE SPACES TO TL-EXPECTED
      PERFORM RUN-LBV
      PERFORM CHECK-DONE
      MOVE "acceptance US14 level-based value levels_squared becomes its prefix expression" TO TL-CASE
