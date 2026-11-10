@@ -29,3 +29,5 @@
  78 BC-SEED               VALUE 27.
  78 BC-VERSION            VALUE 28.
  78 BC-DEFAULTGAMEMODE    VALUE 29.
+ 78 BC-SAVE-ON            VALUE 30.
+ 78 BC-SAVE-OFF           VALUE 31.

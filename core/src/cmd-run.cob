@@ -112,6 +112,27 @@
              CALL "CX-GAMERULE"
          WHEN BC-DEFAULTGAMEMODE
              CALL "CX-DEFAULTGAMEMODE"
+         WHEN BC-OP
+             CALL "CX-OP"
+         WHEN BC-DEOP
+             CALL "CX-DEOP"
+         WHEN BC-BAN
+             CALL "CX-BAN"
+         WHEN BC-PARDON
+             CALL "CX-PARDON"
+         WHEN BC-BANLIST
+             CALL "CX-BANLIST"
+         WHEN BC-KICK
+             CALL "CX-KICK"
+         WHEN BC-WHITELIST
+             CALL "CX-WHITELIST"
+         WHEN BC-STOP
+             CALL "CX-STOP"
+         WHEN BC-SAVE-ALL
+             CALL "CX-SAVE-ALL"
+         WHEN BC-SAVE-ON
+         WHEN BC-SAVE-OFF
+             CALL "CX-SAVE-SWITCH"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE

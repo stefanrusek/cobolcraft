@@ -9,6 +9,8 @@
 *>     first), joined by " | ".
 *>   TEST-RUN-RESULT USING connection id, line (PIC X(768)), result out (BINARY-DOUBLE): the player runs the line (BR-EXECUTE)
 *>     and gets the result of 15a §4.3; what the player was sent stays queued (drain it with TEST-DRAIN-CHAT).
+*>   TEST-DRAIN-DISCONNECT USING connection id, text out (PIC X(4096)), closed out: the Disconnect sent to the connection as key(arg,arg)
+*>     and 1 when the connection was closed (it is released by the drain).
 *>   TEST-EXPECT USING case (PIC X(240)), expected (PIC X(1024)), observed (PIC X(4096)): one text assertion.
 *>   TEST-EXPECT-NUMBER USING case (PIC X(240)), expected (BINARY-DOUBLE), observed (BINARY-DOUBLE): one numeric assertion.
 
@@ -138,3 +140,55 @@
      MOVE WS-RESULT TO L-RESULT
      GOBACK.
  END PROGRAM TEST-RUN-RESULT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-DISCONNECT.
+*> USING connection id, text out (PIC X(4096)), closed out (BINARY-LONG): drains the connection; the text is the Disconnect (play, 0x20)
+*> it was sent as key(arg,arg) ("" when none) and closed 1 when the core closed the connection after it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ 01 L-CLOSED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-TEXT L-CLOSED.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER L-CLOSED
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 32
+             CALL "PB-GET-TEXT" USING PK-BUFFER PK-TEXT
+             IF PK-TX-LENGTH > 0
+                 STRING PK-TX-VALUE(1:PK-TX-LENGTH) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             IF PK-TX-KIND = PK-TEXT-TRANSLATE
+                 STRING "(" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PK-TX-ARG-COUNT
+                     IF WS-I > 1
+                         STRING "," DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                     IF PK-TX-ARG-LENGTH(WS-I) > 0
+                         STRING PK-TX-ARG-VALUE(WS-I)(1:PK-TX-ARG-LENGTH(WS-I)) DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                 END-PERFORM
+                 STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-DISCONNECT.

@@ -8,8 +8,9 @@
 *>   BR-PERMISSION-EVENT USING level, entity event id out (24 + level, sent to the player's own entity)
 *>   BR-CLAMP-LEVEL USING stored level, level out (07 §9.2 Level: clamped to 0..4)
 *>   BR-DEFAULT-LEVEL USING which (1 op-permission-level, 2 function-permission-level), level out
-*>   BR-SOURCE-LEVEL USING sender (player row, 0 = the console), level out: the console is 4; a player
-*>     holding operator status (PL-OPERATOR) holds the default operator level 4, else 0
+*>   BR-SOURCE-LEVEL USING sender (player row, 0 = the console), level out: the console is 4; a player holding operator status
+*>     (PL-OPERATOR) holds the level of their entry on the operator list (07 §9.2 Level, clamped to 0..4), the default 4 when
+*>     they are not listed (the host of a single-player world), else 0
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-HOLDS.
@@ -87,7 +88,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-OPERATORS           BINARY-LONG VALUE 1.
  01 WS-OPERATOR-WHICH      BINARY-LONG VALUE 1.
+ 01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-SENDER               BINARY-LONG.
  01 L-LEVEL                BINARY-LONG.
@@ -98,6 +101,10 @@
      ELSE
          IF PL-OPERATOR(L-SENDER) = 1
              CALL "BR-DEFAULT-LEVEL" USING WS-OPERATOR-WHICH L-LEVEL
+             CALL "ACCESS-FIND" USING WS-OPERATORS PL-UUID(L-SENDER) WS-ROW
+             IF WS-ROW > 0
+                 CALL "BR-CLAMP-LEVEL" USING AC-LEVEL(WS-OPERATORS, WS-ROW) L-LEVEL
+             END-IF
          END-IF
      END-IF
      GOBACK.

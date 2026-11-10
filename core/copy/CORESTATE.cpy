@@ -316,3 +316,15 @@
           15 AC-NAME         PIC X(16).
           15 AC-NAME-LENGTH  BINARY-LONG.
           15 AC-UUID         PIC X(16).
+*>        The rest of an entry (07 §9.2): AC-LEVEL the permission level of an operator (1 to 4, 4 for a new one; 0 in the other lists);
+*>        of a ban the creation time as text, the source (the text name of whoever banned), the expiry text (forever) and the reason
+*>        (length 0 = none).
+          15 AC-LEVEL        BINARY-LONG.
+          15 AC-CREATED      PIC X(32).
+          15 AC-CREATED-LENGTH BINARY-LONG.
+          15 AC-SOURCE       PIC X(32).
+          15 AC-SOURCE-LENGTH BINARY-LONG.
+          15 AC-EXPIRES      PIC X(32).
+          15 AC-EXPIRES-LENGTH BINARY-LONG.
+          15 AC-REASON       PIC X(128).
+          15 AC-REASON-LENGTH BINARY-LONG.
