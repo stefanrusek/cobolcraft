@@ -8,7 +8,7 @@ PKG      := shim
 LIBNAME  := libccshim.a
 SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_open.c src/cc_zlib.c src/cc_tls.c src/cc_f64.c src/cc_win.c src/cc_vk.c
 TESTS    := $(wildcard tests/acc_*.c tests/contract_*.c tests/test_*.c)
-SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag
+SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag shaders/crumble.frag
 
 # Library include directories in "-I <dir>" form (tools/package.mk passes them to the lint).
 SHIM_GEN   = $(BUILD)/shim/gen

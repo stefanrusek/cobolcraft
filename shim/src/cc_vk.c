@@ -1,6 +1,6 @@
 /* cc_vk: Vulkan submission (contracts/shim-abi.md §9; research R3, R4). Glue only: every Vulkan call
  * takes nested platform structs. The module decides nothing about what is drawn: it uploads the
- * COBOL-built atlases and vertex buffers and submits draws of them in three fixed pipelines.
+ * COBOL-built atlases and vertex buffers and submits draws of them in four fixed pipelines.
  *
  * Instance with VK_KHR_portability_enumeration (MoltenVK), surface on the cc_win window, device with
  * VK_KHR_swapchain (+ VK_KHR_portability_subset when reported), FIFO swapchain on the surface's first
@@ -467,6 +467,9 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
         .polygonMode = VK_POLYGON_MODE_FILL,
         .cullMode = VK_CULL_MODE_NONE,
         .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .depthBiasEnable = p == CC_PIPE_CRUMBLING,
+        .depthBiasConstantFactor = -10.0f,
+        .depthBiasSlopeFactor = -1.0f,
         .lineWidth = 1.0f,
     };
     VkPipelineMultisampleStateCreateInfo multisample = {
@@ -477,15 +480,15 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = p != CC_PIPE_UI,
         .depthWriteEnable = p == CC_PIPE_OPAQUE,
-        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .depthCompareOp = p == CC_PIPE_CRUMBLING ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_LESS,
     };
     VkPipelineColorBlendAttachmentState blend = {
         .blendEnable = p != CC_PIPE_OPAQUE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .srcColorBlendFactor = p == CC_PIPE_CRUMBLING ? VK_BLEND_FACTOR_DST_COLOR : VK_BLEND_FACTOR_SRC_ALPHA,
+        .dstColorBlendFactor = p == CC_PIPE_CRUMBLING ? VK_BLEND_FACTOR_SRC_COLOR : VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
         .colorBlendOp = VK_BLEND_OP_ADD,
         .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .dstAlphaBlendFactor = p == CC_PIPE_CRUMBLING ? VK_BLEND_FACTOR_ZERO : VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
         .alphaBlendOp = VK_BLEND_OP_ADD,
         .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
@@ -521,11 +524,14 @@ static void create_pipeline(int p, VkShaderModule vert, VkShaderModule frag) {
 static void create_pipelines(void) {
     VkShaderModule world_vert = shader(spv_world_vert, sizeof spv_world_vert);
     VkShaderModule world_frag = shader(spv_world_frag, sizeof spv_world_frag);
+    VkShaderModule crumble_frag = shader(spv_crumble_frag, sizeof spv_crumble_frag);
     VkShaderModule ui_vert = shader(spv_ui_vert, sizeof spv_ui_vert);
     VkShaderModule ui_frag = shader(spv_ui_frag, sizeof spv_ui_frag);
     create_pipeline(CC_PIPE_OPAQUE, world_vert, world_frag);
     create_pipeline(CC_PIPE_TRANSLUCENT, world_vert, world_frag);
     create_pipeline(CC_PIPE_UI, ui_vert, ui_frag);
+    create_pipeline(CC_PIPE_CRUMBLING, world_vert, crumble_frag);
+    vkDestroyShaderModule(cc_vk_state.device, crumble_frag, NULL);
     vkDestroyShaderModule(cc_vk_state.device, world_vert, NULL);
     vkDestroyShaderModule(cc_vk_state.device, world_frag, NULL);
     vkDestroyShaderModule(cc_vk_state.device, ui_vert, NULL);
@@ -773,7 +779,7 @@ int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
 }
 
 void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matrix[16]) {
-    if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_UI ||
+    if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || pipeline < CC_PIPE_OPAQUE || pipeline > CC_PIPE_CRUMBLING ||
         tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_ENVIRONMENT || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
     mesh_t *m = &cc_vk_state.meshes[slot];
     if (m->count == 0) return;
@@ -848,7 +854,7 @@ void cc_vk_shutdown(void) {
     free(cc_vk_state.garbage);
     destroy_swapchain_images();
     vkDestroySwapchainKHR(cc_vk_state.device, cc_vk_state.swapchain, NULL);
-    for (int p = CC_PIPE_OPAQUE; p <= CC_PIPE_UI; p++) vkDestroyPipeline(cc_vk_state.device, cc_vk_state.pipelines[p], NULL);
+    for (int p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) vkDestroyPipeline(cc_vk_state.device, cc_vk_state.pipelines[p], NULL);
     vkDestroyPipelineLayout(cc_vk_state.device, cc_vk_state.layout, NULL);
     vkDestroyDescriptorPool(cc_vk_state.device, cc_vk_state.pool, NULL);
     vkDestroyDescriptorSetLayout(cc_vk_state.device, cc_vk_state.set_layout, NULL);
