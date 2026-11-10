@@ -3,11 +3,12 @@
 *> context_float_provider: a reference) or an object with a "type". Errors (division by zero, int overflow, a non-finite float, a
 *> type this engine does not evaluate) set LW-ERR and the value is 0, which is what getInt and getFloat return (9.1).
 *> Evaluated types. Int: constant, uniform, binomial, weighted_list, conditional, number_dispatcher, abs, negate, avg, add, mul,
-*> min, max, sub, div, floor_div, mod, floor_mod, from_float. Float: constant, uniform, weighted_list, conditional,
-*> number_dispatcher, abs, negate, add, mul, min, max, sub, div, ceil, floor, round, truncate, sqrt, from_int, enchantment_level.
+*> min, max, sub, div, floor_div, mod, floor_mod, pow, from_float. Float: constant, uniform, weighted_list, conditional,
+*> number_dispatcher, abs, negate, avg, add, mul, min, max, sub, div, mod, pow, ceil, floor, round, truncate, sqrt, length, sin, cos (the
+*> table of 9.3), from_int, enchantment_level.
 *> Level based values: a number, linear, lookup, exponent, clamped, fraction, levels_squared. Not evaluated (value 0 with LW-ERR set):
-*> int pow, environment_attribute, storage, score; float avg, mod, pow, environment_attribute, storage, sin, cos, length (they
-*> need the scoreboard, command storage, environment attributes or the float math table, which the core does not have yet).
+*> int environment_attribute, storage, score; float environment_attribute, storage (they need the scoreboard, command storage or
+*> environment attributes, which the core does not have yet: BLOCKED on those systems).
 *> Assumption: a weighted_list always draws (one nextInt(total weight)), even for one element; 9.2 does not say otherwise.
 *> A float is rounded to binary32 after each operation (Java's float); the arithmetic runs in the shim's IEEE routines (cc_f64_*).
 *> Entry points:
@@ -104,6 +105,8 @@
  01 WS-N-FALSE             PIC X(32) VALUE "on_false".
  01 WS-N-CASES             PIC X(32) VALUE "cases".
  01 WS-N-DEFAULT           PIC X(32) VALUE "default".
+ 01 WS-N-BASE              PIC X(32) VALUE "base".
+ 01 WS-N-EXPONENT          PIC X(32) VALUE "exponent".
  LOCAL-STORAGE SECTION.
  01 LS-SLOT                BINARY-LONG.
  01 LS-NODE                BINARY-LONG.
@@ -263,6 +266,40 @@
                  END-EVALUATE
                  CALL "LOOT-INT-FIT" USING LS-ACC L-VALUE
              END-IF
+         WHEN "pow"
+*>           powExact: 0^0 is an error; a negative exponent only for the bases 1 and -1 (else an error); an overflow is an error.
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-BASE LS-MEMBER
+             CALL "LOOT-INT-EVAL" USING LS-SLOT LS-MEMBER LS-A
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-EXPONENT LS-MEMBER
+             CALL "LOOT-INT-EVAL" USING LS-SLOT LS-MEMBER LS-B
+             EVALUATE TRUE
+                 WHEN LS-A = 0 AND LS-B = 0
+                     MOVE 1 TO LW-ERR
+                 WHEN LS-A = 1 OR LS-B = 0
+                     MOVE 1 TO L-VALUE
+                 WHEN LS-A = -1
+                     IF FUNCTION MOD(LS-B, 2) = 0
+                         MOVE 1 TO L-VALUE
+                     ELSE
+                         MOVE -1 TO L-VALUE
+                     END-IF
+                 WHEN LS-B < 0
+                     MOVE 1 TO LW-ERR
+                 WHEN LS-A = 0
+                     MOVE 0 TO L-VALUE
+                 WHEN OTHER
+                     MOVE 1 TO LS-ACC
+                     PERFORM LS-B TIMES
+                         COMPUTE LS-ACC = LS-ACC * LS-A
+                         IF LS-ACC > 2147483647 OR LS-ACC < -2147483648
+                             MOVE 1 TO LW-ERR
+                             EXIT PERFORM
+                         END-IF
+                     END-PERFORM
+                     IF LW-ERR = 0
+                         MOVE LS-ACC TO L-VALUE
+                     END-IF
+             END-EVALUATE
          WHEN "from_float"
              CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-INPUT LS-MEMBER
              CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-F
@@ -369,6 +406,8 @@
  01 WS-N-LEFT              PIC X(32) VALUE "left".
  01 WS-N-RIGHT             PIC X(32) VALUE "right".
  01 WS-N-AMOUNT            PIC X(32) VALUE "amount".
+ 01 WS-N-BASE              PIC X(32) VALUE "base".
+ 01 WS-N-EXPONENT          PIC X(32) VALUE "exponent".
  01 WS-N-DIST              PIC X(32) VALUE "distribution".
  01 WS-N-DATA              PIC X(32) VALUE "data".
  01 WS-N-WEIGHT            PIC X(32) VALUE "weight".
@@ -516,6 +555,77 @@
                      CALL STATIC "cc_f64_sqrt" USING BY REFERENCE LS-A BY REFERENCE L-VALUE
                      CALL "LOOT-F32" USING L-VALUE
              END-EVALUATE
+         WHEN "avg"
+         WHEN "length"
+*>           avg: the float sum over (float) count; length: sqrt of the sum of squares (every step rounded to binary32).
+             MOVE 0 TO LS-ACC LS-COUNT
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-INPUTS LS-MEMBER
+             MOVE 0 TO LS-CHILD
+             IF LS-MEMBER > 0
+                 MOVE LDS-JN-FIRST(LS-SLOT, LS-MEMBER) TO LS-CHILD
+             END-IF
+             PERFORM UNTIL LS-CHILD = 0
+                 CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-CHILD LS-TERM
+                 ADD 1 TO LS-COUNT
+                 IF LS-KIND = "length"
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-TERM BY REFERENCE LS-TERM BY REFERENCE LS-B
+                     CALL "LOOT-F32" USING LS-B
+                     MOVE LS-B TO LS-TERM
+                 END-IF
+                 CALL STATIC "cc_f64_add" USING BY REFERENCE LS-ACC BY REFERENCE LS-TERM BY REFERENCE LS-A
+                 CALL "LOOT-F32" USING LS-A
+                 MOVE LS-A TO LS-ACC
+                 MOVE LDS-JN-NEXT(LS-SLOT, LS-CHILD) TO LS-CHILD
+             END-PERFORM
+             IF LS-KIND = "length"
+                 CALL STATIC "cc_f64_sqrt" USING BY REFERENCE LS-ACC BY REFERENCE L-VALUE
+                 CALL "LOOT-F32" USING L-VALUE
+             ELSE
+                 IF LS-COUNT = 0
+                     MOVE 1 TO LW-ERR
+                 ELSE
+                     MOVE LS-COUNT TO LS-B
+                     CALL STATIC "cc_f64_div" USING BY REFERENCE LS-ACC BY REFERENCE LS-B BY REFERENCE L-VALUE
+                     CALL "LOOT-F32" USING L-VALUE
+                 END-IF
+             END-IF
+         WHEN "sin"
+         WHEN "cos"
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-INPUT LS-MEMBER
+             CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-A
+             IF LS-KIND = "sin"
+                 CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE LS-A BY REFERENCE L-VALUE
+             ELSE
+                 CALL STATIC "cc_f64_cos_tab" USING BY REFERENCE LS-A BY REFERENCE L-VALUE
+             END-IF
+         WHEN "mod"
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-LEFT LS-MEMBER
+             CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-A
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-RIGHT LS-MEMBER
+             CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-B
+             IF LS-B = 0
+                 MOVE 1 TO LW-ERR
+             ELSE
+                 CALL STATIC "cc_f64_fmod" USING BY REFERENCE LS-A BY REFERENCE LS-B BY REFERENCE L-VALUE
+                 CALL "LOOT-F32" USING L-VALUE
+             END-IF
+         WHEN "pow"
+*>           0^0 and a negative base with a fractional exponent are NaN, a result beyond the float range is infinite: errors (getFloat 0).
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-BASE LS-MEMBER
+             CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-A
+             CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-EXPONENT LS-MEMBER
+             CALL "LOOT-FLOAT-EVAL" USING LS-SLOT LS-MEMBER LS-B
+             CALL STATIC "cc_f64_floor" USING BY REFERENCE LS-B BY REFERENCE LS-ACC
+             IF (LS-A = 0 AND LS-B = 0) OR (LS-A < 0 AND LS-ACC NOT = LS-B)
+                 MOVE 1 TO LW-ERR
+             ELSE
+                 CALL STATIC "cc_f64_pow" USING BY REFERENCE LS-A BY REFERENCE LS-B BY REFERENCE L-VALUE
+                 IF L-VALUE > 3.4028234663852886E38 OR L-VALUE < -3.4028234663852886E38
+                     MOVE 1 TO LW-ERR
+                 ELSE
+                     CALL "LOOT-F32" USING L-VALUE
+                 END-IF
+             END-IF
          WHEN "sub"
          WHEN "div"
              CALL "LOOT-J-MEMBER" USING LS-SLOT LS-NODE WS-N-LEFT LS-MEMBER

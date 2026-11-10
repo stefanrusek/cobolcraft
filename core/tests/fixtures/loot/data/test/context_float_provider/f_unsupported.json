@@ -1,5 +1,4 @@
 {
- "type": "minecraft:pow",
- "base": 2.0,
- "exponent": 3.0
+ "type": "minecraft:environment_attribute",
+ "attribute": "minecraft:gameplay/x"
 }
