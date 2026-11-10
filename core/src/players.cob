@@ -98,6 +98,8 @@
                      COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-SATURATION(L-ROW), PL-FOOD(L-ROW))
                      MOVE KN-HELD(WS-I) TO PL-HELD(L-ROW)
                      MOVE KN-INVENTORY(WS-I) TO PL-INVENTORY(L-ROW)
+                     CALL "KX-FETCH" USING L-ROW WS-I
+                     COMPUTE PL-SATURATION(L-ROW) = FUNCTION MIN(PL-SATURATION(L-ROW), PL-FOOD(L-ROW))
                  END-IF
                  IF KN-DEATH-CAUSE(WS-I) > 0
                      MOVE 0 TO PL-MODE(L-ROW) PL-HEALTH(L-ROW)
@@ -121,6 +123,7 @@
              MOVE L-UUID TO KN-UUID(KN-COUNT)
              MOVE 0 TO KN-DEATH-CAUSE(KN-COUNT)
              INITIALIZE KN-PLACE(KN-COUNT) KN-STATE(KN-COUNT)
+             CALL "KX-ROW-FREE" USING KN-COUNT
          END-IF
      END-IF
      GOBACK.
@@ -180,17 +183,20 @@
  PROGRAM-ID. PLAYER-LEAVE.
 *> USING player row: the player leaves the world (OTHERS-LEAVE: the other players are told); the
 *> row is free again and its connection no longer has a player. The row is copied first: a caller may pass CN-PLAYER itself.
-*> Its known-player row keeps its state (PLAYER-REMEMBER).
+*> The cursor stack and the grids go back into the inventory first (MENU-RELEASE), then its known-player row keeps its
+*> state (PLAYER-REMEMBER).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CMENU.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-BACK                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "MENU-RELEASE" USING WS-ROW WS-BACK
      CALL "PLAYER-REMEMBER" USING WS-ROW
      CALL "OTHERS-LEAVE" USING WS-ROW
      IF PL-CONN(WS-ROW) > 0
@@ -256,6 +262,7 @@
              MOVE PL-FOOD(WS-ROW) TO KN-FOOD(WS-I)
              MOVE PL-HELD(WS-ROW) TO KN-HELD(WS-I)
              MOVE PL-INVENTORY(WS-ROW) TO KN-INVENTORY(WS-I)
+             CALL "KX-STORE" USING WS-ROW WS-I
          END-IF
      END-PERFORM
      GOBACK.
