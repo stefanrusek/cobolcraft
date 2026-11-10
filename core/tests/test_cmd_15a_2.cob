@@ -90,9 +90,9 @@
          STRING "n" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-NAME
          PERFORM ADD-LITERAL
      END-PERFORM
-     MOVE "acceptance US13 15a§2 The tree the table holds 1024 nodes (the root and 1023) and then adds none" TO TL-CASE
+     MOVE "acceptance US13 15a§2 The tree the table holds 4096 nodes (the root and 4095) and then adds none" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 1024001024 TO TL-EXPECTED-N
+     MOVE 4096004096 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = BR-NODE-COUNT * 1000000 + WS-I
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "BR-TREE-RESET"
