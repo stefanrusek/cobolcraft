@@ -1183,3 +1183,811 @@
      END-IF
      GOBACK.
  END PROGRAM TOOL-CROSSBOW-READY.
+
+*> Section 3.10 (trident):
+*>   TOOL-TRIDENT-RELEASE USING use ticks, trident would break, riptide level, in water or rain, riding, action out (0 nothing, 1 thrown,
+*>     2 riptide launch), durability out (1), velocity or spin strength out (thousandths: 2500 thrown; 1500 + 750 (level - 1)), spin damage out
+*>     (8000 for a riptide launch)
+*>   TOOL-TRIDENT-RETURN USING loyalty level, velocity x, y, z, vector to the owner x, y, z (millionths), new vx out, new vy out, new vz out, y raise
+*>     out (velocity x 0.95 + normalised vector x 0.05 x level; the raise is dy x 0.015 x level)
+*>   TOOL-TRIDENT-CHANNEL USING thunderstorm, sky visible, hit an entity, hit a lightning rod, summon out
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TRIDENT-RELEASE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-BREAK                BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-WET                  BINARY-LONG.
+ 01 L-RIDING               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-DURABILITY           BINARY-LONG.
+ 01 L-STRENGTH             BINARY-LONG.
+ 01 L-SPIN                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-BREAK L-LEVEL L-WET L-RIDING L-ACTION L-DURABILITY L-STRENGTH L-SPIN.
+     MOVE 0 TO L-ACTION L-DURABILITY L-STRENGTH L-SPIN
+     IF L-TICKS >= 10 AND L-BREAK = 0
+         EVALUATE TRUE
+             WHEN L-LEVEL = 0
+                 MOVE 1 TO L-ACTION L-DURABILITY
+                 MOVE 2500 TO L-STRENGTH
+             WHEN L-WET = 1 AND L-RIDING = 0
+                 MOVE 2 TO L-ACTION
+                 MOVE 1 TO L-DURABILITY
+                 COMPUTE L-STRENGTH = 1500 + 750 * (L-LEVEL - 1)
+                 MOVE 8000 TO L-SPIN
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-TRIDENT-RELEASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TRIDENT-RETURN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LENGTH              FLOAT-LONG.
+ 01 WS-N                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-VX                   BINARY-LONG.
+ 01 L-VY                   BINARY-LONG.
+ 01 L-VZ                   BINARY-LONG.
+ 01 L-TX                   BINARY-LONG.
+ 01 L-TY                   BINARY-LONG.
+ 01 L-TZ                   BINARY-LONG.
+ 01 L-NX                   BINARY-LONG.
+ 01 L-NY                   BINARY-LONG.
+ 01 L-NZ                   BINARY-LONG.
+ 01 L-RAISE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-VX L-VY L-VZ L-TX L-TY L-TZ L-NX L-NY L-NZ L-RAISE.
+     COMPUTE WS-LENGTH = FUNCTION SQRT(L-TX * L-TX + L-TY * L-TY + L-TZ * L-TZ)
+     MOVE 0 TO WS-N
+     IF WS-LENGTH > 0
+         COMPUTE WS-N = 0.05 * L-LEVEL / WS-LENGTH
+     END-IF
+     COMPUTE L-NX ROUNDED = L-VX * 0.95 + L-TX * WS-N * 1000000
+     COMPUTE L-NY ROUNDED = L-VY * 0.95 + L-TY * WS-N * 1000000
+     COMPUTE L-NZ ROUNDED = L-VZ * 0.95 + L-TZ * WS-N * 1000000
+     COMPUTE L-RAISE ROUNDED = L-TY * 0.015 * L-LEVEL
+     GOBACK.
+ END PROGRAM TOOL-TRIDENT-RETURN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-TRIDENT-CHANNEL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-THUNDER              BINARY-LONG.
+ 01 L-SKY                  BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-ROD                  BINARY-LONG.
+ 01 L-SUMMON               BINARY-LONG.
+ PROCEDURE DIVISION USING L-THUNDER L-SKY L-ENTITY L-ROD L-SUMMON.
+     MOVE 0 TO L-SUMMON
+     IF L-THUNDER = 1 AND L-SKY = 1 AND (L-ENTITY = 1 OR L-ROD = 1)
+         MOVE 1 TO L-SUMMON
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-TRIDENT-CHANNEL.
+
+*> Section 3.11 (fishing rod):
+*>   TOOL-FISH-RETRIEVE USING on ground, hooked item entity, hooked other entity, fish biting, durability out (2 ground, else 3, 5, 1, 0)
+*>   TOOL-FISH-WAIT USING roll (0 to 500 of nextInt(100, 600)), Lure level, ticks out (100 + roll - 100 level)
+*>   TOOL-FISH-HOOKED USING roll (0 to 60), ticks out (nextInt(20, 80) = 20 + roll); TOOL-FISH-NIBBLE USING roll (0 to 20), ticks out (20 + roll)
+*>   TOOL-FISH-AMOUNT USING raining above, roll (0 to 999), sky visible, roll 2, amount out (1; +1 when raining and roll under 250; -1 when the
+*>     sky is hidden and roll 2 under 500)
+*>   TOOL-FISH-WEIGHTS USING luck, open water, fish out, junk out, treasure out (max(0, floor(weight + quality x luck)): fish 85 -1, junk 10 -2,
+*>     treasure 5 +2 and only in open water)
+*>   TOOL-FISH-ENTRY USING table (1 fish, 2 junk, 3 treasure), index, item out, weight out ("-", 0 beyond the table)
+*>   TOOL-FISH-XP USING roll (0 to 5), experience out (roll + 1)
+*>   TOOL-FISH-PITCH USING roll (0 to 999), pitch out (thousandths of 0.4 / (roll x 0.4 + 0.8); also the throw sounds of 3.15)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-RETRIEVE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-GROUND               BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-FISH                 BINARY-LONG.
+ 01 L-DURABILITY           BINARY-LONG.
+ PROCEDURE DIVISION USING L-GROUND L-ITEM L-ENTITY L-FISH L-DURABILITY.
+     MOVE 0 TO L-DURABILITY
+     EVALUATE TRUE
+         WHEN L-GROUND = 1
+             MOVE 2 TO L-DURABILITY
+         WHEN L-ITEM = 1
+             MOVE 3 TO L-DURABILITY
+         WHEN L-ENTITY = 1
+             MOVE 5 TO L-DURABILITY
+         WHEN L-FISH = 1
+             MOVE 1 TO L-DURABILITY
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-FISH-RETRIEVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-WAIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-LURE                 BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-LURE L-TICKS.
+     COMPUTE L-TICKS = 100 + L-ROLL - 100 * L-LURE
+     GOBACK.
+ END PROGRAM TOOL-FISH-WAIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-HOOKED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-TICKS.
+     COMPUTE L-TICKS = 20 + L-ROLL
+     GOBACK.
+ END PROGRAM TOOL-FISH-HOOKED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-NIBBLE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-TICKS.
+     COMPUTE L-TICKS = 20 + L-ROLL
+     GOBACK.
+ END PROGRAM TOOL-FISH-NIBBLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-AMOUNT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RAINING              BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-SKY                  BINARY-LONG.
+ 01 L-ROLL2                BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-RAINING L-ROLL L-SKY L-ROLL2 L-AMOUNT.
+     MOVE 1 TO L-AMOUNT
+     IF L-RAINING = 1 AND L-ROLL < 250
+         ADD 1 TO L-AMOUNT
+     END-IF
+     IF L-SKY = 0 AND L-ROLL2 < 500
+         SUBTRACT 1 FROM L-AMOUNT
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FISH-AMOUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-WEIGHTS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LUCK                 BINARY-LONG.
+ 01 L-OPEN                 BINARY-LONG.
+ 01 L-FISH                 BINARY-LONG.
+ 01 L-JUNK                 BINARY-LONG.
+ 01 L-TREASURE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-LUCK L-OPEN L-FISH L-JUNK L-TREASURE.
+     COMPUTE L-FISH = 85 - L-LUCK
+     COMPUTE L-JUNK = 10 - 2 * L-LUCK
+     COMPUTE L-TREASURE = 5 + 2 * L-LUCK
+     IF L-FISH < 0
+         MOVE 0 TO L-FISH
+     END-IF
+     IF L-JUNK < 0
+         MOVE 0 TO L-JUNK
+     END-IF
+     IF L-OPEN = 0 OR L-TREASURE < 0
+         MOVE 0 TO L-TREASURE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FISH-WEIGHTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-ENTRY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 FISH-ROWS.
+    05 FILLER              PIC X(36) VALUE "cod|60".
+    05 FILLER              PIC X(36) VALUE "salmon|25".
+    05 FILLER              PIC X(36) VALUE "pufferfish|13".
+    05 FILLER              PIC X(36) VALUE "tropical_fish|2".
+ 01 FISH-R REDEFINES FISH-ROWS.
+    05 FISH-ROW OCCURS 4 TIMES.
+       10 FISH-TEXT        PIC X(36).
+ 01 JUNK-ROWS.
+    05 FILLER              PIC X(36) VALUE "lily_pad|17".
+    05 FILLER              PIC X(36) VALUE "leather_boots|10".
+    05 FILLER              PIC X(36) VALUE "leather|10".
+    05 FILLER              PIC X(36) VALUE "bone|10".
+    05 FILLER              PIC X(36) VALUE "potion|10".
+    05 FILLER              PIC X(36) VALUE "string|5".
+    05 FILLER              PIC X(36) VALUE "fishing_rod|2".
+    05 FILLER              PIC X(36) VALUE "bowl|10".
+    05 FILLER              PIC X(36) VALUE "stick|5".
+    05 FILLER              PIC X(36) VALUE "ink_sac|1".
+    05 FILLER              PIC X(36) VALUE "tripwire_hook|10".
+    05 FILLER              PIC X(36) VALUE "rotten_flesh|10".
+    05 FILLER              PIC X(36) VALUE "bamboo|10".
+ 01 JUNK-R REDEFINES JUNK-ROWS.
+    05 JUNK-ROW OCCURS 13 TIMES.
+       10 JUNK-TEXT        PIC X(36).
+ 01 TREASURE-ROWS.
+    05 FILLER              PIC X(36) VALUE "name_tag|1".
+    05 FILLER              PIC X(36) VALUE "saddle|1".
+    05 FILLER              PIC X(36) VALUE "bow|1".
+    05 FILLER              PIC X(36) VALUE "fishing_rod|1".
+    05 FILLER              PIC X(36) VALUE "enchanted_book|1".
+    05 FILLER              PIC X(36) VALUE "nautilus_shell|1".
+ 01 TREASURE-R REDEFINES TREASURE-ROWS.
+    05 TREASURE-ROW OCCURS 6 TIMES.
+       10 TREASURE-TEXT    PIC X(36).
+ 01 WS-TEXT                PIC X(36).
+ 01 WS-WEIGHT-TEXT         PIC X(8).
+ LINKAGE SECTION.
+ 01 L-TABLE                BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ITEM                 PIC X(48).
+ 01 L-WEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TABLE L-INDEX L-ITEM L-WEIGHT.
+     MOVE "-" TO L-ITEM
+     MOVE 0 TO L-WEIGHT
+     MOVE SPACES TO WS-TEXT
+     EVALUATE TRUE
+         WHEN L-TABLE = 1 AND L-INDEX >= 1 AND L-INDEX <= 4
+             MOVE FISH-TEXT(L-INDEX) TO WS-TEXT
+         WHEN L-TABLE = 2 AND L-INDEX >= 1 AND L-INDEX <= 13
+             MOVE JUNK-TEXT(L-INDEX) TO WS-TEXT
+         WHEN L-TABLE = 3 AND L-INDEX >= 1 AND L-INDEX <= 6
+             MOVE TREASURE-TEXT(L-INDEX) TO WS-TEXT
+     END-EVALUATE
+     IF L-WEIGHT = 0 AND WS-TEXT NOT = SPACES
+         UNSTRING WS-TEXT DELIMITED BY "|" INTO L-ITEM WS-WEIGHT-TEXT
+         MOVE FUNCTION NUMVAL(WS-WEIGHT-TEXT) TO L-WEIGHT
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-FISH-ENTRY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-XP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-XP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-XP.
+     COMPUTE L-XP = L-ROLL + 1
+     GOBACK.
+ END PROGRAM TOOL-FISH-XP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FISH-PITCH.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-PITCH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-PITCH.
+     COMPUTE L-PITCH = 400000 / (800 + L-ROLL * 400 / 1000)
+     GOBACK.
+ END PROGRAM TOOL-FISH-PITCH.
+
+*> Section 3.12 (spears):
+*>   TOOL-SPEAR-ATTACK-IGNORED USING main hand has piercing_weapon, ignored out (the Attack packet never runs for a spear)
+*>   TOOL-SPEAR-JAB USING attack strength, minimum attack charge (thousandths), allowed out
+*>   TOOL-KINETIC-PASS USING ticks since the delay, max ticks, attacker speed, min speed, relative speed, min relative speed (tenths of blocks per
+*>     second), scale (thousandths: 1000 players, 200 others), pass out
+*>   TOOL-KINETIC-DAMAGE USING base damage (thousandths), relative speed (thousandths of blocks per second), multiplier (thousandths), damage out
+*>   TOOL-KINETIC-SPEED USING blocks per tick (thousandths), blocks per second out (x 20)
+*>   TOOL-KINETIC-CONTACT USING ticks since the last stab, eligible out (10 or more)
+*>   TOOL-STAB-INFO USING exhaustion (thousandths, 100), base knockback (400)
+*>   TOOL-LUNGE USING level, impulse out (458 x L), exhaustion out (4000 x L), extra item damage out (1)
+*>   TOOL-LUNGE-ALLOWED USING riding, gliding, in water, is a player, creative, food, allowed out
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPEAR-ATTACK-IGNORED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PIERCING             BINARY-LONG.
+ 01 L-IGNORED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-PIERCING L-IGNORED.
+     MOVE L-PIERCING TO L-IGNORED
+     GOBACK.
+ END PROGRAM TOOL-SPEAR-ATTACK-IGNORED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPEAR-JAB.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STRENGTH             BINARY-LONG.
+ 01 L-MINIMUM              BINARY-LONG.
+ 01 L-ALLOWED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-STRENGTH L-MINIMUM L-ALLOWED.
+     MOVE 0 TO L-ALLOWED
+     IF L-STRENGTH >= L-MINIMUM
+         MOVE 1 TO L-ALLOWED
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-SPEAR-JAB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-KINETIC-PASS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-SPEED                BINARY-LONG.
+ 01 L-MIN-SPEED            BINARY-LONG.
+ 01 L-RELATIVE             BINARY-LONG.
+ 01 L-MIN-RELATIVE         BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-PASS                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-MAX L-SPEED L-MIN-SPEED L-RELATIVE L-MIN-RELATIVE L-SCALE L-PASS.
+     MOVE 0 TO L-PASS
+     IF L-TICKS <= L-MAX AND L-SPEED * 1000 >= L-MIN-SPEED * L-SCALE AND L-RELATIVE * 1000 >= L-MIN-RELATIVE * L-SCALE
+         MOVE 1 TO L-PASS
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-KINETIC-PASS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-KINETIC-DAMAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BONUS               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-RELATIVE             BINARY-LONG.
+ 01 L-MULTIPLIER           BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BASE L-RELATIVE L-MULTIPLIER L-DAMAGE.
+     COMPUTE WS-BONUS = L-RELATIVE * L-MULTIPLIER / 1000000
+     COMPUTE L-DAMAGE = L-BASE + WS-BONUS * 1000
+     GOBACK.
+ END PROGRAM TOOL-KINETIC-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-KINETIC-SPEED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PER-TICK             BINARY-LONG.
+ 01 L-PER-SECOND           BINARY-LONG.
+ PROCEDURE DIVISION USING L-PER-TICK L-PER-SECOND.
+     COMPUTE L-PER-SECOND = L-PER-TICK * 20
+     GOBACK.
+ END PROGRAM TOOL-KINETIC-SPEED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-KINETIC-CONTACT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SINCE                BINARY-LONG.
+ 01 L-ELIGIBLE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-SINCE L-ELIGIBLE.
+     MOVE 0 TO L-ELIGIBLE
+     IF L-SINCE >= 10
+         MOVE 1 TO L-ELIGIBLE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-KINETIC-CONTACT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-STAB-INFO.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EXHAUSTION           BINARY-LONG.
+ 01 L-KNOCKBACK            BINARY-LONG.
+ PROCEDURE DIVISION USING L-EXHAUSTION L-KNOCKBACK.
+     MOVE 100 TO L-EXHAUSTION
+     MOVE 400 TO L-KNOCKBACK
+     GOBACK.
+ END PROGRAM TOOL-STAB-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LUNGE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-IMPULSE              BINARY-LONG.
+ 01 L-EXHAUSTION           BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-IMPULSE L-EXHAUSTION L-DAMAGE.
+     COMPUTE L-IMPULSE = 458 * L-LEVEL
+     COMPUTE L-EXHAUSTION = 4000 * L-LEVEL
+     MOVE 1 TO L-DAMAGE
+     GOBACK.
+ END PROGRAM TOOL-LUNGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LUNGE-ALLOWED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RIDING               BINARY-LONG.
+ 01 L-GLIDING              BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-FOOD                 BINARY-LONG.
+ 01 L-ALLOWED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-RIDING L-GLIDING L-WATER L-PLAYER L-CREATIVE L-FOOD L-ALLOWED.
+     MOVE 0 TO L-ALLOWED
+     IF L-RIDING = 0 AND L-GLIDING = 0 AND L-WATER = 0 AND (L-PLAYER = 0 OR L-CREATIVE = 1 OR L-FOOD >= 7)
+         MOVE 1 TO L-ALLOWED
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-LUNGE-ALLOWED.
+
+*> Section 3.13 (elytra and fireworks; velocities and look vectors in millionths of a block per tick, pitch in thousandths of a degree):
+*>   TOOL-ELYTRA-CAN-GLIDE USING has glider, slot matches, next damage would break, Levitation, in liquid, can glide out
+*>   TOOL-ELYTRA-DURABILITY USING glide counter n, hurt out (1 when n is a multiple of 10 and n / 10 is even)
+*>   TOOL-ELYTRA-STEP USING vx, vy, vz, look x, y, z, pitch, gravity (80000), new vx out, new vy out, new vz out (the five steps of the document)
+*>   TOOL-FIREWORK-LIFETIME USING flight duration, roll 6, roll 7, ticks out (10 (d + 1) + r6 + r7)
+*>   TOOL-FIREWORK-DAMAGE USING explosion effect count, damage out (thousandths: 5000 + 2000 per effect)
+*>   TOOL-FIREWORK-BOOST USING vx, vy, vz, look x, y, z, new vx out, new vy out, new vz out (v + look x 0.1 + (look x 1.5 - v) x 0.5)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ELYTRA-CAN-GLIDE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-GLIDER               BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-BREAK                BINARY-LONG.
+ 01 L-LEVITATION           BINARY-LONG.
+ 01 L-LIQUID               BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-GLIDER L-SLOT L-BREAK L-LEVITATION L-LIQUID L-CAN.
+     MOVE 0 TO L-CAN
+     IF L-GLIDER = 1 AND L-SLOT = 1 AND L-BREAK = 0 AND L-LEVITATION = 0 AND L-LIQUID = 0
+         MOVE 1 TO L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-ELYTRA-CAN-GLIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ELYTRA-DURABILITY.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-N                    BINARY-LONG.
+ 01 L-HURT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-N L-HURT.
+     MOVE 0 TO L-HURT
+     IF FUNCTION MOD(L-N, 10) = 0 AND FUNCTION MOD(L-N / 10, 2) = 0
+         MOVE 1 TO L-HURT
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-ELYTRA-DURABILITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ELYTRA-STEP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-LX                  FLOAT-LONG.
+ 01 WS-LY                  FLOAT-LONG.
+ 01 WS-LZ                  FLOAT-LONG.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-LH                  FLOAT-LONG.
+ 01 WS-VH                  FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-VX                   BINARY-LONG.
+ 01 L-VY                   BINARY-LONG.
+ 01 L-VZ                   BINARY-LONG.
+ 01 L-LX                   BINARY-LONG.
+ 01 L-LY                   BINARY-LONG.
+ 01 L-LZ                   BINARY-LONG.
+ 01 L-PITCH                BINARY-LONG.
+ 01 L-GRAVITY              BINARY-LONG.
+ 01 L-NX                   BINARY-LONG.
+ 01 L-NY                   BINARY-LONG.
+ 01 L-NZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-VX L-VY L-VZ L-LX L-LY L-LZ L-PITCH L-GRAVITY L-NX L-NY L-NZ.
+     COMPUTE WS-VX = L-VX / 1000000
+     COMPUTE WS-VY = L-VY / 1000000
+     COMPUTE WS-VZ = L-VZ / 1000000
+     COMPUTE WS-LX = L-LX / 1000000
+     COMPUTE WS-LY = L-LY / 1000000
+     COMPUTE WS-LZ = L-LZ / 1000000
+     COMPUTE WS-G = L-GRAVITY / 1000000
+     COMPUTE WS-P = L-PITCH * 0.017453292519943295 / 1000
+     COMPUTE WS-LH = FUNCTION SQRT(WS-LX * WS-LX + WS-LZ * WS-LZ)
+     COMPUTE WS-VH = FUNCTION SQRT(WS-VX * WS-VX + WS-VZ * WS-VZ)
+     COMPUTE WS-C = FUNCTION COS(WS-P) * FUNCTION COS(WS-P)
+     COMPUTE WS-VY = WS-VY + WS-G * (WS-C * 0.75 - 1)
+     IF WS-VY < 0 AND WS-LH > 0
+         COMPUTE WS-A = WS-VY * -0.1 * WS-C
+         COMPUTE WS-VX = WS-VX + WS-LX * WS-A / WS-LH
+         COMPUTE WS-VY = WS-VY + WS-A
+         COMPUTE WS-VZ = WS-VZ + WS-LZ * WS-A / WS-LH
+     END-IF
+     IF WS-P < 0 AND WS-LH > 0
+         COMPUTE WS-B = WS-VH * (0 - FUNCTION SIN(WS-P)) * 0.04
+         COMPUTE WS-VX = WS-VX - WS-LX * WS-B / WS-LH
+         COMPUTE WS-VY = WS-VY + WS-B * 3.2
+         COMPUTE WS-VZ = WS-VZ - WS-LZ * WS-B / WS-LH
+     END-IF
+     IF WS-LH > 0
+         COMPUTE WS-VX = WS-VX + (WS-LX / WS-LH * WS-VH - WS-VX) * 0.1
+         COMPUTE WS-VZ = WS-VZ + (WS-LZ / WS-LH * WS-VH - WS-VZ) * 0.1
+     END-IF
+     COMPUTE L-NX ROUNDED = WS-VX * 0.99 * 1000000
+     COMPUTE L-NY ROUNDED = WS-VY * 0.98 * 1000000
+     COMPUTE L-NZ ROUNDED = WS-VZ * 0.99 * 1000000
+     GOBACK.
+ END PROGRAM TOOL-ELYTRA-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FIREWORK-LIFETIME.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-R6                   BINARY-LONG.
+ 01 L-R7                   BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DURATION L-R6 L-R7 L-TICKS.
+     COMPUTE L-TICKS = 10 * (L-DURATION + 1) + L-R6 + L-R7
+     GOBACK.
+ END PROGRAM TOOL-FIREWORK-LIFETIME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FIREWORK-DAMAGE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EFFECTS              BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-EFFECTS L-DAMAGE.
+     COMPUTE L-DAMAGE = 5000 + 2000 * L-EFFECTS
+     GOBACK.
+ END PROGRAM TOOL-FIREWORK-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-FIREWORK-BOOST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VX                   BINARY-LONG.
+ 01 L-VY                   BINARY-LONG.
+ 01 L-VZ                   BINARY-LONG.
+ 01 L-LX                   BINARY-LONG.
+ 01 L-LY                   BINARY-LONG.
+ 01 L-LZ                   BINARY-LONG.
+ 01 L-NX                   BINARY-LONG.
+ 01 L-NY                   BINARY-LONG.
+ 01 L-NZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-VX L-VY L-VZ L-LX L-LY L-LZ L-NX L-NY L-NZ.
+     COMPUTE L-NX ROUNDED = L-VX + L-LX * 0.1 + (L-LX * 1.5 - L-VX) * 0.5
+     COMPUTE L-NY ROUNDED = L-VY + L-LY * 0.1 + (L-LY * 1.5 - L-VY) * 0.5
+     COMPUTE L-NZ ROUNDED = L-VZ + L-LZ * 0.1 + (L-LZ * 1.5 - L-VZ) * 0.5
+     GOBACK.
+ END PROGRAM TOOL-FIREWORK-BOOST.
+
+*> Section 3.14 (compass types, spyglass):
+*>   TOOL-LODESTONE-USE USING clicked block key, item is a compass, creative, converts out, stack split out, sound out
+*>   TOOL-LODESTONE-VALID USING lodestone block present, keep tracker out
+*>   TOOL-SPYGLASS-INFO USING use ticks out (1200)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LODESTONE-USE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-COMPASS              BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-CONVERTS             BINARY-LONG.
+ 01 L-SPLIT                BINARY-LONG.
+ 01 L-SOUND                PIC X(48).
+ PROCEDURE DIVISION USING L-KEY L-COMPASS L-CREATIVE L-CONVERTS L-SPLIT L-SOUND.
+     MOVE 0 TO L-CONVERTS L-SPLIT
+     MOVE "-" TO L-SOUND
+     IF L-KEY = "lodestone" AND L-COMPASS = 1
+         MOVE 1 TO L-CONVERTS
+         MOVE "item.lodestone_compass.lock" TO L-SOUND
+         IF L-CREATIVE = 0
+             MOVE 1 TO L-SPLIT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-LODESTONE-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LODESTONE-VALID.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-KEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PRESENT L-KEEP.
+     MOVE L-PRESENT TO L-KEEP
+     GOBACK.
+ END PROGRAM TOOL-LODESTONE-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPYGLASS-INFO.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS.
+     MOVE 1200 TO L-TICKS
+     GOBACK.
+ END PROGRAM TOOL-SPYGLASS-INFO.
+
+*> Section 3.15 (thrown items):
+*>   TOOL-THROWN-INFO USING item key, speed out (thousandths), inaccuracy out, pitch offset out (degrees), cooldown out (ticks; 0 none)
+*>   TOOL-THROWN-HIT USING item key, target is a blaze, damage out (thousandths)
+*>   TOOL-EGG-HATCH USING roll 8 (nextInt(8)), roll 32 (nextInt(32)), chickens out (0, 1 or 4)
+*>   TOOL-PEARL-LAND USING owner valid, roll (0 to 999), monsters spawn, teleports out, damage out (5000), endermite out (roll under 50)
+*>   TOOL-SPLASH-INTENSITY USING squared distance (thousandths), intensity out (thousandths of 1 - sqrt(d2) / 4; -1 beyond 16.0)
+*>   TOOL-SPLASH-DURATION USING duration, intensity, duration scale (thousandths), mapped out ((int)(d t s + 0.5)), applies out (over 20 ticks)
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-THROWN-INFO.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-SPEED                BINARY-LONG.
+ 01 L-INACCURACY           BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-COOLDOWN             BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-SPEED L-INACCURACY L-OFFSET L-COOLDOWN.
+     MOVE 0 TO L-SPEED L-INACCURACY L-OFFSET L-COOLDOWN
+     EVALUATE L-KEY
+         WHEN "ender_pearl"
+             MOVE 1500 TO L-SPEED
+             MOVE 1000 TO L-INACCURACY
+             MOVE 20 TO L-COOLDOWN
+         WHEN "snowball" WHEN "egg"
+             MOVE 1500 TO L-SPEED
+             MOVE 1000 TO L-INACCURACY
+         WHEN "wind_charge"
+             MOVE 1500 TO L-SPEED
+             MOVE 1000 TO L-INACCURACY
+             MOVE 10 TO L-COOLDOWN
+         WHEN "splash_potion"
+             MOVE 500 TO L-SPEED
+             MOVE 1000 TO L-INACCURACY
+             MOVE -20 TO L-OFFSET
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-THROWN-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-THROWN-HIT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-BLAZE                BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-BLAZE L-DAMAGE.
+     MOVE 0 TO L-DAMAGE
+     IF L-KEY = "snowball" AND L-BLAZE = 1
+         MOVE 3000 TO L-DAMAGE
+     END-IF
+     IF L-KEY = "wind_charge"
+         MOVE 1000 TO L-DAMAGE
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-THROWN-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-EGG-HATCH.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-R8                   BINARY-LONG.
+ 01 L-R32                  BINARY-LONG.
+ 01 L-CHICKENS             BINARY-LONG.
+ PROCEDURE DIVISION USING L-R8 L-R32 L-CHICKENS.
+     MOVE 0 TO L-CHICKENS
+     IF L-R8 = 0
+         MOVE 1 TO L-CHICKENS
+         IF L-R32 = 0
+             MOVE 4 TO L-CHICKENS
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-EGG-HATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-PEARL-LAND.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-MONSTERS             BINARY-LONG.
+ 01 L-TELEPORTS            BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-ENDERMITE            BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALID L-ROLL L-MONSTERS L-TELEPORTS L-DAMAGE L-ENDERMITE.
+     MOVE 0 TO L-TELEPORTS L-DAMAGE L-ENDERMITE
+     IF L-VALID = 1
+         MOVE 1 TO L-TELEPORTS
+         MOVE 5000 TO L-DAMAGE
+         IF L-ROLL < 50 AND L-MONSTERS = 1
+             MOVE 1 TO L-ENDERMITE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-PEARL-LAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPLASH-INTENSITY.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-D2                   BINARY-LONG.
+ 01 L-T                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-D2 L-T.
+     IF L-D2 > 16000
+         MOVE -1 TO L-T
+     ELSE
+         COMPUTE L-T ROUNDED = 1000 - FUNCTION SQRT(L-D2 / 1000) * 250
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-SPLASH-INTENSITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPLASH-DURATION.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRODUCT             BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-T                    BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-MAPPED               BINARY-LONG.
+ 01 L-APPLIES              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DURATION L-T L-SCALE L-MAPPED L-APPLIES.
+     COMPUTE WS-PRODUCT = L-DURATION * L-T * L-SCALE + 500000
+     COMPUTE L-MAPPED = WS-PRODUCT / 1000000
+     MOVE 0 TO L-APPLIES
+     IF L-MAPPED > 20
+         MOVE 1 TO L-APPLIES
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-SPLASH-DURATION.
+
+*> Section 3.16 (block loot and tools):
+*>   TOOL-LOOT-SILK USING silk touch level, can silk touch out (level 1 or more)
+*>   TOOL-LOOT-LEAVES USING shears, silk touch, drops itself out
+*>   TOOL-LOOT-COBWEB USING tool kind (PIC X(48): sword, shears, other), silk touch, item out (cobweb with silk touch, else string with a sword or shears, else "-")
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LOOT-SILK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-CAN.
+     MOVE 0 TO L-CAN
+     IF L-LEVEL >= 1
+         MOVE 1 TO L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-LOOT-SILK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LOOT-LEAVES.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SHEARS               BINARY-LONG.
+ 01 L-SILK                 BINARY-LONG.
+ 01 L-ITSELF               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SHEARS L-SILK L-ITSELF.
+     MOVE 0 TO L-ITSELF
+     IF L-SHEARS = 1 OR L-SILK = 1
+         MOVE 1 TO L-ITSELF
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-LOOT-LEAVES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-LOOT-COBWEB.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TOOL                 PIC X(48).
+ 01 L-SILK                 BINARY-LONG.
+ 01 L-ITEM                 PIC X(48).
+ PROCEDURE DIVISION USING L-TOOL L-SILK L-ITEM.
+     MOVE "-" TO L-ITEM
+     EVALUATE TRUE
+         WHEN L-SILK = 1
+             MOVE "cobweb" TO L-ITEM
+         WHEN L-TOOL = "sword" OR "shears"
+             MOVE "string" TO L-ITEM
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-LOOT-COBWEB.
