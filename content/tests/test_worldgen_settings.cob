@@ -336,6 +336,34 @@
      MOVE WGN-CHILD(WS-NODE-2, 2) TO WS-NODE
      MOVE "ore_vein" TO WS-WANT-T
      PERFORM EXPECT-TYPE
+     MOVE "ore_vein density reference" TO WS-LABEL
+     MOVE "minecraft:overworld/ore_vein/copper_density" TO WS-WANT-T
+     MOVE WGN-TEXT-1(WGN-CHILD(WS-NODE, 1)) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein richness reference" TO WS-LABEL
+     MOVE "minecraft:overworld/ore_vein/richness" TO WS-WANT-T
+     MOVE WGN-TEXT-1(WGN-CHILD(WS-NODE, 2)) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein filler_gap reference" TO WS-LABEL
+     MOVE "minecraft:overworld/ore_vein/gap" TO WS-WANT-T
+     MOVE WGN-TEXT-1(WGN-CHILD(WS-NODE, 3)) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein ore_block" TO WS-LABEL
+     MOVE "minecraft:copper_ore" TO WS-WANT-T
+     MOVE WGN-TEXT-1(WS-NODE) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein raw_ore_block" TO WS-LABEL
+     MOVE "minecraft:raw_copper_block" TO WS-WANT-T
+     MOVE WGN-TEXT-2(WS-NODE) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein filler_block (third text slot)" TO WS-LABEL
+     MOVE "minecraft:granite" TO WS-WANT-T
+     MOVE WGN-TEXT-3(WS-NODE) TO WS-GOT-T
+     PERFORM EXPECT-T
+     MOVE "ore_vein raw_ore_chance bits of 0.02" TO WS-LABEL
+     MOVE 4581421828931458171 TO WS-WANT-BITS
+     MOVE WGN-NUM(WS-NODE, 1) TO WS-GOT-F
+     PERFORM EXPECT-BITS
      MOVE "no sixth rule" TO WS-LABEL
      MOVE 0 TO WS-WANT-N
      MOVE WGN-NEXT(WS-NODE-2) TO WS-GOT-N

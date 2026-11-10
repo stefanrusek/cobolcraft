@@ -39,6 +39,7 @@
        10 WGN-INT           BINARY-LONG OCCURS 12 TIMES.
        10 WGN-TEXT-1        PIC X(160).
        10 WGN-TEXT-2        PIC X(112).
+       10 WGN-TEXT-3        PIC X(112).
     05 WSP-ROW OCCURS 16384 TIMES.
        10 WSP-COORD         BINARY-LONG.
        10 WSP-FIRST         BINARY-LONG.
