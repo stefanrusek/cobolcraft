@@ -33,6 +33,11 @@ for n in (0,1,5,6,10,63,64,70):
     y,r=h.get(n); t.raw('MOVE %d TO WS-HN'%n,'CALL "EF7-HIST-GET" USING WS-HIST WS-HN WS-DY WS-DR'); t.num('8.1 get(%d) y'%n,y,'WS-DY'); t.num('8.1 get(%d) yRot'%n,r,'WS-DR')
 for n,tt in ((0,0.5),(5,0.25),(6,1),(10,0),(11,0.75),(62,0.3)):
     y,r=h.geti(n,tt); t.raw('MOVE %d TO WS-HN'%n,'MOVE %s TO WS-HT'%lit(tt),'CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR'); t.num('8.1 get(%d, %s) y'%(n,tt),y,'WS-DY'); t.num('8.1 get(%d, %s) yRot'%(n,tt),r,'WS-DR')
+hist_load([(64+3*math.sin(k*0.4), wrap(-k*37.0)) for k in range(70)]); h2=Hist()
+for k in range(70): h2.record(64+3*math.sin(k*0.4), wrap(-k*37.0))
+for n,tt in ((0,0.5),(3,0.25),(20,0.75)):
+    y,r=h2.geti(n,tt); t.raw('MOVE %d TO WS-HN'%n,'MOVE %s TO WS-HT'%lit(tt),'CALL "EF7-HIST-GETI" USING WS-HIST WS-HN WS-HT WS-DY WS-DR'); t.num('8.1 descending yaw history get(%d, %s) yRot (wrap above 180)'%(n,tt),r,'WS-DR')
+hist_load(SM)
 for i,ay,by,ld,sit,dist in ((3,60,62,1,0,100),(3,60,62,1,0,2),(4,60,62,0,1,100),(6,60,62,0,0,100),(2,60,62.5,0,0,100)):
     t.call('EF7-DRAGON-OFFSET',[i,ay,by,ld,sit,dist],[offset(i,ay,by,ld,sit,dist)],'8.2 head part offset i %d a %s b %s landing %d sitting %d distance %s'%(i,ay,by,ld,sit,dist))
 for p,o,c,dd,dy,hurt,e in ((0.5,2,4,0,0,0,(3,0,0,0.5)),(0.25,2,4,10,0,3,(2.5,10.25,1,0.25)),(0.5,2,4,10,1,0,(3,10.5,0,0))):
@@ -56,8 +61,8 @@ for dt,red,beam in ((0,0,0),(0,1,1),(100,0,0),(200,1,1),(0.5,0,1)):
 for k,e in ((0,'dragon.png'),(1,'dragon_exploding.png'),(2,'dragon_eyes.png')): text_check(t,'EF7-DRAGON-TEXTURE',[k],'8.5 texture %d'%k,'textures/entity/enderdragon/'+e)
 for p,e in ((0.5,22),(0.9,51),(1,60),(0,0),(0.25,int(((0.25+0.0625)/2)*60))):
     t.call('EF7-DRAGON-RAY-COUNT',[p],[e],'8.6 ray count p %s'%p)
-for p,e in ((0.5,0),(0.9,0.5),(1,1),(0.8,0)): t.call('EF7-DRAGON-RAY-COLOR',[p],[e,1-e],'8.6 fade g and centre alpha at p %s'%p)
-for p,k in ((0.5,1),(0.9,3),(1,5),(0.2,7)):
+for p,e in ((0.5,0),(0.9,0.5),(1,1),(0.8,0),(1.2,1)): t.call('EF7-DRAGON-RAY-COLOR',[p],[e,1-e],'8.6 fade g and centre alpha at p %s'%p)
+for p,k in ((0.5,1),(0.9,3),(1,5),(0.2,7),(1.2,2)):
     r=rng7.R(432)
     for _ in range(8*(k-1)): r.nextFloat()
     v=[r.nextFloat() for _ in range(8)]; g=min(1,(p-0.8)/0.2) if p>0.8 else 0

@@ -134,13 +134,7 @@ extra+=prog('EF7-MAT-EULER','''     MOVE L-I(8) TO WS-AI(1)
      MOVE L-I(9) TO WS-AI(2)
      CALL "EF7-ATAN2" USING WS-IN2 WS-OUT2
      MOVE WS-OV(1) TO L-O(1)
-     COMPUTE WS-S = 0 - L-I(7)
-     IF WS-S > 1
-         MOVE 1 TO WS-S
-     END-IF
-     IF WS-S < -1
-         MOVE -1 TO WS-S
-     END-IF
+     COMPUTE WS-S = FUNCTION MAX(-1, FUNCTION MIN(1, 0 - L-I(7)))
      COMPUTE L-O(2) = FUNCTION ASIN(WS-S)
      MOVE L-I(4) TO WS-AI(1)
      MOVE L-I(1) TO WS-AI(2)
