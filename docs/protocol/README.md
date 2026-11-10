@@ -8,13 +8,13 @@ world generation, client rendering and controls, texture-only resource packs, co
 mobs and, from document 22 on, the code-defined engines and registries that the standard world type needs (extraction
 tool and registry loading, block and item registries, block behaviour, redstone, block entities, light, world
 simulation, entity models, worldgen features, structures, the Nether, the End, portals, menus, item entities,
-particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin). The game has two world
+particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin) and, in document 48, the shapes of the shipped data files. The game has two world
 types. The **standard** world type is Minecraft 26.3 content: its data comes from a vanilla resource pack and data pack
 that the extraction tool builds from the user's own jar (22, 23), and the engines are the documents of this folder.
 The **cobolcraft** world type is the invented `cobolcraft:` content of [../design/standin-content.md](../design/standin-content.md)
 with its hand-authored core ([../design/cobolcraft-standard-core.md](../design/cobolcraft-standard-core.md)). Gameplay rules are
 shared. [../design/world-types.md](../design/world-types.md) defines the mechanism; [../design/README.md](../design/README.md)
-is the source-of-truth map. Documents 10 to 21 and 22 to 47 were written from the artifacts below in clean-room rounds
+is the source-of-truth map. Documents 10 to 21 and 22 to 48 were written from the artifacts below in clean-room rounds
 (reader and reviewer agents, see `.claude/skills/clean-room/SKILL.md`); implementers work from these documents only.
 
 | Item | Value |
@@ -83,6 +83,7 @@ is the source-of-truth map. Documents 10 to 21 and 22 to 47 were written from th
 | 45-entity-nbt-*.md | Entity NBT (family, 9 parts): saved-data schemas of entities, the player and its data file, bosses and decorations, the all-entities index. Parts: [45-entity-nbt-1-shared-model-and-entity-base.md](45-entity-nbt-1-shared-model-and-entity-base.md), [45-entity-nbt-2-living-entity-mob-animal.md](45-entity-nbt-2-living-entity-mob-animal.md), [45-entity-nbt-3-player-and-player-data.md](45-entity-nbt-3-player-and-player-data.md), [45-entity-nbt-4-land-animals.md](45-entity-nbt-4-land-animals.md), [45-entity-nbt-5-hostile-mobs.md](45-entity-nbt-5-hostile-mobs.md), [45-entity-nbt-6-villagers-illagers-piglins.md](45-entity-nbt-6-villagers-illagers-piglins.md), [45-entity-nbt-7-aquatic-and-misc-mobs.md](45-entity-nbt-7-aquatic-and-misc-mobs.md), [45-entity-nbt-8-vehicles-projectiles-items.md](45-entity-nbt-8-vehicles-projectiles-items.md), [45-entity-nbt-9-bosses-and-decorations.md](45-entity-nbt-9-bosses-and-decorations.md) |
 | [46-registry-ids.md](46-registry-ids.md) | Static registry ids on the wire: id assignment and id to key tables |
 | [47-default-skin.md](47-default-skin.md) | Default player skin and skin handling, cape, elytra, ears, skin parts |
+| [48-real-data-shapes.md](48-real-data-shapes.md) | The shipped data files as they are: sizes, identifier and key lengths, JSON node counts per registry directory; the accepted value forms of every union-valued member (block state, providers, references); a member census (required and optional members, value kinds) of the worldgen, loot and recipe types; agreement with documents 10, 23, 26, 35 to 37, 44 |
 
 Game design documents live in [../design/](../design/); start from [../design/README.md](../design/README.md), the source-of-truth map. [standin-content.md](../design/standin-content.md) is the content of the cobolcraft world type; [faithful-pack-mapping.md](../design/faithful-pack-mapping.md) says how the Faithful 32x pack layers on the packs. [world-types.md](../design/world-types.md) defines the two world types (selection, what each selects, shared rules, fallback without packs). [cobolcraft-standard-core.md](../design/cobolcraft-standard-core.md) is the hand-authored data core the cobolcraft world type carries when no vanilla data pack exists. [builtin-ui-art.md](../design/builtin-ui-art.md) holds the built-in UI art, fallback texts, world type selection and missing-data screens.
 

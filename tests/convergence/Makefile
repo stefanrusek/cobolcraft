@@ -27,7 +27,7 @@ ifeq ($(COVERAGE),1)
 COBFLAGS += --coverage
 endif
 
-LIBS   := $(BUILD)/client/libclient.a $(BUILD)/server/libserver.a $(BUILD)/core/libcore.a \
+LIBS   := $(BUILD)/client/libclient.a $(BUILD)/content/libcontent.a $(BUILD)/server/libserver.a $(BUILD)/core/libcore.a \
           $(BUILD)/formats/libformats.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
 LDLIBS  = $(shell $(PKG_CONFIG) --libs glfw3 vulkan libssl libcrypto) -lz
 
