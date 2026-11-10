@@ -57,7 +57,7 @@
  01 L-IN.
     05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
 *> (no reset) USING model state(1 baby, 2 main-hand stack empty, 3 aggressive, 4 swing progress, 5 right arm pose, 6 left arm pose; poses as 34-2 section 4: 4 THROW_TRIDENT, 10 SPEAR):
-*> AnimationUtils.animateZombieArms of 2.3 on the right_arm and left_arm parts (the pose is reset first), "empty" being the baby or an empty main hand as this document states.
+*> AnimationUtils.animateZombieArms of 2.3 on the right_arm and left_arm parts (the pose is reset first), "raised" being: not a baby, or an empty main hand (the corrected 2.3 step 2).
  PROCEDURE DIVISION USING EMM-MODEL L-IN.
      IF L-I(5) = 10 OR L-I(6) = 10
          GOBACK
@@ -68,7 +68,7 @@
      CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LARM
      MOVE 0 TO WS-BASE
      MOVE -1 TO WS-SIGN
-     IF L-I(1) NOT = 0 OR L-I(2) NOT = 0
+     IF L-I(1) = 0 OR L-I(2) NOT = 0
          MOVE 1 TO WS-SIGN
          COMPUTE WS-BASE = -3.1415927 / 2.25
          IF L-I(3) NOT = 0
