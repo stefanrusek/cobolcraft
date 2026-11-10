@@ -67,19 +67,15 @@
      COMPUTE WS-Y = WS-TOP + 1
      PERFORM UNTIL WS-Y < WS-MIN-Y OR L-FOUND = 1
          CALL "FLUID-CELL" USING L-DIM L-X WS-Y L-Z WS-STATE WS-F WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
-         MOVE 0 TO WS-FLUID-FLAG
-         IF WS-F > 0
-             MOVE 1 TO WS-FLUID-FLAG
-         END-IF
+         COMPUTE WS-FLUID-FLAG = FUNCTION MIN(WS-F, 1)
          MOVE WS-SOLID TO WS-FULL
          CALL "WP-LEVEL-COLUMN" USING WS-FLUID-FLAG WS-FULL WS-ACTION
-         EVALUATE WS-ACTION
-             WHEN 1
-                 MOVE -1 TO WS-Y
-             WHEN 2
-                 MOVE 1 TO L-FOUND
-                 COMPUTE L-Y = WS-Y + 1
-         END-EVALUATE
+*>       A fluid cell would reject the column (action 1, the end of the scan); the earlier surface test already rejects every column whose top is a fluid.
+         IF WS-ACTION = 1 MOVE -1 TO WS-Y END-IF
+         IF WS-ACTION = 2
+             MOVE 1 TO L-FOUND
+             COMPUTE L-Y = WS-Y + 1
+         END-IF
          SUBTRACT 1 FROM WS-Y
      END-PERFORM
      GOBACK.

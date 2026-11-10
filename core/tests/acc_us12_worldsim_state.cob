@@ -162,6 +162,42 @@
      MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
      MOVE "0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 5.2 given a block above the bed when a bed is used at night then the player does not sleep (obstructed), and a creative player "
+         & "who uses the freed bed sleeps and wakes when the morning comes" TO TL-CASE
+     MOVE 14000 TO CW-TIME
+     MOVE 101 TO WS-Y
+     MOVE 2 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     ADD 1 TO WS-SEQ
+     MOVE 100 TO WS-Y
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT
+     MOVE 101 TO WS-Y
+     MOVE 0 TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO PL-MODE(WS-ROW)
+     MOVE 100 TO WS-Y
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT2
+     MOVE 6000 TO CW-TIME
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 7.2 given a border lerped between equal sizes when the call is made then it is a static extent" TO TL-CASE
+     MOVE 100.0 TO WS-FROM WS-TO
+     MOVE 20 TO WS-DURATION
+     CALL "WORLDSIM-BORDER-LERP" USING WS-DIM WS-FROM WS-TO WS-DURATION
+     MOVE W2-B-MOVING(WS-DIM) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> Adds "minecraft:red_bed" (one state, no collision) to the block tables; WS-BED is its state.
