@@ -1069,8 +1069,9 @@
 *>   ---- play, crafting (US10) ----
      MOVE 0 TO WS-ID
      MOVE 0 TO WS-J
+     MOVE 0 TO WS-K
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID WS-ID WS-J
+     CALL "CLP-PLACE-RECIPE" USING PB-BUFFER WS-ID WS-K WS-J
      MOVE "contract wire client Place Recipe (container 0, display id 0, use max items false) "
          & "equals play-c2s-27-place-recipe.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-27-place-recipe.hex" TO WS-PATH

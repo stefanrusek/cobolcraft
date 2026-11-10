@@ -112,6 +112,19 @@
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A disabled button (state 2) is drawn with the quads of an enabled one: the button sprite.
+     MOVE 1 TO SM-WIDGET-COUNT
+     MOVE 0 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE RL-UI-COUNT TO WS-UNFOCUSED
+     MOVE 2 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "ui a disabled button renders the same quads as an enabled one (the sprite is the same)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-UNFOCUSED TO TL-EXPECTED-N
+     MOVE RL-UI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The edit-server screen with the address field holding its full 256 bytes: focused, the field
 *>   renders its text and one caret quad more than unfocused (the caret must not overrun the text).
      MOVE ALL "a" TO SM-EDIT-ADDR

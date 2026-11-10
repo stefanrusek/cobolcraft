@@ -440,11 +440,8 @@
      IF RK-OPEN(1) = 1
          CALL "RECIPE-BOOK-REFRESH" USING CLIENT-STATE WS-GRID
 *>       The panel (it is drawn over the screen: the first widget of the book).
-         MOVE 0 TO WS-ORIGIN
          CALL "PACK-RESOLVE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-PACK
-         IF WS-PACK > 1
-             MOVE 1 TO WS-ORIGIN
-         END-IF
+         COMPUTE WS-ORIGIN = FUNCTION MIN(1, WS-PACK / 2)
          MOVE 147 TO WS-W
          MOVE 166 TO WS-H
          MOVE SPACES TO WS-TEXT
@@ -586,6 +583,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-W                   BINARY-LONG VALUE 18.
+ 01 WS-H                   BINARY-LONG VALUE 18.
  01 WS-STATE               BINARY-LONG VALUE 3.
  01 WS-TEXT                PIC X(512).
  01 WS-LENGTH              BINARY-LONG VALUE 0.
@@ -613,7 +611,7 @@
                      COMPUTE WS-Y = L-TOP + 18 + 18 * WS-R - 1
                  END-IF
                  COMPUTE WS-ARG = 301 + WS-I
-                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-NONE WS-ARG WS-X WS-Y WS-W WS-W
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-NONE WS-ARG WS-X WS-Y WS-W WS-H
                      WS-TEXT WS-LENGTH WS-STATE
              END-IF
          END-PERFORM
