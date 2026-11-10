@@ -818,8 +818,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0516 [US12-core] Implement Difficulty (§9 of `33-world-simulation.md`) in `core/src/worldsim-33.cob` so the test passes (create the file with the first section of the document)
 - [x] T0517 [US12-core] Write test `core/tests/test_worldsim_33_10.cob` for What is saved where (`docs/protocol/33-world-simulation.md` §10): every rule, table row, formula and worked case of the section; case names start `acceptance US12 33§10 What is saved where` (FR-032)
 - [x] T0518 [US12-core] Implement What is saved where (§10 of `33-world-simulation.md`) in `core/src/worldsim-33.cob` so the test passes (create the file with the first section of the document)
-- [ ] T0519 [US12-core] Review task (mechanical, FR-032): run `for f in docs/protocol/29-*.md docs/protocol/29a-*.md docs/protocol/33-*.md; do id=$(basename $f .md | awk -F- '{p=""; for(i=2;i<=NF;i++) if($i ~ /^([0-9]+|x1|x2)$/) p=$i; print (p==""?$1:$1"-"p)}'); grep -E '^## [0-9]' $f | grep -viE 'worked|validation|open question|reader|naming|checklist|closing' | awk '{n=$2; sub(/\.$/,"",n); print n}' | while read n; do grep -q "acceptance US12 ${id}§${n} " core/tests/*.cob || echo "MISSING ${id}§${n}"; done; done` and record that it prints nothing
-- [ ] T0520 [US12-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0519 [US12-core] Review task (mechanical, FR-032): run `for f in docs/protocol/29-*.md docs/protocol/29a-*.md docs/protocol/33-*.md; do id=$(basename $f .md | awk -F- '{p=""; for(i=2;i<=NF;i++) if($i ~ /^([0-9]+|x1|x2)$/) p=$i; print (p==""?$1:$1"-"p)}'); grep -E '^## [0-9]' $f | grep -viE 'worked|validation|open question|reader|naming|checklist|closing' | awk '{n=$2; sub(/\.$/,"",n); print n}' | while read n; do grep -q "acceptance US12 ${id}§${n} " core/tests/*.cob || echo "MISSING ${id}§${n}"; done; done` and record that it prints nothing
+- [x] T0520 [US12-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 42: US12-core (b) — falling blocks, growth, fire, light
 
