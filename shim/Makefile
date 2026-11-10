@@ -2,11 +2,11 @@
 # (contracts/test-harness.md §2). Shared rules: tools/package.mk.
 #
 # Modules (contracts/shim-abi.md): cc_fatal.c (§2), cc_net.c (§3), cc_con.c (§4), cc_zlib.c (§5),
-# cc_tls.c (§6), cc_fs.c (§7), cc_open.c (§12), cc_f64.c (§10), cc_win.c (§8), cc_vk.c (§9). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
+# cc_tls.c (§6), cc_fs.c (§7), cc_open.c (§12), cc_f64.c (§10), cc_u64.c (§13), cc_win.c (§8), cc_vk.c (§9). cc_vk.c embeds the SPIR-V of shaders/*.vert|*.frag through
 # the generated header $(GEN)/spirv.h (generated code, excluded from coverage).
 PKG      := shim
 LIBNAME  := libccshim.a
-SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_open.c src/cc_zlib.c src/cc_tls.c src/cc_f64.c src/cc_win.c src/cc_vk.c
+SRC      := src/cc_fatal.c src/cc_net.c src/cc_con.c src/cc_fs.c src/cc_open.c src/cc_zlib.c src/cc_tls.c src/cc_f64.c src/cc_u64.c src/cc_win.c src/cc_vk.c
 TESTS    := $(wildcard tests/acc_*.c tests/contract_*.c tests/test_*.c)
 SHADERS  := shaders/world.vert shaders/world.frag shaders/ui.vert shaders/ui.frag
 

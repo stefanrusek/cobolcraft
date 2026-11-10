@@ -199,4 +199,13 @@ void cc_vk_clear_depth(void);
  * CC_NOTFOUND when the opener cannot be started. Does not wait (US4). */
 int32_t cc_open_path(const char *opener, const char *path);
 
+/* §13 cc_u64: unsigned 64-bit wrap-around arithmetic by reference (GnuCOBOL has none; BINARY-DOUBLE UNSIGNED items).
+ * r = a + b, a * b modulo 2^64, a << n, a >> n (logical), rotate left by n (n is int32_t, 1 to 63; shl and shr give 0 for
+ * 64 or more). The result may alias an operand. */
+void cc_u64_add(const uint64_t *a, const uint64_t *b, uint64_t *r);
+void cc_u64_mul(const uint64_t *a, const uint64_t *b, uint64_t *r);
+void cc_u64_shl(const uint64_t *a, const int32_t *n, uint64_t *r);
+void cc_u64_shr(const uint64_t *a, const int32_t *n, uint64_t *r);
+void cc_u64_rotl(const uint64_t *a, const int32_t *n, uint64_t *r);
+
 #endif

@@ -146,6 +146,9 @@
 *>                   CALL STATIC "cc_f64_f64_from_bits" USING BY REFERENCE I64 R
 *>   Three operands: CALL STATIC "cc_f64_clamp_f32" USING BY REFERENCE V LO HI R   (also clamp_f64)
 *>                   CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE T A B R      (also lerp_f64)
+*>   Unsigned 64-bit wrap (section 13; items BINARY-DOUBLE UNSIGNED, count BINARY-LONG 1 to 63):
+*>                   CALL STATIC "cc_u64_add" USING BY REFERENCE A B R   (also mul)
+*>                   CALL STATIC "cc_u64_shl" USING BY REFERENCE A N R   (also shr, rotl)
 *>   Texture (BINARY-LONG arguments BY VALUE, pixel buffer BY REFERENCE, RETURNING BINARY-LONG):
 *>     CALL STATIC "cc_vk_texture_ex" USING BY VALUE TEX-ID W H BY REFERENCE RGBA BY VALUE MIP-LEVELS
 *>         RETURNING RC
