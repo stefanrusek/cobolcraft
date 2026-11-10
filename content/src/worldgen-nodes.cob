@@ -50,6 +50,7 @@
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-WHICH L-N L-KEY L-INDEX L-STATUS.
+     ADD 1 TO WG-LOAD-GEN
      IF WG-COUNT(L-WHICH) + L-N > WS-LIMIT(L-WHICH)
          MOVE 1 TO L-STATUS
          MOVE "the world generation store is full" TO WS-DETAIL

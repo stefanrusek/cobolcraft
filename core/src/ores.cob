@@ -945,6 +945,10 @@
  01 WS-S2                  FLOAT-LONG.
  01 WS-S3                  FLOAT-LONG.
  01 WS-V                   FLOAT-LONG.
+*> The tests "squared distance < 1" are integer compares of the bits (a sum of squares is a non-negative double or a NaN; unsigned,
+*> so a NaN of either sign is not below the bits of 1.0): a FLOAT-LONG compare with a literal converts through decimals.
+ 01 WS-BITS-U              BINARY-DOUBLE UNSIGNED.
+ 01 WS-ONE-BITS            BINARY-DOUBLE UNSIGNED VALUE 4607182418800017408.
  01 WS-XLO                 BINARY-LONG.
  01 WS-YLO                 BINARY-LONG.
  01 WS-ZLO                 BINARY-LONG.
@@ -1020,15 +1024,18 @@
          CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-BR WS-D
          MOVE WS-D TO WS-C
          CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-XD2
-         IF WS-XD2 < 1
+         CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-XD2 WS-BITS-U
+         IF WS-BITS-U < WS-ONE-BITS
              PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
                  COMPUTE WS-K = WS-Y - WS-YLO + 1
                  CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2T-ITEM(WS-K) WS-S2
-                 IF WS-S2 < 1
+                 CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S2 WS-BITS-U
+                 IF WS-BITS-U < WS-ONE-BITS
                      PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
                          COMPUTE WS-K = WS-Z - WS-ZLO + 1
                          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-S2 WS-ZD2T-ITEM(WS-K) WS-S3
-                         IF WS-S3 < 1 AND WS-Y >= -64 AND WS-Y <= 319
+                         CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S3 WS-BITS-U
+                         IF WS-BITS-U < WS-ONE-BITS AND WS-Y >= -64 AND WS-Y <= 319
                              COMPUTE WS-BIT = (WS-X - OB-START-X) + (WS-Y - OB-START-Y) * OB-WIDTH
                                  + (WS-Z - OB-START-Z) * OB-WIDTH * OB-HEIGHT + 1
                              IF WS-BIT >= 1 AND WS-BIT <= L-BITS AND OB-BITS(WS-BIT:1) = LOW-VALUE
@@ -1117,6 +1124,8 @@
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-DR                  FLOAT-LONG.
+ 01 WS-ZERO-F              FLOAT-LONG VALUE 0.
+ 01 WS-GT                  BINARY-LONG.
  01 WS-PA                  FLOAT-LONG.
  01 WS-PB                  FLOAT-LONG.
  01 WS-SUM                 FLOAT-LONG.
@@ -1201,10 +1210,12 @@
 *>   a ball wholly inside a larger one is dropped
      COMPUTE WS-BOUND = WS-SIZE - 1
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BOUND
-         IF WS-BR(WS-I) > 0
+         CALL "FCMP-GT" USING WS-BR(WS-I) WS-ZERO-F WS-GT
+         IF WS-GT = 1
              COMPUTE WS-J = WS-I + 1
              PERFORM VARYING WS-J FROM WS-J BY 1 UNTIL WS-J > WS-SIZE
-                 IF WS-BR(WS-J) > 0
+                 CALL "FCMP-GT" USING WS-BR(WS-J) WS-ZERO-F WS-GT
+                 IF WS-GT = 1
                      MOVE WS-BX(WS-I) TO WS-PA
                      MOVE WS-BX(WS-J) TO WS-PB
                      CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-PA WS-PB WS-DX
@@ -1227,8 +1238,10 @@
                      MOVE WS-DZ TO WS-SQ
                      CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-DZ WS-SQ WS-B
                      CALL STATIC "cc_f64_add" USING BY REFERENCE WS-SUM WS-B WS-C
-                     IF WS-A > WS-C
-                         IF WS-DR > 0
+                     CALL "FCMP-GT" USING WS-A WS-C WS-GT
+                     IF WS-GT = 1
+                         CALL "FCMP-GT" USING WS-DR WS-ZERO-F WS-GT
+                         IF WS-GT = 1
                              MOVE -1 TO WS-BR(WS-J)
                          ELSE
                              MOVE -1 TO WS-BR(WS-I)

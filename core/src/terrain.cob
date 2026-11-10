@@ -25,6 +25,8 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-D                   FLOAT-LONG.
+ 01 WS-ZERO-F              FLOAT-LONG VALUE 0.
+ 01 WS-GT                  BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-COL                 BINARY-LONG.
@@ -50,7 +52,8 @@
              PERFORM VARYING WS-LY FROM 3 BY -1 UNTIL WS-LY < 0
                  COMPUTE WS-Y = -64 + J-SUB * 4 + WS-LY
                  CALL "DENSITY-NODE" USING J-FINAL-ROOT WS-X WS-Y WS-Z WS-D
-                 IF WS-D > 0
+                 CALL "FCMP-GT" USING WS-D WS-ZERO-F WS-GT
+                 IF WS-GT = 1
                      MOVE 0 TO WS-KIND
                  ELSE
                      CALL "AQUIFER-SUBSTANCE" USING L-JOB WS-X WS-Y WS-Z WS-D WS-KIND

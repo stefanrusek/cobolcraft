@@ -506,10 +506,66 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-NODE RECURSIVE.
+*> The node memo around DENSITY-NODE-RAW (DMEMO.cpy): a node evaluated at the position of its last evaluation (any y when that
+*> evaluation did not read y) returns the stored value; otherwise it is evaluated and, when it reached no grid or blend node, stored.
+*> The y and impure flags of the evaluation fold into the flags of the caller either way.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ COPY NOISE.
+ COPY DMEMO.
+ LOCAL-STORAGE SECTION.
+ 01 LS-STAMP               BINARY-LONG.
+ 01 LS-OUTER-Y             BINARY-LONG.
+ 01 LS-OUTER-IMPURE        BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
+     IF L-NODE = 0
+         MOVE 0 TO L-RESULT
+         GOBACK
+     END-IF
+     COMPUTE LS-STAMP = WG-LOAD-GEN + NZ-GEN + 1
+     IF DM-STAMP(L-NODE) = LS-STAMP AND DM-X(L-NODE) = L-X AND DM-Z(L-NODE) = L-Z
+             AND (DM-UY(L-NODE) = 0 OR DM-Y(L-NODE) = L-Y)
+         MOVE DM-RES(L-NODE) TO L-RESULT
+         IF DM-UY(L-NODE) = 1
+             MOVE 1 TO DM-USES-Y
+         END-IF
+         GOBACK
+     END-IF
+     MOVE DM-USES-Y TO LS-OUTER-Y
+     MOVE DM-IMPURE TO LS-OUTER-IMPURE
+     MOVE 0 TO DM-USES-Y DM-IMPURE
+     CALL "DENSITY-NODE-RAW" USING L-NODE L-X L-Y L-Z L-RESULT
+     IF DM-IMPURE = 0
+         MOVE LS-STAMP TO DM-STAMP(L-NODE)
+         MOVE L-X TO DM-X(L-NODE)
+         MOVE L-Y TO DM-Y(L-NODE)
+         MOVE L-Z TO DM-Z(L-NODE)
+         MOVE DM-USES-Y TO DM-UY(L-NODE)
+         MOVE L-RESULT TO DM-RES(L-NODE)
+     END-IF
+     IF LS-OUTER-Y = 1
+         MOVE 1 TO DM-USES-Y
+     END-IF
+     IF LS-OUTER-IMPURE = 1
+         MOVE 1 TO DM-IMPURE
+     END-IF
+     GOBACK.
+ END PROGRAM DENSITY-NODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DENSITY-NODE-RAW RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
  COPY GENSTAGE.
+ COPY DMEMO.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
  01 WS-ONE                 FLOAT-LONG VALUE 1.
  01 WS-HALF                FLOAT-LONG VALUE 0.5.
@@ -556,9 +612,6 @@
  01 L-RESULT               FLOAT-LONG.
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
      MOVE 0 TO L-RESULT
-     IF L-NODE = 0
-         GOBACK
-     END-IF
      EVALUATE WGN-TYPE(L-NODE)
          WHEN 0
              MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
@@ -670,6 +723,9 @@
              END-IF
          WHEN 24
 *>           gradient: from + (float)(c - from_coordinate) * ((to - from) / (float)(to_coordinate - from_coordinate))
+             IF WGN-TEXT-1(L-NODE)(1:1) = "y"
+                 MOVE 1 TO DM-USES-Y
+             END-IF
              EVALUATE WGN-TEXT-1(L-NODE)(1:1)
                  WHEN "x"
                      MOVE L-X TO LS-COORD
@@ -701,6 +757,9 @@
              CALL "DENSITY-NOISE-HANDLE" USING LS-KEY LS-HANDLE
              IF LS-HANDLE = 0
                  GOBACK
+             END-IF
+             IF WGN-NUM(L-NODE, 2) NOT = 0
+                 MOVE 1 TO DM-USES-Y
              END-IF
              CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-SX
              CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-SY
@@ -734,16 +793,20 @@
                  WHEN 27
                      CALL "NOISE-GET" USING LS-HANDLE LS-SZ LS-SX WS-ZERO LS-A
                  WHEN OTHER
+                     MOVE 1 TO DM-USES-Y
                      CALL "NOISE-GET" USING LS-HANDLE LS-SX LS-SY LS-SZ LS-A
              END-EVALUATE
              CALL "DENSITY-F32" USING LS-OP-MUL WS-FOUR LS-A L-RESULT
          WHEN 29
              CALL "DENSITY-SPLINE" USING WGN-INT(L-NODE, 1) L-X L-Y L-Z L-RESULT
          WHEN 30
+             MOVE 1 TO DM-IMPURE
              CALL "DENSITY-BLENDED" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 31
+             MOVE 1 TO DM-IMPURE
              CALL "DENSITY-TOP-SURFACE" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 32
+             MOVE 1 TO DM-IMPURE
              CALL "DENSITY-INTERPOLATED" USING L-NODE L-X L-Y L-Z L-RESULT
          WHEN 33
              MOVE WS-ONE TO L-RESULT
@@ -753,7 +816,7 @@
              MOVE WS-ZERO TO L-RESULT
      END-EVALUATE
      GOBACK.
- END PROGRAM DENSITY-NODE.
+ END PROGRAM DENSITY-NODE-RAW.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-EVAL.

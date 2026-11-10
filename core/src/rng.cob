@@ -76,10 +76,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. XORO-ROTL.
-*> USING value (u64), count (BINARY-LONG 1 to 63), result out (u64): rotate left.
+*> USING value (u64), count (BINARY-LONG 1 to 63), result out (u64): rotate left. The powers of two come from a table built on
+*> the first call (2^count and 2^(64 - count)), not from a loop of doublings per call.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-INIT                BINARY-LONG VALUE 0.
+ 01 WS-TABLE.
+    05 WS-POW-ITEM         PIC 9(20) OCCURS 64 TIMES.
  01 WS-POW                 PIC 9(20).
  01 WS-POW-BACK            PIC 9(20).
  01 WS-I                   BINARY-LONG.
@@ -88,11 +92,15 @@
  01 L-COUNT                BINARY-LONG.
  01 L-RESULT               BINARY-DOUBLE UNSIGNED.
  PROCEDURE DIVISION USING L-VALUE L-COUNT L-RESULT.
-     MOVE 1 TO WS-POW
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
-         COMPUTE WS-POW = WS-POW * 2
-     END-PERFORM
-     COMPUTE WS-POW-BACK = WS-M64 / WS-POW
+     IF WS-INIT = 0
+         MOVE 1 TO WS-POW-ITEM(1)
+         PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > 64
+             COMPUTE WS-POW-ITEM(WS-I) = WS-POW-ITEM(WS-I - 1) * 2
+         END-PERFORM
+         MOVE 1 TO WS-INIT
+     END-IF
+     MOVE WS-POW-ITEM(L-COUNT + 1) TO WS-POW
+     MOVE WS-POW-ITEM(65 - L-COUNT) TO WS-POW-BACK
      COMPUTE L-RESULT = FUNCTION MOD(L-VALUE * WS-POW, WS-M64) + FUNCTION INTEGER(L-VALUE / WS-POW-BACK)
      GOBACK.
  END PROGRAM XORO-ROTL.
