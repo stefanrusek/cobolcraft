@@ -99,6 +99,44 @@
      COMPUTE TL-EXPECTED-N = (1 * 100 + 7) * 100000 + (1 * 100 + 8) * 10 + 9
      COMPUTE TL-OBSERVED-N = (IX-COUNT(1) * 100 + IX-ITEM(1)) * 100000 + (IX-COUNT(4) * 100 + IX-ITEM(4)) * 10 + PL-INV-STATE-ID
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Set Player Inventory index 38 is the chestplate (menu 6, IX 2); index 40 the off hand.
+     MOVE 38 TO WS-SLOT
+     MOVE 1 TO WS-COUNT
+     MOVE 9 TO WS-ITEM
+     CALL "TEST-FEED-PLAYER-SLOT" USING CLIENT-STATE WS-CONN WS-SLOT WS-COUNT WS-ITEM
+     MOVE "acceptance US9-1 Set Player Inventory index 38 sets the chestplate (IX 2)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 1 * 100 + 9
+     COMPUTE TL-OBSERVED-N = IX-COUNT(2) * 100 + IX-ITEM(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The crafting result is taken, never filled: a cursor of the same item takes it (5 + 2 = 7 x 63), another item leaves it.
+     MOVE 2 TO IX-COUNT(5)
+     MOVE 63 TO IX-ITEM(5)
+     MOVE 105 TO WS-ARG
+     CALL "INV-PICKUP" USING CLIENT-STATE WS-ARG
+     MOVE "acceptance US9-1 a click on the crafting result with the same item on the cursor takes it (cursor 7, result empty)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 7 * 100 + 0
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + IX-COUNT(5)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO IX-COUNT(5)
+     MOVE 64 TO IX-ITEM(5)
+     CALL "INV-PICKUP" USING CLIENT-STATE WS-ARG
+     MOVE "acceptance US9-1 a click on the crafting result with another item on the cursor changes nothing" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 7 * 100 + 3
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + IX-COUNT(5)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 36 TO WS-ARG
+     MOVE 2 TO WS-COUNT
+     MOVE 5 TO WS-ITEM
+     MOVE 0 TO WS-STATE
+     CALL "MENU-STACK-PUT" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-STATE
+     MOVE "acceptance US9-1 MENU-STACK-PUT of argument 36 sets the cursor" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 2 * 100 + 5
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + PL-CARRIED-ITEM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-STATE
+     MOVE 0 TO IX-COUNT(5) IX-ITEM(5)
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+
 *>   The screen.
      MOVE 640 TO IN-WIN-W
      MOVE 480 TO IN-WIN-H

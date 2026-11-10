@@ -82,6 +82,26 @@
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   An item slot of a pack with no container/slot sprite draws the panel swatch (one quad); a bare one draws no background.
+     MOVE 0 TO GS-W(GSP-SLOT)
+     INITIALIZE SM-WIDGET(1)
+     MOVE WK-SLOT TO SM-W-KIND(1)
+     MOVE 10 TO SM-W-ARG(1)
+     MOVE 20 TO SM-W-W(1) SM-W-H(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "acceptance US6-6 an empty slot widget without the slot sprite is one swatch quad (6 vertices)" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE RL-UI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "acceptance US6-6 a bare slot widget draws no background" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-UI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE SM-WIDGET(1)
+     MOVE WK-SHEET TO SM-W-KIND(1)
+
 *>   An argument that is no sheet draws nothing.
      MOVE GSP-HOTBAR TO SM-W-ARG(1)
      CALL "UI-RENDER" USING CLIENT-STATE

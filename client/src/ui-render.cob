@@ -250,14 +250,11 @@
      CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
      IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
-         IF SM-W-STATE(L-W) = 1
-             MOVE SW-SELECTED TO WS-SWATCH
-         END-IF
 *>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
          IF SM-W-STATE(L-W) = 3
              CONTINUE
          ELSE
-             IF GS-W(GSP-SLOT) > 0 AND SM-W-STATE(L-W) NOT = 1
+             IF GS-W(GSP-SLOT) > 0
                  MOVE GSP-SLOT TO WS-SPRITE-ROW
                  CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(L-W) SM-W-Y(L-W)
                      SM-W-W(L-W) SM-W-H(L-W)

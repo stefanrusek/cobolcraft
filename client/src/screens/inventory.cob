@@ -273,7 +273,7 @@
 *>   Q over a slot (the slot widget under the cursor) holding a stack.
      MOVE KB-CODE(KB-DROP) TO WS-KEYC
      IF IN-KEY-PRESSED(WS-KEYC + 1) = 1
-         PERFORM FIND-SLOT
+         CALL "MENU-SLOT-AT" USING CLIENT-STATE WS-X WS-Y WS-ARG
          IF WS-ARG >= 0
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
          END-IF
@@ -299,7 +299,7 @@
 *>   slot changed, predicted here.
      MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
      IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND PL-CARRIED-COUNT = 0
-         PERFORM FIND-SLOT
+         CALL "MENU-SLOT-AT" USING CLIENT-STATE WS-X WS-Y WS-ARG
          IF WS-ARG >= 0 AND WS-ARG <= 35
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
              CALL "MENU-STACK-GET" USING CLIENT-STATE WS-OFF-ARG WS-OFF-COUNT WS-OFF-ITEM WS-OFF-DAMAGE
@@ -339,18 +339,31 @@
          END-IF
      END-IF
      GOBACK.
-*> WS-ARG: the argument of the slot widget under the cursor, -1 for none.
- FIND-SLOT.
-     MOVE -1 TO WS-ARG
+ END PROGRAM INVENTORY-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SLOT-AT.
+*> USING CLIENT-STATE, x, y (GUI pixels), argument out: the argument of the slot widget at that point (the cursor's stack excluded), -1 for none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-ARG.
+     MOVE -1 TO L-ARG
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
          IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) NOT = 36
-                 AND WS-X >= SM-W-X(WS-I) AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I)
-                 AND WS-Y >= SM-W-Y(WS-I) AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
-             MOVE SM-W-ARG(WS-I) TO WS-ARG
+                 AND L-X >= SM-W-X(WS-I) AND L-X < SM-W-X(WS-I) + SM-W-W(WS-I)
+                 AND L-Y >= SM-W-Y(WS-I) AND L-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
+             MOVE SM-W-ARG(WS-I) TO L-ARG
          END-IF
      END-PERFORM
-     .
- END PROGRAM INVENTORY-INPUT.
+     GOBACK.
+ END PROGRAM MENU-SLOT-AT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. INVENTORY-CLOSE.

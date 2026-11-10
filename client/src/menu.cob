@@ -145,6 +145,10 @@
  WORKING-STORAGE SECTION.
  01 WS-ARG                 BINARY-LONG.
  01 WS-BENCH               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-CONTAINER            BINARY-LONG.
@@ -187,33 +191,28 @@
          END-EVALUATE
      END-IF
      IF WS-ARG >= 0
-         IF WS-BENCH = 1 AND WS-ARG >= 101
-             PERFORM SET-BENCH-EXTRA
-         ELSE
-             IF WS-ARG >= 101
-                 PERFORM SET-INVENTORY-EXTRA
-             ELSE
-                 CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG L-COUNT L-ITEM L-DAMAGE
+         IF WS-ARG >= 101
+             MOVE L-COUNT TO WS-COUNT
+             MOVE L-ITEM TO WS-ITEM
+             MOVE L-DAMAGE TO WS-DAMAGE
+             IF L-COUNT <= 0
+                 MOVE 0 TO WS-COUNT WS-ITEM WS-DAMAGE
              END-IF
+             COMPUTE WS-N = WS-ARG - 100
+             IF WS-BENCH = 1
+                 MOVE WS-COUNT TO BX-COUNT(WS-N)
+                 MOVE WS-ITEM TO BX-ITEM(WS-N)
+                 MOVE WS-DAMAGE TO BX-DAMAGE(WS-N)
+             ELSE
+                 MOVE WS-COUNT TO IX-COUNT(WS-N)
+                 MOVE WS-ITEM TO IX-ITEM(WS-N)
+                 MOVE WS-DAMAGE TO IX-DAMAGE(WS-N)
+             END-IF
+         ELSE
+             CALL "MENU-PLAYER-SET" USING CLIENT-STATE WS-ARG L-COUNT L-ITEM L-DAMAGE
          END-IF
      END-IF
      GOBACK.
- SET-BENCH-EXTRA.
-     MOVE L-COUNT TO BX-COUNT(WS-ARG - 100)
-     MOVE L-ITEM TO BX-ITEM(WS-ARG - 100)
-     MOVE L-DAMAGE TO BX-DAMAGE(WS-ARG - 100)
-     IF L-COUNT <= 0
-         MOVE 0 TO BX-COUNT(WS-ARG - 100) BX-ITEM(WS-ARG - 100) BX-DAMAGE(WS-ARG - 100)
-     END-IF
-     .
- SET-INVENTORY-EXTRA.
-     MOVE L-COUNT TO IX-COUNT(WS-ARG - 100)
-     MOVE L-ITEM TO IX-ITEM(WS-ARG - 100)
-     MOVE L-DAMAGE TO IX-DAMAGE(WS-ARG - 100)
-     IF L-COUNT <= 0
-         MOVE 0 TO IX-COUNT(WS-ARG - 100) IX-ITEM(WS-ARG - 100) IX-DAMAGE(WS-ARG - 100)
-     END-IF
-     .
  END PROGRAM MENU-SET.
 
  IDENTIFICATION DIVISION.
@@ -308,6 +307,7 @@
  01 WS-NAME                PIC X(32) VALUE "max_stack_size".
  01 WS-VALUE               PIC X(100).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ITEM                 BINARY-LONG.
  01 L-MAX                  BINARY-LONG.
@@ -316,13 +316,10 @@
      IF L-ITEM >= 0 AND L-ITEM < CL-ITEM-COUNT
          MOVE CL-IT-MAX(L-ITEM + 1) TO L-MAX
      END-IF
+*>   The content's value (blank when the content is closed or has none: 0) wins over the table.
      CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-VALUE WS-STATUS
-     IF WS-STATUS = 0 AND WS-VALUE NOT = SPACES
-         COMPUTE L-MAX = FUNCTION NUMVAL(WS-VALUE)
-     END-IF
-     IF L-MAX < 1
-         MOVE 64 TO L-MAX
-     END-IF
+     COMPUTE WS-NUM = FUNCTION NUMVAL(WS-VALUE)
+     COMPUTE L-MAX = WS-NUM + L-MAX * (1 - FUNCTION MIN(WS-NUM, 1))
      GOBACK.
  END PROGRAM ITEM-MAX-STACK.
 
@@ -388,6 +385,7 @@
  01 WS-NAME                PIC X(32) VALUE "max_damage".
  01 WS-VALUE               PIC X(100).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-NUM                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ITEM                 BINARY-LONG.
@@ -399,12 +397,10 @@
              MOVE MX-MAX(WS-K) TO L-MAX
          END-IF
      END-PERFORM
-     IF L-MAX = 0
-         CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-VALUE WS-STATUS
-         IF WS-STATUS = 0 AND WS-VALUE NOT = SPACES
-             COMPUTE L-MAX = FUNCTION NUMVAL(WS-VALUE)
-         END-IF
-     END-IF
+*>   Only when no stack said: the content's value (blank when the content is closed or has none: 0).
+     CALL "CONTENT-ITEM-COMPONENT" USING L-ITEM WS-NAME WS-VALUE WS-STATUS
+     COMPUTE WS-NUM = FUNCTION NUMVAL(WS-VALUE)
+     COMPUTE L-MAX = L-MAX + WS-NUM * (1 - FUNCTION MIN(L-MAX, 1))
      GOBACK.
  END PROGRAM ITEM-MAX-DAMAGE.
 

@@ -97,6 +97,7 @@
 *>     Set Slot (0x14) with that stack (no components).
 *>   TEST-FEED-DAMAGED-SLOT USING CLIENT-STATE, connection, container id, state id, slot, item, damage, max damage: hands PROTO-PACKET a
 *>     Container Set Slot (0x14) of 1 of that item with the components damage (3) and max_damage (2).
+*>   TEST-FEED-PLAYER-SLOT USING CLIENT-STATE, connection, player index, count, item: hands PROTO-PACKET a Set Player Inventory (0x6E).
 *>   TEST-FIGURE-FACE USING CLIENT-STATE, spec (PIC X(40): label, then the eye-relative face
 *>     centre x y z), text (appended): " <label> <u>/<v> <brightness>" of the entity-mesh quad
 *>     with that centre (u and v of its top-left corner), or " <label> none".
@@ -1572,6 +1573,39 @@
      CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
      GOBACK.
  END PROGRAM TEST-FEED-DAMAGED-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEED-PLAYER-SLOT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 110.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-SLOT L-COUNT L-ITEM.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-SLOT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     IF L-COUNT > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER L-ITEM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     END-IF
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-FEED-PLAYER-SLOT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-FIGURE-FACE.
