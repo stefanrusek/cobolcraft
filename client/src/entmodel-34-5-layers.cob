@@ -65,6 +65,8 @@
              CALL "EF5-M-ARMADILLO" USING EMM-MODEL
          WHEN "ARMADILLO_BABY"
              CALL "EF5-M-ARMADILLO-BABY" USING EMM-MODEL
+         WHEN "FROG"
+             CALL "EF5-M-FROG" USING EMM-MODEL
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE
