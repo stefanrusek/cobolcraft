@@ -659,17 +659,17 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
 
-- [ ] T0405 [US11-core] Write test `core/tests/test_gen_queue.cob`: the chunk generation queue orders wanted chunks nearest first and obeys the per-tick budget (R12)
-- [ ] T0406 [US11-core] Implement the generation queue in `core/src/gen-queue.cob` and run it from `CORE-TICK` in `core/src/api.cob`
+- [x] T0405 [US11-core] Write test `core/tests/test_gen_queue.cob`: the chunk generation queue orders wanted chunks nearest first and obeys the per-tick budget (R12)
+- [x] T0406 [US11-core] Implement the generation queue in `core/src/gen-queue.cob` and run it from `CORE-TICK` in `core/src/api.cob`
 - [ ] T0407 [US11-core] Measure one generated chunk with the `cc_f64` noise path (Risk R-P, first US11 task): add `core/tests/test_gen_cost.cob` that prints the elapsed time of one chunk and fails when it exceeds the per-tick budget recorded in `specs/002-client-polish/research.md` R12 (a result above the budget goes back to the plan, not to a hack)
-- [ ] T0408 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0408 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 35: US11-core (b) — random sources, noise, climate, biome source
 
-- [ ] T0409 [US11-core] Write test `core/tests/test_random_sources.cob`: positional random splitters and seed forks of `docs/protocol/10-world-generation-terrain.md` with the worked examples (extends `core/src/rng.cob`)
-- [ ] T0410 [US11-core] Implement them in `core/src/rng.cob`
-- [ ] T0411 [US11-core] Write test `core/tests/test_noise.cob`: improved/perlin noise, octave and normal noise via `cc_f64_*` match the worked examples bit for bit (10)
-- [ ] T0412 [US11-core] Implement the noises in `core/src/noise.cob`
+- [x] T0409 [US11-core] Write test `core/tests/test_random_sources.cob`: positional random splitters and seed forks of `docs/protocol/10-world-generation-terrain.md` with the worked examples (extends `core/src/rng.cob`)
+- [x] T0410 [US11-core] Implement them in `core/src/rng.cob`
+- [x] T0411 [US11-core] Write test `core/tests/test_noise.cob`: improved/perlin noise, octave and normal noise via `cc_f64_*` match the worked examples bit for bit (10)
+- [x] T0412 [US11-core] Implement the noises in `core/src/noise.cob`
 - [ ] T0413 [US11-core] Write test `core/tests/test_climate.cob`: the six climate parameters at sample points and the multi-noise biome lookup (10, 37 part 3)
 - [ ] T0414 [US11-core] Implement climate and the biome source in `core/src/climate.cob`
 - [ ] T0415 [US11-core] Gate: run `make gate-core` and record the command and real output
@@ -718,17 +718,17 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 **Goal**: a hidden `debug` world type whose chunks hold every block state of the standard set in state-id order, per `docs/design/debug-world.md` (our own record; nothing from the jar). **Independent Test**: `test_debug_grid`, `test_debug_codec`.
 
-- [ ] T0444 [US11-core] Write test `core/tests/test_debug_grid.cob`: every block and every state of the standard set (counts of 24 §17 and 46) appears exactly once at the position the record's formula gives, in state-id order, and the cell next to the grid is air
-- [ ] T0445 [US11-core] Implement the generator in `core/src/worldgen-debug.cob` and select it by world type in `core/src/worldgen-standard.cob`
-- [ ] T0446 [US11-core] Write test `core/tests/test_debug_no_terrain.cob`: no noise, climate, density, carver, ore or feature stage runs for a debug chunk, and a chunk outside the grid is empty
-- [ ] T0447 [US11-core] Make `core/src/worldgen-debug.cob` call no terrain stage (satisfies `test_debug_no_terrain`)
-- [ ] T0448 [US11-core] Write test `core/tests/test_debug_no_ticks.cob`: in a debug world `CORE-TICK` runs no block update, fluid, growth, redstone, mob, weather, spawning or generation-queue work and the world time does not advance
-- [ ] T0449 [US11-core] Add the debug-type bypass of the world tick in `core/src/world-tick.cob` and `core/src/api.cob`
+- [x] T0444 [US11-core] Write test `core/tests/test_debug_grid.cob`: every block and every state of the standard set (counts of 24 §17 and 46) appears exactly once at the position the record's formula gives, in state-id order, and the cell next to the grid is air
+- [x] T0445 [US11-core] Implement the generator in `core/src/worldgen-debug.cob` and select it by world type in `core/src/worldgen-standard.cob`
+- [x] T0446 [US11-core] Write test `core/tests/test_debug_no_terrain.cob`: no noise, climate, density, carver, ore or feature stage runs for a debug chunk, and a chunk outside the grid is empty
+- [x] T0447 [US11-core] Make `core/src/worldgen-debug.cob` call no terrain stage (satisfies `test_debug_no_terrain`)
+- [x] T0448 [US11-core] Write test `core/tests/test_debug_no_ticks.cob`: in a debug world `CORE-TICK` runs no block update, fluid, growth, redstone, mob, weather, spawning or generation-queue work and the world time does not advance
+- [x] T0449 [US11-core] Add the debug-type bypass of the world tick in `core/src/world-tick.cob` and `core/src/api.cob`
 - [ ] T0450 [US11-core] Write test `core/tests/test_debug_open.cob`: `CORE-WORLD-OPEN` with `CS-WORLD-TYPE` `debug` writes `WorldType = debug`, opens the content set of the standard type, is refused with the packs status word when the packs are not `ok`, and reopens as `debug`
 - [ ] T0451 [US11-core] Accept `debug` in `core/src/level-data.cob` and `core/src/api.cob` (opening the standard content set)
-- [ ] T0452 [US11-core] Write test `core/tests/test_debug_codec.cob`: the grid chunks round-trip through `PB-PUT-CHUNK-24` and `PB-GET-CHUNK-24` with every 16-bit state identical (palettes above 256 distinct states use the direct form)
-- [ ] T0453 [US11-core] Make `test_debug_codec` pass in `core/src/chunks-stream.cob`; if it already passes when written, record that evidence and mark this task done
-- [ ] T0454 [US11-core] Gate: run `make gate-core` and record the command and real output
+- [x] T0452 [US11-core] Write test `core/tests/test_debug_codec.cob`: the grid chunks round-trip through `PB-PUT-CHUNK-24` and `PB-GET-CHUNK-24` with every 16-bit state identical (palettes above 256 distinct states use the direct form)
+- [x] T0453 [US11-core] Make `test_debug_codec` pass in `core/src/chunks-stream.cob`; if it already passes when written, record that evidence and mark this task done
+- [x] T0454 [US11-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 41: US12-core (a) — block updates, fluids, world simulation
 

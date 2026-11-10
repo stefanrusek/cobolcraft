@@ -18,6 +18,7 @@
              MOVE 0 TO CK-USED(WS-ROW)
          END-IF
      END-PERFORM
+     CALL "GEN-QUEUE-RESET"
      GOBACK.
  END PROGRAM WORLD-RESET.
 

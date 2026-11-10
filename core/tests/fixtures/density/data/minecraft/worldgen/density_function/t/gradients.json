@@ -1,0 +1,1 @@
+{"type": "minecraft:add", "left": {"type": "minecraft:gradient", "axis": "x", "from_coordinate": 100, "to_coordinate": -100, "from_value": 2.0, "to_value": -2.0}, "right": {"type": "minecraft:gradient", "axis": "z", "from_coordinate": 0, "to_coordinate": 50, "from_value": 0.0, "to_value": 1.0}}
