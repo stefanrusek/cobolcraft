@@ -49,9 +49,9 @@
 
      CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS
      MOVE "acceptance US7-2 client half when half a second has passed then the hurt indication "
-         & "is gone (the crosshair is the first widget again)" TO TL-CASE
+         & "is gone (the crosshair sprite, kind 8 at 206, 112, 15 x 15, is the first widget again)" TO TL-CASE
      PERFORM FIRST-WIDGET
-     MOVE "1 210 116 0 0" TO TL-EXPECTED
+     MOVE "8 206 112 15 15" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "contract/fixtures/wire/play-s2c-2b-hurt-animation.hex" TO WS-PATH
@@ -73,7 +73,7 @@
      MOVE "acceptance US7-2 client half given the local player is entity 2 when Damage Event and "
          & "Hurt Animation for entity 1 arrive then no hurt indication is shown" TO TL-CASE
      PERFORM FIRST-WIDGET
-     MOVE "1 210 116 0 0" TO TL-EXPECTED
+     MOVE "8 206 112 15 15" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

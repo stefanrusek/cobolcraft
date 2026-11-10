@@ -934,21 +934,43 @@
  PROGRAM-ID. TEST-SCREEN-TEXTS.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLCONST.
  01 WS-I                   BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOWN               BINARY-LONG.
+ 01 WS-EDIT                PIC Z(9)9.
+ 01 WS-EDIT2               PIC Z(9)9.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-TEXT                 PIC X(1024).
  PROCEDURE DIVISION USING CLIENT-STATE L-TEXT.
      MOVE SPACES TO L-TEXT
      MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-SHOWN
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF WS-I > 1
-             STRING "|" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
-         END-IF
-         IF SM-W-LENGTH(WS-I) > 0
-             STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE
-                 INTO L-TEXT WITH POINTER WS-PTR
+         IF SM-W-KIND(WS-I) = WK-SPRITE
+             CONTINUE
+         ELSE
+             ADD 1 TO WS-SHOWN
+             IF WS-SHOWN > 1
+                 STRING "|" DELIMITED BY SIZE INTO L-TEXT WITH POINTER WS-PTR
+             END-IF
+*>           A meter reads as its old label: "Health <value>/<maximum>" or "Food <value>/<maximum>" (half icons).
+             IF SM-W-KIND(WS-I) = WK-METER
+                 MOVE SM-W-STATE(WS-I) TO WS-EDIT
+                 MOVE SM-W-ACTION(WS-I) TO WS-EDIT2
+                 IF SM-W-ARG(WS-I) = 1
+                     STRING "Health " FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+                         INTO L-TEXT WITH POINTER WS-PTR
+                 ELSE
+                     STRING "Food " FUNCTION TRIM(WS-EDIT) "/" FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
+                         INTO L-TEXT WITH POINTER WS-PTR
+                 END-IF
+             END-IF
+             IF SM-W-LENGTH(WS-I) > 0
+                 STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE
+                     INTO L-TEXT WITH POINTER WS-PTR
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

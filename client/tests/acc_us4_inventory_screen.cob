@@ -41,9 +41,9 @@
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
      MOVE "acceptance US4-6 given the starting inventory when the world is shown then the hotbar "
-         & "shows slots 0 to 8 with their counts, slot 0 held, and an icon for each stack" TO TL-CASE
+         & "shows slots 0 to 8 with their counts, bare slots (the held one is the selection sprite), and an icon for each stack" TO TL-CASE
      PERFORM SLOTS-TEXT
-     MOVE "9 0:64:1 1:64:0 2:64:0 3:64:0 4:64:0 5:64:0 6:64:0 7:64:0 8::0 icons 54"
+     MOVE "9 0:64:3 1:64:3 2:64:3 3:64:3 4:64:3 5:64:3 6:64:3 7:64:3 8::3 icons 54"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

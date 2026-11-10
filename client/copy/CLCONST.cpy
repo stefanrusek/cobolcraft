@@ -34,6 +34,10 @@
                                        *> names (the hurt indication); never clicked
  78 WK-ICON                 VALUE 7.   *> a pack icon: argument the icon cell (1 to CL-MAX-ICONS)
                                        *> of the UI atlas (pack-select.cob); never clicked
+ 78 WK-SPRITE               VALUE 8.   *> a GUI sprite (GSP-* row in the argument) drawn 1:1 at x, y; never clicked
+ 78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
+                                       *> action the maximum in half icons; hearts grow right from x, y (the bottom
+                                       *> row), food grows left (x the first icon), rows of 10 going up 10 pixels
 
 *> Widget actions (what a click on the widget does).
  78 ACT-NONE                VALUE 0.
@@ -152,7 +156,7 @@
  78 CL-MAX-GUESTS           VALUE 8.   *> guest connections of a world opened to others (US17)
  78 CL-MAX-ADDRESSES        VALUE 8.   *> local addresses shown on the open-to-others screen
  78 CL-GUEST-OUT            VALUE 65536.   *> each guest's outbound buffer, bytes
- 78 CL-MAX-WIDGETS          VALUE 48.
+ 78 CL-MAX-WIDGETS          VALUE 128.
  78 CL-MAX-CHUNKS           VALUE 1089.
  78 CL-MAX-SECTIONS         VALUE 24.   *> CE-MAX-SECTIONS: the tallest dimension (384 / 16)
  78 CL-MAX-LANG             VALUE 640.
@@ -255,6 +259,17 @@
 *> GUI sprites of the UI atlas (GS-ROW rows).
  78 GSP-BUTTON              VALUE 1.
  78 GSP-SLOT                VALUE 2.
+ 78 GSP-HOTBAR              VALUE 3.
+ 78 GSP-HOTBAR-SELECTION    VALUE 4.
+ 78 GSP-OFFHAND-LEFT        VALUE 5.
+ 78 GSP-CROSSHAIR           VALUE 6.
+ 78 GSP-HEART-CONTAINER     VALUE 7.
+ 78 GSP-HEART-FULL          VALUE 8.
+ 78 GSP-HEART-HALF          VALUE 9.
+ 78 GSP-FOOD-EMPTY          VALUE 10.
+ 78 GSP-FOOD-FULL           VALUE 11.
+ 78 GSP-FOOD-HALF           VALUE 12.
+ 78 GSP-COUNT               VALUE 12.
 
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.

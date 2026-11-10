@@ -12,7 +12,9 @@
 *> bottom-right corner on the layer drawn over the icons (RL-UI-LAYER 1). UI-QUAD writes to the
 *> layer RL-UI-LAYER names: 0 the UI, 1 over the icons, 2 the icons. An overlay (the hurt
 *> indication) is a quad over its rectangle on the swatch its argument names. A pack icon is a quad
-*> over its rectangle on its 16 x 16 icon cell of the UI atlas (local.cob).
+*> over its rectangle on its 16 x 16 icon cell of the UI atlas (local.cob). A sprite widget (WK-SPRITE) is its GUI sprite
+*> over its rectangle; a meter (WK-METER; UI-METER) is the hearts or the food row of the HUD (12 §5.4), one 9 x 9 sprite
+*> quad per icon: the container or empty sprite, then the full or half sprite over it.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-RENDER.
@@ -59,6 +61,18 @@
                  MOVE SM-W-ARG(WS-W) TO WS-SWATCH
              WHEN SM-W-KIND(WS-W) = WK-ICON
                  CALL "UI-ICON-QUAD" USING CLIENT-STATE WS-W
+             WHEN SM-W-KIND(WS-W) = WK-SPRITE
+                 MOVE SM-W-ARG(WS-W) TO WS-SPRITE-ROW
+                 IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
+                     IF GS-W(WS-SPRITE-ROW) > 0
+                         CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
+                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                     END-IF
+                 END-IF
+                 MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-METER
+                 CALL "UI-METER" USING CLIENT-STATE WS-W
+                 MOVE 0 TO WS-LENGTH
          END-EVALUATE
          IF WS-SWATCH >= 0
              IF SM-W-KIND(WS-W) = WK-BUTTON AND GS-W(GSP-BUTTON) > 0
@@ -89,6 +103,64 @@
      END-PERFORM
      GOBACK.
  END PROGRAM UI-RENDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-METER.
+*> USING CLIENT-STATE, widget (a meter): argument 1 hearts (icon k at x + 8 (k mod 10), y - 10 (k div 10): a container
+*> sprite, then full when 2k + 2 <= value, half when 2k + 1 = value) or 2 food (icon k at x - 8 (k mod 10): the empty
+*> sprite, then full or half likewise). The value is the state, the maximum the action (both in half icons).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ICONS               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-NINE                BINARY-LONG VALUE 9.
+ 01 WS-NINE2               BINARY-LONG VALUE 9.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-W                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-W.
+     MOVE GSP-HEART-CONTAINER TO WS-BASE
+     MOVE GSP-HEART-FULL TO WS-FULL
+     MOVE GSP-HEART-HALF TO WS-HALF
+     IF SM-W-ARG(L-W) = 2
+         MOVE GSP-FOOD-EMPTY TO WS-BASE
+         MOVE GSP-FOOD-FULL TO WS-FULL
+         MOVE GSP-FOOD-HALF TO WS-HALF
+     END-IF
+     COMPUTE WS-ICONS = (SM-W-ACTION(L-W) + 1) / 2
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-ICONS
+         COMPUTE WS-Y = SM-W-Y(L-W) - 10 * (WS-K / 10)
+         IF SM-W-ARG(L-W) = 2
+             COMPUTE WS-X = SM-W-X(L-W) - 8 * FUNCTION MOD(WS-K, 10)
+         ELSE
+             COMPUTE WS-X = SM-W-X(L-W) + 8 * FUNCTION MOD(WS-K, 10)
+         END-IF
+         MOVE WS-BASE TO WS-ROW
+         IF GS-W(WS-ROW) > 0
+             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-NINE WS-NINE2
+         END-IF
+         MOVE 0 TO WS-ROW
+         IF 2 * WS-K + 2 <= SM-W-STATE(L-W)
+             MOVE WS-FULL TO WS-ROW
+         END-IF
+         IF 2 * WS-K + 1 = SM-W-STATE(L-W)
+             MOVE WS-HALF TO WS-ROW
+         END-IF
+         IF WS-ROW > 0
+             IF GS-W(WS-ROW) > 0
+                 CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-NINE WS-NINE2
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM UI-METER.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SLOT.
@@ -137,13 +209,18 @@
          IF SM-W-STATE(L-W) = 1
              MOVE SW-SELECTED TO WS-SWATCH
          END-IF
-         IF GS-W(GSP-SLOT) > 0 AND SM-W-STATE(L-W) NOT = 1
-             MOVE GSP-SLOT TO WS-SPRITE-ROW
-             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(L-W) SM-W-Y(L-W)
-                 SM-W-W(L-W) SM-W-H(L-W)
+*>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
+         IF SM-W-STATE(L-W) = 3
+             CONTINUE
          ELSE
-             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(L-W) SM-W-Y(L-W) SM-W-W(L-W)
-                 SM-W-H(L-W) WS-SWATCH
+             IF GS-W(GSP-SLOT) > 0 AND SM-W-STATE(L-W) NOT = 1
+                 MOVE GSP-SLOT TO WS-SPRITE-ROW
+                 CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(L-W) SM-W-Y(L-W)
+                     SM-W-W(L-W) SM-W-H(L-W)
+             ELSE
+                 CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(L-W) SM-W-Y(L-W) SM-W-W(L-W)
+                     SM-W-H(L-W) WS-SWATCH
+             END-IF
          END-IF
      END-IF
      IF WS-COUNT > 0 AND WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT

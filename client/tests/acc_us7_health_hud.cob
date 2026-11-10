@@ -25,7 +25,7 @@
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 24/24" TO TL-EXPECTED
+     MOVE "|||||||||Health 30/30|Food 24/24" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-SET-HEALTH" USING CLIENT-STATE WS-CONN WS-HEALTH WS-FOOD
@@ -34,7 +34,7 @@
          & "current and maximum health Health 17/30" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
+     MOVE "|||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The server made the player creative (Game Event 3, decoded in contract_wire_client).
@@ -44,7 +44,7 @@
          & "shown" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+|||||||||" TO TL-EXPECTED
+     MOVE "||||||||" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 0 TO PL-MODE
@@ -53,7 +53,7 @@
          & "value it had" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
+     MOVE "|||||||||Health 17/30|Food 20/24" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-US7-HEALTH-HUD.

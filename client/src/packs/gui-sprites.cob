@@ -14,10 +14,20 @@
  COPY CLCONST.
  COPY JSONDOC.
  01 WS-PATHS.
-    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/gui/sprites/widget/button.png".
-    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/gui/sprites/container/slot.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/widget/button.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/container/slot.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar_selection.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar_offhand_left.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/crosshair.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/container.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/full.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/half.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_empty.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_full.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_half.png".
  01 WS-PATH-TABLE REDEFINES WS-PATHS.
-    05 WS-SPRITE-PATH      PIC X(64) OCCURS 2 TIMES.
+    05 WS-SPRITE-PATH      PIC X(80) OCCURS 12 TIMES.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-META-PATH           PIC X(256).
@@ -54,7 +64,7 @@
          MOVE 0 TO GS-TOTAL-H GS-MAX-W
      END-IF
      MOVE 0 TO WS-Y
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > GSP-COUNT
          MOVE SPACES TO WS-PATH
          MOVE WS-SPRITE-PATH(WS-K) TO WS-PATH
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
