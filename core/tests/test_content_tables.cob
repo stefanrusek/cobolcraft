@@ -700,11 +700,13 @@
 *> Dimension rows (§5.1, §15.1, §15.5; see the dimension cases).
  01 WS-DIMENSION-ROWS.
     05 FILLER PIC X(100) VALUE
-       "cobolcraft:main 0 cobolcraft:surface 0 256 48 1 1 1 1 -1 0 2".
+       "cobolcraft:main 0 cobolcraft:surface 0 256 48 1 1 1 1 -1 0 2 5 2".
     05 FILLER PIC X(100) VALUE
-       "cobolcraft:subroutine 1 cobolcraft:sunless 0 128 32 2 2 0 0 2 1 1".
+       "cobolcraft:subroutine 1 cobolcraft:sunless 0 128 32 2 2 0 0 2 1 1 5 2".
+    05 FILLER PIC X(100) VALUE
+       "minecraft:overworld 0 minecraft:overworld -64 384 63 3 1 1 1 -1 2 0 16 7".
  01 WS-DIMENSION-TABLE REDEFINES WS-DIMENSION-ROWS.
-    05 WS-DIMENSION-ROW    PIC X(100) OCCURS 2 TIMES.
+    05 WS-DIMENSION-ROW    PIC X(100) OCCURS 3 TIMES.
  PROCEDURE DIVISION.
 *>   Block ids, block-state ids and palette widths (§1.1, §1.2, §4.3).
      MOVE "test content tables block id constants" TO TL-CASE
@@ -1108,6 +1110,8 @@
          MOVE DM-BIOME(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE DM-EXTRA(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE DM-TRAVEL-TO(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-BLOCK-BITS(WS-I) TO WS-NUM PERFORM ADD-NUM
+         MOVE DM-BIOME-BITS(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE WS-DIMENSION-ROW(WS-I) TO TL-EXPECTED
          PERFORM ASSERT-ROW
      END-PERFORM
@@ -1124,7 +1128,7 @@
      MOVE DIM-GEN-SUBROUTINE TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-LIGHT-STANDIN TO WS-NUM PERFORM ADD-NUM
      MOVE DIM-LIGHT-BLOCK-ONLY TO WS-NUM PERFORM ADD-NUM
-     MOVE "1 2 2 1 2 1 2" TO TL-EXPECTED
+     MOVE "1 2 3 1 2 1 2" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables subroutine generator constants" TO TL-CASE
@@ -1170,9 +1174,9 @@
      MOVE RULE-MAX-FOOD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "test content tables day length (standin-content §4.8: Time 0 to 29999)" TO TL-CASE
+     MOVE "test content tables day length (shared rule 33 §3: Time 0 to 23999)" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 30000 TO TL-EXPECTED-N
+     MOVE 24000 TO TL-EXPECTED-N
      MOVE RULE-DAY-LENGTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

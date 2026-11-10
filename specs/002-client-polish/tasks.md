@@ -562,8 +562,8 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 - [x] T0321 [US2-core] Write test `core/tests/test_cells.cob` for the `CELLS.cpy` layout: 2-byte state get and set, 4-bit light packing, sections derived from the dimension's `min_y` and `height` (24 in the overworld), three dimensions (`core/copy/CORESTATE.cpy` `CORE-MAX-DIMS` 3)
 - [x] T0322 [US2-core] Replace `core/copy/CHUNKMEM.cpy` by `contract/copy/CELLS.cpy` in `core/src/world.cob` and `core/copy/CORESTATE.cpy` (cell width, section count, `CORE-MAX-DIMS` 3)
-- [ ] T0323 [US2-core] Write test `core/tests/test_chunks_stream24.cob`: the chunk packet the core builds for a case equals the 24-section fixture and loads through `PB-GET-CHUNK-24`
-- [ ] T0324 [US2-core] Switch `core/src/chunks-stream.cob` to `PB-PUT-CHUNK-24`
+- [x] T0323 [US2-core] Write test `core/tests/test_chunks_stream24.cob`: the chunk packet the core builds for a case equals the 24-section fixture and loads through `PB-GET-CHUNK-24`
+- [x] T0324 [US2-core] Switch `core/src/chunks-stream.cob` to `PB-PUT-CHUNK-24`
 - [ ] T0325 [US2-core] Write test `core/tests/test_block_lookup.cob`: world, blocks and worldgen code resolves block states only through `CONTENT-BLOCK-*` for both sets (no `ST-` or `BLK-` constants)
 - [ ] T0326 [US2-core] Replace the `ST-` references in `core/src/blocks.cob`, `core/src/world.cob`, `core/src/worldgen.cob`, `core/src/chunks-stream.cob` by `CONTENT-*` lookups and delete `core/copy/BLOCKS.cpy`
 - [ ] T0327 [US2-core] Replace the `ST-`/item/recipe/mob constants in `core/src/registries.cob`, `core/src/login.cob`, `core/src/config-phase.cob` by registries from `CONTENT-REGISTRY-*` and delete `core/copy/REGISTRY.cpy`, `ITEMS.cpy`, `RECIPES.cpy`, `MOBS.cpy`, `ENTITYTYPES.cpy` (the cobolcraft values now live in the content package's built-in layer)
@@ -575,12 +575,12 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T0333 [US2-core] Write acceptance test `core/tests/acc_f2us2_world_type.cob`: scenarios US2-1/US2-3 (new world records its type; reopening yields the same type; a standard world with packs not `ok` is refused with the status word, FR-004; an old 001 world with no `WorldType` and no `dimensions/minecraft/` folder opens as cobolcraft; a folder with `dimensions/` and no `level.dat`, or standard folders and no `WorldType`, is refused, `docs/design/world-types.md` §2.1 rules 2 and 3, WT-24) [SC-011]
 - [ ] T0334 [US2-core] Implement `CORE-WORLD-OPEN` type handling, the new statuses and `CS-WORLD-TYPE`, `CS-GENERATED-DIR`, `CS-GAME-DIR` in `core/src/api.cob` and `core/src/level-data.cob`
 - [ ] T0335 [US2-core] Write edge-case test `core/tests/acc_f2us2_packs_changed.cob` (spec edge case, `docs/design/world-types.md` WT-6, WT-24): a standard world opened after the generated packs were deleted is refused with the reason; opened after they were rebuilt from the accepted jar it opens, and `ContentJar` is informational (no refusal) [FR-003, FR-004, FR-005, FR-037; SC-011]
-- [ ] T0336 [US2-core] Write test `core/tests/test_seed_text.cob` for `CS-SEED-TEXT` to seed with the worked examples of Round SEED (empty text gives a random seed)
-- [ ] T0337 [US2-core] Implement the seed text rule in `core/src/seed-text.cob`
+- [x] T0336 [US2-core] Write test `core/tests/test_seed_text.cob` for `CS-SEED-TEXT` to seed with the worked examples of Round SEED (empty text gives a random seed)
+- [x] T0337 [US2-core] Implement the seed text rule in `core/src/seed-text.cob`
 - [ ] T0338 [US2-core] Write acceptance test `core/tests/acc_f2us2_shared_rules.cob` (US2-4): max health 20, food 20, the hit window and hurt cooldown, fall damage and exhaustion of `docs/protocol/13`/`17`/`18` apply in both types; day length 24,000 ticks (33) [FR-003, FR-004, FR-005, FR-037; SC-011]
 - [ ] T0339 [US2-core] Make `acc_f2us2_shared_rules` pass: delete the stand-in constants in `core/copy/RULES.cpy`, the `CW-TIME` range in `core/copy/CORESTATE.cpy` and the stand-in branches of `core/src/health.cob`, `core/src/hunger.cob`, `core/src/movement.cob`, `core/src/world.cob`
-- [ ] T0340 [US2-core] Write test `core/tests/test_time_rebase.cob`: an old world's `level.dat` time values re-base onto the standard timeline of 33 when it opens (data-model §6)
-- [ ] T0341 [US2-core] Implement the time re-base in `core/src/level-data.cob`
+- [x] T0340 [US2-core] Write test `core/tests/test_time_rebase.cob`: an old world's `level.dat` time values re-base onto the standard timeline of 33 when it opens (data-model §6)
+- [x] T0341 [US2-core] Implement the time re-base in `core/src/level-data.cob`
 - [ ] T0342 [US2-core] Write test `core/tests/test_itemphys_41_1.cob` for The entity (`docs/protocol/41-item-entity-physics.md` §1): every rule, table row, formula and worked case of the section; case names start `acceptance US2 41§1 The entity` (FR-037)
 - [ ] T0343 [US2-core] Implement The entity (§1 of `41-item-entity-physics.md`) in `core/src/itemphys-41.cob` so the test passes (create the file with the first section of the document)
 - [ ] T0344 [US2-core] Write test `core/tests/test_itemphys_41_2.cob` for Spawning (`docs/protocol/41-item-entity-physics.md` §2): every rule, table row, formula and worked case of the section; case names start `acceptance US2 41§2 Spawning` (FR-037)
@@ -600,7 +600,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T0358 [US2-core] Review task (mechanical, FR-037): run `for f in docs/protocol/41-*.md; do id=$(basename $f .md | awk -F- '{p=""; for(i=2;i<=NF;i++) if($i ~ /^([0-9]+|x1|x2)$/) p=$i; print (p==""?$1:$1"-"p)}'); grep -E '^## [0-9]' $f | grep -viE 'worked|validation|open question|reader|naming|checklist|closing' | awk '{n=$2; sub(/\.$/,"",n); print n}' | while read n; do grep -q "acceptance US2 ${id}§${n} " core/tests/*.cob || echo "MISSING ${id}§${n}"; done; done` and record that it prints nothing
 - [ ] T0359 [US2-core] Write test `core/tests/test_weather_shared.cob`: the weather mechanism of 33 for both types (`CS-WEATHER-CHANGES` maps to the gamerule)
 - [ ] T0360 [US2-core] Make the weather engine follow 33 in `core/src/weather.cob`
-- [ ] T0361 [US2-core] Write implementation tests in `core/tests/test_us2_cover.cob` for the lines of the files above that the tests leave unexecuted
+- [x] T0361 [US2-core] Write implementation tests in `core/tests/test_us2_cover.cob` for the lines of the files above that the tests leave unexecuted
 - [ ] T0362 [US2-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 30: US7-core — survival abilities

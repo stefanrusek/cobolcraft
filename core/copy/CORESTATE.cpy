@@ -48,7 +48,7 @@
     05 CW-FOLDER-LENGTH      BINARY-LONG.
     05 CW-NAME               PIC X(64).
     05 CW-GAME-MODE          PIC 9.              *> level.dat GameMode (07 §9.2): new players, host kinds 1-2
-    05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 29999 (standin §4.8)
+    05 CW-TIME               BINARY-DOUBLE.      *> time of day 0 to 23999 (RULES.cpy RULE-DAY-LENGTH; 33 §3)
     05 CW-TICKS              BINARY-DOUBLE.      *> ticks run since the world was opened
     05 CW-SPAWN-X            FLOAT-LONG.
     05 CW-SPAWN-Y            FLOAT-LONG.
