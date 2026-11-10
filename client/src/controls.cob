@@ -388,3 +388,23 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-SPRINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-CTRL-DOWN.
+*> USING CLIENT-STATE, down out (1 = a Ctrl key is held): the left Ctrl key is down, or the modifier
+*> bits of the last key event (IN-MODS) name Control. Screens read it for the Ctrl-click of the hidden
+*> debug world type.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-DOWN                 PIC 9.
+ PROCEDURE DIVISION USING CLIENT-STATE L-DOWN.
+     MOVE 0 TO L-DOWN
+     IF IN-KEY-DOWN(CC-KEY-LEFT-CONTROL + 1) = 1
+             OR FUNCTION MOD(IN-MODS / CC-MOD-CONTROL, 2) = 1
+         MOVE 1 TO L-DOWN
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-CTRL-DOWN.

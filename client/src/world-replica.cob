@@ -172,8 +172,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STATE-LIMIT.
-*> USING limit out: the number of block states the client knows: the open content set's, else the
-*> stand-in table's (an id at or above it decodes as void).
+*> USING limit out: the number of block states the client knows: the open content set's (once its
+*> counts are set: a client set has none before Finish Configuration), else the stand-in table's (an
+*> id at or above it decodes as void).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -182,7 +183,7 @@
  01 L-LIMIT                BINARY-LONG.
  PROCEDURE DIVISION USING L-LIMIT.
      MOVE CL-STAND-STATES TO L-LIMIT
-     IF CT-OPEN = 1
+     IF CT-OPEN = 1 AND CT-STATE-COUNT > 0
          MOVE CT-STATE-COUNT TO L-LIMIT
      END-IF
      GOBACK.
@@ -320,7 +321,7 @@
      MOVE WR-BLOCK-BITS TO WS-BLOCK-BITS
      IF WS-BLOCK-BITS = 0
          MOVE 5 TO WS-BLOCK-BITS
-         IF CT-OPEN = 1
+         IF CT-OPEN = 1 AND CT-STATE-COUNT > 0
              MOVE 0 TO WS-BLOCK-BITS
              PERFORM UNTIL 2 ** WS-BLOCK-BITS >= CT-STATE-COUNT
                  ADD 1 TO WS-BLOCK-BITS

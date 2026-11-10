@@ -318,3 +318,64 @@
      END-PERFORM
      GOBACK.
  END PROGRAM REGISTRY-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WT16-ADD.
+*> USING CLIENT-STATE, connection, packet (Registry Data id 7 or Update Tags id 14, positioned after the
+*> id), packet id: on a network game connection the packet's body goes to CONTENT-CLIENT-REGISTRY-ADD, which
+*> builds the connection's content set (WT-16: world-types.md §7.4); the packet is left unread for its own
+*> reader. A hosted world's connection (memory) has its set from the core: nothing is added. A set the
+*> core holds open is not touched (CL-SET-OWNED says the client's own).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CONTENT.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 B-BODY                 PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-PACKET.
+    05 L-ADDR              USAGE POINTER.
+    05 L-CAPACITY          BINARY-LONG.
+    05 L-LENGTH            BINARY-LONG.
+    05 L-POS               BINARY-LONG.
+    05 L-ERROR             PIC 9.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-PACKET L-ID.
+     IF L-CONN = CONN-GAME AND CN-MEMORY(L-CONN) = 0 AND (CL-SET-OWNED = 1 OR CT-OPEN = 0)
+         MOVE 1 TO CL-SET-OWNED
+         SET ADDRESS OF B-BODY TO L-ADDR
+         COMPUTE WS-LENGTH = L-LENGTH - L-POS
+         CALL "CONTENT-CLIENT-REGISTRY-ADD" USING L-ID B-BODY(L-POS + 1:1) WS-LENGTH WS-STATUS
+     END-IF
+     GOBACK.
+ END PROGRAM WT16-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WT16-FINISH.
+*> USING CLIENT-STATE (Finish Configuration of a game connection): when the client built the set, the world
+*> type is decided from minecraft:dimension_type (CONTENT-CLIENT-FINISH: cobolcraft when an entry keyed
+*> cobolcraft:surface is there, else standard) and kept in CL-WORLD-TYPE; the palette width and the
+*> per-state tables are derived again. A set that decides nothing (no dimension type came) is closed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CL-SET-OWNED = 1
+         CALL "CONTENT-CLIENT-FINISH" USING WS-TYPE WS-STATUS
+         IF WS-STATUS = CT-OK
+             MOVE WS-TYPE TO CL-WORLD-TYPE
+             MOVE 0 TO ST-READY WR-BLOCK-BITS
+         ELSE
+             CALL "CONTENT-CLOSE"
+             MOVE 0 TO CL-SET-OWNED CL-WORLD-TYPE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM WT16-FINISH.

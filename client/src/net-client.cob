@@ -288,7 +288,7 @@
  PROGRAM-ID. NET-CLOSE.
 *> USING CLIENT-STATE, connection: closes the socket (a memory connection: CORE-CONN-CLOSED, unless
 *> the core has handed it back already); the connection is free again. Closing the game connection
-*> removes the server's packs (08 §9.5).
+*> removes the server's packs (08 §9.5) and closes the content set the client built for it (WT-16).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -307,6 +307,10 @@
      MOVE PH-NONE TO CN-PHASE(L-CONN)
      IF L-CONN = CONN-GAME
          CALL "SERVER-PACKS-CLEAR" USING CLIENT-STATE
+         IF CL-SET-OWNED = 1
+             CALL "CONTENT-CLOSE"
+             MOVE 0 TO CL-SET-OWNED CL-WORLD-TYPE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM NET-CLOSE.

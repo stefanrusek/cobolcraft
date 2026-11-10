@@ -17,6 +17,8 @@
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
+    05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-WORLD-TYPE         BINARY-LONG.     *> CT-TYPE-* the game connection's content set was opened as (WT-16)
     05 CL-PACKS-STATUS       BINARY-LONG.     *> CT-PACKS-* of the start-up check (CORE-PACKS-STATUS)
     05 CL-PACKS-REASON       PIC X(128).      *> its reason text (a log line, not shown)
 *>  ---- run control ----
@@ -120,6 +122,9 @@
        10 SP-FOLDER          PIC X(80).      *> the hosted world's folder under saves/
        10 SP-FOLDER-LENGTH   BINARY-LONG.
        10 SP-CREATE-MODE     BINARY-LONG.    *> create-world screen: 0 survival, 1 creative
+       10 SP-CREATE-TYPE     BINARY-LONG.    *> create-world screen: world type, CT-TYPE-* (0 standard,
+                                             *> the default; 1 cobolcraft; 2 the hidden debug type)
+       10 SP-CREATE-REFUSED  PIC 9.          *> 1 = Create (or Play) was refused: the packs are not ok
 *>     Opening to others (US17; sp-host.cob, screens/open-to-others.cob): the screen's choices
 *>     (guest mode 0 survival or 1 creative; 1 = guests may use operator commands), the listener
 *>     (0 = not opened) and its port, the local addresses shown, and the guest connections: the
@@ -148,6 +153,7 @@
           15 WL-NAME         PIC X(64).      *> level.dat LevelName (the folder name without one)
           15 WL-NAME-LENGTH  BINARY-LONG.
           15 WL-MODE         BINARY-LONG.    *> level.dat GameMode
+          15 WL-TYPE         PIC X(16).      *> level.dat WorldType (cobolcraft when absent)
 *>  ---- local player and the joined world (05a Login, 03 registries) ----
     05 PL-STATE.
        10 PL-ENTITY-ID       BINARY-LONG.

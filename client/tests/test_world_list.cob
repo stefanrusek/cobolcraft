@@ -74,7 +74,7 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "world list Create New World opens the create-world screen with the default name and "
          & "survival" TO TL-CASE
-     MOVE "14 Create New World|World name|New World|Game mode: Survival|Create|Cancel"
+     MOVE "14 Create New World|World name|New World|Game mode: Survival|World type: Standard|Create|Cancel"
          TO TL-EXPECTED
      MOVE SM-SCREEN TO WS-E1
      MOVE SPACES TO TL-OBSERVED
@@ -87,8 +87,8 @@
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "world list the game mode control switches survival and creative" TO TL-CASE
-     MOVE "Create New World|World name|New World|Game mode: Creative|Cr / "
-         & "Create New World|World name|New World|Game mode: Survival|Cr" TO TL-EXPECTED
+     MOVE "Create New World|World name|New World|Game mode: Creative|Wo / "
+         & "Create New World|World name|New World|Game mode: Survival|Wo" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING WS-SCREENS(1:60) " / " WS-TEXT(1:60) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -150,6 +150,8 @@
      MOVE "Keep" TO WS-NAME
      MOVE 4 TO WS-NAME-LENGTH
      CALL "TEST-TYPE" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH
+*>   (the create screen's default type is standard; these worlds are cobolcraft ones)
+     MOVE 1 TO SP-CREATE-TYPE
      MOVE ACT-CREATE-WORLD TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
@@ -162,8 +164,8 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "world list saves/ listed with cc_fs_list: each world as <LevelName> (<folder>)"
          TO TL-CASE
-     MOVE "Single-player Worlds|Keep (Keep)|New World (New World)|Play|Create New World|Delete|"
-         & "Back" TO TL-EXPECTED
+     MOVE "Single-player Worlds|Keep (Keep)  Type: CobolCraft|New World (New World)  Type: "
+         & "CobolCraft|Play|Create New World|Delete|Back" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -228,7 +230,8 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "acceptance US16-1 after confirming, Delete removes the world's folder and the list "
          & "shows the rest" TO TL-CASE
-     MOVE "gone 1 13 Single-player Worlds|New World (New World)|Play|Create New World|Delete|Back"
+     MOVE "gone 1 13 Single-player Worlds|New World (New World)  Type: CobolCraft|Play|Create New "
+         & "World|Delete|Back"
          TO TL-EXPECTED
      MOVE 0 TO WS-E1
      CALL "CBL_CHECK_FILE_EXIST" USING WS-FOLDER-PATH WS-INFO

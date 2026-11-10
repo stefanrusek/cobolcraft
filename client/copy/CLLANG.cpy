@@ -1,8 +1,9 @@
 *> English texts of the built-in pack (docs/protocol/08-resource-packs.md §10.8, every key of its
 *> tables 10.8.1 to 10.8.6, in table order), transcribed for assets/cobolcraft/lang/en_us.json of
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
-*> the cobolcraft.packs.* messages of 22 §9.2 and docs/design/builtin-ui-art.md §7.2 (the title banner).
- 78 BI-LANG-COUNT           VALUE 215.
+*> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
+*> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
+ 78 BI-LANG-COUNT           VALUE 220.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -436,7 +437,17 @@
         & "extraction tool again.".
     05 FILLER PIC X(48) VALUE "cobolcraft.packs.damaged".
     05 FILLER PIC X(128) VALUE "The Minecraft content is damaged. Run the extraction tool with --force.".
+    05 FILLER PIC X(48) VALUE "cobolcraft.world_type.standard".
+    05 FILLER PIC X(128) VALUE "Standard".
+    05 FILLER PIC X(48) VALUE "cobolcraft.world_type.cobolcraft".
+    05 FILLER PIC X(128) VALUE "CobolCraft".
+    05 FILLER PIC X(48) VALUE "cobolcraft.world_type.standard.unavailable".
+    05 FILLER PIC X(128) VALUE "Standard worlds need the Minecraft content. See the title screen message.".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.create_world.type".
+    05 FILLER PIC X(128) VALUE "World type: %s".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.world_list.type".
+    05 FILLER PIC X(128) VALUE "Type: %s".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 215 TIMES.
+    05 BI-LANG OCCURS 220 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).
