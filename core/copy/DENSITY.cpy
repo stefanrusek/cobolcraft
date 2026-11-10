@@ -18,3 +18,11 @@
        10 DN-B-MAIN         BINARY-LONG.
        10 DN-B-XZ-MUL       FLOAT-LONG.
        10 DN-B-Y-MUL        FLOAT-LONG.
+*> Grid mode of the interpolated node (gen-stages.cob): while DNG-ACTIVE is 1 an interpolated node that has a grid in the
+*> chunk grids at DNG-PTR (GENGRID.cpy) takes its eight corner values from it instead of evaluating its input there, for a
+*> position inside the chunk column whose west and north corner is (DNG-X0, DNG-Z0).
+ 01 DN-GRID-CTL EXTERNAL.
+    05 DNG-ACTIVE           BINARY-LONG.
+    05 DNG-X0               BINARY-LONG.
+    05 DNG-Z0               BINARY-LONG.
+    05 DNG-PTR              USAGE POINTER.

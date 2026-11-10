@@ -155,7 +155,8 @@
      MOVE 0 TO L-FITNESS
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
          COMPUTE WS-F = CL-OFFSET(WS-I) * CL-OFFSET(WS-I)
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+*>       the sum only grows: a point already no better than the best so far cannot win (a tie keeps the earlier point)
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6 OR (L-INDEX > 0 AND WS-F >= L-FITNESS)
              EVALUATE TRUE
                  WHEN L-T(WS-K) > CL-MAX(WS-I, WS-K)
                      COMPUTE WS-D = L-T(WS-K) - CL-MAX(WS-I, WS-K)
@@ -166,7 +167,7 @@
              END-EVALUATE
              COMPUTE WS-F = WS-F + WS-D * WS-D
          END-PERFORM
-         IF L-INDEX = 0 OR WS-F < L-FITNESS
+         IF L-INDEX = 0 OR (WS-K > 6 AND WS-F < L-FITNESS)
              MOVE WS-I TO L-INDEX
              MOVE CL-BIOME(WS-I) TO L-BIOME
              MOVE WS-F TO L-FITNESS

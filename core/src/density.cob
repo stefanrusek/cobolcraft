@@ -240,7 +240,12 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
+ COPY DENSITY.
+ 01 DG-GRID BASED.
+ COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
  LOCAL-STORAGE SECTION.
+ 01 LS-SLOT                BINARY-LONG.
+ 01 LS-GI                  BINARY-LONG.
  01 LS-RX                  BINARY-LONG.
  01 LS-RY                  BINARY-LONG.
  01 LS-RZ                  BINARY-LONG.
@@ -272,8 +277,25 @@
      COMPUTE LS-RX = FUNCTION MOD(L-X, LS-CX)
      COMPUTE LS-RY = FUNCTION MOD(L-Y, LS-CY)
      COMPUTE LS-RZ = FUNCTION MOD(L-Z, LS-CX)
+*>   grid mode: the slot of this node in the chunk grids, 0 when the node has none or the position is outside them
+     MOVE 0 TO LS-SLOT
+     IF DNG-ACTIVE = 1 AND LS-CX = 4 AND LS-CY = 8
+         AND L-X >= DNG-X0 AND L-X < DNG-X0 + 16 AND L-Z >= DNG-Z0 AND L-Z < DNG-Z0 + 16
+         AND L-Y >= -64 AND L-Y < 320
+         SET ADDRESS OF DG-GRID TO DNG-PTR
+         PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > DG-G-COUNT OR LS-SLOT > 0
+             IF DG-G-NODE(LS-I) = L-NODE
+                 MOVE LS-I TO LS-SLOT
+             END-IF
+         END-PERFORM
+     END-IF
      IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
-         CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
+         IF LS-SLOT > 0
+             COMPUTE LS-GI = ((L-X - DNG-X0) / 4 * 5 + (L-Z - DNG-Z0) / 4) * 49 + (L-Y + 64) / 8 + 1
+             MOVE DG-G-VAL((LS-SLOT - 1) * 1225 + LS-GI) TO L-RESULT
+         ELSE
+             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
+         END-IF
          GOBACK
      END-IF
      COMPUTE LS-X0 = L-X - LS-RX
@@ -296,7 +318,12 @@
          COMPUTE LS-RY = LS-Y0 + FUNCTION MOD(LS-Q, 2) * LS-CY
          COMPUTE LS-Q = LS-I / 4
          COMPUTE LS-RZ = LS-Z0 + LS-Q * LS-CX
-         CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) LS-RX LS-RY LS-RZ LS-G-ITEM(LS-I + 1)
+         IF LS-SLOT > 0
+             COMPUTE LS-GI = ((LS-RX - DNG-X0) / 4 * 5 + (LS-RZ - DNG-Z0) / 4) * 49 + (LS-RY + 64) / 8 + 1
+             MOVE DG-G-VAL((LS-SLOT - 1) * 1225 + LS-GI) TO LS-G-ITEM(LS-I + 1)
+         ELSE
+             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) LS-RX LS-RY LS-RZ LS-G-ITEM(LS-I + 1)
+         END-IF
      END-PERFORM
      CALL "NOISE-TRILERP" USING LS-FX LS-FY LS-FZ LS-G L-RESULT
      GOBACK.
