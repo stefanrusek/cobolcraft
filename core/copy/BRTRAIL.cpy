@@ -15,6 +15,11 @@
        10 BT-INF             BINARY-LONG.   *> 1 = a float or double that parsed to infinity
        10 BT-IVAL            BINARY-DOUBLE.
        10 BT-DVAL            FLOAT-LONG.
+       10 BT-AUX             BINARY-LONG.
+       10 BT-IVAL2           BINARY-DOUBLE.
+       10 BT-DVAL2           FLOAT-LONG.
+       10 BT-KIND            BINARY-LONG OCCURS 3 TIMES.
+       10 BT-NUM             FLOAT-LONG OCCURS 3 TIMES.
     05 BT-CTX-COUNT         BINARY-LONG.
     05 BT-CTX-START         BINARY-LONG OCCURS 8 TIMES.
     05 BT-CURSOR            BINARY-LONG.

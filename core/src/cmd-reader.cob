@@ -41,6 +41,36 @@
  END PROGRAM BR-RAISE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-RAISE-3.
+*> USING key (PIC X(48)), argument count, argument 1 and its length, argument 2 and its length, argument 3 and its
+*> length (PIC X(64) and BINARY-LONG), cursor: an exception with up to three arguments.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ARG1                 PIC X(64).
+ 01 L-LEN1                 BINARY-LONG.
+ 01 L-ARG2                 PIC X(64).
+ 01 L-LEN2                 BINARY-LONG.
+ 01 L-ARG3                 PIC X(64).
+ 01 L-LEN3                 BINARY-LONG.
+ 01 L-CURSOR               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-COUNT L-ARG1 L-LEN1 L-ARG2 L-LEN2 L-ARG3 L-LEN3 L-CURSOR.
+     MOVE L-KEY TO BR-E-KEY
+     MOVE L-COUNT TO BR-E-ARG-COUNT
+     MOVE L-LEN1 TO BR-E-ARG-LENGTH(1)
+     MOVE L-ARG1 TO BR-E-ARG(1)
+     MOVE L-LEN2 TO BR-E-ARG-LENGTH(2)
+     MOVE L-ARG2 TO BR-E-ARG(2)
+     MOVE L-LEN3 TO BR-E-ARG-LENGTH(3)
+     MOVE L-ARG3 TO BR-E-ARG(3)
+     MOVE L-CURSOR TO BR-E-CURSOR
+     GOBACK.
+ END PROGRAM BR-RAISE-3.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-RAISE-PLAIN.
 *> USING key (PIC X(48)), cursor: an exception with no arguments.
  DATA DIVISION.
@@ -211,22 +241,132 @@
  END PROGRAM BR-NUMBER-TEXT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BR-ARG-PARSE.
+ PROGRAM-ID. BR-READ-STRING.
+*> USING mode (0 readUnquotedString, 1 readString: a quoted string with the escapes of 15a §1.4 or an
+*> unquoted run), cursor (BINARY-LONG, in and out: after what was read, at the offending character
+*> on a failure), string out (PIC X(1024)), length out. A failure sets BR-E-KEY (the unclosed quote
+*> at the end of the input, an invalid escape with the character, 15 §5.1); the value read so far
+*> is kept. The unquoted run is 0-9 A-Z a-z _ - . + (15a §1.2) and may be empty.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ 01 WS-CH                  PIC X.
+ 01 WS-QUOTE               PIC X.
+ 01 WS-ESCAPED             BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-IS-UNQUOTED         BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-ONE-ARG             BINARY-LONG VALUE 1.
+ 01 WS-NO-ARGS             BINARY-LONG VALUE 0.
+ 01 WS-LENGTH-1            BINARY-LONG VALUE 1.
+ 01 WS-LENGTH-0            BINARY-LONG VALUE 0.
+ 01 WS-LENGTH-Z            BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-CURSOR               BINARY-LONG.
+ 01 L-STR                  PIC X(1024).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-MODE L-CURSOR L-STR L-LENGTH.
+     GO TO MAIN-LINE.
+
+ TEST-UNQUOTED.
+     MOVE 0 TO WS-IS-UNQUOTED
+     IF (WS-CH >= "0" AND WS-CH <= "9") OR (WS-CH >= "A" AND WS-CH <= "Z")
+             OR (WS-CH >= "a" AND WS-CH <= "z") OR WS-CH = "_" OR WS-CH = "-" OR WS-CH = "."
+             OR WS-CH = "+"
+         MOVE 1 TO WS-IS-UNQUOTED
+     END-IF.
+
+ READ-UNQUOTED.
+     MOVE 1 TO WS-IS-UNQUOTED
+     PERFORM UNTIL L-CURSOR >= BR-IN-LENGTH OR WS-IS-UNQUOTED = 0
+         MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
+         PERFORM TEST-UNQUOTED
+         IF WS-IS-UNQUOTED = 1
+             ADD 1 TO L-LENGTH
+             MOVE WS-CH TO L-STR(L-LENGTH:1)
+             ADD 1 TO L-CURSOR
+         END-IF
+     END-PERFORM.
+
+ READ-UNTIL-QUOTE.
+     MOVE 0 TO WS-ESCAPED WS-DONE
+     PERFORM UNTIL WS-DONE = 1
+         IF L-CURSOR >= BR-IN-LENGTH
+             MOVE "parsing.quote.expected.end" TO WS-KEY
+             MOVE BR-IN-LENGTH TO WS-RC
+             CALL "BR-RAISE" USING WS-KEY WS-NO-ARGS WS-A1 WS-LENGTH-0 WS-A2 WS-LENGTH-Z WS-RC
+             MOVE 1 TO WS-DONE
+         ELSE
+             MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
+             EVALUATE TRUE
+                 WHEN WS-ESCAPED = 1 AND (WS-CH = WS-QUOTE OR WS-CH = "\")
+                     ADD 1 TO L-LENGTH
+                     MOVE WS-CH TO L-STR(L-LENGTH:1)
+                     MOVE 0 TO WS-ESCAPED
+                     ADD 1 TO L-CURSOR
+                 WHEN WS-ESCAPED = 1
+                     MOVE "parsing.quote.escape" TO WS-KEY
+                     MOVE WS-CH TO WS-A1
+                     CALL "BR-RAISE" USING WS-KEY WS-ONE-ARG WS-A1 WS-LENGTH-1 WS-A2 WS-LENGTH-Z
+                         L-CURSOR
+                     MOVE 1 TO WS-DONE
+                 WHEN WS-CH = "\"
+                     MOVE 1 TO WS-ESCAPED
+                     ADD 1 TO L-CURSOR
+                 WHEN WS-CH = WS-QUOTE
+                     ADD 1 TO L-CURSOR
+                     MOVE 1 TO WS-DONE
+                 WHEN OTHER
+                     ADD 1 TO L-LENGTH
+                     MOVE WS-CH TO L-STR(L-LENGTH:1)
+                     ADD 1 TO L-CURSOR
+             END-EVALUATE
+         END-IF
+     END-PERFORM.
+
+ MAIN-LINE.
+     MOVE 0 TO L-LENGTH
+     MOVE SPACES TO L-STR
+     IF L-MODE = 1 AND L-CURSOR < BR-IN-LENGTH
+         MOVE BR-IN-TEXT(L-CURSOR + 1:1) TO WS-CH
+         IF WS-CH = '"' OR WS-CH = "'"
+             MOVE WS-CH TO WS-QUOTE
+             ADD 1 TO L-CURSOR
+             PERFORM READ-UNTIL-QUOTE
+         ELSE
+             PERFORM READ-UNQUOTED
+         END-IF
+     ELSE
+         IF L-MODE = 0
+             PERFORM READ-UNQUOTED
+         END-IF
+     END-IF.
+ END PROGRAM BR-READ-STRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-READ-NUMBER.
+*> USING kind (BR-P-FLOAT, -DOUBLE, -INTEGER or -LONG), has minimum, has maximum, integer minimum, integer
+*> maximum (BINARY-DOUBLE), double minimum, double maximum (FLOAT-LONG), integer out, double out, infinity
+*> flag out: readInt, readLong, readFloat or readDouble from BR-IN-CURSOR (15a §1.3) and the range check of
+*> 15a §5 (the limits default to those of the type). The cursor moves after the number on success; a failure
+*> sets BR-E-KEY (the exception of 15 §5.1, at the start of the number) and leaves the cursor.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
  01 WS-START               BINARY-LONG.
  01 WS-C                   BINARY-LONG.
  01 WS-CH                  PIC X.
- 01 WS-QUOTE               PIC X.
- 01 WS-ESCAPED             BINARY-LONG.
- 01 WS-DONE                BINARY-LONG.
  01 WS-STR                 PIC X(1024).
  01 WS-STR-LENGTH          BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-RUN-LENGTH          BINARY-LONG.
  01 WS-RUN                 PIC X(1024).
  01 WS-VALID               BINARY-LONG.
- 01 WS-IS-UNQUOTED         BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-FIRST               BINARY-LONG.
  01 WS-NEGATIVE            BINARY-LONG.
@@ -260,12 +400,19 @@
  01 WS-DIGIT-RUN           BINARY-LONG.
  01 WS-HEAD                PIC X(40).
  01 WS-EXPONENT            BINARY-LONG.
+ 01 WS-OUT-KIND            BINARY-LONG.
  LINKAGE SECTION.
- 01 L-NODE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-HAS-MIN              BINARY-LONG.
+ 01 L-HAS-MAX              BINARY-LONG.
+ 01 L-IMIN                 BINARY-DOUBLE.
+ 01 L-IMAX                 BINARY-DOUBLE.
+ 01 L-DMIN                 FLOAT-LONG.
+ 01 L-DMAX                 FLOAT-LONG.
  01 L-INT                  BINARY-DOUBLE.
  01 L-DOUBLE               FLOAT-LONG.
  01 L-INF                  BINARY-LONG.
- PROCEDURE DIVISION USING L-NODE L-INT L-DOUBLE L-INF.
+ PROCEDURE DIVISION USING L-KIND L-HAS-MIN L-HAS-MAX L-IMIN L-IMAX L-DMIN L-DMAX L-INT L-DOUBLE L-INF.
      GO TO MAIN-LINE.
 
 *> ---- raising ------------------------------------------------------------------------------
@@ -282,129 +429,9 @@
      END-IF
      PERFORM RAISE-NOW.
 
-*> ---- the character classes of 15a §1.2 --------------------------------------------------------
- TEST-UNQUOTED.
-     MOVE 0 TO WS-IS-UNQUOTED
-     IF (WS-CH >= "0" AND WS-CH <= "9") OR (WS-CH >= "A" AND WS-CH <= "Z")
-             OR (WS-CH >= "a" AND WS-CH <= "z") OR WS-CH = "_" OR WS-CH = "-" OR WS-CH = "."
-             OR WS-CH = "+"
-         MOVE 1 TO WS-IS-UNQUOTED
-     END-IF.
-
-*> ---- readString / readUnquotedString / readStringUntil (15a §1.4) -------------------------------
-*> From WS-C; the value in WS-STR (WS-STR-LENGTH); a failure sets BR-E-KEY.
- READ-STRING.
-     MOVE 0 TO WS-STR-LENGTH
-     MOVE SPACES TO WS-STR
-     IF WS-C < BR-IN-LENGTH
-         MOVE BR-IN-TEXT(WS-C + 1:1) TO WS-CH
-         IF WS-CH = '"' OR WS-CH = "'"
-             MOVE WS-CH TO WS-QUOTE
-             ADD 1 TO WS-C
-             PERFORM READ-UNTIL-QUOTE
-         ELSE
-             PERFORM READ-UNQUOTED
-         END-IF
-     END-IF.
-
- READ-UNQUOTED.
-     MOVE 1 TO WS-IS-UNQUOTED
-     PERFORM UNTIL WS-C >= BR-IN-LENGTH OR WS-IS-UNQUOTED = 0
-         MOVE BR-IN-TEXT(WS-C + 1:1) TO WS-CH
-         PERFORM TEST-UNQUOTED
-         IF WS-IS-UNQUOTED = 1
-             ADD 1 TO WS-STR-LENGTH
-             MOVE WS-CH TO WS-STR(WS-STR-LENGTH:1)
-             ADD 1 TO WS-C
-         END-IF
-     END-PERFORM.
-
- READ-UNTIL-QUOTE.
-     MOVE 0 TO WS-ESCAPED WS-DONE
-     PERFORM UNTIL WS-DONE = 1
-         IF WS-C >= BR-IN-LENGTH
-             MOVE "parsing.quote.expected.end" TO WS-KEY
-             MOVE 0 TO WS-N-ARGS
-             MOVE BR-IN-LENGTH TO WS-RC
-             PERFORM RAISE-NOW
-             MOVE 1 TO WS-DONE
-         ELSE
-             MOVE BR-IN-TEXT(WS-C + 1:1) TO WS-CH
-             EVALUATE TRUE
-                 WHEN WS-ESCAPED = 1 AND (WS-CH = WS-QUOTE OR WS-CH = "\")
-                     ADD 1 TO WS-STR-LENGTH
-                     MOVE WS-CH TO WS-STR(WS-STR-LENGTH:1)
-                     MOVE 0 TO WS-ESCAPED
-                     ADD 1 TO WS-C
-                 WHEN WS-ESCAPED = 1
-                     MOVE "parsing.quote.escape" TO WS-KEY
-                     MOVE 1 TO WS-N-ARGS
-                     MOVE WS-CH TO WS-A1
-                     MOVE 1 TO WS-L1
-                     MOVE WS-C TO WS-RC
-                     PERFORM RAISE-NOW
-                     MOVE 1 TO WS-DONE
-                 WHEN WS-CH = "\"
-                     MOVE 1 TO WS-ESCAPED
-                     ADD 1 TO WS-C
-                 WHEN WS-CH = WS-QUOTE
-                     ADD 1 TO WS-C
-                     MOVE 1 TO WS-DONE
-                 WHEN OTHER
-                     ADD 1 TO WS-STR-LENGTH
-                     MOVE WS-CH TO WS-STR(WS-STR-LENGTH:1)
-                     ADD 1 TO WS-C
-             END-EVALUATE
-         END-IF
-     END-PERFORM.
-
- DO-STRING.
-     MOVE WS-START TO WS-C
-     EVALUATE BR-N-STRING-KIND(L-NODE)
-         WHEN BR-S-GREEDY
-             MOVE BR-IN-LENGTH TO WS-C
-         WHEN BR-S-PHRASE
-             PERFORM READ-STRING
-         WHEN OTHER
-             PERFORM READ-UNQUOTED
-     END-EVALUATE
-     IF BR-E-KEY = SPACES
-         MOVE WS-C TO BR-IN-CURSOR
-     END-IF.
-
-*> ---- readBoolean (15a §1.4: through readString) ---------------------------------------------
- DO-BOOL.
-     MOVE WS-START TO WS-C
-     PERFORM READ-STRING
-     IF BR-E-KEY = SPACES
-         EVALUATE TRUE
-             WHEN WS-STR-LENGTH = 0
-                 MOVE "parsing.bool.expected" TO WS-KEY
-                 MOVE 0 TO WS-N-ARGS
-                 MOVE WS-C TO WS-RC
-                 PERFORM RAISE-NOW
-             WHEN WS-STR(1:WS-STR-LENGTH) = "true" AND WS-STR-LENGTH = 4
-                 MOVE 1 TO L-INT
-                 MOVE WS-C TO BR-IN-CURSOR
-             WHEN WS-STR(1:WS-STR-LENGTH) = "false" AND WS-STR-LENGTH = 5
-                 MOVE 0 TO L-INT
-                 MOVE WS-C TO BR-IN-CURSOR
-             WHEN OTHER
-                 MOVE "parsing.bool.invalid" TO WS-KEY
-                 MOVE 1 TO WS-N-ARGS
-                 MOVE WS-STR(1:WS-STR-LENGTH) TO WS-A1
-                 MOVE WS-STR-LENGTH TO WS-L1
-                 IF WS-L1 > 64
-                     MOVE 64 TO WS-L1
-                 END-IF
-                 MOVE WS-START TO WS-RC
-                 PERFORM RAISE-NOW
-         END-EVALUATE
-     END-IF.
-
 *> ---- readInt, readLong, readFloat, readDouble and the range check (15a §1.3, §5) -------------
  DO-NUMBER.
-     MOVE BR-N-TYPE(L-NODE) TO WS-KIND
+     MOVE L-KIND TO WS-KIND
      MOVE WS-START TO WS-C
      PERFORM UNTIL WS-C >= BR-IN-LENGTH
          MOVE BR-IN-TEXT(WS-C + 1:1) TO WS-CH
@@ -611,11 +638,11 @@
              COMPUTE WS-MIN-I = -9223372036854775807 - 1
              MOVE 9223372036854775807 TO WS-MAX-I
          END-IF
-         IF BR-N-HAS-MIN(L-NODE) = 1
-             MOVE BR-N-IMIN(L-NODE) TO WS-MIN-I
+         IF L-HAS-MIN = 1
+             MOVE L-IMIN TO WS-MIN-I
          END-IF
-         IF BR-N-HAS-MAX(L-NODE) = 1
-             MOVE BR-N-IMAX(L-NODE) TO WS-MAX-I
+         IF L-HAS-MAX = 1
+             MOVE L-IMAX TO WS-MAX-I
          END-IF
          IF L-INT < WS-MIN-I
              MOVE 1 TO WS-LOW
@@ -630,11 +657,11 @@
              COMPUTE WS-MAX-D = WS-MAX-DOUBLE
          END-IF
          COMPUTE WS-MIN-D = 0 - WS-MAX-D
-         IF BR-N-HAS-MIN(L-NODE) = 1
-             MOVE BR-N-DMIN(L-NODE) TO WS-MIN-D
+         IF L-HAS-MIN = 1
+             MOVE L-DMIN TO WS-MIN-D
          END-IF
-         IF BR-N-HAS-MAX(L-NODE) = 1
-             MOVE BR-N-DMAX(L-NODE) TO WS-MAX-D
+         IF L-HAS-MAX = 1
+             MOVE L-DMAX TO WS-MAX-D
          END-IF
          IF L-INF = 1 AND L-DOUBLE > 0
              MOVE 1 TO WS-HIGH
@@ -689,24 +716,143 @@
      MOVE 0 TO L-INT L-DOUBLE L-INF
      MOVE SPACES TO BR-E-KEY
      MOVE BR-IN-CURSOR TO WS-START
+     PERFORM DO-NUMBER.
+ END PROGRAM BR-READ-NUMBER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-READ-PLAIN.
+*> USING kind (BR-P-FLOAT, -DOUBLE, -INTEGER or -LONG), integer out, double out, infinity flag out: BR-READ-NUMBER
+*> with the limits of the type (a reader for the types built on a number).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE-2              BINARY-LONG VALUE 0.
+ 01 WS-I-MIN               BINARY-DOUBLE VALUE 0.
+ 01 WS-I-MAX               BINARY-DOUBLE VALUE 0.
+ 01 WS-D-MIN               FLOAT-LONG VALUE 0.
+ 01 WS-D-MAX               FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-INT                  BINARY-DOUBLE.
+ 01 L-DOUBLE               FLOAT-LONG.
+ 01 L-INF                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-INT L-DOUBLE L-INF.
+     CALL "BR-READ-NUMBER" USING L-KIND WS-NONE WS-NONE-2 WS-I-MIN WS-I-MAX WS-D-MIN WS-D-MAX
+         L-INT L-DOUBLE L-INF
+     GOBACK.
+ END PROGRAM BR-READ-PLAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-ARG-PARSE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRIGADIER.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-STR                 PIC X(1024).
+ 01 WS-STR-LENGTH          BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-RUN-LENGTH          BINARY-LONG.
+ 01 WS-RUN                 PIC X(1024).
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-A2                  PIC X(64).
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-INT                  BINARY-DOUBLE.
+ 01 L-DOUBLE               FLOAT-LONG.
+ 01 L-INF                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE L-INT L-DOUBLE L-INF.
+     GO TO MAIN-LINE.
+
+*> ---- raising ------------------------------------------------------------------------------
+ RAISE-NOW.
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC.
+
+ RAISE-RUN.
+*> an exception with the run text (WS-RUN) as its one argument, at cursor WS-RC
+     MOVE 1 TO WS-N-ARGS
+     MOVE WS-RUN(1:WS-RUN-LENGTH) TO WS-A1
+     MOVE WS-RUN-LENGTH TO WS-L1
+     IF WS-L1 > 64
+         MOVE 64 TO WS-L1
+     END-IF
+     PERFORM RAISE-NOW.
+
+*> ---- readString / readUnquotedString (15a §1.4; BR-READ-STRING) ---------------------------------
+*> From WS-C; the value in WS-STR (WS-STR-LENGTH); a failure sets BR-E-KEY.
+ READ-STRING.
+     CALL "BR-READ-STRING" USING WS-ONE WS-C WS-STR WS-STR-LENGTH.
+
+ READ-UNQUOTED.
+     CALL "BR-READ-STRING" USING WS-ZERO WS-C WS-STR WS-STR-LENGTH.
+
+ DO-STRING.
+     MOVE WS-START TO WS-C
+     EVALUATE BR-N-STRING-KIND(L-NODE)
+         WHEN BR-S-GREEDY
+             MOVE BR-IN-LENGTH TO WS-C
+         WHEN BR-S-PHRASE
+             PERFORM READ-STRING
+         WHEN OTHER
+             PERFORM READ-UNQUOTED
+     END-EVALUATE
+     IF BR-E-KEY = SPACES
+         MOVE WS-C TO BR-IN-CURSOR
+     END-IF.
+
+*> ---- readBoolean (15a §1.4: through readString) ---------------------------------------------
+ DO-BOOL.
+     MOVE WS-START TO WS-C
+     PERFORM READ-STRING
+     IF BR-E-KEY = SPACES
+         EVALUATE TRUE
+             WHEN WS-STR-LENGTH = 0
+                 MOVE "parsing.bool.expected" TO WS-KEY
+                 MOVE 0 TO WS-N-ARGS
+                 MOVE WS-C TO WS-RC
+                 PERFORM RAISE-NOW
+             WHEN WS-STR(1:WS-STR-LENGTH) = "true" AND WS-STR-LENGTH = 4
+                 MOVE 1 TO L-INT
+                 MOVE WS-C TO BR-IN-CURSOR
+             WHEN WS-STR(1:WS-STR-LENGTH) = "false" AND WS-STR-LENGTH = 5
+                 MOVE 0 TO L-INT
+                 MOVE WS-C TO BR-IN-CURSOR
+             WHEN OTHER
+                 MOVE "parsing.bool.invalid" TO WS-KEY
+                 MOVE 1 TO WS-N-ARGS
+                 MOVE WS-STR(1:WS-STR-LENGTH) TO WS-A1
+                 MOVE WS-STR-LENGTH TO WS-L1
+                 IF WS-L1 > 64
+                     MOVE 64 TO WS-L1
+                 END-IF
+                 MOVE WS-START TO WS-RC
+                 PERFORM RAISE-NOW
+         END-EVALUATE
+     END-IF.
+
+ MAIN-LINE.
+     MOVE 0 TO L-INT L-DOUBLE L-INF
+     MOVE SPACES TO BR-E-KEY
+     MOVE BR-IN-CURSOR TO WS-START
      EVALUATE BR-N-TYPE(L-NODE)
          WHEN BR-P-BOOL
              PERFORM DO-BOOL
          WHEN BR-P-FLOAT
-             PERFORM DO-NUMBER
          WHEN BR-P-DOUBLE
-             PERFORM DO-NUMBER
          WHEN BR-P-INTEGER
-             PERFORM DO-NUMBER
          WHEN BR-P-LONG
-             PERFORM DO-NUMBER
+             CALL "BR-READ-NUMBER" USING BR-N-TYPE(L-NODE) BR-N-HAS-MIN(L-NODE) BR-N-HAS-MAX(L-NODE)
+                 BR-N-IMIN(L-NODE) BR-N-IMAX(L-NODE) BR-N-DMIN(L-NODE) BR-N-DMAX(L-NODE)
+                 L-INT L-DOUBLE L-INF
          WHEN BR-P-STRING
              PERFORM DO-STRING
          WHEN OTHER
-             MOVE WS-START TO WS-C
-             PERFORM UNTIL WS-C >= BR-IN-LENGTH OR BR-IN-TEXT(WS-C + 1:1) = SPACE
-                 ADD 1 TO WS-C
-             END-PERFORM
-             MOVE WS-C TO BR-IN-CURSOR
+             CALL "BR-ARG-EXT" USING L-NODE L-INT L-DOUBLE L-INF
      END-EVALUATE.
  END PROGRAM BR-ARG-PARSE.
