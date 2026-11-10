@@ -246,6 +246,15 @@
      END-IF
      MOVE "offhand shield" TO TL-EXPECTED
      PERFORM CHECK
+
+     MOVE "acceptance US14 Use Item with an empty hand wears nothing" TO TL-CASE
+     MOVE 0 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     MOVE PL-SLOT-COUNT(WS-ROWNO, 5) TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "hand " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "hand 0" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
 
 *> Alice breaks dirt with the item of WS-ITEM-KEY (slot 4): its damage is appended to TL-OBSERVED.
