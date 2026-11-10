@@ -3,6 +3,7 @@
 *> Entry points for the integrator (inputs; every state is IN of 16 FLOAT-LONG):
 *>   EM3-VILLAGER-ANIM EMM-MODEL state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age in ticks, 6 unhappy counter): 1.3 (the baby too).
 *>   EM3-ZV-ARMS EMM-MODEL state(1 baby, 2 main-hand empty, 3 aggressive, 4 swing, 5 right arm pose, 6 left arm pose): the zombie arms of 2.3.
+*>   EM3-WITCH-ANIM EMM-MODEL state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age, 6 entity id, 7 holds an item): 3.2.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EM3-VILLAGER-ANIM.
@@ -91,3 +92,46 @@
      END-IF
      GOBACK.
  END PROGRAM EM3-ZV-ARMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-WITCH-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-RLEG                BINARY-LONG.
+ 01 WS-LLEG                BINARY-LONG.
+ 01 WS-NOSE                BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+*> USING model state(1 xRot degrees, 2 yRot degrees, 3 walk position, 4 walk speed, 5 age in ticks, 6 entity id, 7 holds an item): WitchModel.setupAnim (3.2).
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "right_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RLEG
+     MOVE "left_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LLEG
+     MOVE "nose" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-NOSE
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CXROT(WS-RLEG) = FUNCTION COS(L-I(3) * 0.6662) * 1.4 * L-I(4) * 0.5
+     COMPUTE MM-CXROT(WS-LLEG) = FUNCTION COS(L-I(3) * 0.6662 + 3.1415927) * 1.4 * L-I(4) * 0.5
+     COMPUTE WS-ID = L-I(6)
+     COMPUTE WS-F = 0.01 * FUNCTION MOD(WS-ID, 10)
+     COMPUTE MM-CXROT(WS-NOSE) = FUNCTION SIN(L-I(5) * WS-F) * 4.5 * 0.017453292
+     COMPUTE MM-CZROT(WS-NOSE) = FUNCTION COS(L-I(5) * WS-F) * 2.5 * 0.017453292
+     IF L-I(7) NOT = 0
+         MOVE 0 TO MM-CX(WS-NOSE)
+         MOVE 1 TO MM-CY(WS-NOSE)
+         MOVE -1.5 TO MM-CZ(WS-NOSE)
+         MOVE -0.9 TO MM-CXROT(WS-NOSE)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-WITCH-ANIM.

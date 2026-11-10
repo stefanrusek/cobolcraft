@@ -3,11 +3,13 @@
 *> Entry points for the integrator (inputs; the table programs take IN of 16 and OUT of 64 FLOAT-LONG):
 *>   EM3-VILLAGER-SHADOW IN(is baby, scale) OUT(radius): 1.4 (0.5 x scale x ageScale, times 0.5 more for a baby). EM3-VILLAGER-TEXTURE baby(BINARY-LONG) path(X(100), out).
 *>   EM3-TRADER-TEXTURE path(out). EM3-HEAD-TRANSFORM name(X(24): villager, else the default set) OUT(y offset, skull y offset, horizontal scale, vertical scale).
-*>   EM3-CROSSED-ARMS-OPS OUT(operation count, then 4 per operation as EM6-POSE-CHAIN: kind 1 translate, 2 scale, 5 rotate about X, then three values), applied
+*>   EM3-CROSSED-ARMS-OPS OUT(operation count, then 4 per operation as EM6-POSE-CHAIN: kind 1 translate, 2 scale, 5 rotate about X in degrees, then three values), applied
 *>     after translateToArms (1.4).
 *>   EM3-PROF-TEXTURE path-name(X(24)) folder(X(24): type, profession, profession_level) key(X(40), "ns:name", spaces when it cannot be resolved) level(BINARY-LONG)
 *>     baby(BINARY-LONG) texture(X(100), out): 1.5. EM3-HAT-VALUE text(X(24)) value(BINARY-LONG, out 0 none, 1 partial, 2 full).
 *>   EM3-ZV-SHAKING IN(fully frozen, converting, age in ticks, body rotation) OUT(shaking, body rotation with the jitter): 2.
+*>   EM3-WITCH-RENDERER OUT(shadow radius, has a custom head layer); EM3-WITCH-TEXTURE path(out); EM3-WITCH-ITEM-OPS IN(held item is a potion) OUT(ops as EM3-CROSSED-ARMS-OPS; for a
+*>     potion the five operations after the head and nose chain: translate, rotate Z 180, X 140, Z 10, X 180 degrees): 3.3.
 *>   EM3-PROF-MODEL IN(type hat value, profession hat value) OUT(1 for the parent (full) model, 0 for the no-hat model): the model of the type overlay (1.5 step 3).
 *>   EM3-PROF-OVERLAYS IN(invisible, has villager data, baby, profession is none, profession is nitwit) OUT(type overlay, profession overlay, level overlay): which of
 *>     the three overlays are drawn (1.5 steps 1 to 5).
@@ -78,7 +80,7 @@
  PROCEDURE DIVISION USING L-OUT.
      MOVE 4 TO L-O(1)
      MOVE 5 TO L-O(2)
-     MOVE 0.75 TO L-O(3)
+     COMPUTE L-O(3) = 0.75 * 180 / 3.1415927
      MOVE 0 TO L-O(4) L-O(5)
      MOVE 2 TO L-O(6)
      MOVE 1.07 TO L-O(7) L-O(8) L-O(9)
@@ -87,7 +89,7 @@
      MOVE 0.13 TO L-O(12)
      MOVE -0.34 TO L-O(13)
      MOVE 5 TO L-O(14)
-     MOVE 3.1415927 TO L-O(15)
+     MOVE 180 TO L-O(15)
      MOVE 0 TO L-O(16) L-O(17)
      GOBACK.
  END PROGRAM EM3-CROSSED-ARMS-OPS.
@@ -212,3 +214,58 @@
      END-IF
      GOBACK.
  END PROGRAM EM3-ZV-SHAKING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-WITCH-RENDERER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-OUT.
+     MOVE 0.5 TO L-O(1)
+     MOVE 0 TO L-O(2)
+     GOBACK.
+ END PROGRAM EM3-WITCH-RENDERER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-WITCH-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(100).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/witch/witch.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EM3-WITCH-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-WITCH-ITEM-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     IF L-I(1) = 0
+         CALL "EM3-CROSSED-ARMS-OPS" USING L-OUT
+     ELSE
+         MOVE 5 TO L-O(1)
+         MOVE 1 TO L-O(2)
+         MOVE 0.0625 TO L-O(3)
+         MOVE 0.25 TO L-O(4)
+         MOVE 0 TO L-O(5)
+         MOVE 4 TO L-O(6)
+         MOVE 180 TO L-O(7)
+         MOVE 0 TO L-O(8) L-O(9)
+         MOVE 5 TO L-O(10)
+         MOVE 140 TO L-O(11)
+         MOVE 0 TO L-O(12) L-O(13)
+         MOVE 4 TO L-O(14)
+         MOVE 10 TO L-O(15)
+         MOVE 0 TO L-O(16) L-O(17)
+         MOVE 5 TO L-O(18)
+         MOVE 180 TO L-O(19)
+         MOVE 0 TO L-O(20) L-O(21)
+     END-IF
+     GOBACK.
+ END PROGRAM EM3-WITCH-ITEM-OPS.

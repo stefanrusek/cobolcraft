@@ -671,7 +671,7 @@
      MOVE WS-OV(2) TO WS-O
      PERFORM CHECK-NUM
      MOVE "1.4 crossed arms item: operation 1 value 1" TO WS-NAME
-     MOVE 0.75 TO WS-E
+     MOVE 42.971834635 TO WS-E
      MOVE WS-OV(3) TO WS-O
      PERFORM CHECK-NUM
      MOVE "1.4 crossed arms item: operation 1 value 2" TO WS-NAME
@@ -719,7 +719,7 @@
      MOVE WS-OV(14) TO WS-O
      PERFORM CHECK-NUM
      MOVE "1.4 crossed arms item: operation 4 value 1" TO WS-NAME
-     MOVE 3.141592654 TO WS-E
+     MOVE 180 TO WS-E
      MOVE WS-OV(15) TO WS-O
      PERFORM CHECK-NUM
      MOVE "1.4 crossed arms item: operation 4 value 2" TO WS-NAME
