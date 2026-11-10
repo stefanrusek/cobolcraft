@@ -83,8 +83,12 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO SM-WIDGET-COUNT
-     COMPUTE WS-GW = IN-WIN-W / CL-GUI-SCALE
-     COMPUTE WS-GH = IN-WIN-H / CL-GUI-SCALE
+*>   The GUI scale: the largest whole number, 1 to 8, that leaves the GUI at least 320 x 240 (12 section
+*>   5.1; builtin-ui-art 4.13.6); below the minimum window the GUI keeps the 320 x 240 layout.
+     COMPUTE CL-GUI-SCALE = FUNCTION MAX(1, FUNCTION MIN(CL-MAX-GUI-SCALE,
+         FUNCTION MIN(IN-WIN-W / CL-MIN-GUI-W, IN-WIN-H / CL-MIN-GUI-H)))
+     COMPUTE WS-GW = FUNCTION MAX(IN-WIN-W / CL-GUI-SCALE, CL-MIN-GUI-W)
+     COMPUTE WS-GH = FUNCTION MAX(IN-WIN-H / CL-GUI-SCALE, CL-MIN-GUI-H)
      EVALUATE SM-SCREEN
          WHEN SCR-TITLE
              CALL "TITLE-BUILD" USING CLIENT-STATE WS-GW WS-GH
@@ -470,3 +474,106 @@
      END-IF
      GOBACK.
  END PROGRAM WIDGET-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEXT-FIT.
+*> USING CLIENT-STATE, text (PIC X(512), UTF-8), length (in and out), maximum width (GUI pixels): the text cut
+*> at a character boundary and ended with "..." so that it is no wider than the maximum; a text that fits stays.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-SHORT               PIC X(256).
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(512).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-MAX.
+     MOVE L-TEXT(1:256) TO WS-SHORT
+     MOVE FUNCTION MIN(L-LENGTH, 256) TO WS-LIMIT
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-SHORT WS-LIMIT WS-WIDTH
+     IF WS-WIDTH > L-MAX
+         PERFORM UNTIL WS-LIMIT = 0 OR WS-WIDTH <= L-MAX
+             SUBTRACT 1 FROM WS-LIMIT
+*>           Never stop inside a multi-byte character (a continuation byte is 128 to 191).
+             PERFORM UNTIL WS-LIMIT = 0
+                 COMPUTE WS-BYTE = FUNCTION ORD(L-TEXT(WS-LIMIT + 1:1)) - 1
+                 IF WS-BYTE >= 128 AND WS-BYTE < 192
+                     SUBTRACT 1 FROM WS-LIMIT
+                 ELSE
+                     EXIT PERFORM
+                 END-IF
+             END-PERFORM
+             MOVE SPACES TO WS-SHORT
+             MOVE L-TEXT(1:WS-LIMIT) TO WS-SHORT
+             MOVE "..." TO WS-SHORT(WS-LIMIT + 1:3)
+             COMPUTE WS-BYTE = WS-LIMIT + 3
+             CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-SHORT WS-BYTE WS-WIDTH
+         END-PERFORM
+         MOVE SPACES TO L-TEXT
+         COMPUTE L-LENGTH = WS-LIMIT + 3
+         MOVE WS-SHORT(1:L-LENGTH) TO L-TEXT(1:L-LENGTH)
+     END-IF
+     GOBACK.
+ END PROGRAM TEXT-FIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LABELS-WRAPPED.
+*> USING CLIENT-STATE, text (PIC X(512)), length, x, y, maximum width (GUI pixels), next y out: the text as
+*> label lines (one widget each, a line of the font's height plus 2 apart), broken at spaces so that no line
+*> is wider than the maximum (a word wider than that goes alone on its line). The y below the last line.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-TRY                 BINARY-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-LINE                PIC X(512).
+ 01 WS-LINE-LENGTH         BINARY-LONG.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG VALUE 0.
+ 01 WS-Z2                  BINARY-LONG VALUE 0.
+ 01 WS-Z3                  BINARY-LONG VALUE 0.
+ 01 WS-Z4                  BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(512).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-NEXT-Y               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y L-MAX L-NEXT-Y.
+     MOVE WK-LABEL TO WS-KIND
+     MOVE L-Y TO L-NEXT-Y
+     MOVE 1 TO WS-START
+     PERFORM UNTIL WS-START > L-LENGTH
+*>       The longest run from the start that fits, ending at a space or at the text's end.
+         MOVE 0 TO WS-BEST
+         PERFORM VARYING WS-TRY FROM WS-START BY 1 UNTIL WS-TRY > L-LENGTH
+             IF WS-TRY = L-LENGTH OR L-TEXT(WS-TRY + 1:1) = SPACE
+                 MOVE SPACES TO WS-LINE
+                 COMPUTE WS-LINE-LENGTH = WS-TRY - WS-START + 1
+                 MOVE L-TEXT(WS-START:WS-LINE-LENGTH) TO WS-LINE
+                 CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-LINE WS-LINE-LENGTH WS-WIDTH
+                 IF WS-WIDTH <= L-MAX OR WS-BEST = 0
+                     MOVE WS-TRY TO WS-BEST
+                 END-IF
+             END-IF
+         END-PERFORM
+         MOVE WS-BEST TO WS-END
+         COMPUTE WS-LINE-LENGTH = WS-END - WS-START + 1
+         MOVE SPACES TO WS-LINE
+         MOVE L-TEXT(WS-START:WS-LINE-LENGTH) TO WS-LINE
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 L-X L-NEXT-Y WS-Z3 WS-Z4
+             WS-LINE WS-LINE-LENGTH WS-STATE
+         COMPUTE L-NEXT-Y = L-NEXT-Y + FN-HEIGHT + 2
+         COMPUTE WS-START = WS-END + 2
+     END-PERFORM
+     GOBACK.
+ END PROGRAM LABELS-WRAPPED.

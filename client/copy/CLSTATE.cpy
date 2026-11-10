@@ -15,6 +15,7 @@
     05 CL-NAME-LENGTH        BINARY-LONG.
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+    05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)

@@ -179,7 +179,9 @@
  78 CL-MAX-WX-VERTICES      VALUE 3468.
  78 CL-PROTOCOL             VALUE 777.
  78 CL-DEFAULT-PORT         VALUE 25565.
- 78 CL-GUI-SCALE            VALUE 2.
+ 78 CL-MAX-GUI-SCALE        VALUE 8.    *> the GUI scale is 1 to this (CL-GUI-SCALE of CLSTATE.cpy)
+ 78 CL-MIN-GUI-W            VALUE 320.  *> the smallest GUI, GUI pixels: the minimum window at scale 1
+ 78 CL-MIN-GUI-H            VALUE 240.
  78 CL-TICK-MS              VALUE 50.
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
  78 CL-MAX-TOP-VERTICES     VALUE 1536.
