@@ -186,6 +186,24 @@
      STRING "count 3@" FUNCTION TRIM(WS-E1) ":65 strike@39:68 count 2@" FUNCTION TRIM(WS-E2) ":85 strike@39:88 " DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE "acceptance US12 40-5§2.10 a price that differs from the base: the modified count (3 and 2) is drawn at x + 31 - width, y + 9 and the discount strike-through 9 x 2 at (x + 7, y + 12)" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An unchanged price (no demand, no special price): the plain item with its count 2 and neither the modified count nor the strike-through.
+     MOVE 0 TO MO-DEMAND(1) MO-SPECIAL(1)
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-SLOT AND SM-W-ARG(WS-I) = 801
+             STRING SM-W-TEXT(WS-I)(1:SM-W-LENGTH(WS-I)) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         IF SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-W(WS-I) = 9 AND SM-W-H(WS-I) = 2 AND SM-W-Y(WS-I) = 68
+             STRING " strike" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 40-5§2.10 an unchanged price draws the plain item with its count (2) and no strike-through" TO TL-CASE
+     MOVE "2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO MO-DEMAND(1)
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
 *>   2.10 row tooltips: the pointer over the first cost (button x < 20), the second cost (30 to 50) or the result (> 65) gives that item's tooltip; the gaps and the arrow none.
      MOVE 5 TO WS-ITEM
      CALL "RK-ITEM-NAME" USING CLIENT-STATE WS-ITEM WS-TEXT WS-LOOP

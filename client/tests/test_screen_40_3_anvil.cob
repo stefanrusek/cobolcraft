@@ -226,6 +226,40 @@
      MOVE AN-NAME-LENGTH TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
+*>   A character outside the BMP is 4 bytes and 2 UTF-16 units: with 49 characters it does not fit (49 + 2 > 50), a plain one does.
+     MOVE ALL "a" TO AN-NAME(1:49)
+     MOVE 49 TO AN-NAME-LENGTH
+     MOVE 1 TO WS-N
+     MOVE 128512 TO WS-A(1)
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     PERFORM FRAME
+     MOVE "acceptance US12 40-3§3.8 anvil: a 4-byte character counts 2 code units: with 49 characters it is not typed" TO TL-CASE
+     MOVE 49 TO TL-EXPECTED-N
+     MOVE AN-NAME-LENGTH TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 48 TO AN-NAME-LENGTH
+     MOVE 1 TO WS-N
+     MOVE 128512 TO WS-A(1)
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     PERFORM FRAME
+     MOVE "acceptance US12 40-3§3.8 anvil: with 48 characters the 4-byte character fits (48 + 2 = 50): 52 bytes" TO TL-CASE
+     MOVE 52 TO TL-EXPECTED-N
+     MOVE AN-NAME-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+*>   The responder does nothing with an empty slot 0 (no packet).
+     MOVE 0 TO BX-COUNT(1)
+     PERFORM DRAIN
+     CALL "ANVIL-RESPOND" USING CLIENT-STATE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     PERFORM DRAIN
+     MOVE "acceptance US12 40-3§3.8 anvil: onNameChanged with no item in slot 0 returns at once: nothing is sent" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:8) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO BX-COUNT(1)
 *>   Keys: the inventory key types into the focused field (editable) and does not close; Escape closes.
      MOVE 2 TO WS-N
      MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
