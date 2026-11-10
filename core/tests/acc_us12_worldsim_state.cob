@@ -1,0 +1,184 @@
+*> Acceptance test of the world state machines of docs/protocol/33 wired into the tick (specs 002 phase 41, doc 33 sections 3, 5 and 7): the clock stands
+*> still with advance_time false and runs at its rate, the world border of a level moves between sizes over its duration and hurts a survival player whose box
+*> lies outside it, and a player who uses a bed at night sleeps, counts to 100 and, being enough, skips the night: the clock moves to the next day's tick 0, the
+*> sleepers wake and a rain is reset. The cobolcraft world has no bed, so the test adds one to the block table.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US12-WORLDSIM-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CBLOCKS.
+ COPY WSIM2.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-EROW                BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-ADVANCE             BINARY-LONG.
+ 01 WS-PAUSED              BINARY-LONG.
+ 01 WS-RATE                FLOAT-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  FLOAT-LONG VALUE 0.
+ 01 WS-CZ                  FLOAT-LONG VALUE 0.
+ 01 WS-SIZE                FLOAT-LONG.
+ 01 WS-DAMAGE              FLOAT-LONG VALUE 0.2.
+ 01 WS-SAFE                FLOAT-LONG VALUE 5.0.
+ 01 WS-FROM                FLOAT-LONG.
+ 01 WS-TO                  FLOAT-LONG.
+ 01 WS-DURATION            BINARY-LONG.
+ 01 WS-HEALTH              FLOAT-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BED                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG.
+ 01 WS-SEQ                 BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE PL-ENTITY-ROW(WS-ROW) TO WS-EROW
+     MOVE "T" TO TL-MODE
+
+*>   The clock.
+     MOVE "acceptance US12 33 3.2 given advance_time false when 30 ticks pass then the time of day stands still, and at rate 2 it moves two per tick" TO TL-CASE
+     MOVE 100 TO CW-TIME
+     MOVE 0 TO WS-ADVANCE WS-PAUSED
+     MOVE 1.0 TO WS-RATE
+     CALL "WORLDSIM-CLOCK-SET" USING WS-ADVANCE WS-PAUSED WS-RATE
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE CW-TIME TO WS-EDIT
+     MOVE 1 TO WS-ADVANCE
+     MOVE 2.0 TO WS-RATE
+     CALL "WORLDSIM-CLOCK-SET" USING WS-ADVANCE WS-PAUSED WS-RATE
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE CW-TIME TO WS-EDIT2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "100 120" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1.0 TO WS-RATE
+     CALL "WORLDSIM-CLOCK-SET" USING WS-ADVANCE WS-PAUSED WS-RATE
+
+*>   The border: a lerp, then damage outside.
+     MOVE "acceptance US12 33 7.3 given a border moving from 100 to 200 over 20 ticks when 20 ticks pass then its size is 200 and it is static" TO TL-CASE
+     MOVE 100.0 TO WS-FROM
+     MOVE 200.0 TO WS-TO
+     MOVE 20 TO WS-DURATION
+     CALL "WORLDSIM-BORDER-LERP" USING WS-DIM WS-FROM WS-TO WS-DURATION
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE W2-B-SIZE(WS-DIM) TO WS-N
+     MOVE WS-N TO WS-EDIT
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE W2-B-SIZE(WS-DIM) TO WS-N
+     MOVE WS-N TO WS-EDIT2
+     MOVE W2-B-MOVING(WS-DIM) TO WS-EDIT3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "150 200 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 7.5 given a border of size 100 when a survival player stands at x = 60 then her health drops by 1 (max(1, floor(5 x 0.2)))" TO TL-CASE
+     MOVE 100.0 TO WS-SIZE
+     CALL "WORLDSIM-BORDER-SET" USING WS-DIM WS-CX WS-CZ WS-SIZE WS-DAMAGE WS-SAFE
+     MOVE 60.0 TO EN-X(WS-EROW)
+     MOVE 0.0 TO EN-Z(WS-EROW)
+     MOVE PL-HEALTH(WS-ROW) TO WS-HEALTH
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     COMPUTE WS-N = WS-HEALTH - PL-HEALTH(WS-ROW)
+     MOVE WS-N TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 59999968.0 TO WS-SIZE
+     CALL "WORLDSIM-BORDER-SET" USING WS-DIM WS-CX WS-CZ WS-SIZE WS-DAMAGE WS-SAFE
+
+*>   The bed and the night skip.
+     MOVE "acceptance US12 33 5.5 given a player in a bed at night when 100 ticks of sleep pass then the night is skipped to tick 0, the player wakes and "
+         & "the rain is reset" TO TL-CASE
+     MOVE 6.5 TO EN-X(WS-EROW)
+     MOVE 0.5 TO EN-Z(WS-EROW)
+     PERFORM INSTALL-BED
+     MOVE 10 TO WS-X
+     MOVE 100 TO WS-Y
+     MOVE 10 TO WS-Z
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-BED
+     MOVE 9.5 TO EN-X(WS-EROW)
+     MOVE 100.0 TO EN-Y(WS-EROW)
+     MOVE 9.5 TO EN-Z(WS-EROW)
+     MOVE 14000 TO CW-TIME
+     MOVE 1 TO CW-RAINING
+     MOVE 90000 TO CW-RAIN-TIME CW-THUNDER-TIME
+     MOVE 1 TO WS-FACE
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT
+     MOVE 98 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT2
+     MOVE CW-TIME TO WS-N
+     MOVE WS-N TO WS-EDIT3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 1 14098" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 5.5 given the sleeper has slept 100 ticks when the tick runs then time is 0, nobody sleeps and it no longer rains" TO TL-CASE
+     MOVE 6 TO WS-TICKS
+     CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT
+     MOVE CW-TIME TO WS-N
+     MOVE WS-N TO WS-EDIT2
+     MOVE CW-RAINING TO WS-EDIT3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 5 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 5.2 given daylight when a bed is used then the player does not sleep" TO TL-CASE
+     MOVE 6000 TO CW-TIME
+     MOVE 0 TO CW-RAINING
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     MOVE W2-SLEEPING(WS-ROW) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+*> Adds "minecraft:red_bed" (one state, no collision) to the block tables; WS-BED is its state.
+ INSTALL-BED.
+     COMPUTE WS-N = CB-BLOCK-COUNT + 1
+     MOVE "minecraft:red_bed" TO CB-KEY(WS-N)
+     MOVE 17 TO CB-KEY-LENGTH(WS-N)
+     MOVE 0 TO CB-SOLID(WS-N) CB-OPAQUE(WS-N) CB-LIGHT(WS-N) CB-CLASS(WS-N) CB-TOOL-REQ(WS-N) CB-NEED-TIER(WS-N)
+     MOVE -1 TO CB-BREAK-MS(WS-N)
+     MOVE CB-STATE-COUNT TO WS-BED
+     MOVE WS-BED TO CB-FIRST-STATE(WS-N) CB-DEFAULT-STATE(WS-N)
+     MOVE 1 TO CB-STATES(WS-N)
+     COMPUTE CB-S-BLOCK(WS-BED + 1) = WS-N - 1
+     MOVE 0 TO CB-S-LIGHT(WS-BED + 1)
+     ADD 1 TO CB-BLOCK-COUNT
+     ADD 1 TO CB-STATE-COUNT
+     ADD 1 TO CB-EPOCH.
+ END PROGRAM ACC-US12-WORLDSIM-STATE.
+
+ COPY CORETEST.
