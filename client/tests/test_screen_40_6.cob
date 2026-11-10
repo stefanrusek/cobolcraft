@@ -35,6 +35,11 @@
  01 WS-D5                  BINARY-LONG.
  01 WS-D6                  BINARY-LONG.
  01 WS-D7                  BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-T3                  BINARY-LONG.
+ 01 WS-T4                  BINARY-LONG.
+ 01 WS-T5                  BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
  01 WS-LEN                 BINARY-LONG.
  01 WS-E1                  PIC -(7)9.
@@ -284,7 +289,7 @@
 
 *> WS-D7 = own slots * 1000000 + width * 1000 + height of the menu type WS-D1 (CONTAINER-FRAME).
  FRAME-NUMBERS.
-     CALL "CONTAINER-FRAME" USING WS-D1 WS-D2 WS-D3 WS-D4 WS-D5 WS-D6 WS-D7 WS-N WS-N WS-N WS-N WS-N WS-KNOWN
+     CALL "CONTAINER-FRAME" USING WS-D1 WS-D2 WS-D3 WS-D4 WS-D5 WS-D6 WS-D7 WS-T1 WS-T2 WS-T3 WS-T4 WS-T5 WS-KNOWN
      COMPUTE WS-D7 = WS-D2 * 1000000 + WS-D6 * 1000 + WS-D7
      .
 
