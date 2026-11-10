@@ -23,7 +23,6 @@
  01 WS-FLAG                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-TEXT                PIC X(1024).
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
