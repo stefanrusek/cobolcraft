@@ -1,0 +1,15 @@
+{
+ "type": "minecraft:enchantment_level",
+ "amount": {
+  "type": "minecraft:lookup",
+  "values": [
+   1.0,
+   2.0,
+   3.0
+  ],
+  "fallback": {
+   "type": "minecraft:levels_squared",
+   "added": 1.0
+  }
+ }
+}

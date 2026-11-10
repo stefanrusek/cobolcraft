@@ -1,0 +1,15 @@
+{
+ "type": "minecraft:enchantment_level",
+ "amount": {
+  "type": "minecraft:fraction",
+  "numerator": {
+   "type": "minecraft:linear",
+   "base": 1.0,
+   "per_level_above_first": 1.0
+  },
+  "denominator": {
+   "type": "minecraft:levels_squared",
+   "added": 0.0
+  }
+ }
+}

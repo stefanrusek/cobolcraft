@@ -1,0 +1,5 @@
+{
+ "type": "minecraft:entity_scores",
+ "entity": "this",
+ "scores": {}
+}
