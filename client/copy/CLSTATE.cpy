@@ -253,6 +253,7 @@
        10 CT-BREAK-Y         BINARY-LONG.
        10 CT-BREAK-Z         BINARY-LONG.
        10 CT-BREAK-FACE      BINARY-LONG.
+       10 CT-BREAK-HELD      BINARY-LONG.    *> the held slot when the break began (a change aborts it)
        10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held

@@ -14,6 +14,9 @@
  01 WS-PATH                PIC X(256).
  01 WS-SPACE               BINARY-LONG VALUE CC-KEY-SPACE.
  01 WS-TEN                 BINARY-LONG VALUE 10.
+ 01 WS-SHIFT               BINARY-LONG.
+ 01 WS-DOWN                BINARY-LONG VALUE CC-EV-KEY-DOWN.
+ 01 WS-UP                  BINARY-LONG VALUE CC-EV-KEY-UP.
  01 WS-I                   BINARY-LONG.
  01 WS-BEFORE              PIC 9.
  01 WS-TOGGLES             BINARY-LONG.
@@ -40,6 +43,32 @@
          & "flying toggles 0 of 20 times" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-TOGGLES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Landing (13 section 1.4): a flying creative Player that comes down onto the ground stops flying and
+*>   Player Abilities is sent; a spectator stays flying.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE "contract/fixtures/wire/play-s2c-41-player-abilities-creative.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 1 TO PL-FLYING
+     MOVE 13 TO PL-Y
+     MOVE 0 TO PL-ON-GROUND
+     MOVE CC-KEY-LEFT-SHIFT TO WS-SHIFT
+     CALL "TEST-SERVER-READ" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-SHIFT WS-DOWN
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-TEN
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-SHIFT WS-UP
+     CALL "TEST-SERVER-READ" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     MOVE 0 TO WS-SENT
+     INSPECT WS-TEXT TALLYING WS-SENT FOR ALL "28"
+     MOVE "acceptance US7-1 given a flying creative Player when Left Shift brings it down onto the ground "
+         & "then flying stops and Player Abilities is sent" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-FLYING = 0 AND WS-SENT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
