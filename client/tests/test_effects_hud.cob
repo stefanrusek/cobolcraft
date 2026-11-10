@@ -206,7 +206,7 @@
      MOVE "0 2 18 4" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 18 TO WS-EFFECT
-     CALL "EFFECT-REMOVE" USING CLIENT-STATE WS-EFFECT
+     CALL "CL-EFFECT-REMOVE" USING CLIENT-STATE WS-EFFECT
      MOVE "acceptance US14 49§1 removing the first effect (poison) moves the others up: haste, id 2, is first" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 2 TO TL-EXPECTED-N
