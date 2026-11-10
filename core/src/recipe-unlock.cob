@@ -6,7 +6,8 @@
 *> recipe becomes known when one criterion of its recipe advancement holds (27 5.9: the criteria are one OR group): a "tick"
 *> criterion at the join, an "inventory_changed" criterion when every item predicate of it is held by some inventory slot. The
 *> check runs at the join and whenever the inventory differs from the one the last check ran over (CRAFT-REFRESH-ALL, after
-*> every packet and tick). Persistence of the known set is not done here.
+*> every packet and tick). The known set, the highlight set and the
+*> settings of a returning player come from KX-BOOK-FETCH (core/src/player-state.cob) after the built-in recipes.
 *>
 *> Entry points:
 *>   RECBOOK-JOIN USING player row            an empty book, the recipes known from the start and the unlocks of the first
@@ -98,38 +99,6 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM RECIPE-ING-NODE.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. RECIPE-ING-PLAIN.
-*> USING ingredient (PIC X(800)), item id out, plain out: plain 1 when the ingredient is exactly one item key (no tag, no
-*> alternatives), with its item id.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CONTENT.
- 01 WS-KEY                 PIC X(112).
- 01 WS-ROW                 PIC X(270).
- 01 WS-STATUS              BINARY-LONG.
- 01 WS-SPACES              BINARY-LONG.
- LINKAGE SECTION.
- 01 L-INGREDIENT           PIC X(800).
- 01 L-ID                   BINARY-LONG.
- 01 L-PLAIN                BINARY-LONG.
- PROCEDURE DIVISION USING L-INGREDIENT L-ID L-PLAIN.
-     MOVE 0 TO L-PLAIN L-ID WS-SPACES
-     IF L-INGREDIENT = SPACES OR L-INGREDIENT(1:1) = "#" OR L-INGREDIENT(113:688) NOT = SPACES
-         GOBACK
-     END-IF
-     MOVE L-INGREDIENT(1:112) TO WS-KEY
-     INSPECT FUNCTION TRIM(WS-KEY TRAILING) TALLYING WS-SPACES FOR ALL SPACE
-     IF WS-SPACES > 0
-         GOBACK
-     END-IF
-     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY L-ID WS-ROW WS-STATUS
-     IF WS-STATUS = CT-OK
-         MOVE 1 TO L-PLAIN
-     END-IF
-     GOBACK.
- END PROGRAM RECIPE-ING-PLAIN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-ENTRY-BUILD.
@@ -261,11 +230,25 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-ADD-REQ.
 *> USING ingredient (PIC X(800)), PB-RECIPE-ENTRY, all plain (BINARY-LONG, set to 0 when this ingredient cannot be a
-*> requirement): adds the ingredient to the requirements when it is one plain item; an empty cell adds none.
+*> requirement): adds the ingredient to the requirements as the HolderSet of the book (T3663): one item key is the single item, two
+*> to eight item keys are a list, one "#" tag is a tag; a tag mixed with items, more than eight items, an unknown item or a
+*> tag longer than 64 bytes is not a requirement. An empty cell adds none.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-TOKEN               PIC X(112).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW                 PIC X(270).
  01 WS-ID                  BINARY-LONG.
- 01 WS-PLAIN               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TAGS                BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-LIST.
+    05 WS-L                BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-INGREDIENT           PIC X(800).
  COPY PROTO.
@@ -274,13 +257,47 @@
      IF L-INGREDIENT = SPACES
          GOBACK
      END-IF
-     CALL "RECIPE-ING-PLAIN" USING L-INGREDIENT WS-ID WS-PLAIN
-     IF WS-PLAIN = 1 AND PB-RE-REQ-COUNT < 9
-         ADD 1 TO PB-RE-REQ-COUNT
-         MOVE WS-ID TO PB-RE-REQ-ITEM(PB-RE-REQ-COUNT)
-     ELSE
+     MOVE 0 TO WS-N WS-TAGS WS-BAD
+     MOVE 1 TO WS-POINTER
+     COMPUTE WS-END = FUNCTION LENGTH(FUNCTION TRIM(L-INGREDIENT TRAILING))
+     PERFORM UNTIL WS-POINTER > WS-END
+         MOVE SPACES TO WS-TOKEN
+         UNSTRING L-INGREDIENT DELIMITED BY ALL SPACE INTO WS-TOKEN WITH POINTER WS-POINTER
+         IF WS-TOKEN NOT = SPACES
+             ADD 1 TO WS-N
+             IF WS-TOKEN(1:1) = "#"
+                 ADD 1 TO WS-TAGS
+                 MOVE WS-TOKEN(2:111) TO WS-KEY
+             ELSE
+                 MOVE WS-TOKEN TO WS-KEY
+                 CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+                 IF WS-STATUS NOT = CT-OK
+                     MOVE 1 TO WS-BAD
+                 END-IF
+                 IF WS-N <= 9
+                     MOVE WS-ID TO WS-L(WS-N)
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF PB-RE-REQ-COUNT >= 9 OR WS-BAD = 1 OR WS-N > PB-RE-REQ-MAX-LIST
+             OR (WS-TAGS > 0 AND WS-N > 1) OR (WS-TAGS = 1 AND FUNCTION LENGTH(FUNCTION TRIM(WS-KEY TRAILING)) > 64)
          MOVE 0 TO L-ALL-PLAIN
+         GOBACK
      END-IF
+     ADD 1 TO PB-RE-REQ-COUNT
+     EVALUATE TRUE
+         WHEN WS-TAGS = 1
+             MOVE WS-KEY TO PB-RE-REQ-TAG(PB-RE-REQ-COUNT)
+             COMPUTE PB-RE-REQ-TAG-LENGTH(PB-RE-REQ-COUNT) = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY TRAILING))
+         WHEN WS-N = 1
+             MOVE WS-L(1) TO PB-RE-REQ-ITEM(PB-RE-REQ-COUNT)
+         WHEN OTHER
+             MOVE WS-N TO PB-RE-REQ-N(PB-RE-REQ-COUNT)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+                 MOVE WS-L(WS-I) TO PB-RE-REQ-LIST(PB-RE-REQ-COUNT, WS-I)
+             END-PERFORM
+     END-EVALUATE
      GOBACK.
  END PROGRAM RECIPE-ADD-REQ.
 
@@ -511,6 +528,7 @@
              CALL "RECBOOK-SEEN" USING L-ROW WS-K
          END-IF
      END-PERFORM
+     CALL "KX-BOOK-FETCH" USING L-ROW
      CALL "RECIPE-UNLOCK-CHECK" USING L-ROW
      MOVE PL-INVENTORY(L-ROW) TO RB-INVENTORY(L-ROW)
      INITIALIZE PB-RECIPE-BOOK-SETTINGS

@@ -2,7 +2,8 @@
 *> "Inventory-screen throw" and "Inventory screen closed while carrying"; core/src/inventory.cob
 *> INV-CLICK, INV-CLOSE; 05c 0x12 Container Click, 0x13 Container Close). Alice (entity 1, survival)
 *> stands at (20.5, 101, 20.5) on greystone at (20, 100, 20), facing east (yaw -90, pitch 0), so a
-*> thrown item appears at (20.50, 102.30, 20.50) with the motion (0.25, 0.12, 0) and pickup delay 30.
+*> thrown item appears at (20.50, 102.32, 20.50) (the eyes - 0.3) with the motion (0.3 +- 0.02, 0.1 +- 0.1, +- 0.02) and pickup
+*> delay 40 (41 section 2.3; the motion is asserted by its ranges).
 *> Her inventory is emptied first and slot 5 given 5 greystone (item 2). The last cases repeat
 *> the throws in creative.
  IDENTIFICATION DIVISION.
@@ -43,6 +44,7 @@
  01 WS-R1                  PIC -(4)9.9(5).
  01 WS-R2                  PIC -(4)9.9(5).
  01 WS-R3                  PIC -(4)9.9(5).
+ 01 WS-RANGE              PIC X(12).
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
@@ -72,8 +74,8 @@
      PERFORM CLICK
      MOVE 2 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(2,1@20.50,102.30,20.50) 101(2=2x1) 103(2) 20(41=2x4) motion 0.25000,0.12000,"
-         & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
+     MOVE "1(2,1@20.50,102.32,20.50) 101(2=2x1) 103(2) 20(41=2x4) motion in range"
+         & " delay 40 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw survival THROW button 1 throws the whole slot" TO TL-CASE
@@ -81,8 +83,8 @@
      PERFORM CLICK
      MOVE 3 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(3,1@20.50,102.30,20.50) 101(3=2x4) 103(3) 20(41=0x0) motion 0.25000,0.12000,"
-         & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
+     MOVE "1(3,1@20.50,102.32,20.50) 101(3=2x4) 103(3) 20(41=0x0) motion in range"
+         & " delay 40 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw survival THROW on an empty slot does nothing" TO TL-CASE
@@ -101,8 +103,8 @@
      PERFORM CLICK
      MOVE 4 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(4,1@20.50,102.30,20.50) 101(4=2x7) 103(4) motion 0.25000,0.12000,0.00000 delay "
-         & "30 cursor 0x0" TO TL-EXPECTED
+     MOVE "1(4,1@20.50,102.32,20.50) 101(4=2x7) 103(4) motion in range delay "
+         & "40 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw survival PICKUP slot -999 button 1 throws one and leaves 6 "
@@ -113,8 +115,8 @@
      PERFORM CLICK
      MOVE 5 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(5,1@20.50,102.30,20.50) 101(5=2x1) 103(5) 18 motion 0.25000,0.12000,0.00000 "
-         & "delay 30 cursor 2x6" TO TL-EXPECTED
+     MOVE "1(5,1@20.50,102.32,20.50) 101(5=2x1) 103(5) 18 motion in range "
+         & "delay 40 cursor 2x6" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw survival Close Container of another container than 0 changes "
@@ -158,8 +160,8 @@
      PERFORM CLOSE-CONTAINER
      MOVE 6 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(6,1@20.50,102.30,20.50) 101(6=2x3) 103(6) 20(43=2x64) motion 0.25000,0.12000,"
-         & "0.00000 delay 30 cursor 0x0" TO TL-EXPECTED
+     MOVE "1(6,1@20.50,102.32,20.50) 101(6=2x3) 103(6) 20(43=2x64) motion in range"
+         & " delay 40 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw creative THROW button 0 throws one item and button 1 the rest"
@@ -173,8 +175,8 @@
      PERFORM CLICK
      MOVE 8 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(7,1@20.50,102.30,20.50) 101(7=3x1) 103(7) 20(39=3x63) 1(8,1@20.50,102.30,20.50) "
-         & "101(8=3x63) 103(8) 20(39=0x0) motion 0.25000,0.12000,0.00000 delay 30 cursor 0x0"
+     MOVE "1(7,1@20.50,102.32,20.50) 101(7=3x1) 103(7) 20(39=3x63) 1(8,1@20.50,102.32,20.50) "
+         & "101(8=3x63) 103(8) 20(39=0x0) motion in range delay 40 cursor 0x0"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -187,8 +189,8 @@
      PERFORM CLICK
      MOVE 9 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1(9,1@20.50,102.30,20.50) 101(9=4x9) 103(9) motion 0.25000,0.12000,0.00000 delay "
-         & "30 cursor 0x0" TO TL-EXPECTED
+     MOVE "1(9,1@20.50,102.32,20.50) 101(9=4x9) 103(9) motion in range delay "
+         & "40 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 
@@ -208,18 +210,19 @@
  DESCRIBE.
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
      CALL "TEST-FIND-ENTITY" USING WS-ENTITY WS-ER
-     MOVE 0 TO WS-R1 WS-R2 WS-R3 WS-E1
+     MOVE 0 TO WS-E1
+     MOVE "out of range" TO WS-RANGE
      IF WS-ER > 0
-         COMPUTE WS-R1 ROUNDED = EN-VX(WS-ER)
-         COMPUTE WS-R2 ROUNDED = EN-VY(WS-ER)
-         COMPUTE WS-R3 ROUNDED = EN-VZ(WS-ER)
+         IF EN-VX(WS-ER) >= 0.28 AND EN-VX(WS-ER) <= 0.32 AND EN-VY(WS-ER) >= 0 AND EN-VY(WS-ER) <= 0.2
+                 AND EN-VZ(WS-ER) >= -0.02 AND EN-VZ(WS-ER) <= 0.02
+             MOVE "in range" TO WS-RANGE
+         END-IF
          MOVE EN-DELAY(WS-ER) TO WS-E1
      END-IF
      MOVE PL-CARRIED-ITEM(WS-ROW) TO WS-E2
      MOVE PL-CARRIED-COUNT(WS-ROW) TO WS-E3
      MOVE SPACES TO TL-OBSERVED
-     STRING FUNCTION TRIM(WS-TEXT) " motion " FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) ","
-         FUNCTION TRIM(WS-R3) " delay " FUNCTION TRIM(WS-E1) " cursor " FUNCTION TRIM(WS-E2)
+     STRING FUNCTION TRIM(WS-TEXT) " motion " FUNCTION TRIM(WS-RANGE) " delay " FUNCTION TRIM(WS-E1) " cursor " FUNCTION TRIM(WS-E2)
          "x" FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE TL-OBSERVED TO WS-TEXT.
 

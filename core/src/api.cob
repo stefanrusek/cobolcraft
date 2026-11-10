@@ -18,6 +18,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY KNSTATE.
  COPY DIMENSIONS.
  COPY CONTENT.
  COPY PROTO.
@@ -40,7 +41,7 @@
          CALL "PB-FREE" USING PB-BUFFER
      END-IF
      INITIALIZE CORE-WORLD CORE-CONNS CORE-PLAYERS CORE-CHUNKS CORE-ENTITIES CORE-VIEWS
-         CORE-KNOWN CORE-ACCESS
+         CORE-KNOWN CORE-KNOWN-EXTRA CORE-ACCESS
      MOVE "Y" TO CW-OPEN
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
@@ -190,8 +191,8 @@
 *> (WORLD-TIME-TICK), the weather (WEATHER-TICK, step 3 of standin §9.5), break progress
 *> (BLOCKS-TICK), the player survival and hunger rules (HEALTH-TICK, step 4), mob spawning (MOBS-SPAWN-TICK, step 5), the mobs
 *> (MOBS-TICK, step 6), ground items (GROUND-ITEMS-TICK, step 7, last of the game rules), the
-*> recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL) and the
-*> connections' keep-alives.
+*> recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL), the
+*> bench menus that are no longer valid (MENU-TICK) and the connections' keep-alives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -216,6 +217,7 @@
      CALL "GROUND-ITEMS-TICK"
      CALL "GEN-QUEUE-TICK"
      CALL "CRAFT-REFRESH-ALL"
+     CALL "MENU-TICK"
      CALL "SESSION-TICK"
      GOBACK.
  END PROGRAM CORE-TICK.

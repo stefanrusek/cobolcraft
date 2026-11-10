@@ -29,10 +29,10 @@
      MOVE 3 TO TL-EXPECTED-N
      MOVE CORE-MAX-DIMS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "test cells weather state exists for the third dimension" TO TL-CASE
-     MOVE 77 TO CW-WEATHER-LEFT(3)
-     MOVE 77 TO TL-EXPECTED-N
-     MOVE CW-WEATHER-LEFT(3) TO TL-OBSERVED-N
+     MOVE "test cells weather levels exist for the third dimension" TO TL-CASE
+     MOVE 0.5 TO CW-RAIN-LEVEL(3)
+     MOVE 50 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CW-RAIN-LEVEL(3) * 100
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test cells a core chunk is the CE-CHUNK-BYTES block" TO TL-CASE
      MOVE CE-CHUNK-BYTES TO TL-EXPECTED-N
