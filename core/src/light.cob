@@ -100,6 +100,9 @@
      IF WS-LENGTH > 0
          MOVE LOW-VALUES TO CE-SKYS(2049:WS-LENGTH)
      END-IF
+*>   The light section above the dimension has sky light 15 (06 §7.1; the one below stays 0).
+     COMPUTE WS-LENGTH = (DM-HEIGHT(CK-DIM(L-ROW)) / 16 + 1) * 2048 + 1
+     MOVE ALL X"FF" TO CE-SKYS(WS-LENGTH:2048)
      COMPUTE WS-LOW = WS-MIN + 1
      PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 256
          PERFORM VARYING WS-Y FROM WS-LOW BY 1 UNTIL WS-Y > WS-TOP(WS-C)

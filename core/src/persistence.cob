@@ -1031,6 +1031,7 @@
  01 WL                     BINARY-LONG.
  01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
  01 WS-INT                 BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
  01 WS-D                   BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
@@ -1058,6 +1059,24 @@
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
      MOVE "Time" TO WN MOVE 4 TO WL
      CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL CW-TIME
+*>   Clocks (07 §9.2): the one clock minecraft:overworld (CORE-5); its total_ticks is the time of day.
+     MOVE "Clocks" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "minecraft:overworld" TO WN MOVE 19 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "total_ticks" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL CW-TIME
+     MOVE "partial_tick" TO WN MOVE 12 TO WL
+     MOVE 0 TO WS-FLOAT
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     MOVE "rate" TO WN MOVE 4 TO WL
+     MOVE 1 TO WS-FLOAT
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     MOVE "paused" TO WN MOVE 6 TO WL
+     MOVE 0 TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      MOVE "Spawn" TO WN MOVE 5 TO WL
      CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
      MOVE "Dimension" TO WN MOVE 9 TO WL
@@ -1102,6 +1121,7 @@
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY WEATHER.
+ COPY RULES.
  COPY PROTO.
  01 WS-READY               PIC 9 VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 1024.
@@ -1118,6 +1138,10 @@
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(32).
  01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-OLD-TIME            BINARY-DOUBLE.
+ 01 WS-TICKS               BINARY-DOUBLE.
+ 01 WS-HAS-TIME            PIC 9 VALUE 0.
+ 01 WS-HAS-CLOCK           PIC 9 VALUE 0.
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -1127,6 +1151,7 @@
          MOVE 1 TO WS-READY
      END-IF
      CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK
      CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
      PERFORM UNTIL PB-ERROR = 1
          MOVE SPACES TO WN
@@ -1142,7 +1167,35 @@
                  CALL "PB-GET-INT" USING PB-BUFFER WS-INT
                  MOVE WS-INT TO CW-GAME-MODE
              WHEN WN = "Time" AND WS-TYPE = 4
-                 CALL "PB-GET-LONG" USING PB-BUFFER CW-TIME
+                 CALL "PB-GET-LONG" USING PB-BUFFER WS-OLD-TIME
+                 MOVE 1 TO WS-HAS-TIME
+             WHEN WN = "Clocks" AND WS-TYPE = 10
+                 PERFORM UNTIL PB-ERROR = 1
+                     MOVE SPACES TO WN
+                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                         WS-NAME-CAPACITY WL
+                     IF WS-INNER-TYPE = 0
+                         EXIT PERFORM
+                     END-IF
+                     IF WN = "minecraft:overworld" AND WS-INNER-TYPE = 10
+                         PERFORM UNTIL PB-ERROR = 1
+                             MOVE SPACES TO WN
+                             CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                                 WS-NAME-CAPACITY WL
+                             IF WS-INNER-TYPE = 0
+                                 EXIT PERFORM
+                             END-IF
+                             IF WN = "total_ticks" AND WS-INNER-TYPE = 4
+                                 CALL "PB-GET-LONG" USING PB-BUFFER WS-TICKS
+                                 MOVE 1 TO WS-HAS-CLOCK
+                             ELSE
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                             END-IF
+                         END-PERFORM
+                     ELSE
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                     END-IF
+                 END-PERFORM
              WHEN WN = "Spawn" AND WS-TYPE = 10
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
@@ -1212,6 +1265,15 @@
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
          END-EVALUATE
      END-PERFORM
+*>   The time of day: the clock's total_ticks modulo the day, else the Time of a world of feature 001,
+*>   re-based onto the standard day.
+     EVALUATE TRUE
+         WHEN WS-HAS-CLOCK = 1
+             COMPUTE CW-TIME = FUNCTION MOD(WS-TICKS, RULE-DAY-LENGTH)
+         WHEN WS-HAS-TIME = 1
+             MOVE WS-OLD-TIME TO CW-TIME
+             CALL "LEVEL-TIME-REBASE" USING CW-TIME
+     END-EVALUATE
      GOBACK.
  END PROGRAM LEVEL-DAT-READ.
 

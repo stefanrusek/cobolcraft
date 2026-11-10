@@ -3,8 +3,11 @@
  78 RULE-MAX-HEALTH           VALUE 30.
 *> Maximum food level (§11.1): food is a whole number 0..24; new and respawned players have 24.
  78 RULE-MAX-FOOD             VALUE 24.
-*> Day length (§4.8): the time of day runs 0..29999, advancing 1 per tick and wrapping to 0.
- 78 RULE-DAY-LENGTH           VALUE 30000.
+*> Day length (shared rule of both world types, docs/protocol/33 §3, 12 §3.2c): the time of day runs 0..23999,
+*> advancing 1 per tick and wrapping to 0. A level.dat of feature 001 (30000-tick day) is re-based on opening
+*> (LEVEL-TIME-REBASE).
+ 78 RULE-DAY-LENGTH           VALUE 24000.
+ 78 RULE-OLD-DAY-LENGTH       VALUE 30000.
 *> Ground items (§9; §1.3 block yields; data-model §5). Lengths, speeds and factors are integer
 *> THOUSANDTHS (0.035 -> 35), as in ENTITYTYPES.cpy; times are ticks.
 *> Pickup delay of a new ground item (§9.1): a survival block break or a mob defeat 6, a throw 30.

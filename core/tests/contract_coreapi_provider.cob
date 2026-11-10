@@ -223,11 +223,11 @@
      PERFORM APPEND-EDIT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   CORE-TICK: one tick advances the tick count and the time of day (wrapping at 30000).
-     MOVE 29999 TO CW-TIME
+*>   CORE-TICK: one tick advances the tick count and the time of day (wrapping at 24000).
+     MOVE 23999 TO CW-TIME
      MOVE 7 TO CW-TICKS
      CALL "CORE-TICK"
-     MOVE "contract coreapi provider CORE-TICK runs one tick (time of day wraps 29999 to 0)" TO TL-CASE
+     MOVE "contract coreapi provider CORE-TICK runs one tick (time of day wraps 23999 to 0)" TO TL-CASE
      MOVE "8 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE CW-TICKS TO WS-EDIT
