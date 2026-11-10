@@ -137,6 +137,10 @@
              MOVE "shovel" TO WS-KIND
          END-IF
      END-IF
+     IF WS-KEY = "flint_and_steel" OR "fire_charge"
+         CALL "TOOLUSE-FIRE" USING L-ID PLAY-SERVERBOUND WS-KEY L-DONE
+         GOBACK
+     END-IF
      IF WS-KIND = SPACES
          GOBACK
      END-IF
@@ -214,3 +218,145 @@
      MOVE 1 TO L-DONE
      GOBACK.
  END PROGRAM TOOLUSE-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOLUSE-FIRE.
+*> USING connection id, PLAY-SERVERBOUND (Use Item On), item key (PIC X(48): flint_and_steel or fire_charge), done out: 17 section 3.3. Fire
+*> goes into the air block beside the clicked face when the block below it is solid, a neighbour of it is flammable (TOOL-FLAMMABILITY) or it
+*> is a soul fire base (soul_sand, soul_soil: soul_fire). Flint and steel loses 1 durability, a fire charge is used up (neither in creative).
+*> Not done: lighting a candle or campfire (the lit property), sounds, and the clicked block being replaceable.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-TX                  BINARY-LONG.
+ 01 WS-TY                  BINARY-LONG.
+ 01 WS-TZ                  BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK-KEY           PIC X(48).
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-SUPPORT             BINARY-LONG.
+ 01 WS-FLAMMABLE           BINARY-LONG.
+ 01 WS-SOUL                BINARY-LONG.
+ 01 WS-LIT                 BINARY-LONG VALUE 1.
+ 01 WS-WATERLOGGED         BINARY-LONG VALUE 0.
+ 01 WS-CREATIVE            BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-NEW                 PIC X(48).
+ 01 WS-SOUND               PIC X(32).
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-CONSUME             BINARY-LONG.
+ 01 WS-IGNITE              BINARY-LONG.
+ 01 WS-BURN                BINARY-LONG.
+ 01 WS-ITEM16              PIC X(16).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-LONG-KEY            PIC X(112).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW-TEXT            PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-FIRE-STATE          BINARY-LONG.
+ 01 WS-BROKE               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-HELD                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-KEY                  PIC X(48).
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND L-KEY L-DONE.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     MOVE PL-DIM(WS-ROW) TO WS-DIM
+     CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
+     MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-BLOCK-KEY
+     MOVE 0 TO WS-HITS
+     INSPECT WS-BLOCK-KEY TALLYING WS-HITS FOR ALL "candle" ALL "campfire"
+     IF WS-HITS > 0
+         GOBACK
+     END-IF
+     MOVE PSB-BX TO WS-TX
+     MOVE PSB-BY TO WS-TY
+     MOVE PSB-BZ TO WS-TZ
+     EVALUATE PSB-FACE
+         WHEN 0
+             SUBTRACT 1 FROM WS-TY
+         WHEN 1
+             ADD 1 TO WS-TY
+         WHEN 2
+             SUBTRACT 1 FROM WS-TZ
+         WHEN 3
+             ADD 1 TO WS-TZ
+         WHEN 4
+             SUBTRACT 1 FROM WS-TX
+         WHEN OTHER
+             ADD 1 TO WS-TX
+     END-EVALUATE
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-TX WS-TY WS-TZ WS-STATE
+     MOVE 0 TO WS-AIR WS-SUPPORT WS-FLAMMABLE WS-SOUL
+     IF WS-STATE = 0
+         MOVE 1 TO WS-AIR
+     END-IF
+     COMPUTE WS-NY = WS-TY - 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-TX WS-NY WS-TZ WS-STATE
+     IF CB-SOLID(CB-S-BLOCK(WS-STATE + 1) + 1) = 1
+         MOVE 1 TO WS-SUPPORT
+     END-IF
+     IF CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) = "soul_sand" OR "soul_soil"
+         MOVE 1 TO WS-SOUL
+     END-IF
+     PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
+         MOVE WS-TX TO WS-NX
+         MOVE WS-TY TO WS-NY
+         MOVE WS-TZ TO WS-NZ
+         EVALUATE WS-D
+             WHEN 0
+                 SUBTRACT 1 FROM WS-NY
+             WHEN 1
+                 ADD 1 TO WS-NY
+             WHEN 2
+                 SUBTRACT 1 FROM WS-NZ
+             WHEN 3
+                 ADD 1 TO WS-NZ
+             WHEN 4
+                 SUBTRACT 1 FROM WS-NX
+             WHEN OTHER
+                 ADD 1 TO WS-NX
+         END-EVALUATE
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-NX WS-NY WS-NZ WS-STATE
+         MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-BLOCK-KEY
+         CALL "TOOL-FLAMMABILITY" USING WS-BLOCK-KEY WS-IGNITE WS-BURN
+         IF WS-IGNITE > 0
+             MOVE 1 TO WS-FLAMMABLE
+         END-IF
+     END-PERFORM
+     MOVE PL-MODE(WS-ROW) TO WS-CREATIVE
+     MOVE L-KEY TO WS-ITEM16
+     MOVE SPACES TO WS-BLOCK-KEY
+     CALL "TOOL-FIRE-USE" USING WS-ITEM16 WS-BLOCK-KEY WS-LIT WS-WATERLOGGED WS-AIR WS-SUPPORT WS-FLAMMABLE WS-SOUL
+         WS-CREATIVE WS-ACTION WS-NEW WS-SOUND WS-DAMAGE WS-CONSUME
+     IF WS-ACTION NOT = 2
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-LONG-KEY
+     STRING "minecraft:" FUNCTION TRIM(WS-NEW) DELIMITED BY SIZE INTO WS-LONG-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-LONG-KEY WS-ID WS-ROW-TEXT WS-STATUS
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-FIRE-STATE
+     CALL "BLOCK-CHANGE" USING WS-DIM WS-TX WS-TY WS-TZ WS-FIRE-STATE
+     MOVE PL-HELD(WS-ROW) TO WS-HELD
+     IF WS-DAMAGE > 0
+         CALL "TOOL-HURT-STACK" USING L-ID WS-HELD WS-DAMAGE WS-BROKE
+     END-IF
+     IF WS-CONSUME > 0
+         CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE
+         COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
+         CALL "INV-SLOT-SEND" USING L-ID WS-HELD
+     END-IF
+     MOVE 1 TO L-DONE
+     GOBACK.
+ END PROGRAM TOOLUSE-FIRE.

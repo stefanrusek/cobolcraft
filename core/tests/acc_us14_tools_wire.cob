@@ -255,7 +255,95 @@
      STRING "hand " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "hand 0" TO TL-EXPECTED
      PERFORM CHECK
+     MOVE "acceptance US14 flint_and_steel on top of stone sets fire in the air block above for 1 durability" TO TL-CASE
+     MOVE "stone" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE "flint_and_steel" TO WS-ITEM-KEY
+     PERFORM HOLD-ITEM
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-ABOVE
+     MOVE "above fire tool damage 1" TO TL-EXPECTED
+     PERFORM OBSERVE-HELD-DAMAGE
+     PERFORM CHECK
+     PERFORM CLEAR-ABOVE
+
+     MOVE "acceptance US14 flint_and_steel where the target is not air does nothing and costs nothing" TO TL-CASE
+     MOVE 102 TO WS-Y
+     MOVE "stone" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE 101 TO WS-Y
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-ABOVE
+     MOVE "above stone tool damage 1" TO TL-EXPECTED
+     PERFORM OBSERVE-HELD-DAMAGE
+     PERFORM CHECK
+     PERFORM CLEAR-ABOVE
+
+     MOVE "acceptance US14 a fire_charge on oak_planks sets fire and is used up" TO TL-CASE
+     MOVE "oak_planks" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE "fire_charge" TO WS-ITEM-KEY
+     PERFORM HOLD-ITEM
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-ABOVE
+     MOVE PL-SLOT-COUNT(WS-ROWNO, 5) TO WS-E1
+     STRING FUNCTION TRIM(TL-OBSERVED) " count " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "above fire count 0" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM CLEAR-ABOVE
+
+     MOVE "acceptance US14 flint_and_steel on soul_sand makes soul_fire" TO TL-CASE
+     MOVE "soul_sand" TO WS-KEY
+     PERFORM PUT-BLOCK
+     MOVE "flint_and_steel" TO WS-ITEM-KEY
+     PERFORM HOLD-ITEM
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-ABOVE
+     MOVE "above soul_fire" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM CLEAR-ABOVE
+
+     MOVE "acceptance US14 flint_and_steel on a candle is the lighting rule, not fire beside it: nothing is placed here" TO TL-CASE
+     MOVE "candle" TO WS-KEY
+     PERFORM PUT-BLOCK
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-ALICE WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     PERFORM OBSERVE-ABOVE
+     MOVE "above air" TO TL-EXPECTED
+     PERFORM CHECK
      STOP RUN.
+
+*> The item of WS-ITEM-KEY, one of it, in slot 4 and held.
+ HOLD-ITEM.
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ID TO PL-SLOT-ITEM(WS-ROWNO, 5)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROWNO, 5)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROWNO, 5)
+     MOVE 4 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-ALICE WS-SLOT.
+
+ OBSERVE-ABOVE.
+     COMPUTE WS-Y = WS-Y + 1
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+     COMPUTE WS-Y = WS-Y - 1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "above " FUNCTION TRIM(CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1)) DELIMITED BY SIZE INTO TL-OBSERVED.
+
+ OBSERVE-HELD-DAMAGE.
+     MOVE PL-SLOT-VAR(WS-ROWNO, 5) TO WS-HANDLE
+     CALL "SP-GET-DAMAGE" USING PL-SLOT-ITEM(WS-ROWNO, 5) WS-HANDLE WS-DAMAGE
+     MOVE WS-DAMAGE TO WS-E1
+     STRING FUNCTION TRIM(TL-OBSERVED) " tool damage " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED.
+
+ CLEAR-ABOVE.
+     MOVE 0 TO WS-STATE
+     COMPUTE WS-Y = WS-Y + 1
+     CALL "WORLD-SET-BLOCK" USING WS-ONE WS-X WS-Y WS-Z WS-STATE
+     COMPUTE WS-Y = WS-Y - 1.
 
 *> Alice breaks dirt with the item of WS-ITEM-KEY (slot 4): its damage is appended to TL-OBSERVED.
  BREAK-WITH.
