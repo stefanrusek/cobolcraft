@@ -3,7 +3,8 @@
 *> (LW-KIND 1 Xoroshiro128++ with the 128-bit state LW-LO/LW-HI, 2 the Java LCG with its 48-bit state in LW-LO; LW-SEQ the
 *> row of LOOT-SEQUENCES it continues, 0 for an explicit seed), the tables being rolled (LW-VIS: the loop guard of 5.1 step 2),
 *> the function chain (LW-CHAIN: the entry, pool and table modifiers wrapped around the stack consumer, outermost first, 5.1
-*> step 3 and 5.3 step 5), the stacks produced so far (LW-OUT) and the error flag of the number providers (LW-ERR: 9.1, an
+*> step 3 and 5.3 step 5), the leaf entries a pool draw collects (LW-LEAF: document slot, entry node, a sub index that tells which member of a tag or
+*> which table of a list the leaf stands for, 0 for all; LW-TOTAL: the sum of their effective weights), the stacks produced so far (LW-OUT) and the error flag of the number providers (LW-ERR: 9.1, an
 *> arithmetic error makes getInt 0).
 *> LOOT-SEQUENCES: the named random sequences (section 4 step 5): the three seeding parameters (LQ-SALT, LQ-NO-WORLD-SEED and
 *> LQ-NO-SEQUENCE-ID are 1 for include_world_seed / include_sequence_id false; a fresh state includes both) and one generator
@@ -29,6 +30,13 @@
     05 LW-CHAIN             OCCURS 48 TIMES.
        10 LW-CH-SLOT        BINARY-LONG.
        10 LW-CH-NODE        BINARY-LONG.
+    05 LW-LEAF-COUNT        BINARY-LONG.
+    05 LW-TOTAL             BINARY-LONG.
+    05 LW-LEAF              OCCURS 128 TIMES.
+       10 LW-LF-SLOT        BINARY-LONG.
+       10 LW-LF-NODE        BINARY-LONG.
+       10 LW-LF-SUB         BINARY-LONG.
+       10 LW-LF-WEIGHT      BINARY-LONG.
     05 LW-OUT-COUNT         BINARY-LONG.
     05 LW-OUT               OCCURS 256 TIMES.
        10 LW-OUT-ITEM       BINARY-LONG.

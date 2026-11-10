@@ -1,0 +1,17 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:loam",
+     "condition": {
+      "type": "minecraft:killed_by_player"
+     }
+    }
+   ]
+  }
+ ]
+}

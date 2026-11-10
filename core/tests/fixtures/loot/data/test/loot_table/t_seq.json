@@ -1,0 +1,30 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:sequence",
+     "children": [
+      {
+       "type": "minecraft:item",
+       "name": "cobolcraft:loam"
+      },
+      {
+       "type": "minecraft:item",
+       "name": "cobolcraft:grit",
+       "condition": {
+        "type": "minecraft:killed_by_player"
+       }
+      },
+      {
+       "type": "minecraft:item",
+       "name": "cobolcraft:turf"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

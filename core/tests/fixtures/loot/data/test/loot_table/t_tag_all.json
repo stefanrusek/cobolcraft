@@ -1,0 +1,15 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:tag",
+     "items": "#minecraft:enchantable/mining",
+     "expand": false
+    }
+   ]
+  }
+ ]
+}
