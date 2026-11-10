@@ -102,6 +102,8 @@
      MOVE 0 TO PL-MODE
      CALL "CAN-USE-GM" USING CLIENT-STATE WS-OK
      MOVE "acceptance US12 40-9§2.2 level 4 (owner) in survival cannot: both creative and the permission are required" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 26 TO WS-BYTE
      PERFORM SEND-EVENT
