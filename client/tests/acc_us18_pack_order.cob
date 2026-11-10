@@ -1,5 +1,5 @@
 *> Acceptance test US18-2 (spec.md User Story 18 and its edge case "a local pack contains only some
-*> files"; 08 §3.1, §3.2; client-surface §2 options.dat; client/src/screens/pack-select.cob,
+*> files"; 08 §3.1, §3.2; client-surface §2 options.txt; client/src/screens/pack-select.cob,
 *> packs/stack.cob): packs enabled and ordered on the pack screen stack in that order, a higher
 *> pack's file wins, the built-in pack stays at the bottom, the choice and order are kept after a
 *> restart, and a pack's missing files come from the packs below.

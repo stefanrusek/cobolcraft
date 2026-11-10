@@ -556,7 +556,7 @@
 *> USING PB-BUFFER, PB-RECIPE-ENTRY, PB-SLOT-DISPLAY-TABLE: a RecipeBookAddEntry (05b): the
 *> RecipeDisplayEntry (VarInt display id; RecipeDisplay: VarInt type, then the type's slots as
 *> PROTO.cpy lists them; OptionalVarInt group; RegistryId category; Optional crafting
-*> requirements, each a HolderSet<item> of one item) and the flags Byte. shapeless and shaped write
+*> requirements, each a HolderSet<item>: a tag, a list of up to 8 items or one item, see PROTO.cpy) and the flags Byte. shapeless and shaped write
 *> PB-RE-INGREDIENT-COUNT (0 to 9) slots, shaped after width and height; furnace (2 slots, then
 *> duration and experience), stonecutter (1) and smithing (3) ignore the count. A type outside 0 to
 *> 4, a negative id, group, category, width, height or duration, flags outside 0 to 255, a
@@ -568,8 +568,10 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
  01 WS-SELECTOR            BINARY-LONG VALUE 2.
+ 01 WS-LIST-SELECTOR       BINARY-LONG.
  01 WS-NO-PARENT           BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER PB-RECIPE-ENTRY PB-SLOT-DISPLAY-TABLE.
@@ -602,10 +604,17 @@
              GOBACK
          END-IF
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RE-REQ-COUNT
-             IF PB-RE-REQ-ITEM(WS-I) < 0
+             IF PB-RE-REQ-ITEM(WS-I) < 0 OR PB-RE-REQ-N(WS-I) < 0 OR PB-RE-REQ-N(WS-I) > PB-RE-REQ-MAX-LIST
+                     OR PB-RE-REQ-TAG-LENGTH(WS-I) < 0
                  MOVE 1 TO PB-ERROR
                  GOBACK
              END-IF
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-RE-REQ-N(WS-I)
+                 IF PB-RE-REQ-LIST(WS-I, WS-J) < 0
+                     MOVE 1 TO PB-ERROR
+                     GOBACK
+                 END-IF
+             END-PERFORM
          END-PERFORM
      END-IF
      CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RE-DISPLAY-ID
@@ -636,8 +645,19 @@
      IF PB-RE-REQ-PRESENT = 1
          CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RE-REQ-COUNT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RE-REQ-COUNT
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SELECTOR
-             CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RE-REQ-ITEM(WS-I)
+             EVALUATE TRUE
+                 WHEN PB-RE-REQ-TAG-LENGTH(WS-I) > 0
+                     CALL "PB-PUT-SLOT-TAG" USING PB-BUFFER PB-RE-REQ-TAG(WS-I) PB-RE-REQ-TAG-LENGTH(WS-I)
+                 WHEN PB-RE-REQ-N(WS-I) > 0
+                     COMPUTE WS-LIST-SELECTOR = PB-RE-REQ-N(WS-I) + 1
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-LIST-SELECTOR
+                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-RE-REQ-N(WS-I)
+                         CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RE-REQ-LIST(WS-I, WS-J)
+                     END-PERFORM
+                 WHEN OTHER
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SELECTOR
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER PB-RE-REQ-ITEM(WS-I)
+             END-EVALUATE
          END-PERFORM
      END-IF
      CALL "PB-PUT-UBYTE" USING PB-BUFFER PB-RE-FLAGS
@@ -651,7 +671,7 @@
  PROGRAM-ID. PB-GET-RECIPE-ENTRY.
 *> USING PB-BUFFER, PB-RECIPE-ENTRY out, PB-SLOT-DISPLAY-TABLE out: one RecipeBookAddEntry (layout of
 *> PB-PUT-RECIPE-ENTRY); slots are numbered in the order read. A type outside 0 to 4, an ingredient
-*> or requirement count outside 0 to 9, a requirement that is not a HolderSet of exactly one item,
+*> or requirement count outside 0 to 9, a requirement that is an empty list or one of more than 8 items,
 *> a slot PB-GET-SLOT-DISPLAY-NODE rejects or a short read sets PB-ERROR, leaves PB-POS where it was
 *> and yields an all-zero entry and an empty table.
  DATA DIVISION.
@@ -660,7 +680,9 @@
  01 WS-NODE                BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
  01 WS-SELECTOR            BINARY-LONG.
+ 01 WS-TAG-CAPACITY        BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER PB-RECIPE-ENTRY PB-SLOT-DISPLAY-TABLE.
@@ -711,12 +733,23 @@
              MOVE 1 TO PB-ERROR
              MOVE 0 TO PB-RE-REQ-COUNT
          END-IF
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RE-REQ-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-RE-REQ-COUNT OR PB-ERROR = 1
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-SELECTOR
-             CALL "PB-GET-VARINT" USING PB-BUFFER PB-RE-REQ-ITEM(WS-I)
-             IF WS-SELECTOR NOT = 2
-                 MOVE 1 TO PB-ERROR
-             END-IF
+             EVALUATE TRUE
+                 WHEN WS-SELECTOR = 0
+                     MOVE 64 TO WS-TAG-CAPACITY
+                     CALL "PB-GET-IDENTIFIER" USING PB-BUFFER PB-RE-REQ-TAG(WS-I) WS-TAG-CAPACITY
+                         PB-RE-REQ-TAG-LENGTH(WS-I)
+                 WHEN WS-SELECTOR < 2 OR WS-SELECTOR > PB-RE-REQ-MAX-LIST + 1
+                     MOVE 1 TO PB-ERROR
+                 WHEN WS-SELECTOR = 2
+                     CALL "PB-GET-VARINT" USING PB-BUFFER PB-RE-REQ-ITEM(WS-I)
+                 WHEN OTHER
+                     COMPUTE PB-RE-REQ-N(WS-I) = WS-SELECTOR - 1
+                     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-RE-REQ-N(WS-I)
+                         CALL "PB-GET-VARINT" USING PB-BUFFER PB-RE-REQ-LIST(WS-I, WS-J)
+                     END-PERFORM
+             END-EVALUATE
          END-PERFORM
      END-IF
      CALL "PB-GET-UBYTE" USING PB-BUFFER PB-RE-FLAGS

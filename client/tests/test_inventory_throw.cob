@@ -42,8 +42,7 @@
        10 WS-Y             FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
@@ -53,7 +52,7 @@
      MOVE "test inventory throw Q over slot 0 sends THROW button 0 and leaves 63" TO TL-CASE
      MOVE 0 TO WS-SLOT WS-MODS
      PERFORM PRESS-Q
-     MOVE "12000100000004010000" & "01023f000000 slot 63x2 cursor 0x0" TO TL-EXPECTED
+     MOVE "12000100240004010024" & "01023f000000 slot 63x2 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw Ctrl+Q over slot 1 sends THROW button 1 and empties it"
@@ -61,7 +60,7 @@
      MOVE 1 TO WS-SLOT
      MOVE CC-MOD-CONTROL TO WS-MODS
      PERFORM PRESS-Q
-     MOVE "1200010001010401000100" & "00 slot 0x0 cursor 0x0" TO TL-EXPECTED
+     MOVE "1200010025010401002500" & "00 slot 0x0 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw Q over an empty slot sends nothing" TO TL-CASE
@@ -96,7 +95,7 @@
      MOVE 2 TO WS-N
      CALL "TEST-EVENTS" USING CLIENT-STATE WS-EVENTS WS-N
      PERFORM OBSERVE
-     MOVE "1200010002000001000200" & "0104400000 120001fc1900000000 slot 0x0 cursor 0x0"
+     MOVE "1200010026000001002600" & "0104400000 120001fc1900000000 slot 0x0 cursor 0x0"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -145,7 +144,7 @@
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE 2 TO WS-SLOT
      PERFORM OBSERVE
-     MOVE "39000240070000 1300 slot 64x7 cursor 0x0" TO TL-EXPECTED
+     MOVE "39002640070000 1300 slot 64x7 cursor 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory throw closing the screen tops up a stack of the carried item first, "

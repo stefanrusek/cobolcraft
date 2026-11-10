@@ -14,10 +14,33 @@
  COPY CLCONST.
  COPY JSONDOC.
  01 WS-PATHS.
-    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/gui/sprites/widget/button.png".
-    05 FILLER PIC X(64) VALUE "assets/minecraft/textures/gui/sprites/container/slot.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/widget/button.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/container/slot.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar_selection.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/hotbar_offhand_left.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/crosshair.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/container.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/full.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/heart/half.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_empty.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_full.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/hud/food_half.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/inventory.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/container/crafting_table.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/recipe_book.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/button.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/tab.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/tab_selected.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/filter_enabled.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/filter_disabled.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/page_forward.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/page_backward.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/slot_craftable.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/recipe_book/slot_uncraftable.png".
+    05 FILLER PIC X(80) VALUE "assets/minecraft/textures/gui/sprites/toast/recipe.png".
  01 WS-PATH-TABLE REDEFINES WS-PATHS.
-    05 WS-SPRITE-PATH      PIC X(64) OCCURS 2 TIMES.
+    05 WS-SPRITE-PATH      PIC X(80) OCCURS 25 TIMES.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-META-PATH           PIC X(256).
@@ -54,9 +77,13 @@
          MOVE 0 TO GS-TOTAL-H GS-MAX-W
      END-IF
      MOVE 0 TO WS-Y
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 2
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > GSP-COUNT
          MOVE SPACES TO WS-PATH
-         MOVE WS-SPRITE-PATH(WS-K) TO WS-PATH
+         IF WS-K <= 25
+             MOVE WS-SPRITE-PATH(WS-K) TO WS-PATH
+         ELSE
+             CALL "GUI-SPRITE-PATH-X" USING WS-K WS-PATH
+         END-IF
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PATH)) TO WS-PATH-LENGTH
          CALL "PACK-IMAGE" USING CLIENT-STATE WS-PATH WS-PATH-LENGTH WS-IMAGE WS-IMAGE-CAP WS-IW
              WS-IH WS-FOUND
@@ -201,3 +228,112 @@
      END-IF
      GOBACK.
  END PROGRAM GUI-SPRITE-SCALING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GUI-SPRITE-PATH-X.
+*> USING sprite row (26 to GSP-COUNT), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49): the 40 mob_effect
+*> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
+*> the hunger food sprites.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CLEFFECT.
+ 01 WS-SPRITES             PIC X(40) VALUE "assets/minecraft/textures/gui/sprites/".
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-HARDCORE            BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-BLINK               BINARY-LONG.
+ 01 WS-NAME                PIC X(48).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-TYPE-NAMES.
+    05 FILLER              PIC X(10) VALUE "          ".
+    05 FILLER              PIC X(10) VALUE "poisoned_ ".
+    05 FILLER              PIC X(10) VALUE "withered_ ".
+    05 FILLER              PIC X(10) VALUE "frozen_   ".
+    05 FILLER              PIC X(10) VALUE "absorbing_".
+ 01 WS-TYPE-TABLE REDEFINES WS-TYPE-NAMES.
+    05 WS-TYPE-NAME        PIC X(10) OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-PATH                 PIC X(256).
+ PROCEDURE DIVISION USING L-ROW L-PATH.
+     MOVE SPACES TO L-PATH WS-NAME
+     EVALUATE TRUE
+         WHEN L-ROW >= GSP-MOB-EFFECT-0 AND L-ROW < GSP-MOB-EFFECT-0 + EF-TABLE-COUNT
+             COMPUTE WS-N = L-ROW - GSP-MOB-EFFECT-0 + 1
+             STRING "mob_effect/" FUNCTION TRIM(EF-ROW-KEY(WS-N)) DELIMITED BY SIZE INTO WS-NAME
+         WHEN L-ROW = GSP-EFFECT-BG
+             MOVE "hud/effect_background" TO WS-NAME
+         WHEN L-ROW = GSP-EFFECT-BG-AMBIENT
+             MOVE "hud/effect_background_ambient" TO WS-NAME
+         WHEN L-ROW = GSP-INV-EFFECT-BG
+             MOVE "container/inventory/effect_background" TO WS-NAME
+         WHEN L-ROW = GSP-INV-EFFECT-BG-AMBIENT
+             MOVE "container/inventory/effect_background_ambient" TO WS-NAME
+         WHEN L-ROW = GSP-ARMOR-EMPTY
+             MOVE "hud/armor_empty" TO WS-NAME
+         WHEN L-ROW = GSP-ARMOR-HALF
+             MOVE "hud/armor_half" TO WS-NAME
+         WHEN L-ROW = GSP-ARMOR-FULL
+             MOVE "hud/armor_full" TO WS-NAME
+         WHEN L-ROW = GSP-AIR
+             MOVE "hud/air" TO WS-NAME
+         WHEN L-ROW = GSP-AIR-EMPTY
+             MOVE "hud/air_empty" TO WS-NAME
+         WHEN L-ROW = GSP-AIR-BURSTING
+             MOVE "hud/air_bursting" TO WS-NAME
+         WHEN L-ROW = GSP-VEHICLE-CONTAINER
+             MOVE "hud/heart/vehicle_container" TO WS-NAME
+         WHEN L-ROW = GSP-VEHICLE-FULL
+             MOVE "hud/heart/vehicle_full" TO WS-NAME
+         WHEN L-ROW = GSP-VEHICLE-HALF
+             MOVE "hud/heart/vehicle_half" TO WS-NAME
+         WHEN L-ROW = GSP-HEART-CONTAINER-BLINK
+             MOVE "hud/heart/container_blinking" TO WS-NAME
+         WHEN L-ROW = GSP-HEART-CONTAINER-HARDCORE
+             MOVE "hud/heart/container_hardcore" TO WS-NAME
+         WHEN L-ROW = GSP-HEART-CONTAINER-HARDCORE-BLINK
+             MOVE "hud/heart/container_hardcore_blinking" TO WS-NAME
+         WHEN L-ROW >= GSP-HEART-VARIANT-0 AND L-ROW < GSP-FOOD-EMPTY-HUNGER
+             COMPUTE WS-N = L-ROW - GSP-HEART-VARIANT-0
+             COMPUTE WS-BLINK = FUNCTION MOD(WS-N, 2)
+             COMPUTE WS-N = WS-N / 2
+             COMPUTE WS-HALF = FUNCTION MOD(WS-N, 2)
+             COMPUTE WS-N = WS-N / 2
+             COMPUTE WS-HARDCORE = FUNCTION MOD(WS-N, 2)
+             COMPUTE WS-TYPE = WS-N / 2 + 1
+             MOVE 1 TO WS-PTR
+             STRING "hud/heart/" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             IF WS-TYPE > 1
+                 STRING FUNCTION TRIM(WS-TYPE-NAME(WS-TYPE)) DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             END-IF
+             IF WS-HARDCORE = 1
+                 STRING "hardcore_" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             END-IF
+             IF WS-HALF = 1
+                 STRING "half" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             ELSE
+                 STRING "full" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             END-IF
+             IF WS-BLINK = 1
+                 STRING "_blinking" DELIMITED BY SIZE INTO WS-NAME WITH POINTER WS-PTR
+             END-IF
+         WHEN L-ROW = GSP-HIGHLIGHT-BACK
+             MOVE "container/slot_highlight_back" TO WS-NAME
+         WHEN L-ROW = GSP-HIGHLIGHT-FRONT
+             MOVE "container/slot_highlight_front" TO WS-NAME
+         WHEN L-ROW = GSP-TOOLTIP-BACK
+             MOVE "tooltip/background" TO WS-NAME
+         WHEN L-ROW = GSP-TOOLTIP-FRAME
+             MOVE "tooltip/frame" TO WS-NAME
+         WHEN L-ROW = GSP-FOOD-EMPTY-HUNGER
+             MOVE "hud/food_empty_hunger" TO WS-NAME
+         WHEN L-ROW = GSP-FOOD-HALF-HUNGER
+             MOVE "hud/food_half_hunger" TO WS-NAME
+         WHEN OTHER
+             MOVE "hud/food_full_hunger" TO WS-NAME
+     END-EVALUATE
+     STRING FUNCTION TRIM(WS-SPRITES) FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+     GOBACK.
+ END PROGRAM GUI-SPRITE-PATH-X.

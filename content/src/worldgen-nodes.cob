@@ -50,6 +50,7 @@
  01 L-INDEX                BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-WHICH L-N L-KEY L-INDEX L-STATUS.
+     ADD 1 TO WG-LOAD-GEN
      IF WG-COUNT(L-WHICH) + L-N > WS-LIMIT(L-WHICH)
          MOVE 1 TO L-STATUS
          MOVE "the world generation store is full" TO WS-DETAIL
@@ -885,7 +886,7 @@
                          ADD 1 TO LS-II
                          MOVE LS-CHILD TO WGN-INT(LS-IDX, LS-II)
                      WHEN OTHER
-*>                       T, X and H: the first text slot holds 160 bytes, the second 112.
+*>                       T, X and H: the first text slot holds 160 bytes, the second and third 112.
                          IF LS-TI = 0
                              MOVE WS-LIMIT-160 TO LS-LIMIT
                          ELSE
@@ -900,11 +901,14 @@
                                  CALL "WG-LIST-TEXT" USING JSON-DOC LS-MEMBER LS-LIMIT LS-TEXT LS-OK
                          END-EVALUATE
                          ADD 1 TO LS-TI
-                         IF LS-TI = 1
-                             MOVE LS-TEXT TO WGN-TEXT-1(LS-IDX)
-                         ELSE
-                             MOVE LS-TEXT TO WGN-TEXT-2(LS-IDX)
-                         END-IF
+                         EVALUATE LS-TI
+                             WHEN 1
+                                 MOVE LS-TEXT TO WGN-TEXT-1(LS-IDX)
+                             WHEN 2
+                                 MOVE LS-TEXT TO WGN-TEXT-2(LS-IDX)
+                             WHEN OTHER
+                                 MOVE LS-TEXT TO WGN-TEXT-3(LS-IDX)
+                         END-EVALUATE
                  END-EVALUATE
              END-IF
          END-PERFORM

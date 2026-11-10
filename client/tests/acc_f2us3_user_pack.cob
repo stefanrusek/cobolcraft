@@ -2,7 +2,7 @@
 *> Faithful 32x zip (tmp/Faithful 32x - 26.3.zip; the test FAILS loudly when it or the jar is absent) is
 *> copied into resourcepacks/ next to the real generated packs (extracted from tmp/minecraft-26.3-client.jar
 *> by the extraction tool). It lists on the pack screen as compatible, enables (its 32 pixel stone replaces the
-*> generated 16 pixel one), moves above another pack, survives a restart in options.dat, and disabling it returns
+*> generated 16 pixel one), moves above another pack, survives a restart in options.txt, and disabling it returns
 *> the generated look.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-F2US3-USER-PACK.

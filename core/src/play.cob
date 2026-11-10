@@ -4,7 +4,7 @@
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph:
 *>   1. Login (0x32), then Commands (0x10, the tree the player may use, CMD-TREE-SEND,
-*>      core/src/commands.cob) and Recipe Book Settings and Add (0x4D, 0x4B, RECBOOK-JOIN, core/src/recipe-unlock.cob)
+*>      core/src/commands.cob), Update Recipes (0x88, RECIPES-UPDATE-SEND, core/src/recipes-update.cob) and Recipe Book Settings and Add (0x4D, 0x4B, RECBOOK-JOIN, core/src/recipe-unlock.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
@@ -93,6 +93,7 @@
      CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "CMD-TREE-SEND" USING WS-ROW
+     CALL "RECIPES-UPDATE-SEND" USING L-ID
      CALL "RECBOOK-JOIN" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-ABILITIES-BUILD" USING PL-MODE(WS-ROW) PL-FLYING(WS-ROW) PB-BUFFER

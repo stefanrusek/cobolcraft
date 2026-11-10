@@ -196,11 +196,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-DEBUG               BINARY-LONG.
  PROCEDURE DIVISION.
      IF CW-OPEN NOT = "Y"
          GOBACK
      END-IF
      ADD 1 TO CW-TICKS
+*>   A debug world runs no world work (debug-world.md section 6): only the connections' keep-alives.
+     CALL "WORLD-IS-DEBUG" USING WS-DEBUG
+     IF WS-DEBUG = 1
+         CALL "SESSION-TICK"
+         GOBACK
+     END-IF
      CALL "WORLD-TIME-TICK"
      CALL "WEATHER-TICK"
      CALL "BLOCKS-TICK"
@@ -208,6 +215,7 @@
      CALL "MOBS-SPAWN-TICK"
      CALL "MOBS-TICK"
      CALL "GROUND-ITEMS-TICK"
+     CALL "GEN-QUEUE-TICK"
      CALL "CRAFT-REFRESH-ALL"
      CALL "MENU-TICK"
      CALL "SESSION-TICK"

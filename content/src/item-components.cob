@@ -41,9 +41,15 @@
 *>   A3  17 section 2.1 lists an incorrect_for_diamond_tool and an incorrect_for_netherite_tool tag although those deny
 *>       nothing; the deny rule is still given (1.4 builds it for every material), its tag being empty.
 *>   A4  The golden material's deny tag is incorrect_for_gold_tool (17 section 2.1 table), its repair item gold_ingot.
-*>   A5  Not covered: spears (2.4), the special tools of 2.6 (mace, trident, shears, bow, ...), horse, wolf and nautilus
-*>       armor, block_transformer of the axe, shovel and hoe, and the elytra; they answer "not found" unless the row's summary
-*>       has the entry. The wolf/animal body armor values of 2.5 are not read.
+*>   A5  The spears (2.4), the mace, trident and shears (2.6), the horse, wolf and nautilus armor (2.5), the block_transformer of
+*>       the axe, shovel and hoe and a few single numbers of the special items are answered by ITEM-SPECIAL-COMPONENT
+*>       (item-components-special.cob, a data table); every other item answers "not found" unless the row's summary has the entry.
+*>   A7  The horse and nautilus armor has no max_damage default (the generated rows give it no durability, 17 1.4 lumps it with
+*>       the wolf armor); the wolf armor has max_damage 64 (4 x 16, 2.5).
+*>   A8  attack_speed of a spear is the modifier 1 / a - 4.0 to four places (17 1.4); the swing ticks floor(a x 20) are
+*>       13, 15, 17, 19, 19, 21, 23 for a = 0.65 to 1.15.
+*>   A9  The names of the special components (kinetic_*, use_duration, food_on_a_stick, equip_slot, repair_tag, tool_rule_4,
+*>       block_transformer's value) are chosen here, as A1 says of the tool names.
 *>   A6  The cobolcraft rule block set and speed are read from the first summary entry "tool ..." of the row (standard-core
 *>       5.2 puts it first); a cobolcraft item without a tool entry has none of the tool defaults.
 
@@ -396,6 +402,10 @@
          CALL "ITEM-TOOL-COMPONENT" USING WS-TOOL-LINE(WS-FOUND) L-NAME L-VALUE L-STATUS
      ELSE
          CALL "ITEM-ARMOR-COMPONENT" USING WS-R-KEY L-NAME L-VALUE L-STATUS
+     END-IF
+*>   The spears, the mace, the trident, shears, the animal armor and the transformers (item-components-special.cob).
+     IF L-STATUS NOT = CT-OK
+         CALL "ITEM-SPECIAL-COMPONENT" USING WS-R-KEY L-NAME L-VALUE L-STATUS
      END-IF
      GOBACK.
  END PROGRAM ITEM-DEFAULT-COMPONENT.

@@ -34,8 +34,8 @@
      MOVE 20 TO SM-W-H(1)
      MOVE "N" TO TL-MODE
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "nine-slice without a GUI pack a button is the one swatch quad (6 vertices)" TO TL-CASE
-     MOVE 6 TO TL-EXPECTED-N
+     MOVE "nine-slice with no pack a button is nine quads of the built-in art (54 vertices)" TO TL-CASE
+     MOVE 54 TO TL-EXPECTED-N
      MOVE RL-UI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

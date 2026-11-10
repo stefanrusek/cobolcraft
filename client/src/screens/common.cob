@@ -40,8 +40,13 @@
              AND CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "INVENTORY-CLOSE" USING CLIENT-STATE
      END-IF
+     IF (SM-SCREEN = SCR-BENCH AND L-SCREEN NOT = SCR-BENCH
+             OR SM-SCREEN = SCR-CONTAINER AND L-SCREEN NOT = SCR-CONTAINER) AND BM-ID > 0
+             AND CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "INVENTORY-CLOSE" USING CLIENT-STATE
+     END-IF
      MOVE L-SCREEN TO SM-SCREEN
-     MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT
+     MOVE 0 TO SM-FOCUS SM-WIDGET-COUNT RK-SEARCH-FOCUS RK-GHOST-W
      IF L-SCREEN = SCR-SERVER-LIST
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-COUNT
              MOVE SLS-NONE TO SL-STATUS(WS-I)
@@ -86,11 +91,15 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO SM-WIDGET-COUNT
+     MOVE 0 TO SM-WIDGET-COUNT TT-COUNT
 *>   The GUI scale: the largest whole number, 1 to 8, that leaves the GUI at least 320 x 240 (12 section
 *>   5.1; builtin-ui-art 4.13.6); below the minimum window the GUI keeps the 320 x 240 layout.
      COMPUTE CL-GUI-SCALE = FUNCTION MAX(1, FUNCTION MIN(CL-MAX-GUI-SCALE,
          FUNCTION MIN(IN-WIN-W / CL-MIN-GUI-W, IN-WIN-H / CL-MIN-GUI-H)))
+*>   The guiScale option (0 = automatic) is a limit below the automatic scale.
+     IF CL-GUI-OPTION > 0
+         COMPUTE CL-GUI-SCALE = FUNCTION MIN(CL-GUI-SCALE, CL-GUI-OPTION)
+     END-IF
      COMPUTE WS-GW = FUNCTION MAX(IN-WIN-W / CL-GUI-SCALE, CL-MIN-GUI-W)
      COMPUTE WS-GH = FUNCTION MAX(IN-WIN-H / CL-GUI-SCALE, CL-MIN-GUI-H)
      EVALUATE SM-SCREEN
@@ -108,8 +117,10 @@
              CALL "HUD-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-INVENTORY
              CALL "INVENTORY-BUILD" USING CLIENT-STATE WS-GW WS-GH
-         WHEN SCR-CRAFTING
-             CALL "CRAFTING-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-BENCH
+             CALL "BENCH-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-CONTAINER
+             CALL "CONTAINER-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-CHAT
              CALL "CHAT-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-DEATH
@@ -128,7 +139,12 @@
              CALL "PACK-CONFIRM-BUILD" USING CLIENT-STATE WS-GW WS-GH
          WHEN SCR-PACK-PROMPT
              CALL "PACK-PROMPT-BUILD" USING CLIENT-STATE WS-GW WS-GH
+         WHEN SCR-OPTIONS
+             CALL "OPTIONS-BUILD" USING CLIENT-STATE WS-GW WS-GH
      END-EVALUATE
+     IF CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "RECIPE-TOAST-BUILD" USING CLIENT-STATE WS-GW
+     END-IF
      GOBACK.
  END PROGRAM SCREEN-BUILD.
 
@@ -142,7 +158,7 @@
 *> the server list and the world list for the title screen, and the create-world and confirm-delete
 *> screens for the world list; typed text goes to the create-world name (create-world.cob);
 *> Escape leaves the pack screen as Done does and the pack confirmation for the pack screen;
-*> Escape and E close the inventory screen, E opens it from the world; Escape and C close the crafting screen, C opens it from the world (as T); T opens chat
+*> Escape and E close the inventory screen, E opens it from the world; T opens chat
 *> from the world (the screen the frame began on, so the T typed with it and a line just sent do
 *> not reopen it), / opens it the same way with / typed, Escape closes chat; on the chat screen
 *> the frame's typed text, keys and wheel go to the chat line (chat.cob).
@@ -158,6 +174,8 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-SCREEN              BINARY-LONG.
  01 WS-WAS                 BINARY-LONG.
+ 01 WS-KEYC                BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
  01 WS-Z1                   BINARY-LONG VALUE 0.
  01 WS-Z2                   BINARY-LONG VALUE 0.
  01 WS-Z3                   BINARY-LONG VALUE 0.
@@ -168,9 +186,11 @@
          COMPUTE WS-X = IN-CLICK-X / CL-GUI-SCALE
          COMPUTE WS-Y = IN-CLICK-Y / CL-GUI-SCALE
          MOVE 0 TO WS-HIT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT OR WS-HIT > 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
              IF SM-W-KIND(WS-I) NOT = WK-LABEL AND SM-W-KIND(WS-I) NOT = WK-OVERLAY
-                     AND SM-W-STATE(WS-I) NOT = 2
+                     AND SM-W-KIND(WS-I) NOT = WK-SPRITE AND SM-W-KIND(WS-I) NOT = WK-METER
+                     AND SM-W-KIND(WS-I) NOT = WK-SHEET
+                     AND SM-W-STATE(WS-I) NOT = 2 AND SM-W-ACTION(WS-I) NOT = ACT-NONE
                      AND WS-X >= SM-W-X(WS-I)
                      AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I) AND WS-Y >= SM-W-Y(WS-I)
                      AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
@@ -188,31 +208,24 @@
      IF SM-SCREEN = SCR-CHAT
          CALL "CHAT-INPUT" USING CLIENT-STATE
      END-IF
+     IF SM-SCREEN = SCR-OPTIONS
+         CALL "OPTIONS-INPUT" USING CLIENT-STATE
+     END-IF
      IF SM-SCREEN = SCR-CREATE-WORLD AND WS-WAS = SCR-CREATE-WORLD
          CALL "CREATE-WORLD-INPUT" USING CLIENT-STATE
      END-IF
-     IF IN-KEY-PRESSED(CC-KEY-T + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
+     MOVE KB-CODE(KB-CHAT) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
          MOVE SCR-CHAT TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      END-IF
-     IF IN-KEY-PRESSED(CC-KEY-SLASH + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
+     MOVE KB-CODE(KB-COMMAND) TO WS-KEYC
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND WS-WAS = SCR-WORLD AND SM-SCREEN = SCR-WORLD
          MOVE SCR-CHAT TO WS-SCREEN
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
          MOVE "/" TO CH-LINE(1:1)
          MOVE 1 TO CH-LINE-LENGTH
          CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     END-IF
-     IF IN-KEY-PRESSED(CC-KEY-C + 1) = 1 AND WS-WAS = SM-SCREEN
-         MOVE 0 TO WS-SCREEN
-         EVALUATE SM-SCREEN
-             WHEN SCR-WORLD
-                 MOVE SCR-CRAFTING TO WS-SCREEN
-             WHEN SCR-CRAFTING
-                 MOVE SCR-WORLD TO WS-SCREEN
-         END-EVALUATE
-         IF WS-SCREEN > 0
-             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
-         END-IF
      END-IF
      IF IN-KEY-PRESSED(CC-KEY-ESCAPE + 1) = 1
          MOVE 0 TO WS-SCREEN
@@ -223,6 +236,8 @@
                  MOVE SCR-WORLD TO WS-SCREEN
              WHEN SCR-OPEN-TO-OTHERS
                  MOVE SCR-PAUSE TO WS-SCREEN
+             WHEN SCR-OPTIONS
+                 MOVE OP-RETURN TO WS-SCREEN
              WHEN SCR-PACK-CONFIRM
                  MOVE SCR-PACKS TO WS-SCREEN
              WHEN SCR-PACKS
@@ -237,7 +252,8 @@
              WHEN SCR-CONFIRM-DELETE
                  MOVE SCR-WORLD-LIST TO WS-SCREEN
              WHEN SCR-INVENTORY
-             WHEN SCR-CRAFTING
+             WHEN SCR-BENCH
+             WHEN SCR-CONTAINER
              WHEN SCR-CHAT
                  MOVE SCR-WORLD TO WS-SCREEN
          END-EVALUATE
@@ -245,12 +261,22 @@
              CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
          END-IF
      END-IF
-     IF IN-KEY-PRESSED(CC-KEY-E + 1) = 1
+     IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH
+         CALL "RECIPE-BOOK-INPUT" USING CLIENT-STATE
+     END-IF
+     MOVE KB-CODE(KB-INVENTORY) TO WS-KEYC
+     MOVE 0 TO WS-FIELD
+     IF SM-SCREEN = SCR-CONTAINER AND BM-TYPE = 8 AND BX-COUNT(1) > 0
+         MOVE 1 TO WS-FIELD
+     END-IF
+     IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND RK-SEARCH-FOCUS = 0 AND WS-FIELD = 0
          MOVE 0 TO WS-SCREEN
          EVALUATE SM-SCREEN
              WHEN SCR-WORLD
                  MOVE SCR-INVENTORY TO WS-SCREEN
              WHEN SCR-INVENTORY
+             WHEN SCR-BENCH
+             WHEN SCR-CONTAINER
                  MOVE SCR-WORLD TO WS-SCREEN
          END-EVALUATE
          IF WS-SCREEN > 0
@@ -345,12 +371,23 @@
              END-IF
          WHEN ACT-RESUME
              MOVE SCR-WORLD TO WS-SCREEN
+         WHEN ACT-MENU-BUTTON
+             CALL "MENU-BUTTON-CLICK" USING CLIENT-STATE L-ARG
+         WHEN ACT-BEACON-PRIMARY THRU ACT-TRADE-SELECT
+             CALL "MENU-ACTION" USING CLIENT-STATE L-ACTION L-ARG
          WHEN ACT-SLOT
-             CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
+             IF SM-SCREEN NOT = SCR-CONTAINER
+                 CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
+             END-IF
          WHEN ACT-RESPAWN
              CALL "DEATH-RESPAWN" USING CLIENT-STATE
-         WHEN ACT-CRAFT
-             CALL "CRAFTING-CRAFT" USING CLIENT-STATE L-ARG
+         WHEN ACT-RB-BOOK
+         WHEN ACT-RB-TAB
+         WHEN ACT-RB-FILTER
+         WHEN ACT-RB-PAGE
+         WHEN ACT-RB-CELL
+         WHEN ACT-RB-SEARCH
+             CALL "RECIPE-BOOK-ACTION" USING CLIENT-STATE L-ACTION L-ARG
          WHEN ACT-SINGLE-PLAYER
              MOVE SCR-WORLD-LIST TO WS-SCREEN
          WHEN ACT-PLAY-WORLD
@@ -392,6 +429,16 @@
          WHEN ACT-PACK-CONFIRM
          WHEN ACT-PACKS-DONE
              CALL "PACK-SELECT-ACTION" USING CLIENT-STATE L-ACTION
+         WHEN ACT-OPTIONS
+             MOVE SM-SCREEN TO OP-RETURN
+             MOVE 0 TO OP-PAGE OP-REBIND
+             MOVE SCR-OPTIONS TO WS-SCREEN
+         WHEN ACT-OPTION
+         WHEN ACT-OPTIONS-PREV
+         WHEN ACT-OPTIONS-NEXT
+             CALL "OPTIONS-ACTION" USING CLIENT-STATE L-ACTION L-ARG
+         WHEN ACT-OPTIONS-DONE
+             MOVE OP-RETURN TO WS-SCREEN
          WHEN ACT-PACK-ACCEPT
          WHEN ACT-PACK-DECLINE
              COMPUTE WS-I = ACT-PACK-DECLINE - L-ACTION
@@ -475,9 +522,22 @@
          MOVE L-TEXT TO SM-W-TEXT(SM-WIDGET-COUNT)
          MOVE FUNCTION MIN(L-LENGTH, 256) TO SM-W-LENGTH(SM-WIDGET-COUNT)
          MOVE L-STATE TO SM-W-STATE(SM-WIDGET-COUNT)
+         MOVE 0 TO SM-W-SPRITE(SM-WIDGET-COUNT) SM-W-COLOUR(SM-WIDGET-COUNT)
      END-IF
      GOBACK.
  END PROGRAM WIDGET-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WIDGET-COLOUR.
+*> USING CLIENT-STATE, colour (RGB integer): the text colour of the widget added last.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-RGB                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-RGB.
+     MOVE L-RGB TO SM-W-COLOUR(SM-WIDGET-COUNT)
+     GOBACK.
+ END PROGRAM WIDGET-COLOUR.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEXT-FIT.
