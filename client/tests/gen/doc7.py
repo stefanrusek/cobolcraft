@@ -59,3 +59,27 @@ if __name__=='__main__':
     for r in rows_from(7,'### 2.1'): print(r)
     for r in rows_from(7,'### 3.1'): print(r)
     for r in rows_from(7,'### 6.1')[:6]: print(r)
+
+def rot_of(s):
+    s=s.strip(); r=[0.0,0.0,0.0]
+    m=re.match(r'^([xyz])\s+(-?[0-9.]+)',s)
+    if m: r['xyz'.index(m.group(1))]=m.group(2)
+    return [str(v) if not isinstance(v,float) else '0' for v in r]
+def rows7(heading,nth=0):
+    """tables with columns Part, Parent, Pivot, Rotation, Box, tex[, Mirror]; one box per row"""
+    t,hd=table(7,heading,nth)
+    out=[]
+    for c in t:
+        d=dict(zip(hd,c))
+        name=d['part'].replace('`','').split()[0]
+        parent=d['parent'].replace('`','')
+        pv=triple(d['pivot']) or ['0','0','0']
+        rot=rot_of(d.get('rotation','0'))
+        out.append('P %s %s %s %s'%(name,parent,' '.join(pv),' '.join(rot)))
+        bx=d['box']
+        o=triple(bx); sz=re.search(NUM+r'\s*x\s*'+NUM+r'\s*x\s*'+NUM,bx)
+        tx=re.search(r'\(\s*'+NUM+r'\s*,\s*'+NUM+r'\s*\)',d['tex'])
+        g=re.search(r'grow\s+'+NUM,bx); g=g.group(1) if g else '0'
+        mir='1' if d.get('mirror','').strip().lower().startswith('yes') else '0'
+        out.append('C %s %s %s %s %s %s %s %s %s'%(name,tx.group(1),tx.group(2),' '.join(o),sz.group(1),sz.group(2),sz.group(3),g,mir))
+    return out
