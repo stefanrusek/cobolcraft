@@ -129,6 +129,10 @@
           15 PL-SLOT OCCURS 36 TIMES.            *> inventory slot n is PL-SLOT(n + 1)
              20 PL-SLOT-ITEM BINARY-LONG.
              20 PL-SLOT-COUNT BINARY-LONG.       *> 0 = empty
+*>     The data component patch handle of each slot (core/copy/CSTACK.cpy, core/src/stack-patch.cob; 0 = none), kept
+*>     outside PL-INVENTORY so the recipe book's inventory snapshot stays the items and counts.
+       10 PL-SLOT-VARS.
+          15 PL-SLOT-VAR BINARY-LONG OCCURS 36 TIMES.
 *>     Recipe book (standin §13; core/src/crafting.cob): 1 once the join has sent Recipe Book Add,
 *>     and the inventory that book was computed from; a different inventory re-sends it.
        10 PL-BOOK-SENT       PIC 9.
@@ -143,6 +147,7 @@
 *>     The item on the cursor of the inventory screen (Container Click; core/src/inventory.cob).
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-CARRIED-COUNT   BINARY-LONG.        *> 0 = nothing carried
+       10 PL-CARRIED-VAR     BINARY-LONG.        *> its patch handle (0 = none)
 *>     A Container Click drag (QUICK_CRAFT, 05c 0x12): its type (button / 4) and the slots added.
        10 PL-DRAG-ACTIVE     PIC 9.
        10 PL-DRAG-TYPE       BINARY-LONG.

@@ -736,14 +736,22 @@
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-SHORT" USING PK-BUFFER WS-B
-                     CALL "PB-GET-ITEMSTACK" USING PK-BUFFER PK-ITEMSTACK
+                     CALL "PB-GET-ITEM-STACK" USING PK-BUFFER PK-ITEMSTACK-X
                      MOVE WS-A TO WS-E1
                      MOVE WS-B TO WS-E2
-                     MOVE PK-IS-ITEM TO WS-E3
-                     MOVE PK-IS-COUNT TO WS-E4
+                     MOVE PK-ISX-ITEM TO WS-E3
+                     MOVE PK-ISX-COUNT TO WS-E4
                      STRING "(" FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "="
-                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) ")" DELIMITED BY SIZE
+                         FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE
                          INTO L-TEXT POINTER WS-PTR
+*>                   A stack with a component patch shows its counts: "{a<added>r<removed>}".
+                     IF PK-ISX-ADDED-COUNT > 0 OR PK-ISX-REMOVED-COUNT > 0
+                         MOVE PK-ISX-ADDED-COUNT TO WS-E1
+                         MOVE PK-ISX-REMOVED-COUNT TO WS-E2
+                         STRING "{a" FUNCTION TRIM(WS-E1) "r" FUNCTION TRIM(WS-E2) "}" DELIMITED BY SIZE
+                             INTO L-TEXT POINTER WS-PTR
+                     END-IF
+                     STRING ")" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  WHEN 49
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-A
                      CALL "PB-GET-VARINT" USING PK-BUFFER WS-B

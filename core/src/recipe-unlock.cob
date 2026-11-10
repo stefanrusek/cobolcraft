@@ -536,12 +536,17 @@
  COPY RECBOOK.
  01 WS-ROW                 BINARY-LONG.
  01 WS-NO-REPLACE          BINARY-LONG VALUE 0.
+ 01 WS-NEW                 BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
          IF PL-USED(WS-ROW) = 1 AND RB-SENT(WS-ROW) = 1
                  AND PL-INVENTORY(WS-ROW) NOT = RB-INVENTORY(WS-ROW)
+*>           Only an item the last check did not see can unlock a recipe (RECIPE-NEW-ITEM): no scan of the store otherwise.
+             CALL "RECIPE-NEW-ITEM" USING WS-ROW WS-NEW
              MOVE PL-INVENTORY(WS-ROW) TO RB-INVENTORY(WS-ROW)
-             CALL "RECIPE-UNLOCK-CHECK" USING WS-ROW
+             IF WS-NEW = 1
+                 CALL "RECIPE-UNLOCK-CHECK" USING WS-ROW
+             END-IF
              CALL "RECBOOK-SEND" USING WS-ROW WS-NO-REPLACE
          END-IF
      END-PERFORM
@@ -554,8 +559,9 @@
 *> (nothing happens when it does not fit), then sets of the recipe are moved from the inventory into the grid: shapeless
 *> recipes fill the cells in order, shaped recipes keep their pattern from the top left of the grid. One set, or with use
 *> max items as many as the inventory supplies and the stacks allow. A recipe the inventory cannot supply for one set leaves
-*> the grid emptied into the inventory; the Place Ghost Recipe packet that 13 3.8 sends then is not built yet (BLOCKED:
-*> proto has no builder for 0x40).
+*> the grid emptied into the inventory and is answered with Place Ghost Recipe (RECIPE-GHOST, recipe-packets.cob). Without use
+*> max items one set is placed, except when the grid already held the recipe's items: then one more set than the smallest
+*> count in the grid (bounded by the ingredients' stack sizes, 13 3.8 item 4).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -577,10 +583,15 @@
  01 WS-PASS                BINARY-LONG.
  01 WS-SAVED-INV           PIC X(288).
  01 WS-SET-INV             PIC X(288).
+ 01 WS-SAVED-VARS          PIC X(144).
+ 01 WS-SET-VARS            PIC X(144).
+ 01 WS-FIRST               BINARY-LONG VALUE 0.
+ 01 WS-LAST                BINARY-LONG VALUE 35.
  01 WS-GRID.
     05 WS-CELL OCCURS 9 TIMES.
        10 WS-CELL-ITEM     BINARY-LONG.
        10 WS-CELL-COUNT    BINARY-LONG.
+       10 WS-CELL-VAR      BINARY-LONG.
  01 WS-SAVED-SET           PIC X(72).
  01 WS-SET-GRID.
     05 WS-SET-CELL OCCURS 9 TIMES.
@@ -603,6 +614,14 @@
  01 WS-OLD                 BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 2048.
+ 01 WS-TARGET-OFS.
+    05 WS-TARGET-OF        BINARY-LONG OCCURS 9 TIMES.
+ 01 WS-SAME                BINARY-LONG.
+ 01 WS-SMALLEST            BINARY-LONG.
+ 01 WS-STACKCAP            BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-ITEM-X              BINARY-LONG.
+ 01 WS-COUNT-X             BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -658,23 +677,68 @@
              END-PERFORM
          END-PERFORM
      END-IF
-*>   The grid back into the inventory: when it does not fit nothing happens.
-     MOVE PL-INVENTORY(WS-ROW) TO WS-SAVED-INV
+*>   Does the grid already hold this recipe's items (every ingredient cell holds a matching item, no other cell holds any)?
+*>   Then, without use max items, one more set than the smallest count goes in (13 3.8 item 4).
+     MOVE 1 TO WS-SAME
+     MOVE 64 TO WS-SMALLEST WS-STACKCAP
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
-         MOVE 0 TO WS-CELL-ITEM(WS-I) WS-CELL-COUNT(WS-I)
+         MOVE 0 TO WS-TARGET-OF(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         MOVE WS-I TO WS-TARGET-OF(WS-TARGET(WS-I))
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
+         IF MN-WINDOW(WS-ROW) = 0
+             MOVE MN-IGRID-ITEM(WS-ROW, WS-I) TO WS-ITEM-X
+             MOVE MN-IGRID-COUNT(WS-ROW, WS-I) TO WS-COUNT-X
+         ELSE
+             MOVE MN-BGRID-ITEM(WS-ROW, WS-I) TO WS-ITEM-X
+             MOVE MN-BGRID-COUNT(WS-ROW, WS-I) TO WS-COUNT-X
+         END-IF
+         IF WS-TARGET-OF(WS-I) = 0
+             IF WS-COUNT-X > 0
+                 MOVE 0 TO WS-SAME
+             END-IF
+         ELSE
+             IF WS-COUNT-X <= 0
+                 MOVE 0 TO WS-SAME
+             ELSE
+                 CALL "CRAFT-ING-TEST" USING WS-ITEM-X WS-ING(WS-TARGET-OF(WS-I)) WS-PASS
+                 IF WS-PASS = 0
+                     MOVE 0 TO WS-SAME
+                 END-IF
+                 MOVE FUNCTION MIN(WS-SMALLEST, WS-COUNT-X) TO WS-SMALLEST
+                 MOVE FUNCTION MIN(WS-STACKCAP, IT-MAX-STACK(WS-ITEM-X + 1)) TO WS-STACKCAP
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO WS-WANT
+     IF WS-SAME = 1 AND PSB-USE-MAX = 0
+         COMPUTE WS-WANT = FUNCTION MIN(WS-SMALLEST + 1, WS-STACKCAP)
+     END-IF
+*>   The grid back into the inventory (a stack with a component patch keeps it, and one in the inventory is not taken into the
+*> grid): when it does not fit nothing happens.
+     MOVE PL-INVENTORY(WS-ROW) TO WS-SAVED-INV
+     MOVE PL-SLOT-VARS(WS-ROW) TO WS-SAVED-VARS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE 0 TO WS-CELL-ITEM(WS-I) WS-CELL-COUNT(WS-I) WS-CELL-VAR(WS-I)
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
          IF MN-WINDOW(WS-ROW) = 0
              MOVE MN-IGRID-ITEM(WS-ROW, WS-I) TO WS-CELL-ITEM(WS-I)
              MOVE MN-IGRID-COUNT(WS-ROW, WS-I) TO WS-CELL-COUNT(WS-I)
+             MOVE MN-IGRID-VAR(WS-ROW, WS-I) TO WS-CELL-VAR(WS-I)
          ELSE
              MOVE MN-BGRID-ITEM(WS-ROW, WS-I) TO WS-CELL-ITEM(WS-I)
              MOVE MN-BGRID-COUNT(WS-ROW, WS-I) TO WS-CELL-COUNT(WS-I)
+             MOVE MN-BGRID-VAR(WS-ROW, WS-I) TO WS-CELL-VAR(WS-I)
          END-IF
          IF WS-CELL-COUNT(WS-I) > 0
-             CALL "INV-ADD" USING WS-ROW WS-CELL-ITEM(WS-I) WS-CELL-COUNT(WS-I) WS-LEFT
+             CALL "INV-ADD-RANGE-X" USING WS-ROW WS-CELL-ITEM(WS-I) WS-CELL-COUNT(WS-I) WS-FIRST WS-LAST WS-LEFT
+                 WS-CELL-VAR(WS-I)
              IF WS-LEFT > 0
                  MOVE WS-SAVED-INV TO PL-INVENTORY(WS-ROW)
+                 MOVE WS-SAVED-VARS TO PL-SLOT-VARS(WS-ROW)
                  GOBACK
              END-IF
          END-IF
@@ -687,13 +751,14 @@
      MOVE 1 TO WS-MORE
      PERFORM UNTIL WS-MORE = 0
          MOVE PL-INVENTORY(WS-ROW) TO WS-SET-INV
+         MOVE PL-SLOT-VARS(WS-ROW) TO WS-SET-VARS
          MOVE WS-SET-GRID TO WS-SAVED-SET
          MOVE 1 TO WS-OK
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N OR WS-OK = 0
              MOVE WS-TARGET(WS-I) TO WS-C
              MOVE 0 TO WS-SLOT
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36 OR WS-SLOT > 0
-                 IF PL-SLOT-COUNT(WS-ROW, WS-S) > 0
+                 IF PL-SLOT-COUNT(WS-ROW, WS-S) > 0 AND PL-SLOT-VAR(WS-ROW, WS-S) = 0
                      IF WS-SET-COUNT(WS-C) > 0
                          IF PL-SLOT-ITEM(WS-ROW, WS-S) = WS-SET-ITEM(WS-C)
                              MOVE WS-S TO WS-SLOT
@@ -721,12 +786,13 @@
          END-PERFORM
          IF WS-OK = 1
              ADD 1 TO WS-SETS
-             IF PSB-USE-MAX = 0 OR WS-SETS >= WS-MAX-SETS
+             IF WS-SETS >= WS-MAX-SETS OR (PSB-USE-MAX = 0 AND WS-SETS >= WS-WANT)
                  MOVE 0 TO WS-MORE
              END-IF
          ELSE
 *>           This set could not be taken: it is put back and the sets before it stay.
              MOVE WS-SET-INV TO PL-INVENTORY(WS-ROW)
+             MOVE WS-SET-VARS TO PL-SLOT-VARS(WS-ROW)
              MOVE WS-SAVED-SET TO WS-SET-GRID
              MOVE 0 TO WS-MORE
          END-IF
@@ -738,9 +804,11 @@
          IF MN-WINDOW(WS-ROW) = 0
              MOVE WS-SET-ITEM(WS-I) TO MN-IGRID-ITEM(WS-ROW, WS-I)
              MOVE WS-SET-COUNT(WS-I) TO MN-IGRID-COUNT(WS-ROW, WS-I)
+             MOVE 0 TO MN-IGRID-VAR(WS-ROW, WS-I)
          ELSE
              MOVE WS-SET-ITEM(WS-I) TO MN-BGRID-ITEM(WS-ROW, WS-I)
              MOVE WS-SET-COUNT(WS-I) TO MN-BGRID-COUNT(WS-ROW, WS-I)
+             MOVE 0 TO MN-BGRID-VAR(WS-ROW, WS-I)
          END-IF
      END-PERFORM
      CALL "MENU-CRAFT-UPDATE" USING WS-ROW
@@ -749,5 +817,9 @@
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+*>   No set could be taken: Place Ghost Recipe shows the recipe (27 4.7).
+     IF WS-SETS = 0
+         CALL "RECIPE-GHOST" USING L-ID PSB-CONTAINER WS-RC WS-INDEX
+     END-IF
      GOBACK.
  END PROGRAM RECIPE-PLACE.

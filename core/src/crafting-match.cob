@@ -219,6 +219,8 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-T-COUNT             BINARY-LONG.
+ 01 WS-T-PASS              BINARY-LONG.
  LINKAGE SECTION.
  01 L-WIDTH                BINARY-LONG.
  01 L-HEIGHT               BINARY-LONG.
@@ -275,6 +277,9 @@
          IF RR-SERIALIZER(WS-K) = 1
              CALL "CRAFT-MATCH-SHAPELESS" USING WS-K L-WIDTH L-HEIGHT L-ITEMS WS-MATCHED
          END-IF
+         IF RR-SERIALIZER(WS-K) = 4
+             CALL "RECIPE-TRANSMUTE-MATCH" USING WS-K L-ITEMS WS-MATCHED WS-T-COUNT
+         END-IF
          IF WS-MATCHED = 1
              MOVE WS-K TO L-ROW
          END-IF
@@ -285,6 +290,21 @@
          CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ITEM-ROW WS-STATUS
          MOVE WS-ID TO L-RESULT-ITEM
          MOVE RR-RESULT-COUNT(L-ROW) TO L-RESULT-COUNT
+*>       A transmute recipe (27 2.4) gives its own count (plus the material count when it adds it); one that names no
+*>       result gives the input's item.
+         IF RR-SERIALIZER(L-ROW) = 4
+             MOVE WS-T-COUNT TO L-RESULT-COUNT
+             IF RR-RESULT-ID(L-ROW) = SPACES
+                 PERFORM VARYING WS-SLOT FROM 1 BY 1 UNTIL WS-SLOT > 9 OR L-RESULT-ITEM > 0
+                     IF L-ITEM(WS-SLOT) NOT = 0
+                         CALL "CRAFT-ING-TEST" USING L-ITEM(WS-SLOT) RR-ING(L-ROW, 1) WS-T-PASS
+                         IF WS-T-PASS = 1
+                             MOVE L-ITEM(WS-SLOT) TO L-RESULT-ITEM
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM CRAFT-MATCH.

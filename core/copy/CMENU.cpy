@@ -11,14 +11,18 @@
        10 MN-EQUIP OCCURS 5 TIMES.
           15 MN-EQUIP-ITEM   BINARY-LONG.
           15 MN-EQUIP-COUNT  BINARY-LONG.
+          15 MN-EQUIP-VAR    BINARY-LONG.            *> the patch handle of a stack (CSTACK.cpy), here and in the grids
        10 MN-IGRID OCCURS 4 TIMES.                   *> 2 x 2 grid of the inventory menu, row-major
           15 MN-IGRID-ITEM   BINARY-LONG.
           15 MN-IGRID-COUNT  BINARY-LONG.
+          15 MN-IGRID-VAR    BINARY-LONG.
        10 MN-BGRID OCCURS 9 TIMES.                   *> 3 x 3 grid of the crafting bench menu, row-major
           15 MN-BGRID-ITEM   BINARY-LONG.
           15 MN-BGRID-COUNT  BINARY-LONG.
+          15 MN-BGRID-VAR    BINARY-LONG.
        10 MN-RESULT-ITEM     BINARY-LONG.
        10 MN-RESULT-COUNT    BINARY-LONG.
+       10 MN-RESULT-VAR      BINARY-LONG.
        10 MN-WINDOW          BINARY-LONG.
        10 MN-TYPE            BINARY-LONG.
        10 MN-COUNTER         BINARY-LONG.

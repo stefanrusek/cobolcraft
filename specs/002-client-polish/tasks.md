@@ -605,7 +605,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 
 #### Phase 30: US7-core — survival abilities
 
-- [ ] T0363 [US7-core] Write acceptance test `core/tests/acc_f2us7_abilities.cob` (US7-2): `PLAY-ABILITIES-BUILD` grants the flight flags only in creative and spectator and never in survival or adventure (`docs/protocol/13` §1.4); a client request to start flying in survival is ignored and the next Player Abilities states not flying. If the client lane's US7 reproduction finds a core cause of the survival climb (P-client-5) this phase escalates to multi-package: stop and return to the orchestrator [FR-016, FR-017; SC-004]
+- [x] T0363 [US7-core] Write acceptance test `core/tests/acc_f2us7_abilities.cob` (US7-2): `PLAY-ABILITIES-BUILD` grants the flight flags only in creative and spectator and never in survival or adventure (`docs/protocol/13` §1.4); a client request to start flying in survival is ignored and the next Player Abilities states not flying. If the client lane's US7 reproduction finds a core cause of the survival climb (P-client-5) this phase escalates to multi-package: stop and return to the orchestrator [FR-016, FR-017; SC-004] (done as `core/tests/acc_f2us7_abilities.cob` with T3660: the test did not exist; spectator flags 0x07 were added to PLAY-ABILITIES-BUILD; passed in the T3661 gate)
 - [ ] T0364 [US7-core] Gate: run `make gate-core` and record the command and real output
 
 #### Phase 31: US8-core — break progress and stages
@@ -656,6 +656,25 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T0402 [US10-core] Write test `core/tests/test_bench_menu.cob`: Use Item On a placed bench opens the 3x3 menu (12 §5.6b, 13 §3.5); a recipe that needs the large grid matches only in the bench menu (US10-3); the bench block places as an item
 - [x] T0403 [US10-core] Implement the bench menu and block interaction in `core/src/menu-bench.cob`
 - [x] T0404 [US10-core] Gate: run `make gate-core` and record the command and real output
+
+#### Phase 32b: US9-core (c) — component item stacks, Place Ghost Recipe and the recipe gaps (play lane, ids T3650 to T3669)
+
+- [x] T3650 [US9-core] Write test `core/tests/test_stack_patch.cob` (red output scratchpad/play4/red-stack-tests.txt): a wire stack's DataComponentPatch interns to a handle of the patch pool (equal patches share one, in any order, damage 0 and oversized values left out), exports to the same wire bytes, damage, max_damage (patch, else the content item components), custom_name and enchantments read and write as their components, and a full pool is swept and refuses only when every entry is held
+- [x] T3651 [US9-core] Implement `core/src/stack-patch.cob` and `core/copy/CSTACK.cpy`, `CSTACKE.cpy`: the patch pool, `SP-INTERN`, `SP-EXPORT`, `SP-GET-COMPONENT`, `SP-SET-COMPONENT`, damage, max damage, name and enchantment accessors, `SP-SWEEP`; the slots, grids, result slot and cursor keep a handle beside item and count (`PL-SLOT-VAR`, `PL-CARRIED-VAR`, `MN-*-VAR`); `MENU-GET-X`/`MENU-SET-X` and the click, quick-move, drag, off-hand swap, close, creative set and Place Recipe paths carry it (a stack merges only with equal item and handle); `test_stack_menu.cob` covers them
+- [x] T3652 [US9-core] Contract tests for the 46-slot Container Set Content and the component Container Set Slot fixtures in `core/tests/WIRECRAFT.cpy` (the T0400 gap: slot 40, the damaged, named stone with max_stack_size removed): equal to `PLAY-CONTENT-BUILD` and `CONTAINER-SET-SLOT-BUILD-X`
+- [x] T3653 [US9-core] Gate: run `make gate-core` and record the command and real output (covered by the T3661 run: passed 1878 failed 0, coverage 48 objects 0 uncovered lines; the T3653 slice alone: passed 1859 failed 0, scratchpad/play4/gate-core-item1.log, whose uncovered lines were then fixed)
+- [x] T3654 [proto] Exception granted for proto edits: `PB-PUT-PLACE-GHOST-RECIPE` (05a 0x40) and ItemEnchantments (components 13 and 45) in `PB-GET-ITEM-STACK`, with tests; `make gate-proto` green
+- [x] T3655 [US9-core] Write test `core/tests/test_recipe_packets.cob`: Recipe Book Change Settings and Seen (05c 0x2F, 0x30), and Place Ghost Recipe sent when Place Recipe cannot fill the grid (27 4.7)
+- [x] T3656 [US9-core] Implement `core/src/recipe-packets.cob` (`RECIPE-SEEN`, `RECIPE-SETTINGS`, `RECIPE-GHOST`) and the decode and dispatch in `core/src/play.cob`; `RECIPE-PLACE` sends the ghost
+- [x] T3657 [US9-core] Write test `core/tests/test_place_more.cob` and implement the "add one more set" step of Place Recipe (13 3.8 item 4) in `core/src/recipe-unlock.cob`
+- [x] T3658 [US9-core] Write test `core/tests/test_craft_transmute.cob` and offer transmute recipes from `CRAFT-MATCH` (27 2.4)
+- [x] T3659 [US9-core] Write test `core/tests/test_recipe_index.cob` (1,700 synthetic recipes, measured) and skip the unlock scan unless a new item arrived (`RECIPE-NEW-ITEM`, `CRAFT-REFRESH-ALL`)
+- [x] T3660 [US7-core] Write acceptance test `core/tests/acc_f2us7_abilities.cob` (T0363; spectator flags added to `PLAY-ABILITIES-BUILD`)
+- [x] T3661 [US9-core] Gate: run `make gate-core` and record the command and real output (`make gate-core`: lint clean, passed 1878 failed 0, coverage 48 objects 0 uncovered lines; scratchpad/play4/gate-core-item23.log)
+- [ ] T3662 [BLOCKED proto] Update Recipes 0x88 (05b; property sets and stonecutter list): needs `PB-PUT-UPDATE-RECIPES USING PB-BUFFER, property set count, keys (PIC X(64) table with lengths), item id lists, stonecutter entry count, input item lists, PB-SLOT-DISPLAY-TABLE` in proto/ and a RecipePropertySet record in PROTO.cpy; the core side (a sender at join, from the recipe store) follows
+- [ ] T3663 [BLOCKED proto] Requirements of Recipe Book Add entries for tag and alternative ingredients: `PB-RE-REQ-ITEM` holds one item per requirement, so a tag or a several-item ingredient has no requirement; needs a HolderSet per requirement in PB-RECIPE-ENTRY (a tag key or an item list)
+- [ ] T3664 [BLOCKED main lane] Persistence of component stacks: `player-data.cob` writes item and count only; the interface is `SP-EXPORT USING item, count, handle, PB-ITEMSTACK-X` when saving a slot, `SP-INTERN USING PB-ITEMSTACK-X, handle` when loading it, then `MOVE handle TO PL-SLOT-VAR` (and `MN-EQUIP-VAR`, the grids, `PL-CARRIED-VAR`); the NBT form of the patch is the main lane's choice
+- [ ] T3665 [BLOCKED core ground items] A thrown or dropped stack loses its patch: `GI-THROW-STACK USING row, item, count` and the ground item record have no handle; needs a `GI-VAR` per ground item and `GI-THROW-STACK-X`, and the pickup through `INV-ADD-RANGE-X`
 
 #### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
 
