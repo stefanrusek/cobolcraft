@@ -307,6 +307,28 @@
      MOVE 32 TO TL-EXPECTED-N
      MOVE MC-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+         EVALUATE WS-K
+             WHEN 1 MOVE 4 TO WS-D4
+             WHEN 2 MOVE 21 TO WS-D4
+             WHEN OTHER MOVE 7 TO WS-D4
+         END-EVALUATE
+         MOVE 9 TO WS-D3
+         MOVE 3 TO WS-D1
+         PERFORM SEND-OFFERS-OTHER
+         MOVE "acceptance US12 40-5§2 predicate components without payload (4), a Boolean (21) and a Float (7) are sized: 3 offers" TO TL-CASE
+         MOVE 3 TO TL-EXPECTED-N
+         MOVE MC-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE "T" TO TL-MODE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     PERFORM OVERLAY-LIST
+     MOVE "acceptance US12 40-5§2.10 with 3 offers (they fit) the scroller is the disabled thumb 6 x 27 at (116, 55)" TO TL-CASE
+     MOVE "116:55:6x27 " TO TL-EXPECTED
+     PERFORM OVERLAY-FILTER-SCROLL
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
 *>   Beacon.
      MOVE 9 TO WS-TYPE
      PERFORM OPEN-TYPE
@@ -558,8 +580,19 @@
              MOVE 1 TO WS-I
              CALL "PB-PUT-VARINT" USING PB-BUFFER WS-I
              CALL "PB-PUT-VARINT" USING PB-BUFFER WS-D4
-             MOVE 7 TO WS-I
-             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-I
+             EVALUATE WS-D4
+                 WHEN 4
+                     CONTINUE
+                 WHEN 21
+                     MOVE 1 TO WS-I
+                     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-I
+                 WHEN 7
+                     MOVE 0.5 TO WS-FLOATV
+                     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLOATV
+                 WHEN OTHER
+                     MOVE 7 TO WS-I
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-I
+             END-EVALUATE
          ELSE
              MOVE 0 TO WS-I
              CALL "PB-PUT-VARINT" USING PB-BUFFER WS-I
