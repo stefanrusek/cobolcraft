@@ -10,6 +10,11 @@ def gen(prefix,names,anims,header):
     s=s.replace('OCCURS 11 TIMES','OCCURS %d TIMES'%n).replace('PIC X(40000)','PIC X(60000)').replace('OCCURS 12 TIMES','OCCURS %d TIMES'%(n+1)).replace('WS-NAME(12)','WS-NAME(%d)'%(n+1))
     s=s.replace("(ok 0 when the ordinal is not one of the eleven)","(ok 0 when the ordinal is not one of the animations)")
     # drop the header comment appends: they are the first o.append lines; we replace the whole header
+    if not any(c['target']==3 for x in anims for c in x['ch']):
+        # no scale channel in these tables: the scale conversion would be unreachable, so rotation becomes the fall-through branch
+        L=s.split('\n'); k=L.index(" '         WHEN 2',")
+        L[k]=" '         WHEN OTHER',"; del L[k+4:k+8]
+        s='\n'.join(L)
     lines=s.split('\n')
     keep=[l for l in lines if not l.startswith('o.append("*>')]
     s='\n'.join(keep)

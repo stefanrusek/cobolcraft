@@ -835,14 +835,10 @@
              MOVE WS-NUM(3) TO AK-POST(WS-C, WS-K, 1)
              COMPUTE AK-POST(WS-C, WS-K, 2) = -WS-NUM(4)
              MOVE WS-NUM(5) TO AK-POST(WS-C, WS-K, 3)
-         WHEN 2
+         WHEN OTHER
              COMPUTE AK-POST(WS-C, WS-K, 1) = WS-NUM(3) * 0.017453292
              COMPUTE AK-POST(WS-C, WS-K, 2) = WS-NUM(4) * 0.017453292
              COMPUTE AK-POST(WS-C, WS-K, 3) = WS-NUM(5) * 0.017453292
-         WHEN OTHER
-             COMPUTE AK-POST(WS-C, WS-K, 1) = WS-NUM(3) - 1
-             COMPUTE AK-POST(WS-C, WS-K, 2) = WS-NUM(4) - 1
-             COMPUTE AK-POST(WS-C, WS-K, 3) = WS-NUM(5) - 1
      END-EVALUATE
      MOVE AK-POST(WS-C, WS-K, 1) TO AK-PRE(WS-C, WS-K, 1)
      MOVE AK-POST(WS-C, WS-K, 2) TO AK-PRE(WS-C, WS-K, 2)
@@ -1536,14 +1532,10 @@
              MOVE WS-NUM(3) TO AK-POST(WS-C, WS-K, 1)
              COMPUTE AK-POST(WS-C, WS-K, 2) = -WS-NUM(4)
              MOVE WS-NUM(5) TO AK-POST(WS-C, WS-K, 3)
-         WHEN 2
+         WHEN OTHER
              COMPUTE AK-POST(WS-C, WS-K, 1) = WS-NUM(3) * 0.017453292
              COMPUTE AK-POST(WS-C, WS-K, 2) = WS-NUM(4) * 0.017453292
              COMPUTE AK-POST(WS-C, WS-K, 3) = WS-NUM(5) * 0.017453292
-         WHEN OTHER
-             COMPUTE AK-POST(WS-C, WS-K, 1) = WS-NUM(3) - 1
-             COMPUTE AK-POST(WS-C, WS-K, 2) = WS-NUM(4) - 1
-             COMPUTE AK-POST(WS-C, WS-K, 3) = WS-NUM(5) - 1
      END-EVALUATE
      MOVE AK-POST(WS-C, WS-K, 1) TO AK-PRE(WS-C, WS-K, 1)
      MOVE AK-POST(WS-C, WS-K, 2) TO AK-PRE(WS-C, WS-K, 2)
