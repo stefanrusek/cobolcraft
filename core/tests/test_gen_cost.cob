@@ -73,6 +73,7 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      MOVE "standard" TO CS-WORLD-TYPE
      MOVE "12345" TO CS-SEED-TEXT
+     MOVE 12345 TO CW-SEED
      MOVE CORE-SETTINGS TO CW-SETTINGS
      MOVE 1 TO PL-USED(1)
      MOVE PS-ALIVE TO PL-STATE(1)
@@ -321,6 +322,7 @@
 
 *>   edge cases of the pieces: a negative seed text, a 48 byte block key, an empty node, a step of an idle job, an empty point table
      MOVE "-5" TO CS-SEED-TEXT
+     MOVE -5 TO CW-SEED
      MOVE CORE-SETTINGS TO CW-SETTINGS
      CALL "GEN-WORLD-SETUP"
      MOVE "test gen cost the world setup runs once per world (negative seed text)" TO TL-CASE
