@@ -847,6 +847,7 @@
     05 WS-R-BLOCK          BINARY-LONG.
     05 WS-R-BANDLANDS      BINARY-LONG.
     05 WS-R-BADLANDS       BINARY-LONG.
+    05 WS-R-ORE-VEIN       BINARY-LONG.
  01 WS-DOMAIN              BINARY-LONG VALUE 2.
  01 WS-KIND                BINARY-LONG VALUE 2.
  01 WS-NAME                PIC X(32).
@@ -885,6 +886,8 @@
          CALL "WG-TYPE-FIND" USING WS-DOMAIN WS-NAME WS-R-BANDLANDS
          MOVE "badlands" TO WS-NAME
          CALL "WG-TYPE-FIND" USING WS-DOMAIN WS-NAME WS-R-BADLANDS
+         MOVE "ore_vein" TO WS-NAME
+         CALL "WG-TYPE-FIND" USING WS-DOMAIN WS-NAME WS-R-ORE-VEIN
          MOVE 1 TO WS-READY
      END-IF
      MOVE -1 TO L-STATE
@@ -928,6 +931,13 @@
                  END-IF
                  MOVE SF-N-STATE(WS-NODE) TO L-STATE
                  MOVE 1 TO WS-DONE
+             WHEN WS-TYPE = WS-R-ORE-VEIN
+                 CALL "ORE-VEIN-RULE" USING L-JOB WS-NODE L-STATE
+                 IF L-STATE >= 0
+                     MOVE 1 TO WS-DONE
+                 ELSE
+                     MOVE 1 TO WS-TRUE
+                 END-IF
              WHEN WS-TYPE = WS-R-BANDLANDS OR WS-TYPE = WS-R-BADLANDS
                  CALL "SURFACE-BANDS-ENSURE"
                  MOVE SC-X TO WS-X
@@ -1249,6 +1259,7 @@
  WORKING-STORAGE SECTION.
  COPY GENSTAGE.
  COPY SURFACE.
+ COPY DENSITY.
  01 WS-KIND-RULE           BINARY-LONG VALUE 2.
  01 WS-KIND-FN             BINARY-LONG VALUE 1.
  01 WS-KEY-RULE            PIC X(112) VALUE "minecraft:overworld".
@@ -1318,11 +1329,16 @@
              CALL "GEN-BLOCK-STATE" USING WS-KEY-WATER SC-WATER-STATE
              CALL "GEN-BLOCK-STATE" USING WS-KEY-LAVA SC-LAVA-STATE
              MOVE WS-ROOT TO SC-ROOT
+             MOVE 1 TO DNG-ACTIVE
+             COMPUTE DNG-X0 = J-CX * 16
+             COMPUTE DNG-Z0 = J-CZ * 16
+             SET DNG-PTR TO ADDRESS OF J-GRID
              PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
                  COMPUTE WS-N = (J-SUB - 100) * 4 + WS-I
                  DIVIDE WS-N BY 16 GIVING WS-LX REMAINDER WS-LZ
                  CALL "SURFACE-COLUMN" USING L-JOB WS-LX WS-LZ
              END-PERFORM
+             MOVE 0 TO DNG-ACTIVE
      END-EVALUATE
      GOBACK.
  END PROGRAM GEN-STAGE-SURFACE.
