@@ -47,6 +47,7 @@
      "FFFFFFFF00000000000000A05A5A6EFF8C8CC8FF141420FFC8141450".
  01 WS-BOX                 PIC X(16) VALUE "F88888888888F800".
  01 WS-BITS                BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -115,11 +116,14 @@
      END-IF
 *>   The UI atlas: the font image, then the pack icon cells (CL-MAX-ICONS cells of 16 x 16, as
 *>   many to a row as fit; local.cob), then the swatch row.
-     COMPUTE UA-W = FUNCTION MAX(WS-IW, SW-COUNT * 8)
+     MOVE 0 TO WS-MODE
+     CALL "GUI-SPRITES-LOAD" USING CLIENT-STATE WS-MODE
+     COMPUTE UA-W = FUNCTION MAX(WS-IW, SW-COUNT * 8, GS-MAX-W)
      MOVE WS-IH TO UA-ICON-Y
      COMPUTE WS-BYTES = UA-W / 16
      COMPUTE WS-BYTES = (CL-MAX-ICONS + WS-BYTES - 1) / WS-BYTES
-     COMPUTE UA-H = WS-IH + WS-BYTES * 16 + 8
+     COMPUTE UA-SPRITE-Y = WS-IH + WS-BYTES * 16
+     COMPUTE UA-H = UA-SPRITE-Y + GS-TOTAL-H + 8
      IF UA-ADDR NOT = NULL
          FREE UA-ADDR
      END-IF
@@ -144,6 +148,8 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
+     MOVE 1 TO WS-MODE
+     CALL "GUI-SPRITES-LOAD" USING CLIENT-STATE WS-MODE
      MOVE 1 TO AT-UPLOAD(3)
 *>   Glyph cells and advances of every code point 32 to 127 in the chars rows (U+0000 marks an
 *>   unused cell).

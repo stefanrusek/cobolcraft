@@ -30,6 +30,7 @@
  01 WS-CARET               BINARY-LONG.
  01 WS-CARET-TEXT          PIC X(256) VALUE "_".
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SPRITE-ROW          BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -60,8 +61,14 @@
                  CALL "UI-ICON-QUAD" USING CLIENT-STATE WS-W
          END-EVALUATE
          IF WS-SWATCH >= 0
-             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(WS-W) SM-W-Y(WS-W) SM-W-W(WS-W)
-                 SM-W-H(WS-W) WS-SWATCH
+             IF SM-W-KIND(WS-W) = WK-BUTTON AND GS-W(GSP-BUTTON) > 0
+                 MOVE GSP-BUTTON TO WS-SPRITE-ROW
+                 CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W) SM-W-Y(WS-W)
+                     SM-W-W(WS-W) SM-W-H(WS-W)
+             ELSE
+                 CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(WS-W) SM-W-Y(WS-W) SM-W-W(WS-W)
+                     SM-W-H(WS-W) WS-SWATCH
+             END-IF
          END-IF
          MOVE SM-W-X(WS-W) TO WS-X
          MOVE SM-W-Y(WS-W) TO WS-Y
@@ -89,6 +96,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-SPRITE-ROW          BINARY-LONG.
  01 WS-SWATCH              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
@@ -124,8 +132,14 @@
          IF SM-W-STATE(L-W) = 1
              MOVE SW-SELECTED TO WS-SWATCH
          END-IF
-         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(L-W) SM-W-Y(L-W) SM-W-W(L-W)
-             SM-W-H(L-W) WS-SWATCH
+         IF GS-W(GSP-SLOT) > 0 AND SM-W-STATE(L-W) NOT = 1
+             MOVE GSP-SLOT TO WS-SPRITE-ROW
+             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(L-W) SM-W-Y(L-W)
+                 SM-W-W(L-W) SM-W-H(L-W)
+         ELSE
+             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE SM-W-X(L-W) SM-W-Y(L-W) SM-W-W(L-W)
+                 SM-W-H(L-W) WS-SWATCH
+         END-IF
      END-IF
      IF WS-COUNT > 0 AND WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT
          MOVE IT-SPRITE(WS-ITEM + 1) TO WS-SPRITE
@@ -274,6 +288,89 @@
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U WS-V WS-U2 WS-V2
      GOBACK.
  END PROGRAM UI-SWATCH-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-SPRITE-QUAD.
+*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels): the GUI sprite over the
+*> rectangle. A nine-slice sprite (12 §5.9) is nine quads: the borders (the .mcmeta's, in the sprite's own
+*> size, each at most half the rectangle) copied unscaled, the edges and the centre stretched; the borders
+*> in sprite pixels are the border x pixel width / .mcmeta width. Any other sprite is one stretched quad.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-BL                  BINARY-LONG.
+ 01 WS-BT                  BINARY-LONG.
+ 01 WS-BR                  BINARY-LONG.
+ 01 WS-BB                  BINARY-LONG.
+ 01 WS-XS                  BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-YS                  BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-TX                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-TY                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H.
+     IF GS-NINE(L-ROW) = 0
+         COMPUTE WS-X0 = L-X * CL-GUI-SCALE
+         COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
+         COMPUTE WS-X1 = (L-X + L-W) * CL-GUI-SCALE
+         COMPUTE WS-Y1 = (L-Y + L-H) * CL-GUI-SCALE
+         COMPUTE WS-U0 = GS-X(L-ROW) / UA-W
+         COMPUTE WS-V0 = GS-Y(L-ROW) / UA-H
+         COMPUTE WS-U1 = (GS-X(L-ROW) + GS-W(L-ROW)) / UA-W
+         COMPUTE WS-V1 = (GS-Y(L-ROW) + GS-H(L-ROW)) / UA-H
+         CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         GOBACK
+     END-IF
+     COMPUTE WS-BL = FUNCTION MIN(GS-BL(L-ROW), L-W / 2)
+     COMPUTE WS-BR = FUNCTION MIN(GS-BR(L-ROW), L-W / 2)
+     COMPUTE WS-BT = FUNCTION MIN(GS-BT(L-ROW), L-H / 2)
+     COMPUTE WS-BB = FUNCTION MIN(GS-BB(L-ROW), L-H / 2)
+     MOVE L-X TO WS-XS(1)
+     COMPUTE WS-XS(2) = L-X + WS-BL
+     COMPUTE WS-XS(3) = L-X + L-W - WS-BR
+     COMPUTE WS-XS(4) = L-X + L-W
+     MOVE L-Y TO WS-YS(1)
+     COMPUTE WS-YS(2) = L-Y + WS-BT
+     COMPUTE WS-YS(3) = L-Y + L-H - WS-BB
+     COMPUTE WS-YS(4) = L-Y + L-H
+*>   The sprite's texel columns and rows of the same cuts.
+     MOVE 0 TO WS-TX(1)
+     COMPUTE WS-TX(2) = WS-BL * GS-W(L-ROW) / GS-LW(L-ROW)
+     COMPUTE WS-TX(3) = GS-W(L-ROW) - WS-BR * GS-W(L-ROW) / GS-LW(L-ROW)
+     MOVE GS-W(L-ROW) TO WS-TX(4)
+     MOVE 0 TO WS-TY(1)
+     COMPUTE WS-TY(2) = WS-BT * GS-H(L-ROW) / GS-LH(L-ROW)
+     COMPUTE WS-TY(3) = GS-H(L-ROW) - WS-BB * GS-H(L-ROW) / GS-LH(L-ROW)
+     MOVE GS-H(L-ROW) TO WS-TY(4)
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 3
+         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 3
+             COMPUTE WS-X0 = WS-XS(WS-C) * CL-GUI-SCALE
+             COMPUTE WS-X1 = WS-XS(WS-C + 1) * CL-GUI-SCALE
+             COMPUTE WS-Y0 = WS-YS(WS-R) * CL-GUI-SCALE
+             COMPUTE WS-Y1 = WS-YS(WS-R + 1) * CL-GUI-SCALE
+             COMPUTE WS-U0 = (GS-X(L-ROW) + WS-TX(WS-C)) / UA-W
+             COMPUTE WS-U1 = (GS-X(L-ROW) + WS-TX(WS-C + 1)) / UA-W
+             COMPUTE WS-V0 = (GS-Y(L-ROW) + WS-TY(WS-R)) / UA-H
+             COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-TY(WS-R + 1)) / UA-H
+             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM UI-SPRITE-QUAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-QUAD.

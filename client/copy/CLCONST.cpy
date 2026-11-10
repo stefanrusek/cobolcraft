@@ -226,6 +226,10 @@
        10 CL-ET-HALF        PIC 9V999.
        10 CL-ET-HEIGHT      PIC 9V99.
 
+*> GUI sprites of the UI atlas (GS-ROW rows).
+ 78 GSP-BUTTON              VALUE 1.
+ 78 GSP-SLOT                VALUE 2.
+
 *> UI atlas (texture 2) swatches: 8 x 8 cells below the font image, by index from 0 (x = index * 8).
  78 SW-WHITE                VALUE 0.
  78 SW-MISSING-GLYPH        VALUE 1.

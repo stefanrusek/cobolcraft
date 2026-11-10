@@ -510,6 +510,24 @@
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
        10 UA-ICON-Y          BINARY-LONG.    *> first row of the pack icon cells (16 x 16 each)
+       10 UA-SPRITE-Y        BINARY-LONG.    *> first row of the GUI sprites (below the icon cells)
+*>     GUI sprites of the UI atlas (gui-sprites.cob; 12 §5.9): GSP-* rows. GS-W 0 = the pack gives none
+*>     (the swatch draws instead). GS-NINE 1 = a nine_slice .mcmeta: source size GS-LW x GS-LH, borders
+*>     left, top, right, bottom.
+       10 GS-TOTAL-H         BINARY-LONG.
+       10 GS-MAX-W           BINARY-LONG.
+       10 GS-ROW OCCURS 2 TIMES.
+          15 GS-X            BINARY-LONG.
+          15 GS-Y            BINARY-LONG.
+          15 GS-W            BINARY-LONG.
+          15 GS-H            BINARY-LONG.
+          15 GS-NINE         PIC 9.
+          15 GS-LW           BINARY-LONG.
+          15 GS-LH           BINARY-LONG.
+          15 GS-BL           BINARY-LONG.
+          15 GS-BT           BINARY-LONG.
+          15 GS-BR           BINARY-LONG.
+          15 GS-BB           BINARY-LONG.
        10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
