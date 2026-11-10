@@ -34,16 +34,15 @@
     05 WS-DY               FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
      MOVE "acceptance US4-6 given the starting inventory when the world is shown then the hotbar "
-         & "shows slots 0 to 8 with their counts, slot 0 held, and an icon for each stack" TO TL-CASE
+         & "shows slots 0 to 8 with their counts, bare slots (the held one is the selection sprite), and an icon for each stack" TO TL-CASE
      PERFORM SLOTS-TEXT
-     MOVE "9 0:64:1 1:64:0 2:64:0 3:64:0 4:64:0 5:64:0 6:64:0 7:64:0 8:1:0 icons 54"
+     MOVE "9 0:64:3 1:64:3 2:64:3 3:64:3 4:64:3 5:64:3 6:64:3 7:64:3 8::3 icons 54"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -79,7 +78,7 @@
      MOVE CC-KEY-E TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      MOVE "acceptance US4-6 given the starting inventory when E is pressed then the inventory "
-         & "screen shows its title and all 36 slots with their counts, an icon for each of the 10 "
+         & "screen shows its title and all 46 slots with their counts, an icon for each of the 10 "
          & "stacks" TO TL-CASE
      PERFORM SLOTS-TEXT
      MOVE TL-OBSERVED(1:40) TO WS-TEXT
@@ -105,7 +104,7 @@
      MOVE RL-IC-COUNT TO WS-E
      STRING FUNCTION TRIM(TL-OBSERVED) " icons " FUNCTION TRIM(WS-E) DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "screen 6 36 Inventory 8:1 9:1 10: icons 60" TO TL-EXPECTED
+     MOVE "screen 6 46 Crafting 8: 9: 10: icons 60" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 0 TO WS-ARG
@@ -124,7 +123,7 @@
          & "the 64 greystone go to the cursor and then into slot 10, each click sent as Container "
          & "Click with the changed slot and the cursor" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "12000100000000010000000102400000 0x0/64x2 120001000a000001000a010240000000 64x2/0x0"
+     MOVE "12000100240000010024000102400000 0x0/64x2 120001000a000001000a010240000000 64x2/0x0"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

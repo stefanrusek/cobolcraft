@@ -694,6 +694,7 @@
  01 WS-TAKE                BINARY-LONG.
  01 WS-AGAIN               BINARY-LONG.
  01 WS-LOOPS               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -713,7 +714,7 @@
      MOVE 0 TO WS-LOOPS
      PERFORM UNTIL WS-AGAIN = 0 OR WS-LOOPS > 64
          ADD 1 TO WS-LOOPS
-         CALL "MENU-GET" USING L-ROW L-SLOT WS-ITEM WS-SC
+         CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-SC WS-VAR
          COMPUTE WS-TAKE = FUNCTION MIN(WS-COUNT, WS-SC)
          IF WS-KIND = 4
              MOVE WS-SC TO WS-TAKE
@@ -725,7 +726,7 @@
              IF WS-KIND = 4
                  CALL "MENU-RESULT-TAKEN" USING L-ROW
              END-IF
-             CALL "GI-THROW-STACK" USING L-ROW WS-ITEM WS-TAKE
+             CALL "GI-THROW-STACK-X" USING L-ROW WS-ITEM WS-TAKE WS-VAR
              IF L-BUTTON = 1
                  CALL "MENU-GET" USING L-ROW L-SLOT WS-SI WS-SC
                  IF WS-SC > 0 AND WS-SI = WS-ITEM
@@ -981,6 +982,7 @@
  COPY CORESTATE.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -991,6 +993,7 @@
          IF PL-CARRIED-COUNT(L-ROW) > 0
              MOVE PL-CARRIED-ITEM(L-ROW) TO WS-ITEM
              MOVE PL-CARRIED-COUNT(L-ROW) TO WS-COUNT
+             MOVE PL-CARRIED-VAR(L-ROW) TO WS-VAR
              IF L-BUTTON = 1
                  MOVE 1 TO WS-COUNT
              END-IF
@@ -998,7 +1001,7 @@
              IF PL-CARRIED-COUNT(L-ROW) = 0
                  MOVE 0 TO PL-CARRIED-ITEM(L-ROW) PL-CARRIED-VAR(L-ROW)
              END-IF
-             CALL "GI-THROW-STACK" USING L-ROW WS-ITEM WS-COUNT
+             CALL "GI-THROW-STACK-X" USING L-ROW WS-ITEM WS-COUNT WS-VAR
          END-IF
      ELSE
          IF L-SLOT >= 0

@@ -113,7 +113,7 @@
      STRING FUNCTION TRIM(TL-OBSERVED) " mode " FUNCTION TRIM(WS-E3) " hud "
          FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "draws 2 top 2 y 0/128 sky-light 0 sky 16 12 18 mode 0 hud "
-         & "+|12|||||||||Health 17/20|Food 9/20" TO TL-EXPECTED
+         & "|Loading terrain...|12|||||||||Health 17/20|Food 9/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

@@ -1,0 +1,593 @@
+*> Test US12-client (spec 002 T3282 to T3295, in one file; docs/protocol/40-menus-8-book-and-sign-editors.md): the page text engine (section 2: wrapping, insertion rules, limits, keys,
+*> words, vertical motion), the book editor's pages and packets (3.3, 4, 7: Edit Book 05c 0x18), the sign line editor (5, 6.2: Sign Update 05c 0x3E). The worked examples of section 8
+*> use the test fixture advance of 6 pixels per character (the engine's BK-ADVANCE); text is ASCII (one byte per code unit).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SCREEN-40-8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-CLIMIT              BINARY-LONG.
+ 01 WS-LLIMIT              BINARY-LONG.
+ 01 WS-ADV                 BINARY-LONG VALUE 6.
+ 01 WS-FORCE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(1100).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-SHIFT               BINARY-LONG.
+ 01 WS-EDIT                BINARY-LONG.
+ 01 WS-ALT                 BINARY-LONG.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-E1                  PIC -(7)9.
+ 01 WS-E2                  PIC -(7)9.
+ 01 WS-E3                  PIC -(7)9.
+ 01 WS-SCAN                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "T" TO TL-MODE
+     MOVE 114 TO WS-WIDTH
+     MOVE 1024 TO WS-CLIMIT
+     MOVE 14 TO WS-LLIMIT
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+*>   8.1 wrap without spaces: 25 a at width 114: (0, 19) and (19, 25).
+     MOVE 1 TO WS-FORCE
+     MOVE ALL "a" TO WS-TEXT(1:25)
+     MOVE 25 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     PERFORM LINES-TEXT
+     MOVE "acceptance US12 40-8§2.3 wrap without spaces (width 114, advance 6, 25 characters): (0, 19) and (19, 25)" TO TL-CASE
+     MOVE "0-19 19-25 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.2 wrap at a space: width 66, "hello world foo": (0, 11) and (12, 15).
+     MOVE 66 TO WS-WIDTH
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+     MOVE "hello world foo" TO WS-TEXT
+     MOVE 15 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     PERFORM LINES-TEXT
+     MOVE "acceptance US12 40-8§2.3 wrap at a space (width 66): hello world | foo as (0, 11) and (12, 15)" TO TL-CASE
+     MOVE "0-11 12-15 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.3 trailing newline: "ab" LF: (0, 2) and the extra (3, 3); the overflow test counts 2.
+     MOVE 114 TO WS-WIDTH
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+     MOVE SPACES TO WS-TEXT
+     MOVE X"61620A" TO WS-TEXT(1:3)
+     MOVE 3 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     PERFORM LINES-TEXT
+     MOVE "acceptance US12 40-8§2.3 a trailing line feed: (0, 2) and the empty view (3, 3)" TO TL-CASE
+     MOVE "0-2 3-3 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§2.4 the overflow count of that text is 1 split line + 1 for the trailing newline = 2" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BK-OVERFLOW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+*>   Empty text: one empty view.
+     MOVE SPACES TO WS-TEXT
+     MOVE 0 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     PERFORM LINES-TEXT
+     MOVE "acceptance US12 40-8§2.3 an empty text is the single view (0, 0)" TO TL-CASE
+     MOVE "0-0 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   2.2 typed text is filtered: a tab, the section sign (C2 A7) and a carriage return never enter; a line feed does.
+     MOVE SPACES TO WS-TEXT
+     MOVE X"610962C2A7630D640A65" TO WS-TEXT(1:10)
+     MOVE 10 TO WS-LEN
+     CALL "BOOK-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     MOVE "acceptance US12 40-8§2.2 inserting a, tab, b, section sign, c, CR, d, LF, e keeps a b c d LF e" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE X"616263640A65" TO TL-EXPECTED(1:7)
+     PERFORM VALUE-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.4 line limit: 14 lines with the cursor at the end: Enter is ignored; with 13 lines it is accepted.
+     MOVE SPACES TO WS-TEXT
+     MOVE 0 TO WS-LEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 14
+         ADD 1 TO WS-LEN
+         MOVE "x" TO WS-TEXT(WS-LEN:1)
+         IF WS-I < 14
+             ADD 1 TO WS-LEN
+             MOVE X"0A" TO WS-TEXT(WS-LEN:1)
+         END-IF
+     END-PERFORM
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 13 TO WS-KEY
+     MOVE 0 TO WS-SHIFT WS-EDIT WS-ALT
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO WS-N
+     MOVE "acceptance US12 40-8§8.4 Enter at 14 lines: 14 + 1 for the trailing newline is over the limit, the Enter is ignored (length stays 27)" TO TL-CASE
+     MOVE 27 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-8§2.5 Enter is a handled key" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 25 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§8.4 Enter at 13 lines is accepted (length 26)" TO TL-CASE
+     MOVE 26 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.4 a 20-line paste into an empty page is rejected whole.
+     MOVE 0 TO WS-FORCE
+     MOVE SPACES TO WS-TEXT
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-N WS-FORCE
+     MOVE 0 TO WS-LEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         ADD 1 TO WS-LEN
+         MOVE "x" TO WS-TEXT(WS-LEN:1)
+         ADD 1 TO WS-LEN
+         MOVE X"0A" TO WS-TEXT(WS-LEN:1)
+     END-PERFORM
+     CALL "BOOK-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     MOVE "acceptance US12 40-8§8.4 a 20-line paste into an empty page is rejected whole (no truncation to 14 lines): length 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.5 character limit with a selection: 1024 characters, 5 selected, typing x deletes the 5 and inserts nothing: 1019.
+     MOVE 7000 TO WS-WIDTH
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+     MOVE 1 TO WS-FORCE
+     MOVE ALL "a" TO WS-TEXT(1:1024)
+     MOVE 1024 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 0 TO BK-ANCHOR
+     MOVE 5 TO BK-CURSOR
+     MOVE "x" TO WS-TEXT
+     MOVE 1 TO WS-LEN
+     CALL "BOOK-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     MOVE "acceptance US12 40-8§8.5 a full page with 5 characters selected: typing x deletes them and inserts nothing (1019)" TO TL-CASE
+     MOVE 1019 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   2.4 setValue cuts to the limit (1030 characters loaded with force: 1024).
+     MOVE ALL "b" TO WS-TEXT(1:1030)
+     MOVE 1030 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE "acceptance US12 40-8§2.4 setValue cuts a longer text to the character limit: 1024" TO TL-CASE
+     MOVE 1024 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   setValue without force ignores a text that overflows the line limit.
+     MOVE 114 TO WS-WIDTH
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+     MOVE 0 TO WS-FORCE
+     MOVE SPACES TO WS-TEXT
+     MOVE "short" TO WS-TEXT
+     MOVE 5 TO WS-LEN
+     MOVE 1 TO WS-FORCE
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 0 TO WS-FORCE
+     MOVE ALL "b" TO WS-TEXT(1:1000)
+     MOVE 1000 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE "acceptance US12 40-8§2.4 setValue without force ignores a text that overflows the 14 lines: the old 5 characters stay" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE BK-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.6 words: "ab  cd", cursor 6: Ctrl+Backspace deletes two characters: "ab  "; Ctrl+Left goes to 4.
+     MOVE "T" TO TL-MODE
+     MOVE 1 TO WS-FORCE
+     MOVE "ab  cd" TO WS-TEXT
+     MOVE 6 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 1073741904 TO WS-KEY
+     MOVE 1 TO WS-EDIT
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE "acceptance US12 40-8§8.6 Ctrl+Left from 6 in 'ab  cd' goes to the start of the word: 4" TO TL-CASE
+     MOVE "4" TO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "ab  cd" TO WS-TEXT
+     MOVE 6 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 8 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§8.6 Ctrl+Backspace at 6 in 'ab  cd' deletes 2 characters: ab and two spaces" TO TL-CASE
+     MOVE "ab  " TO TL-EXPECTED
+     PERFORM VALUE-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   2.5 plain keys: Backspace, Delete, Left, Right, Home, End on "abcd" with the cursor at 2.
+     MOVE 0 TO WS-EDIT
+     MOVE "abcd" TO WS-TEXT
+     MOVE 4 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 2 TO BK-CURSOR BK-ANCHOR
+     MOVE 8 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE 127 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§2.5 Backspace then Delete at the cursor 2 of abcd leave ad" TO TL-CASE
+     MOVE "ad" TO TL-EXPECTED
+     PERFORM VALUE-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1073741898 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE 1073741901 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-8§2.5 Home goes to the start of the line (0), End to its end (2)" TO TL-CASE
+     MOVE "0 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Shift keeps the anchor: Shift+Left from 2 selects one character; Left alone collapses it.
+     MOVE 1 TO WS-SHIFT
+     MOVE 1073741904 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE BK-ANCHOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-8§2.5 Shift+Left from 2: cursor 1, anchor 2 (a selection)" TO TL-CASE
+     MOVE "1 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-SHIFT
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE BK-ANCHOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-8§2.5 Left without Shift: cursor 0 and the anchor follows" TO TL-CASE
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Right, select all, copy, cut, paste.
+     MOVE 1073741903 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE 1 TO WS-EDIT
+     MOVE 97 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE 120 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§2.5 Ctrl+A then Ctrl+X: the whole text is cut (the page is empty, the clipboard holds ad)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE BK-LEN TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) "," BK-CLIP(1:BK-CLIP-LEN) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0,ad" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 118 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§2.5 Ctrl+V twice pastes adad" TO TL-CASE
+     MOVE "adad" TO TL-EXPECTED
+     PERFORM VALUE-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-EDIT
+*>   2.7 Up and Down: "ab" LF "cdef" with the cursor at 6 (column 3 of line 1): Up gives 2 (the line "ab" is shorter), Down from 1 gives 4.
+     MOVE SPACES TO WS-TEXT
+     MOVE X"61620A63646566" TO WS-TEXT(1:7)
+     MOVE 7 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 6 TO BK-CURSOR BK-ANCHOR
+     MOVE 1073741906 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE 1 TO BK-CURSOR BK-ANCHOR
+     MOVE 1073741905 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-8§2.7 Up from column 3 of line 1 lands at the end of the shorter line 0 (2); Down from column 1 lands at 3 + 1 = 4" TO TL-CASE
+     MOVE "2 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1073741899 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§2.5 the page-up key moves the cursor to 0 and the page-down key to the end (7)" TO TL-CASE
+     MOVE BK-CURSOR TO WS-E1
+     MOVE 1073741902 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 7" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   8.7 pages: 3 pages, page 3 shown: forward appends page 4 and shows it; 100 pages: forward stays; Done erases trailing empty pages and sends 0x18.
+     MOVE 3 TO BE-PAGE-COUNT
+     MOVE "p1" TO BE-PAGE-TEXT(1)
+     MOVE 2 TO BE-PAGE-LEN(1)
+     MOVE "p2" TO BE-PAGE-TEXT(2)
+     MOVE 2 TO BE-PAGE-LEN(2)
+     MOVE "p3" TO BE-PAGE-TEXT(3)
+     MOVE 2 TO BE-PAGE-LEN(3)
+     MOVE 2 TO BE-CURRENT
+     CALL "BOOK-PAGE-FORWARD" USING CLIENT-STATE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§8.7 forward from page 3 of 3 appends an empty page and shows it: 4 pages, page index 3" TO TL-CASE
+     MOVE 43 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BE-PAGE-COUNT * 10 + BE-CURRENT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "x" TO WS-TEXT
+     MOVE 1 TO WS-LEN
+     CALL "BOOK-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-8§3.3 an accepted change is written to the page at once: page 4 holds x" TO TL-CASE
+     MOVE "x" TO TL-EXPECTED
+     MOVE BE-PAGE-TEXT(4)(1:BE-PAGE-LEN(4)) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO PL-HELD
+     MOVE 0 TO BE-HAND
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     CALL "BOOK-DONE" USING CLIENT-STATE
+     PERFORM FLUSH
+     MOVE "acceptance US12 40-8§3.3 Done sends Edit Book 18: slot 4, 4 pages p1 p2 p3 x, no title" TO TL-CASE
+     MOVE "18040402703102703202703301780 0" TO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-HEX) TO TL-OBSERVED
+     INSPECT TL-EXPECTED REPLACING ALL " " BY "0"
+     MOVE "1804040270310270320270330178" TO TL-EXPECTED
+     MOVE WS-HEX(1:30) TO TL-OBSERVED
+     MOVE "180404027031027032027033017800" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO BE-CURRENT
+     MOVE 3 TO BE-CURRENT
+     CALL "BOOK-PAGE-BACK" USING CLIENT-STATE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§3.3 back from page 4 shows page 3 (index 2)" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE BE-CURRENT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BE-PAGE-LEN(4)
+     MOVE 5 TO PL-HELD
+     MOVE 1 TO BE-HAND
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     CALL "BOOK-DONE" USING CLIENT-STATE
+     MOVE "acceptance US12 40-8§8.7 Done erases the trailing empty page 4: 3 pages remain" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE BE-PAGE-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     PERFORM FLUSH
+     MOVE "acceptance US12 40-8§8.15 the off hand sends slot 40 (28): 18 28 03 p1 p2 p3 00" TO TL-CASE
+     MOVE "182803027031027032027033" TO TL-EXPECTED
+     MOVE WS-HEX(1:24) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 100 TO BE-PAGE-COUNT
+     MOVE 99 TO BE-CURRENT
+     CALL "BOOK-PAGE-FORWARD" USING CLIENT-STATE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§8.7 forward at page 100 of 100 changes nothing" TO TL-CASE
+     MOVE 10099 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BE-PAGE-COUNT * 100 + BE-CURRENT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   4 Sign and Close: the shared pages as they are (no erase), the title trimmed and present.
+     MOVE 2 TO BE-PAGE-COUNT
+     MOVE "a" TO BE-PAGE-TEXT(1)
+     MOVE 1 TO BE-PAGE-LEN(1)
+     MOVE 0 TO BE-PAGE-LEN(2)
+     MOVE 0 TO BE-HAND
+     MOVE 4 TO PL-HELD
+     MOVE SPACES TO BE-TITLE
+     MOVE "  Hi " TO BE-TITLE
+     MOVE 5 TO BE-TITLE-LEN
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     CALL "BOOK-SIGN-SEND" USING CLIENT-STATE
+     PERFORM FLUSH
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-8§4 Sign and Close sends the pages unerased and the trimmed title: 18 04 02 01 61 00 01 02 48 69" TO TL-CASE
+     MOVE "18040201610001024869" TO TL-EXPECTED
+     MOVE WS-HEX(1:20) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "   " TO WS-TEXT
+     MOVE 3 TO WS-LEN
+     CALL "BOOK-TITLE-BLANK" USING WS-TEXT WS-LEN WS-HANDLED
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§8.13 a title of spaces is blank: the Sign and Close button stays inactive" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "Hi" TO WS-TEXT
+     MOVE 2 TO WS-LEN
+     CALL "BOOK-TITLE-BLANK" USING WS-TEXT WS-LEN WS-HANDLED
+     MOVE "acceptance US12 40-8§4 a title with text is not blank" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   5, 6.2 the sign line editor: line navigation, width limit 90 / 60 with advance 6, the close packet.
+     MOVE 90 TO SG-MAXW
+     MOVE 6 TO BK-ADVANCE
+     MOVE 0 TO SG-LINE
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         MOVE "a" TO WS-TEXT(1:1)
+         MOVE 1 TO WS-LEN
+         CALL "SIGN-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     END-PERFORM
+     MOVE "acceptance US12 40-8§8.12 on a sign (limit 90, advance 6) the line holds 15 characters" TO TL-CASE
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE SG-LEN(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 60 TO SG-MAXW
+     MOVE 1 TO SG-LINE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         CALL "SIGN-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     END-PERFORM
+     MOVE "acceptance US12 40-8§8.12 on a hanging sign (limit 60) the line holds 10 characters" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE SG-LEN(2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO SG-LINE
+     MOVE 81 TO WS-SCAN
+     CALL "SIGN-NAV" USING CLIENT-STATE WS-SCAN WS-HANDLED
+     MOVE "acceptance US12 40-8§8.11 Down on line 3 selects line 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE SG-LINE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 82 TO WS-SCAN
+     CALL "SIGN-NAV" USING CLIENT-STATE WS-SCAN WS-HANDLED
+     MOVE "acceptance US12 40-8§8.11 Up on line 0 selects line 3" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE SG-LINE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-SCAN
+     MOVE 0 TO SG-LINE
+     CALL "SIGN-NAV" USING CLIENT-STATE WS-SCAN WS-HANDLED
+     MOVE "acceptance US12 40-8§6.2 Enter goes to the next line (never presses Done): line 1, cursor at its end (10)" TO TL-CASE
+     MOVE 110 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = SG-LINE * 100 + SG-CURSOR
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Sign Update 0x3E: position (1, 2, 3), lines ab, empty, c, empty, side front (1).
+     MOVE SPACES TO SG-LINE-TEXT(1) SG-LINE-TEXT(2) SG-LINE-TEXT(3) SG-LINE-TEXT(4)
+     MOVE "ab" TO SG-LINE-TEXT(1)
+     MOVE 2 TO SG-LEN(1)
+     MOVE 0 TO SG-LEN(2)
+     MOVE "c" TO SG-LINE-TEXT(3)
+     MOVE 1 TO SG-LEN(3)
+     MOVE 0 TO SG-LEN(4)
+     MOVE 1 TO SG-X
+     MOVE 2 TO SG-Y
+     MOVE 3 TO SG-Z
+     MOVE 1 TO SG-SIDE
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     CALL "SIGN-CLOSE" USING CLIENT-STATE
+     PERFORM FLUSH
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-8§7 closing the sign editor sends 3e, the packed position, four strings (no count) and the side: 3e 0000004000003002 026162 00 0163 00 01" TO TL-CASE
+     MOVE "3e0000004000003002026162000163" TO TL-EXPECTED
+     MOVE WS-HEX(1:30) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-8§7 the packet ends with the empty line and the side 1" TO TL-CASE
+     MOVE "0001" TO TL-EXPECTED
+     MOVE WS-HEX(31:4) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Coverage of the remaining branches (coverage-only additions): next-word motion and deletion, the Ctrl+Home and Ctrl+End keys, an unhandled key, an empty insert, forward without
+*>   appending, an insertion in the middle of a sign line, a key the sign navigation does not know and the width of a text with the font.
+     MOVE 114 TO WS-WIDTH
+     CALL "BOOK-INIT" USING CLIENT-STATE WS-WIDTH WS-CLIMIT WS-LLIMIT WS-ADV
+     MOVE 1 TO WS-FORCE
+     MOVE "ab  cd ef" TO WS-TEXT
+     MOVE 9 TO WS-LEN
+     CALL "BOOK-SET-VALUE" USING CLIENT-STATE WS-TEXT WS-LEN WS-FORCE
+     MOVE 0 TO WS-N
+     CALL "BOOK-INSERT" USING CLIENT-STATE WS-TEXT WS-N
+     MOVE 0 TO BK-CURSOR BK-ANCHOR
+     MOVE 1 TO WS-EDIT
+     MOVE 0 TO WS-SHIFT WS-ALT
+     MOVE 1073741903 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "T" TO TL-MODE
+     MOVE BK-CURSOR TO WS-E1
+     MOVE "acceptance US12 40-8§2.6 Ctrl+Right from 0 in 'ab  cd ef' goes to the start of the next word: 4" TO TL-CASE
+     MOVE "4" TO TL-EXPECTED
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BK-CURSOR BK-ANCHOR
+     MOVE 127 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "acceptance US12 40-8§2.6 Ctrl+Delete from 0 deletes to the next word's start: 'cd ef' remains" TO TL-CASE
+     MOVE "cd ef" TO TL-EXPECTED
+     PERFORM VALUE-TEXT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1073741898 TO WS-KEY
+     MOVE 3 TO BK-CURSOR BK-ANCHOR
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E1
+     MOVE 1073741901 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE BK-CURSOR TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-8§2.5 with the edit shortcut Home goes to 0 and End to the length (5)" TO TL-CASE
+     MOVE "0 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9999 TO WS-KEY
+     CALL "BOOK-KEY" USING CLIENT-STATE WS-KEY WS-SHIFT WS-EDIT WS-ALT WS-HANDLED
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§2.5 any other key is not handled" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO BE-PAGE-COUNT
+     MOVE 0 TO BE-CURRENT
+     CALL "BOOK-PAGE-FORWARD" USING CLIENT-STATE
+     MOVE "acceptance US12 40-8§3.3 forward from page 1 of 3 shows page 2 without appending" TO TL-CASE
+     MOVE 31 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BE-PAGE-COUNT * 10 + BE-CURRENT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 90 TO SG-MAXW
+     MOVE 6 TO BK-ADVANCE
+     MOVE 0 TO SG-LINE
+     MOVE SPACES TO SG-LINE-TEXT(1)
+     MOVE "ac" TO SG-LINE-TEXT(1)
+     MOVE 2 TO SG-LEN(1)
+     MOVE 1 TO SG-CURSOR SG-ANCHOR
+     MOVE "b" TO WS-TEXT
+     MOVE 1 TO WS-LEN
+     CALL "SIGN-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-8§5.2 inserting b at the cursor 1 of ac gives abc with the cursor at 2" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SG-CURSOR TO WS-E1
+     STRING SG-LINE-TEXT(1)(1:SG-LEN(1)) FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "abc2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 99 TO WS-SCAN
+     CALL "SIGN-NAV" USING CLIENT-STATE WS-SCAN WS-HANDLED
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-8§6.2 a key the line navigation does not know is not handled" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HANDLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BK-ADVANCE
+     MOVE "Hello" TO WS-TEXT
+     MOVE 1 TO WS-I
+     MOVE 5 TO WS-LEN
+     CALL "TXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-I WS-LEN WS-N
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LEN WS-J
+     MOVE "acceptance US12 40-8§2.3 with no fixed advance the width of a text is the font's (UI-TEXT-WIDTH)" TO TL-CASE
+     MOVE WS-J TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+*> TL-OBSERVED: the display lines as "begin-end " pairs.
+ LINES-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > BK-LINE-COUNT
+         MOVE BK-LB(WS-J) TO WS-E1
+         MOVE BK-LE(WS-J) TO WS-E2
+         STRING FUNCTION TRIM(WS-E1) "-" FUNCTION TRIM(WS-E2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     .
+
+*> TL-OBSERVED: the page text.
+ VALUE-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     IF BK-LEN > 0
+         MOVE BK-VALUE(1:BK-LEN) TO TL-OBSERVED
+     END-IF
+     .
+
+*> One frame (pumps the queued packets) and the packets the server received as hex in WS-HEX.
+ FLUSH.
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     .
+
+ END PROGRAM TEST-SCREEN-40-8.
+
+ COPY CLTEST.

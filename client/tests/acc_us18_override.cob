@@ -68,7 +68,7 @@
      MOVE SPACES TO TL-OBSERVED
      STRING WS-TEXT DELIMITED BY "  " " / " WS-SCREEN-TEXT DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "sprites - states - items - entities - lang cobolcraft.screen.title.packs / CobolCraft"
-         & "|Single-player|Multiplayer|Texture Packs|Quit Game" TO TL-EXPECTED
+         & "|Single-player|Multiplayer|Texture Packs|Options|Quit Game" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   All five enabled change all of it; disabling everything restores the built-in appearance.

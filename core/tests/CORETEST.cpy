@@ -2146,3 +2146,43 @@
      CALL "TEST-FEED" USING L-ID WS-PATH
      GOBACK.
  END PROGRAM TEST-PACK-RESPONSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DROP-MOVES.
+*> USING text (PIC X(1024), in and out): the description of TEST-DRAIN-ENTITIES / TEST-DRAIN-BLOCKS without the Teleport Entity
+*> packets (the tokens "128", "128(<id>)" and "128(<id>)x<n>"), for tests whose subject is not the motion of a ground item
+*> (an item's creep after a break is not what a break, a pickup or a throw test asserts: 41 section 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OUT                 PIC X(1024).
+ 01 WS-TOKEN               PIC X(120).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-POS WS-PTR
+     MOVE 0 TO WS-DONE
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-TEXT))
+     IF WS-LEN = 0
+         GOBACK
+     END-IF
+     PERFORM UNTIL WS-DONE = 1
+         MOVE SPACES TO WS-TOKEN
+         UNSTRING L-TEXT(1:WS-LEN) DELIMITED BY ALL SPACE INTO WS-TOKEN POINTER WS-POS
+         IF WS-POS > WS-LEN
+             MOVE 1 TO WS-DONE
+         END-IF
+         IF WS-TOKEN NOT = SPACES AND WS-TOKEN NOT = "128" AND WS-TOKEN(1:4) NOT = "128("
+             IF WS-PTR > 1
+                 STRING " " DELIMITED BY SIZE INTO WS-OUT POINTER WS-PTR
+             END-IF
+             STRING FUNCTION TRIM(WS-TOKEN) DELIMITED BY SIZE INTO WS-OUT POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE WS-OUT TO L-TEXT
+     GOBACK.
+ END PROGRAM TEST-DROP-MOVES.

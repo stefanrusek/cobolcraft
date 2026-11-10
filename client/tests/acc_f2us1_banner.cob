@@ -18,7 +18,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-BUFFER              PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
- 01 WS-BUTTONS             PIC X(64) VALUE "CobolCraft|Single-player|Multiplayer|Resource Packs|Quit Game".
+ 01 WS-BUTTONS             PIC X(72) VALUE "CobolCraft|Single-player|Multiplayer|Resource Packs|Options|Quit Game".
  PROCEDURE DIVISION.
      CALL "SYSTEM" USING "rm -rf build/client-test-banner"
      CALL "CL-INIT" USING CLIENT-STATE

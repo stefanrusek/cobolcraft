@@ -66,7 +66,7 @@
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ANY WS-FOUND
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE ZERO TO WS-HITS
-     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Faithful Skin" ALL "Uses Faithful 32x textures for CobolCraft"
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Faithful Skin" ALL "Uses Faithful 32x textures"
      MOVE "acceptance US3-3 the skin is an entry of the resource pack screen with its description" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 2 TO TL-EXPECTED-N
