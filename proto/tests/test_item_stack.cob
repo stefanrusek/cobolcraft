@@ -172,6 +172,37 @@
      MOVE "test item-stack get of enchantments (two pairs) and empty stored enchantments" TO TL-CASE
      MOVE "c1 i1 +13=0205030201 +45=00 pos 12 error 0" TO TL-EXPECTED
      PERFORM CHECK-GET
+*>   Book components (46 section 8.1 ids 56 and 57; the Filterable layout is the raw value then an optional filtered one, a Boolean and the value).
+     MOVE "01 01 01 00 38 01 02 4869 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of writable_book_content: one page Hi with no filtered text" TO TL-CASE
+     MOVE "c1 i1 +56=0102486900 pos 10 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 38 02 02 4869 01 01 48 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of writable_book_content: a page with a filtered text, then an empty page" TO TL-CASE
+     MOVE "c1 i1 +56=020248690101480000 pos 14 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 39 01 54 00 01 41 00 01 08 0001 61 00 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of written_book_content: title T, author A, generation 0, one text page, resolved" TO TL-CASE
+     MOVE "c1 i1 +57=01540001410001080001610001 pos 18 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 38 65" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of writable_book_content with 101 pages sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 39 01 54 00 01 41 04 00 01" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of written_book_content with generation 4 sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
 *>   ---- values the reader rejects ----
      MOVE "01 01 01 00 10 00" TO WS-HEX
      PERFORM FILL
