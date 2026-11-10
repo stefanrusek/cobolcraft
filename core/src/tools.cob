@@ -19,8 +19,8 @@
 *>     an attack animation), mining speed of the material (thousandths) out; found is 1 for an item with an attack_damage component
 *>   TOOL-IS-WATER USING block key (PIC X(48)), result out (1 for minecraft:water, else 0)
 *>   TOOL-ENCHANT-ID USING enchantment key (PIC X(112), "minecraft:efficiency"), id out (the registry id of the enchantment registry, -1 none)
-*>   TOOL-BREAK-MODS USING player row, efficiency out (the Efficiency level of the held stack), haste out, fatigue out (amplifier + 1; 0:
-*>     the core keeps no mob effects yet, so they are 0), water out (1 with the eyes, 1.62 above the feet, in water): the four extra inputs of
+*>   TOOL-BREAK-MODS USING player row, efficiency out (the Efficiency level of the held stack), haste out, fatigue out (amplifier + 1; 0: none, the
+*>     effect store of effects.cob), water out (1 with the eyes, 1.62 above the feet, in water): the four extra inputs of
 *>     BREAK-RATE (breaking.cob)
 *>   TOOL-KIND-STATS USING wanted kind (PIC X(12): sword, pickaxe, axe, shovel, hoe, spear), then the arguments of TOOL-ITEM-STATS: the same,
 *>     found only when the key is "<material>_<kind>" (tools-swords.cob and the files of the other kinds call it)
@@ -318,6 +318,9 @@
  01 WS-Z                   BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-BLOCK-KEY           PIC X(48).
+ 01 WS-HASTE-ID            BINARY-LONG VALUE 2.
+ 01 WS-FATIGUE-ID          BINARY-LONG VALUE 3.
+ 01 WS-TICKS               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-EFFICIENCY           BINARY-LONG.
@@ -335,5 +338,7 @@
      CALL "WORLD-GET-BLOCK" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-STATE
      MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-BLOCK-KEY
      CALL "TOOL-IS-WATER" USING WS-BLOCK-KEY L-WATER
+     CALL "EFFECT-LEVEL" USING L-ROW WS-HASTE-ID L-HASTE WS-TICKS
+     CALL "EFFECT-LEVEL" USING L-ROW WS-FATIGUE-ID L-FATIGUE WS-TICKS
      GOBACK.
  END PROGRAM TOOL-BREAK-MODS.
