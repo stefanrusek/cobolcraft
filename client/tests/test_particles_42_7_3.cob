@@ -9,8 +9,8 @@
  01 WS-NAME                PIC X(160).
  01 WS-CLASS               PIC X(24).
  01 WS-INT                 PIC X(300).
- 01 WS-DRT                 PIC X(6000).
- 01 WS-EXP                 PIC X(6000).
+ 01 WS-DRT                 PIC X(8000).
+ 01 WS-EXP                 PIC X(8000).
  01 WS-OBS                 PIC X(12000).
  01 WS-OBS2                PIC X(12000).
  01 WS-LEN                 BINARY-LONG.
@@ -22,7 +22,7 @@
  01 WS-LIST.
     05 WS-NUM              FLOAT-LONG OCCURS 2100 TIMES.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-TEXT                PIC X(6000).
+ 01 WS-TEXT                PIC X(8000).
  01 WS-TOK                 PIC X(40).
  01 WS-PTR                 BINARY-LONG.
  01 WS-PTR2                BINARY-LONG.
@@ -476,6 +476,7 @@
      PERFORM RENDER
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-OBS)) TO WS-LEN
      IF WS-LEN > 1000
+         MOVE SPACES TO WS-OBS2
          MOVE WS-OBS(1:480) TO WS-OBS2(1:480)
          MOVE "..." TO WS-OBS2(481:3)
          COMPUTE WS-START = WS-LEN - 479
@@ -509,7 +510,7 @@
  PARSE-LIST.
      MOVE 0 TO WS-COUNT
      MOVE 1 TO WS-PTR
-     PERFORM UNTIL WS-PTR > 6000 OR WS-TEXT(WS-PTR:) = SPACES
+     PERFORM UNTIL WS-PTR > 8000 OR WS-TEXT(WS-PTR:) = SPACES
          MOVE SPACES TO WS-TOK
          UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
          IF WS-TOK NOT = SPACES
@@ -542,6 +543,10 @@
              MOVE EM-COLOR(WS-I) TO WS-EDC
              COMPUTE WS-EDS ROUNDED = EM-SCALE(WS-I)
              STRING " c=" FUNCTION TRIM(WS-EDC) " s=" WS-EDS DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-COLOR(WS-I) = 0 AND EM-SCALE(WS-I) NOT = 0
+             COMPUTE WS-EDR ROUNDED = EM-SCALE(WS-I)
+             STRING " r=" WS-EDR DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
          END-IF
          IF EM-STATE(WS-I) NOT = 0
              MOVE EM-STATE(WS-I) TO WS-EDC
