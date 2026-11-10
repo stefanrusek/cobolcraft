@@ -254,18 +254,9 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-S                   BINARY-LONG.
- 01 WS-Q                   BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-X                   FLOAT-LONG.
- 01 WS-Y                   FLOAT-LONG.
- 01 WS-Z                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG.
- 01 WS-VY                  FLOAT-LONG.
- 01 WS-VZ                  FLOAT-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-DELAY               BINARY-LONG VALUE 30.
- 01 WS-ITEM-ROW            BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-CAUSE                BINARY-LONG.
@@ -295,21 +286,15 @@
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER
      CALL "CONSOLE-TEXT" USING PB-TEXT
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
-     MOVE PL-X(WS-ROW) TO WS-X
-     COMPUTE WS-Y = PL-Y(WS-ROW) + RULE-DEATH-DY-MILLI / 1000
-     MOVE PL-Z(WS-ROW) TO WS-Z
-     COMPUTE WS-VY = RULE-DEATH-LIFT-MILLI / 1000
+*>   Inventory.dropAll (41 section 2.4): every non-empty main slot in index order is dropped with the circle motion of the
+*>   player's own random source, pickup delay 40, no thrower; the patch handle goes with the stack.
      PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 35
          IF PL-SLOT-COUNT(WS-ROW, WS-S + 1) > 0
-             COMPUTE WS-Q = WS-S / 6
-             COMPUTE WS-VX = (FUNCTION MOD(WS-S, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
-             COMPUTE WS-VZ = (FUNCTION MOD(WS-Q, 6) * 2 - 5) * RULE-DEATH-SPREAD-MILLI / 1000
              MOVE PL-SLOT-ITEM(WS-ROW, WS-S + 1) TO WS-ITEM
              MOVE PL-SLOT-COUNT(WS-ROW, WS-S + 1) TO WS-COUNT
-             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1)
-             CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT
-                 WS-DELAY WS-ITEM-ROW
+             MOVE PL-SLOT-VAR(WS-ROW, WS-S + 1) TO WS-VAR
+             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-S + 1) PL-SLOT-COUNT(WS-ROW, WS-S + 1) PL-SLOT-VAR(WS-ROW, WS-S + 1)
+             CALL "GI-DEATH-DROP" USING WS-ROW WS-ITEM WS-COUNT WS-VAR
          END-IF
      END-PERFORM
      COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
