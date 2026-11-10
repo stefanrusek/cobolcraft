@@ -463,6 +463,8 @@
        10 AT-H               BINARY-LONG.
        10 AT-ADDR            USAGE POINTER.  *> RGBA pixels, rows top to bottom
        10 AT-SPRITE-COUNT    BINARY-LONG.    *> sprite 1 is the missing texture
+       10 AT-PAD             BINARY-LONG.    *> padding around each sprite's slot, pixels (12 section 2.2)
+       10 AT-MIPS            BINARY-LONG.    *> mip levels of the atlas texture (levels below the first + 1)
        10 AT-SPRITE OCCURS 4096 TIMES.
           15 AT-NAME         PIC X(80).      *> sprite id, e.g. cobolcraft:block/greystone
           15 AT-NAME-LENGTH  BINARY-LONG.

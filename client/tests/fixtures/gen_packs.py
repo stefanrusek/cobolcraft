@@ -218,6 +218,20 @@ PACKS["ctm"] = ("folder", {
 })
 
 
+# Weather images of co-prime heights (CC-0003): 17 and 19 (least common multiple 323), 1000 and 999 (998,001).
+ENV = "assets/cobolcraft/textures/environment/"
+PACKS["weather"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 17 19"),
+    ENV + "drizzle.png": png(16, 17, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 19, lambda x, y: (40, 50, 60, 255)),
+})
+PACKS["weather2"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 1000 999"),
+    ENV + "drizzle.png": png(16, 1000, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 999, lambda x, y: (40, 50, 60, 255)),
+})
+
+
 def zip_bytes(files):
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:

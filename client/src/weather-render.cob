@@ -2,7 +2,8 @@
 *> §10.11): ENVIRONMENT-ATLAS-BUILD loads the environment atlas (texture 3): the images
 *> textures/environment/drizzle.png and hailstorm.png, each from the top-most pack that has it, or
 *> the missing-texture stripes at its stand-in size (16 x 16) when no pack has it, side by side in
-*> that order from the left. The atlas is as tall as the least common multiple of the two heights,
+*> that order from the left. The atlas is as tall as the least common multiple of the two heights
+*> (at most 4096 rows; past that both images are stretched to the taller one's height),
 *> each image repeated down its columns, and is sampled with repeat wrapping (cc_vk_texture_wrap,
 *> shim-abi §9), so a v running over several images wraps seamlessly (08 §10.11).
 *> WEATHER-MESH builds the frame's weather mesh, eye-relative, in drizzle and in a hailstorm (clear
@@ -50,6 +51,8 @@
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-REST                BINARY-LONG.
+ 01 WS-OLD-HEIGHTS.
+    05 WS-OLD-H            BINARY-LONG OCCURS 2 TIMES.
  01 B-ATLAS                PIC X(1073741824) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -79,6 +82,15 @@
      END-PERFORM
      DIVIDE XA-IM-H(1) BY WS-A GIVING XA-H
      MULTIPLY XA-IM-H(2) BY XA-H
+     MOVE XA-IM-H(1) TO WS-OLD-H(1)
+     MOVE XA-IM-H(2) TO WS-OLD-H(2)
+*>   Heights with no small common multiple (co-prime heights, CC-0003) would make the atlas huge: past
+*>   4096 rows both images are stretched to the taller one's height (nearest neighbour) and the atlas
+*>   is that tall.
+     IF XA-H > 4096
+         MOVE FUNCTION MAX(XA-IM-H(1), XA-IM-H(2)) TO XA-H
+         MOVE XA-H TO XA-IM-H(1) XA-IM-H(2)
+     END-IF
      IF XA-ADDR NOT = NULL
          FREE XA-ADDR
      END-IF
@@ -91,7 +103,11 @@
          COMPUTE WS-ROW-BYTES = XA-IM-W(WS-K) * 4
          PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R >= XA-H
              COMPUTE WS-TO = (WS-R * XA-W + XA-IM-X(WS-K)) * 4 + 1
-             COMPUTE WS-FROM = FUNCTION MOD(WS-R, XA-IM-H(WS-K)) * WS-ROW-BYTES + 1
+             IF WS-OLD-H(WS-K) = XA-IM-H(WS-K)
+                 COMPUTE WS-FROM = FUNCTION MOD(WS-R, XA-IM-H(WS-K)) * WS-ROW-BYTES + 1
+             ELSE
+                 COMPUTE WS-FROM = (WS-R * WS-OLD-H(WS-K) / XA-H) * WS-ROW-BYTES + 1
+             END-IF
              MOVE WS-IMAGE(WS-K)(WS-FROM:WS-ROW-BYTES) TO B-ATLAS(WS-TO:WS-ROW-BYTES)
          END-PERFORM
      END-PERFORM

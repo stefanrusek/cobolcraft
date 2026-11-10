@@ -64,6 +64,9 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-ROW-H               BINARY-LONG.
  01 WS-AREA                BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 WS-SIXTEEN             BINARY-LONG VALUE 16.
  01 WS-SIXTEEN2            BINARY-LONG VALUE 16.
@@ -160,8 +163,6 @@
 *>   Sizes, then rows of sprites in order, as wide as the pack's sprites need: 128 pixels, doubled
 *>   while the area of all the sprites would not fill a square of that width (at most 4096 pixels), and
 *>   at least as wide as the widest sprite.
-     MOVE 128 TO AT-W
-     MOVE 0 TO WS-AREA
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          CALL "ATLAS-LOAD-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
              WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND AT-PACK(WS-S) WS-ANIMATED
@@ -199,24 +200,48 @@
              ALLOCATE WS-BYTES CHARACTERS INITIALIZED RETURNING AN-OUT(AN-COUNT)
          END-IF
          END-IF
-         COMPUTE WS-AREA = WS-AREA + AT-SW(WS-S) * AT-SH(WS-S)
      END-PERFORM
+*>   The mip level M used: at most 4 and at most the lowest set bit of every sprite's width and height;
+*>   the padding is 2^M pixels on each side of a sprite (12 section 2.2), its slot is that much larger.
+     MOVE 4 TO WS-M
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+             IF WS-I = 1
+                 MOVE AT-SW(WS-S) TO WS-V
+             ELSE
+                 MOVE AT-SH(WS-S) TO WS-V
+             END-IF
+             MOVE 0 TO WS-K
+             PERFORM UNTIL FUNCTION MOD(WS-V, 2) NOT = 0 OR WS-K >= WS-M
+                 COMPUTE WS-V = WS-V / 2
+                 ADD 1 TO WS-K
+             END-PERFORM
+             MOVE FUNCTION MIN(WS-M, WS-K) TO WS-M
+         END-PERFORM
+     END-PERFORM
+     COMPUTE AT-PAD = 2 ** WS-M
+     COMPUTE AT-MIPS = WS-M + 1
+     MOVE 0 TO WS-AREA
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         COMPUTE WS-AREA = WS-AREA + (AT-SW(WS-S) + 2 * AT-PAD) * (AT-SH(WS-S) + 2 * AT-PAD)
+     END-PERFORM
+     MOVE 128 TO AT-W
      PERFORM UNTIL AT-W * AT-W >= WS-AREA OR AT-W >= 4096
          COMPUTE AT-W = AT-W * 2
      END-PERFORM
-     PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
-         MOVE FUNCTION MAX(AT-W, AT-SW(WS-S)) TO AT-W
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         MOVE FUNCTION MAX(AT-W, AT-SW(WS-S) + 2 * AT-PAD) TO AT-W
      END-PERFORM
      MOVE 0 TO WS-X WS-Y WS-ROW-H
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
-         IF WS-X + AT-SW(WS-S) > AT-W
+         IF WS-X + AT-SW(WS-S) + 2 * AT-PAD > AT-W
              ADD WS-ROW-H TO WS-Y
              MOVE 0 TO WS-X WS-ROW-H
          END-IF
-         MOVE WS-X TO AT-X(WS-S)
-         MOVE WS-Y TO AT-Y(WS-S)
-         ADD AT-SW(WS-S) TO WS-X
-         MOVE FUNCTION MAX(WS-ROW-H, AT-SH(WS-S)) TO WS-ROW-H
+         COMPUTE AT-X(WS-S) = WS-X + AT-PAD
+         COMPUTE AT-Y(WS-S) = WS-Y + AT-PAD
+         COMPUTE WS-X = WS-X + AT-SW(WS-S) + 2 * AT-PAD
+         MOVE FUNCTION MAX(WS-ROW-H, AT-SH(WS-S) + 2 * AT-PAD) TO WS-ROW-H
      END-PERFORM
      COMPUTE AT-H = WS-Y + WS-ROW-H
      IF AT-ADDR NOT = NULL
@@ -249,6 +274,25 @@
              COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
              MOVE WS-IMAGE(WS-Y * AT-SW(WS-S) * 4 + 1:AT-SW(WS-S) * 4)
                  TO B-ATLAS(WS-I:AT-SW(WS-S) * 4)
+         END-PERFORM
+*>       The padding: the sprite's edge pixels repeated outward, sides first, then the top and bottom
+*>       rows whole (12 section 2.2: a clamped sample of the sprite beyond its edge).
+         PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
+             COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > AT-PAD
+                 MOVE B-ATLAS(WS-I:4) TO B-ATLAS(WS-I - WS-K * 4:4)
+                 MOVE B-ATLAS(WS-I + AT-SW(WS-S) * 4 - 4:4)
+                     TO B-ATLAS(WS-I + AT-SW(WS-S) * 4 + (WS-K - 1) * 4:4)
+             END-PERFORM
+         END-PERFORM
+         COMPUTE WS-BYTES = (AT-SW(WS-S) + 2 * AT-PAD) * 4
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > AT-PAD
+             COMPUTE WS-I = (AT-Y(WS-S) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             COMPUTE WS-V = ((AT-Y(WS-S) - WS-K) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             MOVE B-ATLAS(WS-I:WS-BYTES) TO B-ATLAS(WS-V:WS-BYTES)
+             COMPUTE WS-I = ((AT-Y(WS-S) + AT-SH(WS-S) - 1) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             COMPUTE WS-V = ((AT-Y(WS-S) + AT-SH(WS-S) + WS-K - 1) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             MOVE B-ATLAS(WS-I:WS-BYTES) TO B-ATLAS(WS-V:WS-BYTES)
          END-PERFORM
 *>       Translucent when any pixel has alpha below 255 (08 §5.3).
          PERFORM VARYING WS-I FROM 4 BY 4 UNTIL WS-I > AT-SW(WS-S) * AT-SH(WS-S) * 4
