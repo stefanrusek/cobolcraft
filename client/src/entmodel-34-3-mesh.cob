@@ -1,0 +1,160 @@
+*> Entity models part 3 (docs/protocol/34-entity-models-3-villagers-illagers-golems-misc.md): the model meshes (the tables of the document as rows of EMM-ROW, client/src/entmodel-model.cob).
+*> Entry point for the integrator (inputs): EM3-LAYER model layer-name(X(32), the ModelLayers field name) ok(out): builds the model of the layer; the programs EM3-<MODEL>-MESH build one
+*> unscaled mesh. Records: client/copy/CLEMM.cpy. The setupAnim of each model is in client/src/entmodel-34-3-anim.cob.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-ROWS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-G.
+    05 WS-GV               FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-ROWS.
+    05 L-ROW               PIC X(100) OCCURS 80 TIMES.
+ 01 L-N                    BINARY-LONG.
+ 01 L-GROW                 FLOAT-LONG.
+ PROCEDURE DIVISION USING EMM-MODEL L-ROWS L-N L-GROW.
+     MOVE L-GROW TO WS-GV(1) WS-GV(2) WS-GV(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-N
+         CALL "EMM-ROW" USING EMM-MODEL L-ROW(WS-I) WS-G
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EM3-ROWS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-VILLAGER-MESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -10 -4 8 10 8 0 0".
+    05 FILLER PIC X(100) VALUE "P hat head 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C hat 32 0 -4 -10 -4 8 10 8 0.51 0".
+    05 FILLER PIC X(100) VALUE "P hat_rim hat 0 0 0 -1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C hat_rim 30 47 -8 -8 -6 16 16 1 0 0".
+    05 FILLER PIC X(100) VALUE "P nose head 0 -2 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C nose 24 0 -1 -1 -6 2 4 2 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 16 20 -4 0 -3 8 12 6 0 0".
+    05 FILLER PIC X(100) VALUE "P jacket body 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C jacket 0 38 -4 0 -3 8 20 6 0.5 0".
+    05 FILLER PIC X(100) VALUE "P arms root 0 3 -1 -0.75 0 0".
+    05 FILLER PIC X(100) VALUE "C arms 44 22 -8 -2 -2 4 8 4 0 0".
+    05 FILLER PIC X(100) VALUE "C arms 44 22 4 -2 -2 4 8 4 0 1".
+    05 FILLER PIC X(100) VALUE "C arms 40 38 -4 2 -2 8 4 4 0 0".
+    05 FILLER PIC X(100) VALUE "P right_leg root -2 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_leg 0 22 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_leg root 2 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_leg 0 22 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 60 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 20.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     GOBACK.
+ END PROGRAM EM3-VILLAGER-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-VILLAGER-BABY-MESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P arms root 0 17.5 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hand arms -3 1.4025 -0.9599 -1.0472 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hand 36 15 -1 -2.4925 -1.8401 2 4 2 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hand 16 15 5 -2.4925 -1.8401 2 4 2 0 0".
+    05 FILLER PIC X(100) VALUE "P middlearm_r1 right_hand 0 0.9024 -1.8175 -1.0472 0 0".
+    05 FILLER PIC X(100) VALUE "C middlearm_r1 24 17 -2 -0.9924 -0.9825 4 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "P right_leg root -1 21.5 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_leg 8 23 -1 -0.5 -1 2 3 2 0 0".
+    05 FILLER PIC X(100) VALUE "P left_leg root 1 21.5 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_leg 0 23 -1 -0.5 -1 2 3 2 0 0".
+    05 FILLER PIC X(100) VALUE "P head root 0 16 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -8 -3.5 8 8 7 0 0".
+    05 FILLER PIC X(100) VALUE "P hat head 0 -4 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C hat 0 30 -4 -4 -3.5 8 8 7 0.3 0".
+    05 FILLER PIC X(100) VALUE "P hat_rim head 0 -4.5 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C hat_rim 0 45 -7 -0.5 -6 14 1 12 0 0".
+    05 FILLER PIC X(100) VALUE "P nose head 0 -2 -4 0 0 0".
+    05 FILLER PIC X(100) VALUE "C nose 23 0 -1 0 -0.5 2 2 1 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 18.75 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 0 15 -2 -2.75 -1.5 4 5 3 0 0".
+    05 FILLER PIC X(100) VALUE "P bb_main root 0.5 24 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C bb_main 16 21 -2.5 -8 -1.5 4 6 3 0.2 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 58 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 22.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     GOBACK.
+ END PROGRAM EM3-VILLAGER-BABY-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-NO-HAT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "X head".
+    05 FILLER PIC X(100) VALUE "X hat".
+    05 FILLER PIC X(100) VALUE "X hat_rim".
+    05 FILLER PIC X(100) VALUE "X nose".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 76 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 4.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CONTINUE
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     GOBACK.
+ END PROGRAM EM3-NO-HAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EM3-LAYER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-LAYER                PIC X(32).
+ 01 L-OK                   BINARY-LONG.
+*> USING model layer(X(32), the ModelLayers field name) ok: builds the model of a layer of 34-3 (the scaled layers carry the 0.9375 root); ok 0 when the layer is not one of this document.
+ PROCEDURE DIVISION USING EMM-MODEL L-LAYER L-OK.
+     MOVE 1 TO L-OK
+     EVALUATE L-LAYER
+         WHEN "VILLAGER" WHEN "WANDERING_TRADER"
+             CALL "EM3-VILLAGER-MESH" USING EMM-MODEL
+             MOVE 0.9375 TO WS-S
+             CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S
+         WHEN "VILLAGER_NO_HAT"
+             CALL "EM3-VILLAGER-MESH" USING EMM-MODEL
+             CALL "EM3-NO-HAT" USING EMM-MODEL
+             MOVE 0.9375 TO WS-S
+             CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S
+         WHEN "VILLAGER_BABY"
+             CALL "EM3-VILLAGER-BABY-MESH" USING EMM-MODEL
+         WHEN "VILLAGER_BABY_NO_HAT"
+             CALL "EM3-VILLAGER-BABY-MESH" USING EMM-MODEL
+             CALL "EM3-NO-HAT" USING EMM-MODEL
+         WHEN OTHER
+             MOVE 0 TO L-OK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EM3-LAYER.
