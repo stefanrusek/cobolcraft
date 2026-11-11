@@ -212,6 +212,7 @@
  COPY MOBS.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -237,7 +238,11 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) >= MOB-FIRST-TYPE AND EN-DIM(WS-E) = L-DIM
+         MOVE 0 TO WS-M
+         IF EN-USED(WS-E) = 1
+             CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
+         END-IF
+         IF WS-M > 0 AND EN-DIM(WS-E) = L-DIM
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
              IF L-X < EN-X(WS-E) + WS-HALF - WS-EPSILON
@@ -312,6 +317,7 @@
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+     CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 1 TO L-PLACED
      GOBACK.
@@ -336,7 +342,13 @@
  01 WS-TRAVEL              BINARY-LONG.
  01 WS-BENCH               BINARY-LONG.
  01 WS-BED                 BINARY-LONG.
+ 01 WS-BONE                BINARY-LONG.
+ 01 WS-BONE-USED           BINARY-LONG.
+ 01 WS-CONT                BINARY-LONG.
+ 01 WS-SHELF               BINARY-LONG.
+ 01 WS-OPENED              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TOOL                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -354,15 +366,38 @@
      MOVE 0 TO WS-TRAVEL
      CALL "MENU-IS-BENCH" USING WS-STATE WS-BENCH
      CALL "WORLDSIM-BED-KEY" USING WS-STATE WS-BED
+*>   An axe, shovel or hoe changes the block it is used on (17 section 3.1; tools-wire.cob).
+     MOVE 0 TO WS-TOOL
+     IF WS-ITEM > 0 AND WS-BENCH = 0 AND WS-BED = 0
+         CALL "TOOLUSE-ON" USING L-ID PLAY-SERVERBOUND WS-TOOL
+     END-IF
+     CALL "GB-HELD-BONEMEAL" USING WS-ITEM WS-BONE
+     MOVE 0 TO WS-BONE-USED
+     CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
+     MOVE 0 TO WS-SHELF
+*>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
+     IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
+         MOVE 0 TO WS-CONT
+     ELSE
+         CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
+     END-IF
      EVALUATE TRUE
+         WHEN WS-TOOL = 1
+             CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
          WHEN WS-BENCH = 1
              CONTINUE
          WHEN WS-BED = 1
              CONTINUE
+         WHEN WS-CONT > 0
+             CONTINUE
+         WHEN WS-SHELF = 1
+             CONTINUE
          WHEN PSB-HAND NOT = 0
              CONTINUE
+         WHEN WS-BONE = 1
+             CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
          WHEN WS-PLACES >= 0
              CALL "BLOCK-PLACE" USING L-ID PLAY-SERVERBOUND WS-PLACES WS-PLACED
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GLOWTUBE
@@ -378,6 +413,9 @@
      END-IF
      IF WS-BED = 1 AND PSB-HAND = 0
          CALL "WORLDSIM-SLEEP-USE" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-CONT > 0
+         CALL "MENU-CONT-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-OPENED
      END-IF
      IF WS-PLACED = 1 AND PL-MODE(WS-ROW) = 0
          CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE

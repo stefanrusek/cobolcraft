@@ -27,6 +27,8 @@
        10 WS-C             BINARY-LONG.
        10 WS-X             FLOAT-SHORT.
        10 WS-Y             FLOAT-SHORT.
+ 01 WS-VT-LAYER            PIC XX VALUE "HD".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
@@ -189,6 +191,13 @@
      MOVE "acceptance US20-2 a left click on the inventory screen starts no swing" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE CL-SWING-AT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the hand is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-F2US20-HAND.

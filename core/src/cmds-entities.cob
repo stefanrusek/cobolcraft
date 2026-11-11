@@ -301,6 +301,7 @@
  01 WS-HAS-COLON           BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ET                  BINARY-LONG.
+ 01 WS-MOB-COUNT            BINARY-LONG.
  01 WS-MOB                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -352,7 +353,8 @@
              MOVE WS-I TO WS-ET
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MOB-TYPE-COUNT
+     CALL "MOB-TABLE-COUNT" USING WS-MOB-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MOB-COUNT
          IF MB-ENTITY-TYPE(WS-I) + 1 = WS-ET
              MOVE WS-I TO WS-MOB
          END-IF

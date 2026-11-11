@@ -635,7 +635,7 @@
      MOVE 0 TO PL-MODE
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      PERFORM LECTERN-LIST
-     MOVE "acceptance US12 40-5§4.7 lectern at page 1 of a survival player: back (107, 159) button 1, forward (180, 159) button 2, Done (60, 196), Take Book (162, 196) button 3" TO TL-CASE
+     MOVE "acceptance US12 40-5§4 lectern at page 1 of a survival player: back (107, 159) button 1, forward (180, 159) button 2, Done (60, 196), Take Book (162, 196) button 3" TO TL-CASE
      MOVE "53:107:159:1 53:180:159:2 57:60:196:0 53:162:196:3 " TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM LABEL-LIST

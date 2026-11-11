@@ -163,9 +163,9 @@
          CALL "GEN-JOB-STEP" USING WS-JOB
      END-PERFORM
      CALL "GEN-JOB-FREE" USING WS-JOB
-     MOVE "acc f2us11 world the stages run in order biomes to finish, each once" TO TL-CASE
+     MOVE "acc f2us11 world the stages run in order biomes to finish (the feature stage before it), each once" TO TL-CASE
      COMPUTE TL-OBSERVED-N = WS-ORDER-BAD * 100 + WS-STAGES-SEEN * 10 + WS-LAST
-     MOVE 88 TO TL-EXPECTED-N
+     MOVE 99 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   neighbours: the chunk alone, after its neighbours, and with another seed

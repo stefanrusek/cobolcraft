@@ -21,6 +21,7 @@
           15 MF-UV           FLOAT-SHORT OCCURS 4 TIMES.
           15 MF-CULL         BINARY-LONG.    *> DIR-*, DIR-NONE when absent
           15 MF-ROTATION     BINARY-LONG.    *> 0, 90, 180, 270
+          15 MF-TINT         BINARY-LONG.    *> tintindex (08 5.5), -1 when absent
     05 MR-SLOT-COUNT         BINARY-LONG.
     05 MR-SLOT OCCURS 16 TIMES.
        10 MS-NAME            PIC X(32).

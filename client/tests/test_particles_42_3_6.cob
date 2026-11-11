@@ -1,0 +1,317 @@
+*> Acceptance test of docs/protocol/42-particles-3-fluid-drip-water.md section 6 (suspended, glow and flying particles):
+*> the constructor draws, tick, size and light formulas and worked cases of the section, with the document's
+*> tick, size and light formulas, and the worked examples E1 to E12 that apply. The case lines are written
+*> by a script that applies the document's numbers; the expected values are the document's.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-3-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY CLP3X.
+ COPY CLP2X.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-VX2                 FLOAT-LONG.
+ 01 WS-VY2                 FLOAT-LONG.
+ 01 WS-VZ2                 FLOAT-LONG.
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-D36S.
+    05 WS-D36              FLOAT-LONG OCCURS 36 TIMES.
+ 01 WS-NOISES.
+    05 WS-NOISE            FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-VAL                 FLOAT-LONG.
+ 01 WS-CHK                 FLOAT-LONG.
+ 01 WS-VAL2                FLOAT-LONG.
+ 01 WS-VAL3                FLOAT-LONG VALUE 0.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-R1                  FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-POWER               FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PYD                 FLOAT-LONG.
+ 01 WS-SCALE               BINARY-DOUBLE.
+ 01 WS-ZERO-N              BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-LIFE                BINARY-LONG.
+ 01 WS-LIFEC               BINARY-LONG.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-ERR                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-FIRED               BINARY-LONG.
+ 01 WS-A1                  BINARY-LONG.
+ 01 WS-B1                  BINARY-LONG.
+ 01 WS-C1                  BINARY-LONG.
+ 01 WS-D1                  BINARY-LONG.
+ 01 WS-SHAPE-NAME          PIC X(12).
+ 01 WS-SPAWN               BINARY-LONG.
+ 01 WS-ARGB                BINARY-DOUBLE.
+ 01 WS-AIR                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 0 TO PK-COUNT
+     MOVE 0 TO PX-HAS-FADE
+     MOVE 0 TO PK-COUNT
+     MOVE 10 TO WS-X
+     MOVE 20 TO WS-Y
+     MOVE 30 TO WS-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     CALL "P3-UNDERWATER-NEW" USING PCL WS-X WS-Y WS-Z WS-DRAWS
+     MOVE "6.1 underwater: y lowered by 0.125 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 19875 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.1 underwater: box 0.01" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW
+     MOVE 1000 TO WS-SCALE
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.1 underwater: quadSize 0.15 * 0.5 = 0.075" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 75 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.1 underwater: lifetime (int)(16 / 0.6) = 26" TO WS-NAME
+     MOVE 26 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "6.1 underwater: no collision" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-HAS-PHYSICS
+     PERFORM ASSERT-NUMBER
+     MOVE "6.1 underwater: friction 1.0, gravity 0 (thousandths)" TO WS-NAME
+     COMPUTE WS-CHK = PC-FRICTION + PC-GRAVITY
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.1 underwater: colour (0.4, 0.4, 0.7): blue" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 700 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.1 underwater: red" TO WS-NAME
+     COMPUTE WS-CHK = PC-RCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 400 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     PERFORM 5 TIMES
+     CALL "PCL-TICK" USING PCL PCL-COLLIDERS
+     END-PERFORM
+     MOVE "6.1 underwater: never moves (y stays 19.875, 1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 19875 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     MOVE 0 TO WS-VX
+     MOVE 0 TO WS-VY
+     MOVE 0 TO WS-VZ
+     CALL "P3-DOLPHIN-NEW" USING PCL WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-DRAWS
+     MOVE "6.2 dolphin: colour (0.3, 0.5, 1.0): blue" TO WS-NAME
+     COMPUTE WS-CHK = PC-BCOL
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.2 dolphin: alpha 1 - 0.5 * 0.7 = 0.65" TO WS-NAME
+     COMPUTE WS-CHK = PC-ALPHA
+     MOVE 1000 TO WS-SCALE
+     MOVE 650 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.2 dolphin: lifetime 33 / 2 = 16" TO WS-NAME
+     MOVE 16 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "6.2 dolphin: box 0.02" TO WS-NAME
+     COMPUTE WS-CHK = PC-BBW
+     MOVE 1000 TO WS-SCALE
+     MOVE 20 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.2 dolphin: quadSize 0.15 * 0.8 = 0.12" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 120 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P2-TOWN-TICK" USING PCL PCL-COLLIDERS
+     MOVE "6.2 dolphin tick: velocity * 0.99 (yd 0.002 * 0.99 = 0.00198, 1e-5)" TO WS-NAME
+     COMPUTE WS-CHK = PC-YD
+     MOVE 100000 TO WS-SCALE
+     MOVE 198 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0 TO WS-X WS-Y WS-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     MOVE 0.0 TO WS-D(5)
+     MOVE 0 TO WS-VX
+     MOVE 1.0 TO WS-VY
+     MOVE 0 TO WS-VZ
+     CALL "P3-NAUTILUS-NEW" USING PCL P2X WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-DRAWS
+     MOVE "6.3 nautilus: lifetime 30" TO WS-NAME
+     MOVE 30 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "6.3 nautilus: starts at the target plus the offset: y 1.0" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     PERFORM 29 TIMES
+     CALL "P3-NAUTILUS-TICK" USING PCL P2X
+     END-PERFORM
+     MOVE "6.3 nautilus: the last drawn position (age 29): y = 1 / 30 - 1.2 * (29 / 30)^4 = -1.0144 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE -1014 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 15 TO PC-AGE
+     MOVE 0 TO WS-LIGHT
+     CALL "P3-LIGHT-ADD-T4" USING WS-LIGHT PC-AGE PC-LIFETIME WS-OUT
+     MOVE "6.3 nautilus light: (15 / 30)^4 = 0.0625 gives block 15" TO WS-NAME
+     MOVE 15 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+*>   6.4 sulfur_bubbles
+     MOVE 20 TO WS-Y
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0.5 TO WS-D(WS-I)
+         MOVE 0.5 TO WS-E(WS-I)
+     END-PERFORM
+     MOVE 0 TO WS-VX
+     MOVE 0 TO WS-VZ
+     CALL "P3-SULFUR-NEW" USING PCL P3X WS-X WS-Y WS-Z WS-VX WS-VZ WS-DRAWS
+     MOVE "6.4 sulfur_bubbles: gravity -0.04, friction 0.85 (thousandths: gravity * 10 + friction)" TO WS-NAME
+     COMPUTE WS-CHK = PC-GRAVITY * 10 + PC-FRICTION
+     MOVE 1000 TO WS-SCALE
+     MOVE 450 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles: sizeStart 0.02 + 0.02 * 0.5 = 0.03 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 1000 TO WS-SCALE
+     MOVE 30 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles: lifetime is the int maximum" TO WS-NAME
+     MOVE 2147483647 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-LIFETIME
+     PERFORM ASSERT-NUMBER
+     MOVE "6.4 sulfur_bubbles: yEnd = y + 3 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = X3-Y-END
+     MOVE 1000 TO WS-SCALE
+     MOVE 23000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles: yd 0 at the start" TO WS-NAME
+     COMPUTE WS-CHK = PC-YD
+     MOVE 1000 TO WS-SCALE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.5 TO WS-NOISE(1)
+     MOVE 0.7 TO WS-NOISE(2)
+     MOVE 0.5 TO WS-NOISE(3)
+     MOVE 0.2 TO WS-NOISE(4)
+     MOVE 1 TO WS-ONE
+     CALL "P3-SULFUR-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-NOISES
+     MOVE "6.4 sulfur_bubbles tick 1: alive" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE "6.4 sulfur_bubbles tick 1: y rose by 0.0016 (1e-4)" TO WS-NAME
+     COMPUTE WS-CHK = PC-Y - 20
+     MOVE 10000 TO WS-SCALE
+     MOVE 16 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles tick 1: xd = + 0.5 * 0.003 * 0.5 = 0.00075 (1e-5, after the 0.85 friction of the base tick it was 0)" TO WS-NAME
+     COMPUTE WS-CHK = PC-XD
+     MOVE 100000 TO WS-SCALE
+     MOVE 75 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles tick 1: zd = - 0.00075 (a false boolean)" TO WS-NAME
+     COMPUTE WS-CHK = PC-ZD
+     MOVE 100000 TO WS-SCALE
+     MOVE -75 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "6.4 sulfur_bubbles tick 1: quadSize = 0.03 + (0.0016 / 3) * 0.12 = 0.030064 (1e-5)" TO WS-NAME
+     COMPUTE WS-CHK = PC-QUAD-SIZE
+     MOVE 100000 TO WS-SCALE
+     MOVE 3006 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3-SULFUR-TICK" USING PCL P3X PCL-COLLIDERS WS-ZERO-N WS-NOISES
+     MOVE "6.4 sulfur_bubbles: removed outside a water source" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO PC-REMOVED
+     MOVE 20 TO WS-Y
+     CALL "PCL-SET-POS" USING PCL WS-X WS-Y WS-Z
+     MOVE 20 TO X3-Y-PREV
+     MOVE 0.9 TO WS-NOISE(4)
+     MOVE 0 TO PC-ZD PC-XD
+     CALL "P3-SULFUR-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-NOISES
+     MOVE "6.4 sulfur_bubbles: a true second boolean gives zd = + 0.00075 (1e-5)" TO WS-NAME
+     COMPUTE WS-CHK = PC-ZD
+     MOVE 100000 TO WS-SCALE
+     MOVE 75 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0 TO PC-REMOVED
+     MOVE 23 TO WS-Y
+     CALL "PCL-SET-POS" USING PCL WS-X WS-Y WS-Z
+     CALL "P3-SULFUR-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-NOISES
+     MOVE "6.4 sulfur_bubbles: removed at y >= yEnd" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO PC-REMOVED
+     MOVE 20 TO WS-Y
+     CALL "PCL-SET-POS" USING PCL WS-X WS-Y WS-Z
+     MOVE 20.5 TO X3-Y-PREV
+     MOVE 0 TO PC-YD
+     MOVE 21 TO X3-Y-PREV
+     CALL "P3-SULFUR-TICK" USING PCL P3X PCL-COLLIDERS WS-ONE WS-NOISES
+     MOVE "6.4 sulfur_bubbles: removed when y has not passed yPrev" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PC-REMOVED
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§6 Suspended, glow and flying particles: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-SCALED.
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(WS-CHK * WS-SCALE + 0.5)
+     PERFORM ASSERT-NUMBER.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§6 Suspended, glow and flying particles: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-3-6.

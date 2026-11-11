@@ -148,14 +148,83 @@
  END PROGRAM CLIMATE-POINTS-LOAD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CLIMATE-FIND.
+ PROGRAM-ID. CLIMATE-FITNESS.
+*> USING target (6 BINARY-DOUBLE), point (BINARY-LONG), best index (0 for none), best fitness (BINARY-DOUBLE), fitness out, k out:
+*> the squared distance of the target to the point (the offset squared plus the squared distance to each of the six intervals).
+*> With a best, the sum stops as soon as it exceeds the best fitness, or equals it for a point of a larger index than the best
+*> (it only grows); k out is above 6 when every parameter was added.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLIMATE.
+ 01 WS-D                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-TARGET.
+    05 L-T                 BINARY-DOUBLE OCCURS 6 TIMES.
+ 01 L-I                    BINARY-LONG.
+ 01 L-BEST                 BINARY-LONG.
+ 01 L-BEST-F               BINARY-DOUBLE.
+ 01 L-F                    BINARY-DOUBLE.
+ 01 L-K                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-TARGET L-I L-BEST L-BEST-F L-F L-K.
+     COMPUTE L-F = CL-OFFSET(L-I) * CL-OFFSET(L-I)
+     PERFORM VARYING L-K FROM 1 BY 1 UNTIL L-K > 6 OR (L-BEST > 0 AND (L-F > L-BEST-F OR (L-F = L-BEST-F AND L-I > L-BEST)))
+         EVALUATE TRUE
+             WHEN L-T(L-K) > CL-MAX(L-I, L-K)
+                 COMPUTE WS-D = L-T(L-K) - CL-MAX(L-I, L-K)
+             WHEN L-T(L-K) < CL-MIN(L-I, L-K)
+                 COMPUTE WS-D = CL-MIN(L-I, L-K) - L-T(L-K)
+             WHEN OTHER
+                 MOVE 0 TO WS-D
+         END-EVALUATE
+         COMPUTE L-F = L-F + WS-D * WS-D
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CLIMATE-FITNESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLIMATE-FIND.
+*> The first point of the smallest fitness, the same answer as a scan of every point in order (a point wins over the best so far
+*> when its fitness is smaller, or equal with a smaller index). Three things make it cheap:
+*>  - the points are grouped by their intervals of temperature, humidity and depth (a few hundred groups for the overworld list; built
+*>    on the first lookup after the points or the seed changed), and a group whose lower bound (the squared distances in those three
+*>    parameters plus the smallest squared offset of its members) exceeds the best so far is skipped whole;
+*>  - the best starts as the winner of the previous lookup (neighbouring cells have near climates), evaluated in full first;
+*>  - a point is dropped as soon as its partial sum exceeds the best (CLIMATE-FITNESS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLIMATE.
+ 01 WS-LAST                BINARY-LONG VALUE 0.
+ 01 WS-BUILT               BINARY-LONG VALUE -1.
+ 01 WS-GROUPS              BINARY-LONG.
+ 01 WS-GROUP-TABLE.
+    05 WS-GROUP OCCURS 8192 TIMES.
+       10 WS-G-MIN         BINARY-DOUBLE OCCURS 3 TIMES.
+       10 WS-G-MAX         BINARY-DOUBLE OCCURS 3 TIMES.
+       10 WS-G-OFF         BINARY-DOUBLE.
+       10 WS-G-START       BINARY-LONG.
+       10 WS-G-COUNT       BINARY-LONG.
+ 01 WS-MEMBER-TABLE.
+    05 WS-MEMBER           BINARY-LONG OCCURS 8192 TIMES.
+ 01 WS-OF-POINT-TABLE.
+    05 WS-OF-POINT         BINARY-LONG OCCURS 8192 TIMES.
+ 01 WS-DIM-LIST.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE 2.
+    05 FILLER              BINARY-LONG VALUE 5.
+ 01 WS-DIMS REDEFINES WS-DIM-LIST.
+    05 WS-DIM              BINARY-LONG OCCURS 3 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-SAME                BINARY-LONG.
  01 WS-D                   BINARY-DOUBLE.
  01 WS-F                   BINARY-DOUBLE.
+ 01 WS-LB                  BINARY-DOUBLE.
+ 01 WS-OFF2                BINARY-DOUBLE.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-BEST-F              BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-TARGET.
     05 L-T                 BINARY-DOUBLE OCCURS 6 TIMES.
@@ -166,26 +235,89 @@
      MOVE 0 TO L-INDEX
      MOVE SPACES TO L-BIOME
      MOVE 0 TO L-FITNESS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
-         COMPUTE WS-F = CL-OFFSET(WS-I) * CL-OFFSET(WS-I)
-*>       the sum only grows: a point already no better than the best so far cannot win (a tie keeps the earlier point)
-         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6 OR (L-INDEX > 0 AND WS-F >= L-FITNESS)
+     MOVE 0 TO WS-BEST WS-BEST-F
+     IF WS-BUILT NOT = CM-GEN
+*>       groups the points by the intervals of the three parameters, the members of a group in point order
+         MOVE 0 TO WS-GROUPS
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
+             COMPUTE WS-OFF2 = CL-OFFSET(WS-I) * CL-OFFSET(WS-I)
+             MOVE 0 TO WS-J
+             PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > WS-GROUPS OR WS-J > 0
+                 MOVE 1 TO WS-SAME
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                     IF CL-MIN(WS-I, WS-DIM(WS-K)) NOT = WS-G-MIN(WS-G, WS-K) OR CL-MAX(WS-I, WS-DIM(WS-K)) NOT = WS-G-MAX(WS-G, WS-K)
+                         MOVE 0 TO WS-SAME
+                     END-IF
+                 END-PERFORM
+                 IF WS-SAME = 1
+                     MOVE WS-G TO WS-J
+                 END-IF
+             END-PERFORM
+             IF WS-J = 0
+                 ADD 1 TO WS-GROUPS
+                 MOVE WS-GROUPS TO WS-J
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                     MOVE CL-MIN(WS-I, WS-DIM(WS-K)) TO WS-G-MIN(WS-J, WS-K)
+                     MOVE CL-MAX(WS-I, WS-DIM(WS-K)) TO WS-G-MAX(WS-J, WS-K)
+                 END-PERFORM
+                 MOVE WS-OFF2 TO WS-G-OFF(WS-J)
+                 MOVE 0 TO WS-G-COUNT(WS-J)
+             END-IF
+             IF WS-OFF2 < WS-G-OFF(WS-J)
+                 MOVE WS-OFF2 TO WS-G-OFF(WS-J)
+             END-IF
+             ADD 1 TO WS-G-COUNT(WS-J)
+             MOVE WS-J TO WS-OF-POINT(WS-I)
+         END-PERFORM
+         MOVE 1 TO WS-M
+         PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > WS-GROUPS
+             MOVE WS-M TO WS-G-START(WS-G)
+             ADD WS-G-COUNT(WS-G) TO WS-M
+             MOVE 0 TO WS-G-COUNT(WS-G)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-COUNT
+             MOVE WS-OF-POINT(WS-I) TO WS-G
+             COMPUTE WS-M = WS-G-START(WS-G) + WS-G-COUNT(WS-G)
+             MOVE WS-I TO WS-MEMBER(WS-M)
+             ADD 1 TO WS-G-COUNT(WS-G)
+         END-PERFORM
+         MOVE CM-GEN TO WS-BUILT
+     END-IF
+     IF WS-LAST > 0 AND WS-LAST <= CL-COUNT
+         CALL "CLIMATE-FITNESS" USING L-TARGET WS-LAST WS-BEST WS-BEST-F WS-F WS-K
+         MOVE WS-LAST TO WS-BEST
+         MOVE WS-F TO WS-BEST-F
+     END-IF
+     PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > WS-GROUPS
+*>       WS-LB: a lower bound of the fitness of every member of the group
+         MOVE WS-G-OFF(WS-G) TO WS-LB
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
              EVALUATE TRUE
-                 WHEN L-T(WS-K) > CL-MAX(WS-I, WS-K)
-                     COMPUTE WS-D = L-T(WS-K) - CL-MAX(WS-I, WS-K)
-                 WHEN L-T(WS-K) < CL-MIN(WS-I, WS-K)
-                     COMPUTE WS-D = CL-MIN(WS-I, WS-K) - L-T(WS-K)
+                 WHEN L-T(WS-DIM(WS-K)) > WS-G-MAX(WS-G, WS-K)
+                     COMPUTE WS-D = L-T(WS-DIM(WS-K)) - WS-G-MAX(WS-G, WS-K)
+                 WHEN L-T(WS-DIM(WS-K)) < WS-G-MIN(WS-G, WS-K)
+                     COMPUTE WS-D = WS-G-MIN(WS-G, WS-K) - L-T(WS-DIM(WS-K))
                  WHEN OTHER
                      MOVE 0 TO WS-D
              END-EVALUATE
-             COMPUTE WS-F = WS-F + WS-D * WS-D
+             COMPUTE WS-LB = WS-LB + WS-D * WS-D
          END-PERFORM
-         IF L-INDEX = 0 OR (WS-K > 6 AND WS-F < L-FITNESS)
-             MOVE WS-I TO L-INDEX
-             MOVE CL-BIOME(WS-I) TO L-BIOME
-             MOVE WS-F TO L-FITNESS
+         IF WS-BEST = 0 OR WS-LB NOT > WS-BEST-F
+             PERFORM VARYING WS-M FROM WS-G-START(WS-G) BY 1 UNTIL WS-M >= WS-G-START(WS-G) + WS-G-COUNT(WS-G)
+                 MOVE WS-MEMBER(WS-M) TO WS-I
+                 CALL "CLIMATE-FITNESS" USING L-TARGET WS-I WS-BEST WS-BEST-F WS-F WS-K
+                 IF WS-K > 6 AND (WS-BEST = 0 OR WS-F < WS-BEST-F OR (WS-F = WS-BEST-F AND WS-I < WS-BEST))
+                     MOVE WS-I TO WS-BEST
+                     MOVE WS-F TO WS-BEST-F
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
+     IF WS-BEST > 0
+         MOVE WS-BEST TO L-INDEX WS-LAST
+         MOVE CL-BIOME(WS-BEST) TO L-BIOME
+         MOVE WS-BEST-F TO L-FITNESS
+     END-IF
      GOBACK.
  END PROGRAM CLIMATE-FIND.
 

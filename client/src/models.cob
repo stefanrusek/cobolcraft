@@ -68,6 +68,8 @@
  01 WS-SPRITE              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-S                    BINARY-LONG.
@@ -102,12 +104,43 @@
                      CALL "VARIANT-ROTATE" USING QUAD SX-X(WS-M) SX-Y(WS-M) SX-Z(WS-M)
                      ADD 1 TO BM-QUAD-COUNT(L-S)
                      MOVE QUAD TO BM-QUAD(L-S, BM-QUAD-COUNT(L-S))
+*>                   What the mesher reads without float arithmetic: the corners' place in sixteenths and
+*>                   atlas coordinates (BM-FAST).
+                     MOVE BM-QUAD-COUNT(L-S) TO WS-N
+                     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                         CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE QD-U(WS-C) QD-V(WS-C)
+                             BM-AU(L-S, WS-N, WS-C) BM-AV(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-X(WS-C) BM-IX(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-Y(WS-C) BM-IY(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-Z(WS-C) BM-IZ(L-S, WS-N, WS-C)
+                     END-PERFORM
                  END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM STATE-BAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SIXTEENTHS.
+*> USING coordinate (FLOAT-SHORT, block units), sixteenths out (BINARY-LONG): the coordinate times 16 when
+*> that is a whole number from 0 to 16 (to 0.001), else -1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COORD                FLOAT-SHORT.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-COORD L-OUT.
+     COMPUTE WS-T = L-COORD * 16
+     COMPUTE WS-R = FUNCTION INTEGER(WS-T + 0.5)
+     MOVE -1 TO L-OUT
+     IF FUNCTION ABS(WS-T - WS-R) < 0.001 AND WS-R >= 0 AND WS-R <= 16
+         MOVE WS-R TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM SIXTEENTHS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MODEL-MISSING.
@@ -128,6 +161,7 @@
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
          MOVE 1 TO MF-PRESENT(1, WS-F)
          MOVE WS-F TO MF-CULL(1, WS-F)
+         MOVE -1 TO MF-TINT(1, WS-F)
      END-PERFORM
      GOBACK.
  END PROGRAM MODEL-MISSING.
@@ -385,6 +419,13 @@
          CALL "JSON-MEMBER" USING JSON-DOC WS-FACES WS-NAME WS-NAME-LENGTH WS-FACE
          IF WS-FACE > 0
              MOVE 1 TO MF-PRESENT(WS-E, WS-F)
+             MOVE -1 TO MF-TINT(WS-E, WS-F)
+             MOVE "tintindex" TO WS-NAME
+             MOVE 9 TO WS-NAME-LENGTH
+             CALL "JSON-MEMBER" USING JSON-DOC WS-FACE WS-NAME WS-NAME-LENGTH WS-FIELD
+             IF WS-FIELD > 0
+                 MOVE JN-NUM(WS-FIELD) TO MF-TINT(WS-E, WS-F)
+             END-IF
              MOVE "texture" TO WS-NAME
              MOVE 7 TO WS-NAME-LENGTH
              CALL "JSON-MEMBER" USING JSON-DOC WS-FACE WS-NAME WS-NAME-LENGTH WS-FIELD
@@ -638,6 +679,7 @@
          COMPUTE QD-Z(WS-K) = (WS-Z + ME-ROT-ORIGIN(L-E, 3)) / 16
      END-PERFORM
      MOVE L-SPRITE TO QD-SPRITE
+     MOVE MF-TINT(L-E, L-FACE) TO QD-TINT
      MOVE MF-CULL(L-E, L-FACE) TO QD-CULL
      MOVE L-FACE TO QD-SHADE
      IF ME-SHADE(L-E) > 0

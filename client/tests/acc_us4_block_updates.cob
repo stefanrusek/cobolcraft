@@ -35,6 +35,7 @@
  01 WS-E3                  PIC Z9.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE 1000000000 TO MB-BUDGET-US
 *>   Every section of the flat world meshed and uploaded first.
      CALL "TEST-TICKS" USING CLIENT-STATE WS-THREE
      MOVE 0 TO WS-CX WS-CZ

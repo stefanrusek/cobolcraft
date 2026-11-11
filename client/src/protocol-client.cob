@@ -223,6 +223,8 @@
                  WHEN OTHER
                      MOVE WX-HAILSTORM TO PL-WEATHER
              END-EVALUATE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 48
+             CALL "PARTICLES-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 73
 *>           Player Position: CobolCraft's server sends absolute values only (relative flags 0,
 *>           09 §3.2); the position is taken and accepted.
@@ -280,6 +282,10 @@
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 17 OR L-ID = 18 OR L-ID = 19 OR L-ID = 20 OR L-ID = 42 OR L-ID = 60
                  OR L-ID = 98 OR L-ID = 107 OR L-ID = 110)
              CALL "INVENTORY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 6
+             CALL "BLOCK-ENTITY-DATA" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 129
+             CALL "TI-STATUS" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 61
              CALL "SIGN-OPEN" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 8
@@ -349,6 +355,9 @@
 *>           finished (standin §11.6).
              CALL "PB-GET-INT" USING L-PACKET WS-ID
              CALL "PB-GET-BYTE" USING L-PACKET WS-VALUE
+             IF WS-ID = PL-ENTITY-ID AND WS-VALUE >= 24 AND WS-VALUE <= 28
+                 COMPUTE PL-PERM = WS-VALUE - 24
+             END-IF
              IF WS-ID = PL-ENTITY-ID AND WS-VALUE = 9
                  MOVE 0 TO PL-EATING
              END-IF

@@ -5,11 +5,12 @@ layout(set = 0, binding = 0) uniform sampler2D atlas;
 layout(location = 0) in vec2 in_uv;
 layout(location = 1) in float in_brightness;
 layout(location = 2) in float in_alpha;
+layout(location = 3) in vec3 in_tint;
 layout(location = 0) out vec4 out_colour;
 
 void main() {
     vec4 texel = texture(atlas, in_uv);
     float alpha = texel.a * in_alpha;
     if (alpha < 0.1) discard;
-    out_colour = vec4(texel.rgb * in_brightness, alpha);
+    out_colour = vec4(texel.rgb * in_tint * in_brightness, alpha);
 }

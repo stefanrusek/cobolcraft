@@ -123,15 +123,26 @@
      MOVE CB-S-LIGHT(31) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   A set without the cobolcraft roles and recipes (the standard type is forced on the open set).
+*>   A set of the standard type (forced on the open set): the player and item roles are minecraft:player (159) and
+*>   minecraft:item (72), the two cobolcraft mobs are -1, and there are no recipes.
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
      CALL "ENTITIES-OPEN"
      CALL "RECIPES-OPEN"
      MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
      MOVE "N" TO TL-MODE
-     MOVE "test us2 cover a set without the cobolcraft entities has the four roles -1 and no recipes" TO TL-CASE
-     COMPUTE TL-EXPECTED-N = 0 - 4 + RP-COUNT * 1000
+     MOVE "test us2 cover a standard set has the player and item roles by minecraft: key, the mobs -1 and no recipes" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 159 + 72 - 2 + RP-COUNT * 1000
      COMPUTE TL-OBSERVED-N = CR-OPERATOR + CR-LOOSE-ITEM + CR-SODGRAZER + CR-ABEND + RP-COUNT * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   No set open: no role is found, so all four are -1 (a world never reaches this; the rows are then not indexed).
+     MOVE 0 TO CT-OPEN
+     CALL "ENTITIES-OPEN"
+     MOVE 1 TO CT-OPEN
+     MOVE "N" TO TL-MODE
+     MOVE "test us2 cover with no set open the four roles are -1" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 - 4
+     COMPUTE TL-OBSERVED-N = CR-OPERATOR + CR-LOOSE-ITEM + CR-SODGRAZER + CR-ABEND
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   ContentJar is written when set and read back (informational).

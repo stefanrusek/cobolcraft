@@ -47,6 +47,9 @@
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
          MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S)
      END-PERFORM
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
+         MOVE SPACES TO ST-BLOCK-NAME(WS-S)
+     END-PERFORM
      IF CT-OPEN = 1 AND CT-STATE-COUNT > 0
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > ST-COUNT
              COMPUTE WS-CODE = WS-S - 1
@@ -54,6 +57,13 @@
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
+*>           The block's name as the table holds it, without a namespace (the tint sources key on it).
+             IF WS-BLOCK >= 0 AND WS-BLOCK < 2048 AND WS-STATUS = CT-OK
+                 IF ST-BLOCK-NAME(WS-BLOCK + 1) = SPACES
+                     MOVE WS-ROW TO CT-BLOCK-ROW
+                     MOVE CT-BR-KEY TO ST-BLOCK-NAME(WS-BLOCK + 1)
+                 END-IF
+             END-IF
          END-PERFORM
      ELSE
 *>       The stand-in table: the block id is the hex digit of its row (0 to 9, A, B).

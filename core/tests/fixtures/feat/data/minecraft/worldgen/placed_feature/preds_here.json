@@ -1,0 +1,61 @@
+{
+ "feature": {
+  "type": "minecraft:no_op"
+ },
+ "placement": [
+  {
+   "type": "minecraft:block_predicate_filter",
+   "predicate": {
+    "type": "minecraft:any_of",
+    "predicates": [
+     {
+      "type": "minecraft:all_of",
+      "predicates": [
+       {
+        "type": "minecraft:matching_fluids",
+        "fluids": "minecraft:water"
+       },
+       {
+        "type": "minecraft:true"
+       }
+      ]
+     },
+     {
+      "type": "minecraft:all_of",
+      "predicates": [
+       {
+        "type": "minecraft:solid",
+        "offset": [
+         0,
+         -1,
+         0
+        ]
+       },
+       {
+        "type": "minecraft:inside_world_bounds"
+       },
+       {
+        "type": "minecraft:unobstructed"
+       },
+       {
+        "type": "minecraft:height_range",
+        "min_inclusive": {
+         "absolute": 60
+        },
+        "max_inclusive": {
+         "absolute": 70
+        }
+       },
+       {
+        "type": "minecraft:matching_fluids",
+        "fluids": [
+         "minecraft:empty"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

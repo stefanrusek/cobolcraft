@@ -545,7 +545,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-QUAD.
 *> USING CLIENT-STATE, x0, y0, x1, y1 (window pixels), u0, v0, u1, v1 (FLOAT-SHORT): two triangles
-*> top-left, top-right, bottom-right, top-left, bottom-right, bottom-left (brightness and alpha 1),
+*> top-left, top-right, bottom-right, top-left, bottom-right, bottom-left (brightness and alpha 1, no sky term, white tint),
 *> on the layer RL-UI-LAYER names (0 RL-UI-VERTEX, 1 RL-UT-VERTEX, 2 RL-IC-VERTEX), while it has
 *> room.
  DATA DIVISION.
@@ -565,6 +565,10 @@
        10 B-V              FLOAT-SHORT.
        10 B-B              FLOAT-SHORT.
        10 B-A              FLOAT-SHORT.
+       10 B-SKY            FLOAT-SHORT.
+       10 B-R              FLOAT-SHORT.
+       10 B-G              FLOAT-SHORT.
+       10 B-BLUE           FLOAT-SHORT.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X0                   FLOAT-SHORT.
@@ -609,6 +613,8 @@
              MOVE 0 TO B-Z(WS-COUNT)
              COMPUTE B-B(WS-COUNT) = 1 - RL-UI-DARK
              COMPUTE B-A(WS-COUNT) = 1 - RL-UI-FADE
+             MOVE 0 TO B-SKY(WS-COUNT)
+             MOVE 1 TO B-R(WS-COUNT) B-G(WS-COUNT) B-BLUE(WS-COUNT)
          END-PERFORM
      END-IF
      EVALUATE RL-UI-LAYER

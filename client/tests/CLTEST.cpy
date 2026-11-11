@@ -630,7 +630,78 @@
  END PROGRAM TEST-SERVE-BYTES.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-MESH-FACE.
+ PROGRAM-ID. TEST-VERTEX-TINTS.
+*> USING CLIENT-STATE, layer (PIC XX: UI, IC, UT, HL, BO, GI, HD hand, WX, EN), ok out (BINARY-LONG): 1
+*> when the layer has vertices and every one has tint (1, 1, 1) and sky 0 (an untinted vertex that does
+*> not follow the daylight, shim-abi section 9), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 B-LAYER BASED.
+    05 B-VERTEX OCCURS 24576 TIMES.
+       10 B-X              FLOAT-SHORT.
+       10 B-Y              FLOAT-SHORT.
+       10 B-Z              FLOAT-SHORT.
+       10 B-U              FLOAT-SHORT.
+       10 B-V              FLOAT-SHORT.
+       10 B-B              FLOAT-SHORT.
+       10 B-A              FLOAT-SHORT.
+       10 B-SKY            FLOAT-SHORT.
+       10 B-R              FLOAT-SHORT.
+       10 B-G              FLOAT-SHORT.
+       10 B-BLUE           FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LAYER                PIC XX.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LAYER L-OK.
+     MOVE 0 TO L-OK WS-COUNT
+     EVALUATE L-LAYER
+         WHEN "UI"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-UI-VERTEX(1)
+             MOVE RL-UI-COUNT TO WS-COUNT
+         WHEN "IC"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-IC-VERTEX(1)
+             MOVE RL-IC-COUNT TO WS-COUNT
+         WHEN "UT"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-UT-VERTEX(1)
+             MOVE RL-UT-COUNT TO WS-COUNT
+         WHEN "HL"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-HL-VERTEX(1)
+             MOVE RL-HL-COUNT TO WS-COUNT
+         WHEN "BO"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-BO-VERTEX(1)
+             MOVE RL-BO-COUNT TO WS-COUNT
+         WHEN "GI"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-GI-VERTEX(1)
+             MOVE RL-GI-COUNT TO WS-COUNT
+         WHEN "HD"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-HAND-VERTEX(1)
+             MOVE RL-HAND-COUNT TO WS-COUNT
+         WHEN "WX"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-WX-VERTEX(1)
+             MOVE RL-WX-COUNT TO WS-COUNT
+         WHEN "EN"
+             SET ADDRESS OF B-LAYER TO ADDRESS OF RL-EN-VERTEX(1)
+             MOVE RL-EN-COUNT TO WS-COUNT
+     END-EVALUATE
+     IF WS-COUNT > 0
+         MOVE 1 TO L-OK
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             IF B-R(WS-I) NOT = 1 OR B-G(WS-I) NOT = 1 OR B-BLUE(WS-I) NOT = 1 OR B-SKY(WS-I) NOT = 0
+                 MOVE 0 TO L-OK
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM TEST-VERTEX-TINTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MESH-VERTEX.
+*> USING mesh address (POINTER), vertex count, centre x, y, z (FLOAT-SHORT, section-local), found out,
+*> brightness out, u out, v out, sky out, red out, green out, blue out (FLOAT-SHORT): the raw fields of the
+*> first vertex of the quad (6 vertices) whose centre is that (the vertex of 11 floats: shim-abi section 9).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-Q                   BINARY-LONG.
@@ -645,6 +716,10 @@
        10 B-V              FLOAT-SHORT.
        10 B-B              FLOAT-SHORT.
        10 B-ALPHA          FLOAT-SHORT.
+       10 B-SKY            FLOAT-SHORT.
+       10 B-R              FLOAT-SHORT.
+       10 B-G              FLOAT-SHORT.
+       10 B-BLUE           FLOAT-SHORT.
  LINKAGE SECTION.
  01 L-ADDR                 USAGE POINTER.
  01 L-COUNT                BINARY-LONG.
@@ -655,8 +730,13 @@
  01 L-BRIGHTNESS           FLOAT-SHORT.
  01 L-U                    FLOAT-SHORT.
  01 L-V                    FLOAT-SHORT.
- PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V.
-     MOVE 0 TO L-FOUND L-BRIGHTNESS L-U L-V
+ 01 L-SKY                  FLOAT-SHORT.
+ 01 L-R                    FLOAT-SHORT.
+ 01 L-G                    FLOAT-SHORT.
+ 01 L-BLUE                 FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V L-SKY L-R L-G
+         L-BLUE.
+     MOVE 0 TO L-FOUND L-BRIGHTNESS L-U L-V L-SKY L-R L-G L-BLUE
      IF L-COUNT > 0
          SET ADDRESS OF B-VERTICES TO L-ADDR
      END-IF
@@ -670,8 +750,40 @@
              MOVE B-B(WS-A) TO L-BRIGHTNESS
              MOVE B-U(WS-A) TO L-U
              MOVE B-V(WS-A) TO L-V
+             MOVE B-SKY(WS-A) TO L-SKY
+             MOVE B-R(WS-A) TO L-R
+             MOVE B-G(WS-A) TO L-G
+             MOVE B-BLUE(WS-A) TO L-BLUE
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-MESH-VERTEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MESH-FACE.
+*> As TEST-MESH-VERTEX, but only brightness out: the drawn brightness at full daylight, max(brightness, sky).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SKY                 FLOAT-SHORT.
+ 01 WS-R                   FLOAT-SHORT.
+ 01 WS-G                   FLOAT-SHORT.
+ 01 WS-BLUE                FLOAT-SHORT.
+ LINKAGE SECTION.
+ 01 L-ADDR                 USAGE POINTER.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-X                    FLOAT-SHORT.
+ 01 L-Y                    FLOAT-SHORT.
+ 01 L-Z                    FLOAT-SHORT.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-BRIGHTNESS           FLOAT-SHORT.
+ 01 L-U                    FLOAT-SHORT.
+ 01 L-V                    FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V.
+     CALL "TEST-MESH-VERTEX" USING L-ADDR L-COUNT L-X L-Y L-Z L-FOUND L-BRIGHTNESS L-U L-V WS-SKY
+         WS-R WS-G WS-BLUE
+     IF WS-SKY > L-BRIGHTNESS
+         MOVE WS-SKY TO L-BRIGHTNESS
+     END-IF
      GOBACK.
  END PROGRAM TEST-MESH-FACE.
 
@@ -2030,3 +2142,51 @@
      MOVE 0 TO RETURN-CODE
      GOBACK.
  END PROGRAM TEST-CAPTURE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LEVEL-PARTICLE.
+*> USING CLIENT-STATE, connection, particle type (registry id of a type without options), x, y, z
+*> (FLOAT-LONG), the three distances and the three max speeds (FLOAT-SHORT, one table of six), count,
+*> randomisation, override limiter, always show: hands PROTO-PACKET a Level Particles (0x30).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-PACKET              BINARY-LONG VALUE 48.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-SPREAD-TABLE.
+    05 L-SPREAD            FLOAT-SHORT OCCURS 6 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-OVERRIDE             BINARY-LONG.
+ 01 L-ALWAYS               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-TYPE L-X L-Y L-Z L-SPREAD-TABLE L-COUNT L-RANDOM
+         L-OVERRIDE L-ALWAYS.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-OVERRIDE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-ALWAYS
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER L-SPREAD(WS-I)
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-RANDOM
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-LEVEL-PARTICLE.

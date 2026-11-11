@@ -220,7 +220,10 @@
      CALL "MOBS-SPAWN-TICK"
      CALL "MOBS-TICK"
      CALL "GROUND-ITEMS-TICK"
+     CALL "BE-TICK-ALL"
+     CALL "MENU-DATA-TICK"
      CALL "GEN-QUEUE-TICK"
+     CALL "CHUNK-FEED-TICK"
      CALL "CRAFT-REFRESH-ALL"
      CALL "MENU-TICK"
      CALL "WORLDSIM-ACKS"
@@ -457,6 +460,7 @@
 *>       data fails its shapes, with the errors on standard error) keeps the stand-in yield of BLOCK-DROPS.
          CALL "WORLD-LOOT-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
      END-IF
+     CALL "FURN-PROVIDERS-LOAD" USING WS-DIR
      GOBACK.
  END PROGRAM WORLD-CONTENT-OPEN.
 

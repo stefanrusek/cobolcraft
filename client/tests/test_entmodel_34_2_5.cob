@@ -1,0 +1,530 @@
+*> Acceptance test of docs/protocol/34-entity-models-2-humanoids-zombies-skeletons-piglins.md section 5 (Renderers): 5.1 the layer order, 5.2 the renderer table
+*> (renderer, models, shadow radius, extra layer, textures, texture choice), 5.3 the outer layer textures, 5.4 and 5.5 flags, 5.6 the armor stand flags and render
+*> type, 5.7 hitbox, eye height and name-tag height of every entity of the document.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-2-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(120).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-TYPE                PIC X(24).
+ 01 WS-RENDERER            PIC X(32).
+ 01 WS-ADULT               PIC X(32).
+ 01 WS-BABY                PIC X(32).
+ 01 WS-SHADOW              FLOAT-LONG.
+ 01 WS-EXTRA               PIC X(32).
+ 01 WS-TEX-A               PIC X(64).
+ 01 WS-TEX-B               PIC X(64).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-IS-BABY             BINARY-LONG.
+ 01 WS-IS-BRUTE            BINARY-LONG.
+ 01 WS-PATH                PIC X(64).
+ 01 WS-MARKER              BINARY-LONG.
+ 01 WS-SMALL               BINARY-LONG.
+ 01 WS-W                   FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-EYE                 FLOAT-LONG.
+ 01 WS-FAMILY              PIC X(8).
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-LAYER               PIC X(24).
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-ARMS                BINARY-LONG.
+ 01 WS-PLATE               BINARY-LONG.
+ 01 WS-VISIBLE             BINARY-LONG.
+ 01 WS-GHOST               BINARY-LONG.
+ 01 WS-RT                  PIC X(24).
+ 01 WS-COUNT               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "zombie" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "zombie renderer row" TO WS-NAME
+     MOVE "ZombieRenderer|ZOMBIE|ZOMBIE_BABY|none|textures/entity/zombie/zombie.png|textures/entity/zombie/zombie_baby.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "zombie shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "husk" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "husk renderer row" TO WS-NAME
+     MOVE "HuskRenderer|HUSK|HUSK_BABY|none|textures/entity/zombie/husk.png|textures/entity/zombie/husk_baby.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "husk shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "drowned" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "drowned renderer row" TO WS-NAME
+     MOVE "DrownedRenderer|DROWNED|DROWNED_BABY|DrownedOuterLayer|textures/entity/zombie/drowned.png|textures/entity/zombie/drowned_baby.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "drowned shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "giant" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "giant renderer row" TO WS-NAME
+     MOVE "GiantMobRenderer|GIANT||none|textures/entity/zombie/zombie.png|" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "giant shadow radius" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "skeleton" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "skeleton renderer row" TO WS-NAME
+     MOVE "SkeletonRenderer|SKELETON|SKELETON|none|textures/entity/skeleton/skeleton.png|textures/entity/skeleton/skeleton.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "skeleton shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "stray" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "stray renderer row" TO WS-NAME
+     MOVE "StrayRenderer|STRAY|STRAY|SkeletonClothingLayer|textures/entity/skeleton/stray.png|textures/entity/skeleton/stray.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "stray shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bogged" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "bogged renderer row" TO WS-NAME
+     MOVE "BoggedRenderer|BOGGED|BOGGED|SkeletonClothingLayer|textures/entity/skeleton/bogged.png|textures/entity/skeleton/bogged.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "bogged shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "wither_skeleton" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "wither_skeleton renderer row" TO WS-NAME
+     MOVE "WitherSkeletonRenderer|WITHER_SKELETON|WITHER_SKELETON|none|textures/entity/skeleton/wither_skeleton.png|textures/entity/skeleton/wither_skeleton.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "wither_skeleton shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "parched" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "parched renderer row" TO WS-NAME
+     MOVE "ParchedRenderer|PARCHED|PARCHED|none|textures/entity/skeleton/parched.png|textures/entity/skeleton/parched.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "parched shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "piglin" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "piglin renderer row" TO WS-NAME
+     MOVE "PiglinRenderer|PIGLIN|PIGLIN_BABY|none|textures/entity/piglin/piglin.png|textures/entity/piglin/piglin_baby.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "piglin shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "piglin_brute" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "piglin_brute renderer row" TO WS-NAME
+     MOVE "PiglinRenderer|PIGLIN_BRUTE|PIGLIN_BRUTE|none|textures/entity/piglin/piglin_brute.png|textures/entity/piglin/piglin_brute.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "piglin_brute shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "zombified_piglin" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "zombified_piglin renderer row" TO WS-NAME
+     MOVE "ZombifiedPiglinRenderer|ZOMBIFIED_PIGLIN|ZOMBIFIED_PIGLIN_BABY|none|textures/entity/piglin/zombified_piglin.png|textures/entity/piglin/zombified_piglin_baby.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "zombified_piglin shadow radius" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "armor_stand" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "armor_stand renderer row" TO WS-NAME
+     MOVE "ArmorStandRenderer|ARMOR_STAND|ARMOR_STAND_SMALL|none|textures/entity/armorstand/armorstand.png|textures/entity/armorstand/armorstand.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-RENDERER) "|" FUNCTION TRIM(WS-ADULT) "|" FUNCTION TRIM(WS-BABY) "|" FUNCTION TRIM(WS-EXTRA) "|" FUNCTION TRIM(WS-TEX-A) "|" FUNCTION TRIM(WS-TEX-B) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "armor_stand shadow radius" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-SHADOW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "zombie" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "zombie adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "zombie baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.775 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "husk" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "husk adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "husk baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.825 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "drowned" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "drowned adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "drowned baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.775 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "giant" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "giant adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 3.6 * 10000 + 12.0 * 100 + 10.44 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "skeleton" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "skeleton adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.99 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "stray" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "stray adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.99 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "bogged" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "bogged adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.99 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "parched" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "parched adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.99 * 100 + 1.74 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "wither_skeleton" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "wither_skeleton adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.7 * 10000 + 2.4 * 100 + 2.1 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "piglin" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "piglin adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.79 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "piglin baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.78 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "piglin_brute" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "piglin_brute adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.79 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "piglin_brute baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.78 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "zombified_piglin" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "zombified_piglin adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.6 * 10000 + 1.95 * 100 + 1.79 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "zombified_piglin baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.49 * 10000 + 0.98 * 100 + 0.78 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "armor_stand" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "armor_stand adult dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.5 * 10000 + 1.975 * 100 + 1.7775 * 0.01
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "armor_stand baby dimensions" TO WS-NAME
+     COMPUTE WS-O = WS-W * 10000 + WS-H * 100 + WS-EYE * 0.01
+     COMPUTE WS-E = 0.25 * 10000 + 0.9875 * 100 + 0.9875 * 0.01
+     PERFORM CHECK-NUM
+     MOVE "armor_stand" TO WS-TYPE
+     MOVE 1 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "marker stand wins over small: 0 x 0, eye 0" TO WS-NAME
+     COMPUTE WS-O = WS-W + WS-H + WS-EYE
+     MOVE 0 TO WS-E
+     PERFORM CHECK-NUM
+     MOVE "mannequin" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-MARKER
+     CALL "EMD-DIMS" USING WS-TYPE WS-IS-BABY WS-MARKER WS-W WS-H WS-EYE
+     MOVE "a type outside the document has no dimensions" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-W TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "nothing" TO WS-TYPE
+     CALL "EMD-RENDERER" USING WS-TYPE WS-FOUND WS-RENDERER WS-ADULT WS-BABY WS-SHADOW WS-EXTRA WS-TEX-A WS-TEX-B
+     MOVE "an unknown type has no renderer row" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-FOUND TO WS-O
+     PERFORM CHECK-NUM
+     CALL "EMD-RENDERER-COUNT" USING WS-COUNT
+     MOVE "13 entity types are registered to these renderers" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-COUNT TO WS-O
+     PERFORM CHECK-NUM
+*>   texture choice: the piglin brute first, else baby, else adult (5.2)
+     MOVE "piglin" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY WS-IS-BRUTE
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "adult piglin texture" TO WS-NAME
+     MOVE "textures/entity/piglin/piglin.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "baby piglin texture" TO WS-NAME
+     MOVE "textures/entity/piglin/piglin_baby.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 1 TO WS-IS-BRUTE
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "the brute flag beats the baby flag" TO WS-NAME
+     MOVE "textures/entity/piglin/piglin_brute.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "zombie" TO WS-TYPE
+     MOVE 0 TO WS-IS-BRUTE
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "baby zombie texture" TO WS-NAME
+     MOVE "textures/entity/zombie/zombie_baby.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "skeleton" TO WS-TYPE
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "a skeleton has one texture whatever the baby flag" TO WS-NAME
+     MOVE "textures/entity/skeleton/skeleton.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "nothing" TO WS-TYPE
+     CALL "EMD-TEXTURE" USING WS-TYPE WS-IS-BABY WS-IS-BRUTE WS-PATH
+     MOVE "an unknown type has no texture" TO WS-NAME
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+*>   outer layers (5.3)
+     MOVE "drowned" TO WS-TYPE
+     MOVE 0 TO WS-IS-BABY
+     CALL "EMD-OUTER-TEXTURE" USING WS-TYPE WS-IS-BABY WS-PATH
+     MOVE "drowned outer layer texture" TO WS-NAME
+     MOVE "textures/entity/zombie/drowned_outer_layer.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 1 TO WS-IS-BABY
+     CALL "EMD-OUTER-TEXTURE" USING WS-TYPE WS-IS-BABY WS-PATH
+     MOVE "baby drowned outer layer texture" TO WS-NAME
+     MOVE "textures/entity/zombie/drowned_outer_layer_baby.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "stray" TO WS-TYPE
+     CALL "EMD-OUTER-TEXTURE" USING WS-TYPE WS-IS-BABY WS-PATH
+     MOVE "stray clothes texture" TO WS-NAME
+     MOVE "textures/entity/skeleton/stray_overlay.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "bogged" TO WS-TYPE
+     CALL "EMD-OUTER-TEXTURE" USING WS-TYPE WS-IS-BABY WS-PATH
+     MOVE "bogged clothes texture" TO WS-NAME
+     MOVE "textures/entity/skeleton/bogged_overlay.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "zombie" TO WS-TYPE
+     CALL "EMD-OUTER-TEXTURE" USING WS-TYPE WS-IS-BABY WS-PATH
+     MOVE "a zombie has no outer layer" TO WS-NAME
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+*>   layer order (5.2): zombie, skeleton and piglin families; the giant; the armor stand
+     MOVE "humanoid" TO WS-FAMILY
+     PERFORM CHECK-ORDER-HUMANOID
+     MOVE "giant" TO WS-FAMILY
+     MOVE "giant layers" TO WS-NAME
+     MOVE "item_in_hand,armor," TO TL-EXPECTED
+     PERFORM CHECK-ORDER
+     MOVE "stand" TO WS-FAMILY
+     MOVE "armor stand layers" TO WS-NAME
+     MOVE "armor,item_in_hand,wings,custom_head," TO TL-EXPECTED
+     PERFORM CHECK-ORDER
+*>   armor stand client flags: 1 small, 4 show arms, 8 no base plate, 16 marker
+     MOVE 0 TO WS-FLAGS
+     PERFORM CHECK-STAND-FLAGS-0
+     MOVE 1 TO WS-FLAGS
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "flag 1 is small" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 1010 TO WS-E
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-FLAGS
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "flag 4 shows the arms" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 110 TO WS-E
+     PERFORM CHECK-NUM
+     MOVE 8 TO WS-FLAGS
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "flag 8 hides the base plate" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 0 TO WS-E
+     PERFORM CHECK-NUM
+     MOVE 16 TO WS-FLAGS
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "flag 16 is the marker" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 11 TO WS-E
+     PERFORM CHECK-NUM
+     MOVE 29 TO WS-FLAGS
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "all flags together (29)" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 1101 TO WS-E
+     PERFORM CHECK-NUM
+*>   armor stand render type: marker uses entityTranslucent (ghost) or entityCutout (visible), or nothing; a normal stand the base rule
+     MOVE 1 TO WS-MARKER
+     MOVE 1 TO WS-VISIBLE
+     MOVE 0 TO WS-GHOST
+     CALL "EMD-STAND-RENDER-TYPE" USING WS-MARKER WS-VISIBLE WS-GHOST WS-RT
+     MOVE "visible marker stand: entityCutout" TO WS-NAME
+     MOVE "entityCutout" TO TL-EXPECTED
+     MOVE WS-RT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 0 TO WS-VISIBLE
+     MOVE 1 TO WS-GHOST
+     CALL "EMD-STAND-RENDER-TYPE" USING WS-MARKER WS-VISIBLE WS-GHOST WS-RT
+     MOVE "invisible marker stand seen as a ghost: entityTranslucent" TO WS-NAME
+     MOVE "entityTranslucent" TO TL-EXPECTED
+     MOVE WS-RT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 0 TO WS-GHOST
+     CALL "EMD-STAND-RENDER-TYPE" USING WS-MARKER WS-VISIBLE WS-GHOST WS-RT
+     MOVE "invisible marker stand not seen: nothing" TO WS-NAME
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-RT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 0 TO WS-MARKER
+     MOVE 1 TO WS-GHOST
+     CALL "EMD-STAND-RENDER-TYPE" USING WS-MARKER WS-VISIBLE WS-GHOST WS-RT
+     MOVE "a normal stand follows the base rule (ghost: entityTranslucentCull)" TO WS-NAME
+     MOVE "entityTranslucentCull" TO TL-EXPECTED
+     MOVE WS-RT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 1 TO WS-VISIBLE
+     MOVE 0 TO WS-GHOST
+     CALL "EMD-STAND-RENDER-TYPE" USING WS-MARKER WS-VISIBLE WS-GHOST WS-RT
+     MOVE "a normal visible stand: entityCutout" TO WS-NAME
+     MOVE "entityCutout" TO TL-EXPECTED
+     MOVE WS-RT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     STOP RUN.
+
+ CHECK-STAND-FLAGS-0.
+     CALL "EMD-STAND-FLAGS" USING WS-FLAGS WS-SMALL WS-ARMS WS-PLATE WS-MARKER
+     MOVE "no flags: a plain stand with a base plate" TO WS-NAME
+     COMPUTE WS-O = WS-SMALL * 1000 + WS-ARMS * 100 + WS-PLATE * 10 + WS-MARKER
+     MOVE 10 TO WS-E
+     PERFORM CHECK-NUM.
+
+ CHECK-ORDER-HUMANOID.
+     MOVE "humanoid mob layers" TO WS-NAME
+     MOVE "custom_head,wings,item_in_hand,armor," TO TL-EXPECTED
+     PERFORM CHECK-ORDER.
+
+ CHECK-ORDER.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-POS
+     PERFORM VARYING WS-COUNT FROM 1 BY 1 UNTIL WS-COUNT > 6
+         CALL "EMD-LAYER-ORDER" USING WS-FAMILY WS-COUNT WS-LAYER
+         IF WS-LAYER NOT = SPACES
+             STRING FUNCTION TRIM(WS-LAYER) "," DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-POS
+         END-IF
+     END-PERFORM
+     PERFORM CHECK-TEXT.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-2§5 Renderers: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 10000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 10000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-2§5 Renderers: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-2-5.

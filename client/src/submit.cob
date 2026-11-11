@@ -1,6 +1,6 @@
 *> Render-list submission (research R4; shim-abi.md §9): SUBMIT-FRAME uploads the atlases marked
 *> for upload (texture 0 the block atlas, texture 1 the entity atlas, texture 2 the UI atlas,
-*> texture 3 the environment atlas, with repeat wrapping) with cc_vk_texture and the render list's
+*> texture 3 the environment atlas, with repeat wrapping, texture 4 the particle atlas) with cc_vk_texture and the render list's
 *> meshes with cc_vk_mesh, then records the draws in render-list order between cc_vk_frame_begin
 *> (the clear colour) and cc_vk_frame_end. A minimised window skips the frame.
 
@@ -15,6 +15,7 @@
  01 WS-TEX                 BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-WRAP                BINARY-LONG.
+ 01 WS-DAYLIGHT            FLOAT-SHORT.
  01 WS-CLEAR               FLOAT-SHORT OCCURS 4 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -59,6 +60,12 @@
              BY VALUE XA-ADDR RETURNING WS-RC
          MOVE 0 TO AT-UPLOAD(4)
      END-IF
+     IF AT-UPLOAD(5) = 1
+         MOVE CC-TEX-PARTICLES TO WS-TEX
+         CALL STATIC "cc_vk_texture" USING BY VALUE WS-TEX BY VALUE PRA-W BY VALUE PRA-H
+             BY VALUE PRA-ADDR RETURNING WS-RC
+         MOVE 0 TO AT-UPLOAD(5)
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UPLOAD-COUNT
          CALL STATIC "cc_vk_mesh" USING BY VALUE RL-U-SLOT(WS-I) BY VALUE RL-U-ADDR(WS-I)
              BY VALUE RL-U-COUNT(WS-I) RETURNING WS-RC
@@ -66,6 +73,9 @@
      MOVE 0 TO RL-UPLOAD-COUNT L-PRESENTED
      CALL STATIC "cc_vk_frame_begin" USING BY REFERENCE RL-CLEAR(1) RETURNING WS-RC
      IF WS-RC = 0
+*>       The daylight factor scales the sky term of the vertices at draw time (shim-abi section 9).
+         COMPUTE WS-DAYLIGHT = SK-U / 1000
+         CALL STATIC "cc_vk_daylight" USING BY REFERENCE WS-DAYLIGHT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
              IF RL-D-SLOT(WS-I) < 0
                  CALL STATIC "cc_vk_clear_depth"

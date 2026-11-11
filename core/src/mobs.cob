@@ -23,6 +23,45 @@
 *> MOB-PHYSICS (one mob's tick).
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-INDEX.
+*> USING entity type id, index out (BINARY-LONG): the MOBS.cpy row (1 or 2) of a cobolcraft stand-in mob type, else 0.
+*> The table holds the stand-in ids of the cobolcraft set only; in a standard (or debug) world the type ids are vanilla
+*> ids, which no row describes (the player row alone has 158 and the like), so every type is no mob there until the
+*> mobs lane gives vanilla types their own table.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY MOBS.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-INDEX.
+     MOVE 0 TO L-INDEX
+     IF CT-SET-TYPE = "1" AND L-TYPE >= MOB-FIRST-TYPE AND L-TYPE < MOB-FIRST-TYPE + MOB-TYPE-COUNT
+         COMPUTE L-INDEX = L-TYPE - MOB-FIRST-TYPE + 1
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-INDEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-TABLE-COUNT.
+*> USING count out (BINARY-LONG): the number of MOBS.cpy mob types the open world has: MOB-TYPE-COUNT in a cobolcraft
+*> world, 0 in a standard or debug one (see MOB-INDEX).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY MOBS.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT.
+     MOVE 0 TO L-COUNT
+     IF CT-SET-TYPE = "1"
+         MOVE MOB-TYPE-COUNT TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-TABLE-COUNT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-SPAWN.
 *> USING dimension row, entity type, x, y, z, yaw, row out: a new mob of that type at that position
 *> with that yaw, full health (§12.1), no motion, standing still until its first wander decision
@@ -32,6 +71,7 @@
  COPY CORESTATE.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -50,7 +90,10 @@
      MOVE L-Y TO EN-Y(WS-ROW)
      MOVE L-Z TO EN-Z(WS-ROW)
      MOVE L-YAW TO EN-YAW(WS-ROW)
-     MOVE MB-HEALTH(L-TYPE - MOB-FIRST-TYPE + 1) TO EN-HEALTH(WS-ROW)
+     CALL "MOB-INDEX" USING L-TYPE WS-M
+     IF WS-M > 0
+         MOVE MB-HEALTH(WS-M) TO EN-HEALTH(WS-ROW)
+     END-IF
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
      GOBACK.
@@ -79,15 +122,20 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     COMPUTE WS-M = EN-TYPE(L-ROW) - MOB-FIRST-TYPE + 1
+     CALL "MOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE EN-DIM(L-ROW) TO WS-DIM
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
-     MOVE MB-YIELD-ITEM(WS-M) TO WS-ITEM
-     MOVE MB-YIELD-COUNT(WS-M) TO WS-COUNT
+     MOVE 0 TO WS-ITEM WS-COUNT
+     IF WS-M > 0
+         MOVE MB-YIELD-ITEM(WS-M) TO WS-ITEM
+         MOVE MB-YIELD-COUNT(WS-M) TO WS-COUNT
+     END-IF
      CALL "ENTITY-REMOVE" USING L-ROW
-     CALL "IP-AT-LOCATION" USING WS-DIM WS-X WS-Y WS-Z WS-OFFSET WS-ITEM WS-COUNT WS-NONE WS-ITEM-ROW
+     IF WS-M > 0
+         CALL "IP-AT-LOCATION" USING WS-DIM WS-X WS-Y WS-Z WS-OFFSET WS-ITEM WS-COUNT WS-NONE WS-ITEM-ROW
+     END-IF
      GOBACK.
  END PROGRAM MOB-DEFEAT.
 
@@ -295,6 +343,10 @@
  01 WS-ORDERS.
     05 WS-ORDER            BINARY-LONG OCCURS 64 TIMES.
  PROCEDURE DIVISION.
+     CALL "MOB-TABLE-COUNT" USING WS-N
+     IF WS-N = 0
+         GOBACK
+     END-IF
      IF FUNCTION MOD(CW-TIME, MOB-SPAWN-TICKS) NOT = 0
          GOBACK
      END-IF
@@ -616,6 +668,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
@@ -626,6 +679,10 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+     IF WS-M = 0
+         GOBACK
+     END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW) / 16)
      CALL "WORLD-FIND" USING EN-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
@@ -652,6 +709,7 @@
  COPY CORESTATE.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
@@ -664,11 +722,14 @@
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      MOVE 0 TO WS-N
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
-         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE AND CS-HOSTILE-MOBS NOT = 1
-                 AND MB-KIND(EN-TYPE(WS-ROW) - MOB-FIRST-TYPE + 1) = MOB-HOSTILE
+         MOVE 0 TO WS-M
+         IF EN-USED(WS-ROW) = 1
+             CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+         END-IF
+         IF WS-M > 0 AND CS-HOSTILE-MOBS NOT = 1 AND MB-KIND(WS-M) = MOB-HOSTILE
              CALL "ENTITY-REMOVE" USING WS-ROW
          END-IF
-         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE
+         IF WS-M > 0 AND EN-USED(WS-ROW) = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
              MOVE 1 TO WS-SHIFT

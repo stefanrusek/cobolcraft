@@ -16,7 +16,7 @@
  01 WS-PTR                 BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-LEN                 BINARY-LONG.
- 01 WS-BIG                 PIC X(700).
+ 01 WS-BIG                 PIC X(2200).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      PERFORM PUT-CASES
@@ -94,11 +94,23 @@
          TO TL-CASE
      PERFORM CHECK-PUT-ERROR
      MOVE 1 TO PB-ISX-ADDED-COUNT
-     MOVE 513 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE 2049 TO PB-ISX-VALUE-LENGTH(1)
      CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
-     MOVE "test item-stack put of a 513-byte component value sets PB-ERROR and appends nothing"
+     MOVE "test item-stack put of a 2049-byte component value sets PB-ERROR and appends nothing"
          TO TL-CASE
      PERFORM CHECK-PUT-ERROR
+     MOVE 2048 TO PB-ISX-VALUE-LENGTH(1)
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack put of a 2048-byte component value (a container of 27 stacks) is written whole" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PB-ERROR TO TL-OBSERVED-N
+     IF PB-LENGTH < 2048
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 1 TO PB-ISX-ADDED-COUNT
      MOVE -1 TO PB-ISX-VALUE-LENGTH(1)
      CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
      MOVE "test item-stack put of a negative value length sets PB-ERROR and appends nothing"
@@ -277,15 +289,49 @@
      MOVE "test item-stack get of a removed list cut short sets PB-ERROR, PB-POS 0" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET
-*>   a text value of 600 bytes does not fit PB-ISX-VALUE-MAX
+*>   a text value of 2100 bytes does not fit PB-ISX-VALUE-MAX
      CALL "PB-RESET" USING PB-BUFFER
-     MOVE "01 01 01 00 06 08 02 58" TO WS-HEX
+     MOVE "01 01 01 00 06 08 08 34" TO WS-HEX
      CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
      MOVE ALL "a" TO WS-BIG
-     MOVE 600 TO WS-LEN
+     MOVE 2100 TO WS-LEN
      CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BIG WS-LEN
      CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
-     MOVE "test item-stack get of a 600-byte text value sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "test item-stack get of a 2100-byte text value sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE "01 01 01 00 0d cc 08" TO WS-HEX
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER
+     MOVE ALL X"01" TO WS-BIG
+     MOVE 2200 TO WS-LEN
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-BIG WS-LEN
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of an enchantments value of 1100 pairs (2200 bytes) sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 03 00 01 02 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component (77) of three stacks, two empty, is read whole" TO TL-CASE
+     MOVE "c1 i1 +77=03000102000000 pos 12 error 0" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d ac 02" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component of 300 stacks sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 01 01 02 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component whose stack has an added component sets PB-ERROR, PB-POS 0" TO TL-CASE
+     MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
+     PERFORM CHECK-GET
+     MOVE "01 01 01 00 4d 01 01 02 00 01 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE "test item-stack get of a container component whose stack has a removed component sets PB-ERROR, PB-POS 0" TO TL-CASE
      MOVE "c0 i0 pos 0 error 1" TO TL-EXPECTED
      PERFORM CHECK-GET.
 

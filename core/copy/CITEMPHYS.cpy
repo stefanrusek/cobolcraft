@@ -90,8 +90,8 @@
        10 IP-I-SENT-Y        FLOAT-LONG.
        10 IP-I-SENT-Z        FLOAT-LONG.
     05 IP-STATS OCCURS 64 TIMES.
-       10 IP-S-PICKED        BINARY-LONG OCCURS 1500 TIMES.
-       10 IP-S-DROPPED       BINARY-LONG OCCURS 1500 TIMES.
+       10 IP-S-PICKED        BINARY-LONG OCCURS 2048 TIMES.
+       10 IP-S-DROPPED       BINARY-LONG OCCURS 2048 TIMES.
 *> 41 section 7 (the renderer of the client): shadow radius 0.15 and strength 0.75 in thousandths, the minimum hover 0.0625.
  78 IP-SHADOW-RADIUS-MILLI VALUE 150.
  78 IP-SHADOW-STRENGTH-MILLI VALUE 750.

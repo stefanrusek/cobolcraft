@@ -96,6 +96,14 @@
          MOVE 0 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 8 TO WS-CX
+     MOVE 40 TO WS-Y
+     MOVE 8 TO WS-CZ
+     CALL "ORE-AIR-EXPOSED" USING WS-JOB WS-CX WS-Y WS-CZ WS-FLAG
+     MOVE "acceptance US11-2 a block of the slab has air above it: exposed" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "GEN-JOB-FREE" USING WS-JOB
 
 *>   a blob on the border of two chunks: the positions the whole blob takes (list mode) split exactly into what each chunk takes

@@ -32,6 +32,8 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CMENU.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-OWN                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -39,7 +41,24 @@
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-KIND L-INDEX.
      MOVE 0 TO L-KIND L-INDEX
-     IF L-SLOT < 0 OR L-SLOT > 45
+     CALL "MENU-SLOT-COUNT" USING L-ROW WS-COUNT
+     IF L-SLOT < 0 OR L-SLOT >= WS-COUNT
+         GOBACK
+     END-IF
+*>   A container menu (menu-container.cob): its own slots, the 27 main inventory slots, the 9 hotbar slots.
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CSIZE(L-ROW) > 0
+         MOVE MN-CSIZE(L-ROW) TO WS-OWN
+         EVALUATE TRUE
+             WHEN L-SLOT < WS-OWN
+                 MOVE 6 TO L-KIND
+                 COMPUTE L-INDEX = L-SLOT + 1
+             WHEN L-SLOT < WS-OWN + 27
+                 MOVE 1 TO L-KIND
+                 COMPUTE L-INDEX = L-SLOT - WS-OWN + 10
+             WHEN OTHER
+                 MOVE 1 TO L-KIND
+                 COMPUTE L-INDEX = L-SLOT - WS-OWN - 26
+         END-EVALUATE
          GOBACK
      END-IF
      IF L-SLOT = 0
@@ -90,6 +109,7 @@
  COPY CMENU.
  01 WS-KIND                BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
+ 01 WS-OWN-SLOT            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -120,6 +140,9 @@
              MOVE MN-BGRID-ITEM(L-ROW, WS-INDEX) TO L-ITEM
              MOVE MN-BGRID-COUNT(L-ROW, WS-INDEX) TO L-COUNT
              MOVE MN-BGRID-VAR(L-ROW, WS-INDEX) TO L-VAR
+         WHEN 6
+             COMPUTE WS-OWN-SLOT = WS-INDEX - 1
+             CALL "MENU-CONT-GET" USING L-ROW WS-OWN-SLOT L-ITEM L-COUNT L-VAR
      END-EVALUATE
      IF L-COUNT <= 0
          MOVE 0 TO L-ITEM L-COUNT L-VAR
@@ -155,6 +178,7 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
+ 01 WS-OWN-SLOT            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -190,6 +214,9 @@
              MOVE WS-ITEM TO MN-BGRID-ITEM(L-ROW, WS-INDEX)
              MOVE WS-COUNT TO MN-BGRID-COUNT(L-ROW, WS-INDEX)
              MOVE WS-VAR TO MN-BGRID-VAR(L-ROW, WS-INDEX)
+         WHEN 6
+             COMPUTE WS-OWN-SLOT = WS-INDEX - 1
+             CALL "MENU-CONT-SET" USING L-ROW WS-OWN-SLOT WS-ITEM WS-COUNT WS-VAR
      END-EVALUATE
      GOBACK.
  END PROGRAM MENU-SET-X.
@@ -298,6 +325,15 @@
  01 L-MENU-SLOT            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-MENU-SLOT.
      MOVE -1 TO L-MENU-SLOT
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CSIZE(L-ROW) > 0
+         EVALUATE TRUE
+             WHEN L-SLOT >= 9 AND L-SLOT <= 35
+                 COMPUTE L-MENU-SLOT = MN-CSIZE(L-ROW) + L-SLOT - 9
+             WHEN L-SLOT >= 0 AND L-SLOT <= 8
+                 COMPUTE L-MENU-SLOT = MN-CSIZE(L-ROW) + 27 + L-SLOT
+         END-EVALUATE
+         GOBACK
+     END-IF
      IF MN-WINDOW(L-ROW) = 0
          EVALUATE TRUE
              WHEN L-SLOT >= 9 AND L-SLOT <= 35
@@ -339,9 +375,9 @@
          GOBACK
      END-IF
      EVALUATE TRUE
-         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:shield"
+         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:shield" OR "shield"
              MOVE 5 TO L-KIND
-         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:elytra"
+         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:elytra" OR "elytra"
              MOVE 3 TO L-KIND
          WHEN WS-LEN >= 6 AND IT-KEY(L-ITEM + 1)(WS-LEN - 5:6) = "_boots"
              MOVE 1 TO L-KIND
@@ -363,9 +399,12 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CMENU.
+ COPY CITEMS.
  01 WS-KIND                BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
  01 WS-EQUIP               BINARY-LONG.
+ 01 WS-KL                  BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -379,6 +418,27 @@
              MOVE 0 TO L-RESULT
          WHEN 4
              MOVE 0 TO L-RESULT
+*>       The shulker box's own slots refuse a shulker box item (40-1 section 8.2).
+         WHEN 6
+*>           The furnace family (40-2 section 2.3): nothing goes into the result slot; the fuel slot takes a fuel (a `fuel` component) or an
+*>           empty bucket.
+             IF MN-CFAMILY(L-ROW) = 8
+                 EVALUATE WS-INDEX
+                     WHEN 3
+                         MOVE 0 TO L-RESULT
+                     WHEN 2
+                         CALL "FURN-MAY-FUEL" USING L-ITEM L-RESULT
+                 END-EVALUATE
+             END-IF
+             IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
+                 MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
+                 IF WS-KL >= 11
+                     COMPUTE WS-START = WS-KL - 10
+                     IF IT-KEY(L-ITEM + 1)(WS-START:11) = "shulker_box"
+                         MOVE 0 TO L-RESULT
+                     END-IF
+                 END-IF
+             END-IF
          WHEN 2
              CALL "MENU-EQUIP-KIND" USING L-ITEM WS-EQUIP
              IF WS-EQUIP NOT = WS-INDEX
@@ -744,7 +804,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY CITEMS.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
@@ -759,14 +822,20 @@
  01 L-BUTTON               BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-BUTTON.
      MOVE IT-MAX-STACK(PL-CARRIED-ITEM(L-ROW) + 1) TO WS-MAX
+     CALL "MENU-SLOT-COUNT" USING L-ROW WS-LAST
+     SUBTRACT 1 FROM WS-LAST
+     MOVE 1 TO WS-FIRST
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CSIZE(L-ROW) > 0
+         MOVE 0 TO WS-FIRST
+     END-IF
      PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2
-         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 45 OR PL-CARRIED-COUNT(L-ROW) >= WS-MAX
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > WS-LAST OR PL-CARRIED-COUNT(L-ROW) >= WS-MAX
              IF L-BUTTON = 0
                  MOVE WS-I TO WS-SLOT
              ELSE
-                 COMPUTE WS-SLOT = 45 - WS-I
+                 COMPUTE WS-SLOT = WS-LAST - WS-I
              END-IF
-             IF WS-SLOT > 0
+             IF WS-SLOT >= WS-FIRST
                  CALL "MENU-GET-X" USING L-ROW WS-SLOT WS-SI WS-SC WS-SV
                  IF WS-SC > 0 AND WS-SI = PL-CARRIED-ITEM(L-ROW) AND WS-SV = PL-CARRIED-VAR(L-ROW) AND (WS-PASS = 2 OR WS-SC < WS-MAX)
                      COMPUTE WS-N = FUNCTION MIN(WS-SC, WS-MAX - PL-CARRIED-COUNT(L-ROW))
@@ -794,12 +863,14 @@
  01 WS-MAY                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SV                  BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT.
      MOVE 1 TO WS-OK
-     IF L-SLOT < 0 OR L-SLOT > 45
+     CALL "MENU-SLOT-COUNT" USING L-ROW WS-LIMIT
+     IF L-SLOT < 0 OR L-SLOT >= WS-LIMIT
          MOVE 0 TO WS-OK
      END-IF
      IF WS-OK = 1
@@ -1036,13 +1107,15 @@
  01 WS-MAY                 BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-SV                  BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
  01 L-BUTTON               BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-BUTTON L-TYPE.
-     IF L-SLOT < -999 OR L-SLOT > 45
+     CALL "MENU-SLOT-COUNT" USING L-ROW WS-LIMIT
+     IF L-SLOT < -999 OR L-SLOT >= WS-LIMIT
          GOBACK
      END-IF
      IF L-TYPE = 5
@@ -1092,11 +1165,14 @@
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-COUNT.
-     IF MN-WINDOW(L-ROW) = 0
-         CALL "MENU-INV-QUICK-MOVE" USING L-ROW L-SLOT L-ITEM L-COUNT
-     ELSE
-         CALL "MENU-BENCH-QUICK-MOVE" USING L-ROW L-SLOT L-ITEM L-COUNT
-     END-IF
+     EVALUATE TRUE
+         WHEN MN-WINDOW(L-ROW) = 0
+             CALL "MENU-INV-QUICK-MOVE" USING L-ROW L-SLOT L-ITEM L-COUNT
+         WHEN MN-CSIZE(L-ROW) > 0
+             CALL "MENU-CONT-QUICK-MOVE" USING L-ROW L-SLOT L-ITEM L-COUNT
+         WHEN OTHER
+             CALL "MENU-BENCH-QUICK-MOVE" USING L-ROW L-SLOT L-ITEM L-COUNT
+     END-EVALUATE
      GOBACK.
  END PROGRAM MENU-QUICK-MOVE.
 

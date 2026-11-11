@@ -231,7 +231,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GUI-SPRITE-PATH-X.
-*> USING sprite row (26 to GSP-COUNT), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49): the 40 mob_effect
+*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites are the last 23 rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49): the 40 mob_effect
 *> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
 *> the hunger food sprites.
  DATA DIVISION.
@@ -246,6 +246,29 @@
  01 WS-BLINK               BINARY-LONG.
  01 WS-NAME                PIC X(48).
  01 WS-PTR                 BINARY-LONG.
+ 01 WS-CSLOT-NAMES.
+    05 FILLER PIC X(40) VALUE "smithing_template_armor_trim".
+    05 FILLER PIC X(40) VALUE "smithing_template_netherite_upgrade".
+    05 FILLER PIC X(40) VALUE "helmet".
+    05 FILLER PIC X(40) VALUE "chestplate".
+    05 FILLER PIC X(40) VALUE "leggings".
+    05 FILLER PIC X(40) VALUE "boots".
+    05 FILLER PIC X(40) VALUE "ingot".
+    05 FILLER PIC X(40) VALUE "redstone_dust".
+    05 FILLER PIC X(40) VALUE "lapis_lazuli".
+    05 FILLER PIC X(40) VALUE "quartz".
+    05 FILLER PIC X(40) VALUE "diamond".
+    05 FILLER PIC X(40) VALUE "emerald".
+    05 FILLER PIC X(40) VALUE "amethyst_shard".
+    05 FILLER PIC X(40) VALUE "sword".
+    05 FILLER PIC X(40) VALUE "pickaxe".
+    05 FILLER PIC X(40) VALUE "axe".
+    05 FILLER PIC X(40) VALUE "hoe".
+    05 FILLER PIC X(40) VALUE "shovel".
+    05 FILLER PIC X(40) VALUE "nautilus_armor".
+    05 FILLER PIC X(40) VALUE "spear".
+ 01 WS-CSLOT-TABLE REDEFINES WS-CSLOT-NAMES.
+    05 WS-CSLOT-NAME       PIC X(40) OCCURS 20 TIMES.
  01 WS-TYPE-NAMES.
     05 FILLER              PIC X(10) VALUE "          ".
     05 FILLER              PIC X(10) VALUE "poisoned_ ".
@@ -331,6 +354,15 @@
              MOVE "hud/food_empty_hunger" TO WS-NAME
          WHEN L-ROW = GSP-FOOD-HALF-HUNGER
              MOVE "hud/food_half_hunger" TO WS-NAME
+         WHEN L-ROW >= GSP-CSLOT-0 AND L-ROW < GSP-CSLOT-0 + 20
+             COMPUTE WS-N = L-ROW - GSP-CSLOT-0 + 1
+             STRING "container/slot/" FUNCTION TRIM(WS-CSLOT-NAME(WS-N)) DELIMITED BY SIZE INTO WS-NAME
+         WHEN L-ROW = GSP-CSLOT-SHIELD
+             MOVE "container/slot/shield" TO WS-NAME
+         WHEN L-ROW = GSP-FURNACE-LIT
+             MOVE "container/furnace/lit_progress" TO WS-NAME
+         WHEN L-ROW = GSP-FURNACE-BURN
+             MOVE "container/furnace/burn_progress" TO WS-NAME
          WHEN OTHER
              MOVE "hud/food_full_hunger" TO WS-NAME
      END-EVALUATE

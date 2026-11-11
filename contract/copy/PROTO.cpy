@@ -170,7 +170,7 @@
 *> per-type content to the component's own codec): each added entry carries its value as the
 *> bytes of that codec, PB-ISX-VALUE-LENGTH of PB-ISX-VALUE, written and read verbatim.
  78 PB-ISX-MAX-COMPONENTS  VALUE 32.
- 78 PB-ISX-VALUE-MAX       VALUE 512.
+ 78 PB-ISX-VALUE-MAX       VALUE 2048.
  01 PB-ITEMSTACK-X.
     05 PB-ISX-COUNT          BINARY-LONG.
     05 PB-ISX-ITEM           BINARY-LONG.   *> RegistryId<item>; only if count > 0
@@ -179,7 +179,7 @@
     05 PB-ISX-ADDED          OCCURS 32 TIMES.
        10 PB-ISX-TYPE          BINARY-LONG. *> RegistryId<data_component_type>
        10 PB-ISX-VALUE-LENGTH  BINARY-LONG.
-       10 PB-ISX-VALUE         PIC X(512).
+       10 PB-ISX-VALUE         PIC X(2048).
     05 PB-ISX-REMOVED        BINARY-LONG OCCURS 32 TIMES.
 
 *> ---------------------------------------------------------------------------------------------

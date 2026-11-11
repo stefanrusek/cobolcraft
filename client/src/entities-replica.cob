@@ -96,6 +96,14 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ENTITY-VIEW REDEFINES WS-ENTITY-ROW.
+    05 FILLER              PIC X(3).
+    05 WS-ER-KEY           PIC X(22).
+    05 FILLER              PIC X(41).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ROWS                BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-R                   BINARY-LONG.
@@ -182,6 +190,18 @@
                  MOVE WS-VY TO EN-VY(WS-ROW)
                  MOVE WS-VZ TO EN-VZ(WS-ROW)
                  MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW)
+*>               A world of the standard set: EN-TYPE is the entity_type registry id, so keep its key and the model row
+*>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
+                 MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW)
+                 MOVE SPACES TO EN-KEY(WS-ROW)
+                 IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                     MOVE 1 TO EN-VANILLA(WS-ROW)
+                     CALL "ENTITY-ROW-AT" USING WS-TYPE WS-ENTITY-ROW WS-STATUS WS-ROWS
+                     IF WS-STATUS = CT-OK
+                         MOVE WS-ER-KEY TO EN-KEY(WS-ROW)
+                         CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-ROW) EN-MODEL(WS-ROW)
+                     END-IF
+                 END-IF
              END-IF
          WHEN 101
 *>           Set Entity Data: entries until the 0xFF terminator.

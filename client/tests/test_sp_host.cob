@@ -102,7 +102,8 @@
          FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later catches up 4.
+*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later owes 4 and runs
+*>   3 (CL-MAX-PUMP-TICKS; the fourth is spread to the next frame).
      MOVE SP-TICKS TO WS-TICKS
      PERFORM 50 TIMES
          CALL "TEST-STEP" USING CLIENT-STATE
@@ -111,10 +112,10 @@
      MOVE SP-TICKS TO WS-TICKS
      MOVE 200 TO WS-MS
      CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-ZERO WS-MS
-     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 4 in one frame "
-         & "200 ms later" TO TL-CASE
+     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 3 (the cap) in one "
+         & "frame 200 ms later" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 2004 TO TL-EXPECTED-N
+     MOVE 2003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-T1 * 100 + SP-TICKS - WS-TICKS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

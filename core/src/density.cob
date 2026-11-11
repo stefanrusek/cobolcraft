@@ -238,12 +238,21 @@
 *> USING node, x, y, z, result out: 10 section 4.1, the trilinear interpolation of the input evaluated at the eight
 *> corners of the cell (cell sizes WGN-INT 1 horizontal and 2 vertical, anchored at multiples of them); evaluated
 *> directly when the position is a corner.
+*> Grid mode (the node has a slot in the chunk grids and the position is inside them): the corners are read from the grid
+*> and the fractions from tables, with the integer divisions as DIVIDE (a COMPUTE with a division goes through decimals).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
  COPY DENSITY.
  01 DG-GRID BASED.
  COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
+ 01 WS-INIT                BINARY-LONG VALUE 0.
+ 01 WS-FRACTIONS.
+    05 WS-FXT              FLOAT-LONG OCCURS 4 TIMES.
+    05 WS-FYT              FLOAT-LONG OCCURS 8 TIMES.
+    05 WS-FZT              FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-N4                  BINARY-LONG VALUE 4.
+ 01 WS-N8                  BINARY-LONG VALUE 8.
  LOCAL-STORAGE SECTION.
  01 LS-SLOT                BINARY-LONG.
  01 LS-GI                  BINARY-LONG.
@@ -256,6 +265,12 @@
  01 LS-CX                  BINARY-LONG.
  01 LS-CY                  BINARY-LONG.
  01 LS-CZ                  BINARY-LONG.
+ 01 LS-LX                  BINARY-LONG.
+ 01 LS-LY                  BINARY-LONG.
+ 01 LS-LZ                  BINARY-LONG.
+ 01 LS-CI                  BINARY-LONG.
+ 01 LS-CJ                  BINARY-LONG.
+ 01 LS-CK                  BINARY-LONG.
  01 LS-A                   FLOAT-LONG.
  01 LS-B                   FLOAT-LONG.
  01 LS-FX                  FLOAT-LONG.
@@ -275,9 +290,6 @@
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
      MOVE WGN-INT(L-NODE, 1) TO LS-CX
      MOVE WGN-INT(L-NODE, 2) TO LS-CY
-     COMPUTE LS-RX = FUNCTION MOD(L-X, LS-CX)
-     COMPUTE LS-RY = FUNCTION MOD(L-Y, LS-CY)
-     COMPUTE LS-RZ = FUNCTION MOD(L-Z, LS-CX)
 *>   grid mode: the slot of this node in the chunk grids, 0 when the node has none or the position is outside them
      MOVE 0 TO LS-SLOT
      IF DNG-ACTIVE = 1 AND LS-CX = 4 AND LS-CY = 8
@@ -290,13 +302,47 @@
              END-IF
          END-PERFORM
      END-IF
-     IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
-         IF LS-SLOT > 0
-             COMPUTE LS-GI = ((L-X - DNG-X0) / 4 * 5 + (L-Z - DNG-Z0) / 4) * 49 + (L-Y + 64) / 8 + 1
-             MOVE DG-G-VAL((LS-SLOT - 1) * 1225 + LS-GI) TO L-RESULT
+*>   grid slot LS-SLOT, position inside the grids (cells of 4 by 8 by 4 anchored at the chunk's corner and y = -64; the grid of a
+*>   node holds 5 x 5 x 49 values, x the slowest, then z, then y): the grid index of the cell, its eight corners at the offsets of
+*>   one cell in x (245), z (49) and y (1).
+     IF LS-SLOT > 0
+         COMPUTE LS-LX = L-X - DNG-X0
+         COMPUTE LS-LZ = L-Z - DNG-Z0
+         COMPUTE LS-LY = L-Y + 64
+         DIVIDE LS-LX BY 4 GIVING LS-CI REMAINDER LS-RX
+         DIVIDE LS-LZ BY 4 GIVING LS-CK REMAINDER LS-RZ
+         DIVIDE LS-LY BY 8 GIVING LS-CJ REMAINDER LS-RY
+         COMPUTE LS-GI = (LS-SLOT - 1) * 1225 + (LS-CI * 5 + LS-CK) * 49 + LS-CJ + 1
+         IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
+             MOVE DG-G-VAL(LS-GI) TO L-RESULT
          ELSE
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
+             IF WS-INIT = 0
+                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 3
+                     CALL "DENSITY-FRACTION" USING LS-I WS-N4 WS-FXT(LS-I + 1)
+                     MOVE WS-FXT(LS-I + 1) TO WS-FZT(LS-I + 1)
+                 END-PERFORM
+                 PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
+                     CALL "DENSITY-FRACTION" USING LS-I WS-N8 WS-FYT(LS-I + 1)
+                 END-PERFORM
+                 MOVE 1 TO WS-INIT
+             END-IF
+             MOVE DG-G-VAL(LS-GI) TO LS-G-ITEM(1)
+             MOVE DG-G-VAL(LS-GI + 245) TO LS-G-ITEM(2)
+             MOVE DG-G-VAL(LS-GI + 1) TO LS-G-ITEM(3)
+             MOVE DG-G-VAL(LS-GI + 246) TO LS-G-ITEM(4)
+             MOVE DG-G-VAL(LS-GI + 49) TO LS-G-ITEM(5)
+             MOVE DG-G-VAL(LS-GI + 294) TO LS-G-ITEM(6)
+             MOVE DG-G-VAL(LS-GI + 50) TO LS-G-ITEM(7)
+             MOVE DG-G-VAL(LS-GI + 295) TO LS-G-ITEM(8)
+             CALL "NOISE-TRILERP" USING WS-FXT(LS-RX + 1) WS-FYT(LS-RY + 1) WS-FZT(LS-RZ + 1) LS-G L-RESULT
          END-IF
+         GOBACK
+     END-IF
+     COMPUTE LS-RX = FUNCTION MOD(L-X, LS-CX)
+     COMPUTE LS-RY = FUNCTION MOD(L-Y, LS-CY)
+     COMPUTE LS-RZ = FUNCTION MOD(L-Z, LS-CX)
+     IF LS-RX = 0 AND LS-RY = 0 AND LS-RZ = 0
+         CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
          GOBACK
      END-IF
      COMPUTE LS-X0 = L-X - LS-RX
@@ -313,12 +359,7 @@
          COMPUTE LS-RY = LS-Y0 + FUNCTION MOD(LS-Q, 2) * LS-CY
          COMPUTE LS-Q = LS-I / 4
          COMPUTE LS-RZ = LS-Z0 + LS-Q * LS-CX
-         IF LS-SLOT > 0
-             COMPUTE LS-GI = ((LS-RX - DNG-X0) / 4 * 5 + (LS-RZ - DNG-Z0) / 4) * 49 + (LS-RY + 64) / 8 + 1
-             MOVE DG-G-VAL((LS-SLOT - 1) * 1225 + LS-GI) TO LS-G-ITEM(LS-I + 1)
-         ELSE
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) LS-RX LS-RY LS-RZ LS-G-ITEM(LS-I + 1)
-         END-IF
+         CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) LS-RX LS-RY LS-RZ LS-G-ITEM(LS-I + 1)
      END-PERFORM
      CALL "NOISE-TRILERP" USING LS-FX LS-FY LS-FZ LS-G L-RESULT
      GOBACK.

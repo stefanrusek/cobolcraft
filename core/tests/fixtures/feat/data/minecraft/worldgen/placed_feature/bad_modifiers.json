@@ -1,0 +1,88 @@
+{
+ "feature": "poppy",
+ "placement": [
+  {
+   "type": "rarity_filter"
+  },
+  {
+   "type": "minecraft:random_chance"
+  },
+  {
+   "type": "minecraft:surface_relative_threshold_filter",
+   "heightmap": "NOPE"
+  },
+  {
+   "type": "minecraft:surface_water_depth_filter"
+  },
+  {
+   "type": "minecraft:count",
+   "count": "x"
+  },
+  {
+   "type": "minecraft:count"
+  },
+  {
+   "type": "minecraft:cuboid"
+  },
+  {
+   "type": "minecraft:environment_scan",
+   "direction_of_search": "sideways"
+  },
+  {
+   "type": "minecraft:environment_scan",
+   "direction_of_search": "down",
+   "target_condition": {
+    "type": "minecraft:true"
+   },
+   "max_steps": "x"
+  },
+  {
+   "type": "minecraft:heightmap",
+   "heightmap": "NOPE"
+  },
+  {
+   "type": "minecraft:height_range"
+  },
+  {
+   "type": "minecraft:offset"
+  },
+  {
+   "type": "minecraft:offset",
+   "x": {
+    "type": "minecraft:trapezoid",
+    "min": 1
+   },
+   "y": {
+    "type": "minecraft:uniform",
+    "min_inclusive": 1
+   },
+   "z": {
+    "type": "minecraft:nope"
+   }
+  },
+  {
+   "type": "minecraft:block_predicate_filter"
+  },
+  {
+   "type": "minecraft:height_range",
+   "height": {
+    "type": "minecraft:uniform",
+    "min_inclusive": {
+     "absolute": 1
+    }
+   }
+  },
+  {
+   "type": "minecraft:height_range",
+   "height": {
+    "type": "minecraft:uniform",
+    "max_inclusive": {
+     "absolute": 1
+    }
+   }
+  },
+  {
+   "x": 1
+  }
+ ]
+}

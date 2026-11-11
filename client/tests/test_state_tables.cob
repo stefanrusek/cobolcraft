@@ -111,6 +111,14 @@
      MOVE WS-ID TO TL-EXPECTED-N
      MOVE ST-BLOCK(WS-STATE + 1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "grass_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "state tables the name of a minecraft block of the set is kept without its namespace "
+         & "(the tint sources key on it), under its block id + 1" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "grass_block" TO TL-EXPECTED
+     MOVE ST-BLOCK-NAME(WS-ID + 1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.
  END PROGRAM TEST-STATE-TABLES.

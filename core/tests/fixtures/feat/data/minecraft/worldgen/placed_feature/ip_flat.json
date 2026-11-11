@@ -1,0 +1,21 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "Name": "minecraft:poppy"
+  }
+ },
+ "placement": [
+  {
+   "type": "minecraft:offset",
+   "x": {
+    "type": "minecraft:trapezoid",
+    "min": 0,
+    "max": 4,
+    "plateau": 4
+   },
+   "y": 0,
+   "z": 0
+  }
+ ]
+}
