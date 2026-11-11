@@ -327,8 +327,8 @@
 *>     The form screens (test block and jigsaw editors of 40-9): the form (1 test block, 2 jigsaw), the focused box, the box texts, the test block mode (0 to 3), the jigsaw keep flag,
 *>     the levels of the slider and whether the jigsaw's front is vertical (the joint cycle shows).
        10 EF-FOCUS           BINARY-LONG.
-       10 EF-TEXT            PIC X(256) OCCURS 8 TIMES.
-       10 EF-LEN             BINARY-LONG OCCURS 8 TIMES.
+       10 EF-TEXT            PIC X(256) OCCURS 12 TIMES.
+       10 EF-LEN             BINARY-LONG OCCURS 12 TIMES.
        10 EB-FORM            BINARY-LONG.
        10 EB-TB-MODE         BINARY-LONG.
        10 EB-JG-KEEP         BINARY-LONG.
@@ -361,6 +361,10 @@
        10 EB-ST-INTEGRITY    FLOAT-SHORT.
        10 EB-ST-SEED         BINARY-DOUBLE.
        10 EB-ST-FLAGS        BINARY-LONG.
+       10 EB-ST-INIT-MODE    BINARY-LONG.    *> the values at open that Cancel restores (40-x1 5.7)
+       10 EB-ST-INIT-MIRROR  BINARY-LONG.
+       10 EB-ST-INIT-ROT     BINARY-LONG.
+       10 EB-ST-INIT-FLAGS   BINARY-LONG.
        10 MT-ENTITY          BINARY-LONG.
        10 MT-KIND            BINARY-LONG.
        10 MT-SADDLE          BINARY-LONG.

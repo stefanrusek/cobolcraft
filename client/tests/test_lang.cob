@@ -19,9 +19,9 @@
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
      CALL "LANG-LOAD" USING CLIENT-STATE
-     MOVE "lang loads the 320 keys of the built-in en_us.json" TO TL-CASE
+     MOVE "lang loads the 345 keys of the built-in en_us.json" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 320 TO TL-EXPECTED-N
+     MOVE 345 TO TL-EXPECTED-N
      MOVE LG-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -70,7 +70,7 @@
      CALL "LANG-LOAD" USING CLIENT-STATE
      MOVE "lang a higher pack's en_us.json replaces the texts of the same keys" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 320 TO TL-EXPECTED-N
+     MOVE 345 TO TL-EXPECTED-N
      MOVE LG-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

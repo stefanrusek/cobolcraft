@@ -128,6 +128,17 @@
  78 ACT-EF-LEVELS            VALUE 76.
  78 ACT-EF-DONE              VALUE 77.
  78 ACT-EF-GENERATE          VALUE 78.
+ 78 ACT-ST-MODE              VALUE 79.
+ 78 ACT-ST-INCLUDE           VALUE 80.
+ 78 ACT-ST-STRICT            VALUE 81.
+ 78 ACT-ST-SHOWAIR           VALUE 82.
+ 78 ACT-ST-SHOWBB            VALUE 83.
+ 78 ACT-ST-MIRROR            VALUE 84.
+ 78 ACT-ST-ROT               VALUE 85.
+ 78 ACT-ST-SAVE              VALUE 86.
+ 78 ACT-ST-LOAD              VALUE 87.
+ 78 ACT-ST-DETECT            VALUE 88.
+ 78 ACT-ST-CANCEL            VALUE 89.
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

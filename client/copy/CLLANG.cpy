@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 320.
+ 78 BI-LANG-COUNT           VALUE 345.
  01 BI-LANG-DATA.
     05 FILLER PIC X(80) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -651,7 +651,58 @@
     05 FILLER PIC X(128) VALUE "ON".
     05 FILLER PIC X(80) VALUE "options.off".
     05 FILLER PIC X(128) VALUE "OFF".
+*>   The keys of the structure block screen of docs/protocol/40-menus-x1 section 5.
+    05 FILLER PIC X(80) VALUE "block.minecraft.structure_block".
+    05 FILLER PIC X(128) VALUE "Structure Block".
+    05 FILLER PIC X(80) VALUE "structure_block.mode.save".
+    05 FILLER PIC X(128) VALUE "Save".
+    05 FILLER PIC X(80) VALUE "structure_block.mode.load".
+    05 FILLER PIC X(128) VALUE "Load".
+    05 FILLER PIC X(80) VALUE "structure_block.mode.corner".
+    05 FILLER PIC X(128) VALUE "Corner".
+    05 FILLER PIC X(80) VALUE "structure_block.mode.data".
+    05 FILLER PIC X(128) VALUE "Data".
+    05 FILLER PIC X(80) VALUE "structure_block.button.save".
+    05 FILLER PIC X(128) VALUE "SAVE".
+    05 FILLER PIC X(80) VALUE "structure_block.button.load".
+    05 FILLER PIC X(128) VALUE "LOAD".
+    05 FILLER PIC X(80) VALUE "structure_block.button.detect_size".
+    05 FILLER PIC X(128) VALUE "DETECT".
+    05 FILLER PIC X(80) VALUE "structure_block.structure_name".
+    05 FILLER PIC X(128) VALUE "Structure Name".
+    05 FILLER PIC X(80) VALUE "structure_block.position".
+    05 FILLER PIC X(128) VALUE "Relative Position".
+    05 FILLER PIC X(80) VALUE "structure_block.include_entities".
+    05 FILLER PIC X(128) VALUE "Include Entities:".
+    05 FILLER PIC X(80) VALUE "structure_block.size".
+    05 FILLER PIC X(128) VALUE "Structure Size".
+    05 FILLER PIC X(80) VALUE "structure_block.detect_size".
+    05 FILLER PIC X(128) VALUE "Detect Structure Size and Position:".
+    05 FILLER PIC X(80) VALUE "structure_block.show_air".
+    05 FILLER PIC X(128) VALUE "Show Invisible Blocks:".
+    05 FILLER PIC X(80) VALUE "structure_block.integrity".
+    05 FILLER PIC X(128) VALUE "Structure Integrity and Seed".
+    05 FILLER PIC X(80) VALUE "structure_block.strict".
+    05 FILLER PIC X(128) VALUE "Strict Placement:".
+    05 FILLER PIC X(80) VALUE "structure_block.show_boundingbox".
+    05 FILLER PIC X(128) VALUE "Show Bounding Box:".
+    05 FILLER PIC X(80) VALUE "structure_block.custom_data".
+    05 FILLER PIC X(128) VALUE "Custom Data Tag Name".
+    05 FILLER PIC X(80) VALUE "structure_block.mode_info.save".
+    05 FILLER PIC X(128) VALUE "Save Mode - Write to file".
+    05 FILLER PIC X(80) VALUE "structure_block.mode_info.load".
+    05 FILLER PIC X(128) VALUE "Load Mode - Load from file".
+    05 FILLER PIC X(80) VALUE "structure_block.mode_info.corner".
+    05 FILLER PIC X(128) VALUE "Corner Mode - Placement and size marker".
+    05 FILLER PIC X(80) VALUE "structure_block.mode_info.data".
+    05 FILLER PIC X(128) VALUE "Data Mode - Game logic marker".
+    05 FILLER PIC X(80) VALUE "mirror.none".
+    05 FILLER PIC X(128) VALUE "|".
+    05 FILLER PIC X(80) VALUE "mirror.left_right".
+    05 FILLER PIC X(128) VALUE "← →".
+    05 FILLER PIC X(80) VALUE "mirror.front_back".
+    05 FILLER PIC X(128) VALUE "↑ ↓".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 320 TIMES.
+    05 BI-LANG OCCURS 345 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).

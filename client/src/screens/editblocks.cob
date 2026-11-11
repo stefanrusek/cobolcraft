@@ -213,7 +213,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SEND-SET-STRUCTURE-BLOCK.
-*> USING CLIENT-STATE, x, y, z: Set Structure Block (05c 0x3C) from EB-ST-*: update type, mode, name, offsets (clamped -48 to 48, one byte each), sizes (0 to 48), mirror, rotation, metadata (128), integrity (0 to 1), seed and flags.
+*> USING CLIENT-STATE, x, y, z: Set Structure Block (05c 0x3C) from EB-ST-*: update type, mode, name, offsets and sizes (one byte each, the low 8 bits: the server clamps them to -48 to 48 and 0 to 48), mirror, rotation, metadata (128), integrity (0 to 1), seed and flags.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -245,11 +245,11 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-MODE
      CALL "PB-PUT-STRING" USING PB-BUFFER EB-ST-NAME EB-ST-NAME-LEN WS-MAX
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
-         COMPUTE WS-N = FUNCTION MAX(-48, FUNCTION MIN(48, EB-ST-OFFSET(WS-V)))
+         MOVE EB-ST-OFFSET(WS-V) TO WS-N
          CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
      END-PERFORM
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
-         COMPUTE WS-N = FUNCTION MAX(0, FUNCTION MIN(48, EB-ST-SIZE(WS-V)))
+         MOVE EB-ST-SIZE(WS-V) TO WS-N
          CALL "PB-PUT-BYTE" USING PB-BUFFER WS-N
      END-PERFORM
      CALL "PB-PUT-VARINT" USING PB-BUFFER EB-ST-MIRROR
