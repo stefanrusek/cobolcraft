@@ -63,6 +63,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_TEX_ENTITIES    1 /* entity atlas */
 #define CC_TEX_UI          2 /* font and UI atlas */
 #define CC_TEX_ENVIRONMENT 3 /* environment atlas */
+#define CC_TEX_PARTICLES   4 /* particle atlas */
 
 /* Texture wrap modes of cc_vk_texture_wrap (§9). */
 #define CC_WRAP_CLAMP  0 /* clamp-to-edge (the default) */

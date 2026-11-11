@@ -91,7 +91,7 @@ struct cc_vk_state {
     VkFence done;
     uint32_t image_index;
     int stale;
-    texture_t textures[4];
+    texture_t textures[5];
     mesh_t meshes[CC_MESH_SLOT_MAX + 1];
     garbage_t *garbage;
     size_t garbage_count, garbage_cap;

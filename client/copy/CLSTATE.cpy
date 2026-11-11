@@ -768,7 +768,7 @@
           15 GS-BT           BINARY-LONG.
           15 GS-BR           BINARY-LONG.
           15 GS-BB           BINARY-LONG.
-       10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
+       10 AT-UPLOAD          PIC 9 OCCURS 5 TIMES.   *> texture id + 1 to be uploaded
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
        10 EA-W               BINARY-LONG.
@@ -789,6 +789,21 @@
           15 XA-IM-X         BINARY-LONG.
           15 XA-IM-W         BINARY-LONG.
           15 XA-IM-H         BINARY-LONG.
+*>     Particle atlas (texture 4; particles-live.cob PARTICLE-ATLAS-BUILD): the sprites of the wired particle
+*>     types stacked from the top, left-aligned. PRA-FIRST(t + 1) and PRA-COUNT(t + 1) are the first sprite and the
+*>     number of sprites of particle type t (registry id, 42-1 section 2); PRA-S-Y, PRA-S-W and PRA-S-H the
+*>     rectangle of a sprite (left 0).
+       10 PRA-W              BINARY-LONG.
+       10 PRA-H              BINARY-LONG.
+       10 PRA-ADDR           USAGE POINTER.
+       10 PRA-SPRITES        BINARY-LONG.
+       10 PRA-TYPE OCCURS 128 TIMES.
+          15 PRA-FIRST       BINARY-LONG.
+          15 PRA-COUNT       BINARY-LONG.
+       10 PRA-SPRITE OCCURS 256 TIMES.
+          15 PRA-S-Y         BINARY-LONG.
+          15 PRA-S-W         BINARY-LONG.
+          15 PRA-S-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
@@ -974,6 +989,22 @@
           15 RL-WX-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-WX-G         FLOAT-SHORT.
           15 RL-WX-BLUE      FLOAT-SHORT.
+*>     The particle quads of the frame (eye-relative, texture 4, particles-live.cob PARTICLES-MESH): six vertices
+*>     per particle, 2048 particles (PQ-MAX of CLPSTORE.cpy).
+       10 RL-PT-COUNT        BINARY-LONG.
+       10 RL-PT-UPLOADED     BINARY-LONG.
+       10 RL-PT-VERTEX OCCURS 12288 TIMES.
+          15 RL-PT-X         FLOAT-SHORT.
+          15 RL-PT-Y         FLOAT-SHORT.
+          15 RL-PT-Z         FLOAT-SHORT.
+          15 RL-PT-U         FLOAT-SHORT.
+          15 RL-PT-V         FLOAT-SHORT.
+          15 RL-PT-B         FLOAT-SHORT.
+          15 RL-PT-A         FLOAT-SHORT.
+          15 RL-PT-SKY       FLOAT-SHORT.
+          15 RL-PT-R         FLOAT-SHORT.
+          15 RL-PT-G         FLOAT-SHORT.
+          15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)

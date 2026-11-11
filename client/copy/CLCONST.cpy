@@ -157,6 +157,8 @@
  78 MESH-SLOT-BREAK         VALUE 65006.
 *> The hand in first person (one mesh, view space, texture 0; hand.cob), drawn after a depth clear.
  78 MESH-SLOT-HAND          VALUE 65007.
+*> The particle quads of the frame (one mesh, eye-relative, texture 4).
+ 78 MESH-SLOT-PARTICLES     VALUE 65008.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).

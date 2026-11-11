@@ -28,6 +28,7 @@
  78 CC-TEX-ENTITIES         VALUE 1.   *> entity atlas
  78 CC-TEX-UI               VALUE 2.   *> font and UI atlas
  78 CC-TEX-ENVIRONMENT      VALUE 3.   *> environment atlas
+ 78 CC-TEX-PARTICLES        VALUE 4.   *> particle atlas
 
 *> Texture wrap modes of cc_vk_texture_wrap (§9).
  78 CC-WRAP-CLAMP           VALUE 0.   *> clamp-to-edge (the default)

@@ -442,7 +442,7 @@ static void vulkan(void) {
     uint8_t rgba[4 * 4 * 4];
     memset(rgba, 0x80, sizeof rgba);
     char name[128];
-    for (int32_t id = CC_TEX_BLOCKS; id <= CC_TEX_ENVIRONMENT; id++) {
+    for (int32_t id = CC_TEX_BLOCKS; id <= CC_TEX_PARTICLES; id++) {
         snprintf(name, sizeof name, "contract shim cc_vk_texture id %d returns 0", (int)id);
         tl_int(name, 0, cc_vk_texture(id, 4, 4, rgba));
     }

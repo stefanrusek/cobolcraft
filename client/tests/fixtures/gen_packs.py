@@ -199,6 +199,18 @@ PACKS = {
         "pack.mcmeta": new_style("Second server pack"),
         GREYSTONE: solid((250, 250, 0)),
     }),
+    # Particle definitions (42-1 section 6.1): crit lists a 32 x 16 sprite of minecraft: (red, 200,10,10) and
+    # a 16 x 8 sprite of cobolcraft: (blue, 10,10,200); heart names a sprite that no pack has (missing
+    # texture); poof's definition is not JSON (the missing texture); sweep_attack has an empty list.
+    "particles": ("folder", {
+        "pack.mcmeta": new_style("Particle pack"),
+        "assets/minecraft/particles/crit.json": b'{"textures": ["minecraft:crit", "cobolcraft:spark"]}',
+        "assets/minecraft/particles/heart.json": b'{"textures": ["minecraft:nothere"]}',
+        "assets/minecraft/particles/poof.json": b'[1, 2',
+        "assets/minecraft/particles/sweep_attack.json": b'{"textures": []}',
+        "assets/minecraft/textures/particle/crit.png": png(32, 16, lambda x, y: (200, 10, 10, 255)),
+        "assets/cobolcraft/textures/particle/spark.png": png(16, 8, lambda x, y: (10, 10, 200, 255)),
+    }),
 }
 
 # "many": 300 blocks of 16 pixels (colour (n % 256, n // 256, 7)) and 6 of 32 pixels (colour (9, 9, 100 + k)),
