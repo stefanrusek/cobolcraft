@@ -161,6 +161,81 @@
  END PROGRAM EFFECT-LEVEL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. EFFECT-PERIODIC.
+*> USING player row, effect id, amplifier, duration (BINARY-LONG each): the periodic action of an effect that is ticked this tick (docs/protocol/17
+*> section 4.9a), run before the duration step with the duration the instance had at the start of the tick (an infinite duration, -1, uses the tick
+*> count). poison (18): n = 25 >> amplifier; wither (19): 40 >> amplifier; regeneration (7): 50 >> amplifier; the action fires when n <= 0 or
+*> d mod n = 0: poison hurts 1.0 while the health is above 1.0, wither hurts 1.0 (and can kill), regeneration heals 1.0 below 20. Hunger (16)
+*> adds 0.005 x (amplifier + 1) exhaustion every tick. The hurt goes through HEALTH-HURT with the generic cause (CAUSE-COMMAND: the cobolcraft
+*> set has no magic or wither damage type; it bypasses armor, adds no exhaustion).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-FIRE                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 1000.
+ 01 WS-CAUSE               BINARY-LONG VALUE CAUSE-COMMAND.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-EXHAUST             FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EFFECT L-AMPLIFIER L-DURATION.
+     IF L-EFFECT = 16
+         COMPUTE WS-EXHAUST = 0.005 * (L-AMPLIFIER + 1)
+         CALL "HUNGER-EXHAUST" USING L-ROW WS-EXHAUST
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-BASE
+     EVALUATE L-EFFECT
+         WHEN 18
+             MOVE 25 TO WS-BASE
+         WHEN 19
+             MOVE 40 TO WS-BASE
+         WHEN 7
+             MOVE 50 TO WS-BASE
+     END-EVALUATE
+     IF WS-BASE = 0
+         GOBACK
+     END-IF
+     MOVE L-DURATION TO WS-D
+     IF L-DURATION = -1
+         MOVE CW-TICKS TO WS-D
+     END-IF
+     COMPUTE WS-N = FUNCTION INTEGER(WS-BASE / (2 ** FUNCTION MOD(L-AMPLIFIER, 32)))
+     MOVE 1 TO WS-FIRE
+     IF WS-N > 0
+         IF FUNCTION MOD(WS-D, WS-N) NOT = 0
+             MOVE 0 TO WS-FIRE
+         END-IF
+     END-IF
+     IF WS-FIRE = 0
+         GOBACK
+     END-IF
+     EVALUATE L-EFFECT
+         WHEN 18
+             IF PL-HEALTH(L-ROW) > 1.0
+                 CALL "HEALTH-HURT" USING L-ROW WS-AMOUNT WS-CAUSE WS-NONE WS-NONE2 WS-RESULT
+             END-IF
+         WHEN 19
+             CALL "HEALTH-HURT" USING L-ROW WS-AMOUNT WS-CAUSE WS-NONE WS-NONE2 WS-RESULT
+         WHEN OTHER
+             IF PL-HEALTH(L-ROW) < 20
+                 COMPUTE PL-HEALTH(L-ROW) = FUNCTION MIN(20, PL-HEALTH(L-ROW) + 1)
+                 CALL "HEALTH-SEND" USING L-ROW
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EFFECT-PERIODIC.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. EFFECTS-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -175,6 +250,10 @@
              PERFORM VARYING WS-EFFECT FROM 0 BY 1 UNTIL WS-EFFECT >= EF-MAX-EFFECTS
                  COMPUTE WS-SLOT = WS-EFFECT + 1
                  IF EF-ON(WS-ROW, WS-SLOT) = 1
+                     IF EF-OWNER(WS-ROW, WS-SLOT) = PL-ENTITY-ID(WS-ROW) AND PL-STATE(WS-ROW) = PS-ALIVE
+                         CALL "EFFECT-PERIODIC" USING WS-ROW WS-EFFECT EF-AMPLIFIER(WS-ROW, WS-SLOT)
+                             EF-DURATION(WS-ROW, WS-SLOT)
+                     END-IF
                      EVALUATE TRUE
                          WHEN EF-OWNER(WS-ROW, WS-SLOT) NOT = PL-ENTITY-ID(WS-ROW)
                              MOVE 0 TO EF-ON(WS-ROW, WS-SLOT)
