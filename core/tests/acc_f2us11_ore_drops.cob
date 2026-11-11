@@ -50,6 +50,7 @@
  01 WS-TEXT                PIC X(300).
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
+ 01 WS-POS                PIC X(40).
  01 WS-R1                  PIC -(6)9.99.
  01 WS-R2                  PIC -(6)9.99.
  01 WS-R3                  PIC -(6)9.99.
@@ -78,7 +79,7 @@
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-GREYSTONE
 
      MOVE "acceptance US11-3 given an ore with a loot table when it is broken in survival with a pickaxe then the "
-         & "table gives its item: one dump shard at (x + 0.5, y + 0.25, z + 0.5) and the block is gone" TO TL-CASE
+         & "table gives its item: one dump shard inside the block-pop box and the block is gone" TO TL-CASE
      MOVE 0 TO WS-ACTION
      PERFORM ACT
      MOVE 7 TO WS-TICKS
@@ -91,7 +92,7 @@
      PERFORM DESCRIBE-DROPS
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-TEXT) " block " FUNCTION TRIM(WS-BLOCK-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "15x1@20.50,100.25,20.50 block 0" TO TL-EXPECTED
+     MOVE "15x1@box block 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE 3 TO WS-LEVEL
@@ -99,12 +100,12 @@
      PERFORM BREAK-AGAIN
      MOVE "acceptance US11-3 given a pickaxe with efficiency 3 (the Fortune stand-in) when the ore is broken then the "
          & "ore_drops formula multiplies the count by the draw of the table's sequence: 4 shards the first time" TO TL-CASE
-     MOVE "15x4@20.50,100.25,20.50" TO TL-EXPECTED
+     MOVE "15x4@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
      PERFORM BREAK-AGAIN
      MOVE "acceptance US11-3 given the same tool when the ore is broken again then the sequence continues: 3 shards"
          TO TL-CASE
-     MOVE "15x3@20.50,100.25,20.50" TO TL-EXPECTED
+     MOVE "15x3@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
 
      MOVE 5 TO WS-LEVEL
@@ -112,7 +113,7 @@
      PERFORM BREAK-AGAIN
      MOVE "acceptance US11-3 given a pickaxe with efficiency 5 (the Silk Touch stand-in) when the ore is broken then the "
          & "block's own kind drops instead (the first alternative)" TO TL-CASE
-     MOVE "3x1@20.50,100.25,20.50" TO TL-EXPECTED
+     MOVE "3x1@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
 
      COMPUTE WS-BLOCK-ROW = CB-S-BLOCK(WS-GREYSTONE + 1) + 1
@@ -136,7 +137,7 @@
      PERFORM BREAK-AGAIN
      MOVE "acceptance US11-3 given an ore that requires a tool when it is broken with a pickaxe then it drops its item "
          & "again (the sequence goes on: efficiency 0 draws nothing)" TO TL-CASE
-     MOVE "15x1@20.50,100.25,20.50" TO TL-EXPECTED
+     MOVE "15x1@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
      MOVE 0 TO CB-TOOL-REQ(WS-BLOCK-ROW)
 
@@ -149,7 +150,7 @@
          & "(the block's item) is kept" TO TL-CASE
      MOVE RULE-YIELD-ITEM(WS-LOAM-STATE + 1) TO WS-EDIT2
      MOVE SPACES TO TL-EXPECTED
-     STRING FUNCTION TRIM(WS-EDIT2) "x1@20.50,100.25,20.50" DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING FUNCTION TRIM(WS-EDIT2) "x1@box" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-DROPS
      STOP RUN.
 
@@ -184,15 +185,28 @@
              IF WS-F > 0
                  STRING FUNCTION TRIM(WS-TEXT) " " DELIMITED BY SIZE INTO WS-TEXT
              END-IF
+             PERFORM POSITION-TOKEN
              STRING FUNCTION TRIM(WS-TEXT) FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) "@"
-                 FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) "," FUNCTION TRIM(WS-R3)
-                 DELIMITED BY SIZE INTO WS-TEXT
+                 FUNCTION TRIM(WS-POS) DELIMITED BY SIZE INTO WS-TEXT
              ADD 1 TO WS-F
              CALL "ENTITY-REMOVE" USING WS-E
          END-IF
      END-PERFORM
      IF WS-F = 0
          MOVE "-" TO WS-TEXT
+     END-IF.
+
+*> Block.popResource (docs/protocol/41 section 2.1): the item starts within 0.25 of the block centre in x and z and in
+*> [y + 0.125, y + 0.625]; "box" when it does, the coordinates otherwise.
+ POSITION-TOKEN.
+     IF EN-X(WS-E) >= WS-X + 0.249 AND EN-X(WS-E) <= WS-X + 0.751
+        AND EN-Y(WS-E) >= WS-Y + 0.124 AND EN-Y(WS-E) <= WS-Y + 0.626
+        AND EN-Z(WS-E) >= WS-Z + 0.249 AND EN-Z(WS-E) <= WS-Z + 0.751
+         MOVE "box" TO WS-POS
+     ELSE
+         MOVE SPACES TO WS-POS
+         STRING FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) "," FUNCTION TRIM(WS-R3)
+             DELIMITED BY SIZE INTO WS-POS
      END-IF.
 
  CHECK-DROPS.

@@ -44,6 +44,7 @@
  01 WS-SAVED-KEY           PIC X(48).
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
+ 01 WS-POS                PIC X(40).
  01 WS-R1                  PIC -(6)9.99.
  01 WS-R2                  PIC -(6)9.99.
  01 WS-R3                  PIC -(6)9.99.
@@ -73,8 +74,8 @@
      MOVE 0 TO WS-TOOL WS-TOOL-COUNT WS-HANDLE WS-RADIUS-SET
      MOVE 0 TO WS-RADIUS
      PERFORM SPAWN
-     MOVE "test block drops a block with a table drops its loot at (x + 0.5, y + 0.25, z + 0.5): turf, no explosion, 4 loam" TO TL-CASE
-     MOVE "3x4@7.50,64.25,9.50" TO TL-EXPECTED
+     MOVE "test block drops a block with a table drops its loot inside the block-pop box: turf, no explosion, 4 loam" TO TL-CASE
+     MOVE "3x4@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
      MOVE "test block drops a block with a table reports found 1" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
@@ -94,7 +95,7 @@
          ELSE
              MOVE WS-TURF-COUNT(WS-I) TO WS-EDIT
              MOVE SPACES TO TL-EXPECTED
-             STRING "3x" FUNCTION TRIM(WS-EDIT) "@7.50,64.25,9.50" DELIMITED BY SIZE INTO TL-EXPECTED
+             STRING "3x" FUNCTION TRIM(WS-EDIT) "@box" DELIMITED BY SIZE INTO TL-EXPECTED
          END-IF
          PERFORM CHECK-DROPS
      END-PERFORM
@@ -115,7 +116,7 @@
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
      PERFORM SPAWN
      MOVE "test block drops greystone with an empty hand: ore_drops without a level draws nothing, one dump shard" TO TL-CASE
-     MOVE "15x1@7.50,64.25,9.50" TO TL-EXPECTED
+     MOVE "15x1@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
 
      MOVE "cobolcraft:pry_bar" TO WS-KEY
@@ -133,9 +134,9 @@
              DELIMITED BY SIZE INTO TL-CASE
          EVALUATE WS-I
              WHEN 1
-                 MOVE "15x4@7.50,64.25,9.50" TO TL-EXPECTED
+                 MOVE "15x4@box" TO TL-EXPECTED
              WHEN OTHER
-                 MOVE "15x3@7.50,64.25,9.50" TO TL-EXPECTED
+                 MOVE "15x3@box" TO TL-EXPECTED
          END-EVALUATE
          PERFORM CHECK-DROPS
      END-PERFORM
@@ -145,7 +146,7 @@
      CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-ID WS-LEVEL
      PERFORM SPAWN
      MOVE "test block drops greystone with an efficiency 5 tool takes the first alternative (loam)" TO TL-CASE
-     MOVE "3x1@7.50,64.25,9.50" TO TL-EXPECTED
+     MOVE "3x1@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
 
      MOVE "cobolcraft:turf" TO WS-KEY
@@ -156,7 +157,7 @@
      PERFORM SPAWN
      MOVE WS-SAVED-KEY TO CB-KEY(WS-BLOCK-ROW)
      MOVE "test block drops a block key without namespace (pseudo_stone) has the table minecraft:blocks/pseudo_stone" TO TL-CASE
-     MOVE "3x1@7.50,64.25,9.50" TO TL-EXPECTED
+     MOVE "3x1@box" TO TL-EXPECTED
      PERFORM CHECK-DROPS
      GOBACK.
 
@@ -165,6 +166,19 @@
          WS-RADIUS-SET WS-RADIUS WS-FOUND.
 
 *> Describes the ground items (item id x count @ position) in tracker order, then frees them.
+*> Block.popResource (docs/protocol/41 section 2.1): the item starts within 0.25 of the block centre in x and z and in
+*> [y + 0.125, y + 0.625]; "box" when it does, the coordinates otherwise.
+ POSITION-TOKEN.
+     IF EN-X(WS-E) >= WS-X + 0.249 AND EN-X(WS-E) <= WS-X + 0.751
+        AND EN-Y(WS-E) >= WS-Y + 0.124 AND EN-Y(WS-E) <= WS-Y + 0.626
+        AND EN-Z(WS-E) >= WS-Z + 0.249 AND EN-Z(WS-E) <= WS-Z + 0.751
+         MOVE "box" TO WS-POS
+     ELSE
+         MOVE SPACES TO WS-POS
+         STRING FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) "," FUNCTION TRIM(WS-R3)
+             DELIMITED BY SIZE INTO WS-POS
+     END-IF.
+
  CHECK-DROPS.
      MOVE SPACES TO WS-TEXT
      MOVE 0 TO WS-F
@@ -178,9 +192,9 @@
              IF WS-F > 0
                  STRING FUNCTION TRIM(WS-TEXT) " " DELIMITED BY SIZE INTO WS-TEXT
              END-IF
+             PERFORM POSITION-TOKEN
              STRING FUNCTION TRIM(WS-TEXT) FUNCTION TRIM(WS-EDIT) "x" FUNCTION TRIM(WS-EDIT2) "@"
-                 FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) "," FUNCTION TRIM(WS-R3)
-                 DELIMITED BY SIZE INTO WS-TEXT
+                 FUNCTION TRIM(WS-POS) DELIMITED BY SIZE INTO WS-TEXT
              ADD 1 TO WS-F
              MOVE 0 TO EN-USED(WS-E)
          END-IF
