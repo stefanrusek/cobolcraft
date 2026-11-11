@@ -277,6 +277,9 @@
        10 CR-SCROLLING       BINARY-LONG.
        10 CR-QUERY-LEN       BINARY-LONG.
        10 CR-QUERY           PIC X(64).
+       10 CY-LIST            BINARY-LONG OCCURS 3 TIMES.   *> the smithing table's cycling icon helpers (40-3 5.6): list id, tick counter, icon index
+       10 CY-TICK            BINARY-LONG OCCURS 3 TIMES.
+       10 CY-INDEX           BINARY-LONG OCCURS 3 TIMES.
        10 CR-HB-LOADED      BINARY-LONG.    *> 1 once hotbar.nbt was read (lazily, 40-7 10)
        10 CR-HB OCCURS 81 TIMES.
           15 CR-HB-ITEM      BINARY-LONG.
