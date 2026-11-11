@@ -208,6 +208,7 @@
  01 WS-T                   BINARY-LONG.
  01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  01 WS-PLAYER-Y            FLOAT-LONG VALUE 0.
+ 01 WS-PLAYER-YD           FLOAT-LONG VALUE 0.
  01 WS-DRAWS.
     05 WS-DRAW             FLOAT-LONG OCCURS 48 TIMES.
  LINKAGE SECTION.
@@ -227,7 +228,7 @@
              WHEN 3
                  CALL "P2-POOF-TICK" USING PCL PCL-COLLIDERS
              WHEN 4
-                 CALL "P2-CLOUD-TICK" USING PCL PCL-COLLIDERS WS-NO-PLAYER WS-PLAYER-Y WS-PLAYER-Y
+                 CALL "P2-CLOUD-TICK" USING PCL PCL-COLLIDERS WS-NO-PLAYER WS-PLAYER-Y WS-PLAYER-YD
              WHEN 5
                  CALL "P2-EXPLOSION-TICK" USING PCL
              WHEN 6
@@ -287,6 +288,12 @@
  01 WS-REMAIN              BINARY-LONG.
  01 WS-MORE                BINARY-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SY                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
+ 01 WS-SVX                 FLOAT-LONG.
+ 01 WS-SVY                 FLOAT-LONG.
+ 01 WS-SVZ                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -322,12 +329,18 @@
              CALL "PARTICLE-RANDOM" USING WS-R
              COMPUTE WS-D3 = FUNCTION INTEGER-PART(WS-R * 3)
              CALL "PENTRY-STATUS" USING WS-VISIBLE WS-STATUS-IN WS-D10 WS-D3 WS-STATUS WS-USED
-             COMPUTE WS-DIST2 = (PS-V(WS-K, 1) - WS-EYE(1)) ** 2 + (PS-V(WS-K, 2) - WS-EYE(2)) ** 2
-                 + (PS-V(WS-K, 3) - WS-EYE(3)) ** 2
+             MOVE PS-V(WS-K, 1) TO WS-SX
+             MOVE PS-V(WS-K, 2) TO WS-SY
+             MOVE PS-V(WS-K, 3) TO WS-SZ
+             MOVE PS-V(WS-K, 4) TO WS-SVX
+             MOVE PS-V(WS-K, 5) TO WS-SVY
+             MOVE PS-V(WS-K, 6) TO WS-SVZ
+             COMPUTE WS-DIST2 = (WS-SX - WS-EYE(1)) ** 2 + (WS-SY - WS-EYE(2)) ** 2
+                 + (WS-SZ - WS-EYE(3)) ** 2
              CALL "PENTRY-DECIDE" USING WS-FORCE WS-STATUS WS-DIST2 WS-CREATE
              IF WS-CREATE = 1
-                 CALL "PARTICLE-SPAWN" USING CLIENT-STATE WS-ID PS-V(WS-K, 1) PS-V(WS-K, 2)
-                     PS-V(WS-K, 3) PS-V(WS-K, 4) PS-V(WS-K, 5) PS-V(WS-K, 6)
+                 CALL "PARTICLE-SPAWN" USING CLIENT-STATE WS-ID WS-SX WS-SY WS-SZ WS-SVX WS-SVY
+                     WS-SVZ
              END-IF
          END-PERFORM
          IF WS-REMAIN <= 0
@@ -512,7 +525,7 @@
  COPY CLSTATE.
  01 L-TYPE                 BINARY-LONG.
  01 L-INDEX                BINARY-LONG.
- 01 L-IMAGE                PIC X.
+ 01 L-IMAGE                PIC X(1048576).
  01 L-COUNT                BINARY-LONG.
  01 L-W                    BINARY-LONG.
  01 L-H                    BINARY-LONG.
