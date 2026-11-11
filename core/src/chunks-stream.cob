@@ -268,6 +268,7 @@
  01 WS-DZ                  BINARY-LONG.
  01 WS-STEP                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-FEED                BINARY-LONG.
  COPY PROTO.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -287,6 +288,14 @@
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-CACHE-CENTER-BUILD" USING WS-CX WS-CZ PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "CHUNK-FEED-ON" USING WS-DIM WS-FEED
+     IF WS-FEED = 1
+*>       the dimension's chunks come from the generation queue: the feed sends them as they are done (core/src/chunk-feed.cob)
+         CALL "CHUNK-FEED-RESET" USING WS-PLAYER WS-CX WS-CZ
+         MOVE WS-CX TO PL-CENTER-X(WS-PLAYER)
+         MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
+         GOBACK
+     END-IF
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
@@ -363,6 +372,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-LOW-X               BINARY-LONG.
  01 WS-LOW-Z               BINARY-LONG.
+ 01 WS-FEED                BINARY-LONG.
  COPY PROTO.
  LINKAGE SECTION.
  COPY COREAPI.
@@ -397,6 +407,16 @@
              END-IF
          END-PERFORM
      END-PERFORM
+     CALL "CHUNK-FEED-ON" USING WS-DIM WS-FEED
+     IF WS-FEED = 1
+*>       the new chunks come from the generation queue through the feed (the forgets above are sent now)
+         CALL "CHUNK-FEED-MOVE" USING WS-PLAYER WS-CX WS-CZ
+         MOVE WS-CX TO PL-CENTER-X(WS-PLAYER)
+         MOVE WS-CZ TO PL-CENTER-Z(WS-PLAYER)
+         CALL "ENTITY-VIEWER-REFRESH" USING WS-PLAYER
+         CALL "CHUNKS-UNLOAD"
+         GOBACK
+     END-IF
      CALL "PB-RESET" USING PB-BUFFER
      CALL "CHUNK-BATCH-START-BUILD" USING PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER

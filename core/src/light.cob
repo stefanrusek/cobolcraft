@@ -165,7 +165,10 @@
          PERFORM VARYING WS-DX FROM -1 BY 1 UNTIL WS-DX > 1
              COMPUTE WS-CX = CK-X(L-ROW) + WS-DX
              COMPUTE WS-CZ = CK-Z(L-ROW) + WS-DZ
-             CALL "WORLD-CHUNK-LOAD" USING WS-DIM WS-CX WS-CZ WS-ROW
+             CALL "WORLD-CHUNK-PEEK" USING WS-DIM WS-CX WS-CZ WS-ROW
+             IF WS-ROW = 0
+                 EXIT PERFORM CYCLE
+             END-IF
              SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
              PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SECTIONS
                  IF CK-SOURCES(WS-ROW, WS-S) > 0
@@ -342,10 +345,16 @@
                              COMPUTE WS-CZ = (WS-NZ - 15) / 16
                          END-IF
                          IF WS-CX NOT = WS-SEEN-CX OR WS-CZ NOT = WS-SEEN-CZ
-                             CALL "WORLD-CHUNK-LOAD" USING WS-DIM WS-CX WS-CZ WS-ROW
-                             SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
+                             CALL "WORLD-CHUNK-PEEK" USING WS-DIM WS-CX WS-CZ WS-ROW
+                             IF WS-ROW > 0
+                                 SET ADDRESS OF CX-CHUNK TO CK-ADDR(WS-ROW)
+                             END-IF
                              MOVE WS-CX TO WS-SEEN-CX
                              MOVE WS-CZ TO WS-SEEN-CZ
+                         END-IF
+*>                       a neighbour that is not loaded (a sliced dimension never generates it here) blocks the spread
+                         IF WS-ROW = 0
+                             EXIT PERFORM CYCLE
                          END-IF
                          COMPUTE WS-CELL = WS-NY * 256 + (WS-NZ - WS-CZ * 16) * 16
                              + WS-NX - WS-CX * 16 + 1
