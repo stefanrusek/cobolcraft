@@ -421,9 +421,9 @@
      MOVE 44 TO WS-N
      PERFORM FEED-REFUSED
 
-     MOVE "test play packet Player Input (0x2B, outside the 09 inventory) closes the connection"
+     MOVE "test play packet id 70 (no serverbound play packet; Player Input 0x2B is read since the sneak state) closes the connection"
          TO TL-CASE
-     MOVE 43 TO WS-N
+     MOVE 70 TO WS-N
      PERFORM FEED-REFUSED
 
      MOVE "test play packet id 69 (no serverbound play packet) closes the connection" TO TL-CASE
