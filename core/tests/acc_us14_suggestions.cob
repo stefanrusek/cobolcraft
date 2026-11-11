@@ -113,10 +113,10 @@
      PERFORM SUGGEST-CHECK-ALICE
 
      MOVE "acceptance US14-1 a word that is a name the player is completing (a player argument) "
-         & "is offered nothing by the server, and an unknown command nothing" TO TL-CASE
+         & "is offered the online names by the server, and an unknown command nothing" TO TL-CASE
      MOVE 7 TO WS-TRANSACTION
      MOVE "/msg Al" TO WS-LINE
-     MOVE "7 0 0 [] | 8 0 0 []" TO TL-EXPECTED
+     MOVE "7 5 2 [Alfred,Alice] | 8 0 0 []" TO TL-EXPECTED
      COMPUTE WS-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING))
      CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
      MOVE 8 TO WS-TRANSACTION
