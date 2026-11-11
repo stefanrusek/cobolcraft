@@ -105,3 +105,104 @@
      END-IF
      GOBACK.
  END PROGRAM WORLD-AUTOSAVE-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RULES-RESET.
+*> No arguments: every game rule back at its default (a world that is opened starts from its own saved values).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRULES.
+ 01 WS-NAME                PIC X(40) VALUE "advance_time".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "BR-RULE-FIND" USING WS-NAME WS-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GR-COUNT
+         CALL "BR-RULE-SET" USING WS-I GR-D-VALUE(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RULES-RESET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RULES-NBT-WRITE.
+*> USING PB-BUFFER: the compound GameRules of level.dat (07 §9.2): one entry for each rule that is not at its default, a Byte for a boolean rule and an Int for an
+*> integer rule (an absent entry is the default of 16 §13).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRULES.
+ 01 WN                     PIC X(64).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME                PIC X(40) VALUE "advance_time".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     CALL "BR-RULE-FIND" USING WS-NAME WS-INDEX
+     MOVE "GameRules" TO WN
+     MOVE 9 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GR-COUNT
+         IF GR-VALUE(WS-I) NOT = GR-D-VALUE(WS-I)
+             MOVE SPACES TO WN
+             MOVE GR-D-NAME(WS-I) TO WN
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(GR-D-NAME(WS-I))) TO WL
+             MOVE GR-VALUE(WS-I) TO WS-INT
+             IF GR-D-TYPE(WS-I) = "B"
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+             ELSE
+                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-INT
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM RULES-NBT-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RULES-NBT-READ.
+*> USING PB-BUFFER (after the name of the compound GameRules): the entries set the rules they name (a Byte or an Int); an entry the game does not know is skipped.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRULES.
+ 01 WN                     PIC X(64).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-VALUE               BINARY-DOUBLE.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-RULE                PIC X(40).
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-BUFFER.
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         MOVE SPACES TO WS-RULE
+         IF WL <= 40
+             MOVE WN(1:WL) TO WS-RULE
+         END-IF
+         CALL "BR-RULE-FIND" USING WS-RULE WS-INDEX
+         EVALUATE TRUE
+             WHEN WS-INDEX > 0 AND WS-TYPE = 1
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-INT
+                 MOVE 0 TO WS-VALUE
+                 IF WS-INT NOT = 0
+                     MOVE 1 TO WS-VALUE
+                 END-IF
+                 CALL "BR-RULE-SET" USING WS-INDEX WS-VALUE
+             WHEN WS-INDEX > 0 AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                 MOVE WS-INT TO WS-VALUE
+                 CALL "BR-RULE-SET" USING WS-INDEX WS-VALUE
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RULES-NBT-READ.
