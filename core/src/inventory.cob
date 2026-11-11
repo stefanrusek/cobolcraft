@@ -199,6 +199,8 @@
      IF L-SLOT >= 0 AND L-SLOT <= 8
          IF L-SLOT NOT = PL-HELD(CN-PLAYER(L-ID))
              CALL "HUNGER-CANCEL" USING CN-PLAYER(L-ID)
+*>           A changed held item restarts the attack strength ticker (17 section 4.1).
+             CALL "COMBAT-TICKER-RESET" USING CN-PLAYER(L-ID)
 *>           A changed held item ends a break in progress (13 section 2.4).
              IF PL-BREAKING(CN-PLAYER(L-ID)) = 1
                  CALL "BLOCK-BREAK-END" USING CN-PLAYER(L-ID)

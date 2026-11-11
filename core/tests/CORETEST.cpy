@@ -798,6 +798,21 @@
  END PROGRAM TEST-BLOCK-AT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STANDARD-TABLES.
+*> No parameters: after a world opened as any set, the item, entity and block tables of the core are rebuilt from the standard
+*> content set (the generated rows), the way a standard world opens them (the tool and combat tests of US14).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ PROCEDURE DIVISION.
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     CALL "BLOCKS-OPEN"
+     CALL "CORE-TABLES-OPEN"
+     GOBACK.
+ END PROGRAM TEST-STANDARD-TABLES.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-HELD.
 *> USING connection id, slot (BINARY-LONG): feeds Set Carried Item with that slot (Short).
  DATA DIVISION.

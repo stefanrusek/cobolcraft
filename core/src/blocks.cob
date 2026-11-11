@@ -337,6 +337,7 @@
  01 WS-BENCH               BINARY-LONG.
  01 WS-BED                 BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TOOL                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -354,7 +355,14 @@
      MOVE 0 TO WS-TRAVEL
      CALL "MENU-IS-BENCH" USING WS-STATE WS-BENCH
      CALL "WORLDSIM-BED-KEY" USING WS-STATE WS-BED
+*>   An axe, shovel or hoe changes the block it is used on (17 section 3.1; tools-wire.cob).
+     MOVE 0 TO WS-TOOL
+     IF WS-ITEM > 0 AND WS-BENCH = 0 AND WS-BED = 0
+         CALL "TOOLUSE-ON" USING L-ID PLAY-SERVERBOUND WS-TOOL
+     END-IF
      EVALUATE TRUE
+         WHEN WS-TOOL = 1
+             CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
          WHEN WS-BENCH = 1

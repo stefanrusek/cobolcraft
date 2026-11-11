@@ -339,9 +339,9 @@
          GOBACK
      END-IF
      EVALUATE TRUE
-         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:shield"
+         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:shield" OR "shield"
              MOVE 5 TO L-KIND
-         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:elytra"
+         WHEN IT-KEY(L-ITEM + 1)(1:WS-LEN) = "minecraft:elytra" OR "elytra"
              MOVE 3 TO L-KIND
          WHEN WS-LEN >= 6 AND IT-KEY(L-ITEM + 1)(WS-LEN - 5:6) = "_boots"
              MOVE 1 TO L-KIND
