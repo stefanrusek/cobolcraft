@@ -10,7 +10,7 @@
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
 *>   blockstate, blockpred, item, itempred, component, style, message, nbt (compound), nbttag, nbtpath; objective, criteria,
 *>   operation, particle, team, slot, slots, resloc, function, anchor, intrange, floatrange, dimension, gamemode, uuid,
-*>   hexcolor, teamcolor; time (min ticks); entitytype (a resource of the registry minecraft:entity_type).
+*>   hexcolor, teamcolor; time (min ticks); entitytype and effecttype (a resource of the registry minecraft:entity_type, minecraft:mob_effect).
 *>
 *> Entry points:
 *>   BR-REG USING level (of the first word), command id, line (PIC X(256)): adds the nodes and sets the command of the last
@@ -193,6 +193,9 @@
          WHEN "entitytype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:entity_type" TO WS-REGISTRY
+         WHEN "effecttype"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:mob_effect" TO WS-REGISTRY
          WHEN OTHER         MOVE BR-P-TIME TO WS-TYPE-ID
      END-EVALUATE.
 

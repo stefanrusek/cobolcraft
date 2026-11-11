@@ -151,6 +151,8 @@
              CALL "CX-SETBLOCK"
          WHEN BC-FILL
              CALL "CX-FILL"
+         WHEN BC-EFFECT
+             CALL "CX-EFFECT"
          WHEN BC-BAN-IP
              CALL "CX-BAN-IP"
          WHEN BC-PARDON-IP
