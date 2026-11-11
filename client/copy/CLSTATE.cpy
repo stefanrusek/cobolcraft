@@ -192,6 +192,7 @@
        10 PL-YAW             FLOAT-SHORT.
        10 PL-PITCH           FLOAT-SHORT.
        10 PL-MODE            BINARY-LONG.
+       10 PL-PERM            BINARY-LONG.    *> the permission level 0 to 4 (Entity Event 24 + level for the local player; 40-9 section 2.2)
        10 PL-HELD            BINARY-LONG.
        10 PL-SLOT OCCURS 36 TIMES.
           15 PL-SLOT-COUNT   BINARY-LONG.
@@ -276,6 +277,10 @@
        10 CR-SCROLLING       BINARY-LONG.
        10 CR-QUERY-LEN       BINARY-LONG.
        10 CR-QUERY           PIC X(64).
+       10 CY-LIST            BINARY-LONG OCCURS 3 TIMES.   *> the smithing table's cycling icon helpers (40-3 5.6): list id, tick counter, icon index
+       10 CY-TICK            BINARY-LONG OCCURS 3 TIMES.
+       10 CY-INDEX           BINARY-LONG OCCURS 3 TIMES.
+       10 CR-HB-LOADED      BINARY-LONG.    *> 1 once hotbar.nbt was read (lazily, 40-7 10)
        10 CR-HB OCCURS 81 TIMES.
           15 CR-HB-ITEM      BINARY-LONG.
           15 CR-HB-COUNT     BINARY-LONG.
@@ -321,6 +326,55 @@
        10 SG-ROW OCCURS 4 TIMES.
           15 SG-LEN          BINARY-LONG.
           15 SG-LINE-TEXT    PIC X(64).
+*>     The block editors (40-9): the command block screen's target, mode (0 sequence, 1 auto, 2 redstone), conditional, automatic and track flags, and the command; the jigsaw and structure packet
+*>     sources (the screens for those are not drawn yet).
+*>     The form screens (test block and jigsaw editors of 40-9): the form (1 test block, 2 jigsaw), the focused box, the box texts, the test block mode (0 to 3), the jigsaw keep flag,
+*>     the levels of the slider and whether the jigsaw's front is vertical (the joint cycle shows).
+       10 EF-FOCUS           BINARY-LONG.
+       10 EF-TEXT            PIC X(256) OCCURS 12 TIMES.
+       10 EF-LEN             BINARY-LONG OCCURS 12 TIMES.
+       10 EB-FORM            BINARY-LONG.
+       10 EB-MC              BINARY-LONG.    *> 1 when the command screen edits a command block minecart (entity id EB-MC-ENTITY)
+       10 EB-MC-ENTITY       BINARY-LONG.
+       10 EB-TB-MODE         BINARY-LONG.
+       10 EB-JG-KEEP         BINARY-LONG.
+       10 EB-LEVELS          BINARY-LONG.
+       10 EB-VERTICAL        BINARY-LONG.
+       10 EB-X               BINARY-LONG.
+       10 EB-Y               BINARY-LONG.
+       10 EB-Z               BINARY-LONG.
+       10 EB-MODE            BINARY-LONG.
+       10 EB-COND            BINARY-LONG.
+       10 EB-AUTO            BINARY-LONG.
+       10 EB-TRACK           BINARY-LONG.
+       10 EB-CMD-LEN         BINARY-LONG.
+       10 EB-CMD             PIC X(1024).
+       10 EB-JG-TEXT         PIC X(256) OCCURS 4 TIMES.
+       10 EB-JG-LEN          BINARY-LONG OCCURS 4 TIMES.
+       10 EB-JG-JOINT        BINARY-LONG.
+       10 EB-JG-SELECTION    BINARY-LONG.
+       10 EB-JG-PLACEMENT    BINARY-LONG.
+       10 EB-ST-UPDATE       BINARY-LONG.
+       10 EB-ST-MODE         BINARY-LONG.
+       10 EB-ST-NAME         PIC X(128).
+       10 EB-ST-NAME-LEN     BINARY-LONG.
+       10 EB-ST-META         PIC X(128).
+       10 EB-ST-META-LEN     BINARY-LONG.
+       10 EB-ST-OFFSET       BINARY-LONG OCCURS 3 TIMES.
+       10 EB-ST-SIZE         BINARY-LONG OCCURS 3 TIMES.
+       10 EB-ST-MIRROR       BINARY-LONG.
+       10 EB-ST-ROTATION     BINARY-LONG.
+       10 EB-ST-INTEGRITY    FLOAT-SHORT.
+       10 EB-ST-SEED         BINARY-DOUBLE.
+       10 EB-ST-FLAGS        BINARY-LONG.
+       10 EB-TI-ROT          BINARY-LONG.    *> the test instance screen (40-x1 8): rotation id, include entities and the info text
+       10 EB-TI-ENT          BINARY-LONG.
+       10 EB-TI-INFO         PIC X(256).
+       10 EB-TI-INFO-LEN     BINARY-LONG.
+       10 EB-ST-INIT-MODE    BINARY-LONG.    *> the values at open that Cancel restores (40-x1 5.7)
+       10 EB-ST-INIT-MIRROR  BINARY-LONG.
+       10 EB-ST-INIT-ROT     BINARY-LONG.
+       10 EB-ST-INIT-FLAGS   BINARY-LONG.
        10 MT-ENTITY          BINARY-LONG.
        10 MT-KIND            BINARY-LONG.
        10 MT-SADDLE          BINARY-LONG.
@@ -759,7 +813,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 128 TIMES.
+       10 GS-ROW OCCURS 151 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.

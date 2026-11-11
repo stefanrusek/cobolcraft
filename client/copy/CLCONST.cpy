@@ -24,7 +24,9 @@
  78 SCR-OPTIONS             VALUE 18.  *> the options pages (US16; screens/options.cob)
  78 SCR-SIGN                VALUE 21.  *> the sign editor (Open Sign Editor 05a 0x3D; screens/signscreen.cob)
  78 SCR-BOOK                VALUE 22.  *> the writable book editor (screens/bookscreen.cob)
- 78 SCR-CREATIVE            VALUE 23.  *> the creative inventory (screens/creativescreen.cob)
+ 78 SCR-CREATIVE            VALUE 23.
+ 78 SCR-CMDBLOCK            VALUE 24.
+ 78 SCR-FORM                VALUE 25.  *> the test block and jigsaw editors (screens/forms.cob)  *> the command block editor (screens/editblocks.cob)  *> the creative inventory (screens/creativescreen.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
@@ -115,6 +117,34 @@
  78 ACT-CREATIVE-TAB         VALUE 65.   *> the creative screen: select the tab of the argument
  78 ACT-CREATIVE-GRID        VALUE 66.   *> a grid slot (argument 901 to 945)
  78 ACT-CREATIVE-HOTBAR      VALUE 67.   *> a hotbar slot (argument 0 to 8)
+ 78 ACT-CMD-MODE             VALUE 68.
+ 78 ACT-CMD-TYPE             VALUE 69.
+ 78 ACT-CMD-TRIGGER          VALUE 70.
+ 78 ACT-CMD-TRACK            VALUE 71.
+ 78 ACT-CMD-DONE             VALUE 72.
+ 78 ACT-EF-FOCUS             VALUE 73.   *> focus the box of the argument
+ 78 ACT-EF-MODE              VALUE 74.   *> the test block mode cycle, the jigsaw joint cycle
+ 78 ACT-EF-KEEP              VALUE 75.
+ 78 ACT-EF-LEVELS            VALUE 76.
+ 78 ACT-EF-DONE              VALUE 77.
+ 78 ACT-EF-GENERATE          VALUE 78.
+ 78 ACT-ST-MODE              VALUE 79.
+ 78 ACT-ST-INCLUDE           VALUE 80.
+ 78 ACT-ST-STRICT            VALUE 81.
+ 78 ACT-ST-SHOWAIR           VALUE 82.
+ 78 ACT-ST-SHOWBB            VALUE 83.
+ 78 ACT-ST-MIRROR            VALUE 84.
+ 78 ACT-ST-ROT               VALUE 85.
+ 78 ACT-ST-SAVE              VALUE 86.
+ 78 ACT-ST-LOAD              VALUE 87.
+ 78 ACT-ST-DETECT            VALUE 88.
+ 78 ACT-ST-CANCEL            VALUE 89.
+ 78 ACT-TI-ROT               VALUE 90.
+ 78 ACT-TI-ENT               VALUE 91.
+ 78 ACT-TI-RESET             VALUE 92.
+ 78 ACT-TI-SAVE              VALUE 93.
+ 78 ACT-TI-RUN               VALUE 94.
+ 78 ACT-TI-DONE              VALUE 95.
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).
@@ -264,8 +294,11 @@
     05 FILLER PIC X(8) VALUE "00150030".
     05 FILLER PIC X(8) VALUE "10450090".
     05 FILLER PIC X(8) VALUE "10375075".
+*>   Types 4 to 28 (the registry ids of the standard set, 21 section 2) have no box here; type 29, the command block minecart (0.98 x 0.7), can be aimed at and used (40-9 2.1).
+    05 FILLER PIC X(200) VALUE ALL "0".
+    05 FILLER PIC X(8) VALUE "10490070".
  01 CL-ENTITIES REDEFINES CL-ENTITY-DATA.
-    05 CL-ET OCCURS 4 TIMES.
+    05 CL-ET OCCURS 30 TIMES.
        10 CL-ET-ATTACK      PIC 9.
        10 CL-ET-HALF        PIC 9V999.
        10 CL-ET-HEIGHT      PIC 9V99.
@@ -285,7 +318,9 @@
  78 KB-CHAT                 VALUE 20.
  78 KB-COMMAND              VALUE 21.
  78 KB-PERSPECTIVE          VALUE 22.
- 78 KB-COUNT                VALUE 22.
+ 78 KB-SAVE-TOOLBAR         VALUE 23.
+ 78 KB-LOAD-TOOLBAR         VALUE 24.
+ 78 KB-COUNT                VALUE 24.
 
 *> GUI sprites of the UI atlas (GS-ROW rows).
  78 GSP-BUTTON              VALUE 1.
@@ -340,7 +375,11 @@
  78 GSP-HIGHLIGHT-FRONT     VALUE 126.
  78 GSP-TOOLTIP-BACK        VALUE 127.  *> tooltip/background and tooltip/frame, nine-slice (12 section 5.8)
  78 GSP-TOOLTIP-FRAME       VALUE 128.
- 78 GSP-COUNT               VALUE 128.
+ 78 GSP-CSLOT-0             VALUE 129.  *> container/slot/<name> of the 20 hint icons of the smithing table (40-3 5.6): armor_trim, netherite_upgrade templates, helmet, chestplate, leggings, boots, ingot, redstone_dust, lapis_lazuli, quartz, diamond, emerald, amethyst_shard, sword, pickaxe, axe, hoe, shovel, nautilus_armor, spear
+ 78 GSP-CSLOT-SHIELD        VALUE 149.  *> container/slot/shield (the empty off-hand slot)
+ 78 GSP-FURNACE-LIT          VALUE 150.  *> container/furnace/lit_progress and burn_progress
+ 78 GSP-FURNACE-BURN         VALUE 151.
+ 78 GSP-COUNT               VALUE 151.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 

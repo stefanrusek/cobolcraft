@@ -77,7 +77,7 @@
      PERFORM FRAME
      MOVE "T" TO TL-MODE
      PERFORM LABELS
-     MOVE "acceptance US12 40-8§6.3 the screen shows the title at y 40 and the lines hi and x centred on x 160 (y 70 and 80)" TO TL-CASE
+     MOVE "acceptance US12 40-8§6 the screen shows the title at y 40 and the lines hi and x centred on x 160 (y 70 and 80)" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      MOVE "Edit Sign Message" TO WS-TITLE
      MOVE 17 TO WS-N

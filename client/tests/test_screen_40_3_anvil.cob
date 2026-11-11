@@ -145,6 +145,12 @@
      MOVE "3109457863616c69627572" TO TL-EXPECTED
      MOVE WS-TEXT(1:22) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The local preview (3.3 steps 11 to 14, rename only): slot 0 holds an item, slot 1 is empty and the name differs from the default: a copy of the left stack and the cost 1; with the default name no result.
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-3§3.3 anvil: a rename (name Excalibur, empty right slot) previews a copy of the left stack in the result slot and the cost 1" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = BX-ITEM(1) * 1000 + BX-COUNT(1) * 10 + 1
+     COMPUTE TL-OBSERVED-N = BX-ITEM(3) * 1000 + BX-COUNT(3) * 10 + BM-DATA(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The same name is not sent again; a section sign is not typed.
      MOVE 1 TO WS-N
      MOVE 167 TO WS-A(1)
@@ -312,6 +318,16 @@
      MOVE "acceptance US12 40-3§3.7 anvil: a reopened anvil starts with itemName null: the default name goes out again as the empty name" TO TL-CASE
      MOVE "3100" TO TL-EXPECTED
      MOVE WS-TEXT(1:4) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM UNTIL AN-NAME-LENGTH = 0
+         MOVE 1 TO WS-N
+         MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+         MOVE CC-KEY-BACKSPACE TO WS-A(1)
+         PERFORM FRAME
+     END-PERFORM
+     MOVE "acceptance US12 40-3§3.3 anvil: with the name cleared the preview is empty and the cost 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BX-COUNT(3) * 10 + BM-DATA(1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

@@ -182,6 +182,44 @@
              PERFORM HOVER
          END-PERFORM
      END-IF
+*>   6.4: the survival tab shows the 27 main slots (arguments 9 to 35 at (9 + 18 col, 54 + 18 row); the armour and off-hand wrappers are not kept by this client) and the delete slot at (173, 112).
+     IF WS-TYPE = 2
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 26
+             COMPUTE WS-K = 9 + WS-I
+             COMPUTE WS-X = WS-LEFT + 9 - 1 + 18 * FUNCTION MOD(WS-I, 9)
+             COMPUTE WS-CELL = WS-I / 9
+             COMPUTE WS-Y = WS-TOP + 54 - 1 + 18 * WS-CELL
+             MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+             CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-K WS-X WS-Y WS-ACTION
+             MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+             PERFORM HOVER
+         END-PERFORM
+*>       The armour wrappers (arguments 101 to 104: helmet, chestplate, leggings, boots at (54 + 54 (k / 2), 6 + 27 (k mod 2))) and the off-hand (argument 37 at (35, 20)).
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-K = 101 + WS-I
+             COMPUTE WS-CELL = WS-I / 2
+             COMPUTE WS-X = WS-LEFT + 54 - 1 + 54 * WS-CELL
+             COMPUTE WS-Y = WS-TOP + 6 - 1 + 27 * FUNCTION MOD(WS-I, 2)
+             MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+             CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-K WS-X WS-Y WS-ACTION
+             MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+             PERFORM HOVER
+         END-PERFORM
+         MOVE 37 TO WS-K
+         COMPUTE WS-X = WS-LEFT + 35 - 1
+         COMPUTE WS-Y = WS-TOP + 20 - 1
+         MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-K WS-X WS-Y WS-ACTION
+         MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+         PERFORM HOVER
+         MOVE 99 TO WS-ARG
+         MOVE WK-IMAGE TO WS-KIND
+         MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+         COMPUTE WS-X = WS-LEFT + 173 - 1
+         COMPUTE WS-Y = WS-TOP + 112 - 1
+         MOVE 18 TO WS-W WS-H
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-NOTEXT WS-ZERO WS-STATE
+     END-IF
      PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
          MOVE WS-I TO WS-K
          COMPUTE WS-X = WS-LEFT + 9 - 1 + 18 * WS-I
@@ -221,6 +259,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CCSHIM.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-BUTTON              BINARY-LONG VALUE 0.
@@ -244,11 +283,33 @@
              MOVE 0 TO CR-QUERY-LEN
          WHEN ACT-CREATIVE-GRID
              CALL "CREATIVE-GRID-STACK" USING CLIENT-STATE L-ARG WS-COUNT WS-ITEM
+             COMPUTE WS-QUICK = FUNCTION MOD(IN-MODS / CC-MOD-SHIFT, 2)
              CALL "CREATIVE-GRID-CLICK" USING CLIENT-STATE WS-ITEM WS-COUNT WS-BUTTON WS-QUICK WS-CLONE
          WHEN ACT-CREATIVE-HOTBAR
+             IF L-ARG >= 101 OR L-ARG = 37
+                 CALL "CREATIVE-ARMOR-CLICK" USING CLIENT-STATE L-ARG
+                 GOBACK
+             END-IF
+             COMPUTE WS-QUICK = FUNCTION MOD(IN-MODS / CC-MOD-SHIFT, 2)
+*>           5.3, 7.1 rules 8 and 9 (the survival tab's delete slot, argument 99): a shift click empties every slot of the inventory menu, any other click empties the cursor.
+             IF L-ARG = 99
+                 IF WS-QUICK = 1
+                     CALL "CREATIVE-DELETE-ALL" USING CLIENT-STATE
+                 ELSE
+                     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+                 END-IF
+                 GOBACK
+             END-IF
              COMPUTE WS-SLOT = L-ARG + 1
              MOVE PL-SLOT-COUNT(WS-SLOT) TO WS-HC
              MOVE PL-SLOT-ITEM(WS-SLOT) TO WS-HI
+*>           5.3 quickMoveStack: a shift click on a hotbar slot with a stack deletes it (and sends the empty slot).
+             IF WS-QUICK = 1 AND L-ARG < 9 AND WS-HC > 0
+                 MOVE 0 TO PL-SLOT-COUNT(WS-SLOT) PL-SLOT-ITEM(WS-SLOT)
+                 COMPUTE WS-WIRE = 36 + L-ARG
+                 CALL "CREATIVE-SEND" USING CLIENT-STATE WS-WIRE PL-SLOT-COUNT(WS-SLOT) PL-SLOT-ITEM(WS-SLOT)
+                 GOBACK
+             END-IF
              EVALUATE TRUE
                  WHEN PL-CARRIED-COUNT = 0 AND WS-HC > 0
                      MOVE WS-HI TO PL-CARRIED-ITEM
@@ -275,11 +336,76 @@
                      MOVE WS-HI TO PL-CARRIED-ITEM
                      MOVE WS-HC TO PL-CARRIED-COUNT
              END-EVALUATE
-             COMPUTE WS-WIRE = 36 + L-ARG
+             IF L-ARG >= 9
+                 MOVE L-ARG TO WS-WIRE
+             ELSE
+                 COMPUTE WS-WIRE = 36 + L-ARG
+             END-IF
              CALL "CREATIVE-SEND" USING CLIENT-STATE WS-WIRE PL-SLOT-COUNT(WS-SLOT) PL-SLOT-ITEM(WS-SLOT)
      END-EVALUATE
      GOBACK.
  END PROGRAM CREATIVE-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREATIVE-SLOT-RIGHT.
+*> USING CLIENT-STATE, slot argument (0 to 8 the hotbar, 9 to 35 the main inventory of the survival tab): the right click of 40-1 3.4: an empty cursor takes half of the stack (the larger half), a stack on
+*> the cursor puts one into an empty slot or onto the same item (up to its maximum), a different item swaps; the slot change is sent as Set Creative Mode Slot.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-HC                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-WIRE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG.
+     COMPUTE WS-SLOT = L-ARG + 1
+     MOVE PL-SLOT-COUNT(WS-SLOT) TO WS-HC
+     MOVE PL-SLOT-ITEM(WS-SLOT) TO WS-HI
+     EVALUATE TRUE
+         WHEN PL-CARRIED-COUNT = 0 AND WS-HC > 0
+             COMPUTE WS-HALF = (WS-HC + 1) / 2
+             MOVE WS-HI TO PL-CARRIED-ITEM
+             MOVE WS-HALF TO PL-CARRIED-COUNT
+             SUBTRACT WS-HALF FROM PL-SLOT-COUNT(WS-SLOT)
+             IF PL-SLOT-COUNT(WS-SLOT) = 0
+                 MOVE 0 TO PL-SLOT-ITEM(WS-SLOT)
+             END-IF
+         WHEN PL-CARRIED-COUNT > 0 AND WS-HC = 0
+             MOVE PL-CARRIED-ITEM TO PL-SLOT-ITEM(WS-SLOT)
+             MOVE 1 TO PL-SLOT-COUNT(WS-SLOT)
+             SUBTRACT 1 FROM PL-CARRIED-COUNT
+             IF PL-CARRIED-COUNT = 0
+                 MOVE 0 TO PL-CARRIED-ITEM
+             END-IF
+         WHEN PL-CARRIED-COUNT > 0 AND PL-CARRIED-ITEM = WS-HI
+             CALL "CREATIVE-MAX-STACK" USING CLIENT-STATE WS-HI WS-MAX
+             IF WS-HC < WS-MAX
+                 ADD 1 TO PL-SLOT-COUNT(WS-SLOT)
+                 SUBTRACT 1 FROM PL-CARRIED-COUNT
+                 IF PL-CARRIED-COUNT = 0
+                     MOVE 0 TO PL-CARRIED-ITEM
+                 END-IF
+             END-IF
+         WHEN PL-CARRIED-COUNT > 0
+             MOVE PL-CARRIED-ITEM TO PL-SLOT-ITEM(WS-SLOT)
+             MOVE PL-CARRIED-COUNT TO PL-SLOT-COUNT(WS-SLOT)
+             MOVE WS-HI TO PL-CARRIED-ITEM
+             MOVE WS-HC TO PL-CARRIED-COUNT
+         WHEN OTHER
+             GOBACK
+     END-EVALUATE
+     IF L-ARG >= 9
+         MOVE L-ARG TO WS-WIRE
+     ELSE
+         COMPUTE WS-WIRE = 36 + L-ARG
+     END-IF
+     CALL "CREATIVE-SEND" USING CLIENT-STATE WS-WIRE PL-SLOT-COUNT(WS-SLOT) PL-SLOT-ITEM(WS-SLOT)
+     GOBACK.
+ END PROGRAM CREATIVE-SLOT-RIGHT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-INPUT.
@@ -313,6 +439,9 @@
  01 WS-SCROLLABLE          BINARY-LONG.
  01 WS-SHOWTITLE           BINARY-LONG.
  01 WS-TITLE               PIC X(32).
+ 01 WS-ZQ                  BINARY-LONG VALUE 0.
+ 01 WS-ZC                  BINARY-LONG VALUE 0.
+ 01 WS-CELL                BINARY-LONG.
  01 WS-LINE                PIC X(64).
  01 WS-LEN                 BINARY-LONG.
  LINKAGE SECTION.
@@ -340,6 +469,31 @@
      END-IF
      IF IN-BUTTON-RELEASED(CC-BUTTON-LEFT + 1) = 1
          MOVE 0 TO CR-SCROLLING
+     END-IF
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1
+         COMPUTE WS-X = IN-CLICK-X / CL-GUI-SCALE
+         COMPUTE WS-Y = IN-CLICK-Y / CL-GUI-SCALE
+         IF WS-X >= WS-LEFT + 8 AND WS-X < WS-LEFT + 170 AND WS-Y >= WS-TOP + 111 AND WS-Y < WS-TOP + 129
+             COMPUTE WS-COUNT = (WS-X - WS-LEFT - 8) / 18
+             CALL "CREATIVE-SLOT-RIGHT" USING CLIENT-STATE WS-COUNT
+         END-IF
+         IF WS-TYPE = 2 AND WS-X >= WS-LEFT + 8 AND WS-X < WS-LEFT + 170 AND WS-Y >= WS-TOP + 53 AND WS-Y < WS-TOP + 107
+             COMPUTE WS-CELL = (WS-Y - WS-TOP - 53) / 18
+             COMPUTE WS-COUNT = 9 + WS-CELL * 9 + (WS-X - WS-LEFT - 8) / 18
+             CALL "CREATIVE-SLOT-RIGHT" USING CLIENT-STATE WS-COUNT
+         END-IF
+     END-IF
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND WS-TYPE NOT = 2
+         COMPUTE WS-X = IN-CLICK-X / CL-GUI-SCALE
+         COMPUTE WS-Y = IN-CLICK-Y / CL-GUI-SCALE
+         IF WS-X >= WS-LEFT + 8 AND WS-X < WS-LEFT + 170 AND WS-Y >= WS-TOP + 17 AND WS-Y < WS-TOP + 107
+             COMPUTE WS-COUNT = (WS-X - WS-LEFT - 8) / 18
+             COMPUTE WS-CHANGED = (WS-Y - WS-TOP - 17) / 18
+             COMPUTE WS-CELL = 901 + WS-CHANGED * 9 + WS-COUNT
+             CALL "CREATIVE-GRID-STACK" USING CLIENT-STATE WS-CELL WS-COUNT WS-HIT
+             MOVE 1 TO WS-BUTTON
+             CALL "CREATIVE-GRID-CLICK" USING CLIENT-STATE WS-HIT WS-COUNT WS-BUTTON WS-ZQ WS-ZC
+         END-IF
      END-IF
      PERFORM VARYING WS-BUTTON FROM 0 BY 1 UNTIL WS-BUTTON > 1
          IF IN-BUTTON-PRESSED(WS-BUTTON + 1) = 1 AND PL-CARRIED-COUNT > 0
@@ -385,3 +539,67 @@
      END-IF
      GOBACK.
  END PROGRAM CREATIVE-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREATIVE-ARMOR-CLICK.
+*> USING CLIENT-STATE, slot argument (101 to 104 the armour slots 5 to 8 of the inventory menu, 37 the off-hand slot 45): a left click on the survival tab's wrappers (40-7 6.4): an empty cursor takes the stack,
+*> a stack on the cursor goes into an empty slot or swaps with the stack there (creative: nothing refuses an item); the change is sent as Set Creative Mode Slot with the menu slot number.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-HC                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-HD                  BINARY-LONG.
+ 01 WS-TMP                 BINARY-LONG.
+ 01 WS-WIRE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG.
+     IF L-ARG = 37
+         MOVE PL-OFFHAND-COUNT TO WS-HC
+         MOVE PL-OFFHAND-ITEM TO WS-HI
+         MOVE PL-OFFHAND-DAMAGE TO WS-HD
+         MOVE 45 TO WS-WIRE
+     ELSE
+         COMPUTE WS-N = L-ARG - 100
+         MOVE IX-COUNT(WS-N) TO WS-HC
+         MOVE IX-ITEM(WS-N) TO WS-HI
+         MOVE IX-DAMAGE(WS-N) TO WS-HD
+         COMPUTE WS-WIRE = L-ARG - 96
+     END-IF
+     IF PL-CARRIED-COUNT = 0 AND WS-HC = 0
+         GOBACK
+     END-IF
+     IF PL-CARRIED-COUNT = 0
+         MOVE WS-HI TO PL-CARRIED-ITEM
+         MOVE WS-HC TO PL-CARRIED-COUNT
+         MOVE 0 TO WS-HC WS-HI WS-HD
+     ELSE
+         IF WS-HC = 0
+             MOVE PL-CARRIED-ITEM TO WS-HI
+             MOVE PL-CARRIED-COUNT TO WS-HC
+             MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+         ELSE
+             MOVE PL-CARRIED-ITEM TO WS-N
+             MOVE PL-CARRIED-COUNT TO WS-TMP
+             MOVE WS-HI TO PL-CARRIED-ITEM
+             MOVE WS-HC TO PL-CARRIED-COUNT
+             MOVE WS-N TO WS-HI
+             MOVE WS-TMP TO WS-HC
+         END-IF
+         MOVE 0 TO WS-HD
+     END-IF
+     IF L-ARG = 37
+         MOVE WS-HC TO PL-OFFHAND-COUNT
+         MOVE WS-HI TO PL-OFFHAND-ITEM
+         MOVE WS-HD TO PL-OFFHAND-DAMAGE
+     ELSE
+         COMPUTE WS-N = L-ARG - 100
+         MOVE WS-HC TO IX-COUNT(WS-N)
+         MOVE WS-HI TO IX-ITEM(WS-N)
+         MOVE WS-HD TO IX-DAMAGE(WS-N)
+     END-IF
+     CALL "CREATIVE-SEND" USING CLIENT-STATE WS-WIRE WS-HC WS-HI
+     GOBACK.
+ END PROGRAM CREATIVE-ARMOR-CLICK.

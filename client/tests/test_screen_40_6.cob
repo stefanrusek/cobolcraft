@@ -15,6 +15,7 @@
  01 WS-SERVER              BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE 1.
  01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
  01 WS-PACKET              BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-KIND-OUT            BINARY-LONG.
@@ -105,14 +106,14 @@
      MOVE 101 TO WS-TYPE
      CALL "MOUNT-VARIANT" USING WS-TYPE WS-KIND-OUT WS-SADDLE WS-BODY WS-ICON WS-KEY WS-KNOWN
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12 40-6§3.3 an entity type that is no mount (101, pig) is not known" TO TL-CASE
+     MOVE "acceptance US12 40-6§3 an entity type that is no mount (101, pig) is not known" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-KNOWN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Own slot counts (7.1): 2 + 3 columns; the frame is the default 176 x 166 with the player inventory at (8, 84).
      MOVE 100 TO WS-D1
      PERFORM FRAME-NUMBERS
-     MOVE "acceptance US12 40-6§2.2 a horse (no chest): 2 own slots, 176 x 166, inventory at (8, 84)" TO TL-CASE
+     MOVE "acceptance US12 40-6§2 a horse (no chest): 2 own slots, 176 x 166, inventory at (8, 84)" TO TL-CASE
      MOVE 2176166 TO TL-EXPECTED-N
      MOVE WS-D7 TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -279,6 +280,46 @@
      MOVE "acceptance US12 40-6§4 a packet with 6 chest columns (above the 5 of the screen) is refused: no menu (coverage of the guard)" TO TL-CASE
      COMPUTE TL-EXPECTED-N = SCR-WORLD
      COMPUTE TL-OBSERVED-N = SM-SCREEN + BM-ID * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   End to end through the frame loop: a llama (3 columns) opened by the packet, a click on its first chest slot sends Container Click for menu slot 2, and the inventory key closes the screen
+*>   with Container Close for container 1.
+     MOVE 79 TO EN-TYPE(1)
+     MOVE 3 TO WS-COLS
+     PERFORM OPEN-MOUNT
+     MOVE 0 TO IN-CAPTURED
+     MOVE 0 TO PL-MODE
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-EKIND(1)
+     MOVE 320 TO WS-X(1) WS-X(2) WS-X(3)
+     MOVE 126 TO WS-Y(1) WS-Y(2) WS-Y(3)
+     MOVE CC-EV-BUTTON-DOWN TO WS-EKIND(2)
+     MOVE CC-EV-BUTTON-UP TO WS-EKIND(3)
+     MOVE 3 TO WS-N
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-6§6 a click on the llama's first chest slot sends a Container Click packet for container 1, menu slot 2" TO TL-CASE
+     MOVE WS-TEXT(6:12) TO TL-OBSERVED
+     MOVE "120100000200" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-KEY-DOWN TO WS-EKIND(1)
+     MOVE CC-KEY-E TO WS-A(1) WS-A(2)
+     MOVE CC-EV-KEY-UP TO WS-EKIND(2)
+     MOVE 2 TO WS-N
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-TEXT
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     MOVE "acceptance US12 40-6§6 the inventory key closes the mount screen: Container Close for container 1 (13 01) and the world screen" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-E1
+     STRING WS-TEXT(1:4) " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1301 5" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

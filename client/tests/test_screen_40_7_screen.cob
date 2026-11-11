@@ -120,6 +120,34 @@
      MOVE "39ffff05030000" TO TL-EXPECTED
      MOVE WS-HEX(1:14) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Shift and right clicks on the grid (building blocks tab, slot 901 holds item 1, maximum stack 64): a shift left click takes the maximum, a right click lowers the carried stack by one.
+     MOVE 75 TO WS-D1
+     MOVE 40 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE CC-MOD-SHIFT TO IN-MODS
+     MOVE 75 TO WS-D1
+     MOVE 75 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE 0 TO IN-MODS
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-7§7.3 a shift left click on a grid slot of item 1 with an empty cursor takes the maximum stack: 1 x 64" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 1 * 100 + 64
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-ITEM * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     MOVE 150 TO WS-EX(1) WS-EX(2)
+     MOVE 150 TO WS-EY(1) WS-EY(2)
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND(2)
+     MOVE CC-BUTTON-RIGHT TO WS-A(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-7§7.3 a right click on the same item lowers the carried stack by one: 63" TO TL-CASE
+     MOVE 63 TO TL-EXPECTED-N
+     MOVE PL-CARRIED-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
 *>   The search tab: typing flank filters to the two flanks.
      MOVE 236 TO WS-D1
      MOVE 34 TO WS-D2
@@ -234,7 +262,7 @@
      MOVE CC-EV-SCROLL TO WS-KIND(1)
      MOVE -1.0 TO WS-EY(1)
      PERFORM FRAME
-     MOVE "acceptance US12 40-7§5.2 a wheel step down scrolls: the scroll is above 0" TO TL-CASE
+     MOVE "acceptance US12 40-7§5 a wheel step down scrolls: the scroll is above 0" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF CR-SCROLL > 0

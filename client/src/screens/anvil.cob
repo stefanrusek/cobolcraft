@@ -134,6 +134,19 @@
          MOVE 0 TO WS-LENGTH
      END-IF
      CALL "ANVIL-NAME-SET" USING CLIENT-STATE WS-NAME WS-LENGTH
+*>   3.3 createResult, the part this client can compute (the server's Set Container Slot and Set Container Data overwrite it): with an empty right slot (rename only, steps 4, 11 to 14) a non-blank name
+*>   that differs from the default gives a copy of the left stack and the cost 1; a blank name gives no result and cost 0 (the client keeps no custom_name to remove). A right stack is the server's.
+     IF BX-COUNT(2) = 0
+         IF WS-LENGTH > 0
+             MOVE BX-ITEM(1) TO BX-ITEM(3)
+             MOVE BX-COUNT(1) TO BX-COUNT(3)
+             MOVE BX-DAMAGE(1) TO BX-DAMAGE(3)
+             MOVE 1 TO BM-DATA(1)
+         ELSE
+             MOVE 0 TO BX-ITEM(3) BX-COUNT(3) BX-DAMAGE(3)
+             MOVE 0 TO BM-DATA(1)
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM ANVIL-RESPOND.
 

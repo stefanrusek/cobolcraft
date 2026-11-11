@@ -1,0 +1,225 @@
+*> Test US12-client (spec 002; docs/protocol/40-menus-9-block-editor-screens.md sections 2.1, 4.3 and 4.5): the minecart command screen through the real stack and the Block Entity Data refresh of the command
+*> block screen. A command_block_minecart (entity type 29) used with creative and level 2 opens the screen with no mode cycles, previous output at y 150; Done sends Set Command Minecart 0x38; a Block Entity
+*> Data packet (05a 0x06) for the open command block fills the command box and the track flag; a packet for another position or while another screen is open changes nothing.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SCREEN-40-9-MC.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY CONTENT.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 512.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-X                   BINARY-LONG VALUE 1.
+ 01 WS-Y                   BINARY-LONG VALUE 2.
+ 01 WS-Z                   BINARY-LONG VALUE 3.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW                 PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-BODY                PIC X(8).
+ 01 WS-BLEN                BINARY-LONG VALUE 1.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 14.
+ 01 WS-PACKET             BINARY-LONG.
+ 01 WS-CONN               BINARY-LONG VALUE CONN-GAME.
+ 01 WS-EDT                PIC 9.
+ 01 WS-NAME               PIC X(32).
+ 01 WS-TEXT               PIC X(32).
+ 01 WS-LEN                BINARY-LONG.
+ 01 WS-KEYB                PIC X(112).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-D1                  BINARY-LONG.
+ 01 WS-D2                  BINARY-LONG.
+ 01 WS-MS                  BINARY-LONG VALUE 20.
+ 01 WS-E1                  PIC -(7)9.
+ 01 WS-E2                  PIC -(7)9.
+ 01 WS-E3                  PIC -(7)9.
+ 01 WS-E4                  PIC -(7)9.
+ 01 WS-EVENTS.
+    05 WS-EVENT OCCURS 4 TIMES.
+       10 WS-KIND          BINARY-LONG.
+       10 WS-A             BINARY-LONG.
+       10 WS-B             BINARY-LONG.
+       10 WS-C             BINARY-LONG.
+       10 WS-EX            FLOAT-SHORT.
+       10 WS-EY            FLOAT-SHORT.
+
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 640 TO IN-WIN-W
+     MOVE 480 TO IN-WIN-H
+     MOVE 0 TO IN-CAPTURED
+     MOVE 1 TO PL-MODE
+     MOVE 2 TO PL-PERM
+     MOVE X"00" TO WS-BODY(1:1)
+     CALL "CONTENT-CLIENT-REGISTRY-ADD" USING WS-PACKET-ID WS-BODY WS-BLEN WS-STATUS
+     MOVE 7 TO EN-ID(1)
+     MOVE 1 TO EN-USED(1) EN-COUNT
+     MOVE 29 TO EN-TYPE(1)
+     MOVE 8 TO EN-ID(2)
+     MOVE 1 TO EN-USED(2)
+     MOVE 2 TO EN-COUNT
+     MOVE 5 TO EN-TYPE(2)
+     MOVE 8 TO WS-ID
+     CALL "MINECART-USE-CHECK" USING CLIENT-STATE WS-ID
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-9§2 an entity that is not a command block minecart opens nothing" TO TL-CASE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-PERM
+     MOVE 7 TO WS-ID
+     CALL "MINECART-USE-CHECK" USING CLIENT-STATE WS-ID
+     MOVE "acceptance US12 40-9§2 without the game master permission the minecart opens nothing" TO TL-CASE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO PL-PERM
+     CALL "MINECART-USE-CHECK" USING CLIENT-STATE WS-ID
+     MOVE "acceptance US12 40-9§4 using a command block minecart with creative and level 2 opens the command screen" TO TL-CASE
+     MOVE SCR-CMDBLOCK TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     PERFORM BOXES
+     MOVE "acceptance US12 40-9§4 minecart screen: previous output box (10, 150, 276), track cycle (290, 150, 20), Done and Cancel, and no mode, type or trigger cycles" TO TL-CASE
+     MOVE "F10:50:300x20 F10:150:276x20 B290:150:20x20 B6:192:150x20 B164:192:150x20 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 108 TO WS-A(1)
+     MOVE 115 TO WS-A(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     MOVE 300 TO WS-D1
+     MOVE 160 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE 50 TO WS-D1
+     MOVE 200 TO WS-D2
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     PERFORM CLICK-GUI
+     PERFORM FLUSH
+     MOVE "acceptance US12 40-9§4 Done sends Set Command Minecart 0x38: entity 7, command ls, track true" TO TL-CASE
+     MOVE "3807026c7301" TO TL-EXPECTED
+     MOVE WS-HEX(1:12) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Block Entity Data for the open command block.
+     MOVE "command_block" TO WS-KEYB
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYB WS-ID WS-ROW WS-STATUS
+     MOVE WS-ROW TO CT-BLOCK-ROW
+     MOVE FUNCTION NUMVAL(CT-BR-DEFAULT-STATE) TO WS-STATE
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 6 TO WS-PACKET
+     PERFORM SEND-BE
+     MOVE "acceptance US12 40-9§4 a Block Entity Data packet for the open command block sets the command (say hi) and the track flag (1)" TO TL-CASE
+     MOVE "say hi|1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE EB-TRACK TO WS-EDT
+     STRING EB-CMD(1:EB-CMD-LEN) "|" WS-EDT DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "ls" TO EB-CMD
+     MOVE 2 TO EB-CMD-LEN
+     MOVE 0 TO EB-TRACK
+     MOVE 9 TO WS-Y
+     PERFORM SEND-BE
+     MOVE 2 TO WS-Y
+     MOVE "acceptance US12 40-9§4 a Block Entity Data packet for another position changes nothing" TO TL-CASE
+     MOVE "ls|0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE EB-TRACK TO WS-EDT
+     STRING EB-CMD(1:EB-CMD-LEN) "|" WS-EDT DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SCR-WORLD TO WS-N
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-N
+     PERFORM SEND-BE
+     MOVE "acceptance US12 40-9§4 a Block Entity Data packet while another screen is open changes nothing" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CONTENT-CLOSE"
+     STOP RUN.
+
+ SEND-BE.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
+     MOVE 25 TO WS-I
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-I
+     MOVE -2 TO WS-I
+     MOVE SPACE TO WS-BODY(1:1)
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-BODY WS-I
+     MOVE 7 TO WS-I
+     MOVE "Command" TO WS-NAME
+     MOVE "say hi" TO WS-TEXT
+     MOVE 6 TO WS-LEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NAME WS-I WS-TEXT WS-LEN
+     MOVE 1 TO WS-LEN
+     MOVE 11 TO WS-I
+     MOVE "TrackOutput" TO WS-NAME
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NAME WS-I WS-LEN
+     MOVE 5 TO WS-I
+     MOVE "Other" TO WS-NAME
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NAME WS-I WS-LEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-PACKET
+     .
+
+ FRAME.
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     INITIALIZE WS-EVENTS
+     .
+
+ FLUSH.
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE SPACES TO WS-HEX
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     .
+
+ CLICK-GUI.
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-CURSOR TO WS-KIND(1)
+     COMPUTE WS-EX(1) = WS-D1 * 2
+     COMPUTE WS-EY(1) = WS-D2 * 2
+     MOVE WS-EX(1) TO WS-EX(2) WS-EX(3)
+     MOVE WS-EY(1) TO WS-EY(2) WS-EY(3)
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND(2)
+     MOVE CC-EV-BUTTON-UP TO WS-KIND(3)
+     MOVE 3 TO WS-N
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-N WS-MS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     INITIALIZE WS-EVENTS
+     .
+
+*> TL-OBSERVED: the field overlays (F) and the buttons (B) as "Fx:y:wxh " in widget order.
+ BOXES.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF (SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-ARG(WS-I) = SW-FIELD) OR SM-W-KIND(WS-I) = WK-BUTTON
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             MOVE SM-W-W(WS-I) TO WS-E3
+             MOVE SM-W-H(WS-I) TO WS-E4
+             IF SM-W-KIND(WS-I) = WK-BUTTON
+                 STRING "B" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) ":" FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             ELSE
+                 STRING "F" FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) ":" FUNCTION TRIM(WS-E3) "x" FUNCTION TRIM(WS-E4) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             END-IF
+         END-IF
+     END-PERFORM
+     .
+
+ END PROGRAM TEST-SCREEN-40-9-MC.
+
+ COPY CLTEST.

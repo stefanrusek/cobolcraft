@@ -280,6 +280,10 @@
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 17 OR L-ID = 18 OR L-ID = 19 OR L-ID = 20 OR L-ID = 42 OR L-ID = 60
                  OR L-ID = 98 OR L-ID = 107 OR L-ID = 110)
              CALL "INVENTORY-PACKET" USING CLIENT-STATE L-PACKET L-ID
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 6
+             CALL "BLOCK-ENTITY-DATA" USING CLIENT-STATE L-PACKET
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 129
+             CALL "TI-STATUS" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 61
              CALL "SIGN-OPEN" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 8
@@ -349,6 +353,9 @@
 *>           finished (standin §11.6).
              CALL "PB-GET-INT" USING L-PACKET WS-ID
              CALL "PB-GET-BYTE" USING L-PACKET WS-VALUE
+             IF WS-ID = PL-ENTITY-ID AND WS-VALUE >= 24 AND WS-VALUE <= 28
+                 COMPUTE PL-PERM = WS-VALUE - 24
+             END-IF
              IF WS-ID = PL-ENTITY-ID AND WS-VALUE = 9
                  MOVE 0 TO PL-EATING
              END-IF
