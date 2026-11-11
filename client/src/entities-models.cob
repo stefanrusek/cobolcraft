@@ -140,9 +140,10 @@
 *> Per part: visibility and the sines and cosines of its current rotation about x, y, z.
  01 WS-PARTS.
     05 WS-PT OCCURS 40 TIMES.
-       10 WS-VIS           PIC 9.
        10 WS-SA            FLOAT-LONG OCCURS 3 TIMES.
        10 WS-CA            FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-VIS-TABLE.
+    05 WS-VIS              PIC 9 OCCURS 41 TIMES.
  01 WS-ANG                 FLOAT-LONG OCCURS 3 TIMES.
  01 WS-P                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
@@ -269,14 +270,11 @@
          COMPUTE WS-OP-SIN(WS-J) = FUNCTION SIN(WS-T)
          COMPUTE WS-OP-COS(WS-J) = FUNCTION COS(WS-T)
      END-PERFORM
-*>   Per part: visibility (a hidden part hides its children) and the trigonometry of its rotation.
+*>   Per part: visibility (WS-VIS(p + 1); entry 1 is the visible root's parent, so a hidden part hides its children, whose parents come
+*>   first) and the trigonometry of its rotation.
+     MOVE 1 TO WS-VIS(1)
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
-         MOVE MM-VISIBLE(WS-P) TO WS-VIS(WS-P)
-         IF MM-PARENT(WS-P) > 0
-             IF WS-VIS(MM-PARENT(WS-P)) = 0
-                 MOVE 0 TO WS-VIS(WS-P)
-             END-IF
-         END-IF
+         COMPUTE WS-VIS(WS-P + 1) = MM-VISIBLE(WS-P) * WS-VIS(MM-PARENT(WS-P) + 1)
          MOVE MM-CXROT(WS-P) TO WS-ANG(1)
          MOVE MM-CYROT(WS-P) TO WS-ANG(2)
          MOVE MM-CZROT(WS-P) TO WS-ANG(3)
@@ -298,7 +296,7 @@
      MOVE MM-TEXW TO WS-RI(6)
      MOVE MM-TEXH TO WS-RI(7)
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
-         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > MM-NCUBES(WS-P) OR WS-VIS(WS-P) = 0
+         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > MM-NCUBES(WS-P) OR WS-VIS(WS-P + 1) = 0
              IF RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
                  MOVE MC-OX(WS-P, WS-C) TO WS-BI(1)
                  MOVE MC-OY(WS-P, WS-C) TO WS-BI(2)
