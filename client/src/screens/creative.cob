@@ -141,7 +141,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-MEMBER.
 *> USING tab, item, member out (1/0): the stand-in rule of the category tabs over the item facts of CL-ITEM-INFO (the open content set, else the stand-in table): building blocks the items
-*> that place a block, tools the tool classes, food and drinks the foods, ingredients the rest; item 0 is no stack; the other category tabs hold nothing.
+*> that place a block, tools the tool classes, food and drinks the foods, ingredients the rest; item 0 is no stack; the operator tab 13 holds the op_blocks plain list for a player with game master permission; the other category tabs hold nothing.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-COUNT               BINARY-LONG.
@@ -152,6 +152,7 @@
  01 WS-TOOL                PIC X.
  01 WS-FOOD                BINARY-LONG.
  01 WS-KNOWN               BINARY-LONG.
+ 01 WS-GM                  BINARY-LONG.
  01 WS-STATE.
     05 FILLER              PIC X.
  LINKAGE SECTION.
@@ -181,6 +182,17 @@
                  IF WS-BLOCK = 0 AND WS-TOOL = SPACE AND WS-FOOD = 0
                      MOVE 1 TO L-MEMBER
                  END-IF
+             WHEN 13
+*>               11.9 and the op_blocks generator: only with the operator permission; the plain part of the list (40-7 section 4).
+                 CALL "CAN-USE-GM" USING CLIENT-STATE WS-GM
+                 IF WS-GM = 1
+                     EVALUATE FUNCTION TRIM(WS-PATH)
+                         WHEN "command_block" WHEN "chain_command_block" WHEN "repeating_command_block"
+                         WHEN "command_block_minecart" WHEN "jigsaw" WHEN "structure_block" WHEN "structure_void"
+                         WHEN "barrier" WHEN "debug_stick" WHEN "test_instance_block" WHEN "test_block"
+                             MOVE 1 TO L-MEMBER
+                     END-EVALUATE
+                 END-IF
          END-EVALUATE
      END-IF
      GOBACK.
@@ -204,6 +216,11 @@
      MOVE 0 TO L-SHOWN
      IF L-TAB = 6 OR L-TAB = 7 OR L-TAB = 14
          MOVE 1 TO L-SHOWN
+     END-IF
+*>   11.9: the operator tab is in tabs() only with game master permission (and then always, 7 bottom tabs).
+     IF L-TAB = 13
+         CALL "CAN-USE-GM" USING CLIENT-STATE L-SHOWN
+         GOBACK
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-ITEMS
          CALL "CREATIVE-MEMBER" USING CLIENT-STATE L-TAB WS-I WS-MEMBER
@@ -372,6 +389,9 @@
  COPY CLSTATE.
  01 L-TAB                  BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-TAB.
+     IF CR-HB-LOADED = 0
+         CALL "HOTBAR-FILE-LOAD" USING CLIENT-STATE
+     END-IF
      CALL "CL-ITEM-COUNT-NOW" USING WS-ITEMS
      MOVE L-TAB TO CR-TAB
      MOVE 0 TO CR-COUNT
@@ -681,7 +701,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-HOTBAR-SAVE.
-*> USING CLIENT-STATE, hotbar (0 to 8): 10 Hotbar.storeFrom: the player's nine hotbar stacks are kept as saved hotbar number (in memory; hotbar.nbt is not written).
+*> USING CLIENT-STATE, hotbar (0 to 8): 10 Hotbar.storeFrom: the player's nine hotbar stacks are kept as saved hotbar number (and hotbar.nbt is written).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-J                   BINARY-LONG.
@@ -689,10 +709,14 @@
  COPY CLSTATE.
  01 L-HOTBAR               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-HOTBAR.
+     IF CR-HB-LOADED = 0
+         CALL "HOTBAR-FILE-LOAD" USING CLIENT-STATE
+     END-IF
      PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 8
          MOVE PL-SLOT-ITEM(WS-J + 1) TO CR-HB-ITEM(L-HOTBAR * 9 + WS-J + 1)
          MOVE PL-SLOT-COUNT(WS-J + 1) TO CR-HB-COUNT(L-HOTBAR * 9 + WS-J + 1)
      END-PERFORM
+     CALL "HOTBAR-FILE-SAVE" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CREATIVE-HOTBAR-SAVE.
 
@@ -707,6 +731,9 @@
  COPY CLSTATE.
  01 L-HOTBAR               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-HOTBAR.
+     IF CR-HB-LOADED = 0
+         CALL "HOTBAR-FILE-LOAD" USING CLIENT-STATE
+     END-IF
      PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 8
          MOVE CR-HB-ITEM(L-HOTBAR * 9 + WS-J + 1) TO PL-SLOT-ITEM(WS-J + 1)
          MOVE CR-HB-COUNT(L-HOTBAR * 9 + WS-J + 1) TO PL-SLOT-COUNT(WS-J + 1)
