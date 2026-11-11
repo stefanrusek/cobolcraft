@@ -35,7 +35,7 @@
  01 WS-TICKS               BINARY-DOUBLE.
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-SHUTDOWN            PIC X(16) VALUE Z"shutdown".
+ 01 WS-SHUTDOWN            PIC X(16) VALUE Z"stop".
  01 WS-STATE-BEFORE        BINARY-LONG.
  01 WS-LEVEL-DAT           PIC X(32) VALUE "world/level.dat".
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
@@ -219,7 +219,7 @@
          & "CORE-STOP (run state 2, level.dat saved) between the Stopping and Stopped lines"
          TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "run 1 then 2 saved | Shutting down | Stopping: saving world and disconnecting players | "
+     MOVE "run 1 then 2 saved | Stopping the server | Stopping: saving world and disconnecting players | "
          & "Stopped" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-STATE-BEFORE TO WS-EDIT

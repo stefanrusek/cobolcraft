@@ -183,7 +183,7 @@
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test main loop SV-ITERATE displays the drained console lines" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Unknown command nosuchcommand (howto lists the commands)" TO TL-EXPECTED
+     MOVE "Unknown or incomplete command. See below for error" TO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -1,6 +1,6 @@
 *> Test of SV-MAIN (server/src/loop.cob; contracts/test-harness.md §2; core-host-api.md §2): in a
 *> scratch directory, SV-MAIN starts the server, iterates until the run state reaches 2 (the §16
-*> stop command shutdown from test_sv_main.stdin), shuts down and ends the run with exit status 0
+*> stop command stop from test_sv_main.stdin), shuts down and ends the run with exit status 0
 *> (test_sv_main.expect). SV-MAIN never returns: the line after it would end the run with 9.
 *> Runs in build/server-test-sv-main.
  IDENTIFICATION DIVISION.
