@@ -118,18 +118,16 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector a volume above everyone: none" TO TL-CASE
      MOVE "msg @a[x=20,y=100,z=0,dx=0,dy=1,dz=0] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector level 1 or more: none have experie" & "nce" TO TL-CASE
      MOVE "msg @a[level=1..] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector level up to 0: everyone" TO TL-CASE
@@ -148,14 +146,11 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
-     MOVE "acceptance US13 /selector level below 0: none" TO TL-CASE
+     MOVE "acceptance US13 /selector a negative level is refused" TO TL-CASE
      MOVE "msg @a[level=..-1] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
+     MOVE "argument.entity.options.level.negative() |" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /selector gamemode creative: Alice" TO TL-CASE
      MOVE "msg @a[gamemode=creative] x" TO WS-LINE
      CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
@@ -214,18 +209,16 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector on some team: none" TO TL-CASE
      MOVE "msg @a[team=!] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector team red: none" TO TL-CASE
      MOVE "msg @a[team=red] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector not on team red: everyone" TO TL-CASE
@@ -246,18 +239,16 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector some tag: none" TO TL-CASE
      MOVE "msg @a[tag=!] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector tag hero: none" TO TL-CASE
      MOVE "msg @a[tag=hero] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector not tagged hero: everyone" TO TL-CASE
@@ -278,26 +269,23 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector not a player: none" TO TL-CASE
      MOVE "msg @a[type=!minecraft:player] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector type sodgrazer among players: none" TO TL-CASE
      MOVE "msg @a[type=cobolcraft:sodgrazer] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector a tag type: none" TO TL-CASE
      MOVE "msg @a[type=#cobolcraft:anything] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector x_rotation -90 to -30: Alice" TO TL-CASE
@@ -342,10 +330,9 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector y_rotation from 170: none (200 is " & "-160)" TO TL-CASE
      MOVE "msg @a[y_rotation=170..] x" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
      MOVE "acceptance US13 /selector limit 2 sorted nearest" TO TL-CASE
@@ -484,10 +471,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector a tag type: none" TO TL-CASE
      MOVE "kill @e[type=#cobolcraft:anything]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -628,10 +614,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector a volume with no mob" TO TL-CASE
      MOVE "kill @e[x=0,y=0,z=0,dx=1,dy=1,dz=1,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -646,10 +631,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector a mob has no name: a positive name" & " fails" TO TL-CASE
      MOVE "kill @e[name=Foo,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -682,10 +666,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector a mob has no team" TO TL-CASE
      MOVE "kill @e[team=red,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -736,10 +719,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector some team: none" TO TL-CASE
      MOVE "kill @e[team=!,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -754,10 +736,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector a mob has no tag" TO TL-CASE
      MOVE "kill @e[tag=hero,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -808,10 +789,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector some tag: none" TO TL-CASE
      MOVE "kill @e[tag=!,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -844,10 +824,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector x_rotation from 5: none" TO TL-CASE
      MOVE "kill @e[x_rotation=5..,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -862,10 +841,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector x_rotation up to -5: none" TO TL-CASE
      MOVE "kill @e[x_rotation=..-5,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -898,10 +876,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector y_rotation from 5: none" TO TL-CASE
      MOVE "kill @e[y_rotation=5..,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -916,10 +893,9 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /selector y_rotation up to -5: none" TO TL-CASE
      MOVE "kill @e[y_rotation=..-5,type=!minecraft:player]" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
-     MOVE 0 TO WS-EXPECTED-N
-     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
@@ -982,6 +958,67 @@
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
+     MOVE "summon cobolcraft:sodgrazer 100.5 64.0 100.5" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "summon cobolcraft:abend 110.5 64.0 100.5" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             MOVE 0 TO EN-HEALTH(WS-I)
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US13 /selector a mob with no health left is not s" & "elected" TO TL-CASE
+     MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             MOVE 10 TO EN-HEALTH(WS-I)
+             MOVE 2 TO EN-DIM(WS-I)
+         END-IF
+     END-PERFORM
+     MOVE 2 TO PL-DIM(CN-PLAYER(WS-ID-BOB))
+     MOVE "acceptance US13 /selector a distance limits the selection to" & " the source's dimension: mobs elsewhere are not selected" TO TL-CASE
+     MOVE "kill @e[distance=..1000,type=!minecraft:player]" TO WS-LINE
+     MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /selector players in another dimension are n" & "ot selected by a distance" TO TL-CASE
+     MOVE "msg @a[distance=..1000] x" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
+     MOVE 2 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-BOB WS-DISCARD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             MOVE PL-DIM(CN-PLAYER(WS-ID-OPAL)) TO EN-DIM(WS-I)
+         END-IF
+     END-PERFORM
+     MOVE PL-DIM(CN-PLAYER(WS-ID-OPAL)) TO PL-DIM(CN-PLAYER(WS-ID-BOB))
+     MOVE "kill @e[type=cobolcraft:sodgrazer]" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "kill @e[type=cobolcraft:abend]" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "kill @e[type=cobolcraft:loose_item]" TO WS-LINE
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     MOVE "acceptance US13 /selector a name longer than 16 characters i" & "s no profile" TO TL-CASE
+     MOVE "op Abcdefghijklmnopq" TO WS-LINE
+     MOVE "argument.player.unknown()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /selector a UUID is not a known profile" TO TL-CASE
+     MOVE "op 00000000-0000-0000-0000-000000000000" TO WS-LINE
+     MOVE "argument.player.unknown()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /selector a selector over the players gives " & "their profiles" TO TL-CASE
+     MOVE "op @a[name=Bob]" TO WS-LINE
+     MOVE "commands.op.success(Bob)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      GOBACK.
  END PROGRAM TEST-CMD-SELECTORS.
 

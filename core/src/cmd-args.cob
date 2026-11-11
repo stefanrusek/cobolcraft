@@ -244,9 +244,6 @@
  TEST-LEVEL.
      IF (SL-LEVEL-AUX = 1 OR SL-LEVEL-AUX = 3) AND SL-LEVEL-MIN > 0
          MOVE 0 TO WS-OK
-     END-IF
-     IF (SL-LEVEL-AUX = 2 OR SL-LEVEL-AUX = 3) AND SL-LEVEL-MAX < 0
-         MOVE 0 TO WS-OK
      END-IF.
 
 *> The game mode masks: survival 1, creative 2 (the player's PL-MODE 0 and 1).
@@ -675,7 +672,7 @@
              MOVE SL-TEXT(1:SL-TEXT-LENGTH) TO BX-P-NAME(1)
              MOVE SL-TEXT-LENGTH TO BX-P-LENGTH(1)
              CALL "LOGIN-OFFLINE-UUID" USING BX-P-NAME(1) BX-P-LENGTH(1) BX-P-UUID(1)
-         WHEN SL-TYPE = 7 OR SL-TYPE = 8
+         WHEN BR-E-KEY NOT = SPACES OR SL-TYPE = 7 OR SL-TYPE = 8
              MOVE "argument.player.unknown" TO WS-KEY
              MOVE SPACES TO WS-A1 WS-A2
              CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
@@ -850,7 +847,6 @@
  01 WS-LX                  FLOAT-LONG.
  01 WS-LY                  FLOAT-LONG.
  01 WS-LZ                  FLOAT-LONG.
- 01 WS-EYE                 FLOAT-LONG VALUE 1.62.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -878,9 +874,6 @@
          MOVE BS-X TO L-X
          MOVE BS-Y TO L-Y
          MOVE BS-Z TO L-Z
-         IF BS-ANCHOR = 1
-             ADD WS-EYE TO L-Y
-         END-IF
          COMPUTE L-X = L-X + WS-FX * BA-NUM(L-INDEX, 3) + WS-UX * BA-NUM(L-INDEX, 2) + WS-LX * BA-NUM(L-INDEX, 1)
          COMPUTE L-Y = L-Y + WS-FY * BA-NUM(L-INDEX, 3) + WS-UY * BA-NUM(L-INDEX, 2) + WS-LY * BA-NUM(L-INDEX, 1)
          COMPUTE L-Z = L-Z + WS-FZ * BA-NUM(L-INDEX, 3) + WS-UZ * BA-NUM(L-INDEX, 2) + WS-LZ * BA-NUM(L-INDEX, 1)

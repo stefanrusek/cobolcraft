@@ -170,6 +170,33 @@
  01 WS-L2                  BINARY-LONG.
  01 WS-RC                  BINARY-LONG VALUE -1.
  PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The message of the found items: success or test (maxCount 0), single when one player held some, else multiple.
+ TELL-FOUND.
+     IF WS-LIMITED = 1 AND WS-MAX = 0
+         IF WS-HOLDERS = 1
+             MOVE "commands.clear.test.single" TO WS-KEY
+         ELSE
+             MOVE "commands.clear.test.multiple" TO WS-KEY
+         END-IF
+     ELSE
+         IF WS-HOLDERS = 1
+             MOVE "commands.clear.success.single" TO WS-KEY
+         ELSE
+             MOVE "commands.clear.success.multiple" TO WS-KEY
+         END-IF
+     END-IF
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-INT" USING PB-TEXT WS-TOTAL
+     IF WS-HOLDERS = 1
+         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST-HOLDER) PL-NAME-LENGTH(WS-LAST-HOLDER)
+     ELSE
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-HOLDERS
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+ MAIN-LINE.
      MOVE -1 TO WS-ITEM
      CALL "BX-TARGETS-OR-SELF" USING WS-NAME-TARGETS WS-ROWS
      IF BR-R-FAILED = 0
@@ -252,30 +279,6 @@
          END-IF
      END-IF
      GOBACK.
-
-*> The message of the found items: success or test (maxCount 0), single when one player held some, else multiple.
- TELL-FOUND.
-     IF WS-LIMITED = 1 AND WS-MAX = 0
-         IF WS-HOLDERS = 1
-             MOVE "commands.clear.test.single" TO WS-KEY
-         ELSE
-             MOVE "commands.clear.test.multiple" TO WS-KEY
-         END-IF
-     ELSE
-         IF WS-HOLDERS = 1
-             MOVE "commands.clear.success.single" TO WS-KEY
-         ELSE
-             MOVE "commands.clear.success.multiple" TO WS-KEY
-         END-IF
-     END-IF
-     CALL "BX-KEY" USING PB-TEXT WS-KEY
-     CALL "CMD-TEXT-INT" USING PB-TEXT WS-TOTAL
-     IF WS-HOLDERS = 1
-         CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST-HOLDER) PL-NAME-LENGTH(WS-LAST-HOLDER)
-     ELSE
-         CALL "CMD-TEXT-INT" USING PB-TEXT WS-HOLDERS
-     END-IF
-     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
  END PROGRAM CX-CLEAR.
 
  IDENTIFICATION DIVISION.
