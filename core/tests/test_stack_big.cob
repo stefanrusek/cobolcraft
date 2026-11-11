@@ -1,0 +1,100 @@
+*> Test of the large component values of the stack patch pool (core/src/stack-patch.cob; contract PROTO.cpy PB-ISX-VALUE-MAX 2048): a component of
+*> 1002 bytes (a container of many stacks) is set, read back whole, exported to the wire stack and interned again to the same handle, written
+*> to the wire and read, and kept in and taken from the known-player pool through the stack NBT of the player file.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STACK-BIG.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
+ 01 WS-VALUE               PIC X(2048).
+ 01 WS-BACK                PIC X(2048).
+ 01 WS-HANDLE              BINARY-LONG VALUE 0.
+ 01 WS-HANDLE2             BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG VALUE 77.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-LONG                BINARY-LONG VALUE 1002.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-KP                  BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-KP2                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "T" TO TL-MODE
+*>   A container component of 250 stacks of one item (count 1, item 2, no components): VarInt 250 then 250 x 4 bytes = 1002 bytes.
+     MOVE SPACES TO WS-VALUE
+     MOVE FUNCTION CHAR(251) TO WS-VALUE(1:1)
+     MOVE X"01" TO WS-VALUE(2:1)
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 249
+         MOVE X"01020000" TO WS-VALUE(WS-I * 4 + 3:4)
+     END-PERFORM
+     CALL "SP-SET-COMPONENT-X" USING WS-HANDLE WS-TYPE WS-VALUE WS-LONG
+     MOVE "test stack big a 1002-byte component value is read back whole (length, first and last byte)" TO TL-CASE
+     CALL "SP-GET-COMPONENT-X" USING WS-HANDLE WS-TYPE WS-BACK WS-LENGTH WS-FOUND
+     MOVE WS-LENGTH TO WS-EDIT
+     MOVE WS-FOUND TO WS-EDIT2
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-BACK(1:1002) = WS-VALUE(1:1002)
+         STRING "same " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     ELSE
+         STRING "different " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE "same 1002 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test stack big the wire stack written and read keeps the 1002 bytes and interns to the same handle" TO TL-CASE
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 2 TO WS-ITEM
+     CALL "SP-EXPORT" USING WS-ITEM WS-ONE WS-HANDLE PB-ITEMSTACK-X
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE 0 TO PB-POS
+     INITIALIZE PB-ITEMSTACK-X
+     CALL "PB-GET-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     CALL "SP-INTERN" USING PB-ITEMSTACK-X WS-HANDLE2
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-HANDLE2 = WS-HANDLE AND WS-HANDLE > 0
+         MOVE "same handle" TO TL-OBSERVED
+     ELSE
+         MOVE WS-HANDLE2 TO WS-EDIT
+         STRING "handle " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE "same handle" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test stack big the stack NBT of the player file keeps the 1002 bytes (keep, write, read, take)" TO TL-CASE
+     CALL "KX-PATCH-KEEP" USING WS-HANDLE WS-KP
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-ONE WS-KP
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "KX-PATCH-FREE" USING WS-KP
+     MOVE 0 TO PB-POS
+     CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-COUNT WS-KP2
+     CALL "KX-PATCH-TAKE" USING WS-KP2 WS-HANDLE2
+     CALL "KX-PATCH-FREE" USING WS-KP2
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-HANDLE2 = WS-HANDLE AND WS-HANDLE > 0
+         MOVE "same handle" TO TL-OBSERVED
+     ELSE
+         MOVE WS-HANDLE2 TO WS-EDIT
+         STRING "handle " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     MOVE "same handle" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-STACK-BIG.
+
+ COPY CORETEST.

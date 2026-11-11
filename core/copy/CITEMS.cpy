@@ -15,13 +15,13 @@
 *> of first use, at most RP-MAX-LINES lines; a recipe with more lines, and a shaped recipe (the crafting bench's, which
 *> needs the 3 x 3 grid), is not held here.
  78 TOOL-BREAK-DIVISOR      VALUE 4.
- 78 CI-MAX-ITEMS            VALUE 1500.
+ 78 CI-MAX-ITEMS            VALUE 2048.
  78 CI-MAX-ENTITIES         VALUE 200.
  78 RP-MAX                  VALUE 64.
  78 RP-MAX-LINES            VALUE 3.
  01 CORE-ITEMS EXTERNAL.
     05 IT-COUNT               BINARY-LONG.
-    05 IT-ENTRY OCCURS 1500 TIMES.
+    05 IT-ENTRY OCCURS 2048 TIMES.
        10 IT-KEY             PIC X(48).
        10 IT-KEY-LENGTH      BINARY-LONG.
        10 IT-PLACES-STATE    BINARY-LONG.

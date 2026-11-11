@@ -1,0 +1,204 @@
+*> Test of 31-2 section 2 (Shared facts this document relies on; T0869): the per-slot maximum, the Items list (omitted when empty, slots outside the container ignored on load), CustomName, lock and loot table keys, the container signal, and the absence of client synchronisation for the types of 31-2. The scattering of Containers.dropItemStack (item 7) draws from the level's random source and is not part of this test.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-2-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 2.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-X                   BINARY-LONG VALUE 5.
+ 01 WS-Y                   BINARY-LONG VALUE 70.
+ 01 WS-Z                   BINARY-LONG VALUE 5.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-KEY32               PIC X(32).
+ 01 WS-NAME                PIC X(32).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-HOPPER              BINARY-LONG.
+ 01 WS-DISPENSER           BINARY-LONG.
+ 01 WS-DROPPER             BINARY-LONG.
+ 01 WS-SRC                BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-SYNC-TYPES.
+    05 FILLER              PIC X(22) VALUE "0005061217181927283842".
+ 01 FILLER REDEFINES WS-SYNC-TYPES.
+    05 WS-SYNC-TYPE        PIC 99 OCCURS 11 TIMES.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "minecraft:hopper" TO WS-KEY
+     MOVE 16 TO WS-LEN
+     MOVE 18 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-HOPPER
+     ADD 1 TO WS-X
+     MOVE "minecraft:dispenser" TO WS-KEY
+     MOVE 19 TO WS-LEN
+     MOVE 5 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-DISPENSER
+     ADD 1 TO WS-X
+     MOVE "minecraft:dropper" TO WS-KEY
+     MOVE 17 TO WS-LEN
+     MOVE 6 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-DROPPER
+     MOVE "T" TO TL-MODE
+     MOVE "minecraft:chest" TO WS-KEY
+     MOVE 0 TO WS-C
+     MOVE 15 TO WS-LEN
+     MOVE 1 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-SRC
+     MOVE "acceptance US12 31-2§2 Shared facts: the per-slot maximum is min(99, the item's own maximum): 64 stays 64, 1 stays 1, 200 is 99" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 64 TO WS-A
+     CALL "BE-MAX-STACK" USING WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE 1 TO WS-A
+     CALL "BE-MAX-STACK" USING WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE 200 TO WS-A
+     CALL "BE-MAX-STACK" USING WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE "64 1 99" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§2 Shared facts: Items is not written when every slot is empty (the dispenser's tag is empty), written for a non-empty slot with Slot and count" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-DISPENSER TO WS-IDX
+     PERFORM SAVE-RENDER
+     MOVE 2 TO BE-SLOT-ITEM(WS-DISPENSER, 3)
+     MOVE 3 TO BE-SLOT-COUNT(WS-DISPENSER, 3)
+     PERFORM SAVE-RENDER
+     MOVE SPACES TO WS-KEY
+     MOVE IT-KEY(3) TO WS-KEY
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{} {Items:[{Slot:2,id:" FUNCTION TRIM(WS-KEY) ",count:3}]} " DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§2 Shared facts: a slot outside the container is ignored on load (a stack at slot 10 does not load into the 9-slot dropper) and the slot inside it does" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 2 TO BE-SLOT-ITEM(WS-SRC, 3)
+     MOVE 3 TO BE-SLOT-COUNT(WS-SRC, 3)
+     MOVE 2 TO BE-SLOT-ITEM(WS-SRC, 11)
+     MOVE 4 TO BE-SLOT-COUNT(WS-SRC, 11)
+     MOVE WS-DROPPER TO WS-IDX
+     PERFORM ROUNDTRIP
+     MOVE BE-SLOT-COUNT(WS-DROPPER, 3) TO WS-EDIT
+     MOVE BE-SLOT-COUNT(WS-DROPPER, 11) TO WS-EDIT2
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "3 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§2 Shared facts: CustomName and lock are written only when set, LootTable hides Items on load" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-DISPENSER TO WS-IDX
+     MOVE "Trap" TO BE-NAME(WS-DISPENSER)
+     MOVE 4 TO BE-NAME-LENGTH(WS-DISPENSER)
+     MOVE "minecraft:stick" TO BE-LOCK(WS-DISPENSER)
+     MOVE 15 TO BE-LOCK-LENGTH(WS-DISPENSER)
+     MOVE 0 TO BE-SLOT-COUNT(WS-DISPENSER, 3)
+     PERFORM SAVE-RENDER
+     MOVE "minecraft:chests/x" TO BE-LOOT(WS-SRC)
+     MOVE 18 TO BE-LOOT-LENGTH(WS-SRC)
+     MOVE WS-DROPPER TO WS-IDX
+     PERFORM ROUNDTRIP
+     MOVE BE-LOOT-LENGTH(WS-DROPPER) TO WS-EDIT
+     MOVE BE-SLOT-COUNT(WS-DROPPER, 3) TO WS-EDIT2
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE "{lock:{items:minecraft:stick},CustomName:Trap} 18 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§2 Shared facts: the container signal of a hopper (size 5): empty 0, one item 1, five full stacks 15" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 2 TO WS-ITEM
+     MOVE 0 TO WS-A
+     CALL "BE-SIGNAL" USING WS-HOPPER WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE 2 TO BE-SLOT-ITEM(WS-HOPPER, 1)
+     MOVE 1 TO BE-SLOT-COUNT(WS-HOPPER, 1)
+     CALL "BE-SIGNAL" USING WS-HOPPER WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE 2 TO BE-SLOT-ITEM(WS-HOPPER, WS-I)
+         MOVE 64 TO BE-SLOT-COUNT(WS-HOPPER, WS-I)
+     END-PERFORM
+     CALL "BE-SIGNAL" USING WS-HOPPER WS-A WS-B
+     MOVE WS-B TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE "0 1 15" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§2 Shared facts: none of the types of 31-2 has an update tag or packet for the client" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-C
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         MOVE WS-SYNC-TYPE(WS-I) TO WS-T
+         CALL "BE-SYNC-INFO" USING WS-T WS-A WS-B
+         ADD WS-A TO WS-C
+         ADD WS-B TO WS-C
+     END-PERFORM
+     MOVE WS-C TO WS-EDIT
+     STRING "sync " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "sync 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ROUNDTRIP.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-SRC WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+*> Saves entity WS-IDX in form WS-FORM and appends the rendered compound to WS-TEXT.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-TYPE10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR.
+ END PROGRAM TEST-BE-31-2-2.
+
+ COPY CORETEST.

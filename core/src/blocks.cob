@@ -312,6 +312,7 @@
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+     CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 1 TO L-PLACED
      GOBACK.
@@ -338,6 +339,9 @@
  01 WS-BED                 BINARY-LONG.
  01 WS-BONE                BINARY-LONG.
  01 WS-BONE-USED           BINARY-LONG.
+ 01 WS-CONT                BINARY-LONG.
+ 01 WS-SHELF               BINARY-LONG.
+ 01 WS-OPENED              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
  LINKAGE SECTION.
@@ -364,6 +368,14 @@
      END-IF
      CALL "GB-HELD-BONEMEAL" USING WS-ITEM WS-BONE
      MOVE 0 TO WS-BONE-USED
+     CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
+     MOVE 0 TO WS-SHELF
+*>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
+     IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
+         MOVE 0 TO WS-CONT
+     ELSE
+         CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
+     END-IF
      EVALUATE TRUE
          WHEN WS-TOOL = 1
              CONTINUE
@@ -372,6 +384,10 @@
          WHEN WS-BENCH = 1
              CONTINUE
          WHEN WS-BED = 1
+             CONTINUE
+         WHEN WS-CONT > 0
+             CONTINUE
+         WHEN WS-SHELF = 1
              CONTINUE
          WHEN PSB-HAND NOT = 0
              CONTINUE
@@ -392,6 +408,9 @@
      END-IF
      IF WS-BED = 1 AND PSB-HAND = 0
          CALL "WORLDSIM-SLEEP-USE" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-CONT > 0
+         CALL "MENU-CONT-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-OPENED
      END-IF
      IF WS-PLACED = 1 AND PL-MODE(WS-ROW) = 0
          CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE

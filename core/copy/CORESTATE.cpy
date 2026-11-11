@@ -126,6 +126,7 @@
        10 PL-EXHAUSTION      FLOAT-LONG.
        10 PL-SATURATION      FLOAT-LONG.         *> 17 section 4.9: 0 to the food level, 5.0 for a new player
        10 PL-SPRINTING       PIC 9.
+       10 PL-SNEAKING        PIC 9.              *> 1 while Player Input (05c 0x2B) holds the shift flag 0x20
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.
