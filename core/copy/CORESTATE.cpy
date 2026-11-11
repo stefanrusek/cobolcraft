@@ -308,9 +308,10 @@
  78 ACCESS-OPERATORS        VALUE 1.
  78 ACCESS-BANS             VALUE 2.
  78 ACCESS-ALLOW            VALUE 3.
+ 78 ACCESS-IPBANS           VALUE 4.   *> IPv4 addresses (the name field holds the dotted text, the UUID is empty)
  01 CORE-ACCESS EXTERNAL.
     05 AC-ENFORCED           PIC 9.
-    05 AC-LIST OCCURS 3 TIMES.
+    05 AC-LIST OCCURS 4 TIMES.
        10 AC-COUNT           BINARY-LONG.
        10 AC-ENTRY OCCURS 256 TIMES.
           15 AC-NAME         PIC X(16).

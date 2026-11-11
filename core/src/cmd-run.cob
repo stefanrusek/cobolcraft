@@ -141,6 +141,10 @@
          WHEN BC-SAVE-ALL
              CALL "CX-SAVE-ALL"
          WHEN BC-SAVE-ON
+         WHEN BC-BAN-IP
+             CALL "CX-BAN-IP"
+         WHEN BC-PARDON-IP
+             CALL "CX-PARDON-IP"
          WHEN BC-SAVE-OFF
              CALL "CX-SAVE-SWITCH"
          WHEN OTHER

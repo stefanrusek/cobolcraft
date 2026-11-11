@@ -374,26 +374,42 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-BANLIST.
 *> banlist [ips | players] (16 §11.7, level 3): without bans commands.banlist.none; else commands.banlist.list [count] and one
-*> commands.banlist.entry [name, banned by, reason] per ban ("Banned by an operator." when it has no reason), not broadcast; `ips`
-*> lists no bans (BLOCKED with ban-ip: no IP list); the result is the number of bans listed.
+*> commands.banlist.entry [name or IP, banned by, reason] per ban ("Banned by an operator." when it has no reason), players first, then the
+*> IP addresses (both for the plain form), not broadcast; the result is the number of bans listed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY BRRUN.
  COPY PROTO.
  01 WS-NAME-IPS            PIC X(32) VALUE "ips".
+ 01 WS-NAME-PLAYERS        PIC X(32) VALUE "players".
  01 WS-INDEX               BINARY-LONG.
+ 01 WS-INDEX-PLAYERS       BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
  01 WS-KEY                 PIC X(72).
  01 WS-DEFAULT             PIC X(24) VALUE "Banned by an operator.".
  01 WS-QUIET               BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      CALL "BX-LIT" USING WS-NAME-IPS WS-INDEX
-     MOVE AC-COUNT(2) TO WS-COUNT
+     CALL "BX-LIT" USING WS-NAME-PLAYERS WS-INDEX-PLAYERS
+     MOVE ACCESS-BANS TO WS-FIRST
+     MOVE ACCESS-IPBANS TO WS-LAST
      IF WS-INDEX > 0
-         MOVE 0 TO WS-COUNT
+         MOVE ACCESS-IPBANS TO WS-FIRST
      END-IF
+     IF WS-INDEX-PLAYERS > 0
+         MOVE ACCESS-BANS TO WS-LAST
+     END-IF
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-LIST FROM WS-FIRST BY 1 UNTIL WS-LIST > WS-LAST
+         IF WS-LIST = ACCESS-BANS OR WS-LIST = ACCESS-IPBANS
+             ADD AC-COUNT(WS-LIST) TO WS-COUNT
+         END-IF
+     END-PERFORM
      IF WS-COUNT = 0
          MOVE "commands.banlist.none" TO WS-KEY
          CALL "BX-KEY" USING PB-TEXT WS-KEY
@@ -403,18 +419,22 @@
          CALL "BX-KEY" USING PB-TEXT WS-KEY
          CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
          CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
-             MOVE "commands.banlist.entry" TO WS-KEY
-             CALL "BX-KEY" USING PB-TEXT WS-KEY
-             CALL "CMD-TEXT-ARG" USING PB-TEXT AC-NAME(2, WS-I) AC-NAME-LENGTH(2, WS-I)
-             CALL "CMD-TEXT-ARG" USING PB-TEXT AC-SOURCE(2, WS-I) AC-SOURCE-LENGTH(2, WS-I)
-             IF AC-REASON-LENGTH(2, WS-I) > 0
-                 CALL "CMD-TEXT-ARG" USING PB-TEXT AC-REASON(2, WS-I) AC-REASON-LENGTH(2, WS-I)
-             ELSE
-                 MOVE 22 TO WS-INDEX
-                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-DEFAULT WS-INDEX
+         PERFORM VARYING WS-LIST FROM WS-FIRST BY 1 UNTIL WS-LIST > WS-LAST
+             IF WS-LIST = ACCESS-BANS OR WS-LIST = ACCESS-IPBANS
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AC-COUNT(WS-LIST)
+                     MOVE "commands.banlist.entry" TO WS-KEY
+                     CALL "BX-KEY" USING PB-TEXT WS-KEY
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT AC-NAME(WS-LIST, WS-I) AC-NAME-LENGTH(WS-LIST, WS-I)
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT AC-SOURCE(WS-LIST, WS-I) AC-SOURCE-LENGTH(WS-LIST, WS-I)
+                     IF AC-REASON-LENGTH(WS-LIST, WS-I) > 0
+                         CALL "CMD-TEXT-ARG" USING PB-TEXT AC-REASON(WS-LIST, WS-I) AC-REASON-LENGTH(WS-LIST, WS-I)
+                     ELSE
+                         MOVE 22 TO WS-INDEX
+                         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-DEFAULT WS-INDEX
+                     END-IF
+                     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+                 END-PERFORM
              END-IF
-             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
          END-PERFORM
      END-IF
      MOVE WS-COUNT TO BR-R-RESULT
@@ -921,3 +941,242 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-WHITELIST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BX-IPV4.
+*> USING text (PIC X(64)), length, ok out, address out (PIC X(16), the text space padded: the identity of the entry): 1 when the text is a dotted IPv4 address
+*> (four numbers of 1 to 3 digits, each at most 255); IPv6 addresses are BLOCKED (an entry holds at most 16 characters).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-GROUPS              BINARY-LONG.
+ 01 WS-DIGITS              BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ 01 L-ADDRESS              PIC X(16).
+ PROCEDURE DIVISION USING L-TEXT L-LENGTH L-OK L-ADDRESS.
+     MOVE 1 TO L-OK
+     MOVE SPACES TO L-ADDRESS
+     IF L-LENGTH < 7 OR L-LENGTH > 15
+         MOVE 0 TO L-OK
+     ELSE
+         MOVE L-TEXT(1:L-LENGTH) TO L-ADDRESS
+         MOVE 1 TO WS-GROUPS
+         MOVE 0 TO WS-DIGITS WS-VALUE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-LENGTH
+             MOVE L-TEXT(WS-I:1) TO WS-CH
+             EVALUATE TRUE
+                 WHEN WS-CH >= "0" AND WS-CH <= "9"
+                     ADD 1 TO WS-DIGITS
+                     COMPUTE WS-VALUE = WS-VALUE * 10 + FUNCTION ORD(WS-CH) - 49
+                     IF WS-DIGITS > 3 OR WS-VALUE > 255
+                         MOVE 0 TO L-OK
+                     END-IF
+                 WHEN WS-CH = "."
+                     IF WS-DIGITS = 0
+                         MOVE 0 TO L-OK
+                     END-IF
+                     ADD 1 TO WS-GROUPS
+                     MOVE 0 TO WS-DIGITS WS-VALUE
+                 WHEN OTHER
+                     MOVE 0 TO L-OK
+             END-EVALUATE
+         END-PERFORM
+         IF WS-GROUPS NOT = 4 OR WS-DIGITS = 0
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BX-IPV4.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-BAN-IP.
+*> ban-ip <target> [<reason>] (16 §11.4, level 3): the target is an IPv4 address (a player's name would give that player's address: BLOCKED, the core
+*> keeps no peer address, so a name is commands.banip.invalid); an address already banned is commands.banip.failed; else it is added to the IP list
+*> (creation time, the source's name, forever, the reason when given) and commands.banip.success [address, reason] is broadcast ("Banned by an operator."
+*> when none was given); the result is the number of players disconnected (0: no player address is known).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-REASON         PIC X(32) VALUE "reason".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-INDEX-REASON        BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-ADDRESS             PIC X(16).
+ 01 WS-UUID                PIC X(16).
+ 01 WS-LIST                BINARY-LONG VALUE 4.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-REASON              PIC X(1024).
+ 01 WS-REASON-LENGTH       BINARY-LONG VALUE 0.
+ 01 WS-SHOWN               PIC X(1024).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-DEFAULT             PIC X(24) VALUE "Banned by an operator.".
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-NOW                 PIC X(32).
+ 01 WS-NOW-LENGTH          BINARY-LONG.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The failure WS-KEY with no arguments.
+ FAIL-PLAIN.
+     MOVE SPACES TO WS-A1 WS-A2
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+ MAIN-LINE.
+     MOVE 0 TO WS-REASON-LENGTH
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     COMPUTE WS-LENGTH = BA-END(WS-INDEX) - BA-START(WS-INDEX)
+     MOVE SPACES TO WS-TEXT
+     IF WS-LENGTH > 0 AND WS-LENGTH <= 64
+         MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-LENGTH) TO WS-TEXT
+     END-IF
+     CALL "BX-IPV4" USING WS-TEXT WS-LENGTH WS-OK WS-ADDRESS
+     CALL "BX-FIND" USING WS-NAME-REASON WS-INDEX-REASON
+     IF WS-INDEX-REASON > 0
+         CALL "BX-MESSAGE" USING WS-INDEX-REASON WS-REASON WS-REASON-LENGTH
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-OK = 0
+             MOVE "commands.banip.invalid" TO WS-KEY
+             PERFORM FAIL-PLAIN
+         WHEN OTHER
+             CALL "ACCESS-FIND" USING WS-LIST WS-ADDRESS WS-ROW
+             IF WS-ROW > 0
+                 MOVE "commands.banip.failed" TO WS-KEY
+                 PERFORM FAIL-PLAIN
+             END-IF
+     END-EVALUATE
+     IF BR-R-FAILED = 0
+         MOVE WS-ADDRESS TO WS-UUID
+         CALL "ACCESS-ADD" USING WS-LIST WS-ADDRESS WS-LENGTH WS-UUID WS-OUTCOME
+         MOVE AC-COUNT(WS-LIST) TO WS-ROW
+         CALL "BR-NOW-TEXT" USING WS-NOW WS-NOW-LENGTH
+         MOVE WS-NOW TO AC-CREATED(WS-LIST, WS-ROW)
+         MOVE WS-NOW-LENGTH TO AC-CREATED-LENGTH(WS-LIST, WS-ROW)
+         MOVE BS-NAME TO AC-SOURCE(WS-LIST, WS-ROW)
+         MOVE BS-NAME-LENGTH TO AC-SOURCE-LENGTH(WS-LIST, WS-ROW)
+         IF WS-REASON-LENGTH > 0
+             MOVE WS-REASON(1:WS-REASON-LENGTH) TO AC-REASON(WS-LIST, WS-ROW)
+             MOVE WS-REASON-LENGTH TO AC-REASON-LENGTH(WS-LIST, WS-ROW)
+             MOVE WS-REASON TO WS-SHOWN
+             MOVE WS-REASON-LENGTH TO WS-SHOWN-LENGTH
+         ELSE
+             MOVE WS-DEFAULT TO WS-SHOWN
+             MOVE 22 TO WS-SHOWN-LENGTH
+         END-IF
+         MOVE "commands.banip.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ADDRESS WS-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 0 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-BAN-IP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-BAN-IP.
+*> The forms of ban-ip (16 §11.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-BAN-IP.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "ban-ip <target:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "ban-ip <target:word> <reason:message>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-BAN-IP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PARDON-IP.
+*> pardon-ip <target> (16 §11.6, level 3): the target must be an IPv4 address (else commands.pardonip.invalid) that is banned (else
+*> commands.pardonip.failed); it leaves the IP list; commands.pardonip.success [address] is broadcast; the result is 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-ADDRESS             PIC X(16).
+ 01 WS-LIST                BINARY-LONG VALUE 4.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     COMPUTE WS-LENGTH = BA-END(WS-INDEX) - BA-START(WS-INDEX)
+     MOVE SPACES TO WS-TEXT
+     IF WS-LENGTH > 0 AND WS-LENGTH <= 64
+         MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-LENGTH) TO WS-TEXT
+     END-IF
+     CALL "BX-IPV4" USING WS-TEXT WS-LENGTH WS-OK WS-ADDRESS
+     MOVE 1 TO WS-OUTCOME
+     IF WS-OK = 1
+         CALL "ACCESS-REMOVE" USING WS-LIST WS-ADDRESS WS-OUTCOME
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-OK = 0
+             MOVE "commands.pardonip.invalid" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         WHEN WS-OUTCOME NOT = 0
+             MOVE "commands.pardonip.failed" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         WHEN OTHER
+             MOVE "commands.pardonip.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ADDRESS WS-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 1 TO BR-R-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-PARDON-IP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PARDON-IP.
+*> The form of pardon-ip (16 §11.6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PARDON-IP.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "pardon-ip <target:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-PARDON-IP.

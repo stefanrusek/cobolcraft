@@ -51,6 +51,8 @@
     05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "weather".
     05 FILLER PIC S9(9) BINARY VALUE 2.
+    05 FILLER PIC X(20) VALUE "ban-ip".
+    05 FILLER PIC S9(9) BINARY VALUE 3.
     05 FILLER PIC X(20) VALUE "banlist".
     05 FILLER PIC S9(9) BINARY VALUE 3.
     05 FILLER PIC X(20) VALUE "ban".
@@ -60,6 +62,8 @@
     05 FILLER PIC X(20) VALUE "op".
     05 FILLER PIC S9(9) BINARY VALUE 3.
     05 FILLER PIC X(20) VALUE "pardon".
+    05 FILLER PIC S9(9) BINARY VALUE 3.
+    05 FILLER PIC X(20) VALUE "pardon-ip".
     05 FILLER PIC S9(9) BINARY VALUE 3.
     05 FILLER PIC X(20) VALUE "save-all".
     05 FILLER PIC S9(9) BINARY VALUE 4.
@@ -72,7 +76,7 @@
     05 FILLER PIC X(20) VALUE "whitelist".
     05 FILLER PIC S9(9) BINARY VALUE 3.
  01 WS-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 31 TIMES.
+    05 WS-ROW OCCURS 33 TIMES.
        10 WS-ROW-NAME PIC X(20).
        10 WS-ROW-LEVEL PIC S9(9) BINARY.
  01 WS-I                   BINARY-LONG.
@@ -469,7 +473,7 @@
      END-IF
      MOVE 22 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands banlist is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban-ip is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -487,7 +491,7 @@
      END-IF
      MOVE 23 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands banlist is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -505,7 +509,7 @@
      END-IF
      MOVE 24 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands deop is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -523,7 +527,7 @@
      END-IF
      MOVE 25 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands op is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands deop is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -541,7 +545,7 @@
      END-IF
      MOVE 26 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands op is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -559,9 +563,9 @@
      END-IF
      MOVE 27 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-all is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -577,9 +581,9 @@
      END-IF
      MOVE 28 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-off is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon-ip is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -595,7 +599,7 @@
      END-IF
      MOVE 29 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-on is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-all is a root literal of level 4" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 4
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -613,7 +617,7 @@
      END-IF
      MOVE 30 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands stop is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-off is a root literal of level 4" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 4
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -630,6 +634,42 @@
          MOVE WS-POSITION TO WS-LAST-DEDICATED
      END-IF
      MOVE 31 TO WS-I
+     PERFORM FIND-ROOT-CHILD
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-on is a root literal of level 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
+     IF WS-NODE = 0
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-NODE > 0
+         MOVE 0 TO WS-POSITION
+         PERFORM POSITION-OF-NODE
+         IF WS-POSITION < WS-LAST-DEDICATED
+             MOVE 0 TO WS-ORDER-OK
+         END-IF
+         MOVE WS-POSITION TO WS-LAST-DEDICATED
+     END-IF
+     MOVE 32 TO WS-I
+     PERFORM FIND-ROOT-CHILD
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands stop is a root literal of level 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
+     IF WS-NODE = 0
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-NODE > 0
+         MOVE 0 TO WS-POSITION
+         PERFORM POSITION-OF-NODE
+         IF WS-POSITION < WS-LAST-DEDICATED
+             MOVE 0 TO WS-ORDER-OK
+         END-IF
+         MOVE WS-POSITION TO WS-LAST-DEDICATED
+     END-IF
+     MOVE 33 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands whitelist is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
