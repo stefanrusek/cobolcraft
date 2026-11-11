@@ -5,7 +5,8 @@
  78 BR-MAX-SOURCES        VALUE 1024.
  78 BR-MAX-RUN-NODES      VALUE 24.
 *> The source of the command: the player row (0 = the console), the permission level, the position (in the dimension
-*> row BS-DIM), the rotation, the entity anchor (0 feet, 1 eyes), silent (1: no feedback is sent) and forked.
+*> row BS-DIM), the rotation, the entity anchor (0 feet, 1 eyes), silent (1: no feedback is sent) and forked; BS-OUT the player row (0 = the console) that is told what the commands report (it stays
+*> the sender while execute as changes the executing entity BS-ROW).
  01 BR-SRC EXTERNAL.
     05 BS-ROW               BINARY-LONG.
     05 BS-LEVEL             BINARY-LONG.
@@ -21,7 +22,8 @@
     05 BS-NAME              PIC X(16).
     05 BS-FORKED            BINARY-LONG.
     05 BS-EXTRA             BINARY-LONG.
-    05 FILLER               PIC X(12).
+    05 BS-OUT               BINARY-LONG.
+    05 FILLER               PIC X(8).
 *> The sources a modifier returned for the current one.
  01 BR-MOD EXTERNAL.
     05 BM-COUNT             BINARY-LONG.

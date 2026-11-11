@@ -39,3 +39,17 @@
  78 BC-SETBLOCK          VALUE 37.
  78 BC-FILL              VALUE 38.
  78 BC-EFFECT            VALUE 39.
+ 78 BC-EXECUTE           VALUE 40.
+*> The modifier ids of the clauses of execute (BR-N-MODIFIER of the node that ends a clause; core/src/cmds-execute.cob).
+ 78 MX-AS                 VALUE 1.
+ 78 MX-AT                 VALUE 2.
+ 78 MX-POSITIONED         VALUE 3.
+ 78 MX-POSITIONED-AS      VALUE 4.
+ 78 MX-ROTATED            VALUE 5.
+ 78 MX-ROTATED-AS         VALUE 6.
+ 78 MX-FACING             VALUE 7.
+ 78 MX-FACING-ENTITY      VALUE 8.
+ 78 MX-ALIGN              VALUE 9.
+ 78 MX-ANCHORED           VALUE 10.
+ 78 MX-IN                 VALUE 11.
+ 78 MX-IF                 VALUE 12.

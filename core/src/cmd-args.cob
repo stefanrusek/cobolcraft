@@ -847,6 +847,7 @@
  01 WS-LX                  FLOAT-LONG.
  01 WS-LY                  FLOAT-LONG.
  01 WS-LZ                  FLOAT-LONG.
+ 01 WS-EYE                 FLOAT-LONG VALUE 1.62.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -874,6 +875,9 @@
          MOVE BS-X TO L-X
          MOVE BS-Y TO L-Y
          MOVE BS-Z TO L-Z
+         IF BS-ANCHOR = 1
+             ADD WS-EYE TO L-Y
+         END-IF
          COMPUTE L-X = L-X + WS-FX * BA-NUM(L-INDEX, 3) + WS-UX * BA-NUM(L-INDEX, 2) + WS-LX * BA-NUM(L-INDEX, 1)
          COMPUTE L-Y = L-Y + WS-FY * BA-NUM(L-INDEX, 3) + WS-UY * BA-NUM(L-INDEX, 2) + WS-LY * BA-NUM(L-INDEX, 1)
          COMPUTE L-Z = L-Z + WS-FZ * BA-NUM(L-INDEX, 3) + WS-UZ * BA-NUM(L-INDEX, 2) + WS-LZ * BA-NUM(L-INDEX, 1)

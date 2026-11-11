@@ -63,14 +63,19 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-MODIFY-CALL.
+*> The modifier of the framework: the clauses of execute (CX-MODIFY, core/src/cmds-execute.cob) fill BM-ENTRY; a node without a modifier id leaves the source as it is.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRRUN.
  LINKAGE SECTION.
  01 L-CTX                  BINARY-LONG.
  PROCEDURE DIVISION USING L-CTX.
-     MOVE 1 TO BM-COUNT
-     MOVE BR-SRC TO BM-ENTRY(1)
+     IF BR-R-MODIFIER > 0
+         CALL "CX-MODIFY" USING L-CTX
+     ELSE
+         MOVE 1 TO BM-COUNT
+         MOVE BR-SRC TO BM-ENTRY(1)
+     END-IF
      GOBACK.
  END PROGRAM BR-MODIFY-CALL.
 
@@ -153,6 +158,8 @@
              CALL "CX-FILL"
          WHEN BC-EFFECT
              CALL "CX-EFFECT"
+         WHEN BC-EXECUTE
+             CALL "CX-EXECUTE-COND"
          WHEN BC-BAN-IP
              CALL "CX-BAN-IP"
          WHEN BC-PARDON-IP
