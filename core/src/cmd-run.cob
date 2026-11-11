@@ -141,6 +141,12 @@
          WHEN BC-SAVE-ALL
              CALL "CX-SAVE-ALL"
          WHEN BC-SAVE-ON
+         WHEN BC-RANDOM
+             CALL "CX-RANDOM"
+         WHEN BC-RELOAD
+             CALL "CX-RELOAD"
+         WHEN BC-SETIDLETIMEOUT
+             CALL "CX-SETIDLETIMEOUT"
          WHEN BC-BAN-IP
              CALL "CX-BAN-IP"
          WHEN BC-PARDON-IP

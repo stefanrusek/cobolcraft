@@ -33,3 +33,6 @@
  78 BC-SAVE-OFF           VALUE 31.
  78 BC-BAN-IP             VALUE 32.
  78 BC-PARDON-IP          VALUE 33.
+ 78 BC-RANDOM            VALUE 34.
+ 78 BC-RELOAD            VALUE 35.
+ 78 BC-SETIDLETIMEOUT     VALUE 36.
