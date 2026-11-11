@@ -1,0 +1,38 @@
+{
+ "feature": "poppy",
+ "placement": [
+  {
+   "type": "count",
+   "count": {
+    "type": "minecraft:constant",
+    "value": 3
+   }
+  },
+  {
+   "type": "minecraft:offset",
+   "x": {
+    "type": "minecraft:trapezoid",
+    "min": 0,
+    "max": 4,
+    "plateau": 4
+   },
+   "y": 0,
+   "z": 0
+  },
+  {
+   "type": "height_range",
+   "height": {
+    "type": "minecraft:constant",
+    "value": {
+     "absolute": 5
+    }
+   }
+  },
+  {
+   "type": "minecraft:block_predicate_filter",
+   "predicate": {
+    "type": "solid"
+   }
+  }
+ ]
+}

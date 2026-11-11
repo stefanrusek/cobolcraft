@@ -1,0 +1,11 @@
+{
+ "feature": {
+  "type": "no_op"
+ },
+ "placement": [
+  {
+   "type": "minecraft:count",
+   "count": 5000
+  }
+ ]
+}

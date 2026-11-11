@@ -1,0 +1,9 @@
+{
+ "feature": {
+  "type": "minecraft:simple_random_selector",
+  "features": [
+   5
+  ]
+ },
+ "placement": []
+}

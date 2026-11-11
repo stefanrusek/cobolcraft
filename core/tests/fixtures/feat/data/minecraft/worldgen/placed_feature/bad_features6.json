@@ -1,0 +1,19 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "type": "minecraft:weighted",
+   "entries": [
+    {
+     "data": {
+      "Name": "minecraft:poppy"
+     }
+    },
+    {
+     "weight": 1
+    }
+   ]
+  }
+ },
+ "placement": []
+}
