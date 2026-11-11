@@ -54,7 +54,7 @@ int main(void) {
     tl_int("contract ccshim cc_event offset x", 16, (long long)offsetof(cc_event, x));
     tl_int("contract ccshim cc_event offset y", 20, (long long)offsetof(cc_event, y));
     tl_int("contract ccshim float is 4 bytes", 4, (long long)sizeof(float));
-    tl_int("contract ccshim cc_vertex size", 28, (long long)sizeof(cc_vertex));
+    tl_int("contract ccshim cc_vertex size", 44, (long long)sizeof(cc_vertex));
     tl_int("contract ccshim cc_vertex offset alpha", 24, (long long)offsetof(cc_vertex, alpha));
 
     {

@@ -88,14 +88,14 @@
      CALL "TEST-DRAIN-IDS" USING WS-BOB WS-TEXT
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
      CALL "TEST-DRAIN-IDS" USING WS-BOB WS-TEXT
-     MOVE "25 43 106 103" TO TL-EXPECTED
+     MOVE "48 25 43 106 103" TO TL-EXPECTED
      PERFORM CHECK-TEXT
 
      MOVE "acceptance US14 Alice, who sees the hit, gets Damage Event, Hurt Animation and the Container Set Slot of the damaged sword" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      MOVE "25 43 20" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "25 43 20 115 25 43 20" TO TL-EXPECTED
+     MOVE "48 25 43 20 115 48 25 43 20" TO TL-EXPECTED
      PERFORM CHECK-TEXT
 
      MOVE "acceptance US14 each accepted hit costs the sword 1 durability (item_damage_per_attack), two hits so far" TO TL-CASE
@@ -205,7 +205,7 @@
      MOVE PL-SLOT-COUNT(CN-PLAYER(WS-ALICE), 1) TO WS-E1
      MOVE SPACES TO TL-OBSERVED
      STRING "count " FUNCTION TRIM(WS-E1) " ids " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "count 0 ids 25 43 20" TO TL-EXPECTED
+     MOVE "count 0 ids 48 25 43 20" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US14 with player combat off an attack on a player does nothing" TO TL-CASE
      PERFORM PREP-HIT
