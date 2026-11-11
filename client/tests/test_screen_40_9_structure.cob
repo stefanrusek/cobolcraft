@@ -258,6 +258,10 @@
      MOVE 4 TO EF-LEN(8)
      MOVE "x" TO EF-TEXT(3)
      CALL "STRUCT-SEND" USING CLIENT-STATE WS-N
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE "ab" TO EF-TEXT(8)
+     MOVE 2 TO EF-LEN(8)
+     CALL "STRUCT-SEND" USING CLIENT-STATE WS-N
      MOVE "ab" TO EF-TEXT(10)
      MOVE 2 TO EF-LEN(10)
 *>   DATA mode: the custom data box takes text; the mode button gives SAVE; show air, DETECT and LOAD buttons.
