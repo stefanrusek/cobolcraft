@@ -101,6 +101,57 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE PL-SLOT-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Right clicks on hotbar slots, the remaining branches: one item taken from a stack of one empties the slot; the last carried item placed; onto the same item; onto another item (swap); nothing to do.
+     MOVE 5 TO PL-SLOT-ITEM(1)
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     MOVE 75 TO WS-D1
+     MOVE 168 TO WS-D2
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 a right click on a slot with one item and an empty cursor takes it: carried 1, slot empty" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 1 * 100 + 0
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + PL-SLOT-COUNT(1) + PL-SLOT-ITEM(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 the right click with the last carried item on the empty slot places it: carried 0, slot 1 item 5" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 0 * 100 + 1 + 5
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + PL-SLOT-COUNT(1) + PL-SLOT-ITEM(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO PL-CARRIED-ITEM
+     MOVE 1 TO PL-CARRIED-COUNT
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 a right click with the same item adds one: slot 2, carried 0 and the item cleared" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 2 * 100 + 0
+     COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(1) * 100 + PL-CARRIED-COUNT + PL-CARRIED-ITEM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO PL-CARRIED-ITEM
+     MOVE 3 TO PL-CARRIED-COUNT
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 a right click with a carried stack of 3 on the same item adds one: slot 2, carried 2" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 2 * 100 + 2
+     COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(1) * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 64 TO PL-SLOT-COUNT(1)
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 onto a full stack nothing is added: slot 64, carried 2" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 64 * 100 + 2
+     COMPUTE TL-OBSERVED-N = PL-SLOT-COUNT(1) * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO PL-CARRIED-ITEM
+     MOVE 4 TO PL-CARRIED-COUNT
+     MOVE 2 TO PL-SLOT-COUNT(1)
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 a right click with another item swaps the stacks: slot item 6 x 4, carried item 5 x 2" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 6 * 100000 + 4 * 1000 + 5 * 100 + 2
+     COMPUTE TL-OBSERVED-N = PL-SLOT-ITEM(1) * 100000 + PL-SLOT-COUNT(1) * 1000 + PL-CARRIED-ITEM * 100 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE 0 TO PL-SLOT-COUNT(1)
+     PERFORM RIGHT-CLICK-GUI
+     MOVE "acceptance US12 40-7§7.3 a right click on an empty slot with an empty cursor does nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT + PL-SLOT-COUNT(1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The survival tab (tab 14 at (231, 200)): main slots and the delete slot.
      MOVE 245 TO WS-D1
      MOVE 200 TO WS-D2

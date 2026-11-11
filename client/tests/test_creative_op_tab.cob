@@ -12,6 +12,10 @@
  01 WS-I                   BINARY-LONG.
  01 WS-MEMBER              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-BODY                PIC X(8).
+ 01 WS-BLEN                BINARY-LONG VALUE 1.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 14.
+ 01 WS-STATUS              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE 13 TO WS-TAB
@@ -45,6 +49,25 @@
      MOVE "acceptance US12 40-7§11 11.9 the stand-in item table has no operator item: the plain list of the tab is empty" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   With the standard content set the plain list holds the operator items (command_block among them) for a permitted player and nothing without.
+     MOVE X"00" TO WS-BODY(1:1)
+     CALL "CONTENT-CLIENT-REGISTRY-ADD" USING WS-PACKET-ID WS-BODY WS-BLEN WS-STATUS
+     CALL "CL-ITEM-COUNT-NOW" USING WS-COUNT
+     MOVE 2 TO PL-PERM
+     MOVE 0 TO TL-OBSERVED-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-COUNT
+         CALL "CREATIVE-MEMBER" USING CLIENT-STATE WS-TAB WS-I WS-MEMBER
+         ADD WS-MEMBER TO TL-OBSERVED-N
+     END-PERFORM
+     MOVE "acceptance US12 40-7§11 11.9 with the standard set and permission the operator tab's plain list holds items (command block, jigsaw, barrier, ...): at least 5" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     IF TL-OBSERVED-N >= 5
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "CONTENT-CLOSE"
      STOP RUN.
  END PROGRAM TEST-CREATIVE-OP-TAB.
 

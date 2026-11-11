@@ -28,6 +28,10 @@
  01 WS-PACKET             BINARY-LONG.
  01 WS-CONN               BINARY-LONG VALUE CONN-GAME.
  01 WS-STATE-A            BINARY-LONG VALUE 2.
+ 01 WS-TI-TEXT            PIC X(256).
+ 01 WS-TI-LEN             BINARY-LONG.
+ 01 WS-TI-D               PIC 9.
+ 01 WS-TI-VALID           BINARY-LONG.
  01 WS-KEYB                PIC X(112).
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
@@ -242,6 +246,48 @@
      MOVE "acceptance US12 40-x1§8 Cancel (218, 210) closes with no further action" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
+*>   The id box: a namespaced id is kept as typed; two colons and upper case are not identifiers; a size box holds 15 characters.
+     MOVE "ns:id" TO EF-TEXT(1)
+     MOVE 5 TO EF-LEN(1)
+     CALL "TI-ID" USING CLIENT-STATE WS-TI-TEXT WS-TI-LEN WS-TI-VALID
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-9§7A an id with a namespace (ns:id) is valid and sent as typed" TO TL-CASE
+     MOVE "1 ns:id" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-TI-VALID TO WS-TI-D
+     STRING WS-TI-D " " WS-TI-TEXT(1:WS-TI-LEN) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "a:b:c" TO EF-TEXT(1)
+     MOVE 5 TO EF-LEN(1)
+     CALL "TI-ID" USING CLIENT-STATE WS-TI-TEXT WS-TI-LEN WS-TI-VALID
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-9§7A an id with two colons does not parse (Identifier.tryParse)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-TI-VALID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "Ab" TO EF-TEXT(1)
+     MOVE 2 TO EF-LEN(1)
+     CALL "TI-ID" USING CLIENT-STATE WS-TI-TEXT WS-TI-LEN WS-TI-VALID
+     MOVE "acceptance US12 40-9§7A an id with an upper case letter does not parse" TO TL-CASE
+     MOVE WS-TI-VALID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     MOVE 30 TO WS-D1
+     MOVE 170 TO WS-D2
+     PERFORM CLICK-GUI
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         INITIALIZE WS-EVENTS
+         MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2) WS-KIND(3) WS-KIND(4)
+         MOVE 49 TO WS-A(1) WS-A(2) WS-A(3) WS-A(4)
+         MOVE 4 TO WS-N
+         PERFORM FRAME
+     END-PERFORM
+     MOVE "acceptance US12 40-x1§8 a size box holds at most 15 characters (max length 15)" TO TL-CASE
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE EF-LEN(2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CONTENT-CLOSE"
      STOP RUN.
 

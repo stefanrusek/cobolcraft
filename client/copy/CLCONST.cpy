@@ -294,8 +294,11 @@
     05 FILLER PIC X(8) VALUE "00150030".
     05 FILLER PIC X(8) VALUE "10450090".
     05 FILLER PIC X(8) VALUE "10375075".
+*>   Types 4 to 28 (the registry ids of the standard set, 21 section 2) have no box here; type 29, the command block minecart (0.98 x 0.7), can be aimed at and used (40-9 2.1).
+    05 FILLER PIC X(200) VALUE ALL "0".
+    05 FILLER PIC X(8) VALUE "10490070".
  01 CL-ENTITIES REDEFINES CL-ENTITY-DATA.
-    05 CL-ET OCCURS 4 TIMES.
+    05 CL-ET OCCURS 30 TIMES.
        10 CL-ET-ATTACK      PIC 9.
        10 CL-ET-HALF        PIC 9V999.
        10 CL-ET-HEIGHT      PIC 9V99.

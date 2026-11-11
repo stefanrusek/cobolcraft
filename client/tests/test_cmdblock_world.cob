@@ -69,6 +69,30 @@
      COMPUTE TL-EXPECTED-N = SCR-CMDBLOCK * 1000 + 9
      COMPUTE TL-OBSERVED-N = SM-SCREEN * 1000 + EB-Y
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A command block minecart under the crosshair (entity type 29 above the block): the right button opens the minecart screen for its entity id.
+     MOVE SCR-WORLD TO WS-N
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-N
+     MOVE 7 TO EN-ID(5)
+     MOVE 1 TO EN-USED(5)
+     MOVE 29 TO EN-TYPE(5)
+     MOVE 0.5 TO EN-X(5)
+     MOVE 10.0 TO EN-Y(5)
+     MOVE 0.5 TO EN-Z(5)
+     IF EN-COUNT < 5
+         MOVE 5 TO EN-COUNT
+     END-IF
+     MOVE 0 TO PL-PERM
+     PERFORM RIGHT-CLICK
+     MOVE "acceptance US12 40-9§2.1 a command block minecart under the crosshair used without the permission leaves the world screen" TO TL-CASE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO PL-PERM
+     PERFORM RIGHT-CLICK
+     MOVE "acceptance US12 40-9§2.1 a command block minecart under the crosshair used with creative and level 2 opens the minecart command screen for entity 7" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = SCR-CMDBLOCK * 1000 + 1 * 100 + 7
+     COMPUTE TL-OBSERVED-N = SM-SCREEN * 1000 + EB-MC * 100 + EB-MC-ENTITY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CONTENT-CLOSE"
      STOP RUN.
 
