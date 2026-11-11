@@ -36,6 +36,10 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-E1                  PIC -(7)9.
  01 WS-ICON                PIC X(40).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-E2                  PIC -(7)9.
+ 01 WS-E3                  PIC -(7)9.
+ 01 WS-E4                  PIC -(7)9.
  01 WS-ALPHA               BINARY-LONG.
  01 WS-EVENTS.
     05 WS-EVENT OCCURS 1 TIMES.
@@ -154,6 +158,35 @@
      MOVE "redstone_dust" TO TL-EXPECTED
      MOVE WS-ICON TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The drawing: sprite widgets for the hint icons at (left + 8 + 18 h, top + 48), 16 x 16, the previous icon first while transitioning.
+     MOVE 0 TO SM-WIDGET-COUNT
+     MOVE 1 TO BX-COUNT(1)
+     MOVE 0 TO BX-COUNT(2) BX-COUNT(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE 0 TO CY-LIST(WS-I) CY-TICK(WS-I) CY-INDEX(WS-I)
+     END-PERFORM
+     MOVE 1 TO CY-LIST(1)
+     MOVE 31 TO CY-TICK(1)
+     MOVE 1 TO CY-INDEX(1)
+     MOVE 0 TO BX-COUNT(1)
+     MOVE 21 TO BM-TYPE
+     MOVE 100 TO WS-D1
+     MOVE 50 TO WS-D2
+     CALL "SMITH-CYCLE-DRAW" USING CLIENT-STATE WS-D1 WS-D2
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         MOVE SM-W-ARG(WS-I) TO WS-E1
+         MOVE SM-W-X(WS-I) TO WS-E2
+         MOVE SM-W-Y(WS-I) TO WS-E3
+         MOVE SM-W-STATE(WS-I) TO WS-E4
+         STRING "r" FUNCTION TRIM(WS-E1) "@" FUNCTION TRIM(WS-E2) ":" FUNCTION TRIM(WS-E3) "/" FUNCTION TRIM(WS-E4) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-3§5.6 one tick into a transition (counter 31) slot 0 draws the previous icon (armor trim template, row 129) at alpha 3 / 4 first (state 251), then the current (netherite template, row 130) at alpha 1 / 4 (state 751)" TO TL-CASE
+     MOVE "r129@108:98/251 r130@108:98/751 " TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
      MOVE 8 TO BM-TYPE
      MOVE 2 TO WS-I
      MOVE 1 TO CY-TICK(2)

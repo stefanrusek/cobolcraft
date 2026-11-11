@@ -204,6 +204,48 @@
      COMPUTE TL-EXPECTED-N = 2 * 100 + 2
      COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT * 100 + PL-SLOT-COUNT(10)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Armour and off-hand wrappers of the survival tab: the helmet slot at (54, 6), a swap; the off-hand slot at (35, 20), a take and a place.
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE 4 TO IX-ITEM(1)
+     MOVE 1 TO IX-COUNT(1)
+     MOVE 3 TO PL-CARRIED-ITEM
+     MOVE 2 TO PL-CARRIED-COUNT
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     MOVE 120 TO WS-D1
+     MOVE 62 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§6.4 a click on the survival tab's helmet wrapper (62 + 54, 52 + 6) swaps: the slot holds item 3 x 2, the cursor item 4 x 1" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 3 * 10000 + 2 * 1000 + 4 * 10 + 1
+     COMPUTE TL-OBSERVED-N = IX-ITEM(1) * 10000 + IX-COUNT(1) * 1000 + PL-CARRIED-ITEM * 10 + PL-CARRIED-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-OFFHAND-COUNT
+     MOVE 100 TO WS-D1
+     MOVE 78 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§6.4 the cursor stack goes into the empty off-hand wrapper (35, 20)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 4 * 10 + 1
+     COMPUTE TL-OBSERVED-N = PL-OFFHAND-ITEM * 10 + PL-OFFHAND-COUNT + PL-CARRIED-COUNT * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§6.4 and a second click takes it back: cursor 4 x 1, off-hand empty" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 4 * 10 + 1
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-ITEM * 10 + PL-CARRIED-COUNT + PL-OFFHAND-COUNT * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+     MOVE 120 TO WS-D1
+     MOVE 62 TO WS-D2
+     PERFORM CLICK-GUI
+     PERFORM CLICK-GUI
+     MOVE 0 TO PL-CARRIED-COUNT
+     MOVE 0 TO IX-COUNT(2)
+     MOVE 120 TO WS-D1
+     MOVE 90 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-7§6.4 a click on the empty chestplate wrapper with an empty cursor does nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-CARRIED-COUNT + IX-COUNT(2)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  FRAME.

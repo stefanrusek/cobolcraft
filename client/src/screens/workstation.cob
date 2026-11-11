@@ -245,6 +245,7 @@
                  END-IF
              END-PERFORM
          WHEN BM-TYPE = 21
+             CALL "SMITH-CYCLE-DRAW" USING CLIENT-STATE L-LEFT L-TOP
 *>           5.5 the smithing error icon at (65, 46) while the error flag (data 0) is 1.
              IF BM-DATA(1) = 1
                  COMPUTE WS-X = L-LEFT + 65

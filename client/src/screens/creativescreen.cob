@@ -194,6 +194,24 @@
              MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
              PERFORM HOVER
          END-PERFORM
+*>       The armour wrappers (arguments 101 to 104: helmet, chestplate, leggings, boots at (54 + 54 (k / 2), 6 + 27 (k mod 2))) and the off-hand (argument 37 at (35, 20)).
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-K = 101 + WS-I
+             COMPUTE WS-CELL = WS-I / 2
+             COMPUTE WS-X = WS-LEFT + 54 - 1 + 54 * WS-CELL
+             COMPUTE WS-Y = WS-TOP + 6 - 1 + 27 * FUNCTION MOD(WS-I, 2)
+             MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+             CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-K WS-X WS-Y WS-ACTION
+             MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+             PERFORM HOVER
+         END-PERFORM
+         MOVE 37 TO WS-K
+         COMPUTE WS-X = WS-LEFT + 35 - 1
+         COMPUTE WS-Y = WS-TOP + 20 - 1
+         MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-K WS-X WS-Y WS-ACTION
+         MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
+         PERFORM HOVER
          MOVE 99 TO WS-ARG
          MOVE WK-IMAGE TO WS-KIND
          MOVE ACT-CREATIVE-HOTBAR TO WS-ACTION
@@ -268,6 +286,10 @@
              COMPUTE WS-QUICK = FUNCTION MOD(IN-MODS / CC-MOD-SHIFT, 2)
              CALL "CREATIVE-GRID-CLICK" USING CLIENT-STATE WS-ITEM WS-COUNT WS-BUTTON WS-QUICK WS-CLONE
          WHEN ACT-CREATIVE-HOTBAR
+             IF L-ARG >= 101 OR L-ARG = 37
+                 CALL "CREATIVE-ARMOR-CLICK" USING CLIENT-STATE L-ARG
+                 GOBACK
+             END-IF
              COMPUTE WS-QUICK = FUNCTION MOD(IN-MODS / CC-MOD-SHIFT, 2)
 *>           5.3, 7.1 rules 8 and 9 (the survival tab's delete slot, argument 99): a shift click empties every slot of the inventory menu, any other click empties the cursor.
              IF L-ARG = 99
@@ -517,3 +539,67 @@
      END-IF
      GOBACK.
  END PROGRAM CREATIVE-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREATIVE-ARMOR-CLICK.
+*> USING CLIENT-STATE, slot argument (101 to 104 the armour slots 5 to 8 of the inventory menu, 37 the off-hand slot 45): a left click on the survival tab's wrappers (40-7 6.4): an empty cursor takes the stack,
+*> a stack on the cursor goes into an empty slot or swaps with the stack there (creative: nothing refuses an item); the change is sent as Set Creative Mode Slot with the menu slot number.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-HC                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-HD                  BINARY-LONG.
+ 01 WS-TMP                 BINARY-LONG.
+ 01 WS-WIRE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG.
+     IF L-ARG = 37
+         MOVE PL-OFFHAND-COUNT TO WS-HC
+         MOVE PL-OFFHAND-ITEM TO WS-HI
+         MOVE PL-OFFHAND-DAMAGE TO WS-HD
+         MOVE 45 TO WS-WIRE
+     ELSE
+         COMPUTE WS-N = L-ARG - 100
+         MOVE IX-COUNT(WS-N) TO WS-HC
+         MOVE IX-ITEM(WS-N) TO WS-HI
+         MOVE IX-DAMAGE(WS-N) TO WS-HD
+         COMPUTE WS-WIRE = L-ARG - 96
+     END-IF
+     IF PL-CARRIED-COUNT = 0 AND WS-HC = 0
+         GOBACK
+     END-IF
+     IF PL-CARRIED-COUNT = 0
+         MOVE WS-HI TO PL-CARRIED-ITEM
+         MOVE WS-HC TO PL-CARRIED-COUNT
+         MOVE 0 TO WS-HC WS-HI WS-HD
+     ELSE
+         IF WS-HC = 0
+             MOVE PL-CARRIED-ITEM TO WS-HI
+             MOVE PL-CARRIED-COUNT TO WS-HC
+             MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+         ELSE
+             MOVE PL-CARRIED-ITEM TO WS-N
+             MOVE PL-CARRIED-COUNT TO WS-TMP
+             MOVE WS-HI TO PL-CARRIED-ITEM
+             MOVE WS-HC TO PL-CARRIED-COUNT
+             MOVE WS-N TO WS-HI
+             MOVE WS-TMP TO WS-HC
+         END-IF
+         MOVE 0 TO WS-HD
+     END-IF
+     IF L-ARG = 37
+         MOVE WS-HC TO PL-OFFHAND-COUNT
+         MOVE WS-HI TO PL-OFFHAND-ITEM
+         MOVE WS-HD TO PL-OFFHAND-DAMAGE
+     ELSE
+         COMPUTE WS-N = L-ARG - 100
+         MOVE WS-HC TO IX-COUNT(WS-N)
+         MOVE WS-HI TO IX-ITEM(WS-N)
+         MOVE WS-HD TO IX-DAMAGE(WS-N)
+     END-IF
+     CALL "CREATIVE-SEND" USING CLIENT-STATE WS-WIRE WS-HC WS-HI
+     GOBACK.
+ END PROGRAM CREATIVE-ARMOR-CLICK.

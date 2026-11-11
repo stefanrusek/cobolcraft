@@ -149,3 +149,103 @@
      END-IF
      GOBACK.
  END PROGRAM SMITH-CYCLE-ICON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SMITH-ICON-ROW.
+*> USING icon name (PIC X(40)), sprite row out (GSP-CSLOT-0 + n; 0 for no icon): the UI atlas row of a hint icon (the order of CLCONST GSP-CSLOT-0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-NAMES.
+    05 FILLER PIC X(40) VALUE "smithing_template_armor_trim".
+    05 FILLER PIC X(40) VALUE "smithing_template_netherite_upgrade".
+    05 FILLER PIC X(40) VALUE "helmet".
+    05 FILLER PIC X(40) VALUE "chestplate".
+    05 FILLER PIC X(40) VALUE "leggings".
+    05 FILLER PIC X(40) VALUE "boots".
+    05 FILLER PIC X(40) VALUE "ingot".
+    05 FILLER PIC X(40) VALUE "redstone_dust".
+    05 FILLER PIC X(40) VALUE "lapis_lazuli".
+    05 FILLER PIC X(40) VALUE "quartz".
+    05 FILLER PIC X(40) VALUE "diamond".
+    05 FILLER PIC X(40) VALUE "emerald".
+    05 FILLER PIC X(40) VALUE "amethyst_shard".
+    05 FILLER PIC X(40) VALUE "sword".
+    05 FILLER PIC X(40) VALUE "pickaxe".
+    05 FILLER PIC X(40) VALUE "axe".
+    05 FILLER PIC X(40) VALUE "hoe".
+    05 FILLER PIC X(40) VALUE "shovel".
+    05 FILLER PIC X(40) VALUE "nautilus_armor".
+    05 FILLER PIC X(40) VALUE "spear".
+ 01 WS-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(40) OCCURS 20 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ICON                 PIC X(40).
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ICON L-ROW.
+     MOVE 0 TO L-ROW
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         IF L-ICON = WS-NAME(WS-I) AND L-ICON NOT = SPACES
+             COMPUTE L-ROW = GSP-CSLOT-0 + WS-I - 1
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SMITH-ICON-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SMITH-CYCLE-DRAW.
+*> USING CLIENT-STATE, left, top: 5.6 draw for the three helpers at the slots (8, 48), (26, 48), (44, 48): nothing for an empty list or a slot with an item; while transitioning
+*> (a list over 1 and the counter at 30 or more) the previous icon at alpha 1 - a first, then the current icon at alpha a, a = min(counter mod 30, 4) / 4 (partial tick 0); each icon a 16 x 16 sprite.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-ICON                PIC X(40).
+ 01 WS-PREV                PIC X(40).
+ 01 WS-ALPHA               BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-PI                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG VALUE 48.
+ 01 WS-16                  BINARY-LONG VALUE 16.
+ 01 WS-16H                 BINARY-LONG VALUE 16.
+ 01 WS-KIND                BINARY-LONG VALUE WK-SPRITE.
+ 01 WS-ACTION              BINARY-LONG VALUE ACT-NONE.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LEFT L-TOP.
+     PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 3
+         CALL "SMITH-CYCLE-ICON" USING CLIENT-STATE WS-H WS-ICON WS-ALPHA
+         IF WS-ICON NOT = SPACES
+             COMPUTE WS-X = L-LEFT + 8 + 18 * (WS-H - 1)
+             MOVE 48 TO WS-Y
+             ADD L-TOP TO WS-Y
+             IF WS-ALPHA < 16
+                 CALL "SMITH-CYCLE-LIST" USING CY-LIST(WS-H) WS-SIZE WS-ZERO WS-PREV
+                 COMPUTE WS-PI = FUNCTION MOD(CY-INDEX(WS-H) + WS-SIZE - 1, WS-SIZE)
+                 CALL "SMITH-CYCLE-LIST" USING CY-LIST(WS-H) WS-SIZE WS-PI WS-PREV
+                 CALL "SMITH-ICON-ROW" USING WS-PREV WS-ROW
+                 COMPUTE WS-STATE = 1 + 1000 * WS-ALPHA / 16
+                 IF WS-ROW > 0
+                     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ROW WS-X WS-Y WS-16 WS-16H WS-TEXT WS-ZERO WS-STATE
+                 END-IF
+             END-IF
+             CALL "SMITH-ICON-ROW" USING WS-ICON WS-ROW
+             COMPUTE WS-STATE = 1 + 1000 * (16 - WS-ALPHA) / 16
+             IF WS-ALPHA >= 16
+                 MOVE 0 TO WS-STATE
+             END-IF
+             IF WS-ROW > 0
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ROW WS-X WS-Y WS-16 WS-16H WS-TEXT WS-ZERO WS-STATE
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM SMITH-CYCLE-DRAW.

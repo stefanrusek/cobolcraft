@@ -375,7 +375,11 @@
  78 GSP-HIGHLIGHT-FRONT     VALUE 126.
  78 GSP-TOOLTIP-BACK        VALUE 127.  *> tooltip/background and tooltip/frame, nine-slice (12 section 5.8)
  78 GSP-TOOLTIP-FRAME       VALUE 128.
- 78 GSP-COUNT               VALUE 128.
+ 78 GSP-CSLOT-0             VALUE 129.  *> container/slot/<name> of the 20 hint icons of the smithing table (40-3 5.6): armor_trim, netherite_upgrade templates, helmet, chestplate, leggings, boots, ingot, redstone_dust, lapis_lazuli, quartz, diamond, emerald, amethyst_shard, sword, pickaxe, axe, hoe, shovel, nautilus_armor, spear
+ 78 GSP-CSLOT-SHIELD        VALUE 149.  *> container/slot/shield (the empty off-hand slot)
+ 78 GSP-FURNACE-LIT          VALUE 150.  *> container/furnace/lit_progress and burn_progress
+ 78 GSP-FURNACE-BURN         VALUE 151.
+ 78 GSP-COUNT               VALUE 151.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 
