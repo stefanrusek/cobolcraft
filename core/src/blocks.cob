@@ -212,6 +212,7 @@
  COPY MOBS.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
@@ -237,7 +238,11 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) >= MOB-FIRST-TYPE AND EN-DIM(WS-E) = L-DIM
+         MOVE 0 TO WS-M
+         IF EN-USED(WS-E) = 1
+             CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
+         END-IF
+         IF WS-M > 0 AND EN-DIM(WS-E) = L-DIM
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
              IF L-X < EN-X(WS-E) + WS-HALF - WS-EPSILON
