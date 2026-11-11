@@ -72,7 +72,7 @@
      MOVE WS-STATE TO WS-EDIT4
      STRING FUNCTION TRIM(TL-OBSERVED) " | window " FUNCTION TRIM(WS-EDIT) " type " FUNCTION TRIM(WS-EDIT2)
          " state " FUNCTION TRIM(WS-EDIT3) " above " FUNCTION TRIM(WS-EDIT4) DELIMITED BY SIZE INTO WS-TEXT
-     MOVE "4(1) 60 18 | window 1 type 12 state 1 above 0" TO TL-EXPECTED
+     MOVE "60 18 4(1) | window 1 type 12 state 1 above 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test bench menu a recipe of five ingredients (sod_cake: four turf and a loam) in the bench grid "

@@ -461,9 +461,9 @@ static void vulkan(void) {
     tl_int("contract shim cc_vk_mesh free returns 0", 0, cc_vk_mesh(1, NULL, 0));
     tl_int("contract shim cc_vk_mesh highest slot returns 0", 0, cc_vk_mesh(CC_MESH_SLOT_MAX, QUAD, 6));
 
-    static const char *pipes[] = {"opaque", "translucent", "ui"};
+    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling"};
     const float clear[4] = {0, 0, 0, 1};
-    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_UI; p++) {
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_CRUMBLING; p++) {
         rc = cc_vk_frame_begin(clear);
         snprintf(name, sizeof name, "contract shim cc_vk_frame_begin returns 0 (%s frame)", pipes[p]);
         tl_int(name, 0, rc);

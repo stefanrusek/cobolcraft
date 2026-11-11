@@ -1,0 +1,35 @@
+*> Test of 29 section 9, Using an item on a block (core/src/blockupd-29-use.cob; T0471): the packet-level checks of 9.1, the
+*> game-mode steps of 9.2, ItemStack.useOn of 9.3, the placement attempt of 9.4, BlockPlaceContext and the facing rules of 9.5,
+*> BlockItem.place of 9.6 and the use-in-air path of 9.7. Expected values come from the rules and tables of the section; the
+*> facing orders come from an independent model of the quantised Mth.sin and Mth.cos written from the same formulas (python).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BLOCKUPD-29-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-IS.
+    05 WS-I                BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXS.
+    05 WS-FX               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RS.
+    05 WS-R                BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFS.
+    05 WS-RF               FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-IN                  PIC X(120).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-KEY                 PIC X(32).
+ 01 WS-TEXT                PIC X(96).
+ 01 WS-POS                 PIC X(32).
+ 01 WS-ORDER.
+    05 WS-DIR              BINARY-LONG OCCURS 6 TIMES.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE

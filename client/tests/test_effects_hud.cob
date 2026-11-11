@@ -1,0 +1,465 @@
+*> Test US14-client (spec 002 T3335/T3336 effects half; docs/protocol/49 sections 1 to 3): the status-effect model and the HUD icons. EFFECT-INFO (2.4 table:
+*> 40 rows, category, colour); Update Mob Effect (0x87) and Remove Mob Effect (0x4F) for the local player change the active effects, for
+*> another entity they do not; HUD-TICK lowers the durations by one (an infinite one stays, none goes below 0); the natural order (2.3 rules A
+*> and B); the icon alpha (2.5 table); the name text (3.3) and the duration text (3.4); the icons of the world HUD: top-right anchor,
+*> beneficial row at y 1 and the other row at y 27, pitch 25, ambient background, alpha in the widget state, no icon without the show flag.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EFFECTS-HUD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET              BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-EFFECT              BINARY-LONG.
+ 01 WS-AMP                 BINARY-LONG.
+ 01 WS-DUR                 BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-BENEFICIAL          BINARY-LONG.
+ 01 WS-COLOUR              BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-AMBIENT             BINARY-LONG.
+ 01 WS-ALPHA               BINARY-LONG.
+ 01 WS-ORDERS.
+    05 WS-ORDER            BINARY-LONG OCCURS 40 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(300).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-E1                  PIC -(7)9.
+ 01 WS-E2                  PIC -(7)9.
+ 01 WS-E3                  PIC -(7)9.
+ 01 WS-E4                  PIC -(7)9.
+ 01 WS-E5                  PIC -(7)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 77 TO PL-ENTITY-ID
+     MOVE "T" TO TL-MODE
+
+*>   2.4: the table.
+     MOVE "acceptance US14 49§2.4 the table has 40 effects" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 40 TO TL-EXPECTED-N
+     MOVE EF-TABLE-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 39
+         MOVE WS-I TO WS-EFFECT
+         CALL "EFFECT-INFO" USING WS-EFFECT WS-BENEFICIAL WS-COLOUR WS-KEY WS-KEY-LENGTH WS-NAME
+             WS-NAME-LENGTH
+         IF WS-I = 0 OR WS-I = 1 OR WS-I = 18 OR WS-I = 23 OR WS-I = 39
+             MOVE WS-BENEFICIAL TO WS-E1
+             MOVE WS-COLOUR TO WS-E2
+             STRING FUNCTION TRIM(WS-KEY) ":" FUNCTION TRIM(WS-NAME) ":" FUNCTION TRIM(WS-E1) ":"
+                 FUNCTION TRIM(WS-E2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US14 49§2.4 speed, slowness, poison, glowing and the last row (category, colour)" TO TL-CASE
+     MOVE "speed:Speed:1:3402751 slowness:Slowness:0:9154528 poison:Poison:0:8889187 glowing:Glowing:0:9740385 "
+         & "breath_of_the_nautilus:Breath of the Nautilus:1:65518" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Section 1: Update Mob Effect for the local player (entity 77), then for another (entity 5), then Remove.
+     MOVE 77 TO WS-ENTITY
+     MOVE 0 TO WS-EFFECT
+     MOVE 1 TO WS-AMP
+     MOVE 3600 TO WS-DUR
+     MOVE 6 TO WS-FLAGS
+     PERFORM SEND-UPDATE
+     MOVE 5 TO WS-ENTITY
+     MOVE 2 TO WS-EFFECT
+     PERFORM SEND-UPDATE
+     MOVE 77 TO WS-ENTITY
+     MOVE 18 TO WS-EFFECT
+     MOVE 0 TO WS-AMP
+     MOVE 600 TO WS-DUR
+     PERFORM SEND-UPDATE
+     MOVE "acceptance US14 49§1 Update Mob Effect for the local player adds two effects, another entity's none" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EF-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A second update of speed replaces its amplifier and duration.
+     MOVE 0 TO WS-EFFECT
+     MOVE 2 TO WS-AMP
+     MOVE 1000 TO WS-DUR
+     PERFORM SEND-UPDATE
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US14 49§1 an update of an effect the player has replaces it (still two; speed amplifier 2, 1000 ticks)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE EF-COUNT TO WS-E1
+     MOVE EF-AMP(1) TO WS-E2
+     MOVE EF-DUR(1) TO WS-E3
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2 2 1000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 18 TO WS-EFFECT
+     PERFORM SEND-REMOVE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US14 49§1 Remove Mob Effect drops poison, leaving speed" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = EF-COUNT * 1000 + EF-ID(1)
+     MOVE 1000 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   HUD-TICK: one effect finite, one infinite, one at 0.
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 3 TO WS-EFFECT
+     MOVE 0 TO WS-AMP
+     MOVE 2 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 4 TO WS-EFFECT
+     MOVE -1 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "HUD-TICK" USING CLIENT-STATE
+     CALL "HUD-TICK" USING CLIENT-STATE
+     CALL "HUD-TICK" USING CLIENT-STATE
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US14 49§2.5 each tick lowers a duration by 1: 2 ticks leave 0 (never below), infinite stays -1, the effect stays listed" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE EF-COUNT TO WS-E1
+     MOVE EF-DUR(1) TO WS-E2
+     MOVE EF-DUR(2) TO WS-E3
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2 0 -1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   2.3: natural order. Rule B: ambient (false first), infinite (false first), shorter first, colour. Rule A: both above 32147 or both ambient.
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO WS-AMP
+     MOVE 6 TO WS-FLAGS
+     MOVE 0 TO WS-EFFECT
+     MOVE 3600 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 2 TO WS-EFFECT
+     MOVE 1200 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 18 TO WS-EFFECT
+     MOVE -1 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 4 TO WS-EFFECT
+     MOVE 5000 TO WS-DUR
+     MOVE 7 TO WS-FLAGS
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "EFFECT-ORDER" USING CLIENT-STATE WS-ORDERS WS-N
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US14 49§2.3 ascending natural order: haste 1200, speed 3600, poison infinite, strength ambient" TO TL-CASE
+     PERFORM ORDER-TEXT
+     MOVE "2 0 18 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Rule A: two long ones order by colour (speed 33EBFF below haste D9C043), two ambient ones by colour too.
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 6 TO WS-FLAGS
+     MOVE 40000 TO WS-DUR
+     MOVE 2 TO WS-EFFECT
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 0 TO WS-EFFECT
+     MOVE 33000 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "EFFECT-ORDER" USING CLIENT-STATE WS-ORDERS WS-N
+     MOVE "acceptance US14 49§2.3 rule A: both above 32147 ticks, speed (colour 33EBFF) before haste (D9C043)" TO TL-CASE
+     PERFORM ORDER-TEXT
+     MOVE "0 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An id outside the table is harmful, colour 0, "unknown"; removing the first of two effects moves the second up; an infinite effect added before a
+*>   finite one, and an ambient one before a plain one, order after them.
+     MOVE 99 TO WS-EFFECT
+     CALL "EFFECT-INFO" USING WS-EFFECT WS-BENEFICIAL WS-COLOUR WS-KEY WS-KEY-LENGTH WS-NAME WS-NAME-LENGTH
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-COLOUR TO WS-E1
+     STRING FUNCTION TRIM(WS-KEY) " " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US14 49§2.4 an id outside the table is unknown, colour 0" TO TL-CASE
+     MOVE "unknown 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO WS-AMP
+     MOVE 6 TO WS-FLAGS
+     MOVE 18 TO WS-EFFECT
+     MOVE -1 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 2 TO WS-EFFECT
+     MOVE 700 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 7 TO WS-FLAGS
+     MOVE 4 TO WS-EFFECT
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 6 TO WS-FLAGS
+     MOVE 0 TO WS-EFFECT
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "EFFECT-ORDER" USING CLIENT-STATE WS-ORDERS WS-N
+     PERFORM ORDER-TEXT
+     MOVE "acceptance US14 49§2.3 plain finite ones by duration then colour, then infinite, then ambient: speed (colour), haste, poison, strength" TO TL-CASE
+     MOVE "0 2 18 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 18 TO WS-EFFECT
+     CALL "CLIENT-EFFECT-REMOVE" USING CLIENT-STATE WS-EFFECT
+     MOVE "acceptance US14 49§1 removing the first effect (poison) moves the others up: haste, id 2, is first" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EF-ID(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+
+*>   2.5: the alpha table (permille). D, ambient.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE 0 TO WS-AMBIENT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         EVALUATE WS-I
+             WHEN 1 MOVE 200 TO WS-DUR
+             WHEN 2 MOVE 190 TO WS-DUR
+             WHEN 3 MOVE 185 TO WS-DUR
+             WHEN 4 MOVE 100 TO WS-DUR
+             WHEN 5 MOVE 95 TO WS-DUR
+             WHEN 6 MOVE 45 TO WS-DUR
+             WHEN 7 MOVE 10 TO WS-DUR
+             WHEN 8 MOVE 5 TO WS-DUR
+             WHEN 9 MOVE 201 TO WS-DUR
+             WHEN 10 MOVE -1 TO WS-DUR
+             WHEN 11 MOVE 0 TO WS-DUR
+         END-EVALUATE
+         CALL "EFFECT-ALPHA" USING WS-DUR WS-AMBIENT WS-ALPHA
+         MOVE WS-ALPHA TO WS-E1
+         STRING FUNCTION TRIM(WS-E1) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE 1 TO WS-AMBIENT
+     MOVE 100 TO WS-DUR
+     CALL "EFFECT-ALPHA" USING WS-DUR WS-AMBIENT WS-ALPHA
+     MOVE WS-ALPHA TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "acceptance US14 49§2.5 alpha at D 200, 190, 185, 100, 95, 45, 10, 5, 201, infinite, 0 (k = 10, cos 0 = 1: 250) and ambient D 100 (permille)" TO TL-CASE
+     MOVE "500 525 475 625 350 250 350 0 1000 1000 250 1000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   3.3 and 3.4: the texts.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1 MOVE 0 TO WS-AMP
+             WHEN 2 MOVE 1 TO WS-AMP
+             WHEN 3 MOVE 9 TO WS-AMP
+             WHEN 4 MOVE 10 TO WS-AMP
+         END-EVALUATE
+         MOVE 0 TO WS-EFFECT
+         CALL "EFFECT-NAME-TEXT" USING CLIENT-STATE WS-EFFECT WS-AMP WS-TEXT WS-LENGTH
+         STRING WS-TEXT(1:WS-LENGTH) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE 17 TO WS-EFFECT
+     MOVE 3 TO WS-AMP
+     CALL "EFFECT-NAME-TEXT" USING CLIENT-STATE WS-EFFECT WS-AMP WS-TEXT WS-LENGTH
+     STRING WS-TEXT(1:WS-LENGTH) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "acceptance US14 49§3.3 the name: amplifier 0 none, 1 II, 9 X, 10 none; weakness at 3 is IV" TO TL-CASE
+     MOVE "Speed/Speed II/Speed X/Speed/Weakness IV" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
+         EVALUATE WS-I
+             WHEN 1 MOVE 3600 TO WS-DUR
+             WHEN 2 MOVE 1199 TO WS-DUR
+             WHEN 3 MOVE 20 TO WS-DUR
+             WHEN 4 MOVE 19 TO WS-DUR
+             WHEN 5 MOVE 72000 TO WS-DUR
+             WHEN 6 MOVE 1200000 TO WS-DUR
+             WHEN 7 MOVE -1 TO WS-DUR
+         END-EVALUATE
+         CALL "EFFECT-DURATION-TEXT" USING CLIENT-STATE WS-DUR WS-TEXT WS-LENGTH
+         STRING WS-TEXT(1:WS-LENGTH) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE "acceptance US14 49§3.4 the duration text of 3600, 1199, 20, 19, 72000, 1200000 ticks and infinite" TO TL-CASE
+     MOVE "03:00 00:59 00:01 00:00 01:00:00 16:40:00 ∞" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A pack's lang file replaces the English fallbacks: effect.minecraft.speed, enchantment.level.3 and effect.duration.infinite.
+     MOVE 3 TO LG-COUNT
+     MOVE "effect.minecraft.speed" TO LG-KEY(1)
+     MOVE 22 TO LG-KEY-LENGTH(1)
+     MOVE "Schnell" TO LG-TEXT(1)
+     MOVE 7 TO LG-TEXT-LENGTH(1)
+     MOVE "enchantment.level.3" TO LG-KEY(2)
+     MOVE 19 TO LG-KEY-LENGTH(2)
+     MOVE "drei" TO LG-TEXT(2)
+     MOVE 4 TO LG-TEXT-LENGTH(2)
+     MOVE "effect.duration.infinite" TO LG-KEY(3)
+     MOVE 24 TO LG-KEY-LENGTH(3)
+     MOVE "ewig" TO LG-TEXT(3)
+     MOVE 4 TO LG-TEXT-LENGTH(3)
+     MOVE 0 TO WS-EFFECT
+     MOVE 2 TO WS-AMP
+     CALL "EFFECT-NAME-TEXT" USING CLIENT-STATE WS-EFFECT WS-AMP WS-TEXT WS-LENGTH
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     STRING WS-TEXT(1:WS-LENGTH) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE -1 TO WS-DUR
+     CALL "EFFECT-DURATION-TEXT" USING CLIENT-STATE WS-DUR WS-TEXT WS-LENGTH
+     STRING WS-TEXT(1:WS-LENGTH) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "acceptance US14 49§3.3 the pack's lang texts replace the fallbacks: Schnell drei/ewig" TO TL-CASE
+     MOVE "Schnell drei/ewig" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO LG-COUNT
+
+*>   2.2 and 2.5: the HUD icons at GUI width 427 (window 854 x 480): speed (3600, beneficial), haste (1200, beneficial), poison (600).
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 6 TO WS-FLAGS
+     MOVE 0 TO WS-AMP
+     MOVE 0 TO WS-EFFECT
+     MOVE 3600 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 2 TO WS-EFFECT
+     MOVE 1200 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 18 TO WS-EFFECT
+     MOVE 600 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 854 TO IN-WIN-W
+     MOVE 480 TO IN-WIN-H
+     MOVE 0 TO CL-NOW-MS PL-HURT-UNTIL
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE "T" TO TL-MODE
+     MOVE GSP-EFFECT-BG TO WS-ROW
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.2 the backgrounds: beneficial row (402, 1) and (377, 1), the harmful row (402, 27), 24 x 24" TO TL-CASE
+     MOVE "402:1:24:24:0 377:1:24:24:0 402:27:24:24:0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-ROW = GSP-MOB-EFFECT-0 + 0
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.5 the speed icon is 18 x 18 at (405, 4), opaque" TO TL-CASE
+     MOVE "405:4:18:18:0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-ROW = GSP-MOB-EFFECT-0 + 18
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.5 the poison icon is at (405, 30)" TO TL-CASE
+     MOVE "405:30:18:18:0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An ambient effect has the ambient background and never fades; a fading one carries its alpha (D 100: 625, state 626).
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 2 TO WS-EFFECT
+     MOVE 100 TO WS-DUR
+     MOVE 6 TO WS-FLAGS
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 0 TO WS-EFFECT
+     MOVE 7 TO WS-FLAGS
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE GSP-EFFECT-BG-AMBIENT TO WS-ROW
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.5 an ambient effect is drawn first (nearest the edge) on the ambient background" TO TL-CASE
+     MOVE "402:1:24:24:0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-ROW = GSP-MOB-EFFECT-0 + 2
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.5 haste at 100 ticks left fades: alpha 0.625 as widget state 626 at (377 + 3, 4)" TO TL-CASE
+     MOVE "380:4:18:18:626" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The vertices of the faded icon carry the alpha.
+     COMPUTE WS-ROW = GSP-MOB-EFFECT-0 + 2
+     MOVE 18 TO GS-W(WS-ROW) GS-H(WS-ROW)
+     MOVE 18 TO GS-W(GSP-MOB-EFFECT-0) GS-H(GSP-MOB-EFFECT-0)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US14 49§2.5 the faded icon's 6 vertices carry alpha 0.625, the ambient icon's and the rest carry 1" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UI-COUNT
+         IF RL-UI-A(WS-I) > 0.6 AND RL-UI-A(WS-I) < 0.65
+             ADD 1 TO TL-OBSERVED-N
+         END-IF
+         IF RL-UI-A(WS-I) < 0.99
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     COMPUTE TL-OBSERVED-N = TL-OBSERVED-N * 100 + WS-N
+     MOVE 606 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+
+*>   Without the show-icon flag (0x04) an effect takes no slot; without effects nothing is drawn.
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     MOVE 3 TO WS-FLAGS
+     MOVE 2 TO WS-EFFECT
+     MOVE 1000 TO WS-DUR
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 0 TO WS-EFFECT
+     MOVE 6 TO WS-FLAGS
+     CALL "EFFECT-SET" USING CLIENT-STATE WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE GSP-EFFECT-BG TO WS-ROW
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.1 an effect without the show-icon flag takes no slot: speed alone at (402, 1)" TO TL-CASE
+     MOVE "402:1:24:24:0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "EFFECTS-CLEAR" USING CLIENT-STATE
+     CALL "SCREEN-BUILD" USING CLIENT-STATE
+     MOVE GSP-EFFECT-BG TO WS-ROW
+     PERFORM SPRITES-OF
+     MOVE "acceptance US14 49§2.1 with no effect no icon is drawn" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ SEND-UPDATE.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UPDATE-MOB-EFFECT" USING PB-BUFFER WS-ENTITY WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     MOVE 0 TO PB-POS
+     MOVE 135 TO WS-PACKET
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-PACKET
+     .
+
+ SEND-REMOVE.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER PL-ENTITY-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-EFFECT
+     MOVE 0 TO PB-POS
+     MOVE 79 TO WS-PACKET
+     CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-PACKET
+     .
+
+ ORDER-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         MOVE EF-ID(WS-ORDER(WS-I)) TO WS-E1
+         IF WS-I > 1
+             STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     .
+
+*> "x:y:w:h:state" of every sprite widget whose row is WS-ROW, in widget order, space separated.
+ SPRITES-OF.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-SPRITE AND SM-W-ARG(WS-I) = WS-ROW
+             MOVE SM-W-X(WS-I) TO WS-E1
+             MOVE SM-W-Y(WS-I) TO WS-E2
+             MOVE SM-W-W(WS-I) TO WS-E3
+             MOVE SM-W-H(WS-I) TO WS-E4
+             MOVE SM-W-STATE(WS-I) TO WS-E5
+             IF WS-PTR > 1
+                 STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             END-IF
+             STRING FUNCTION TRIM(WS-E1) ":" FUNCTION TRIM(WS-E2) ":" FUNCTION TRIM(WS-E3) ":"
+                 FUNCTION TRIM(WS-E4) ":" FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     .
+ END PROGRAM TEST-EFFECTS-HUD.
+ COPY CLTEST.

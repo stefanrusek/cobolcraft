@@ -2,8 +2,8 @@
 *> tables 10.8.1 to 10.8.6, in table order), transcribed for assets/cobolcraft/lang/en_us.json of
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
-*> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type).
- 78 BI-LANG-COUNT           VALUE 223.
+*> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
+ 78 BI-LANG-COUNT           VALUE 282.
  01 BI-LANG-DATA.
     05 FILLER PIC X(48) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -453,7 +453,126 @@
     05 FILLER PIC X(128) VALUE "Open Pack Folder".
     05 FILLER PIC X(48) VALUE "cobolcraft.screen.packs.open_failed".
     05 FILLER PIC X(128) VALUE "Cannot start %s to open the pack folder".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.title.options".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.pause.options".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.title".
+    05 FILLER PIC X(128) VALUE "Options".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.previous".
+    05 FILLER PIC X(128) VALUE "Previous Page".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.next".
+    05 FILLER PIC X(128) VALUE "Next Page".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.page".
+    05 FILLER PIC X(128) VALUE "Options (page %s of %s)".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.options.press_key".
+    05 FILLER PIC X(128) VALUE "> Press a key <".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.common.search_hint".
+    05 FILLER PIC X(128) VALUE "Search...".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.filter_on".
+    05 FILLER PIC X(128) VALUE "Showing Craftable".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.filter_off".
+    05 FILLER PIC X(128) VALUE "Showing All".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.more".
+    05 FILLER PIC X(128) VALUE "Right Click for More".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.page".
+    05 FILLER PIC X(128) VALUE "%s/%s".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.search".
+    05 FILLER PIC X(128) VALUE "Search".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.equipment".
+    05 FILLER PIC X(128) VALUE "Equipment".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.building".
+    05 FILLER PIC X(128) VALUE "Building Blocks".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.misc".
+    05 FILLER PIC X(128) VALUE "Misc".
+    05 FILLER PIC X(48) VALUE "cobolcraft.screen.recipe_book.tab.redstone".
+    05 FILLER PIC X(128) VALUE "Redstone".
+    05 FILLER PIC X(48) VALUE "recipe.toast.title".
+    05 FILLER PIC X(128) VALUE "New Recipe(s) Unlocked!".
+    05 FILLER PIC X(48) VALUE "recipe.toast.description".
+    05 FILLER PIC X(128) VALUE "Check your recipe book".
+    05 FILLER PIC X(48) VALUE "container.repair.cost".
+    05 FILLER PIC X(128) VALUE "Enchantment Cost: %1$s".
+    05 FILLER PIC X(48) VALUE "container.repair.expensive".
+    05 FILLER PIC X(128) VALUE "Too Expensive!".
+    05 FILLER PIC X(48) VALUE "container.upgrade".
+    05 FILLER PIC X(128) VALUE "Upgrade Gear".
+    05 FILLER PIC X(48) VALUE "container.upgrade.error_tooltip".
+    05 FILLER PIC X(128) VALUE "Item can't be upgraded this way".
+    05 FILLER PIC X(48) VALUE "container.upgrade.missing_template_tooltip".
+    05 FILLER PIC X(128) VALUE "Add Smithing Template".
+    05 FILLER PIC X(48) VALUE "container.inventory".
+    05 FILLER PIC X(128) VALUE "Inventory".
+    05 FILLER PIC X(48) VALUE "gui.done".
+    05 FILLER PIC X(128) VALUE "Done".
+    05 FILLER PIC X(48) VALUE "gui.cancel".
+    05 FILLER PIC X(128) VALUE "Cancel".
+    05 FILLER PIC X(48) VALUE "merchant.trades".
+    05 FILLER PIC X(128) VALUE "Trades".
+    05 FILLER PIC X(48) VALUE "merchant.title".
+    05 FILLER PIC X(128) VALUE "%s - %s".
+    05 FILLER PIC X(48) VALUE "merchant.level.1".
+    05 FILLER PIC X(128) VALUE "Novice".
+    05 FILLER PIC X(48) VALUE "merchant.level.2".
+    05 FILLER PIC X(128) VALUE "Apprentice".
+    05 FILLER PIC X(48) VALUE "merchant.level.3".
+    05 FILLER PIC X(128) VALUE "Journeyman".
+    05 FILLER PIC X(48) VALUE "merchant.level.4".
+    05 FILLER PIC X(128) VALUE "Expert".
+    05 FILLER PIC X(48) VALUE "merchant.level.5".
+    05 FILLER PIC X(128) VALUE "Master".
+    05 FILLER PIC X(48) VALUE "merchant.deprecated".
+    05 FILLER PIC X(128) VALUE "Villagers restock up to two times per day.".
+    05 FILLER PIC X(48) VALUE "lectern.take_book".
+    05 FILLER PIC X(128) VALUE "Take Book".
+    05 FILLER PIC X(48) VALUE "book.pageIndicator".
+    05 FILLER PIC X(128) VALUE "Page %1$s of %2$s".
+    05 FILLER PIC X(48) VALUE "block.minecraft.beacon.primary".
+    05 FILLER PIC X(128) VALUE "Primary Power".
+    05 FILLER PIC X(48) VALUE "block.minecraft.beacon.secondary".
+    05 FILLER PIC X(128) VALUE "Secondary Power".
+*>   The keys of the screens of docs/protocol/40-menus-7 (the tab titles) and 40-menus-8 (the sign and book editors).
+    05 FILLER PIC X(48) VALUE "sign.edit".
+    05 FILLER PIC X(128) VALUE "Edit Sign Message".
+    05 FILLER PIC X(48) VALUE "book.signButton".
+    05 FILLER PIC X(128) VALUE "Sign".
+    05 FILLER PIC X(48) VALUE "book.finalizeButton".
+    05 FILLER PIC X(128) VALUE "Sign and Close".
+    05 FILLER PIC X(48) VALUE "book.editTitle".
+    05 FILLER PIC X(128) VALUE "Enter Book Title:".
+    05 FILLER PIC X(48) VALUE "book.byAuthor".
+    05 FILLER PIC X(128) VALUE "by %1$s".
+    05 FILLER PIC X(48) VALUE "book.finalizeWarning".
+    05 FILLER PIC X(128) VALUE "Note! When you sign the book, it will no longer be editable.".
+    05 FILLER PIC X(48) VALUE "itemGroup.buildingBlocks".
+    05 FILLER PIC X(128) VALUE "Building Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.coloredBlocks".
+    05 FILLER PIC X(128) VALUE "Colored Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.natural".
+    05 FILLER PIC X(128) VALUE "Natural Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.functional".
+    05 FILLER PIC X(128) VALUE "Functional Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.redstone".
+    05 FILLER PIC X(128) VALUE "Redstone Blocks".
+    05 FILLER PIC X(48) VALUE "itemGroup.hotbar".
+    05 FILLER PIC X(128) VALUE "Saved Hotbars".
+    05 FILLER PIC X(48) VALUE "itemGroup.search".
+    05 FILLER PIC X(128) VALUE "Search Items".
+    05 FILLER PIC X(48) VALUE "itemGroup.tools".
+    05 FILLER PIC X(128) VALUE "Tools & Utilities".
+    05 FILLER PIC X(48) VALUE "itemGroup.combat".
+    05 FILLER PIC X(128) VALUE "Combat".
+    05 FILLER PIC X(48) VALUE "itemGroup.foodAndDrink".
+    05 FILLER PIC X(128) VALUE "Food & Drinks".
+    05 FILLER PIC X(48) VALUE "itemGroup.ingredients".
+    05 FILLER PIC X(128) VALUE "Ingredients".
+    05 FILLER PIC X(48) VALUE "itemGroup.spawnEggs".
+    05 FILLER PIC X(128) VALUE "Spawn Eggs".
+    05 FILLER PIC X(48) VALUE "itemGroup.op".
+    05 FILLER PIC X(128) VALUE "Operator Utilities".
+    05 FILLER PIC X(48) VALUE "itemGroup.inventory".
+    05 FILLER PIC X(128) VALUE "Survival Inventory".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 223 TIMES.
+    05 BI-LANG OCCURS 282 TIMES.
        10 BI-LANG-KEY        PIC X(48).
        10 BI-LANG-TEXT       PIC X(128).

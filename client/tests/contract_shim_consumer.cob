@@ -70,6 +70,10 @@
          + CC-TEX-UI * 10000000 + CC-TEX-ENVIRONMENT * 1000000 + CC-MESH-SLOT-MIN * 100000
          + CC-MESH-SLOT-MAX
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract client shim consumer the crumbling pipeline is 3 (CC-PIPE-CRUMBLING)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE CC-PIPE-CRUMBLING TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "contract client shim consumer the event record is 24 bytes and the vertex 28 (records and "
          & "CC-EVENT-SIZE, CC-VERTEX-SIZE)" TO TL-CASE
      MOVE 24282428 TO TL-EXPECTED-N

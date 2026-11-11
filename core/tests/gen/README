@@ -1,0 +1,2 @@
+Generators of the 29/29a/33 decision tests; run from the repository root: for g in gen9 gen10 genfl genfl34 genfl5 genws; do python3 core/tests/gen/$g.py; done (rewrites core/tests/test_blockupd_29_9..12, test_fluids_29a_1..10 and test_worldsim_33_1..10).
+gengr1 -> test_growth_29b_1_1..4 (run from the repository root: python3 core/tests/gen/gengr1.py)

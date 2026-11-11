@@ -1,0 +1,1 @@
+{"type": "minecraft:add", "left": {"type": "minecraft:mul", "left": "minecraft:y", "right": 0.25}, "right": {"type": "minecraft:sub", "left": 3.5, "right": {"type": "minecraft:div", "left": "minecraft:y", "right": 3.0}}}

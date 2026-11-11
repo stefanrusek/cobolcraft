@@ -64,12 +64,12 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-DIRTY TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "loop every frame produces the screen model (the HUD crosshair) and a render list whose "
+     MOVE "loop every frame produces the screen model (the HUD crosshair, a sprite widget of kind 8) and a render list whose "
          & "last draw is the UI" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "+ 2" TO TL-EXPECTED
+     MOVE "8 2" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     STRING SM-W-TEXT(1)(1:SM-W-LENGTH(1)) " " FUNCTION CHAR(RL-D-PIPELINE(RL-DRAW-COUNT) + 49)
+     STRING FUNCTION CHAR(SM-W-KIND(1) + 49) " " FUNCTION CHAR(RL-D-PIPELINE(RL-DRAW-COUNT) + 49)
          DELIMITED BY SIZE INTO TL-OBSERVED
      IF RL-DRAW-COUNT < 2
          MOVE "no world draws" TO TL-OBSERVED

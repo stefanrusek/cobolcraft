@@ -54,7 +54,7 @@
      PERFORM USE-ON
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      PERFORM ADD-STATE
-     MOVE "8(8,59,8=14) 49(0,-1) 49(-1,0) 49(0,0) 49(1,0) 49(0,1) 4(1) state 14"
+     MOVE "49(0,-1) 49(-1,0) 49(0,0) 49(1,0) 49(0,1) 8(8,59,8=14) 4(1) state 14"
          TO TL-EXPECTED
      PERFORM CHECK
 

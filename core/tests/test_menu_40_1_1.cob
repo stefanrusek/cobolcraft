@@ -1,0 +1,66 @@
+*> Test of 40-1 section 1 (Scope and reading guide; T0989): the shared constants the model fixes: slot -999 (outside), -1 (none),
+*> slot size 18, 9 slots per row, 25 menu types.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-1-1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-E1 PIC -(9)9.
+ 01 WS-E2 PIC -(9)9.
+ 01 WS-E3 PIC -(9)9.
+ 01 WS-E4 PIC -(9)9.
+ 01 WS-E5 PIC -(9)9.
+ 01 WS-E6 PIC -(9)9.
+ 01 WS-E7 PIC -(9)9.
+ 01 WS-E8 PIC -(9)9.
+ 01 WS-E9 PIC -(9)9.
+ 01 WS-E10 PIC -(9)9.
+ 01 WS-E11 PIC -(9)9.
+ 01 WS-E12 PIC -(9)9.
+ 01 WS-A BINARY-LONG.
+ 01 WS-B BINARY-LONG.
+ 01 WS-C BINARY-LONG.
+ 01 WS-D BINARY-LONG.
+ 01 WS-F BINARY-LONG.
+ 01 WS-G BINARY-LONG.
+ 01 WS-H BINARY-LONG.
+ 01 WS-J BINARY-LONG.
+ 01 WS-K BINARY-LONG.
+ 01 WS-K32 PIC X(32).
+ 01 WS-KEY2 PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE "acceptance US12 40-1§1 Scope and reading guide: outside -999, none -1, slot size 18, 9 per row, 25 menu types" TO TL-CASE
+     CALL "MENU-SCOPE" USING WS-A WS-B WS-C WS-D WS-F
+     MOVE WS-A TO WS-E1
+     MOVE WS-B TO WS-E2
+     MOVE WS-C TO WS-E3
+     MOVE WS-D TO WS-E4
+     MOVE WS-F TO WS-E5
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) " " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "-999 -1 18 9 25" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MENU-40-1-1.
+
+ COPY CORETEST.

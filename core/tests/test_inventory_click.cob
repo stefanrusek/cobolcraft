@@ -279,8 +279,8 @@
      MOVE WS-BOB TO WS-CONN
      MOVE CN-PLAYER(WS-BOB) TO WS-ROW
 
-     MOVE "test inventory click Set Creative Mode Slot lowers a count to the item's maximum "
-         & "stack; an unknown item, slot -1 and slot 46 are ignored; count 0 empties a slot"
+     MOVE "test inventory click Set Creative Mode Slot ignores a count above the item's maximum "
+         & "stack (41 section 2.3.1: slot 36 stays empty); an unknown item and slot 46 are ignored (slot -1 throws); count 0 empties a slot"
          TO TL-CASE
      MOVE 36 TO WS-NUM
      MOVE 12 TO WS-I
@@ -304,7 +304,7 @@
      MOVE 0 TO WS-S
      PERFORM CREATIVE-SET
      PERFORM SHOW
-     MOVE "cursor 0x0 36:12x32 38:7x5" TO TL-EXPECTED
+     MOVE "cursor 0x0 38:7x5" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test inventory click CLONE in creative fills an empty cursor with a full stack of "
@@ -327,7 +327,7 @@
      MOVE -999 TO WS-C-SLOT
      PERFORM CLICK
      PERFORM SHOW
-     MOVE "cursor 0x0 36:12x32 38:7x5 39:7x64 40:7x64" TO TL-EXPECTED
+     MOVE "cursor 0x0 38:7x5 39:7x64 40:7x64" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   Decoding.

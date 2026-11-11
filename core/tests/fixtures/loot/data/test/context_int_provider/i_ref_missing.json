@@ -1,0 +1,6 @@
+{
+ "type": "minecraft:add",
+ "inputs": [
+  "test:no_such_int"
+ ]
+}

@@ -1,0 +1,345 @@
+*> Durability, Unbreaking, Mending and repair (docs/protocol/17 section 5; US14; T2163). Damage and fractions in whole points or thousandths as named.
+*>   TOOL-UNBREAKING-CHANCE USING level, armor piece (1 or 0), chance out (thousandths: tools L / (L + 1), armor (2 + 2 (L - 1)) / (10 + 5 (L - 1)))
+*>   TOOL-UNBREAKING-ROLL USING chance, roll (0 to 999), removed out (1 when the roll is under the chance)
+*>   TOOL-DAMAGE-STACK USING damage, max damage, amount, creative, new damage out, broke out (damage reaches max), next hit breaks out
+*>   TOOL-MENDING USING xp, damage, repaired out (2 per point, at most the damage), xp remainder out
+*>   TOOL-ANVIL-REPAIR USING damage, max damage, material count, new damage out, materials used out, levels out (1 per unit of min(damage, max / 4))
+*>   TOOL-MERGE-DAMAGE USING mode (1 anvil 12 percent, 2 crafting grid 5 percent, 3 grindstone 5 percent), max, remaining a, remaining b, new damage out
+*>   TOOL-REPAIR-COST USING repair cost n, next out (2 n + 1)
+*>   TOOL-ANVIL-FINAL USING cost, only a rename, creative, final cost out (39 for a rename-only 40 or more), result allowed out (cost under 40 or creative)
+*>   TOOL-ANVIL-ENCHANT USING level on the left, level on the right, enchantment max level, anvil multiplier, right is a book, new level out, cost out
+*>   TOOL-GRIND-XP USING sum of minimum costs T, roll (0 to h - 1), experience out (h + roll, h = ceil(T / 2); 0 for T 0)
+*>   TOOL-DURABILITY-COST USING event (1 block with a tool, 2 block with a sword, mace or trident, 3 hit with a sword, mace, trident or spear, 4 hit
+*>     with a pickaxe, axe, shovel or hoe, 5 bow shot, 6 crossbow firework, 7 crossbow arrow, 8 trident throw), cost out
+*>   TOOL-HURT-STACK USING connection id, inventory slot 0 to 35, amount, broke out: hurtAndBreak on that player stack (Unbreaking, creative takes none,
+*>     the stack breaks at max_damage), then Container Set Slot of the slot (core/src/stack-patch.cob for the damage component)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-UNBREAKING-CHANCE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-ARMOR                BINARY-LONG.
+ 01 L-CHANCE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-ARMOR L-CHANCE.
+     IF L-ARMOR = 1
+         COMPUTE L-CHANCE = (2 + 2 * (L-LEVEL - 1)) * 1000 / (10 + 5 * (L-LEVEL - 1))
+     ELSE
+         COMPUTE L-CHANCE = L-LEVEL * 1000 / (L-LEVEL + 1)
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-UNBREAKING-CHANCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-UNBREAKING-ROLL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CHANCE               BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-REMOVED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHANCE L-ROLL L-REMOVED.
+     MOVE 0 TO L-REMOVED
+     IF L-ROLL < L-CHANCE
+         MOVE 1 TO L-REMOVED
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-UNBREAKING-ROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-UNBREAKING-APPLY.
+*> USING pending damage, Unbreaking level, armor piece, damage left out: removes each pending point with the chance of the level
+*> (the draws come from RNG-MIX over a running seed); level 0 or less leaves the damage whole.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 12345.
+ 01 WS-RESULT              BINARY-DOUBLE.
+ 01 WS-CHANCE              BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-REMOVED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-ARMOR                BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-AMOUNT L-LEVEL L-ARMOR L-LEFT.
+     MOVE L-AMOUNT TO L-LEFT
+     IF L-LEVEL > 0
+         CALL "TOOL-UNBREAKING-CHANCE" USING L-LEVEL L-ARMOR WS-CHANCE
+         PERFORM L-AMOUNT TIMES
+             COMPUTE WS-SEED = FUNCTION MOD(WS-SEED * 1103515245 + 12345, 4294967296)
+             CALL "RNG-MIX" USING WS-SEED WS-RESULT
+             COMPUTE WS-ROLL = FUNCTION MOD(WS-RESULT, 1000)
+             CALL "TOOL-UNBREAKING-ROLL" USING WS-CHANCE WS-ROLL WS-REMOVED
+             SUBTRACT WS-REMOVED FROM L-LEFT
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-UNBREAKING-APPLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DAMAGE-STACK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-BROKE                BINARY-LONG.
+ 01 L-NEXT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DAMAGE L-MAX L-AMOUNT L-CREATIVE L-NEW L-BROKE L-NEXT.
+     MOVE L-DAMAGE TO L-NEW
+     MOVE 0 TO L-BROKE L-NEXT
+     IF L-MAX > 0 AND L-CREATIVE = 0
+         ADD L-AMOUNT TO L-NEW
+         IF L-NEW >= L-MAX
+             MOVE L-MAX TO L-NEW
+             MOVE 1 TO L-BROKE
+         END-IF
+     END-IF
+     IF L-MAX > 0 AND L-NEW + 1 >= L-MAX
+         MOVE 1 TO L-NEXT
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-DAMAGE-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-MENDING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-POTENTIAL           BINARY-LONG.
+ 01 WS-USED                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-XP                   BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-REPAIRED             BINARY-LONG.
+ 01 L-REMAINDER            BINARY-LONG.
+ PROCEDURE DIVISION USING L-XP L-DAMAGE L-REPAIRED L-REMAINDER.
+     COMPUTE WS-POTENTIAL = L-XP * 2
+     MOVE L-XP TO L-REMAINDER
+     MOVE WS-POTENTIAL TO L-REPAIRED
+     IF L-REPAIRED > L-DAMAGE
+         MOVE L-DAMAGE TO L-REPAIRED
+     END-IF
+     IF L-REPAIRED > 0
+         COMPUTE WS-USED = L-REPAIRED * L-XP / WS-POTENTIAL
+         COMPUTE L-REMAINDER = L-XP - WS-USED
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-MENDING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ANVIL-REPAIR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-UNIT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-USED                 BINARY-LONG.
+ 01 L-LEVELS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DAMAGE L-MAX L-COUNT L-NEW L-USED L-LEVELS.
+     MOVE L-DAMAGE TO L-NEW
+     MOVE 0 TO L-USED L-LEVELS
+     COMPUTE WS-UNIT = L-MAX / 4
+     IF WS-UNIT > L-NEW
+         MOVE L-NEW TO WS-UNIT
+     END-IF
+     PERFORM UNTIL WS-UNIT <= 0 OR L-USED >= L-COUNT OR L-NEW <= 0
+         SUBTRACT WS-UNIT FROM L-NEW
+         ADD 1 TO L-USED L-LEVELS
+         COMPUTE WS-UNIT = L-MAX / 4
+         IF WS-UNIT > L-NEW
+             MOVE L-NEW TO WS-UNIT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TOOL-ANVIL-REPAIR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-MERGE-DAMAGE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-REMAINING           BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-MODE L-MAX L-A L-B L-NEW.
+     IF L-MODE = 1
+         COMPUTE WS-REMAINING = L-A + L-B + L-MAX * 12 / 100
+     ELSE
+         COMPUTE WS-REMAINING = L-A + L-B + L-MAX * 5 / 100
+     END-IF
+     COMPUTE L-NEW = L-MAX - WS-REMAINING
+     IF L-NEW < 0
+         MOVE 0 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-MERGE-DAMAGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-REPAIR-COST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-N                    BINARY-LONG.
+ 01 L-NEXT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-N L-NEXT.
+     COMPUTE L-NEXT = L-N * 2 + 1
+     GOBACK.
+ END PROGRAM TOOL-REPAIR-COST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ANVIL-FINAL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COST                 BINARY-LONG.
+ 01 L-RENAME               BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-FINAL                BINARY-LONG.
+ 01 L-ALLOWED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-COST L-RENAME L-CREATIVE L-FINAL L-ALLOWED.
+     MOVE L-COST TO L-FINAL
+     IF L-RENAME = 1 AND L-FINAL >= 40
+         MOVE 39 TO L-FINAL
+     END-IF
+     MOVE 1 TO L-ALLOWED
+     IF L-FINAL >= 40 AND L-CREATIVE = 0
+         MOVE 0 TO L-ALLOWED
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-ANVIL-FINAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-ANVIL-ENCHANT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MULTIPLIER          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-RIGHT                BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-MULTIPLIER           BINARY-LONG.
+ 01 L-BOOK                 BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-COST                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEFT L-RIGHT L-MAX L-MULTIPLIER L-BOOK L-LEVEL L-COST.
+     IF L-LEFT = L-RIGHT
+         COMPUTE L-LEVEL = L-LEFT + 1
+     ELSE
+         IF L-LEFT > L-RIGHT
+             MOVE L-LEFT TO L-LEVEL
+         ELSE
+             MOVE L-RIGHT TO L-LEVEL
+         END-IF
+     END-IF
+     IF L-LEVEL > L-MAX
+         MOVE L-MAX TO L-LEVEL
+     END-IF
+     MOVE L-MULTIPLIER TO WS-MULTIPLIER
+     IF L-BOOK = 1
+         COMPUTE WS-MULTIPLIER = L-MULTIPLIER / 2
+         IF WS-MULTIPLIER < 1
+             MOVE 1 TO WS-MULTIPLIER
+         END-IF
+     END-IF
+     COMPUTE L-COST = L-LEVEL * WS-MULTIPLIER
+     GOBACK.
+ END PROGRAM TOOL-ANVIL-ENCHANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-GRIND-XP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-H                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-T                    BINARY-LONG.
+ 01 L-ROLL                 BINARY-LONG.
+ 01 L-XP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-T L-ROLL L-XP.
+     MOVE 0 TO L-XP
+     IF L-T > 0
+         COMPUTE WS-H = (L-T + 1) / 2
+         COMPUTE L-XP = WS-H + L-ROLL
+     END-IF
+     GOBACK.
+ END PROGRAM TOOL-GRIND-XP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-DURABILITY-COST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-COST                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-EVENT L-COST.
+     EVALUATE L-EVENT
+         WHEN 2 WHEN 4
+             MOVE 2 TO L-COST
+         WHEN 6
+             MOVE 3 TO L-COST
+         WHEN OTHER
+             MOVE 1 TO L-COST
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM TOOL-DURABILITY-COST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-HURT-STACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-CHANCE              BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-ROLL                BINARY-LONG.
+ 01 WS-REMOVED             BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 12345.
+ 01 WS-RESULT              BINARY-DOUBLE.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:unbreaking".
+ 01 WS-SLOT1               BINARY-LONG.
+ 01 WS-NOT-ARMOR           BINARY-LONG VALUE 0.
+ 01 WS-CREATIVE            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-BROKE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CONN L-SLOT L-AMOUNT L-BROKE.
+     MOVE 0 TO L-BROKE
+     MOVE CN-PLAYER(L-CONN) TO WS-ROW
+     COMPUTE WS-SLOT1 = L-SLOT + 1
+     IF PL-SLOT-COUNT(WS-ROW, WS-SLOT1) = 0
+         GOBACK
+     END-IF
+     MOVE PL-SLOT-VAR(WS-ROW, WS-SLOT1) TO WS-HANDLE
+     CALL "SP-GET-MAX-DAMAGE" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT1) WS-HANDLE WS-MAX
+     IF WS-MAX = 0
+         GOBACK
+     END-IF
+     MOVE PL-MODE(WS-ROW) TO WS-CREATIVE
+     CALL "TOOL-ENCHANT-ID" USING WS-KEY WS-ID
+     CALL "SP-ENCHANT-LEVEL" USING WS-HANDLE WS-ID WS-LEVEL
+     CALL "TOOL-UNBREAKING-APPLY" USING L-AMOUNT WS-LEVEL WS-NOT-ARMOR WS-LEFT
+     CALL "SP-GET-DAMAGE" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT1) WS-HANDLE WS-DAMAGE
+     CALL "TOOL-DAMAGE-STACK" USING WS-DAMAGE WS-MAX WS-LEFT WS-CREATIVE WS-NEW L-BROKE WS-NEXT
+     IF WS-NEW NOT = WS-DAMAGE
+         CALL "SP-SET-DAMAGE" USING WS-HANDLE WS-NEW
+         MOVE WS-HANDLE TO PL-SLOT-VAR(WS-ROW, WS-SLOT1)
+     END-IF
+     IF L-BROKE = 1
+         MOVE 0 TO PL-SLOT-COUNT(WS-ROW, WS-SLOT1) PL-SLOT-VAR(WS-ROW, WS-SLOT1)
+     END-IF
+     CALL "INV-SLOT-SEND" USING L-CONN L-SLOT
+     GOBACK.
+ END PROGRAM TOOL-HURT-STACK.

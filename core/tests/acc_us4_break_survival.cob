@@ -46,7 +46,7 @@
      MOVE 2 TO WS-STATE
      MOVE 31 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(2) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 103 8(20,100,20=0) 4(2) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (pry_bar, hard class) when "
@@ -56,7 +56,7 @@
      MOVE 2 TO WS-STATE
      MOVE 7 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(4) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 103 8(20,100,20=0) 4(4) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and the matching tool (trowel, soft class) when loam "
@@ -70,7 +70,7 @@
      MOVE 3 TO WS-STATE
      MOVE 3 TO WS-TICKS
      PERFORM BREAK-BLOCK
-     MOVE "5(1,20,100,20=255) 8(20,100,20=0) 49(1,1) 1 101 4(6) state 0" TO TL-EXPECTED
+     MOVE "5(1,20,100,20=255) 49(1,1) 1 101 103 8(20,100,20=0) 4(6) state 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US4-3 given survival and a tool of the other class (trowel on greystone) "
@@ -181,6 +181,8 @@
 
  CHECK.
      MOVE "T" TO TL-MODE
+*>   Teleport Entity of a ground item that an earlier break left creeping or falling is not what these cases assert (41 section 3).
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
      MOVE FUNCTION TRIM(WS-TEXT) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM ACC-US4-BREAK-SURVIVAL.

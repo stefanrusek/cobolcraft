@@ -1,0 +1,1087 @@
+*> The classic cave and canyon carvers (docs/protocol/11 section 5; T0426; CARVER.cpy, CVWALK.cpy): for the chunk being generated
+*> (the job's target) every source chunk within 8 chunks starts the carvers cave, cave_extra_underground and canyon with the
+*> probabilities of 5.1, a walker draws tunnels from the Java LCG (rng-java.cob), and each step of a walker marks an ellipsoid in
+*> the chunk's carving mask (GENJOB.cpy GJ-CV-MASK); the mask is then applied column by column through the aquifer (5.6).
+*>
+*> The parameters of 5.1 are the document's constants (every overworld biome has the same carver list, 8.5, so no biome is read).
+*> Single precision values (the "float" steps of the document) are rounded to float32 after every operation with the shim's exact
+*> double operations; the table sine and cosine are the shim's cc_f64_sin_tab and cc_f64_cos_tab.
+*>
+*> The stage's steps (GEN-STAGE-CARVERS, GJ-STEPS-CARVERS 305): steps 0 to 288 one source chunk each (dx outer from -8, dz inner,
+*> 5.2), steps 289 to 304 the application of one row of the mask each (CARVER-APPLY-ROW, x = step - 289).
+*>
+*> Entry points:
+*>   CARVER-SETUP USING world seed (u64): the seed and the constants (once per world)
+*>   CARVER-START-DRAW USING world seed (u64), carver index (BINARY-LONG), source chunk x, z, random state out, draw out (FLOAT-LONG)
+*>   CARVER-COUNT USING random state, count out: the very_biased_to_bottom 0..14 sample
+*>   CARVER-CAVE-HEAD USING random state, y low, y high: the draws of one cave (CV-CAVE)
+*>   CARVER-TUNNEL-HEAD USING random state: the draws of one tunnel (CV-TUNNEL)
+*>   CARVER-ELLIPSOID USING job, x, y, z, horizontal radius, vertical radius (FLOAT-LONG): 5.5
+*>   CARVER-APPLY-ROW USING job, x (0 to 15): 5.6 for the 16 columns of that x
+*>   CARVER-SOURCE USING job, source chunk x, z: the three carvers of one source chunk
+*>   GEN-STAGE-CARVERS USING job: step GJ-SUB of the stage
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-FADD.
+*> USING a, b, result (FLOAT-LONG): the float32 sum.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-R.
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-A L-B WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-R
+     GOBACK.
+ END PROGRAM CV-FADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-FSUB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-R.
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-A L-B WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-R
+     GOBACK.
+ END PROGRAM CV-FSUB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-FMUL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-R.
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE L-A L-B WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-R
+     GOBACK.
+ END PROGRAM CV-FMUL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-FDIV.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-R.
+     CALL STATIC "cc_f64_div" USING BY REFERENCE L-A L-B WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-R
+     GOBACK.
+ END PROGRAM CV-FDIV.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-CONST.
+*> USING text (z-string PIC X(16)), result (FLOAT-LONG): the float32 value nearest the decimal text.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(16).
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-R.
+     CALL STATIC "cc_f64_from_text" USING BY REFERENCE L-TEXT WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-R
+     GOBACK.
+ END PROGRAM CV-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-SETUP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-TEXT                PIC X(16).
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE UNSIGNED.
+ PROCEDURE DIVISION USING L-SEED.
+     MOVE L-SEED TO CV-SEED
+     MOVE 0 TO CV-SX CV-SZ CV-MODE
+     MOVE 0 TO CV-FLOOR
+     MOVE Z"3.1415927" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-PI
+     MOVE Z"6.28318548" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-TWO-PI
+     MOVE Z"1.57079637" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-HALF-PI
+     MOVE Z"0.92" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K092
+     MOVE Z"0.7" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K07
+     MOVE Z"0.1" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K01
+     MOVE Z"0.9" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K09
+     MOVE Z"0.75" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K075
+     MOVE Z"0.05" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K005
+     MOVE Z"0.8" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-K08
+     MOVE Z"0.15" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-PROB-CAVE
+     MOVE Z"0.07" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-PROB-EXTRA
+     MOVE Z"0.01" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-PROB-CANYON
+     MOVE Z"-0.4" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-NEG-04
+     MOVE Z"1.4" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-HMUL-HI
+     MOVE Z"0.7" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-HMUL-LO
+     MOVE Z"0.8" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-VMUL-LO
+     MOVE Z"1.3" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-VMUL-HI
+     MOVE Z"0.1" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-ROOMV-LO
+     MOVE Z"0.9" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-ROOMV-HI
+     MOVE Z"-0.125" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-ROT-LO
+     MOVE Z"0.125" TO WS-TEXT
+     CALL "CV-CONST" USING WS-TEXT CV-ROT-HI
+     MOVE 0.5 TO CV-HALF
+     MOVE 1 TO CV-ONE
+     MOVE 2 TO CV-TWO
+     MOVE 3 TO CV-THREE
+     MOVE 4 TO CV-FOUR
+     MOVE 6 TO CV-SIX
+     MOVE 16 TO CV-SIXTEEN
+     MOVE 1.5 TO CV-ONE-HALF
+     MOVE -1 TO CV-NEG-ONE
+     MOVE 1 TO CV-READY
+     GOBACK.
+ END PROGRAM CARVER-SETUP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-UNIFORM.
+*> USING random state, low, high (FLOAT-LONG), result out: nextFloat() * (high - low) + low, in float32 steps (11 section 4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-LO                   FLOAT-LONG.
+ 01 L-HI                   FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-LO L-HI L-R.
+     CALL "CV-FSUB" USING L-HI L-LO WS-RANGE
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FMUL" USING WS-F WS-RANGE WS-T
+     CALL "CV-FADD" USING WS-T L-LO L-R
+     GOBACK.
+ END PROGRAM CV-UNIFORM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-TRAPEZOID.
+*> USING random state, min, max, plateau (FLOAT-LONG), result out: min + nextFloat * slope + nextFloat * slopeWidth (11 section 4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-WIDTH               FLOAT-LONG.
+ 01 WS-SLOPE               FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-MIN                  FLOAT-LONG.
+ 01 L-MAX                  FLOAT-LONG.
+ 01 L-PLATEAU              FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-MIN L-MAX L-PLATEAU L-R.
+     CALL "CV-FSUB" USING L-MAX L-MIN WS-RANGE
+     CALL "CV-FSUB" USING WS-RANGE L-PLATEAU WS-T
+     CALL "CV-FDIV" USING WS-T CV-TWO WS-WIDTH
+     CALL "CV-FSUB" USING WS-RANGE WS-WIDTH WS-SLOPE
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FMUL" USING WS-F WS-SLOPE WS-T
+     CALL "CV-FADD" USING L-MIN WS-T WS-A
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FMUL" USING WS-F WS-WIDTH WS-T
+     CALL "CV-FADD" USING WS-A WS-T L-R
+     GOBACK.
+ END PROGRAM CV-TRAPEZOID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-START-DRAW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE UNSIGNED.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-DRAW                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SEED L-INDEX L-SX L-SZ L-STATE L-DRAW.
+     MOVE L-SX TO CV-SX
+     MOVE L-SZ TO CV-SZ
+     COMPUTE WS-SEED = FUNCTION MOD(L-SEED + L-INDEX, WS-M64)
+     CALL "JRAND-LARGE-FEATURE-SEED" USING L-STATE WS-SEED L-SX L-SZ
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE L-DRAW
+     GOBACK.
+ END PROGRAM CARVER-START-DRAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-COUNT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-COUNT.
+     MOVE 15 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-A
+     COMPUTE WS-BOUND = WS-A + 1
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-B
+     COMPUTE WS-BOUND = WS-B + 1
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND L-COUNT
+     GOBACK.
+ END PROGRAM CARVER-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-CAVE-HEAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-YLO                  BINARY-LONG.
+ 01 L-YHI                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-YLO L-YHI.
+     MOVE 16 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE CV-CAVE-X = CV-SX * 16 + WS-D
+     COMPUTE WS-BOUND = L-YHI - L-YLO + 1
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE CV-CAVE-Y = L-YLO + WS-D
+     MOVE 16 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE CV-CAVE-Z = CV-SZ * 16 + WS-D
+     CALL "CV-UNIFORM" USING L-STATE CV-HMUL-LO CV-HMUL-HI CV-CAVE-HMUL
+     CALL "CV-UNIFORM" USING L-STATE CV-VMUL-LO CV-VMUL-HI CV-CAVE-VMUL
+     CALL "CV-UNIFORM" USING L-STATE CV-NEG-ONE CV-NEG-04 CV-CAVE-FLOOR
+     MOVE 4 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     MOVE 1 TO CV-CAVE-TUNNELS
+     MOVE 0 TO CV-CAVE-ROOM
+     IF WS-D = 0
+         MOVE 1 TO CV-CAVE-ROOM
+         CALL "CV-UNIFORM" USING L-STATE CV-ROOMV-LO CV-ROOMV-HI CV-CAVE-ROOMV
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+         CALL "CV-FMUL" USING WS-F CV-SIX WS-T
+         CALL "CV-FADD" USING CV-ONE WS-T CV-CAVE-ROOMR
+         CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+         ADD WS-D TO CV-CAVE-TUNNELS
+     END-IF
+     GOBACK.
+ END PROGRAM CARVER-CAVE-HEAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-TUNNEL-HEAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ PROCEDURE DIVISION USING L-STATE.
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FMUL" USING WS-F CV-TWO-PI CV-TUN-YAW
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FSUB" USING WS-F CV-HALF WS-T
+     CALL "CV-FDIV" USING WS-T CV-FOUR CV-TUN-PITCH
+     CALL "CV-TRAPEZOID" USING L-STATE WS-ZERO CV-THREE CV-ONE CV-TUN-THICK
+     MOVE 10 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     IF WS-D = 0
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-G
+         CALL "CV-FMUL" USING WS-F WS-G WS-T
+         CALL "CV-FMUL" USING WS-T CV-THREE WS-F
+         CALL "CV-FADD" USING WS-F CV-ONE WS-G
+         CALL "CV-FMUL" USING CV-TUN-THICK WS-G WS-T
+         MOVE WS-T TO CV-TUN-THICK
+     END-IF
+     MOVE 28 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE CV-TUN-STEPS = 112 - WS-D
+     CALL "JRAND-NEXT-LONG" USING L-STATE CV-TUN-SEED
+     GOBACK.
+ END PROGRAM CARVER-TUNNEL-HEAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-ELLIPSOID.
+*> USING job, centre x, y, z, horizontal radius, vertical radius (FLOAT-LONG): carveEllipsoid of 5.5 with the skip test of the carver
+*> of CV-MODE (0 cave: the floor CV-FLOOR and the unit ellipsoid; 1 canyon: the layer factor of CV-WIDTH and yd * yd / 6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-TWO                 FLOAT-LONG VALUE 2.
+ 01 WS-SIXTEEN             FLOAT-LONG VALUE 16.
+ 01 WS-SIX                 FLOAT-LONG VALUE 6.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-MID                 FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-LIM                 FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-MINX                BINARY-LONG.
+ 01 WS-MINZ                BINARY-LONG.
+ 01 WS-XLO                 BINARY-LONG.
+ 01 WS-XHI                 BINARY-LONG.
+ 01 WS-ZLO                 BINARY-LONG.
+ 01 WS-ZHI                 BINARY-LONG.
+ 01 WS-YLO                 BINARY-LONG.
+ 01 WS-YHI                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-XD                  FLOAT-LONG.
+ 01 WS-XD2                 FLOAT-LONG.
+ 01 WS-ZD2                 FLOAT-LONG.
+ 01 WS-YD                  FLOAT-LONG.
+ 01 WS-YD2                 FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-SKIP                BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-CX                   FLOAT-LONG.
+ 01 L-CY                   FLOAT-LONG.
+ 01 L-CZ                   FLOAT-LONG.
+ 01 L-HR                   FLOAT-LONG.
+ 01 L-VR                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-JOB L-CX L-CY L-CZ L-HR L-VR.
+     COMPUTE WS-MINX = J-CX * 16
+     COMPUTE WS-MINZ = J-CZ * 16
+*>   too far from the chunk's middle: nothing of the chunk is reached
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE L-HR WS-TWO WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-SIXTEEN WS-LIM
+     COMPUTE WS-D = WS-MINX + 8
+     MOVE WS-D TO WS-MID
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-CX WS-MID WS-T
+     CALL STATIC "cc_f64_abs_f64" USING BY REFERENCE WS-T WS-D
+     IF WS-D > WS-LIM
+         GOBACK
+     END-IF
+     COMPUTE WS-D = WS-MINZ + 8
+     MOVE WS-D TO WS-MID
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-CZ WS-MID WS-T
+     CALL STATIC "cc_f64_abs_f64" USING BY REFERENCE WS-T WS-D
+     IF WS-D > WS-LIM
+         GOBACK
+     END-IF
+*>   the bounds
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-CX L-HR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-XLO = WS-A - WS-MINX - 1
+     IF WS-XLO < 0
+         MOVE 0 TO WS-XLO
+     END-IF
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-CX L-HR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-XHI = WS-A - WS-MINX
+     IF WS-XHI > 15
+         MOVE 15 TO WS-XHI
+     END-IF
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-CZ L-HR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-ZLO = WS-A - WS-MINZ - 1
+     IF WS-ZLO < 0
+         MOVE 0 TO WS-ZLO
+     END-IF
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-CZ L-HR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-ZHI = WS-A - WS-MINZ
+     IF WS-ZHI > 15
+         MOVE 15 TO WS-ZHI
+     END-IF
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-CY L-VR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-YLO = WS-A - 1
+     IF WS-YLO < -63
+         MOVE -63 TO WS-YLO
+     END-IF
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-CY L-VR WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
+     COMPUTE WS-YHI = WS-A + 1
+     IF WS-YHI > 312
+         MOVE 312 TO WS-YHI
+     END-IF
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         COMPUTE WS-BX = WS-MINX + WS-X
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-BX WS-HALF WS-T
+         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-CX WS-A
+         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-HR WS-XD
+         MOVE WS-XD TO WS-C
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-XD WS-C WS-XD2
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             COMPUTE WS-BZ = WS-MINZ + WS-Z
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-BZ WS-HALF WS-T
+             CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-CZ WS-A
+             CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-HR WS-XD
+             MOVE WS-XD TO WS-C
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-XD WS-C WS-ZD2
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-ZD2 WS-S
+             IF WS-S < 1
+                 PERFORM VARYING WS-Y FROM WS-YHI BY -1 UNTIL WS-Y <= WS-YLO
+                     MOVE WS-Y TO WS-BY
+                     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-BY WS-HALF WS-T
+                     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-CY WS-A
+                     CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A L-VR WS-YD
+                     MOVE WS-YD TO WS-C
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-YD WS-C WS-YD2
+                     MOVE 0 TO WS-SKIP
+                     IF CV-MODE = 0
+                         IF WS-YD <= CV-FLOOR
+                             MOVE 1 TO WS-SKIP
+                         ELSE
+                             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2 WS-T
+                             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-ZD2 WS-A
+                             IF WS-A >= 1
+                                 MOVE 1 TO WS-SKIP
+                             END-IF
+                         END-IF
+                     ELSE
+                         COMPUTE WS-IDX = WS-Y + 64
+                         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-S CV-WIDTH(WS-IDX) WS-T
+                         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-YD2 WS-SIX WS-A
+                         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-A WS-D
+                         IF WS-D >= 1
+                             MOVE 1 TO WS-SKIP
+                         END-IF
+                     END-IF
+                     IF WS-SKIP = 0
+                         COMPUTE WS-IDX = (WS-Y + 63) + (WS-Z + 16 * WS-X) * 376 + 1
+                         MOVE "1" TO J-CV-MASK(WS-IDX)
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CARVER-ELLIPSOID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CV-CAN-REACH.
+*> USING job, x, z (FLOAT-LONG), step, max steps (BINARY-LONG), thickness (FLOAT-LONG), flag out (BINARY-LONG): 5.3.1 canReach.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-MID                 FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEFT                FLOAT-LONG.
+ 01 WS-REACH               FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-STEP                 BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-THICK                FLOAT-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-JOB L-X L-Z L-STEP L-MAX L-THICK L-FLAG.
+     COMPUTE WS-M = J-CX * 16 + 8
+     MOVE WS-M TO WS-MID
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-X WS-MID WS-DX
+     COMPUTE WS-M = J-CZ * 16 + 8
+     MOVE WS-M TO WS-MID
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-Z WS-MID WS-DZ
+     COMPUTE WS-M = L-MAX - L-STEP
+     MOVE WS-M TO WS-LEFT
+     CALL "CV-FADD" USING L-THICK CV-TWO WS-T
+     CALL "CV-FADD" USING WS-T CV-SIXTEEN WS-REACH
+     MOVE WS-DX TO WS-C
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-DX WS-C WS-A
+     MOVE WS-DZ TO WS-C
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-DZ WS-C WS-B
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-A WS-B WS-T
+     MOVE WS-LEFT TO WS-C
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-LEFT WS-C WS-U
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T WS-U WS-A
+     MOVE WS-REACH TO WS-C
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-REACH WS-C WS-B
+     MOVE 1 TO L-FLAG
+     IF WS-A > WS-B
+         MOVE 0 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM CV-CAN-REACH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-WALK-CAVE RECURSIVE.
+*> USING job, walker (CVWALK.cpy): the tunnel walker of 5.3.1 (a branch is the same walker called again).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ LOCAL-STORAGE SECTION.
+ 01 LS-RND                 BINARY-DOUBLE UNSIGNED.
+ 01 LS-BOUND               BINARY-LONG.
+ 01 LS-D                   BINARY-LONG.
+ 01 LS-BRANCH              BINARY-LONG.
+ 01 LS-STEEP               BINARY-LONG.
+ 01 LS-STEP                BINARY-LONG.
+ 01 LS-LEAVE               BINARY-LONG.
+ 01 LS-FLAG                BINARY-LONG.
+ 01 LS-DPITCH              FLOAT-LONG.
+ 01 LS-DYAW                FLOAT-LONG.
+ 01 LS-X                   FLOAT-LONG.
+ 01 LS-Y                   FLOAT-LONG.
+ 01 LS-Z                   FLOAT-LONG.
+ 01 LS-YAW                 FLOAT-LONG.
+ 01 LS-PITCH               FLOAT-LONG.
+ 01 LS-F                   FLOAT-LONG.
+ 01 LS-G                   FLOAT-LONG.
+ 01 LS-H                   FLOAT-LONG.
+ 01 LS-T                   FLOAT-LONG.
+ 01 LS-A                   FLOAT-LONG.
+ 01 LS-S                   FLOAT-LONG.
+ 01 LS-R                   FLOAT-LONG.
+ 01 LS-RV                  FLOAT-LONG.
+ 01 LS-HR                  FLOAT-LONG.
+ 01 LS-VR                  FLOAT-LONG.
+ 01 LS-CP                  FLOAT-LONG.
+ 01 LS-CHILD.
+    COPY CVWALK REPLACING LEADING ==CVK-== BY ==LC-==.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-WALK.
+    COPY CVWALK REPLACING LEADING ==CVK-== BY ==L-==.
+ PROCEDURE DIVISION USING L-JOB L-WALK.
+     CALL "JRAND-SET-SEED" USING LS-RND L-SEED
+     DIVIDE L-MAX BY 2 GIVING LS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING LS-RND LS-BOUND LS-BRANCH
+     DIVIDE L-MAX BY 4 GIVING LS-D
+     ADD LS-D TO LS-BRANCH
+     MOVE 6 TO LS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING LS-RND LS-BOUND LS-D
+     MOVE 0 TO LS-STEEP
+     IF LS-D = 0
+         MOVE 1 TO LS-STEEP
+     END-IF
+     MOVE 0 TO LS-DPITCH LS-DYAW
+     MOVE L-X TO LS-X
+     MOVE L-Y TO LS-Y
+     MOVE L-Z TO LS-Z
+     MOVE L-YAW TO LS-YAW
+     MOVE L-PITCH TO LS-PITCH
+     MOVE 0 TO LS-LEAVE
+     MOVE L-START TO LS-STEP
+     PERFORM UNTIL LS-STEP >= L-MAX OR LS-LEAVE = 1
+*>       r = 1.5 + sin(pi * step / maxSteps) * thickness
+         MOVE LS-STEP TO LS-F
+         CALL "CV-FMUL" USING LS-F CV-PI LS-G
+         MOVE L-MAX TO LS-F
+         CALL "CV-FDIV" USING LS-G LS-F LS-A
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE LS-A LS-S
+         CALL "CV-FMUL" USING LS-S L-THICK LS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE CV-ONE-HALF LS-T LS-R
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-R L-YSCALE LS-RV
+*>       move
+         CALL STATIC "cc_f64_cos_tab" USING BY REFERENCE LS-PITCH LS-CP
+         CALL STATIC "cc_f64_cos_tab" USING BY REFERENCE LS-YAW LS-F
+         CALL "CV-FMUL" USING LS-F LS-CP LS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE LS-X LS-T LS-G
+         MOVE LS-G TO LS-X
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE LS-PITCH LS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE LS-Y LS-T LS-G
+         MOVE LS-G TO LS-Y
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE LS-YAW LS-F
+         CALL "CV-FMUL" USING LS-F LS-CP LS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE LS-Z LS-T LS-G
+         MOVE LS-G TO LS-Z
+*>       the angles
+         IF LS-STEEP = 1
+             CALL "CV-FMUL" USING LS-PITCH CV-K092 LS-T
+         ELSE
+             CALL "CV-FMUL" USING LS-PITCH CV-K07 LS-T
+         END-IF
+         CALL "CV-FMUL" USING LS-DPITCH CV-K01 LS-F
+         CALL "CV-FADD" USING LS-T LS-F LS-PITCH
+         CALL "CV-FMUL" USING LS-DYAW CV-K01 LS-F
+         CALL "CV-FADD" USING LS-YAW LS-F LS-G
+         MOVE LS-G TO LS-YAW
+         CALL "CV-FMUL" USING LS-DPITCH CV-K09 LS-T
+         MOVE LS-T TO LS-DPITCH
+         CALL "CV-FMUL" USING LS-DYAW CV-K075 LS-T
+         MOVE LS-T TO LS-DYAW
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-F
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-G
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-H
+         CALL "CV-FSUB" USING LS-F LS-G LS-T
+         CALL "CV-FMUL" USING LS-T LS-H LS-A
+         CALL "CV-FMUL" USING LS-A CV-TWO LS-T
+         CALL "CV-FADD" USING LS-DPITCH LS-T LS-F
+         MOVE LS-F TO LS-DPITCH
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-F
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-G
+         CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-H
+         CALL "CV-FSUB" USING LS-F LS-G LS-T
+         CALL "CV-FMUL" USING LS-T LS-H LS-A
+         CALL "CV-FMUL" USING LS-A CV-FOUR LS-T
+         CALL "CV-FADD" USING LS-DYAW LS-T LS-F
+         MOVE LS-F TO LS-DYAW
+         IF LS-STEP = LS-BRANCH AND L-THICK > 1
+*>           two branches, then this walker ends
+             CALL "JRAND-NEXT-LONG" USING LS-RND LC-SEED
+             CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-F
+             CALL "CV-FMUL" USING LS-F CV-HALF LS-T
+             CALL "CV-FADD" USING LS-T CV-HALF LC-THICK
+             MOVE LS-X TO LC-X
+             MOVE LS-Y TO LC-Y
+             MOVE LS-Z TO LC-Z
+             MOVE L-HMUL TO LC-HMUL
+             MOVE L-VMUL TO LC-VMUL
+             CALL "CV-FSUB" USING LS-YAW CV-HALF-PI LC-YAW
+             CALL "CV-FDIV" USING LS-PITCH CV-THREE LC-PITCH
+             MOVE 1 TO LC-YSCALE
+             MOVE LS-STEP TO LC-START
+             MOVE L-MAX TO LC-MAX
+             CALL "CARVER-WALK-CAVE" USING L-JOB LS-CHILD
+             CALL "JRAND-NEXT-LONG" USING LS-RND LC-SEED
+             CALL "JRAND-NEXT-FLOAT" USING LS-RND LS-F
+             CALL "CV-FMUL" USING LS-F CV-HALF LS-T
+             CALL "CV-FADD" USING LS-T CV-HALF LC-THICK
+             MOVE LS-X TO LC-X
+             MOVE LS-Y TO LC-Y
+             MOVE LS-Z TO LC-Z
+             CALL "CV-FADD" USING LS-YAW CV-HALF-PI LC-YAW
+             CALL "CV-FDIV" USING LS-PITCH CV-THREE LC-PITCH
+             CALL "CARVER-WALK-CAVE" USING L-JOB LS-CHILD
+             MOVE 1 TO LS-LEAVE
+         ELSE
+             MOVE 4 TO LS-BOUND
+             CALL "JRAND-NEXT-INT-BOUND" USING LS-RND LS-BOUND LS-D
+             IF LS-D NOT = 0
+                 CALL "CV-CAN-REACH" USING L-JOB LS-X LS-Z LS-STEP L-MAX L-THICK LS-FLAG
+                 IF LS-FLAG = 0
+                     MOVE 1 TO LS-LEAVE
+                 ELSE
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-R L-HMUL LS-HR
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-RV L-VMUL LS-VR
+                     CALL "CARVER-ELLIPSOID" USING L-JOB LS-X LS-Y LS-Z LS-HR LS-VR
+                 END-IF
+             END-IF
+         END-IF
+         ADD 1 TO LS-STEP
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CARVER-WALK-CAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-CAVE.
+*> USING job, random state (after the start draw), y low, y high: the caves of one source chunk (5.3 steps 1 to 4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-HR                  FLOAT-LONG.
+ 01 WS-VR                  FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-WALK.
+    COPY CVWALK REPLACING LEADING ==CVK-== BY ==WK-==.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ 01 L-YLO                  BINARY-LONG.
+ 01 L-YHI                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-JOB L-STATE L-YLO L-YHI.
+     CALL "CARVER-COUNT" USING L-STATE WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         CALL "CARVER-CAVE-HEAD" USING L-STATE L-YLO L-YHI
+         MOVE 0 TO CV-MODE
+         MOVE CV-CAVE-FLOOR TO CV-FLOOR
+         MOVE CV-CAVE-X TO WS-X
+         MOVE CV-CAVE-Y TO WS-Y
+         MOVE CV-CAVE-Z TO WS-Z
+         IF CV-CAVE-ROOM = 1
+*>           the room: sin(pi / 2) is the table's value at half pi
+             CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE CV-HALF-PI WS-S
+             CALL "CV-FMUL" USING WS-S CV-CAVE-ROOMR WS-T
+             CALL STATIC "cc_f64_add" USING BY REFERENCE CV-ONE-HALF WS-T WS-HR
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-HR CV-CAVE-ROOMV WS-VR
+             CALL STATIC "cc_f64_add" USING BY REFERENCE WS-X CV-ONE WS-S
+             CALL "CARVER-ELLIPSOID" USING L-JOB WS-S WS-Y WS-Z WS-HR WS-VR
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > CV-CAVE-TUNNELS
+             CALL "CARVER-TUNNEL-HEAD" USING L-STATE
+             MOVE CV-TUN-SEED TO WK-SEED
+             MOVE WS-X TO WK-X
+             MOVE WS-Y TO WK-Y
+             MOVE WS-Z TO WK-Z
+             MOVE CV-CAVE-HMUL TO WK-HMUL
+             MOVE CV-CAVE-VMUL TO WK-VMUL
+             MOVE CV-TUN-THICK TO WK-THICK
+             MOVE CV-TUN-YAW TO WK-YAW
+             MOVE CV-TUN-PITCH TO WK-PITCH
+             MOVE 1 TO WK-YSCALE
+             MOVE 0 TO WK-START
+             MOVE CV-TUN-STEPS TO WK-MAX
+             CALL "CARVER-WALK-CAVE" USING L-JOB WS-WALK
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CARVER-CAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-CANYON.
+*> USING job, random state (after the start draw): the canyon of one source chunk (5.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-RND                 BINARY-DOUBLE UNSIGNED.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-LEAVE               BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ 01 WS-THICK               FLOAT-LONG.
+ 01 WS-YSCALE              FLOAT-LONG.
+ 01 WS-DPITCH              FLOAT-LONG.
+ 01 WS-DYAW                FLOAT-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-RV                  FLOAT-LONG.
+ 01 WS-CP                  FLOAT-LONG.
+ 01 WS-FACTOR              FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-HFACTOR             FLOAT-LONG.
+ 01 WS-RB                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-STATE                BINARY-DOUBLE UNSIGNED.
+ PROCEDURE DIVISION USING L-JOB L-STATE.
+     MOVE 16 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE WS-X = CV-SX * 16 + WS-D
+     MOVE 58 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE WS-Y = 10 + WS-D
+     MOVE 16 TO WS-BOUND
+     CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+     COMPUTE WS-Z = CV-SZ * 16 + WS-D
+     CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+     CALL "CV-FMUL" USING WS-F CV-TWO-PI WS-YAW
+     CALL "CV-UNIFORM" USING L-STATE CV-ROT-LO CV-ROT-HI WS-PITCH
+     MOVE CV-THREE TO WS-YSCALE
+     MOVE 2 TO WS-T
+     CALL "CV-TRAPEZOID" USING L-STATE WS-ZERO CV-SIX WS-T WS-THICK
+     CALL "CV-UNIFORM" USING L-STATE CV-K075 CV-ONE WS-DIST
+     MOVE 112 TO WS-F
+     CALL "CV-FMUL" USING WS-F WS-DIST WS-G
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-G WS-MAX
+     CALL "JRAND-NEXT-LONG" USING L-STATE WS-SEED
+*>   the width factors of the 384 layers, then the walk, from the walker's own source
+     CALL "JRAND-SET-SEED" USING WS-RND WS-SEED
+     MOVE 1 TO WS-FACTOR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 384
+         MOVE 0 TO WS-D
+         IF WS-I > 1
+             MOVE 3 TO WS-BOUND
+             CALL "JRAND-NEXT-INT-BOUND" USING WS-RND WS-BOUND WS-D
+         END-IF
+         IF WS-I = 1 OR WS-D = 0
+             CALL "JRAND-NEXT-FLOAT" USING WS-RND WS-F
+             CALL "JRAND-NEXT-FLOAT" USING WS-RND WS-G
+             CALL "CV-FMUL" USING WS-F WS-G WS-T
+             CALL "CV-FADD" USING CV-ONE WS-T WS-FACTOR
+         END-IF
+         MOVE WS-FACTOR TO WS-T
+         CALL "CV-FMUL" USING WS-FACTOR WS-T CV-WIDTH(WS-I)
+     END-PERFORM
+     MOVE 1 TO CV-MODE
+     MOVE 0 TO WS-DPITCH WS-DYAW
+     MOVE 0 TO WS-LEAVE
+     MOVE 0 TO WS-STEP
+     PERFORM UNTIL WS-STEP >= WS-MAX OR WS-LEAVE = 1
+         MOVE WS-STEP TO WS-F
+         CALL "CV-FMUL" USING WS-F CV-PI WS-G
+         MOVE WS-MAX TO WS-F
+         CALL "CV-FDIV" USING WS-G WS-F WS-A
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE WS-A WS-S
+         CALL "CV-FMUL" USING WS-S WS-THICK WS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE CV-ONE-HALF WS-T WS-R
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-R WS-YSCALE WS-RV
+*>       the horizontal factor and the random vertical factor (the centre factor is 0, the default factor 1)
+         CALL "CV-UNIFORM" USING L-STATE CV-K075 CV-ONE WS-HFACTOR
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-R WS-HFACTOR WS-T
+         MOVE WS-T TO WS-R
+         CALL "CV-UNIFORM" USING L-STATE CV-K075 CV-ONE WS-RB
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-RV WS-RB WS-T
+         MOVE WS-T TO WS-RV
+         CALL STATIC "cc_f64_cos_tab" USING BY REFERENCE WS-PITCH WS-CP
+         CALL STATIC "cc_f64_cos_tab" USING BY REFERENCE WS-YAW WS-F
+         CALL "CV-FMUL" USING WS-F WS-CP WS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-X WS-T WS-G
+         MOVE WS-G TO WS-X
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE WS-PITCH WS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-Y WS-T WS-G
+         MOVE WS-G TO WS-Y
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE WS-YAW WS-F
+         CALL "CV-FMUL" USING WS-F WS-CP WS-T
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-Z WS-T WS-G
+         MOVE WS-G TO WS-Z
+         CALL "CV-FMUL" USING WS-PITCH CV-K07 WS-T
+         CALL "CV-FMUL" USING WS-DPITCH CV-K005 WS-F
+         CALL "CV-FADD" USING WS-T WS-F WS-PITCH
+         CALL "CV-FMUL" USING WS-DYAW CV-K005 WS-F
+         CALL "CV-FADD" USING WS-YAW WS-F WS-G
+         MOVE WS-G TO WS-YAW
+         CALL "CV-FMUL" USING WS-DPITCH CV-K08 WS-T
+         MOVE WS-T TO WS-DPITCH
+         CALL "CV-FMUL" USING WS-DYAW CV-HALF WS-T
+         MOVE WS-T TO WS-DYAW
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-G
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-H
+         CALL "CV-FSUB" USING WS-F WS-G WS-T
+         CALL "CV-FMUL" USING WS-T WS-H WS-A
+         CALL "CV-FMUL" USING WS-A CV-TWO WS-T
+         CALL "CV-FADD" USING WS-DPITCH WS-T WS-F
+         MOVE WS-F TO WS-DPITCH
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-F
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-G
+         CALL "JRAND-NEXT-FLOAT" USING L-STATE WS-H
+         CALL "CV-FSUB" USING WS-F WS-G WS-T
+         CALL "CV-FMUL" USING WS-T WS-H WS-A
+         CALL "CV-FMUL" USING WS-A CV-FOUR WS-T
+         CALL "CV-FADD" USING WS-DYAW WS-T WS-F
+         MOVE WS-F TO WS-DYAW
+         MOVE 4 TO WS-BOUND
+         CALL "JRAND-NEXT-INT-BOUND" USING L-STATE WS-BOUND WS-D
+         IF WS-D NOT = 0
+             CALL "CV-CAN-REACH" USING L-JOB WS-X WS-Z WS-STEP WS-MAX WS-THICK WS-FLAG
+             IF WS-FLAG = 0
+                 MOVE 1 TO WS-LEAVE
+             ELSE
+                 CALL "CARVER-ELLIPSOID" USING L-JOB WS-X WS-Y WS-Z WS-R WS-RV
+             END-IF
+         END-IF
+         ADD 1 TO WS-STEP
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CARVER-CANYON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-SOURCE.
+*> USING job, source chunk x, z: the carvers [cave, cave_extra_underground, canyon] of one source chunk (5.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-RND                 BINARY-DOUBLE UNSIGNED.
+ 01 WS-DRAW                FLOAT-LONG.
+ 01 WS-YLO                 BINARY-LONG.
+ 01 WS-YHI                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-JOB L-SX L-SZ.
+     MOVE 0 TO WS-INDEX
+     CALL "CARVER-START-DRAW" USING CV-SEED WS-INDEX L-SX L-SZ WS-RND WS-DRAW
+     IF WS-DRAW <= CV-PROB-CAVE
+         MOVE -56 TO WS-YLO
+         MOVE 180 TO WS-YHI
+         CALL "CARVER-CAVE" USING L-JOB WS-RND WS-YLO WS-YHI
+     END-IF
+     MOVE 1 TO WS-INDEX
+     CALL "CARVER-START-DRAW" USING CV-SEED WS-INDEX L-SX L-SZ WS-RND WS-DRAW
+     IF WS-DRAW <= CV-PROB-EXTRA
+         MOVE -56 TO WS-YLO
+         MOVE 47 TO WS-YHI
+         CALL "CARVER-CAVE" USING L-JOB WS-RND WS-YLO WS-YHI
+     END-IF
+     MOVE 2 TO WS-INDEX
+     CALL "CARVER-START-DRAW" USING CV-SEED WS-INDEX L-SX L-SZ WS-RND WS-DRAW
+     IF WS-DRAW <= CV-PROB-CANYON
+         CALL "CARVER-CANYON" USING L-JOB WS-RND
+     END-IF
+     GOBACK.
+ END PROGRAM CARVER-SOURCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CARVER-APPLY-ROW.
+*> USING job, x (BINARY-LONG 0 to 15): 5.6 for the 16 columns of local x: every marked block, each run of marks from its highest
+*> block down, loses its block (bedrock is never carved) to what the aquifer says for density 0 (air, water or lava; nothing leaves
+*> the block); under a carved grass block or mycelium a block of dirt takes that block when the run became air (the document's
+*> regrassing by the surface rule is reduced to this: the top material of an air exposed column is the grassy block itself).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CELLS.
+ 01 WS-KEY-BEDROCK         PIC X(48) VALUE "minecraft:bedrock".
+ 01 WS-KEY-GRASS           PIC X(48) VALUE "minecraft:grass_block".
+ 01 WS-KEY-MYCELIUM        PIC X(48) VALUE "minecraft:mycelium".
+ 01 WS-KEY-DIRT            PIC X(48) VALUE "minecraft:dirt".
+ 01 WS-KEY-WATER           PIC X(48) VALUE "minecraft:water".
+ 01 WS-KEY-LAVA            PIC X(48) VALUE "minecraft:lava".
+ 01 WS-BEDROCK             BINARY-LONG.
+ 01 WS-GRASS               BINARY-LONG.
+ 01 WS-MYCELIUM            BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-LAVA                BINARY-LONG.
+ 01 WS-GRASSY              BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-WX                  BINARY-LONG.
+ 01 WS-WZ                  BINARY-LONG.
+ 01 WS-COL                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ 01 L-X                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-JOB L-X.
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-BEDROCK WS-BEDROCK
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-GRASS WS-GRASS
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-MYCELIUM WS-MYCELIUM
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-DIRT WS-DIRT
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-WATER WS-WATER
+     CALL "GEN-BLOCK-STATE" USING WS-KEY-LAVA WS-LAVA
+     SET ADDRESS OF CE-CHUNK TO J-ADDR
+     COMPUTE WS-WX = J-CX * 16 + L-X
+     PERFORM VARYING WS-Z FROM 0 BY 1 UNTIL WS-Z > 15
+         COMPUTE WS-WZ = J-CZ * 16 + WS-Z
+         COMPUTE WS-COL = WS-Z * 16 + L-X + 1
+         MOVE 0 TO WS-GRASSY
+         PERFORM VARYING WS-Y FROM 312 BY -1 UNTIL WS-Y < -63
+             COMPUTE WS-IDX = (WS-Y + 63) + (WS-Z + 16 * L-X) * 376 + 1
+             IF J-CV-MASK(WS-IDX) = "1"
+                 COMPUTE WS-CELL = (WS-Y + 64) * 256 + WS-COL
+                 MOVE CE-STATE(WS-CELL) TO WS-CUR
+                 IF WS-CUR NOT = WS-BEDROCK
+                     IF WS-CUR = WS-GRASS OR WS-CUR = WS-MYCELIUM
+                         MOVE WS-CUR TO WS-GRASSY
+                     END-IF
+                     CALL "AQUIFER-SUBSTANCE" USING L-JOB WS-WX WS-Y WS-WZ WS-ZERO WS-KIND
+                     EVALUATE WS-KIND
+                         WHEN 1
+                             MOVE 0 TO CE-STATE(WS-CELL)
+                         WHEN 2
+                             MOVE WS-WATER TO CE-STATE(WS-CELL)
+                         WHEN 3
+                             MOVE WS-LAVA TO CE-STATE(WS-CELL)
+                     END-EVALUATE
+                     IF WS-KIND = 1 AND WS-GRASSY NOT = 0
+                         COMPUTE WS-BELOW = WS-CELL - 256
+                         IF WS-Y > -63 AND CE-STATE(WS-BELOW) = WS-DIRT
+                             MOVE WS-GRASSY TO CE-STATE(WS-BELOW)
+                         END-IF
+                     END-IF
+                 END-IF
+             ELSE
+                 MOVE 0 TO WS-GRASSY
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CARVER-APPLY-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-STAGE-CARVERS.
+*> Step GJ-SUB of the carver stage: 0 to 288 the source chunk (dx outer, dz inner, both from -8 to 8), 289 to 304 a row of the mask.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CARVER.
+ COPY GENSTAGE.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
+ PROCEDURE DIVISION USING L-JOB.
+     ADD 1 TO GS-CARVER
+     IF CV-READY = 1
+         IF J-SUB < 289
+             DIVIDE J-SUB BY 17 GIVING WS-DX REMAINDER WS-DZ
+             COMPUTE WS-SX = J-CX - 8 + WS-DX
+             COMPUTE WS-SZ = J-CZ - 8 + WS-DZ
+             CALL "CARVER-SOURCE" USING L-JOB WS-SX WS-SZ
+         ELSE
+             COMPUTE WS-ROW = J-SUB - 289
+             CALL "CARVER-APPLY-ROW" USING L-JOB WS-ROW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-STAGE-CARVERS.

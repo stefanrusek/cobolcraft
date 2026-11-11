@@ -25,78 +25,174 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
- COPY CLARGS.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
- 01 WS-KIND                BINARY-LONG VALUE 1.
- 01 WS-KEY                 PIC X(80) VALUE "cobolcraft.hud.crosshair".
- 01 WS-KEY-LENGTH          BINARY-LONG VALUE 24.
+ 01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG VALUE 0.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
  01 WS-Z1                  BINARY-LONG VALUE 0.
  01 WS-Z2                  BINARY-LONG VALUE 0.
  01 WS-Z3                  BINARY-LONG VALUE 0.
  01 WS-CLOSED              BINARY-LONG VALUE 0.
- 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-LOAD-SWATCH          BINARY-LONG.
+ 01 WS-LOAD-KEY            PIC X(80).
+ 01 WS-LOAD-KEY-LENGTH     BINARY-LONG.
+ 01 WS-LOAD-TEXT           PIC X(512).
+ 01 WS-LOAD-TEXT256        PIC X(256).
+ 01 WS-LOAD-LENGTH         BINARY-LONG.
+ 01 WS-LOAD-WIDTH          BINARY-LONG.
+ 01 WS-NINE                BINARY-LONG VALUE 9.
+ 01 WS-ROWS                BINARY-LONG.
+ 01 WS-ROW-HEIGHT          BINARY-LONG.
+ 01 WS-MOUNT-ROWS          BINARY-LONG.
  01 WS-OVERLAY             BINARY-LONG VALUE WK-OVERLAY.
  01 WS-HURT                BINARY-LONG VALUE SW-HURT.
- 01 WS-LABEL               BINARY-LONG VALUE WK-LABEL.
- 01 WS-W                   BINARY-LONG VALUE 90.
- 01 WS-H                   BINARY-LONG VALUE 9.
- 01 WS-HKEY                PIC X(80) VALUE "cobolcraft.hud.health".
- 01 WS-HKEY-LENGTH         BINARY-LONG VALUE 21.
- 01 WS-FKEY                PIC X(80) VALUE "cobolcraft.hud.food".
- 01 WS-FKEY-LENGTH         BINARY-LONG VALUE 19.
- 01 WS-EDIT                PIC Z(9)9.
  01 WS-TEXT                PIC X(512).
- 01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
  01 L-GH                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+*>   While a new level loads after a dimension change (LL-REASON, 39 section 8.4) the whole screen is covered by the loading overlay and a label.
+     IF PL-LOADED = 0 AND LL-REASON > 0
+         MOVE SW-BLACK TO WS-LOAD-SWATCH
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-OVERLAY WS-ACTION WS-LOAD-SWATCH WS-Z1 WS-Z2 L-GW L-GH
+             WS-TEXT WS-Z3 WS-STATE
+         MOVE "multiplayer.downloadingTerrain" TO WS-LOAD-KEY
+         MOVE 30 TO WS-LOAD-KEY-LENGTH
+         CALL "LANG-GET" USING CLIENT-STATE WS-LOAD-KEY WS-LOAD-KEY-LENGTH WS-LOAD-TEXT WS-LOAD-LENGTH
+         IF WS-LOAD-TEXT(1:WS-LOAD-LENGTH) = WS-LOAD-KEY(1:30)
+             MOVE "Loading terrain..." TO WS-LOAD-TEXT
+             MOVE 18 TO WS-LOAD-LENGTH
+         END-IF
+         MOVE WS-LOAD-TEXT(1:256) TO WS-LOAD-TEXT256
+         CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-LOAD-TEXT256 WS-LOAD-LENGTH WS-LOAD-WIDTH
+         COMPUTE WS-X = (L-GW - WS-LOAD-WIDTH) / 2
+         COMPUTE WS-Y = L-GH / 2 - 4
+         MOVE 77 TO WS-ARG
+         MOVE WK-LABEL TO WS-KIND
+         MOVE WS-LOAD-LENGTH TO WS-C
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-LOAD-WIDTH WS-NINE
+             WS-LOAD-TEXT WS-C WS-STATE
+     END-IF
      IF CL-NOW-MS < PL-HURT-UNTIL
          MOVE SPACES TO WS-TEXT
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-OVERLAY WS-ACTION WS-HURT WS-Z1 WS-Z2 L-GW L-GH
              WS-TEXT WS-Z3 WS-STATE
      END-IF
-     COMPUTE WS-X = L-GW / 2 - 3
-     COMPUTE WS-Y = L-GH / 2 - 4
-     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
-         WS-KEY-LENGTH
-     COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 2
+     MOVE SPACES TO WS-TEXT
+     MOVE WK-SPRITE TO WS-KIND
+*>   The crosshair is not drawn in the third-person modes (12 section 5.3, 7.1).
+     IF CL-CAMERA = 0
+         MOVE GSP-CROSSHAIR TO WS-ARG
+         COMPUTE WS-X = (L-GW - 15) / 2
+         COMPUTE WS-Y = (L-GH - 15) / 2
+         MOVE 15 TO WS-W WS-H
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-Z3 WS-STATE
+     END-IF
+*>   The hotbar sprite, then the selection frame over the held slot (12 section 5.2).
+     MOVE GSP-HOTBAR TO WS-ARG
+     COMPUTE WS-X = L-GW / 2 - 91
+     COMPUTE WS-Y = L-GH - 22
+     MOVE 182 TO WS-W
+     MOVE 22 TO WS-H
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+         WS-TEXT WS-Z3 WS-STATE
+     MOVE GSP-HOTBAR-SELECTION TO WS-ARG
+     COMPUTE WS-X = L-GW / 2 - 92 + 20 * PL-HELD
+     COMPUTE WS-Y = L-GH - 23
+     MOVE 24 TO WS-W
+     MOVE 23 TO WS-H
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+         WS-TEXT WS-Z3 WS-STATE
+*>   The slots are bare (state 3): the sprite carries the wells; the icon cell is 2 pixels in.
+     COMPUTE WS-Y = L-GH - 21
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 8
          COMPUTE WS-X = L-GW / 2 - 90 + WS-C * CL-SLOT-SIZE
          CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
+         MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
      END-PERFORM
-     IF PL-MODE = 0
-         MOVE 2 TO LA-COUNT
-         COMPUTE WS-C ROUNDED = PL-HEALTH
-         MOVE WS-C TO WS-EDIT
-         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(1)
-         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(1)
-         MOVE CL-MAX-HEALTH TO WS-EDIT
-         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(2)
-         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(2)
-         CALL "LANG-FORMAT" USING CLIENT-STATE WS-HKEY WS-HKEY-LENGTH LANG-ARGS WS-TEXT
-             WS-LENGTH
-         COMPUTE WS-X = L-GW / 2 - 90
-         COMPUTE WS-Y = L-GH - CL-SLOT-SIZE - 12
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H
-             WS-TEXT WS-LENGTH WS-STATE
-         MOVE PL-FOOD TO WS-EDIT
-         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(1)
-         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(1)
-         MOVE CL-MAX-FOOD TO WS-EDIT
-         MOVE FUNCTION TRIM(WS-EDIT) TO LA-TEXT(2)
-         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO LA-LENGTH(2)
-         CALL "LANG-FORMAT" USING CLIENT-STATE WS-FKEY WS-FKEY-LENGTH LANG-ARGS WS-TEXT
-             WS-LENGTH
-         COMPUTE WS-X = L-GW / 2
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-LABEL WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H
-             WS-TEXT WS-LENGTH WS-STATE
+*>   The off-hand backing and slot beside the hotbar (12 section 5.2; 13 section 4; widget slot 37 is the off hand), while
+*>   the off hand holds a stack.
+     IF PL-OFFHAND-COUNT > 0
+         MOVE GSP-OFFHAND-LEFT TO WS-ARG
+         COMPUTE WS-X = L-GW / 2 - 91 - 29
+         COMPUTE WS-Y = L-GH - 23
+         MOVE 29 TO WS-W
+         MOVE 24 TO WS-H
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-Z3 WS-STATE
+         COMPUTE WS-X = L-GW / 2 - 91 - 28
+         COMPUTE WS-Y = L-GH - 21
+         MOVE 37 TO WS-C
+         CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE WS-C WS-X WS-Y WS-ACTION
+         MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
      END-IF
+*>   The heart rows (12 section 5.4; 49 section 5): in survival and adventure the armour row (from 1 armour), the hearts from the left end of the
+*>   hotbar and the food from the right end (not while a mount with hearts is ridden), the air bubbles above them; the mount's hearts in every mode.
+*>   Each is a meter widget (ui-render.cob, hearts.cob METER-ICON); the widgets are in the order of the frame's random numbers.
+     CALL "HEARTS-FRAME" USING CLIENT-STATE CL-NOW-MS
+     CALL "HEART-ROWS" USING CLIENT-STATE WS-ROWS WS-ROW-HEIGHT
+     MOVE WK-METER TO WS-KIND
+     MOVE 82 TO WS-W
+     MOVE 9 TO WS-H
+     COMPUTE WS-MOUNT-ROWS = FUNCTION MAX(1, (PL-MOUNT-HEARTS + 9) / 10)
+     IF PL-MODE = 0 OR PL-MODE = 2
+         IF PL-ARMOR > 0
+             MOVE 3 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 - 91
+             COMPUTE WS-Y = L-GH - 39 - (WS-ROWS - 1) * WS-ROW-HEIGHT - 10
+             MOVE 20 TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-ARMOR
+         END-IF
+         MOVE 1 TO WS-ARG
+         COMPUTE WS-X = L-GW / 2 - 91
+         COMPUTE WS-Y = L-GH - 39
+         COMPUTE WS-C = FUNCTION INTEGER(PL-HEALTH + 0.999)
+         IF WS-C < 0
+             MOVE 0 TO WS-C
+         END-IF
+         CALL "HEART-MAX" USING CLIENT-STATE WS-ACTION
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-Z3 WS-C
+         IF PL-MOUNT-HEARTS = 0
+             MOVE 2 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 + 91 - 9
+             MOVE CL-MAX-FOOD TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-FOOD
+         END-IF
+         CALL "METER-AIR-SHOWN" USING CLIENT-STATE WS-C
+         IF WS-C = 1
+             MOVE 4 TO WS-ARG
+             COMPUTE WS-X = L-GW / 2 + 91 - 9
+             IF PL-MOUNT-HEARTS > 0
+                 COMPUTE WS-Y = L-GH - 49 - 10 * (WS-MOUNT-ROWS - 1)
+             ELSE
+                 COMPUTE WS-Y = L-GH - 49
+             END-IF
+             MOVE 20 TO WS-ACTION
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+                 WS-TEXT WS-Z3 PL-AIR
+         END-IF
+     END-IF
+     IF PL-MOUNT-HEARTS > 0
+         MOVE 5 TO WS-ARG
+         COMPUTE WS-X = L-GW / 2 + 91 - 9
+         COMPUTE WS-Y = L-GH - 39
+         COMPUTE WS-ACTION = PL-MOUNT-HEARTS * 2
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
+             WS-TEXT WS-Z3 PL-MOUNT-HEALTH
+     END-IF
+     CALL "EFFECTS-HUD-ADD" USING CLIENT-STATE L-GW L-GH
      CALL "CHAT-AREA-ADD" USING CLIENT-STATE L-GW L-GH WS-CLOSED
+     CALL "DEBUG-OVERLAY-ADD" USING CLIENT-STATE L-GW L-GH
      GOBACK.
  END PROGRAM HUD-BUILD.
 
@@ -152,7 +248,7 @@
  01 L-OPEN                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH L-OPEN.
      COMPUTE WS-W = L-GW - 4
-     COMPUTE WS-BASE = L-GH - CL-SLOT-SIZE - 14
+     COMPUTE WS-BASE = L-GH - 59
      MOVE CH-COUNT TO WS-LAST
      IF L-OPEN = 1
          COMPUTE WS-BASE = L-GH - 26 - CS-SHOWN * 9
@@ -185,6 +281,8 @@
  01 WS-SIZE                BINARY-LONG VALUE CL-SLOT-SIZE.
  01 WS-SIZE2               BINARY-LONG VALUE CL-SLOT-SIZE.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-TEXT                PIC X(512).
  01 WS-LENGTH              BINARY-LONG.
@@ -196,16 +294,14 @@
  01 L-Y                    BINARY-LONG.
  01 L-ACTION               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-SLOT L-X L-Y L-ACTION.
-     MOVE PL-CARRIED-COUNT TO WS-COUNT
-     IF L-SLOT < 36
-         MOVE PL-SLOT-COUNT(L-SLOT + 1) TO WS-COUNT
-     END-IF
+     CALL "MENU-STACK-GET" USING CLIENT-STATE L-SLOT WS-COUNT WS-ITEM WS-DAMAGE
      MOVE 0 TO WS-STATE WS-LENGTH
      IF L-SLOT = PL-HELD
          MOVE 1 TO WS-STATE
      END-IF
      MOVE SPACES TO WS-TEXT
-     IF WS-COUNT > 0
+*>   A single item shows no count (FR-014).
+     IF WS-COUNT > 1
          MOVE WS-COUNT TO WS-EDIT
          MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-LENGTH

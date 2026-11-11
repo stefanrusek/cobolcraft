@@ -1,0 +1,6 @@
+{
+ "type": "minecraft:add",
+ "inputs": [
+  "i_no_such_bare"
+ ]
+}

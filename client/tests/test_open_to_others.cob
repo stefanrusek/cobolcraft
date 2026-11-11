@@ -56,7 +56,7 @@
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "open to others the pause menu of a hosted world offers Open to Others" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Game Menu|Back to the World|Open to Others|Save and Leave the World" TO TL-EXPECTED
+     MOVE "Game Menu|Back to the World|Options|Open to Others|Save and Leave the World" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

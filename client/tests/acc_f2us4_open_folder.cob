@@ -42,10 +42,12 @@
      IF RETURN-CODE NOT = 0
          MOVE 1 TO WS-E1
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
+*>   The opener runs in the background: poll for its output (a condition, not a fixed pause) for up to 30 seconds, since a loaded machine can take seconds to start a process.
+     MOVE 1 TO RETURN-CODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3000 OR RETURN-CODE = 0
          CALL "TEST-SLEEP"
+         CALL "SYSTEM" USING "grep -q 'game/resourcepacks' build/client-test-open-folder/opener.out"
      END-PERFORM
-     CALL "SYSTEM" USING "grep -q 'game/resourcepacks' build/client-test-open-folder/opener.out"
      MOVE 0 TO WS-E2
      IF RETURN-CODE NOT = 0
          MOVE 1 TO WS-E2

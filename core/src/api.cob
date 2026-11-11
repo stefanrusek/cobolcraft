@@ -66,6 +66,7 @@
      END-IF
      CALL "BLOCKS-OPEN"
      CALL "CORE-TABLES-OPEN"
+     CALL "GB-RULES-OPEN"
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE PB-BUFFER TO CW-CONSOLE
      MOVE 0 TO CW-RUN-STATE CW-TIME CW-TICKS
@@ -92,6 +93,7 @@
      ELSE
          MOVE 1 TO L-CREATED
          CALL "SEED-FROM-TEXT" USING CS-SEED-TEXT CW-SEED WS-RANDOM
+         CALL "WORLDSIM-NEW-WORLD-SPAWN"
      END-IF
      MOVE 0 TO RETURN-CODE
      CALL "PERSIST-DIRS"
@@ -191,25 +193,37 @@
 *> (WORLD-TIME-TICK), the weather (WEATHER-TICK, step 3 of standin §9.5), break progress
 *> (BLOCKS-TICK), the player survival and hunger rules (HEALTH-TICK, step 4), mob spawning (MOBS-SPAWN-TICK, step 5), the mobs
 *> (MOBS-TICK, step 6), ground items (GROUND-ITEMS-TICK, step 7, last of the game rules), the
-*> recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL), the
+*> world simulation of 33 section 2.1 (WORLDSIM-TICK: scheduled block and fluid ticks, random ticks, the changes broadcast to the viewers, block
+*> events; WORLDSIM-ACKS: the Block Changed Acks), the recipe book of each player whose inventory the tick changed (CRAFT-REFRESH-ALL), the
 *> bench menus that are no longer valid (MENU-TICK) and the connections' keep-alives.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-DEBUG               BINARY-LONG.
  PROCEDURE DIVISION.
      IF CW-OPEN NOT = "Y"
          GOBACK
      END-IF
      ADD 1 TO CW-TICKS
+*>   A debug world runs no world work (debug-world.md section 6): only the connections' keep-alives.
+     CALL "WORLD-IS-DEBUG" USING WS-DEBUG
+     IF WS-DEBUG = 1
+         CALL "SESSION-TICK"
+         GOBACK
+     END-IF
+     CALL "WORLDSIM-SLEEP-TICK"
      CALL "WORLD-TIME-TICK"
      CALL "WEATHER-TICK"
+     CALL "WORLDSIM-TICK"
      CALL "BLOCKS-TICK"
      CALL "HEALTH-TICK"
      CALL "MOBS-SPAWN-TICK"
      CALL "MOBS-TICK"
      CALL "GROUND-ITEMS-TICK"
+     CALL "GEN-QUEUE-TICK"
      CALL "CRAFT-REFRESH-ALL"
      CALL "MENU-TICK"
+     CALL "WORLDSIM-ACKS"
      CALL "SESSION-TICK"
      GOBACK.
  END PROGRAM CORE-TICK.
@@ -416,6 +430,7 @@
  01 WS-TYPE                BINARY-LONG.
  01 WS-DIR                 PIC X(1100).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-LOOT-STATUS         BINARY-LONG.
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -436,6 +451,10 @@
      MOVE CORE-WO-OK TO L-STATUS
      IF WS-STATUS NOT = CT-OK
          MOVE CORE-WO-PACKS-NOT-OK TO L-STATUS
+     ELSE
+*>       The loot tables of the set (world-loot.cob): a standard or debug set uses them, a cobolcraft set (and a set whose loot
+*>       data fails its shapes, with the errors on standard error) keeps the stand-in yield of BLOCK-DROPS.
+         CALL "WORLD-LOOT-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
      END-IF
      GOBACK.
  END PROGRAM WORLD-CONTENT-OPEN.

@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:conditional",
+ "condition": {
+  "type": "minecraft:killed_by_player"
+ },
+ "on_true": 0.75,
+ "on_false": 0.25
+}

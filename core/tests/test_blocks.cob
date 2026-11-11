@@ -101,7 +101,7 @@
      IF WS-ROW = 0 OR CK-LIT(WS-ROW) NOT = 0
          MOVE "chunk (3, 0) was not loaded and unlit" TO TL-OBSERVED
      END-IF
-     MOVE "8(47,100,8=2) 49(2,0) 4(4) state 2" TO TL-EXPECTED
+     MOVE "49(2,0) 8(47,100,8=2) 4(4) state 2" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

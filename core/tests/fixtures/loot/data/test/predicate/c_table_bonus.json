@@ -1,0 +1,9 @@
+{
+ "type": "minecraft:table_bonus",
+ "enchantment": "minecraft:efficiency",
+ "chances": [
+  0.1,
+  0.2,
+  0.3
+ ]
+}

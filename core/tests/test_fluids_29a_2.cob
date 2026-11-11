@@ -1,0 +1,577 @@
+*> Test of 29a section 2, The fluid tick (core/src/fluids-29a.cob; T0481): tick delays, the tick step, getNewLiquid, spread, holes and the slope search, passing rules, canBeReplacedWith and spreadTo.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FLUIDS-29A-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-GRID                PIC X(81).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29a§2 The fluid tick: tick delay, slope find distance and drop-off: water 5, 4, 1; lava 30, 2, 2 or, with fast_lava, 10, 4, 1" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5/4/1 30/2/2 10/4/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: lava growing taller multiplies its spread delay by 4 on 3 draws in 4; water and other lava use the plain delay" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 0 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 1 1 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DELAY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "120 30 30 40 5 30 30" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: tick: a source does nothing here; an empty new state sets air; a changed state is written and rescheduled; an unchanged one only spreads" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-TICK-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-TICK-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-TICK-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-TICK-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 2 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: getNewLiquid: two sources over a solid or source floor convert (rule on); fluid above gives amount 8 falling; else the highest neighbour minus the drop-off," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "5 2 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 2 0 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 2 1 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 2 1 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "8 0 1 1 0 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 2 1 0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-NEW-LIQUID" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/8/0 2/4/0 2/4/0 2/8/1 0/0/0 2/6/0 2/2/0 1/8/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: spread: falling into the cell below spreads down (and also to the sides with 3 source neighbours); otherwise sides for a source or a cell that is not a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 3 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 2 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-DECIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 3 0 0 3 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: spreadToSides: amount minus the drop-off (7 when falling); nothing when it is not above 0" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "5 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SIDES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SIDES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SIDES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SIDES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4/1 0/0 7/1 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: isWaterHole: needs to pass the wall below, then the same fluid below or a cell that can hold the flowing fluid" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-IS-HOLE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-IS-HOLE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-IS-HOLE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-IS-HOLE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: getSpread keeps only the directions with the smallest distance to a hole that the new fluid can replace; invalid directions are skipped" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1000 0 1000 2 1 1 1 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-MAP" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 2 1 1 1 1 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-MAP" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 3 5 1 0 1 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-MAP" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 2 3 1 1 1 1 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-MAP" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1000 1000 1000 1000 1 1 1 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-MAP" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/0/0 1/1/0/1 1/0/1/0 0/1/0/0 1/1/1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: getSlopeDistance: the shallowest hole along each branch within the find distance returns its distance; with none in reach the distance is 1000" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 4 1 4 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#####################################...H...#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 1 4 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#####################################.....H.#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 1 6 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#####################################.....H.#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 4 1 4 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#############H########.########.#####.......#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 1 4 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#####################################.......#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 4 1 -1 -1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "#####################################...H...#####################################" TO WS-GRID
+     CALL "FL-SLOPE" USING WS-GRID WS-I1 WS-I2 WS-I3 WS-I5 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1000 5 4 1000 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: canBeReplacedWith: empty always; water only by a non-water fluid falling down; lava from amount 4 up by a water fluid" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-REPLACEABLE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0 1 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: canPassThroughWall: false when either collision shape is the full block, true when both are empty, else unless the faces occlude" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-WALL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-WALL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-WALL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-WALL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-WALL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: canHold rules: any is a container or washed away by fluids; specific asks the container; canMaybePassThrough needs a non-source neighbour, any, and a wall" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-HOLD-RULES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-HOLD-RULES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-HOLD-RULES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-HOLD-RULES" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1 1/1/1 0/1/0 1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: canMaybePassThrough and canPassThrough combine the checks" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-RULES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-RULES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-RULES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-RULES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-PASS-RULES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/0 0/0 0/0 1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29a§2 The fluid tick: spreadTo: a container places the liquid; water drops the destroyed block, lava fizzes (1501) without drops; lava falling onto a water liquid block makes" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "FL-SPREAD-TO" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/1/0/0 2/0/0/0 2/0/1/0 1/0/0/0 4/0/1/1 2/0/1/0 2/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-FLUIDS-29A-2.

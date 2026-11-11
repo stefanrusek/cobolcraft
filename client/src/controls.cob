@@ -49,6 +49,9 @@
  01 WS-DONE                BINARY-LONG.
  01 WS-START               BINARY-LONG.
  01 WS-ACTION6             BINARY-LONG VALUE 6.
+ 01 WS-IBLOCK              BINARY-LONG.
+ 01 WS-ITOOL               PIC X.
+ 01 WS-IFOOD               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -56,19 +59,24 @@
      IF PL-SLOT-COUNT(PL-HELD + 1) > 0
          MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-ITEM
      END-IF
+     CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-IBLOCK WS-ITOOL WS-IFOOD
      MOVE 0 TO WS-STATE
      IF TG-HIT = 1
          CALL "WORLD-CELL" USING CLIENT-STATE TG-X TG-Y TG-Z WS-STATE WS-SKY WS-BLOCK
+     END-IF
+*>   A writable book held on the world screen opens the book editor on the client's own (40-8 section 1.1).
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-ITEM > 0
+         CALL "BOOK-USE-CHECK" USING CLIENT-STATE WS-ITEM
      END-IF
 *>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used; otherwise
 *>   a food item held on the world screen is eaten.
      EVALUATE TRUE
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
-                 AND (CL-IT-STATE(WS-ITEM + 1) > 0 OR WS-STATE = 13 OR WS-STATE = 14
+                 AND (WS-IBLOCK = 1 OR WS-STATE = 13 OR WS-STATE = 14
                  OR WS-STATE = 16)
              CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
-                 AND CL-IT-FOOD(WS-ITEM + 1) > 0 AND PL-EATING = 0
+                 AND WS-IFOOD > 0 AND PL-EATING = 0
              CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE
      END-EVALUATE
 *>   Eating ends when the button is released; early, the server is told.
@@ -148,12 +156,16 @@
  01 WS-STATUS              BINARY-LONG.
  01 WS-ROW                 PIC X(819).
  01 WS-HARDNESS            FLOAT-LONG.
+ 01 WS-IBLOCK              BINARY-LONG.
+ 01 WS-ITOOL               PIC X.
+ 01 WS-IFOOD               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-MS                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-STATE L-ITEM L-MS.
+     CALL "CL-ITEM-FLAGS" USING CLIENT-STATE L-ITEM WS-IBLOCK WS-ITOOL WS-IFOOD
 *>   The standard content set: hardness x 1.5 s by hand, x 5 s when the block needs the correct tool for
 *>   its drops, never for an unbreakable block (hardness below 0). The held item's tool speed is not
 *>   applied (it needs the item rules of 17).
@@ -178,7 +190,7 @@
          COMPUTE WS-B = WS-CODE - 55
      END-IF
      MOVE CL-BK-BREAK-MS(WS-B + 1) TO L-MS
-     IF CL-BK-CLASS(WS-B + 1) NOT = SPACE AND CL-BK-CLASS(WS-B + 1) = CL-IT-TOOL(L-ITEM + 1)
+     IF CL-BK-CLASS(WS-B + 1) NOT = SPACE AND CL-BK-CLASS(WS-B + 1) = WS-ITOOL
          COMPUTE L-MS = L-MS / 4
      END-IF
      IF L-MS = 99999
@@ -326,13 +338,16 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-K                   BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
  01 WS-HELD                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE PL-HELD TO WS-HELD
      PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 8
-         IF IN-KEY-PRESSED(CC-KEY-1 + WS-K + 1) = 1
+         COMPUTE WS-KEY = KB-HOTBAR-1 + WS-K
+         MOVE KB-CODE(WS-KEY) TO WS-KEY
+         IF IN-KEY-PRESSED(WS-KEY + 1) = 1
              MOVE WS-K TO WS-HELD
          END-IF
      END-PERFORM
@@ -363,11 +378,13 @@
  COPY CLCONST.
  COPY CCSHIM.
  01 WS-ACTION              BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
  01 WS-MODS                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     IF IN-KEY-PRESSED(CC-KEY-Q + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+     MOVE KB-CODE(KB-DROP) TO WS-KEY
+     IF IN-KEY-PRESSED(WS-KEY + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
          COMPUTE WS-MODS = IN-MODS / CC-MOD-CONTROL
          MOVE 5 TO WS-ACTION
          IF FUNCTION MOD(WS-MODS, 2) = 1
@@ -390,13 +407,19 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-WANT                BINARY-LONG.
+ 01 WS-K1                  BINARY-LONG.
+ 01 WS-K2                  BINARY-LONG.
+ 01 WS-K3                  BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO WS-WANT
-     IF SM-SCREEN = SCR-WORLD AND IN-KEY-DOWN(CC-KEY-LEFT-CONTROL + 1) = 1
-             AND IN-KEY-DOWN(CC-KEY-W + 1) = 1 AND IN-KEY-DOWN(CC-KEY-S + 1) = 0
+     MOVE KB-CODE(KB-SPRINT) TO WS-K1
+     MOVE KB-CODE(KB-FORWARD) TO WS-K2
+     MOVE KB-CODE(KB-BACK) TO WS-K3
+     IF SM-SCREEN = SCR-WORLD AND IN-KEY-DOWN(WS-K1 + 1) = 1
+             AND IN-KEY-DOWN(WS-K2 + 1) = 1 AND IN-KEY-DOWN(WS-K3 + 1) = 0
              AND (PL-MODE = 1 OR PL-FOOD > CL-SPRINT-FOOD)
          MOVE 1 TO WS-WANT
      END-IF
@@ -433,3 +456,22 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-CTRL-DOWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-SWAP.
+*> USING CLIENT-STATE (world screen, in play; US19; 13 §4): the swap key (F) pressed sends Player Action SWAP_ITEM_WITH_OFFHAND (7: position
+*> 0 0 0, face down, sequence 0), not for a spectator, with no local prediction: the server answers with the new contents of both hands.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG VALUE 7.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEY
+     IF IN-KEY-PRESSED(WS-KEY + 1) = 1 AND PL-MODE NOT = 3
+         CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-SWAP.
