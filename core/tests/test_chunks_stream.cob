@@ -426,6 +426,10 @@
      MOVE 70 TO WS-N
      PERFORM FEED-REFUSED
 
+     MOVE "test play packet id 45 (a serverbound id the core does not read) closes the connection" TO TL-CASE
+     MOVE 45 TO WS-N
+     PERFORM FEED-REFUSED
+
      MOVE "test play packet id 69 (no serverbound play packet) closes the connection" TO TL-CASE
      MOVE 69 TO WS-N
      PERFORM FEED-REFUSED.

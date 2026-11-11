@@ -414,6 +414,69 @@
  END PROGRAM FURN-SET-INPUT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FURN-FINISH.
+*> USING index, recipe row, result item, result count: moving the result (3.8) and noting the recipe used (3.6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CONTENT.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ROWDATA             PIC X(270).
+ 01 WS-VIEW REDEFINES WS-ROWDATA.
+    05 FILLER              PIC X(4).
+    05 WS-R-KEY            PIC X(38).
+    05 FILLER              PIC X(228).
+ 01 WS-INPUT-KEY           PIC X(112).
+ 01 WS-SPONGE              PIC X(112) VALUE "wet_sponge".
+ 01 WS-BUCKET              PIC X(112) VALUE "bucket".
+ 01 WS-WATER               PIC X(112) VALUE "water_bucket".
+ 01 WS-BUCKET-ID           BINARY-LONG.
+ 01 WS-WATER-ID            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ROW L-RESULT L-COUNT.
+     IF BE-SLOT-COUNT(L-INDEX, 3) = 0
+         MOVE L-RESULT TO BE-SLOT-ITEM(L-INDEX, 3)
+         MOVE L-COUNT TO BE-SLOT-COUNT(L-INDEX, 3)
+         MOVE 0 TO BE-SLOT-VAR(L-INDEX, 3)
+     ELSE
+         ADD L-COUNT TO BE-SLOT-COUNT(L-INDEX, 3)
+     END-IF
+     CALL "CONTENT-ITEM-BY-ID" USING BE-SLOT-ITEM(L-INDEX, 1) WS-ROWDATA WS-STATUS
+     MOVE SPACES TO WS-INPUT-KEY
+     MOVE WS-R-KEY TO WS-INPUT-KEY
+     IF WS-INPUT-KEY = WS-SPONGE AND BE-SLOT-COUNT(L-INDEX, 2) > 0
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-BUCKET WS-BUCKET-ID WS-ROWDATA WS-STATUS
+         IF BE-SLOT-ITEM(L-INDEX, 2) = WS-BUCKET-ID
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-WATER WS-WATER-ID WS-ROWDATA WS-STATUS
+             MOVE WS-WATER-ID TO BE-SLOT-ITEM(L-INDEX, 2)
+         END-IF
+     END-IF
+     SUBTRACT 1 FROM BE-SLOT-COUNT(L-INDEX, 1)
+     IF BE-SLOT-COUNT(L-INDEX, 1) = 0
+         MOVE 0 TO BE-SLOT-ITEM(L-INDEX, 1) BE-SLOT-VAR(L-INDEX, 1)
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         IF BE-F-USED-ROW(L-INDEX, WS-I) = L-ROW
+             ADD 1 TO BE-F-USED-COUNT(L-INDEX, WS-I)
+             MOVE 5 TO WS-I
+         ELSE
+             IF BE-F-USED-ROW(L-INDEX, WS-I) = 0
+                 MOVE L-ROW TO BE-F-USED-ROW(L-INDEX, WS-I)
+                 MOVE 1 TO BE-F-USED-COUNT(L-INDEX, WS-I)
+                 MOVE 5 TO WS-I
+             END-IF
+         END-IF
+     END-PERFORM
+
+     GOBACK.
+ END PROGRAM FURN-FINISH.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FURN-TICK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -489,9 +552,7 @@
                  MOVE 1 TO WS-OK
                  IF BE-SLOT-COUNT(L-INDEX, 3) > 0
                      MOVE IT-MAX-STACK(WS-RESULT + 1) TO WS-LIMIT
-                     IF WS-LIMIT > 99
-                         MOVE 99 TO WS-LIMIT
-                     END-IF
+                     MOVE FUNCTION MIN(99, WS-LIMIT) TO WS-LIMIT
                      IF BE-SLOT-ITEM(L-INDEX, 3) NOT = WS-RESULT OR BE-SLOT-VAR(L-INDEX, 3) NOT = 0
                              OR BE-SLOT-COUNT(L-INDEX, 3) + WS-COUNT > WS-LIMIT
                          MOVE 0 TO WS-OK
@@ -528,7 +589,8 @@
                          IF BE-F-COOK(L-INDEX) >= BE-F-COOK-TOTAL(L-INDEX)
                              MOVE 0 TO BE-F-COOK(L-INDEX)
                              CALL "FURN-TOTAL-TIME" USING WS-TIME BE-F-SPEED(L-INDEX) BE-F-COOK-TOTAL(L-INDEX)
-                             PERFORM FURN-FINISH
+                             CALL "FURN-FINISH" USING L-INDEX WS-ROW WS-RESULT WS-COUNT
+                             MOVE 1 TO WS-CHANGED
                          END-IF
                      ELSE
                          MOVE 0 TO BE-F-COOK(L-INDEX)
@@ -565,42 +627,6 @@
      END-IF
      GOBACK.
 
-*> Moving the result (3.8) and noting the recipe used (3.6).
- FURN-FINISH.
-     IF BE-SLOT-COUNT(L-INDEX, 3) = 0
-         MOVE WS-RESULT TO BE-SLOT-ITEM(L-INDEX, 3)
-         MOVE WS-COUNT TO BE-SLOT-COUNT(L-INDEX, 3)
-         MOVE 0 TO BE-SLOT-VAR(L-INDEX, 3)
-     ELSE
-         ADD WS-COUNT TO BE-SLOT-COUNT(L-INDEX, 3)
-     END-IF
-     CALL "CONTENT-ITEM-BY-ID" USING BE-SLOT-ITEM(L-INDEX, 1) WS-ROWDATA WS-STATUS
-     MOVE SPACES TO WS-INPUT-KEY
-     MOVE WS-R-KEY TO WS-INPUT-KEY
-     IF WS-INPUT-KEY = WS-SPONGE AND BE-SLOT-COUNT(L-INDEX, 2) > 0
-         CALL "CONTENT-ITEM-BY-KEY" USING WS-BUCKET WS-BUCKET-ID WS-ROWDATA WS-STATUS
-         IF BE-SLOT-ITEM(L-INDEX, 2) = WS-BUCKET-ID
-             CALL "CONTENT-ITEM-BY-KEY" USING WS-WATER WS-WATER-ID WS-ROWDATA WS-STATUS
-             MOVE WS-WATER-ID TO BE-SLOT-ITEM(L-INDEX, 2)
-         END-IF
-     END-IF
-     SUBTRACT 1 FROM BE-SLOT-COUNT(L-INDEX, 1)
-     IF BE-SLOT-COUNT(L-INDEX, 1) = 0
-         MOVE 0 TO BE-SLOT-ITEM(L-INDEX, 1) BE-SLOT-VAR(L-INDEX, 1)
-     END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
-         IF BE-F-USED-ROW(L-INDEX, WS-I) = WS-ROW
-             ADD 1 TO BE-F-USED-COUNT(L-INDEX, WS-I)
-             MOVE 5 TO WS-I
-         ELSE
-             IF BE-F-USED-ROW(L-INDEX, WS-I) = 0
-                 MOVE WS-ROW TO BE-F-USED-ROW(L-INDEX, WS-I)
-                 MOVE 1 TO BE-F-USED-COUNT(L-INDEX, WS-I)
-                 MOVE 5 TO WS-I
-             END-IF
-         END-IF
-     END-PERFORM
-     MOVE 1 TO WS-CHANGED.
  END PROGRAM FURN-TICK.
 
  IDENTIFICATION DIVISION.

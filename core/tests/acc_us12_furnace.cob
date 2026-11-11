@@ -68,6 +68,14 @@
  01 WS-E5                  PIC -(9)9.
  01 WS-E6                  PIC -(9)9.
  01 WS-A                   BINARY-LONG.
+ 01 WS-TAGGED              BINARY-LONG.
+ 01 WS-TAG-REGISTRY        PIC X(48) VALUE "item".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:test_tag".
+ 01 WS-MEMBERS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 1 TIMES.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SPEED-S             FLOAT-SHORT VALUE 2.
+ 01 WS-HUGE                BINARY-LONG VALUE 99999.
  01 WS-E1-N                BINARY-LONG.
  01 WS-E2-N                BINARY-LONG.
  01 WS-E3-N                BINARY-LONG.
@@ -473,6 +481,56 @@
      MOVE "17 180 900 used 3 speed 10" TO TL-EXPECTED
      PERFORM CHECK
 
+     MOVE "acceptance US12 furnace given a smelt onto a stack of the same item then the result grows and the used count rises; the total rounds up; "
+         & "an unknown item gives no recipe, a #tag ingredient gives a recipe of count 1" TO TL-CASE
+     MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
+     MOVE WS-RAW TO BE-SLOT-ITEM(WS-BE, 1)
+     MOVE 2 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 0 TO BE-SLOT-VAR(WS-BE, 1)
+     MOVE WS-COAL TO BE-SLOT-ITEM(WS-BE, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-BE, 2)
+     MOVE WS-INGOT TO BE-SLOT-ITEM(WS-BE, 3)
+     MOVE 5 TO BE-SLOT-COUNT(WS-BE, 3)
+     MOVE 0 TO BE-SLOT-VAR(WS-BE, 3)
+     MOVE 100 TO BE-F-LIT(WS-BE)
+     MOVE 199 TO BE-F-COOK(WS-BE)
+     MOVE 200 TO BE-F-COOK-TOTAL(WS-BE)
+     MOVE 1 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE BE-SLOT-COUNT(WS-BE, 3) TO WS-E1
+     MOVE BE-F-USED-COUNT(WS-BE, 1) TO WS-E2
+     MOVE 201 TO WS-TIME
+     CALL "FURN-TOTAL-TIME" USING WS-TIME WS-SPEED-S WS-COUNT
+     MOVE WS-COUNT TO WS-E3
+     MOVE 0 TO WS-TYPE
+     CALL "FURN-RECIPE" USING WS-TYPE WS-HUGE WS-ROWNO WS-RESULT WS-COUNT WS-TIME WS-XP
+     MOVE WS-ROWNO TO WS-E4
+     CALL "FURN-RECIPE" USING WS-TYPE WS-TAGGED WS-ROWNO WS-RESULT WS-COUNT WS-TIME WS-XP
+     MOVE WS-COUNT TO WS-E5
+     MOVE WS-TIME TO WS-E6
+     MOVE SPACES TO WS-TEXT
+     STRING "result " FUNCTION TRIM(WS-E1) " used " FUNCTION TRIM(WS-E2) " total " FUNCTION TRIM(WS-E3) " unknown " FUNCTION TRIM(WS-E4)
+         " tag count " FUNCTION TRIM(WS-E5) " time " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "result 6 used 4 total 101 unknown 0 tag count 1 time 50" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 furnace given progress without fuel then it decays by 2 a tick down to 0 and never below, and above the total it is "
+         & "clamped to the total" TO TL-CASE
+     MOVE 0 TO BE-SLOT-COUNT(WS-BE, 1) BE-SLOT-COUNT(WS-BE, 2) BE-SLOT-COUNT(WS-BE, 3)
+     MOVE 0 TO BE-F-LIT(WS-BE)
+     MOVE 1 TO BE-F-COOK(WS-BE)
+     MOVE 200 TO BE-F-COOK-TOTAL(WS-BE)
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE BE-F-COOK(WS-BE) TO WS-E1
+     MOVE 10 TO BE-F-COOK(WS-BE)
+     MOVE 5 TO BE-F-COOK-TOTAL(WS-BE)
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE BE-F-COOK(WS-BE) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "floor " FUNCTION TRIM(WS-E1) " clamp " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "floor 0 clamp 5" TO TL-EXPECTED
+     PERFORM CHECK
+
      MOVE "acceptance US12 furnace given a smoker and a blast furnace with their inputs and coal when one tick runs then the smoker (menu 22) burns "
          & "the coal for 800 and cooks beef in 100, the blast furnace (menu 10) cooks raw iron in 50" TO TL-CASE
      COMPUTE WS-X = WS-BX + 1
@@ -519,6 +577,27 @@
      STRING "coal " FUNCTION TRIM(WS-E1) " bucket " FUNCTION TRIM(WS-E2) " dirt " FUNCTION TRIM(WS-E3) " result " FUNCTION TRIM(WS-E4) " input "
          FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO WS-TEXT
      MOVE "coal 1 bucket 1 dirt 0 result 0 input 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 furnace given dirt in a main inventory slot when it is shift-clicked then it goes to the hotbar" TO TL-CASE
+     MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, 12)
+     MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 12)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROW, 12)
+     MOVE 0 TO WS-BUTTON
+     MOVE 1 TO WS-TYPE
+     MOVE 5 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE PL-SLOT-COUNT(WS-ROW, 12) TO WS-E1
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         IF PL-SLOT-ITEM(WS-ROW, WS-I) = WS-DIRT
+             ADD PL-SLOT-COUNT(WS-ROW, WS-I) TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE WS-COUNT TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "main " FUNCTION TRIM(WS-E1) " hotbar " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "main 0 hotbar 3" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12 furnace given a tag with unknown recipes, foreign tag types and a smaller RecipesUsed when it is loaded then the unknown "
@@ -610,9 +689,9 @@
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
      CALL "CONTENT-SET-COUNTS"
      CALL "FURN-PROVIDERS-LOAD" USING WS-DIRF
-     MOVE 4 TO RC-COUNT
-     INITIALIZE RC-ROW(1) RC-ROW(2) RC-ROW(3) RC-ROW(4)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+     MOVE 5 TO RC-COUNT
+     INITIALIZE RC-ROW(1) RC-ROW(2) RC-ROW(3) RC-ROW(4) RC-ROW(5)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          MOVE SPACES TO RR-ING(WS-I, 1)
      END-PERFORM
      MOVE 14 TO RR-SERIALIZER(1)
@@ -645,11 +724,20 @@
      MOVE 200 TO RR-COOK-TIME(4)
      MOVE 0.15 TO RR-EXPERIENCE(4)
      MOVE "sponge" TO RR-KEY(4)
+     MOVE 14 TO RR-SERIALIZER(5)
+     MOVE "#minecraft:test_tag" TO RR-ING(5, 1)
+     MOVE "minecraft:iron_ingot" TO RR-RESULT-ID(5)
+     MOVE 0 TO RR-RESULT-COUNT(5)
+     MOVE 50 TO RR-COOK-TIME(5)
+     MOVE "from_tag" TO RR-KEY(5)
      CALL "BLOCKS-OPEN"
      CALL "CORE-TABLES-OPEN"
      MOVE WS-SAVE-TYPES TO CORE-ENTITY-TYPES
      MOVE WS-SAVE-ROLES TO CORE-ENTITY-ROLES
-     MOVE "stone" TO WS-KEY112.
+     MOVE "gravel" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-TAGGED
+     MOVE WS-TAGGED TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS.
 
  PREPARE-GROUND.
      COMPUTE WS-Y = WS-BY - 1
