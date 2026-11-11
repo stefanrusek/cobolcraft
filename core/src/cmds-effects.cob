@@ -172,17 +172,7 @@
          MOVE BR-R-LINE(BA-START(WS-EFFECT) + 1:WS-TEXT-LENGTH) TO WS-TEXT
      END-IF
      CALL "EFFECT-RESOLVE" USING WS-TEXT WS-TEXT-LENGTH WS-ID WS-DISPLAY WS-DISPLAY-LENGTH WS-INSTANT
-     IF WS-ID < 0
-         MOVE "argument.resource.not_found" TO WS-KEY
-         MOVE 2 TO WS-N-ARGS
-         MOVE SPACES TO WS-A1 WS-A2
-         MOVE WS-TEXT TO WS-A1
-         MOVE WS-TEXT-LENGTH TO WS-L1
-         MOVE "minecraft:mob_effect" TO WS-A2
-         MOVE 20 TO WS-L2
-         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
-         MOVE 1 TO BR-R-FAILED
-     END-IF.
+     CONTINUE.
 
 *> The message WS-KEY with the effect name (WS-WITH-NAME 1) and the player name (one target) or the count.
  TELL-DONE.
@@ -232,7 +222,7 @@
          END-IF
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
              MOVE BX-ROW(WS-I) TO WS-ROW
-             IF WS-ROW > 0
+             IF WS-ROW > 0 AND WS-ID >= 0
                  CALL "EFFECT-ADD" USING WS-ROW WS-ID WS-J WS-DURATION WS-FLAGS
                  CALL "EFFECT-LEVEL" USING WS-ROW WS-ID WS-LEVEL WS-LEFT
                  IF WS-LEVEL = WS-J + 1 AND WS-LEFT = WS-DURATION
@@ -258,7 +248,7 @@
      IF BR-R-FAILED = 0 AND WS-GIVE = 0
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
              MOVE BX-ROW(WS-I) TO WS-ROW
-             IF WS-ROW > 0
+             IF WS-ROW > 0 AND (WS-EFFECT = 0 OR WS-ID >= 0)
                  MOVE 0 TO WS-HAD
                  IF WS-EFFECT > 0
                      CALL "EFFECT-LEVEL" USING WS-ROW WS-ID WS-LEVEL WS-LEFT

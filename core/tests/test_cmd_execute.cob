@@ -229,6 +229,36 @@
      MOVE "commands.teleport.success.location.single(Opal,0.000000,65.0" & "00000,0.000000) | commands.teleport.success.location.single(" & "Alice,10.000000,65.000000,0.000000) | commands.teleport.succ" & "ess.location.single(Bob,20.000000,65.000000,0.000000)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute a target that is not online gives n" & "o source: nothing runs, no error" TO TL-CASE
+     MOVE "execute as Zed run say hi" TO WS-LINE
+     MOVE SPACES TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute rotated with relative yaw and pitch" TO TL-CASE
+     MOVE "execute positioned 12 70 12 rotated ~10 ~5 run setblock ~ ~ " & "~ cobolcraft:turf" TO WS-LINE
+     MOVE "commands.setblock.success(12,70,12)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute a pitch below -90 is limited" TO TL-CASE
+     MOVE "execute positioned 13 70 13 rotated 0 -100 run setblock ~ ~ " & "~ cobolcraft:turf" TO WS-LINE
+     MOVE "commands.setblock.success(13,70,13)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute a pitch above 90 is limited" TO TL-CASE
+     MOVE "execute positioned 14 70 14 rotated 0 100 run setblock ~ ~ ~" & " cobolcraft:turf" TO WS-LINE
+     MOVE "commands.setblock.success(14,70,14)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute facing from the eyes anchor" TO TL-CASE
+     MOVE "execute anchored eyes facing 10 64 0 run say eyes" TO WS-LINE
+     MOVE "chat.type.announcement(Opal,eyes)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /execute facing an entity's eyes from the ey" & "es anchor" TO TL-CASE
+     MOVE "execute anchored eyes facing entity Alice eyes run say eyes2" TO WS-LINE
+     MOVE "chat.type.announcement(Opal,eyes2)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      MOVE "acceptance US13 /execute a player below level 2 does not kno" & "w the command" TO TL-CASE
      MOVE "execute run say hi" TO WS-LINE

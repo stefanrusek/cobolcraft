@@ -92,6 +92,16 @@
      MOVE "commands.banip.invalid()" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /ban-ip a leading dot is an empty group" TO TL-CASE
+     MOVE "ban-ip .1.2.3.4" TO WS-LINE
+     MOVE "commands.banip.invalid()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /ban-ip an empty group in the middle" TO TL-CASE
+     MOVE "ban-ip 1..2.3.4" TO WS-LINE
+     MOVE "commands.banip.invalid()" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /ban-ip a letter is invalid" TO TL-CASE
      MOVE "ban-ip 1.2.3.4a" TO WS-LINE
      MOVE "commands.banip.invalid()" TO WS-EXPECTED

@@ -147,6 +147,26 @@
      MOVE "T" TO TL-MODE
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US13 15§14 Suggestions a dimension argument offer" & "s the enabled dimensions: only cobolcraft:main in a world wi" & "thout extra dimensions" TO TL-CASE
+     MOVE 20 TO WS-TRANSACTION
+     MOVE "/execute in " TO WS-LINE
+     MOVE 12 TO WS-LENGTH
+     MOVE "20 12 0 [cobolcraft:main]" TO TL-EXPECTED
+     CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALFRED WS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO CW-DIM-COUNT
+     MOVE "acceptance US13 15§14 Suggestions with extra dimensions cobo" & "lcraft:subroutine is offered too" TO TL-CASE
+     MOVE 21 TO WS-TRANSACTION
+     MOVE "20 12 0 [cobolcraft:main]" TO TL-EXPECTED
+     MOVE "21 12 0 [cobolcraft:main,cobolcraft:subroutine]" TO TL-EXPECTED
+     CALL "TEST-SUGGEST" USING WS-ALFRED WS-TRANSACTION WS-LINE WS-LENGTH
+     CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ALFRED WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO CW-DIM-COUNT
      MOVE "acceptance US13 15§14 Suggestions the list is cut at 1000 entries (BR-SG-MAX)" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 1000 TO TL-EXPECTED-N

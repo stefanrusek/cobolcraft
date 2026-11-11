@@ -177,6 +177,16 @@
      MOVE "commands.effect.clear.everything.success.single(Opal)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /effect three players slowed" TO TL-CASE
+     MOVE "effect give @a slowness 30" TO WS-LINE
+     MOVE "commands.effect.give.success.multiple(Slowness,3)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /effect clear one effect from several: Remov" & "ed effect Slowness from 3 targets" TO TL-CASE
+     MOVE "effect clear @a slowness" TO WS-LINE
+     MOVE "commands.effect.clear.specific.success.multiple(Slowness,3)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /effect specific clear when none has it" TO TL-CASE
      MOVE "effect clear @a haste" TO WS-LINE
      MOVE "commands.effect.clear.specific.failed()" TO WS-EXPECTED

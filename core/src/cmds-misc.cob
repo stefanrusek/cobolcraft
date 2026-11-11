@@ -59,9 +59,6 @@
              PERFORM FAIL-PLAIN
          WHEN OTHER
              COMPUTE WS-VALUE = WS-MIN + FUNCTION INTEGER(FUNCTION RANDOM * (WS-SPAN + 1))
-             IF WS-VALUE > WS-MAX
-                 MOVE WS-MAX TO WS-VALUE
-             END-IF
              IF WS-ROLL > 0
                  MOVE "commands.random.roll" TO WS-KEY
                  CALL "BX-KEY" USING PB-TEXT WS-KEY
