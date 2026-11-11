@@ -171,12 +171,20 @@
              COMPUTE ET-HEIGHT-MILLI(WS-INDEX) ROUNDED = FUNCTION NUMVAL(WS-HEIGHT) * 1000
          END-IF
      END-PERFORM
+*>   The player and item roles by the key of the set's type (WT-22): the cobolcraft set holds operator and loose_item, a
+*>   standard (or debug) set minecraft:player and minecraft:item.
      MOVE "cobolcraft:operator" TO WS-KEY
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE "minecraft:player" TO WS-KEY
+     END-IF
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY CR-OPERATOR WS-ROLE-ROW WS-STATUS
      IF WS-STATUS NOT = CT-OK
          MOVE -1 TO CR-OPERATOR
      END-IF
      MOVE "cobolcraft:loose_item" TO WS-KEY
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE "minecraft:item" TO WS-KEY
+     END-IF
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY CR-LOOSE-ITEM WS-ROLE-ROW WS-STATUS
      IF WS-STATUS NOT = CT-OK
          MOVE -1 TO CR-LOOSE-ITEM
