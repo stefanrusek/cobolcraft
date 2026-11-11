@@ -142,6 +142,14 @@
              MOVE 0 TO BM-TINT(301, WS-Q)
          END-IF
          MOVE 0 TO BM-TINT(302, WS-Q) BM-TINT(303, WS-Q)
+*>       Leaves: the first quad culls nothing (its light cell is still the shade direction's) and its
+*>       corners are not on sixteenths (the added-up positions).
+         IF WS-Q = 1
+             MOVE DIR-NONE TO BM-CULL(302, WS-Q)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE -1 TO BM-IX(302, WS-Q, WS-I) BM-IY(302, WS-Q, WS-I) BM-IZ(302, WS-Q, WS-I)
+             END-PERFORM
+         END-IF
      END-PERFORM
      MOVE 1 TO ST-OPAQUE(301) ST-OPAQUE(302)
      MOVE 0 TO ST-OPAQUE(303)
