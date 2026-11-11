@@ -1,6 +1,7 @@
 *> World state kept by the commands (docs/protocol/16-commands-catalog.md §4, §11.9), EXTERNAL: BW-READY 0 until the first use (BR-WORLD-READY
 *> sets the difficulty to normal), the difficulty (0 peaceful, 1 easy, 2 normal, 3 hard), BW-SAVE-OFF 1 after save-off (WORLD-AUTOSAVE-TICK reads it), BW-AUTOSAVE-LEFT the
-*> ticks until the next automatic save (6000 at the start), and per player row the personal spawn
+*> ticks until the next automatic save (6000 at the start), BW-FORCE-GAMEMODE 1 for the force-gamemode property (defaultgamemode then moves
+*> every online player; the hosts' property wiring is BLOCKED: no settings field exists in COREAPI.cpy), and per player row the personal spawn
 *> point of the spawnpoint command (BW-SPAWN-SET 1 once set; the dimension row, the position and the rotation). Neither is
 *> persisted, and the respawn code does not read BW-SPAWN yet (BLOCKED for core/src/health.cob: when a player respawns,
 *> a row with BW-SPAWN-SET 1 holds the place: BW-SPAWN-DIM, BW-SPAWN-X/Y/Z, BW-SPAWN-YAW, BW-SPAWN-PITCH).
@@ -9,6 +10,7 @@
     05 BW-DIFFICULTY        BINARY-LONG.
     05 BW-SAVE-OFF          BINARY-LONG.
     05 BW-AUTOSAVE-LEFT    BINARY-LONG.
+    05 BW-FORCE-GAMEMODE   BINARY-LONG.
     05 BW-SPAWN             OCCURS 64 TIMES.
        10 BW-SPAWN-SET       BINARY-LONG.
        10 BW-SPAWN-DIM       BINARY-LONG.

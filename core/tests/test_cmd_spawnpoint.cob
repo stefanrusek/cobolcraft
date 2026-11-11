@@ -99,6 +99,31 @@
      MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /spawnpoint a personal spawn point for the r" & "espawn test" TO TL-CASE
+     MOVE "spawnpoint Bob 11 22 33 90 0" TO WS-LINE
+     MOVE "commands.spawnpoint.success.single(11,22,33,90.0,0.0,cobolcr" & "aft:main,Bob)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE "acceptance US13 /spawnpoint Bob dies" TO TL-CASE
+     MOVE "kill Bob" TO WS-LINE
+     MOVE "cobolcraft.death.command(Bob) | commands.kill.success.single" & "(Bob)" TO WS-EXPECTED
+     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+     CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     MOVE 0 TO WS-ROW
+     CALL "TEST-CLIENT-COMMAND" USING WS-ID-BOB WS-ROW
+     MOVE "acceptance US13 /spawnpoint a respawning player stands at th" & "e personal spawn point: x 11.5 (twice 23)" TO TL-CASE
+     COMPUTE WS-NUM = PL-X(CN-PLAYER(WS-ID-BOB)) * 2
+     MOVE 23 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /spawnpoint y 22" TO TL-CASE
+     COMPUTE WS-NUM = PL-Y(CN-PLAYER(WS-ID-BOB))
+     MOVE 22 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /spawnpoint looking along yaw 90" TO TL-CASE
+     COMPUTE WS-NUM = PL-YAW(CN-PLAYER(WS-ID-BOB))
+     MOVE 90 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      MOVE "acceptance US13 /spawnpoint a player below level 2 does not " & "know the command" TO TL-CASE
      MOVE "spawnpoint" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED

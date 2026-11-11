@@ -47,7 +47,7 @@
                  CALL "BX-ROW-OF-UUID" USING BX-P-UUID(WS-I) WS-PLAYER
                  IF WS-PLAYER > 0
                      CALL "ACCESS-OPERATOR-STATUS" USING WS-PLAYER
-                     CALL "CMD-TREE-SEND" USING WS-PLAYER
+                     CALL "CMD-PERMISSION-SEND" USING WS-PLAYER
                  END-IF
                  MOVE "commands.op.success" TO WS-KEY
                  CALL "BX-KEY" USING PB-TEXT WS-KEY
@@ -128,7 +128,7 @@
              CALL "BX-ROW-OF-UUID" USING BX-P-UUID(WS-I) WS-PLAYER
              IF WS-PLAYER > 0
                  CALL "ACCESS-OPERATOR-STATUS" USING WS-PLAYER
-                 CALL "CMD-TREE-SEND" USING WS-PLAYER
+                 CALL "CMD-PERMISSION-SEND" USING WS-PLAYER
              END-IF
              MOVE "commands.deop.success" TO WS-KEY
              CALL "BX-KEY" USING PB-TEXT WS-KEY

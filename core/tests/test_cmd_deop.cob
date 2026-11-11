@@ -55,10 +55,10 @@
      MOVE PL-OPERATOR(CN-PLAYER(WS-ID-ALICE)) TO WS-NUM
      MOVE 0 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     MOVE "acceptance US13 /deop Alice is sent the Commands packet of l" & "evel 0 (16)" TO TL-CASE
+     MOVE "acceptance US13 /deop Alice is sent the permission Entity Ev" & "ent (34) and the Commands packet of level 0 (16)" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ID-ALICE WS-IDS
      MOVE WS-IDS TO WS-TEXT
-     MOVE "16" TO WS-EXPECTED
+     MOVE "34 16" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /deop a player who is not an operator: Nothi" & "ng changed" TO TL-CASE
      MOVE "deop Alice" TO WS-LINE

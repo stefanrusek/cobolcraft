@@ -1,6 +1,6 @@
 *> Acceptance test, US14-5 core half and edge cases (spec US14 scenario 5; FR-016; docs/protocol/16 §op, deop and 15 §13): when an operator grants
 *> or revokes operator status the sender is told (commands.op.success, commands.deop.success), the target is sent the Commands tree of
-*> its new level at once (Commands 0x10; the Entity Event with the level is BLOCKED), a repeat changes nothing, a name that never joined works through its
+*> its new level at once (Entity Event 24 + level, then Commands 0x10), a repeat changes nothing, a name that never joined works through its
 *> offline identity, the last operator may revoke her own status (the console keeps operator permission and can grant it again).
 *> The stand-in notice and is_host cases have no counterpart in the standard texts. Opal holds operator status.
  IDENTIFICATION DIVISION.
@@ -43,9 +43,9 @@
      MOVE "commands.op.success(Alice)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
-     MOVE "acceptance US13 /op_change Alice is sent the Commands tree o" & "f her new level at once (and the admin chat line)" TO TL-CASE
+     MOVE "acceptance US13 /op_change Alice is sent the permission Enti" & "ty Event (34), the Commands tree of her new level (16) at on" & "ce and the admin chat line" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ID-ALICE WS-TEXT
-     MOVE "16 124" TO WS-EXPECTED
+     MOVE "34 16 124" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /op_change granting to a player who holds it" & " changes nothing" TO TL-CASE
      MOVE "op Alice" TO WS-LINE
@@ -62,9 +62,9 @@
      MOVE "chat.type.admin(Alice,Set cobolcraft:daylight to 100 tick(s)" & ") | commands.deop.success(Alice)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
-     MOVE "acceptance US13 /op_change Alice is sent the Commands tree o" & "f her new level at once (revoked)" TO TL-CASE
+     MOVE "acceptance US13 /op_change Alice is sent the permission Enti" & "ty Event and the Commands tree of her new level (revoked)" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ID-ALICE WS-TEXT
-     MOVE "16" TO WS-EXPECTED
+     MOVE "34 16" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /op_change revoking from a player who does n" & "ot hold it changes nothing" TO TL-CASE
      MOVE "deop Alice" TO WS-LINE

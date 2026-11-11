@@ -69,10 +69,10 @@
      MOVE AC-LEVEL(1, WS-ROW) TO WS-NUM
      MOVE 4 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
-     MOVE "acceptance US13 /op Alice is sent the Commands packet of her" & " new level (16) and the broadcast (124)" TO TL-CASE
+     MOVE "acceptance US13 /op Alice is sent the permission Entity Even" & "t (34), the Commands packet of her new level (16) and the br" & "oadcast (124)" TO TL-CASE
      CALL "TEST-DRAIN-IDS" USING WS-ID-ALICE WS-IDS
      MOVE WS-IDS TO WS-TEXT
-     MOVE "16 124" TO WS-EXPECTED
+     MOVE "34 16 124" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /op a player who is an operator already: Not" & "hing changed" TO TL-CASE
      MOVE "op Alice" TO WS-LINE

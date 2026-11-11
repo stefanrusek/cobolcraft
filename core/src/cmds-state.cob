@@ -1032,14 +1032,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-DEFAULTGAMEMODE.
-*> defaultgamemode <gamemode> (16 §4.2, level 2): the game mode new players start in (CW-GAME-MODE) is set and no player is moved
-*> (a dedicated server without force-gamemode: BLOCKED for the force-gamemode property); commands.defaultgamemode.success is
-*> broadcast; the result is 0 (players moved).
+*> defaultgamemode <gamemode> (16 §4.2, level 2): the game mode new players start in (CW-GAME-MODE) is set; with force-gamemode
+*> (BW-FORCE-GAMEMODE) every online player whose mode differs is moved to it (mode event and abilities sent; survival and creative only
+*> are modes of the core, so another mode moves no one); commands.defaultgamemode.success is broadcast; the result is the number of
+*> players moved (0 without force-gamemode).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY BRRUN.
  COPY PROTO.
+ COPY BRWORLD.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 3.
+ 01 WS-VALUE               FLOAT-SHORT.
+ 01 WS-MODE-PIC            PIC 9.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-NAME                PIC X(32) VALUE "gamemode".
  01 WS-INDEX               BINARY-LONG.
  01 WS-MODE-NAME           PIC X(16).
@@ -1063,7 +1071,27 @@
      CALL "BX-KEY" USING PB-TEXT WS-KEY
      CALL "CMD-TEXT-ARG" USING PB-TEXT WS-MODE-NAME WS-MODE-NAME-LENGTH
      CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
-     MOVE 0 TO BR-R-RESULT
+     MOVE 0 TO WS-MOVED
+     CALL "BR-WORLD-READY"
+     IF BW-FORCE-GAMEMODE = 1 AND CW-GAME-MODE < 2
+         MOVE CW-GAME-MODE TO WS-MODE-PIC
+         PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > 64
+             IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) NOT = PS-JOINING AND PL-MODE(WS-ROW) NOT = CW-GAME-MODE
+                 ADD 1 TO WS-MOVED
+                 MOVE CW-GAME-MODE TO PL-MODE(WS-ROW)
+                 MOVE 0 TO PL-FLYING(WS-ROW)
+                 MOVE CW-GAME-MODE TO WS-VALUE
+                 CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                 CALL "PLAY-GAME-EVENT-BUILD" USING WS-EVENT WS-VALUE PB-BUFFER
+                 CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "PLAY-ABILITIES-BUILD" USING WS-MODE-PIC PL-FLYING(WS-ROW) PB-BUFFER
+                 CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
+                 CALL "PB-FREE" USING PB-BUFFER
+             END-IF
+         END-PERFORM
+     END-IF
+     MOVE WS-MOVED TO BR-R-RESULT
      GOBACK.
  END PROGRAM CX-DEFAULTGAMEMODE.
 

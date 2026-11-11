@@ -24,6 +24,7 @@
  01 WS-I                   BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ COPY BRWORLD.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
@@ -64,6 +65,41 @@
      MOVE "commands.defaultgamemode.success(Spectator Mode)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
+     CALL "BR-WORLD-READY"
+     MOVE 1 TO BW-FORCE-GAMEMODE
+     MOVE 0 TO PL-MODE(CN-PLAYER(WS-ID-OPAL))
+     MOVE 0 TO PL-MODE(CN-PLAYER(WS-ID-ALICE))
+     MOVE "acceptance US13 /defaultgamemode with force-gamemode every o" & "nline player is moved: the result is the number moved" TO TL-CASE
+     MOVE "defaultgamemode creative" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
+     MOVE 2 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /defaultgamemode Opal is in creative mode" TO TL-CASE
+     MOVE PL-MODE(CN-PLAYER(WS-ID-OPAL)) TO WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /defaultgamemode Alice is in creative mode" TO TL-CASE
+     MOVE PL-MODE(CN-PLAYER(WS-ID-ALICE)) TO WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "acceptance US13 /defaultgamemode nobody differs: 0 moved" TO TL-CASE
+     MOVE "defaultgamemode creative" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
+     MOVE 0 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE 0 TO BW-FORCE-GAMEMODE
+     MOVE "acceptance US13 /defaultgamemode without force-gamemode no o" & "ne is moved" TO TL-CASE
+     MOVE "defaultgamemode survival" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-NUM
+     MOVE 0 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /defaultgamemode Opal stays in creative mode" TO TL-CASE
+     MOVE PL-MODE(CN-PLAYER(WS-ID-OPAL)) TO WS-NUM
+     MOVE 1 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      MOVE "acceptance US13 /defaultgamemode without a mode the line is " & "incomplete" TO TL-CASE
      MOVE "defaultgamemode" TO WS-LINE
      MOVE "command.unknown.command() |" TO WS-EXPECTED
