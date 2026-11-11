@@ -506,6 +506,12 @@
           15 EN-VZ           FLOAT-LONG.
           15 EN-STACK-COUNT  BINARY-LONG.
           15 EN-STACK-ITEM   BINARY-LONG.
+*>        The registry key of EN-TYPE in a world of the standard set (EN-VANILLA 1; spaces when the id is outside the
+*>        registry) and the row of CL-MODELS (CLMODELS.cpy) that draws it (0 = no model). In a cobolcraft world EN-TYPE is the
+*>        stand-in type of standin-content §3 and EN-VANILLA is 0.
+          15 EN-VANILLA      PIC 9.
+          15 EN-KEY          PIC X(24).
+          15 EN-MODEL        BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -779,6 +785,15 @@
           15 EA-IM-Y         BINARY-LONG.
           15 EA-IM-W         BINARY-LONG.
           15 EA-IM-H         BINARY-LONG.
+*>     The images of the entity models (entities-models.cob), stacked below the stand-ins in the order the replica first
+*>     showed them: slot k holds the CL-MODELS row EA-MT-MODEL and its image's rectangle.
+       10 EA-MT-COUNT        BINARY-LONG.
+       10 EA-MT OCCURS 16 TIMES.
+          15 EA-MT-MODEL     BINARY-LONG.
+          15 EA-MT-X         BINARY-LONG.
+          15 EA-MT-Y         BINARY-LONG.
+          15 EA-MT-W         BINARY-LONG.
+          15 EA-MT-H         BINARY-LONG.
 *>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
 *>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
 *>     down its columns over the whole atlas height.
