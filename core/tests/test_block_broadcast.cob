@@ -51,12 +51,12 @@
          & "same dimension within view distance (Block Update and Light Update)" TO TL-CASE
      PERFORM ALICE-PLACES
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
-     MOVE "8(20,100,20=2) 49(1,1)" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=2)" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "test block broadcast the placing player gets the same change and its Block Changed "
          & "Ack" TO TL-CASE
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "8(20,100,20=2) 49(1,1) 4(1)" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=2) 4(1)" TO TL-EXPECTED
      PERFORM CHECK
      MOVE "test block broadcast a player outside the view distance receives nothing" TO TL-CASE
      CALL "TEST-DRAIN-BLOCKS" USING WS-CAROL WS-TEXT
@@ -67,7 +67,7 @@
      MOVE 100 TO WS-Y
      PERFORM BOB-BREAKS
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "8(20,100,20=0) 49(1,1)" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
 
@@ -79,10 +79,10 @@
      MOVE 100 TO WS-Y
      PERFORM BOB-BREAKS
      CALL "TEST-DRAIN-BLOCKS" USING WS-ALICE WS-TEXT
-     MOVE "8(20,100,20=2) 49(1,1) 4(2) 8(20,100,20=0) 49(1,1)" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=2) 4(2) 49(1,1) 8(20,100,20=0)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-DRAIN-BLOCKS" USING WS-BOB WS-TEXT
-     MOVE "8(20,100,20=2) 49(1,1) 8(20,100,20=0) 49(1,1) 4(2)" TO TL-EXPECTED
+     MOVE "49(1,1) 8(20,100,20=2) 49(1,1) 8(20,100,20=0) 4(2)" TO TL-EXPECTED
      PERFORM CHECK
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
      MOVE "test block broadcast the server's block is the final state (void)" TO TL-CASE

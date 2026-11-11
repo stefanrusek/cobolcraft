@@ -217,6 +217,9 @@
  COPY PROTO REPLACING LEADING ==PB-== BY ==FR-==.
  01 WS-CAPACITY            BINARY-LONG VALUE 256.
  01 WS-THRESHOLD           BINARY-LONG.
+*> TFO-NO-FLUSH 1 (set by a test that asserts the timing of the broadcast) keeps TEST-FEED-BUFFER and TEST-TICKS from running the broadcast part of a tick.
+ 01 TEST-FEED-OPTIONS EXTERNAL.
+    05 TFO-NO-FLUSH           BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -230,6 +233,11 @@
      SET CB-ADDR TO FR-ADDR
      MOVE FR-LENGTH TO CB-CAPACITY CB-LENGTH
      CALL "CORE-CONN-INPUT" USING L-ID CORE-BUFFER
+*>   The block changes and acknowledgements the packet queued are sent by the next tick (29 section 7); a test drains right after feeding, so it
+*>   runs that part of the tick now (WORLDSIM-FLUSH) instead of a whole tick.
+     IF TFO-NO-FLUSH = 0
+         CALL "WORLDSIM-FLUSH"
+     END-IF
      CALL "PB-FREE" USING FR-BUFFER
      GOBACK.
  END PROGRAM TEST-FEED-BUFFER.
@@ -649,12 +657,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-I                   BINARY-LONG.
+ 01 TEST-FEED-OPTIONS EXTERNAL.
+    05 TFO-NO-FLUSH           BINARY-LONG.
  LINKAGE SECTION.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-COUNT.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
          CALL "CORE-TICK"
      END-PERFORM
+*>   What the last tick changed is broadcast by the next tick (29 section 7.2); a test drains right after, so that part runs now.
+     IF TFO-NO-FLUSH = 0
+         CALL "WORLDSIM-FLUSH"
+     END-IF
      GOBACK.
  END PROGRAM TEST-TICKS.
 

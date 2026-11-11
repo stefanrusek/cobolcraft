@@ -332,7 +332,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-TIME-TICK.
 *> No parameters; called once per tick after CW-TICKS is raised (US3-6). The time of day advances by
-*> 1 and wraps from 23999 to 0 (RULE-DAY-LENGTH). Every CORE-TIME-TICKS ticks (once a
+*> the clock's rate (WORLDSIM-CLOCK-STEP, 33 section 3.2; 1 per tick by default) and wraps from 23999 to 0 (RULE-DAY-LENGTH). Every CORE-TIME-TICKS ticks (once a
 *> second, 09 §3.2 Set Time row) every player whose join has been sent gets Set Time.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -343,7 +343,7 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-PLAYER              BINARY-LONG.
  PROCEDURE DIVISION.
-     COMPUTE CW-TIME = FUNCTION MOD(CW-TIME + 1, RULE-DAY-LENGTH)
+     CALL "WORLDSIM-CLOCK-STEP"
      IF FUNCTION MOD(CW-TICKS, CORE-TIME-TICKS) NOT = 0
          GOBACK
      END-IF
@@ -352,7 +352,7 @@
          MOVE 1 TO WS-READY
      END-IF
      CALL "PB-RESET" USING PB-BUFFER
-     CALL "PLAY-TIME-BUILD" USING CW-TIME PB-BUFFER
+     CALL "PLAY-TIME-RATE-BUILD" USING CW-TIME PB-BUFFER
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
          IF PL-USED(WS-PLAYER) = 1 AND PL-ENTITY-ROW(WS-PLAYER) > 0
              CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) PB-BUFFER
