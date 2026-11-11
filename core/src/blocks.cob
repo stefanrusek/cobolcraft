@@ -351,7 +351,13 @@
      MOVE 0 TO WS-TRAVEL
      CALL "MENU-IS-BENCH" USING WS-STATE WS-BENCH
      CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
-     CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
+     MOVE 0 TO WS-SHELF
+*>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
+     IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
+         MOVE 0 TO WS-CONT
+     ELSE
+         CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
+     END-IF
      EVALUATE TRUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL

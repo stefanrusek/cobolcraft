@@ -36,6 +36,7 @@
        10 MN-CFAMILY         BINARY-LONG.            *> 1 chest, trapped chest, 2 ender chest, 3 barrel, 4 shulker box
        10 MN-CBE1            BINARY-LONG.            *> the block entities the own slots are over (CORE-BE index; the second only for a double chest)
        10 MN-CBE2            BINARY-LONG.
+       10 MN-CDATA           BINARY-LONG OCCURS 4 TIMES.   *> the data slots (furnace: lit, lit total, cook, cook total) as last sent
        10 MN-COPEN           BINARY-LONG OCCURS 2 TIMES.   *> the entities that count the openers (an ender chest's own block entity, else the same as MN-CBE1 and 2)
        10 MN-DRAG-ACTIVE     PIC 9.
        10 MN-DRAG-TYPE       BINARY-LONG.

@@ -30,6 +30,14 @@
        10 BE-LID            FLOAT-SHORT.
        10 BE-LID-OLD        FLOAT-SHORT.
        10 BE-SHOULD-OPEN    BINARY-LONG.
+       10 BE-F-COOK         BINARY-LONG.            *> furnace family (31-2 section 3.2): cooking_time_spent, cooking_total_time,
+       10 BE-F-COOK-TOTAL   BINARY-LONG.            *> lit_time_remaining, lit_total_time, speed_multiplier, RecipesUsed (recipe rows of RC-STORE and counts)
+       10 BE-F-LIT          BINARY-LONG.
+       10 BE-F-LIT-TOTAL    BINARY-LONG.
+       10 BE-F-SPEED        FLOAT-SHORT.
+       10 BE-F-USED OCCURS 4 TIMES.
+          15 BE-F-USED-ROW   BINARY-LONG.
+          15 BE-F-USED-COUNT BINARY-LONG.
        10 BE-OUTPUT         BINARY-LONG.            *> comparator OutputSignal (31-2 section 8)
        10 BE-COOLDOWN       BINARY-LONG.            *> hopper TransferCooldown (31-2 section 5.2) and chiseled bookshelf last_interacted_slot (10.1), -1 when fresh
        10 BE-SLOT OCCURS 27 TIMES.

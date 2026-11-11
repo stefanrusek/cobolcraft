@@ -420,6 +420,16 @@
              MOVE 0 TO L-RESULT
 *>       The shulker box's own slots refuse a shulker box item (40-1 section 8.2).
          WHEN 6
+*>           The furnace family (40-2 section 2.3): nothing goes into the result slot; the fuel slot takes a fuel (a `fuel` component) or an
+*>           empty bucket.
+             IF MN-CFAMILY(L-ROW) = 8
+                 EVALUATE WS-INDEX
+                     WHEN 3
+                         MOVE 0 TO L-RESULT
+                     WHEN 2
+                         CALL "FURN-MAY-FUEL" USING L-ITEM L-RESULT
+                 END-EVALUATE
+             END-IF
              IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
                  MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
                  IF WS-KL >= 11

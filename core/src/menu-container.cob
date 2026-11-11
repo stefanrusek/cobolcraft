@@ -93,6 +93,7 @@
  WORKING-STORAGE SECTION.
  COPY CMENU.
  COPY BESTATE.
+ 01 WS-CHANGED             BINARY-LONG.
  01 WS-BE                  BINARY-LONG.
  01 WS-HALF                BINARY-LONG.
  01 WS-LOCAL               BINARY-LONG.
@@ -111,9 +112,19 @@
              MOVE MN-CBE2(L-ROW) TO WS-BE
          END-IF
      END-IF
+     MOVE 0 TO WS-CHANGED
+     IF WS-LOCAL = 0 AND (BE-TYPE(WS-BE) = 0 OR BE-TYPE(WS-BE) = 27 OR BE-TYPE(WS-BE) = 28)
+         IF L-COUNT = 0 OR BE-SLOT-COUNT(WS-BE, 1) = 0 OR L-ITEM NOT = BE-SLOT-ITEM(WS-BE, 1) OR L-VAR NOT = BE-SLOT-VAR(WS-BE, 1)
+             MOVE 1 TO WS-CHANGED
+         END-IF
+     END-IF
      MOVE L-ITEM TO BE-SLOT-ITEM(WS-BE, WS-LOCAL + 1)
      MOVE L-COUNT TO BE-SLOT-COUNT(WS-BE, WS-LOCAL + 1)
      MOVE L-VAR TO BE-SLOT-VAR(WS-BE, WS-LOCAL + 1)
+*>   A changed input stack of a furnace resets the cooking (31-2 section 3.9).
+     IF WS-CHANGED = 1
+         CALL "FURN-SET-INPUT" USING WS-BE
+     END-IF
      CALL "BE-MARK-CHUNK" USING WS-BE
      GOBACK.
  END PROGRAM MENU-CONT-SET.
@@ -329,6 +340,21 @@
          MOVE 9 TO MN-CSIZE(WS-ROW)
          MOVE 6 TO WS-MENU-TYPE
      END-IF
+*>   The furnace family (40-2 section 2.1): furnace 14, blast furnace 10, smoker 22.
+     IF WS-FAMILY = 8
+         MOVE 3 TO MN-CSIZE(WS-ROW)
+         EVALUATE BE-TYPE(WS-FIRST)
+             WHEN 27
+                 MOVE 22 TO WS-MENU-TYPE
+             WHEN 28
+                 MOVE 10 TO WS-MENU-TYPE
+             WHEN OTHER
+                 MOVE 14 TO WS-MENU-TYPE
+         END-EVALUATE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             MOVE -1 TO MN-CDATA(WS-ROW, WS-I)
+         END-PERFORM
+     END-IF
      MOVE WS-MENU-TYPE TO MN-TYPE(WS-ROW)
      MOVE WS-FAMILY TO MN-CFAMILY(WS-ROW)
      MOVE WS-FIRST TO MN-CBE1(WS-ROW) MN-COPEN(WS-ROW, 1)
@@ -385,6 +411,7 @@
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "MENU-DATA-SYNC" USING WS-ROW
      MOVE 1 TO L-OPENED
      GOBACK.
  END PROGRAM MENU-CONT-OPEN.
@@ -506,6 +533,22 @@
          MOVE 0 TO WS-FIRST
          MOVE WS-OWN TO WS-END
          MOVE 0 TO WS-REVERSE
+     END-IF
+*>   The furnace family (40-2 section 2.5): the result goes to the inventory from the end, the input and the fuel from the start; an inventory
+*>   stack that has a recipe goes only to the input slot, else a fuel to the fuel slot, else between the main inventory and the hotbar.
+     IF MN-CFAMILY(L-ROW) = 8
+         EVALUATE TRUE
+             WHEN L-SLOT = 0 OR L-SLOT = 1
+                 MOVE 3 TO WS-FIRST
+                 MOVE 39 TO WS-END
+                 MOVE 0 TO WS-REVERSE
+             WHEN L-SLOT = 2
+                 MOVE 3 TO WS-FIRST
+                 MOVE 39 TO WS-END
+                 MOVE 1 TO WS-REVERSE
+             WHEN OTHER
+                 CALL "FURN-ROUTE" USING MN-CBE1(L-ROW) WS-ITEM L-SLOT WS-FIRST WS-END
+         END-EVALUATE
      END-IF
      CALL "MENU-MOVE-TO-X" USING L-ROW WS-ITEM WS-LEFT WS-FIRST WS-END WS-REVERSE WS-MOVED WS-VAR
      CALL "MENU-QUICK-FINISH" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-LEFT WS-MOVED L-RET-ITEM L-RET-COUNT

@@ -13,7 +13,7 @@
 *>   BE-BLOCK-KEY USING block id, key out (X(48), "minecraft:" + path when the table key has no namespace), length out
 *>   BE-BLOCK-TYPE USING block id, block entity type out (-1 none)    the type whose valid blocks hold the block (cached)
 *>   BE-BLOCK-FAMILY USING block id, family out                    0 none, 1 chest or trapped chest, 2 ender chest, 3 barrel, 4 shulker box,
-*>        5 hopper, 6 dispenser or dropper (their menus count no openers)
+*>        5 hopper, 6 dispenser or dropper (their menus count no openers), 7 chiseled bookshelf, 8 furnace, smoker, blast furnace
 *>   BE-STATE-FIELDS USING state, family out, direction out, chest type out, flag out
 *>        direction 0 north, 1 east, 2 south, 3 west, 4 up, 5 down; chest type 0 single, 1 left, 2 right; flag waterlogged (chest family,
 *>        ender chest) or open (barrel). The state index splits from the last property: a bool lists true first (24 part 1 section 3).
@@ -130,6 +130,8 @@
              MOVE 3 TO L-FAMILY
          WHEN WS-KEY = "minecraft:chiseled_bookshelf"
              MOVE 7 TO L-FAMILY
+         WHEN WS-KEY = "minecraft:furnace" OR WS-KEY = "minecraft:smoker" OR WS-KEY = "minecraft:blast_furnace"
+             MOVE 8 TO L-FAMILY
          WHEN WS-KEY = "minecraft:hopper"
              MOVE 5 TO L-FAMILY
          WHEN WS-KEY = "minecraft:dispenser" OR WS-KEY = "minecraft:dropper"
@@ -187,6 +189,11 @@
              COMPUTE L-DIR = WS-INDEX / 2
          WHEN 4
              MOVE WS-INDEX TO L-DIR
+*>       The furnaces: facing[north/south/west/east] lit (true first); the flag is lit.
+         WHEN 8
+             COMPUTE L-FLAG = 1 - WS-PICK
+             COMPUTE WS-FACE = WS-INDEX / 2
+             MOVE WS-DIRECTION(WS-FACE + 1) TO L-DIR
 *>       The chiseled bookshelf: facing[north/south/west/east] then slot_0_occupied .. slot_5_occupied (true first); the type out is the
 *>       occupancy mask (bit i set when slot i is occupied).
          WHEN 7
@@ -237,6 +244,9 @@
              COMPUTE WS-INDEX = L-DIR * 2 + 1 - L-FLAG
          WHEN 4
              MOVE L-DIR TO WS-INDEX
+         WHEN 8
+             MOVE WS-PROP(L-DIR + 1) TO WS-FACE
+             COMPUTE WS-INDEX = WS-FACE * 2 + 1 - L-FLAG
          WHEN 7
              MOVE WS-PROP(L-DIR + 1) TO WS-FACE
              COMPUTE WS-INDEX = WS-FACE * 64 + 63
@@ -512,7 +522,7 @@
 *> The placed state of the chest family (31-1 section 10.2 and the block rows of 24): a chest or trapped chest faces the player (the
 *> opposite of the horizontal look direction) and becomes the left half when a single chest of the same block and facing stands on the
 *> side clockwise from its facing (that chest becomes the right half), else the right half when one stands counter-clockwise. The
-*> sneaking placement against a clicked side is not modelled (the core has no sneak state). An ender chest faces the player, a barrel
+*> sneaking placement against a clicked side follows the clicked chest (PL-SNEAKING). An ender chest faces the player, a barrel
 *> faces opposite to the look direction (up or down when the pitch is steeper than 45 degrees), a shulker box faces the clicked face.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -552,6 +562,8 @@
  01 WS-PTYPE               BINARY-LONG.
  01 WS-PFLAG               BINARY-LONG.
  01 WS-PARTNER-TYPE        BINARY-LONG.
+ 01 WS-CLICKED             BINARY-LONG.
+ 01 WS-OPPOSITE            BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -573,7 +585,29 @@
      MOVE 0 TO WS-TYPE
      EVALUATE WS-FAMILY
          WHEN 1
-             PERFORM VARYING WS-STEP FROM 1 BY 2 UNTIL WS-STEP > 3 OR WS-TYPE NOT = 0
+*>           Sneaking against the side of a chest: the single chest of the same block clicked (a horizontal face) gives its facing when its axis
+*>           is not the clicked one; the new chest is the right half when that facing's counter-clockwise side is the side clicked.
+             IF PL-SNEAKING(WS-ROW) = 1 AND PSB-FACE >= 2 AND PSB-FACE <= 5
+                 MOVE WS-FACE-TO-DIR(PSB-FACE + 1) TO WS-CLICKED
+                 COMPUTE WS-OPPOSITE = FUNCTION MOD(WS-CLICKED + 2, 4)
+                 CALL "WORLD-GET-BLOCK" USING L-DIM PSB-BX PSB-BY PSB-BZ WS-PSTATE
+                 CALL "BE-STATE-FIELDS" USING WS-PSTATE WS-PFAMILY WS-PDIR WS-PTYPE WS-PFLAG
+                 IF CB-S-BLOCK(WS-PSTATE + 1) = WS-BLOCK AND WS-PTYPE = 0
+                         AND FUNCTION MOD(WS-PDIR, 2) NOT = FUNCTION MOD(WS-CLICKED, 2)
+                     MOVE WS-PDIR TO WS-DIR
+                     MOVE 1 TO WS-TYPE
+                     MOVE 2 TO WS-PARTNER-TYPE
+                     IF FUNCTION MOD(WS-PDIR + 3, 4) = WS-OPPOSITE
+                         MOVE 2 TO WS-TYPE
+                         MOVE 1 TO WS-PARTNER-TYPE
+                     END-IF
+                     MOVE PSB-BX TO WS-PX
+                     MOVE PSB-BZ TO WS-PZ
+                     CALL "BE-STATE-MAKE" USING WS-BLOCK WS-PDIR WS-PARTNER-TYPE WS-PFLAG WS-PSTATE
+                     CALL "BE-PARTNER-SET" USING L-DIM WS-PX L-Y WS-PZ WS-PSTATE
+                 END-IF
+             END-IF
+             PERFORM VARYING WS-STEP FROM 1 BY 2 UNTIL WS-STEP > 3 OR WS-TYPE NOT = 0 OR PL-SNEAKING(WS-ROW) = 1
                  COMPUTE WS-SIDE = FUNCTION MOD(WS-DIR + WS-STEP, 4)
                  COMPUTE WS-PX = L-X + WS-DXC(WS-SIDE + 1) - 1
                  COMPUTE WS-PZ = L-Z + WS-DZC(WS-SIDE + 1) - 1
@@ -1235,3 +1269,22 @@
      CALL "BE-MARK-CHUNK" USING L-INDEX
      GOBACK.
  END PROGRAM BE-SHULKER-RESTORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-SNEAK.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Player Input, 05c 0x2B): PL-SNEAKING is the shift flag (0x20) of the key bits.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SHIFT               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     COMPUTE WS-SHIFT = PSB-FLAGS / 32
+     MOVE 0 TO PL-SNEAKING(CN-PLAYER(L-ID))
+     IF FUNCTION MOD(WS-SHIFT, 2) = 1
+         MOVE 1 TO PL-SNEAKING(CN-PLAYER(L-ID))
+     END-IF
+     GOBACK.
+ END PROGRAM MOVE-SNEAK.
