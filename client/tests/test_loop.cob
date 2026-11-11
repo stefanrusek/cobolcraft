@@ -50,6 +50,11 @@
      CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
      CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
+*>   The frame budget of the mesher is the injected clock with a large budget (the real clock would make the
+*>   number of sections a frame depend on the machine).
+     MOVE 1 TO MB-FAKE MB-FAKE-STEP
+     MOVE 1000000 TO MB-BUDGET-US
+     MOVE 0 TO MB-FAKE-NOW
      PERFORM 3 TIMES
          CALL "TEST-STEP" USING CLIENT-STATE
      END-PERFORM
