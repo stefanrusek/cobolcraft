@@ -639,8 +639,10 @@
     05 FILLER PIC X(40) VALUE "key.chat".
     05 FILLER PIC X(40) VALUE "key.command".
     05 FILLER PIC X(40) VALUE "key.togglePerspective".
+    05 FILLER PIC X(40) VALUE "key.saveToolbarActivator".
+    05 FILLER PIC X(40) VALUE "key.loadToolbarActivator".
  01 WS-NAME-TABLE REDEFINES WS-NAMES.
-    05 KB-NAME             PIC X(40) OCCURS 22 TIMES.
+    05 KB-NAME             PIC X(40) OCCURS 24 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-CODE                BINARY-LONG.
  01 WS-KEY                 PIC X(40).

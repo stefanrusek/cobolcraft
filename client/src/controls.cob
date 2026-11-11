@@ -347,6 +347,10 @@
  01 WS-K                   BINARY-LONG.
  01 WS-KEY                 BINARY-LONG.
  01 WS-HELD                BINARY-LONG.
+ 01 WS-SAVE-KEY            BINARY-LONG.
+ 01 WS-LOAD-KEY            BINARY-LONG.
+ 01 WS-SAVE                BINARY-LONG.
+ 01 WS-LOAD                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -355,7 +359,25 @@
          COMPUTE WS-KEY = KB-HOTBAR-1 + WS-K
          MOVE KB-CODE(WS-KEY) TO WS-KEY
          IF IN-KEY-PRESSED(WS-KEY + 1) = 1
-             MOVE WS-K TO WS-HELD
+             MOVE KB-CODE(KB-SAVE-TOOLBAR) TO WS-SAVE-KEY
+             MOVE KB-CODE(KB-LOAD-TOOLBAR) TO WS-LOAD-KEY
+             MOVE 0 TO WS-SAVE WS-LOAD
+             IF WS-SAVE-KEY > 0 AND IN-KEY-DOWN(WS-SAVE-KEY + 1) = 1
+                 MOVE 1 TO WS-SAVE
+             END-IF
+             IF WS-LOAD-KEY > 0 AND IN-KEY-DOWN(WS-LOAD-KEY + 1) = 1
+                 MOVE 1 TO WS-LOAD
+             END-IF
+*>           40-7 10: with infinite materials and no screen open, an activator key down makes the key a saved hotbar action (load wins).
+             IF PL-MODE = 1 AND SM-SCREEN = SCR-WORLD AND (WS-SAVE = 1 OR WS-LOAD = 1)
+                 IF WS-LOAD = 1
+                     CALL "CREATIVE-HOTBAR-LOAD" USING CLIENT-STATE WS-K
+                 ELSE
+                     CALL "CREATIVE-HOTBAR-SAVE" USING CLIENT-STATE WS-K
+                 END-IF
+             ELSE
+                 MOVE WS-K TO WS-HELD
+             END-IF
          END-IF
      END-PERFORM
      EVALUATE TRUE
