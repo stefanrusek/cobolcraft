@@ -330,6 +330,8 @@
        10 EF-TEXT            PIC X(256) OCCURS 12 TIMES.
        10 EF-LEN             BINARY-LONG OCCURS 12 TIMES.
        10 EB-FORM            BINARY-LONG.
+       10 EB-MC              BINARY-LONG.    *> 1 when the command screen edits a command block minecart (entity id EB-MC-ENTITY)
+       10 EB-MC-ENTITY       BINARY-LONG.
        10 EB-TB-MODE         BINARY-LONG.
        10 EB-JG-KEEP         BINARY-LONG.
        10 EB-LEVELS          BINARY-LONG.

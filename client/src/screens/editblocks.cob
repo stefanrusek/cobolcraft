@@ -297,6 +297,7 @@
              MOVE L-Y TO EB-Y
              MOVE L-Z TO EB-Z
              MOVE 2 TO EB-MODE
+             MOVE 0 TO EB-MC
              MOVE 0 TO EB-COND EB-AUTO EB-TRACK EB-CMD-LEN
              MOVE SPACES TO EB-CMD
              CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
@@ -389,16 +390,16 @@
      END-IF
      MOVE "advMode.previousOutput" TO WS-KEY
      COMPUTE WS-X = WS-CX - 149
-     MOVE 125 TO WS-Y
+     COMPUTE WS-Y = 125 + 15 * EB-MC
      PERFORM KEY-LABEL
      COMPUTE WS-X = WS-CX - 150
-     MOVE 135 TO WS-Y
+     COMPUTE WS-Y = 135 + 15 * EB-MC
      MOVE 276 TO WS-W
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-NOTEXT WS-ZERO WS-STATE
      MOVE "-" TO WS-TEXT
      MOVE 1 TO WS-LEN
      COMPUTE WS-X = WS-CX - 146
-     MOVE 141 TO WS-Y
+     COMPUTE WS-Y = 141 + 15 * EB-MC
      CALL "BOOK-LABEL" USING CLIENT-STATE WS-TEXT WS-LEN WS-X WS-Y
      MOVE "O" TO WS-TEXT
      IF EB-TRACK = 0
@@ -408,36 +409,38 @@
      MOVE WK-BUTTON TO WS-KIND
      MOVE ACT-CMD-TRACK TO WS-ACTION
      COMPUTE WS-X = WS-CX + 130
-     MOVE 135 TO WS-Y
+     COMPUTE WS-Y = 135 + 15 * EB-MC
      MOVE 20 TO WS-W
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-LEN WS-STATE
-     EVALUATE EB-MODE
-         WHEN 0
-             MOVE "advMode.mode.sequence" TO WS-KEY
-         WHEN 1
-             MOVE "advMode.mode.auto" TO WS-KEY
-         WHEN OTHER
-             MOVE "advMode.mode.redstone" TO WS-KEY
-     END-EVALUATE
-     MOVE ACT-CMD-MODE TO WS-ACTION
-     COMPUTE WS-X = WS-CX - 154
-     PERFORM CYCLE
-     IF EB-COND = 1
-         MOVE "advMode.mode.conditional" TO WS-KEY
-     ELSE
-         MOVE "advMode.mode.unconditional" TO WS-KEY
+     IF EB-MC = 0
+         EVALUATE EB-MODE
+             WHEN 0
+                 MOVE "advMode.mode.sequence" TO WS-KEY
+             WHEN 1
+                 MOVE "advMode.mode.auto" TO WS-KEY
+             WHEN OTHER
+                 MOVE "advMode.mode.redstone" TO WS-KEY
+         END-EVALUATE
+         MOVE ACT-CMD-MODE TO WS-ACTION
+         COMPUTE WS-X = WS-CX - 154
+         PERFORM CYCLE
+         IF EB-COND = 1
+             MOVE "advMode.mode.conditional" TO WS-KEY
+         ELSE
+             MOVE "advMode.mode.unconditional" TO WS-KEY
+         END-IF
+         MOVE ACT-CMD-TYPE TO WS-ACTION
+         COMPUTE WS-X = WS-CX - 50
+         PERFORM CYCLE
+         IF EB-AUTO = 1
+             MOVE "advMode.mode.autoexec.bat" TO WS-KEY
+         ELSE
+             MOVE "advMode.mode.redstoneTriggered" TO WS-KEY
+         END-IF
+         MOVE ACT-CMD-TRIGGER TO WS-ACTION
+         COMPUTE WS-X = WS-CX + 54
+         PERFORM CYCLE
      END-IF
-     MOVE ACT-CMD-TYPE TO WS-ACTION
-     COMPUTE WS-X = WS-CX - 50
-     PERFORM CYCLE
-     IF EB-AUTO = 1
-         MOVE "advMode.mode.autoexec.bat" TO WS-KEY
-     ELSE
-         MOVE "advMode.mode.redstoneTriggered" TO WS-KEY
-     END-IF
-     MOVE ACT-CMD-TRIGGER TO WS-ACTION
-     COMPUTE WS-X = WS-CX + 54
-     PERFORM CYCLE
      MOVE "gui.done" TO WS-KEY
      MOVE 8 TO WS-KEY-LENGTH
      COMPUTE WS-X = WS-CX - 154
@@ -469,7 +472,11 @@
      IF EB-CMD-LEN > 0
          MOVE EB-CMD(1:EB-CMD-LEN) TO WS-TEXT
      END-IF
-     CALL "SEND-SET-COMMAND-BLOCK" USING CLIENT-STATE EB-X EB-Y EB-Z WS-TEXT EB-CMD-LEN EB-MODE WS-FLAGS
+     IF EB-MC = 1
+         CALL "SEND-SET-COMMAND-MINECART" USING CLIENT-STATE EB-MC-ENTITY WS-TEXT EB-CMD-LEN EB-TRACK
+     ELSE
+         CALL "SEND-SET-COMMAND-BLOCK" USING CLIENT-STATE EB-X EB-Y EB-Z WS-TEXT EB-CMD-LEN EB-MODE WS-FLAGS
+     END-IF
      CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      GOBACK.
  END PROGRAM CMDBLOCK-SEND.
@@ -588,3 +595,97 @@
      CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
      GOBACK.
  END PROGRAM SEND-TEST-INSTANCE-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MINECART-USE-CHECK.
+*> USING CLIENT-STATE, entity id: 2.1 MinecartCommandBlock.interact: with the permission (CAN-USE-GM) and the entity a command_block_minecart (type id 29 of the entity table in 21 section 2) the command screen
+*> opens for the minecart: no mode, type or trigger cycles, previous output at y 150, Set Command Minecart on Done. The command text starts empty (the client keeps no entity data).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-CMDBLOCK.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ENTITY.
+     CALL "CAN-USE-GM" USING CLIENT-STATE WS-OK
+     IF WS-OK = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             IF EN-USED(WS-I) = 1 AND EN-ID(WS-I) = L-ENTITY AND EN-TYPE(WS-I) = 29
+                 MOVE 1 TO EB-MC
+                 MOVE L-ENTITY TO EB-MC-ENTITY
+                 MOVE 0 TO EB-COND EB-AUTO EB-TRACK EB-CMD-LEN
+                 MOVE 2 TO EB-MODE
+                 MOVE SPACES TO EB-CMD
+                 CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM MINECART-USE-CHECK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ENTITY-DATA.
+*> USING CLIENT-STATE, PB-BUFFER (after the id): Block Entity Data (05a 0x06: position, block entity type VarInt, network NBT). While the command block screen is open for that position the box and the track flag
+*> follow its Command and TrackOutput (40-9 4.3); any other packet is read and dropped (the client keeps no block entity copy).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ETYPE               BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 0.
+ 01 WN                     PIC X(64).
+ 01 WN-CAP                 BINARY-LONG VALUE 64.
+ 01 WL                     BINARY-LONG.
+ 01 WS-STR                PIC X(1100).
+ 01 WS-STR-CAP            BINARY-LONG VALUE 1100.
+ 01 WS-STR-LEN         BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-APPLY               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-TYPE
+     MOVE 0 TO WS-APPLY
+     IF PB-ERROR = 0 AND SM-SCREEN = SCR-CMDBLOCK AND EB-MC = 0 AND WS-X = EB-X AND WS-Y = EB-Y AND WS-Z = EB-Z
+         MOVE 1 TO WS-APPLY
+     END-IF
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     IF PB-ERROR = 0 AND WS-TYPE = 10
+         MOVE 1 TO WS-ETYPE
+         PERFORM UNTIL WS-ETYPE = 0 OR PB-ERROR = 1
+             MOVE SPACES TO WN
+             CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-ETYPE WN WN-CAP WL
+             EVALUATE TRUE
+                 WHEN WS-ETYPE = 0
+                     CONTINUE
+                 WHEN WN = "Command" AND WS-ETYPE = 8
+                     MOVE SPACES TO WS-STR
+                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-STR WS-STR-CAP WS-STR-LEN
+                     IF WS-APPLY = 1 AND PB-ERROR = 0
+                         MOVE SPACES TO EB-CMD
+                         MOVE FUNCTION MIN(WS-STR-LEN, 1024) TO EB-CMD-LEN
+                         IF EB-CMD-LEN > 0
+                             MOVE WS-STR(1:EB-CMD-LEN) TO EB-CMD
+                         END-IF
+                     END-IF
+                 WHEN WN = "TrackOutput" AND WS-ETYPE = 1
+                     CALL "PB-GET-BYTE" USING PB-BUFFER WS-BYTE
+                     IF WS-APPLY = 1
+                         MOVE FUNCTION ABS(WS-BYTE) TO EB-TRACK
+                     END-IF
+                 WHEN OTHER
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ETYPE
+             END-EVALUATE
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM BLOCK-ENTITY-DATA.
