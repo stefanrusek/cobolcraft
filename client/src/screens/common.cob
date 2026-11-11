@@ -207,9 +207,26 @@
                      AND SM-W-KIND(WS-I) NOT = WK-SPRITE AND SM-W-KIND(WS-I) NOT = WK-METER
                      AND SM-W-KIND(WS-I) NOT = WK-SHEET
                      AND SM-W-STATE(WS-I) NOT = 2 AND SM-W-ACTION(WS-I) NOT = ACT-NONE
+                     AND SM-W-ACTION(WS-I) NOT = ACT-CREATIVE-TAB
                      AND WS-X >= SM-W-X(WS-I)
                      AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I) AND WS-Y >= SM-W-Y(WS-I)
                      AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
+                 MOVE WS-I TO WS-HIT
+             END-IF
+         END-PERFORM
+         IF WS-HIT > 0
+             CALL "SCREEN-ACTION" USING CLIENT-STATE SM-W-ACTION(WS-HIT) SM-W-ARG(WS-HIT)
+         END-IF
+     END-IF
+*>   40-7 3.3: a creative tab is selected on the release of the left button over it (the press only consumes the event).
+     IF IN-BUTTON-RELEASED(1) = 1
+         COMPUTE WS-X = IN-CURSOR-X / CL-GUI-SCALE
+         COMPUTE WS-Y = IN-CURSOR-Y / CL-GUI-SCALE
+         MOVE 0 TO WS-HIT
+         PERFORM VARYING WS-I FROM SM-WIDGET-COUNT BY -1 UNTIL WS-I < 1
+             IF SM-W-ACTION(WS-I) = ACT-CREATIVE-TAB AND SM-W-STATE(WS-I) NOT = 2
+                     AND WS-X >= SM-W-X(WS-I) AND WS-X < SM-W-X(WS-I) + SM-W-W(WS-I)
+                     AND WS-Y >= SM-W-Y(WS-I) AND WS-Y < SM-W-Y(WS-I) + SM-W-H(WS-I)
                  MOVE WS-I TO WS-HIT
              END-IF
          END-PERFORM
