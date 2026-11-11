@@ -43,9 +43,6 @@
          GOBACK
      END-IF
      MOVE WS-KEY TO WS-SHORT
-     IF WS-SHORT(1:10) = "minecraft:"
-         MOVE WS-KEY(11:25) TO WS-SHORT
-     END-IF
      EVALUATE WS-SHORT
          WHEN "command_block" WHEN "chain_command_block" WHEN "repeating_command_block"
              CALL "CMDBLOCK-USE-CHECK" USING CLIENT-STATE L-X L-Y L-Z L-STATE

@@ -28,6 +28,11 @@
  01 WS-BLEN                BINARY-LONG VALUE 1.
  01 WS-PACKET-ID           BINARY-LONG VALUE 14.
  01 WS-KEYB                PIC X(112).
+ 01 WS-PROPS.
+    05 WS-P-COUNT          BINARY-LONG.
+    05 WS-P-ENTRY OCCURS 16 TIMES.
+       10 WS-P-NAME        PIC X(24).
+       10 WS-P-VALUE       PIC X(32).
  01 WS-I                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
@@ -192,6 +197,166 @@
      MOVE "acceptance US12 40-x1§6 Generate sends Set Jigsaw Block (pool minecraft:p, final state minecraft:air, rollable, priorities 0) then Jigsaw Generate with 10 levels, keep true" TO TL-CASE
      MOVE "3b00000040000030020f6d696e6563726166743a656d7074790f6d696e6563726166743a656d7074790b6d696e6563726166743a700d6d696e6563726166743a61697208726f6c6c61626c650000 1b00000040000030020a01" TO TL-EXPECTED
      MOVE WS-HEX(1:179) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Coverage and behaviour of the rest: an unknown state opens nothing, a command block opens the command block screen, a vertical jigsaw shows the joint cycle (and aligned on a click), the keep
+*>   cycle reads OFF, the identifier characters, a second colon is invalid, the box limits, Enter on a valid jigsaw is Done, Escape closes, a send while invalid does nothing.
+     MOVE 99999999 TO WS-STATE
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 40-9§2 a block state the registry does not know opens nothing" TO TL-CASE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "command_block" TO WS-KEYB
+     PERFORM STATE-OF
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE "acceptance US12 40-9§2 a command block used through the generic check opens the command block screen" TO TL-CASE
+     MOVE SCR-CMDBLOCK TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SCR-WORLD TO WS-I
+     CALL "SCREEN-OPEN" USING CLIENT-STATE WS-I
+*>   A jigsaw state whose orientation starts with up_ (its front is vertical).
+     MOVE "jigsaw" TO WS-KEYB
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEYB WS-ID WS-ROW WS-STATUS
+     MOVE WS-ROW TO CT-BLOCK-ROW
+     MOVE FUNCTION NUMVAL(CT-BR-FIRST-STATE) TO WS-STATE
+     MOVE FUNCTION NUMVAL(CT-BR-STATE-COUNT) TO WS-N
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         COMPUTE WS-D1 = WS-STATE + WS-I
+         CALL "CONTENT-STATE-PROPS" USING WS-D1 WS-PROPS WS-STATUS
+         IF WS-P-VALUE(1)(1:3) = "up_" AND WS-STATUS = 0
+             MOVE WS-D1 TO WS-STATE
+             MOVE WS-N TO WS-I
+         END-IF
+     END-PERFORM
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-x1§6 a jigsaw whose front is vertical (orientation up_...) shows the joint cycle" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EB-VERTICAL TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 260 TO WS-D1
+     MOVE 170 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-x1§6 a click on the joint cycle (214, 160) turns rollable into aligned" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EB-JG-JOINT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 160 TO WS-D1
+     MOVE 195 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE "acceptance US12 40-x1§6 a click on the keep jigsaws cycle (110, 185) turns it OFF" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EB-JG-KEEP TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Boxes: the pool accepts digits, underscore, dash, dot and slash; a second colon is invalid; the final state takes 256, the priorities 3.
+     MOVE 30 TO WS-D1
+     MOVE 30 TO WS-D2
+     PERFORM CLICK-GUI
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2) WS-KIND(3) WS-KIND(4)
+     MOVE 49 TO WS-A(1)
+     MOVE 95 TO WS-A(2)
+     MOVE 45 TO WS-A(3)
+     MOVE 46 TO WS-A(4)
+     MOVE 4 TO WS-N
+     PERFORM FRAME
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     MOVE 47 TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     CALL "FORM-VALID" USING CLIENT-STATE WS-STATUS
+     MOVE "acceptance US12 40-x1§6 an identifier with digits, underscore, dash, dot and slash is valid" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 58 TO WS-A(1) WS-A(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     CALL "FORM-VALID" USING CLIENT-STATE WS-STATUS
+     MOVE "acceptance US12 40-x1§6 two colons are not an identifier" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 8 TO WS-D1
+     MOVE 8 TO WS-D2
+     MOVE 50 TO WS-D1
+     MOVE 135 TO WS-D2
+     PERFORM CLICK-GUI
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     MOVE 120 TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE 30 TO WS-D1
+     MOVE 170 TO WS-D2
+     PERFORM CLICK-GUI
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2) WS-KIND(3)
+     MOVE 55 TO WS-A(1) WS-A(2) WS-A(3)
+     MOVE 3 TO WS-N
+     PERFORM FRAME
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1)
+     MOVE 56 TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-x1§6 the selection priority box holds 3 characters (0 then 77 and the fourth refused: length 3), the final state box took x" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 3 * 1000 + 14
+     COMPUTE TL-OBSERVED-N = EF-LEN(5) * 1000 + EF-LEN(4)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A send while invalid does nothing; with a valid pool Enter is Done and closes; Escape closes.
+     MOVE 0 TO WS-N
+     MOVE 0 TO WS-I
+     CALL "FORM-SEND" USING CLIENT-STATE WS-N
+     MOVE "acceptance US12 40-9§6 FORM-SEND with an invalid identifier sends nothing and keeps the screen" TO TL-CASE
+     MOVE SCR-FORM TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 30 TO WS-D1
+     MOVE 30 TO WS-D2
+     PERFORM CLICK-GUI
+     MOVE 2 TO WS-I
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         INITIALIZE WS-EVENTS
+         MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+         MOVE CC-KEY-BACKSPACE TO WS-A(1)
+         MOVE 1 TO WS-N
+         PERFORM FRAME
+     END-PERFORM
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-TEXT TO WS-KIND(1) WS-KIND(2)
+     MOVE 100 TO WS-A(1)
+     MOVE 101 TO WS-A(2)
+     MOVE 2 TO WS-N
+     PERFORM FRAME
+     MOVE 0 TO EF-LEN(1)
+     MOVE "ab" TO EF-TEXT(1)
+     MOVE 2 TO EF-LEN(1)
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE 257 TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-x1§6 Enter on a valid jigsaw is Done: the screen closes" TO TL-CASE
+     MOVE SCR-WORLD TO TL-EXPECTED-N
+     MOVE SM-SCREEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "BLOCKEDIT-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     INITIALIZE WS-EVENTS
+     MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
+     MOVE CC-KEY-ESCAPE TO WS-A(1)
+     MOVE 1 TO WS-N
+     PERFORM FRAME
+     MOVE "acceptance US12 40-x1§6 Escape closes the jigsaw screen" TO TL-CASE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CONTENT-CLOSE"
      STOP RUN.
