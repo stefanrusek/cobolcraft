@@ -361,6 +361,10 @@
        10 EB-ST-INTEGRITY    FLOAT-SHORT.
        10 EB-ST-SEED         BINARY-DOUBLE.
        10 EB-ST-FLAGS        BINARY-LONG.
+       10 EB-TI-ROT          BINARY-LONG.    *> the test instance screen (40-x1 8): rotation id, include entities and the info text
+       10 EB-TI-ENT          BINARY-LONG.
+       10 EB-TI-INFO         PIC X(256).
+       10 EB-TI-INFO-LEN     BINARY-LONG.
        10 EB-ST-INIT-MODE    BINARY-LONG.    *> the values at open that Cancel restores (40-x1 5.7)
        10 EB-ST-INIT-MIRROR  BINARY-LONG.
        10 EB-ST-INIT-ROT     BINARY-LONG.

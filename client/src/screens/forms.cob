@@ -27,6 +27,7 @@
        10 WS-P-VALUE       PIC X(32).
  01 WS-I                   BINARY-LONG.
  01 WS-SHORT               PIC X(35).
+ 01 WS-ACTION-ID           BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -55,6 +56,23 @@
              MOVE SPACES TO EF-TEXT(1)
              MOVE 0 TO EF-LEN(1)
              MOVE 1 TO EF-FOCUS
+             CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+         WHEN "test_instance_block"
+             MOVE L-X TO EB-X
+             MOVE L-Y TO EB-Y
+             MOVE L-Z TO EB-Z
+             MOVE 4 TO EB-FORM
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 MOVE SPACES TO EF-TEXT(WS-I)
+                 MOVE 0 TO EF-LEN(WS-I)
+             END-PERFORM
+             MOVE "1" TO EF-TEXT(2) EF-TEXT(3) EF-TEXT(4)
+             MOVE 1 TO EF-LEN(2) EF-LEN(3) EF-LEN(4)
+             MOVE 0 TO EB-TI-ROT EB-TI-INFO-LEN
+             MOVE 1 TO EB-TI-ENT EF-FOCUS
+             MOVE SPACES TO EB-TI-INFO
+             MOVE 0 TO WS-ACTION-ID
+             CALL "TI-SEND" USING CLIENT-STATE WS-ACTION-ID
              CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
          WHEN "structure_block"
              MOVE L-X TO EB-X
@@ -257,6 +275,10 @@
      MOVE 0 TO WS-STATE
      IF EB-FORM = 3
          CALL "STRUCT-BUILD" USING CLIENT-STATE L-GW L-GH
+         GOBACK
+     END-IF
+     IF EB-FORM = 4
+         CALL "TI-BUILD" USING CLIENT-STATE L-GW L-GH
          GOBACK
      END-IF
      IF EB-FORM = 1
@@ -504,6 +526,8 @@
              COMPUTE EB-LEVELS = FUNCTION INTEGER-PART(20 * WS-VALUE)
          WHEN ACT-ST-MODE THRU ACT-ST-CANCEL
              CALL "STRUCT-ACTION" USING CLIENT-STATE L-ACTION L-ARG
+         WHEN ACT-TI-ROT THRU ACT-TI-DONE
+             CALL "TI-ACTION" USING CLIENT-STATE L-ACTION
          WHEN ACT-EF-DONE
              IF EB-FORM = 3
                  CALL "STRUCT-SEND" USING CLIENT-STATE WS-NO
@@ -529,18 +553,22 @@
  01 WS-LEN                 BINARY-LONG.
  01 WS-VALID               BINARY-LONG.
  01 WS-OKC                 BINARY-LONG.
+ 01 WS-QUERY               BINARY-LONG.
  01 WS-NO                  BINARY-LONG VALUE 0.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     IF EF-FOCUS >= 1 AND EF-FOCUS <= 10 AND (EB-FORM = 3 OR EF-FOCUS <= 6)
+     IF EF-FOCUS >= 1 AND EF-FOCUS <= 10 AND (EB-FORM = 3 OR EF-FOCUS <= 6) AND (EB-FORM NOT = 4 OR EF-FOCUS <= 4)
          MOVE 128 TO WS-MAX
          IF EB-FORM = 3 AND EF-FOCUS >= 2 AND EF-FOCUS <= 8
              MOVE 15 TO WS-MAX
          END-IF
          IF EB-FORM = 3 AND EF-FOCUS = 9
              MOVE 31 TO WS-MAX
+         END-IF
+         IF EB-FORM = 4 AND EF-FOCUS >= 2
+             MOVE 15 TO WS-MAX
          END-IF
          IF EB-FORM = 2 AND EF-FOCUS = 4
              MOVE 256 TO WS-MAX
@@ -558,6 +586,10 @@
                  MOVE FUNCTION CHAR(IN-TEXT(WS-I) + 1) TO EF-TEXT(EF-FOCUS)(EF-LEN(EF-FOCUS):1)
              END-IF
          END-PERFORM
+         IF EB-FORM = 4 AND EF-FOCUS = 1 AND IN-TEXT-COUNT > 0
+             MOVE 1 TO WS-QUERY
+             CALL "TI-SEND" USING CLIENT-STATE WS-QUERY
+         END-IF
          IF IN-KEY-PRESSED(CC-KEY-BACKSPACE + 1) = 1 AND EF-LEN(EF-FOCUS) > 0
              MOVE SPACE TO EF-TEXT(EF-FOCUS)(EF-LEN(EF-FOCUS):1)
              SUBTRACT 1 FROM EF-LEN(EF-FOCUS)
@@ -1070,3 +1102,322 @@
      PERFORM KEY-LABEL
      GOBACK.
  END PROGRAM STRUCT-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TI-ID.
+*> USING CLIENT-STATE, text out (PIC X(256), namespace:path), length out, valid out (1/0): the id box through Identifier.tryParse: non-empty, the characters a to z, 0 to 9, _ - . /, one optional colon;
+*> a text without a colon gets minecraft: in front (the codec always writes the namespace).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-C                   PIC X.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-VALID.
+     MOVE SPACES TO L-TEXT
+     MOVE 0 TO L-LENGTH
+     MOVE 1 TO L-VALID
+     MOVE 0 TO WS-COLONS
+     IF EF-LEN(1) = 0
+         MOVE 0 TO L-VALID
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EF-LEN(1)
+         MOVE EF-TEXT(1)(WS-I:1) TO WS-C
+         IF WS-C = ":"
+             ADD 1 TO WS-COLONS
+         ELSE
+             IF NOT ((WS-C >= "a" AND WS-C <= "z") OR (WS-C >= "0" AND WS-C <= "9") OR WS-C = "_" OR WS-C = "-" OR WS-C = "." OR WS-C = "/")
+                 MOVE 0 TO L-VALID
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-COLONS > 1
+         MOVE 0 TO L-VALID
+     END-IF
+     IF L-VALID = 1
+         IF WS-COLONS = 1
+             MOVE EF-TEXT(1)(1:EF-LEN(1)) TO L-TEXT
+             MOVE EF-LEN(1) TO L-LENGTH
+         ELSE
+             STRING "minecraft:" EF-TEXT(1)(1:EF-LEN(1)) DELIMITED BY SIZE INTO L-TEXT
+             COMPUTE L-LENGTH = EF-LEN(1) + 10
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TI-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TI-SEND.
+*> USING CLIENT-STATE, action id: 8.3 point 1: Test Instance Block Action from the boxes: the id when it parses, the three sizes by parseSize (Integer.parseInt clamped 1 to 48, 1 on failure), the rotation and
+*> NOT include entities. An invalid id sets the info text to Invalid test ID (the packet is still sent, with no test).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-V                   BINARY-DOUBLE.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-BOX                 BINARY-LONG.
+ 01 WS-IGNORE              BINARY-LONG.
+ 01 WS-S1                  BINARY-LONG.
+ 01 WS-S2                  BINARY-LONG.
+ 01 WS-S3                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(80) VALUE "test_instance.description.invalid_id".
+ 01 WS-KEY-LENGTH          BINARY-LONG VALUE 36.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ACTION.
+     CALL "TI-ID" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-VALID
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         COMPUTE WS-BOX = WS-I + 1
+         CALL "STRUCT-NUM" USING CLIENT-STATE WS-BOX WS-V WS-OK
+         IF WS-OK = 0
+             MOVE 1 TO WS-V
+         END-IF
+         COMPUTE WS-SIZE(WS-I) = FUNCTION MAX(1, FUNCTION MIN(48, WS-V))
+     END-PERFORM
+     MOVE WS-SIZE(1) TO WS-S1
+     MOVE WS-SIZE(2) TO WS-S2
+     MOVE WS-SIZE(3) TO WS-S3
+     COMPUTE WS-IGNORE = 1 - EB-TI-ENT
+     CALL "SEND-TEST-INSTANCE-ACTION" USING CLIENT-STATE EB-X EB-Y EB-Z L-ACTION WS-TEXT WS-LENGTH WS-S1 WS-S2 WS-S3 EB-TI-ROT WS-IGNORE
+     IF L-ACTION < 2 AND WS-VALID = 0
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+         CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+         MOVE WS-OUT(1:256) TO EB-TI-INFO
+         MOVE WS-OUT-LENGTH TO EB-TI-INFO-LEN
+     END-IF
+     GOBACK.
+ END PROGRAM TI-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TI-ACTION.
+*> USING CLIENT-STATE, action: the rotation cycle (0, 90, 180, 270), include entities, Reset, Save, Run (each sends its action then closes) and Done (SET then close).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-SCREEN              BINARY-LONG VALUE SCR-WORLD.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ACTION.
+     MOVE 0 TO WS-A
+     EVALUATE L-ACTION
+         WHEN ACT-TI-ROT
+             COMPUTE EB-TI-ROT = FUNCTION MOD(EB-TI-ROT + 1, 4)
+         WHEN ACT-TI-ENT
+             COMPUTE EB-TI-ENT = 1 - EB-TI-ENT
+         WHEN ACT-TI-RESET
+             MOVE 3 TO WS-A
+         WHEN ACT-TI-SAVE
+             IF EB-TI-ROT = 0
+                 MOVE 4 TO WS-A
+             END-IF
+         WHEN ACT-TI-RUN
+             MOVE 6 TO WS-A
+         WHEN ACT-TI-DONE
+             MOVE 2 TO WS-A
+     END-EVALUATE
+     IF WS-A > 0
+         CALL "TI-SEND" USING CLIENT-STATE WS-A
+         CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
+     END-IF
+     GOBACK.
+ END PROGRAM TI-ACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TI-BUILD.
+*> USING CLIENT-STATE, GUI width, GUI height: 8.2 and 8.3 point 6 with left = W / 2 - 158: the title (cx, 10); labels at y 30 and 150; the id box (left, 40, 316 x 20); the info text (left, 70); the three size
+*> boxes, rotation and include entities buttons at y 160 (n = 5: width 56, x int(left + i x 64.8)); Reset and Save at y 185 (154 wide, x left and left + 162); Run, Done, Cancel at y 210 (100 wide, x left + 108 i).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG VALUE 20.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-OUT-256             PIC X(256).
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-ARG                 BINARY-LONG VALUE 0.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-LIT                 PIC X(4).
+ 01 WS-LIT-LEN             BINARY-LONG.
+ 01 WS-LITS                PIC X(16) VALUE "0   90  180 270 ".
+ 01 WS-LIT-TABLE REDEFINES WS-LITS.
+    05 WS-LIT-ENTRY        PIC X(4) OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-GW                   BINARY-LONG.
+ 01 L-GH                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+     GO TO MAIN-FLOW.
+
+ KEY-LABEL.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+     CALL "BOOK-LABEL" USING CLIENT-STATE WS-OUT WS-OUT-LENGTH WS-X WS-Y
+     .
+
+ KEY-BUTTON.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     CALL "BOOK-BUTTON" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-STATE
+     .
+
+*> X of widget WS-I of 5: int(left + i x 64.8).
+ X-OF-FIVE.
+     COMPUTE WS-X = FUNCTION INTEGER-PART(WS-LEFT + WS-I * 64.8)
+     .
+
+ MAIN-FLOW.
+     COMPUTE WS-CX = L-GW / 2
+     COMPUTE WS-LEFT = WS-CX - 158
+     MOVE "block.minecraft.test_instance_block" TO WS-KEY
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO WS-KEY-LENGTH
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-OUT WS-OUT-LENGTH
+     MOVE WS-OUT(1:256) TO WS-OUT-256
+     CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-OUT-256 WS-OUT-LENGTH WS-WIDTH
+     COMPUTE WS-X = WS-CX - WS-WIDTH / 2
+     MOVE 10 TO WS-Y
+     CALL "BOOK-LABEL" USING CLIENT-STATE WS-OUT WS-OUT-LENGTH WS-X WS-Y
+     MOVE WS-LEFT TO WS-X
+     MOVE "test_instance_block.test_id" TO WS-KEY
+     MOVE 30 TO WS-Y
+     PERFORM KEY-LABEL
+     MOVE 1 TO WS-IDX
+     MOVE 40 TO WS-Y
+     MOVE 316 TO WS-W
+     CALL "FORM-FIELD" USING CLIENT-STATE WS-IDX WS-X WS-Y WS-W
+     IF EB-TI-INFO-LEN > 0
+         MOVE 70 TO WS-Y
+         MOVE EB-TI-INFO TO WS-OUT
+         MOVE EB-TI-INFO-LEN TO WS-OUT-LENGTH
+         CALL "BOOK-LABEL" USING CLIENT-STATE WS-OUT WS-OUT-LENGTH WS-X WS-Y
+     END-IF
+     MOVE "test_instance_block.size" TO WS-KEY
+     MOVE 150 TO WS-Y
+     PERFORM KEY-LABEL
+     MOVE 56 TO WS-W
+     MOVE 160 TO WS-Y
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2
+         PERFORM X-OF-FIVE
+         COMPUTE WS-IDX = WS-I + 2
+         CALL "FORM-FIELD" USING CLIENT-STATE WS-IDX WS-X WS-Y WS-W
+     END-PERFORM
+     MOVE 3 TO WS-I
+     PERFORM X-OF-FIVE
+     MOVE "test_instance_block.rotation" TO WS-KEY
+     MOVE 150 TO WS-Y
+     PERFORM KEY-LABEL
+     MOVE WS-LIT-ENTRY(EB-TI-ROT + 1) TO WS-OUT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LIT-ENTRY(EB-TI-ROT + 1))) TO WS-LIT-LEN
+     MOVE 160 TO WS-Y
+     MOVE ACT-TI-ROT TO WS-ACTION
+     MOVE 0 TO WS-STATE
+     CALL "WIDGET-ADD" USING CLIENT-STATE WK-BUTTON WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-OUT WS-LIT-LEN WS-STATE
+     MOVE 4 TO WS-I
+     PERFORM X-OF-FIVE
+     MOVE "test_instance_block.entities" TO WS-KEY
+     MOVE 150 TO WS-Y
+     PERFORM KEY-LABEL
+     IF EB-TI-ENT = 1
+         MOVE "options.on" TO WS-KEY
+     ELSE
+         MOVE "options.off" TO WS-KEY
+     END-IF
+     MOVE ACT-TI-ENT TO WS-ACTION
+     MOVE 160 TO WS-Y
+     PERFORM KEY-BUTTON
+     CALL "TI-ID" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-VALID
+     MOVE "test_instance.action.reset" TO WS-KEY
+     MOVE ACT-TI-RESET TO WS-ACTION
+     MOVE WS-LEFT TO WS-X
+     MOVE 185 TO WS-Y
+     MOVE 154 TO WS-W
+     MOVE 0 TO WS-STATE
+     PERFORM KEY-BUTTON
+     IF EB-TI-ROT NOT = 0 OR WS-VALID = 0
+         MOVE 2 TO WS-STATE
+     END-IF
+     MOVE "test_instance.action.save" TO WS-KEY
+     MOVE ACT-TI-SAVE TO WS-ACTION
+     COMPUTE WS-X = WS-LEFT + 162
+     PERFORM KEY-BUTTON
+     MOVE 0 TO WS-STATE
+     MOVE 100 TO WS-W
+     MOVE 210 TO WS-Y
+     MOVE "test_instance.action.run" TO WS-KEY
+     MOVE ACT-TI-RUN TO WS-ACTION
+     MOVE WS-LEFT TO WS-X
+     PERFORM KEY-BUTTON
+     MOVE "gui.done" TO WS-KEY
+     MOVE ACT-TI-DONE TO WS-ACTION
+     COMPUTE WS-X = WS-LEFT + 108
+     PERFORM KEY-BUTTON
+     MOVE "gui.cancel" TO WS-KEY
+     MOVE ACT-CLOSE-MENU TO WS-ACTION
+     COMPUTE WS-X = WS-LEFT + 216
+     PERFORM KEY-BUTTON
+     GOBACK.
+ END PROGRAM TI-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TI-STATUS.
+*> USING PB-BUFFER (after the id): Test Instance Block Status (05b 0x81): a text and an optional size; only while the test instance screen is open: the text becomes the info and the size fills the size boxes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==WS-==.
+ 01 WS-OUT                 PIC X(512).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-V                   BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ED                  PIC Z(8)9.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ COPY PROTO.
+ PROCEDURE DIVISION USING CLIENT-STATE PB-BUFFER.
+     CALL "PB-GET-TEXT" USING PB-BUFFER WS-TEXT
+     CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+     IF WS-PRESENT = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             CALL "PB-GET-VARINT" USING PB-BUFFER WS-V(WS-I)
+         END-PERFORM
+     END-IF
+     IF PB-ERROR = 0 AND SM-SCREEN = SCR-FORM AND EB-FORM = 4
+         CALL "TEXT-RENDER" USING CLIENT-STATE WS-TEXT WS-OUT WS-OUT-LENGTH
+         MOVE WS-OUT(1:256) TO EB-TI-INFO
+         MOVE FUNCTION MIN(WS-OUT-LENGTH, 256) TO EB-TI-INFO-LEN
+         IF WS-PRESENT = 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 MOVE WS-V(WS-I) TO WS-ED
+                 MOVE SPACES TO EF-TEXT(WS-I + 1)
+                 MOVE FUNCTION TRIM(WS-ED) TO EF-TEXT(WS-I + 1)
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ED)) TO EF-LEN(WS-I + 1)
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TI-STATUS.

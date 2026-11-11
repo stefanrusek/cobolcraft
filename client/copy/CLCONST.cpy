@@ -139,6 +139,12 @@
  78 ACT-ST-LOAD              VALUE 87.
  78 ACT-ST-DETECT            VALUE 88.
  78 ACT-ST-CANCEL            VALUE 89.
+ 78 ACT-TI-ROT               VALUE 90.
+ 78 ACT-TI-ENT               VALUE 91.
+ 78 ACT-TI-RESET             VALUE 92.
+ 78 ACT-TI-SAVE              VALUE 93.
+ 78 ACT-TI-RUN               VALUE 94.
+ 78 ACT-TI-DONE              VALUE 95.
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

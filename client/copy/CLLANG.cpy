@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 345.
+ 78 BI-LANG-COUNT           VALUE 355.
  01 BI-LANG-DATA.
     05 FILLER PIC X(80) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -702,7 +702,28 @@
     05 FILLER PIC X(128) VALUE "← →".
     05 FILLER PIC X(80) VALUE "mirror.front_back".
     05 FILLER PIC X(128) VALUE "↑ ↓".
+*>   The keys of the test instance screen of docs/protocol/40-menus-x1 section 8.
+    05 FILLER PIC X(80) VALUE "block.minecraft.test_instance_block".
+    05 FILLER PIC X(128) VALUE "Test Instance Block".
+    05 FILLER PIC X(80) VALUE "test_instance.action.reset".
+    05 FILLER PIC X(128) VALUE "Reset and Load".
+    05 FILLER PIC X(80) VALUE "test_instance.action.save".
+    05 FILLER PIC X(128) VALUE "Save Structure".
+    05 FILLER PIC X(80) VALUE "test_instance.action.run".
+    05 FILLER PIC X(128) VALUE "Load and Run".
+    05 FILLER PIC X(80) VALUE "test_instance_block.test_id".
+    05 FILLER PIC X(128) VALUE "Test Instance ID".
+    05 FILLER PIC X(80) VALUE "test_instance_block.size".
+    05 FILLER PIC X(128) VALUE "Test Structure Size".
+    05 FILLER PIC X(80) VALUE "test_instance_block.rotation".
+    05 FILLER PIC X(128) VALUE "Rotation:".
+    05 FILLER PIC X(80) VALUE "test_instance_block.entities".
+    05 FILLER PIC X(128) VALUE "Entities:".
+    05 FILLER PIC X(80) VALUE "test_instance.description.invalid_id".
+    05 FILLER PIC X(128) VALUE "Invalid test ID".
+    05 FILLER PIC X(80) VALUE "test_instance.description.failed".
+    05 FILLER PIC X(128) VALUE "Failed: %s".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 345 TIMES.
+    05 BI-LANG OCCURS 355 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).
