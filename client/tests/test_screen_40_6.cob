@@ -106,14 +106,14 @@
      MOVE 101 TO WS-TYPE
      CALL "MOUNT-VARIANT" USING WS-TYPE WS-KIND-OUT WS-SADDLE WS-BODY WS-ICON WS-KEY WS-KNOWN
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12 40-6§3.3 an entity type that is no mount (101, pig) is not known" TO TL-CASE
+     MOVE "acceptance US12 40-6§3 an entity type that is no mount (101, pig) is not known" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-KNOWN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Own slot counts (7.1): 2 + 3 columns; the frame is the default 176 x 166 with the player inventory at (8, 84).
      MOVE 100 TO WS-D1
      PERFORM FRAME-NUMBERS
-     MOVE "acceptance US12 40-6§2.2 a horse (no chest): 2 own slots, 176 x 166, inventory at (8, 84)" TO TL-CASE
+     MOVE "acceptance US12 40-6§2 a horse (no chest): 2 own slots, 176 x 166, inventory at (8, 84)" TO TL-CASE
      MOVE 2176166 TO TL-EXPECTED-N
      MOVE WS-D7 TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

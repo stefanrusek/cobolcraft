@@ -3,7 +3,7 @@
 *> client/src/packs/builtin.cob. Never edit a text here without changing 08 §10.8 first. The last rows are
 *> the cobolcraft.packs.* messages of 22 §9.2 and the cobolcraft.world_type.* and type texts of
 *> docs/design/builtin-ui-art.md §7.2 (the title banner, the create-world and world-list type), then the 20 menu keys of docs/protocol/40-menus-3 and 40-menus-5 (anvil, smithing, merchant, lectern, beacon texts; standard key names and English read there).
- 78 BI-LANG-COUNT           VALUE 296.
+ 78 BI-LANG-COUNT           VALUE 320.
  01 BI-LANG-DATA.
     05 FILLER PIC X(80) VALUE "block.cobolcraft.baseplate".
     05 FILLER PIC X(128) VALUE "Baseplate".
@@ -602,7 +602,56 @@
     05 FILLER PIC X(128) VALUE "Add diamond armor, weapon, or tool".
     05 FILLER PIC X(80) VALUE "item.minecraft.smithing_template.netherite_upgrade.additions_slot_description".
     05 FILLER PIC X(128) VALUE "Add Netherite Ingot".
+*>   The keys of the test block and jigsaw screens of docs/protocol/40-menus-x1 sections 6 and 7.
+    05 FILLER PIC X(80) VALUE "block.minecraft.test_block".
+    05 FILLER PIC X(128) VALUE "Test Block".
+    05 FILLER PIC X(80) VALUE "test_block.mode.start".
+    05 FILLER PIC X(128) VALUE "Start".
+    05 FILLER PIC X(80) VALUE "test_block.mode.log".
+    05 FILLER PIC X(128) VALUE "Log".
+    05 FILLER PIC X(80) VALUE "test_block.mode.fail".
+    05 FILLER PIC X(128) VALUE "Fail".
+    05 FILLER PIC X(80) VALUE "test_block.mode.accept".
+    05 FILLER PIC X(128) VALUE "Accept".
+    05 FILLER PIC X(80) VALUE "test_block.message".
+    05 FILLER PIC X(128) VALUE "Message:".
+    05 FILLER PIC X(80) VALUE "test_block.mode_info.start".
+    05 FILLER PIC X(128) VALUE "Start Mode - The starting point for a test".
+    05 FILLER PIC X(80) VALUE "test_block.mode_info.log".
+    05 FILLER PIC X(128) VALUE "Log Mode - Log a message".
+    05 FILLER PIC X(80) VALUE "test_block.mode_info.fail".
+    05 FILLER PIC X(128) VALUE "Fail Mode - Fail the test".
+    05 FILLER PIC X(80) VALUE "test_block.mode_info.accept".
+    05 FILLER PIC X(128) VALUE "Accept Mode - Accept success for (part of) a test".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.pool".
+    05 FILLER PIC X(128) VALUE "Target Pool:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.name".
+    05 FILLER PIC X(128) VALUE "Name:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.target".
+    05 FILLER PIC X(128) VALUE "Target Name:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.final_state".
+    05 FILLER PIC X(128) VALUE "Turns into:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.selection_priority".
+    05 FILLER PIC X(128) VALUE "Selection Priority:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.placement_priority".
+    05 FILLER PIC X(128) VALUE "Placement Priority:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.joint_label".
+    05 FILLER PIC X(128) VALUE "Joint Type:".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.joint.rollable".
+    05 FILLER PIC X(128) VALUE "Rollable".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.joint.aligned".
+    05 FILLER PIC X(128) VALUE "Aligned".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.levels".
+    05 FILLER PIC X(128) VALUE "Levels: %s".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.keep_jigsaws".
+    05 FILLER PIC X(128) VALUE "Keep Jigsaws".
+    05 FILLER PIC X(80) VALUE "jigsaw_block.generate".
+    05 FILLER PIC X(128) VALUE "Generate".
+    05 FILLER PIC X(80) VALUE "options.on".
+    05 FILLER PIC X(128) VALUE "ON".
+    05 FILLER PIC X(80) VALUE "options.off".
+    05 FILLER PIC X(128) VALUE "OFF".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 296 TIMES.
+    05 BI-LANG OCCURS 320 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).

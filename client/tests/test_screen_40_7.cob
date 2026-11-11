@@ -103,7 +103,7 @@
      MOVE 169 TO WS-X
      MOVE -32 TO WS-Y
      CALL "CREATIVE-TAB-HIT" USING WS-I WS-X WS-Y WS-HIT
-     MOVE "acceptance US12 40-7§3.2 the hit box of the search tab is inclusive: its top-left corner (169, -32) hits" TO TL-CASE
+     MOVE "acceptance US12 40-7§3 the hit box of the search tab is inclusive: its top-left corner (169, -32) hits" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -130,7 +130,7 @@
 *>   Content: select the building blocks tab: the stand-in rule puts the items that place a block (11) there; the search list is the union (17).
      MOVE 1 TO WS-I
      CALL "CREATIVE-SELECT" USING CLIENT-STATE WS-I
-     MOVE "acceptance US12 40-7§4.3 building blocks (stand-in rule: items that place a block): 11 stacks of count 1" TO TL-CASE
+     MOVE "acceptance US12 40-7§4 building blocks (stand-in rule: items that place a block): 11 stacks of count 1" TO TL-CASE
      MOVE 11 TO TL-EXPECTED-N
      MOVE CR-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -233,7 +233,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0.5 TO WS-SCROLL
      CALL "CREATIVE-SCROLLER-Y" USING WS-SCROLL WS-Y
-     MOVE "acceptance US12 40-7§6.2 the scroller sprite at scroll 0.5 is 18 + (int)(95 x 0.5) = 65 below the top" TO TL-CASE
+     MOVE "acceptance US12 40-7§6 the scroller sprite at scroll 0.5 is 18 + (int)(95 x 0.5) = 65 below the top" TO TL-CASE
      MOVE 65 TO TL-EXPECTED-N
      MOVE WS-Y TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -245,7 +245,7 @@
      MOVE 1 TO WS-COUNT
      MOVE 0 TO WS-BUTTON WS-QUICK WS-CLONE
      CALL "CREATIVE-GRID-CLICK" USING CLIENT-STATE WS-ITEM WS-COUNT WS-BUTTON WS-QUICK WS-CLONE
-     MOVE "acceptance US12 40-7§7.3 carried loam x1, left click on a loam slot: x2" TO TL-CASE
+     MOVE "acceptance US12 40-7§7 carried loam x1, left click on a loam slot: x2" TO TL-CASE
      PERFORM CARRIED-TEXT
      MOVE "3x2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -345,7 +345,7 @@
          END-IF
      END-PERFORM
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12 40-7§9.3 the client throttler (step 20, threshold 1280) lets 64 drops through" TO TL-CASE
+     MOVE "acceptance US12 40-7§9 the client throttler (step 20, threshold 1280) lets 64 drops through" TO TL-CASE
      MOVE 64 TO TL-EXPECTED-N
      MOVE WS-K TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -410,7 +410,7 @@
      MOVE "flank" TO WS-QUERY
      MOVE 5 TO WS-QLEN
      CALL "CREATIVE-SEARCH" USING CLIENT-STATE WS-QUERY WS-QLEN
-     MOVE "acceptance US12 40-7§8.1 the query flank finds grazer_flank and seared_flank" TO TL-CASE
+     MOVE "acceptance US12 40-7§8 the query flank finds grazer_flank and seared_flank" TO TL-CASE
      MOVE 2 TO TL-EXPECTED-N
      MOVE CR-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

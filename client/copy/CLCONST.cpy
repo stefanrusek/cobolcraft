@@ -25,7 +25,8 @@
  78 SCR-SIGN                VALUE 21.  *> the sign editor (Open Sign Editor 05a 0x3D; screens/signscreen.cob)
  78 SCR-BOOK                VALUE 22.  *> the writable book editor (screens/bookscreen.cob)
  78 SCR-CREATIVE            VALUE 23.
- 78 SCR-CMDBLOCK            VALUE 24.  *> the command block editor (screens/editblocks.cob)  *> the creative inventory (screens/creativescreen.cob)
+ 78 SCR-CMDBLOCK            VALUE 24.
+ 78 SCR-FORM                VALUE 25.  *> the test block and jigsaw editors (screens/forms.cob)  *> the command block editor (screens/editblocks.cob)  *> the creative inventory (screens/creativescreen.cob)
  78 SCR-PACK-PROMPT         VALUE 17.  *> a server's pack offer (US18-6; screens/pack-prompt.cob)
 
 *> Widget kinds.
@@ -121,6 +122,12 @@
  78 ACT-CMD-TRIGGER          VALUE 70.
  78 ACT-CMD-TRACK            VALUE 71.
  78 ACT-CMD-DONE             VALUE 72.
+ 78 ACT-EF-FOCUS             VALUE 73.   *> focus the box of the argument
+ 78 ACT-EF-MODE              VALUE 74.   *> the test block mode cycle, the jigsaw joint cycle
+ 78 ACT-EF-KEEP              VALUE 75.
+ 78 ACT-EF-LEVELS            VALUE 76.
+ 78 ACT-EF-DONE              VALUE 77.
+ 78 ACT-EF-GENERATE          VALUE 78.
  78 ACT-MENU-BUTTON          VALUE 53.   *> a menu's button: Container Button Click of the argument (enchanting rows)
 
 *> Server pack steps (RP-STEP; packs/download.cob, 08 §9.1).

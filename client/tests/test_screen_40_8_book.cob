@@ -51,7 +51,7 @@
      MOVE "writable_book  " TO WS-KEY16
      CALL "ITEM-BY-KEY" USING CLIENT-STATE WS-KEY16 WS-ITEM
      MOVE "N" TO TL-MODE
-     MOVE "acceptance US12 40-8§1.1 the standard set has the item writable_book (a non-zero id)" TO TL-CASE
+     MOVE "acceptance US12 40-8§1 the standard set has the item writable_book (a non-zero id)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-ITEM > 0
@@ -82,7 +82,7 @@
      MOVE 1 TO WS-N
      MOVE "T" TO TL-MODE
      PERFORM TEXT-LINES
-     MOVE "acceptance US12 40-8§3.2 the typed page text is drawn at the text origin (99, 32)" TO TL-CASE
+     MOVE "acceptance US12 40-8§3 the typed page text is drawn at the text origin (99, 32)" TO TL-CASE
      MOVE "99:32=Hi;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE CC-EV-KEY-DOWN TO WS-KIND(1)
@@ -222,7 +222,7 @@
      PERFORM PRESS
      MOVE "T" TO TL-MODE
      PERFORM TEXT-LINES
-     MOVE "acceptance US12 40-8§2.5 the editing keys (Left, Backspace, Delete, Enter, Up, Right, Down, Home, End) and the page keys give the page a, line feed, z: lines a at y 32 and z at y 41" TO TL-CASE
+     MOVE "acceptance US12 40-8§2 the editing keys (Left, Backspace, Delete, Enter, Up, Right, Down, Home, End) and the page keys give the page a, line feed, z: lines a at y 32 and z at y 41" TO TL-CASE
      MOVE "99:32=a;99:41=z;" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 70 TO WS-D1

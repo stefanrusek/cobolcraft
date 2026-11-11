@@ -537,7 +537,7 @@
      MOVE 1 TO WS-LEN
      CALL "SIGN-INSERT" USING CLIENT-STATE WS-TEXT WS-LEN
      MOVE "T" TO TL-MODE
-     MOVE "acceptance US12 40-8§5.2 inserting b at the cursor 1 of ac gives abc with the cursor at 2" TO TL-CASE
+     MOVE "acceptance US12 40-8§5 inserting b at the cursor 1 of ac gives abc with the cursor at 2" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE SG-CURSOR TO WS-E1
      STRING SG-LINE-TEXT(1)(1:SG-LEN(1)) FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED

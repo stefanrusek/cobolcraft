@@ -324,6 +324,16 @@
           15 SG-LINE-TEXT    PIC X(64).
 *>     The block editors (40-9): the command block screen's target, mode (0 sequence, 1 auto, 2 redstone), conditional, automatic and track flags, and the command; the jigsaw and structure packet
 *>     sources (the screens for those are not drawn yet).
+*>     The form screens (test block and jigsaw editors of 40-9): the form (1 test block, 2 jigsaw), the focused box, the box texts, the test block mode (0 to 3), the jigsaw keep flag,
+*>     the levels of the slider and whether the jigsaw's front is vertical (the joint cycle shows).
+       10 EF-FOCUS           BINARY-LONG.
+       10 EF-TEXT            PIC X(256) OCCURS 8 TIMES.
+       10 EF-LEN             BINARY-LONG OCCURS 8 TIMES.
+       10 EB-FORM            BINARY-LONG.
+       10 EB-TB-MODE         BINARY-LONG.
+       10 EB-JG-KEEP         BINARY-LONG.
+       10 EB-LEVELS          BINARY-LONG.
+       10 EB-VERTICAL        BINARY-LONG.
        10 EB-X               BINARY-LONG.
        10 EB-Y               BINARY-LONG.
        10 EB-Z               BINARY-LONG.

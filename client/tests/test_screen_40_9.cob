@@ -80,7 +80,7 @@
      MOVE 26 TO WS-BYTE
      PERFORM SEND-EVENT
      CALL "CAN-USE-GM" USING CLIENT-STATE WS-OK
-     MOVE "acceptance US12 40-9§2.2 creative with Entity Event 26 (level 2): the player can use game master blocks" TO TL-CASE
+     MOVE "acceptance US12 40-9§2 creative with Entity Event 26 (level 2): the player can use game master blocks" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -238,7 +238,7 @@
      PERFORM CLICK-GUI
      MOVE "T" TO TL-MODE
      PERFORM BUTTON-TEXTS
-     MOVE "acceptance US12 40-9§4.2 the cycles read Repeat (mode AUTO), Conditional, Always Active and the track output O" TO TL-CASE
+     MOVE "acceptance US12 40-9§4 the cycles read Repeat (mode AUTO), Conditional, Always Active and the track output O" TO TL-CASE
      MOVE "O|Repeat|Conditional|Always Active|" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Enter sends Set Command Block: mode AUTO (1), flags track 1 + conditional 2 + automatic 4 = 7.
@@ -311,6 +311,22 @@
      MOVE "acceptance US12 40-9§4.1 Backspace in the command box removes a character: ab becomes a" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE EB-CMD-LEN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Overview: none of the five screens sends a packet when it is cancelled: the Cancel button closes the command block screen with no packet.
+     CALL "CMDBLOCK-USE-CHECK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-N
+     PERFORM FRAME
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-HEX WS-THRESHOLD
+     MOVE 170 TO WS-D1
+     MOVE 200 TO WS-D2
+     PERFORM CLICK-GUI
+     PERFORM FLUSH
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SM-SCREEN TO WS-E1
+     STRING FUNCTION TRIM(WS-E1) ":" WS-HEX(1:4) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "acceptance US12 40-9§1 Overview: Cancel closes the command block screen (world, screen 5) and sends no packet" TO TL-CASE
+     MOVE "5:" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CONTENT-CLOSE"
      STOP RUN.

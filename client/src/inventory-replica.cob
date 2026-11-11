@@ -80,7 +80,8 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-CONTAINER
              CALL "PB-GET-VARINT" USING PB-BUFFER WS-MENU-TYPE
              CALL "CONTAINER-LAYOUT" USING WS-MENU-TYPE WS-OWN WS-HEIGHT WS-Y0 WS-CENTRED WS-KNOWN
-             IF PB-ERROR = 0 AND WS-KNOWN = 1 AND WS-CONTAINER > 0
+*>           Registry menu types are 0 to 24: the pseudo types of the mount inventories (100 and above) come only from Mount Screen Open.
+             IF PB-ERROR = 0 AND WS-KNOWN = 1 AND WS-CONTAINER > 0 AND WS-MENU-TYPE < 100
                  CALL "PB-GET-TEXT" USING PB-BUFFER WS-TEXT
                  IF PB-ERROR = 0
                      CALL "TEXT-RENDER" USING CLIENT-STATE WS-TEXT WS-TITLE WS-TITLE-LENGTH

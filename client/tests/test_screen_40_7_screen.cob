@@ -262,7 +262,7 @@
      MOVE CC-EV-SCROLL TO WS-KIND(1)
      MOVE -1.0 TO WS-EY(1)
      PERFORM FRAME
-     MOVE "acceptance US12 40-7§5.2 a wheel step down scrolls: the scroll is above 0" TO TL-CASE
+     MOVE "acceptance US12 40-7§5 a wheel step down scrolls: the scroll is above 0" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF CR-SCROLL > 0
