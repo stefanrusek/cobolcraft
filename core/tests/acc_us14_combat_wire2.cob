@@ -82,7 +82,10 @@
      MOVE "acceptance US14 sweeping: a charged ground iron_sword hit on Bobby also hurts Carol (1.0) and the mob next to him (1)" TO TL-CASE
      PERFORM PREP
      MOVE ET-SODGRAZER TO WS-MOB-TYPE
+*>   The stand-in mob table applies to a cobolcraft set only (MOB-INDEX): this mob needs the set type of the world it was spawned in.
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
      CALL "MOB-SPAWN" USING WS-DIM1 WS-MOB-TYPE WS-MX WS-FY WS-FZ WS-YAW WS-MOB-ROW
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
      MOVE EN-HEALTH(WS-MOB-ROW) TO WS-MOB-HEALTH
      MOVE EN-ID(WS-MOB-ROW) TO WS-MOB-ID
      CALL "TEST-ATTACK" USING WS-ALICE WS-BOB-ID
