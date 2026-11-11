@@ -278,6 +278,18 @@
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A model without an atlas slot (its image was never made: more than 16 models, or no frame meshed it yet) draws nothing.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 1 TO EN-COUNT
+     MOVE 1 TO EN-USED(1) EN-MODEL(1)
+     MOVE 0 TO EA-MT-COUNT RL-EN-COUNT
+     MOVE 1 TO WS-ID
+     CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-ID WS-EYE-TABLE
+     MOVE "entity models a model without an atlas slot draws no vertex" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Every row of the model table agrees with the model library: its texture size is the layer's.
      CALL "ETM-TABLE-CHECK" USING WS-OK
      MOVE "entity models every table row builds its layer, whose texture size is the row's" TO TL-CASE

@@ -89,6 +89,11 @@ PACKS = {
         "assets/cobolcraft/textures/": b"",
         "assets/cobolcraft/.ds_store": b"junk",
     }),
+    # "entmodel": the creeper's entity model image (34-6 section 2, 64 x 32): the texel (x, y) is (10 + x, 10 + y, 77, 255).
+    "entmodel": ("folder", {
+        "pack.mcmeta": new_style("Entity model pack"),
+        "assets/minecraft/textures/entity/creeper/creeper.png": png(64, 32, lambda x, y: (10 + x, 10 + y, 77, 255)),
+    }),
     # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
     "cracks": ("folder", dict(
         [("pack.mcmeta", new_style("Cracks pack"))]
