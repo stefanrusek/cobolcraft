@@ -11,6 +11,7 @@
  COPY COREAPI.
  COPY CBLOCKS.
  COPY CITEMS.
+ COPY WSIM3.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-CONN                BINARY-LONG.
@@ -48,6 +49,9 @@
  01 WS-SLOT                BINARY-LONG VALUE 0.
  01 WS-TEXT                PIC X(1024).
  01 WS-LIT                 BINARY-LONG.
+ 01 WS-TRIES               BINARY-LONG.
+ 01 WS-BIG                 BINARY-LONG VALUE 1073741825.
+ 01 WS-STONE               BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
@@ -76,6 +80,22 @@
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "0 11 730968" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 33 2.4 given an unseeded level random when drawn then it is seeded from the world seed, and a bound above 2^30 redraws on overflow but stays below the bound" TO TL-CASE
+     MOVE 0 TO LR-READY
+     MOVE 0 TO WS-N
+     PERFORM 40 TIMES
+         CALL "LEVEL-RANDOM-INT" USING WS-BIG WS-DRAW
+         IF WS-DRAW < 0 OR WS-DRAW >= WS-BIG
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE LR-READY TO WS-EDIT
+     MOVE WS-N TO WS-EDIT2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Fixtures.
@@ -109,6 +129,7 @@
      MOVE IT-COUNT TO WS-BONE
      ADD 1 TO IT-COUNT
      CALL "GB-RULES-OPEN"
+     CALL "GB-RULES-OPEN"
 
 *>   The raw brightness lookup.
      MOVE "acceptance US12 32 1.2 given a block light source in open air when the raw brightness is read then the sky is 15, the source's cell has its light and its neighbour one less, and a cell inside the ground has 0" TO TL-CASE
@@ -127,6 +148,19 @@
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "15 11 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 32 1.2 given an opaque block at the top of its column and a height outside the dimension when the raw brightness is read then both are 0" TO TL-CASE
+     MOVE 110 TO WS-Y
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+     CALL "LIGHT-RAW" USING WS-DIM WS-X WS-Y WS-Z WS-SKY WS-BLOCK-LIGHT WS-RAW
+     MOVE WS-RAW TO WS-EDIT
+     MOVE -5 TO WS-Y
+     CALL "LIGHT-RAW" USING WS-DIM WS-X WS-Y WS-Z WS-SKY WS-BLOCK-LIGHT WS-RAW
+     MOVE WS-RAW TO WS-EDIT2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A field of wheat on hydrated farmland over chunk (0, 0).
@@ -213,6 +247,29 @@
          MOVE "items off" TO TL-OBSERVED
      END-IF
      MOVE "one item a use" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 29b-1 7.1 given a stage 0 sapling in daylight when its random tick runs repeatedly (BR-RANDOM-TICK) then it reaches stage 1 and stays" TO TL-CASE
+     MOVE 6000 TO CW-TIME
+     MOVE 10 TO WS-X
+     MOVE 10 TO WS-Z
+     MOVE 101 TO WS-Y
+     MOVE WS-SAPLING TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-TRIES
+     PERFORM UNTIL WS-STATE NOT = WS-SAPLING OR WS-TRIES >= 300
+         CALL "BR-RANDOM-TICK" USING WS-DIM WS-X WS-Y WS-Z
+         CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+         ADD 1 TO WS-TRIES
+     END-PERFORM
+     PERFORM 30 TIMES
+         CALL "BR-RANDOM-TICK" USING WS-DIM WS-X WS-Y WS-Z
+     END-PERFORM
+     CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
+     COMPUTE WS-N = WS-STATE - WS-SAPLING
+     MOVE WS-N TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
