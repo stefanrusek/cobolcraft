@@ -18,6 +18,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
+ COPY CORESTATE.
+ COPY CONTENT.
  COPY BRTRAIL REPLACING LEADING ==BT-== BY ==SR-==.
  01 WS-CTX                 BINARY-LONG.
  01 WS-A                   BINARY-LONG.
@@ -43,6 +45,27 @@
  01 WS-SWAP-LENGTH         BINARY-LONG.
  01 WS-LOWER-A             PIC X(64).
  01 WS-LOWER-B             PIC X(64).
+ 01 WS-K                 BINARY-LONG.
+ 01 WS-SUB-OK              BINARY-LONG.
+ 01 WS-SUB-P               BINARY-LONG.
+ 01 WS-SUB-LAST            BINARY-LONG.
+ 01 WS-HEAD-TABLE          PIC X(12) VALUE "@p@a@r@s@e@n".
+ 01 WS-MODE-NAMES.
+    05 FILLER               PIC X(10) VALUE "survival".
+    05 FILLER               PIC X(10) VALUE "creative".
+    05 FILLER               PIC X(10) VALUE "adventure".
+    05 FILLER               PIC X(10) VALUE "spectator".
+ 01 WS-MODE-TABLE REDEFINES WS-MODE-NAMES.
+    05 WS-MODE-NAME         PIC X(10) OCCURS 4 TIMES.
+ 01 WS-REG-ID              BINARY-LONG.
+ 01 WS-REG-COUNT           BINARY-LONG.
+ 01 WS-REG-STATUS          BINARY-LONG.
+ 01 WS-REG-ENTRY           PIC X(112).
+ 01 WS-REG-ENTRY-LENGTH    BINARY-LONG.
+ 01 WS-REG-PAYLOAD         PIC X.
+ 01 WS-REG-CAPACITY        BINARY-LONG VALUE 0.
+ 01 WS-REG-PAYLOAD-LENGTH  BINARY-LONG.
+ 01 WS-REG-KEY             PIC X(112).
  01 WS-TRUE-TEXT           PIC X(5) VALUE "true".
  01 WS-FALSE-TEXT          PIC X(5) VALUE "false".
  LINKAGE SECTION.
@@ -129,13 +152,131 @@
          MOVE BR-N-NAME-LENGTH(WS-CHILD) TO WS-CANDIDATE-LENGTH
          PERFORM OFFER
      ELSE
-         IF BR-N-TYPE(WS-CHILD) = BR-P-BOOL AND BR-N-SUGGEST(WS-CHILD) = 0
-             MOVE WS-TRUE-TEXT TO WS-CANDIDATE
-             MOVE 4 TO WS-CANDIDATE-LENGTH
-             PERFORM OFFER
-             MOVE WS-FALSE-TEXT TO WS-CANDIDATE
-             MOVE 5 TO WS-CANDIDATE-LENGTH
-             PERFORM OFFER
+         EVALUATE BR-N-TYPE(WS-CHILD)
+             WHEN BR-P-BOOL
+                 IF BR-N-SUGGEST(WS-CHILD) = 0
+                     MOVE WS-TRUE-TEXT TO WS-CANDIDATE
+                     MOVE 4 TO WS-CANDIDATE-LENGTH
+                     PERFORM OFFER
+                     MOVE WS-FALSE-TEXT TO WS-CANDIDATE
+                     MOVE 5 TO WS-CANDIDATE-LENGTH
+                     PERFORM OFFER
+                 END-IF
+             WHEN BR-P-ENTITY
+             WHEN BR-P-GAME-PROFILE
+             WHEN BR-P-SCORE-HOLDER
+                 PERFORM LIST-PLAYERS
+             WHEN BR-P-GAMEMODE
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                     MOVE WS-MODE-NAME(WS-K) TO WS-CANDIDATE
+                     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-CANDIDATE)) TO WS-CANDIDATE-LENGTH
+                     PERFORM OFFER-SUB
+                 END-PERFORM
+             WHEN BR-P-DIMENSION
+                 MOVE "cobolcraft:main" TO WS-CANDIDATE
+                 MOVE 15 TO WS-CANDIDATE-LENGTH
+                 PERFORM OFFER-RESOURCE
+                 IF CW-DIM-COUNT > 1
+                     MOVE "cobolcraft:subroutine" TO WS-CANDIDATE
+                     MOVE 21 TO WS-CANDIDATE-LENGTH
+                     PERFORM OFFER-RESOURCE
+                 END-IF
+             WHEN BR-P-RESOURCE
+                 IF BR-N-REG-LENGTH(WS-CHILD) > 0
+                     PERFORM LIST-REGISTRY
+                 END-IF
+         END-EVALUATE
+     END-IF.
+
+*> The online players' names, and the selector heads when the source holds level 2 (14.3).
+ LIST-PLAYERS.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 64
+         IF PL-USED(WS-K) = 1 AND PL-STATE(WS-K) NOT = PS-JOINING
+             MOVE PL-NAME(WS-K) TO WS-CANDIDATE
+             MOVE PL-NAME-LENGTH(WS-K) TO WS-CANDIDATE-LENGTH
+             PERFORM OFFER-SUB
+         END-IF
+     END-PERFORM
+     IF L-LEVEL >= 2 AND BR-N-TYPE(WS-CHILD) = BR-P-ENTITY
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+             MOVE SPACES TO WS-CANDIDATE
+             MOVE WS-HEAD-TABLE(WS-K * 2 - 1:2) TO WS-CANDIDATE
+             MOVE 2 TO WS-CANDIDATE-LENGTH
+             PERFORM OFFER-SUB
+         END-PERFORM
+     END-IF.
+
+*> The entries of the registry of the node (14.3 resource types).
+ LIST-REGISTRY.
+     MOVE SPACES TO WS-REG-KEY
+     MOVE BR-N-REG(WS-CHILD) TO WS-REG-KEY
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REG-KEY WS-REG-COUNT WS-REG-STATUS
+     IF WS-REG-STATUS = CT-OK
+         PERFORM VARYING WS-REG-ID FROM 0 BY 1 UNTIL WS-REG-ID >= WS-REG-COUNT
+             CALL "CONTENT-REGISTRY-ENTRY" USING WS-REG-KEY WS-REG-ID WS-REG-ENTRY WS-REG-ENTRY-LENGTH
+                 WS-REG-PAYLOAD WS-REG-CAPACITY WS-REG-PAYLOAD-LENGTH WS-REG-STATUS
+             IF WS-REG-ENTRY-LENGTH > 0 AND WS-REG-ENTRY-LENGTH <= 64
+                 MOVE SPACES TO WS-CANDIDATE
+                 MOVE WS-REG-ENTRY(1:WS-REG-ENTRY-LENGTH) TO WS-CANDIDATE
+                 MOVE WS-REG-ENTRY-LENGTH TO WS-CANDIDATE-LENGTH
+                 PERFORM OFFER-RESOURCE
+             END-IF
+         END-PERFORM
+     END-IF.
+
+*> SharedSuggestionProvider.matchesSubStr (14.2): the typed text matches the start of the candidate or the text after a . _ or /.
+ MATCH-SUB.
+     MOVE 0 TO WS-SUB-OK
+     IF WS-REMAINING-LENGTH = 0
+         MOVE 1 TO WS-SUB-OK
+     END-IF
+     MOVE FUNCTION LOWER-CASE(WS-CANDIDATE) TO WS-CANDIDATE-LOWER
+     PERFORM VARYING WS-SUB-P FROM 1 BY 1 UNTIL WS-SUB-P + WS-REMAINING-LENGTH - 1 > WS-CANDIDATE-LENGTH OR WS-SUB-OK = 1
+         IF WS-SUB-P = 1 OR WS-CANDIDATE-LOWER(WS-SUB-P - 1:1) = "." OR WS-CANDIDATE-LOWER(WS-SUB-P - 1:1) = "_"
+                 OR WS-CANDIDATE-LOWER(WS-SUB-P - 1:1) = "/"
+             IF WS-CANDIDATE-LOWER(WS-SUB-P:WS-REMAINING-LENGTH) = WS-LOWER(1:WS-REMAINING-LENGTH)
+                 MOVE 1 TO WS-SUB-OK
+             END-IF
+         END-IF
+     END-PERFORM.
+
+*> suggest(text) with the substring matching.
+ OFFER-SUB.
+     PERFORM MATCH-SUB
+     IF WS-SUB-OK = 1
+         IF NOT (WS-REMAINING-LENGTH = WS-CANDIDATE-LENGTH
+                 AND WS-CANDIDATE(1:WS-CANDIDATE-LENGTH) = WS-REMAINING(1:WS-REMAINING-LENGTH))
+             PERFORM ADD-ENTRY
+         END-IF
+     END-IF.
+
+*> suggestResource: with a colon in the typed text the whole namespace:path is matched, else the namespace or the path.
+ OFFER-RESOURCE.
+     MOVE 0 TO WS-SUB-LAST
+     PERFORM VARYING WS-SUB-P FROM 1 BY 1 UNTIL WS-SUB-P > WS-CANDIDATE-LENGTH
+         IF WS-CANDIDATE(WS-SUB-P:1) = ":" AND WS-SUB-LAST = 0
+             MOVE WS-SUB-P TO WS-SUB-LAST
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-COUNT
+     IF WS-REMAINING-LENGTH > 0
+         INSPECT WS-REMAINING(1:WS-REMAINING-LENGTH) TALLYING WS-COUNT FOR ALL ":"
+     END-IF
+     PERFORM MATCH-SUB
+     IF WS-SUB-OK = 0 AND WS-COUNT = 0 AND WS-SUB-LAST > 0
+         MOVE WS-CANDIDATE TO WS-SWAP-TEXT
+         MOVE WS-CANDIDATE-LENGTH TO WS-SWAP-LENGTH
+         MOVE SPACES TO WS-CANDIDATE
+         COMPUTE WS-CANDIDATE-LENGTH = WS-SWAP-LENGTH - WS-SUB-LAST
+         MOVE WS-SWAP-TEXT(WS-SUB-LAST + 1:WS-CANDIDATE-LENGTH) TO WS-CANDIDATE
+         PERFORM MATCH-SUB
+         MOVE WS-SWAP-TEXT TO WS-CANDIDATE
+         MOVE WS-SWAP-LENGTH TO WS-CANDIDATE-LENGTH
+     END-IF
+     IF WS-SUB-OK = 1
+         IF NOT (WS-REMAINING-LENGTH = WS-CANDIDATE-LENGTH
+                 AND WS-CANDIDATE(1:WS-CANDIDATE-LENGTH) = WS-REMAINING(1:WS-REMAINING-LENGTH))
+             PERFORM ADD-ENTRY
          END-IF
      END-IF.
 

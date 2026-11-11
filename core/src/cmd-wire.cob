@@ -14,14 +14,40 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMD-RUN-PACKET.
+*> 15 §13.1: a text with a character that is not allowed in chat (U+00A7, below U+0020, U+007F) disconnects the player with
+*> multiplayer.disconnect.illegal_characters and runs nothing; otherwise the player runs the line with their own source.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PSB-MESSAGE-LENGTH
+         COMPUTE WS-BYTE = FUNCTION ORD(PSB-MESSAGE(WS-I:1)) - 1
+         IF WS-BYTE < 32 OR WS-BYTE = 127
+             MOVE 1 TO WS-BAD
+         END-IF
+         IF WS-BYTE = 194 AND WS-I < PSB-MESSAGE-LENGTH
+             IF FUNCTION ORD(PSB-MESSAGE(WS-I + 1:1)) = 168
+                 MOVE 1 TO WS-BAD
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-BAD = 1
+         INITIALIZE PK-TEXT
+         MOVE PK-TEXT-TRANSLATE TO PK-TX-KIND
+         MOVE "multiplayer.disconnect.illegal_characters" TO PK-TX-VALUE
+         MOVE 41 TO PK-TX-LENGTH
+         CALL "CORE-SEND-DISCONNECT" USING L-ID PK-TEXT
+         GOBACK
+     END-IF
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      CALL "CMD-RUN" USING WS-ROW PSB-MESSAGE PSB-MESSAGE-LENGTH
      GOBACK.
