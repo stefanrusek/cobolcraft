@@ -145,7 +145,6 @@
              CALL "CX-STOP"
          WHEN BC-SAVE-ALL
              CALL "CX-SAVE-ALL"
-         WHEN BC-SAVE-ON
          WHEN BC-RANDOM
              CALL "CX-RANDOM"
          WHEN BC-RELOAD
@@ -164,6 +163,7 @@
              CALL "CX-BAN-IP"
          WHEN BC-PARDON-IP
              CALL "CX-PARDON-IP"
+         WHEN BC-SAVE-ON
          WHEN BC-SAVE-OFF
              CALL "CX-SAVE-SWITCH"
          WHEN OTHER
