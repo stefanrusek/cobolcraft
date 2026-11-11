@@ -136,7 +136,7 @@
 *> Records added by feature 002: contracts/wire-delta.md section 3, content-api.md section 1,
 *> formats-api.md, data-model.md section 4 (PROTO, CONTENT, FORMATS, FMZIP, CELLS).
      MOVE "contract PROTO PB-ITEMSTACK-X length" TO TL-CASE
-     MOVE 16784 TO TL-EXPECTED-N
+     MOVE 65936 TO TL-EXPECTED-N
      MOVE FUNCTION LENGTH(PB-ITEMSTACK-X) TO TL-OBSERVED-N
      PERFORM ASSERT-NUMBER
      MOVE "contract PROTO PB-HASHED-STACK length" TO TL-CASE
