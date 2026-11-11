@@ -36,3 +36,5 @@
  78 BC-RANDOM            VALUE 34.
  78 BC-RELOAD            VALUE 35.
  78 BC-SETIDLETIMEOUT     VALUE 36.
+ 78 BC-SETBLOCK          VALUE 37.
+ 78 BC-FILL              VALUE 38.

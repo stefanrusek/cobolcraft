@@ -147,6 +147,10 @@
              CALL "CX-RELOAD"
          WHEN BC-SETIDLETIMEOUT
              CALL "CX-SETIDLETIMEOUT"
+         WHEN BC-SETBLOCK
+             CALL "CX-SETBLOCK"
+         WHEN BC-FILL
+             CALL "CX-FILL"
          WHEN BC-BAN-IP
              CALL "CX-BAN-IP"
          WHEN BC-PARDON-IP

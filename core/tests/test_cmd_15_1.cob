@@ -17,6 +17,8 @@
     05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "me".
     05 FILLER PIC S9(9) BINARY VALUE 0.
+    05 FILLER PIC X(20) VALUE "fill".
+    05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "gamemode".
     05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "gamerule".
@@ -42,6 +44,8 @@
     05 FILLER PIC X(20) VALUE "seed".
     05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "version".
+    05 FILLER PIC S9(9) BINARY VALUE 2.
+    05 FILLER PIC X(20) VALUE "setblock".
     05 FILLER PIC S9(9) BINARY VALUE 2.
     05 FILLER PIC X(20) VALUE "spawnpoint".
     05 FILLER PIC S9(9) BINARY VALUE 2.
@@ -82,7 +86,7 @@
     05 FILLER PIC X(20) VALUE "whitelist".
     05 FILLER PIC S9(9) BINARY VALUE 3.
  01 WS-TABLE REDEFINES WS-ROWS.
-    05 WS-ROW OCCURS 36 TIMES.
+    05 WS-ROW OCCURS 38 TIMES.
        10 WS-ROW-NAME PIC X(20).
        10 WS-ROW-LEVEL PIC S9(9) BINARY.
  01 WS-I                   BINARY-LONG.
@@ -173,7 +177,7 @@
      END-IF
      MOVE 5 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands gamemode is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands fill is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -191,7 +195,7 @@
      END-IF
      MOVE 6 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands gamerule is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands gamemode is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -209,7 +213,7 @@
      END-IF
      MOVE 7 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands give is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands gamerule is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -227,6 +231,24 @@
      END-IF
      MOVE 8 TO WS-I
      PERFORM FIND-ROOT-CHILD
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands give is a root literal of level 2" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 1000 + 2
+     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
+     IF WS-NODE = 0
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-NODE > 0
+         MOVE 0 TO WS-POSITION
+         PERFORM POSITION-OF-NODE
+         IF WS-POSITION < WS-LAST-COMMON
+             MOVE 0 TO WS-ORDER-OK
+         END-IF
+         MOVE WS-POSITION TO WS-LAST-COMMON
+     END-IF
+     MOVE 9 TO WS-I
+     PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands help is a root literal of level 0" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 0
@@ -243,7 +265,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 9 TO WS-I
+     MOVE 10 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands kick is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -261,7 +283,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 10 TO WS-I
+     MOVE 11 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands kill is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -279,7 +301,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 11 TO WS-I
+     MOVE 12 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands list is a root literal of level 0" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -297,7 +319,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 12 TO WS-I
+     MOVE 13 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands msg is a root literal of level 0" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -315,7 +337,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 13 TO WS-I
+     MOVE 14 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands random is a root literal of level 0" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -333,7 +355,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 14 TO WS-I
+     MOVE 15 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands reload is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -351,7 +373,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 15 TO WS-I
+     MOVE 16 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands say is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -369,7 +391,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 16 TO WS-I
+     MOVE 17 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands seed is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -387,7 +409,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 17 TO WS-I
+     MOVE 18 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands version is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -405,27 +427,9 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
-     MOVE 18 TO WS-I
-     PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands spawnpoint is a root literal of level 2" TO TL-CASE
-     MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 2
-     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
-     IF WS-NODE = 0
-         MOVE -1 TO TL-OBSERVED-N
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     IF WS-NODE > 0
-         MOVE 0 TO WS-POSITION
-         PERFORM POSITION-OF-NODE
-         IF WS-POSITION < WS-LAST-COMMON
-             MOVE 0 TO WS-ORDER-OK
-         END-IF
-         MOVE WS-POSITION TO WS-LAST-COMMON
-     END-IF
      MOVE 19 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands setworldspawn is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands setblock is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -443,7 +447,7 @@
      END-IF
      MOVE 20 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands summon is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands spawnpoint is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -461,7 +465,7 @@
      END-IF
      MOVE 21 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands teleport is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands setworldspawn is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -479,7 +483,7 @@
      END-IF
      MOVE 22 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands time is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands summon is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -497,7 +501,7 @@
      END-IF
      MOVE 23 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands weather is a root literal of level 2" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands teleport is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -515,9 +519,9 @@
      END-IF
      MOVE 24 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban-ip is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands time is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 3
+     COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -526,16 +530,16 @@
      IF WS-NODE > 0
          MOVE 0 TO WS-POSITION
          PERFORM POSITION-OF-NODE
-         IF WS-POSITION < WS-LAST-DEDICATED
+         IF WS-POSITION < WS-LAST-COMMON
              MOVE 0 TO WS-ORDER-OK
          END-IF
-         MOVE WS-POSITION TO WS-LAST-DEDICATED
+         MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
      MOVE 25 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands banlist is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands weather is a root literal of level 2" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 3
+     COMPUTE TL-EXPECTED-N = 1000 + 2
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -544,14 +548,14 @@
      IF WS-NODE > 0
          MOVE 0 TO WS-POSITION
          PERFORM POSITION-OF-NODE
-         IF WS-POSITION < WS-LAST-DEDICATED
+         IF WS-POSITION < WS-LAST-COMMON
              MOVE 0 TO WS-ORDER-OK
          END-IF
-         MOVE WS-POSITION TO WS-LAST-DEDICATED
+         MOVE WS-POSITION TO WS-LAST-COMMON
      END-IF
      MOVE 26 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban-ip is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -569,7 +573,7 @@
      END-IF
      MOVE 27 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands deop is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands banlist is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -587,7 +591,7 @@
      END-IF
      MOVE 28 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands op is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands ban is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -605,7 +609,7 @@
      END-IF
      MOVE 29 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands deop is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -623,7 +627,7 @@
      END-IF
      MOVE 30 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon-ip is a root literal of level 3" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands op is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -641,9 +645,9 @@
      END-IF
      MOVE 31 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-all is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -659,9 +663,9 @@
      END-IF
      MOVE 32 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-off is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands pardon-ip is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
-     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-EXPECTED-N = 1000 + 3
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
      IF WS-NODE = 0
          MOVE -1 TO TL-OBSERVED-N
@@ -677,7 +681,7 @@
      END-IF
      MOVE 33 TO WS-I
      PERFORM FIND-ROOT-CHILD
-     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-on is a root literal of level 4" TO TL-CASE
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-all is a root literal of level 4" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 4
      COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
@@ -695,6 +699,42 @@
      END-IF
      MOVE 34 TO WS-I
      PERFORM FIND-ROOT-CHILD
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-off is a root literal of level 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
+     IF WS-NODE = 0
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-NODE > 0
+         MOVE 0 TO WS-POSITION
+         PERFORM POSITION-OF-NODE
+         IF WS-POSITION < WS-LAST-DEDICATED
+             MOVE 0 TO WS-ORDER-OK
+         END-IF
+         MOVE WS-POSITION TO WS-LAST-DEDICATED
+     END-IF
+     MOVE 35 TO WS-I
+     PERFORM FIND-ROOT-CHILD
+     MOVE "acceptance US13 15§1 Table of contents of the standard commands save-on is a root literal of level 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 1000 + 4
+     COMPUTE TL-OBSERVED-N = 1000 + BR-N-LEVEL(WS-NODE)
+     IF WS-NODE = 0
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     IF WS-NODE > 0
+         MOVE 0 TO WS-POSITION
+         PERFORM POSITION-OF-NODE
+         IF WS-POSITION < WS-LAST-DEDICATED
+             MOVE 0 TO WS-ORDER-OK
+         END-IF
+         MOVE WS-POSITION TO WS-LAST-DEDICATED
+     END-IF
+     MOVE 36 TO WS-I
+     PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands setidletimeout is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE
      COMPUTE TL-EXPECTED-N = 1000 + 3
@@ -711,7 +751,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-DEDICATED
      END-IF
-     MOVE 35 TO WS-I
+     MOVE 37 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands stop is a root literal of level 4" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -729,7 +769,7 @@
          END-IF
          MOVE WS-POSITION TO WS-LAST-DEDICATED
      END-IF
-     MOVE 36 TO WS-I
+     MOVE 38 TO WS-I
      PERFORM FIND-ROOT-CHILD
      MOVE "acceptance US13 15§1 Table of contents of the standard commands whitelist is a root literal of level 3" TO TL-CASE
      MOVE "N" TO TL-MODE

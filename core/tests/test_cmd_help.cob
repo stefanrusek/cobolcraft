@@ -37,13 +37,13 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      MOVE "acceptance US13 /help a player below level 2 sees the comman" & "ds of level 0 (with the aliases)" TO TL-CASE
      MOVE "help" TO WS-LINE
-     MOVE "/me <action> | /help [<command>] | /list [uuids] | /msg <tar" & "gets> <message> | /tell -> msg | /w -> msg" TO WS-EXPECTED
+     MOVE "/me <action> | /help [<command>] | /list [uuids] | /msg <tar" & "gets> <message> | /tell -> msg | /w -> msg | /random (value|" & "roll)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-ALICE WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /help the result is the number of lines" TO TL-CASE
      MOVE "help" TO WS-LINE
      CALL "TEST-RUN-RESULT" USING WS-ID-ALICE WS-LINE WS-NUM
-     MOVE 6 TO WS-EXPECTED-N
+     MOVE 7 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
      CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
