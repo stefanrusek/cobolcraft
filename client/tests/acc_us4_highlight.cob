@@ -23,6 +23,8 @@
  01 WS-E                   PIC -9.99.
  01 WS-TEXT                PIC X(1024).
  01 WS-N                   PIC Z(4)9.
+ 01 WS-VT-LAYER            PIC XX VALUE "HL".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
 *>   Looking straight down from (0.5, 10, 0.5): the greystone under the feet, (0, 9, 0), top face.
@@ -74,6 +76,13 @@
              INTO TL-OBSERVED
      END-PERFORM
      MOVE "144 -0.50 -2.60 -0.50 0.50 -1.60 0.50" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the target highlight is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Looking ahead (+Z) at a ledger_tile wall: 4.5 blocks away it is in reach (north face), 5.5

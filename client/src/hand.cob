@@ -138,6 +138,9 @@
                      MOVE WS-CV(WS-K) TO RL-HAND-V(RL-HAND-COUNT)
                      MOVE WS-FACTOR(WS-F) TO RL-HAND-B(RL-HAND-COUNT)
                      MOVE 1 TO RL-HAND-A(RL-HAND-COUNT)
+                     MOVE 0 TO RL-HAND-SKY(RL-HAND-COUNT)
+                     MOVE 1 TO RL-HAND-R(RL-HAND-COUNT) RL-HAND-G(RL-HAND-COUNT)
+                         RL-HAND-BLUE(RL-HAND-COUNT)
                  END-PERFORM
              END-PERFORM
          END-IF

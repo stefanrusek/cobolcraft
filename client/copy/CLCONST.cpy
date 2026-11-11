@@ -190,6 +190,8 @@
  78 MESH-SLOT-BREAK         VALUE 65006.
 *> The hand in first person (one mesh, view space, texture 0; hand.cob), drawn after a depth clear.
  78 MESH-SLOT-HAND          VALUE 65007.
+*> The particle quads of the frame (one mesh, eye-relative, texture 4).
+ 78 MESH-SLOT-PARTICLES     VALUE 65008.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
@@ -257,6 +259,10 @@
  78 CL-MIN-GUI-W            VALUE 320.  *> the smallest GUI, GUI pixels: the minimum window at scale 1
  78 CL-MIN-GUI-H            VALUE 240.
  78 CL-TICK-MS              VALUE 50.
+ 78 CL-MAX-PUMP-TICKS       VALUE 3.    *> core ticks SP-PUMP runs in one frame
+ 78 CL-PUMP-DEBT-MS         VALUE 250.  *> owed time SP-PUMP keeps after those ticks; more is dropped
+ 78 CL-MESH-BUDGET-US       VALUE 8000. *> microseconds of meshing per frame (MESH-DIRTY)
+ 78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
  78 CL-MAX-HL-VERTICES      VALUE 144.

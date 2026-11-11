@@ -63,6 +63,7 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_TEX_ENTITIES    1 /* entity atlas */
 #define CC_TEX_UI          2 /* font and UI atlas */
 #define CC_TEX_ENVIRONMENT 3 /* environment atlas */
+#define CC_TEX_PARTICLES   4 /* particle atlas */
 
 /* Texture wrap modes of cc_vk_texture_wrap (§9). */
 #define CC_WRAP_CLAMP  0 /* clamp-to-edge (the default) */
@@ -72,7 +73,9 @@ _Static_assert(sizeof(cc_event) == 24, "cc_event is the 24-byte event record of 
 #define CC_MESH_SLOT_MIN 1
 #define CC_MESH_SLOT_MAX 65535
 
-/* Vertex (§9, research R4): 7 x float32 = 28 bytes. */
+/* Vertex (§9): 11 x float32 = 44 bytes. The colour drawn is texel rgb x (r, g, b) x
+ * max(brightness, sky x daylight), the alpha texel alpha x alpha. Untinted vertices carry (1, 1, 1),
+ * vertices that do not follow the daylight carry sky 0. */
 typedef struct cc_vertex {
     float x;
     float y;
@@ -81,8 +84,12 @@ typedef struct cc_vertex {
     float v;
     float brightness;
     float alpha;
+    float sky;
+    float r;
+    float g;
+    float b;
 } cc_vertex;
-_Static_assert(sizeof(cc_vertex) == 28, "cc_vertex is the 28-byte vertex of shim-abi.md §9");
+_Static_assert(sizeof(cc_vertex) == 44, "cc_vertex is the 44-byte vertex of shim-abi.md §9");
 
 /* §2 cc_fatal: writes "FATAL <what>: <detail>" to standard error and exits with status 1. */
 _Noreturn void cc_fatal(const char *what);
@@ -192,6 +199,10 @@ void cc_f64_lerp_f64(const double *t, const double *a, const double *b, double *
  * regenerates the mip levels it touches. Both return 0 or call cc_fatal. */
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels);
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba);
+
+/* §9 addition: the daylight factor (0 to 1, default 1) that scales every vertex's sky term in the draws that
+ * follow; read through a pointer (a COBOL FLOAT-SHORT is passed BY REFERENCE). */
+void cc_vk_daylight(const float *daylight);
 
 /* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */
 void cc_vk_clear_depth(void);

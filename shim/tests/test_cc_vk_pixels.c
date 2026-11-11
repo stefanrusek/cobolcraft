@@ -15,14 +15,14 @@
 #define S cc_vk_state
 
 /* The quad covers clip space [-0.5, 0.5]; brightness 1, alpha multiplier 1. */
-static const float QUAD[6 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1,
+static const float QUAD[6 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 1, 1, 1, 1, 0, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1, 0, 1, 1, 1,
 };
 /* The same quad with u from 0 to 2. */
-static const float QUAD_U2[6 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 2, 0, 1, 1,  0.5f, 0.5f, 0.5f, 2, 1, 1, 1,
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, 0.5f, 0.5f, 2, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1,
+static const float QUAD_U2[6 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 2, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 2, 1, 1, 1, 0, 1, 1, 1,
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, 0.5f, 0.5f, 2, 1, 1, 1, 0, 1, 1, 1,  -0.5f, 0.5f, 0.5f, 0, 1, 1, 1, 0, 1, 1, 1,
 };
 static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
@@ -156,6 +156,47 @@ int main(void) {
         snprintf(name, sizeof name, "test cc_vk %s wrap at u 1.25 samples the %s texel", wraps[w],
                  w == CC_WRAP_REPEAT ? "first (repeated)" : "last (edge)");
         tl_str(name, expect[w], pixels[0]);
+    }
+
+    /* The tint channel and the daylight uniform (§9 vertex of 11 floats: x y z u v brightness alpha sky r g b):
+     * the colour is texel x tint x max(brightness, sky x daylight). The texture is a white texel. */
+    static const uint8_t white[2 * 2 * 4] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+    cc_vk_texture(CC_TEX_BLOCKS, 2, 2, white);
+    float lit[6 * 11];
+    memcpy(lit, QUAD, sizeof lit);
+    static const struct {
+        const char *what;
+        float brightness, sky, r, g, b, daylight;
+        const char *expect;
+    } cases[] = {
+        {"tint (1, 0.5, 0) on white at full brightness", 1, 0, 1, 0.5f, 0, 1, "FF8000FF"},
+        {"tint (0, 1, 1) with brightness 0.5 halves the tinted colour", 0.5f, 0, 0, 1, 1, 1, "008080FF"},
+        {"sky 1 at daylight 1 is full brightness", 0.1f, 1, 1, 1, 1, 1, "FFFFFFFF"},
+        {"sky 1 at daylight 0.5 is half brightness", 0.1f, 1, 1, 1, 1, 0.5f, "808080FF"},
+        {"sky 1 at daylight 0.2 under a block light brightness 0.6 stays at the brighter term", 0.6f, 1, 1, 1, 1, 0.2f, "999999FF"},
+        {"sky 0 ignores the daylight", 0.5f, 0, 1, 1, 1, 0.1f, "808080FF"},
+    };
+    for (size_t c = 0; c < sizeof cases / sizeof cases[0]; c++) {
+        for (int v = 0; v < 6; v++) {
+            float *f = lit + v * 11;
+            f[5] = cases[c].brightness;
+            f[7] = cases[c].sky;
+            f[8] = cases[c].r;
+            f[9] = cases[c].g;
+            f[10] = cases[c].b;
+        }
+        cc_vk_mesh(3, lit, 6);
+        cc_vk_daylight(&cases[c].daylight);
+        cc_vk_frame_begin(clear);
+        cc_vk_draw(3, CC_PIPE_OPAQUE, CC_TEX_BLOCKS, IDENTITY);
+        cc_vk_submit();
+        int xs[1] = {(int)S.extent.width / 2};
+        int ys[1] = {(int)S.extent.height / 2};
+        char pixels[1][9];
+        read_pixels(1, xs, ys, pixels);
+        cc_vk_present();
+        snprintf(name, sizeof name, "test cc_vk %s", cases[c].what);
+        tl_str(name, cases[c].expect, pixels[0]);
     }
     cc_vk_shutdown();
     cc_win_close();

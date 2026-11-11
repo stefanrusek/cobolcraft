@@ -1,0 +1,563 @@
+*> Acceptance test of docs/protocol/42-particles-3-fluid-drip-water.md section 9 (server and entity emitters of the scope types):
+*> the emission rules of the section with their random draws (given in the document's order), the
+*> tick, size and light formulas, and the worked examples E1 to E12 that apply. The case lines are written
+*> by a script that applies the document's numbers; the expected values are the document's.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-3-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLPCL.
+ COPY CLPCLX.
+ COPY CLP3E.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-VX2                 FLOAT-LONG.
+ 01 WS-VY2                 FLOAT-LONG.
+ 01 WS-VZ2                 FLOAT-LONG.
+ 01 WS-DRAWS.
+    05 WS-D                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-EDRAWS.
+    05 WS-E                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-D36S.
+    05 WS-D36              FLOAT-LONG OCCURS 36 TIMES.
+ 01 WS-NOISES.
+    05 WS-NOISE            FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-VAL                 FLOAT-LONG.
+ 01 WS-CHK                 FLOAT-LONG.
+ 01 WS-VAL2                FLOAT-LONG.
+ 01 WS-VAL3                FLOAT-LONG VALUE 0.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-R1                  FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-POWER               FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PYD                 FLOAT-LONG.
+ 01 WS-SCALE               BINARY-DOUBLE.
+ 01 WS-ZERO-N              BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-LIFE                BINARY-LONG.
+ 01 WS-LIFEC               BINARY-LONG.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-ERR                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-FIRED               BINARY-LONG.
+ 01 WS-A1                  BINARY-LONG.
+ 01 WS-B1                  BINARY-LONG.
+ 01 WS-C1                  BINARY-LONG.
+ 01 WS-D1                  BINARY-LONG.
+ 01 WS-SHAPE-NAME          PIC X(12).
+ 01 WS-F1                  FLOAT-LONG.
+ 01 WS-F2                  FLOAT-LONG.
+ 01 WS-F3                  FLOAT-LONG.
+ 01 WS-F4                  FLOAT-LONG.
+ 01 WS-F5                  FLOAT-LONG.
+ 01 WS-F6                  FLOAT-LONG.
+ 01 WS-F7                  FLOAT-LONG.
+ 01 WS-F8                  FLOAT-LONG.
+ 01 WS-G1                  FLOAT-LONG.
+ 01 WS-G2                  FLOAT-LONG.
+ 01 WS-G3                  FLOAT-LONG.
+ 01 WS-G4                  FLOAT-LONG.
+ 01 WS-B2                  BINARY-LONG.
+ 01 WS-B3                  BINARY-LONG.
+ 01 WS-B4                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 10 TO WS-B1
+     MOVE 1.0 TO WS-F1
+     MOVE 0 TO WS-B2
+     CALL "P3E-RAIN-COUNT" USING WS-B1 WS-F1 WS-B2 WS-OUT
+     MOVE "9.1 rain: count (int)(0.225 * 441 * 1 * 1) = 99 at radius 10" TO WS-NAME
+     MOVE 99 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-B2
+     CALL "P3E-RAIN-COUNT" USING WS-B1 WS-F1 WS-B2 WS-OUT
+     MOVE "9.1 rain: DECREASED halves the integer count: 49" TO WS-NAME
+     MOVE 49 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-B2
+     MOVE 0.5 TO WS-F1
+     CALL "P3E-RAIN-COUNT" USING WS-B1 WS-F1 WS-B2 WS-OUT
+     MOVE "9.1 rain: rain level 0.5: (int)(0.225 * 441 * 0.25) = 24" TO WS-NAME
+     MOVE 24 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 3 TO WS-B1
+     MOVE 1.0 TO WS-F1
+     CALL "P3E-RAIN-COUNT" USING WS-B1 WS-F1 WS-B2 WS-OUT
+     MOVE "9.1 rain: radius 3: N = 49: (int)(0.225 * 49) = 11" TO WS-NAME
+     MOVE 11 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.0 TO WS-F1
+     MOVE 10 TO WS-B1
+     CALL "P3E-RAIN-OFFSET" USING WS-B1 WS-F1 WS-OUT
+     MOVE "9.1 rain: nextInt(21) - 10 with draw 0 is -10" TO WS-NAME
+     MOVE -10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.999 TO WS-F1
+     CALL "P3E-RAIN-OFFSET" USING WS-B1 WS-F1 WS-OUT
+     MOVE "9.1 rain: draw near 1 gives +10" TO WS-NAME
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 64 TO WS-B1
+     MOVE 0 TO WS-B2
+     MOVE 60 TO WS-B3
+     MOVE 1 TO WS-B4
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: an accepted column spawns (1)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 2 TO WS-N
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: MINIMAL stops the whole loop (2)" TO WS-NAME
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-N
+     MOVE 0 TO WS-B4
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: a column whose precipitation is not RAIN is skipped (0)" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-B4
+     MOVE 80 TO WS-B3
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: a top 16 blocks from the camera is skipped" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 70 TO WS-B3
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: a top 6 blocks from the camera passes" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 64 TO WS-B1
+     MOVE 74 TO WS-B3
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE 74 TO WS-B1
+     MOVE 64 TO WS-B3
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: exactly 10 above the camera passes" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 64 TO WS-B1
+     MOVE 64 TO WS-B2
+     MOVE 64 TO WS-B3
+     CALL "P3E-RAIN-ACCEPT" USING WS-B1 WS-B2 WS-B3 WS-B4 WS-N WS-OUT
+     MOVE "9.1 rain: a top at the minimum height is skipped (top.y must exceed minY)" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.25 TO WS-F1
+     MOVE 0.75 TO WS-F2
+     MOVE 0.5 TO WS-F3
+     MOVE 0 TO WS-B1
+     MOVE 10 TO WS-B2
+     MOVE 0 TO WS-B3 WS-B4
+     CALL "P3E-RAIN-PARTICLE" USING WS-B1 WS-F1 WS-F2 WS-F3 WS-B2 WS-B3 WS-B4 P3ER
+     MOVE "9.1 rain: the particle is rain (71) on plain ground" TO WS-NAME
+     MOVE 71 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-B1
+     CALL "P3E-RAIN-PARTICLE" USING WS-B1 WS-F1 WS-F2 WS-F3 WS-B2 WS-B3 WS-B4 P3ER
+     MOVE "9.1 rain: over lava, magma or a lit campfire it is smoke (72)" TO WS-NAME
+     MOVE 72 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.1 rain: position ground.x + u" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 10250 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.1 rain: position ground.y + h" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.1 rain: position ground.z + v" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE 750 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0 TO WS-N
+     MOVE 0.0 TO WS-F1
+     MOVE 0.5 TO WS-F2
+     MOVE 0.5 TO WS-F3
+     MOVE 0.25 TO WS-F4
+     MOVE 0.5 TO WS-F5
+     MOVE 0.75 TO WS-F6
+     CALL "P3E-COLUMN-DOWN" USING WS-F1 WS-F2 WS-F3 P3ER
+     MOVE "9.2 drag_down: current_down (83) at (x + 0.5, y + 0.8, z)" TO WS-NAME
+     MOVE 83 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.2 drag_down: x offset 0.5" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 drag_down: y offset 0.8" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 800 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 drag_down: z offset 0 (no 0.5)" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 drag_down: nextInt(200) = 0 plays the whirlpool sound (1)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT2
+     PERFORM ASSERT-NUMBER
+     MOVE "9.2 drag_down: volume 0.2 + 0.5 * 0.2 = 0.3" TO WS-NAME
+     COMPUTE WS-CHK = ER-VOL2
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3E-COLUMN-DOWN" USING WS-F4 WS-F2 WS-F3 P3ER
+     MOVE "9.2 drag_down: nextInt(200) = 50 plays nothing" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT2
+     PERFORM ASSERT-NUMBER
+     MOVE 0.0 TO WS-F1
+     CALL "P3E-COLUMN-UP" USING WS-F4 WS-F5 WS-F6 WS-F1 WS-F2 WS-F3 P3ER
+     MOVE "9.2 not drag_down: bubble_column_up (84) twice, at the centre then at random" TO WS-NAME
+     MOVE 84 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.2 not drag_down: the second particle x offset 0.25" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 250 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 not drag_down: y offset 0.5" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 not drag_down: z offset 0.75" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE 750 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.2 not drag_down: nextInt(200) = 0 plays the upwards sound (2)" TO WS-NAME
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT2
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-B1
+     CALL "P3E-CONDUIT-BOB" USING WS-B1 WS-VAL
+     MOVE "9.3 conduit: b at tick 0: (b * b + b) * 0.3 with b = sin(3.5) / 2 + 0.5 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = WS-VAL
+     MOVE 1000 TO WS-SCALE
+     MOVE 129 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.01 TO WS-F1
+     MOVE 0.5 TO WS-F2
+     MOVE 0.5 TO WS-F3
+     MOVE 0.5 TO WS-F4
+     MOVE 2 TO WS-B1
+     MOVE 1 TO WS-B2
+     MOVE -2 TO WS-B3
+     CALL "P3E-CONDUIT-FRAME" USING WS-F1 WS-F2 WS-F3 WS-F4 WS-B1 WS-B2 WS-B3 P3ER
+     MOVE "9.3 conduit frame: nextInt(50) = 0 spawns a nautilus (85)" TO WS-NAME
+     MOVE 85 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.3 conduit frame: x velocity -0.5 + 0.5 + dx 2" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 2000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.3 conduit frame: y -2 + 0.5 + 1" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE -500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.3 conduit frame: z -0.5 + 0.5 - 2" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE -2000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.1 TO WS-F1
+     CALL "P3E-CONDUIT-FRAME" USING WS-F1 WS-F2 WS-F3 WS-F4 WS-B1 WS-B2 WS-B3 P3ER
+     MOVE "9.3 conduit frame: nextInt(50) != 0 skips it" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.75 TO WS-F1
+     MOVE 0.5 TO WS-F2
+     MOVE 0.25 TO WS-F3
+     MOVE 0.6 TO WS-F5
+     MOVE 1.8 TO WS-F6
+     CALL "P3E-CONDUIT-TARGET" USING WS-F1 WS-F2 WS-F3 WS-F5 WS-F6 P3ER
+     MOVE "9.3 conduit target: a nautilus at the target eye (85)" TO WS-NAME
+     MOVE 85 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.3 conduit target: ox = (-0.5 + 0.75) * (3 + 0.6) = 0.9" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 900 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.3 conduit target: oy = -1 + 0.5 * 1.8 = -0.1" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE -100 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.3 conduit target: oz = (-0.5 + 0.25) * 3.6 = -0.9" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE -900 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     CALL "P3E-INK-COUNT" USING WS-N
+     MOVE "9.4 squid ink: 30 particles per burst" TO WS-NAME
+     MOVE 30 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO WS-F1
+     MOVE 1.0 TO WS-F2
+     CALL "P3E-INK-DIR" USING WS-F1 WS-F2 WS-VX WS-VY WS-VZ
+     MOVE "9.4 ink direction x = 0.5 * 0.6 - 0.3 = 0" TO WS-NAME
+     COMPUTE WS-CHK = WS-VX
+     MOVE 1000 TO WS-SCALE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.4 ink direction y = -1" TO WS-NAME
+     COMPUTE WS-CHK = WS-VY
+     MOVE 1000 TO WS-SCALE
+     MOVE -1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.4 ink direction z = 1.0 * 0.6 - 0.3 = 0.3" TO WS-NAME
+     COMPUTE WS-CHK = WS-VZ
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.5 TO WS-F3
+     MOVE 0 TO WS-B1
+     CALL "P3E-INK-VEL" USING WS-B1 WS-F3 WS-VX WS-VY WS-VZ WS-F5 WS-F6 WS-F7 WS-F8
+     MOVE "9.4 ink velocity: scale 0.3 + 0.5 * 2 = 1.3, packet velocity 0.1 * dir * 1.3: y = -0.13 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = WS-F6
+     MOVE 1000 TO WS-SCALE
+     MOVE -130 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1 TO WS-B1
+     CALL "P3E-INK-VEL" USING WS-B1 WS-F3 WS-VX WS-VY WS-VZ WS-F5 WS-F6 WS-F7 WS-F8
+     MOVE "9.4 ink velocity for a baby: scale 0.1 + 1.0 = 1.1: y = -0.11 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = WS-F6
+     MOVE 1000 TO WS-SCALE
+     MOVE -110 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.1 TO WS-F1
+     MOVE 0.9 TO WS-F2
+     MOVE 1 TO WS-B1
+     MOVE 1 TO WS-B2
+     CALL "P3E-FISH-STEP" USING WS-F1 WS-B1 WS-F2 WS-B2 WS-OUT
+     MOVE "9.5 preamble: rain test passes (+1), sky visible (no -1): s = 2" TO WS-NAME
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-B1
+     CALL "P3E-FISH-STEP" USING WS-F1 WS-B1 WS-F2 WS-B2 WS-OUT
+     MOVE "9.5 preamble: no rain: s = 1" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.4 TO WS-F2
+     MOVE 0 TO WS-B2
+     CALL "P3E-FISH-STEP" USING WS-F1 WS-B1 WS-F2 WS-B2 WS-OUT
+     MOVE "9.5 preamble: no rain and the sky is blocked (draw 0.4 < 0.5): s = 0" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.1 TO WS-F1
+     MOVE 1 TO WS-B1
+     CALL "P3E-FISH-STEP" USING WS-F1 WS-B1 WS-F2 WS-B2 WS-OUT
+     MOVE "9.5 preamble: rain and blocked sky: s = 1" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 10 TO WS-B1
+     CALL "P3E-FISH-LURE-P" USING WS-B1 WS-F1
+     MOVE "9.5 lure probability at t = 10 is 0.65" TO WS-NAME
+     COMPUTE WS-CHK = WS-F1
+     MOVE 1000 TO WS-SCALE
+     MOVE 650 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 30 TO WS-B1
+     CALL "P3E-FISH-LURE-P" USING WS-B1 WS-F1
+     MOVE "9.5 lure probability at t = 30 is 0.35" TO WS-NAME
+     COMPUTE WS-CHK = WS-F1
+     MOVE 1000 TO WS-SCALE
+     MOVE 350 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 50 TO WS-B1
+     CALL "P3E-FISH-LURE-P" USING WS-B1 WS-F1
+     MOVE "9.5 lure probability at t = 50 is 0.25" TO WS-NAME
+     COMPUTE WS-CHK = WS-F1
+     MOVE 1000 TO WS-SCALE
+     MOVE 250 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 70 TO WS-B1
+     CALL "P3E-FISH-LURE-P" USING WS-B1 WS-F1
+     MOVE "9.5 lure probability at t = 70 is 0.15" TO WS-NAME
+     COMPUTE WS-CHK = WS-F1
+     MOVE 1000 TO WS-SCALE
+     MOVE 150 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 3.5 TO WS-VAL
+     CALL "P3E-FISH-BITE-COUNT" USING WS-VAL WS-OUT
+     MOVE 0.25 TO WS-VAL
+     CALL "P3E-FISH-BITE-COUNT" USING WS-VAL WS-OUT
+     MOVE "9.5 bite: count (int)(1 + 0.25 * 20) = 6" TO WS-NAME
+     MOVE 6 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 90 TO WS-VAL
+     MOVE 5 TO WS-B1
+     MOVE 10 TO WS-VX
+     MOVE 63.5 TO WS-VY
+     MOVE 20 TO WS-VZ
+     CALL "P3E-FISH-APPROACH" USING WS-VAL WS-B1 WS-VX WS-VY WS-VZ P3ER
+     MOVE "9.5 approach: angle 90 degrees: px = 10 + sin * 5 * 0.1 = 10.5 (1e-3)" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 10500 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.5 approach: py = floor(63.5) + 1 = 64" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 64000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.5 approach: pz = 20 + cos(90) * 0.5 = 20 (1e-2)" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 100 TO WS-SCALE
+     MOVE 2000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.0 TO WS-F1
+     MOVE 0 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 0 TO WS-Z
+     MOVE 0 TO WS-VX
+     MOVE 0 TO WS-VY
+     MOVE 1 TO WS-VZ
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B1
+     MOVE 0.5 TO WS-R
+     CALL "P3E-DOLPHIN" USING WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-A WS-R WS-B1 P3ER
+     MOVE "9.6 dolphin: yaw 0: a = 0.3: x = 0 - 0 * d + 0.3" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.6 dolphin: y - v.y" TO WS-NAME
+     COMPUTE WS-CHK = ER-Y
+     MOVE 1000 TO WS-SCALE
+     MOVE 64000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.6 dolphin: z = 0 - 1 * (1.2 - 0.5 * 0.7) + b with b = 0: -0.85" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE -850 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE -1 TO WS-B1
+     CALL "P3E-DOLPHIN" USING WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-A WS-R WS-B1 P3ER
+     MOVE "9.6 dolphin: the second particle at -a: x = -0.3" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE -300 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.25 TO WS-F1
+     MOVE 0.5 TO WS-F2
+     MOVE 0.75 TO WS-F3
+     CALL "P3E-SULFUR-EMIT" USING WS-F1 WS-F2 WS-F3 P3ER
+     MOVE "9.8 sulfur_bubbles (4) with zero velocity" TO WS-NAME
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = ER-ACT
+     PERFORM ASSERT-NUMBER
+     MOVE "9.8 sulfur: x = x + nextFloat 0.25" TO WS-NAME
+     COMPUTE WS-CHK = ER-X
+     MOVE 1000 TO WS-SCALE
+     MOVE 250 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "9.8 sulfur: z + 0.75" TO WS-NAME
+     COMPUTE WS-CHK = ER-Z
+     MOVE 1000 TO WS-SCALE
+     MOVE 750 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.05 TO WS-F1
+     CALL "P3E-SULFUR-SOUND" USING WS-F1 WS-OUT
+     MOVE "9.8 sulfur: nextInt(10) = 0 plays NOXIOUS_GAS (1)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO WS-F1
+     CALL "P3E-SULFUR-SOUND" USING WS-F1 WS-OUT
+     MOVE "9.8 sulfur: nextInt(10) = 5 plays nothing" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-OUT
+     PERFORM ASSERT-NUMBER
+     MOVE 5 TO WS-X
+     MOVE 0.8 TO WS-A
+     MOVE 0.75 TO WS-F1
+     MOVE 0.6 TO WS-VAL
+     CALL "P3E-RANDOM-X" USING WS-X WS-A WS-VAL WS-F1 WS-VAL2
+     MOVE "9.9 glow squid: getRandomX(0.6) = x + bbWidth * (2 * 0.75 - 1) * 0.6 = 5.24" TO WS-NAME
+     COMPUTE WS-CHK = WS-VAL2
+     MOVE 1000 TO WS-SCALE
+     MOVE 5240 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1.8 TO WS-A
+     MOVE 64 TO WS-Y
+     MOVE 0.5 TO WS-F1
+     CALL "P3E-RANDOM-Y" USING WS-Y WS-A WS-F1 WS-VAL2
+     MOVE "9.9 glow squid: getRandomY = y + bbHeight * 0.5 = 64.9" TO WS-NAME
+     COMPUTE WS-CHK = WS-VAL2
+     MOVE 1000 TO WS-SCALE
+     MOVE 64900 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§9 Server and entity emitters of the scope types: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-SCALED.
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(WS-CHK * WS-SCALE + 0.5)
+     PERFORM ASSERT-NUMBER.
+
+ ASSERT-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-3§9 Server and entity emitters of the scope types: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-3-9.

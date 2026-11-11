@@ -2200,3 +2200,92 @@
      MOVE WS-OUT TO L-TEXT
      GOBACK.
  END PROGRAM TEST-DROP-MOVES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-PARTICLES.
+*> USING connection id, text out (PIC X(4096)): the Level Particles packets (0x30) the connection was sent,
+*> `|`-separated, each as `type <t> [state <s>] flags <override><always> pos <x> <y> <z> spread <dx> <dy> <dz>
+*> speed <sx> <sy> <sz> count <n> random <r>` (reals to two places); every other packet is skipped. Only the
+*> particle types without options and the block type (1, one VarInt state) are decoded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-RANDOM              BINARY-LONG.
+ 01 WS-FA                  PIC 9.
+ 01 WS-FB                  PIC 9.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-D                   FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-R                   PIC -(5)9.99.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 48
+             IF WS-PTR > 1
+                 STRING " | " DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-TYPE
+             MOVE WS-TYPE TO WS-E1
+             STRING "type " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             IF WS-TYPE = 1
+                 CALL "PB-GET-VARINT" USING PK-BUFFER WS-STATE
+                 MOVE WS-STATE TO WS-E1
+                 STRING " state " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             CALL "PB-GET-BOOL" USING PK-BUFFER WS-A
+             CALL "PB-GET-BOOL" USING PK-BUFFER WS-B
+             MOVE WS-A TO WS-FA
+             MOVE WS-B TO WS-FB
+             STRING " flags " WS-FA WS-FB DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             STRING " pos" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-DOUBLE" USING PK-BUFFER WS-D(WS-I)
+                 COMPUTE WS-R ROUNDED = WS-D(WS-I)
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             STRING " spread" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+                 COMPUTE WS-R ROUNDED = WS-FLOAT
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             STRING " speed" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 CALL "PB-GET-FLOAT" USING PK-BUFFER WS-FLOAT
+                 COMPUTE WS-R ROUNDED = WS-FLOAT
+                 STRING " " FUNCTION TRIM(WS-R) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-PERFORM
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-RANDOM
+             MOVE WS-COUNT TO WS-E1
+             STRING " count " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             MOVE WS-RANDOM TO WS-E1
+             STRING " random " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-PARTICLES.

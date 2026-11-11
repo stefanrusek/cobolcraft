@@ -8,7 +8,8 @@
 *> then the entity figures (texture 1, built eye-relative by ENTITIES-MESH), then the translucent
 *> meshes back to front by section centre, then the ground items (item-icon billboards built
 *> eye-relative by GROUND-ITEMS-MESH, translucent on texture 0), then the weather quads (built
-*> eye-relative by WEATHER-MESH, translucent on texture 3), then the target highlight (an
+*> eye-relative by WEATHER-MESH, translucent on texture 3), then the particle quads (built eye-relative by
+*> PARTICLES-MESH, translucent on texture 4), then the target highlight (an
 *> outline around the targeted block, eye-relative, translucent on texture 2), then the UI mesh
 *> (texture 2) with an orthographic window-pixel matrix, the item icons over it (texture 0) and the
 *> UI drawn over the icons (the slot counts, texture 2), with the same matrix. Meshes changed since
@@ -249,6 +250,15 @@
      MOVE CC-TEX-ENVIRONMENT TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-WX-VERTEX(1) RL-WX-COUNT RL-WX-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The particle quads (eye-relative, texture 4), alpha-blended after the weather.
+     MOVE 0 TO RL-PT-COUNT
+     IF WS-WORLD = 1
+         CALL "PARTICLES-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-VIEW-YAW WS-VIEW-PITCH
+     END-IF
+     MOVE MESH-SLOT-PARTICLES TO WS-SLOT
+     MOVE CC-TEX-PARTICLES TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-PT-VERTEX(1) RL-PT-COUNT RL-PT-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The crack overlay (world screen, 12 section 4), after the translucent sections, before the highlight.
      MOVE 0 TO RL-BO-COUNT
      IF WS-WORLD = 1
@@ -467,6 +477,8 @@
                      MOVE WS-TV TO RL-HL-V(RL-HL-COUNT)
                      MOVE 0 TO RL-HL-B(RL-HL-COUNT)
                      MOVE 0.6 TO RL-HL-A(RL-HL-COUNT)
+                     MOVE 0 TO RL-HL-SKY(RL-HL-COUNT)
+                     MOVE 1 TO RL-HL-R(RL-HL-COUNT) RL-HL-G(RL-HL-COUNT) RL-HL-BLUE(RL-HL-COUNT)
                  END-PERFORM
              END-PERFORM
          END-PERFORM

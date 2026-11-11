@@ -1,0 +1,60 @@
+from mesh6 import *
+from prog6 import *
+setlayer('SHULKER_BULLET',['P main root 0 0 0 0 0 0','C main 0 0 -4 -4 -1 8 8 2 0 0','C main 0 10 -1 -4 -4 2 8 8 0 0','C main 20 0 -4 -1 -4 8 2 8 0 0'],64,32)
+hdr='''*> Entity models part 6 section 13 (Shulker bullet): the mesh and setupAnim (yaw and pitch), the renderer submit stack, the two passes, texture and block light.
+*> Entry points for the integrator (inputs; the table programs take IN (16 FLOAT-LONG) and OUT (64 FLOAT-LONG)): ops lists are count, then code (1 translate, 2 scale, 3 rotate Y degrees, 4 rotate Z degrees, 6 rotate X degrees) and three values per op in call order.
+*>   EF6-BULLET-ANIM EMM-MODEL state(1 yRot, 2 xRot degrees): reset first, main.yRot and main.xRot; EF6-BULLET-OPS IN(ageInTicks) OUT(ops of the submit stack before the first pass); EF6-BULLET-PASS IN(pass 1 or 2) OUT(extra scale, translucent, tint (-1 none, 654311423 = 0x26FFFFFF), order);
+*>   EF6-BULLET-TEXTURE IN() path(out X(120)); EF6-BULLET-BLOCKLIGHT IN() OUT(15).
+'''
+extra=r''' IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF6-BULLET-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "main" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-M
+     COMPUTE MM-CYROT(WS-M) = L-I(1) * 0.017453292
+     COMPUTE MM-CXROT(WS-M) = L-I(2) * 0.017453292
+     GOBACK.
+ END PROGRAM EF6-BULLET-ANIM.
+
+'''
+extra+=prog('EF6-BULLET-OPS','''     MOVE 5 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3) L-O(5)
+     MOVE 0.15 TO L-O(4)
+     MOVE 3 TO L-O(6)
+     COMPUTE L-O(7) = FUNCTION SIN(L-I(1) * 0.1) * 180
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 6 TO L-O(10)
+     COMPUTE L-O(11) = FUNCTION COS(L-I(1) * 0.1) * 180
+     MOVE 0 TO L-O(12) L-O(13)
+     MOVE 4 TO L-O(14)
+     COMPUTE L-O(15) = FUNCTION SIN(L-I(1) * 0.15) * 360
+     MOVE 0 TO L-O(16) L-O(17)
+     MOVE 2 TO L-O(18)
+     MOVE -0.5 TO L-O(19) L-O(20)
+     MOVE 0.5 TO L-O(21)
+''')
+extra+=prog('EF6-BULLET-PASS','''     IF L-I(1) = 2
+         MOVE 1.5 TO L-O(1)
+         MOVE 1 TO L-O(2)
+         MOVE 654311423 TO L-O(3)
+         MOVE 1 TO L-O(4)
+     ELSE
+         MOVE 1 TO L-O(1)
+         MOVE 0 TO L-O(2)
+         MOVE -1 TO L-O(3)
+         MOVE 0 TO L-O(4)
+     END-IF
+''')
+extra+=' IDENTIFICATION DIVISION.\n PROGRAM-ID. EF6-BULLET-TEXTURE.\n DATA DIVISION.\n LINKAGE SECTION.\n 01 L-IN.\n    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.\n 01 L-PATH                 PIC X(120).\n PROCEDURE DIVISION USING L-IN L-PATH.\n     MOVE "textures/entity/shulker/spark.png" TO L-PATH\n     GOBACK.\n END PROGRAM EF6-BULLET-TEXTURE.\n\n'
+extra+=prog('EF6-BULLET-BLOCKLIGHT','     MOVE 15 TO L-O(1)\n')
+write_section_src(13,hdr,['SHULKER_BULLET'],extra); write_layers(['SHULKER_BULLET'])

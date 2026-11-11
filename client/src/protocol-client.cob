@@ -223,6 +223,8 @@
                  WHEN OTHER
                      MOVE WX-HAILSTORM TO PL-WEATHER
              END-EVALUATE
+         WHEN WS-PHASE = PH-PLAY AND L-ID = 48
+             CALL "PARTICLES-READ" USING CLIENT-STATE L-PACKET
          WHEN WS-PHASE = PH-PLAY AND L-ID = 73
 *>           Player Position: CobolCraft's server sends absolute values only (relative flags 0,
 *>           09 §3.2); the position is taken and accepted.

@@ -1,0 +1,678 @@
+*> Acceptance test of docs/protocol/34-entity-models-4-farm-animals-equines.md section 6 (Chicken): 6.1 the model pair by model type, the flap interpolation, the null variant rule, 6.2 setupAnim (leg swings, wing flap, head turn for the
+*> adult and cold chicken only), 6.3 the geometry of chicken, cold_chicken and chicken_baby. Mesh rows are the tables of the document; formula values were worked by an independent script.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-4-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LAYER              PIC X(32).
+ 01 WS-OK                 BINARY-LONG.
+ 01 WS-PARTS              BINARY-LONG.
+ 01 WS-CUBES              BINARY-LONG.
+ 01 WS-P                  BINARY-LONG.
+ 01 WS-PN                 PIC X(24).
+ COPY EMCHKW.
+
+ 01 WS-X32               PIC X(32).
+ 01 WS-X32B              PIC X(32).
+ 01 WS-X120              PIC X(120).
+ 01 WS-X24               PIC X(24).
+ 01 WS-X40               PIC X(40).
+ 01 WS-FL                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer CHICKEN is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-4§6 Chicken 6.3 CHICKEN" TO CK-PREFIX
+     MOVE "P head root 0 15 -4 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 0 0 -2 -6 -2 4 6 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P beak head 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C beak 14 0 -2 -4 -4 4 2 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P red_thing head 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C red_thing 14 4 -1 -2 -3 2 2 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body root 0 16 0 1.5707964 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 9 -3 -4 -3 6 8 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_leg root -2 19 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_leg 26 0 -1 0 -3 3 5 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_leg root 1 19 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_leg 26 0 -1 0 -3 3 5 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_wing root -4 13 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_wing 24 13 0 0 -3 1 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_wing root 4 13 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_wing 24 13 -1 0 -3 1 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "6.3 CHICKEN: parts below the root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN: cuboids" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN: texture width" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COLD_CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer COLD_CHICKEN is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-4§6 Chicken 6.3 COLD_CHICKEN" TO CK-PREFIX
+     MOVE "P head root 0 15 -4 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 0 0 -2 -6 -2 4 6 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 44 0 -3 -7 -2.015 6 3 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P beak head 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C beak 14 0 -2 -4 -4 4 2 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P red_thing head 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C red_thing 14 4 -1 -2 -3 2 2 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body root 0 16 0 1.5707964 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 9 -3 -4 -3 6 8 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 38 9 0 3 -1 0 3 5 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_leg root -2 19 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_leg 26 0 -1 0 -3 3 5 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_leg root 1 19 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_leg 26 0 -1 0 -3 3 5 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_wing root -4 13 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_wing 24 13 0 0 -3 1 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_wing root 4 13 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_wing 24 13 -1 0 -3 1 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "6.3 COLD_CHICKEN: parts below the root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 COLD_CHICKEN: cuboids" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 COLD_CHICKEN: texture width" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 COLD_CHICKEN: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN_BABY" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer CHICKEN_BABY is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-4§6 Chicken 6.3 CHICKEN_BABY" TO CK-PREFIX
+     MOVE "P body root 0 20.25 -1.25 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 0 -2 -2.25 -0.75 4 4 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 10 8 -1 -0.25 -1.75 2 1 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_leg root 1 22 0.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_leg 2 2 -0.5 0 0 1 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_leg 0 1 -0.5 2 -1 1 0 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_leg root -1 22 0.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_leg 0 2 -0.5 0 0 1 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_leg 0 0 -0.5 2 -1 1 0 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_wing root 2 20 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_wing 6 8 0 0 -1 1 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_wing root -2 20 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_wing 4 8 -1 0 -1 1 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "6.3 CHICKEN_BABY: parts below the root" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN_BABY: cuboids" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN_BABY: texture width" TO WS-NAME
+     MOVE 16.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "6.3 CHICKEN_BABY: texture height" TO WS-NAME
+     MOVE 16.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "chicken" TO WS-X24
+     MOVE "normal" TO WS-X40
+     MOVE 0 TO WS-FL
+     CALL "EF4-VARIANT-MODEL" USING WS-X24 WS-X40 WS-FL WS-X32
+     MOVE "6.1 chicken model type normal baby 0" TO WS-NAME
+     MOVE "CHICKEN" TO TL-EXPECTED
+     MOVE WS-X32 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "chicken" TO WS-X24
+     MOVE "normal" TO WS-X40
+     MOVE 1 TO WS-FL
+     CALL "EF4-VARIANT-MODEL" USING WS-X24 WS-X40 WS-FL WS-X32
+     MOVE "6.1 chicken model type normal baby 1" TO WS-NAME
+     MOVE "CHICKEN_BABY" TO TL-EXPECTED
+     MOVE WS-X32 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "chicken" TO WS-X24
+     MOVE "cold" TO WS-X40
+     MOVE 0 TO WS-FL
+     CALL "EF4-VARIANT-MODEL" USING WS-X24 WS-X40 WS-FL WS-X32
+     MOVE "6.1 chicken model type cold baby 0" TO WS-NAME
+     MOVE "COLD_CHICKEN" TO TL-EXPECTED
+     MOVE WS-X32 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "chicken" TO WS-X24
+     MOVE "cold" TO WS-X40
+     MOVE 1 TO WS-FL
+     CALL "EF4-VARIANT-MODEL" USING WS-X24 WS-X40 WS-FL WS-X32
+     MOVE "6.1 chicken model type cold baby 1" TO WS-NAME
+     MOVE "CHICKEN_BABY" TO TL-EXPECTED
+     MOVE WS-X32 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EF4-VARIANT-TEXTURE" USING WS-IN WS-OUT
+     MOVE "6.1 null variant: missing texture" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.25 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 3 TO WS-IV(3)
+     CALL "EF4-CHICKEN-FLAP" USING WS-IN WS-OUT
+     MOVE "6.1 flap lerp partial 0.25 from 1 to 3" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     CALL "EF4-CHICKEN-FLAP" USING WS-IN WS-OUT
+     MOVE "6.1 flap lerp partial 0.5 from 0 to 2" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 6.5 TO WS-IV(3)
+     CALL "EF4-CHICKEN-FLAP" USING WS-IN WS-OUT
+     MOVE "6.1 flap lerp partial 1 from 4 to 6.5" TO WS-NAME
+     MOVE 6.5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.75 TO WS-IV(1)
+     MOVE 2 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     CALL "EF4-CHICKEN-FLAP" USING WS-IN WS-OUT
+     MOVE "6.1 flap lerp partial 0.75 from 2 to 2" TO WS-NAME
+     MOVE 2.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 10 TO WS-IV(1)
+     MOVE -20 TO WS-IV(2)
+     MOVE 1.2 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 0.7 TO WS-IV(5)
+     MOVE 0.9 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 right_leg.xrot" TO WS-NAME
+     MOVE 0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 left_leg.xrot" TO WS-NAME
+     MOVE -0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 right_wing.zrot" TO WS-NAME
+     MOVE 1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 left_wing.zrot" TO WS-NAME
+     MOVE -1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 head.xrot" TO WS-NAME
+     MOVE 0.17453292 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 1.2 flap 0.7 head.yrot" TO WS-NAME
+     MOVE -0.34906584 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 right_leg.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 left_leg.xrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 right_wing.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 left_wing.zrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 head.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 0 flap 0 head.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -30 TO WS-IV(1)
+     MOVE 45 TO WS-IV(2)
+     MOVE 5.5 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 2.2 TO WS-IV(5)
+     MOVE 0.3 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 right_leg.xrot" TO WS-NAME
+     MOVE -1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 left_leg.xrot" TO WS-NAME
+     MOVE 1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 right_wing.zrot" TO WS-NAME
+     MOVE 0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 left_wing.zrot" TO WS-NAME
+     MOVE -0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 head.xrot" TO WS-NAME
+     MOVE -0.52359876 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN pos 5.5 flap 2.2 head.yrot" TO WS-NAME
+     MOVE 0.78539814 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN has a head part (the baby has none)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE FUNCTION MIN(WS-P, 1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COLD_CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 10 TO WS-IV(1)
+     MOVE -20 TO WS-IV(2)
+     MOVE 1.2 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 0.7 TO WS-IV(5)
+     MOVE 0.9 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 right_leg.xrot" TO WS-NAME
+     MOVE 0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 left_leg.xrot" TO WS-NAME
+     MOVE -0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 right_wing.zrot" TO WS-NAME
+     MOVE 1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 left_wing.zrot" TO WS-NAME
+     MOVE -1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 head.xrot" TO WS-NAME
+     MOVE 0.17453292 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 1.2 flap 0.7 head.yrot" TO WS-NAME
+     MOVE -0.34906584 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COLD_CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 right_leg.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 left_leg.xrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 right_wing.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 left_wing.zrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 head.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 0 flap 0 head.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COLD_CHICKEN" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -30 TO WS-IV(1)
+     MOVE 45 TO WS-IV(2)
+     MOVE 5.5 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 2.2 TO WS-IV(5)
+     MOVE 0.3 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 right_leg.xrot" TO WS-NAME
+     MOVE -1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 left_leg.xrot" TO WS-NAME
+     MOVE 1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 right_wing.zrot" TO WS-NAME
+     MOVE 0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 left_wing.zrot" TO WS-NAME
+     MOVE -0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 head.xrot" TO WS-NAME
+     MOVE -0.52359876 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN pos 5.5 flap 2.2 head.yrot" TO WS-NAME
+     MOVE 0.78539814 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 COLD_CHICKEN has a head part (the baby has none)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE FUNCTION MIN(WS-P, 1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN_BABY" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 10 TO WS-IV(1)
+     MOVE -20 TO WS-IV(2)
+     MOVE 1.2 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 0.7 TO WS-IV(5)
+     MOVE 0.9 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 1.2 flap 0.7 right_leg.xrot" TO WS-NAME
+     MOVE 0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 1.2 flap 0.7 left_leg.xrot" TO WS-NAME
+     MOVE -0.487975824 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 1.2 flap 0.7 right_wing.zrot" TO WS-NAME
+     MOVE 1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 1.2 flap 0.7 left_wing.zrot" TO WS-NAME
+     MOVE -1.479795919 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN_BABY" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 0 flap 0 right_leg.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 0 flap 0 left_leg.xrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 0 flap 0 right_wing.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 0 flap 0 left_wing.zrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHICKEN_BABY" TO WS-LAYER
+     CALL "EF4-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -30 TO WS-IV(1)
+     MOVE 45 TO WS-IV(2)
+     MOVE 5.5 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 2.2 TO WS-IV(5)
+     MOVE 0.3 TO WS-IV(6)
+     CALL "EF4-CHICKEN-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 5.5 flap 2.2 right_leg.xrot" TO WS-NAME
+     MOVE -1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 5.5 flap 2.2 left_leg.xrot" TO WS-NAME
+     MOVE 1.213198843 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 5.5 flap 2.2 right_wing.zrot" TO WS-NAME
+     MOVE 0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY pos 5.5 flap 2.2 left_wing.zrot" TO WS-NAME
+     MOVE -0.542548921 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "6.2 CHICKEN_BABY has a head part (the baby has none)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE FUNCTION MIN(WS-P, 1) TO WS-O
+     PERFORM CHECK-NUM
+     STOP RUN.
+
+ COPY EMCHKP.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-4§6 Chicken: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
+         MOVE WS-E TO WS-O
+     END-IF
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-4§6 Chicken: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-4-6.

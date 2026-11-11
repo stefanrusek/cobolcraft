@@ -1,0 +1,318 @@
+from mesh5 import *
+IDS=['WOLF','WOLF_ARMOR','WOLF_BABY']
+hdr='''*> Entity models part 5 section 2 (Wolf): the meshes of wolf, wolf_armor (grow 0.2) and wolf_baby (2.1), setupAnim (2.2), shake-off roll (2.3), renderer rules (2.4), extraction (2.5) and per-tick counters (2.6).
+*> Entry points for the integrator (inputs; the table programs take IN (16 FLOAT-LONG) and OUT (64 FLOAT-LONG)):
+*>   EF5-WOLF-ANIM EMM-MODEL state(1 xRot, 2 yRot degrees, 3 walk position, 4 walk speed, 5 ageScale, 6 angry, 7 sitting, 8 shakeAnim, 9 head roll angle, 10 tail angle): adult (has real_head) or baby, reset first;
+*>   EF5-WOLF-ROLL IN(shakeAnim, extra) OUT(getBodyRollAngle); EF5-WOLF-TEXTURE-KIND IN(baby, tame, angry) OUT(0 wild 1 angry 2 tame; tame wins); EF5-WOLF-ASSET variant(X(24), pale, ashen, ...) baby entry(IN(1)) path(out X(120))
+*>   (the paths of other variants follow the pale and ashen pattern: inferred); EF5-WOLF-WET IN(wet, shakeAnim) OUT(wet shade); EF5-WOLF-COLLAR IN(tame, invisible) OUT(drawn, order 1); EF5-WOLF-ARMOR IN(equippable, asset, baby) OUT(drawn);
+*>   EF5-WOLF-CRACK IN(max damage, damage, damageable) OUT(0 none 1 low 2 medium 3 high); EF5-WOLF-TAIL IN(angry, tame, max health, health) OUT(tail angle); EF5-WOLF-HEADROLL IN(partial, old, new) OUT(angle);
+*>   EF5-WOLF-TICK IN(interested angle, interested, shakeAnim, shaking) OUT(old angle, angle, old shake, shake, dry, splash particles). Sine and cosine are the true functions (the table error is below 1e-4).
+'''
+extra=r''' IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-ROLL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-U                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-U = FUNCTION MIN(1, FUNCTION MAX(0, (L-I(1) + L-I(2)) / 1.8))
+     COMPUTE L-O(1) = FUNCTION SIN(WS-U * 3.141592653589793) * FUNCTION SIN(WS-U * 3.141592653589793 * 11) * 0.15 * 3.141592653589793
+     GOBACK.
+ END PROGRAM EF5-WOLF-ROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-BODY                BINARY-LONG.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-TAIL                BINARY-LONG.
+ 01 WS-UB                  BINARY-LONG.
+ 01 WS-RH                  BINARY-LONG.
+ 01 WS-RT                  BINARY-LONG.
+ 01 WS-RHL                 BINARY-LONG.
+ 01 WS-LHL                 BINARY-LONG.
+ 01 WS-RFL                 BINARY-LONG.
+ 01 WS-LFL                 BINARY-LONG.
+ 01 WS-RI.
+    05 WS-RV               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RO.
+    05 WS-ROV              FLOAT-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     MOVE "body" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-BODY
+     MOVE "head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-HEAD
+     MOVE "tail" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-TAIL
+     MOVE "upper_body" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-UB
+     MOVE "real_head" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RH
+     MOVE "real_tail" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RT
+     MOVE "right_hind_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RHL
+     MOVE "left_hind_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LHL
+     MOVE "right_front_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-RFL
+     MOVE "left_front_leg" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-LFL
+     MOVE 0 TO MM-CZROT(WS-TAIL)
+     IF L-I(6) = 0
+         COMPUTE MM-CZROT(WS-TAIL) = FUNCTION COS(0.6662 * L-I(3)) * 1.4 * L-I(4)
+     END-IF
+     IF L-I(7) NOT = 0
+         COMPUTE MM-CY(WS-BODY) = MM-CY(WS-BODY) + 4 * L-I(5)
+         COMPUTE MM-CZ(WS-BODY) = MM-CZ(WS-BODY) - 2 * L-I(5)
+         MOVE 0.7853982 TO MM-CXROT(WS-BODY)
+         COMPUTE MM-CY(WS-TAIL) = MM-CY(WS-TAIL) + 9 * L-I(5)
+         COMPUTE MM-CZ(WS-TAIL) = MM-CZ(WS-TAIL) - 2 * L-I(5)
+         COMPUTE MM-CY(WS-RHL) = MM-CY(WS-RHL) + 6.7 * L-I(5)
+         COMPUTE MM-CZ(WS-RHL) = MM-CZ(WS-RHL) - 5 * L-I(5)
+         MOVE 4.712389 TO MM-CXROT(WS-RHL)
+         COMPUTE MM-CY(WS-LHL) = MM-CY(WS-LHL) + 6.7 * L-I(5)
+         COMPUTE MM-CZ(WS-LHL) = MM-CZ(WS-LHL) - 5 * L-I(5)
+         MOVE 4.712389 TO MM-CXROT(WS-LHL)
+         MOVE 5.811947 TO MM-CXROT(WS-RFL) MM-CXROT(WS-LFL)
+         COMPUTE MM-CX(WS-RFL) = MM-CX(WS-RFL) + 0.01 * L-I(5)
+         COMPUTE MM-CX(WS-LFL) = MM-CX(WS-LFL) - 0.01 * L-I(5)
+         COMPUTE MM-CY(WS-RFL) = MM-CY(WS-RFL) + 1 * L-I(5)
+         COMPUTE MM-CY(WS-LFL) = MM-CY(WS-LFL) + 1 * L-I(5)
+         IF WS-UB NOT = 0
+             COMPUTE MM-CY(WS-UB) = MM-CY(WS-UB) + 2
+             MOVE 1.2566371 TO MM-CXROT(WS-UB)
+             MOVE 0 TO MM-CYROT(WS-UB)
+         ELSE
+             COMPUTE MM-CXROT(WS-BODY) = 0.7853982 - 1.5707964
+         END-IF
+     ELSE
+         COMPUTE MM-CXROT(WS-RHL) = FUNCTION COS(0.6662 * L-I(3)) * 1.4 * L-I(4)
+         COMPUTE MM-CXROT(WS-LHL) = FUNCTION COS(0.6662 * L-I(3) + 3.141592653589793) * 1.4 * L-I(4)
+         COMPUTE MM-CXROT(WS-RFL) = FUNCTION COS(0.6662 * L-I(3) + 3.141592653589793) * 1.4 * L-I(4)
+         COMPUTE MM-CXROT(WS-LFL) = FUNCTION COS(0.6662 * L-I(3)) * 1.4 * L-I(4)
+     END-IF
+     MOVE L-I(8) TO WS-RV(1)
+     MOVE -0.16 TO WS-RV(2)
+     CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+     MOVE WS-ROV(1) TO MM-CZROT(WS-BODY)
+     IF WS-RH NOT = 0
+         MOVE 0 TO WS-RV(2)
+         CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+         COMPUTE MM-CZROT(WS-RH) = L-I(9) + WS-ROV(1)
+         MOVE -0.08 TO WS-RV(2)
+         CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+         MOVE WS-ROV(1) TO MM-CZROT(WS-UB)
+         MOVE -0.2 TO WS-RV(2)
+         CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+         MOVE WS-ROV(1) TO MM-CZROT(WS-RT)
+     ELSE
+         MOVE 0 TO WS-RV(2)
+         CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+         COMPUTE MM-CZROT(WS-HEAD) = L-I(9) + WS-ROV(1)
+         MOVE -0.2 TO WS-RV(2)
+         CALL "EF5-WOLF-ROLL" USING WS-RI WS-RO
+         MOVE WS-ROV(1) TO MM-CZROT(WS-TAIL)
+     END-IF
+     COMPUTE MM-CXROT(WS-HEAD) = L-I(1) * 0.017453292
+     COMPUTE MM-CYROT(WS-HEAD) = L-I(2) * 0.017453292
+     MOVE L-I(10) TO MM-CXROT(WS-TAIL)
+     GOBACK.
+ END PROGRAM EF5-WOLF-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-TEXTURE-KIND.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(3) NOT = 0
+         MOVE 1 TO L-O(1)
+     END-IF
+     IF L-I(2) NOT = 0
+         MOVE 2 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-TEXTURE-KIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-ASSET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(60).
+ LINKAGE SECTION.
+ 01 L-VAR                  PIC X(24).
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-PATH                 PIC X(120).
+ PROCEDURE DIVISION USING L-VAR L-BABY L-IN L-PATH.
+     MOVE "wolf" TO WS-NAME
+     IF L-VAR NOT = "pale"
+         STRING "wolf_" FUNCTION TRIM(L-VAR) DELIMITED BY SIZE INTO WS-NAME
+     END-IF
+     IF L-I(1) = 2
+         STRING FUNCTION TRIM(WS-NAME) "_tame" DELIMITED BY SIZE INTO WS-NAME
+     END-IF
+     IF L-I(1) = 1
+         STRING FUNCTION TRIM(WS-NAME) "_angry" DELIMITED BY SIZE INTO WS-NAME
+     END-IF
+     IF L-BABY NOT = 0
+         STRING FUNCTION TRIM(WS-NAME) "_baby" DELIMITED BY SIZE INTO WS-NAME
+     END-IF
+     MOVE SPACES TO L-PATH
+     STRING "textures/entity/wolf/" FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+     GOBACK.
+ END PROGRAM EF5-WOLF-ASSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-WET.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1 TO L-O(1)
+     IF L-I(1) NOT = 0
+         COMPUTE L-O(1) = FUNCTION MIN(0.75 + (L-I(2) / 2) * 0.25, 1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-WET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-COLLAR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     IF L-I(1) NOT = 0 AND L-I(2) = 0
+         MOVE 1 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-COLLAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-ARMOR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) NOT = 0 AND L-I(2) NOT = 0 AND L-I(3) = 0
+         MOVE 1 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-ARMOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-CRACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-F                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(3) NOT = 0
+         COMPUTE WS-F = (L-I(1) - L-I(2)) / L-I(1)
+         EVALUATE TRUE
+             WHEN WS-F < 0.32 MOVE 3 TO L-O(1)
+             WHEN WS-F < 0.69 MOVE 2 TO L-O(1)
+             WHEN WS-F < 0.95 MOVE 1 TO L-O(1)
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-CRACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-TAIL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0.62831855 TO L-O(1)
+     IF L-I(2) NOT = 0
+         COMPUTE L-O(1) = (0.55 - 0.4 * ((L-I(3) - L-I(4)) / L-I(3))) * 3.141592653589793
+     END-IF
+     IF L-I(1) NOT = 0
+         MOVE 1.5393804 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-TAIL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-HEADROLL.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = (L-I(2) + L-I(1) * (L-I(3) - L-I(2))) * 0.15 * 3.141592653589793
+     GOBACK.
+ END PROGRAM EF5-WOLF-HEADROLL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WOLF-TICK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(1) TO L-O(1)
+     IF L-I(2) NOT = 0
+         COMPUTE L-O(2) = L-I(1) + 0.4 * (1 - L-I(1))
+     ELSE
+         COMPUTE L-O(2) = L-I(1) + 0.4 * (0 - L-I(1))
+     END-IF
+     MOVE L-I(3) TO L-O(3) L-O(4)
+     MOVE 0 TO L-O(5) L-O(6)
+     IF L-I(4) NOT = 0
+         COMPUTE L-O(4) = L-I(3) + 0.05
+         IF L-I(3) >= 2
+             MOVE 1 TO L-O(5)
+             MOVE 0 TO L-O(3) L-O(4)
+         ELSE
+             IF L-O(4) > 0.4
+                 COMPUTE L-O(6) = FUNCTION INTEGER-PART(FUNCTION SIN((L-O(4) - 0.4) * 3.141592653589793) * 7)
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-WOLF-TICK.
+'''
+write_section_src(2,hdr,IDS,extra); write_layers(IDS)

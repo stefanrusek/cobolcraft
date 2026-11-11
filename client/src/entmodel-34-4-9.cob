@@ -1,0 +1,332 @@
+*> Entity models part 4 section 9 (Llama and trader llama): the meshes of the llama, decor and spit layers (9.4, 9.5), variants and textures (9.1), the decor algorithm (9.3), setupAnim (9.2), spit pose (9.5).
+*> Entry points for the integrator (inputs): EF4-LLAMA-VARIANT IN(id) OUT(ordinal 0 creamy 1 white 2 brown 3 gray, clamped); EF4-LLAMA-TEXTURE IN(ordinal, baby) path(out X(120)); EF4-LLAMA-CHEST IN(hasChest, baby) OUT(state hasChest);
+*>   EF4-LLAMA-DECOR IN(body item has an equippable asset, baby, trader) OUT(mode 0 nothing 1 the item's asset 2 the trader carpet asset, baby decor model); EF4-LLAMA-ANIM EMM-MODEL state(1 xRot, 2 yRot degrees, 3 walk position,
+*>   4 walk speed, 5 hasChest); EF4-SPIT-OPS IN(xRot deg, yRot deg) OUT(count, then code 1 translate 2 rotate Y deg 3 rotate Z deg and three values each); EF4-SPIT-TEXTURE path(out X(120)).
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-LLAMA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 7 -6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -2 -14 -10 4 4 9 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 14 -4 -16 -6 8 18 6 0 0".
+    05 FILLER PIC X(100) VALUE "C head 17 0 -4 -19 -4 3 3 2 0 0".
+    05 FILLER PIC X(100) VALUE "C head 17 0 1 -19 -4 3 3 2 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 5 2 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C body 29 0 -6 -10 -7 12 18 10 0 0".
+    05 FILLER PIC X(100) VALUE "P right_chest root -8.5 3 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C right_chest 45 28 -3 0 0 8 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_chest root 5.5 3 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C left_chest 45 41 -3 0 0 8 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -3.5 10 6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 29 29 -2 0 -2 4 14 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 3.5 10 6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 29 29 -2 0 -2 4 14 4 0 0".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -3.5 10 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 29 29 -2 0 -2 4 14 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 3.5 10 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 29 29 -2 0 -2 4 14 4 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 61 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 19.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 128 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-LLAMA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-LLAMA-BABY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 12 -4 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -3 -9 -4 6 11 4 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 15 -1.5 -7 -7 3 3 3 0 0".
+    05 FILLER PIC X(100) VALUE "C head 20 4 0.5 -11 -3 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C head 20 0 -2.5 -11 -3 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -2.5 16.5 4.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 0 45 -1.4 -0.5 -1.5 3 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 2.5 16.5 4.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 12 45 -1.6 -0.5 -1.5 3 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -2.5 16.5 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 0 34 -1.4 -0.5 -1.5 3 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 2.5 16.5 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 12 34 -1.6 -0.5 -1.5 3 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 14 2.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 0 15 -4 -3 -8.5 8 6 13 0 0".
+    05 FILLER PIC X(100) VALUE "P right_chest root -8.5 4 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C right_chest 45 28 -3 0 0 8 8 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_chest root 5.5 4 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C left_chest 45 41 -3 0 0 8 8 3 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 61 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 19.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-LLAMA-BABY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-LLAMA-G0P5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 7 -6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -2 -14 -10 4 4 9 0.5 0".
+    05 FILLER PIC X(100) VALUE "C head 0 14 -4 -16 -6 8 18 6 0.5 0".
+    05 FILLER PIC X(100) VALUE "C head 17 0 -4 -19 -4 3 3 2 0.5 0".
+    05 FILLER PIC X(100) VALUE "C head 17 0 1 -19 -4 3 3 2 0.5 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 5 2 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C body 29 0 -6 -10 -7 12 18 10 0.5 0".
+    05 FILLER PIC X(100) VALUE "P right_chest root -8.5 3 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C right_chest 45 28 -3 0 0 8 8 3 0.5 0".
+    05 FILLER PIC X(100) VALUE "P left_chest root 5.5 3 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C left_chest 45 41 -3 0 0 8 8 3 0.5 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -3.5 10 6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 29 29 -2 0 -2 4 14 4 0.5 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 3.5 10 6 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 29 29 -2 0 -2 4 14 4 0.5 0".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -3.5 10 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 29 29 -2 0 -2 4 14 4 0.5 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 3.5 10 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 29 29 -2 0 -2 4 14 4 0.5 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 61 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 19.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 128 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-LLAMA-G0P5.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-LLAMA-BABY-G0P2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 12 -4 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -3 -9 -4 6 11 4 0.2 0".
+    05 FILLER PIC X(100) VALUE "C head 0 15 -1.5 -7 -7 3 3 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "C head 20 4 0.5 -11 -3 2 2 2 0.2 0".
+    05 FILLER PIC X(100) VALUE "C head 20 0 -2.5 -11 -3 2 2 2 0.2 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -2.5 16.5 4.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 0 45 -1.4 -0.5 -1.5 3 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 2.5 16.5 4.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 12 45 -1.6 -0.5 -1.5 3 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -2.5 16.5 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 0 34 -1.4 -0.5 -1.5 3 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 2.5 16.5 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 12 34 -1.6 -0.5 -1.5 3 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 14 2.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 0 15 -4 -3 -8.5 8 6 13 0.2 0".
+    05 FILLER PIC X(100) VALUE "P right_chest root -8.5 4 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C right_chest 45 28 -3 0 0 8 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE "P left_chest root 5.5 4 3 0 1.5707964 0".
+    05 FILLER PIC X(100) VALUE "C left_chest 45 41 -3 0 0 8 8 3 0.2 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 61 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 19.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-LLAMA-BABY-G0P2.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-LLAMA-SPIT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P main root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 -4 0 0 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 0 -4 0 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 0 0 -4 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 0 0 0 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 2 0 0 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 0 2 0 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C main 0 0 0 0 2 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 72 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 8.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 32 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-LLAMA-SPIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-LLAMA-VARIANT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(1) TO L-O(1)
+     IF L-I(1) < 0
+         MOVE 0 TO L-O(1)
+     END-IF
+     IF L-I(1) > 3
+         MOVE 3 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-LLAMA-VARIANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-LLAMA-TEXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER PIC X(8) VALUE "creamy".
+    05 FILLER PIC X(8) VALUE "white".
+    05 FILLER PIC X(8) VALUE "brown".
+    05 FILLER PIC X(8) VALUE "gray".
+ 01 WS-NAMES-R REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(8) OCCURS 4 TIMES.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-PATH                 PIC X(120).
+ PROCEDURE DIVISION USING L-IN L-PATH.
+     COMPUTE WS-K = L-I(1) + 1
+     MOVE SPACES TO L-PATH
+     IF L-I(2) NOT = 0
+         STRING "textures/entity/llama/llama_" FUNCTION TRIM(WS-NAME(WS-K)) "_baby.png" DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         STRING "textures/entity/llama/llama_" FUNCTION TRIM(WS-NAME(WS-K)) ".png" DELIMITED BY SIZE INTO L-PATH
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-LLAMA-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-LLAMA-CHEST.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) NOT = 0 AND L-I(2) = 0
+         MOVE 1 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-LLAMA-CHEST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-LLAMA-DECOR.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1) L-O(2)
+     IF L-I(1) NOT = 0 AND L-I(2) = 0
+         MOVE 1 TO L-O(1)
+     ELSE
+         IF L-I(3) NOT = 0
+             MOVE 2 TO L-O(1)
+             MOVE L-I(2) TO L-O(2)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-LLAMA-DECOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-LLAMA-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EF4-QUAD-POSE" USING EMM-MODEL L-IN
+     MOVE "right_chest" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-P
+     MOVE 0 TO MM-VISIBLE(WS-P)
+     IF L-I(5) NOT = 0
+         MOVE 1 TO MM-VISIBLE(WS-P)
+     END-IF
+     MOVE "left_chest" TO WS-NAME
+     CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-P
+     MOVE 0 TO MM-VISIBLE(WS-P)
+     IF L-I(5) NOT = 0
+         MOVE 1 TO MM-VISIBLE(WS-P)
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-LLAMA-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-SPIT-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 3 TO L-O(1)
+     MOVE 1 TO L-O(2)
+     MOVE 0 TO L-O(3)
+     MOVE 0.15 TO L-O(4)
+     MOVE 0 TO L-O(5)
+     MOVE 2 TO L-O(6)
+     COMPUTE L-O(7) = L-I(2) - 90
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 3 TO L-O(10)
+     MOVE L-I(1) TO L-O(11)
+     MOVE 0 TO L-O(12) L-O(13)
+     GOBACK.
+ END PROGRAM EF4-SPIT-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-SPIT-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(120).
+ PROCEDURE DIVISION USING L-PATH.
+     MOVE "textures/entity/llama/llama_spit.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EF4-SPIT-TEXTURE.

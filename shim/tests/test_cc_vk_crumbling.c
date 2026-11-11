@@ -70,19 +70,19 @@ static void centre_pixel(char out[9]) {
 
 
 static void quad(float z, float *out) {
-    static const float base[6][7] = {
-        {-0.5f, -0.5f, 0, 0, 0, 1, 1}, {0.5f, -0.5f, 0, 1, 0, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1},
-        {-0.5f, -0.5f, 0, 0, 0, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1}, {-0.5f, 0.5f, 0, 0, 1, 1, 1},
+    static const float base[6][11] = {
+        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, -0.5f, 0, 1, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1, 0, 1, 1, 1},
+        {-0.5f, -0.5f, 0, 0, 0, 1, 1, 0, 1, 1, 1}, {0.5f, 0.5f, 0, 1, 1, 1, 1, 0, 1, 1, 1}, {-0.5f, 0.5f, 0, 0, 1, 1, 1, 0, 1, 1, 1},
     };
     for (int i = 0; i < 6; i++) {
-        memcpy(out + i * 7, base[i], sizeof base[i]);
-        out[i * 7 + 2] = z;
+        memcpy(out + i * 11, base[i], sizeof base[i]);
+        out[i * 11 + 2] = z;
     }
 }
 
 /* One frame: the opaque quad (z 0.5), then the crumbling quad at depth z; the centre pixel. */
 static void frame(float z, char out[9]) {
-    float crack[6 * 7];
+    float crack[6 * 11];
     quad(z, crack);
     cc_vk_mesh(2, crack, 6);
     const float clear[4] = {0, 0, 0, 1};
@@ -102,7 +102,7 @@ int main(void) {
     static const uint8_t ground[2 * 2 * 4] = {100, 200, 50, 255, 100, 200, 50, 255, 100, 200, 50, 255, 100, 200, 50, 255};
     static const uint8_t dark[2 * 2 * 4] = {64, 64, 64, 255, 64, 64, 64, 255, 64, 64, 64, 255, 64, 64, 64, 255};
     static const uint8_t clear_texel[2 * 2 * 4] = {64, 64, 64, 0, 64, 64, 64, 0, 64, 64, 64, 0, 64, 64, 64, 0};
-    float opaque[6 * 7];
+    float opaque[6 * 11];
     quad(0.5f, opaque);
     cc_vk_mesh(1, opaque, 6);
     cc_vk_texture(CC_TEX_BLOCKS, 2, 2, ground);

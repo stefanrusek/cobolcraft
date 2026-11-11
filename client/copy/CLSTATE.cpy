@@ -535,7 +535,7 @@
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
           15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
-             20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
+             20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (44 bytes each)
              20 WR-OP-COUNT  BINARY-LONG.
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
@@ -563,6 +563,12 @@
           15 EN-VZ           FLOAT-LONG.
           15 EN-STACK-COUNT  BINARY-LONG.
           15 EN-STACK-ITEM   BINARY-LONG.
+*>        The registry key of EN-TYPE in a world of the standard set (EN-VANILLA 1; spaces when the id is outside the
+*>        registry) and the row of CL-MODELS (CLMODELS.cpy) that draws it (0 = no model). In a cobolcraft world EN-TYPE is the
+*>        stand-in type of standin-content §3 and EN-VANILLA is 0.
+          15 EN-VANILLA      PIC 9.
+          15 EN-KEY          PIC X(24).
+          15 EN-MODEL        BINARY-LONG.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -825,7 +831,7 @@
           15 GS-BT           BINARY-LONG.
           15 GS-BR           BINARY-LONG.
           15 GS-BB           BINARY-LONG.
-       10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
+       10 AT-UPLOAD          PIC 9 OCCURS 5 TIMES.   *> texture id + 1 to be uploaded
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
        10 EA-W               BINARY-LONG.
@@ -836,6 +842,15 @@
           15 EA-IM-Y         BINARY-LONG.
           15 EA-IM-W         BINARY-LONG.
           15 EA-IM-H         BINARY-LONG.
+*>     The images of the entity models (entities-models.cob), stacked below the stand-ins in the order the replica first
+*>     showed them: slot k holds the CL-MODELS row EA-MT-MODEL and its image's rectangle.
+       10 EA-MT-COUNT        BINARY-LONG.
+       10 EA-MT OCCURS 16 TIMES.
+          15 EA-MT-MODEL     BINARY-LONG.
+          15 EA-MT-X         BINARY-LONG.
+          15 EA-MT-Y         BINARY-LONG.
+          15 EA-MT-W         BINARY-LONG.
+          15 EA-MT-H         BINARY-LONG.
 *>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
 *>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
 *>     down its columns over the whole atlas height.
@@ -846,6 +861,21 @@
           15 XA-IM-X         BINARY-LONG.
           15 XA-IM-W         BINARY-LONG.
           15 XA-IM-H         BINARY-LONG.
+*>     Particle atlas (texture 4; particles-live.cob PARTICLE-ATLAS-BUILD): the sprites of the wired particle
+*>     types stacked from the top, left-aligned. PRA-FIRST(t + 1) and PRA-COUNT(t + 1) are the first sprite and the
+*>     number of sprites of particle type t (registry id, 42-1 section 2); PRA-S-Y, PRA-S-W and PRA-S-H the
+*>     rectangle of a sprite (left 0).
+       10 PRA-W              BINARY-LONG.
+       10 PRA-H              BINARY-LONG.
+       10 PRA-ADDR           USAGE POINTER.
+       10 PRA-SPRITES        BINARY-LONG.
+       10 PRA-TYPE OCCURS 128 TIMES.
+          15 PRA-FIRST       BINARY-LONG.
+          15 PRA-COUNT       BINARY-LONG.
+       10 PRA-SPRITE OCCURS 256 TIMES.
+          15 PRA-S-Y         BINARY-LONG.
+          15 PRA-S-W         BINARY-LONG.
+          15 PRA-S-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
@@ -855,6 +885,7 @@
        10 ST-COUNT           BINARY-LONG.    *> states known: the set's, else the stand-in table's
        10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
        10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
+       10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 320 TIMES.
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -862,19 +893,38 @@
           15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE
           15 BM-SHADE        BINARY-LONG.    *> DIR-* the face is shaded and lit as
           15 BM-SPRITE       BINARY-LONG.
+          15 BM-TINT         BINARY-LONG.    *> tintindex of the face (08 5.5), -1 none
           15 BM-CORNER OCCURS 4 TIMES.       *> top-left, top-right, bottom-right, bottom-left
              20 BM-X         FLOAT-SHORT.    *> block units 0 to 1
              20 BM-Y         FLOAT-SHORT.
              20 BM-Z         FLOAT-SHORT.
              20 BM-U         FLOAT-SHORT.    *> sprite units 0 to 16
              20 BM-V         FLOAT-SHORT.
+*>       What the mesher needs per quad without arithmetic on floats (computed by STATE-BAKE from the corners above
+*>       and the atlas): per corner the position in sixteenths of a block (-1 when it is not a whole number of them,
+*>       or outside 0 to 16) and the atlas texture coordinates.
+       10 BM-FAST OCCURS 24 TIMES.
+          15 BM-FCORNER OCCURS 4 TIMES.
+             20 BM-IX       BINARY-LONG.
+             20 BM-IY       BINARY-LONG.
+             20 BM-IZ       BINARY-LONG.
+             20 BM-AU       FLOAT-SHORT.
+             20 BM-AV       FLOAT-SHORT.
 *>  ---- sky (standin-content §4.8) ----
     05 SK-STATE.
        10 SK-U               BINARY-LONG.    *> daylight in thousandths
-       10 SK-MESHED-U        BINARY-LONG.    *> daylight the meshes were built with
        10 SK-R               FLOAT-SHORT.    *> clear colour
        10 SK-G               FLOAT-SHORT.
        10 SK-B               FLOAT-SHORT.
+*>  ---- mesh frame budget (client/src/mesher.cob MESH-DIRTY) ----
+    05 MB-STATE.
+       10 MB-BUDGET-US       BINARY-LONG.    *> microseconds of meshing per frame (CL-INIT: CL-MESH-BUDGET-US)
+       10 MB-FAKE            BINARY-LONG.    *> 1 = the injected clock MB-FAKE-NOW (tests), 0 = the process clock
+       10 MB-FAKE-NOW        BINARY-DOUBLE.  *> the injected clock, microseconds
+       10 MB-FAKE-STEP       BINARY-LONG.    *> microseconds the injected clock advances per section meshed
+       10 MB-MESHED          BINARY-LONG.    *> sections meshed by the last MESH-DIRTY
+       10 MB-EMPTY           BINARY-LONG.    *> sections found all air (meshed at once, no vertices) since CL-INIT
+       10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
@@ -901,6 +951,10 @@
           15 RL-EN-V         FLOAT-SHORT.
           15 RL-EN-B         FLOAT-SHORT.
           15 RL-EN-A         FLOAT-SHORT.
+          15 RL-EN-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-EN-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-EN-G         FLOAT-SHORT.
+          15 RL-EN-BLUE      FLOAT-SHORT.
 *>     Item icons of the slot widgets (texture 0), the UI drawn over them (the slot counts,
 *>     texture 2; UI-QUAD writes there while RL-UI-LAYER is 1) and the target highlight
 *>     (eye-relative, texture 2); each with the vertex count last uploaded.
@@ -914,6 +968,10 @@
           15 RL-IC-V         FLOAT-SHORT.
           15 RL-IC-B         FLOAT-SHORT.
           15 RL-IC-A         FLOAT-SHORT.
+          15 RL-IC-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-IC-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-IC-G         FLOAT-SHORT.
+          15 RL-IC-BLUE      FLOAT-SHORT.
        10 RL-UI-LAYER        PIC 9.
        10 RL-UT-COUNT        BINARY-LONG.
        10 RL-UT-UPLOADED     BINARY-LONG.
@@ -925,6 +983,10 @@
           15 RL-UT-V         FLOAT-SHORT.
           15 RL-UT-B         FLOAT-SHORT.
           15 RL-UT-A         FLOAT-SHORT.
+          15 RL-UT-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-UT-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-UT-G         FLOAT-SHORT.
+          15 RL-UT-BLUE      FLOAT-SHORT.
        10 RL-HL-COUNT        BINARY-LONG.
        10 RL-HL-UPLOADED     BINARY-LONG.
        10 RL-HL-VERTEX OCCURS 144 TIMES.
@@ -935,6 +997,10 @@
           15 RL-HL-V         FLOAT-SHORT.
           15 RL-HL-B         FLOAT-SHORT.
           15 RL-HL-A         FLOAT-SHORT.
+          15 RL-HL-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HL-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HL-G         FLOAT-SHORT.
+          15 RL-HL-BLUE      FLOAT-SHORT.
 *>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
        10 RL-BO-COUNT        BINARY-LONG.
        10 RL-BO-UPLOADED     BINARY-LONG.
@@ -946,6 +1012,10 @@
           15 RL-BO-V         FLOAT-SHORT.
           15 RL-BO-B         FLOAT-SHORT.
           15 RL-BO-A         FLOAT-SHORT.
+          15 RL-BO-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-BO-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-BO-G         FLOAT-SHORT.
+          15 RL-BO-BLUE      FLOAT-SHORT.
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.
@@ -957,6 +1027,10 @@
           15 RL-GI-V         FLOAT-SHORT.
           15 RL-GI-B         FLOAT-SHORT.
           15 RL-GI-A         FLOAT-SHORT.
+          15 RL-GI-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-GI-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-GI-G         FLOAT-SHORT.
+          15 RL-GI-BLUE      FLOAT-SHORT.
 *>     The hand (view space, texture 0; hand.cob).
        10 RL-HAND-COUNT      BINARY-LONG.
        10 RL-HAND-UPLOADED   BINARY-LONG.
@@ -967,7 +1041,11 @@
           15 RL-HAND-U       FLOAT-SHORT.
           15 RL-HAND-V       FLOAT-SHORT.
           15 RL-HAND-B       FLOAT-SHORT.
-          15 RL-HAND-A       FLOAT-SHORT.
+          15 RL-HAND-A         FLOAT-SHORT.
+          15 RL-HAND-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HAND-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HAND-G         FLOAT-SHORT.
+          15 RL-HAND-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.
@@ -979,6 +1057,26 @@
           15 RL-WX-V         FLOAT-SHORT.
           15 RL-WX-B         FLOAT-SHORT.
           15 RL-WX-A         FLOAT-SHORT.
+          15 RL-WX-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-WX-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-WX-G         FLOAT-SHORT.
+          15 RL-WX-BLUE      FLOAT-SHORT.
+*>     The particle quads of the frame (eye-relative, texture 4, particles-live.cob PARTICLES-MESH): six vertices
+*>     per particle, 2048 particles (PQ-MAX of CLPSTORE.cpy).
+       10 RL-PT-COUNT        BINARY-LONG.
+       10 RL-PT-UPLOADED     BINARY-LONG.
+       10 RL-PT-VERTEX OCCURS 12288 TIMES.
+          15 RL-PT-X         FLOAT-SHORT.
+          15 RL-PT-Y         FLOAT-SHORT.
+          15 RL-PT-Z         FLOAT-SHORT.
+          15 RL-PT-U         FLOAT-SHORT.
+          15 RL-PT-V         FLOAT-SHORT.
+          15 RL-PT-B         FLOAT-SHORT.
+          15 RL-PT-A         FLOAT-SHORT.
+          15 RL-PT-SKY       FLOAT-SHORT.
+          15 RL-PT-R         FLOAT-SHORT.
+          15 RL-PT-G         FLOAT-SHORT.
+          15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
@@ -990,4 +1088,8 @@
           15 RL-UI-V         FLOAT-SHORT.
           15 RL-UI-B         FLOAT-SHORT.
           15 RL-UI-A         FLOAT-SHORT.
+          15 RL-UI-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-UI-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-UI-G         FLOAT-SHORT.
+          15 RL-UI-BLUE      FLOAT-SHORT.
 

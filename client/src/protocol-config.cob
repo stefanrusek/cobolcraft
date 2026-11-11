@@ -222,7 +222,10 @@
 *> USING CLIENT-STATE, packet (Registry Data, 04): counts the packet; keeps the entries of
 *> minecraft:dimension_type (name, min_y, height, has_skylight), the number of
 *> minecraft:worldgen/biome entries and each biome's has_precipitation (an entry without data has
-*> none); every other entry's data is skipped.
+*> none) and its colour data for the tint sources (temperature, downfall and the effects' water, grass,
+*> foliage and dry foliage colours and grass colour modifier, 43 section 5: TINT-BIOME-SET under the
+*> biome's id, its index in the registry; minecraft:plains is the biome of an unloaded cell, TT-PLAINS);
+*> every other entry's data is skipped.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -241,6 +244,26 @@
  01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
+ COPY CLTINT.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-TEMP                COMP-2.
+ 01 WS-DOWN                COMP-2.
+ 01 WS-WATER               BINARY-DOUBLE.
+ 01 WS-GRASS               BINARY-DOUBLE.
+ 01 WS-FOLIAGE             BINARY-DOUBLE.
+ 01 WS-DRY                 BINARY-DOUBLE.
+ 01 WS-COLOUR              BINARY-DOUBLE.
+ 01 WS-MOD                 PIC X(16).
+ 01 WS-BIOME-ID            BINARY-LONG.
+ 01 WS-TYPE2               BINARY-LONG.
+ 01 WN2                    PIC X(64).
+ 01 WL2                    BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(10)9.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -274,7 +297,13 @@
              CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
              EVALUATE TRUE
                  WHEN WS-B > 0
-*>                   A biome: has_precipitation (Byte); the other fields are skipped.
+*>                   A biome: has_precipitation (Byte), temperature and downfall (Float) and the effects
+*>                   compound (water_color, grass_color, foliage_color, dry_foliage_color as a "#RRGGBB"
+*>                   String or an Int, grass_color_modifier String); the other fields are skipped.
+                     MOVE 0.5 TO WS-TEMP WS-DOWN
+                     MOVE 4282349284 TO WS-WATER
+                     MOVE -1 TO WS-GRASS WS-FOLIAGE WS-DRY
+                     MOVE "none" TO WS-MOD
                      MOVE 1 TO WS-TYPE
                      PERFORM UNTIL WS-TYPE = 0
                          MOVE SPACES TO WN
@@ -285,10 +314,66 @@
                              WHEN WN = "has_precipitation"
                                  CALL "PB-GET-BYTE" USING PB-BUFFER WS-VALUE
                                  MOVE WS-VALUE TO RG-BIOME-PRECIP(WS-B)
+                             WHEN WN = "temperature"
+                                 CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                                 MOVE WS-FLOAT TO WS-TEMP
+                             WHEN WN = "downfall"
+                                 CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                                 MOVE WS-FLOAT TO WS-DOWN
+                             WHEN WN = "effects"
+                                 MOVE 1 TO WS-TYPE2
+                                 PERFORM UNTIL WS-TYPE2 = 0
+                                     MOVE SPACES TO WN2
+                                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE2 WN2 WS-CAP WL2
+                                     EVALUATE TRUE
+                                         WHEN WS-TYPE2 = 0
+                                             CONTINUE
+                                         WHEN WN2 = "grass_color_modifier" AND WS-TYPE2 = 8
+                                             MOVE SPACES TO WS-TEXT
+                                             CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP
+                                                 WS-TEXT-LENGTH
+                                             MOVE WS-TEXT TO WS-MOD
+                                         WHEN (WN2 = "water_color" OR WN2 = "grass_color"
+                                                 OR WN2 = "foliage_color" OR WN2 = "dry_foliage_color")
+                                                 AND (WS-TYPE2 = 8 OR WS-TYPE2 = 3)
+                                             MOVE SPACES TO WS-TEXT
+                                             IF WS-TYPE2 = 8
+                                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP
+                                                     WS-TEXT-LENGTH
+                                             ELSE
+                                                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                                                 MOVE WS-INT TO WS-EDIT
+                                                 MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
+                                                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-TEXT-LENGTH
+                                             END-IF
+                                             CALL "TINT-COLOR-PARSE" USING WS-KIND WS-TEXT WS-TEXT-LENGTH
+                                                 WS-COLOUR WS-OK
+                                             IF WS-OK = 1
+                                                 EVALUATE WN2
+                                                     WHEN "water_color"
+                                                         MOVE WS-COLOUR TO WS-WATER
+                                                     WHEN "grass_color"
+                                                         MOVE WS-COLOUR TO WS-GRASS
+                                                     WHEN "foliage_color"
+                                                         MOVE WS-COLOUR TO WS-FOLIAGE
+                                                     WHEN OTHER
+                                                         MOVE WS-COLOUR TO WS-DRY
+                                                 END-EVALUATE
+                                             END-IF
+                                         WHEN OTHER
+                                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE2
+                                     END-EVALUATE
+                                 END-PERFORM
                              WHEN OTHER
                                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                          END-EVALUATE
                      END-PERFORM
+                     COMPUTE WS-BIOME-ID = WS-B - 1
+                     CALL "TINT-BIOME-SET" USING WS-BIOME-ID WS-TEMP WS-DOWN WS-WATER WS-GRASS
+                         WS-FOLIAGE WS-DRY WS-MOD
+                     IF WS-NAME = "minecraft:plains"
+                         MOVE WS-BIOME-ID TO TT-PLAINS
+                     END-IF
                  WHEN WS-D = 0
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  WHEN OTHER
