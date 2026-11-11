@@ -42,6 +42,8 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-ACTION              BINARY-LONG VALUE ACT-SLOT.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ARG                  BINARY-LONG.
@@ -55,6 +57,12 @@
      CALL "SLOT-WIDGET-ADD" USING CLIENT-STATE L-ARG WS-X WS-Y WS-ACTION
      MOVE 18 TO SM-W-W(SM-WIDGET-COUNT) SM-W-H(SM-WIDGET-COUNT)
      MOVE 3 TO SM-W-STATE(SM-WIDGET-COUNT)
+*>   40-1 5.6: the item tooltip of the slot under the pointer while nothing is carried (the inventory and crafting screens).
+     COMPUTE WS-PX = IN-CURSOR-X / CL-GUI-SCALE
+     COMPUTE WS-PY = IN-CURSOR-Y / CL-GUI-SCALE
+     IF PL-CARRIED-COUNT = 0 AND WS-PX >= WS-X AND WS-PX < WS-X + 18 AND WS-PY >= WS-Y AND WS-PY < WS-Y + 18
+         CALL "SLOT-TOOLTIP" USING CLIENT-STATE L-ARG WS-PX WS-PY
+     END-IF
      GOBACK.
  END PROGRAM MENU-SLOT-ADD.
 
