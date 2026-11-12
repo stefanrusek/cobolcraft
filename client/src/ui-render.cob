@@ -293,8 +293,11 @@
              END-IF
          END-IF
      END-IF
-     IF WS-COUNT > 0 AND WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT
-         MOVE IT-SPRITE(WS-ITEM + 1) TO WS-SPRITE
+     MOVE 0 TO WS-SPRITE
+     IF WS-COUNT > 0 AND WS-ITEM >= 0
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
+     END-IF
+     IF WS-SPRITE > 0
 *>       The icon cell is 16 x 16, centred in the slot (2 pixels in a 20 slot, 1 in an 18 slot).
          COMPUTE WS-INSET = (SM-W-W(L-W) - 16) / 2
          COMPUTE WS-X0 = (SM-W-X(L-W) + WS-INSET) * CL-GUI-SCALE

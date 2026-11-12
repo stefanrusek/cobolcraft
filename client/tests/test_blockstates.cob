@@ -42,7 +42,7 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-BLOCK               PIC X(32).
- 01 WS-PROPS               PIC X(62).
+ 01 WS-PROPS               PIC X(96).
  01 WS-PROPS-LENGTH        BINARY-LONG.
  01 WS-OUT                 PIC X(1024).
  01 WS-PTR                 BINARY-LONG.

@@ -194,6 +194,8 @@
  01 WS-LY                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-ROW-STATE           BINARY-LONG.
+ 01 WS-BM                  BINARY-LONG.
+ 01 WS-NO-STATE            BINARY-LONG VALUE 0.
  01 WS-Q                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
@@ -268,6 +270,7 @@
      MOVE 4 TO WS-CORNER(6)
      MOVE 0 TO WS-OCOUNT WS-TCOUNT
      CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+     CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-NO-STATE WS-BM
      MOVE PL-HEIGHT TO WS-HEIGHT
      SET ADDRESS OF CE-CHUNK TO WR-ADDR(L-ROW)
      COMPUTE WS-BASE = (L-S - 1) * 4096
@@ -294,7 +297,21 @@
        PERFORM VARYING WS-X FROM 0 BY 1 UNTIL WS-X > WS-LAST
          ADD 1 TO WS-CELL
          MOVE CE-STATE(WS-BASE + WS-CELL) TO WS-STATE
-         IF WS-STATE > 0 AND WS-STATE < CL-MAX-BAKED
+*>       The row of the state's baked quads: its own in the stand-in table, the one taken for it on first
+*>       use in a standard world (MODEL-SLOT-OF); 0 when there is none (the cell draws nothing).
+         MOVE 0 TO WS-BM
+         IF WS-STATE > 0
+             IF BM-MODE = 1 AND WS-STATE < CL-MAX-BAKED
+                 COMPUTE WS-BM = WS-STATE + 1
+             END-IF
+             IF BM-MODE = 2 AND WS-STATE < CL-MAX-STATES
+                 MOVE BM-SLOT(WS-STATE + 1) TO WS-BM
+                 IF WS-BM = 0
+                     CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-STATE WS-BM
+                 END-IF
+             END-IF
+         END-IF
+         IF WS-BM > 0
              COMPUTE WS-Y = WS-SEC-Y + WS-LY
              COMPUTE WS-ROW-STATE = WS-STATE + 1
              MOVE 0 TO WS-HIDDEN
@@ -304,9 +321,9 @@
              END-IF
              IF WS-HIDDEN = 0
                  MOVE 0 TO WS-TC-DONE(1) WS-TC-DONE(2) WS-TC-DONE(3)
-                 PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > BM-QUAD-COUNT(WS-ROW-STATE)
+                 PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > BM-QUAD-COUNT(WS-BM)
 *>                   The cull neighbour.
-                     MOVE BM-CULL(WS-ROW-STATE, WS-Q) TO WS-CULL-D
+                     MOVE BM-CULL(WS-BM, WS-Q) TO WS-CULL-D
                      MOVE 0 TO WS-CULL
                      IF WS-CULL-D > 0
                          CALL "MESH-CELL" USING CLIENT-STATE L-ROW WS-NEIGHBOURS WS-HEIGHT WS-X
@@ -321,41 +338,41 @@
                      END-IF
                      IF WS-CULL = 0
 *>                       The light of the cell the face looks into (the cull neighbour when it is that cell).
-                         MOVE BM-SHADE(WS-ROW-STATE, WS-Q) TO WS-D
+                         MOVE BM-SHADE(WS-BM, WS-Q) TO WS-D
                          IF WS-D NOT = WS-CULL-D
                              CALL "MESH-CELL" USING CLIENT-STATE L-ROW WS-NEIGHBOURS WS-HEIGHT WS-X
                                  WS-Y WS-Z WS-D WS-NSTATE WS-NSKY WS-NBLOCK
                          END-IF
                          MOVE WS-LB(WS-D, WS-NBLOCK + 1) TO WS-BRIGHT
                          MOVE WS-LS(WS-D, WS-NSKY + 1) TO WS-SKYTERM
-                         MOVE BM-SPRITE(WS-ROW-STATE, WS-Q) TO WS-SPRITE
+                         MOVE BM-SPRITE(WS-BM, WS-Q) TO WS-SPRITE
 *>                       The four corners: atlas coordinates baked, positions from the table of sixteenths
 *>                       (a corner that is not on a sixteenth is added up).
                          PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
-                             MOVE BM-AU(WS-ROW-STATE, WS-Q, WS-C) TO WS-QU(WS-C)
-                             MOVE BM-AV(WS-ROW-STATE, WS-Q, WS-C) TO WS-QV(WS-C)
-                             IF BM-IX(WS-ROW-STATE, WS-Q, WS-C) >= 0
-                                 COMPUTE WS-KP = WS-X * 16 + BM-IX(WS-ROW-STATE, WS-Q, WS-C) + 1
+                             MOVE BM-AU(WS-BM, WS-Q, WS-C) TO WS-QU(WS-C)
+                             MOVE BM-AV(WS-BM, WS-Q, WS-C) TO WS-QV(WS-C)
+                             IF BM-IX(WS-BM, WS-Q, WS-C) >= 0
+                                 COMPUTE WS-KP = WS-X * 16 + BM-IX(WS-BM, WS-Q, WS-C) + 1
                                  MOVE WS-POS(WS-KP) TO WS-QX(WS-C)
                              ELSE
-                                 COMPUTE WS-QX(WS-C) = WS-X + BM-X(WS-ROW-STATE, WS-Q, WS-C)
+                                 COMPUTE WS-QX(WS-C) = WS-X + BM-X(WS-BM, WS-Q, WS-C)
                              END-IF
-                             IF BM-IY(WS-ROW-STATE, WS-Q, WS-C) >= 0
-                                 COMPUTE WS-KP = WS-LY * 16 + BM-IY(WS-ROW-STATE, WS-Q, WS-C) + 1
+                             IF BM-IY(WS-BM, WS-Q, WS-C) >= 0
+                                 COMPUTE WS-KP = WS-LY * 16 + BM-IY(WS-BM, WS-Q, WS-C) + 1
                                  MOVE WS-POS(WS-KP) TO WS-QY(WS-C)
                              ELSE
-                                 COMPUTE WS-QY(WS-C) = WS-LY + BM-Y(WS-ROW-STATE, WS-Q, WS-C)
+                                 COMPUTE WS-QY(WS-C) = WS-LY + BM-Y(WS-BM, WS-Q, WS-C)
                              END-IF
-                             IF BM-IZ(WS-ROW-STATE, WS-Q, WS-C) >= 0
-                                 COMPUTE WS-KP = WS-Z * 16 + BM-IZ(WS-ROW-STATE, WS-Q, WS-C) + 1
+                             IF BM-IZ(WS-BM, WS-Q, WS-C) >= 0
+                                 COMPUTE WS-KP = WS-Z * 16 + BM-IZ(WS-BM, WS-Q, WS-C) + 1
                                  MOVE WS-POS(WS-KP) TO WS-QZ(WS-C)
                              ELSE
-                                 COMPUTE WS-QZ(WS-C) = WS-Z + BM-Z(WS-ROW-STATE, WS-Q, WS-C)
+                                 COMPUTE WS-QZ(WS-C) = WS-Z + BM-Z(WS-BM, WS-Q, WS-C)
                              END-IF
                          END-PERFORM
 *>                       The tint of the face: white without a tintindex or a source.
                          MOVE WS-FONE TO WS-TR WS-TG WS-TB
-                         MOVE BM-TINT(WS-ROW-STATE, WS-Q) TO WS-TINT-INDEX
+                         MOVE BM-TINT(WS-BM, WS-Q) TO WS-TINT-INDEX
                          IF WS-TINT-INDEX >= 0 AND WS-TINT-INDEX <= 2
                              IF WS-TC-DONE(WS-TINT-INDEX + 1) = 0
                                  MOVE ST-BLOCK(WS-ROW-STATE) TO WS-BLOCK-ID

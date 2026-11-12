@@ -206,8 +206,10 @@
  01 WS-CUR                 PIC X(256).
  01 WS-CUR-LENGTH          BINARY-LONG.
  01 WS-DIRZ                PIC X(1400).
- 01 WS-LIST                PIC X(65536).
- 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 65536.
+*> A directory listing of the generated vanilla pack is about 80,000 bytes (models/block alone has
+*> 2,900 names); a listing that does not fit is dropped whole by cc_fs_list, which hid every model.
+ 01 WS-LIST                PIC X(524288).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 524288.
  01 WS-LIST-COUNT          BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.

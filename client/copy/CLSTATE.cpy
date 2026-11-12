@@ -879,6 +879,8 @@
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
+*>     The same for the items of a standard set, found on first use (ITEM-SPRITE-OF, models-lazy.cob): 0 = not looked up yet.
+       10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
     05 ST-STATE.
        10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
@@ -887,7 +889,7 @@
        10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
 *>  ---- baked block models (08 §4, §5): quads per block state ----
-    05 BM-STATE OCCURS 320 TIMES.
+    05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
        10 BM-QUAD OCCURS 24 TIMES.
           15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE
@@ -910,6 +912,11 @@
              20 BM-IZ       BINARY-LONG.
              20 BM-AU       FLOAT-SHORT.
              20 BM-AV       FLOAT-SHORT.
+*>  ---- lazily baked states of a standard world (client/src/models-lazy.cob) ----
+    05 BM-LAZY.
+       10 BM-MODE            PIC 9.          *> 0 = nothing baked, 1 = the stand-in table, 2 = the standard set (rows taken on demand)
+       10 BM-NEXT            BINARY-LONG.    *> the next free row in mode 2
+       10 BM-SLOT            BINARY-LONG OCCURS 65536 TIMES.   *> state id + 1: its row (0 = not baked yet)
 *>  ---- sky (standin-content §4.8) ----
     05 SK-STATE.
        10 SK-U               BINARY-LONG.    *> daylight in thousandths
