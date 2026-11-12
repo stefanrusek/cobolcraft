@@ -459,6 +459,7 @@
 *>       The loot tables of the set (world-loot.cob): a standard or debug set uses them, a cobolcraft set (and a set whose loot
 *>       data fails its shapes, with the errors on standard error) keeps the stand-in yield of BLOCK-DROPS.
          CALL "WORLD-LOOT-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
+         CALL "WORLD-RECIPES-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
      END-IF
      CALL "FURN-PROVIDERS-LOAD" USING WS-DIR
      GOBACK.
