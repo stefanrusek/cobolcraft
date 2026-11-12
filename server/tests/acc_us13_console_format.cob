@@ -46,7 +46,7 @@
      MOVE "acceptance US13-3 drained console lines are printed with the [HH:MM:SS] prefix"
          TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
-     STRING WS-STAMP-BEFORE "Unknown command nosuchcommand (howto lists the commands)"
+     STRING WS-STAMP-BEFORE "Unknown or incomplete command. See below for error"
          DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      IF WS-STAMP-AFTER NOT = WS-STAMP-BEFORE

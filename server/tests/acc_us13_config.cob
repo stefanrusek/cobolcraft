@@ -33,7 +33,8 @@
  01 WS-LINE-NO             BINARY-LONG.
  01 WS-UNCOMMENTED         BINARY-LONG.
  01 WS-PREVIOUS            PIC X.
- 01 WS-SHOW                PIC X(64) VALUE Z"guestlist show".
+ 01 WS-SHOW                PIC X(64) VALUE Z"whitelist on".
+ 01 WS-HIDE                PIC X(64) VALUE Z"whitelist off".
  01 WS-STATE               PIC X(8).
  01 WS-COUNT               PIC Z(7)9.
  01 WS-OBSERVED            PIC X(256).
@@ -167,7 +168,7 @@
      CALL "SV-SHUTDOWN"
 
 *>   allow-list seeds the enforcement flag of a newly created world only (A2): observed with the
-*>   console command guestlist show (standin-content §16, "Guest list enforcement on|off; ...").
+*>   console command whitelist on (already turned on: it was on; now turned on: it was off, and whitelist off puts it back).
      MOVE SPACES TO WS-OBSERVED
      CALL "SVT-HOME"
      MOVE "build/server-test-config-allow-on" TO WS-SCRATCH
@@ -220,13 +221,15 @@
      CALL "SV-ITERATE"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      MOVE 0 TO WS-ON WS-OFF
-     INSPECT WS-CAPTURED TALLYING WS-ON FOR ALL "Guest list enforcement on;"
-         WS-OFF FOR ALL "Guest list enforcement off;"
+     INSPECT WS-CAPTURED TALLYING WS-ON FOR ALL "Whitelist is already turned on"
+         WS-OFF FOR ALL "Whitelist is now turned on"
      EVALUATE TRUE
          WHEN WS-ON = 1 AND WS-OFF = 0
              MOVE "on" TO WS-STATE
          WHEN WS-ON = 0 AND WS-OFF = 1
              MOVE "off" TO WS-STATE
+             CALL "CORE-CONSOLE" USING WS-HIDE
+             CALL "SV-ITERATE"
          WHEN OTHER
              MOVE "unknown" TO WS-STATE
      END-EVALUATE.

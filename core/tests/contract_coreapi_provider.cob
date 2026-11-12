@@ -273,20 +273,20 @@
 
 *>   CORE-CONSOLE (US15): a z-string command line, run with operator permission; its reply is a
 *>   console line.
-     MOVE Z"clock 1000" TO WS-CONSOLE-LINE
+     MOVE Z"time set 1000" TO WS-CONSOLE-LINE
      CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
      PERFORM DRAIN-LINES
      MOVE "contract coreapi provider CORE-CONSOLE runs an operator command line and its reply is "
          & "drained as a console line" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "1000|The clock now reads 1000" TO TL-EXPECTED
+     MOVE "1000|Set cobolcraft:daylight to 1000 tick(s)" TO TL-EXPECTED
      MOVE CW-TIME TO WS-EDIT
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-EDIT) "|" WS-LINES DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   CORE-STATUS-GET run states: 0 running, 1 after the stop command, 2 after CORE-STOP.
-     MOVE Z"shutdown" TO WS-CONSOLE-LINE
+     MOVE Z"stop" TO WS-CONSOLE-LINE
      CALL "CORE-CONSOLE" USING WS-CONSOLE-LINE
      PERFORM DRAIN-LINES
      CALL "CORE-STATUS-GET" USING CORE-STATUS

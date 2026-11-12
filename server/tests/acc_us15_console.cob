@@ -1,6 +1,6 @@
 *> Acceptance test, US15-1 and US15-3 server half: console input (contracts/operator-surface.md §4;
-*> standin-content §16). acc_us15_console.stdin holds the §16 player-list command (roster), a blank
-*> line, an operator-only command (barlist) and an unknown command, then the end of input. Each typed
+*> standin-content §16). acc_us15_console.stdin holds the player-list command (list), a blank
+*> line, an operator-only command (banlist) and an unknown command, then the end of input. Each typed
 *> line runs as a command of the command set with operator permission and its result or error text
 *> is printed; the blank line runs nothing; the end of input has no effect on the running server.
 *> Runs in build/server-test-us15-console.
@@ -52,18 +52,18 @@
      MOVE SPACES TO WS-LINES
      UNSTRING WS-CAPTURED DELIMITED BY " | " INTO WS-LINE(1) WS-LINE(2) WS-LINE(3) WS-LINE(4)
          WS-LINE(5)
-     MOVE "acceptance US15-1 given the server running when roster and the operator command barlist "
+     MOVE "acceptance US15-1 given the server running when list and the operator command banlist "
          & "are typed at the console then they run with operator permission and their results are "
          & "printed" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Online (0): | Barred (0):" TO TL-EXPECTED
+     MOVE "There are 0 of a max of 64 players online: | There are no bans" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-LINE(1)) " | " FUNCTION TRIM(WS-LINE(2)) DELIMITED BY SIZE
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US15-3 given the server running when an unknown command is typed then the "
          & "error and the help hint are printed, and the blank line runs nothing" TO TL-CASE
-     MOVE "Unknown command nosuchcommand (howto lists the commands) | (no more lines)"
+     MOVE "Unknown or incomplete command. See below for error | (no more lines)"
          TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      IF WS-LINE(4) = SPACES
