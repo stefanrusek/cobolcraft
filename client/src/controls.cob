@@ -11,7 +11,7 @@
 *>     the block's class; never for baseplate): stop destroy follows once it has passed while the
 *>     button is held on the same block, abort destroy when the button is released, the target
 *>     changes or the held slot changes first. While the button stays held after a finished break, the next block aimed at
-*>     (the one behind, once the server has broken this one) is started without a new press.
+*>     (the one behind, once the server has broken this one) is started without a new press, 5 ticks (250 ms) after the stop.
 *>   - the left button pressed while a player or mob is the target (RAYCAST's entity target, which
 *>     leaves no target block) sends Attack with its entity id (US7-5; standin-content §10.4, in
 *>     either game mode); the server decides the hit and the damage.
@@ -114,6 +114,7 @@
              CALL "CONTROLS-SEND-ACTION" USING CLIENT-STATE WS-ACTION
              MOVE 0 TO CT-BREAKING
              MOVE 1 TO CT-DONE
+             MOVE CL-NOW-MS TO CT-DONE-MS
              MOVE CT-BREAK-X TO CT-DONE-X
              MOVE CT-BREAK-Y TO CT-DONE-Y
              MOVE CT-BREAK-Z TO CT-DONE-Z
@@ -130,6 +131,11 @@
      IF CT-BREAKING = 0 AND TG-HIT = 1 AND IN-BUTTON-DOWN(CC-BUTTON-LEFT + 1) = 1
              AND (IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 1 OR (PL-MODE NOT = 1 AND WS-DONE = 0))
          MOVE 1 TO WS-START
+     END-IF
+*>   The continuous-break cooldown (13 section 2.2): no new break for 5 ticks (250 ms) after a finished one.
+     IF WS-START = 1 AND CT-DONE = 1 AND IN-BUTTON-PRESSED(CC-BUTTON-LEFT + 1) = 0
+             AND CL-NOW-MS - CT-DONE-MS < CL-BREAK-COOLDOWN-MS
+         MOVE 0 TO WS-START
      END-IF
      IF WS-START = 1
          MOVE TG-X TO CT-BREAK-X

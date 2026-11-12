@@ -51,20 +51,20 @@
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Survival break of greystone by hand: 1.5 s.
+*>   Survival break of greystone by hand: 2.25 s (hardness 1.5 x 1.5 s, the server's rate).
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
-     MOVE 1000 TO WS-MS
+     MOVE 2000 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
-     MOVE 600 TO WS-MS
+     MOVE 400 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE 100 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(4) WS-THRESHOLD
      MOVE "acceptance US4-3 client half given survival when the left button is held on greystone "
-         & "then start destroy is sent at once, nothing more after 1 s, stop destroy once 1.5 s "
+         & "then start destroy is sent at once, nothing more after 2 s, stop destroy once 2.25 s "
          & "have passed, and nothing more while the button stays held" TO TL-CASE
      PERFORM STEPS-TEXT
      MOVE "290000000000000000090102 | - | 290300000000000000090103 | -" TO TL-EXPECTED
@@ -87,7 +87,7 @@
      MOVE "- | 290000000000000000090104 | 290200000000000000090105 | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   With the pry bar (hard class, like greystone): a quarter, 375 ms.
+*>   With the pry bar (hard class, like greystone): a quarter, 562 ms.
      MOVE 1 TO PL-SLOT-COUNT(1)
      MOVE 10 TO PL-SLOT-ITEM(1)
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
@@ -95,14 +95,14 @@
      MOVE 300 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
-     MOVE 100 TO WS-MS
+     MOVE 300 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE 20 TO WS-MS
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-UP WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(4) WS-THRESHOLD
      MOVE "acceptance US4-3 client half given the pry bar held when greystone (hard) is broken "
-         & "then stop destroy follows after a quarter of the break time (375 ms)" TO TL-CASE
+         & "then stop destroy follows after a quarter of the break time (562 ms)" TO TL-CASE
      PERFORM STEPS-TEXT
      MOVE "290000000000000000090106 | - | 290300000000000000090107 | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

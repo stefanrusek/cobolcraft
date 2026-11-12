@@ -505,6 +505,7 @@
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
        10 CT-DONE-X          BINARY-LONG.
+       10 CT-DONE-MS         BINARY-DOUBLE.  *> clock of that stop destroy (the 5-tick cooldown, 13 section 2.2)
        10 CT-DONE-Y          BINARY-LONG.
        10 CT-DONE-Z          BINARY-LONG.
        10 BD-ENTITY          BINARY-LONG.    *> the last Block Destruction (another player's break)
