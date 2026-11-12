@@ -288,6 +288,22 @@
              MOVE RG-DIM-COUNT TO WS-D
              INITIALIZE RG-DIM(WS-D)
              MOVE WS-NAME TO RG-DIM-NAME(WS-D)
+*>           An entry sent without data (the vanilla entries of the known pack, a standard world) has the
+*>           vanilla range: min_y -64 and height 384 for the overworld types, 0 and 256 for the nether and
+*>           the end, sky light on except in the nether. Data in the packet overrides these.
+             EVALUATE WS-NAME
+                 WHEN "minecraft:overworld" WHEN "minecraft:overworld_caves"
+                     MOVE -64 TO RG-DIM-MIN-Y(WS-D)
+                     MOVE 384 TO RG-DIM-HEIGHT(WS-D)
+                     MOVE 1 TO RG-DIM-HAS-SKY(WS-D)
+                 WHEN "minecraft:the_nether"
+                     MOVE 0 TO RG-DIM-MIN-Y(WS-D) RG-DIM-HAS-SKY(WS-D)
+                     MOVE 256 TO RG-DIM-HEIGHT(WS-D)
+                 WHEN "minecraft:the_end"
+                     MOVE 0 TO RG-DIM-MIN-Y(WS-D)
+                     MOVE 256 TO RG-DIM-HEIGHT(WS-D)
+                     MOVE 1 TO RG-DIM-HAS-SKY(WS-D)
+             END-EVALUATE
          END-IF
          IF WS-REGISTRY = "minecraft:worldgen/biome" AND WS-I <= CL-MAX-BIOMES
              MOVE WS-I TO WS-B

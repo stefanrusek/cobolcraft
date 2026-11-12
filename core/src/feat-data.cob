@@ -35,23 +35,38 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FD-BLOCK-INDEX.
+*> USING key (PIC X(48)), index out: the row (1-based) of the core's block table whose key is the key, 0 when absent. A standard set keeps
+*> its block keys without the namespace (CONTENT-BLOCK-BY-KEY), so a key "minecraft:stone" that no row holds is looked up again as "stone".
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  01 WS-I                   BINARY-LONG.
  01 WS-LEN                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-PASS                BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(48).
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-INDEX.
      MOVE 0 TO L-INDEX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT OR L-INDEX > 0
-         MOVE CB-KEY-LENGTH(WS-I) TO WS-LEN
-         IF WS-LEN > 0 AND WS-LEN <= 48
-             IF CB-KEY(WS-I)(1:WS-LEN) = L-KEY(1:WS-LEN) AND (WS-LEN = 48 OR L-KEY(WS-LEN + 1:1) = SPACE)
-                 MOVE WS-I TO L-INDEX
+     MOVE L-KEY TO WS-KEY
+     PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2 OR L-INDEX > 0
+         IF WS-PASS = 2
+             IF L-KEY(1:10) = "minecraft:"
+                 MOVE SPACES TO WS-KEY
+                 MOVE L-KEY(11:38) TO WS-KEY
+             ELSE
+                 EXIT PERFORM
              END-IF
          END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT OR L-INDEX > 0
+             MOVE CB-KEY-LENGTH(WS-I) TO WS-LEN
+             IF WS-LEN > 0 AND WS-LEN <= 48
+                 IF CB-KEY(WS-I)(1:WS-LEN) = WS-KEY(1:WS-LEN) AND (WS-LEN = 48 OR WS-KEY(WS-LEN + 1:1) = SPACE)
+                     MOVE WS-I TO L-INDEX
+                 END-IF
+             END-IF
+         END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM FD-BLOCK-INDEX.
