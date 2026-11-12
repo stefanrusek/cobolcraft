@@ -84,10 +84,7 @@
      MOVE 0 TO RL-HAND-COUNT
      IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
          MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-ITEM
-         MOVE 0 TO WS-SPRITE
-         IF WS-ITEM >= 0 AND WS-ITEM < CL-ITEM-COUNT
-             MOVE IT-SPRITE(WS-ITEM + 1) TO WS-SPRITE
-         END-IF
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
          IF WS-SPRITE > 0
 *>           The swing: forward and down by sin(pi t) while t = (now - start) / 300 ms is below 1.
              MOVE 0 TO WS-SWING

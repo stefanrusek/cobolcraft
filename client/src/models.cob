@@ -11,14 +11,18 @@
  PROGRAM-ID. MODELS-BAKE.
 *> USING CLIENT-STATE: fills BM-STATE for the block states of standin-content §1.2 (void: none):
 *> each state's block state file selects its models (BLOCKSTATE-SELECT), STATE-BAKE bakes them.
+*> With the standard content set open (CT-OPEN, not the cobolcraft type) nothing is baked here: its
+*> ~30,000 states are baked on first use (MODEL-SLOT-OF, models-lazy.cob), so this only empties the
+*> table of baked rows (BM-MODE 2); otherwise BM-MODE becomes 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
  COPY JSONDOC.
  COPY CLMODEL.
  01 WS-S                   BINARY-LONG.
  01 WS-BLOCK               PIC X(32).
- 01 WS-PROPS               PIC X(62).
+ 01 WS-PROPS               PIC X(96).
  01 WS-PROPS-LENGTH        BINARY-LONG.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -29,6 +33,18 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CT-OPEN = 1 AND CT-STATE-COUNT > 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 2 TO BM-MODE
+         MOVE 1 TO BM-NEXT
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
+             MOVE 0 TO BM-SLOT(WS-S)
+         END-PERFORM
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
+             MOVE 0 TO IS-SPRITE(WS-S)
+         END-PERFORM
+         GOBACK
+     END-IF
+     MOVE 1 TO BM-MODE
      MOVE 0 TO BM-QUAD-COUNT(1)
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > CL-STAND-STATES
          MOVE SPACES TO WS-BLOCK WS-PROPS WS-PATH

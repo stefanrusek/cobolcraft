@@ -225,6 +225,7 @@
  78 CL-MAX-STATES           VALUE 65536. *> state ids are 16 bits (CE-STATE, contract/copy/CELLS.cpy)
  78 CL-STAND-STATES         VALUE 18.   *> states of the stand-in table below
  78 CL-MAX-BAKED            VALUE 320.  *> states with baked models (BM-STATE)
+ 78 CL-MAX-ROWS             VALUE 2048. *> rows of BM-STATE
  78 CL-MAX-QUADS            VALUE 24.
  78 CL-MAX-DRAWS            VALUE 8192.
  78 CL-MAX-UPLOADS          VALUE 4096.

@@ -20,8 +20,8 @@
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG.
- 01 WS-STATE               PIC X(66).
- 01 WS-PAIR                PIC X(66).
+ 01 WS-STATE               PIC X(100).
+ 01 WS-PAIR                PIC X(100).
  01 WS-START               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
@@ -29,7 +29,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  COPY CLMODEL.
- 01 L-STATE                PIC X(62).
+ 01 L-STATE                PIC X(96).
  01 L-STATE-LENGTH         BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-STATE L-STATE-LENGTH STATE-MODELS.
      MOVE 0 TO SX-COUNT
@@ -157,7 +157,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCKSTATE-CONDITION RECURSIVE.
-*> USING JSON-DOC, Condition node, state (",<state key>," PIC X(66)), holds out (1 or 0): a
+*> USING JSON-DOC, Condition node, state (",<state key>," PIC X(100)), holds out (1 or 0): a
 *> Combined condition (one key AND or OR over an array of conditions, nesting) or a key-value one
 *> (every listed property matches one of its "|"-separated terms; "!v" matches any other value).
  DATA DIVISION.
@@ -183,7 +183,7 @@
  LINKAGE SECTION.
  COPY JSONDOC.
  01 L-NODE                 BINARY-LONG.
- 01 L-STATE                PIC X(66).
+ 01 L-STATE                PIC X(100).
  01 L-HOLDS                BINARY-LONG.
  PROCEDURE DIVISION USING JSON-DOC L-NODE L-STATE L-HOLDS.
      MOVE JN-FIRST(L-NODE) TO LS-NODE
@@ -231,7 +231,7 @@
          MOVE 0 TO LS-COUNT
          INSPECT L-STATE TALLYING LS-COUNT FOR CHARACTERS
              BEFORE INITIAL LS-NEEDLE(1:LS-KEY-LENGTH + 2)
-         IF LS-COUNT < 66
+         IF LS-COUNT < 100
              UNSTRING L-STATE(LS-COUNT + LS-KEY-LENGTH + 3:) DELIMITED BY "," INTO LS-VALUE
          END-IF
          MOVE 0 TO LS-ANY
