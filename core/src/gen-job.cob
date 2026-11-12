@@ -65,30 +65,16 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
- 01 WS-I                   BINARY-LONG.
- 01 WS-LEN                 BINARY-LONG.
- 01 WS-NEXT                BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(48).
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-STATE.
      MOVE 0 TO L-STATE
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-         MOVE CB-KEY-LENGTH(WS-I) TO WS-LEN
-         IF WS-LEN > 0 AND WS-LEN <= 48
-             IF CB-KEY(WS-I)(1:WS-LEN) = L-KEY(1:WS-LEN)
-                 IF WS-LEN = 48
-                     MOVE CB-DEFAULT-STATE(WS-I) TO L-STATE
-                     GOBACK
-                 END-IF
-                 COMPUTE WS-NEXT = WS-LEN + 1
-                 IF L-KEY(WS-NEXT:1) = SPACE
-                     MOVE CB-DEFAULT-STATE(WS-I) TO L-STATE
-                     GOBACK
-                 END-IF
-             END-IF
-         END-IF
-     END-PERFORM
+     CALL "FD-BLOCK-INDEX" USING L-KEY WS-INDEX
+     IF WS-INDEX > 0
+         MOVE CB-DEFAULT-STATE(WS-INDEX) TO L-STATE
+     END-IF
      GOBACK.
  END PROGRAM GEN-BLOCK-STATE.
 

@@ -71,13 +71,7 @@
      MOVE PB-BUFFER TO CW-CONSOLE
      MOVE 0 TO CW-RUN-STATE CW-TIME CW-TICKS
      MOVE 1 TO CW-NEXT-ENTITY-ID
-     MOVE 0 TO CW-DIM-COUNT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
-         IF DM-EXTRA(WS-I) = 0 OR (DM-EXTRA(WS-I) = 1 AND CS-EXTRA-DIMENSIONS = 1)
-             ADD 1 TO CW-DIM-COUNT
-             MOVE WS-I TO CW-DIM(CW-DIM-COUNT)
-         END-IF
-     END-PERFORM
+     CALL "WORLD-DIMS-SELECT" USING CW-WORLD-TYPE CS-EXTRA-DIMENSIONS
      CALL "WEATHER-INIT"
      CALL "ACCESS-RESET"
      COMPUTE CW-SPAWN-X = SPAWN-X10 / 10
@@ -99,6 +93,31 @@
      CALL "PERSIST-DIRS"
      GOBACK.
  END PROGRAM CORE-WORLD-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-DIMS-SELECT.
+*> USING world type (PIC X(10)), extra-dimensions setting (PIC 9): fills CW-DIM and CW-DIM-COUNT with the dimensions
+*> the world has, in Login order. A cobolcraft world has cobolcraft:main and, while extra dimensions are on, the extras
+*> (DM-EXTRA 1); a standard or debug world has minecraft:overworld only (the DM-EXTRA 2 row), its first dimension.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(10).
+ 01 L-EXTRA                PIC 9.
+ PROCEDURE DIVISION USING L-TYPE L-EXTRA.
+     MOVE 0 TO CW-DIM-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DIM-TABLE-ROWS
+         IF (L-TYPE = "cobolcraft" AND (DM-EXTRA(WS-I) = 0 OR (DM-EXTRA(WS-I) = 1 AND L-EXTRA = 1)))
+                 OR (L-TYPE NOT = "cobolcraft" AND DM-EXTRA(WS-I) = 2)
+             ADD 1 TO CW-DIM-COUNT
+             MOVE WS-I TO CW-DIM(CW-DIM-COUNT)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLD-DIMS-SELECT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CORE-SAVE.
@@ -459,10 +478,39 @@
 *>       The loot tables of the set (world-loot.cob): a standard or debug set uses them, a cobolcraft set (and a set whose loot
 *>       data fails its shapes, with the errors on standard error) keeps the stand-in yield of BLOCK-DROPS.
          CALL "WORLD-LOOT-OPEN" USING L-TYPE L-DIR WS-LOOT-STATUS
+*>       The terrain data of the standard pipeline (WORLD-GEN-DATA-OPEN).
+         CALL "WORLD-GEN-DATA-OPEN" USING L-TYPE L-DIR
      END-IF
      CALL "FURN-PROVIDERS-LOAD" USING WS-DIR
      GOBACK.
  END PROGRAM WORLD-CONTENT-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-GEN-DATA-OPEN.
+*> USING world type (PIC X(10)), generated directory (PIC X(1024)): for a standard world loads the terrain data of the standard pipeline
+*> (noises, density functions, surface rules and conditions, carvers) from <directory>/vanilla-data, after WORLDGEN-FREE, and resets the
+*> generation queue. Without them GEN-DATA-READY is 0 and the world is void (worldgen-standard.cob). The cobolcraft type has none and the
+*> debug type builds its grid without them: nothing is loaded for them.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GEN-STATUS          BINARY-LONG.
+ 01 WS-GEN-DIR             PIC X(1100).
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(10).
+ 01 L-DIR                  PIC X(1024).
+ PROCEDURE DIVISION USING L-TYPE L-DIR.
+     IF L-TYPE = "standard"
+         MOVE SPACES TO WS-GEN-DIR
+         STRING FUNCTION TRIM(L-DIR TRAILING) "/vanilla-data" DELIMITED BY SIZE INTO WS-GEN-DIR
+         CALL "WORLDGEN-FREE"
+         CALL "NOISES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+         CALL "DENSITY-FUNCTIONS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+         CALL "MATERIAL-RULES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+         CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+         CALL "GEN-QUEUE-RESET"
+     END-IF
+     GOBACK.
+ END PROGRAM WORLD-GEN-DATA-OPEN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-HAS-DATA.
