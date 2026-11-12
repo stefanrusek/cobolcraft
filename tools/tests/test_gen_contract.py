@@ -103,12 +103,12 @@ class CoreWorldSeams(unittest.TestCase):
         seam = gen_contract.read_table(PLAY)
         self.assertEqual(seam.name, "play-core-blocks")
         marked = [r.id for r in seam.rows if gen_contract.known_divergence(r)]
-        self.assertEqual(marked, ["!place-light-before-update", "!change-light-before-update", "!break-light-before-update"])
+        self.assertEqual(marked, ["!change-light-before-update", "!break-light-before-update"])
 
     def test_divergence_row_is_inverted_and_plain_row_is_not(self):
         program = gen_contract.generate(gen_contract.read_table(PLAY))["core/tests/contract_play_core_blocks_core.cob"]
         self.assertIn("known divergence still present", program)
-        self.assertEqual(program.count("known divergence still present"), 3)
+        self.assertEqual(program.count("known divergence still present"), 2)
         self.assertIn('CALL "TEST-JOIN"', program)
         self.assertIn('CALL "TEST-OPEN-WORLD"', program)
 
