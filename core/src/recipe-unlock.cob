@@ -442,9 +442,10 @@
              COMPUTE WS-LAST = RR-UNLOCK-FIRST(WS-K) + RR-UNLOCK-N(WS-K) - 1
              PERFORM VARYING WS-U FROM RR-UNLOCK-FIRST(WS-K) BY 1 UNTIL WS-U > WS-LAST OR WS-HIT = 1
                  EVALUATE TRUE
-                     WHEN RU-TRIGGER(WS-U) = "tick"
+*>                   The loader keeps the trigger as the data file wrote it ("minecraft:inventory_changed"); the built-in layer has no namespace.
+                     WHEN RU-TRIGGER(WS-U) = "tick" OR RU-TRIGGER(WS-U) = "minecraft:tick"
                          MOVE 1 TO WS-HIT
-                     WHEN RU-TRIGGER(WS-U) = "inventory_changed"
+                     WHEN RU-TRIGGER(WS-U) = "inventory_changed" OR RU-TRIGGER(WS-U) = "minecraft:inventory_changed"
                          CALL "RECIPE-PREDICATES-HOLD" USING L-ROW RU-ITEMS(WS-U) WS-HIT
                  END-EVALUATE
              END-PERFORM

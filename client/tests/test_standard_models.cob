@@ -32,6 +32,7 @@
  01 WS-BLOCK-ROW           PIC X(819).
  01 WS-SLOTS               BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-DIRECTION           BINARY-LONG.
  01 WS-VERTICES            BINARY-LONG.
  01 WS-E1                  PIC Z(5)9.
  01 WS-E2                  PIC Z(5)9.
@@ -182,6 +183,84 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF WS-SLOT > 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The hand draws a block item with the faces of its model, not one icon on every face (user bug: a flat coloured cube).
+     MOVE "grass_block" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE 2 TO WS-DIRECTION
+     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-SLOT
+     MOVE SPACES TO WS-SPRITE-ID
+     MOVE "minecraft:block/grass_top" TO WS-SPRITE-ID
+     MOVE 25 TO WS-SPRITE-LENGTH
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-SPRITE-ID WS-SPRITE-LENGTH WS-SPRITE-FOUND
+     MOVE "standard models a block item's up face is the model's up texture" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-DIRECTION
+     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-SLOT
+     MOVE SPACES TO WS-SPRITE-ID
+     MOVE "minecraft:block/grass_side" TO WS-SPRITE-ID
+     MOVE 26 TO WS-SPRITE-LENGTH
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-SPRITE-ID WS-SPRITE-LENGTH WS-SPRITE-FOUND
+     MOVE "standard models a block item's south face is the model's side texture, not the top" TO TL-CASE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-DIRECTION
+     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-SLOT
+     MOVE SPACES TO WS-SPRITE-ID
+     MOVE "minecraft:block/dirt" TO WS-SPRITE-ID
+     MOVE 20 TO WS-SPRITE-LENGTH
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-SPRITE-ID WS-SPRITE-LENGTH WS-SPRITE-FOUND
+     MOVE "standard models a block item's down face is the model's down texture" TO TL-CASE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "stone" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE 3 TO WS-DIRECTION
+     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-SLOT
+     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE-FOUND
+     MOVE "standard models a one-texture block item has its icon on every face" TO TL-CASE
+     MOVE WS-SPRITE-FOUND TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-SLOT
+     MOVE "standard models a flat item has no face sprites (0): the hand extrudes its icon" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SLOT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The hand holding the block item: 36 vertices, and the up face and a side face sample different atlas regions (vertex 1 of face 1 is a side,
+*>   vertex 1 of face 5 the up face); a flat item (stick) is the 36-vertex slab of one icon, the same region on every face.
+     MOVE "grass_block" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE SCR-WORLD TO SM-SCREEN
+     MOVE 0 TO CL-CAMERA CL-SWING-AT
+     MOVE 0 TO PL-HELD
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "standard models the hand holding a grass block samples the side and the top texture, not one icon on six faces" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HAND-COUNT = 36 AND (RL-HAND-U(1) NOT = RL-HAND-U(25) OR RL-HAND-V(1) NOT = RL-HAND-V(25))
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE "standard models the hand holding a stick is a 36-vertex slab with one icon on every face" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF RL-HAND-COUNT = 36 AND RL-HAND-U(1) = RL-HAND-U(25) AND RL-HAND-V(1) = RL-HAND-V(25)
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

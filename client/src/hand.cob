@@ -56,8 +56,13 @@
  01 WS-HBLOCK              BINARY-LONG.
  01 WS-HTOOL               PIC X.
  01 WS-HFOOD               BINARY-LONG.
+ 01 WS-DIR-DATA            PIC X(6) VALUE "436521".
+ 01 WS-DIR-TABLE REDEFINES WS-DIR-DATA.
+    05 WS-FACE-DIR         PIC 9 OCCURS 6 TIMES.
  01 WS-ITEM                BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
+ 01 WS-FACE-SPR            BINARY-LONG.
+ 01 WS-DIRECTION           BINARY-LONG.
  01 WS-F                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-V                   BINARY-LONG.
@@ -109,11 +114,21 @@
 *>           Corner texels of the icon: top-left, top-right, bottom-right, bottom-left.
              MOVE 0 TO WS-U16(1) WS-V16(1) WS-V16(2) WS-U16(4)
              MOVE 16 TO WS-U16(2) WS-U16(3) WS-V16(3) WS-V16(4)
-             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                 CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-CU(WS-K)
-                     WS-CV(WS-K)
-             END-PERFORM
              PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
+*>               A block item shows the face of its model on each side (south, north, east, west, up, down of the corner table); a flat
+*>               item, and a block with no model faces, the one icon.
+                 MOVE WS-SPRITE TO WS-FACE-SPR
+                 IF WS-HBLOCK = 1
+                     MOVE WS-FACE-DIR(WS-F) TO WS-DIRECTION
+                     CALL "ITEM-FACE-SPRITE" USING CLIENT-STATE WS-ITEM WS-DIRECTION WS-FACE-SPR
+                     IF WS-FACE-SPR = 0
+                         MOVE WS-SPRITE TO WS-FACE-SPR
+                     END-IF
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                     CALL "ATLAS-UV" USING CLIENT-STATE WS-FACE-SPR WS-U16(WS-K) WS-V16(WS-K) WS-CU(WS-K)
+                         WS-CV(WS-K)
+                 END-PERFORM
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
                      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
                          COMPUTE WS-C = (WS-K - 1) * 3 + WS-A

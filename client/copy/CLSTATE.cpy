@@ -881,6 +881,10 @@
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
 *>     The same for the items of a standard set, found on first use (ITEM-SPRITE-OF, models-lazy.cob): 0 = not looked up yet.
        10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
+*>     The faces of a block item's model (ITEM-FACE-SPRITE): IS-FACE-DONE(i + 1) = 1 when the item is a block model, and IS-FACE-SPRITE(i * 6 + d) is
+*>     the sprite of face d (DIR-DOWN to DIR-EAST) of its first element, the up sprite where the model has no such face.
+       10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
+       10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
     05 ST-STATE.
        10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)

@@ -168,6 +168,10 @@
  01 WS-LAYER               PIC X(80) VALUE "#layer0".
  01 WS-SPRITE              BINARY-LONG.
  01 WS-F                   BINARY-LONG.
+ 01 WS-FACES               PIC 9.
+ 01 WS-FACE-SPRITE         BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ITEM                 BINARY-LONG.
@@ -192,6 +196,7 @@
          GOBACK
      END-IF
      MOVE 1 TO WS-SPRITE
+     MOVE 0 TO WS-FACES
      CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
      IF WS-KNOWN = 1
@@ -236,12 +241,54 @@
                      IF WS-F > 0
                          CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED MF-TEXTURE(1, WS-F)
                              WS-SPRITE
+*>                       The sprite of each face of the first element (the icon's face where the element has none).
+                         MOVE 1 TO WS-FACES
+                         PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+                             MOVE WS-SPRITE TO WS-FACE-SPRITE(WS-D)
+                             IF MF-PRESENT(1, WS-D) = 1
+                                 CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED MF-TEXTURE(1, WS-D)
+                                     WS-FACE-SPRITE(WS-D)
+                             END-IF
+                         END-PERFORM
                      END-IF
                  END-IF
              END-IF
          END-IF
      END-IF
+     IF WS-FACES = 1
+         MOVE 1 TO IS-FACE-DONE(L-ITEM + 1)
+         PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
+             COMPUTE WS-SLOT = L-ITEM * 6 + WS-D
+             MOVE WS-FACE-SPRITE(WS-D) TO IS-FACE-SPRITE(WS-SLOT)
+         END-PERFORM
+     END-IF
      MOVE WS-SPRITE TO IS-SPRITE(L-ITEM + 1)
      MOVE WS-SPRITE TO L-SPRITE
      GOBACK.
  END PROGRAM ITEM-SPRITE-OF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-FACE-SPRITE.
+*> USING CLIENT-STATE, item id, direction (BINARY-LONG, DIR-DOWN 1 to DIR-EAST 6), sprite out: the atlas sprite of that face of a block item's model
+*> (standard set, found with the item's icon on first use). 0 for an item with no block model (a flat item, a stand-in item, an id out of range):
+*> the hand then extrudes the icon of ITEM-SPRITE-OF instead of drawing a cube.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ICON                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-SPRITE               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-DIRECTION L-SPRITE.
+     MOVE 0 TO L-SPRITE
+     IF L-ITEM >= 0 AND L-ITEM < 2048 AND L-DIRECTION >= 1 AND L-DIRECTION <= 6
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-ICON
+         IF IS-FACE-DONE(L-ITEM + 1) = 1
+             COMPUTE WS-SLOT = L-ITEM * 6 + L-DIRECTION
+             MOVE IS-FACE-SPRITE(WS-SLOT) TO L-SPRITE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-FACE-SPRITE.
