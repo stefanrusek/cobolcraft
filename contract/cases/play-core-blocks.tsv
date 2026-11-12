@@ -17,7 +17,7 @@
 #
 # columns: see wire-chat.tsv; ops core-use-on (item, x, y, z, face, seq), core-action (action, x, y, z, face, seq,
 # optional setblock), core-block-change (x, y, z, state); optional observe=last keeps only the last packet
-!place-light-before-update	core-use-on	BLOCK-USE-ON	core	core		item=2;x=10;y=99;z=10;face=1;seq=1	49(0,0) 8(10,100,10=2) 4(1)
+place-light-before-update	core-use-on	BLOCK-USE-ON	core	core		item=2;x=10;y=99;z=10;face=1;seq=1	49(0,0) 8(10,100,10=2) 4(1)
 place-ack-last	core-use-on	BLOCK-USE-ON	core	core		item=2;x=14;y=99;z=14;face=1;seq=2;observe=last	4(2)
 !change-light-before-update	core-block-change	BLOCK-CHANGE	core	core		x=12;y=100;z=12;state=2	49(0,0) 8(12,100,12=2)
 !break-light-before-update	core-action	BLOCK-ACTION	core	core		action=0;x=20;y=100;z=20;face=1;seq=3;setblock=2	49(1,1) 8(20,100,20=0) 4(3)
