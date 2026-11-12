@@ -4,10 +4,11 @@
 *> stated values. The cases are grouped by phase in the test copybooks COPYed after this program
 *> (test infrastructure): WIRESTATUS (handshake, status, login), WIRECONFIG (registries and
 *> configuration), WIRECHUNK (chunks), WIREPLAY (play join), WIREMOVE (movement and other
-*> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIRECHAT (chat), WIREHEALTH
+*> players), WIREBLOCK (blocks and inventory), WIREITEM (ground items), WIREHEALTH
 *> (health, damage, death and respawn), WIREHUNGER (hunger, eating and sprinting), WIREMOB (mobs),
 *> WIRECRAFT (crafting), WIREWEATHER (weather), WIREDIM (dimensions and travel), WIRECMD
-*> (commands), WIREPACK (server pack offer).
+*> (commands), WIREPACK (server pack offer). Chat is generated from contract/cases/wire-chat.tsv
+*> (build/gen/core/tests/contract_wire_chat_core.cob).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTRACT-WIRE-SERVER.
  PROCEDURE DIVISION.
@@ -18,7 +19,6 @@
      CALL "WIRE-MOVE-CASES"
      CALL "WIRE-BLOCK-CASES"
      CALL "WIRE-ITEM-CASES"
-     CALL "WIRE-CHAT-CASES"
      CALL "WIRE-HEALTH-CASES"
      CALL "WIRE-HUNGER-CASES"
      CALL "WIRE-MOB-CASES"
@@ -37,7 +37,6 @@
  COPY WIREMOVE.
  COPY WIREBLOCK.
  COPY WIREITEM.
- COPY WIRECHAT.
  COPY WIREHEALTH.
  COPY WIREHUNGER.
  COPY WIREMOB.

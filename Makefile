@@ -8,6 +8,10 @@
 #   make gate            lint + build + coverage (with the Convergence tests), plus the tools package's tests
 #   make gate-<pkg>      the same scoped to shim, formats, proto, content, extract, core, server, client or tools
 #   make gate-tables     generated registry copybooks match the generator (tools/gen/gen_tables.py --check)
+#   make contract-wire   generated contract tests of the wire seams only (intermediate: no coverage, never a gate)
+#   make contract-play   generated contract tests of the play to core hooks (intermediate, as contract-wire)
+#   make contract-content   generated contract tests of the content to core recipes seam (intermediate)
+#   make contract-affected   the seams whose paths changed against BASE (default HEAD) and untracked files
 #   make gate-contract   wire fixtures parse, contract probes, lint of contract/
 #   make clean           remove build/
 
@@ -34,7 +38,7 @@ TARGETS_core   := lib
 TARGETS_server := lib bin
 TARGETS_client := lib bin
 
-.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract gate-tables clean $(addprefix gate-,$(PKGS))
+.PHONY: build bootstrap test lint coverage gate gate-tools gate-contract gate-tables clean contract-wire contract-play contract-content contract-affected $(addprefix gate-,$(PKGS))
 .DEFAULT_GOAL := build
 
 build:
@@ -88,6 +92,29 @@ gate-tools: gate-tables
 # The generated registry copybooks under content/copy/gen/ equal a fresh regeneration (drift gate).
 gate-tables:
 	$(PYTHON) tools/gen/gen_tables.py --check
+	$(PYTHON) tools/gen/gen_contract.py --check
+
+# Scoped contract runs (contract/cases/README.md). They run the generated contract programs of a seam
+# group through runtests.py --only, so they build only those programs and their libraries, and they skip
+# tools/coverage.py: a subset run would report false gaps. The full gates stay the terminal check.
+# A new seam group is one more target like contract-wire (its table name prefix after --only-args).
+contract-wire:
+	$(PYTHON) tools/gen/gen_contract.py --check
+	$(PYTHON) tools/runtests.py --build $(BUILD) $(shell $(PYTHON) tools/gen/gen_contract.py --only-args wire)
+
+contract-play:
+	$(PYTHON) tools/gen/gen_contract.py --check
+	$(PYTHON) tools/runtests.py --build $(BUILD) $(shell $(PYTHON) tools/gen/gen_contract.py --only-args play)
+
+contract-content:
+	$(PYTHON) tools/gen/gen_contract.py --check
+	$(PYTHON) tools/runtests.py --build $(BUILD) $(shell $(PYTHON) tools/gen/gen_contract.py --only-args content)
+
+BASE ?= HEAD
+AFFECTED_ARGS = $(shell $(PYTHON) tools/gen/gen_contract.py --affected-args --base $(BASE))
+contract-affected:
+	$(PYTHON) tools/gen/gen_contract.py --check
+	$(if $(AFFECTED_ARGS),$(PYTHON) tools/runtests.py --build $(BUILD) $(AFFECTED_ARGS),@echo "contract-affected: no seam affected by the changes against $(BASE)")
 
 # Foundational gate: every wire fixture parses, every contract header and copybook compiles in a
 # probe program (tools/probe, once it exists), and the contract headers lint.

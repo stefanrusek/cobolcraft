@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test runner (research R9; contracts/test-harness.md §1, §3). Test infrastructure, stdlib only.
 
-usage: runtests.py [--build DIR] [--coverage] [PACKAGE ...]
+usage: runtests.py [--build DIR] [--coverage] [--only NAME ...] [PACKAGE ...]
 
 For the selected packages (default: all, in dependency order) it builds their libraries and the
 libraries they depend on (`make lib`), builds each package's test programs (`make tests`), runs every test program
@@ -19,9 +19,18 @@ Sibling files of a test source:
 - `<name>.expect`: line 1 the expected exit status, optional line 2 a text standard error must
   contain; the program is then one case named after it (for fatal-path tests).
 A program without `.expect` that exits non-zero counts as one failure named after the program.
+
+Generated contract tests (tools/gen/gen_contract.py) are written to `<build>/gen/<package>/tests/` at every
+start and run with their package's tests; their programs are `<build>/<package>/tests/<name>` like the others.
+
+`--only NAME` (repeatable, a program name without extension or an fnmatch pattern such as `contract_wire_*`)
+selects test programs instead of whole packages: only the matching programs are built and run, with the
+libraries they depend on. It is an intermediate check: it never satisfies a gate, and the coverage step
+(tools/coverage.py) is not run for it by the make targets that use it.
 """
 import argparse
 import collections
+import fnmatch
 import os
 import subprocess
 import sys
@@ -93,8 +102,38 @@ def discover_tests(repo, package):
     ]
 
 
+def generated_tests(build, package):
+    """Paths relative to `build` of the generated test program sources of the package, sorted."""
+    relative = "gen/%s/tests" % package
+    directory = os.path.join(build, relative)
+    if not os.path.isdir(directory):
+        return []
+    return [
+        relative + "/" + name
+        for name in sorted(os.listdir(directory))
+        if name.startswith(TEST_PREFIXES) and name.endswith(TEST_EXTENSIONS)
+    ]
+
+
+def generate_contract_tests(build):
+    """Write the generated contract test sources under `build`; True when the generator succeeded."""
+    command = [sys.executable, os.path.join(REPO, "tools", "gen", "gen_contract.py"), "--write", "--out", os.path.join(build, "gen")]
+    returncode = subprocess.run(command, stdout=subprocess.DEVNULL).returncode
+    if returncode != 0:
+        print("ERROR generate: %s exited %d" % (" ".join(command), returncode))
+    return returncode == 0
+
+
+def matches_only(source, patterns):
+    """True when the test source's program name matches one of the --only patterns (all match when none given)."""
+    name = os.path.splitext(source.rpartition("/")[2])[0]
+    return not patterns or any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
+
+
 def program_path(build, source):
     directory, _, name = source.rpartition("/")
+    if directory.startswith("gen/"):
+        return os.path.join(build, directory[len("gen/"):], os.path.splitext(name)[0])
     package = next((p for p, d in DIRECTORIES.items() if d == directory), directory.split("/")[0])
     return os.path.join(build, package, "tests", os.path.splitext(name)[0])
 
@@ -153,7 +192,7 @@ def report(results):
 
 
 def make(package, target, build, coverage):
-    command = ["make", "-C", os.path.join(REPO, package_directory(package)), target, "BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
+    command = ["make", "-C", os.path.join(REPO, package_directory(package))] + target.split() + ["BUILD=" + build, "COVERAGE=" + ("1" if coverage else "0")]
     returncode = subprocess.run(command).returncode
     if returncode != 0:
         print("ERROR build: %s exited %d" % (" ".join(command), returncode))
@@ -164,10 +203,17 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser(description="Build and run the test programs of the selected packages.")
     parser.add_argument("--build", default=os.path.join(REPO, "build"), help="build output root")
     parser.add_argument("--coverage", action="store_true", help="build with coverage instrumentation")
+    parser.add_argument("--only", action="append", default=[], metavar="NAME", help="run only the test programs with this name or pattern")
     parser.add_argument(
         "packages", nargs="*", choices=PACKAGES + [CONVERGENCE], metavar="PACKAGE", help=" ".join(PACKAGES + [CONVERGENCE])
     )
     return parser.parse_args(argv)
+
+
+def test_sources(build, package, patterns):
+    """(source, program path) of the package's test programs that match the --only patterns, hand-written first."""
+    sources = [s for s in discover_tests(REPO, package) + generated_tests(build, package) if matches_only(s, patterns)]
+    return [(s, program_path(build, s)) for s in sources]
 
 
 def main(argv):
@@ -175,16 +221,30 @@ def main(argv):
     build = os.path.abspath(arguments.build)
     selected = select_packages(arguments.packages)
     os.environ["COBOLCRAFT_BUILD"] = build
+    if not generate_contract_tests(build):
+        return 1
+    chosen = {package: test_sources(build, package, arguments.only) for package in selected}
+    if arguments.only:
+        selected = [p for p in selected if chosen[p]]
+        if not selected:
+            print("ERROR --only: no test program matches " + " ".join(arguments.only))
+            return 1
     for package in build_order(selected):
         if not make(package, "lib", build, arguments.coverage):
             return 1
     for package in selected:
-        if not make(package, "tests", build, arguments.coverage):
+        if arguments.only:
+            if package == "client" and not make(package, "fixtures", build, arguments.coverage):
+                return 1
+            target = " ".join(program for _, program in chosen[package])
+        else:
+            target = "tests"
+        if not make(package, target, build, arguments.coverage):
             return 1
     results = []
     for package in selected:
-        for source in discover_tests(REPO, package):
-            results.extend(run_program(program_path(build, source), source, REPO))
+        for source, program in chosen[package]:
+            results.extend(run_program(program, source, REPO))
     for line in report(results):
         print(line)
     return 0 if all(r.passed for r in results) else 1

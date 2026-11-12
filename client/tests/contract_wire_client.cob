@@ -103,9 +103,6 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT2              BINARY-LONG.
  01 WS-ITEM2               BINARY-LONG.
- 01 WS-CHAT                PIC X(1024) VALUE "hello".
- 01 WS-CHAT-LENGTH         BINARY-LONG VALUE 5.
- 01 WS-CHAT-TIME           BINARY-DOUBLE VALUE 1700000000000.
  01 WS-EVENT               BINARY-LONG.
  01 WS-LEVEL               FLOAT-SHORT.
  01 WS-RAIN-EDIT           PIC 9.9.
@@ -912,32 +909,7 @@
      CALL "TEST-GROUND-ITEM" USING CLIENT-STATE WS-GI-ID TL-OBSERVED
      MOVE "10 none 11 1x2 0.2500/0.1200/0.0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   ---- play, chat (US6) ----
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-CHAT" USING PB-BUFFER WS-CHAT WS-CHAT-LENGTH WS-CHAT-TIME
-     MOVE "contract wire client Chat (hello, timestamp 1700000000000, no signature) equals "
-         & "play-c2s-09-chat.hex" TO TL-CASE
-     MOVE "contract/fixtures/wire/play-c2s-09-chat.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-chat.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-command-feedback.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-death.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
-     MOVE "contract wire client System Chat decodes: the literal player chat, the translated "
-         & "command feedback and death message, in order, into the chat history" TO TL-CASE
-     MOVE "T" TO TL-MODE
-     MOVE SPACES TO TL-OBSERVED
-     MOVE 1 TO WS-INDEX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CH-COUNT
-         MOVE CH-LENGTH(WS-I) TO WS-COUNT
-         STRING "|" CH-TEXT(WS-I)(1:WS-COUNT) DELIMITED BY SIZE INTO TL-OBSERVED
-             WITH POINTER WS-INDEX
-     END-PERFORM
-     MOVE "|<Alice> hello|Alice now holds operator status|Alice misjudged the drop"
-         TO TL-EXPECTED
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- play, chat (US6): generated from contract/cases/wire-chat.tsv ----
 *>   ---- play, health, damage, death and attacking (US7) ----
      MOVE 21 TO WS-EID
      CALL "PB-RESET" USING PB-BUFFER
@@ -1176,14 +1148,6 @@
      MOVE "contract wire client Command Suggestion (transaction 1, /murmur Al) equals "
          & "play-c2s-0f-command-suggestion.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-0f-command-suggestion.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-     MOVE "promote Alice" TO WS-CMD
-     MOVE 13 TO WS-CMD-LENGTH
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "CLP-CHAT-COMMAND" USING PB-BUFFER WS-CMD WS-CMD-LENGTH
-     MOVE "contract wire client Chat Command (promote Alice, no leading slash) equals "
-         & "play-c2s-07-chat-command.hex" TO TL-CASE
-     MOVE "contract/fixtures/wire/play-c2s-07-chat-command.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 
      MOVE "contract/fixtures/wire/play-s2c-10-commands-everyone.hex" TO WS-PATH

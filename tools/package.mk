@@ -32,6 +32,9 @@ LINT_FILES  ?= $(SRC) $(TESTS)
 LIB_SRC     := $(filter-out src/main.cob,$(SRC))
 OBJS        := $(patsubst src/%,$(OBJ)/%.o,$(basename $(LIB_SRC)))
 TEST_PROGS  := $(patsubst tests/%,$(TOUT)/%,$(basename $(TESTS)))
+# Generated contract tests (tools/gen/gen_contract.py, written by tools/runtests.py) are built like TESTS.
+GENDIR      := $(BUILD)/gen/$(PKG)/tests
+GEN_PROGS   := $(patsubst $(GENDIR)/%,$(TOUT)/%,$(basename $(wildcard $(GENDIR)/*.cob)))
 TESTASSERT  := $(TOUT)/testassert.o
 COPYBOOKS   := $(wildcard $(REPO)/contract/copy/*.cpy copy/*.cpy)
 TESTCOPY    := $(wildcard tests/*.cpy)
@@ -42,7 +45,7 @@ HEADERS     := $(wildcard $(REPO)/contract/include/*.h)
 
 lib: $(LIB)
 
-tests: $(LIB) $(TEST_PROGS)
+tests: $(LIB) $(TEST_PROGS) $(GEN_PROGS)
 
 lint:
 	python3 $(REPO)/tools/lint.py -I $(TESTLIB) $(addprefix -I ,$(filter-out -I,$(INCLUDES))) $(LINT_FILES)
@@ -66,6 +69,10 @@ $(TESTASSERT): $(TESTLIB)/testassert.cob $(TESTLIB)/TESTLIB.cpy
 	cobc -c $(COBFLAGS) -I $(TESTLIB) -o $@ $<
 
 $(TOUT)/%: tests/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
+	@mkdir -p $(dir $@)
+	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
+
+$(TOUT)/%: $(GENDIR)/%.cob $(TESTASSERT) $(LIB) $(DEPLIBS) $(COPYBOOKS) $(TESTCOPY)
 	@mkdir -p $(dir $@)
 	cobc -x $(COBFLAGS) -I $(TESTLIB) -o $@ $< $(TESTASSERT) $(LIB) $(DEPLIBS) $(LDLIBS)
 

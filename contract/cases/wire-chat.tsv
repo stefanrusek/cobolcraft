@@ -1,0 +1,18 @@
+# Contract cases of the chat seam on the wire (docs/protocol/09-cobolcraft-profile.md §1 "Chat is
+# unsigned", §3.2 rows 0x7C and §3.3 rows 0x07, 0x09). Read by tools/gen/gen_contract.py; see README.md.
+# Expected bytes are the fixtures in contract/fixtures/wire (their headers state the inputs and doc
+# references); expected texts are copied from those fixtures' stated inputs, never from running code.
+#
+# seam: wire-chat
+# paths: contract/cases/wire-chat.tsv contract/fixtures/wire/play-c2s-09-chat.hex contract/fixtures/wire/play-c2s-07-chat-command.hex contract/fixtures/wire/play-s2c-7c-system-chat-chat.hex contract/fixtures/wire/play-s2c-7c-system-chat-command-feedback.hex contract/fixtures/wire/play-s2c-7c-system-chat-death.hex core/src/chat.cob core/src/play.cob client/src/protocol-client.cob client/src/screens/chat.cob client/src/screens/hud.cob proto/src
+#
+# columns (tab separated): id, op, entry, owner, caller, fixtures (comma separated, names under
+# contract/fixtures/wire without .hex), inputs (name=value;...), expected text (empty for the build ops,
+# whose expected value is the fixture's bytes)
+# owner: the package whose program is the entry; caller: the package whose src/ must contain CALL "<entry>"
+# op: build-core-chat-line, decode-core-chat, build-client-chat, build-client-chat-command, history-client
+chat-send-decode	decode-core-chat	PLAY-DECODE	core	core	play-c2s-09-chat		9 0 message hello length 5
+chat-line-build	build-core-chat-line	CHAT-LINE-BUILD	core	core	play-s2c-7c-system-chat-chat	name=Alice;message=hello	
+chat-send	build-client-chat	CLP-CHAT	client	client	play-c2s-09-chat	text=hello;time=1700000000000	
+chat-command-send	build-client-chat-command	CLP-CHAT-COMMAND	client	client	play-c2s-07-chat-command	command=promote Alice	
+chat-history	history-client	PROTO-PACKET	client	client	play-s2c-7c-system-chat-chat,play-s2c-7c-system-chat-command-feedback,play-s2c-7c-system-chat-death		|<Alice> hello|Alice now holds operator status|Alice misjudged the drop
