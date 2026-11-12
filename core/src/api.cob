@@ -358,7 +358,8 @@
 *> USING requested type (PIC X(10): CS-WORLD-TYPE, spaces = cobolcraft), type out (PIC X(10)), status out (BINARY-LONG,
 *> CORE-WO-*). The rules of world-types section 2.1 for the folder CW-FOLDER: a folder with level.dat takes the type
 *> of its WorldType (standard, cobolcraft, debug); an absent key with no dimensions/minecraft folder is an old
-*> world, cobolcraft (rule 2); an absent key with that folder, a key of another value or a tag of another type is
+*> world, cobolcraft (rule 2); an absent key with a level.dat of the 26.3 layout (compound Data) is a standard world;
+*> an absent key with that folder, a key of another value or a tag of another type is
 *> refused CORE-WO-NO-WORLDTYPE (rules 3 and 4); a folder without level.dat that holds dimensions/ content is refused
 *> CORE-WO-NO-LEVEL-DAT (WT-24: any region or entities file counts, WORLD-HAS-DATA); otherwise a new world takes the requested type (an unknown one is refused).
  DATA DIVISION.
@@ -408,6 +409,9 @@
          EVALUATE TRUE
              WHEN WS-FOUND = 1
                  MOVE WS-TEXT TO L-TYPE
+*>           A level.dat of a real 26.3 game (compound Data, no WorldType): a standard world (33 section 10).
+             WHEN WS-FOUND = 3
+                 MOVE "standard" TO L-TYPE
              WHEN WS-FOUND = 0 AND WS-HAS-MINECRAFT = 0
                  MOVE "cobolcraft" TO L-TYPE
              WHEN OTHER

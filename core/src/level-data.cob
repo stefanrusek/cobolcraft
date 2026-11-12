@@ -187,13 +187,18 @@
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-VANILLA             PIC 9 VALUE 0.
+ 01 WS-INT-CAPACITY        BINARY-LONG VALUE 3.
+ 01 WS-INT-COUNT           BINARY-LONG.
+ 01 WS-POS-INTS.
+    05 WS-POS-INT          BINARY-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION.
      IF WS-READY = 0
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
      CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
-     MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK WS-HAS-WEATHER WS-LEGACY-KIND
+     MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK WS-HAS-WEATHER WS-LEGACY-KIND WS-VANILLA
      CALL "RULES-RESET"
      CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
      PERFORM UNTIL PB-ERROR = 1
@@ -203,6 +208,36 @@
              EXIT PERFORM
          END-IF
          EVALUATE TRUE
+*>           The 26.3 layout (33 section 10): one compound `Data` holds the keys; its children are read here as
+*>           if they sat in the root (the end tag of `Data` then ends the loop, nothing follows it in a real file).
+             WHEN WN = "Data" AND WS-TYPE = 10
+                 MOVE 1 TO WS-VANILLA
+             WHEN WN = "GameType" AND WS-TYPE = 3
+                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                 MOVE WS-INT TO CW-GAME-MODE
+             WHEN WN = "spawn" AND WS-TYPE = 10
+                 PERFORM UNTIL PB-ERROR = 1
+                     MOVE SPACES TO WN
+                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                         WS-NAME-CAPACITY WL
+                     IF WS-INNER-TYPE = 0
+                         EXIT PERFORM
+                     END-IF
+                     EVALUATE TRUE
+                         WHEN WN = "pos" AND WS-INNER-TYPE = 11
+                             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT
+                                 WS-POS-INTS
+                             IF WS-INT-COUNT = 3
+                                 MOVE WS-POS-INT(1) TO CW-SPAWN-X
+                                 MOVE WS-POS-INT(2) TO CW-SPAWN-Y
+                                 MOVE WS-POS-INT(3) TO CW-SPAWN-Z
+                             END-IF
+                         WHEN WN = "yaw" AND WS-INNER-TYPE = 5
+                             CALL "PB-GET-FLOAT" USING PB-BUFFER CW-SPAWN-YAW
+                         WHEN OTHER
+                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                     END-EVALUATE
+                 END-PERFORM
              WHEN WN = "LevelName" AND WS-TYPE = 8
                  MOVE SPACES TO CW-NAME
                  CALL "NBT-READ-STRING" USING PB-BUFFER CW-NAME WS-TEXT-CAPACITY WS-INT
@@ -357,10 +392,16 @@
      EVALUATE TRUE
          WHEN WS-HAS-CLOCK = 1
              COMPUTE CW-TIME = FUNCTION MOD(WS-TICKS, RULE-DAY-LENGTH)
+         WHEN WS-HAS-TIME = 1 AND WS-VANILLA = 1
+             COMPUTE CW-TIME = FUNCTION MOD(WS-OLD-TIME, RULE-DAY-LENGTH)
          WHEN WS-HAS-TIME = 1
              MOVE WS-OLD-TIME TO CW-TIME
              CALL "LEVEL-TIME-REBASE" USING CW-TIME
      END-EVALUATE
+*>   The seed of a 26.3 world is in data/minecraft/world_gen_settings.dat, not in level.dat.
+     IF WS-VANILLA = 1
+         CALL "VANILLA-SEED-READ" USING CW-SEED
+     END-IF
      GOBACK.
  END PROGRAM LEVEL-DAT-READ.
 
@@ -380,6 +421,7 @@
  01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 32.
  01 WS-TYPE                BINARY-LONG.
  01 WS-LENGTH              BINARY-LONG.
+ 01 WS-DATA                PIC 9.
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-SUFFIX              PIC X(128) VALUE "/level.dat".
@@ -387,7 +429,7 @@
  01 L-FOUND                BINARY-LONG.
  01 L-TEXT                 PIC X(32).
  PROCEDURE DIVISION USING L-FOUND L-TEXT.
-     MOVE 0 TO L-FOUND
+     MOVE 0 TO L-FOUND WS-DATA
      MOVE SPACES TO L-TEXT
      IF WS-READY = 0
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -410,7 +452,73 @@
              END-IF
              EXIT PERFORM
          END-IF
+         IF WN = "Data" AND WS-TYPE = 10
+             MOVE 1 TO WS-DATA
+         END-IF
          CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
      END-PERFORM
+*>   No WorldType but the compound `Data`: the level.dat of a real 26.3 world (33 section 10), found 3.
+     IF L-FOUND = 0 AND WS-DATA = 1
+         MOVE 3 TO L-FOUND
+     END-IF
      GOBACK.
  END PROGRAM LEVEL-PEEK-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VANILLA-SEED-READ.
+*> USING seed (BINARY-DOUBLE, in and out): the `seed` of the compound `data` of <world>/data/minecraft/world_gen_settings.dat
+*> (the 26.3 layout, 33 section 10). A missing file or key leaves the seed unchanged.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/data/minecraft/world_gen_settings.dat".
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SEED.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "NBT-FILE-READ" USING WS-PATH WS-PATH-LENGTH PB-BUFFER WS-OUTCOME
+     IF WS-OUTCOME NOT = 0
+         GOBACK
+     END-IF
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "data" AND WS-TYPE = 10
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-NAME-CAPACITY WL
+                 IF WS-INNER-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF WN = "seed" AND WS-INNER-TYPE = 4
+                     CALL "PB-GET-LONG" USING PB-BUFFER L-SEED
+                 ELSE
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VANILLA-SEED-READ.

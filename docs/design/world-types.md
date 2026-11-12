@@ -65,6 +65,9 @@ Reading rules for a folder that has `level.dat`, in order:
 2. `WorldType` is absent and the world folder holds no `dimensions/minecraft/` folder: the type is `cobolcraft`. On the next
    save the server (the dedicated server or the single-player host; no other tool writes these keys, Decision WT-26) writes `WorldType = cobolcraft` and `Seed = 0` if `Seed` is absent, and leaves `ContentJar` absent
    (Decision WT-7). If the world is opened read-only nothing is written and this rule applies again at each open (Decision WT-26). Worlds of feature 001 follow 07 §9.1, which names no `minecraft` dimension folder, so they cannot hold one.
+3a. (Operator request, world26 lane.) `WorldType` is absent, but `level.dat` holds the compound `Data` (the 26.3 layout of 33 §10: `Data` with
+   `LevelName`, `GameType`, `Time`, `spawn`; the seed in `data/minecraft/world_gen_settings.dat`; no `access.dat`): the folder is a real 26.3 world and its type is
+   `standard`. It is read, never written to by detection. A folder with neither key is still refused by rule 3.
 3. `WorldType` is absent and the folder holds `dimensions/minecraft/...`: the folder is not from a version that had no type key,
    so the world is **not opened**. The message is `cobolcraft.world_type.missing` (key name proposed, text "This world has no
    world type and cannot be opened."). Nothing is altered. Exit code and list row as in rule 4.

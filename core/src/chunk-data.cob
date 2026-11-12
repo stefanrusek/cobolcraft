@@ -407,7 +407,8 @@
     05 WS-DU               BINARY-DOUBLE UNSIGNED OCCURS 1024 TIMES.
  01 WS-DATA-S REDEFINES WS-DATA-U.
     05 WS-DS               BINARY-DOUBLE OCCURS 1024 TIMES.
- 01 WS-KEY                 PIC X(32).
+ 01 WS-KEY                 PIC X(64).
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PAIRS               PIC X(64).
  01 WS-PAIR-COUNT          BINARY-LONG.
@@ -446,7 +447,7 @@
                                  MOVE SPACES TO WS-KEY WS-PAIRS
                                  MOVE 0 TO WS-KEY-LENGTH WS-PAIR-COUNT
                                  IF WS-ELEMENT-TYPE = 8
-                                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-CAPACITY
+                                     CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY
                                          WS-KEY-LENGTH
                                  ELSE
                                      CALL "CHUNK-NBT-PALETTE-ENTRY" USING PB-BUFFER WS-ELEMENT-TYPE
@@ -521,6 +522,7 @@
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 64.
  01 WS-TYPE                BINARY-LONG.
  01 WS-INNER-TYPE          BINARY-LONG.
  01 WS-PVALUE              PIC X(32).
@@ -529,7 +531,7 @@
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ELEMENT-TYPE         BINARY-LONG.
- 01 L-KEY                  PIC X(32).
+ 01 L-KEY                  PIC X(64).
  01 L-KEY-LENGTH           BINARY-LONG.
  01 L-PAIRS                PIC X(64).
  01 L-PAIR-COUNT           BINARY-LONG.
@@ -543,7 +545,7 @@
          END-IF
          EVALUATE TRUE
              WHEN (WN = "id" OR WN = SPACES) AND WS-TYPE = 8
-                 CALL "NBT-READ-STRING" USING PB-BUFFER L-KEY WS-CAPACITY L-KEY-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER L-KEY WS-KEY-CAPACITY L-KEY-LENGTH
              WHEN WN = "properties" AND WS-TYPE = 10
                  PERFORM UNTIL PB-ERROR = 1
                      MOVE SPACES TO WN
@@ -582,7 +584,7 @@
  01 WS-PAIRS               PIC X(64).
  01 WS-ID                  BINARY-LONG.
  LINKAGE SECTION.
- 01 L-KEY                  PIC X(32).
+ 01 L-KEY                  PIC X(64).
  01 L-PAIRS                PIC X(64).
  01 L-PAIR-COUNT           BINARY-LONG.
  01 L-STATE                BINARY-LONG.

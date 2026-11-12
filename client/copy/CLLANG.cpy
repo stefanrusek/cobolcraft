@@ -445,6 +445,8 @@
     05 FILLER PIC X(128) VALUE "CobolCraft".
     05 FILLER PIC X(80) VALUE "cobolcraft.world_type.standard.unavailable".
     05 FILLER PIC X(128) VALUE "Standard worlds need the Minecraft content. See the title screen message.".
+    05 FILLER PIC X(80) VALUE "cobolcraft.world_type.refused".
+    05 FILLER PIC X(128) VALUE "This world cannot be opened: it has no world type, or its files are incomplete.".
     05 FILLER PIC X(80) VALUE "cobolcraft.screen.create_world.type".
     05 FILLER PIC X(128) VALUE "World type: %s".
     05 FILLER PIC X(80) VALUE "cobolcraft.screen.world_list.type".
@@ -724,6 +726,6 @@
     05 FILLER PIC X(80) VALUE "test_instance.description.failed".
     05 FILLER PIC X(128) VALUE "Failed: %s".
  01 BI-LANG-TABLE REDEFINES BI-LANG-DATA.
-    05 BI-LANG OCCURS 355 TIMES.
+    05 BI-LANG OCCURS 356 TIMES.
        10 BI-LANG-KEY        PIC X(80).
        10 BI-LANG-TEXT       PIC X(128).

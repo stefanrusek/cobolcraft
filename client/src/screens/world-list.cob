@@ -124,12 +124,16 @@
      MOVE 29 TO WS-KEY-LENGTH
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
          WS-KEY-LENGTH
-     IF SP-CREATE-REFUSED = 1
+     IF SP-CREATE-REFUSED NOT = 0
          MOVE WK-LABEL TO WS-KIND
          COMPUTE WS-X = L-GW / 2 - 150
          COMPUTE WS-Y = L-GH - 66
          MOVE "cobolcraft.world_type.standard.unavailable" TO WS-KEY
          MOVE 42 TO WS-KEY-LENGTH
+         IF SP-CREATE-REFUSED = 2
+             MOVE "cobolcraft.world_type.refused" TO WS-KEY
+             MOVE 29 TO WS-KEY-LENGTH
+         END-IF
          CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
              WS-KEY-LENGTH
      END-IF
