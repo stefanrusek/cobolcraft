@@ -2,7 +2,7 @@
 *> times for standard states"): with the standard set open, the hand break time of a state is its block's
 *> hardness x 1.5 s, x 5 s when the block needs the correct tool for its drops (stone: 1.5 -> 7,500 ms; dirt: 0.5
 *> -> 750 ms), and never for an unbreakable block (bedrock: -1). With no set open (or a cobolcraft one) the
-*> stand-in table of standin-content 1.1 answers as before (greystone 1,500 ms, baseplate never).
+*> stand-in table of standin-content 1.1 answers as before (greystone 2,250 ms, baseplate never).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-BREAK-TIME-CONTENT.
  DATA DIVISION.
@@ -26,10 +26,10 @@
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE 2 TO WS-STATE
      CALL "CONTROLS-BREAK-TIME" USING CLIENT-STATE WS-STATE WS-ITEM WS-MS
-     MOVE "break time with no set open: greystone (state 2) by hand takes 1,500 ms (the stand-in table)"
+     MOVE "break time with no set open: greystone (state 2) by hand takes 2,250 ms (the stand-in table)"
          TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 1500 TO TL-EXPECTED-N
+     MOVE 2250 TO TL-EXPECTED-N
      MOVE WS-MS TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

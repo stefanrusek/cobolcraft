@@ -47,6 +47,8 @@
        10 IN-KEY-DOWN        PIC 9 OCCURS 400 TIMES.   *> GLFW key code + 1
        10 IN-KEY-PRESSED-AREA.
           15 IN-KEY-PRESSED  PIC 9 OCCURS 400 TIMES.   *> went down during this frame
+       10 IN-KEY-REPEAT-AREA.
+          15 IN-KEY-REPEAT   PIC 9 OCCURS 400 TIMES.   *> the frame's down event was the window system's key repeat
        10 IN-MODS            BINARY-LONG.
        10 IN-TEXT-COUNT      BINARY-LONG.
        10 IN-TEXT            BINARY-LONG OCCURS 32 TIMES.   *> code points typed this frame
@@ -505,6 +507,7 @@
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
        10 CT-DONE-X          BINARY-LONG.
+       10 CT-DONE-MS         BINARY-DOUBLE.  *> clock of that stop destroy (the 5-tick cooldown, 13 section 2.2)
        10 CT-DONE-Y          BINARY-LONG.
        10 CT-DONE-Z          BINARY-LONG.
        10 BD-ENTITY          BINARY-LONG.    *> the last Block Destruction (another player's break)

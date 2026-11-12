@@ -48,7 +48,8 @@
          CALL "CLP-SEND-ABILITIES" USING CLIENT-STATE WS-CONN
      END-IF
      MOVE KB-CODE(KB-JUMP) TO WS-KJ
-     IF IN-KEY-PRESSED(WS-KJ + 1) = 1
+*>   A key repeat of the window system is not a press (13 section 1.4: a rising edge of Space).
+     IF IN-KEY-PRESSED(WS-KJ + 1) = 1 AND IN-KEY-REPEAT(WS-KJ + 1) = 0
          MOVE 1 TO PL-JUMP
          IF WS-CAN-FLY = 1 AND PL-SPACE-MS > 0 AND CL-NOW-MS - PL-SPACE-MS <= 300
              COMPUTE PL-FLYING = 1 - PL-FLYING
