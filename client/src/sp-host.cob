@@ -101,7 +101,11 @@
 *>   A refused world (core-host-delta section 2: the flag is minus a CORE-WO status) is not hosted: the create
 *>   screen shows the refusal (builtin-ui-art 7.2) and nothing opens.
      IF WS-CREATED < 0
-         MOVE 1 TO SP-CREATE-REFUSED
+*>       1: the packs are not ok (the Minecraft content text); 2: any other refusal of the core (no world type, no level.dat).
+         MOVE 2 TO SP-CREATE-REFUSED
+         IF WS-CREATED = -1
+             MOVE 1 TO SP-CREATE-REFUSED
+         END-IF
          GOBACK
      END-IF
      IF WS-CREATED = 1

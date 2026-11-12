@@ -363,6 +363,14 @@
                  EVALUATE TRUE
                      WHEN WS-TYPE = 0
                          CONTINUE
+*>                   A real 26.3 world (33 section 10): one compound Data holds LevelName and GameType; read
+*>                   as if in the root (its end tag ends the loop). It is a standard world, as the core decides.
+                     WHEN WN = "Data" AND WS-TYPE = 10
+                         MOVE SPACES TO WL-TYPE(WL-COUNT)
+                         MOVE "standard" TO WL-TYPE(WL-COUNT)
+                     WHEN WN = "GameType" AND WS-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                         MOVE WS-INT TO WL-MODE(WL-COUNT)
                      WHEN WN = "LevelName" AND WS-TYPE = 8
                          CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAP
                              WS-TEXT-LENGTH
