@@ -87,3 +87,12 @@
  78 MX-ANCHORED           VALUE 10.
  78 MX-IN                 VALUE 11.
  78 MX-IF                 VALUE 12.
+*> The commands of core/src/cmds-world.cob added in the lane cmds-c (run by CX-DISPATCH-C).
+ 78 BC-CLONE             VALUE 301.
+ 78 BC-FILLBIOME         VALUE 302.
+ 78 BC-FORCELOAD         VALUE 303.
+ 78 BC-LOCATE            VALUE 304.
+ 78 BC-PARTICLE          VALUE 305.
+ 78 BC-PLACE             VALUE 306.
+ 78 BC-PLAYSOUND         VALUE 307.
+ 78 BC-STOPSOUND         VALUE 308.

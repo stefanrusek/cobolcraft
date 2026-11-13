@@ -205,6 +205,27 @@
          WHEN "recipetype"
              MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
              MOVE "minecraft:recipe" TO WS-REGISTRY
+         WHEN "biome"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
+         WHEN "biomeortag"
+             MOVE BR-P-RES-OR-TAG TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
+         WHEN "structortag"
+             MOVE BR-P-RES-OR-TAG-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+         WHEN "structkey"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/structure" TO WS-REGISTRY
+         WHEN "poolkey"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/template_pool" TO WS-REGISTRY
+         WHEN "poiortag"
+             MOVE BR-P-RES-OR-TAG TO WS-TYPE-ID
+             MOVE "minecraft:point_of_interest_type" TO WS-REGISTRY
+         WHEN "feature"     MOVE BR-P-FEATURE TO WS-TYPE-ID
+         WHEN "mirror"      MOVE BR-P-MIRROR TO WS-TYPE-ID
+         WHEN "templaterot" MOVE BR-P-TEMPLATE-ROT TO WS-TYPE-ID
          WHEN OTHER         MOVE BR-P-TIME TO WS-TYPE-ID
      END-EVALUATE.
 
