@@ -79,6 +79,8 @@
     MOVE "trigger t set 9" TO WS-LINE
     MOVE 9 TO WS-EXPECTED-N
     CALL "TA-CHECK-N" USING WS-ID-ALICE TL-CASE WS-LINE WS-EXPECTED-N
+    MOVE "scoreboard objectives list" TO WS-LINE
+    CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
     MOVE "acceptance US13 /trigger the value is the score" TO TL-CASE
     MOVE "scoreboard players get Alice t" TO WS-LINE
     MOVE "commands.scoreboard.players.get.success(Alice,9,t)" TO WS-EXPECTED

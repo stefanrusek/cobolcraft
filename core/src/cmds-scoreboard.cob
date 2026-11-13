@@ -1270,6 +1270,715 @@
  END PROGRAM CMDS-REG-SCOREBOARD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SBX-TEAM-LEAVE.
+*> USING holder name (PIC X(64)), length: the holder is on no team afterwards.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SBSTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-LENGTH.
+     CALL "SBX-MEMBER-OF" USING L-NAME L-LENGTH WS-ROW
+     IF WS-ROW > 0
+         MOVE 0 TO SB-M-USED(WS-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM SBX-TEAM-LEAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SBX-TEAM-JOIN.
+*> USING team row, holder name (PIC X(64)), length: the holder is on that team (and off any other); a holder already on it stays where it is, and a full
+*> member table drops the join.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SBSTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FREE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEAM                 BINARY-LONG.
+ 01 L-NAME                 PIC X(64).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEAM L-NAME L-LENGTH.
+     CALL "SBX-MEMBER-OF" USING L-NAME L-LENGTH WS-ROW
+     IF WS-ROW > 0 AND SB-M-TEAM(WS-ROW) NOT = L-TEAM
+         MOVE 0 TO SB-M-USED(WS-ROW)
+         MOVE 0 TO WS-ROW
+     END-IF
+     IF WS-ROW = 0
+         MOVE 0 TO WS-FREE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SB-MAX-MEMBERS OR WS-FREE > 0
+             IF SB-M-USED(WS-I) = 0
+                 MOVE WS-I TO WS-FREE
+             END-IF
+         END-PERFORM
+         IF WS-FREE > 0
+             MOVE 1 TO SB-M-USED(WS-FREE)
+             MOVE L-TEAM TO SB-M-TEAM(WS-FREE)
+             MOVE L-NAME TO SB-M-NAME(WS-FREE)
+             MOVE L-LENGTH TO SB-M-NAME-LENGTH(WS-FREE)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM SBX-TEAM-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXT-MODIFY.
+*> team modify <team> <option> ... (16 §9.2): displayName, color (reset or a colour), friendlyFire and seeFriendlyInvisibles (a bool), nametagVisibility and
+*> deathMessageVisibility (always, never, hideForOtherTeams, hideForOwnTeam), collisionRule (always, never, pushOtherTeams, pushOwnTeam), prefix and suffix.
+*> A value the team already has fails with the option's unchanged or already... exception; otherwise the .option.* message is broadcast (prefix and suffix are
+*> quiet) and the result is 0 (prefix and suffix 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SBSTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-OPTION-NAMES.
+    05 FILLER               PIC X(32) VALUE "displayName".
+    05 FILLER               PIC X(32) VALUE "color".
+    05 FILLER               PIC X(32) VALUE "friendlyFire".
+    05 FILLER               PIC X(32) VALUE "seeFriendlyInvisibles".
+    05 FILLER               PIC X(32) VALUE "nametagVisibility".
+    05 FILLER               PIC X(32) VALUE "deathMessageVisibility".
+    05 FILLER               PIC X(32) VALUE "collisionRule".
+    05 FILLER               PIC X(32) VALUE "prefix".
+    05 FILLER               PIC X(32) VALUE "suffix".
+ 01 WS-OPTION-TABLE REDEFINES WS-OPTION-NAMES.
+    05 WS-OPTION-NAME       PIC X(32) OCCURS 9 TIMES.
+ 01 WS-VALUE-NAMES.
+    05 FILLER               PIC X(32) VALUE "always".
+    05 FILLER               PIC X(32) VALUE "never".
+    05 FILLER               PIC X(32) VALUE "hideForOtherTeams".
+    05 FILLER               PIC X(32) VALUE "hideForOwnTeam".
+    05 FILLER               PIC X(32) VALUE "pushOtherTeams".
+    05 FILLER               PIC X(32) VALUE "pushOwnTeam".
+ 01 WS-VALUE-TABLE REDEFINES WS-VALUE-NAMES.
+    05 WS-VALUE-NAME        PIC X(32) OCCURS 6 TIMES.
+ 01 WS-VALUE-CODES.
+    05 FILLER               BINARY-LONG VALUE 0.
+    05 FILLER               BINARY-LONG VALUE 1.
+    05 FILLER               BINARY-LONG VALUE 2.
+    05 FILLER               BINARY-LONG VALUE 3.
+    05 FILLER               BINARY-LONG VALUE 2.
+    05 FILLER               BINARY-LONG VALUE 3.
+ 01 WS-CODE-TABLE REDEFINES WS-VALUE-CODES.
+    05 WS-VALUE-CODE        BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-N-TEAM              PIC X(32) VALUE "team".
+ 01 WS-N-RESET             PIC X(32) VALUE "reset".
+ 01 WS-N-VALUE             PIC X(32) VALUE "value".
+ 01 WS-N-DISPLAY           PIC X(32) VALUE "displayName".
+ 01 WS-N-PREFIX            PIC X(32) VALUE "prefix".
+ 01 WS-N-SUFFIX            PIC X(32) VALUE "suffix".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OPT                 BINARY-LONG.
+ 01 WS-RESET               BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-CURRENT             BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-VALUE-TEXT          PIC X(64).
+ 01 WS-VALUE-LENGTH        BINARY-LONG.
+ 01 WS-QUOTES              BINARY-LONG VALUE 1.
+ 01 WS-NO-QUOTES           BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-KEY-UNCHANGED       PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The message WS-KEY with the team name, then the value text when WS-VALUE-LENGTH > 0, broadcast.
+ TELL-TEAM.
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-NAME(WS-ROW) SB-T-NAME-LENGTH(WS-ROW)
+     IF WS-VALUE-LENGTH > 0
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-VALUE-TEXT WS-VALUE-LENGTH
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+*> The visibility or collision options: WS-CURRENT is the team's value, WS-KEY-UNCHANGED the failure.
+ DO-LEVELS.
+     MOVE 0 TO WS-VALUE-LENGTH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         CALL "BX-LIT" USING WS-VALUE-NAME(WS-I) WS-INDEX
+         IF WS-INDEX > 0
+             MOVE WS-VALUE-CODE(WS-I) TO WS-CODE
+             MOVE WS-VALUE-NAME(WS-I) TO WS-VALUE-TEXT
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-VALUE-NAME(WS-I))) TO WS-VALUE-LENGTH
+         END-IF
+     END-PERFORM
+     IF WS-CODE = WS-CURRENT
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY-UNCHANGED
+     ELSE
+         EVALUATE WS-OPT
+             WHEN 5
+                 MOVE WS-CODE TO SB-T-NAMETAG(WS-ROW)
+             WHEN 6
+                 MOVE WS-CODE TO SB-T-DEATH(WS-ROW)
+             WHEN OTHER
+                 MOVE WS-CODE TO SB-T-COLLISION(WS-ROW)
+         END-EVALUATE
+         PERFORM TELL-TEAM
+     END-IF.
+
+*> friendlyFire (WS-OPT 3) and seeFriendlyInvisibles (4): the bool of "value".
+ DO-FLAG.
+     CALL "BX-FIND" USING WS-N-VALUE WS-INDEX
+     MOVE BA-IVAL(WS-INDEX) TO WS-CODE
+     MOVE 0 TO WS-VALUE-LENGTH
+     IF WS-OPT = 3
+         MOVE SB-T-FRIENDLY(WS-ROW) TO WS-CURRENT
+         MOVE "commands.team.option.friendlyfire.alreadyDisabled" TO WS-KEY-UNCHANGED
+         MOVE "commands.team.option.friendlyfire.disabled" TO WS-KEY
+         IF WS-CODE = 1
+             MOVE "commands.team.option.friendlyfire.alreadyEnabled" TO WS-KEY-UNCHANGED
+             MOVE "commands.team.option.friendlyfire.enabled" TO WS-KEY
+         END-IF
+     ELSE
+         MOVE SB-T-SEE-INVISIBLE(WS-ROW) TO WS-CURRENT
+         MOVE "commands.team.option.seeFriendlyInvisibles.alreadyDisabled" TO WS-KEY-UNCHANGED
+         MOVE "commands.team.option.seeFriendlyInvisibles.disabled" TO WS-KEY
+         IF WS-CODE = 1
+             MOVE "commands.team.option.seeFriendlyInvisibles.alreadyEnabled" TO WS-KEY-UNCHANGED
+             MOVE "commands.team.option.seeFriendlyInvisibles.enabled" TO WS-KEY
+         END-IF
+     END-IF
+     IF WS-CODE = WS-CURRENT
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY-UNCHANGED
+     ELSE
+         IF WS-OPT = 3
+             MOVE WS-CODE TO SB-T-FRIENDLY(WS-ROW)
+         ELSE
+             MOVE WS-CODE TO SB-T-SEE-INVISIBLE(WS-ROW)
+         END-IF
+         PERFORM TELL-TEAM
+     END-IF.
+
+ DO-COLOR.
+     CALL "BX-LIT" USING WS-N-RESET WS-RESET
+     MOVE 0 TO WS-VALUE-LENGTH
+     IF WS-RESET > 0
+         MOVE -1 TO WS-CODE
+     ELSE
+         CALL "BX-FIND" USING WS-N-VALUE WS-INDEX
+         MOVE BA-IVAL(WS-INDEX) TO WS-CODE
+         CALL "SBX-ARG-TEXT" USING WS-INDEX WS-VALUE-TEXT WS-VALUE-LENGTH WS-NO-QUOTES
+     END-IF
+     IF WS-CODE = SB-T-COLOR(WS-ROW)
+         MOVE "commands.team.option.color.unchanged" TO WS-KEY
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE WS-CODE TO SB-T-COLOR(WS-ROW)
+         MOVE "commands.team.option.color.success" TO WS-KEY
+         IF WS-RESET > 0
+             MOVE "commands.team.option.color.clear.success" TO WS-KEY
+         END-IF
+         PERFORM TELL-TEAM
+     END-IF.
+
+ DO-NAME.
+     CALL "BX-FIND" USING WS-N-DISPLAY WS-INDEX
+     CALL "SBX-ARG-TEXT" USING WS-INDEX WS-TEXT WS-TEXT-LENGTH WS-QUOTES
+     MOVE 0 TO WS-VALUE-LENGTH
+     IF WS-TEXT-LENGTH = SB-T-DISPLAY-LENGTH(WS-ROW) AND WS-TEXT = SB-T-DISPLAY(WS-ROW)
+         MOVE "commands.team.option.name.unchanged" TO WS-KEY
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE WS-TEXT TO SB-T-DISPLAY(WS-ROW)
+         MOVE WS-TEXT-LENGTH TO SB-T-DISPLAY-LENGTH(WS-ROW)
+         MOVE "commands.team.option.name.success" TO WS-KEY
+         PERFORM TELL-TEAM
+     END-IF.
+
+*> prefix (WS-OPT 8) and suffix (9): the component text, told quietly; the result is 1.
+ DO-AFFIX.
+     IF WS-OPT = 8
+         CALL "BX-FIND" USING WS-N-PREFIX WS-INDEX
+         CALL "SBX-ARG-TEXT" USING WS-INDEX SB-T-PREFIX(WS-ROW) SB-T-PREFIX-LENGTH(WS-ROW) WS-QUOTES
+         MOVE SB-T-PREFIX(WS-ROW) TO WS-TEXT
+         MOVE SB-T-PREFIX-LENGTH(WS-ROW) TO WS-TEXT-LENGTH
+         MOVE "commands.team.option.prefix.success" TO WS-KEY
+     ELSE
+         CALL "BX-FIND" USING WS-N-SUFFIX WS-INDEX
+         CALL "SBX-ARG-TEXT" USING WS-INDEX SB-T-SUFFIX(WS-ROW) SB-T-SUFFIX-LENGTH(WS-ROW) WS-QUOTES
+         MOVE SB-T-SUFFIX(WS-ROW) TO WS-TEXT
+         MOVE SB-T-SUFFIX-LENGTH(WS-ROW) TO WS-TEXT-LENGTH
+         MOVE "commands.team.option.suffix.success" TO WS-KEY
+     END-IF
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     MOVE 1 TO BR-R-RESULT.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     CALL "SBX-TEAM" USING WS-INDEX WS-ROW
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-OPT BR-R-RESULT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+             CALL "BX-LIT" USING WS-OPTION-NAME(WS-I) WS-INDEX
+             IF WS-INDEX > 0
+                 MOVE WS-I TO WS-OPT
+             END-IF
+         END-PERFORM
+         EVALUATE WS-OPT
+             WHEN 1
+                 PERFORM DO-NAME
+             WHEN 2
+                 PERFORM DO-COLOR
+             WHEN 3 THRU 4
+                 PERFORM DO-FLAG
+             WHEN 5
+                 MOVE SB-T-NAMETAG(WS-ROW) TO WS-CURRENT
+                 MOVE "commands.team.option.nametagVisibility.unchanged" TO WS-KEY-UNCHANGED
+                 MOVE "commands.team.option.nametagVisibility.success" TO WS-KEY
+                 PERFORM DO-LEVELS
+             WHEN 6
+                 MOVE SB-T-DEATH(WS-ROW) TO WS-CURRENT
+                 MOVE "commands.team.option.deathMessageVisibility.unchanged" TO WS-KEY-UNCHANGED
+                 MOVE "commands.team.option.deathMessageVisibility.success" TO WS-KEY
+                 PERFORM DO-LEVELS
+             WHEN 7
+                 MOVE SB-T-COLLISION(WS-ROW) TO WS-CURRENT
+                 MOVE "commands.team.option.collisionRule.unchanged" TO WS-KEY-UNCHANGED
+                 MOVE "commands.team.option.collisionRule.success" TO WS-KEY
+                 PERFORM DO-LEVELS
+             WHEN OTHER
+                 PERFORM DO-AFFIX
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM CXT-MODIFY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-TEAM.
+*> team list|add|remove|empty|join|leave|modify (16 §9.2, level 2). list tells the teams (.list.teams.empty or .list.teams.success [count, names]) or the
+*> members of one (.list.members.empty [team], .list.members.success [team, count, names]), not broadcast; the result is the count. add <team> [<displayName>]
+*> makes a team (a duplicate, or a full table, is .add.duplicate; .add.success [team]); remove drops it and its members (.remove.success [team]); both return
+*> the number of teams afterwards. empty removes the members (.empty.success [count, team], .empty.unchanged when there were none; the result is the count).
+*> join <team> [<members>] puts the holders (the source when none is typed; the console is permissions.requires.entity) on the team, off any other
+*> (.join.success.single [member, team] or .multiple [count, team]); leave takes them off any team (.leave.success.single [member] or .multiple [count]); both
+*> return the number of holders. modify is CXT-MODIFY. An unknown team is team.notFound [name].
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SBSTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ COPY SBHOLD.
+ 01 WS-N-LIST              PIC X(32) VALUE "list".
+ 01 WS-N-ADD               PIC X(32) VALUE "add".
+ 01 WS-N-REMOVE            PIC X(32) VALUE "remove".
+ 01 WS-N-EMPTY             PIC X(32) VALUE "empty".
+ 01 WS-N-JOIN              PIC X(32) VALUE "join".
+ 01 WS-N-LEAVE             PIC X(32) VALUE "leave".
+ 01 WS-N-TEAM              PIC X(32) VALUE "team".
+ 01 WS-N-DISPLAY           PIC X(32) VALUE "displayName".
+ 01 WS-N-MEMBERS           PIC X(32) VALUE "members".
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-ADD                 BINARY-LONG.
+ 01 WS-REMOVE              BINARY-LONG.
+ 01 WS-EMPTY               BINARY-LONG.
+ 01 WS-JOIN                BINARY-LONG.
+ 01 WS-LEAVE               BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-FREE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 3.
+ 01 WS-NAMES               PIC X(1024).
+ 01 WS-NAMES-LENGTH        BINARY-LONG.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-NAME                PIC X(64).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-QUOTES              BINARY-LONG VALUE 1.
+ 01 WS-NO-QUOTES           BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The number of teams into BR-R-RESULT.
+ COUNT-RESULT.
+     CALL "SBX-JOIN" USING WS-KIND WS-NAMES WS-NAMES-LENGTH WS-COUNT
+     MOVE WS-COUNT TO BR-R-RESULT.
+
+*> The message WS-KEY with the team name (WS-NAME) as its only argument, broadcast.
+ TELL-NAME.
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NAME WS-NAME-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+*> The names of the members of team WS-ROW in WS-NAMES and their number in WS-COUNT.
+ COLLECT-MEMBERS.
+     MOVE SPACES TO WS-NAMES
+     MOVE 1 TO WS-POINTER
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SB-MAX-MEMBERS
+         IF SB-M-USED(WS-I) = 1 AND SB-M-TEAM(WS-I) = WS-ROW
+             IF WS-COUNT > 0
+                 STRING ", " DELIMITED BY SIZE INTO WS-NAMES WITH POINTER WS-POINTER
+             END-IF
+             STRING SB-M-NAME(WS-I)(1:SB-M-NAME-LENGTH(WS-I)) DELIMITED BY SIZE INTO WS-NAMES WITH POINTER WS-POINTER
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     COMPUTE WS-NAMES-LENGTH = WS-POINTER - 1.
+
+ DO-LIST.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     IF WS-INDEX = 0
+         CALL "SBX-JOIN" USING WS-KIND WS-NAMES WS-NAMES-LENGTH WS-COUNT
+         IF WS-COUNT = 0
+             MOVE "commands.team.list.teams.empty" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+         ELSE
+             MOVE "commands.team.list.teams.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NAMES WS-NAMES-LENGTH
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         MOVE WS-COUNT TO BR-R-RESULT
+     ELSE
+         CALL "SBX-TEAM" USING WS-INDEX WS-ROW
+         IF BR-R-FAILED = 0
+             PERFORM COLLECT-MEMBERS
+             IF WS-COUNT = 0
+                 MOVE "commands.team.list.members.empty" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-NAME(WS-ROW) SB-T-NAME-LENGTH(WS-ROW)
+             ELSE
+                 MOVE "commands.team.list.members.success" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-NAME(WS-ROW) SB-T-NAME-LENGTH(WS-ROW)
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NAMES WS-NAMES-LENGTH
+             END-IF
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+             MOVE WS-COUNT TO BR-R-RESULT
+         END-IF
+     END-IF.
+
+ DO-ADD.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     CALL "SBX-ARG-TEXT" USING WS-INDEX WS-NAME WS-NAME-LENGTH WS-NO-QUOTES
+     CALL "SBX-TEAM-BY-NAME" USING WS-NAME WS-NAME-LENGTH WS-ROW
+     MOVE 0 TO WS-FREE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SB-MAX-TEAMS OR WS-FREE > 0
+         IF SB-T-USED(WS-I) = 0
+             MOVE WS-I TO WS-FREE
+         END-IF
+     END-PERFORM
+     IF WS-ROW > 0 OR WS-FREE = 0
+         MOVE "commands.team.add.duplicate" TO WS-KEY
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         INITIALIZE SB-TEAM(WS-FREE)
+         MOVE 1 TO SB-T-USED(WS-FREE)
+         MOVE WS-NAME TO SB-T-NAME(WS-FREE)
+         MOVE WS-NAME-LENGTH TO SB-T-NAME-LENGTH(WS-FREE)
+         MOVE WS-NAME TO SB-T-DISPLAY(WS-FREE)
+         MOVE WS-NAME-LENGTH TO SB-T-DISPLAY-LENGTH(WS-FREE)
+         MOVE -1 TO SB-T-COLOR(WS-FREE)
+         MOVE 1 TO SB-T-FRIENDLY(WS-FREE) SB-T-SEE-INVISIBLE(WS-FREE)
+         CALL "BX-FIND" USING WS-N-DISPLAY WS-INDEX
+         IF WS-INDEX > 0
+             CALL "SBX-ARG-TEXT" USING WS-INDEX SB-T-DISPLAY(WS-FREE) SB-T-DISPLAY-LENGTH(WS-FREE) WS-QUOTES
+         END-IF
+         MOVE "commands.team.add.success" TO WS-KEY
+         PERFORM TELL-NAME
+         PERFORM COUNT-RESULT
+     END-IF.
+
+ DO-REMOVE.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     CALL "SBX-TEAM" USING WS-INDEX WS-ROW
+     IF BR-R-FAILED = 0
+         MOVE SB-T-NAME(WS-ROW) TO WS-NAME
+         MOVE SB-T-NAME-LENGTH(WS-ROW) TO WS-NAME-LENGTH
+         MOVE 0 TO SB-T-USED(WS-ROW)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SB-MAX-MEMBERS
+             IF SB-M-USED(WS-I) = 1 AND SB-M-TEAM(WS-I) = WS-ROW
+                 MOVE 0 TO SB-M-USED(WS-I)
+             END-IF
+         END-PERFORM
+         MOVE "commands.team.remove.success" TO WS-KEY
+         PERFORM TELL-NAME
+         PERFORM COUNT-RESULT
+     END-IF.
+
+ DO-EMPTY.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     CALL "SBX-TEAM" USING WS-INDEX WS-ROW
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SB-MAX-MEMBERS
+             IF SB-M-USED(WS-I) = 1 AND SB-M-TEAM(WS-I) = WS-ROW
+                 MOVE 0 TO SB-M-USED(WS-I)
+                 ADD 1 TO WS-COUNT
+             END-IF
+         END-PERFORM
+         IF WS-COUNT = 0
+             MOVE "commands.team.empty.unchanged" TO WS-KEY
+             CALL "SBX-RAISE-PLAIN" USING WS-KEY
+         ELSE
+             MOVE "commands.team.empty.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
+             CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-NAME(WS-ROW) SB-T-NAME-LENGTH(WS-ROW)
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE WS-COUNT TO BR-R-RESULT
+         END-IF
+     END-IF.
+
+*> The holders of the "members" argument, or the source when there is none (the console is not an entity).
+ GET-MEMBERS.
+     CALL "BX-FIND" USING WS-N-MEMBERS WS-INDEX
+     EVALUATE TRUE
+         WHEN WS-INDEX > 0
+             CALL "SBX-HOLDERS" USING WS-INDEX SBH-TABLE
+         WHEN BS-ROW = 0
+             MOVE "permissions.requires.entity" TO WS-KEY
+             CALL "SBX-RAISE-PLAIN" USING WS-KEY
+         WHEN OTHER
+             MOVE 1 TO SBH-COUNT
+             MOVE SPACES TO SBH-NAME(1)
+             MOVE BS-NAME TO SBH-NAME(1)
+             MOVE BS-NAME-LENGTH TO SBH-LENGTH(1)
+     END-EVALUATE.
+
+ DO-JOIN.
+     CALL "BX-FIND" USING WS-N-TEAM WS-INDEX
+     CALL "SBX-TEAM" USING WS-INDEX WS-ROW
+     IF BR-R-FAILED = 0
+         PERFORM GET-MEMBERS
+     END-IF
+     IF BR-R-FAILED = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SBH-COUNT
+             CALL "SBX-TEAM-JOIN" USING WS-ROW SBH-NAME(WS-I) SBH-LENGTH(WS-I)
+         END-PERFORM
+         IF SBH-COUNT = 1
+             MOVE "commands.team.join.success.single" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT SBH-NAME(1) SBH-LENGTH(1)
+         ELSE
+             MOVE "commands.team.join.success.multiple" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT SBH-COUNT
+         END-IF
+         CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-NAME(WS-ROW) SB-T-NAME-LENGTH(WS-ROW)
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE SBH-COUNT TO BR-R-RESULT
+     END-IF.
+
+ DO-LEAVE.
+     PERFORM GET-MEMBERS
+     IF BR-R-FAILED = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SBH-COUNT
+             CALL "SBX-TEAM-LEAVE" USING SBH-NAME(WS-I) SBH-LENGTH(WS-I)
+         END-PERFORM
+         IF SBH-COUNT = 1
+             MOVE "commands.team.leave.success.single" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT SBH-NAME(1) SBH-LENGTH(1)
+         ELSE
+             MOVE "commands.team.leave.success.multiple" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT SBH-COUNT
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE SBH-COUNT TO BR-R-RESULT
+     END-IF.
+
+ MAIN-LINE.
+     CALL "BX-LIT" USING WS-N-LIST WS-LIST
+     CALL "BX-LIT" USING WS-N-ADD WS-ADD
+     CALL "BX-LIT" USING WS-N-REMOVE WS-REMOVE
+     CALL "BX-LIT" USING WS-N-EMPTY WS-EMPTY
+     CALL "BX-LIT" USING WS-N-JOIN WS-JOIN
+     CALL "BX-LIT" USING WS-N-LEAVE WS-LEAVE
+     EVALUATE TRUE
+         WHEN WS-LIST > 0
+             PERFORM DO-LIST
+         WHEN WS-ADD > 0
+             PERFORM DO-ADD
+         WHEN WS-REMOVE > 0
+             PERFORM DO-REMOVE
+         WHEN WS-EMPTY > 0
+             PERFORM DO-EMPTY
+         WHEN WS-JOIN > 0
+             PERFORM DO-JOIN
+         WHEN WS-LEAVE > 0
+             PERFORM DO-LEAVE
+         WHEN OTHER
+             CALL "CXT-MODIFY"
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-TEAM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-TEAM.
+*> The forms of team (16 §9.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-TEAM.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FORMS.
+    05 FILLER PIC X(100) VALUE "list".
+    05 FILLER PIC X(100) VALUE "list <team:team>".
+    05 FILLER PIC X(100) VALUE "add <team:word>".
+    05 FILLER PIC X(100) VALUE "add <team:word> <displayName:component>".
+    05 FILLER PIC X(100) VALUE "remove <team:team>".
+    05 FILLER PIC X(100) VALUE "empty <team:team>".
+    05 FILLER PIC X(100) VALUE "join <team:team>".
+    05 FILLER PIC X(100) VALUE "join <team:team> <members:holders>".
+    05 FILLER PIC X(100) VALUE "leave <members:holders>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> displayName <displayName:component>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> color reset".
+    05 FILLER PIC X(100) VALUE "modify <team:team> color <value:teamcolor>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> friendlyFire <value:bool>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> seeFriendlyInvisibles <value:bool>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility never".
+    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility hideForOtherTeams".
+    05 FILLER PIC X(100) VALUE "modify <team:team> nametagVisibility hideForOwnTeam".
+    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility never".
+    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility hideForOtherTeams".
+    05 FILLER PIC X(100) VALUE "modify <team:team> deathMessageVisibility hideForOwnTeam".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule always".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule never".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule pushOtherTeams".
+    05 FILLER PIC X(100) VALUE "modify <team:team> collisionRule pushOwnTeam".
+    05 FILLER PIC X(100) VALUE "modify <team:team> prefix <prefix:component>".
+    05 FILLER PIC X(100) VALUE "modify <team:team> suffix <suffix:component>".
+ 01 WS-FORM-TABLE REDEFINES WS-FORMS.
+    05 WS-FORM              PIC X(100) OCCURS 28 TIMES.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 28
+         MOVE SPACES TO WS-PATH
+         STRING "team " DELIMITED BY SIZE WS-FORM(WS-I) DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-TEAM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-TRIGGER.
+*> trigger <objective> [add <value> | set <value>] (16 §9.3, level 0): the source must be a player (permissions.requires.player); the objective must have
+*> the criterion trigger (commands.trigger.failed.invalid) and the player a score of it that is not locked (commands.trigger.failed.unprimed; scoreboard players
+*> enable makes or unlocks it). The score is locked, then raised by 1 (.simple.success [objective]), raised by the value (.add.success [objective, value]) or set
+*> to it (.set.success [objective, value]), broadcast; the result is the new score.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY SBSTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-N-OBJECTIVE         PIC X(32) VALUE "objective".
+ 01 WS-N-ADD               PIC X(32) VALUE "add".
+ 01 WS-N-SET               PIC X(32) VALUE "set".
+ 01 WS-N-VALUE             PIC X(32) VALUE "value".
+ 01 WS-ADD                 BINARY-LONG.
+ 01 WS-SET                 BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-OBJ                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HOLDER              PIC X(64).
+ 01 WS-HOLDER-LENGTH       BINARY-LONG.
+ 01 WS-NEW                 BINARY-DOUBLE.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     IF BS-ROW = 0
+         MOVE "permissions.requires.player" TO WS-KEY
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         CALL "BX-FIND" USING WS-N-OBJECTIVE WS-INDEX
+         CALL "SBX-OBJECTIVE" USING WS-INDEX WS-OBJ
+     END-IF
+     IF BR-R-FAILED = 0 AND (SB-O-CRIT-LENGTH(WS-OBJ) NOT = 7 OR SB-O-CRITERIA(WS-OBJ)(1:7) NOT = "trigger")
+         MOVE "commands.trigger.failed.invalid" TO WS-KEY
+         CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE SPACES TO WS-HOLDER
+         MOVE BS-NAME TO WS-HOLDER
+         MOVE BS-NAME-LENGTH TO WS-HOLDER-LENGTH
+         CALL "SBX-SCORE-FIND" USING WS-OBJ WS-HOLDER WS-HOLDER-LENGTH WS-ZERO WS-ROW
+         IF WS-ROW = 0
+             MOVE "commands.trigger.failed.unprimed" TO WS-KEY
+             CALL "SBX-RAISE-PLAIN" USING WS-KEY
+         ELSE
+             IF SB-S-LOCKED(WS-ROW) = 1
+                 MOVE "commands.trigger.failed.unprimed" TO WS-KEY
+                 CALL "SBX-RAISE-PLAIN" USING WS-KEY
+             END-IF
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE 1 TO SB-S-LOCKED(WS-ROW)
+         CALL "BX-LIT" USING WS-N-ADD WS-ADD
+         CALL "BX-LIT" USING WS-N-SET WS-SET
+         MOVE 1 TO WS-VALUE
+         IF WS-ADD + WS-SET > 0
+             CALL "BX-FIND" USING WS-N-VALUE WS-INDEX
+             MOVE BA-IVAL(WS-INDEX) TO WS-VALUE
+         END-IF
+         EVALUATE TRUE
+             WHEN WS-SET > 0
+                 MOVE WS-VALUE TO WS-NEW
+                 MOVE "commands.trigger.set.success" TO WS-KEY
+             WHEN WS-ADD > 0
+                 COMPUTE WS-NEW = SB-S-VALUE(WS-ROW) + WS-VALUE
+                 MOVE "commands.trigger.add.success" TO WS-KEY
+             WHEN OTHER
+                 COMPUTE WS-NEW = SB-S-VALUE(WS-ROW) + 1
+                 MOVE "commands.trigger.simple.success" TO WS-KEY
+         END-EVALUATE
+         CALL "SBX-WRAP" USING WS-NEW
+         MOVE WS-NEW TO SB-S-VALUE(WS-ROW)
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT SB-O-NAME(WS-OBJ) SB-O-NAME-LENGTH(WS-OBJ)
+         IF WS-ADD + WS-SET > 0
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-VALUE
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-NEW TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-TRIGGER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-TRIGGER.
+*> The forms of trigger (16 §9.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 0.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-TRIGGER.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "trigger <objective:objective>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "trigger <objective:objective> add <value:int>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "trigger <objective:objective> set <value:int>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-TRIGGER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-DISPATCH-D.
 *> The commands of the lane cmds-d (the scoreboard group of this file and the data group of core/src/cmds-data.cob; CX-DISPATCH-C hands over to it):
 *> any other command id is help.
@@ -1281,6 +1990,10 @@
      EVALUATE BR-R-COMMAND
          WHEN BC-SCOREBOARD
              CALL "CX-SCOREBOARD"
+         WHEN BC-TEAM
+             CALL "CX-TEAM"
+         WHEN BC-TRIGGER
+             CALL "CX-TRIGGER"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE

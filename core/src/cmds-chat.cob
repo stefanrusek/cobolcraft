@@ -655,15 +655,74 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-TEAMMSG.
-*> teammsg <message> (16 §8.4, level 0; tm is an alias): the sender must be on a team, else commands.teammsg.failed.noteam; no team exists yet (the
-*> scoreboard lane owns teams), so every sender fails and the delivery to a team is not done (BLOCKED outside this file: team state); result 0.
+*> teammsg <message> (16 §8.4, level 0; tm is an alias): the sender must be on a team (the scoreboard state of core/src/cmds-scoreboard.cob; the console
+*> is on none), else commands.teammsg.failed.noteam. Every other player on the team is sent chat.type.team.text [team display name, sender, message] and the
+*> sender chat.type.team.sent [the same]; the result is the number of recipients including the sender. BLOCKED: the hover text and the click action of the team
+*> name (chat.type.team.hover) are not sent.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRRUN.
+ COPY CORESTATE.
+ COPY SBSTATE.
+ COPY PROTO.
  01 WS-KEY                 PIC X(72) VALUE "commands.teammsg.failed.noteam".
+ 01 WS-KEY-TEXT            PIC X(72) VALUE "chat.type.team.text".
+ 01 WS-KEY-SENT            PIC X(72) VALUE "chat.type.team.sent".
+ 01 WS-NAME-MESSAGE        PIC X(32) VALUE "message".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-MEMBER              BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ 01 WS-HOLDER              PIC X(64).
+ 01 WS-HOLDER-LENGTH       BINARY-LONG.
+ 01 WS-TEAM                BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ROWS.
+    05 WS-ONLINE            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-RECIPIENTS          BINARY-LONG.
  PROCEDURE DIVISION.
-     CALL "BA-RAISE-PLAIN" USING WS-KEY
-     MOVE 0 TO BR-R-RESULT
+     MOVE 0 TO WS-MEMBER
+     IF BS-ROW > 0
+         MOVE SPACES TO WS-HOLDER
+         MOVE BS-NAME TO WS-HOLDER
+         MOVE BS-NAME-LENGTH TO WS-HOLDER-LENGTH
+         CALL "SBX-MEMBER-OF" USING WS-HOLDER WS-HOLDER-LENGTH WS-MEMBER
+     END-IF
+     IF WS-MEMBER = 0
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+         MOVE 0 TO BR-R-RESULT
+     ELSE
+         CALL "BX-FIND" USING WS-NAME-MESSAGE WS-INDEX
+         CALL "BX-MESSAGE" USING WS-INDEX WS-TEXT WS-LENGTH
+         IF BR-R-FAILED = 0
+             MOVE SB-M-TEAM(WS-MEMBER) TO WS-TEAM
+             MOVE 0 TO WS-RECIPIENTS
+             CALL "CMD-ONLINE" USING WS-COUNT WS-ROWS
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+                 MOVE WS-ONLINE(WS-I) TO WS-ROW
+                 MOVE SPACES TO WS-HOLDER
+                 MOVE PL-NAME(WS-ROW) TO WS-HOLDER
+                 MOVE PL-NAME-LENGTH(WS-ROW) TO WS-HOLDER-LENGTH
+                 CALL "SBX-MEMBER-OF" USING WS-HOLDER WS-HOLDER-LENGTH WS-OTHER
+                 IF WS-OTHER > 0 AND SB-M-TEAM(WS-OTHER) = WS-TEAM
+                     ADD 1 TO WS-RECIPIENTS
+                     IF WS-ROW = BS-ROW
+                         CALL "BX-KEY" USING PB-TEXT WS-KEY-SENT
+                     ELSE
+                         CALL "BX-KEY" USING PB-TEXT WS-KEY-TEXT
+                     END-IF
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT SB-T-DISPLAY(WS-TEAM) SB-T-DISPLAY-LENGTH(WS-TEAM)
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT BS-NAME BS-NAME-LENGTH
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-LENGTH
+                     CALL "BR-TELL" USING WS-ROW PB-TEXT
+                 END-IF
+             END-PERFORM
+             MOVE WS-RECIPIENTS TO BR-R-RESULT
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM CX-TEAMMSG.
 
