@@ -1,0 +1,811 @@
+*> Test of 29b part 4 section 10, Small plants (core/src/growth-29b-4.cob; T0599): flowers (10.1), wither rose (10.2), eyeblossoms (10.3), flower beds (10.4), bush (10.5), dry vegetation (10.6), firefly bush (10.7).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-4-10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-4§10 Small plants: suspicious stew effect entry (10.1): (effect, floor(seconds x 20)) ticks for a duration in seconds" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "8.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.35" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "11.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "7.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5.5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEW-TICKS" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "160 7 220 140 10 110" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: FlowerBlock (10.1): shape column 6 wide 0 to 10, no tick (0), no bone meal (0), no entity effect, getBeeInteractionEffect null (0) (width, y from, y to," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-FLOWER10-CONST" USING  WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "6/0/10/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: wither rose entityInside (10.2): on a server, difficulty not peaceful (0), a LivingEntity not invulnerable to wither damage: the wither effect for 40" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 2 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-WITHER-HIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/40/0 0/40/0 0/40/0 0/40/0 0/40/0 1/40/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom types (10.3): OPEN is open with blindness for 11 seconds and colour 16545810, CLOSED is not open with nausea for 7 seconds and colour 6250335;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-TYPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-TYPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/11/16545810/2 0/2/7/6250335/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom tryChangingState (10.3 step 1, example 13): want is the environment attribute gameplay/eyeblossom_open (2 for the default of the tri-state," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-CHANGE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1 1/0 0/0 1/0 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom neighbour delay (10.3 step 1, example 13): dist = sqrt(distSqr), delay = nextIntBetweenInclusive((int)(dist x 5), (int)(dist x 10)), that is the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 10" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "18 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-DELAY" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "5/10/5 5/10/10 7/14/7 7/14/14 8/17/11 10/20/10 10/20/20 15/30/15 15/30/30 21/42/25" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom scan box (10.3 step 1): the cells from pos + (-3, -2, -3) to pos + (3, 2, 3) other than the changed block itself are candidates (dx, dy, dz)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "-3 -2 -3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 -3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 -4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SCAN" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 0 0 0 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom sound (10.3 steps 2, 3): a random tick that changed plays the long switch sound (1), a scheduled tick the short one (2), nothing when unchanged" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SOUND" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SOUND" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SOUND" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-SOUND" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: bee attractive tag (10.3 step 5): the 29 members of bee_attractive are true when not waterlogged, sunflower only for its upper half; golden_dandelion and" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:dandelion" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:open_eyeblossom" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:poppy" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:blue_orchid" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:allium" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:azure_bluet" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:red_tulip" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:orange_tulip" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:white_tulip" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pink_tulip" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:oxeye_daisy" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cornflower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:lily_of_the_valley" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:wither_rose" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:torchflower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: bee attractive tag (10.3 step 5): the 29 members of bee_attractive are true when not waterlogged, sunflower only for its upper half; golden_dandelion and" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:sunflower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:lilac" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:peony" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:rose_bush" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pitcher_plant" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:flowering_azalea_leaves" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:flowering_azalea" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:mangrove_propagule" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cherry_leaves" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pink_petals" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:wildflowers" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:chorus_flower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:spore_blossom" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cactus_flower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:sunflower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:sunflower" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:lilac" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:golden_dandelion" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:closed_eyeblossom" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:rose" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:poppy" TO WS-T1
+     CALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: eyeblossom entityInside (10.3 step 5): on a server, difficulty not peaceful, a Bee that is attracted (Bee.attractsBees of the state) and not already" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 2 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-EYE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/25/0 0/25/0 0/25/0 0/25/0 0/25/0 0/25/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: flower bed placement (10.4 step 1): the same block gives flower_amount min(4, amount + 1) and keeps facing (-1); otherwise the default with facing the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-PLACE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/-1 4/-1 4/-1 1/4 1/3 1/6 1/5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: segmentable and pickle canBeReplaced (10.4 step 2, 11.1 step 3): true when not secondary use, the item in hand is this block's item and the amount is below" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SEG-REPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1 0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: flower bed bone meal (10.4 step 4, example 14): always valid and successful; below 4 the amount increases by 1 (flags 2), at 4 one item is dropped (amount)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/2/2/0 1/1/3/2/0 1/1/4/2/0 1/1/-1/2/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: flower bed constants (10.4): default facing NORTH (3), default flower_amount 1, amount 1 to 4, shape height 3" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BED-CONST" USING  WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3/1/4/3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: bush and red_shrub (10.5): column 16 wide to height 13 (the constructor argument)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "13" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BUSH-SHAPE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "16/13" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: dry vegetation shapes (10.6): dead_bush column 12 wide to 13; short_dry_grass 12 wide to 10 with offset XYZ (2); tall_dry_grass 14 wide to 16 with offset" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "12/0/13/0 12/0/10/2 14/0/16/2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: dry vegetation bone meal (10.6): dead_bush is not a target; short_dry_grass is always valid and grows in place into tall_dry_grass (effect 1, flags 3);" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRY-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 1/1/1/3 1/1/2/3 0/1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§10 Small plants: firefly bush bone meal (10.7): valid when a neighbour can take a copy, always successful, the neighbour spreader with flags 3 (type GROWER)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BUSH-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-BUSH-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/3 0/1/1/3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-4-10.
