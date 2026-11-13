@@ -24,3 +24,41 @@
     05 GQ-STEPS             BINARY-DOUBLE.
  01 GQ-JOB EXTERNAL.
     COPY GENJOB.
+*> The generation workers (docs/design/generation-worker.md; core/src/gen-worker.cob): forked processes that make the chunks of the standard
+*> pipeline while the game loop goes on. GQ-WORKERS is the pool size a host asked for (GEN-WORKERS-CONFIG, 0 to GW-POOL-MAX, 0 = none: the in-tick steps above
+*> make the chunks); GQ-LOAD-WORKERS (up to GW-MAX) is the pool while a world's spawn area is made (GQ-SP-STATE above 0): the pool for an explicit size, more for the
+*> automatic one (GEN-WORKERS-AUTO); GW-ACTIVE is 1 while the pool serves the standard chunks (set by each tick: the terrain data are loaded and the world
+*> is not of the debug type), and then the in-tick steps leave those chunks alone. A worker is a slot of the shim (GW-SLOT, 0 = not
+*> started), idle (GW-BUSY 0), with the request in flight (1: GW-DIM, GW-CX, GW-CZ, GW-GOT bytes of the answer received so far) and
+*> the answer buffer GW-ADDR (marker-y, then the chunk). GQ-READY is the worker whose finished answer the chunk installer takes (0 = none).
+ 78 GW-MAX                 VALUE 8.
+ 78 GW-POOL-MAX            VALUE 4.
+ 78 GW-ANSWER-BYTES        VALUE 304644.
+ 01 GEN-WORKERS EXTERNAL.
+    05 GQ-WORKERS           BINARY-LONG.
+    05 GW-ACTIVE            BINARY-LONG.
+    05 GQ-READY             BINARY-LONG.
+    05 GQ-LOAD-WORKERS      BINARY-LONG.
+    05 GW-ENTRY OCCURS 8 TIMES.
+       10 GW-SLOT           BINARY-LONG.
+       10 GW-BUSY           BINARY-LONG.
+       10 GW-DIM            BINARY-LONG.
+       10 GW-CX             BINARY-LONG.
+       10 GW-CZ             BINARY-LONG.
+       10 GW-GOT            BINARY-LONG.
+       10 GW-ADDR           USAGE POINTER.
+*> The asynchronous initial spawn search and the spawn area (core/src/worldsim-33c.cob; docs/protocol/50): GQ-SP-STATE 1 while the search runs, 2 while the
+*> spawn area (the 7 x 7 square of chunks around the spawn chunk, 50 section 5.1) is made, 0 otherwise; a joining player is held in both. The spiral chunk the
+*> search is on (GQ-SP-CHUNK, 1 to 121), the next column of that chunk (GQ-SP-COLUMN) and the chunks done (GQ-SP-DONE); the spawn chunk (GQ-SP-FX, GQ-SP-FZ)
+*> and the chunks of the spawn area that are loaded (GQ-SP-READY of GQ-SP-RING).
+ 78 GQ-SP-RING             VALUE 49.
+ 78 GQ-SP-COLUMNS          VALUE 16.
+ 01 GEN-SPAWN EXTERNAL.
+    05 GQ-SP-STATE          BINARY-LONG.
+    05 GQ-SP-CHUNK          BINARY-LONG.
+    05 GQ-SP-COLUMN         BINARY-LONG.
+    05 GQ-SP-DONE           BINARY-LONG.
+    05 GQ-SP-TOTAL          BINARY-LONG.
+    05 GQ-SP-FX             BINARY-LONG.
+    05 GQ-SP-FZ             BINARY-LONG.
+    05 GQ-SP-READY          BINARY-LONG.

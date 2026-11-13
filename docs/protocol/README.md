@@ -8,13 +8,13 @@ world generation, client rendering and controls, texture-only resource packs, co
 mobs and, from document 22 on, the code-defined engines and registries that the standard world type needs (extraction
 tool and registry loading, block and item registries, block behaviour, redstone, block entities, light, world
 simulation, entity models, worldgen features, structures, the Nether, the End, portals, menus, item entities,
-particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin) and, in document 48, the shapes of the shipped data files. The game has two world
+particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin) and, in document 48, the shapes of the shipped data files. Document 50 covers the level-loading screen (spawn-area preparation, chunk-status grid, the join wait). The game has two world
 types. The **standard** world type is Minecraft 26.3 content: its data comes from a vanilla resource pack and data pack
 that the extraction tool builds from the user's own jar (22, 23), and the engines are the documents of this folder.
 The **cobolcraft** world type is the invented `cobolcraft:` content of [../design/standin-content.md](../design/standin-content.md)
 with its hand-authored core ([../design/cobolcraft-standard-core.md](../design/cobolcraft-standard-core.md)). Gameplay rules are
 shared. [../design/world-types.md](../design/world-types.md) defines the mechanism; [../design/README.md](../design/README.md)
-is the source-of-truth map. Documents 10 to 21 and 22 to 49 were written from the artifacts below in clean-room rounds
+is the source-of-truth map. Documents 10 to 21 and 22 to 50 were written from the artifacts below in clean-room rounds
 (reader and reviewer agents, see `.claude/skills/clean-room/SKILL.md`); implementers work from these documents only.
 
 | Item | Value |
@@ -24,7 +24,7 @@ is the source-of-truth map. Documents 10 to 21 and 22 to 49 were written from th
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` |
 | Method | Static reading of the shipped bytecode (`javap`), with no execution; the class names in the artifact are not obfuscated |
 | Second artifact | `brigadier-1.3.11.jar` (`com.mojang:brigadier` 1.3.11, the release the 26.3 version manifest names), SHA-256 `9d09cf4819de83dfcd38bcb212d5f2227131791cef3abbfca3321d6fb2b9a64d`, SHA-1 `3373d1e7bf00c8b99bed1ea4efb8c47344e4a887`. Read only for document 15a: the game jar does not contain the command library |
-| Third-party data | `Faithful 32x - 26.3.zip` (a resource pack, data not code), SHA-256 `596035002e8c369ca673b5b922cd532a38a2aaabe80f317f5ac4d5c7680c7bf2`. Read for document 14 and `../design/faithful-pack-mapping.md` only. Neither jar nor pack is committed. Documents 22 to 49 read the game jar only (its bytecode and, where a document says so, its data files); the generated vanilla packs are produced at run time by the tool of 22 and no vanilla data rows are listed in any document. The two other SHA-256 values in `../design/builtin-ui-art.md` are check values of generated art, not artifacts |
+| Third-party data | `Faithful 32x - 26.3.zip` (a resource pack, data not code), SHA-256 `596035002e8c369ca673b5b922cd532a38a2aaabe80f317f5ac4d5c7680c7bf2`. Read for document 14 and `../design/faithful-pack-mapping.md` only. Neither jar nor pack is committed. Documents 22 to 50 read the game jar only (its bytecode and, where a document says so, its data files); the generated vanilla packs are produced at run time by the tool of 22 and no vanilla data rows are listed in any document. The two other SHA-256 values in `../design/builtin-ui-art.md` are check values of generated art, not artifacts |
 
 ## Documents
 
@@ -85,6 +85,7 @@ is the source-of-truth map. Documents 10 to 21 and 22 to 49 were written from th
 | [47-default-skin.md](47-default-skin.md) | Default player skin and skin handling, cape, elytra, ears, skin parts |
 | [48-real-data-shapes.md](48-real-data-shapes.md) | The shipped data files as they are: sizes, identifier and key lengths, JSON node counts per registry directory; the accepted value forms of every union-valued member (block state, providers, references); a member census (required and optional members, value kinds) of the worldgen, loot and recipe types; agreement with documents 10, 23, 26, 35 to 37, 44 |
 | [49-effects-hud-and-inventory-preview.md](49-effects-hud-and-inventory-preview.md) | Status-effect HUD icons and the inventory effects panel (anchors, order, sprites, blink alpha, duration and amplifier text, visibility rules); the inventory player-model preview (box, scale, mouse angles, lighting); heart, armour, food, air and mount-health row details that 12 §5.4 lacks, with corrections to 12 |
+| [50-level-loading-screen.md](50-level-loading-screen.md) | The level-loading screen: the one screen shown while a world is created, opened, joined or respawned into (texts, layout, backgrounds per reason, the chunk-status grid with sizes and per-status colours, progress bar and its smoothing); the progress model and percent; the spawn-area load (radius 3, 49 chunks); the ten chunk statuses of 26.3 and their dependency pyramid; the client wait after Login or Respawn (Game Event 13, readiness conditions, 30 s timeout, Player Loaded) |
 
 Game design documents live in [../design/](../design/); start from [../design/README.md](../design/README.md), the source-of-truth map. [standin-content.md](../design/standin-content.md) is the content of the cobolcraft world type; [faithful-pack-mapping.md](../design/faithful-pack-mapping.md) says how the Faithful 32x pack layers on the packs. [world-types.md](../design/world-types.md) defines the two world types (selection, what each selects, shared rules, fallback without packs). [cobolcraft-standard-core.md](../design/cobolcraft-standard-core.md) is the hand-authored data core the cobolcraft world type carries when no vanilla data pack exists. [builtin-ui-art.md](../design/builtin-ui-art.md) holds the built-in UI art, fallback texts, world type selection and missing-data screens.
 
@@ -93,5 +94,5 @@ Game design documents live in [../design/](../design/); start from [../design/RE
 - Documents 24 to 25, 29b, 30 to 31, 34 to 37, 40, 42, 44 and 45 are families split into numbered parts (`NN-name-K-topic.md`); a reference to a family without a part ("24") means the part that holds the topic, and part 1 of each family holds the shared model. Names ending `-x1`, `-x2` are continuations written after the numbered parts of the same family, to finish topics a part did not reach (25 x1, 40 x1, 44 x1 and x2). Document 29a is a sibling of 29, and 15a of 15.
 - Packet ids are shown in hex and decimal. Within each phase and direction, a packet's id is the order in which it is registered.
 - Fields marked "(inferred)" were deduced rather than read directly. Each document ends with an "Open questions" section, numbered per document ("Open question 5"); in a split family each part has its own list.
-- **Recalled knowledge is not evidence.** Every value in documents 10 to 49 was read from an artifact in its round. Anything not read is marked "(recalled, not verified)" or "(inferred)" and listed in the document's Open questions. See "Recalled knowledge is not evidence" in the clean-room skill.
+- **Recalled knowledge is not evidence.** Every value in documents 10 to 50 was read from an artifact in its round. Anything not read is marked "(recalled, not verified)" or "(inferred)" and listed in the document's Open questions. See "Recalled knowledge is not evidence" in the clean-room skill.
 - **Section references** between documents use the form "NN §x", for example "17 §4.4" or, for a split family, "24 part 6 §3" or "31-5 §2"; a reference such as "18 framework: <topic>" names a topic of document 18.

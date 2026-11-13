@@ -42,6 +42,7 @@
                                        *> of the UI atlas (pack-select.cob); never clicked
  78 WK-SPRITE               VALUE 8.   *> a GUI sprite (GSP-* row in the argument) drawn 1:1 at x, y; never clicked
  78 WK-IMAGE                VALUE 11.  *> a clickable GUI sprite: the sprite row in SM-W-SPRITE, the action's argument in the argument
+ 78 WK-LOADGRID             VALUE 12.  *> the loading screen's chunk status grid (docs/protocol/50 section 2.5): x, y, width and height of the 35 x 35 cells, 2 GUI pixels each, SM-LOAD-CELLS
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
                                        *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
@@ -404,6 +405,7 @@
  78 SW-BLACK                VALUE 7.
  78 SW-BAR-0                VALUE 8.   *> 24 swatches SW-BAR-0 to SW-BAR-0 + 23: the durability bar colours, red to green
  78 SW-COUNT                VALUE 32.
+ 78 LOAD-GREEN              VALUE 65280. *> the loading screen's bar fill, #00ff00 (docs/protocol/50 section 2.3): an overlay's colour tints its white swatch
 
 *> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
 *> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack
