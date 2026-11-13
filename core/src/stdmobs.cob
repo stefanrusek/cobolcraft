@@ -741,6 +741,8 @@
  01 WS-INDEX               BINARY-LONG VALUE 16.
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG VALUE 1.
+ 01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
+ 01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -781,6 +783,8 @@
          MOVE EN-Z(L-ROW) TO WS-Z
          MOVE SM-BLAST(L-M) TO WS-POWER
          MOVE L-ROW TO WS-ROW
+         CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
+         MOVE WS-GRIEF TO WS-DESTROY
          CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-Y WS-Z WS-POWER WS-DESTROY WS-ROW
          CALL "ENTITY-REMOVE" USING L-ROW
          MOVE 2 TO L-STOP

@@ -362,6 +362,8 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-DROP-TOOL           BINARY-LONG VALUE 0.
  01 WS-DROP-SET            BINARY-LONG VALUE 1.
+ 01 WS-DECAY-RULE           PIC X(40) VALUE "mob_explosion_drop_decay".
+ 01 WS-DECAY                BINARY-DOUBLE.
  01 WS-KNOCK.
     05 WS-KN OCCURS 64 TIMES.
        10 WS-KN-SET        BINARY-LONG.
@@ -463,6 +465,12 @@
      END-PERFORM
 *>   The blocks: replaced by air, each drop kept with probability 1 / power.
      MOVE 0 TO WS-BLOCKS-SENT
+*>   The drops of a mob's blast decay only while mob_explosion_drop_decay is true (20 section 6.2); a blast without a source always decays.
+     MOVE 1 TO WS-DROP-SET
+     IF L-SOURCE > 0
+         CALL "BR-RULE-GET" USING WS-DECAY-RULE WS-DECAY
+         MOVE WS-DECAY TO WS-DROP-SET
+     END-IF
      IF L-DESTROY = 1
          MOVE WS-COUNT TO WS-BLOCKS-SENT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
