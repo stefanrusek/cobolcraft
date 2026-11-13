@@ -101,3 +101,122 @@ g.run('budding amethyst random tick (3.3, E1): nextInt(5) not 0 stops; nextInt(6
 g.run('rate (3.3): one face advances with 1/30 per random tick (x 1e6), four stages 120 ticks, about 163840 game ticks at random_tick_speed 3 (3/4096 per game tick); GROWTH_CHANCE 5',["0"],'CALL "GC6-BUD-RATE" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"33333/120/163840/5")
 g.run('push reaction (3.1, 3.3): amethyst_block keeps the default PUSH_PULL (1), budding_amethyst is POPPED (2)',["1","2"],'CALL "GC6-AMETHYST-PUSH" USING WS-I(1) WS-R(1)',1,"1 2")
 W(g,3)
+# ===== 4
+g=GG(4,'The speleothem model','T0633','the constants, the helper predicates, placement, survival, shape update and the thickness rules of the speleothem blocks.')
+g.extra=TBL('A12',12)
+SC=[2,60,100,40,6,11377778,7,10,5,2]
+g.run('constants (4.1): DELAY_BEFORE_FALLING 2, trident velocity 0.6 (x 100), damage per fall distance and size 1.0 (x 100), max damage 40, max height for damage 6, growth probability 0.011377778 (x 1e9), MAX_GROWTH_LENGTH 7, stalagmite search range 10, days per growth 5, sulfur spike MAX_GROWING_LENGTH 2',[str(i) for i in range(1,11)],'CALL "GC6-SPEL-CONST" USING WS-I(1) WS-R(1)',1," ".join(map(str,SC)))
+def st(t,d,th,wl,inc):
+    sl=int(t and d==1); sm=int(t and d==2)
+    tip=int(t and (th==2 or (inc and th==1)))
+    free=int(sl and th==2 and not wl)
+    return sl,sm,tip,free
+stc=[(1,1,2,0,0),(1,1,2,1,0),(1,1,1,0,0),(1,1,1,0,1),(1,2,2,0,0),(1,2,1,0,1),(1,2,3,0,1),(0,1,2,0,1),(1,1,4,0,1),(1,1,5,0,0),(0,2,2,0,0)]
+g.run('predicates (4.2): isStalactite (tip down), isStalagmite (tip up), isTip (tip, or tip_merge when merged are included), isFreeHangingStalactite (a stalactite with thickness exactly tip, not waterlogged); thickness 1 tip_merge, 2 tip, 3 frustum, 4 middle, 5 base',[S(*c) for c in stc],'CALL "GC6-SPEL-STATE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(show(*st(*c)) for c in stc))
+g.run('isValidSpeleothemPlacement (4.2): the support is sturdy on its face toward the tip, or is a speleothem of this block with that direction',["0 0","1 0","0 1","1 1"],'CALL "GC6-SPEL-VALID" USING WS-I(1) WS-I(2) WS-R(1)',1,"0 1 1 1")
+def tipdir(t,vt,vo):
+    if vt: return t
+    if vo: return 3-t
+    return 0
+tdc=[(1,1,1),(1,1,0),(1,0,1),(1,0,0),(2,1,1),(2,0,1),(2,0,0)]
+g.run('calculateTipDirection (4.2): T when the placement toward T is valid; else the opposite when that is valid; else null (0); T 1 down, 2 up',[S(*c) for c in tdc],'CALL "GC6-SPEL-TIPDIR" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(tipdir(*c)) for c in tdc))
+g.run('isStalactiteStartPos (4.2): a stalactite whose block above is not the same block (the topmost piece)',["1 0","1 1","0 0","0 1"],'CALL "GC6-SPEL-STARTPOS" USING WS-I(1) WS-I(2) WS-R(1)',1,"1 0 0 0")
+def fv(mi,cells):
+    for i in range(1,mi):
+        c=cells[i-1]
+        if c==1: return i
+        if c!=2: return 0
+    return 0
+fvc=[(11,[2,2,2,1]),(11,[1]),(11,[0,1]),(4,[2,2,2,1]),(4,[2,2,1]),(2,[2,1]),(11,[2]*11),(7,[2]*6+[1]),(7,[2]*5+[1]),(1,[1]),(11,[2,0,1]),(11,[2]*9+[1,1])]
+def fvcall(mi,cells): return setarr('A12',cells+[0]*(12-len(cells)))+'MOVE %d TO WS-I(1)\nCALL "GC6-FIND-VERT" USING WS-I(1) WS-A12G WS-R(1)'%mi
+g.case('findBlockVertical (4.2): cells 1 to maxIter - 1 only (cell code 1 stop, 2 pass, 0 neither); the first stop is returned, a blocking cell or the end gives none (0); maxIter 7 examines 6 cells, 11 examines 10',[("0",fvcall(*c),1) for c in fvc]," ".join(str(fv(*c)) for c in fvc))
+def ft(tp,mi,cells):
+    if tp: return (1,0)
+    i=fv(mi,cells)
+    return (int(i>0),i)
+ftc=[(1,7,[]),(0,7,[2,2,1]),(0,7,[2]*6),(0,7,[2]*5+[1]),(0,7,[2]*6+[1]),(0,11,[2]*9+[1]),(0,11,[0,1])]
+def ftcall(tp,mi,cells): return setarr('A12',cells+[0]*(12-len(cells)))+'MOVE %d TO WS-I(1)\nMOVE %d TO WS-I(2)\nCALL "GC6-FIND-TIP" USING WS-I(1) WS-I(2) WS-A12G WS-R(1) WS-R(2)'%(tp,mi)
+g.case('findTip (4.2): the position itself when it is a tip; else the first tip below within maxIter - 1 cells (found, offset): with MAX_GROWTH_LENGTH 7 a tip 6 cells below is found, 7 cells below is not, so a pointed dripstone stalactite stops at 8 pieces',[("0",ftcall(*c),2) for c in ftc]," ".join(show(*ft(*c)) for c in ftc))
+def dt(air,sol,fl_,inter):
+    if air: return 1
+    if sol: return 0
+    if fl_: return 0
+    return int(not inter)
+dtc=[(1,0,0,0),(1,1,1,1),(0,1,0,0),(0,0,1,0),(0,0,0,1),(0,0,0,0)]
+g.run('canDripThrough (4.2): true for air; false for a full opaque cube and for a non-empty fluid; else true exactly when the collision shape misses the central 4 x 4 column',[S(*c) for c in dtc],'CALL "GC6-DRIP-THROUGH" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1," ".join(str(dt(*c)) for c in dtc))
+def pl(pitch,vd,vo,sn,w):
+    D=1 if pitch<0 else 2
+    T=D if vd else ((3-D) if vo else 0)
+    if not T: return (0,0,0,0)
+    return (1,T,int(not sn),int(w))
+plc=[(-30,1,0,0,0),(-30,0,1,0,1),(-30,0,0,0,0),(0,1,0,1,0),(45,0,1,0,0),(45,1,1,0,1),(-0.5,1,1,0,0),(0.5,1,0,0,0)]
+g.run('placement (4.3): D = opposite of the vertical look direction (pitch below 0 looks up and gives tip down); T from calculateTipDirection; merge is not sneaking; waterlogged = the fluid is water (placed, tip direction, merge, waterlogged)',[S(*c) for c in plc],'CALL "GC6-SPEL-PLACE" USING WS-FX(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(show(*pl(*c)) for c in plc))
+g.run('survival (4.4): canSurvive is isValidSpeleothemPlacement toward the state\'s tip direction',["0","1"],'CALL "GC6-SPEL-VALID" USING WS-I(1) WS-I(2) WS-R(1)',1,"0 1")
+def su(w,d,T,sched,surv):
+    wt=int(w)
+    if d==3: return (wt,0,0)
+    if T==1 and sched: return (wt,0,0)
+    opp=2 if T==1 else 1
+    if d==opp and not surv: return (wt,1,2 if T==1 else 1)
+    return (wt,2,0)
+suc=[(1,3,1,0,1),(0,3,2,0,0),(0,2,1,1,0),(0,2,1,0,0),(0,1,2,0,0),(0,1,2,0,1),(0,2,1,0,1),(1,2,1,0,0),(0,1,1,0,0),(0,2,2,1,0)]
+g.run('shape update (4.4): a waterlogged state schedules a water tick; a horizontal update returns the state; a stalactite with a tick already scheduled returns it; the update from the support side that cannot survive schedules a tick (2 for a stalactite, 1 for a stalagmite); else the thickness is recomputed (water tick, 0 unchanged 1 tick 2 thickness, delay)',[S(*c) for c in suc],'CALL "GC6-SPEL-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*su(*c)) for c in suc))
+def th(opp,mg,nm,spT,tm,bT):
+    if opp: return 1 if (mg or nm) else 2
+    if not spT: return 2
+    if tm: return 3
+    if not bT: return 5
+    return 4
+thc=[(1,1,0,0,0,0),(1,0,1,0,0,0),(1,0,0,0,0,0),(0,0,0,0,0,1),(0,0,0,1,1,0),(0,0,0,1,1,1),(0,0,0,1,0,0),(0,0,0,1,0,1)]
+g.run('thickness (4.5): an opposing tip of this block gives tip_merge when merging or when it is merged, else tip; nothing continuing beyond gives tip; a tip or merged tip beyond gives frustum; no speleothem behind gives base; else middle',[S(*c) for c in thc],'CALL "GC6-SPEL-THICK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-R(1)',1," ".join(str(th(*c)) for c in thc))
+def colcall(k,i): return 'MOVE 0 TO WS-I(1)\nMOVE 0 TO WS-I(2)\nMOVE 0 TO WS-I(3)\nMOVE %d TO WS-I(4)\nMOVE %d TO WS-I(5)\nMOVE %d TO WS-I(6)\nCALL "GC6-SPEL-THICK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-R(1)'%(int(i+1<k),int(i+1==k-1),int(i>0))
+cols={1:[2],2:[3,2],3:[5,3,2],4:[5,4,3,2]}
+g.case('a downward column of height 1, 2, 3, 4 read from the support: [tip], [frustum, tip], [base, frustum, tip], [base, middle, frustum, tip] (4.5, validation 4)',[("0",colcall(k,i),1) for k in range(1,5) for i in range(k)]," ".join(str(x) for k in range(1,5) for x in cols[k]))
+W(g,4)
+# ===== 5
+g=GG(5,'Growth','T0635','the random tick gate, canGrow, findTip, the growth choice, the stalagmite scan and growing, merging and creating pieces.')
+g.extra=TBL('A60',60)
+g.run('growth probability (5.1, validation 2): 1 / (5 x 24000 x 3 / 4096) = 0.011377778 (x 1e9)',["0"],'CALL "GC6-GROW-RATE" USING WS-R(1)',1,"11377778")
+def gt(k,d,start):
+    dr=2 if k==1 else 1
+    return int(d<0.011377778 and start),dr
+gtc=[(1,0.0,1),(1,0.01,1),(1,0.0113,1),(1,0.0114,1),(1,0.5,1),(1,0.0,0),(2,0.0,1),(2,0.0114,1),(2,0.0,0),(2,0.9,0)]
+g.run('random tick (5.1): one nextFloat below 0.011377778 and a stalactite start position continue; the pointed dripstone makes two draws (fluid transfer first), the sulfur spike one (kind 1 pointed, 2 sulfur; proceeds, draws)',[S(*c) for c in gtc],'CALL "GC6-GROW-TICK" USING WS-I(1) WS-FX(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join(show(*gt(*c)) for c in gtc))
+cg=[(1,1,1),(1,1,0),(1,0,1),(1,0,0),(2,1,0),(2,1,1),(2,0,1),(2,0,0)]
+g.run('canGrow (5.2 step 1): the block above is the block of blockToGrowOn; the pointed dripstone also needs a water source two above, the sulfur spike no fluid condition',[S(*c) for c in cg],'CALL "GC6-CAN-GROW" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(int(a if k==2 else (a and b))) for k,a,b in [(c[0],c[1],c[2]) for c in cg]).replace("True","1"))
+g.run('getMaxGrowthLength (5.2 step 2, 9.1): 7 for the pointed dripstone (stops at 8 pieces), 2 for the sulfur spike (stops at 3 pieces) (max length, piece cap)',["1","2"],'CALL "GC6-MAX-LEN" USING WS-I(1) WS-R(1) WS-R(2)',2,"7/8 2/3")
+def ctg(fl_,air,tip):
+    if fl_: return 0
+    if air: return 1
+    return int(tip)
+ctc=[(1,1,1),(1,0,1),(0,1,0),(0,0,1),(0,0,0)]
+g.run('canTipGrow (5.2 step 3): false when the cell below has a fluid; true when it is air; else it must be an unmerged tip of this block pointing up',[S(*c) for c in ctc],'CALL "GC6-TIP-GROW" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(ctg(*c)) for c in ctc))
+def gch(free,ctgv,nb):
+    if not(free and ctgv): return (0,0)
+    return (1 if nb else 2,1)
+gcc=[(1,1,1),(1,1,0),(0,1,1),(1,0,1),(0,0,0)]
+g.run('growth choice (5.2 steps 3, 4): a free-hanging tip that can grow draws nextBoolean: true grows the stalactite (1), false grows a stalagmite below (2); otherwise stop (0) without a draw (action, draws)',[S(*c) for c in gcc],'CALL "GC6-GROW-CHOICE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join(show(*gch(*c)) for c in gcc))
+def scan(k,cells):
+    for i,(fl_,tu,ctg_,vp,bw,bs) in enumerate(cells,1):
+        if fl_: return (0,0)
+        if tu and ctg_: return (1,i)
+        if vp and not bw: return (2,i)
+        if k==1 and bs: return (0,0)
+    return (0,0)
+def scall(k,cells):
+    flat=[]
+    for c in cells: flat+=list(c)
+    flat+=[0]*(60-len(flat))
+    return setarr('A60',flat)+'MOVE %d TO WS-I(1)\nCALL "GC6-STALAGMITE-SCAN" USING WS-I(1) WS-A60G WS-R(1) WS-R(2)'%k
+Z=(0,0,0,0,0,0)
+sc_=[(1,[Z]*10),(1,[(0,1,1,0,0,0)]+[Z]*9),(1,[Z,Z,(0,1,0,1,0,0)]+[Z]*7),(1,[Z,(0,1,0,1,1,0),(0,0,0,1,0,0)]+[Z]*7),(1,[(1,1,1,1,0,0)]+[Z]*9),(1,[(0,0,0,0,0,1),(0,1,1,1,0,0)]+[Z]*8),(2,[(0,0,0,0,0,1),(0,0,0,1,0,1)]+[Z]*8),(1,[Z]*9+[(0,0,0,1,0,0)]),(2,[Z]*9+[(0,0,0,0,0,1)]),(1,[(0,1,0,0,0,0),(0,0,0,1,0,0)]+[Z]*8)]
+g.case('stalagmite scan (5.3): up to 10 cells downward; a fluid stops; an unmerged tip up that can grow grows (1); a valid placement with no water below places a new tip at that cell (2); a block that stops a drop ends the pointed dripstone scan, never the sulfur spike scan (action, cell)',[("0",scall(*c),2) for c in sc_]," ".join(show(*scan(*c)) for c in sc_))
+def gtg(op,air,wb):
+    if op: return 1
+    if air or wb: return 2
+    return 0
+gtc2=[(1,0,0),(0,1,0),(0,0,1),(0,0,0),(1,1,1)]
+g.run('grow (5.4): an opposing unmerged tip of this block merges the tips (1); air or any water block creates a tip (2); otherwise nothing (0)',[S(*c) for c in gtc2],'CALL "GC6-GROW-TARGET" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(gtg(*c)) for c in gtc2))
+g.run('createSpeleothem (5.4): waterlogged = the fluid at the position is water; written with setBlockAndUpdate (flags 3), the thickness given (no calculation)',["1","0"],'CALL "GC6-CREATE" USING WS-I(1) WS-R(1) WS-R(2)',2,"1/3 0/3")
+g.run('createMergedTips (5.4, E3): the existing tip direction up: lower = pos, upper = pos + up; down: upper = pos, lower = pos + down; the upper piece is written first (tip down), then the lower (tip up), both tip_merge (1) (upper dy, lower dy, thickness, first written 1 upper)',["2","1"],'CALL "GC6-MERGE-TIPS" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"1/0/1/1 0/-1/1/1")
+W(g,5)
