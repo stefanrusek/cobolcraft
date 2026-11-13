@@ -612,6 +612,9 @@
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-DEEP                BINARY-LONG.
+ 01 WS-DEEP-Y              FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -624,18 +627,39 @@
      MOVE EN-X(WS-ROW) TO WS-X
      MOVE EN-Y(WS-ROW) TO WS-Y
      MOVE EN-Z(WS-ROW) TO WS-Z
-*>   1. and 2. Gravity, vertical drag, the move along Y.
-     COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+*>   1. and 2. Gravity, vertical drag, the move along Y. A mob whose box touches water (18 section 3.2 travelInWater, the FloatGoal): no gravity, the
+*>   vertical speed is (speed + 0.04 when the water is deeper than 0.4) x 0.8, less 0.005 while it is not rising; its horizontal step is halved.
+     CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-Y WS-Z WS-WET
+     IF WS-WET = 1
+         COMPUTE WS-DEEP-Y = WS-Y + 0.4
+         CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-DEEP-Y WS-Z WS-DEEP
+         MOVE EN-VY(WS-ROW) TO WS-VY
+         IF WS-DEEP = 1
+             ADD 0.04 TO WS-VY
+         END-IF
+         COMPUTE WS-VY = WS-VY * 0.8
+         IF WS-VY <= 0
+             SUBTRACT 0.005 FROM WS-VY
+         END-IF
+         COMPUTE L-HX = L-HX / 2
+         COMPUTE L-HZ = L-HZ / 2
+     ELSE
+         COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+     END-IF
      COMPUTE WS-NEW = WS-Y + WS-VY
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
-     IF WS-HIT = 0
-         MOVE WS-NEW TO WS-Y
-         MOVE 0 TO WS-GROUND
-     ELSE
-         COMPUTE WS-Y = WS-TOP + 1
-         MOVE 0 TO WS-VY
-         MOVE 1 TO WS-GROUND
-     END-IF
+     EVALUATE TRUE
+         WHEN WS-HIT = 0
+             MOVE WS-NEW TO WS-Y
+             MOVE 0 TO WS-GROUND
+         WHEN WS-VY > 0
+*>           Rising into a ceiling: stop, not on the ground.
+             MOVE 0 TO WS-VY WS-GROUND
+         WHEN OTHER
+             COMPUTE WS-Y = WS-TOP + 1
+             MOVE 0 TO WS-VY
+             MOVE 1 TO WS-GROUND
+     END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
      CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP

@@ -85,6 +85,11 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-ID TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "DAMAGE-TYPE-ID" USING CAUSE-DROWN WS-ID
+     MOVE "test stdmob damage: drowning keeps its RULES id when the registry lacks drown" TO TL-CASE
+     MOVE RULE-CAUSE-TYPE(CAUSE-DROWN) TO TL-EXPECTED-N
+     MOVE WS-ID TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Death messages of the standard set.
      MOVE "T" TO TL-MODE
      MOVE CAUSE-MOB TO WS-CAUSE
@@ -123,6 +128,12 @@
      PERFORM BUILD-TEXT
      MOVE "test stdmob damage: hail is death.attack.generic" TO TL-CASE
      MOVE "death.attack.generic" TO TL-EXPECTED
+     MOVE PB-TX-VALUE TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CAUSE-DROWN TO WS-CAUSE
+     PERFORM BUILD-TEXT
+     MOVE "test stdmob damage: drowning is death.attack.drown" TO TL-CASE
+     MOVE "death.attack.drown" TO TL-EXPECTED
      MOVE PB-TX-VALUE TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE CAUSE-COMMAND TO WS-CAUSE

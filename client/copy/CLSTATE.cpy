@@ -460,6 +460,18 @@
        10 PL-VY              FLOAT-LONG.
        10 PL-ON-GROUND       PIC 9.
        10 PL-COLLIDED        PIC 9.
+*>     Fluids (29a section 8; client/src/physics-fluid.cob): the box touches water or lava, the eye is inside one, the fluid's
+*>     height above the feet (0 none), and the horizontal speed in blocks per tick kept while in a fluid.
+       10 PL-IN-WATER        PIC 9.
+       10 PL-IN-LAVA         PIC 9.
+       10 PL-EYE-WATER       PIC 9.
+       10 PL-EYE-LAVA        PIC 9.
+       10 PL-WATER-H         FLOAT-LONG.
+       10 PL-LAVA-H          FLOAT-LONG.
+       10 PL-VX              FLOAT-LONG.
+       10 PL-VZ              FLOAT-LONG.
+       10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
+       10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.
@@ -926,6 +938,9 @@
        10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
        10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
+       10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
+       10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -973,6 +988,7 @@
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.

@@ -198,6 +198,45 @@ int main(void) {
         snprintf(name, sizeof name, "test cc_vk %s", cases[c].what);
         tl_str(name, cases[c].expect, pixels[0]);
     }
+    /* Fog (§9 cc_vk_fog; 12 section 3.3): colour = lerp(colour, fog rgb, value x fog alpha) with value = 0 up to the start, 1 from the end,
+     * (d - start) / (end - start) between, d the distance of the fragment to the camera. With the identity matrix the fragment at the
+     * centre of the screen has x = y = 0 and w = 1, so d = 1 (the projection scales 1, 1). The texel and vertex give white. */
+    for (int v = 0; v < 6; v++) {
+        float *f = lit + v * 11;
+        f[5] = 1;
+        f[7] = 0;
+        f[8] = f[9] = f[10] = 1;
+    }
+    cc_vk_mesh(3, lit, 6);
+    static const struct {
+        const char *what;
+        float fog[13]; /* r g b alpha start end p00 p11 up.x up.y up.z render-distance start end */
+        const char *expect;
+    } fogs[] = {
+        {"fog red, start 0, end 4, distance 1: a quarter", {1, 0, 0, 1, 0, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFBFBFFF"},
+        {"fog red at alpha 0.5, a quarter: an eighth", {1, 0, 0, 0.5f, 0, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFDFDFFF"},
+        {"fog starting beyond the fragment changes nothing", {1, 0, 0, 1, 2, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFFFFFFF"},
+        {"fog ending before the fragment is the fog colour", {1, 0, 0, 1, 0, 0.5f, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FF0000FF"},
+        {"fog with alpha 0 is off", {1, 0, 0, 0, 0, 0.5f, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFFFFFFF"},
+        {"render-distance fog red, start 0, end 4 (cylindrical distance 1 at the centre): a quarter", {1, 0, 0, 1, 1e9f, 2e9f, 1, 1, 0, 1, 0, 0, 4}, "FFBFBFFF"},
+        {"render-distance fog counts the larger of the two values: environment a quarter, render distance 0.4", {1, 0, 0, 1, 0, 4, 1, 1, 0, 1, 0, 0, 2.5f}, "FF9999FF"},
+        {"the focal terms widen the distance of an off-axis fragment (here the centre: none)", {0, 0, 1, 1, 0, 4, 0.5f, 0.5f, 0, 1, 0, 1e9f, 2e9f}, "BFBFFFFF"},
+    };
+    float full = 1;
+    cc_vk_daylight(&full);
+    for (size_t c = 0; c < sizeof fogs / sizeof fogs[0]; c++) {
+        cc_vk_fog(fogs[c].fog);
+        cc_vk_frame_begin(clear);
+        cc_vk_draw(3, CC_PIPE_OPAQUE, CC_TEX_BLOCKS, IDENTITY);
+        cc_vk_submit();
+        int xs[1] = {(int)S.extent.width / 2};
+        int ys[1] = {(int)S.extent.height / 2};
+        char pixels[1][9];
+        read_pixels(1, xs, ys, pixels);
+        cc_vk_present();
+        snprintf(name, sizeof name, "test cc_vk %s", fogs[c].what);
+        tl_str(name, fogs[c].expect, pixels[0]);
+    }
     cc_vk_shutdown();
     cc_win_close();
     return 0;

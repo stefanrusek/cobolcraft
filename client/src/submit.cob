@@ -76,6 +76,7 @@
 *>       The daylight factor scales the sky term of the vertices at draw time (shim-abi section 9).
          COMPUTE WS-DAYLIGHT = SK-U / 1000
          CALL STATIC "cc_vk_daylight" USING BY REFERENCE WS-DAYLIGHT
+         CALL STATIC "cc_vk_fog" USING BY REFERENCE RL-FOG(1)
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
              IF RL-D-SLOT(WS-I) < 0
                  CALL STATIC "cc_vk_clear_depth"

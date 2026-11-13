@@ -23,7 +23,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLTINT.
  COPY CCSHIM.
+ 01 WS-ATTRIBUTE           PIC X(64).
+ 01 WS-FOG                 BINARY-DOUBLE.
+ 01 WS-FOG-Q               BINARY-DOUBLE.
+ 01 WS-FOG-END             BINARY-LONG.
+ 01 WS-FOG-SPAN            FLOAT-LONG.
+ 01 WS-FOG-MUL             FLOAT-LONG VALUE 1.
+ 01 WS-EX                  BINARY-LONG.
+ 01 WS-EY                  BINARY-LONG.
+ 01 WS-EZ                  BINARY-LONG.
+ 01 WS-BIOME               BINARY-LONG.
  01 WS-R                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -71,6 +82,35 @@
      MOVE SK-G TO RL-CLEAR(2)
      MOVE SK-B TO RL-CLEAR(3)
      MOVE 1 TO RL-CLEAR(4)
+*>   An eye in a fluid clears to its fog colour (12 section 3.3): lava #991900, water the water fog colour (#050533 unless a
+*>   biome overrides it).
+     EVALUATE TRUE
+         WHEN PL-EYE-LAVA = 1
+             COMPUTE RL-CLEAR(1) = 153 / 255
+             COMPUTE RL-CLEAR(2) = 25 / 255
+             MOVE 0 TO RL-CLEAR(3)
+         WHEN PL-EYE-WATER = 1
+             MOVE "minecraft:visual/water_fog_color" TO WS-ATTRIBUTE
+             CALL "TINT-ATTRIBUTE-DEFAULT" USING WS-ATTRIBUTE WS-FOG
+*>           The biome under the eye overrides the colour and multiplies the end distance (43 section 5).
+             COMPUTE WS-EX = FUNCTION INTEGER(PL-X)
+             COMPUTE WS-EY = FUNCTION INTEGER(PL-Y + 1.6)
+             COMPUTE WS-EZ = FUNCTION INTEGER(PL-Z)
+             CALL "TINT-BIOME-AT" USING CLIENT-STATE WS-EX WS-EY WS-EZ WS-BIOME
+             COMPUTE WS-BIOME = WS-BIOME + 1
+             IF TB-FOG(WS-BIOME) > 0
+                 COMPUTE WS-FOG = FUNCTION MOD(TB-FOG(WS-BIOME), 16777216)
+             END-IF
+             MOVE 1 TO WS-FOG-MUL
+             IF TB-FOG-END(WS-BIOME) > 0
+                 MOVE TB-FOG-END(WS-BIOME) TO WS-FOG-MUL
+             END-IF
+             DIVIDE WS-FOG BY 65536 GIVING WS-FOG-Q
+             COMPUTE RL-CLEAR(1) = FUNCTION MOD(WS-FOG-Q, 256) / 255
+             DIVIDE WS-FOG BY 256 GIVING WS-FOG-Q
+             COMPUTE RL-CLEAR(2) = FUNCTION MOD(WS-FOG-Q, 256) / 255
+             COMPUTE RL-CLEAR(3) = FUNCTION MOD(WS-FOG, 256) / 255
+     END-EVALUATE
      MOVE 0 TO RL-DRAW-COUNT RL-UPLOAD-COUNT
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VIEW-YAW WS-VIEW-PITCH WS-EYE-TABLE
 *>   Projection (column-major).
@@ -84,6 +124,38 @@
      COMPUTE RL-PROJ(11) = WS-FAR / (WS-NEAR - WS-FAR)
      MOVE -1 TO RL-PROJ(12)
      COMPUTE RL-PROJ(15) = WS-NEAR * WS-FAR / (WS-NEAR - WS-FAR)
+*>   The fog of an eye in a fluid (12 section 3.3 environments; cc_vk_fog): the fog colour is the clear colour set above, strength 1, lava
+*>   from 0.25 to 1.0 blocks (no Fire Resistance), water from -8 to 96 (water vision 1); the focal terms of the projection.
+     MOVE 0 TO RL-FOG(1) RL-FOG(2) RL-FOG(3) RL-FOG(4)
+     MOVE 1000000000 TO RL-FOG(5)
+     MOVE 2000000000 TO RL-FOG(6)
+*>   The render-distance fog (cylindrical): end = view distance in blocks, start = end - clamp(end / 10, 4, 64); off until the view distance is known.
+     MOVE 1000000000 TO RL-FOG(12)
+     MOVE 2000000000 TO RL-FOG(13)
+     IF PL-VIEW-DISTANCE > 0
+         COMPUTE WS-FOG-END = PL-VIEW-DISTANCE * 16
+         COMPUTE WS-FOG-SPAN = FUNCTION MAX(4, FUNCTION MIN(64, WS-FOG-END / 10))
+         COMPUTE RL-FOG(12) = WS-FOG-END - WS-FOG-SPAN
+         MOVE WS-FOG-END TO RL-FOG(13)
+         MOVE RL-CLEAR(1) TO RL-FOG(1)
+         MOVE RL-CLEAR(2) TO RL-FOG(2)
+         MOVE RL-CLEAR(3) TO RL-FOG(3)
+         MOVE 1 TO RL-FOG(4)
+     END-IF
+     MOVE RL-PROJ(1) TO RL-FOG(7)
+     MOVE RL-PROJ(6) TO RL-FOG(8)
+     IF PL-EYE-LAVA = 1 OR PL-EYE-WATER = 1
+         MOVE RL-CLEAR(1) TO RL-FOG(1)
+         MOVE RL-CLEAR(2) TO RL-FOG(2)
+         MOVE RL-CLEAR(3) TO RL-FOG(3)
+         MOVE 1 TO RL-FOG(4)
+         MOVE -8 TO RL-FOG(5)
+         COMPUTE RL-FOG(6) = 96 * WS-FOG-MUL
+         IF PL-EYE-LAVA = 1
+             MOVE 0.25 TO RL-FOG(5)
+             MOVE 1 TO RL-FOG(6)
+         END-IF
+     END-IF
 *>   View: rows right, up and -forward.
      COMPUTE WS-YAW = WS-VIEW-YAW * FUNCTION PI / 180
      COMPUTE WS-PITCH = WS-VIEW-PITCH * FUNCTION PI / 180
@@ -103,6 +175,9 @@
          COMPUTE RL-VIEW(WS-I + 2) = 0 - WS-FWD(WS-C)
      END-PERFORM
      MOVE 1 TO RL-VIEW(16)
+     MOVE RL-VIEW(5) TO RL-FOG(9)
+     MOVE RL-VIEW(6) TO RL-FOG(10)
+     MOVE RL-VIEW(7) TO RL-FOG(11)
 *>   Projection x view.
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
          PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3

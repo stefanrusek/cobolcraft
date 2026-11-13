@@ -162,6 +162,7 @@
 *>         RETURNING RC
 *>     CALL STATIC "cc_vk_texture_update" USING BY VALUE TEX-ID X Y W H BY REFERENCE RGBA RETURNING RC
 *>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
+*>   Fog:            CALL STATIC "cc_vk_fog" USING BY REFERENCE fog (13 FLOAT-SHORT: r g b strength start end p00 p11 up-x up-y up-z render-distance-start render-distance-end; strength 0 = none)
 *>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
 *>   Screenshot:     CALL STATIC "cc_vk_screenshot" USING BY REFERENCE PATH-Z RETURNING RC   (CC-AGAIN: one still waiting)
 *>                   CALL STATIC "cc_vk_screenshot_result" RETURNING RC   (CC-AGAIN waiting, 0 written, CC-FAILED)

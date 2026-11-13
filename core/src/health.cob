@@ -360,7 +360,7 @@
 *> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), damage type id out (BINARY-LONG): the id of the cause's damage type in the open content set. The
 *> cobolcraft set numbers its types in RULES.cpy. A standard (or debug) set has the vanilla damage_type registry, a synchronized registry whose ids are
 *> the entries' positions (17 section 4.13.4): the cause's type is found there by key (fall, mob_attack for the abend and mob causes, player_attack,
-*> starve, generic for hail, generic_kill for the command). Where the open set's registry has no such entry the RULES.cpy id is kept.
+*> starve, generic for hail, generic_kill for the command, drown). Where the open set's registry has no such entry the RULES.cpy id is kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
@@ -398,6 +398,8 @@
              MOVE "minecraft:starve" TO WS-WANTED
          WHEN CAUSE-COMMAND
              MOVE "minecraft:generic_kill" TO WS-WANTED
+         WHEN CAUSE-DROWN
+             MOVE "minecraft:drown" TO WS-WANTED
          WHEN OTHER
              MOVE "minecraft:generic" TO WS-WANTED
      END-EVALUATE
@@ -661,6 +663,7 @@
      MOVE PS-ALIVE TO PL-STATE(WS-ROW)
      MOVE RULE-MAX-HEALTH TO PL-HEALTH(WS-ROW)
      MOVE RULE-MAX-FOOD TO PL-FOOD(WS-ROW)
+     MOVE RULE-MAX-AIR TO PL-AIR(WS-ROW)
      MOVE RULE-START-SATURATION TO PL-SATURATION(WS-ROW)
      MOVE 0 TO PL-EXHAUSTION(WS-ROW) PL-HURT-COOLDOWN(WS-ROW) PL-RECOVER-TICKS(WS-ROW)
          PL-DEATH-CAUSE(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PL-SPRINTING(WS-ROW)
@@ -718,6 +721,7 @@
          END-IF
          IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) = PS-ALIVE
              CALL "WEATHER-HAIL-PLAYER" USING WS-ROW
+             CALL "BREATH-TICK" USING WS-ROW
          END-IF
      END-PERFORM
      CALL "EFFECTS-TICK"
