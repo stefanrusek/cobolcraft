@@ -5752,6 +5752,354 @@
      PERFORM ADD-N
      MOVE "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§2 Shared base, helpers and vocabulary: tag triggers_ambient_desert_dry_vegetation_block_sounds (2.4): members and non-members (part 1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:bamboo" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:bamboo_sapling" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:black_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:blue_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:brown_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cactus" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:clay" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:coarse_dirt" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cyan_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:dead_tube_coral_block" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:dirt" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:end_stone" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:farmland" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:flowing_water" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:frosted_ice" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:glazed_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:grass_block" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:gravel" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:gray_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:green_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:ice" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:lava" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§2 Shared base, helpers and vocabulary: tag triggers_ambient_desert_dry_vegetation_block_sounds (2.4): members and non-members (part 2)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:light_blue_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:light_gray_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:lime_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:magenta_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:magma_block" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:moss_block" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:mud" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:muddy_mangrove_roots" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:mycelium" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:netherrack" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:oak_log" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:orange_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:packed_ice" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pale_oak_log" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pale_oak_wood" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pink_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:podzol" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:purple_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:red_sand" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:red_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:rooted_dirt" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:sand" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1 0 0 0 0 0 0 0 1 0 0 0 1 0 1 1 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§2 Shared base, helpers and vocabulary: tag triggers_ambient_desert_dry_vegetation_block_sounds (2.4): members and non-members (part 3)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:soul_sand" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:soul_soil" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:stone" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:stripped_pale_oak_log" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:stripped_pale_oak_wood" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:suspicious_gravel" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:suspicious_sand" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:tube_coral_block" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:water" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:white_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "22" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:yellow_terracotta" TO WS-T1
+     CALL "GC4-IN-TAG" USING WS-I1 WS-T1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 0 1 0 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 29b-4§2 Shared base, helpers and vocabulary: VegetationBlock (2.1): canSurvive is mayPlaceOn of the state below (supports_vegetation); the shape update gives air when it fails," TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "1" TO WS-IN

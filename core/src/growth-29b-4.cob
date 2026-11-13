@@ -115,7 +115,8 @@
 *> USING tag (1 supports_vegetation, 2 substrate_overworld, 3 dirt, 4 sand, 5 supports_sugar_cane, 6 supports_sugar_cane_adjacently (block), 7 supports_cactus,
 *> 8 support_override_cactus_flower, 9 supports_bamboo, 10 cannot_support_kelp / cannot_support_seagrass, 11 supports_chorus_plant / supports_chorus_flower,
 *> 12 supports_dry_vegetation, 13 terracotta, 14 supports_wither_rose, 15 supports_lily_pad (block), 16 supports_small_dripleaf, 17 supports_big_dripleaf,
-*> 18 coral_blocks, 19 pale_oak_logs, 20 fluid supports_sugar_cane_adjacently (water tag), 21 fluid supports_lily_pad), block or fluid key (PIC X(48)), member (BINARY-LONG
+*> 18 coral_blocks, 19 pale_oak_logs, 20 fluid supports_sugar_cane_adjacently (water tag), 21 fluid supports_lily_pad, 22 triggers_ambient_desert_dry_vegetation_block_sounds:
+*> terracotta, sand and red_sand as shipped, 15), block or fluid key (PIC X(48)), member (BINARY-LONG
 *> out, 1 or 0): the tag members as shipped (2.4), listed to make the examples concrete; a reimplementation takes the tags from the data pack (23).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -225,8 +226,12 @@
              IF L-KEY = "minecraft:water" OR L-KEY = "minecraft:flowing_water"
                  MOVE 1 TO L-MEMBER
              END-IF
-         WHEN OTHER
+         WHEN 21
              IF L-KEY = "minecraft:water"
+                 MOVE 1 TO L-MEMBER
+             END-IF
+         WHEN OTHER
+             IF WS-TERRA = 1 OR L-KEY = "minecraft:sand" OR L-KEY = "minecraft:red_sand"
                  MOVE 1 TO L-MEMBER
              END-IF
      END-EVALUATE
@@ -3474,3 +3479,616 @@
      MOVE 100 TO L-OFFSET
      GOBACK.
  END PROGRAM GC4-SMALL-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-ROOTS-SURVIVE.
+*> USING the state above has a sturdy face toward DOWN (BINARY-LONG), canSurvive out: HangingRootsBlock (13.1 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-STURDY L-SURVIVE.
+     MOVE L-STURDY TO L-SURVIVE
+     GOBACK.
+ END PROGRAM GC4-ROOTS-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-ROOTS-SU.
+*> USING the changed direction (2 up), canSurvive, waterlogged (BINARY-LONG), the result is air, a water tick is scheduled out: 13.1 step 2 (air first, no tick for the removed block).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-SURVIVE L-WATERLOGGED L-AIR L-WATER.
+     MOVE 0 TO L-AIR L-WATER
+     IF L-DIR = 2 AND L-SURVIVE = 0
+         MOVE 1 TO L-AIR
+     ELSE
+         MOVE L-WATERLOGGED TO L-WATER
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-ROOTS-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-ROOTS-PLACE.
+*> USING the clicked fluid is a water source (BINARY-LONG), waterlogged, the shape width, y from, y to out: placement and shape of hanging roots (13.1 steps 3, shape).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SOURCE L-WATERLOGGED L-WIDTH L-Y0 L-Y1.
+     MOVE L-SOURCE TO L-WATERLOGGED
+     MOVE 12 TO L-WIDTH
+     MOVE 10 TO L-Y0
+     MOVE 16 TO L-Y1
+     GOBACK.
+ END PROGRAM GC4-ROOTS-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-ROOTS-CONST.
+*> USING the offset type (1 XZ), bone meal on the block itself (0 none) (BINARY-LONG out): hanging roots (13.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-BONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-OFFSET L-BONE.
+     MOVE 1 TO L-OFFSET
+     MOVE 0 TO L-BONE
+     GOBACK.
+ END PROGRAM GC4-ROOTS-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-SURVIVE.
+*> USING canSupportCenter of the state above toward DOWN, isWaterAt(pos) (BINARY-LONG), canSurvive out: SporeBlossomBlock (13.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CENTER               BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CENTER L-WATER L-SURVIVE.
+     MOVE 0 TO L-SURVIVE
+     IF L-CENTER = 1 AND L-WATER = 0
+         MOVE 1 TO L-SURVIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SPORE-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-SU.
+*> USING the changed direction (2 up), canSurvive (BINARY-LONG), the result is air out: 13.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-SURVIVE L-AIR.
+     MOVE 0 TO L-AIR
+     IF L-DIR = 2 AND L-SURVIVE = 0
+         MOVE 1 TO L-AIR
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SPORE-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-CONST.
+*> USING the shape width, y from, y to out: column(12, 13, 16) (13.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-Y0 L-Y1.
+     MOVE 12 TO L-WIDTH
+     MOVE 13 TO L-Y0
+     MOVE 16 TO L-Y1
+     GOBACK.
+ END PROGRAM GC4-SPORE-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-CONST.
+*> USING the default of tip, the base shape's y from, the tip shape's y from (BINARY-LONG out; both 14 wide to 16): HangingMossBlock (13.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TIP                  BINARY-LONG.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-TIP-Y                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIP L-BASE L-TIP-Y.
+     MOVE 1 TO L-TIP
+     MOVE 0 TO L-BASE
+     MOVE 2 TO L-TIP-Y
+     GOBACK.
+ END PROGRAM GC4-MOSS-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-STAY.
+*> USING the block above can be attached to by its bottom face, it is pale_hanging_moss (BINARY-LONG), canStayAtPosition out: 13.3 step 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ATTACH               BINARY-LONG.
+ 01 L-MOSS                 BINARY-LONG.
+ 01 L-STAY                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ATTACH L-MOSS L-STAY.
+     MOVE 0 TO L-STAY
+     IF L-ATTACH = 1 OR L-MOSS = 1
+         MOVE 1 TO L-STAY
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-MOSS-STAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-SU.
+*> USING canStayAtPosition, the state below is pale_hanging_moss (BINARY-LONG), a block tick scheduled, tip out: the shape update for every direction (13.3 step 2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STAY                 BINARY-LONG.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-TIP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STAY L-BELOW L-TICK L-TIP.
+     MOVE 0 TO L-TICK
+     IF L-STAY = 0
+         MOVE 1 TO L-TICK
+     END-IF
+     MOVE 1 TO L-TIP
+     IF L-BELOW = 1
+         MOVE 0 TO L-TIP
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-MOSS-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-TIP.
+*> USING the moss cells from pos downward including pos (BINARY-LONG), the offset of the tip from pos out (negative): getTip (13.3 step 3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RUN                  BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-RUN L-OFFSET.
+     COMPUTE L-OFFSET = 1 - L-RUN
+     GOBACK.
+ END PROGRAM GC4-MOSS-TIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-BONE.
+*> USING the cell below the tip is air, it is inside the build height (BINARY-LONG), valid, success, a moss with tip true is written there, the flags out: 13.3 step 4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-WRITTEN              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-HEIGHT L-VALID L-SUCCESS L-WRITTEN L-FLAGS.
+     MOVE 0 TO L-VALID L-WRITTEN
+     MOVE 1 TO L-SUCCESS
+     MOVE 3 TO L-FLAGS
+     IF L-AIR = 1 AND L-HEIGHT = 1
+         MOVE 1 TO L-VALID L-WRITTEN
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-MOSS-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MROOTS-RULES.
+*> USING waterlogged, a water source at the clicked position, the neighbour is mangrove_roots, the direction's axis is Y (BINARY-LONG), the placed state's waterlogged, a water tick is
+*> scheduled, the fluid state is the water source, face rendering is skipped out: MangroveRootsBlock (13.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-ROOTS                BINARY-LONG.
+ 01 L-AXIS                 BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-FLUID                BINARY-LONG.
+ 01 L-SKIP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATERLOGGED L-SOURCE L-ROOTS L-AXIS L-PLACED L-TICK L-FLUID L-SKIP.
+     MOVE L-SOURCE TO L-PLACED
+     MOVE L-WATERLOGGED TO L-TICK L-FLUID
+     MOVE 0 TO L-SKIP
+     IF L-ROOTS = 1 AND L-AXIS = 1
+         MOVE 1 TO L-SKIP
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-MROOTS-RULES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-REMOVAL.
+*> USING block key (PIC X(48)), the removal path (BINARY-LONG out: 1 the shape update gives air, 2 a block tick of delay 1 destroys it, 0 none): the "removal path" column of 14.1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SECTION             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-PATH                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-PATH.
+     MOVE 0 TO L-PATH
+     CALL "GC4-PART" USING L-KEY WS-SECTION
+     EVALUATE TRUE
+         WHEN WS-SECTION = 40 OR WS-SECTION = 51 OR WS-SECTION = 81 OR WS-SECTION = 82 OR WS-SECTION = 33 OR WS-SECTION = 34 OR WS-SECTION = 35
+              OR WS-SECTION = 122 OR WS-SECTION = 133 OR L-KEY = "minecraft:bamboo"
+             MOVE 2 TO L-PATH
+         WHEN WS-SECTION = 105 OR WS-SECTION = 101 OR WS-SECTION = 103 OR WS-SECTION = 107 OR WS-SECTION = 95 OR WS-SECTION = 92 OR WS-SECTION = 52
+              OR WS-SECTION = 102 OR WS-SECTION = 106 OR WS-SECTION = 112 OR WS-SECTION = 111 OR WS-SECTION = 91 OR WS-SECTION = 93 OR WS-SECTION = 96
+              OR WS-SECTION = 124 OR WS-SECTION = 104 OR WS-SECTION = 70 OR WS-SECTION = 121 OR WS-SECTION = 131 OR WS-SECTION = 132
+              OR L-KEY = "minecraft:bamboo_sapling"
+             MOVE 1 TO L-PATH
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-REMOVAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SURVIVE-TAG.
+*> USING block key (PIC X(48)), the tag of the block below that decides canSurvive (BINARY-LONG out: 1 supports_vegetation, 14 supports_wither_rose, 12 supports_dry_vegetation,
+*> 9 supports_bamboo, 17 supports_big_dripleaf, 8 support_override_cactus_flower, 0 when another rule decides): the "canSurvive" column of 14.1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SECTION             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-TAG                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TAG.
+     MOVE 0 TO L-TAG
+     CALL "GC4-PART" USING L-KEY WS-SECTION
+     EVALUATE TRUE
+         WHEN WS-SECTION = 105 OR WS-SECTION = 101 OR WS-SECTION = 103 OR WS-SECTION = 107 OR WS-SECTION = 95 OR WS-SECTION = 91 OR WS-SECTION = 96
+              OR WS-SECTION = 104
+             MOVE 1 TO L-TAG
+         WHEN WS-SECTION = 102
+             MOVE 14 TO L-TAG
+         WHEN WS-SECTION = 106
+             MOVE 12 TO L-TAG
+         WHEN WS-SECTION = 60
+             MOVE 9 TO L-TAG
+         WHEN WS-SECTION = 121
+             MOVE 17 TO L-TAG
+         WHEN WS-SECTION = 52
+             MOVE 8 TO L-TAG
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-SURVIVE-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-RT-TABLE.
+*> USING block key (PIC X(48)), the draws of the table row, the gate (BINARY-LONG out: 3 age < 25, 4 the cell above is air, 1 stage == 0, 2 age < 5 with air above and in height, 5 the game rule
+*> spread_vines, 0 none): the random-tick table of 14.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-DRAWS                BINARY-LONG.
+ 01 L-GATE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-DRAWS L-GATE.
+     MOVE 0 TO L-DRAWS L-GATE
+     EVALUATE TRUE
+         WHEN L-KEY = "minecraft:kelp" OR L-KEY = "minecraft:weeping_vines" OR L-KEY = "minecraft:twisting_vines"
+             MOVE 1 TO L-DRAWS
+             MOVE 3 TO L-GATE
+         WHEN L-KEY = "minecraft:cave_vines"
+             MOVE 2 TO L-DRAWS
+             MOVE 3 TO L-GATE
+         WHEN L-KEY = "minecraft:sugar_cane"
+             MOVE 4 TO L-GATE
+         WHEN L-KEY = "minecraft:cactus"
+             MOVE 1 TO L-DRAWS
+             MOVE 4 TO L-GATE
+         WHEN L-KEY = "minecraft:bamboo"
+             MOVE 2 TO L-DRAWS
+             MOVE 1 TO L-GATE
+         WHEN L-KEY = "minecraft:bamboo_sapling" OR L-KEY = "minecraft:open_eyeblossom" OR L-KEY = "minecraft:closed_eyeblossom"
+             MOVE 1 TO L-DRAWS
+         WHEN L-KEY = "minecraft:vine"
+             MOVE 2 TO L-DRAWS
+             MOVE 5 TO L-GATE
+         WHEN L-KEY = "minecraft:chorus_flower"
+             MOVE 3 TO L-DRAWS
+             MOVE 2 TO L-GATE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-RT-TABLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BONE-TARGET.
+*> USING block key (PIC X(48)), the block is a bone meal target, the effect (BINARY-LONG out: 1 heads grow, 2 bodies run the head's effect, 3 berries, 4 bamboo, 5 bamboo sapling,
+*> 6 tall seagrass, 7 tall grass or large fern, 8 drops the item, 9 flower amount, 10 neighbour spread, 11 short dry grass grows, 12 tall dry grass spreads, 13 sea pickle patch,
+*> 14 dripleaf head, 15 dripleaf stem, 16 small dripleaf column, 17 more moss): the bone meal table of 14.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-TARGET               BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TARGET L-EFFECT.
+     MOVE 1 TO L-TARGET
+     EVALUATE TRUE
+         WHEN L-KEY = "minecraft:kelp" OR L-KEY = "minecraft:weeping_vines" OR L-KEY = "minecraft:twisting_vines"
+             MOVE 1 TO L-EFFECT
+         WHEN L-KEY = "minecraft:kelp_plant" OR L-KEY = "minecraft:weeping_vines_plant" OR L-KEY = "minecraft:twisting_vines_plant"
+             MOVE 2 TO L-EFFECT
+         WHEN L-KEY = "minecraft:cave_vines" OR L-KEY = "minecraft:cave_vines_plant"
+             MOVE 3 TO L-EFFECT
+         WHEN L-KEY = "minecraft:bamboo"
+             MOVE 4 TO L-EFFECT
+         WHEN L-KEY = "minecraft:bamboo_sapling"
+             MOVE 5 TO L-EFFECT
+         WHEN L-KEY = "minecraft:seagrass"
+             MOVE 6 TO L-EFFECT
+         WHEN L-KEY = "minecraft:short_grass" OR L-KEY = "minecraft:fern"
+             MOVE 7 TO L-EFFECT
+         WHEN L-KEY = "minecraft:sunflower" OR L-KEY = "minecraft:lilac" OR L-KEY = "minecraft:rose_bush" OR L-KEY = "minecraft:peony"
+             MOVE 8 TO L-EFFECT
+         WHEN L-KEY = "minecraft:pink_petals" OR L-KEY = "minecraft:wildflowers"
+             MOVE 9 TO L-EFFECT
+         WHEN L-KEY = "minecraft:bush" OR L-KEY = "minecraft:red_shrub" OR L-KEY = "minecraft:firefly_bush"
+             MOVE 10 TO L-EFFECT
+         WHEN L-KEY = "minecraft:short_dry_grass"
+             MOVE 11 TO L-EFFECT
+         WHEN L-KEY = "minecraft:tall_dry_grass"
+             MOVE 12 TO L-EFFECT
+         WHEN L-KEY = "minecraft:sea_pickle"
+             MOVE 13 TO L-EFFECT
+         WHEN L-KEY = "minecraft:big_dripleaf"
+             MOVE 14 TO L-EFFECT
+         WHEN L-KEY = "minecraft:big_dripleaf_stem"
+             MOVE 15 TO L-EFFECT
+         WHEN L-KEY = "minecraft:small_dripleaf"
+             MOVE 16 TO L-EFFECT
+         WHEN L-KEY = "minecraft:pale_hanging_moss"
+             MOVE 17 TO L-EFFECT
+         WHEN OTHER
+             MOVE 0 TO L-TARGET L-EFFECT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-BONE-TARGET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BONE-SUCCESS.
+*> USING isBonemealSuccess out: true for every row of this part (14.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-SUCCESS.
+     MOVE 1 TO L-SUCCESS
+     GOBACK.
+ END PROGRAM GC4-BONE-SUCCESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DAY-ATTR.
+*> USING the tick of the 24000-tick day (BINARY-LONG), the value of gameplay/eyeblossom_open and audio/firefly_bush_sounds out: true from 12600 to 23401 as read from the timeline
+*> (10.3 step 4, 15); how the keyframes interpolate and which side the last keyframe belongs to is open question 11 of the document, here 23401 is the first false tick.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICK L-VALUE.
+     MOVE 0 TO L-VALUE
+     IF L-TICK >= 12600 AND L-TICK < 23401
+         MOVE 1 TO L-VALUE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DAY-ATTR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FIREFLY.
+*> USING the nextInt(30) draw, the attribute audio/firefly_bush_sounds, the position is at or above the surface (MOTION_BLOCKING_NO_LEAVES height <= y), the local raw brightness
+*> (BINARY-LONG), the nextDouble of the particle test and the three draws x, y, z (FLOAT-LONG), the sound FIREFLY_BUSH_IDLE is played, the firefly particle is added, its x, y, z offsets
+*> x 1000 out (BINARY-LONG): the client tick of 15.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CHANCE              FLOAT-LONG VALUE 0.7.
+ LINKAGE SECTION.
+ 01 L-DRAW30               BINARY-LONG.
+ 01 L-ATTRIBUTE            BINARY-LONG.
+ 01 L-SURFACE              BINARY-LONG.
+ 01 L-BRIGHTNESS           BINARY-LONG.
+ 01 L-DOUBLE               FLOAT-LONG.
+ 01 L-D1                   FLOAT-LONG.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-D3                   FLOAT-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-PARTICLE             BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW30 L-ATTRIBUTE L-SURFACE L-BRIGHTNESS L-DOUBLE L-D1 L-D2 L-D3 L-SOUND L-PARTICLE L-X L-Y L-Z.
+     MOVE 0 TO L-SOUND L-PARTICLE L-X L-Y L-Z
+     IF L-DRAW30 = 0 AND L-ATTRIBUTE = 1 AND L-SURFACE = 1
+         MOVE 1 TO L-SOUND
+     END-IF
+     IF L-BRIGHTNESS <= 13 AND L-DOUBLE <= WS-CHANCE
+         MOVE 1 TO L-PARTICLE
+         COMPUTE L-X ROUNDED = (L-D1 * 10 - 5) * 1000
+         COMPUTE L-Y ROUNDED = L-D2 * 5 * 1000
+         COMPUTE L-Z ROUNDED = (L-D3 * 10 - 5) * 1000
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-FIREFLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-DRIP.
+*> USING two nextDouble draws (FLOAT-LONG), the x, y and z offsets x 1000 of the falling_spore_blossom particle out (BINARY-LONG): (x + draw, y + 0.7, z + draw) (15).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-D1                   FLOAT-LONG.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-D1 L-D2 L-X L-Y L-Z.
+     COMPUTE L-X ROUNDED = L-D1 * 1000
+     MOVE 700 TO L-Y
+     COMPUTE L-Z ROUNDED = L-D2 * 1000
+     GOBACK.
+ END PROGRAM GC4-SPORE-DRIP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-AIR.
+*> USING the nextInt(21) draw of Mth.nextInt(-10, 10) for x, the nextInt(10) draw for y, the nextInt(21) draw for z, the state at p has a full-block collision shape (BINARY-LONG), three
+*> nextDouble draws (FLOAT-LONG), the particle spore_blossom_air is added, dx, dy, dz of p, the offsets x 1000 added to p out (BINARY-LONG): one of the 14 attempts of 15.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RX                   BINARY-LONG.
+ 01 L-RY                   BINARY-LONG.
+ 01 L-RZ                   BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-D1                   FLOAT-LONG.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-D3                   FLOAT-LONG.
+ 01 L-PARTICLE             BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-FX                   BINARY-LONG.
+ 01 L-FY                   BINARY-LONG.
+ 01 L-FZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-RX L-RY L-RZ L-FULL L-D1 L-D2 L-D3 L-PARTICLE L-DX L-DY L-DZ L-FX L-FY L-FZ.
+     COMPUTE L-DX = L-RX - 10
+     COMPUTE L-DY = 0 - L-RY
+     COMPUTE L-DZ = L-RZ - 10
+     MOVE 0 TO L-PARTICLE L-FX L-FY L-FZ
+     IF L-FULL = 0
+         MOVE 1 TO L-PARTICLE
+         COMPUTE L-FX ROUNDED = L-D1 * 1000
+         COMPUTE L-FY ROUNDED = L-D2 * 1000
+         COMPUTE L-FZ ROUNDED = L-D3 * 1000
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SPORE-AIR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SPORE-ATTEMPTS.
+*> USING the attempts of the air particle loop out (BINARY-LONG): 15.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ATTEMPTS             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ATTEMPTS.
+     MOVE 14 TO L-ATTEMPTS
+     GOBACK.
+ END PROGRAM GC4-SPORE-ATTEMPTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-WITHER-SMOKE.
+*> USING nextBoolean (BINARY-LONG), the outline shape's centre x and z, three nextDouble draws (FLOAT-LONG), the smoke particle is added, its x, y, z offsets x 1000 out (BINARY-LONG):
+*> one of the three iterations of 15: (x + centre x + draw / 5, y + 0.5 - draw, z + centre z + draw / 5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BOOLEAN              BINARY-LONG.
+ 01 L-CX                   FLOAT-LONG.
+ 01 L-CZ                   FLOAT-LONG.
+ 01 L-D1                   FLOAT-LONG.
+ 01 L-D2                   FLOAT-LONG.
+ 01 L-D3                   FLOAT-LONG.
+ 01 L-PARTICLE             BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-BOOLEAN L-CX L-CZ L-D1 L-D2 L-D3 L-PARTICLE L-X L-Y L-Z.
+     MOVE 0 TO L-PARTICLE L-X L-Y L-Z
+     IF L-BOOLEAN = 1
+         MOVE 1 TO L-PARTICLE
+         COMPUTE L-X ROUNDED = (L-CX + L-D1 / 5) * 1000
+         COMPUTE L-Y ROUNDED = (0.5 - L-D2) * 1000
+         COMPUTE L-Z ROUNDED = (L-CZ + L-D3 / 5) * 1000
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-WITHER-SMOKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-WITHER-ITER.
+*> USING the iterations of the smoke loop out (BINARY-LONG): 15.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ITERATIONS           BINARY-LONG.
+ PROCEDURE DIVISION USING L-ITERATIONS.
+     MOVE 3 TO L-ITERATIONS
+     GOBACK.
+ END PROGRAM GC4-WITHER-ITER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-MOSS-IDLE.
+*> USING the nextInt(500) draw, the block above is in pale_oak_logs, it is pale_oak_leaves (BINARY-LONG), the sound PALE_HANGING_MOSS_IDLE is played out: 15.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-LOGS                 BINARY-LONG.
+ 01 L-LEAVES               BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-LOGS L-LEAVES L-SOUND.
+     MOVE 0 TO L-SOUND
+     IF L-DRAW = 0 AND (L-LOGS = 1 OR L-LEAVES = 1)
+         MOVE 1 TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-MOSS-IDLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-IDLE.
+*> USING the nextInt(700) draw, the block below is pale_moss_block, the type is open (BINARY-LONG), the sound EYEBLOSSOM_IDLE is played out: 15 (only the open type emits it).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-MOSS                 BINARY-LONG.
+ 01 L-OPEN                 BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-MOSS L-OPEN L-SOUND.
+     MOVE 0 TO L-SOUND
+     IF L-DRAW = 0 AND L-MOSS = 1 AND L-OPEN = 1
+         MOVE 1 TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-IDLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRY-SOUND.
+*> USING the nextInt(200) draw, the state below the plant is in the tag, the state two below it is in the tag (BINARY-LONG), the sound DRY_GRASS is played, it goes through
+*> playPlayerSound (the player's own position) out: playAmbientDryGrassSounds (15).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-TAG1                 BINARY-LONG.
+ 01 L-TAG2                 BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-PLAYER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-TAG1 L-TAG2 L-SOUND L-PLAYER.
+     MOVE 0 TO L-SOUND L-PLAYER
+     IF L-DRAW = 0 AND L-TAG1 = 1 AND L-TAG2 = 1
+         MOVE 1 TO L-SOUND L-PLAYER
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRY-SOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DEAD-BUSH.
+*> USING the nextInt(130) draw, the block below is red_sand or in tag terracotta, the nextInt(3) draw, the state below the plant and the one two below it are in the tag (BINARY-LONG),
+*> the local sound DEAD_BUSH_IDLE is played, the draws made out: playAmbientDeadBushSounds (15).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW130              BINARY-LONG.
+ 01 L-RED                  BINARY-LONG.
+ 01 L-DRAW3                BINARY-LONG.
+ 01 L-TAG1                 BINARY-LONG.
+ 01 L-TAG2                 BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW130 L-RED L-DRAW3 L-TAG1 L-TAG2 L-SOUND L-DRAWS.
+     MOVE 0 TO L-SOUND
+     MOVE 1 TO L-DRAWS
+     IF L-DRAW130 NOT = 0
+         GOBACK
+     END-IF
+     IF L-RED = 1
+         MOVE 2 TO L-DRAWS
+         IF L-DRAW3 NOT = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF L-TAG1 = 1 AND L-TAG2 = 1
+         MOVE 1 TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DEAD-BUSH.

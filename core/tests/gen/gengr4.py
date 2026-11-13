@@ -100,8 +100,8 @@ TERRA=["terracotta"]+[c+"_terracotta" for c in "white orange magenta light_blue 
 SMALLD=["clay","moss_block"]
 TAGS={1:SV,2:SUB,3:DIRT,4:SAND,5:SUB+SAND,6:["frosted_ice"],7:SAND,8:["cactus","farmland"],9:SAND+SUB+["bamboo","bamboo_sapling","gravel","suspicious_gravel"],10:["magma_block"],11:["end_stone"],
 12:SAND+TERRA+SV,13:TERRA,14:SV+["netherrack","soul_sand","soul_soil"],15:["ice","frosted_ice"],16:SMALLD,17:SMALLD+["dirt","grass_block","podzol","coarse_dirt","mycelium","rooted_dirt","moss_block","mud","muddy_mangrove_roots","farmland"],
-18:["tube_coral_block","brain_coral_block","bubble_coral_block","fire_coral_block","horn_coral_block"],19:["pale_oak_log","pale_oak_wood","stripped_pale_oak_log","stripped_pale_oak_wood"],20:["water","flowing_water"],21:["water"]}
-NAMES={1:"supports_vegetation",2:"substrate_overworld",3:"dirt",4:"sand",5:"supports_sugar_cane",6:"supports_sugar_cane_adjacently (block)",7:"supports_cactus",8:"support_override_cactus_flower",9:"supports_bamboo",10:"cannot_support_kelp and cannot_support_seagrass",11:"supports_chorus_plant and supports_chorus_flower",12:"supports_dry_vegetation",13:"terracotta",14:"supports_wither_rose",15:"supports_lily_pad (block)",16:"supports_small_dripleaf",17:"supports_big_dripleaf",18:"coral_blocks",19:"pale_oak_logs",20:"supports_sugar_cane_adjacently (fluid, water tag)",21:"supports_lily_pad (fluid)"}
+18:["tube_coral_block","brain_coral_block","bubble_coral_block","fire_coral_block","horn_coral_block"],19:["pale_oak_log","pale_oak_wood","stripped_pale_oak_log","stripped_pale_oak_wood"],20:["water","flowing_water"],21:["water"],22:TERRA+["sand","red_sand"]}
+NAMES={1:"supports_vegetation",2:"substrate_overworld",3:"dirt",4:"sand",5:"supports_sugar_cane",6:"supports_sugar_cane_adjacently (block)",7:"supports_cactus",8:"support_override_cactus_flower",9:"supports_bamboo",10:"cannot_support_kelp and cannot_support_seagrass",11:"supports_chorus_plant and supports_chorus_flower",12:"supports_dry_vegetation",13:"terracotta",14:"supports_wither_rose",15:"supports_lily_pad (block)",16:"supports_small_dripleaf",17:"supports_big_dripleaf",18:"coral_blocks",19:"pale_oak_logs",20:"supports_sugar_cane_adjacently (fluid, water tag)",21:"supports_lily_pad (fluid)",22:"triggers_ambient_desert_dry_vegetation_block_sounds"}
 PROBE=["dirt","coarse_dirt","rooted_dirt","mud","moss_block","grass_block","farmland","podzol","mycelium","sand","red_sand","suspicious_sand","gravel","suspicious_gravel","clay","stone","frosted_ice","ice","cactus","bamboo","bamboo_sapling","magma_block","end_stone","netherrack","soul_sand","soul_soil","terracotta","white_terracotta","black_terracotta","glazed_terracotta","muddy_mangrove_roots","tube_coral_block","dead_tube_coral_block","pale_oak_log","pale_oak_wood","stripped_pale_oak_log","stripped_pale_oak_wood","oak_log","water","flowing_water","lava","packed_ice"]
 for t in sorted(TAGS):
     keys=sorted(set(TAGS[t]+PROBE)) if t not in (13,) else sorted(set(TAGS[t]+PROBE))
@@ -351,7 +351,7 @@ rows(g,'vine crowding box (7): the offsets (dx, dy, dz) inside the box are -4 to
 rows(g,'vine wrap-over chance (7): nextFloat() converted to double compared below 0.05, so the float nearest 0.05 (0.05000000074505806) is not below it (draw)','GC4-VINE-WRAP',1,1,[(0.049,),(0.05,),(0.05000000074505806,),(0.0,),(0.0499999,)],lambda d:(int(d<0.05),),fl=(1,))
 bs4=[(a,b,c,d) for a in (0,1) for b in (0,1) for c in (0,1) for d in (0,1)]
 rows(g,'vine faces copied up (7): for north, east, south, west nextBoolean() is drawn first and the face survives only when the draw is false and the neighbour of the cell above is acceptable (four draws, four acceptances) (four faces)','GC4-VINE-UPFACES',8,4,[(1,0,0,1,1,1,0,0),(0,0,0,0,1,1,1,1),(1,1,1,1,1,1,1,1),(0,1,0,1,1,1,1,0),(0,0,1,1,0,1,0,1)],lambda *a:tuple(int(a[i]==0 and a[4+i]==1) for i in range(4)))
-rows(g,'vine faces copied down (7): for each of north, east, south, west nextBoolean() is drawn and when true and the source vine has the face the target gets it (four draws, four source faces) (target faces)','GC4-VINE-COPYDOWN',8,4,[(1,0,0,1,1,1,1,1),(1,1,1,1,0,1,0,1),(0,0,0,0,1,1,1,1),(1,1,0,0,1,1,1,1),(0,1,0,1,1,0,1,0)],lambda *a:tuple(int(a[i]==1 and a[4+i]==1) for i in range(4)))
+rows(g,'vine faces copied down (7): for each of north, east, south, west nextBoolean() is drawn and when true and the source vine has the face the target gets it (four draws, four source faces) (target faces)','GC4-VINE-COPYDOWN',8,4,[(1,0,0,1,1,1,1,1),(1,1,1,1,0,1,0,1),(0,0,0,0,1,1,1,1),(1,1,0,0,1,1,1,1),(0,1,0,1,1,0,1,0),(1,1,1,1,1,1,1,1)],lambda *a:tuple(int(a[i]==1 and a[4+i]==1) for i in range(4)))
 rows(g,'vine horizontal connection (7): any of the four horizontal faces is true','GC4-VINE-HCONN',4,1,[(0,0,0,0),(1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)],lambda *a:(int(any(a)),))
 rows(g,'vine up-face quirk (7, open question 4): the re-check of the up face (getUpdatedState, kind 1) tests the TOP face of the block above; the random tick and placement (kind 2) test its BOTTOM face (kind, top face full, bottom face full) (acceptable)','GC4-VINE-UPCHECK',3,1,[(1,1,0),(1,0,1),(2,1,0),(2,0,1),(1,1,1),(2,0,0)],lambda k,t,b:(t if k==1 else b,))
 rows(g,'vine canBeReplaced (7): while it has fewer than 5 faces (the face map has five entries, no down)','GC4-VINE-REPLACE',1,1,[(0,),(1,),(4,),(5,)],lambda n:(int(n<5),))
@@ -593,3 +593,77 @@ rows(g,'small dripleaf shape update (12.4 step 5): a water tick when waterlogged
 rows(g,'small dripleaf bone meal (12.4 step 6): always valid and successful; from the lower half the upper cell becomes the legacy fluid block (water when it is water, else air) with flags 18, then placeWithRandomHeight at the lower half; from the upper half the same on the lower half\'s position (half 0 lower 1 upper, fluid above is water) (valid, success, y offset of the acting position, replacement 1 water 0 air, flags)','GC4-SMALL-BONE',2,5,[(0,1),(0,0),(1,1),(1,0)],lambda h,w:(1,1,-h,w,18))
 rows(g,'small dripleaf constants (12.4): column 12 wide to 13, maximum vertical offset 0.1 (x 1000)','GC4-SMALL-CONST',0,4,[()],lambda :(12,0,13,100))
 W4(g,12)
+# ===== 13
+g=G4(13,'Hanging and root blocks','T0605','hanging roots (13.1), spore blossom (13.2), pale hanging moss (13.3), mangrove roots (13.4), worked example 12.')
+rows(g,'hanging roots survival (13.1 step 1): the state above has a sturdy face toward DOWN (sturdy) (survives)','GC4-ROOTS-SURVIVE',1,1,[(1,),(0,)],lambda s:(s,))
+def rsu(d,sv,wl):
+    if d==2 and not sv: return 1,0
+    return 0,wl
+rows(g,'hanging roots shape update (13.1 step 2): from UP air when it cannot survive; a water tick when waterlogged (direction 2 up, survive, waterlogged) (air, water tick)','GC4-ROOTS-SU',3,2,[(2,0,1),(2,1,1),(2,1,0),(3,0,1),(3,1,0)],rsu)
+rows(g,'hanging roots placement and constants (13.1): waterlogged is a water source at the clicked position (source) (waterlogged); shape 12 wide from 10 to 16 with offset XZ (1); no bone meal (0)','GC4-ROOTS-PLACE',1,4,[(1,),(0,)],lambda s:(s,12,10,16))
+rows(g,'hanging roots constants (13.1): offset type XZ (1), bone meal on the block itself (0)','GC4-ROOTS-CONST',0,2,[()],lambda :(1,0))
+rows(g,'spore blossom survival (13.2): canSupportCenter above toward DOWN and the cell is not water (center support above, isWaterAt) (survives)','GC4-SPORE-SURVIVE',2,1,[(1,0),(1,1),(0,0),(0,1)],lambda c,w:(int(c and not w),))
+rows(g,'spore blossom shape update (13.2): from UP air when it cannot survive, else the default (direction 2 up, survive) (air)','GC4-SPORE-SU',2,1,[(2,0),(2,1),(3,0),(3,1)],lambda d,s:(int(d==2 and not s),))
+rows(g,'spore blossom shape (13.2): column 12 wide from 13 to 16','GC4-SPORE-CONST',0,3,[()],lambda :(12,13,16))
+rows(g,'pale hanging moss constants (13.3): tip default true (1), base shape 14 wide 0 to 16, tip shape 14 wide 2 to 16 (default tip, base y from, tip y from)','GC4-MOSS-CONST',0,3,[()],lambda :(1,0,2))
+rows(g,'pale hanging moss canStayAtPosition (13.3 step 1): the block above can be attached to by its bottom face, or is pale_hanging_moss (attachable, above is moss) (stays)','GC4-MOSS-STAY',2,1,[(1,0),(0,1),(0,0),(1,1)],lambda a,m:(int(a or m),))
+rows(g,'pale hanging moss shape update (13.3 step 2, example 12): a block tick when it cannot stay (delay 1); the state takes tip = not (the state below is pale_hanging_moss) for every direction (stays, below is moss) (tick, tip)','GC4-MOSS-SU',2,2,[(1,0),(1,1),(0,0),(0,1)],lambda s,b:(int(not s),int(not b)))
+rows(g,'pale hanging moss getTip (13.3 step 3): from pos move DOWN over moss; the tip is the last moss cell (moss cells from pos downward including pos) (offset of the tip, negative)','GC4-MOSS-TIP',1,1,[(1,),(3,),(5,)],lambda n:(-(n-1),))
+rows(g,'pale hanging moss bone meal (13.3 step 4, example 12): valid when the cell below the tip is air and inside the build height; success always; setBlockAndUpdate (flags 3) of the cell below the tip with tip true, the old tip losing its tip by the shape update (air below, in height) (valid, success, tip written, flags)','GC4-MOSS-BONE',2,4,[(1,1),(1,0),(0,1)],lambda a,h:(int(a and h),1,int(a and h),3))
+rows(g,'mangrove roots (13.4): placement waterlogged is a water source at the clicked position; the shape update schedules a water tick when waterlogged; the fluid state is the water source when waterlogged; face culling is skipped when the neighbour is mangrove_roots and the direction\'s axis is Y (waterlogged, source at clicked position, neighbour is roots, axis is Y) (placement waterlogged, water tick, water source, skip rendering)','GC4-MROOTS-RULES',4,4,[(1,1,0,0),(0,0,1,1),(1,0,1,0),(0,1,0,1),(0,0,0,0)],lambda w,s,n,a:(s,w,w,int(n and a)))
+W4(g,13)
+# ===== 14
+g=G4(14,'The rules in one table each','T0607','can-survive and removal path (14.1), random ticks (14.2), bone meal (14.3).')
+SU=["bush","red_shrub"]+FLOWERS+["open_eyeblossom","closed_eyeblossom","firefly_bush","short_grass","fern","seagrass","cactus_flower","wither_rose","dead_bush","short_dry_grass","tall_dry_grass","lily_pad","sea_pickle","tall_grass","large_fern","pitcher_plant","tall_seagrass","sunflower","lilac","rose_bush","peony","small_dripleaf","pink_petals","wildflowers","bamboo_sapling","vine","big_dripleaf","hanging_roots","spore_blossom"]
+TK=["sugar_cane","cactus","bamboo","chorus_plant","chorus_flower","kelp","kelp_plant","weeping_vines","weeping_vines_plant","twisting_vines","twisting_vines_plant","cave_vines","cave_vines_plant","big_dripleaf_stem","pale_hanging_moss"]
+rm=[(k,1) for k in SU]+[(k,2) for k in TK]+[("mangrove_roots",0),("muddy_mangrove_roots",0),("stone",0)]
+for i in range(0,len(rm),24): keycase(g,'removal path (14.1): 1 the shape update gives air, 2 a tick (delay 1) destroys, 0 none (part %d)'%(i//24+1),'GC4-REMOVAL',rm[i:i+24])
+GT={1:["bush","red_shrub","open_eyeblossom","closed_eyeblossom","firefly_bush","short_grass","fern","tall_grass","large_fern","pitcher_plant","sunflower","lilac","rose_bush","peony","pink_petals","wildflowers"]+FLOWERS,14:["wither_rose"],12:["dead_bush","short_dry_grass","tall_dry_grass"],9:["bamboo","bamboo_sapling"],17:["big_dripleaf"],8:["cactus_flower"]}
+gt=[(k,t) for t,ks in GT.items() for k in ks]+[("sugar_cane",0),("sea_pickle",0),("seagrass",0),("kelp",0),("stone",0)]
+for i in range(0,len(gt),24): keycase(g,'ground test tag of canSurvive (14.1): the tag of the block below that decides it (1 supports_vegetation, 14 supports_wither_rose, 12 supports_dry_vegetation, 9 supports_bamboo, 17 supports_big_dripleaf, 8 support_override_cactus_flower), 0 when the rule is something else (part %d)'%(i//24+1),'GC4-SURVIVE-TAG',gt[i:i+24])
+RTT={"kelp":(1,3),"weeping_vines":(1,3),"twisting_vines":(1,3),"cave_vines":(2,3),"sugar_cane":(0,4),"cactus":(1,4),"bamboo":(2,1),"bamboo_sapling":(1,0),"vine":(2,5),"chorus_flower":(3,2),"open_eyeblossom":(1,0),"closed_eyeblossom":(1,0)}
+rt=[(k,"%d/%d"%v) for k,v in RTT.items()]+[("kelp_plant","0/0"),("stone","0/0")]
+keycase(g,'random tick table (14.2): the number of draws in the table row and the gate (3 age < 25, 4 the cell above is air, 1 stage == 0, 2 age < 5 and above air and in height, 5 the game rule spread_vines, 0 none)','GC4-RT-TABLE',rt,2)
+BT={"kelp":1,"weeping_vines":1,"twisting_vines":1,"kelp_plant":2,"weeping_vines_plant":2,"twisting_vines_plant":2,"cave_vines":3,"cave_vines_plant":3,"bamboo":4,"bamboo_sapling":5,"seagrass":6,"short_grass":7,"fern":7,"sunflower":8,"lilac":8,"rose_bush":8,"peony":8,"pink_petals":9,"wildflowers":9,"bush":10,"red_shrub":10,"firefly_bush":10,"short_dry_grass":11,"tall_dry_grass":12,"sea_pickle":13,"big_dripleaf":14,"big_dripleaf_stem":15,"small_dripleaf":16,"pale_hanging_moss":17}
+NT=["vine","cactus","sugar_cane","cactus_flower","chorus_plant","chorus_flower","lily_pad","hanging_roots","spore_blossom","mangrove_roots","dead_bush"]+FLOWERS+["wither_rose","open_eyeblossom","closed_eyeblossom","tall_seagrass","tall_grass","large_fern","pitcher_plant"]
+bt=[(k,"1/%d"%v) for k,v in BT.items()]+[(k,"0/0") for k in NT]
+for i in range(0,len(bt),20): keycase(g,'bone meal table (14.3): whether the block is a target and its effect (1 heads grow, 2 bodies run the head, 3 berries, 4 bamboo, 5 sapling, 6 tall seagrass, 7 tall grass or large fern, 8 drops the item, 9 flower amount, 10 neighbour spread, 11 short dry grass grows, 12 tall dry grass spreads, 13 pickle patch, 14 and 15 dripleaf stalk, 16 small dripleaf column, 17 more moss) (part %d)'%(i//20+1),'GC4-BONE-TARGET',bt[i:i+20],2)
+rows(g,'bone meal success (14.3): isBonemealSuccess is true for every row of this part','GC4-BONE-SUCCESS',0,1,[()],lambda :(1,))
+W4(g,14)
+# ===== 15
+g=G4(15,'Client-side behaviour that does not change state','T0609','the animateTick rules of 15: firefly bush, spore blossom, wither rose, pale hanging moss, eyeblossom, dry grass and dead bush sounds.')
+rows(g,'day timeline attribute (10.3 step 4, 15): gameplay/eyeblossom_open and audio/firefly_bush_sounds are true from 12600 to 23401 ticks of the 24000-tick day (day tick) (value)','GC4-DAY-ATTR',1,1,[(0,),(12599,),(12600,),(20000,),(23400,),(23999,)],lambda t:(int(12600<=t<23401),))
+def ff(d30,at,ho,br,dp,d1,d2,d3):
+    snd=int(d30==0 and at and ho)
+    prt=int(br<=13 and dp<=0.7)
+    return snd,prt,(m(d1*10-5) if prt else 0),(m(d2*5) if prt else 0),(m(d3*10-5) if prt else 0)
+ffc=[(0,1,1,13,0.7,0.5,0.5,0.5),(1,1,1,14,0.7,0.5,0.5,0.5),(0,0,1,13,0.71,0.5,0.5,0.5),(0,1,0,10,0.0,0.25,0.5,0.75),(5,1,1,13,0.2,0.0,1.0,0.125),(0,1,1,15,0.2,0.5,0.5,0.5)]
+rows(g,'firefly bush (15): with nextInt(30) == 0, the attribute true and the position at or above the surface the local sound FIREFLY_BUSH_IDLE; then at local brightness <= 13 and nextDouble <= 0.7 the firefly particle at (x + d x 10 - 5, y + d x 5, z + d x 10 - 5), draw order x, y, z (nextInt(30), attribute, at or above the surface, brightness, the nextDouble, three draws) (sound, particle, x, y, z offsets x 1000)','GC4-FIREFLY',8,5,ffc,ff,fl=(5,6,7,8))
+rows(g,'spore blossom drip (15): the particle falling_spore_blossom at (x + nextDouble, y + 0.7, z + nextDouble) (two draws) (x, y, z offsets x 1000)','GC4-SPORE-DRIP',2,3,[(0.5,0.25),(0.0,0.999)],lambda a,b:(m(a),700,m(b)),fl=(1,2))
+def sa(rx,ry,rz,full,d1,d2,d3):
+    dx=-10+rx; dy=-ry; dz=-10+rz
+    if full: return 0,dx,dy,dz,0,0,0
+    return 1,dx,dy,dz,m(d1),m(d2),m(d3)
+sac=[(0,0,0,0,0.5,0.5,0.5),(20,9,20,0,0.25,0.75,0.125),(10,5,10,1,0.5,0.5,0.5),(3,2,17,0,0.0,0.0,0.0)]
+rows(g,'spore blossom air particles (15): 14 attempts; p = (x + Mth.nextInt(-10, 10), y - nextInt(10), z + Mth.nextInt(-10, 10)); when the state at p has no full-block collision shape the particle spore_blossom_air at p plus a nextDouble each (the nextInt(21) draw for x, nextInt(10), the draw for z, p has a full collision shape, three draws) (particle, dx, dy, dz, offsets x 1000)','GC4-SPORE-AIR',7,7,sac,sa,fl=(5,6,7))
+rows(g,'spore blossom constants (15): 14 attempts a tick','GC4-SPORE-ATTEMPTS',0,1,[()],lambda :(14,))
+def wsm(b,cx,cz,d1,d2,d3):
+    if not b: return 0,0,0,0
+    return 1,m(cx+d1/5),m(0.5-d2),m(cz+d3/5)
+wsc=[(1,0.5,0.5,0.5,0.25,0.5),(0,0.5,0.5,0.5,0.25,0.5),(1,0.25,0.75,1.0,0.0,0.0)]
+rows(g,'wither rose smoke (15): three iterations, each when nextBoolean(): the particle smoke at (x + centre x + nextDouble / 5, y + 0.5 - nextDouble, z + centre z + nextDouble / 5) (nextBoolean, centre x, centre z, three draws) (particle, x, y, z offsets x 1000)','GC4-WITHER-SMOKE',6,4,wsc,wsm,fl=(2,3,4,5,6))
+rows(g,'wither rose smoke iterations (15): three','GC4-WITHER-ITER',0,1,[()],lambda :(3,))
+rows(g,'pale hanging moss ambient sound (15): nextInt(500) == 0 and the block above in pale_oak_logs or pale_oak_leaves (draw, above in logs, above is leaves) (sound)','GC4-MOSS-IDLE',3,1,[(0,1,0),(0,0,1),(0,0,0),(1,1,0),(499,0,1)],lambda d,l,v:(int(d==0 and (l or v)),))
+rows(g,'open eyeblossom ambient sound (15): nextInt(700) == 0 and the block below pale_moss_block; only the open type plays it (draw, below is pale_moss_block, open) (sound)','GC4-EYE-IDLE',3,1,[(0,1,1),(0,1,0),(0,0,1),(5,1,1)],lambda d,b,o:(int(d==0 and b and o),))
+def drys(d,t1,t2): return int(d==0 and t1 and t2),int(d==0 and t1 and t2)
+rows(g,'dry grass ambient sound (15): one nextInt(200) draw; when 0 and the state below and the state two below are both in the tag triggers_ambient_desert_dry_vegetation_block_sounds: DRY_GRASS (source AMBIENT) through playPlayerSound, the player\'s own position (draw, below in tag, two below in tag) (sound, player sound)','GC4-DRY-SOUND',3,2,[(0,1,1),(0,1,0),(0,0,1),(7,1,1)],drys)
+def dbs(d130,red,d3,t1,t2):
+    if d130!=0: return 0,1
+    dr=1
+    if red:
+        dr=2
+        if d3!=0: return 0,2
+    return int(t1 and t2),dr
+dbc=[(5,0,0,1,1),(0,0,0,1,1),(0,0,0,1,0),(0,1,0,1,1),(0,1,2,1,1),(0,1,0,0,1),(0,1,0,1,0),(129,1,0,1,1)]
+rows(g,'dead bush ambient sound (15): nextInt(130) must be 0; over red_sand or terracotta a second nextInt(3) must also be 0 (1/390 there); then with the two-block tag check true the local sound DEAD_BUSH_IDLE (nextInt(130), below is red_sand or terracotta, nextInt(3), below in tag, two below in tag) (sound, draws made)','GC4-DEAD-BUSH',5,2,dbc,dbs)
+W4(g,15)
