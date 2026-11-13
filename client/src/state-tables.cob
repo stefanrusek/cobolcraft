@@ -39,13 +39,14 @@
  01 WS-CODE                BINARY-LONG.
  01 WS-OPAQUE              PIC 9.
  01 WS-ROW                 PIC X(819).
+ 01 WS-FLUID               PIC 9.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      CALL "STATE-LIMIT" USING WS-LIMIT
      MOVE FUNCTION MIN(WS-LIMIT, CL-MAX-STATES) TO ST-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
-         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S)
+         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
          MOVE SPACES TO ST-BLOCK-NAME(WS-S)
@@ -57,6 +58,11 @@
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
+             CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID
+             MOVE WS-FLUID TO ST-FLUID(WS-S)
+             IF WS-FLUID > 0 AND WS-FLUID < 3
+                 MOVE WS-INDEX TO ST-LEVEL(WS-S)
+             END-IF
 *>           The block's name as the table holds it, without a namespace (the tint sources key on it).
              IF WS-BLOCK >= 0 AND WS-BLOCK < 2048 AND WS-STATUS = CT-OK
                  IF ST-BLOCK-NAME(WS-BLOCK + 1) = SPACES
@@ -79,6 +85,37 @@
      MOVE 1 TO ST-READY
      GOBACK.
  END PROGRAM STATE-TABLES-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STATE-FLUID-OF.
+*> USING block row (PIC X(819), CT-BLOCK-ROW), fluid out (PIC 9): the fluid the block's states hold (29a section 1.2): 1 water
+*> and 2 lava (the liquid blocks, whose state index is the level; they have no model), 3 water for a block that is always wet and
+*> has a model of its own (kelp, seagrass, the bubble column), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-KEY                 PIC X(35).
+ LINKAGE SECTION.
+ 01 L-ROW                  PIC X(819).
+ 01 L-FLUID                PIC 9.
+ PROCEDURE DIVISION USING L-ROW L-FLUID.
+     MOVE L-ROW TO CT-BLOCK-ROW
+     MOVE CT-BR-KEY TO WS-KEY
+     MOVE 0 TO L-FLUID
+     EVALUATE WS-KEY
+         WHEN "water"
+             MOVE 1 TO L-FLUID
+         WHEN "lava"
+             MOVE 2 TO L-FLUID
+         WHEN "kelp"
+         WHEN "kelp_plant"
+         WHEN "seagrass"
+         WHEN "tall_seagrass"
+         WHEN "bubble_column"
+             MOVE 3 TO L-FLUID
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM STATE-FLUID-OF.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STATE-ROW-OPAQUE.

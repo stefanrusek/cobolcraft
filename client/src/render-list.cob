@@ -24,6 +24,9 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY CCSHIM.
+ 01 WS-ATTRIBUTE           PIC X(64).
+ 01 WS-FOG                 BINARY-DOUBLE.
+ 01 WS-FOG-Q               BINARY-DOUBLE.
  01 WS-R                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -71,6 +74,22 @@
      MOVE SK-G TO RL-CLEAR(2)
      MOVE SK-B TO RL-CLEAR(3)
      MOVE 1 TO RL-CLEAR(4)
+*>   An eye in a fluid clears to its fog colour (12 section 3.3): lava #991900, water the water fog colour (#050533 unless a
+*>   biome overrides it).
+     EVALUATE TRUE
+         WHEN PL-EYE-LAVA = 1
+             COMPUTE RL-CLEAR(1) = 153 / 255
+             COMPUTE RL-CLEAR(2) = 25 / 255
+             MOVE 0 TO RL-CLEAR(3)
+         WHEN PL-EYE-WATER = 1
+             MOVE "minecraft:visual/water_fog_color" TO WS-ATTRIBUTE
+             CALL "TINT-ATTRIBUTE-DEFAULT" USING WS-ATTRIBUTE WS-FOG
+             DIVIDE WS-FOG BY 65536 GIVING WS-FOG-Q
+             COMPUTE RL-CLEAR(1) = FUNCTION MOD(WS-FOG-Q, 256) / 255
+             DIVIDE WS-FOG BY 256 GIVING WS-FOG-Q
+             COMPUTE RL-CLEAR(2) = FUNCTION MOD(WS-FOG-Q, 256) / 255
+             COMPUTE RL-CLEAR(3) = FUNCTION MOD(WS-FOG, 256) / 255
+     END-EVALUATE
      MOVE 0 TO RL-DRAW-COUNT RL-UPLOAD-COUNT
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VIEW-YAW WS-VIEW-PITCH WS-EYE-TABLE
 *>   Projection (column-major).

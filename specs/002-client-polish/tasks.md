@@ -4285,6 +4285,20 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T3587 [US20-client] Implement the hand pass in `client/src/hand.cob` and its submit order in `client/src/submit.cob` with `cc_vk_clear_depth`
 - [x] T3588 [US20-client] Gate: run `make gate-client` and record the command and real output
 
+#### Phase 75a: US12-client — fluids (water and lava in the client)
+
+Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red output of the new tests: the lane's scratchpad `fluids/red1.txt` to `red4.txt`.
+
+- [x] T3720 [US12-client] Write test `client/tests/test_state_tables.cob` case: the fluid of a state from the standard table (water 89 to 104 is 1 with the level, lava 105 to 120 is 2, kelp holds water and keeps its model, air none)
+- [x] T3721 [US12-client] Implement `ST-FLUID` and `ST-LEVEL` (`client/copy/CLSTATE.cpy`) and `STATE-FLUID-OF` (`client/src/state-tables.cob`)
+- [x] T3722 [US12-client] Write test `client/tests/test_mesher_fluid.cob` for the fluid mesh of 29a §10 (face selection, corner heights E10, top geometry with the still and the flowing sprite, sides, tint, light, layer, borders of the row, the sprite lookup after an atlas change)
+- [x] T3723 [US12-client] Implement `MESH-FLUID` and `MF-AT` in `client/src/mesher-fluid.cob` (`client/copy/CLFLUID.cpy`) and call it from `MESH-SECTION`: a standard world's water and lava were invisible because the liquid blocks bake no quads (gaps: the overlay sprite beside glass and leaves, waterlogged blocks of other kinds, partial-shape occlusion by a neighbour, a backward top face is not needed because the pipeline does not cull)
+- [x] T3724 [US12-client] Write test `client/tests/test_physics_fluid.cob`: a liquid cell is not solid; swimming (acceleration 0.02, drag 0.8 and 0.9 sprinting, falling adjustment 0.005, Space +0.04 and sneak -0.04, jump from the ground in shallow water, ledge hop 0.3), lava (drag 0.5, 0.02), the eye flags
+- [x] T3725 [US12-client] Implement `PHYS-FLUID` (`client/src/physics-fluid.cob`) and the fluid movement of `PHYS-TICK`, and make liquid cells non-solid in `PHYS-SOLID` (`client/src/physics.cob`; the flow current of 8.3 is not applied: gap)
+- [x] T3726 [US12-client] Write test `client/tests/test_render_list.cob` cases: the eye under water or in lava clears to the water fog colour #050533 or the lava fog colour #991900
+- [x] T3727 [US12-client] Implement the fog clear colour in `client/src/render-list.cob` (the per-fragment fog of 12 §3.3 needs the shim shaders: not done)
+- [ ] T3728 [US12-client] Gate: run `make gate-client` and record the command and real output
+
 ---
 
 ## Phase 76: Convergence (cross-package tests, aggregate gate, manual vanilla run)

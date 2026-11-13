@@ -119,6 +119,19 @@
      MOVE "grass_block" TO TL-EXPECTED
      MOVE ST-BLOCK-NAME(WS-ID + 1) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Fluids (29a section 1.2): water is block states 89 to 104 (level 0 to 15), lava 105 to 120; a block that is always
+*>   wet (kelp) holds water and keeps its own model (3); stone holds none.
+     MOVE "kelp" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+     MOVE SPACES TO TL-OBSERVED
+     STRING ST-FLUID(90) " " ST-LEVEL(93) " " ST-FLUID(106) " " ST-LEVEL(114) " " ST-FLUID(WS-STATE + 1) " "
+         ST-FLUID(2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "state tables the fluid of a state: water source 1, water level 3 is level 03, lava source 2, lava level 8 "
+         & "is 08, kelp holds water with a model (3), air none" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "1 03 2 08 3 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.
  END PROGRAM TEST-STATE-TABLES.
