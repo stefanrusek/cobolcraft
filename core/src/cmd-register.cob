@@ -197,6 +197,12 @@
          WHEN "effecttype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:mob_effect" TO WS-REGISTRY
+         WHEN "biome"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
+         WHEN "biomeortag"
+             MOVE BR-P-RES-OR-TAG TO WS-TYPE-ID
+             MOVE "minecraft:worldgen/biome" TO WS-REGISTRY
          WHEN OTHER         MOVE BR-P-TIME TO WS-TYPE-ID
      END-EVALUATE.
 
