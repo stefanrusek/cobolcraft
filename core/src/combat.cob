@@ -386,13 +386,18 @@
      MOVE WS-IN TO TS-LAST-HURT(WS-ROW)
      COMPUTE PL-LAST-HURT(WS-ROW) = WS-IN / 1000
      MOVE WS-APPLY TO WS-TAKEN
-     IF WS-CAUSE = CAUSE-PLAYER OR WS-CAUSE = CAUSE-MOB
+     IF WS-CAUSE = CAUSE-PLAYER OR WS-CAUSE = CAUSE-MOB OR WS-CAUSE = CAUSE-EXPLOSION OR WS-CAUSE = CAUSE-ARROW
          MOVE 1 TO EC-DIRECT
-         IF WS-CAUSE = CAUSE-MOB
-             MOVE "mob_attack" TO EC-DAMAGE-KEY
-         ELSE
-             MOVE "player_attack" TO EC-DAMAGE-KEY
-         END-IF
+         EVALUATE WS-CAUSE
+             WHEN CAUSE-MOB
+                 MOVE "mob_attack" TO EC-DAMAGE-KEY
+             WHEN CAUSE-EXPLOSION
+                 MOVE "explosion" TO EC-DAMAGE-KEY
+             WHEN CAUSE-ARROW
+                 MOVE "arrow" TO EC-DAMAGE-KEY
+             WHEN OTHER
+                 MOVE "player_attack" TO EC-DAMAGE-KEY
+         END-EVALUATE
          MOVE -1 TO EC-VICTIM-ID
          MOVE "player" TO EC-VICTIM-KEY
          CALL "COMBAT-ARMOR-STATS" USING WS-ROW ENCH-CTX WS-ARMOR WS-TOUGHNESS WS-KNOCKBACK WS-PROTECTION
