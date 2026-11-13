@@ -13,6 +13,8 @@
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
+ 01 WS-ALICE-ROW           BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -151,6 +153,16 @@
          TO TL-CASE
      MOVE WS-TEXT TO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Water above the eye's cell too (a full column): the eye is under water.
+     MOVE 103 TO WS-BY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ALICE-ROW
+     CALL "BREATH-EYE-IN-WATER" USING WS-ALICE-ROW WS-IN
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance 18§2.5 given water above the eye's cell when the eye is tested then it is in the water" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-IN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

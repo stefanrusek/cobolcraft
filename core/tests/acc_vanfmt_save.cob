@@ -105,6 +105,18 @@
      MOVE "{clear_weather_time:11,rain_time:22,thunder_time:33,raining:1,thundering:1,extra:9}" TO TL-EXPECTED
      PERFORM CHECK
 
+*>   A clock file with no overworld clock: the save writes it with the default rate, and keeps the other clock.
+     MOVE "cp build/vanfmt-folder/data/minecraft/world_clocks_only_end.dat build/vanfmt-folder/data/minecraft/world_clocks.dat" TO WS-COMMAND
+     CALL "SYSTEM" USING WS-COMMAND
+     CALL "LEVEL-DAT-WRITE"
+     MOVE "build/vanfmt-folder/data/minecraft/world_clocks.dat" TO WS-FILE
+     CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
+     MOVE SPACES TO WS-OBSERVED
+     MOVE "data.minecraft:overworld.rate" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.minecraft:the_end.total_ticks" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt given a clock file with no overworld clock when saved then it has the default rate and the other clock is kept" TO TL-CASE
+     MOVE "1.000 999" TO TL-EXPECTED
+     PERFORM CHECK
 *>   Files that are missing are created by the save (a 26.3 level.dat with no saved-data files yet).
      MOVE "rm -rf build/vanfmt-folder/data" TO WS-COMMAND
      CALL "SYSTEM" USING WS-COMMAND
