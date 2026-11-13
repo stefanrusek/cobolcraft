@@ -6,3 +6,4 @@ gengr5 -> test_growth_29b_5_1..8 (python3 core/tests/gen/gengr5.py [section numb
 gengr6 -> test_growth_29b_6_1..9 (python3 core/tests/gen/gengr6.py [section numbers], from the repository root)
 gengr7 -> test_growth_29b_7_1..10 (python3 core/tests/gen/gengr7.py [section numbers], from the repository root)
 gengr8 -> test_growth_29b_8_1..7 (python3 core/tests/gen/gengr8.py [section numbers], from the repository root)
+genl32 -> test_light_32_1..9 (python3 core/tests/gen/genl32.py [section numbers], from the repository root; independent Python models of the light engine rules of 32)
