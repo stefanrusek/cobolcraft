@@ -734,6 +734,22 @@
  END PROGRAM BSH-BUILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-ENSURE-CUBE.
+*> No parameters: stores the full cube as shape 1 when no build has (the first query before any set is open).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ PROCEDURE DIVISION.
+     IF BSH-N(2) = 0
+         INITIALIZE BSC-SHAPE
+         MOVE 1 TO BSC-N
+         MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
+         MOVE BSC-SHAPE TO BSH-SHAPE(2)
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-ENSURE-CUBE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-COLL-ID.
 *> USING state id (BINARY-LONG), shape id out (BINARY-LONG): the collision shape of the state; the full cube for every state but 0 (the
 *> void) while the tables are not built.
@@ -752,12 +768,7 @@
          WHEN OTHER
              MOVE 1 TO L-ID
 *>           Before the first build the full cube is not stored yet (no set open: the stand-in states are all full cubes).
-             IF BSH-N(2) = 0
-                 INITIALIZE BSC-SHAPE
-                 MOVE 1 TO BSC-N
-                 MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
-                 MOVE BSC-SHAPE TO BSH-SHAPE(2)
-             END-IF
+             CALL "BSH-ENSURE-CUBE"
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-COLL-ID.
@@ -780,12 +791,7 @@
          WHEN OTHER
              MOVE 1 TO L-ID
 *>           Before the first build the full cube is not stored yet (no set open: the stand-in states are all full cubes).
-             IF BSH-N(2) = 0
-                 INITIALIZE BSC-SHAPE
-                 MOVE 1 TO BSC-N
-                 MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
-                 MOVE BSC-SHAPE TO BSH-SHAPE(2)
-             END-IF
+             CALL "BSH-ENSURE-CUBE"
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-OUT-ID.

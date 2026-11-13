@@ -113,6 +113,21 @@
      END-IF
      MOVE 1 TO TL-EXPECTED-N
      PERFORM ASSERT-N
+*>   Sneaking on the ladder holds the Player where it is for the 10 ticks (only the tick after the key is lifted sinks it, by 0.08).
+     MOVE 13 TO PL-Y
+     MOVE 0 TO PL-VY
+     MOVE CC-KEY-LEFT-SHIFT TO WS-KEY
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-DOWN
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-TICKS
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-UP
+     MOVE "physics sneaking on a ladder does not sink" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-Y > 12.9 AND PL-Y < 13.01
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM ASSERT-N
      PERFORM VARYING WS-Y FROM 10 BY 1 UNTIL WS-Y > 16
          CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-AIR
      END-PERFORM
@@ -166,6 +181,17 @@
      MOVE TG-HIT TO TL-OBSERVED-N
      PERFORM ASSERT-N
      MOVE 0.5 TO PL-X
+
+*>   A cell with no outline (technical air) is not a target.
+     MOVE "void_air" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast the ray goes through technical air" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
 
 *>   The outline mesh: one box for a torch (144 vertices), two for a straight stair (288).
      MOVE 64 TO UA-W UA-H
