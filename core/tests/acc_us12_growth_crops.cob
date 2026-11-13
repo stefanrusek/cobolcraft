@@ -233,6 +233,8 @@
      MOVE WS-SAPLING TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 0 TO WS-K
+*>   The level random starts from a known state (Java's Random(0): nextFloat 0.731, 0.831, 0.241), so a success inside the four tries is certain.
+     CALL "LEVEL-RANDOM-SEED" USING WS-SEED
      PERFORM UNTIL WS-STATE NOT = WS-SAPLING OR WS-K >= 4
          ADD 1 TO WS-SEQ
          CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ

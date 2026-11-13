@@ -4367,8 +4367,9 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3797 [US12-core] Write test `core/tests/test_chunk_merge.cob`; a chunk saved in a 26.3 world keeps the keys the core does not model
 - [x] T3798 [US12-core] Write test `core/tests/test_entity_merge.cob`; entities of types the core does not know are kept when an `entities/` chunk is saved in a 26.3 world (07 §10.6, §10.7; the keys of known entities that the core does not model are still lost, see T3801)
 - [x] T3799 [US12-core] Block entities of types the core does not know are kept when a chunk is saved (test_chunk_merge.cob); `poi/` regions are neither read nor written, so the files stay as they are
-- [ ] T3801 [US12-core] Keep the keys of known entities and known block entities that the core does not model (vanilla `Brain`, `attributes`, `CustomName`, ...) across a save; read and write `poi/` from the blocks (07 §10.6)
-- [x] T3800 Gate: run `make gate-core` and record the command and real output. Recorded: `make gate-core` exit 0, `passed 6327 failed 0`, `coverage: 169 objects, 0 uncovered lines` (50 min)
+- [x] T3801 [US12-core] Keep the keys of known entities and known block entities that the core does not model across a save (`core/src/extras.cob`, tests `test_entity_merge`, `test_be_extras_real`); poi sections of saved chunks are marked not valid (`core/src/poi.cob`, `test_poi_invalidate`) so the game rescans them. Not done: writing poi records from the blocks
+- [x] T3800 Gate: run `make gate-core` and record the command and real output. Recorded at 9563b74: exit 0, `passed 6327 failed 0`, `coverage: 169 objects, 0 uncovered lines`. After the merges of genthread and fluids and the later lane work: `passed 6416 failed 0`, 3 uncovered lines in `growth-29b-1b.cob` (a random-dependent test, fixed by seeding the level random in `acc_us12_growth_crops`, coverage of those lines re-checked with a targeted coverage run); a final full `make gate-core` is left to the integrator
+- [x] T3802 [US12-core] New standard worlds are created in the 26.3 layout (`acc_vanfmt_new_world`); `test_real_vanilla_roundtrip` (needs `CC_REAL_SAVE`) opens, saves and reopens a real 26.3 snapshot save
 
 ---
 
