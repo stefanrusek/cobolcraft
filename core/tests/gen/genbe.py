@@ -31,6 +31,8 @@ HEAD='''*> %(comment)s
  01 WS-SVL                 BINARY-LONG.
  01 WS-NV                  BINARY-LONG.
  01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
  01 WS-LT                  BINARY-LONG.
  01 WS-LC                  BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -76,6 +78,9 @@ TAIL='''     STOP RUN.
      .
  NB-LONG.
      CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
      .
  NB-B.
      CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
@@ -158,6 +163,7 @@ def nb_s(n,v): return _nm(n)+('MOVE "%s" TO WS-SV\n'%v if v else 'MOVE SPACES TO
 def nb_i(n,v): return _nm(n)+'MOVE %d TO WS-NV\nPERFORM NB-I\n'%v
 def nb_b(n,v): return _nm(n)+'MOVE %d TO WS-NV\nPERFORM NB-B\n'%v
 def nb_long(n,v): return _nm(n)+'MOVE %d TO WS-LV\nPERFORM NB-LONG\n'%v
+def nb_intarr(n,vals): return _nm(n)+''.join('MOVE %d TO WS-IAV(%d)\n'%(v,i+1) for i,v in enumerate(vals))+'MOVE %d TO WS-LC\nPERFORM NB-IA\n'%len(vals)
 def nb_c(n): return _nm(n)+'PERFORM NB-C\n'
 def nb_e(): return 'PERFORM NB-E\n'
 def nb_l(n,t,c): return _nm(n)+'MOVE %d TO WS-LT\nMOVE %d TO WS-LC\nPERFORM NB-L\n'%(t,c)

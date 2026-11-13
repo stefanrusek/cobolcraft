@@ -1,0 +1,513 @@
+*> Test of 31-4 section 3, Lectern (core/src/be-31-4.cob; T0909): state and operations, the page clamp, the redstone signal, the menu buttons, the use and placement rules, persistence.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-4-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-TX                 PIC X(64).
+ 01 WS-DROPS.
+    05 WS-DROP            OCCURS 4 TIMES.
+       10 WS-DROP-ITEM    BINARY-LONG.
+       10 WS-DROP-COUNT   BINARY-LONG.
+       10 WS-DROP-VAR     BINARY-LONG.
+ 01 WS-KINDS.
+    05 WS-KIND            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DRAWS.
+    05 WS-DRAW            BINARY-LONG OCCURS 16 TIMES.
+ COPY CTRECIPE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-4§3 Lectern: worked example 1 (3.3, 3.5): a 5-page book set gives page 0 and signal 1; next page twice (button 2) is page 2 with signal 8, each change raising the page signal; jump to page 4 (button 104) gives" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 104 TO WS-A
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 109 TO WS-A
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 5 1 1 1 1 1 1 2 8 4 15 1 0 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: signal (3.3): floor((pageCount > 1 ? page / (pageCount - 1) : 1.0) * 14) plus 1 with a book (a 1-page or 0-page book gives 15; 14 pages at page 13 gives 15; page 7 of 14 gives 7 in float arithmetic)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 3 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 2 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 14 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 13 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 14 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 7 TO BE-XI(WS-IDX, 1)
+     CALL "BE4-LECTERN-SIGNAL" USING WS-IDX WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "15 15 15 15 15 8" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: page clamp (3.2, 3.3): setPage on a book with 0 pages clamps to -1 (min(max(n, 0), -1)); the change is signalled with a 2-tick delay and level event 1043 (page 0 to -1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 5 TO WS-A
+     CALL "BE4-LECTERN-PAGE" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "-1 1 2 1043" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: persistence (3.2, V8): Book and Page load; with a 3-page book Page 7 is page 2; saved as Book then Page (an empty lectern saves nothing, an empty book is page -1 after the resolve)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Book" TO WS-NM
+     MOVE 4 TO WS-NML
+     PERFORM NB-C
+     MOVE 2 TO WS-ITEM
+     MOVE 1 TO WS-NV
+     PERFORM NB-STACK
+     PERFORM NB-E
+     MOVE "Page" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 7 TO WS-NV
+     PERFORM NB-I
+     PERFORM LOAD-BUFFER
+     MOVE 3 TO WS-A
+     CALL "BE4-LECTERN-RESOLVE" USING WS-IDX WS-A
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     CALL "BE4-LECTERN-RESOLVE" USING WS-IDX WS-A
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "2 3 {Book:{id:cobolcraft:greystone,count:1},Page:2} -1 {}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: menu button 3 (3.5, V7): a player who may not build gets false and the book stays; otherwise the book is taken (handled, taken, the slot and the page count are emptied: onBookItemRemove); an" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE4-LECTERN-SET-BOOK" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:lectern" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 29 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 77 TO WS-A
+     CALL "BE4-LECTERN-BUTTON" USING WS-IDX WS-A WS-B WS-G WS-H WS-C
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 5 1 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: use with an item (3.7): a lectern with a book tries the empty hand (1); a book of lectern_books is placed (2); an empty main hand passes (3); anything else tries the empty hand (1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE4-LECTERN-USE-ITEM" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 2 3 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§3 Lectern: placement and signals (3.7): has_book is set at placement only for a player who may use game-master blocks with a Book key in the item data; getDirectSignal is 15 for direction UP (1) while powered" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-LECTERN-PLACEMENT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-LECTERN-PLACEMENT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-LECTERN-PLACEMENT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-LECTERN-PLACEMENT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-LECTERN-DIRECT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-LECTERN-DIRECT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE4-LECTERN-DIRECT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-LECTERN-DIRECT" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 0 15 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-4-3.
+
+ COPY CORETEST.

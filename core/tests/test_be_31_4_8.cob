@@ -1,0 +1,816 @@
+*> Test of 31-4 section 8, Beehive (core/src/be-31-4.cob; T0919): the occupants, entering, the release rules and position, the honey step, the bee age and love time, the anger and the saved keys.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-4-8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-TX                 PIC X(64).
+ 01 WS-DROPS.
+    05 WS-DROP            OCCURS 4 TIMES.
+       10 WS-DROP-ITEM    BINARY-LONG.
+       10 WS-DROP-COUNT   BINARY-LONG.
+       10 WS-DROP-VAR     BINARY-LONG.
+ 01 WS-KINDS.
+    05 WS-KIND            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DRAWS.
+    05 WS-DRAW            BINARY-LONG OCCURS 16 TIMES.
+ COPY CTRECIPE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-4§8 Beehive: addOccupant (8.4, 8.1): a bee with nectar is stored with min_ticks_in_hive 2400, one without 600; the hive adopts the bee's flower when it has none, or on a true coin flip when it has one; the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 11) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 8) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 1 1 2 1 0 3 0 0 3 2400 600 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: flower adoption (8.4 step 4): the first bee gives its flower to a hive that has none; with one already the bee's flower is adopted only when nextBoolean is true (1, 1, 0)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: tick of a stored bee (8.3, 8.8, worked examples 1 and 2): the counter exceeds min_ticks_in_hive after 2401 ticks for a nectar bee (status 0 honey delivered) and after 601 for a bee without (status" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 2400
+     CALL "BE4-HIVE-BEE-TICK" USING WS-IDX WS-A WS-B
+     END-PERFORM
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE4-HIVE-BEE-TICK" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE4-HIVE-BEE-TICK" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE 1 TO WS-A
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 600
+     CALL "BE4-HIVE-BEE-TICK" USING WS-IDX WS-A WS-B
+     END-PERFORM
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE4-HIVE-BEE-TICK" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "-1 2400 0 0 2402 -1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: removal (8.8): a released bee is removed and the later ones move up (the nectar bee is first afterwards: count 1, nectar 1, min 2400)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ENTER" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE 1 TO WS-A
+     CALL "BE4-HIVE-REMOVE" USING WS-IDX WS-A
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 8) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 2400" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: release conditions (8.5 steps 1, 2, V20, V21): the daylight attribute bees_stay_in_hive and a blocked exit stop every release except EMERGENCY (2)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE4-HIVE-ALLOWED" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 1 0 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: honey delivery (8.5 step 4b, worked example 1): the level rises by 1, by 2 on nextInt(100) = 0, reduced by one when it would pass 5; a full hive stays at 5" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 5 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 50 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE4-HIVE-HONEY" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "5 5 2 1 5 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: release position (8.5 step 4d): the bee appears 0.55 + width / 2 out of the exit face (0 when the exit is blocked, at the hive's centre column), at y + 0.5 - height / 2" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     MOVE 0 TO WS-F
+     COMPUTE WS-FA = 0.4
+     COMPUTE WS-FB = 0.3
+     CALL "BE4-HIVE-POS" USING WS-A WS-B WS-FA WS-FB WS-C WS-E WS-F WS-FC WS-FD WS-FE
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FD) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FE) * 1000000
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 70 TO WS-E
+     MOVE -2 TO WS-F
+     COMPUTE WS-FA = 0.7
+     COMPUTE WS-FB = 0.6
+     CALL "BE4-HIVE-POS" USING WS-A WS-B WS-FA WS-FB WS-C WS-E WS-F WS-FC WS-FD WS-FE
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FD) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FE) * 1000000
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     MOVE 0 TO WS-F
+     COMPUTE WS-FA = 0.4
+     COMPUTE WS-FB = 0.3
+     CALL "BE4-HIVE-POS" USING WS-A WS-B WS-FA WS-FB WS-C WS-E WS-F WS-FC WS-FD WS-FE
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FD) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FE) * 1000000
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     COMPUTE WS-FA = 0.4
+     COMPUTE WS-FB = 0.5
+     CALL "BE4-HIVE-POS" USING WS-A WS-B WS-FA WS-FB WS-C WS-E WS-F WS-FC WS-FD WS-FE
+     COMPUTE WS-SHOW ROUNDED = (WS-FC) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FD) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FE) * 1000000
+     PERFORM ADD-N
+     MOVE "500000 64350000 -250000 5500000 70200000 -600000 500000 64350000 500000 2250000 1250000 1500000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: released bee (8.6): a baby (age below 0) grows by the ticks in the hive up to 0, an adult's breeding cool-down shrinks by them to 0, the love time shrinks to 0" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE -100 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-AGE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -10 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-AGE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 100 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-AGE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 10 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-AGE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-AGE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 100 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-LOVE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 10 TO WS-A
+     MOVE 40 TO WS-B
+     CALL "BE4-HIVE-LOVE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 5 TO WS-B
+     CALL "BE4-HIVE-LOVE" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "-60 0 60 0 0 60 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: emptyAllLivingFromHive and the work sound (8.7, 8.8): a released bee within squared distance 16 of the player targets the player (1) unless the hive is sedated (2: 400-tick stay-out); further away" TO TL-CASE
+     PERFORM BEGIN-CASE
+     COMPUTE WS-FA = 16.0
+     MOVE 0 TO WS-A
+     CALL "BE4-HIVE-ANGER" USING WS-FA WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 16.1
+     MOVE 0 TO WS-A
+     CALL "BE4-HIVE-ANGER" USING WS-FA WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 4.0
+     MOVE 1 TO WS-A
+     CALL "BE4-HIVE-ANGER" USING WS-FA WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 20.0
+     MOVE 1 TO WS-A
+     CALL "BE4-HIVE-ANGER" USING WS-FA WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.0
+     MOVE 0 TO WS-A
+     CALL "BE4-HIVE-ANGER" USING WS-FA WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.001
+     CALL "BE4-HIVE-WORK" USING WS-A WS-FA WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     COMPUTE WS-FA = 0.001
+     CALL "BE4-HIVE-WORK" USING WS-A WS-FA WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     COMPUTE WS-FA = 0.005
+     CALL "BE4-HIVE-WORK" USING WS-A WS-FA WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     COMPUTE WS-FA = 0.0049999
+     CALL "BE4-HIVE-WORK" USING WS-A WS-FA WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 2 0 1 0 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: ignored tags (8.3): the 25 names removed from a stored or released bee (case matters); HasNectar, id, a lower-case air, Health and the empty name are kept" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE SPACES TO WS-N32
+     MOVE "Air" TO WS-N32
+     MOVE 3 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "drop_chances" TO WS-N32
+     MOVE 12 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "equipment" TO WS-N32
+     MOVE 9 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Brain" TO WS-N32
+     MOVE 5 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "CanPickUpLoot" TO WS-N32
+     MOVE 13 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "DeathTime" TO WS-N32
+     MOVE 9 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "fall_distance" TO WS-N32
+     MOVE 13 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "FallFlying" TO WS-N32
+     MOVE 10 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Fire" TO WS-N32
+     MOVE 4 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "HurtTime" TO WS-N32
+     MOVE 8 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "LeftHanded" TO WS-N32
+     MOVE 10 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Motion" TO WS-N32
+     MOVE 6 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "NoGravity" TO WS-N32
+     MOVE 9 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "OnGround" TO WS-N32
+     MOVE 8 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "PortalCooldown" TO WS-N32
+     MOVE 14 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Pos" TO WS-N32
+     MOVE 3 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Rotation" TO WS-N32
+     MOVE 8 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "sleeping_pos" TO WS-N32
+     MOVE 12 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "CannotEnterHiveTicks" TO WS-N32
+     MOVE 20 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "TicksSincePollination" TO WS-N32
+     MOVE 21 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "CropsGrownSincePollination" TO WS-N32
+     MOVE 26 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "hive_pos" TO WS-N32
+     MOVE 8 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Passengers" TO WS-N32
+     MOVE 10 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "leash" TO WS-N32
+     MOVE 5 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "UUID" TO WS-N32
+     MOVE 4 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "HasNectar" TO WS-N32
+     MOVE 9 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "id" TO WS-N32
+     MOVE 2 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "air" TO WS-N32
+     MOVE 3 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE "Health" TO WS-N32
+     MOVE 6 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-N32
+     MOVE " " TO WS-N32
+     MOVE 0 TO WS-A
+     CALL "BE4-IGNORED-TAG" USING WS-N32 WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§8 Beehive: save and load (8.3, worked example 5, V23): bees is always written (an empty list for none); a stored bee keeps id, HasNectar, ticks_in_hive and min_ticks_in_hive (the counter continues from 500)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:beehive" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 33 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "bees" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 10 TO WS-LT
+     MOVE 2 TO WS-LC
+     PERFORM NB-L
+     MOVE "entity_data" TO WS-NM
+     MOVE 11 TO WS-NML
+     PERFORM NB-C
+     MOVE "id" TO WS-NM
+     MOVE 2 TO WS-NML
+     MOVE "minecraft:bee" TO WS-SV
+     MOVE 13 TO WS-SVL
+     PERFORM NB-S
+     MOVE "HasNectar" TO WS-NM
+     MOVE 9 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-B
+     MOVE "Brain" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE "x" TO WS-SV
+     MOVE 1 TO WS-SVL
+     PERFORM NB-S
+     PERFORM NB-E
+     MOVE "ticks_in_hive" TO WS-NM
+     MOVE 13 TO WS-NML
+     MOVE 500 TO WS-NV
+     PERFORM NB-I
+     MOVE "min_ticks_in_hive" TO WS-NM
+     MOVE 17 TO WS-NML
+     MOVE 2400 TO WS-NV
+     PERFORM NB-I
+     MOVE "extra" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-I
+     PERFORM NB-E
+     MOVE "entity_data" TO WS-NM
+     MOVE 11 TO WS-NML
+     PERFORM NB-C
+     MOVE "id" TO WS-NM
+     MOVE 2 TO WS-NML
+     MOVE "minecraft:bee" TO WS-SV
+     MOVE 13 TO WS-SVL
+     PERFORM NB-S
+     PERFORM NB-E
+     MOVE "ticks_in_hive" TO WS-NM
+     MOVE 13 TO WS-NML
+     MOVE 3 TO WS-NV
+     PERFORM NB-I
+     MOVE "min_ticks_in_hive" TO WS-NM
+     MOVE 17 TO WS-NML
+     MOVE 600 TO WS-NV
+     PERFORM NB-I
+     PERFORM NB-E
+     MOVE "flower_pos" TO WS-NM
+     MOVE 10 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE 3 TO WS-LC
+     PERFORM NB-IA
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "{bees:[]} {bees:[{entity_data:{id:minecraft:bee,HasNectar:1},ticks_in_hive:500,min_ticks_in_hive:240" &
+         "0},{entity_data:{id:minecraft:bee},ticks_in_hive:3,min_ticks_in_hive:600}],flower_pos:I[1,2,3]} 500" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-4-8.
+
+ COPY CORETEST.

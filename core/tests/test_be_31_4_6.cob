@@ -1,0 +1,489 @@
+*> Test of 31-4 section 6, Enchanting table (core/src/be-31-4.cob; T0915): the client animation tick with its random draws, the open book, the naming and the saved key.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-4-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-TX                 PIC X(64).
+ 01 WS-DROPS.
+    05 WS-DROP            OCCURS 4 TIMES.
+       10 WS-DROP-ITEM    BINARY-LONG.
+       10 WS-DROP-COUNT   BINARY-LONG.
+       10 WS-DROP-VAR     BINARY-LONG.
+ 01 WS-KINDS.
+    05 WS-KIND            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-DRAWS.
+    05 WS-DRAW            BINARY-LONG OCCURS 16 TIMES.
+ COPY CTRECIPE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-4§6 Enchanting table: player near (6.3, worked example 6): atan2(0, 2) is 0; open rises by 0.1f per tick (0.3 after 3 ticks, 0.5 after 5), each tick below 0.5 draws pairs of nextInt(4) until flipT moves; flip" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 3 TO WS-DRAW(1)
+     MOVE 1 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 2 TO WS-DRAW(1)
+     MOVE 2 TO WS-DRAW(2)
+     MOVE 0 TO WS-DRAW(3)
+     MOVE 2 TO WS-DRAW(4)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-DRAW(3)
+     MOVE 3 TO WS-DRAW(4)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 2 TO WS-DRAW(1)
+     MOVE 1 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 3)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 1)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 5)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 7)) * 1000000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "-1000000 -50195 500000 0 0 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: target angle (6.3 step 3): tRot = Mth.atan2(dz, dx) of the shim (east 0, north of the table 1.5707964, west -PI after the normalising, and so on; the cases are the exact multiples of PI /" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 1.0
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = -2.0
+     COMPUTE WS-FB = 0.0
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = -1.0
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     MOVE "0 1570796 -3141593 -1570796 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: open book (6.3, 6.6): open after 3, 4 and 5 ticks is 0.30000001192092896, 0.4000000059604645 and 0.5 in single precision (so open < 0.5 is false from the fifth tick on)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 5)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 5)) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-DRAW(1)
+     MOVE 0 TO WS-DRAW(2)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 5)) * 1000000
+     PERFORM ADD-N
+     MOVE "300000 400000 500000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: draw order (6.3 step 3): with open >= 0.5 only nextInt(40) is drawn first and the pairs only when it is 0 (draw counts 1, 5 with a repeat of an unchanged flipT, 1, 3)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1.0 TO BE-XF(WS-IDX, 5)
+     MOVE 5 TO WS-DRAW(1)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-DRAW(1)
+     MOVE 3 TO WS-DRAW(2)
+     MOVE 3 TO WS-DRAW(3)
+     MOVE 2 TO WS-DRAW(4)
+     MOVE 0 TO WS-DRAW(5)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 39 TO WS-DRAW(1)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-DRAW(1)
+     MOVE 2 TO WS-DRAW(2)
+     MOVE 1 TO WS-DRAW(3)
+     MOVE 1 TO WS-A
+     COMPUTE WS-FA = 2.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 3)) * 1000000
+     PERFORM ADD-N
+     MOVE "1 5 1 3 3000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: player away (6.3 step 4, V24): tRot rises by 0.02 per tick and open falls by 0.1 per tick (a book opened to 1.0 is closed after 10 ticks and stays at 0); rot approaches tRot by 40 percent" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1.0 TO BE-XF(WS-IDX, 5)
+     MOVE 1 TO BE-XF(WS-IDX, 9)
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 5)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 7)) * 1000000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 1240000 1207888 12" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: angle normalising (6.3 steps 5 and 6): rot and tRot are kept in [-PI, PI) and the gap is normalised too, so a book turns the short way round (rot 3.5 to tRot -3.0 and rot -3.0 to tRot 3.0;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 3.5 TO BE-XF(WS-IDX, 7)
+     MOVE -3.0 TO BE-XF(WS-IDX, 9)
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 7)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 8)) * 1000000
+     PERFORM ADD-N
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -3.0 TO BE-XF(WS-IDX, 7)
+     MOVE 3.0 TO BE-XF(WS-IDX, 9)
+     MOVE 0 TO WS-A
+     COMPUTE WS-FA = 0.0
+     COMPUTE WS-FB = 0.0
+     CALL "BE4-ENCH-TICK" USING WS-IDX WS-A WS-FA WS-FB WS-DRAWS WS-B
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 7)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 9)) * 1000000
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (BE-XF(WS-IDX, 8)) * 1000000
+     PERFORM ADD-N
+     MOVE "-2861911 -2980000 3500000 -3105274 3020000 -3000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-4§6 Enchanting table: name and key (6.2): the default name is container.enchant, a CustomName replaces it and is saved back (CustomName only when set)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "BE4-ENCH-NAME" USING WS-IDX WS-N32 WS-A
+     STRING WS-N32(1:WS-A) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "CustomName" TO WS-NM
+     MOVE 10 TO WS-NML
+     MOVE "Arcane" TO WS-SV
+     MOVE 6 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     CALL "BE4-ENCH-NAME" USING WS-IDX WS-N32 WS-A
+     STRING WS-N32(1:WS-A) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "minecraft:enchanting_table" TO WS-KEY
+     MOVE 26 TO WS-SVL
+     MOVE 13 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "container.enchant Arcane {CustomName:Arcane} {}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-4-6.
+
+ COPY CORETEST.

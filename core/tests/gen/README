@@ -11,3 +11,4 @@ gen30_1, gen30_2, gen30_3 (shared helpers gen30c.py) -> test_redstone_30_1_1..8,
 genrs4 -> test_redstone_30_4_1..6 (python3 core/tests/gen/genrs4.py [section numbers], from the repository root; independent Python models of 30 part 4)
 genrs5 -> test_redstone_30_5_0..9 (python3 core/tests/gen/genrs5.py [section numbers], from the repository root; independent Python models of 30 part 5, with binary32 steps for the weighted plate and daylight detector)
 genbe3 -> test_be_31_3_1..8 (python3 core/tests/gen/genbe3.py [section numbers], from the repository root; shared writer genbe.py; independent Python models of the 31-3 sign facing, use rules, strip, wobble, shelf swap and the DyeColor table of the doc)
+genbe4 -> test_be_31_4_1..8 (python3 core/tests/gen/genbe4.py [section numbers], from the repository root; independent Python models of the 31-4 rules, with binary32 steps for the enchanting table animation and the table sine)

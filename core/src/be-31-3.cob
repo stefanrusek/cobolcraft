@@ -230,20 +230,7 @@
      END-IF
      COMPUTE WS-DX = L-PX - (L-BX + L-CX)
      COMPUTE WS-DZ = L-PZ - (L-BZ + L-CZ)
-     EVALUATE TRUE
-         WHEN WS-DX > 0
-             COMPUTE WS-A = FUNCTION ATAN(WS-DZ / WS-DX)
-         WHEN WS-DX < 0 AND WS-DZ >= 0
-             COMPUTE WS-A = FUNCTION ATAN(WS-DZ / WS-DX) + FUNCTION PI
-         WHEN WS-DX < 0
-             COMPUTE WS-A = FUNCTION ATAN(WS-DZ / WS-DX) - FUNCTION PI
-         WHEN WS-DZ > 0
-             COMPUTE WS-A = FUNCTION PI / 2
-         WHEN WS-DZ < 0
-             COMPUTE WS-A = 0 - FUNCTION PI / 2
-         WHEN OTHER
-             MOVE 0 TO WS-A
-     END-EVALUATE
+     CALL STATIC "cc_f64_atan2_lib" USING BY REFERENCE WS-DZ WS-DX WS-A
      COMPUTE WS-A = WS-A * 57.2957763671875 - 90
      COMPUTE WS-D = L-YAW - WS-A + 180
      COMPUTE WS-D = WS-D - 360 * FUNCTION INTEGER(WS-D / 360) - 180
@@ -1056,6 +1043,10 @@
              MOVE 15 TO BE-XI(L-INDEX, 4) BE-XI(L-INDEX, 14)
          WHEN 41
              MOVE -1 TO BE-XI(L-INDEX, 6)
+         WHEN 30
+             MOVE -1 TO BE-XI(L-INDEX, 3)
+         WHEN 40
+             MOVE -1 TO BE-XI(L-INDEX, 4)
      END-EVALUATE
      GOBACK.
  END PROGRAM BEX-DEFAULTS.
@@ -1288,6 +1279,8 @@
              MOVE "align_items_to_bottom" TO WN
              MOVE 21 TO WL
              CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL BE-XI(L-INDEX, 1)
+         WHEN 4 WHEN 13 WHEN 29 WHEN 32 WHEN 33 WHEN 40
+             CALL "BE4-SAVE" USING L-INDEX L-TYPE PB-BUFFER
      END-EVALUATE
      GOBACK.
  END PROGRAM BEX-SAVE.
@@ -1488,6 +1481,8 @@
                  MOVE 1 TO L-HANDLED
                  CALL "PB-GET-BYTE" USING PB-BUFFER BE-XI(L-INDEX, 1)
              END-IF
+         WHEN 4 WHEN 13 WHEN 29 WHEN 32 WHEN 33 WHEN 40
+             CALL "BE4-LOAD-KEY" USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED
      END-EVALUATE
      GOBACK.
  END PROGRAM BEX-LOAD-KEY.
