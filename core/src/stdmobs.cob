@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 6 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 7 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -320,6 +320,53 @@
      END-IF
      GOBACK.
  END PROGRAM STDMOB-TARGET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-AGGRO.
+*> USING tracker row, table row of a hostile standard mob: its target for this tick. A neutral-by-day mob (SM-NEUTRAL, the spider, 20 section 7.1) whose cell
+*> has light 13 or more (the sky light after the night's darkening or the block light) takes no new target and gives up the one it has with probability
+*> 1 / 100 a tick; anywhere darker, and for every other hostile mob, STDMOB-TARGET decides.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-DARK                BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M.
+     MOVE 0 TO WS-LIGHT
+     IF SM-NEUTRAL(L-M) = 1
+         COMPUTE WS-BX = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE WS-BY = FUNCTION INTEGER(EN-Y(L-ROW)) + 1
+         COMPUTE WS-BZ = FUNCTION INTEGER(EN-Z(L-ROW))
+         CALL "STDMOB-LIGHTS" USING EN-DIM(L-ROW) WS-BX WS-BY WS-BZ WS-SKY WS-BLOCK
+         CALL "STDMOB-DARKEN" USING CW-TIME WS-DARK
+         COMPUTE WS-LIGHT = FUNCTION MAX(WS-BLOCK, WS-SKY - WS-DARK)
+     END-IF
+     IF WS-LIGHT >= 13
+         MOVE EN-ID(L-ROW) TO WS-ARG(1)
+         MOVE CW-TIME TO WS-ARG(2)
+         MOVE 17 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
+         IF FUNCTION MOD(WS-R, 100) = 0
+             MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+         END-IF
+     ELSE
+         CALL "STDMOB-TARGET" USING L-ROW L-M
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-AGGRO.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-LIGHTS.
@@ -664,7 +711,7 @@
          IF EN-HEALTH(WS-ROW) = 0
              GOBACK
          END-IF
-         CALL "STDMOB-TARGET" USING WS-ROW WS-M
+         CALL "STDMOB-AGGRO" USING WS-ROW WS-M
          IF EN-COOLDOWN(WS-ROW) > 0
              SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
          END-IF

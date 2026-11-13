@@ -3,13 +3,13 @@
 *> SM-HEALTH: max_health (19 sections 2.1, 2.2, 20 section 4.1). SM-WALK-MILLI and SM-PANIC-MILLI: blocks per tick x 1000 at the stroll or
 *> chase speed and the panic speed of the mob's goal list: (movement_speed x speedModifier) squared / 0.454 (18 section 3.2.1, the steady state
 *> of a mob on ground with friction 0.6). SM-KIND 0 passive (category creature), 1 hostile (monster). SM-ATTACK: attack damage in points, before the
-*> difficulty scaling of 20 section 3.1. SM-FOLLOW: the follow range in blocks. SM-BURNS 1: burns in daylight (20 section 3.5). The loot of a mob is its
+*> difficulty scaling of 20 section 3.1. SM-FOLLOW: the follow range in blocks. SM-BURNS 1: burns in daylight (20 section 3.5). SM-NEUTRAL 1: takes a target only where the light is below 13 (the spider, 20 section 7.1). The loot of a mob is its
 *> table minecraft:entities/<key> (18 section 7.6; STDMOB-DROPS).
- 78 SM-COUNT                 VALUE 6.
+ 78 SM-COUNT                 VALUE 7.
 *> The first SM-NATURAL rows spawn on grass in the natural cycle (18 section 6.8 animal rule); rows SM-HOSTILE-FIRST to SM-COUNT are monsters.
  78 SM-NATURAL               VALUE 4.
  78 SM-HOSTILE-FIRST         VALUE 6.
- 78 SM-HOSTILE-COUNT         VALUE 1.
+ 78 SM-HOSTILE-COUNT         VALUE 2.
  01 STD-MOB-DATA.
     05 FILLER.
        10 FILLER PIC X(24) VALUE "pig".
@@ -20,6 +20,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "cow".
        10 FILLER BINARY-LONG VALUE 10.
@@ -29,6 +30,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "sheep".
        10 FILLER BINARY-LONG VALUE 8.
@@ -38,6 +40,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "chicken".
        10 FILLER BINARY-LONG VALUE 4.
@@ -47,6 +50,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "mooshroom".
        10 FILLER BINARY-LONG VALUE 10.
@@ -56,6 +60,7 @@
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
     05 FILLER.
        10 FILLER PIC X(24) VALUE "zombie".
        10 FILLER BINARY-LONG VALUE 20.
@@ -65,8 +70,19 @@
        10 FILLER BINARY-LONG VALUE 3.
        10 FILLER BINARY-LONG VALUE 35.
        10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.             *> neutral by day (the target goal needs light below 13)
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "spider".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 198.            *> 0.3 x 1.0
+       10 FILLER BINARY-LONG VALUE 0.              *> no panic goal
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.              *> attack damage 2.0 (the Monster default, 20 section 7.1)
+       10 FILLER BINARY-LONG VALUE 16.             *> follow range 16 (the Mob base, 18 section 1.3)
+       10 FILLER BINARY-LONG VALUE 0.              *> does not burn
+       10 FILLER BINARY-LONG VALUE 1.              *> neutral by day
  01 STD-MOB-TABLE REDEFINES STD-MOB-DATA.
-    05 SM-ENTRY OCCURS 6 TIMES.
+    05 SM-ENTRY OCCURS 7 TIMES.
        10 SM-KEY                PIC X(24).
        10 SM-HEALTH             BINARY-LONG.
        10 SM-WALK-MILLI         BINARY-LONG.
@@ -75,6 +91,7 @@
        10 SM-ATTACK             BINARY-LONG.
        10 SM-FOLLOW             BINARY-LONG.
        10 SM-BURNS              BINARY-LONG.
+       10 SM-NEUTRAL            BINARY-LONG.
 *> Walking (19 section 2.1, 18 section 4.2 RandomStrollGoal): a standing mob starts a stroll on a tick with probability 1/120 and walks it
 *> 3 to 10 blocks along one heading, then it stands.
  78 SM-STROLL-ODDS           VALUE 120.
