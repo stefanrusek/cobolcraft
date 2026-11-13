@@ -150,15 +150,30 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ *> The model of a definition (08 5.7): the first of these that holds a string. The first ten reach a "minecraft:model" (directly, or as
+*> the fallback, the false branch, the first composite member or the first entry of a select, condition, composite or range_dispatch, also through a select case);
+*> the last four reach the "base" of a code-drawn "minecraft:special" model, whose icon is its particle texture.
  01 WS-JPATHS.
-    05 FILLER              PIC X(24) VALUE "model.model".
-    05 FILLER              PIC X(24) VALUE "model.fallback.model".
-    05 FILLER              PIC X(24) VALUE "model.on_false.model".
-    05 FILLER              PIC X(24) VALUE "model.models".
+    05 FILLER              PIC X(48) VALUE "model.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.models[0].model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.fallback.model".
+    05 FILLER              PIC X(48) VALUE "model.fallback.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.on_false.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.cases[0].model.entries[0].model.model".
+    05 FILLER              PIC X(48) VALUE "model.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.base".
+    05 FILLER              PIC X(48) VALUE "model.on_false.base".
+    05 FILLER              PIC X(48) VALUE "model.fallback.on_false.base".
  01 WS-JPATH-TABLE REDEFINES WS-JPATHS.
-    05 WS-JPATH            PIC X(24) OCCURS 4 TIMES.
+    05 WS-JPATH            PIC X(48) OCCURS 14 TIMES.
  01 WS-K                   BINARY-LONG.
- 01 WS-JP                  PIC X(32).
+ 01 WS-JP                  PIC X(48).
+ 01 WS-SPECIAL             BINARY-LONG.
+ 01 WS-PARTICLE            PIC X(80) VALUE "#particle".
  01 WS-JP-LENGTH           BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
  01 WS-ID                  PIC X(80).
@@ -211,12 +226,16 @@
              MOVE SPACES TO WS-ID
              MOVE 0 TO WS-ID-LENGTH
              IF JD-ERROR = 0
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3 OR WS-ID-LENGTH > 0
+                 MOVE 0 TO WS-SPECIAL
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 14 OR WS-ID-LENGTH > 0
                      MOVE SPACES TO WS-JP
                      MOVE WS-JPATH(WS-K) TO WS-JP
                      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-JP)) TO WS-JP-LENGTH
                      CALL "JSON-FIND" USING JSON-DOC WS-JP WS-JP-LENGTH WS-NODE
                      CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-ID WS-CAP WS-ID-LENGTH
+                     IF WS-K > 10
+                         MOVE 1 TO WS-SPECIAL
+                     END-IF
                  END-PERFORM
              END-IF
              IF WS-ID-LENGTH > 0
@@ -224,6 +243,9 @@
                      WS-GENERATED
                  IF WS-GENERATED = 1
                      CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-LAYER WS-SPRITE
+                 ELSE
+                 IF WS-SPECIAL = 1
+                     CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-PARTICLE WS-SPRITE
                  ELSE
                      CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LENGTH MODEL-RESOLVED
                      MOVE 0 TO WS-F
@@ -251,6 +273,7 @@
                              END-IF
                          END-PERFORM
                      END-IF
+                 END-IF
                  END-IF
              END-IF
          END-IF

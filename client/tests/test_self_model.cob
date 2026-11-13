@@ -5,11 +5,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
+ COPY CONTENT.
  COPY TESTLIB.
  01 WS-SERVER              BINARY-LONG.
  01 WS-EYE-TABLE.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
  01 WS-COUNT               BINARY-LONG.
+ 01 WS-WHOLE               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      MOVE "N" TO TL-MODE
@@ -39,6 +41,29 @@
      MOVE 256 TO EN-COUNT
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE "self model: with every replica row taken there is no room for it" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A world of the standard set: the model is the humanoid of the model library (at least the six cuboids of head, body, arms and
+*>   legs, whole cuboids of 36 vertices), not the stand-in box.
+     MOVE 0 TO EN-COUNT
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE 1 TO CL-CAMERA
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 0 TO WS-WHOLE
+     IF RL-EN-COUNT >= 216 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0
+         MOVE 1 TO WS-WHOLE
+     END-IF
+     MOVE "self model: in a standard world the Player is the humanoid model, at least six whole cuboids" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-WHOLE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO CL-CAMERA
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "self model: in a standard world first person still draws none" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

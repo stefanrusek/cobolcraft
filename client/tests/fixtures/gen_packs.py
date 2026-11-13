@@ -306,6 +306,19 @@ def write(path, data):
         handle.write(data)
 
 
+def big_lang():
+    """A language file in the size of the generated vanilla one (about 9,000 keys, over 500 KB): the
+    keys past the first 4,096 JSON nodes and past 262,144 bytes, a value with escapes and commas."""
+    lines = []
+    for n in range(9000):
+        key = "filler.key.%05d" % n
+        lines.append('  "%s": "Filler text number %d of the language"' % (key, n))
+    lines[5000] = '  "death.attack.mob": "%1$s was slain by %2$s"'
+    lines[5001] = '  "tricky.value": "a, \\"b\\": {c} [d], e"'
+    lines[8999] = '  "zzz.last.key": "the last one"'
+    return ("{\n" + ",\n".join(lines) + "\n}\n").encode()
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "packs")
     for name, (kind, files) in PACKS.items():
@@ -316,6 +329,9 @@ def main():
             data = zip_bytes(files)
             write(os.path.join(out, name + ".zip"), data)
             write(os.path.join(out, name + ".zip.sha1"), hashlib.sha1(data).hexdigest().encode())
+    write(os.path.join(os.path.dirname(out), "biglang", "pack.mcmeta"),
+          b'{"pack":{"description":"test fixture: a large language file","min_format":[97,1],"max_format":97}}')
+    write(os.path.join(os.path.dirname(out), "biglang", "assets", "minecraft", "lang", "en_us.json"), big_lang())
     write(os.path.join(out, "broken.zip"), b"this is not a zip archive")
     write(os.path.join(out, "readme.txt"), b"not a pack")
 
