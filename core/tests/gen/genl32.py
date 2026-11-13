@@ -19,6 +19,10 @@ class Gen2(Gen):
         self.out.append(s)
     def run(self, text, inputs, call, n, exp):
         self.case(text,[(i,call,n) for i in inputs],exp)
+    def write(self, path):
+        Gen.write(self,path)
+        t=open(path).read().replace('PIC -(9)9','PIC -(10)9')
+        open(path,'w').write(t)
 def GL(n,subj,tasks,desc): return Gen2('TEST-LIGHT-32-%d'%n,'32§%d'%n,subj,'Test of 32 section %d, %s (core/src/light-32*.cob; %s): %s'%(n,subj,tasks,desc),'')
 def W(g,n):
     if not ONLY or n in ONLY: g.write(OUT+'/test_light_32_%d.cob'%n)
@@ -386,3 +390,490 @@ for bp,sp,bon,son in itertools.product((0,1),repeat=4):
     cl.append((S(bp,sp,1),'CALL "L32-LIGHT-ON-IN-COLUMN" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1)); ce.append(str(lo(bp,sp,bon,son)))
 g.case('lightOnInColumn (6.5): no block engine gives true; with a block engine and its column not enabled false (even without a sky engine); otherwise true when the sky engine is absent or has the column enabled',cl," ".join(ce))
 W(g,6)
+
+# ===================== engine model (sections 4 and 5)
+DIRS=[(0,-1,0),(0,1,0),(0,0,-1),(0,0,1),(-1,0,0),(1,0,0)]
+def E_dec_all(l): return l|1008
+def E_dec_skip(l,d): return l|(1008&~(16<<d))
+def E_inc_em(l,e): return l|1008|2048|(1024 if e else 0)
+def E_inc_skip(l,e,d): return l|(1008&~(16<<d))|(1024 if e else 0)
+def E_inc_one(l,e,d): return l|(16<<d)|(1024 if e else 0)
+def E_sky(dn,n,so,w,e): return 15|sum(16<<i for i,f in ((0,dn),(2,n),(3,so),(4,w),(5,e)) if f)
+PULL=E_dec_all(1); ADD_SKY=E_inc_skip(15,0,1); REM_SKY=E_dec_skip(15,1); REM_TOP=E_dec_all(15)
+MINV=-2147483648
+class Eng:
+    def __init__(s,sky=0):
+        s.skyon=sky; s.states={0:(0,0,0,0,(0,)*6),1:(0,15,1,0,(15,)*6)}
+        s.blocks={}; s.avail=set(); s.lay=[Store(False),Store(True)]
+        s.q=[{'ck':[],'inc':[],'dec':[]} for _ in range(2)]
+        s.ls={}
+    def define(s,i,e,d,o,u,f): s.states[i]=(e,d,o,u,tuple(f))
+    def state(s,x,y,z):
+        if (x>>4,z>>4) not in s.avail: return 1
+        if 0<=y<=63: return s.blocks.get((x,y,z),0)
+        return 0
+    def opacity(s,i): return max(1,s.states[i][1])
+    def empty(s,i): e,d,o,u,f=s.states[i]; return int(o==0 or u==0)
+    def face(s,i,d): return 0 if s.empty(i) else s.states[i][4][d]
+    def occl(s,a,b,d):
+        fa=s.face(a,d); fb=s.face(b,d^1)
+        return int(not(fa==0 and fb==0) and (fa|fb)==15)
+    def stores(s,k,x,y,z): return (x>>4,y>>4,z>>4) in s.lay[k].work
+    def stored(s,k,x,y,z):
+        w=s.lay[k].work.get((x>>4,y>>4,z>>4)); return w[(y&15)*256+(z&15)*16+(x&15)] if w else 0
+    def setst(s,k,x,y,z,v): s.lay[k].setlevel(x,y,z,v)
+    def emission(s,x,y,z):
+        e=s.states[s.state(x,y,z)][0]
+        return e if e>0 and (x>>4,z>>4) in s.lay[0].on else 0
+    def pushinc(s,k,x,y,z,e): s.q[k]['inc'].append((x,y,z,e))
+    def pushdec(s,k,x,y,z,e): s.q[k]['dec'].append((x,y,z,e))
+    def check(s,k,x,y,z):
+        if (x,y,z) not in s.q[k]['ck']: s.q[k]['ck'].append((x,y,z))
+    def haswork(s,k):
+        q=s.q[k]; return int(s.lay[k].incons or bool(q['ck']) or bool(q['inc']) or bool(q['dec']))
+    def bcheck(s,x,y,z):
+        if not s.stores(0,x,y,z): return
+        e=s.emission(x,y,z); sl=s.stored(0,x,y,z)
+        if e<sl:
+            s.setst(0,x,y,z,0); s.pushdec(0,x,y,z,E_dec_all(sl))
+        else: s.pushdec(0,x,y,z,PULL)
+        if e>0: s.pushinc(0,x,y,z,E_inc_em(e,s.empty(s.state(x,y,z))))
+    def pinc(s,k,x,y,z,ent,level):
+        src=None; kk=s.empty_below(k,x,y,z) if k==1 else 0
+        for d in range(6):
+            if not (ent>>(4+d))&1: continue
+            nx,ny,nz=x+DIRS[d][0],y+DIRS[d][1],z+DIRS[d][2]
+            if not s.stores(k,nx,ny,nz): continue
+            ns=s.stored(k,nx,ny,nz)
+            if level-1<=ns: continue
+            nst=s.state(nx,ny,nz); nl=level-s.opacity(nst)
+            if nl<=ns: continue
+            if src is None: src=0 if (ent>>10)&1 else s.state(x,y,z)
+            if s.occl(src,nst,d): continue
+            s.setst(k,nx,ny,nz,nl)
+            if nl>1: s.pushinc(k,nx,ny,nz,E_inc_skip(nl,s.empty(nst),d^1))
+            if k==1: s.from_empty(nx,ny,nz,d,nl,1,kk)
+    def pdec(s,k,x,y,z,ent):
+        frm=ent&15; kk=s.empty_below(k,x,y,z) if k==1 else 0
+        for d in range(6):
+            if not (ent>>(4+d))&1: continue
+            nx,ny,nz=x+DIRS[d][0],y+DIRS[d][1],z+DIRS[d][2]
+            if not s.stores(k,nx,ny,nz): continue
+            ns=s.stored(k,nx,ny,nz)
+            if ns==0: continue
+            if ns<=frm-1:
+                e=s.emission(nx,ny,nz) if k==0 else 0
+                s.setst(k,nx,ny,nz,0)
+                if e<ns: s.pushdec(k,nx,ny,nz,E_dec_skip(ns,d^1))
+                if e>0: s.pushinc(k,nx,ny,nz,E_inc_em(e,s.empty(s.state(nx,ny,nz))))
+                if k==1: s.from_empty(nx,ny,nz,d,ns,0,kk)
+            else:
+                s.pushinc(k,nx,ny,nz,E_inc_one(ns,0,d^1))
+    def checknode(s,k,x,y,z):
+        if k==0: s.bcheck(x,y,z)
+        else: s.skycheck(x,y,z)
+    # ---- sky sources (5.3)
+    def edge_occ(s,a,b):
+        if s.states[b][1]!=0: return 1
+        fa=s.face(a,0); fb=s.face(b,1)
+        return int(not(fa==0 and fb==0) and (fa|fb)==15)
+    def blk(s,x,y,z): return s.blocks.get((x,y,z),0)
+    def sky_fill(s,cx,cz):
+        tab=[MINV]*256; top=-1
+        for sy in range(4):
+            if any(s.blk(cx*16+lx,sy*16+ly,cz*16+lz)!=0 for lx in range(16) for ly in range(16) for lz in range(16)): top=sy
+        if top>=0:
+            for lz in range(16):
+                for lx in range(16):
+                    above=0; found=MINV
+                    for y in range(top*16+15,-1,-1):
+                        here=s.blk(cx*16+lx,y,cz*16+lz)
+                        if s.edge_occ(above,here): found=y+1; break
+                        above=here
+                    tab[lx+16*lz]=found
+        s.ls[(cx,cz)]=tab
+    def skylow(s,x,z,default):
+        c=(x>>4,z>>4)
+        if c not in s.avail or c not in s.ls: return default
+        return s.ls[c][(x&15)+16*(z&15)]
+    def find_below(s,x,y,z):
+        above=s.state(x,y,z)
+        for yy in range(y-1,-2,-1):
+            below=s.state(x,yy,z)
+            if s.edge_occ(above,below): return yy+1
+            above=below
+        return MINV
+    def sky_step(s,x,lower,z,tab,idx):
+        ny=lower+1; cur=tab[idx]
+        occ=s.edge_occ(s.state(x,ny,z),s.state(x,lower,z))
+        if occ and ny>cur: tab[idx]=ny; return True
+        if not occ and ny==cur: tab[idx]=s.find_below(x,lower,z); return True
+        return False
+    def sky_update(s,x,y,z):
+        tab=s.ls[(x>>4,z>>4)]; idx=(x&15)+16*(z&15)
+        if y+1<tab[idx]: return False
+        if s.sky_step(x,y,z,tab,idx): return True
+        return s.sky_step(x,y-1,z,tab,idx)
+    def update_column(s,x,z,lowest):
+        L=s.lay[1]
+        if L.lowest==INF: return
+        bsec=L.lowest; bottom=bsec*16; col=(x>>4,z>>4)
+        if lowest>bottom:
+            y=lowest-1
+            while True:
+                sec=y//16
+                if sec<bsec: break
+                if not s.stores(1,x,y,z): y=sec*16-1; continue
+                if s.stored(1,x,y,z)!=15: break
+                s.setst(1,x,y,z,0); s.pushdec(1,x,y,z,REM_TOP if y==lowest-1 else REM_SKY); y-=1
+        nbr=max(s.skylow(x-1,z,MINV),s.skylow(x+1,z,MINV),s.skylow(x,z-1,MINV),s.skylow(x,z+1,MINV))
+        y=max(lowest,bottom)
+        while True:
+            sec=y//16
+            if col not in L.top or sec>=L.top[col]: break
+            if not s.stores(1,x,y,z): y=(sec+1)*16; continue
+            if s.stored(1,x,y,z)==15: break
+            s.setst(1,x,y,z,15)
+            if y<nbr or y==lowest: s.pushinc(1,x,y,z,ADD_SKY)
+            y+=1
+    def skycheck(s,x,y,z):
+        col=(x>>4,z>>4)
+        lowest=s.skylow(x,z,INF) if col in s.lay[1].on else INF
+        if lowest!=INF: s.update_column(x,z,lowest)
+        if not s.stores(1,x,y,z): return
+        if y>=lowest:
+            s.pushdec(1,x,y,z,REM_SKY); s.pushinc(1,x,y,z,ADD_SKY)
+        else:
+            sl=s.stored(1,x,y,z)
+            if sl>0: s.setst(1,x,y,z,0); s.pushdec(1,x,y,z,E_dec_all(sl))
+            else: s.pushdec(1,x,y,z,PULL)
+    def empty_below(s,k,x,y,z):
+        if k!=1 or (y&15)!=0: return 0
+        lx=x&15; lz=z&15
+        if lx not in (0,15) and lz not in (0,15): return 0
+        cnt=0; sec=(y>>4)-1
+        while (x>>4,sec,z>>4) not in s.lay[1].work and sec>=s.lay[1].lowest: cnt+=1; sec-=1
+        return cnt
+    def from_empty(s,nx,ny,nz,d,level,inc,kk):
+        if kk==0: return
+        lx=nx&15; lz=nz&15
+        cross={2:lz==15,3:lz==0,4:lx==15,5:lx==0}.get(d,False)
+        if not cross: return
+        nsec=ny>>4
+        for sec in range(nsec-1,nsec-kk-1,-1):
+            if (nx>>4,sec,nz>>4) not in s.lay[1].work: continue
+            for yy in range(sec*16+15,sec*16-1,-1):
+                if inc:
+                    s.setst(1,nx,yy,nz,level)
+                    if level>1: s.pushinc(1,nx,yy,nz,E_inc_skip(level,1,d^1))
+                else:
+                    s.setst(1,nx,yy,nz,0); s.pushdec(1,nx,yy,nz,E_dec_skip(level,d^1))
+    def chunk_start_sky(s,cx,cz):
+        L=s.lay[1]; L.on.add((cx,cz)); col=(cx,cz)
+        top=L.top.get(col,L.lowest); bottom=L.lowest; tab=s.ls[col]; sec=top-1
+        while sec>=bottom:
+            if (cx,sec,cz) not in L.work: sec-=1; continue
+            sb=sec*16; st=sb+15; mark=False
+            for lz in range(16):
+                for lx in range(16):
+                    ls=tab[lx+16*lz]
+                    if ls>st: continue
+                    X=cx*16+lx; Z=cz*16+lz
+                    lsN=s.skylow(X,Z-1,MINV); lsS=s.skylow(X,Z+1,MINV); lsW=s.skylow(X-1,Z,MINV); lsE=s.skylow(X+1,Z,MINV)
+                    mx=max(lsN,lsS,lsW,lsE)
+                    for y in range(st,max(sb,ls)-1,-1):
+                        s.setst(1,X,y,Z,15)
+                        if y==ls or y<mx: s.pushinc(1,X,y,Z,E_sky(y==ls,y<lsN,y<lsS,y<lsW,y<lsE))
+                    if ls<sb: mark=True
+            if not mark: break
+            sec-=1
+    def set_enabled(s,cx,cz,flag):
+        col=(cx,cz); s.lay[0].on.add(col) if flag else s.lay[0].on.discard(col)
+        if not s.skyon: return
+        L=s.lay[1]; L.on.add(col) if flag else L.on.discard(col)
+        if flag:
+            top=L.top.get(col,L.lowest); bottom=L.lowest; tab=s.ls.get(col,[MINV]*256); H=max(tab)
+            S=bottom if H==MINV else ((H-1)>>4)+1
+            for sec in range(top-1,max(bottom,S)-1,-1):
+                p=(cx,sec,cz)
+                if p in L.work and not any(L.work[p]): L.work[p]=[15]*4096; L.changed.add(p)
+    def run(s,k):
+        q=s.q[k]; n=0
+        for (x,y,z) in list(q['ck']): s.checknode(k,x,y,z)
+        q['ck']=[]
+        while q['dec']:
+            x,y,z,e=q['dec'].pop(0); n+=1; s.pdec(k,x,y,z,e)
+        while q['inc']:
+            x,y,z,e=q['inc'].pop(0); n+=1
+            frm=e&15; lv=s.stored(k,x,y,z)
+            if (e>>11)&1 and lv<frm and s.stores(k,x,y,z):
+                s.setst(k,x,y,z,frm); lv=frm
+            if lv==frm: s.pinc(k,x,y,z,e,lv)
+        s.lay[k].finish()
+        return n
+    def chunk_start_block(s,cx,cz):
+        s.lay[0].on.add((cx,cz))
+        for sy in range(4):
+            for ly in range(16):
+                for lz in range(16):
+                    for lx in range(16):
+                        x,y,z=cx*16+lx,sy*16+ly,cz*16+lz
+                        st=s.state(x,y,z); e=s.states[st][0]
+                        if e!=0: s.pushinc(0,x,y,z,E_inc_em(e,s.empty(st)))
+    def cksum(s,k,x0,x1,y0,y1,z0,z1):
+        c=0; w=0
+        for x in range(x0,x1+1):
+            for y in range(y0,y1+1):
+                for z in range(z0,z1+1):
+                    v=s.stored(k,x,y,z)
+                    if v: c+=1; w+=v*(1+(x*7+y*13+z*31)%97)
+        return c,w
+class EScn:
+    def __init__(self,sky=0):
+        self.sky=sky; self.m=Eng(sky); self.calls=[]; self.exp=[]
+        self.op("%d"%sky,'CALL "L32-INIT" USING WS-I(1)')
+    def op(self,inp,call,n=None): self.calls.append((inp,call,n))
+    def define(self,i,e,d,o,u,f):
+        self.m.define(i,e,d,o,u,f); self.op(S(i,e,d,o,u,*f),DEF)
+    def standard(self):
+        for i in (2,3,4,5,6,7,8,9): self.define(i,*STATES[i][:4],STATES[i][4])
+        self.define(10,15,15,1,0,[15]*6); self.define(11,0,3,0,0,[0]*6); self.define(12,5,0,0,0,[0]*6)
+    def everything(self,ks=(1,)):
+        for cz in range(-1,3):
+            for cx in range(-1,3):
+                self.avail(cx,cz,1)
+        for k in ks:
+            for cz in range(-1,3):
+                for cx in range(-1,3):
+                    for sy in range(4):
+                        self.m.lay[k-1].status((cx,sy,cz),0); self.op(S(k,cx,sy,cz,0),'CALL "L32-STORAGE-STATUS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+            self.m.lay[k-1].finish(); self.op(S(k),'CALL "L32-STORAGE-FINISH" USING WS-I(1)')
+    def enable(self,k,cx,cz,f):
+        (self.m.lay[k-1].on.add if f else self.m.lay[k-1].on.discard)((cx,cz)); self.op(S(k,colidx((cx,0,cz)),f),'CALL "L32-STORAGE-ENABLE" USING WS-I(1) WS-I(2) WS-I(3)')
+    def enable_all(self,k):
+        for cz in range(-1,3):
+            for cx in range(-1,3): self.enable(k,cx,cz,1)
+    def cell(self,x,y,z,i):
+        self.m.blocks[(x,y,z)]=i; self.op(S(x,y,z,i),'CALL "L32-SET-CELL" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4)')
+    def check(self,k,x,y,z):
+        self.m.check(k-1,x,y,z); self.op(S(k,x,y,z),'CALL "L32-CHECK-BLOCK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4)')
+    def haswork(self,k):
+        self.exp.append(str(self.m.haswork(k-1))); self.op(S(k),'CALL "L32-HAS-WORK" USING WS-I(1) WS-R(1)',1)
+    def run(self,k):
+        self.exp.append(str(self.m.run(k-1))); self.op(S(k),'CALL "L32-RUN-UPDATES" USING WS-I(1) WS-R(1)',1)
+    def probe(self,k,x0,x1,y0,y1,z0,z1):
+        c,w=self.m.cksum(k-1,x0,x1,y0,y1,z0,z1); self.exp.append("%d/%d"%(c,w))
+        self.op("%d"%k,'MOVE 0 TO WS-R(1) WS-R(2)\nPERFORM VARYING WS-PX FROM %d BY 1 UNTIL WS-PX > %d\n PERFORM VARYING WS-PY FROM %d BY 1 UNTIL WS-PY > %d\n  PERFORM VARYING WS-PZ FROM %d BY 1 UNTIL WS-PZ > %d\n   CALL "L32-GET-STORED" USING WS-I(1) WS-PX WS-PY WS-PZ WS-LV\n   IF WS-LV > 0\n    ADD 1 TO WS-R(1)\n    COMPUTE WS-PW = WS-PX * 7 + WS-PY * 13 + WS-PZ * 31\n    COMPUTE WS-PW = 1 + FUNCTION MOD(WS-PW, 97)\n    COMPUTE WS-R(2) = WS-R(2) + WS-LV * WS-PW\n   END-IF\n  END-PERFORM\n END-PERFORM\nEND-PERFORM'%(x0,x1,y0,y1,z0,z1),2)
+    def level(self,k,x,y,z):
+        self.exp.append(str(self.m.stored(k-1,x,y,z))); self.op(S(k,x,y,z),'CALL "L32-GET-STORED" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
+    def qpeek(self,k,which,i):
+        q=self.m.q[k-1]['inc' if which==1 else 'dec']
+        if i==0: self.exp.append(str(len(q)))
+        else:
+            x,y,z,e=q[i-1]; self.exp.append("%d/%d/%d/%d/%d"%(len(q),x,y,z,e))
+        self.op(S(k,which,i),'CALL "L32-QUEUE-ENTRY" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',1 if i==0 else 5)
+    def chunk_block(self,cx,cz):
+        self.m.chunk_start_block(cx,cz); self.op(S(cx,cz),'CALL "L32-CHUNK-START-BLOCK" USING WS-I(1) WS-I(2)')
+    def fill(self,cx,cz):
+        self.m.sky_fill(cx,cz); self.op(S(cx,cz),'CALL "L32-SKY-FILL" USING WS-I(1) WS-I(2)')
+    def tab(self,x,z,df=777):
+        self.exp.append(str(self.m.skylow(x,z,df))); self.op(S(x,z,df),'CALL "L32-SKY-LOWEST" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1)
+    def skyupdate(self,x,y,z):
+        r=self.m.sky_update(x,y,z); self.exp.append("%d/%d"%(int(r),self.m.skylow(x,z,777))); self.op(S(x,y,z,x,z,777),'CALL "L32-SKY-UPDATE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)\nCALL "L32-SKY-LOWEST" USING WS-I(4) WS-I(5) WS-I(6) WS-R(2)',2)
+    def chunk_sky(self,cx,cz):
+        self.m.chunk_start_sky(cx,cz); self.op(S(cx,cz),'CALL "L32-CHUNK-START-SKY" USING WS-I(1) WS-I(2)')
+    def setlight(self,cx,cz,f):
+        self.m.set_enabled(cx,cz,f); self.op(S(cx,cz,f),'CALL "L32-SET-LIGHT-ENABLED" USING WS-I(1) WS-I(2) WS-I(3)')
+    def rawset(self,k,x,y,z,v):
+        self.m.setst(k-1,x,y,z,v); self.op(S(k,x,y,z,v),'CALL "L32-SET-STORED" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def rawinc(self,k,x,y,z,ent):
+        self.m.pushinc(k-1,x,y,z,ent); self.op(S(k,x,y,z,ent),'CALL "L32-PUSH-INC" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def rawdec(self,k,x,y,z,ent):
+        self.m.pushdec(k-1,x,y,z,ent); self.op(S(k,x,y,z,ent),'CALL "L32-PUSH-DEC" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def floor(self,y,id_=2):
+        for x in range(-16,48):
+            for z in range(-16,48): self.m.blocks[(x,y,z)]=id_
+        self.op(S(y,id_),'PERFORM VARYING WS-PX FROM -16 BY 1 UNTIL WS-PX > 47\n PERFORM VARYING WS-PZ FROM -16 BY 1 UNTIL WS-PZ > 47\n  CALL "L32-SET-CELL" USING WS-PX WS-I(1) WS-PZ WS-I(2)\n END-PERFORM\nEND-PERFORM')
+    def fill_all(self):
+        for cz in range(-1,3):
+            for cx in range(-1,3): self.fill(cx,cz)
+    def status(self,k,sx,sy,sz,empty):
+        self.m.lay[k-1].status((sx,sy,sz),empty); self.op(S(k,sx,sy,sz,empty),'CALL "L32-STORAGE-STATUS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def finish(self,k):
+        self.m.lay[k-1].finish(); self.op(S(k),'CALL "L32-STORAGE-FINISH" USING WS-I(1)')
+    def avail(self,cx,cz,f):
+        (self.m.avail.add if f else self.m.avail.discard)((cx,cz)); self.op(S(cx,cz,f),'CALL "L32-AVAIL-CHUNK" USING WS-I(1) WS-I(2) WS-I(3)')
+        if f: self.m.ls[(cx,cz)]=[MINV]*256
+    def run_case(self,g,text): g.case(text,self.calls," ".join(self.exp))
+EXTRA=" 01 WS-PX                BINARY-LONG.\n 01 WS-PY                BINARY-LONG.\n 01 WS-PZ                BINARY-LONG.\n 01 WS-PW                BINARY-LONG.\n 01 WS-LV                BINARY-LONG.\n"
+
+def base(sky=0,enable=True):
+    e=EScn(sky); e.standard(); e.everything((1,) if not sky else (1,2))
+    if enable: e.enable_all(1)
+    return e
+BOX=(-8,24,6,34,-8,24)
+# ===================== 4
+g=GL(4,'The update cycle','T0685','checkBlock records work, runLightUpdates runs the checks, then the decrease queue, then the increase queue and returns the pairs processed.')
+g.extra=EXTRA
+e=base()
+e.haswork(1); e.cell(8,20,8,4); e.check(1,8,20,8); e.haswork(1); e.check(1,8,20,8); e.run(1); e.haswork(1); e.probe(1,*BOX)
+e.level(1,8,20,8); e.level(1,9,20,8); e.level(1,8,21,8); e.level(1,8,20,10)
+e.run_case(g,'checkBlock adds the packed position to a set (a second check of the same position adds nothing); hasLightWork is true while the check set holds a position and false once the run ended; the run returns the number of queue pairs processed')
+e=base()
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1); e.haswork(1)
+e.m.lay[0].status((0,1,0),1); e.op(S(1,0,1,0,1),'CALL "L32-STORAGE-STATUS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+e.haswork(1); e.run(1); e.haswork(1); e.probe(1,*BOX)
+e.run_case(g,'hasLightWork is also true while the storage has inconsistencies (a section went empty: a layer waits for removal); the run clears it (step 4 markNewInconsistencies) and a removed section drops its layer')
+e=base()
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1)
+e.cell(8,20,8,0); e.check(1,8,20,8); e.run(1); e.probe(1,*BOX)
+e.cell(12,20,8,4); e.cell(4,20,8,4); e.check(1,12,20,8); e.check(1,4,20,8); e.run(1)
+e.cell(12,20,8,0); e.check(1,12,20,8); e.run(1); e.probe(1,*BOX)
+e.level(1,8,20,8); e.level(1,12,20,8); e.level(1,6,20,8)
+e.run_case(g,'decreases are drained completely before increases (4): removing one of two torches clears its light first, then the increase queue refills the boundary from the other torch; the run counts decrease and increase pairs')
+W(g,4)
+# ===================== 5
+g=GL(5,'Propagation rules','T0687','block light: checkNode, propagateIncrease, propagateDecrease, chunk start; the validation table rows 1 to 4.')
+g.extra=EXTRA
+e=base()
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1)
+for d in range(0,16): e.level(1,8+d,20,8)
+for d in range(0,15): e.level(1,8,20+d,8)
+for x,y,z in [(0,20,8),(8,28,8),(12,24,10),(8,20,22),(9,21,9),(15,27,9)]: e.level(1,x,y,z)
+e.probe(1,*BOX)
+for d in range(0,16): assert e.m.stored(0,8+d,20,8)==max(0,14-d)
+for (x,y,z) in [(0,20,8),(8,28,8),(12,24,10),(8,20,22),(9,21,9),(15,27,9)]: assert e.m.stored(0,x,y,z)==max(0,14-(abs(x-8)+abs(y-20)+abs(z-8)))
+e.run_case(g,'validation 1 (5.4 example 1): a torch (emission 14) in open air gives level 14 - d at Manhattan distance d for d from 0 to 13 and 0 beyond; the stored level of the torch cell is raised to the emission first')
+e=base()
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1); e.cell(8,20,8,0); e.check(1,8,20,8); e.run(1)
+e.probe(1,*BOX); e.level(1,9,20,8); e.level(1,8,20,8)
+assert e.m.cksum(0,*BOX)==(0,0)
+e.run_case(g,'validation 2 (5.4 example 2): removing the torch: checkNode finds e = 0 < s = 14, stores 0 and queues a decrease; every cell returns to 0 after one decrease pass and one increase pass')
+e=base()
+e.cell(6,20,8,4); e.cell(10,20,8,4); e.check(1,6,20,8); e.check(1,10,20,8); e.run(1)
+e.level(1,8,20,8); e.cell(10,20,8,0); e.check(1,10,20,8); e.run(1)
+for x in (4,6,8,10,12): e.level(1,x,20,8)
+e.probe(1,*BOX)
+e.run_case(g,'validation 3: two torches 4 cells apart, remove one: the cells between settle at the remaining torch 14 - d and none keeps the removed torch value (the re-spreading increaseOnlyOneDirection entries of propagateDecrease)')
+e=base()
+e.cell(8,20,8,4); e.cell(9,20,8,2); e.cell(8,20,9,3); e.cell(8,21,8,11); e.cell(7,20,8,10)
+e.check(1,8,20,8); e.check(1,9,20,8); e.check(1,8,20,9); e.check(1,8,21,8); e.check(1,7,20,8); e.run(1)
+for p_ in [(9,20,8),(10,20,8),(8,20,9),(8,20,10),(8,21,8),(8,22,8),(7,20,8),(6,20,8),(8,19,8)]: e.level(1,*p_)
+e.probe(1,*BOX)
+e.run_case(g,'validation 4 and opacity (5.4 examples 3 and 4): a dampening-15 block next to a level-14 cell stays 0 and light does not enter; leaves (opacity 1) pass 13; dampening 3 gives 14 - 3; an opaque emitter (lamp, emission 15) stores its own level and spreads as from an empty shape')
+e=base()
+e.cell(8,20,8,4); e.cell(9,20,8,5); e.cell(8,21,8,8); e.cell(8,19,8,9); e.cell(7,20,8,5)
+for p_ in [(8,20,8),(9,20,8),(8,21,8),(8,19,8),(7,20,8)]: e.check(1,*p_)
+e.run(1)
+for p_ in [(9,20,8),(10,20,8),(8,22,8),(8,18,8),(7,20,8),(6,20,8),(8,20,9),(9,20,9)]: e.level(1,*p_)
+e.probe(1,*BOX)
+e.run_case(g,'face-shape occlusion (2.1, 5.1 step 5): slabs that use their shape block light across faces that cover together (bottom slab above the torch, down against up) and not across a side of two half faces; the torch itself is a non-occluding source')
+e=base(enable=False)
+e.enable(1,1,0,1)
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1); e.probe(1,*BOX); e.cell(24,20,8,4); e.check(1,24,20,8); e.run(1); e.probe(1,*BOX); e.level(1,24,20,8)
+e.run_case(g,'emission of a cell (5.1) is the state emission only when the chunk column has light enabled: a torch in a column without it stays dark and checkNode finds nothing to pull; the torch in the enabled column lights its own and the neighbouring section')
+e=EScn(0); e.standard()
+for cz in range(-1,3):
+    for cx in range(-1,3):
+        e.avail(cx,cz,1)
+e.m.lay[0].status((0,1,0),0); e.op(S(1,0,1,0,0),'CALL "L32-STORAGE-STATUS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+e.m.lay[0].finish(); e.op("1",'CALL "L32-STORAGE-FINISH" USING WS-I(1)')
+e.enable_all(1)
+e.cell(28,20,8,4); e.cell(12,2,8,4); e.check(1,28,20,8); e.check(1,12,2,8); e.run(1)
+e.probe(1,12,44,6,34,-8,24); e.probe(1,0,24,0,16,-8,24); e.level(1,31,20,8); e.level(1,32,20,8); e.level(1,12,2,8); e.level(1,12,-2,8)
+e.run_case(g,'sections that store no light are skipped (5.1 steps 1 of checkNode and propagateIncrease): with layers only around section (0, 1, 0) light stops at the section edge x = 32, and a torch in a section without a layer does nothing')
+e=base()
+e.avail(1,0,0)
+e.cell(8,20,8,4); e.check(1,8,20,8); e.run(1)
+e.level(1,15,20,8); e.level(1,16,20,8); e.level(1,17,20,8); e.probe(1,*BOX)
+e.run_case(g,'an unloaded neighbour chunk reads as bedrock (2.2): opaque, so light stops at the chunk edge and the engine does not fail on the missing chunk')
+e=base(enable=False)
+e.cell(5,20,5,4); e.cell(2,3,9,12); e.cell(2,35,9,12); e.cell(14,50,14,10); e.cell(0,0,0,4); e.cell(15,63,15,12); e.cell(3,20,5,0)
+e.chunk_block(0,0)
+e.qpeek(1,1,0)
+for i in range(1,6): e.qpeek(1,1,i)
+e.run(1); e.probe(1,-8,24,-4,40,-8,24); e.probe(1,0,15,41,70,0,15); e.level(1,2,3,9); e.level(1,0,0,0)
+e.run_case(g,'chunk start (5.1): light is enabled for the column and every emitting cell is queued as increaseLightFromEmission in storage index order (lowest section, then Y, Z, X ascending); emission of the light block is its own level and 0 is no source')
+# ---- sky scenarios (5.2, 5.3)
+def skybase(chunks=True):
+    e=EScn(1); e.standard()
+    for cz in range(-1,3):
+        for cx in range(-1,3): e.avail(cx,cz,1)
+    return e
+e=skybase()
+for p_,i in [((3,10,3),2),((4,10,4),3),((5,12,5),6),((5,3,5),2),((6,20,6),5),((7,63,7),2),((8,0,8),2),((9,30,9),7),((9,29,9),3),((10,40,10),9),((10,39,10),2),((2,5,2),12)]: e.cell(*p_,i)
+e.fill(0,0)
+for x,z in [(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10),(2,2),(0,0),(15,15)]: e.tab(x,z)
+e.tab(16,0); e.tab(-1,0); e.tab(100,100)
+e.m.avail.discard((1,0)); e.op(S(1,0,0),'CALL "L32-AVAIL-CHUNK" USING WS-I(1) WS-I(2) WS-I(3)'); e.tab(16,0)
+e.fill(1,1)
+e.tab(17,17)
+e.run_case(g,'sky sources fill (5.3 fillFrom): the lowest source Y of a column is the Y of the cell above the first cell where the edge is occluded (stone 11 for y 10; leaves and water-like dampening end a column; glass passes; a bottom slab occludes at its own cell); an empty chunk or a column without ground is the minimum value; the read gives the default for an unavailable chunk')
+e=skybase()
+e.cell(3,10,3,2); e.cell(3,9,3,2); e.fill(0,0)
+for step in [((3,11,3,2),),((3,11,3,0),),((3,10,3,0),),((3,9,3,0),),((4,5,4,2),),((4,5,4,0),),((3,2,3,2),),((5,40,5,3),),((5,40,5,6),),((5,41,5,2),),((5,41,5,0),),((5,40,5,0),),((6,20,6,5),),((6,20,6,0),),((6,21,6,5),),((6,22,6,2),),((6,22,6,0),),((6,21,6,0),)]:
+    x,y,z,i=step[0]; e.cell(x,y,z,i); e.skyupdate(x,y,z)
+e.run_case(g,'sky sources update (5.3): update(chunk, x, y, z) returns false when y + 1 is below the current value; a changed cell that makes the edge above it occluded raises the entry to its y + 1; one that opens the edge at the current value looks down (findLowestSourceBelow) for the next occluded edge or the minimum; the edge below the changed cell is tested the same way')
+# sky light propagation on a floor with a roof
+def sky_world(roof=True):
+    e=EScn(1); e.standard(); e.everything((1,2)); e.floor(30)
+    if roof:
+        for x in range(4,10):
+            for z in range(4,10): e.cell(x,40,z,2)
+    e.fill_all()
+    for cx,cz in [(0,0),(1,0),(0,1),(1,1)]: e.chunk_sky(cx,cz)
+    return e
+SBOX=(0,31,28,45,0,31)
+e=sky_world()
+e.qpeek(2,1,0); e.run(2); e.probe(2,*SBOX)
+for p_ in [(3,35,6),(4,35,6),(6,35,6),(9,35,9),(12,35,6),(6,45,6),(6,41,6),(6,31,6),(20,35,20),(20,31,20),(20,30,20)]: e.level(2,*p_)
+assert e.m.stored(1,6,35,6)==12 and e.m.stored(1,4,35,6)==14 and e.m.stored(1,3,35,6)==15 and e.m.stored(1,6,41,6)==15 and e.m.stored(1,6,31,6)==12
+for x in range(0,32):
+    for z in range(0,32):
+        assert e.m.stored(1,x,31,z)==15 or (4<=x<10 and 4<=z<10)
+e.run_case(g,'sky light 15 at and above the lowest source of the column and spreading below it (5.2 chunk start, propagateIncrease): a roof over open ground gets 14 under its edge, 12 in the middle; validation 5: the cells at Y >= the lowest source read 15 and canSeeSky is true exactly there')
+e=sky_world(); e.run(2); e.probe(2,*SBOX); h0=e.m.cksum(1,*SBOX)
+e.cell(12,31,12,2); e.skyupdate(12,31,12); e.check(2,12,31,12); e.run(2); e.probe(2,*SBOX)
+e.level(2,12,31,12); e.level(2,12,32,12); e.level(2,13,31,12); e.level(2,12,30,12)
+e.cell(12,31,12,0); e.skyupdate(12,31,12); e.check(2,12,31,12); e.run(2); e.probe(2,*SBOX)
+assert e.m.cksum(1,*SBOX)==h0
+e.cell(20,45,20,2); e.skyupdate(20,45,20); e.check(2,20,45,20); e.run(2); e.probe(2,*SBOX); e.level(2,20,44,20); e.level(2,20,46,20); e.level(2,21,44,20); e.level(2,20,35,20)
+e.cell(20,45,20,0); e.skyupdate(20,45,20); e.check(2,20,45,20); e.run(2); e.probe(2,*SBOX)
+assert e.m.cksum(1,*SBOX)==h0
+e.cell(6,40,6,0); e.skyupdate(6,40,6); e.check(2,6,40,6); e.run(2); e.probe(2,*SBOX); e.level(2,6,35,6); e.level(2,6,40,6)
+e.cell(6,40,6,2); e.skyupdate(6,40,6); e.check(2,6,40,6); e.run(2); e.probe(2,*SBOX)
+assert e.m.cksum(1,*SBOX)==h0
+e.run_case(g,'validation 6 and checkNode (5.2): an opaque block placed at the top of a sky column raises the source Y (updateSourcesInColumn removal step clears the old source cells with the all-direction entry on the top one), the cells below fall off by the spreading rule, and after breaking it the table and the levels equal the original; same for a block higher up and a hole in the roof (addition step)')
+# empty sections below a column edge
+e=EScn(1); e.standard()
+for cz in range(-1,3):
+    for cx in range(-1,3): e.avail(cx,cz,1)
+e.status(2,0,0,0,0); e.status(2,2,3,0,0); e.finish(2)
+e.rawset(2,32,32,5,15); e.rawinc(2,32,32,5,ADD_SKY); e.run(2)
+e.probe(2,28,36,-16,40,2,8); e.level(2,31,32,5); e.level(2,31,31,5); e.level(2,31,-16,5); e.level(2,31,-17,5); e.level(2,30,31,5); e.level(2,33,32,5); e.level(2,32,32,4)
+e.rawdec(2,32,32,5,E_dec_all(15)); e.rawset(2,32,32,5,0); e.run(2)
+e.probe(2,28,36,-16,40,2,8)
+e.run_case(g,'empty sections below a column edge (5.2 worked example): a lit cell on a section bottom edge counts k = 3 sections that store no light but have data below; the neighbour that crosses the section column edge (WEST, local x 15) writes its level into those sections of its own column, 16 Y values each, and the decrease clears them again; EAST and NORTH do not cross')
+# chunk start worked example (5.2)
+e=EScn(1); e.standard()
+for cz in range(-1,3):
+    for cx in range(-1,3): e.avail(cx,cz,1)
+e.floor(19); e.cell(5,19,5,0); e.cell(5,2,5,2); e.fill_all()
+e.status(2,0,0,0,0); e.status(2,0,1,0,0); e.finish(2)
+e.chunk_sky(0,0); e.qpeek(2,1,0)
+assert len(e.m.q[1]['inc'])==272
+for i in (1,2,16,17,255,256,257,272): e.qpeek(2,1,i)
+e.level(2,5,16,5); e.level(2,5,3,5); e.level(2,5,2,5); e.level(2,5,-1,5); e.level(2,7,31,7); e.level(2,7,47,7); e.level(2,7,20,7); e.level(2,7,19,7)
+e.run(2); e.probe(2,0,15,-16,50,0,15); e.level(2,5,-1,5); e.level(2,6,10,5); e.level(2,10,10,5)
+e.run_case(g,'chunk start of the sky engine (5.2 worked example): sections from the highest storing one down to the lowest; every column at or above its lowest source set to 15 with increaseSkySourceInDirections entries (17 entries for the pit column (5, 5), 272 queued in all) and the mark stops the loop below section 0 (section -1 untouched)')
+# setLightEnabled fill (5.2)
+e=EScn(1); e.standard()
+for cz in range(-1,3):
+    for cx in range(-1,3): e.avail(cx,cz,1)
+e.floor(19); e.fill_all()
+e.status(2,0,0,0,0); e.status(2,0,1,0,0); e.status(2,1,0,1,0); e.finish(2)
+e.probe(2,0,15,-16,50,0,15); e.setlight(0,0,1); e.finish(2); e.probe(2,0,15,-16,50,0,15)
+e.setlight(1,1,1); e.finish(2); e.probe(2,16,31,-16,50,16,31)
+e.setlight(1,1,0); e.setlight(0,0,0); e.status(2,2,2,2,0); e.finish(2); e.setlight(2,2,1); e.finish(2); e.probe(2,32,47,-16,80,32,47)
+e.run_case(g,'setLightEnabled(true) on the sky engine (5.2): every writable all-zero layer from the top storing section down to max(bottom, S) is filled with 15 (S = section of H - 1 plus 1, H the highest lowest-source Y; an empty chunk fills all); layers that already hold light stay; false only clears the flag')
+W(g,5)

@@ -82,7 +82,7 @@
  01 WS-N                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
- 01 WS-SHOW                PIC -(9)9.
+ 01 WS-SHOW                PIC -(10)9.
  01 WS-TEXTS.
     05 WS-T1               PIC X(96).
     05 WS-T2               PIC X(96).

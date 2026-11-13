@@ -41,23 +41,24 @@
           15 LY-VB             BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
        10 LY-QD                OCCURS 96 TIMES.
           15 LY-QB             BINARY-CHAR UNSIGNED OCCURS 2048 TIMES.
-    05 EN-CK-N                 BINARY-LONG.
-    05 EN-CK                   OCCURS 4096 TIMES.
-       10 EN-CKX               BINARY-LONG.
-       10 EN-CKY               BINARY-LONG.
-       10 EN-CKZ               BINARY-LONG.
-    05 EN-INC-HEAD             BINARY-LONG.
-    05 EN-INC-TAIL             BINARY-LONG.
-    05 EN-INC                  OCCURS 100000 TIMES.
-       10 EN-INC-X             BINARY-LONG.
-       10 EN-INC-Y             BINARY-LONG.
-       10 EN-INC-Z             BINARY-LONG.
-       10 EN-INC-E             BINARY-LONG.
-    05 EN-DEC-HEAD             BINARY-LONG.
-    05 EN-DEC-TAIL             BINARY-LONG.
-    05 EN-DEC                  OCCURS 100000 TIMES.
-       10 EN-DEC-X             BINARY-LONG.
-       10 EN-DEC-Y             BINARY-LONG.
-       10 EN-DEC-Z             BINARY-LONG.
-       10 EN-DEC-E             BINARY-LONG.
+    05 EN-QU                   OCCURS 2 TIMES.
+       10 QU-CK-N              BINARY-LONG.
+       10 QU-CK                OCCURS 4096 TIMES.
+          15 QU-CKX            BINARY-LONG.
+          15 QU-CKY            BINARY-LONG.
+          15 QU-CKZ            BINARY-LONG.
+       10 QU-INC-HEAD          BINARY-LONG.
+       10 QU-INC-TAIL          BINARY-LONG.
+       10 QU-INC               OCCURS 50000 TIMES.
+          15 QU-INC-X          BINARY-LONG.
+          15 QU-INC-Y          BINARY-LONG.
+          15 QU-INC-Z          BINARY-LONG.
+          15 QU-INC-E          BINARY-LONG.
+       10 QU-DEC-HEAD          BINARY-LONG.
+       10 QU-DEC-TAIL          BINARY-LONG.
+       10 QU-DEC               OCCURS 50000 TIMES.
+          15 QU-DEC-X          BINARY-LONG.
+          15 QU-DEC-Y          BINARY-LONG.
+          15 QU-DEC-Z          BINARY-LONG.
+          15 QU-DEC-E          BINARY-LONG.
     05 EN-BLK                  BINARY-SHORT UNSIGNED OCCURS 262144 TIMES.
