@@ -1,0 +1,586 @@
+*> Test of 31-8 section 4, Sculk sensor (core/src/be-31-8.cob; T0973): receive rules, activation, the phase machine, resonance pitch, stepping, the comparator and the keys.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-8-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-FV                  FLOAT-SHORT.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-Q                 BINARY-LONG.
+ 01 WS-R                 BINARY-LONG.
+ 01 WS-S                 BINARY-LONG.
+ 01 WS-U                 BINARY-LONG.
+ 01 WS-V                 BINARY-LONG.
+ 01 WS-W                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-FH                FLOAT-LONG.
+ 01 WS-FS1                FLOAT-SHORT.
+ 01 WS-FS2                FLOAT-SHORT.
+ 01 WS-FS3                FLOAT-SHORT.
+ 01 WS-FS4                FLOAT-SHORT.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N48                PIC X(48).
+ 01 WS-T64                PIC X(64).
+ 01 WS-T256               PIC X(256).
+ 01 WS-T2                 PIC X(64).
+ 01 WS-TAB.
+    05 WS-TV              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB2.
+    05 WS-TV2            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB3.
+    05 WS-TV3            BINARY-LONG OCCURS 192 TIMES.
+ 01 WS-LONG1              BINARY-DOUBLE.
+ 01 WS-LONG2              BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-8§4 Sculk sensor: canReceiveVibration (4.2, 5, example 12.4): refused for a block destroy or place at the sensor own position, for frequency 0, and unless the phase is inactive; the calibrated sensor also" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 2 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 7 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 7 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 7 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 7 TO WS-G
+     CALL "BE8-SENSOR-CAN" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 1 1 0 0 0 1 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: onReceiveVibration (4.2, example 12.2): in the inactive phase the frequency is stored and the block activates with the power for the distance (5.0 at radius 8 gives 6), never in another phase" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-N48
+     MOVE "step" TO WS-N48
+     MOVE 4 TO WS-SVL
+     MOVE 0 TO WS-A
+     COMPUTE WS-FS1 = 5.0
+     MOVE 8 TO WS-B
+     CALL "BE8-SENSOR-RECEIVE" USING WS-IDX WS-A WS-N48 WS-SVL WS-FS1 WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-N48
+     MOVE "entity_damage" TO WS-N48
+     MOVE 13 TO WS-SVL
+     MOVE 0 TO WS-A
+     COMPUTE WS-FS1 = 0.0
+     MOVE 8 TO WS-B
+     CALL "BE8-SENSOR-RECEIVE" USING WS-IDX WS-A WS-N48 WS-SVL WS-FS1 WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-N48
+     MOVE "step" TO WS-N48
+     MOVE 4 TO WS-SVL
+     MOVE 1 TO WS-A
+     COMPUTE WS-FS1 = 5.0
+     MOVE 8 TO WS-B
+     CALL "BE8-SENSOR-RECEIVE" USING WS-IDX WS-A WS-N48 WS-SVL WS-FS1 WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-N48
+     MOVE "flap" TO WS-N48
+     MOVE 4 TO WS-SVL
+     MOVE 0 TO WS-A
+     COMPUTE WS-FS1 = 10.0
+     MOVE 16 TO WS-B
+     CALL "BE8-SENSOR-RECEIVE" USING WS-IDX WS-A WS-N48 WS-SVL WS-FS1 WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE SPACES TO WS-N48
+     MOVE "explode" TO WS-N48
+     MOVE 7 TO WS-SVL
+     MOVE 0 TO WS-A
+     COMPUTE WS-FS1 = 8.0
+     MOVE 8 TO WS-B
+     CALL "BE8-SENSOR-RECEIVE" USING WS-IDX WS-A WS-N48 WS-SVL WS-FS1 WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 6 1 1 15 7 0 0 0 1 6 1 1 1 15" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: block tick (4.3): active turns to cooldown with power 0 and a tick after 10; cooldown turns to inactive with the stop sound when not waterlogged (1); inactive does nothing (phase, not" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-PHASE-TICK" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-PHASE-TICK" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-PHASE-TICK" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "2 0 10 0 0 0 0 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: block tick (4.3): the stop sound is silent for a waterlogged block" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-PHASE-TICK" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: resonance pitch (4.3): 2 ^ ((note - 12) / 12) with the note table 0, 0, 2, 4, 6, 7, 9, 10, 12, 14, 15, 18, 19, 21, 22, 24 for the frequencies 0 to 15" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 7 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 8 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 9 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 10 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 11 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 12 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 13 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 14 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE 15 TO WS-A
+     CALL "BE8-PITCH" USING WS-A WS-FS1
+     COMPUTE WS-SHOW ROUNDED = (WS-FS1) * 10000
+     PERFORM ADD-N
+     MOVE "5000 5000 5612 6300 7071 7492 8409 8909 10000 11225 11892 14142 14983 16818 17818 20000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: comparator and stepping (4.3, 4.4): the comparator reads last_vibration_frequency only while active; stepping forces a vibration only when the sensor can activate (phase 0), the entity is not" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 9 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO WS-A
+     CALL "BE8-SENSOR-OUTPUT" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 9 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO WS-A
+     CALL "BE8-SENSOR-OUTPUT" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 9 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     CALL "BE8-SENSOR-OUTPUT" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-STEP-ON" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-STEP-ON" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-STEP-ON" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-STEP-ON" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE8-STEP-ON" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "9 0 0 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§4 Sculk sensor: keys (4.1): last_vibration_frequency is written before listener (fresh: 0 and a fresh listener data), and loads back; the update tag is empty" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:sculk_sensor" TO WS-KEY
+     MOVE 22 TO WS-SVL
+     MOVE 34 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "last_vibration_frequency" TO WS-NM
+     MOVE 24 TO WS-NML
+     MOVE 7 TO WS-NV
+     PERFORM NB-I
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-TAG-ENTRIES" USING WS-IDX PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "{last_vibration_frequency:0,listener:{selector:{tick:-1},event_delay:0}} {last_vibration_frequency:7" &
+         ",listener:{selector:{tick:-1},event_delay:0}} 7 {}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-FLOAT.
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-NM WS-NML WS-FV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-8-4.
+
+ COPY CORETEST.

@@ -130,7 +130,7 @@ def _show(it):
     if it.startswith('f:'): return flo(it[2:])
     if it.startswith('f4:'): return flo(it[3:],10000)
     if it.startswith('t:'):
-        e,l=it[2:].split(',')
+        e,l=it[2:].split('|') if '|' in it else it[2:].split(',')
         return txt(e,l)
     raise Exception(it)
 class G:
