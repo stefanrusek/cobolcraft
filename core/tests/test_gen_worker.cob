@@ -44,6 +44,8 @@
  01 WS-GRID                PIC X(1225).
  01 WS-CELL                BINARY-LONG.
  01 WS-SAVE-DIM            BINARY-LONG.
+ 01 WS-EXPECT              BINARY-LONG.
+ 01 WS-BUSY                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "TEST-GEN-FIXTURE"
@@ -310,6 +312,55 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   while a spawn area is made (GQ-SP-STATE 2) the loading pool of 3 works though the pool is 1; afterwards the extra workers are stopped when idle
+     CALL "GEN-QUEUE-RESET"
+     MOVE 1 TO WS-WORKERS
+     CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
+     MOVE 3 TO GQ-LOAD-WORKERS
+     MOVE 2 TO GQ-SP-STATE
+     PERFORM VARYING WS-I FROM 20 BY 1 UNTIL WS-I > 25
+         MOVE WS-I TO WS-CX
+         MOVE 20 TO WS-CZ
+         CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     END-PERFORM
+     CALL "GEN-QUEUE-TICK"
+     MOVE 0 TO WS-BUSY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GW-MAX
+         IF GW-BUSY(WS-I) = 1
+             ADD 1 TO WS-BUSY
+         END-IF
+     END-PERFORM
+     MOVE "test gen worker while the spawn area is made three workers are busy though the pool is one" TO TL-CASE
+     MOVE WS-BUSY TO TL-OBSERVED-N
+     MOVE 3 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO GQ-SP-STATE
+     MOVE 0 TO WS-TICKS
+     MOVE 0 TO WS-N
+     PERFORM UNTIL WS-N >= 6 OR WS-TICKS > 6000
+         CALL "GEN-QUEUE-TICK"
+         ADD 1 TO WS-TICKS
+         CALL "C$SLEEP" USING WS-SLEEP
+         MOVE 0 TO WS-N
+         PERFORM VARYING WS-I FROM 20 BY 1 UNTIL WS-I > 25
+             MOVE WS-I TO WS-CX
+             MOVE 20 TO WS-CZ
+             CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+             IF WS-ROW > 0
+                 ADD 1 TO WS-N
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     CALL "GEN-QUEUE-TICK"
+     MOVE "test gen worker all six chunks of the loading pool arrive" TO TL-CASE
+     MOVE WS-N TO TL-OBSERVED-N
+     MOVE 6 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test gen worker once the area is made the idle extra workers are stopped" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = (GW-SLOT(2) + GW-SLOT(3)) * 10 + FUNCTION MIN(GW-SLOT(1), 1)
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   a reset leaves no worker, a config of 0 or too many is bounded
      MOVE 2 TO WS-WORKERS
      CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
@@ -328,7 +379,7 @@
      MOVE "test gen worker the pool size is bounded" TO TL-CASE
      CALL "GEN-WORKERS-GET" USING WS-N
      MOVE WS-N TO TL-OBSERVED-N
-     MOVE GW-MAX TO TL-EXPECTED-N
+     MOVE GW-POOL-MAX TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "GEN-WORKERS-AUTO"
      CALL "GEN-WORKERS-GET" USING WS-N
@@ -337,12 +388,32 @@
      IF WS-WORKERS < 1
          MOVE 1 TO WS-WORKERS
      END-IF
-     IF WS-WORKERS > GW-MAX
-         MOVE GW-MAX TO WS-WORKERS
+     IF WS-WORKERS > GW-POOL-MAX
+         MOVE GW-POOL-MAX TO WS-WORKERS
      END-IF
      MOVE "test gen worker the automatic pool is half the processors, at least 1 and at most the maximum" TO TL-CASE
      MOVE WS-N TO TL-OBSERVED-N
      MOVE WS-WORKERS TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the pool used while a world's spawn area is made: processors - 2 (at least the pool, at most GW-MAX = 8) for the automatic size, else the size asked for
+     CALL "GEN-WORKERS-LOADING" USING WS-N
+     COMPUTE WS-EXPECT = WS-RC - 2
+     IF WS-EXPECT < WS-WORKERS
+         MOVE WS-WORKERS TO WS-EXPECT
+     END-IF
+     IF WS-EXPECT > GW-MAX
+         MOVE GW-MAX TO WS-EXPECT
+     END-IF
+     MOVE "test gen worker the automatic loading pool is processors - 2, not below the pool, at most 8" TO TL-CASE
+     MOVE WS-N TO TL-OBSERVED-N
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-N
+     CALL "GEN-WORKERS-CONFIG" USING WS-N
+     CALL "GEN-WORKERS-LOADING" USING WS-N
+     MOVE "test gen worker an explicit pool size is also the loading pool" TO TL-CASE
+     MOVE WS-N TO TL-OBSERVED-N
+     MOVE 2 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -5 TO WS-WORKERS
      CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS

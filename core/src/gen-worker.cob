@@ -146,7 +146,8 @@
  01 L-SIZE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-SIZE.
      CALL "GEN-WORKERS-STOP"
-     MOVE FUNCTION MAX(0, FUNCTION MIN(L-SIZE, GW-MAX)) TO GQ-WORKERS
+     MOVE FUNCTION MAX(0, FUNCTION MIN(L-SIZE, GW-POOL-MAX)) TO GQ-WORKERS
+     MOVE GQ-WORKERS TO GQ-LOAD-WORKERS
      GOBACK.
  END PROGRAM GEN-WORKERS-CONFIG.
 
@@ -245,12 +246,17 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-WORKERS-TICK.
+*> No parameters: the pool's share of one tick: finished answers are collected (every worker, busy ones only), idle workers up to the pool size get the nearest chunks; the pool
+*> is GQ-LOAD-WORKERS while a spawn area is made (GQ-SP-STATE above 0), else GQ-WORKERS, and the idle workers above it are stopped.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY GENQUEUE.
  01 WS-DEBUG               BINARY-LONG.
  01 WS-READY               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-FORCE               BINARY-LONG VALUE 1.
+ 01 WS-RC                  BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "WORLD-IS-DEBUG" USING WS-DEBUG
      CALL "GEN-DATA-READY" USING WS-READY
@@ -261,14 +267,28 @@
      IF GW-ACTIVE = 0
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GQ-WORKERS
+     MOVE GQ-WORKERS TO WS-LIMIT
+     IF GQ-SP-STATE > 0
+         MOVE GQ-LOAD-WORKERS TO WS-LIMIT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GW-MAX
          IF GW-BUSY(WS-I) = 1
              CALL "GEN-WORKER-COLLECT" USING WS-I
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GQ-WORKERS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-LIMIT
          IF GW-BUSY(WS-I) = 0
              CALL "GEN-WORKER-ASSIGN" USING WS-I
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GW-MAX
+         IF WS-I > WS-LIMIT AND GW-BUSY(WS-I) = 0 AND GW-SLOT(WS-I) > 0
+             CALL STATIC "cc_wk_stop" USING BY VALUE GW-SLOT(WS-I) BY VALUE WS-FORCE RETURNING WS-RC
+             MOVE 0 TO GW-SLOT(WS-I)
+             IF GW-ADDR(WS-I) NOT = NULL
+                 FREE GW-ADDR(WS-I)
+                 SET GW-ADDR(WS-I) TO NULL
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
@@ -357,5 +377,27 @@
          MOVE 1 TO WS-SIZE
          CALL "GEN-WORKERS-CONFIG" USING WS-SIZE
      END-IF
+*>   while a world's spawn area is made the player waits for it, so more of the machine is used: all but two processors (at least the pool, at most GW-MAX)
+     COMPUTE WS-SIZE = WS-CPUS - 2
+     IF WS-SIZE < GQ-WORKERS
+         MOVE GQ-WORKERS TO WS-SIZE
+     END-IF
+     IF WS-SIZE > GW-MAX
+         MOVE GW-MAX TO WS-SIZE
+     END-IF
+     MOVE WS-SIZE TO GQ-LOAD-WORKERS
      GOBACK.
  END PROGRAM GEN-WORKERS-AUTO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-WORKERS-LOADING.
+*> USING size out (BINARY-LONG): the pool while a world's spawn area is made (GQ-LOAD-WORKERS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ LINKAGE SECTION.
+ 01 L-SIZE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIZE.
+     MOVE GQ-LOAD-WORKERS TO L-SIZE
+     GOBACK.
+ END PROGRAM GEN-WORKERS-LOADING.

@@ -71,7 +71,7 @@
      END-IF
 *>   chunks still to be made: the spiral chunks being looked at while the spawn is searched, the 7 x 7 square of the spawn area after it
      IF GQ-SP-STATE = 1
-         MOVE FUNCTION MAX(GQ-WORKERS, 1) TO WS-AHEAD
+         MOVE FUNCTION MAX(GQ-LOAD-WORKERS, 1) TO WS-AHEAD
          COMPUTE WS-LAST = GQ-SP-CHUNK + WS-AHEAD - 1
          PERFORM VARYING WS-K FROM GQ-SP-CHUNK BY 1 UNTIL WS-K > WS-LAST
              CALL "WP-SPIRAL" USING WS-K WS-DX WS-DZ
