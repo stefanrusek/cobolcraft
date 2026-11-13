@@ -135,6 +135,21 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   A chest (no block state file in the pack, no elements in any case): the lazy bake gives it the entity model of 52, 18 quads
+*>   for a single chest (T5001).
+     MOVE "chest" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-BLOCK-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+     CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-STATE WS-SLOT
+     MOVE "standard models a chest state bakes the 18 quads of the entity model" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SLOT > 0
+         MOVE BM-QUAD-COUNT(WS-SLOT) TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The icon of the stone item (a block item: the pack's items/stone.json names the stone block model): the
 *>   pack's stone sprite, found on first use and kept.
      MOVE "stone" TO WS-KEY
