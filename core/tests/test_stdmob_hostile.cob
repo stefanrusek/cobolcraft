@@ -373,11 +373,11 @@
      MOVE 29 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   CAUSE-DROWN looks up minecraft:drown: the fixture registry has no such entry, so the position is 0 (generic).
+*>   CAUSE-DROWN looks up minecraft:drown: the fixture registry has no such entry, so the RULES.cpy id (6) is kept.
      MOVE 9 TO WS-INDEX
      CALL "DAMAGE-TYPE-ID" USING CAUSE-DROWN WS-INDEX
-     MOVE "test stdmob hostile: the damage type of CAUSE-DROWN looks up minecraft:drown and is 0 when the registry has none" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "test stdmob hostile: the damage type of CAUSE-DROWN keeps the RULES.cpy id 6 when the registry has no minecraft:drown" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "PB-FREE" USING PB-BUFFER

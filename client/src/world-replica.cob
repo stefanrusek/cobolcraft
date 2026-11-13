@@ -512,6 +512,8 @@
  01 WS-NZ                  BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -531,8 +533,12 @@
          IF L-STATE < 0 OR L-STATE >= WS-LIMIT
              MOVE 0 TO CE-STATE(WS-CELL)
          END-IF
-*>       The column surfaces of the CC-0007 sky light stopgap (sky-stopgap.cob) are to be found again.
-         MOVE 0 TO WR-SURF-OK(WS-ROW)
+*>       CC-0007 stopgap (sky-stopgap.cob): the column's surface again, the sections its change lights meshed again.
+         IF PL-HAS-SKY = 1
+             COMPUTE WS-LX = L-X - WS-CX * 16
+             COMPUTE WS-LZ = L-Z - WS-CZ * 16
+             CALL "SKY-STOPGAP-RESURFACE" USING CLIENT-STATE WS-ROW WS-LX WS-LZ
+         END-IF
          PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 6
              MOVE L-X TO WS-NX
              MOVE L-Y TO WS-NY

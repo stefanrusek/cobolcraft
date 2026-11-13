@@ -165,6 +165,23 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "N" TO TL-MODE
 
+*>   a y outside the quart table (above 413 or below -66; no column reaches it) takes the decimal way: every column still gets one of the two biomes of the
+*>   checkerboard (the cells of that layer are not part of the fixture, so the ring or the default answers)
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 15
+         MOVE -999 TO SC-BIO-Q
+         MOVE 500 TO WS-Y
+         MOVE 5 TO WS-LZ
+         CALL "SURFACE-BIOME-AT" USING WS-JOB WS-I WS-Y WS-LZ WS-GOT-ID
+         IF WS-GOT-ID > 1 OR WS-GOT-ID < 0
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "test surface rules the zoomed biome at a y outside the quart table is one of the two checkerboard biomes" TO TL-CASE
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   the terracotta bands
      CALL "SURFACE-BANDS-ENSURE"
      MOVE 0 TO WS-COUNT

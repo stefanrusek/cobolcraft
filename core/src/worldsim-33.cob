@@ -2230,6 +2230,15 @@
  COPY CORESTATE.
  COPY DIMENSIONS.
  COPY WSIM.
+ COPY BRCOUNT.
+ 01 WS-NPLAYERS           BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-PZ                  BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-CHUNK-X             BINARY-LONG.
+ 01 WS-CHUNK-Z             BINARY-LONG.
+ 01 WS-DISTANCE            BINARY-LONG.
+ 01 WS-ZERO-ROW            BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TICKING             BINARY-LONG.
  01 WS-SECTIONS            BINARY-LONG.
@@ -2252,6 +2261,7 @@
  01 WS-RAIN-LEVEL          FLOAT-LONG.
  01 WS-THUNDER-LEVEL       FLOAT-LONG.
  LINKAGE SECTION.
+ COPY COREAPI.
  01 L-DIM                  BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM.
      CALL "WORLDSIM-ENSURE"
@@ -2261,9 +2271,30 @@
      MOVE CW-RAIN-LEVEL(L-DIM) TO WS-RAIN-LEVEL
      MOVE CW-THUNDER-LEVEL(L-DIM) TO WS-THUNDER-LEVEL
      CALL "WW-IS" USING WS-CAN WS-RAIN-LEVEL WS-THUNDER-LEVEL WS-RAINING WS-THUNDERING
+     CALL "BR-RANDOM-TICK-ROW" USING L-DIM WS-ZERO-ROW WS-X WS-Y WS-Z
+*>   The players that tick chunks of this dimension (BT-CHUNK-TICKS asked of each chunk: a player of the dimension with an entity whose
+*>   centre chunk is within the view distance on both axes), listed once for the run.
+     SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     MOVE CS-VIEW-DISTANCE TO WS-DISTANCE
+     MOVE 0 TO WS-NPLAYERS
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-ENTITY-ROW(WS-P) > 0 AND PL-DIM(WS-P) = L-DIM AND WS-NPLAYERS < 64
+             ADD 1 TO WS-NPLAYERS
+             MOVE PL-CENTER-X(WS-P) TO WS-PX(WS-NPLAYERS)
+             MOVE PL-CENTER-Z(WS-P) TO WS-PZ(WS-NPLAYERS)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > WS-LAST
          IF CK-USED(WS-ROW) = 1 AND CK-DIM(WS-ROW) = L-DIM
-             CALL "BT-CHUNK-TICKS" USING L-DIM CK-X(WS-ROW) CK-Z(WS-ROW) WS-TICKING
+             MOVE CK-X(WS-ROW) TO WS-CHUNK-X
+             MOVE CK-Z(WS-ROW) TO WS-CHUNK-Z
+             MOVE 0 TO WS-TICKING
+             PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-NPLAYERS OR WS-TICKING = 1
+                 IF FUNCTION ABS(WS-CHUNK-X - WS-PX(WS-P)) <= WS-DISTANCE
+                         AND FUNCTION ABS(WS-CHUNK-Z - WS-PZ(WS-P)) <= WS-DISTANCE
+                     MOVE 1 TO WS-TICKING
+                 END-IF
+             END-PERFORM
              IF WS-TICKING = 1
                  COMPUTE WS-X0 = CK-X(WS-ROW) * 16
                  COMPUTE WS-Z0 = CK-Z(WS-ROW) * 16
@@ -2276,12 +2307,16 @@
                      END-IF
                  END-PERFORM
                  PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-SECTIONS
-                     CALL "BR-VISIT" USING WS-ROW WS-S WS-VISIT
+                     MOVE 0 TO WS-VISIT
+                     COMPUTE WS-N = WS-S + 1
+                     IF BR-TICKING-BLOCKS(WS-ROW, WS-N) > 0 OR BR-TICKING-FLUIDS(WS-ROW, WS-N) > 0
+                         MOVE 1 TO WS-VISIT
+                     END-IF
                      IF WS-VISIT = 1
                          COMPUTE WS-Y0 = DM-MIN-Y(L-DIM) + WS-S * 16
                          PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WSM-SPEED
                              CALL "WL-RANDOM-POS" USING WSM-RAND(L-DIM) WS-X0 WS-Y0 WS-Z0 WS-MASK WS-X WS-Y WS-Z
-                             CALL "BR-RANDOM-TICK" USING L-DIM WS-X WS-Y WS-Z
+                             CALL "BR-RANDOM-TICK-ROW" USING L-DIM WS-ROW WS-X WS-Y WS-Z
                          END-PERFORM
                      END-IF
                  END-PERFORM
