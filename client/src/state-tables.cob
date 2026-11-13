@@ -53,7 +53,7 @@
      CALL "STATE-LIMIT" USING WS-LIMIT
      MOVE FUNCTION MIN(WS-LIMIT, CL-MAX-STATES) TO ST-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
-         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S)
+         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S) ST-OVERLAY(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
          MOVE SPACES TO ST-BLOCK-NAME(WS-S)
@@ -65,6 +65,7 @@
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
+             MOVE WS-ROW TO CT-BLOCK-ROW
              CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID
 *>           A waterlogged state (a block with the property, set true) holds water and keeps its model (4).
              IF WS-FLUID = 0
@@ -80,6 +81,13 @@
                  END-IF
              END-IF
              MOVE WS-FLUID TO ST-FLUID(WS-S)
+*>           The classes that take the overlay sprite of the water beside them (29a 10.3).
+             MOVE 0 TO WS-HITS
+             INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Transparent" ALL "IceBlock" ALL "SlimeBlock" ALL "HoneyBlock"
+                 ALL "Leaves" ALL "StainedGlass" ALL "TintedGlass"
+             IF WS-HITS > 0
+                 MOVE 1 TO ST-OVERLAY(WS-S)
+             END-IF
              IF WS-FLUID > 0 AND WS-FLUID < 3
                  MOVE WS-INDEX TO ST-LEVEL(WS-S)
              END-IF

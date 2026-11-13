@@ -7,8 +7,8 @@
 *> vector of 1.4 (FM-TOP-UV); the sides (flowing sprite, u 0 to 0.5, v from (1 - height) / 2 to 0.5) from the floor (0.001 when the
 *> bottom is drawn) up to their corner heights, inset 0.001; no backward copy of the top (the pipeline does not cull). Colour and
 *> light (10.4): the biome water colour for water, white for lava, the larger of the cell's light and the light above for every
-*> face times the factor of its direction. Not done (gaps): the overlay sprite beside glass and leaves, waterlogged blocks of
-*> other kinds, the partial-shape occlusion of a neighbour (an opaque neighbour hides, any other does not).
+*> face times the factor of its direction. Beside a block of the overlay classes (ST-OVERLAY) the water's side takes the overlay sprite. Not done (gap): the partial-shape
+*> occlusion of a neighbour (the client has no shape of a state: an opaque neighbour hides, any other does not).
 *> MESH-FLUID USING CLIENT-STATE, row, x, y (row y from the dimension's bottom), z, section y, dimension height, state id, FLUID-OUT.
 
  IDENTIFICATION DIVISION.
@@ -27,6 +27,9 @@
  01 WS-FACE-OF             PIC X(4) VALUE "3465".     *> the face (1 top, 2 bottom, 3 north, 4 south, 5 west, 6 east) of neighbours 1 to 4
  01 WS-FACE-MAP REDEFINES WS-FACE-OF.
     05 WS-FM               PIC 9 OCCURS 4 TIMES.
+ 01 WS-NB-OF               PIC X(4) VALUE "1243".     *> the neighbour (1 north, 2 south, 3 east, 4 west) of the faces 3 to 6
+ 01 WS-NB-MAP REDEFINES WS-NB-OF.
+    05 WS-NBV              PIC 9 OCCURS 4 TIMES.
  01 WS-FACTORS.
     05 FILLER PIC 9V9 VALUE 1.0.
     05 FILLER PIC 9V9 VALUE 0.5.
@@ -65,6 +68,7 @@
        10 WS-N-BLOCK       BINARY-LONG.
        10 WS-N-KIND        BINARY-LONG.
        10 WS-N-OPAQUE      BINARY-LONG.
+       10 WS-N-OVERLAY     BINARY-LONG.
        10 WS-N-OWN         FLOAT-LONG.
        10 WS-N-H           FLOAT-LONG.
  01 WS-NX                  BINARY-LONG.
@@ -113,6 +117,7 @@
  01 WS-C                   BINARY-LONG.
  01 WS-SPR                 BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
+ 01 WS-NSPR                BINARY-LONG.
  01 WS-FLOOR               FLOAT-LONG.
  01 WS-HA                  FLOAT-LONG.
  01 WS-HB                  FLOAT-LONG.
@@ -184,6 +189,7 @@
                      MOVE 1 TO WS-N-KIND(WS-I)
                  END-IF
                  MOVE ST-OPAQUE(WS-N-STATE(WS-I) + 1) TO WS-N-OPAQUE(WS-I)
+                 MOVE ST-OVERLAY(WS-N-STATE(WS-I) + 1) TO WS-N-OVERLAY(WS-I)
              END-IF
 *>           In pass 2, for each side and diagonal: its render height (1.0 under the same fluid, else its own height; another fluid or
 *>           none 0.0, an opaque block -1.0) and its own height (the flow of 1.4).
@@ -323,7 +329,11 @@
      END-IF
 *>   The sprites (still and flowing) of the fluid, found in the atlas and remembered while the atlas keeps them.
      COMPUTE WS-BASE = 3 * (WS-KIND - 1)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+     MOVE 2 TO WS-NSPR
+     IF WS-KIND = 1
+         MOVE 3 TO WS-NSPR
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NSPR
          COMPUTE WS-C = WS-BASE + WS-I
          IF WS-SP-SEEN(WS-C) NOT = AT-SPRITE-COUNT
              MOVE -1 TO WS-SP-SEEN(WS-C)
@@ -378,6 +388,11 @@
 *>                   A side: corner 1 and 2 at the corner heights HA and HB, 3 and 4 at the floor; inset by 0.001.
                      COMPUTE WS-C = WS-BASE + 2
                      MOVE WS-SP-ID(WS-C) TO WS-SPR
+*>                   Beside a block of the overlay classes the water takes its overlay sprite (when the atlas has it).
+                     MOVE WS-NBV(WS-F - 2) TO WS-C
+                     IF WS-KIND = 1 AND WS-N-OVERLAY(WS-C) = 1 AND WS-SP-ID(3) > 0
+                         MOVE WS-SP-ID(3) TO WS-SPR
+                     END-IF
                      EVALUATE WS-F
                          WHEN 3
                              MOVE WS-CNW TO WS-HA

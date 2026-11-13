@@ -154,6 +154,25 @@
          MOVE -1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A neighbour that makes the water side face take the overlay sprite (29a 10.3: a HalfTransparentBlock or leaves): glass, oak_leaves and
+*>   ice do, stone and air do not.
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1 MOVE "glass" TO WS-KEY
+             WHEN 2 MOVE "oak_leaves" TO WS-KEY
+             WHEN 3 MOVE "ice" TO WS-KEY
+             WHEN OTHER MOVE "stone" TO WS-KEY
+         END-EVALUATE
+         CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+         CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+         STRING FUNCTION TRIM(TL-OBSERVED) ST-OVERLAY(WS-STATE + 1) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
+     STRING FUNCTION TRIM(TL-OBSERVED) ST-OVERLAY(1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "state tables glass, oak_leaves and ice take the overlay sprite beside water; stone and air do not" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "11100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.
  END PROGRAM TEST-STATE-TABLES.

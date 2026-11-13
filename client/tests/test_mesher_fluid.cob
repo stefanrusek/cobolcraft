@@ -121,6 +121,10 @@
          MOVE 2 TO CE-STATE(256 + WS-N + 1)
      END-PERFORM
      MOVE 310 TO CE-STATE(2 * 256 + 12 * 16 + 12 + 1)
+*>   M: a glass-like block (state 314, overlay 1) south of the isolated source: its south face takes the overlay sprite.
+     MOVE 1 TO ST-OVERLAY(315)
+     MOVE 0 TO ST-OPAQUE(315)
+     MOVE 314 TO CE-STATE(2 * 256 + 13 * 16 + 12 + 1)
      PERFORM VARYING WS-I FROM 4 BY 1 UNTIL WS-I > 6
          PERFORM VARYING WS-N FROM 4 BY 1 UNTIL WS-N > 6
              MOVE 310 TO CE-STATE(2 * 256 + WS-N * 16 + WS-I + 1)
@@ -445,6 +449,28 @@
      MOVE 15.999 TO WS-Z
      PERFORM FIND-WATER
      STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "mesher fluid the face beside a glass-like block takes the overlay sprite (its first vertex at the sprite's left), a face "
+         & "beside air the flowing sprite" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     MOVE 12.5 TO WS-X
+     MOVE 2.3704 TO WS-Y
+     MOVE 12.999 TO WS-Z
+     PERFORM FIND-WATER
+     COMPUTE WS-N = WS-STILL + 2
+     COMPUTE WS-EXPECT-U = AT-X(WS-N) / AT-W
+     IF WS-FOUND = 1 AND FUNCTION ABS(WS-U - WS-EXPECT-U) < 0.0001
+         MOVE 12.001 TO WS-Z
+         PERFORM FIND-WATER
+         COMPUTE WS-N = WS-STILL + 1
+         COMPUTE WS-EXPECT-U = AT-X(WS-N) / AT-W
+         IF WS-FOUND = 1 AND FUNCTION ABS(WS-U - WS-EXPECT-U) < 0.0001
+             MOVE 1 TO TL-OBSERVED-N
+         END-IF
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The sprites are found again when the atlas changes: with the still sprite renamed away, the top of the isolated source takes
