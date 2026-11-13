@@ -23,7 +23,7 @@
 *>   CV-SERVER-CONSOLE USING CONVH, line (PIC X(256), the command text, trailing spaces dropped):
 *>     the line as typed at the server console (CORE-CONSOLE in <dir>/server); the replies are
 *>     printed with the next frame.
-*>   CV-SERVER-STOP USING CONVH: the shutdown command at the console, frames until the core has stopped,
+*>   CV-SERVER-STOP USING CONVH: the stop command at the console, frames until the core has stopped,
 *>     SV-SHUTDOWN; the server no longer runs.
 *>   CV-JOIN USING CONVH, index, port: the client adds the server-list entry "Convergence" with
 *>     address 127.0.0.1:<port>, selects it and clicks Join (three frames).
@@ -255,7 +255,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY COREAPI.
- 01 WS-LINE                PIC X(256) VALUE "shutdown".
+ 01 WS-LINE                PIC X(256) VALUE "stop".
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CONVH.
