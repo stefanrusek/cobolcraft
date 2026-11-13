@@ -4297,7 +4297,9 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3725 [US12-client] Implement `PHYS-FLUID` (`client/src/physics-fluid.cob`) and the fluid movement of `PHYS-TICK`, and make liquid cells non-solid in `PHYS-SOLID` (`client/src/physics.cob`; the flow current of 8.3 is not applied: gap)
 - [x] T3726 [US12-client] Write test `client/tests/test_render_list.cob` cases: the eye under water or in lava clears to the water fog colour #050533 or the lava fog colour #991900
 - [x] T3727 [US12-client] Implement the fog clear colour in `client/src/render-list.cob` (the per-fragment fog of 12 §3.3 needs the shim shaders: not done)
-- [ ] T3728 [US12-client] Gate: run `make gate-client` and record the command and real output
+- [x] T3728 [US12-client] Write tests (`test_state_tables.cob`, `test_physics_fluid.cob`) for waterlogged states (a block with the property set true holds water, keeps its model and its collision) and the current of 29a §8.3 (E8, E9, lava lifted to 0.0045, a falling cell beside stone divided by sqrt(37), a source over a drop)
+- [x] T3729 [US12-client] Implement waterlogged states in `STATE-TABLES-BUILD` and the current in `PHYS-FLUID`, `CELL-FLOW`, `CURRENT-PUSH` (`client/src/physics-fluid.cob`; the Nether's `fast_lava` strength 0.007 is not applied: gap)
+- [ ] T3730 [US12-client] Gate: run `make gate-client` and record the command and real output
 
 ---
 

@@ -453,6 +453,8 @@
        10 PL-LAVA-H          FLOAT-LONG.
        10 PL-VX              FLOAT-LONG.
        10 PL-VZ              FLOAT-LONG.
+       10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
+       10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.

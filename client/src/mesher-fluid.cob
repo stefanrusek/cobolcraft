@@ -158,7 +158,7 @@
 *>   What the cell holds: the fluid kind (1 water, 2 lava; a block that is always wet counts as water) and its amount (8 for a
 *>   source and for a falling column, 8 - level for levels 1 to 7).
      MOVE ST-FLUID(L-STATE + 1) TO WS-KIND
-     IF WS-KIND = 3
+     IF WS-KIND > 2
          MOVE 1 TO WS-KIND
      END-IF
      MOVE ST-LEVEL(L-STATE + 1) TO WS-LEVEL
@@ -180,7 +180,7 @@
                  CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-N-STATE(WS-I)
                      WS-N-SKY(WS-I) WS-N-BLOCK(WS-I)
                  MOVE ST-FLUID(WS-N-STATE(WS-I) + 1) TO WS-N-KIND(WS-I)
-                 IF WS-N-KIND(WS-I) = 3
+                 IF WS-N-KIND(WS-I) > 2
                      MOVE 1 TO WS-N-KIND(WS-I)
                  END-IF
                  MOVE ST-OPAQUE(WS-N-STATE(WS-I) + 1) TO WS-N-OPAQUE(WS-I)
@@ -204,7 +204,7 @@
                          CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-A-STATE WS-A-SKY
                              WS-A-BLOCK
                          MOVE ST-FLUID(WS-A-STATE + 1) TO WS-A-KIND
-                         IF WS-A-KIND = 3
+                         IF WS-A-KIND > 2
                              MOVE 1 TO WS-A-KIND
                          END-IF
                          IF WS-A-KIND = WS-KIND
@@ -270,7 +270,7 @@
                  COMPUTE WS-NZ = L-Z + WS-DZ(WS-I)
                  CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-A-STATE WS-A-SKY WS-A-BLOCK
                  MOVE ST-FLUID(WS-A-STATE + 1) TO WS-A-KIND
-                 IF WS-A-KIND = 3
+                 IF WS-A-KIND > 2
                      MOVE 1 TO WS-A-KIND
                  END-IF
                  IF WS-A-KIND = WS-KIND

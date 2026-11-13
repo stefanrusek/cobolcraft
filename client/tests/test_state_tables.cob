@@ -30,6 +30,8 @@
  01 WS-KEY-TABLE REDEFINES WS-KEYS.
     05 WS-KEY-NAME         PIC X(12) OCCURS 7 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-WET                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE "state tables are not built after CL-INIT" TO TL-CASE
@@ -131,6 +133,26 @@
          & "is 08, kelp holds water with a model (3), air none" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE "1 03 2 08 3 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A waterlogged state holds water and keeps its model (4): of the six states of oak_slab (type 3 x waterlogged 2) three.
+     MOVE "oak_slab" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE WS-ROW TO CT-BLOCK-ROW
+     COMPUTE WS-STATE = FUNCTION NUMVAL(CT-BR-FIRST-STATE)
+     COMPUTE WS-N = FUNCTION NUMVAL(CT-BR-STATE-COUNT)
+     MOVE 0 TO WS-WET
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         IF ST-FLUID(WS-STATE + WS-I + 1) = 4
+             ADD 1 TO WS-WET
+         END-IF
+     END-PERFORM
+     MOVE "state tables a waterlogged state holds water and keeps its model (4): half the states of oak_slab" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE WS-WET TO TL-OBSERVED-N
+     IF WS-N NOT = 6
+         MOVE -1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.

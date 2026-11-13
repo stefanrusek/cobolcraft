@@ -158,8 +158,8 @@
 *>   In a fluid: Space adds 0.04 of vertical speed in water deeper than 0.4 or off the ground (a jump from the ground in
 *>   shallower water), in lava the same; sneaking in water takes 0.04 off (13 section 1.3).
      IF WS-FLUID > 0
-         COMPUTE PL-VX = PL-VX + WS-HX
-         COMPUTE PL-VZ = PL-VZ + WS-HZ
+         COMPUTE PL-VX = PL-VX + PL-PUSH-X + WS-HX
+         COMPUTE PL-VZ = PL-VZ + PL-PUSH-Z + WS-HZ
          MOVE PL-WATER-H TO WS-DEPTH
          IF WS-FLUID = 2
              MOVE PL-LAVA-H TO WS-DEPTH
@@ -385,10 +385,11 @@
              MOVE 1 TO L-SOLID
          WHEN OTHER
              CALL "WORLD-CELL" USING CLIENT-STATE L-X L-Y L-Z WS-STATE WS-SKY WS-BLOCK
-*>           A cell that holds a fluid (water, lava, the always-wet plants) has no collision box (29a section 1.2).
+*>           A cell that holds a fluid (water, lava, the always-wet plants) has no collision box (29a section 1.2); a waterlogged
+*>           block (4) keeps its own.
              IF WS-STATE NOT = 0
                  CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
-                 IF ST-FLUID(WS-STATE + 1) = 0
+                 IF ST-FLUID(WS-STATE + 1) = 0 OR ST-FLUID(WS-STATE + 1) = 4
                      MOVE 1 TO L-SOLID
                  END-IF
              END-IF

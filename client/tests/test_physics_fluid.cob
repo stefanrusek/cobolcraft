@@ -52,6 +52,44 @@
          END-PERFORM
      END-PERFORM
 
+*>   Flowing cells for the current (rows 9 to 13 are states 8 to 12): water level 1 (amount 7) and level 2 (amount 6), lava level 1 and 2,
+*>   water level 8 (falling).
+     MOVE 1 TO ST-FLUID(9) ST-FLUID(10) ST-FLUID(13)
+     MOVE 2 TO ST-FLUID(11) ST-FLUID(12)
+     MOVE 1 TO ST-LEVEL(9) ST-LEVEL(11)
+     MOVE 2 TO ST-LEVEL(10) ST-LEVEL(12)
+     MOVE 8 TO ST-LEVEL(13)
+     MOVE 0 TO ST-OPAQUE(9) ST-OPAQUE(10) ST-OPAQUE(11) ST-OPAQUE(12) ST-OPAQUE(13)
+     MOVE -8 TO WS-Z
+     MOVE 10 TO WS-Y
+     MOVE 4 TO WS-STATE
+     MOVE 0 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 8 TO WS-STATE
+     MOVE 1 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 9 TO WS-STATE
+     MOVE 2 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 5 TO WS-STATE
+     MOVE 11 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 10 TO WS-STATE
+     MOVE 12 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 11 TO WS-STATE
+     MOVE 13 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 9 TO WS-STATE
+     MOVE 19 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 12 TO WS-STATE
+     MOVE 20 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 2 TO WS-STATE
+     MOVE 21 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+
      MOVE SPACES TO TL-OBSERVED
      MOVE 0 TO WS-X WS-Z
      MOVE 8 TO WS-Y
@@ -69,6 +107,27 @@
      MOVE "T" TO TL-MODE
      MOVE "001" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A wet plant (3) is passed through, a waterlogged block (4) keeps its collision.
+     MOVE 3 TO ST-FLUID(7)
+     MOVE 4 TO ST-FLUID(8)
+     MOVE 5 TO WS-X
+     MOVE 8 TO WS-Y
+     MOVE 5 TO WS-Z
+     MOVE 6 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "PHYS-SOLID" USING CLIENT-STATE WS-X WS-Y WS-Z WS-SOLID
+     MOVE FUNCTION CHAR(WS-SOLID + 49) TO TL-OBSERVED(1:1)
+     MOVE 7 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "PHYS-SOLID" USING CLIENT-STATE WS-X WS-Y WS-Z WS-SOLID
+     MOVE FUNCTION CHAR(WS-SOLID + 49) TO TL-OBSERVED(2:1)
+     MOVE "physics fluid a block that is always wet is passed through, a waterlogged block is solid" TO TL-CASE
+     MOVE "01" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
 
 *>   Sinking: 10 ticks from rest at y 8, no keys: vy x 0.8 less 0.005 each tick; the eye (y + 1.6) is in the water.
      MOVE 8 TO PL-Y
@@ -213,6 +272,126 @@
      COMPUTE WS-EDIT ROUNDED = PL-VY
      STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "-0.0250" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The current (8.3): a water cell of amount 7 between a source and a cell of amount 6 flows east (E8): the Player in it gets
+*>   0.014 of speed east (one cell, height 0.778), moves by it and keeps 0.8 of it.
+     MOVE 1.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY PL-VX PL-VZ
+     MOVE 1 TO PL-ON-GROUND
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "physics fluid a water current of 8.3 (E8, E9): east 0.014 a tick moves the Player to x 1.5140 and leaves 0.0112" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-VX
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-POSITION" USING CLIENT-STATE TL-OBSERVED
+     MOVE "0.0112 1.5140/10.0000/-7.5000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Lava's current is weaker than 0.0045 and the Player is at rest: it is lifted to 0.0045 (x 12.5045).
+     MOVE 12.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY PL-VX PL-VZ
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "physics fluid a lava current weaker than 0.0045 on a Player at rest is lifted to 0.0045: x 12.5045" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-POSITION" USING CLIENT-STATE TL-OBSERVED
+     MOVE "12.5045/10.0000/-7.5000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A falling cell beside stone has its current divided by sqrt(37) (normalised, then down 6, normalised again): the lower cell is to the
+*>   west, so a Player already moving east at 0.01 gets 0.014 / 6.083 = 0.0023 west, 0.0077 moves it and 0.0062 is left.
+     MOVE 20.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY PL-VZ
+     MOVE 0.01 TO PL-VX
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "physics fluid the current of a falling cell beside stone is divided by 6.083: speed 0.0062 after a tick" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-VX
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0.0062" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A waterfall edge: a source on a pillar with the empty cell east of it over a water cell of amount 7 (state 8): the drop is flow, east
+*>   (drop 8/9 + 1/9); the west side has a wet plant below (a drop of 8/9, less): east still wins, 0.014 as for E8.
+     MOVE -8 TO WS-Z
+     MOVE 30 TO WS-X
+     MOVE 2 TO WS-STATE
+     MOVE 10 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 11 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 4 TO WS-STATE
+     MOVE 12 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 8 TO WS-STATE
+     MOVE 31 TO WS-X
+     MOVE 11 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 6 TO WS-STATE
+     MOVE 29 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 30.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 12 TO PL-Y
+     MOVE 0 TO PL-VY PL-VX PL-VZ
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "physics fluid a source over a drop flows toward the water below its empty side: x 30.5140, speed 0.0112" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-VX
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-POSITION" USING CLIENT-STATE TL-OBSERVED
+     MOVE "0.0112 30.5140/12.0000/-7.5000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Wet plants and waterlogged blocks count as water: a kelp-like cell (state 6, kind 3) over the Player's cell and beside it.
+     MOVE 6 TO WS-STATE
+     MOVE 0 TO WS-X WS-Z
+     MOVE 9 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO WS-X
+     MOVE 8 TO WS-Y
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0.5 TO PL-X PL-Z
+     MOVE 8 TO PL-Y
+     MOVE 0 TO PL-VY PL-VX PL-VZ
+     CALL "PHYS-FLUID" USING CLIENT-STATE
+     MOVE "physics fluid a wet plant over the Player's cell is water: the water is 1.8889 deep (a full cell, then 8/9)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-WATER-H
+     STRING FUNCTION TRIM(WS-EDIT) " " PL-IN-WATER DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1.8889 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-STATE
+     MOVE 9 TO WS-Y
+     MOVE 0 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 8 TO WS-Y
+     MOVE 1 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+
+*>   A falling cell whose side is open but has stone above it is beside a solid face too (stone above the north cell of x 20).
+     MOVE 2 TO WS-STATE
+     MOVE 20 TO WS-X
+     MOVE 11 TO WS-Y
+     MOVE -9 TO WS-Z
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 20.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY PL-VZ
+     MOVE 0.01 TO PL-VX
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "physics fluid stone above an open side counts as a solid face of a falling cell: speed 0.0062 as before" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     COMPUTE WS-EDIT ROUNDED = PL-VX
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0.0062" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Lava: drag 0.5 on every axis and 0.02 off the vertical speed: 5 ticks from y 8 to 7.8775.

@@ -40,6 +40,13 @@
  01 WS-OPAQUE              PIC 9.
  01 WS-ROW                 PIC X(819).
  01 WS-FLUID               PIC 9.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PROPS.
+    05 WS-P-COUNT          BINARY-LONG.
+    05 WS-P-ENTRY OCCURS 16 TIMES.
+       10 WS-P-NAME        PIC X(24).
+       10 WS-P-VALUE       PIC X(32).
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -59,6 +66,19 @@
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
              CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID
+*>           A waterlogged state (a block with the property, set true) holds water and keeps its model (4).
+             IF WS-FLUID = 0
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-PROPS TALLYING WS-HITS FOR ALL "waterlogged"
+                 IF WS-HITS > 0
+                     CALL "CONTENT-STATE-PROPS" USING WS-CODE WS-PROPS WS-STATUS
+                     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-P-COUNT
+                         IF WS-P-NAME(WS-P) = "waterlogged" AND WS-P-VALUE(WS-P) = "true"
+                             MOVE 4 TO WS-FLUID
+                         END-IF
+                     END-PERFORM
+                 END-IF
+             END-IF
              MOVE WS-FLUID TO ST-FLUID(WS-S)
              IF WS-FLUID > 0 AND WS-FLUID < 3
                  MOVE WS-INDEX TO ST-LEVEL(WS-S)
@@ -90,7 +110,8 @@
  PROGRAM-ID. STATE-FLUID-OF.
 *> USING block row (PIC X(819), CT-BLOCK-ROW), fluid out (PIC 9): the fluid the block's states hold (29a section 1.2): 1 water
 *> and 2 lava (the liquid blocks, whose state index is the level; they have no model), 3 water for a block that is always wet and
-*> has a model of its own (kelp, seagrass, the bubble column), else 0.
+*> has a model of its own without collision (kelp, seagrass, the bubble column), else 0; STATE-TABLES-BUILD sets 4 for a
+*> waterlogged state (water, a model and its collision).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
