@@ -25,6 +25,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
@@ -192,13 +193,15 @@
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H
              WS-TEXT WS-Z3 PL-MOUNT-HEALTH
      END-IF
-*>   The experience bar and the level number (12 section 5): in survival and adventure the bar 182 x 5 at ((W - 182) / 2, H - 29), the progress
-*>   filling (int)(progress x 183) pixels, at most 182 (an overlay on the black and white swatches, tinted #80ff20, until the pack sprites
-*>   hud/experience_bar_* are drawn here: open); from level 1 the level number centred at H - 35 in #80ff20.
+*>   The experience bar and the level number (12 section 5): in survival and adventure the bar 182 x 5 at ((W - 182) / 2, H - 29), the
+*>   sprite hud/experience_bar_background, and over it the left (int)(progress x 183) pixels (at most 182) of hud/experience_bar_progress
+*>   (a clipped sprite; ui-render.cob draws the black and tinted white swatches where the pack stack lacks the sprites); from level 1 the
+*>   level number centred at H - 35, outlined: four copies in black at (+1, 0), (-1, 0), (0, +1), (0, -1), then one in #80ff20 (no shadow;
+*>   the black is colour 1, since a label colour of 0 is the default white).
      IF PL-MODE = 0 OR PL-MODE = 2
-         MOVE WK-OVERLAY TO WS-KIND
+         MOVE WK-SPRITE TO WS-KIND
          MOVE 0 TO WS-ACTION
-         MOVE SW-BLACK TO WS-ARG
+         MOVE GSP-XP-BACK TO WS-ARG
          COMPUTE WS-X = (L-GW - 182) / 2
          COMPUTE WS-Y = L-GH - 29
          MOVE 182 TO WS-W
@@ -207,9 +210,9 @@
          CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-Z3 WS-STATE
          COMPUTE WS-W = FUNCTION MIN(182, FUNCTION INTEGER(PL-XP-PROGRESS * 183))
          IF WS-W > 0
-             MOVE SW-WHITE TO WS-ARG
+             MOVE WK-CLIP TO WS-KIND
+             MOVE GSP-XP-PROGRESS TO WS-ARG
              CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-TEXT WS-Z3 WS-STATE
-             MOVE 8454176 TO SM-W-COLOUR(SM-WIDGET-COUNT)
          END-IF
          IF PL-XP-LEVEL > 0
              MOVE PL-XP-LEVEL TO WS-XP-EDIT
@@ -221,14 +224,26 @@
              MOVE SPACES TO WS-LOAD-TEXT
              MOVE WS-XP-TEXT TO WS-LOAD-TEXT
              CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-LOAD-TEXT256 WS-LOAD-LENGTH WS-LOAD-WIDTH
-             COMPUTE WS-X = (L-GW - WS-LOAD-WIDTH) / 2
-             COMPUTE WS-Y = L-GH - 35
              MOVE 78 TO WS-ARG
              MOVE WK-LABEL TO WS-KIND
              MOVE WS-LOAD-LENGTH TO WS-C
-             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-LOAD-WIDTH WS-NINE
-                 WS-LOAD-TEXT WS-C WS-STATE
-             MOVE 8454176 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+                 COMPUTE WS-X = (L-GW - WS-LOAD-WIDTH) / 2
+                 COMPUTE WS-Y = L-GH - 35
+                 EVALUATE WS-I
+                     WHEN 1 ADD 1 TO WS-X
+                     WHEN 2 SUBTRACT 1 FROM WS-X
+                     WHEN 3 ADD 1 TO WS-Y
+                     WHEN 4 SUBTRACT 1 FROM WS-Y
+                 END-EVALUATE
+                 CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-LOAD-WIDTH WS-NINE
+                     WS-LOAD-TEXT WS-C WS-STATE
+                 IF WS-I < 5
+                     MOVE 1 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+                 ELSE
+                     MOVE 8454176 TO SM-W-COLOUR(SM-WIDGET-COUNT)
+                 END-IF
+             END-PERFORM
          END-IF
      END-IF
      CALL "EFFECTS-HUD-ADD" USING CLIENT-STATE L-GW L-GH

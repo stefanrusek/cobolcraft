@@ -907,6 +907,11 @@
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
              COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
              CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
+*>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
+             IF SM-RANGED(WS-M) > 0
+                 MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
+                 MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
+             END-IF
          WHEN WS-CHASE = 1
              MOVE EN-TARGET(WS-ROW) TO WS-P
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)

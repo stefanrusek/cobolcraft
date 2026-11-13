@@ -344,6 +344,47 @@
  END PROGRAM ARROWS-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-SEES.
+*> USING dim, x1 y1 z1 (the eye of the looker), x2 y2 z2 (the eye of the target) (FLOAT-LONG), sees out (BINARY-LONG): 1 when no solid cell lies on the
+*> segment (18 Sensing.hasLineOfSight: a collider ray cast between the eyes, fluids ignored). Approximation (open): samples every 0.1 block against
+*> whole solid cells, not an exact voxel traversal.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X1                   FLOAT-LONG.
+ 01 L-Y1                   FLOAT-LONG.
+ 01 L-Z1                   FLOAT-LONG.
+ 01 L-X2                   FLOAT-LONG.
+ 01 L-Y2                   FLOAT-LONG.
+ 01 L-Z2                   FLOAT-LONG.
+ 01 L-SEES                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X1 L-Y1 L-Z1 L-X2 L-Y2 L-Z2 L-SEES.
+     MOVE 1 TO L-SEES
+     COMPUTE WS-D = FUNCTION SQRT((L-X2 - L-X1) * (L-X2 - L-X1) + (L-Y2 - L-Y1) * (L-Y2 - L-Y1) + (L-Z2 - L-Z1) * (L-Z2 - L-Z1))
+     COMPUTE WS-N = FUNCTION INTEGER(WS-D * 10) + 1
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-N OR L-SEES = 0
+         COMPUTE WS-T = WS-I / WS-N
+         COMPUTE WS-CX = FUNCTION INTEGER(L-X1 + (L-X2 - L-X1) * WS-T)
+         COMPUTE WS-CY = FUNCTION INTEGER(L-Y1 + (L-Y2 - L-Y1) * WS-T)
+         COMPUTE WS-CZ = FUNCTION INTEGER(L-Z1 + (L-Z2 - L-Z1) * WS-T)
+         CALL "GI-SOLID-CELL" USING L-DIM WS-CX WS-CY WS-CZ WS-SOLID
+         IF WS-SOLID = 1
+             MOVE 0 TO L-SEES
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MOB-SEES.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-SHOOT.
 *> USING tracker row, table row of a bow mob (SM-RANGED 1), stop out (BINARY-LONG): the bow goal (20 section 5). With a target the seeTime (EN-SWELL) grows by 1
 *> a tick (the line of sight is not tested yet: open); within 15 blocks and with seeTime 20 the mob stands still (stop 1; strafing is open). Without a
@@ -354,6 +395,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY STDMOBS.
  COPY BRWORLD.
  01 WS-P                   BINARY-LONG.
  01 WS-DX                  FLOAT-LONG.
@@ -378,6 +420,13 @@
  01 WS-VZ                  FLOAT-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-INTERVAL            BINARY-LONG.
+ 01 WS-SEES                BINARY-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-SPD                 FLOAT-LONG.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-SX                  FLOAT-LONG.
+ 01 WS-SZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -389,17 +438,77 @@
          MOVE 0 TO EN-SWELL(L-ROW) EN-DRAW(L-ROW)
          GOBACK
      END-IF
-     ADD 1 TO EN-SWELL(L-ROW)
      COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
      COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
      COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
      COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+*>   Step 1: sees = line of sight between the eyes (skeleton eye feet + 1.74, player eye feet + 1.62); a change of sees resets seeTime to 0 first.
+     COMPUTE WS-AX = EN-X(L-ROW)
+     COMPUTE WS-AY = EN-Y(L-ROW) + 1.74
+     COMPUTE WS-AZ = EN-Z(L-ROW)
+     COMPUTE WS-TY = PL-Y(WS-P) + 1.62
+     CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ PL-X(WS-P) WS-TY PL-Z(WS-P) WS-SEES
+     IF (WS-SEES = 1 AND EN-SWELL(L-ROW) <= 0) OR (WS-SEES = 0 AND EN-SWELL(L-ROW) > 0)
+         MOVE 0 TO EN-SWELL(L-ROW)
+     END-IF
+     IF WS-SEES = 1
+         ADD 1 TO EN-SWELL(L-ROW)
+     ELSE
+         SUBTRACT 1 FROM EN-SWELL(L-ROW)
+     END-IF
+*>   Steps 2 to 4: in range with seeTime 20 it stands and strafes, else it paths to the target.
+     MOVE 0 TO EN-STRAFE-X(L-ROW) EN-STRAFE-Z(L-ROW)
      IF WS-D2 <= 225 AND EN-SWELL(L-ROW) >= 20
          MOVE 1 TO L-STOP
+         ADD 1 TO EN-STRAFE-TIME(L-ROW)
+     ELSE
+         MOVE -1 TO EN-STRAFE-TIME(L-ROW)
+     END-IF
+     IF EN-STRAFE-TIME(L-ROW) >= 20
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R1
+         IF WS-R1 < 300
+             COMPUTE EN-STRAFE-CW(L-ROW) = 1 - EN-STRAFE-CW(L-ROW)
+         END-IF
+         CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-R1
+         IF WS-R1 < 300
+             COMPUTE EN-STRAFE-BACK(L-ROW) = 1 - EN-STRAFE-BACK(L-ROW)
+         END-IF
+         MOVE 0 TO EN-STRAFE-TIME(L-ROW)
+     END-IF
+     IF EN-STRAFE-TIME(L-ROW) > -1
+         IF WS-D2 > 168.75
+             MOVE 0 TO EN-STRAFE-BACK(L-ROW)
+         ELSE
+             IF WS-D2 < 56.25
+                 MOVE 1 TO EN-STRAFE-BACK(L-ROW)
+             END-IF
+         END-IF
+*>       Forward +-0.5 along the facing (to the target), sideways +-0.5 to its right (facing (dx, dz) the right is (-dz, dx)).
+         COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+         IF WS-H > 0
+             COMPUTE WS-SPD = SM-WALK-MILLI(L-M) / 1000 * 0.5
+             COMPUTE WS-FX = WS-DX / WS-H
+             COMPUTE WS-FZ = WS-DZ / WS-H
+             IF EN-STRAFE-BACK(L-ROW) = 1
+                 COMPUTE WS-FX = 0 - WS-FX
+                 COMPUTE WS-FZ = 0 - WS-FZ
+             END-IF
+             COMPUTE WS-SX = 0 - WS-DZ / WS-H
+             COMPUTE WS-SZ = WS-DX / WS-H
+             IF EN-STRAFE-CW(L-ROW) = 0
+                 COMPUTE WS-SX = 0 - WS-SX
+                 COMPUTE WS-SZ = 0 - WS-SZ
+             END-IF
+             COMPUTE EN-STRAFE-X(L-ROW) = (WS-FX + WS-SX) * WS-SPD
+             COMPUTE EN-STRAFE-Z(L-ROW) = (WS-FZ + WS-SZ) * WS-SPD
+         END-IF
      END-IF
      IF EN-DRAW(L-ROW) > 0
          ADD 1 TO EN-DRAW(L-ROW)
-         IF EN-DRAW(L-ROW) > 21
+         IF WS-SEES = 0 AND EN-SWELL(L-ROW) < -60
+             MOVE 0 TO EN-DRAW(L-ROW)
+         END-IF
+         IF EN-DRAW(L-ROW) > 21 AND WS-SEES = 1
              MOVE EN-DIM(L-ROW) TO WS-DIM
              MOVE EN-ID(L-ROW) TO WS-OWNER
              COMPUTE WS-AX = EN-X(L-ROW)
@@ -432,7 +541,7 @@
          END-IF
      ELSE
          SUBTRACT 1 FROM EN-SHOOT-TIME(L-ROW)
-         IF EN-SHOOT-TIME(L-ROW) <= 0
+         IF EN-SHOOT-TIME(L-ROW) <= 0 AND EN-SWELL(L-ROW) >= -60
              MOVE 1 TO EN-DRAW(L-ROW)
          END-IF
      END-IF

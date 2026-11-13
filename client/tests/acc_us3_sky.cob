@@ -1,7 +1,7 @@
 *> Acceptance test of US3-6 on the client (standin-content §4.8 day length, daylight factor and sky
-*> colour; 09 §3.2 Set Time; client/src/sky.cob): Set Time packets over a whole 30000-tick day
+*> colour; 09 §3.2 Set Time; client/src/sky.cob): Set Time packets over a whole 24000-tick day
 *> make the clear colour go from the day sky #8FB8E6 through dusk to the night sky #0E1222 and back,
-*> with the daylight factor u following §4.8 (expected values computed here from the formulas).
+*> with the daylight factor u following the sky_color track of the overworld timeline (12 §3.2: 1 from 133 to 11867, linear to 0 at 13670, 0 to 22330, linear to 1 at 24133) as u = 200 + 800 f (expected values computed here from the formulas).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US3-SKY.
  DATA DIVISION.
@@ -46,13 +46,13 @@
      MOVE PH-PLAY TO CN-PHASE(WS-CONN)
      MOVE 1 TO PL-HAS-SKY
      MOVE SPACES TO WS-EXPECTED WS-OBSERVED
-     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 14
-*>       Every 2000 ticks, plus points inside dusk (15500) and dawn (29500).
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 13
+*>       Every 2000 ticks, plus points inside dusk (12700) and dawn (23200).
          EVALUATE WS-K
+             WHEN 12
+                 MOVE 12700 TO WS-T
              WHEN 13
-                 MOVE 15500 TO WS-T
-             WHEN 14
-                 MOVE 29500 TO WS-T
+                 MOVE 23200 TO WS-T
              WHEN OTHER
                  COMPUTE WS-T = WS-K * 2000 + 1000
          END-EVALUATE
@@ -62,23 +62,25 @@
          CALL "PB-PUT-LONG" USING PB-BUFFER WS-TIME
          CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
          CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-         COMPUTE WS-TIME = WS-T + 30000
+         COMPUTE WS-TIME = WS-T + 24000
          CALL "PB-PUT-VARLONG" USING PB-BUFFER WS-TIME
          CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PARTIAL
          CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-RATE
          MOVE 0 TO PB-POS
          CALL "PROTO-PACKET" USING CLIENT-STATE WS-CONN PB-BUFFER WS-ID
          CALL "SKY-UPDATE" USING CLIENT-STATE
-*>       Expected (§4.8).
+*>       Expected: the factor f of the sky_color track in ticks over 1803, u = 200 + trunc(800 f).
          EVALUATE TRUE
-             WHEN WS-T < 15000
+             WHEN WS-T < 133
+                 COMPUTE WS-U = 200 + FUNCTION INTEGER-PART(800 * (WS-T + 1670) / 1803)
+             WHEN WS-T <= 11867
                  MOVE 1000 TO WS-U
-             WHEN WS-T < 16000
-                 COMPUTE WS-U = 1000 - FUNCTION INTEGER-PART((WS-T - 15000) * 4 / 5)
-             WHEN WS-T < 29000
+             WHEN WS-T < 13670
+                 COMPUTE WS-U = 200 + FUNCTION INTEGER-PART(800 * (13670 - WS-T) / 1803)
+             WHEN WS-T <= 22330
                  MOVE 200 TO WS-U
              WHEN OTHER
-                 COMPUTE WS-U = 200 + FUNCTION INTEGER-PART((WS-T - 29000) * 4 / 5)
+                 COMPUTE WS-U = 200 + FUNCTION INTEGER-PART(800 * (WS-T - 22330) / 1803)
          END-EVALUATE
          MOVE WS-T TO WS-ET
          MOVE WS-U TO WS-EU
@@ -106,9 +108,9 @@
          STRING FUNCTION TRIM(WS-OBSERVED) " " WS-ET ":" WS-EU ":" WS-HEX DELIMITED BY SIZE
              INTO WS-OBSERVED
      END-PERFORM
-     MOVE "acceptance US3-6 given Set Time over a full 30000-tick day then the sky goes from day "
+     MOVE "acceptance US3-6 given Set Time over a full 24000-tick day then the sky goes from day "
          & "(#8FB8E6) through dusk to night (#0E1222) and back through dawn, and the daylight factor "
-         & "follows standin §4.8" TO TL-CASE
+         & "follows the sky_color track of 12 §3.2" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE WS-EXPECTED TO TL-EXPECTED
      MOVE WS-OBSERVED TO TL-OBSERVED

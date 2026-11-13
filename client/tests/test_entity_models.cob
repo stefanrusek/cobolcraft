@@ -18,6 +18,8 @@
  COPY TESTLIB.
  01 WS-KEY                 PIC X(112).
  01 WS-COW-ID              BINARY-LONG.
+ 01 WS-ROW-N               BINARY-LONG.
+ 01 WS-FKEY                PIC X(24).
  01 WS-CREEPER-ID          BINARY-LONG.
  01 WS-ROW-AREA            PIC X(66).
  01 WS-STATUS              BINARY-LONG.
@@ -272,10 +274,73 @@
          IF RL-EN-COUNT >= 36 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0
              ADD 1 TO WS-OK
          END-IF
+*>       The experience orb row (family 0) is one quad of 6 vertices (test_entity_orb_swell).
+         IF CL-MD-FAMILY(WS-I) = 0 AND RL-EN-COUNT = 6
+             ADD 1 TO WS-OK
+         END-IF
+*>       A row that is the extra layer of another (the sheep's wool) is no entity type: it is drawn with its base row (below).
+         IF WS-STATUS NOT = CT-OK AND RL-EN-COUNT = 0
+             ADD 1 TO WS-OK
+         END-IF
      END-PERFORM
-     MOVE "entity models each of the 9 table types draws whole cuboids on its own" TO TL-CASE
+     MOVE "entity models each type of the table draws whole cuboids on its own" TO TL-CASE
      MOVE CL-MODEL-COUNT TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The sheep is its body (6 cuboids) and its wool layer (6 cuboids); the chicken and the mooshroom draw whole cuboids.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE SPACES TO WS-KEY
+     MOVE "sheep" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 11 TO WS-ID
+     CALL "ETM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entity models a sheep draws its body and its wool layer: 12 cuboids" TO TL-CASE
+     MOVE 432 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "entity models the cow and pig textures are the temperate variants (the replica holds no variant)" TO TL-CASE
+     MOVE "textures/entity/cow/cow_temperate.png textures/entity/pig/pig_temperate.png" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CL-MD-PATH(1)) " " FUNCTION TRIM(CL-MD-PATH(2)) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+
+*>   An entity farther than 64 blocks (horizontally) from the eye is not drawn (the entity render range); one at 60 blocks is; and 60 cows
+*>   (3600 vertices in all) fit in one frame: the vertex capacity is 49152.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE SPACES TO WS-KEY
+     MOVE "cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 11 TO WS-ID
+     MOVE 80.5 TO WS-X
+     MOVE 10.5 TO WS-Z
+     CALL "ETM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entity models a cow 70 blocks away is not drawn" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 70.5 TO WS-X
+     CALL "ETM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entity models a cow 60 blocks away is drawn (360 vertices)" TO TL-CASE
+     MOVE 360 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 60
+         COMPUTE WS-ID = 100 + WS-I
+         COMPUTE WS-X = 10.5 + WS-I / 2
+         CALL "ETM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     END-PERFORM
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "entity models 60 cows near the eye are all drawn (21600 vertices)" TO TL-CASE
+     MOVE 21600 TO TL-EXPECTED-N
+     MOVE RL-EN-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A model without an atlas slot (its image was never made: more than 16 models, or no frame meshed it yet) draws nothing.
@@ -295,6 +360,17 @@
      MOVE "entity models every table row builds its layer, whose texture size is the row's" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The sheep's extra layer is its own wool row (sheep_wool, 34-4 5.3), not the sheep row itself (which drew the skin twice and never the wool).
+     MOVE "sheep" TO WS-FKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-FKEY WS-ROW-N
+     MOVE "the sheep's extra layer is the row of key sheep_wool" TO TL-CASE
+     MOVE "sheep_wool" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-ROW-N > 0 AND CL-MD-EXTRA(WS-ROW-N) > 0
+         MOVE CL-MD-KEY(CL-MD-EXTRA(WS-ROW-N)) TO TL-OBSERVED
+     END-IF
+     MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-MODELS.
@@ -390,11 +466,13 @@
  PROCEDURE DIVISION USING L-OK.
      MOVE 1 TO L-OK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-MODEL-COUNT
-         CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-I WS-BUILT
-         MOVE MM-TEXW TO WS-W
-         MOVE MM-TEXH TO WS-H
-         IF WS-BUILT = 0 OR WS-W NOT = CL-MD-TEXW(WS-I) OR WS-H NOT = CL-MD-TEXH(WS-I)
-             MOVE 0 TO L-OK
+         IF CL-MD-FAMILY(WS-I) > 0
+             CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-I WS-BUILT
+             MOVE MM-TEXW TO WS-W
+             MOVE MM-TEXH TO WS-H
+             IF WS-BUILT = 0 OR WS-W NOT = CL-MD-TEXW(WS-I) OR WS-H NOT = CL-MD-TEXH(WS-I)
+                 MOVE 0 TO L-OK
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
