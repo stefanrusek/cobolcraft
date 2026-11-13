@@ -145,7 +145,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STARTUP-COMMANDS.
-*> USING CLIENT-STATE: from the frame CL-CMD-AT (CC_COMMANDS_AT_FRAME) on the world screen runs the console commands of CL-CMD-TEXT (CC_COMMANDS: commands without
+*> USING CLIENT-STATE: from the frame CL-CMD-AT (CC_COMMANDS_AT_FRAME) on the world screen runs the console commands of CL-CMD-TEXT (CC_COMMANDS, up to 1024 bytes, a command cut at 256: commands without
 *> the leading slash, separated by `;`, leading spaces dropped) once through the hosted world's console (CORE-CONSOLE), then clears CL-CMD-AT. For
 *> screenshot runs that need mobs, the time of day or the game mode without typing; nothing happens when CL-CMD-AT is 0.
  DATA DIVISION.
@@ -163,12 +163,15 @@
      END-IF
      MOVE 0 TO CL-CMD-AT
      MOVE 1 TO WS-START
-     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > 257
-         IF WS-POS = 257 OR CL-CMD-TEXT(WS-POS:1) = ";"
+     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > 1025
+         IF WS-POS = 1025 OR CL-CMD-TEXT(WS-POS:1) = ";"
              PERFORM UNTIL WS-START >= WS-POS OR CL-CMD-TEXT(WS-START:1) NOT = SPACE
                  ADD 1 TO WS-START
              END-PERFORM
              COMPUTE WS-LENGTH = WS-POS - WS-START
+             IF WS-LENGTH > 256
+                 MOVE 256 TO WS-LENGTH
+             END-IF
              PERFORM UNTIL WS-LENGTH = 0 OR CL-CMD-TEXT(WS-START + WS-LENGTH - 1:1) NOT = SPACE
                  SUBTRACT 1 FROM WS-LENGTH
              END-PERFORM

@@ -165,6 +165,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLMODELS.
 *> The model boxes (08 §10.11; standin-content §3.2, §12.6): entity type, from x y z and to x y z
 *> in model pixels, the top row of its part's strip, the stand-in texture width and height.
  01 WS-BOX-DATA.
@@ -188,6 +189,7 @@
  01 WS-A                   BINARY-LONG.
  01 WS-T                   BINARY-LONG.
  01 WS-SAVED               PIC X(1024).
+ 01 WS-SAVED-MODEL         BINARY-LONG.
  01 WS-BOX.
     05 WS-CORNER           FLOAT-LONG OCCURS 6 TIMES.
 *> The part's strip (top-left texel), the stand-in texture size and the image's atlas rectangle.
@@ -212,6 +214,13 @@
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
              CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+*>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
+             MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
+             IF CL-MD-EXTRA(WS-SAVED-MODEL) > 0
+                 MOVE CL-MD-EXTRA(WS-SAVED-MODEL) TO EN-MODEL(WS-R)
+                 CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
+             END-IF
          END-IF
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
              IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 0 AND EN-TYPE(WS-R) = WS-MB-TYPE(WS-B)

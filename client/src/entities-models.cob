@@ -74,10 +74,12 @@
 *> drawn); the atlas is rebuilt once when a slot was added.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CLMODELS.
  01 WS-R                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -94,6 +96,21 @@
                  ADD 1 TO EA-MT-COUNT
                  MOVE EN-MODEL(WS-R) TO EA-MT-MODEL(EA-MT-COUNT)
                  MOVE 1 TO WS-NEW
+             END-IF
+*>           The extra layer of the row's model (the sheep's wool) has its own slot.
+             MOVE CL-MD-EXTRA(EN-MODEL(WS-R)) TO WS-X
+             IF WS-X > 0
+                 MOVE 0 TO WS-FOUND
+                 PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+                     IF EA-MT-MODEL(WS-S) = WS-X
+                         MOVE 1 TO WS-FOUND
+                     END-IF
+                 END-PERFORM
+                 IF WS-FOUND = 0 AND EA-MT-COUNT < 16
+                     ADD 1 TO EA-MT-COUNT
+                     MOVE WS-X TO EA-MT-MODEL(EA-MT-COUNT)
+                     MOVE 1 TO WS-NEW
+                 END-IF
              END-IF
          END-IF
      END-PERFORM
@@ -113,9 +130,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 9 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 16 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 9 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 16 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
@@ -221,6 +238,12 @@
          END-IF
      END-PERFORM
      IF WS-SLOT = 0
+         GOBACK
+     END-IF
+*>   Entities beyond 64 blocks (horizontally) are not drawn: a cap standing in for the entity distance rule (13 section 9.2 Entity Distance option, 34-1 7.1 shadow fade 16 blocks), which the docs do not give as a number (open).
+     COMPUTE WS-D = (EN-X(WS-ROW) - L-EYE(1)) * (EN-X(WS-ROW) - L-EYE(1))
+         + (EN-Z(WS-ROW) - L-EYE(3)) * (EN-Z(WS-ROW) - L-EYE(3))
+     IF WS-D > 4096
          GOBACK
      END-IF
 *>   The model: built once per row of the table, then copied.
