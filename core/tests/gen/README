@@ -13,3 +13,4 @@ genrs5 -> test_redstone_30_5_0..9 (python3 core/tests/gen/genrs5.py [section num
 genbe3 -> test_be_31_3_1..8 (python3 core/tests/gen/genbe3.py [section numbers], from the repository root; shared writer genbe.py; independent Python models of the 31-3 sign facing, use rules, strip, wobble, shelf swap and the DyeColor table of the doc)
 genbe4 -> test_be_31_4_1..8 (python3 core/tests/gen/genbe4.py [section numbers], from the repository root; independent Python models of the 31-4 rules, with binary32 steps for the enchanting table animation and the table sine)
 genbe5 -> test_be_31_5_1..6 (python3 core/tests/gen/genbe5.py [section numbers], from the repository root; independent Python models of the 31-5 rules)
+genbe2 -> test_be_31_2_4, _7, _11 (python3 core/tests/gen/genbe2.py [section numbers], from the repository root; Python models of the brewing tick and the crafter slot rules)
