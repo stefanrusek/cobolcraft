@@ -131,6 +131,27 @@
      MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
      MOVE "300" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Falling into water ends the fall (29a 8.3: touching water resets the fall distance): a survival player who drops 10 blocks into the two
+*>   cells of water and lands on the stone below takes no damage.
+     MOVE 0 TO PL-MODE(CN-PLAYER(WS-ALICE))
+     MOVE 20 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     MOVE 111 TO WS-FY
+     MOVE 0 TO WS-FLAGS
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     MOVE 102 TO WS-FY
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     MOVE 101 TO WS-FY
+     MOVE 1 TO WS-FLAGS
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     MOVE "acceptance 29a§8.3 given a survival player falling 10 blocks into water when they land on the bottom then they take no fall damage"
+         TO TL-CASE
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> Adds a block with the key WS-KEY and WS-COUNT states, solid or not (WS-SOLID), after the last block and state of the tables.

@@ -120,3 +120,67 @@
      END-IF
      GOBACK.
  END PROGRAM BREATH-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FLUID-TOUCHES-WATER.
+*> USING dimension row, feet x, y, z (FLOAT-LONG), wet out (BINARY-LONG 1 or 0): the box of a player (feet up to 1.8) touches water: one of the cells
+*> of its column from the feet's cell up holds water whose surface (the cell's y plus 1 under water, else amount / 9) is not below the feet (29a 8.2
+*> step 6, in the column of the feet only). Touching water ends a fall (8.3 step 2: resetFallDistance).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-YA                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-A-STATE             BINARY-LONG.
+ 01 WS-A-FLUID             BINARY-LONG.
+ 01 WS-A-KIND              BINARY-LONG.
+ 01 WS-A-AMOUNT            BINARY-LONG.
+ 01 WS-A-FALLING           BINARY-LONG.
+ 01 WS-A-SOLID             BINARY-LONG.
+ 01 WS-A-HOLDS             BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-FALLING             BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-HOLDS               BINARY-LONG.
+ 01 WS-SAME                BINARY-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
+ 01 WS-HIGH                FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-WET                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-WET.
+     MOVE 0 TO L-WET
+     COMPUTE WS-X = FUNCTION INTEGER(L-X)
+     COMPUTE WS-Z = FUNCTION INTEGER(L-Z)
+     COMPUTE WS-Y0 = FUNCTION INTEGER(L-Y)
+     COMPUTE WS-HIGH = L-Y + 1.8
+     COMPUTE WS-Y1 = FUNCTION INTEGER(WS-HIGH)
+     PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1 OR L-WET = 1
+         CALL "FLUID-CELL" USING L-DIM WS-X WS-Y WS-Z WS-STATE WS-FLUID WS-KIND WS-AMOUNT WS-FALLING WS-SOLID WS-HOLDS
+         IF WS-FLUID = 1
+             COMPUTE WS-YA = WS-Y + 1
+             CALL "FLUID-CELL" USING L-DIM WS-X WS-YA WS-Z WS-A-STATE WS-A-FLUID WS-A-KIND WS-A-AMOUNT WS-A-FALLING WS-A-SOLID
+                 WS-A-HOLDS
+             MOVE 0 TO WS-SAME
+             IF WS-A-FLUID = 1
+                 MOVE 1 TO WS-SAME
+             END-IF
+             CALL "FL-HEIGHT" USING WS-AMOUNT WS-SAME WS-HEIGHT
+             COMPUTE WS-TOP = WS-Y + WS-HEIGHT
+             IF WS-TOP >= L-Y
+                 MOVE 1 TO L-WET
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM FLUID-TOUCHES-WATER.

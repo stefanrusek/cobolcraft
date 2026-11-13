@@ -107,6 +107,7 @@
  01 WS-MOVED               PIC 9.
  01 WS-ON-GROUND           BINARY-LONG.
  01 WS-FALL                FLOAT-LONG.
+ 01 WS-WET                 BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
@@ -178,6 +179,11 @@
          IF WS-SUPPORTED = 0
              MOVE 0 TO PL-ON-GROUND(WS-ROW)
          END-IF
+     END-IF
+*>   A player whose box touches water has no fall (29a 8.3 step 2: resetFallDistance).
+     CALL "FLUID-TOUCHES-WATER" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-WET
+     IF WS-WET = 1
+         MOVE PL-Y(WS-ROW) TO PL-FALL-START(WS-ROW)
      END-IF
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1

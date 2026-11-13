@@ -4313,6 +4313,7 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3734 [US12-core] Write test `core/tests/acc_us12_drowning.cob`: the air supply (18 §2.5 item 4, 17 §4.12): -1 a tick with the eye in water, +4 a tick out of it (300 at most), Set Entity Data slot 1 sent on a change, -20 resets to 0 and 2 drown damage, a creative player breathes (red: scratchpad `fluids/red8.txt`); `test_content_tables.cob` gets the drown cause row
 - [x] T3735 [US12-core] Implement `BREATH-TICK`, `BREATH-EYE-IN-WATER`, `AIR-DATA-BUILD` (`core/src/breath.cob`), `PL-AIR`, `CAUSE-DROWN` (`RULES.cpy`: minecraft:drown, the sixth type sorted by path; MESSAGES.cpy: `death.attack.drown`) (not done: oxygen_bonus, water breathing, bubble columns, Entity Event 67)
 - [x] T3736 [US12-client] The HUD air row (hearts.cob, already there) reads `PL-EYES-WATER`, which `PHYS-FLUID` now sets (it was never set)
+- [x] T3745 [US12-core] Write the fall-into-water case of `core/tests/acc_us12_drowning.cob` (29a 8.3 step 2: touching water resets the fall distance; red: `fluids/red16.txt`) and implement `FLUID-TOUCHES-WATER` (`core/src/breath.cob`) called by `MOVE-PLAYER`
 - [ ] T3733 [US12-core] Gate: run `make gate-core` and record the command and real output
 
 ---
