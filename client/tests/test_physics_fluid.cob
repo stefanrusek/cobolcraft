@@ -136,9 +136,9 @@
      MOVE "physics fluid in water at rest the Player sinks slowly: 10 ticks from y 8 to 7.8616, the eye in the water"
          TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
-     STRING PL-EYE-WATER PL-IN-WATER PL-IN-LAVA DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING PL-EYE-WATER PL-IN-WATER PL-IN-LAVA PL-EYES-WATER DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-POSITION" USING CLIENT-STATE TL-OBSERVED
-     MOVE "110 0.5000/7.8616/0.5000" TO TL-EXPECTED
+     MOVE "1101 0.5000/7.8616/0.5000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Standing on stone beside the pool: not in water, the eye flags clear.
@@ -148,8 +148,8 @@
      CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
      MOVE "physics fluid on dry ground the Player is in no fluid" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
-     STRING PL-EYE-WATER PL-IN-WATER PL-IN-LAVA DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "000" TO TL-EXPECTED
+     STRING PL-EYE-WATER PL-IN-WATER PL-IN-LAVA PL-EYES-WATER DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0000" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Rising: a key event runs a tick with the key as it is then, so Space is held for 1 + 6 ticks and the release is one tick more.

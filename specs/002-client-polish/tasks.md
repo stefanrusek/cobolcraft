@@ -4302,6 +4302,9 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [ ] T3730 [US12-client] Gate: run `make gate-client` and record the command and real output
 - [x] T3731 [US12-core] Write test `core/tests/acc_us12_item_current.cob`: the current of 41 §3.2 on a ground item (E8 east 0.014, lava lifted to 0.0045, a source over a drop, another fluid beside, a falling cell beside stone and under stone), the flow of a cell without fluid (red: the lane's scratchpad `fluids/red7.txt`)
 - [x] T3732 [US12-core] Implement `FLUID-FLOW-AT` (`core/src/fluids-world-29a.cob`, getFlow of 29a 1.4 over the core tables) and the current in `IP-FLUID-SCAN` (`core/src/itemphys-41.cob`, via `EF-ACCUM`, `EF-STRENGTH`, `EF-CURRENT`); completes T0347 (the Nether's `fast_lava` is not read: 0)
+- [x] T3734 [US12-core] Write test `core/tests/acc_us12_drowning.cob`: the air supply (18 §2.5 item 4, 17 §4.12): -1 a tick with the eye in water, +4 a tick out of it (300 at most), Set Entity Data slot 1 sent on a change, -20 resets to 0 and 2 drown damage, a creative player breathes (red: scratchpad `fluids/red8.txt`); `test_content_tables.cob` gets the drown cause row
+- [x] T3735 [US12-core] Implement `BREATH-TICK`, `BREATH-EYE-IN-WATER`, `AIR-DATA-BUILD` (`core/src/breath.cob`), `PL-AIR`, `CAUSE-DROWN` (`RULES.cpy`: minecraft:drown, the sixth type sorted by path; MESSAGES.cpy: `death.attack.drown`) (not done: oxygen_bonus, water breathing, bubble columns, Entity Event 67)
+- [x] T3736 [US12-client] The HUD air row (hearts.cob, already there) reads `PL-EYES-WATER`, which `PHYS-FLUID` now sets (it was never set)
 - [ ] T3733 [US12-core] Gate: run `make gate-core` and record the command and real output
 
 ---
