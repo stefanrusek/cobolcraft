@@ -210,6 +210,18 @@
      MOVE WS-TEXT TO TL-OBSERVED
      MOVE SPACES TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Water above the cell of the eye (a third cell of water at y 103): the eye cell is full height there, so the eye is in the water at any height of the eye.
+     MOVE 103 TO WS-BY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-WATER
+     MOVE 300 TO PL-AIR(CN-PLAYER(WS-ALICE))
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "acceptance 18§2.5 given water above the cell of the eye when 10 ticks pass then the air supply is 300 - 10" TO TL-CASE
+     MOVE PL-AIR(CN-PLAYER(WS-ALICE)) TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
+     MOVE "290" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> Adds a block with the key WS-KEY and WS-COUNT states, solid or not (WS-SOLID), after the last block and state of the tables.
