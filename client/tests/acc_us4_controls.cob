@@ -4,7 +4,7 @@
 *> item held sends Use Item On with that face and the hit point; the left button sends start destroy,
 *> and in survival stop destroy once the break time has passed (a quarter of it with the matching
 *> tool), or abort destroy when released early; in creative start destroy alone; the right button
-*> on a glowtube without a block item sends Use Item On, on another block nothing. What the server
+*> on any targeted block sends Use Item On whatever the hand holds (T4800). What the server
 *> receives is read on the server side of a real loopback connection.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-CONTROLS.
@@ -140,11 +140,13 @@
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE "-" TO WS-STEP-TEXT(4)
      MOVE "acceptance US4-5 client half given no block item held when the right button is used "
-         & "then greystone gets nothing, a glowtube Use Item On (toggle), and so does a goto_pad "
-         & "(travel, standin §1.3)" TO TL-CASE
+         & "then every targeted block gets Use Item On (a plain block, a glowtube toggle, a goto_pad "
+         & "travel; T4800: the server decides what a block does when used, so the bench, a chest or a "
+         & "door opens with an empty hand too)" TO TL-CASE
      PERFORM STEPS-TEXT
-     MOVE "- | 4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
-         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | -" TO TL-EXPECTED
+     MOVE "4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
+         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | "
+         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000b | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

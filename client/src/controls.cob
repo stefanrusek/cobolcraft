@@ -92,11 +92,12 @@
      END-IF
 *>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used; otherwise
 *>   a food item held on the world screen is eaten.
+*>   Every targeted block gets Use Item On whatever the hand holds (T4800): the server decides what the block does
+*>   (open a bench, a chest or a door; place the held block).
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
+         CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+     END-IF
      EVALUATE TRUE
-         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
-                 AND (WS-IBLOCK = 1 OR WS-STATE = 13 OR WS-STATE = 14
-                 OR WS-STATE = 16)
-             CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
                  AND WS-IFOOD > 0 AND PL-EATING = 0
              CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE
