@@ -10,6 +10,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY CORESTATE.
+ COPY CTBSHAPE.
  COPY COREAPI.
  COPY CBLOCKS.
  01 WS-NAME                PIC X(16) VALUE "Alice".
@@ -63,6 +64,8 @@
      MOVE CR-LUCITE TO WS-LUCITE
      MOVE 0 TO CB-SOLID(WS-LUCITE + 1)
      MOVE CB-DEFAULT-STATE(WS-LUCITE + 1) TO WS-STATE
+*>   The player box reads the collision shape (51), so the test column has none: the shape of that state is the empty shape.
+     MOVE 0 TO BSH-COLL(WS-STATE + 1)
      MOVE 23 TO WS-BX
      PERFORM VARYING WS-BY FROM 101 BY 1 UNTIL WS-BY > 110
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE

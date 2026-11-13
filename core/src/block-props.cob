@@ -334,6 +334,8 @@
              MOVE WS-STATE TO CB-STATE-COUNT
          END-IF
      END-PERFORM
+*>   The collision and outline shape of every state (51 block shapes; the content library's tables, built once per set type).
+     CALL "BSH-BUILD"
 *>   The roles of the cobolcraft rules, by key.
      MOVE SPACES TO WS-PAIRS
      MOVE "cobolcraft:cardstack" TO WS-KEY
