@@ -97,6 +97,24 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL STATIC "cc_net_close" USING BY VALUE WS-CLIENT
 
+*>   The 002 settings fields the host fills (core-host-delta §1) and the CORE-WORLD-OPEN status words (§2).
+     MOVE "contract server coreapi consumer the host fills CS-WORLD-TYPE, CS-GENERATED-DIR and CS-GAME-DIR "
+         & "(auto, ./generated, .)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "auto|./generated|." TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SV-SETTINGS TO CORE-SETTINGS
+     STRING FUNCTION TRIM(CS-WORLD-TYPE) "|" FUNCTION TRIM(CS-GENERATED-DIR) "|"
+         FUNCTION TRIM(CS-GAME-DIR) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract server coreapi consumer status words ok 0, packs not ok 1, no level.dat 2, no WorldType 3"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 123 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CORE-WO-PACKS-NOT-OK * 100 + CORE-WO-NO-LEVEL-DAT * 10 + CORE-WO-NO-WORLDTYPE
+         + CORE-WO-OK
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Per-connection pump, status: Status Response, then the Pong of the Ping.
      CALL "SVT-CONNECT" USING WS-PORT WS-STATUS-CLIENT
      MOVE "contract/fixtures/wire/handshake-c2s-00-intention-status.hex" TO WS-PATH
