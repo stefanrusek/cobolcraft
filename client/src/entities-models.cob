@@ -113,9 +113,9 @@
  COPY CLEMM.
 *> The models built so far, one per row of CL-MODELS (EMM-MODEL is 36660 bytes).
  01 WS-CACHE.
-    05 WS-CM               PIC X(36700) OCCURS 9 TIMES.
+    05 WS-CM               PIC X(36700) OCCURS 10 TIMES.
  01 WS-HAVE-TABLE.
-    05 WS-HAVE             PIC 9 OCCURS 9 TIMES VALUE 0.
+    05 WS-HAVE             PIC 9 OCCURS 10 TIMES VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.

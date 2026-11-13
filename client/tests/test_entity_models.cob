@@ -273,7 +273,7 @@
              ADD 1 TO WS-OK
          END-IF
      END-PERFORM
-     MOVE "entity models each of the 9 table types draws whole cuboids on its own" TO TL-CASE
+     MOVE "entity models each of the table types draws whole cuboids on its own" TO TL-CASE
      MOVE CL-MODEL-COUNT TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

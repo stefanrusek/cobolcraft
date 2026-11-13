@@ -165,6 +165,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
 *> The model boxes (08 §10.11; standin-content §3.2, §12.6): entity type, from x y z and to x y z
 *> in model pixels, the top row of its part's strip, the stand-in texture width and height.
  01 WS-BOX-DATA.
@@ -239,6 +240,23 @@
          MOVE PL-Y TO EN-Y(WS-R)
          MOVE PL-Z TO EN-Z(WS-R)
          MOVE PL-YAW TO EN-YAW(WS-R)
+*>       A world of the standard set: the row is a "player" of the model table (the humanoid with the default skin), emitted like any
+*>       other replica row; only the cobolcraft stand-in world keeps the operator's box.
+         IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+             MOVE 1 TO EN-USED(WS-R) EN-VANILLA(WS-R)
+             MOVE PL-YAW TO EN-HEAD-YAW(WS-R)
+             MOVE PL-PITCH TO EN-PITCH(WS-R)
+             MOVE 1 TO EN-ON-GROUND(WS-R)
+             MOVE SPACES TO EN-KEY(WS-R)
+             MOVE "player" TO EN-KEY(WS-R)
+             CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)
+             ADD 1 TO EN-COUNT
+             CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
+             CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             SUBTRACT 1 FROM EN-COUNT
+             MOVE WS-SAVED TO EN-ENTITY(WS-R)
+             GOBACK
+         END-IF
          MOVE 1 TO WS-B
          PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 6
              MOVE WS-MB-CORNER(WS-B, WS-A) TO WS-CORNER(WS-A)
