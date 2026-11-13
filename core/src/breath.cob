@@ -112,7 +112,8 @@
              COMPUTE PL-AIR(L-ROW) = FUNCTION MIN(RULE-MAX-AIR, PL-AIR(L-ROW) + 4)
          END-IF
      END-IF
-     IF PL-AIR(L-ROW) NOT = WS-OLD
+*>   (a player row with no connection has no one to tell, as in the generation tests' stand-in players)
+     IF PL-AIR(L-ROW) NOT = WS-OLD AND PL-CONN(L-ROW) > 0
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          CALL "AIR-DATA-BUILD" USING PL-ENTITY-ID(L-ROW) PL-AIR(L-ROW) PB-BUFFER
          CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
