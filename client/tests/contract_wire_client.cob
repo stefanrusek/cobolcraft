@@ -488,9 +488,22 @@
          & "received.hex" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-0b-chunk-batch-received.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+*>   Game Event 13 was received, so the client waits for the section of its camera (docs/protocol/50 section 7): Player Loaded is not sent with the batch and the
+*>   position, but when the wait ends (here by its 30 s deadline).
      MOVE 2 TO WS-INDEX
      CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
-     MOVE "contract wire client after the first batch and the position Player Loaded is sent "
+     MOVE "contract wire client after Game Event 13 the first batch and the position do not send Player Loaded yet"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     COMPUTE CL-NOW-MS = PL-WAIT-START + 30001
+     CALL "LOAD-WAIT-TICK" USING CLIENT-STATE
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client when the wait for the camera section ends Player Loaded is sent "
          & "(play-c2s-2c-player-loaded.hex)" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
