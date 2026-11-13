@@ -64,6 +64,9 @@
        10 BE-XI             BINARY-LONG OCCURS 64 TIMES.
        10 BE-XT             PIC X(64) OCCURS 20 TIMES.
        10 BE-XF             FLOAT-SHORT OCCURS 12 TIMES.
+       10 BE-TIME2          BINARY-DOUBLE SIGNED.
+       10 BE-XD             FLOAT-LONG OCCURS 4 TIMES.
+       10 BE-UUID           BINARY-LONG OCCURS 640 TIMES.
        10 BE-CMD-LENGTH     BINARY-LONG.
        10 BE-CMD            PIC X(256).
 *> Data of the types of parts 31-6 to 31-8 (be-31-6.cob, be-31-7.cob, be-31-8.cob; BEX-DEFAULTS sets the defaults). BE-CMD holds the command of a command block (the first 256 bytes).
@@ -73,6 +76,15 @@
 *>        1 aligned), 6 placement priority, 7 selection priority, 8 front direction; XT 1..4. test block (45): XI 1 mode, 2 message length, 3 powered, 4 triggered; XT 1 message.
 *>        test instance block (46): XI 1 test key length, 2..4 size, 5 rotation, 6 ignore_entities, 7 status, 8 error message length, 9 marker count, marker i (up to 4): XI 10 + 3 (i - 1).. x, y, z,
 *>        XI 22 + i text length; XT 1 test, 2 error message, 2 + i marker text
+*>   mob spawner (9): XI 1..7 Delay, MinSpawnDelay, MaxSpawnDelay, SpawnCount, MaxNearbyEntities, RequiredPlayerRange, SpawnRange; XI 8 SpawnData set, XT 1 its entity id, XI 9 the id length,
+*>        XI 10..13 block light min, max, sky light min, max, XI 14 custom_spawn_rules set; XI 15 potentials count (0 = the default list), entry i (up to 8): XT 1 + i the entity id, XI 19 + i its
+*>        length, XI 29 + i the weight. trial spawner (43): XI 1 registered players (UUIDs in BE-UUID 1..64), XI 2 current mobs (BE-UUID 65..320), XI 3 total_mobs_spawned, XI 4 spawn_data set,
+*>        XT 1 its id, XI 5 the length, XI 6 ejecting_loot_table length, XT 2 the table, XI 7, 8 lengths of normal_config, ominous_config (XT 3, 4), XI 9 target_cooldown_length (36000),
+*>        XI 10 required_player_range (14), XI 11 the config read failed, XI 12..15 and 16 the light limits and their set flag of spawn_data; BE-SEED cooldown_ends_at, BE-TIME2 next_mob_spawns_at.
+*>        vault (44): XT 1 key_item id, XI 1 its length, XI 2 its count; XT 2 loot_table, XI 4 length; XT 3 override_loot_table_to_display, XI 5 length; XD 1 activation_range, 2 deactivation_range,
+*>        3 connected_particles_range; XT 4 display item id, XI 6 length, XI 7 count; XI 8 connected players (BE-UUID 513..640); XI 25 rewarded players (BE-UUID 1..512, at most 128);
+*>        XT 5..12 the items to eject (XI 59 their count, counts in BE-SLOT-COUNT 1..8, XI 60 total_ejections_needed, not saved); BE-SEED state_updating_resumes_at, BE-TIME2 lastInsertFailTimestamp
+*>        (not saved); XI 61 shared data dirty, XI 62 server data dirty
 *> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
 *> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
  78 ENDER-MAX             VALUE 64.

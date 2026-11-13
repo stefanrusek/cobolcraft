@@ -2,11 +2,14 @@
 import sys,math,struct
 sys.path.insert(0,'core/tests/gen')
 from genbe import *
+from genbe import _nm
 OUT="core/tests"
 def only(): return set(int(a) for a in sys.argv[1:])
 def f32(x): return struct.unpack('f',struct.pack('f',x))[0]
-WSV=''.join(' 01 WS-%s                 BINARY-LONG.\n'%c for c in 'ABCEFGHPQRSUVW')+' 01 WS-EV                BINARY-LONG.\n'+''.join(' 01 WS-O%d                 BINARY-LONG.\n'%i for i in range(1,8))+''.join(' 01 WS-F%s                FLOAT-LONG.\n'%c for c in 'ABCDEF')+''' 01 WS-FS1                FLOAT-SHORT.
+WSV=''.join(' 01 WS-%s                 BINARY-LONG.\n'%c for c in 'ABCEFGHPQRSUVW')+' 01 WS-EV                BINARY-LONG.\n'+''.join(' 01 WS-O%d                 BINARY-LONG.\n'%i for i in range(1,8))+''.join(' 01 WS-F%s                FLOAT-LONG.\n'%c for c in 'ABCDEFGH')+''' 01 WS-FS1                FLOAT-SHORT.
  01 WS-FS2                FLOAT-SHORT.
+ 01 WS-FS3                FLOAT-SHORT.
+ 01 WS-FS4                FLOAT-SHORT.
  01 WS-N24                PIC X(24).
  01 WS-N48                PIC X(48).
  01 WS-T64                PIC X(64).
@@ -27,3 +30,5 @@ def cr(typ,name,x=5,y=70,z=5): return create(typ,name,x,y,z)
 def render(form=2): return 'MOVE %d TO WS-FORM\n'%form
 def mk(prog,sec,subj,tasks,desc,part):
     return G('TEST-BE-31-%d-%d'%(part,sec),'31-%d§%d'%(part,sec),subj,'Test of 31-%d section %d, %s (core/src/be-31-%d.cob; %s): %s'%(part,sec,subj,part,tasks,desc),WSV)
+
+def nb_double(n,v): return _nm(n)+'COMPUTE WS-FA = %s\nCALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NM WS-NML WS-FA\n'%v

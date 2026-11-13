@@ -854,13 +854,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE6-W-INT.
-*> USING PB-BUFFER, key name (X(24)), value: writes an Int tag named by the trimmed key.
+*> USING PB-BUFFER, key name (X(32)), value: writes an Int tag named by the trimmed key.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WL                     BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
- 01 L-NAME                 PIC X(24).
+ 01 L-NAME                 PIC X(32).
  01 L-VALUE                BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-NAME L-VALUE.
      MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO WL
@@ -870,13 +870,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE6-W-BYTE.
-*> USING PB-BUFFER, key name (X(24)), value: a Byte tag.
+*> USING PB-BUFFER, key name (X(32)), value: a Byte tag.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WL                     BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
- 01 L-NAME                 PIC X(24).
+ 01 L-NAME                 PIC X(32).
  01 L-VALUE                BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-NAME L-VALUE.
      MOVE FUNCTION LENGTH(FUNCTION TRIM(L-NAME)) TO WL
@@ -886,13 +886,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE6-W-STR.
-*> USING PB-BUFFER, key name (X(24)), text (X(64)), length: a String tag.
+*> USING PB-BUFFER, key name (X(32)), text (X(64)), length: a String tag.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WL                     BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
- 01 L-NAME                 PIC X(24).
+ 01 L-NAME                 PIC X(32).
  01 L-TEXT                 PIC X(64).
  01 L-LENGTH               BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-NAME L-TEXT L-LENGTH.
@@ -903,14 +903,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE6-W-ENUM.
-*> USING PB-BUFFER, key name (X(24)), kind, id: a String tag with the enum name of BE6-ENUM-NAME.
+*> USING PB-BUFFER, key name (X(32)), kind, id: a String tag with the enum name of BE6-ENUM-NAME.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-TEXT                PIC X(64).
  01 WS-LENGTH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
- 01 L-NAME                 PIC X(24).
+ 01 L-NAME                 PIC X(32).
  01 L-KIND                 BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-NAME L-KIND L-ID.
@@ -925,7 +925,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
- 01 WN                     PIC X(24).
+ 01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-LONG                BINARY-DOUBLE.
  LINKAGE SECTION.
@@ -1037,7 +1037,7 @@
  01 WS-BYTE-KEYS           PIC X(75) VALUE "ignoreEntities strict         powered        showair        showboundingbox".
  01 FILLER REDEFINES WS-BYTE-KEYS.
     05 WS-BYTE-KEY         PIC X(15) OCCURS 5 TIMES.
- 01 WN                     PIC X(24).
+ 01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
@@ -1176,7 +1176,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
- 01 WN                     PIC X(24).
+ 01 WN                     PIC X(32).
  01 WS-KIND                BINARY-LONG VALUE 7.
  LINKAGE SECTION.
  COPY PROTO.
@@ -1265,7 +1265,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
- 01 WN                     PIC X(24).
+ 01 WN                     PIC X(32).
  01 WS-KIND                BINARY-LONG VALUE 6.
  LINKAGE SECTION.
  COPY PROTO.
@@ -1323,7 +1323,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
- 01 WN                     PIC X(24).
+ 01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-T-COMPOUND          BINARY-LONG VALUE 10.

@@ -685,7 +685,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-TAG-ENTRIES.
-*> The entries of the update tag (31-1 5.2), by kind; kinds 4 to 8 await their parts.
+*> The entries of the update tag (31-1 5.2), by kind; kinds 3, 7 and 8 are the spawner (without SpawnPotentials), trial spawner and vault tags of 31-7.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -701,9 +701,15 @@
          WHEN 2
              MOVE 0 TO WS-FORM
              CALL "BE-SAVE" USING L-INDEX WS-FORM PB-BUFFER
-         WHEN 1 WHEN 3 WHEN 6
+         WHEN 1 WHEN 6
              MOVE 2 TO WS-FORM
              CALL "BE-SAVE" USING L-INDEX WS-FORM PB-BUFFER
+         WHEN 3
+             CALL "BE7-SPAWNER-TAG" USING L-INDEX PB-BUFFER
+         WHEN 7
+             CALL "BE7-TRIAL-TAG" USING L-INDEX PB-BUFFER
+         WHEN 8
+             CALL "BE7-VAULT-TAG" USING L-INDEX PB-BUFFER
          WHEN 4
              CALL "BE4-BRUSH-TAG" USING L-INDEX PB-BUFFER
          WHEN 5
