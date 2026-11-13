@@ -1,0 +1,409 @@
+*> Test of 30 part 7 section 7, `CopperBulbBlock` and `WeatheringCopperBulbBlock` (core/src/redstone-30-7.cob; T0812): state, light, the toggle rule, the comparator output and the variants.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-REDSTONE-30-7-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(40).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: light (7.1): 15, 12, 8, 4 when lit for unaffected, exposed, weathered, oxidized (0 to 3), 0 when unlit (weather state," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-LIGHT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 15 0 12 0 8 0 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: default state (7.1): lit and powered false; 4 states; never a redstone conductor (lit, powered, states, conductor kind 1" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-DEFAULT" USING WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/4/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: onPlace (7.2 step 1): the old state is the same block: nothing (a property change); otherwise on a server level" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ON-PLACE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ON-PLACE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ON-PLACE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ON-PLACE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: neighborChanged (7.2 step 2): on a server level checkAndFlip runs (server; runs)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-NEIGHBOR" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-NEIGHBOR" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: checkAndFlip (7.2 step 3): nothing when the signal equals powered; a rising edge toggles lit and plays turn_on (1) or" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 1/1/1/1 1/0/0/0 0/0/1/0 0/1/0/0 1/0/1/2 1/1/0/0 0/1/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: worked example 10 (10): placed beside a lit redstone block: lit with turn_on; the block removed: powered false, lit" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1 1/1/0/0 1/0/1/2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: comparator output (7.3): 15 when lit, else 0, independent of the weather state and the comparator direction (lit," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-ANALOG" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 15 15 15 15" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: the eight blocks (7.4): copper_bulb, exposed, weathered and oxidized and their four waxed twins: identical redstone" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "exposed_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "weathered_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "oxidized_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "waxed_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "waxed_exposed_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "waxed_weathered_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "waxed_oxidized_copper_bulb" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "copper_block" TO WS-NM
+     CALL "RS3-BULB-VARIANT" USING WS-NM WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 1/0 2/0 3/0 0/1 1/1 2/1 3/1 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: random tick (7.1): only the weathering class has the random tick, the waxed class not; the state-preserving next block" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-RANDOM-TICK" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-RANDOM-TICK" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-7§7 `CopperBulbBlock` and `WeatheringCopperBulbBlock`: waxing and scraping (7.4): a block change triggers onPlace, so checkAndFlip runs on the new block and does nothing when" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-BULB-FLIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/1/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-REDSTONE-30-7-7.
