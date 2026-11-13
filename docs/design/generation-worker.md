@@ -40,7 +40,9 @@ thread would need a second copy of the COBOL runtime state, which a process give
   not replaced by a late result.
 - Shutdown: GEN-QUEUE-RESET (world open over another, world close, CORE-STOP) kills and reaps every worker. A worker
   of a game process that died ends by end of file. No thread is ever created.
-- Pool size: 3 in the client, the game process keeps the other cores.
+- Pool size: GEN-WORKERS-AUTO takes half the processors online (`cc_wk_cpus`), at least 1 and at most GW-MAX (4), so the game loop,
+  the renderer and the rest of the machine keep the other half. The client uses it; the server takes it from the
+  `generation-workers` key (`auto` by default, 0 to 4 explicitly; a world that is not of the standard type never starts a worker).
 
 ## Reads of unloaded chunks
 

@@ -170,3 +170,8 @@ void cc_wk_child_exit(void) {
     }
     _exit(0);
 }
+
+int32_t cc_wk_cpus(void) {
+    long n = sysconf(_SC_NPROCESSORS_ONLN);
+    return n < 1 ? 1 : (int32_t)n;
+}

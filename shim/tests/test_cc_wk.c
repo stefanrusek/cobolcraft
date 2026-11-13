@@ -208,5 +208,7 @@ int main(void) {
     cc_wk_stop(e, 0);
     tl_int("test cc_wk child read without a worker fails", -1, cc_wk_child_read(one, 4));
     tl_int("test cc_wk child write without a worker fails", -1, cc_wk_child_write(one, 4));
+    int32_t cpus = cc_wk_cpus();
+    tl_int("test cc_wk the processor count is at least one", 1, cpus >= 1 && cpus <= 4096);
     return 0;
 }

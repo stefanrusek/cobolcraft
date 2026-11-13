@@ -158,7 +158,7 @@ child, -1 when no slot is free or the fork fails. The parent: `cc_wk_send` (writ
 without blocking: bytes, 0 when nothing yet, -1 at end of file or unknown slot), `cc_wk_stop(slot, force)` (reap; force 1
 kills first; -1 unknown slot). The child: `cc_wk_child_read` (exactly n bytes; 0 at end of input; -1 error),
 `cc_wk_child_write` (all n bytes or -1), `cc_wk_child_exit` (`_exit` after dumping coverage counters when instrumented). A
-child closes the pipe ends of every other slot, so end of input reaches it when the parent ends. SIGPIPE is ignored.
+`cc_wk_cpus` returns the processors online (at least 1). A child closes the pipe ends of every other slot, so end of input reaches it when the parent ends. SIGPIPE is ignored.
 
 ## 10. Contract tests
 

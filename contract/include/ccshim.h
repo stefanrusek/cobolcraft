@@ -244,5 +244,7 @@ int32_t cc_wk_stop(int32_t slot, int32_t force);
 int32_t cc_wk_child_read(uint8_t *buf, int32_t n);
 int32_t cc_wk_child_write(const uint8_t *buf, int32_t n);
 void cc_wk_child_exit(void);
+/* cc_wk_cpus: the number of processors online (at least 1), for sizing the worker pool. */
+int32_t cc_wk_cpus(void);
 
 #endif

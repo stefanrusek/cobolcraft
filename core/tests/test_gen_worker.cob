@@ -312,6 +312,20 @@
      MOVE WS-N TO TL-OBSERVED-N
      MOVE GW-MAX TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "GEN-WORKERS-AUTO"
+     CALL "GEN-WORKERS-GET" USING WS-N
+     CALL STATIC "cc_wk_cpus" RETURNING WS-RC
+     COMPUTE WS-WORKERS = WS-RC / 2
+     IF WS-WORKERS < 1
+         MOVE 1 TO WS-WORKERS
+     END-IF
+     IF WS-WORKERS > GW-MAX
+         MOVE GW-MAX TO WS-WORKERS
+     END-IF
+     MOVE "test gen worker the automatic pool is half the processors, at least 1 and at most the maximum" TO TL-CASE
+     MOVE WS-N TO TL-OBSERVED-N
+     MOVE WS-WORKERS TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE -5 TO WS-WORKERS
      CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
      MOVE "test gen worker a negative pool size is none" TO TL-CASE

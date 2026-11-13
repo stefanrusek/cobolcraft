@@ -339,3 +339,23 @@
      MOVE GQ-WORKERS TO L-SIZE
      GOBACK.
  END PROGRAM GEN-WORKERS-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-WORKERS-AUTO.
+*> No parameters: sizes the pool from the processors online (cc_wk_cpus): half of them, at least 1 and at most GW-MAX, so the game loop, the renderer and
+*> the rest of the machine keep the other half (docs/design/generation-worker.md).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ 01 WS-CPUS                BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL STATIC "cc_wk_cpus" RETURNING WS-CPUS
+     COMPUTE WS-SIZE = WS-CPUS / 2
+     CALL "GEN-WORKERS-CONFIG" USING WS-SIZE
+     IF GQ-WORKERS < 1
+         MOVE 1 TO WS-SIZE
+         CALL "GEN-WORKERS-CONFIG" USING WS-SIZE
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-WORKERS-AUTO.
