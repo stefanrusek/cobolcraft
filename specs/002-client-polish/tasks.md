@@ -4391,6 +4391,15 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [ ] T3613 Update `.claude/skills/cobolcraft-cobol/SKILL.md` with the pitfalls found in this feature (GnuCOBOL by-reference double arithmetic, generated copybook rows, new package Makefiles)
 - [ ] T3614 Gate: run `make gate` and record the command and real output (terminal aggregate; no E2E; independent of the operator-blocking Q-1 evidence, which may still read `pending operator`)
 
+### Block shapes (operator feedback: hit boxes)
+
+- [x] T4500 [US7-docs] docs/protocol/51-block-shapes.md: per-state collision and outline shapes consolidated from the registry documents (24 parts 1 to 8, 29, 30, 31), rules by class and property; open questions listed
+- [x] T4501 [US7-content] contract/copy/CTBSHAPE.cpy, content/src/block-shapes.cob (BSH-BUILD and the queries BSH-COLL-ID, BSH-OUT-ID, BSH-OVERLAPS, BSH-CLIP, BSH-RAY), content/copy/CTBSDATA.cpy rule rows; test_block_shapes first observed red (the builder absent)
+- [ ] T4502 [US7-client] Player collision by collision shape: PHYS-SOLID, PHYS-COLLIDES, PHYS-MOVE through the shape tables, step-up 0.6 (slabs, stairs), ground check on slab tops; tests first
+- [ ] T4503 [US7-client] Targeting by outline shape: RAYCAST tests the boxes of the cell's outline, so torches, buttons, ladders, slabs and stairs are targeted where they are; tests first
+- [ ] T4504 [US7-core] Server movement check by collision shape: MOVE-COLLIDES, MOVE-SUPPORTED, MOVE-CLIMBING agree with the client; BLOCKS-OPEN builds the shape tables; tests first
+- [ ] T4505 [US7-docs] Open questions of 51 (offset plants, tall plants, hopper, cauldron, bell, scaffolding, shulker box, piston, chest joins, bed legs, skull variants): clean-room round when the operator reports a block that is still wrong
+
 ---
 
 ## Dependencies & Execution Order
