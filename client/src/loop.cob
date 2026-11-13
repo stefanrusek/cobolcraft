@@ -257,7 +257,7 @@
      END-IF
 *>   The target (world screen only) and, in play, the block controls (which abort a break once the
 *>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen;
-*>   on the inventory screen INVENTORY-INPUT throws from a slot or the cursor).
+*>   on a container screen MENU-POINTER throws from a slot or the cursor).
      MOVE 0 TO TG-HIT TG-ENTITY-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
@@ -265,19 +265,17 @@
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-INPUT" USING CLIENT-STATE
          CALL "HAND-INPUT" USING CLIENT-STATE
-         IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH
-                 OR SM-SCREEN = SCR-CONTAINER
+         IF SM-SCREEN = SCR-WORLD
              CALL "CONTROLS-HOTBAR" USING CLIENT-STATE
          END-IF
          IF SM-SCREEN = SCR-WORLD
              CALL "CONTROLS-THROW" USING CLIENT-STATE
              CALL "CONTROLS-SWAP" USING CLIENT-STATE
          END-IF
-         IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH
-             CALL "INVENTORY-INPUT" USING CLIENT-STATE
+         IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH OR SM-SCREEN = SCR-CONTAINER
+             CALL "MENU-POINTER" USING CLIENT-STATE
          END-IF
          IF SM-SCREEN = SCR-CONTAINER
-             CALL "MENU-POINTER" USING CLIENT-STATE
              CALL "MENU-EXTRA-INPUT" USING CLIENT-STATE
          END-IF
      END-IF

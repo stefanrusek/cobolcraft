@@ -16,7 +16,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO CX-DRAG-ON CX-DRAG-BUTTON CX-DRAG-N CX-SKIP-RELEASE CX-PREV-MS CX-DOUBLE
+     MOVE 0 TO CX-DRAG-ON CX-DRAG-BUTTON CX-DRAG-N CX-SKIP-RELEASE CX-PREV-MS CX-DOUBLE CX-LAST-X CX-LAST-Y
      MOVE -2 TO CX-PREV-SLOT
      MOVE 0 TO BC-PRIMARY BC-SECONDARY MC-COUNT MC-LEVEL MC-XP MC-PROGRESS MC-RESTOCK MC-SCROLL MC-SELECTED MC-DRAGGING
      GOBACK.
@@ -78,6 +78,10 @@
  01 WS-ADD-WIRE            BINARY-LONG.
  01 WS-QUICK               BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
+ 01 WS-PX                 BINARY-LONG.
+ 01 WS-DROP-SLOT           BINARY-LONG VALUE -1.
+ 01 WS-DROP-COUNT          BINARY-LONG.
+ 01 WS-DROP-ITEM           BINARY-LONG.
  01 WS-TOGGLE-MODE         BINARY-LONG VALUE 0.
  01 WS-TOGGLE-SWAP         BINARY-LONG VALUE 1.
  01 WS-S-BUTTON-40         BINARY-LONG VALUE 40.
@@ -106,6 +110,11 @@
          MOVE -1 TO WS-TARGET
          IF WS-GX < WS-LEFT OR WS-GY < WS-TOP OR WS-GX >= WS-LEFT + WS-W OR WS-GY >= WS-TOP + WS-H
              MOVE WS-OUTSIDE TO WS-TARGET
+*>           The recipe book's panel beside the inventory and the crafting screens is inside the screen.
+             IF SM-SCREEN NOT = SCR-CONTAINER AND RK-OPEN(1) = 1 AND WS-GX >= WS-PX AND WS-GX < WS-PX + 147
+                     AND WS-GY >= WS-TOP AND WS-GY < WS-TOP + WS-H
+                 MOVE -1 TO WS-TARGET
+             END-IF
          END-IF
      END-IF
      .
@@ -125,7 +134,7 @@
      .
 
  KEYS.
-     IF WS-WIRE >= 0
+     IF WS-WIRE >= 0 AND RK-SEARCH-FOCUS = 0
          MOVE KB-CODE(KB-SWAP-OFFHAND) TO WS-KEYC
          IF IN-KEY-PRESSED(WS-KEYC + 1) = 1 AND PL-CARRIED-COUNT = 0
              CALL "CRAFTER-TOGGLE" USING CLIENT-STATE WS-WIRE WS-TOGGLE-SWAP WS-S-BUTTON-40
@@ -166,11 +175,14 @@
      END-IF
      .
 
-*> While a drag is held: the slot under the pointer joins the set (see the header).
+*> While a drag is held: the slot under the pointer joins the set (see the header) when the pointer has moved since the last frame, as vanilla's
+*> mouseDragged does, so that a click without movement stays a PICKUP.
  DRAG-ADD.
      IF CX-DRAG-ON = 1 AND PL-CARRIED-COUNT > 0 AND WS-WIRE >= 0 AND CX-DRAG-N < 64
              AND (IN-BUTTON-DOWN(CX-DRAG-BUTTON + 1) = 1 OR IN-BUTTON-RELEASED(CX-DRAG-BUTTON + 1) = 1)
-             AND CX-DRAG-N < PL-CARRIED-COUNT
+             AND (CX-DRAG-N < PL-CARRIED-COUNT OR CX-DRAG-BUTTON = 2)
+             AND (WS-GX NOT = CX-LAST-X OR WS-GY NOT = CX-LAST-Y)
+             AND (SM-SCREEN = SCR-CONTAINER OR WS-ARG < 101 OR WS-ARG > 105)
          CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
          MOVE 0 TO WS-DUP
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CX-DRAG-N
@@ -181,6 +193,7 @@
          IF WS-DUP = 0 AND (WS-COUNT = 0 OR WS-ITEM = PL-CARRIED-ITEM)
              ADD 1 TO CX-DRAG-N
              MOVE WS-WIRE TO CX-DRAG-SLOT(CX-DRAG-N)
+             MOVE WS-ARG TO CX-DRAG-ARG(CX-DRAG-N)
          END-IF
      END-IF
      .
@@ -192,6 +205,10 @@
      END-IF
      MOVE FUNCTION MIN(WS-B, 1) TO WS-C
      EVALUATE TRUE
+         WHEN WS-B = 2 AND PL-MODE = 1 AND PL-CARRIED-COUNT > 0 AND WS-TARGET NOT = -1 AND CX-DRAG-ON = 0
+             MOVE 1 TO CX-DRAG-ON
+             MOVE WS-B TO CX-DRAG-BUTTON
+             MOVE 0 TO CX-DRAG-N
          WHEN WS-B = 2
              IF PL-MODE = 1 AND PL-CARRIED-COUNT = 0 AND WS-WIRE >= 0
                  MOVE WS-WIRE TO WS-S-SLOT
@@ -225,13 +242,9 @@
          WHEN WS-TARGET = WS-OUTSIDE
              MOVE WS-THROW TO WS-S-TYPE
              PERFORM CLICK-PLAIN
-         WHEN WS-B = 0
-             CALL "CRAFTER-TOGGLE" USING CLIENT-STATE WS-WIRE WS-TOGGLE-MODE WS-NO-BUTTON
-             CALL "INVENTORY-CLICK" USING CLIENT-STATE WS-ARG
          WHEN OTHER
              CALL "CRAFTER-TOGGLE" USING CLIENT-STATE WS-WIRE WS-TOGGLE-MODE WS-NO-BUTTON
-             MOVE WS-PICKUP TO WS-S-TYPE
-             PERFORM CLICK-PLAIN
+             CALL "INVENTORY-CLICK-B" USING CLIENT-STATE WS-ARG WS-C
      END-EVALUATE
      .
 
@@ -251,7 +264,7 @@
          WHEN CX-DRAG-ON = 1 AND CX-DRAG-N > 0
              PERFORM CLICK-DRAG
              MOVE 0 TO CX-DRAG-ON
-         WHEN PL-CARRIED-COUNT > 0 AND WS-TARGET NOT = -1
+         WHEN PL-CARRIED-COUNT > 0 AND WS-TARGET NOT = -1 AND WS-B < 2
              MOVE 0 TO CX-DRAG-ON
              MOVE FUNCTION MIN(WS-B, 1) TO WS-C
              PERFORM CARRIED-CLICK
@@ -270,28 +283,35 @@
              PERFORM CLICK-PLAIN
          WHEN WS-TARGET = WS-OUTSIDE
              MOVE WS-PICKUP TO WS-S-TYPE
+             MOVE PL-CARRIED-COUNT TO WS-DROP-COUNT
+             MOVE PL-CARRIED-ITEM TO WS-DROP-ITEM
              IF WS-B = 0
                  MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
              ELSE
+                 MOVE 1 TO WS-DROP-COUNT
                  SUBTRACT 1 FROM PL-CARRIED-COUNT
                  IF PL-CARRIED-COUNT = 0
                      MOVE 0 TO PL-CARRIED-ITEM
                  END-IF
              END-IF
-             PERFORM CLICK-PLAIN
-         WHEN WS-B = 0
-             CALL "CRAFTER-TOGGLE" USING CLIENT-STATE WS-WIRE WS-TOGGLE-MODE WS-NO-BUTTON
-             CALL "INVENTORY-CLICK" USING CLIENT-STATE WS-ARG
+             IF PL-MODE = 1 AND SM-SCREEN = SCR-INVENTORY
+*>               Creative: the cursor is the client's, so the drop is Set Creative Mode Slot -1 with what was thrown (40-menus-7 section 3.3).
+                 CALL "PB-RESET" USING PB-BUFFER
+                 CALL "CLP-CREATIVE-SLOT" USING PB-BUFFER WS-DROP-SLOT WS-DROP-COUNT WS-DROP-ITEM
+                 CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+             ELSE
+                 PERFORM CLICK-PLAIN
+             END-IF
          WHEN OTHER
              CALL "CRAFTER-TOGGLE" USING CLIENT-STATE WS-WIRE WS-TOGGLE-MODE WS-NO-BUTTON
-             MOVE WS-PICKUP TO WS-S-TYPE
-             PERFORM CLICK-PLAIN
+             CALL "INVENTORY-CLICK-B" USING CLIENT-STATE WS-ARG WS-C
      END-EVALUATE
      .
 
 *> Three kinds of QUICK_CRAFT packets: start, each slot of the set, end (the masks of 3.4: header + 4 x type).
  CLICK-DRAG.
      COMPUTE WS-HELD = 4 * CX-DRAG-BUTTON
+*>   The first packets show the cursor as it was; the end packet shows it as the drag leaves it (predicted by CX-DRAG-APPLY).
      MOVE WS-OUTSIDE TO WS-S-SLOT
      MOVE WS-HELD TO WS-S-BUTTON
      MOVE WS-QUICK-CRAFT TO WS-S-TYPE
@@ -301,6 +321,7 @@
          COMPUTE WS-S-BUTTON = WS-HELD + 1
          PERFORM CLICK-PLAIN
      END-PERFORM
+     CALL "CX-DRAG-APPLY" USING CLIENT-STATE
      MOVE WS-OUTSIDE TO WS-S-SLOT
      COMPUTE WS-S-BUTTON = WS-HELD + 2
      PERFORM CLICK-PLAIN
@@ -312,12 +333,18 @@
          MOVE 1 TO WS-READY
      END-IF
      CALL "MENU-CONTAINER" USING CLIENT-STATE WS-CONTAINER WS-STATE-ID
-     CALL "CONTAINER-FRAME" USING BM-TYPE WS-OWN WS-TAIL WS-IX WS-IY WS-W WS-H WS-TX WS-TY WS-LX WS-LY
-         WS-DATA WS-KNOWN
      COMPUTE WS-GW = FUNCTION MAX(IN-WIN-W / CL-GUI-SCALE, CL-MIN-GUI-W)
      COMPUTE WS-GH = FUNCTION MAX(IN-WIN-H / CL-GUI-SCALE, CL-MIN-GUI-H)
-     COMPUTE WS-LEFT = (WS-GW - WS-W) / 2
-     COMPUTE WS-TOP = (WS-GH - WS-H) / 2
+     IF SM-SCREEN = SCR-CONTAINER
+         CALL "CONTAINER-FRAME" USING BM-TYPE WS-OWN WS-TAIL WS-IX WS-IY WS-W WS-H WS-TX WS-TY WS-LX WS-LY
+             WS-DATA WS-KNOWN
+         COMPUTE WS-LEFT = (WS-GW - WS-W) / 2
+         COMPUTE WS-TOP = (WS-GH - WS-H) / 2
+     ELSE
+         MOVE 176 TO WS-W
+         MOVE 166 TO WS-H
+         CALL "RECIPE-BOOK-GEOMETRY" USING CLIENT-STATE WS-GW WS-GH WS-LEFT WS-TOP WS-PX
+     END-IF
      COMPUTE WS-GX = IN-CURSOR-X / CL-GUI-SCALE
      COMPUTE WS-GY = IN-CURSOR-Y / CL-GUI-SCALE
      COMPUTE WS-SHIFT = FUNCTION MOD(IN-MODS, 2)
@@ -330,10 +357,62 @@
              PERFORM PRESS
          END-IF
      END-PERFORM
-     PERFORM VARYING WS-B FROM 0 BY 1 UNTIL WS-B > 1
+     PERFORM VARYING WS-B FROM 0 BY 1 UNTIL WS-B > 2
          IF IN-BUTTON-RELEASED(WS-B + 1) = 1
              PERFORM LET-GO
          END-IF
      END-PERFORM
+     MOVE WS-GX TO CX-LAST-X
+     MOVE WS-GY TO CX-LAST-Y
      GOBACK.
  END PROGRAM MENU-POINTER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-DRAG-APPLY.
+*> USING CLIENT-STATE: the drag set CX-DRAG-SLOT (CX-DRAG-ARG, CX-DRAG-N slots, CX-DRAG-BUTTON 0 charitable, 1 greedy, 2 clone) applied to the replica as the
+*> server does (40-1 3.4 item 6): one slot a PICKUP with the drag's button (0 whole, 1 one, 2 nothing); several slots each get
+*> the cursor's share (count / n, one, or a full stack) up to the item's maximum, and the cursor keeps what is left.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-PLACE               BINARY-LONG.
+ 01 WS-PLACED              BINARY-LONG.
+ 01 WS-REMAINING           BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-CARRIED             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     EVALUATE TRUE
+         WHEN CX-DRAG-N = 1
+             IF CX-DRAG-BUTTON < 2
+                 CALL "INV-PICKUP-B" USING CLIENT-STATE CX-DRAG-ARG(1) CX-DRAG-BUTTON
+             END-IF
+         WHEN OTHER
+             CALL "ITEM-MAX-STACK" USING PL-CARRIED-ITEM WS-MAX
+             MOVE PL-CARRIED-ITEM TO WS-CARRIED
+             EVALUATE CX-DRAG-BUTTON
+                 WHEN 0
+                     COMPUTE WS-PLACE = PL-CARRIED-COUNT / CX-DRAG-N
+                 WHEN 1
+                     MOVE 1 TO WS-PLACE
+                 WHEN OTHER
+                     MOVE WS-MAX TO WS-PLACE
+             END-EVALUATE
+             MOVE PL-CARRIED-COUNT TO WS-REMAINING
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CX-DRAG-N
+                 CALL "MENU-STACK-GET" USING CLIENT-STATE CX-DRAG-ARG(WS-I) WS-COUNT WS-ITEM WS-DAMAGE
+                 COMPUTE WS-PLACED = FUNCTION MIN(WS-PLACE + WS-COUNT, WS-MAX)
+                 COMPUTE WS-REMAINING = WS-REMAINING - (WS-PLACED - WS-COUNT)
+                 CALL "MENU-STACK-PUT" USING CLIENT-STATE CX-DRAG-ARG(WS-I) WS-PLACED WS-CARRIED WS-DAMAGE
+             END-PERFORM
+             MOVE WS-REMAINING TO PL-CARRIED-COUNT
+             IF WS-REMAINING <= 0
+                 MOVE 0 TO PL-CARRIED-COUNT PL-CARRIED-ITEM
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-DRAG-APPLY.
