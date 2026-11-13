@@ -549,7 +549,8 @@
  PROGRAM-ID. DENSITY-NODE RECURSIVE.
 *> The node memo around DENSITY-NODE-RAW (DMEMO.cpy): a node evaluated at the position of its last evaluation (any y when that
 *> evaluation did not read y) returns the stored value; otherwise it is evaluated and, when it reached no grid or blend node, stored.
-*> The y and impure flags of the evaluation fold into the flags of the caller either way.
+*> The y and impure flags of the evaluation fold into the flags of the caller either way. The entry is addressed once (a based view
+*> of DM-ENTRY(L-NODE)): every subscript costs a checked conversion under -debug and this program runs per node per block.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
@@ -559,22 +560,32 @@
  01 LS-STAMP               BINARY-LONG.
  01 LS-OUTER-Y             BINARY-LONG.
  01 LS-OUTER-IMPURE        BINARY-LONG.
+ 01 LS-ENTRY-PTR           USAGE POINTER.
  LINKAGE SECTION.
  01 L-NODE                 BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
  01 L-RESULT               FLOAT-LONG.
+ 01 B-ENTRY.
+    05 B-STAMP             BINARY-LONG.
+    05 B-X                 BINARY-LONG.
+    05 B-Y                 BINARY-LONG.
+    05 B-Z                 BINARY-LONG.
+    05 B-UY                BINARY-LONG.
+    05 B-RES               FLOAT-LONG.
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
      IF L-NODE = 0
          MOVE 0 TO L-RESULT
          GOBACK
      END-IF
      COMPUTE LS-STAMP = WG-LOAD-GEN + NZ-GEN + 1
-     IF DM-STAMP(L-NODE) = LS-STAMP AND DM-X(L-NODE) = L-X AND DM-Z(L-NODE) = L-Z
-             AND (DM-UY(L-NODE) = 0 OR DM-Y(L-NODE) = L-Y)
-         MOVE DM-RES(L-NODE) TO L-RESULT
-         IF DM-UY(L-NODE) = 1
+     SET LS-ENTRY-PTR TO ADDRESS OF DM-ENTRY(L-NODE)
+     SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
+     IF B-STAMP = LS-STAMP AND B-X = L-X AND B-Z = L-Z
+             AND (B-UY = 0 OR B-Y = L-Y)
+         MOVE B-RES TO L-RESULT
+         IF B-UY = 1
              MOVE 1 TO DM-USES-Y
          END-IF
          GOBACK
@@ -584,12 +595,13 @@
      MOVE 0 TO DM-USES-Y DM-IMPURE
      CALL "DENSITY-NODE-RAW" USING L-NODE L-X L-Y L-Z L-RESULT
      IF DM-IMPURE = 0
-         MOVE LS-STAMP TO DM-STAMP(L-NODE)
-         MOVE L-X TO DM-X(L-NODE)
-         MOVE L-Y TO DM-Y(L-NODE)
-         MOVE L-Z TO DM-Z(L-NODE)
-         MOVE DM-USES-Y TO DM-UY(L-NODE)
-         MOVE L-RESULT TO DM-RES(L-NODE)
+         SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
+         MOVE LS-STAMP TO B-STAMP
+         MOVE L-X TO B-X
+         MOVE L-Y TO B-Y
+         MOVE L-Z TO B-Z
+         MOVE DM-USES-Y TO B-UY
+         MOVE L-RESULT TO B-RES
      END-IF
      IF LS-OUTER-Y = 1
          MOVE 1 TO DM-USES-Y
@@ -605,6 +617,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
+ COPY NOISE.
  COPY GENSTAGE.
  COPY DMEMO.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
@@ -645,6 +658,7 @@
  01 LS-OP-MUL              BINARY-LONG VALUE 3.
  01 LS-OP-DIV              BINARY-LONG VALUE 4.
  01 LS-KEY                 PIC X(112).
+ 01 LS-STAMP               BINARY-LONG.
  LINKAGE SECTION.
  01 L-NODE                 BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -655,8 +669,17 @@
      MOVE 0 TO L-RESULT
      EVALUATE WGN-TYPE(L-NODE)
          WHEN 0
-             MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
-             CALL "WG-FIND" USING WS-KIND LS-KEY LS-ROOT
+             COMPUTE LS-STAMP = WG-LOAD-GEN + NZ-GEN + 1
+             IF DM-REF-STAMP(L-NODE) = LS-STAMP
+                 MOVE DM-REF(L-NODE) TO LS-ROOT
+             ELSE
+                 MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
+                 CALL "WG-FIND" USING WS-KIND LS-KEY LS-ROOT
+                 IF LS-ROOT > 0
+                     MOVE LS-STAMP TO DM-REF-STAMP(L-NODE)
+                     MOVE LS-ROOT TO DM-REF(L-NODE)
+                 END-IF
+             END-IF
              CALL "DENSITY-NODE" USING LS-ROOT L-X L-Y L-Z L-RESULT
          WHEN 1
              CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) L-RESULT

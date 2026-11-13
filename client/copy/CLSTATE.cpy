@@ -120,6 +120,11 @@
        10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
        10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
+       10 SM-LOAD-CELLS      PIC X(1225).    *> the loading screen grid (docs/protocol/50 section 2.5): 35 x 35 cells, row by row, each one byte holding status code + 1 (GEN-LOAD-GRID)
+       10 SM-LOAD-SMOOTH     BINARY-LONG.    *> the loading bar's smoothed progress in millionths (0.2 of the gap per 50 ms tick, 50 section 2.2)
+       10 SM-LOAD-TICK-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last smoothing tick, 0 before the first
+       10 SM-LOAD-GRID-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last read of the grid
+       10 SM-LOAD-SHOWN      BINARY-LONG.    *> 1 once the loading screen has been shown for the hosted world being opened
        10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
@@ -423,6 +428,10 @@
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
+       10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
+       10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
+       10 PL-READY-AT        BINARY-DOUBLE.  *> CL-NOW-MS at which the wait ended
+       10 PL-CLOSE-DELAY     BINARY-LONG.    *> ms between the end of the wait and Player Loaded: 500 for a newly created local world, else 0
        10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
        10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
@@ -1115,6 +1124,7 @@
           15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
+       10 RL-UI-TINT         BINARY-LONG.    *> RGB integer multiplied into the next UI quads (0 none): the loading screen's status colours and bar
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
