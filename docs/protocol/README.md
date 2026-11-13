@@ -8,7 +8,7 @@ world generation, client rendering and controls, texture-only resource packs, co
 mobs and, from document 22 on, the code-defined engines and registries that the standard world type needs (extraction
 tool and registry loading, block and item registries, block behaviour, redstone, block entities, light, world
 simulation, entity models, worldgen features, structures, the Nether, the End, portals, menus, item entities,
-particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin) and, in document 48, the shapes of the shipped data files. Document 50 covers the level-loading screen (spawn-area preparation, chunk-status grid, the join wait). The game has two world
+particles, tint sources, residual mob questions, entity NBT, registry ids, the default skin) and, in document 48, the shapes of the shipped data files. Document 50 covers the level-loading screen (spawn-area preparation, chunk-status grid, the join wait). Document 07 §10 also records the vanilla 26.3 save folder exactly as the game reads and writes it (`level.dat`, saved-data files, player files, dimension folders), so that a vanilla save can be opened and written back without loss. The game has two world
 types. The **standard** world type is Minecraft 26.3 content: its data comes from a vanilla resource pack and data pack
 that the extraction tool builds from the user's own jar (22, 23), and the engines are the documents of this folder.
 The **cobolcraft** world type is the invented `cobolcraft:` content of [../design/standin-content.md](../design/standin-content.md)
@@ -39,7 +39,7 @@ is the source-of-truth map. Documents 10 to 21 and 22 to 50 were written from th
 | [05b-play-clientbound-72-143.md](05b-play-clientbound-72-143.md) | Play phase, clientbound, ids 72–143 |
 | [05c-play-serverbound.md](05c-play-serverbound.md) | Play phase, serverbound, ids 0–68 |
 | [06-chunk-format.md](06-chunk-format.md) | Chunk sections, paletted containers, light data |
-| [07-nbt-and-anvil.md](07-nbt-and-anvil.md) | NBT binary format and region files; §9 the CobolCraft world folder (layout, `.dat` schemas, entity and chunk storage), §9.7 the world-folder contract (the vanilla 26.3 layout against the CobolCraft decisions) |
+| [07-nbt-and-anvil.md](07-nbt-and-anvil.md) | NBT binary format and region files; §9 the CobolCraft world folder (layout, `.dat` schemas, entity and chunk storage), §9.7 the world-folder contract (the vanilla 26.3 layout against the CobolCraft decisions); §10 the vanilla 26.3 world folder as the game writes it (`level.dat`, saved-data files, player files, dimension folders, load and round-trip rules) |
 | [08-resource-packs.md](08-resource-packs.md) | Resource pack format, stacking, server-pushed packs, the cobolcraft world type's built-in pack, pack order |
 | [09-cobolcraft-profile.md](09-cobolcraft-profile.md) | CobolCraft's profile of protocol 777: identity and message rule, transport choices, the packet inventory with game meaning and wire fixtures, packets never sent; §3.5 the packets whose use changes for feature 002 (chat types, command tree, permission levels, 46-slot menus, recipe book, block destruction, entities, three dimensions, 24-section chunks) |
 | [10-world-generation-terrain.md](10-world-generation-terrain.md) | Overworld terrain: random sources, noise, density functions, climate and biome table, aquifers, surface rules, stage order; §16 the floating-point function set (the `cc_f64_*` list, `Mth` sine and `atan2` tables, rounding and cast rules) |

@@ -286,7 +286,7 @@ Both world types use these unchanged. A document that states one of them must no
 **Decision WT-21 (save layout is not decided here; outside the world-type mechanism).** This document adds three keys to
 `level.dat` (section 2.1) and nothing else to the save format. It does **not** adopt the 33 §10 layout, does not change `Time`,
 does not move clocks or weather out of `level.dat`, and adds no migration. README Part 7, decision 9 says to keep the CobolCraft
-schemas of 07 §9. The only rule stated is that a per-type save schema would hide a difference (Decision WT-8), so whatever
+schemas of 07 §9 for the cobolcraft type; for the standard type the layout is now the game's own (07 §10, operator request, see the edit of decision 9). The only rule stated is that a per-type save schema would hide a difference (Decision WT-8), so whatever
 07 §9 holds applies to both types. Where the three keys sit if 07 and 33 adopt the 26.3 layout (33 §10 puts the seed in
 `world_gen_settings.dat` and the game time in a `Data` compound of `level.dat`) is for their owners: Open question 12. Likewise
 the `players/` inventory (07 §9.2 covers slots 0 to 35, README C5 makes it 46 slots) is a matter of 07, noted in Open question 12.
@@ -804,6 +804,10 @@ pause screen does not stop the simulation. Closing, changing the port, saving an
     and 33 §10 (game time, clocks, weather, game rules and border outside `level.dat`, seed in `world_gen_settings.dat`, a `Data`
     compound) disagree, and README Part 7 decision 9 says to keep the CobolCraft schemas. Whether to adopt the 26.3 layout, with a
     migration, and where `WorldType`, `Seed` and `ContentJar` then sit, belongs to the owners of 07 and 33. This document does not decide it.
+    **Superseded for the standard type (vanfmt lane, operator request):** a standard world is created, read and saved in the 26.3 layout of 07 §10
+    (`level.dat` `Data`, saved-data files, `players/data/`). That layout has no `WorldType` and no `ContentJar` key: a folder whose `level.dat` holds `Data` is
+    standard (reading rule 3a); the seed is `data/minecraft/world_gen_settings.dat`; `ContentJar` is not stored for such a world. The cobolcraft and debug types
+    keep the flat layout of 07 §9.
     **Closed for the layout question (clean-room round SAVE):** 07 §9.7 records what the 26.3 artifact does (flat `Data` wrapper in
     `level.dat`, `dimensions/<namespace>/<path>/{region,entities,poi,data}`, world-wide `data/`, `players/data/<uuid>.dat`, the seed in
     `world_gen_settings.dat`) and fixes the CobolCraft contract: no adoption of the 26.3 `level.dat` tree and no migration; the three keys sit

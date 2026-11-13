@@ -24,7 +24,7 @@
  01 WS-Y                   BINARY-LONG VALUE 64.
  01 WS-Z                   BINARY-LONG VALUE 9.
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64) VALUE SPACES.
+ 01 WS-PAIRS               PIC X(160) VALUE SPACES.
  01 WS-STATE               BINARY-LONG.
  01 WS-TOOL                BINARY-LONG.
  01 WS-TOOL-COUNT          BINARY-LONG.

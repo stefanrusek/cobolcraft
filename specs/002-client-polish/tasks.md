@@ -4407,6 +4407,22 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [ ] T3613 Update `.claude/skills/cobolcraft-cobol/SKILL.md` with the pitfalls found in this feature (GnuCOBOL by-reference double arithmetic, generated copybook rows, new package Makefiles)
 - [ ] T3614 Gate: run `make gate` and record the command and real output (terminal aggregate; no E2E; independent of the operator-blocking Q-1 evidence, which may still read `pending operator`)
 
+## Phase 78: Vanilla world format (lane vanfmt, operator request: open a real 26.3 save and save it back without loss)
+
+- [x] T3790 [P] Round SAVEFMT, reader: the vanilla 26.3 world folder as the game writes it (`level.dat` `Data`, saved-data files, player files, dimension folders, poi, load and round-trip rules), written as `docs/protocol/07-nbt-and-anvil.md` §10
+- [x] T3791 Round SAVEFMT, reviewer (two rounds): contamination, completeness and accuracy review of 07 §10
+- [x] T3792 [US12-core] Write test `core/tests/test_state_props_wide.cob` (block property text is not cut at 64 characters; every standard state round-trips through its property text) and widen the property buffers to 160
+- [x] T3793 [US12-core] Write tests `core/tests/test_chunk_biomes.cob` and `test_chunk_biomes_real.cob`; save the chunk's own biome cells and read them back (07 §7.2 widths)
+- [x] T3794 [US12-core] Write test `core/tests/test_save_keys_real.cob`; item and entity ids of the player file and of ground items are stored with `minecraft:` and read whole, bare or namespaced
+- [x] T3795 [US12-core] Write test `core/tests/acc_vanfmt_save.cob` with fixture `core/tests/fixtures/gen_vanfmt.py`; implement `core/src/level-vanilla.cob`: a 26.3 world is read from and saved to `level.dat` `Data` (unmodelled keys kept, `level.dat_old`), `weather.dat`, `world_clocks.dat` and `game_rules.dat`
+- [x] T3796 [US12-core] Write test `core/tests/test_player_dat_vanilla.cob`; player files of a 26.3 world are `players/data/<uuid>.dat` (the old place is still read)
+- [x] T3797 [US12-core] Write test `core/tests/test_chunk_merge.cob`; a chunk saved in a 26.3 world keeps the keys the core does not model
+- [x] T3798 [US12-core] Write test `core/tests/test_entity_merge.cob`; entities of types the core does not know are kept when an `entities/` chunk is saved in a 26.3 world (07 §10.6, §10.7; the keys of known entities that the core does not model are still lost, see T3801)
+- [x] T3799 [US12-core] Block entities of types the core does not know are kept when a chunk is saved (test_chunk_merge.cob); `poi/` regions are neither read nor written, so the files stay as they are
+- [x] T3801 [US12-core] Keep the keys of known entities and known block entities that the core does not model across a save (`core/src/extras.cob`, tests `test_entity_merge`, `test_be_extras_real`); poi sections of saved chunks are marked not valid (`core/src/poi.cob`, `test_poi_invalidate`) so the game rescans them. Not done: writing poi records from the blocks
+- [x] T3800 Gate: run `make gate-core` and record the command and real output. Recorded at 9563b74: exit 0, `passed 6327 failed 0`, `coverage: 169 objects, 0 uncovered lines`. After the merges of genthread and fluids and the later lane work: `passed 6416 failed 0`, 3 uncovered lines in `growth-29b-1b.cob` (a random-dependent test, fixed by seeding the level random in `acc_us12_growth_crops`, coverage of those lines re-checked with a targeted coverage run); a final full `make gate-core` is left to the integrator
+- [x] T3802 [US12-core] New standard worlds are created in the 26.3 layout (`acc_vanfmt_new_world`); `test_real_vanilla_roundtrip` (needs `CC_REAL_SAVE`) opens, saves and reopens a real 26.3 snapshot save
+
 ---
 
 ## Dependencies & Execution Order

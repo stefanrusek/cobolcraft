@@ -18,7 +18,7 @@
  01 WS-KEY-TEXT-LENGTH     BINARY-LONG VALUE 43.
  01 WS-KEY                 PIC X(64).
  01 WS-KEY-LENGTH          BINARY-LONG.
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  01 WS-PAIR-COUNT          BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
