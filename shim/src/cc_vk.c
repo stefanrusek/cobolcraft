@@ -876,7 +876,63 @@ void cc_vk_submit(void) {
     collect_garbage();
 }
 
+/* ---- screenshot (shim-delta §14) ---------------------------------------------------------------- */
+
+static char shot_path[1024];
+static int shot_state; /* 0 none, or served and written; 1 waiting for a frame; 2 served and failed */
+
+int32_t cc_vk_screenshot(const char *path) {
+    if (shot_state == 1) return CC_AGAIN;
+    if (strlen(path) >= sizeof shot_path) cc_fatal("cc_vk_screenshot: path too long");
+    strcpy(shot_path, path);
+    shot_state = 1;
+    return 0;
+}
+
+int32_t cc_vk_screenshot_result(void) {
+    return shot_state == 1 ? CC_AGAIN : shot_state == 2 ? CC_FAILED : 0;
+}
+
+/* Copies the image of the frame just submitted (in PRESENT_SRC layout, still owned by the application) to the host and
+ * writes it as a PNG in RGBA order. */
+static void capture_frame(void) {
+    VkExtent2D e = cc_vk_state.extent;
+    size_t size = (size_t)e.width * e.height * 4;
+    uint8_t *zero = calloc(1, size);
+    if (zero == NULL) cc_fatal("cc_vk_screenshot: out of memory");
+    VkDeviceMemory memory;
+    VkBuffer buffer = host_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT, zero, size, &memory);
+    free(zero);
+    VkImage image = cc_vk_state.images[cc_vk_state.image_index];
+    VkCommandBuffer cmd = command_buffer();
+    begin(cmd);
+    barrier_levels(cmd, image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_MEMORY_WRITE_BIT,
+                   VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1);
+    VkBufferImageCopy region = {.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, .imageExtent = {e.width, e.height, 1}};
+    vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
+    barrier_levels(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_TRANSFER_READ_BIT,
+                   VK_ACCESS_MEMORY_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1);
+    submit_wait(cmd, "cc_vk_screenshot");
+    uint8_t *pixels;
+    check(vkMapMemory(cc_vk_state.device, memory, 0, size, 0, (void **)&pixels), "cc_vk_screenshot: vkMapMemory failed");
+    VkFormat f = cc_vk_state.format.format;
+    int bgra = f == VK_FORMAT_B8G8R8A8_UNORM || f == VK_FORMAT_B8G8R8A8_SRGB;
+    if (bgra) {
+        for (size_t i = 0; i < size; i += 4) {
+            uint8_t t = pixels[i];
+            pixels[i] = pixels[i + 2];
+            pixels[i + 2] = t;
+        }
+    }
+    for (size_t i = 3; i < size; i += 4) pixels[i] = 255; /* a screenshot is opaque, as the window shows it */
+    shot_state = cc_png_write(shot_path, (int32_t)e.width, (int32_t)e.height, pixels) == 0 ? 0 : 2;
+    vkUnmapMemory(cc_vk_state.device, memory);
+    vkDestroyBuffer(cc_vk_state.device, buffer, NULL);
+    vkFreeMemory(cc_vk_state.device, memory, NULL);
+}
+
 void cc_vk_present(void) {
+    if (shot_state == 1) capture_frame();
     VkPresentInfoKHR present = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,

@@ -328,7 +328,8 @@
  78 KB-PERSPECTIVE          VALUE 22.
  78 KB-SAVE-TOOLBAR         VALUE 23.
  78 KB-LOAD-TOOLBAR         VALUE 24.
- 78 KB-COUNT                VALUE 24.
+ 78 KB-SCREENSHOT           VALUE 25.
+ 78 KB-COUNT                VALUE 25.
 
 *> GUI sprites of the UI atlas (GS-ROW rows).
  78 GSP-BUTTON              VALUE 1.

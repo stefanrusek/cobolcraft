@@ -12,10 +12,11 @@ call (OpenSSL digests, `CBL_*`, libm through glue only where a C double crosses 
 | `cc_vk_texture_update(tex_id, x, y, w, h, rgba)` | Staging buffer and copy command. | Replaces one rectangle of the base level and regenerates the mip levels it touches; the animation frame update (14, FR-010). | `client` |
 | `cc_vk_clear_depth(void)` | Render pass control. | Clears the depth attachment between the world pass and the hand pass (the first-person hand of 12 §6 is drawn over the world). | `client` (US20) |
 | `cc_open_path(opener, path)` | `posix_spawn` and argument vector. | Starts `opener` (production: `/usr/bin/open`) with `path` as its only argument and returns 0 at once, or `CC-NOTFOUND` when the opener cannot be started. Does not wait. | `client` (US4) |
+| `cc_png_write(path, w, h, rgba)`, `cc_vk_screenshot(path)`, `cc_vk_screenshot_result()`, constant `CC-FAILED` (8) | The swapchain image copy, the PNG chunks, CRC32 and deflate (zlib) cannot be done from COBOL. | `cc_png_write` writes the 8-bit RGBA image as a PNG (filter 0, one IDAT, zlib level 6) and returns 0 or `CC-FAILED`. `cc_vk_screenshot` asks for the frame the next `cc_vk_frame_end` presents to be saved at `path` (the pixels as presented, in RGBA order, alpha forced to 255) and returns 0, or `CC-AGAIN` while an earlier request waits. `cc_vk_screenshot_result` is `CC-AGAIN` while the request waits for its frame, then 0 (written) or `CC-FAILED`; 0 when there never was a request. | `client` (`screenshot.cob`: key.screenshot / F2, `--screenshot-after-frames`) |
 | Key codes `CC-KEY-F` (70), `CC-KEY-F3` (292), `CC-KEY-F5` (294) and the others 13 §5.1 and §7.3 name | constants of GLFW | Added to `CCSHIM.cpy`; the existing key-down path delivers them. | `client` |
 
 **Contract tests.** `shim/tests/contract_shim_provider.c` extends the existing provider test: `cc_f64_*` against
 IEEE vectors computed independently (Python `struct`), texture calls against the real MoltenVK device (readback of
-mip level 1 and of an updated rectangle), `cc_open_path` with an opener that exists (`/usr/bin/true`, the Q-2 sanctioned double) and with a
+mip level 1 and of an updated rectangle), `cc_png_write` and `cc_vk_screenshot_result` outcomes (content: `test_cc_png.c`, `test_cc_vk_screenshot.c` on the real device), `cc_open_path` with an opener that exists (`/usr/bin/true`, the Q-2 sanctioned double) and with a
 missing opener (`CC-NOTFOUND`). Consumer side: `contract_shim_consumer.cob` in `core`, `client`, `formats` assert
 the COBOL `CALL` shapes of `CCSHIM.cpy` (as today).

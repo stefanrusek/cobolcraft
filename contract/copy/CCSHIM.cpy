@@ -11,6 +11,7 @@
  78 CC-SMALL                VALUE 5.
  78 CC-BADDATA              VALUE 6.
  78 CC-NOTFOUND             VALUE 7.
+ 78 CC-FAILED               VALUE 8.
 
 *> Compression modes (§5).
  78 CC-ZLIB                 VALUE 0.
@@ -162,5 +163,8 @@
 *>     CALL STATIC "cc_vk_texture_update" USING BY VALUE TEX-ID X Y W H BY REFERENCE RGBA RETURNING RC
 *>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
 *>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
+*>   Screenshot:     CALL STATIC "cc_vk_screenshot" USING BY REFERENCE PATH-Z RETURNING RC   (CC-AGAIN: one still waiting)
+*>                   CALL STATIC "cc_vk_screenshot_result" RETURNING RC   (CC-AGAIN waiting, 0 written, CC-FAILED)
+*>                   CALL STATIC "cc_png_write" USING BY REFERENCE PATH-Z BY VALUE W H BY REFERENCE RGBA RETURNING RC
 *>   Open a path:    CALL STATIC "cc_open_path" USING BY REFERENCE OPENER-Z PATH-Z RETURNING RC
 *>                   (both z-strings; 0 at once, CC-NOTFOUND when the opener cannot start)
