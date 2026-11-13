@@ -1,0 +1,21 @@
+{
+ "type": "minecraft:entity",
+ "random_sequence": "cobolcraft:entities/sodgrazer",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:grazer_flank",
+     "modifier": [
+      {
+       "type": "minecraft:set_count",
+       "count": 2
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

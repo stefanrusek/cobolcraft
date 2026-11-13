@@ -880,3 +880,419 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-LOOT.
+*> loot <target> <source> (16 §6.4, level 2). Sources: loot <table>, fish <table> <pos> [<tool> | mainhand | offhand], kill <entity> (the table entities/<path of the type key> in
+*> the namespace of the key; a player has none), mine <pos> [<tool> | mainhand | offhand] (the table of the block at the position, BLOCK-DROPS-KEY); the table is rolled with LOOT-ROLL
+*> (origin: the position, or the source's; tool for fish and mine; the world seed). Targets: give <players> (INV-ADD, what does not fit is dropped at the player), spawn <pos> (ground items
+*> there), replace entity <entities> <slot> [<count>] (the stacks on the player slots from the slot on, at most count of them: CXB-ITEM-SLOT), replace block and insert (no live container
+*> block: commands.item.target.not_a_container [x, y, z]). give and spawn tell commands.drop.success.single_with_table [count, item, table] (one stack) or .multiple_with_table
+*> [items, table], not broadcast; replace entity tells commands.item.entity.replace.success.single [slots, name] / .multiple [entities], broadcast; a replace that set no slot is
+*> commands.drop.no_held_items; no table is commands.drop.no_loot_table.entity / .block [name] (loot and fish: argument.resource_or_id.no_such_element [id, minecraft:loot_table]); the
+*> result is the number of items rolled (the slots set for replace). Not done: the component patch of a stack does not reach the inventory (INV-ADD takes none), an inline table, the
+*> messages without a table name (every source here has one), the kill and fish context keys other than the origin and this_entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY CBLOCKS.
+ COPY BRRUN.
+ COPY PROTO.
+ COPY LOOTCTX.
+ 01 WS-NAME-ENTITIES       PIC X(32) VALUE "entities".
+ 01 WS-NAME-SLOT           PIC X(32) VALUE "slot".
+ 01 WS-NAME-COUNT          PIC X(32) VALUE "count".
+ 01 WS-NAME-TARGET-POS     PIC X(32) VALUE "targetPos".
+ 01 WS-NAME-PLAYERS        PIC X(32) VALUE "players".
+ 01 WS-NAME-TABLE          PIC X(32) VALUE "table".
+ 01 WS-NAME-POS            PIC X(32) VALUE "pos".
+ 01 WS-NAME-KILL           PIC X(32) VALUE "target".
+ 01 WS-NAME-TOOL           PIC X(32) VALUE "tool".
+ 01 WS-NAME-MAINHAND       PIC X(32) VALUE "mainhand".
+ 01 WS-NAME-OFFHAND        PIC X(32) VALUE "offhand".
+ 01 WS-NAME-SPAWN          PIC X(32) VALUE "spawn".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-KILL-ROWS.
+    05 WS-KILL-COUNT        BINARY-LONG.
+    05 WS-KILL-ROW          BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-I-ENTITIES          BINARY-LONG.
+ 01 WS-I-PLAYERS           BINARY-LONG.
+ 01 WS-I-TARGET-POS        BINARY-LONG.
+ 01 WS-I-SPAWN             BINARY-LONG.
+ 01 WS-I-TABLE             BINARY-LONG.
+ 01 WS-I-POS               BINARY-LONG.
+ 01 WS-I-KILL              BINARY-LONG.
+ 01 WS-I-TOOL              BINARY-LONG.
+ 01 WS-I-MAINHAND          BINARY-LONG.
+ 01 WS-I-OFFHAND           BINARY-LONG.
+ 01 WS-I-SLOT              BINARY-LONG.
+ 01 WS-I-COUNT             BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-TABLE               PIC X(112).
+ 01 WS-TABLE-LENGTH        BINARY-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-NS                  PIC X(48).
+ 01 WS-PATH                PIC X(64).
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-HELD                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-DELAY               BINARY-LONG VALUE 0.
+ 01 WS-ZERO-V              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
+ 01 WS-PLACED              BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-TRACKED             BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-LAST-PLACED         BINARY-LONG.
+ 01 WS-SLOT-ID             BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-A3                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-L3                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> Raises not_a_container for the position argument WS-INDEX.
+ RAISE-BLOCK.
+     CALL "BX-POSITION" USING WS-INDEX WS-X WS-Y WS-Z
+     MOVE SPACES TO WS-A1 WS-A2 WS-A3
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
+     MOVE WS-BX TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L1
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-Y)
+     MOVE WS-BX TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A2
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L2
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-Z)
+     MOVE WS-BX TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A3
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L3
+     MOVE "commands.item.target.not_a_container" TO WS-KEY
+     MOVE 3 TO WS-N-ARGS
+     CALL "BR-RAISE-3" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> The tool of fish and mine in the context: an item, the main hand of the source (the held slot; nothing for the console) or the off hand (nothing).
+ SET-TOOL.
+     IF WS-I-TOOL > 0
+         MOVE 1 TO LC-TOOL-SET LC-TOOL-COUNT
+         MOVE BA-IVAL(WS-I-TOOL) TO LC-TOOL-ITEM
+     END-IF
+     IF WS-I-MAINHAND > 0
+         MOVE 1 TO LC-TOOL-SET
+         IF BS-ROW > 0
+             COMPUTE WS-HELD = PL-HELD(BS-ROW) + 1
+             MOVE PL-SLOT-ITEM(BS-ROW, WS-HELD) TO LC-TOOL-ITEM
+             MOVE PL-SLOT-COUNT(BS-ROW, WS-HELD) TO LC-TOOL-COUNT
+             MOVE PL-SLOT-VAR(BS-ROW, WS-HELD) TO LC-TOOL-HANDLE
+         END-IF
+     END-IF
+     IF WS-I-OFFHAND > 0
+         MOVE 1 TO LC-TOOL-SET
+     END-IF.
+
+*> The table key in WS-TABLE (WS-TABLE-LENGTH) and the context for the source; WS-KIND 1 a named table, 2 kill, 3 mine; WS-TABLE-LENGTH 0 when the source has none.
+ ROLL-SOURCE.
+     INITIALIZE LOOT-CONTEXT
+     MOVE 1 TO LC-ORIGIN-SET
+     MOVE BS-X TO LC-X
+     MOVE BS-Y TO LC-Y
+     MOVE BS-Z TO LC-Z
+     MOVE CW-SEED TO LC-WORLD-SEED
+     MOVE SPACES TO WS-TABLE
+     MOVE 0 TO WS-TABLE-LENGTH
+     MOVE 1 TO WS-KIND
+     EVALUATE TRUE
+         WHEN WS-I-KILL > 0
+             MOVE 2 TO WS-KIND
+             CALL "BX-RESOLVE" USING WS-I-KILL WS-KILL-ROWS
+             MOVE WS-KILL-ROW(1) TO WS-ROW
+             CALL "CXB-SHOWN" USING WS-ROW WS-SHOWN WS-SHOWN-LENGTH
+             IF WS-ROW < 0 AND BR-R-FAILED = 0
+                 MOVE SPACES TO WS-NS WS-PATH
+                 UNSTRING WS-SHOWN(1:WS-SHOWN-LENGTH) DELIMITED BY ":" INTO WS-NS WS-PATH
+                 STRING FUNCTION TRIM(WS-NS) ":entities/" FUNCTION TRIM(WS-PATH) DELIMITED BY SIZE INTO WS-TABLE
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TABLE)) TO WS-TABLE-LENGTH
+                 MOVE 1 TO LC-THIS-SET
+                 MOVE WS-SHOWN TO LC-THIS-TYPE
+             END-IF
+         WHEN WS-I-POS > 0 AND WS-I-TABLE = 0
+             MOVE 3 TO WS-KIND
+             PERFORM POSITION-ORIGIN
+             PERFORM SET-TOOL
+             CALL "WORLD-GET-BLOCK" USING BS-DIM WS-BX WS-BY WS-BZ WS-STATE
+             CALL "BLOCK-DROPS-KEY" USING WS-STATE WS-TABLE
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TABLE)) TO WS-TABLE-LENGTH
+             MOVE 1 TO LC-STATE-SET
+             MOVE WS-STATE TO LC-STATE
+         WHEN OTHER
+             CALL "BX-NAMESPACED" USING WS-I-TABLE WS-ID WS-ID-LENGTH
+             MOVE WS-ID TO WS-TABLE
+             MOVE WS-ID-LENGTH TO WS-TABLE-LENGTH
+             IF WS-I-POS > 0
+                 PERFORM POSITION-ORIGIN
+                 PERFORM SET-TOOL
+             END-IF
+     END-EVALUATE.
+
+*> The position argument WS-I-POS as the origin of the context and as the block WS-BX, WS-BY, WS-BZ.
+ POSITION-ORIGIN.
+     CALL "BX-POSITION" USING WS-I-POS WS-X WS-Y WS-Z
+     MOVE WS-X TO LC-X
+     MOVE WS-Y TO LC-Y
+     MOVE WS-Z TO LC-Z
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z).
+
+*> The failure of a source that has no table.
+ NO-TABLE.
+     MOVE SPACES TO WS-A1 WS-A2
+     EVALUATE WS-KIND
+         WHEN 2
+             MOVE "commands.drop.no_loot_table.entity" TO WS-KEY
+             MOVE WS-SHOWN TO WS-A1
+             MOVE WS-SHOWN-LENGTH TO WS-L1
+             MOVE 1 TO WS-N-ARGS
+         WHEN 3
+             MOVE "commands.drop.no_loot_table.block" TO WS-KEY
+             COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+             MOVE CB-KEY(WS-BLOCK) TO WS-A1
+             MOVE CB-KEY-LENGTH(WS-BLOCK) TO WS-L1
+             MOVE 1 TO WS-N-ARGS
+         WHEN OTHER
+             MOVE "argument.resource_or_id.no_such_element" TO WS-KEY
+             MOVE WS-TABLE TO WS-A1
+             MOVE WS-TABLE-LENGTH TO WS-L1
+             MOVE "minecraft:loot_table" TO WS-A2
+             MOVE 20 TO WS-L2
+             MOVE 2 TO WS-N-ARGS
+     END-EVALUATE
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> The stacks to the players WS-ROWS (give): into the inventory, the rest on the ground.
+ GIVE-ALL.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+         MOVE BX-ROW(WS-I) TO WS-ROW
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > LR-COUNT
+             CALL "INV-ADD" USING WS-ROW LR-ITEM(WS-K) LR-AMOUNT(WS-K) WS-LEFT
+             IF WS-LEFT > 0
+                 MOVE PL-Y(WS-ROW) TO WS-Y
+                 CALL "GI-SPAWN" USING PL-DIM(WS-ROW) PL-X(WS-ROW) WS-Y PL-Z(WS-ROW) WS-ZERO-V WS-ZERO-Y
+                     WS-ZERO-Z LR-ITEM(WS-K) WS-LEFT WS-DELAY WS-NEW
+             END-IF
+         END-PERFORM
+         CALL "CMD-SEND-INVENTORY" USING WS-ROW
+     END-PERFORM.
+
+*> The stacks on the ground at the position argument WS-I-TARGET-POS.
+ SPAWN-ALL.
+     CALL "BX-POSITION" USING WS-I-TARGET-POS WS-X WS-Y WS-Z
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > LR-COUNT
+         CALL "GI-SPAWN" USING BS-DIM WS-X WS-Y WS-Z WS-ZERO-V WS-ZERO-Y WS-ZERO-Z LR-ITEM(WS-K) LR-AMOUNT(WS-K)
+             WS-DELAY WS-NEW
+     END-PERFORM.
+
+*> The stacks on the slots of each player from the slot argument on; WS-TRACKED counts the players that got any, WS-TOTAL the slots set.
+ REPLACE-ALL.
+     CALL "BX-FIND" USING WS-NAME-SLOT WS-I-SLOT
+     MOVE BA-IVAL(WS-I-SLOT) TO WS-SLOT-ID
+     MOVE LR-COUNT TO WS-N
+     CALL "BX-FIND" USING WS-NAME-COUNT WS-I-COUNT
+     IF WS-I-COUNT > 0 AND BA-IVAL(WS-I-COUNT) < WS-N
+         MOVE BA-IVAL(WS-I-COUNT) TO WS-N
+     END-IF
+     MOVE 0 TO WS-TRACKED WS-TOTAL WS-LAST WS-LAST-PLACED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+         MOVE BX-ROW(WS-I) TO WS-ROW
+         MOVE 0 TO WS-PLACED
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+             COMPUTE WS-WANT = WS-SLOT-ID + WS-K - 1
+             CALL "CXB-ITEM-SLOT" USING WS-ROW WS-WANT WS-AT
+             IF WS-AT > 0
+                 MOVE LR-ITEM(WS-K) TO PL-SLOT-ITEM(WS-ROW, WS-AT)
+                 MOVE LR-AMOUNT(WS-K) TO PL-SLOT-COUNT(WS-ROW, WS-AT)
+                 MOVE LR-HANDLE(WS-K) TO PL-SLOT-VAR(WS-ROW, WS-AT)
+                 ADD 1 TO WS-PLACED
+             END-IF
+         END-PERFORM
+         IF WS-PLACED > 0
+             CALL "CMD-SEND-INVENTORY" USING WS-ROW
+             ADD 1 TO WS-TRACKED
+             ADD WS-PLACED TO WS-TOTAL
+             MOVE WS-ROW TO WS-LAST
+             MOVE WS-PLACED TO WS-LAST-PLACED
+         END-IF
+     END-PERFORM.
+
+*> The drop message of a give or spawn: one stack names its item.
+ TELL-DROP.
+     MOVE 0 TO WS-TOTAL
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > LR-COUNT
+         ADD LR-AMOUNT(WS-K) TO WS-TOTAL
+     END-PERFORM
+     IF LR-COUNT = 1
+         MOVE "commands.drop.success.single_with_table" TO WS-KEY
+     ELSE
+         MOVE "commands.drop.success.multiple_with_table" TO WS-KEY
+     END-IF
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-INT" USING PB-TEXT WS-TOTAL
+     IF LR-COUNT = 1
+         CALL "CMD-TEXT-ARG" USING PB-TEXT IT-KEY(LR-ITEM(1) + 1) IT-KEY-LENGTH(LR-ITEM(1) + 1)
+     END-IF
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TABLE WS-TABLE-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     MOVE WS-TOTAL TO BR-R-RESULT.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-ENTITIES WS-I-ENTITIES
+     CALL "BX-FIND" USING WS-NAME-PLAYERS WS-I-PLAYERS
+     CALL "BX-FIND" USING WS-NAME-TARGET-POS WS-I-TARGET-POS
+     CALL "BX-LIT" USING WS-NAME-SPAWN WS-I-SPAWN
+     CALL "BX-FIND" USING WS-NAME-TABLE WS-I-TABLE
+     CALL "BX-FIND" USING WS-NAME-POS WS-I-POS
+     CALL "BX-FIND" USING WS-NAME-KILL WS-I-KILL
+     CALL "BX-FIND" USING WS-NAME-TOOL WS-I-TOOL
+     CALL "BX-LIT" USING WS-NAME-MAINHAND WS-I-MAINHAND
+     CALL "BX-LIT" USING WS-NAME-OFFHAND WS-I-OFFHAND
+     IF WS-I-TARGET-POS > 0 AND WS-I-SPAWN = 0
+         MOVE WS-I-TARGET-POS TO WS-INDEX
+         PERFORM RAISE-BLOCK
+     END-IF
+     IF BR-R-FAILED = 0
+         PERFORM ROLL-SOURCE
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-TABLE-LENGTH = 0
+         PERFORM NO-TABLE
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "LOOT-ROLL" USING WS-TABLE LOOT-CONTEXT LOOT-RESULT
+         IF LR-STATUS = 1
+             PERFORM NO-TABLE
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         EVALUATE TRUE
+             WHEN WS-I-PLAYERS > 0
+                 CALL "BX-RESOLVE" USING WS-I-PLAYERS WS-ROWS
+                 IF BR-R-FAILED = 0
+                     PERFORM GIVE-ALL
+                     PERFORM TELL-DROP
+                 END-IF
+             WHEN WS-I-TARGET-POS > 0
+                 PERFORM SPAWN-ALL
+                 PERFORM TELL-DROP
+             WHEN OTHER
+                 CALL "BX-RESOLVE" USING WS-I-ENTITIES WS-ROWS
+                 IF BR-R-FAILED = 0
+                     PERFORM REPLACE-ALL
+                     PERFORM TELL-REPLACE
+                 END-IF
+         END-EVALUATE
+     END-IF
+     GOBACK.
+
+*> The message of a replace: none set is commands.drop.no_held_items.
+ TELL-REPLACE.
+     IF WS-TRACKED = 0
+         MOVE "commands.drop.no_held_items" TO WS-KEY
+         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+         MOVE SPACES TO WS-A1 WS-A2
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     ELSE
+         IF WS-TRACKED = 1
+             MOVE "commands.item.entity.replace.success.single" TO WS-KEY
+         ELSE
+             MOVE "commands.item.entity.replace.success.multiple" TO WS-KEY
+         END-IF
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         IF WS-TRACKED = 1
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-LAST-PLACED
+             CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+         ELSE
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-TOTAL TO BR-R-RESULT
+     END-IF.
+ END PROGRAM CX-LOOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-LOOT.
+*> The forms of loot (16 §6.4): each target with each source (fish and mine with an item, mainhand, offhand or no tool).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-LOOT.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-TARGETS.
+    05 FILLER              PIC X(64) VALUE "replace entity <entities:entities> <slot:slot>".
+    05 FILLER              PIC X(64) VALUE "replace entity <entities:entities> <slot:slot> <count:int:0>".
+    05 FILLER              PIC X(64) VALUE "replace block <targetPos:pos> <slot:slot>".
+    05 FILLER              PIC X(64) VALUE "replace block <targetPos:pos> <slot:slot> <count:int:0>".
+    05 FILLER              PIC X(64) VALUE "insert <targetPos:pos>".
+    05 FILLER              PIC X(64) VALUE "give <players:players>".
+    05 FILLER              PIC X(64) VALUE "spawn <targetPos:vec3>".
+ 01 WS-TARGET-TABLE REDEFINES WS-TARGETS.
+    05 WS-TARGET           PIC X(64) OCCURS 7 TIMES.
+ 01 WS-SOURCES.
+    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos>".
+    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> <tool:item>".
+    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> mainhand".
+    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> offhand".
+    05 FILLER              PIC X(80) VALUE "loot <table:loottable>".
+    05 FILLER              PIC X(80) VALUE "kill <target:entity>".
+    05 FILLER              PIC X(80) VALUE "mine <pos:pos>".
+    05 FILLER              PIC X(80) VALUE "mine <pos:pos> <tool:item>".
+    05 FILLER              PIC X(80) VALUE "mine <pos:pos> mainhand".
+    05 FILLER              PIC X(80) VALUE "mine <pos:pos> offhand".
+ 01 WS-SOURCE-TABLE REDEFINES WS-SOURCES.
+    05 WS-SOURCE           PIC X(80) OCCURS 10 TIMES.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 7
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 10
+             MOVE SPACES TO WS-PATH
+             STRING "loot " FUNCTION TRIM(WS-TARGET(WS-T)) " " FUNCTION TRIM(WS-SOURCE(WS-S)) DELIMITED BY SIZE INTO WS-PATH
+             CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-LOOT.

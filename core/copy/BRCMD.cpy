@@ -50,6 +50,7 @@
  78 BC-SPREADPLAYERS     VALUE 207.
  78 BC-RECIPE            VALUE 208.
  78 BC-ITEM              VALUE 209.
+ 78 BC-LOOT              VALUE 210.
 *> The commands of core/src/cmds-admin.cob, cmds-state.cob and cmds-chat.cob added in the lane cmds-a (run by CX-DISPATCH-A).
  78 BC-CHASE             VALUE 101.
  78 BC-DEBUG             VALUE 102.

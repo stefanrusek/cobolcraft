@@ -200,6 +200,7 @@
          WHEN "enchanttype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:enchantment" TO WS-REGISTRY
+         WHEN "loottable"   MOVE BR-P-LOOT-TABLE TO WS-TYPE-ID
          WHEN "modifier"    MOVE BR-P-LOOT-MODIFIER TO WS-TYPE-ID
          WHEN "recipetype"
              MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID

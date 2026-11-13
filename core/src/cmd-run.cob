@@ -184,6 +184,8 @@
              CALL "CX-RECIPE"
          WHEN BC-ITEM
              CALL "CX-ITEM"
+         WHEN BC-LOOT
+             CALL "CX-LOOT"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE
