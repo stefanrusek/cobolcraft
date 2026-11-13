@@ -442,9 +442,8 @@
          WHEN ACT-BEACON-PRIMARY THRU ACT-TRADE-SELECT
              CALL "MENU-ACTION" USING CLIENT-STATE L-ACTION L-ARG
          WHEN ACT-SLOT
-             IF SM-SCREEN NOT = SCR-CONTAINER
-                 CALL "INVENTORY-CLICK" USING CLIENT-STATE L-ARG
-             END-IF
+*>           The slot clicks of every container screen are MENU-POINTER's.
+             CONTINUE
          WHEN ACT-RESPAWN
              CALL "DEATH-RESPAWN" USING CLIENT-STATE
          WHEN ACT-RB-BOOK

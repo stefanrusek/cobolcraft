@@ -13,8 +13,8 @@
 *> INV-REMOVE, INV-MOVE, INV-SLOT-SEND) keep the container slot numbers 0 to 35.
 *>
 *> Container Click (05c 0x12; click types and their rules are MENU-CLICK in menus.cob) changes the slots and the cursor of the
-*> menu named by the container id (the player's current one; another id is ignored). Every click raises the menu's state id by
-*> one (mod 32768). Each slot the click changed is echoed with Container Set Slot (the container id, the new state id, the
+*> menu named by the container id (the player's current one; another id is ignored). A click that changes a slot or needs a
+*> resynchronisation raises the menu's state id by one (mod 32768); one that changes nothing leaves it. Each slot the click changed is echoed with Container Set Slot (the container id, the new state id, the
 *> slot, its stack). When the click's state id was not the current one, or the client's predicted carried item or a
 *> predicted slot differs from the server's, Container Set Content (with the cursor) follows to resynchronise. A thrown stack
 *> becomes a ground item (GI-THROW-STACK, core/src/ground-items.cob) before the echoes.
@@ -333,6 +333,7 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  01 WS-RESYNC              PIC 9.
+ 01 WS-CHANGED             PIC 9.
  01 WS-LIMIT               BINARY-LONG.
  01 WS-BEFORE.
     05 WS-BEFORE-SLOT OCCURS 90 TIMES.
@@ -357,13 +358,19 @@
              WS-BEFORE-VAR(WS-S + 1)
      END-PERFORM
      CALL "MENU-CLICK" USING WS-ROW PSB-SLOT PSB-BUTTON PSB-CLICK-TYPE
-*>   State id, echoes of the changed slots, resynchronisation.
-     CALL "MENU-STATE-RAISE" USING WS-ROW WS-OLD-STATE WS-NEW-STATE
+*>   The state id is raised (and the changed slots echoed with it) only when the click changed a slot or needs a resynchronisation: a
+*>   click that changes nothing (a drag's start and slot packets) leaves the id the client holds valid (40-1 §4.2).
+     IF MN-WINDOW(WS-ROW) = 0
+         MOVE PL-STATE-ID(WS-ROW) TO WS-OLD-STATE
+     ELSE
+         MOVE MN-STATE-ID(WS-ROW) TO WS-OLD-STATE
+     END-IF
+     MOVE 0 TO WS-CHANGED
      PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-LIMIT
          CALL "MENU-GET-X" USING WS-ROW WS-S WS-ITEM WS-COUNT WS-VAR
          IF WS-ITEM NOT = WS-BEFORE-ITEM(WS-S + 1) OR WS-COUNT NOT = WS-BEFORE-COUNT(WS-S + 1)
                  OR WS-VAR NOT = WS-BEFORE-VAR(WS-S + 1)
-             CALL "MENU-SLOT-SEND" USING L-ID WS-S
+             MOVE 1 TO WS-CHANGED
          END-IF
      END-PERFORM
      MOVE 0 TO WS-RESYNC
@@ -381,6 +388,18 @@
              END-IF
          END-IF
      END-PERFORM
+     IF WS-CHANGED = 1 OR WS-RESYNC = 1
+         CALL "MENU-STATE-RAISE" USING WS-ROW WS-OLD-STATE WS-NEW-STATE
+     END-IF
+     IF WS-CHANGED = 1
+         PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= WS-LIMIT
+             CALL "MENU-GET-X" USING WS-ROW WS-S WS-ITEM WS-COUNT WS-VAR
+             IF WS-ITEM NOT = WS-BEFORE-ITEM(WS-S + 1) OR WS-COUNT NOT = WS-BEFORE-COUNT(WS-S + 1)
+                     OR WS-VAR NOT = WS-BEFORE-VAR(WS-S + 1)
+                 CALL "MENU-SLOT-SEND" USING L-ID WS-S
+             END-IF
+         END-PERFORM
+     END-IF
      IF WS-RESYNC = 1
          CALL "PB-RESET" USING PB-BUFFER
          CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
