@@ -572,6 +572,9 @@
           15 WR-CZ           BINARY-LONG.
           15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
+          15 WR-SURF-OK      PIC 9.          *> 1 = WR-SURF and WR-WTOP are current (SKY-STOPGAP-SURFACE, CC-0007 stopgap)
+          15 WR-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
+          15 WR-WTOP         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> one above the topmost fluid cell above WR-SURF, 0 = none
           15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (44 bytes each)
@@ -579,13 +582,6 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
-*>  ---- SKY-STOPGAP (CC-0007 stopgap; sky-stopgap.cob): per mesh call, the rows whose sky light is to be assumed ----
-    05 SKG-STATE.
-       10 SKG-COUNT           BINARY-LONG.    *> entries in use (0 = real light only)
-       10 SKG-ENTRY OCCURS 5 TIMES.
-          15 SKG-ROW          BINARY-LONG.    *> the world replica row
-          15 SKG-FAKE         PIC 9 OCCURS 24 TIMES.   *> 1 = block section s has no sky light data
-          15 SKG-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.

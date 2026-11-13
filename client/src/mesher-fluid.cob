@@ -531,6 +531,10 @@
              ELSE
                  DIVIDE WS-BYTE BY 16 GIVING L-BLOCK
              END-IF
+*>           CC-0007 stopgap (sky-stopgap.cob): the sky light assumed where the core sent none (0); remove with it.
+             IF L-SKY = 0
+                 CALL "SKY-STOPGAP-LIGHT" USING CLIENT-STATE WS-ROW WS-NX L-Y WS-NZ L-SKY
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM MF-AT.
