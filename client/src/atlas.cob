@@ -21,8 +21,9 @@
  01 WS-DEFS.
     05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/blocks.json".
     05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/items.json".
+    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/chests.json".
  01 WS-DEF-TABLE REDEFINES WS-DEFS.
-    05 WS-DEF              PIC X(40) OCCURS 2 TIMES.
+    05 WS-DEF              PIC X(40) OCCURS 3 TIMES.
  01 WS-D                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
@@ -84,7 +85,7 @@
      MOVE "missing" TO AT-NAME(1)
      MOVE 7 TO AT-NAME-LENGTH(1)
      MOVE 16 TO AT-SW(1) AT-SH(1)
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 2
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 3
          MOVE WS-DEF(WS-D) TO WS-FILE
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FILE)) TO WS-FILE-LENGTH
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT

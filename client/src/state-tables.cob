@@ -7,7 +7,7 @@
 *> opaque unless its flags say noOcclusion, noCollision, air, liquid or replaceable, or its class
 *> is a shape that does not fill the cube (slabs, stairs, fences, walls, doors, panes and the
 *> like) or a see-through material (glass, ice, leaves): the client holds no shape for a state, so this is the class-level approximation of the
-*> occlusion shape (24 part 1 section 5.2: canOcclude and a full block shape). A state at or above
+*> occlusion shape (24 part 1 section 5.2: canOcclude and a full block shape); an opaque state whose outline shape (51) is not the full cube is then not opaque. A state at or above
 *> ST-COUNT is not opaque and has block 0. STATE-TABLES-ENSURE builds them when they are not.
 
  IDENTIFICATION DIVISION.
@@ -67,6 +67,11 @@
              CALL "CONTENT-BLOCK-OF-STATE" USING WS-CODE WS-BLOCK WS-INDEX WS-ROW WS-STATUS
              MOVE WS-BLOCK TO ST-BLOCK(WS-S)
              CALL "STATE-ROW-OPAQUE" USING WS-ROW WS-OPAQUE
+*>           A shape that does not fill the cube occludes nothing, whatever the flags and the class say (redstone dust, an
+*>           enchanting table, a daylight detector): the outline shape of the state is the full cube (id 1) or the state is not opaque.
+             IF WS-OPAQUE = 1 AND BSH-READY = 1 AND BSH-OUT(WS-S) NOT = 1
+                 MOVE 0 TO WS-OPAQUE
+             END-IF
              MOVE WS-OPAQUE TO ST-OPAQUE(WS-S)
              MOVE WS-ROW TO CT-BLOCK-ROW
              CALL "STATE-FLUID-OF" USING WS-ROW WS-FLUID

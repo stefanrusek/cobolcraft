@@ -84,6 +84,10 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-FACING              PIC X(8).
+ 01 WS-CTYPE               PIC X(8).
+ 01 WS-CNAME               PIC X(48).
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-STATE                BINARY-LONG.
@@ -121,6 +125,23 @@
          END-IF
      END-IF
      CALL "STATE-BAKE" USING CLIENT-STATE L-BM-ROW STATE-MODELS
+*>   The chest family has no elements in its block model: the closed entity model of 52 is baked instead (models-chest.cob).
+     MOVE 0 TO WS-HITS
+     INSPECT WS-NAME TALLYING WS-HITS FOR ALL "chest"
+     IF WS-HITS > 0 AND WS-STATUS = CT-OK
+         MOVE "south" TO WS-FACING
+         MOVE "single" TO WS-CTYPE
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-P-COUNT
+             IF WS-P-NAME(WS-I) = "facing"
+                 MOVE WS-P-VALUE(WS-I) TO WS-FACING
+             END-IF
+             IF WS-P-NAME(WS-I) = "type"
+                 MOVE WS-P-VALUE(WS-I) TO WS-CTYPE
+             END-IF
+         END-PERFORM
+         MOVE WS-NAME TO WS-CNAME
+         CALL "CHEST-BAKE" USING CLIENT-STATE L-BM-ROW WS-CNAME WS-FACING WS-CTYPE
+     END-IF
      GOBACK.
  END PROGRAM LAZY-STATE-BAKE.
 

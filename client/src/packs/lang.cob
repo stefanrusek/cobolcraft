@@ -39,10 +39,12 @@
  01 WS-DONE                BINARY-LONG.
  01 WS-SLICE-LENGTH        BINARY-LONG.
  01 WS-CHAR                PIC X.
+ 01 WS-LINE                PIC X(160).
+ 01 WS-LINE-LENGTH         BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO LG-COUNT
+     MOVE 0 TO LG-COUNT LG-FILES LG-FAILED LG-OVERFLOW
      PERFORM VARYING WS-PACK FROM 1 BY 1 UNTIL WS-PACK > PK-COUNT
          MOVE 1 TO WS-FOUND
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-FOUND = 0
@@ -56,11 +58,18 @@
              IF WS-SLASH = 2 AND WS-PATH(WS-PATH-LENGTH - 15:16) = "/lang/en_us.json"
                  CALL "PACK-SOURCE-READ" USING CLIENT-STATE WS-PACK WS-PATH WS-PATH-LENGTH
                      WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
-                 PERFORM LANG-SLICES
+                 IF WS-FOUND = 1
+                     ADD 1 TO LG-FILES
+                     PERFORM LANG-SLICES
+                 ELSE
+                     ADD 1 TO LG-FAILED
+                 END-IF
                  MOVE 1 TO WS-FOUND
              END-IF
          END-PERFORM
      END-PERFORM
+     CALL "LANG-REPORT" USING CLIENT-STATE WS-LINE WS-LINE-LENGTH
+     DISPLAY WS-LINE(1:WS-LINE-LENGTH)
      GOBACK.
 
 *> Walks WS-TEXT(1:WS-LENGTH): the first "{" starts the first slice; outside strings the nesting depth
@@ -122,6 +131,9 @@
              ADD 1 TO LG-COUNT
              MOVE LG-COUNT TO WS-ENTRY
          END-IF
+         IF WS-ENTRY = 0
+             MOVE 1 TO LG-OVERFLOW
+         END-IF
          IF WS-ENTRY > 0
              MOVE WS-KEY TO LG-KEY(WS-ENTRY)
              MOVE WS-KEY-LENGTH TO LG-KEY-LENGTH(WS-ENTRY)
@@ -132,6 +144,44 @@
          MOVE JN-NEXT(WS-NODE) TO WS-NODE
      END-PERFORM.
  END PROGRAM LANG-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LANG-REPORT.
+*> USING CLIENT-STATE, line out (PIC X(160)), length out: what the last LANG-LOAD did, as a console line: a
+*> WARNING for no lang file at all (every text then shows as its key), for lang files that could not be
+*> read and for more keys than the table holds; else the number of files merged.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-FILES               PIC Z(5)9.
+ 01 WS-MAX                 PIC Z(5)9.
+ 01 WS-FAILED              PIC Z(5)9.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LINE                 PIC X(160).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LINE L-LENGTH.
+     MOVE SPACES TO L-LINE
+     MOVE LG-FILES TO WS-FILES
+     MOVE LG-FAILED TO WS-FAILED
+     MOVE CL-MAX-LANG TO WS-MAX
+     EVALUATE TRUE
+         WHEN LG-FILES = 0 AND LG-FAILED = 0
+             MOVE "WARNING language: no lang/en_us.json in any pack, texts show as their keys"
+                 TO L-LINE
+         WHEN LG-FAILED > 0
+             STRING "WARNING language: " FUNCTION TRIM(WS-FAILED) " lang files could not be read"
+                 DELIMITED BY SIZE INTO L-LINE
+         WHEN LG-OVERFLOW = 1
+             STRING "WARNING language: more keys than the table holds (" FUNCTION TRIM(WS-MAX)
+                 "), the rest are not loaded" DELIMITED BY SIZE INTO L-LINE
+         WHEN OTHER
+             STRING "language: " FUNCTION TRIM(WS-FILES) " lang files, no problem"
+                 DELIMITED BY SIZE INTO L-LINE
+     END-EVALUATE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-LINE)) TO L-LENGTH
+     GOBACK.
+ END PROGRAM LANG-REPORT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LANG-GET.
