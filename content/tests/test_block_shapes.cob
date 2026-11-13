@@ -414,6 +414,21 @@
      MOVE "5000,0,6000,10000,6000,11000" TO WS-EXPECT
      PERFORM CHECK-COLL
 
+*>   The climbable states (24 part 1 section 12).
+     MOVE "ladder" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     PERFORM FIND-STATE
+     MOVE "shapes: a ladder state is climbable" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE BSH-CLIMB(WS-STATE + 1) TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "stone" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE "shapes: a stone state is not climbable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BSH-CLIMB(WS-STATE + 1) TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+
 *>   Shape queries on a bottom slab at cell (0, 0, 0) (state found by key and property).
      MOVE "oak_slab" TO WS-KEY
      MOVE "type=bottom" TO WS-P1

@@ -626,6 +626,11 @@
  01 WS-WHICH               BINARY-LONG.
  01 WS-NAME                PIC X(24).
  01 WS-VALUE               PIC X(16).
+ 01 WS-CLIMBABLE.
+    05 FILLER              PIC X(70) VALUE "|LadderBlock|VineBlock|ScaffoldingBlock|".
+    05 FILLER              PIC X(70) VALUE "|WeepingVinesBlock|WeepingVinesPlantBlock|".
+    05 FILLER              PIC X(70) VALUE "|TwistingVinesBlock|TwistingVinesPlantBlock|".
+    05 FILLER              PIC X(70) VALUE "|CaveVinesBlock|CaveVinesPlantBlock|".
  PROCEDURE DIVISION.
      IF CT-OPEN = 0
          MOVE 0 TO BSH-READY BSH-TYPE
@@ -639,7 +644,7 @@
          MOVE 0 TO BSH-HASH(WS-S)
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
-         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S)
+         MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -685,6 +690,8 @@
                  END-IF
              END-IF
          END-PERFORM
+         MOVE 0 TO WS-HITS
+         INSPECT WS-CLIMBABLE TALLYING WS-HITS FOR ALL WS-KEY(1:WS-LENGTH)
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -716,6 +723,9 @@
              COMPUTE WS-S = WS-FIRST + WS-IDX + 1
              MOVE WS-COLL TO BSH-COLL(WS-S)
              MOVE WS-OUTV TO BSH-OUT(WS-S)
+             IF WS-HITS > 0
+                 MOVE 1 TO BSH-CLIMB(WS-S)
+             END-IF
          END-PERFORM
      END-PERFORM
      MOVE 1 TO BSH-READY
@@ -741,6 +751,13 @@
              MOVE 0 TO L-ID
          WHEN OTHER
              MOVE 1 TO L-ID
+*>           Before the first build the full cube is not stored yet (no set open: the stand-in states are all full cubes).
+             IF BSH-N(2) = 0
+                 INITIALIZE BSC-SHAPE
+                 MOVE 1 TO BSC-N
+                 MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
+                 MOVE BSC-SHAPE TO BSH-SHAPE(2)
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-COLL-ID.
@@ -762,6 +779,13 @@
              MOVE 0 TO L-ID
          WHEN OTHER
              MOVE 1 TO L-ID
+*>           Before the first build the full cube is not stored yet (no set open: the stand-in states are all full cubes).
+             IF BSH-N(2) = 0
+                 INITIALIZE BSC-SHAPE
+                 MOVE 1 TO BSC-N
+                 MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
+                 MOVE BSC-SHAPE TO BSH-SHAPE(2)
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-OUT-ID.

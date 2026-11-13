@@ -4,6 +4,7 @@
 *>   BSH-READY      1 once BSH-BUILD has run with a set open; 0 otherwise (then every state is a full cube, 0 the void).
 *>   BSH-TYPE       the set type (CT-SET-TYPE + 1) the tables were built for, 0 when none: BSH-BUILD skips a set it has built.
 *>   BSH-COLL, BSH-OUT   the collision shape id and the outline (targeting) shape id of block state s, at index s + 1.
+*>   BSH-CLIMB      1 for a state of the tag minecraft:climbable (ladder, vines, scaffolding; 24 part 1 section 12): the climbing rules of 13 section 1.3.
 *>   BSH-SHAPE      shape id i at index i + 1: BSH-N boxes, each (x1, y1, z1, x2, y2, z2) in thousandths of a pixel (1/16 block,
 *>                  so 16000 is one block); shape id 0 is empty and 1 is the full cube. Equal shapes share an id.
 *>   BSC-SHAPE      the candidate shape the builder assembles (same layout as one BSH-SHAPE).
@@ -18,6 +19,7 @@
     05 BSH-TYPE           BINARY-LONG.
     05 BSH-COLL           BINARY-SHORT UNSIGNED OCCURS 40000 TIMES.
     05 BSH-OUT            BINARY-SHORT UNSIGNED OCCURS 40000 TIMES.
+    05 BSH-CLIMB          BINARY-CHAR UNSIGNED OCCURS 40000 TIMES.
     05 BSH-SHAPE OCCURS 2000 TIMES.
        10 BSH-N           BINARY-LONG.
        10 BSH-BOX OCCURS 12 TIMES.

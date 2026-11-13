@@ -530,12 +530,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HIGHLIGHT-MESH.
-*> USING CLIENT-STATE, eye (3 FLOAT-LONG): the target's outline (08 §10.8.6): on each of the six
-*> faces of the block's cube, grown by 0.002 so it is not hidden by the faces themselves, four
-*> strips 1/32 block wide along its edges: 24 quads, 144 vertices, eye-relative, on the white
-*> swatch of the UI atlas at brightness 0 (black) and alpha 0.6.
+*> USING CLIENT-STATE, eye (3 FLOAT-LONG): the target's outline (08 section 10.8.6; 51 block shapes): for each box of the outline shape of
+*> the targeted state (a full cube when the tables hold none), on each of the six faces of the box, grown by 0.002 so it is not hidden
+*> by the faces themselves, four strips 1/32 block wide along its edges: 24 quads, 144 vertices a box (at most 12 boxes),
+*> eye-relative, on the white swatch of the UI atlas at brightness 0 (black) and alpha 0.6.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
  01 WS-E                   FLOAT-LONG VALUE 0.002.
  01 WS-W                   FLOAT-LONG VALUE 0.03125.
  01 WS-A                   BINARY-LONG.
@@ -545,69 +546,97 @@
  01 WS-V-AXIS              BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
- 01 WS-LO                  FLOAT-LONG.
- 01 WS-HI                  FLOAT-LONG.
  01 WS-U0                  FLOAT-LONG.
  01 WS-U1                  FLOAT-LONG.
  01 WS-V0                  FLOAT-LONG.
  01 WS-V1                  FLOAT-LONG.
  01 WS-BLOCK               FLOAT-LONG OCCURS 3 TIMES.
  01 WS-P                   FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-BLO                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-BHI                 FLOAT-LONG OCCURS 3 TIMES.
  01 WS-CORNERS             PIC X(6) VALUE "123134".
  01 WS-TU                  FLOAT-SHORT.
  01 WS-TV                  FLOAT-SHORT.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-BOXES               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
-     MOVE TG-X TO WS-BLOCK(1)
-     MOVE TG-Y TO WS-BLOCK(2)
-     MOVE TG-Z TO WS-BLOCK(3)
+     MOVE TG-X TO WS-BLOCK(1) WS-CX
+     MOVE TG-Y TO WS-BLOCK(2) WS-CY
+     MOVE TG-Z TO WS-BLOCK(3) WS-CZ
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
+     CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+     MOVE BSH-N(WS-SHAPE + 1) TO WS-BOXES
+     IF WS-BOXES = 0
+         MOVE 1 TO WS-BOXES
+     END-IF
      COMPUTE WS-TU = 4 / UA-W
      COMPUTE WS-TV = (UA-H - 4) / UA-H
-     COMPUTE WS-LO = 0 - WS-E
-     COMPUTE WS-HI = 1 + WS-E
      MOVE 0 TO RL-HL-COUNT
-     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
-         COMPUTE WS-U-AXIS = FUNCTION MOD(WS-A, 3) + 1
-         COMPUTE WS-V-AXIS = FUNCTION MOD(WS-A + 1, 3) + 1
-         PERFORM VARYING WS-SIDE FROM 0 BY 1 UNTIL WS-SIDE > 1
-             PERFORM VARYING WS-STRIP FROM 1 BY 1 UNTIL WS-STRIP > 4
-*>               The strip's rectangle in the face's two other axes.
-                 MOVE WS-LO TO WS-U0 WS-V0
-                 MOVE WS-HI TO WS-U1 WS-V1
-                 EVALUATE WS-STRIP
-                     WHEN 1
-                         COMPUTE WS-U1 = WS-LO + WS-W
-                     WHEN 2
-                         COMPUTE WS-U0 = WS-HI - WS-W
-                     WHEN 3
-                         COMPUTE WS-V1 = WS-LO + WS-W
-                     WHEN 4
-                         COMPUTE WS-V0 = WS-HI - WS-W
-                 END-EVALUATE
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
-                     MOVE FUNCTION NUMVAL(WS-CORNERS(WS-K:1)) TO WS-C
-                     COMPUTE WS-P(WS-A) = WS-LO + WS-SIDE * (WS-HI - WS-LO)
-                     MOVE WS-U0 TO WS-P(WS-U-AXIS)
-                     IF WS-C = 2 OR WS-C = 3
-                         MOVE WS-U1 TO WS-P(WS-U-AXIS)
-                     END-IF
-                     MOVE WS-V0 TO WS-P(WS-V-AXIS)
-                     IF WS-C >= 3
-                         MOVE WS-V1 TO WS-P(WS-V-AXIS)
-                     END-IF
-                     ADD 1 TO RL-HL-COUNT
-                     COMPUTE RL-HL-X(RL-HL-COUNT) = WS-BLOCK(1) + WS-P(1) - L-EYE(1)
-                     COMPUTE RL-HL-Y(RL-HL-COUNT) = WS-BLOCK(2) + WS-P(2) - L-EYE(2)
-                     COMPUTE RL-HL-Z(RL-HL-COUNT) = WS-BLOCK(3) + WS-P(3) - L-EYE(3)
-                     MOVE WS-TU TO RL-HL-U(RL-HL-COUNT)
-                     MOVE WS-TV TO RL-HL-V(RL-HL-COUNT)
-                     MOVE 0 TO RL-HL-B(RL-HL-COUNT)
-                     MOVE 0.6 TO RL-HL-A(RL-HL-COUNT)
-                     MOVE 0 TO RL-HL-SKY(RL-HL-COUNT)
-                     MOVE 1 TO RL-HL-R(RL-HL-COUNT) RL-HL-G(RL-HL-COUNT) RL-HL-BLUE(RL-HL-COUNT)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BOXES
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+             IF BSH-N(WS-SHAPE + 1) = 0
+                 MOVE 0 TO WS-BLO(WS-A)
+                 MOVE 1 TO WS-BHI(WS-A)
+             ELSE
+                 COMPUTE WS-BLO(WS-A) = BSH-V(WS-SHAPE + 1, WS-I, WS-A) / 16000
+                 COMPUTE WS-BHI(WS-A) = BSH-V(WS-SHAPE + 1, WS-I, WS-A + 3) / 16000
+             END-IF
+             COMPUTE WS-BLO(WS-A) = WS-BLO(WS-A) - WS-E
+             COMPUTE WS-BHI(WS-A) = WS-BHI(WS-A) + WS-E
+         END-PERFORM
+         PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+             COMPUTE WS-U-AXIS = FUNCTION MOD(WS-A, 3) + 1
+             COMPUTE WS-V-AXIS = FUNCTION MOD(WS-A + 1, 3) + 1
+             PERFORM VARYING WS-SIDE FROM 0 BY 1 UNTIL WS-SIDE > 1
+                 PERFORM VARYING WS-STRIP FROM 1 BY 1 UNTIL WS-STRIP > 4
+*>                   The strip's rectangle in the face's two other axes.
+                     MOVE WS-BLO(WS-U-AXIS) TO WS-U0
+                     MOVE WS-BHI(WS-U-AXIS) TO WS-U1
+                     MOVE WS-BLO(WS-V-AXIS) TO WS-V0
+                     MOVE WS-BHI(WS-V-AXIS) TO WS-V1
+                     EVALUATE WS-STRIP
+                         WHEN 1
+                             COMPUTE WS-U1 = WS-U0 + WS-W
+                         WHEN 2
+                             COMPUTE WS-U0 = WS-U1 - WS-W
+                         WHEN 3
+                             COMPUTE WS-V1 = WS-V0 + WS-W
+                         WHEN 4
+                             COMPUTE WS-V0 = WS-V1 - WS-W
+                     END-EVALUATE
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                         MOVE FUNCTION NUMVAL(WS-CORNERS(WS-K:1)) TO WS-C
+                         COMPUTE WS-P(WS-A) = WS-BLO(WS-A) + WS-SIDE * (WS-BHI(WS-A) - WS-BLO(WS-A))
+                         MOVE WS-U0 TO WS-P(WS-U-AXIS)
+                         IF WS-C = 2 OR WS-C = 3
+                             MOVE WS-U1 TO WS-P(WS-U-AXIS)
+                         END-IF
+                         MOVE WS-V0 TO WS-P(WS-V-AXIS)
+                         IF WS-C >= 3
+                             MOVE WS-V1 TO WS-P(WS-V-AXIS)
+                         END-IF
+                         ADD 1 TO RL-HL-COUNT
+                         COMPUTE RL-HL-X(RL-HL-COUNT) = WS-BLOCK(1) + WS-P(1) - L-EYE(1)
+                         COMPUTE RL-HL-Y(RL-HL-COUNT) = WS-BLOCK(2) + WS-P(2) - L-EYE(2)
+                         COMPUTE RL-HL-Z(RL-HL-COUNT) = WS-BLOCK(3) + WS-P(3) - L-EYE(3)
+                         MOVE WS-TU TO RL-HL-U(RL-HL-COUNT)
+                         MOVE WS-TV TO RL-HL-V(RL-HL-COUNT)
+                         MOVE 0 TO RL-HL-B(RL-HL-COUNT)
+                         MOVE 0.6 TO RL-HL-A(RL-HL-COUNT)
+                         MOVE 0 TO RL-HL-SKY(RL-HL-COUNT)
+                         MOVE 1 TO RL-HL-R(RL-HL-COUNT) RL-HL-G(RL-HL-COUNT) RL-HL-BLUE(RL-HL-COUNT)
+                     END-PERFORM
                  END-PERFORM
              END-PERFORM
          END-PERFORM

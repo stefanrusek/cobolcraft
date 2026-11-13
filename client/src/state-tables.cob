@@ -31,6 +31,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY CONTENT.
+ COPY CTBSHAPE.
  01 WS-S                   BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
@@ -59,6 +60,8 @@
          MOVE SPACES TO ST-BLOCK-NAME(WS-S)
      END-PERFORM
      IF CT-OPEN = 1 AND CT-STATE-COUNT > 0
+*>       The collision and outline shape of every state (51 block shapes): the content library's tables, built once per set type.
+         CALL "BSH-BUILD"
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > ST-COUNT
              COMPUTE WS-CODE = WS-S - 1
              CALL "CONTENT-BLOCK-OF-STATE" USING WS-CODE WS-BLOCK WS-INDEX WS-ROW WS-STATUS
@@ -100,7 +103,8 @@
              END-IF
          END-PERFORM
      ELSE
-*>       The stand-in table: the block id is the hex digit of its row (0 to 9, A, B).
+*>       The stand-in table: the block id is the hex digit of its row (0 to 9, A, B); every state but 0 is a full cube.
+         MOVE 0 TO BSH-READY BSH-TYPE
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > ST-COUNT
              COMPUTE WS-CODE = FUNCTION ORD(CL-BS-BLOCK(WS-S)) - 1
              COMPUTE ST-BLOCK(WS-S) = WS-CODE - 48
