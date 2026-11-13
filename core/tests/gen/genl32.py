@@ -231,6 +231,8 @@ class Store:
         d=-1 if empty else 1
         for q in s.nbrs(p):
             o=s.state.get(q,0); s.setbyte(q,(o&32)|((o&31)+d))
+    def queue_layer(s,p,arr):
+        s.queue[p]=list(arr); s.queued_same.discard(p); s.incons=True
     def queue_data(s,p,fill):
         if fill<0: s.queue.pop(p,None); s.queued_same.discard(p)
         else: s.queue[p]=[fill]*4096; s.queued_same.discard(p); s.incons=True
@@ -674,6 +676,8 @@ class EScn:
         self.op(S(k,which,i),'CALL "L32-QUEUE-ENTRY" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',1 if i==0 else 5)
     def chunk_block(self,cx,cz):
         self.m.chunk_start_block(cx,cz); self.op(S(cx,cz),'CALL "L32-CHUNK-START-BLOCK" USING WS-I(1) WS-I(2)')
+    def pub(self,k,x,y,z):
+        self.exp.append(str(self.m.lay[k-1].pub(x,y,z) if (k==1 or self.m.skyon) else 0)); self.op(S(k,x,y,z),'CALL "L32-GET-PUBLISHED" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
     def fill(self,cx,cz):
         self.m.sky_fill(cx,cz); self.op(S(cx,cz),'CALL "L32-SKY-FILL" USING WS-I(1) WS-I(2)')
     def tab(self,x,z,df=777):
@@ -877,3 +881,294 @@ e.setlight(1,1,1); e.finish(2); e.probe(2,16,31,-16,50,16,31)
 e.setlight(1,1,0); e.setlight(0,0,0); e.status(2,2,2,2,0); e.finish(2); e.setlight(2,2,1); e.finish(2); e.probe(2,32,47,-16,80,32,47)
 e.run_case(g,'setLightEnabled(true) on the sky engine (5.2): every writable all-zero layer from the top storing section down to max(bottom, S) is filled with 15 (S = section of H - 1 plus 1, H the highest lowest-source Y; an empty chunk fills all); layers that already hold light stay; false only clears the flag')
 W(g,5)
+# ===================== 7
+g=GL(7,'Block-state overrides','T0691','the default dampening rule and the per-class overrides of propagatesSkylightDown, dampening and useShapeForLightOcclusion.')
+CLASSES=[('LeavesBlock',1),('TintedGlassBlock',2)]+[(n,3) for n in ('LiquidBlock','PipeBlock','ShulkerBoxBlock')]+[(n,4) for n in ('BambooStalkBlock','HangingMossBlock','MossyCarpetBlock','TransparentBlock','VineBlock')]+[(n,5) for n in ('BarrierBlock','GlowLichenBlock','LightBlock','VegetationBlock')]+[(n,6) for n in ('CrossCollisionBlock','WallBlock')]+[('SlabBlock',7)]+[(n,8) for n in ('StairBlock','SnowLayerBlock','DaylightDetectorBlock','EnchantingTableBlock','EndPortalFrameBlock','FarmlandBlock','LecternBlock','PathBlock','SculkSensorBlock','SculkShriekerBlock','ShelfBlock','StonecutterBlock','PistonHeadBlock')]+[('PistonBaseBlock',9),('StoneBlock',0),('GlassBlock',0)]
+def rules(cat,solid,pdef,fempty,wl,dbl,ext):
+    prop=pdef; use=0; ov=None
+    if cat==1: ov=1
+    if cat==2: ov=15; prop=0
+    if cat==3: prop=0
+    if cat==4: prop=1
+    if cat==5: prop=fempty
+    if cat==6: prop=1-wl
+    if cat==7: use=1-dbl
+    if cat==8: use=1
+    if cat==9: use=ext
+    d=ov if ov is not None else (15 if solid else (0 if prop else 1))
+    return d,prop,use
+g.extra=" 01 WS-CLS               PIC X(32).\n"
+def r7(name,cat,solid,pdef,fe,wl,dbl,ext):
+    d,p,u=rules(cat,solid,pdef,fe,wl,dbl,ext)
+    return ('%s %d %d %d %d %d %d'%(name,solid,pdef,fe,wl,dbl,ext),"%d/%d/%d"%(d,p,u))
+cases=[]
+for name,cat in CLASSES:
+    for solid,pdef,fe,wl,dbl,ext in [(0,1,1,0,0,0),(0,0,0,1,1,1),(1,0,1,0,0,1)]:
+        cases.append((name,)+r7(name,cat,solid,pdef,fe,wl,dbl,ext))
+def call7(c):
+    name,inp,exp=c; _,solid,pdef,fe,wl,dbl,ext=inp.split()
+    return (" ".join([solid,pdef,fe,wl,dbl,ext]),'MOVE "%s" TO WS-CLS\nCALL "L32-BLOCK-RULES" USING WS-CLS WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-R(1) WS-R(2) WS-R(3)'%name,3)
+half=len(cases)//2
+g.case('overrides by class (7, part 1): leaves dampening 1; tinted glass dampening 15 and no skylight pass; liquid, pipe, shulker box never propagate skylight; bamboo, hanging moss, moss carpet, transparent blocks and vines always do; barrier, glow lichen, light block and vegetation follow the fluid; walls and fences follow waterlogging',[call7(c) for c in cases[:half]]," ".join(c[2] for c in cases[:half]))
+g.case('overrides by class (7, part 2): slabs use their shape unless double; stairs, snow layers, daylight detector, enchanting table, end portal frame, farmland, lectern, path, sculk sensor and shrieker, shelf, stonecutter and piston head always; the piston base only when extended; other classes use the default rule (full block 15, else 0 when skylight passes, else 1)',[call7(c) for c in cases[half:]]," ".join(c[2] for c in cases[half:]))
+W(g,7)
+
+# ===================== engine model, feeding (section 8)
+def nib(b): return b&15,(b>>4)&15
+def arr_of(b):
+    lo,hi=nib(b); return [lo if i%2==0 else hi for i in range(4096)]
+class Feed(Eng):
+    def __init__(s,sky=0):
+        Eng.__init__(s,sky); s.past=set(); s.correct={}; s.note={}; s.dirty=set(); s.tasks=[]; s.cq=[]
+    def sec_nonair(s,cx,sy,cz):
+        return any(s.blk(cx*16+lx,sy*16+ly,cz*16+lz)!=0 for lx in range(16) for ly in range(16) for lz in range(16))
+    def status_both(s,sx,sy,sz,empty):
+        s.lay[0].status((sx,sy,sz),empty)
+        if s.skyon: s.lay[1].status((sx,sy,sz),empty)
+    def check_both(s,x,y,z):
+        s.check(0,x,y,z)
+        if s.skyon: s.check(1,x,y,z)
+    def light_diff(s,a,b):
+        if a==b: return 0
+        A,B=s.states[a],s.states[b]
+        return int(A[1]!=B[1] or A[0]!=B[0] or A[3]==1 or B[3]==1)
+    def set_block(s,mode,x,y,z,new):
+        if not 0<=y<=63: return
+        col=(x>>4,z>>4); old=s.blocks.get((x,y,z),0)
+        if old==new: return
+        sy=y>>4; was=not s.sec_nonair(col[0],sy,col[1])
+        if new: s.blocks[(x,y,z)]=new
+        else: s.blocks.pop((x,y,z),None)
+        now=not s.sec_nonair(col[0],sy,col[1]); chg=was!=now; diff=s.light_diff(old,new)
+        if mode==0 or col in s.past:
+            if chg:
+                s.status_both(col[0],sy,col[1],now)
+                if mode==0: s.note[(col[0],sy,col[1])]=1 if now else 2
+            if diff:
+                s.sky_update(x,y,z); s.check_both(x,y,z)
+    def mark(s,p):
+        for dx in (-1,0,1):
+            for dy in (-1,0,1):
+                for dz in (-1,0,1):
+                    q=(p[0]+dx,p[1]+dy,p[2]+dz)
+                    if Store.ok(q): s.dirty.add(q)
+    def apply_light(s,cx,cz,dirty,sm,se,bm,be,arrs):
+        j=0
+        for lst,(mask,emp) in ((1,(sm,se)),(0,(bm,be))):
+            for i in range(6):
+                p=(cx,i-1,cz)
+                if (mask>>i)&1: a=arrs[j]; j+=1
+                elif (emp>>i)&1: a=[0]*4096
+                else: continue
+                if lst==1 and not s.skyon: continue
+                s.lay[lst].queue_layer(p,a)
+                if dirty: s.mark(p)
+        s.set_enabled(cx,cz,True)
+    def enable_chunk_light(s,cx,cz):
+        for sy in range(4): s.status_both(cx,sy,cz,0 if s.sec_nonair(cx,sy,cz) else 1)
+        for dz in (-1,0,1):
+            for dx in (-1,0,1):
+                for sy in range(-1,5):
+                    q=(cx+dx,sy,cz+dz)
+                    if Store.ok(q): s.dirty.add(q)
+    def forget(s,cx,cz):
+        s.set_enabled(cx,cz,False)
+        for sy in range(-1,5):
+            s.lay[0].queue_data((cx,sy,cz),-1)
+            if s.skyon: s.lay[1].queue_data((cx,sy,cz),-1)
+        for sy in range(4): s.status_both(cx,sy,cz,1)
+    def retain(s,cx,cz,f):
+        for k in range(2 if s.skyon else 1):
+            (s.lay[k].retain.add if f else s.lay[k].retain.discard)((cx,cz))
+    def leave(s,cx,cz):
+        s.retain(cx,cz,0); s.forget(cx,cz)
+    def run_both(s):
+        n=s.run(0)
+        if s.skyon: n+=s.run(1)
+        return n
+    def poll_count(s,n): return n if n>=1000 else min(n,max(10,n//10))
+    def exec_task(s,t):
+        ph,k,a,b,c,d,e=t
+        if k==1: s.check_both(a,b,c)
+        elif k==2: s.status_both(a,b,c,d)
+        elif k==3: s.set_enabled(a,b,bool(c))
+        elif k==4:
+            s.chunk_start_block(a,b)
+            if s.skyon: s.chunk_start_sky(a,b)
+        elif k==5: s.lay[a-1].queue_data((b,c,d),e)
+        elif k==6: s.retain(a,b,c)
+        elif k==7: s.leave(a,b)
+        elif k==8: s.correct[(a,b)]=c
+    def server_run(s):
+        n=min(len(s.tasks),1000); batch=s.tasks[:n]
+        for t in batch:
+            if t[0]==0: s.exec_task(t)
+        pairs=s.run_both()
+        for t in batch:
+            if t[0]==1: s.exec_task(t)
+        s.tasks=s.tasks[n:]
+        return n,pairs
+    def needs(s):
+        return int(bool(s.tasks) or s.haswork(0) or (s.skyon and s.haswork(1)))
+class FScn(EScn):
+    def __init__(self,sky=1):
+        self.sky=sky; self.m=Feed(sky); self.calls=[]; self.exp=[]
+        self.op("%d"%sky,'CALL "L32-INIT" USING WS-I(1)')
+    def setblock(self,mode,x,y,z,i):
+        self.m.set_block(mode,x,y,z,i); self.op(S(mode,x,y,z,i),'CALL "L32-SET-BLOCK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def past(self,cx,cz,f):
+        (self.m.past.add if f else self.m.past.discard)((cx,cz)); self.op(S(cx,cz,f),'CALL "L32-PAST-INIT" USING WS-I(1) WS-I(2) WS-I(3)')
+    def submit(self,ph,kind,a=0,b=0,c=0,d=0,e=0):
+        self.m.tasks.append((ph,kind,a,b,c,d,e)); self.op(S(ph,kind,a,b,c,d,e),'CALL "L32-SERVER-SUBMIT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7)')
+    def srun(self):
+        n,p=self.m.server_run(); self.exp.append("%d/%d"%(n,p)); self.op("0",'CALL "L32-SERVER-RUN" USING WS-R(1) WS-R(2)',2)
+    def needs(self):
+        self.exp.append(str(self.m.needs())); self.op("0",'CALL "L32-SERVER-NEEDS" USING WS-R(1)',1)
+    def flags(self,k,cx,cz):
+        L=self.m.lay[k-1]; self.exp.append("%d/%d/%d"%(int((cx,cz) in L.on),int((cx,cz) in L.retain),self.m.correct.get((cx,cz),0)))
+        self.op(S(k,cx,cz),'CALL "L32-COLUMN-FLAGS" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3)
+    def initlight(self,cx,cz,lighted):
+        m=self.m; m.sky_fill(cx,cz)
+        for sy in range(4):
+            if m.sec_nonair(cx,sy,cz): m.tasks.append((0,2,cx,sy,cz,0,0))
+        m.tasks.append((1,3,cx,cz,lighted,0,0)); m.tasks.append((1,6,cx,cz,0,0,0))
+        self.op(S(cx,cz,lighted),'CALL "L32-INIT-LIGHT" USING WS-I(1) WS-I(2) WS-I(3)')
+    def lightstage(self,cx,cz,lighted):
+        m=self.m; m.correct[(cx,cz)]=0
+        if not lighted: m.tasks.append((0,4,cx,cz,0,0,0))
+        m.tasks.append((1,8,cx,cz,1,0,0))
+        self.op(S(cx,cz,lighted),'CALL "L32-LIGHT-STAGE" USING WS-I(1) WS-I(2) WS-I(3)')
+    def leave(self,cx,cz):
+        self.m.tasks.append((0,7,cx,cz,0,0,0)); self.op(S(cx,cz),'CALL "L32-CHUNK-LEAVE" USING WS-I(1) WS-I(2)')
+    def loadstored(self,cx,cz,fills):
+        m=self.m; first=True
+        for sy in range(4):
+            hb=fills[sy]>=0; hs=m.skyon and fills[4+sy]>=0
+            if hb or hs:
+                if first: m.retain(cx,cz,1); first=False
+                if hb: m.lay[0].queue_data((cx,sy,cz),fills[sy])
+                if hs: m.lay[1].queue_data((cx,sy,cz),fills[4+sy])
+        self.op(S(cx,cz,*fills),'CALL "L32-LOAD-STORED" USING WS-IST',None)
+    def obs8(self,x,y,z):
+        m=self.m; sx,sy,sz=x>>4,y>>4,z>>4
+        a=m.lay[0].info((sx,sy,sz)); b=m.lay[1].info((sx,sy,sz))
+        self.exp.append("%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d"%(a[0],b[0],len(m.q[0]['ck']),len(m.q[1]['ck']),m.skylow(x,z,777),m.note.get((sx,sy,sz),0),int(a[1]),int(b[1]),a[3],int((sx,sy,sz) in m.dirty),a[5]))
+        self.op(S(1,sx,sy,sz,2,sx,sy,sz,x,z,777),'CALL "L32-SECTION-INFO" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1) WS-R(7) WS-R(12) WS-R(9) WS-R(13) WS-R(11)\nCALL "L32-SECTION-INFO" USING WS-I(5) WS-I(6) WS-I(7) WS-I(8) WS-R(2) WS-R(8) WS-R(14) WS-R(15) WS-R(16) WS-R(13)\nCALL "L32-CHECK-COUNT" USING WS-I(1) WS-R(3)\nCALL "L32-CHECK-COUNT" USING WS-I(5) WS-R(4)\nCALL "L32-SKY-LOWEST" USING WS-I(9) WS-I(10) WS-I(11) WS-R(5)\nCALL "L32-EMPTY-NOTE" USING WS-I(2) WS-I(3) WS-I(4) WS-R(6)\nCALL "L32-DIRTY-AT" USING WS-I(2) WS-I(3) WS-I(4) WS-R(10)',11)
+
+def f8(sky=1,standard=True):
+    e=FScn(sky); e.standard()
+    e.define(13,0,0,0,0,[0]*6); e.define(14,0,0,0,0,[0]*6)
+    for cz in range(-1,3):
+        for cx in range(-1,3): e.avail(cx,cz,1)
+    return e
+# ===================== 8
+g=GL(8,'When the engine is fed','T0693','block changes, the client, the server batches, the generation stages and loaded light.')
+g.extra=EXTRA+" 01 WS-DATA              PIC X(24576).\n"
+e=f8()
+e.setblock(0,5,20,5,2); e.obs8(5,20,5); e.setblock(0,5,20,5,2); e.obs8(5,20,5)
+e.setblock(0,6,21,6,13); e.obs8(6,21,6); e.setblock(0,6,21,6,4); e.obs8(6,21,6); e.setblock(0,6,21,6,0); e.obs8(6,21,6); e.setblock(0,5,20,5,0); e.obs8(5,20,5)
+e.setblock(0,5,20,5,0); e.obs8(5,20,5); e.setblock(0,5,100,5,2); e.setblock(0,5,-3,5,2); e.obs8(5,20,5)
+e.setblock(0,20,3,20,2); e.run(1); e.run(2); e.obs8(20,3,20); e.setblock(0,20,50,20,9); e.obs8(20,50,20); e.setblock(0,20,50,20,5); e.obs8(20,50,20)
+e.run_case(g,'LevelChunk.setBlockState (8.1): a write of the identical state or air into an all-air section does nothing; the first block of a section runs updateSectionStatus on both engines and tells the chunk source (emptiness note); a state whose light properties equal the old one (two airs) leaves the sky table and the check set alone; a changed emission or dampening updates the sky table and checks the position on both engines')
+e=f8()
+e.setblock(1,5,20,5,2); e.obs8(5,20,5); e.past(0,0,1); e.setblock(1,5,20,5,0); e.obs8(5,20,5); e.setblock(1,5,20,5,2); e.obs8(5,20,5); e.setblock(1,5,20,5,4); e.obs8(5,20,5)
+e.setblock(1,5,200,5,2); e.setblock(1,5,21,5,3); e.obs8(5,21,5); e.past(0,0,0); e.setblock(1,6,21,6,2); e.obs8(6,21,6)
+e.run_case(g,'ProtoChunk.setBlockState (8.1): the cell is stored always but the light work (updateSectionStatus then the sky table update and checkBlock; no emptiness note for the chunk source) only once the chunk status is at or after INITIALIZE_LIGHT; a Y outside the build height returns')
+def arrs(e,sm,se,bm,be,pats):
+    parts=[]
+    for j,b in enumerate(pats):
+        parts.append('MOVE ALL X"%02X" TO WS-DATA(%d:2048)'%(b,j*2048+1))
+    return "\n".join(parts)
+e=f8()
+pats=[0x35,0x12,0x7F,0x24,0x71,0x66]
+for p_ in [(0,0,0)]: pass
+e.setblock(0,5,20,5,2)
+e.op("0",arrs(e,0,0,0,0,pats),None)
+arr=[arr_of(b) for b in pats]
+e.m.apply_light(0,0,0,0b000110,0b100000,0b001001,0b010000,arr)
+e.op(S(0,0,0,6,32,9,16),'CALL "L32-APPLY-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-DATA',None)
+for y in (-5,5,20,40,70): e.obs8(5,y,5)
+e.m.enable_chunk_light(0,0); e.op(S(0,0),'CALL "L32-ENABLE-CHUNK-LIGHT" USING WS-I(1) WS-I(2)',None)
+for y in (-5,5,20,40,70): e.obs8(5,y,5)
+e.run(1); e.run(2)
+for y in (-5,5,20,40,70): e.obs8(5,y,5)
+for (x,y,z) in [(1,-10,2),(2,-10,2),(3,10,3),(4,10,3),(3,25,3),(3,40,3),(4,40,3),(3,60,3)]:
+    e.pub(1,x,y,z); e.pub(2,x,y,z)
+e.run_case(g,'client chunk with light (8.2): the sky list then the block list: bit i of the mask queues a layer from the next array (nibbles low then high), else bit i of the empty mask an all-zero layer, else nothing; light is enabled afterwards; enableChunkLight gives every block section its emptiness; the queued layers are installed by the next engine run')
+e=f8()
+e.setblock(0,5,20,5,2)
+e.op("0",arrs(e,0,0,0,0,pats),None)
+e.m.apply_light(0,0,1,0b000110,0b100000,0b001001,0b010000,arr)
+e.op(S(0,0,1,6,32,9,16),'CALL "L32-APPLY-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-DATA',None)
+for p_ in [(5,-5,5),(5,5,5),(5,20,5),(5,40,5),(5,70,5),(40,5,5),(20,20,20)]: e.obs8(*p_)
+e.run_case(g,'light update packet (8.2): the same apply step with the mark-dirty flag true marks each updated section and its neighbours dirty')
+e=f8()
+e.setblock(0,5,20,5,2)
+e.op("0",arrs(e,0,0,0,0,pats),None)
+e.m.apply_light(0,0,0,0b000110,0b100000,0b001001,0b010000,arr)
+e.op(S(0,0,0,6,32,9,16),'CALL "L32-APPLY-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-DATA',None)
+e.m.enable_chunk_light(0,0); e.op(S(0,0),'CALL "L32-ENABLE-CHUNK-LIGHT" USING WS-I(1) WS-I(2)',None)
+e.run(1); e.run(2)
+for y in (5,20,40): e.obs8(5,y,5)
+e.m.forget(0,0); e.op(S(0,0),'CALL "L32-FORGET-CHUNK" USING WS-I(1) WS-I(2)',None)
+for y in (-5,5,20,40): e.obs8(5,y,5)
+e.run(1); e.run(2)
+for y in (-5,5,20,40): e.obs8(5,y,5)
+cl=[]
+for k in (1,2):
+    for cx,cz in [(0,0),(1,0)]: cl.append((k,cx,cz))
+e.m.set_enabled(1,1,True); e.op(S(1,1,1),'CALL "L32-SET-LIGHT-ENABLED" USING WS-I(1) WS-I(2) WS-I(3)',None)
+e.m.set_enabled(1,1,False); e.op(S(1,1),'CALL "L32-CHUNK-UNLOAD" USING WS-I(1) WS-I(2)',None)
+for k in (1,2):
+    for cx,cz in [(0,0),(1,1)]:
+        e.exp.append("%d/%d"%(int(cx>=0 and (cx,cz) in e.m.lay[k-1].on),int((cx,cz) in e.m.lay[k-1].retain))); e.op(S(k,cx,cz),'CALL "L32-COLUMN-FLAGS" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',2)
+e.run_case(g,'forget chunk and unload (8.2): setLightEnabled(false), a null layer queued for every light section of both engines (queued data is cleared) and every block section reported empty; unloading only turns the light off')
+e=f8()
+pcs=[(1,0),(5,0),(9,0),(10,0),(99,0),(100,0),(999,0),(1000,0),(1500,0),(3,0)]
+g.run('pollLightUpdates (8.2): with n queued it runs max(10, n / 10) tasks when n < 1000 (never more than n), else all n',[S(n) for n,_ in pcs],'CALL "L32-POLL-COUNT" USING WS-I(1) WS-R(1)',1," ".join(str(Feed().poll_count(n)) for n,_ in pcs))
+e=f8()
+e.setblock(0,5,20,5,2); e.setblock(0,20,20,20,2)
+e.run(1); e.run(2)
+for kind,cx,cz in [(1,0,0),(1,1,1),(2,0,0),(3,1,1)]:
+    e.m.cq.append((kind,cx,cz)); e.op(S(kind,cx,cz),'CALL "L32-CLIENT-QUEUE" USING WS-I(1) WS-I(2) WS-I(3)',None)
+def cl_update(e):
+    n=len(e.m.cq); k=e.m.poll_count(n); ran=e.m.cq[:k]; e.m.cq=e.m.cq[k:]
+    for kind,cx,cz in ran:
+        if kind==1: e.m.enable_chunk_light(cx,cz)
+        elif kind==2: e.m.forget(cx,cz)
+        else: e.m.set_enabled(cx,cz,False)
+    pairs=e.m.run_both(); e.exp.append("%d/%d"%(k,pairs)); e.op("0",'CALL "L32-CLIENT-UPDATE" USING WS-R(1) WS-R(2)',2)
+cl_update(e)
+for p_ in [(5,20,5),(20,20,20)]: e.obs8(*p_)
+cl_update(e)
+e.run_case(g,'client frame (8.2): ClientLevel.update polls the task deque (enable chunk light, forget, unload tasks) and then runs the engines once; the update is per frame, not per tick')
+
+e=f8()
+e.cell(5,20,5,4); e.cell(6,20,5,2)
+e.needs(); e.submit(0,2,0,1,0,0,0); e.submit(0,3,0,0,1,0,0); e.submit(0,1,5,20,5,0,0); e.submit(1,6,0,0,1,0,0); e.needs()
+e.srun(); e.needs(); e.level(1,5,20,5); e.level(1,6,20,5); e.level(1,5,21,5); e.level(1,4,20,5); e.flags(1,0,0); e.flags(2,0,0)
+for i in range(1005): e.submit(1 if i%2 else 0,6,0,1,i%2,0,0)
+e.needs(); e.srun(); e.needs(); e.srun(); e.needs(); e.flags(1,0,1)
+e.run_case(g,'server batches (8.3): every call is a task; runUpdate processes at most 1000 tasks: the PRE_UPDATE ones first, then one light update run, then the POST_UPDATE ones of the same batch; tasks are removed once processed; scheduling is needed while tasks wait or the engines have work')
+e=f8()
+e.floor(19); e.cell(5,19,5,0); e.cell(5,2,5,2)
+e.initlight(0,0,0); e.needs(); e.srun(); e.flags(1,0,0); e.flags(2,0,0)
+e.lightstage(0,0,0); e.srun(); e.flags(2,0,0); e.probe(2,0,15,-16,35,0,15); e.level(2,5,3,5); e.level(2,5,25,5)
+e.initlight(1,0,1); e.srun(); e.lightstage(1,0,1); e.srun(); e.flags(2,1,0); e.probe(2,16,31,-16,35,0,15)
+e.leave(0,0); e.srun(); e.flags(1,0,0); e.flags(2,0,0); e.srun(); e.probe(2,0,15,-16,35,0,15); e.obs8(5,20,5)
+e.run_case(g,'chunk generation stages (8.3): initializeLight fills the sky sources and queues updateSectionStatus for every non-air section, then (POST) setLightEnabled(lighted) and retainData(false); light propagates the sources only when the chunk was not lighted and marks the light correct; a chunk that leaves the stage is switched off, its data dropped and its sections reported empty')
+e=f8()
+e.loadstored(0,0,[3,-1,5,-1,9,-1,-1,2]); e.flags(1,0,0); e.flags(2,0,0)
+for sy in range(4): e.obs8(5,sy*16+1,5)
+e.status(1,0,0,0,0); e.status(2,0,0,0,0); e.status(1,0,2,0,0); e.status(2,0,2,0,0)
+e.m.sky_fill(0,0); e.op(S(0,0),'CALL "L32-SKY-FILL" USING WS-I(1) WS-I(2)')
+e.finish(1); e.finish(2)
+for sy in range(4): e.obs8(5,sy*16+1,5)
+for p_ in [(5,5,5),(5,37,5),(5,53,5),(5,21,5)]: e.pub(1,*p_); e.pub(2,*p_)
+e.run_case(g,'stored light (8.4): for each saved section with a block layer, or a sky layer in a dimension with sky light, retainData(chunk, true) once and then queueSectionData for the layers present; the queued layers are installed once updateSectionStatus makes the section store light')
+e=f8(sky=0)
+e.loadstored(0,0,[3,-1,5,-1,9,-1,-1,2]); e.flags(1,0,0)
+e.status(1,0,0,0,0); e.finish(1); e.obs8(5,5,5); e.pub(1,5,5,5); e.pub(2,5,5,5)
+e.setblock(0,5,20,5,2); e.obs8(5,20,5)
+e.run_case(g,'a dimension without sky light (1.1, 8.4): a stored sky layer is ignored, the sky engine does not exist (no sky state, no sky check, sky reads 0) while block light still loads')
+W(g,8)
