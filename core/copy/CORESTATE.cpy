@@ -123,6 +123,7 @@
        10 PL-FLYING          PIC 9.
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-AIR             BINARY-LONG.        *> air supply in ticks (18 section 2.5 item 4: 300 at most, drowning at -20; core/src/breath.cob)
 *>     Hunger (standin §11; core/src/hunger.cob): exhaustion (§11.2, not saved), the sprinting flag of
 *>     Player Command, the food item being eaten (0 = not eating) with its hotbar slot and the CW-TICKS
 *>     of the Use Item that started it (§11.6), and the consecutive ticks at food 0 (§10.3).

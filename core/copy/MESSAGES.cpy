@@ -5,7 +5,7 @@
 *> Argument kinds: the victim's name, the attacker's name.
  78 MSG-ARG-VICTIM            VALUE 1.
  78 MSG-ARG-ATTACKER          VALUE 2.
-*> Death messages (§10.7), indexed by the cause of RULES.cpy (CAUSE-FALL 1 to CAUSE-COMMAND 6):
+*> Death messages (§10.7), indexed by the cause of RULES.cpy (CAUSE-FALL 1 to CAUSE-DROWN 7):
 *> key, key length, argument count, kinds of arguments 1 and 2 (0 = none).
  01 DEATH-MESSAGE-DATA.
     05 FILLER.                                  *> CAUSE-FALL
@@ -44,8 +44,14 @@
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-DROWN (the vanilla translate key, 17 4.12: death.attack.drown has the victim)
+       10 FILLER PIC X(40) VALUE "death.attack.drown".
+       10 FILLER BINARY-LONG VALUE 18.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
  01 DEATH-MESSAGE-TABLE REDEFINES DEATH-MESSAGE-DATA.
-    05 DTH-ENTRY OCCURS 6 TIMES.
+    05 DTH-ENTRY OCCURS 7 TIMES.
        10 DTH-KEY               PIC X(40).
        10 DTH-KEY-LENGTH        BINARY-LONG.
        10 DTH-ARG-COUNT         BINARY-LONG.
