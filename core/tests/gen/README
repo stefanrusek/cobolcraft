@@ -8,3 +8,5 @@ gengr7 -> test_growth_29b_7_1..10 (python3 core/tests/gen/gengr7.py [section num
 gengr8 -> test_growth_29b_8_1..7 (python3 core/tests/gen/gengr8.py [section numbers], from the repository root)
 genl32 -> test_light_32_1..9 (python3 core/tests/gen/genl32.py [section numbers], from the repository root; independent Python models of the light engine rules of 32)
 gen30_1, gen30_2, gen30_3 (shared helpers gen30c.py) -> test_redstone_30_1_1..8, test_redstone_30_2_1..6, test_redstone_30_3_1..11 (python3 core/tests/gen/gen30_N.py [section numbers], from the repository root; the 30_3 section 4 resolver cases are a literal Python model of 4.1 to 4.5 plus random and searched grids)
+genrs4 -> test_redstone_30_4_1..6 (python3 core/tests/gen/genrs4.py [section numbers], from the repository root; independent Python models of 30 part 4)
+genrs5 -> test_redstone_30_5_0..9 (python3 core/tests/gen/genrs5.py [section numbers], from the repository root; independent Python models of 30 part 5, with binary32 steps for the weighted plate and daylight detector)
