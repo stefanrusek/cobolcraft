@@ -4,7 +4,7 @@
 *> mobs within twice the power (EXPLODE-SEEN: the share of sample points of the entity's box that see the centre), the Explode packet to the players
 *> within 64 blocks, and, with block destruction, the blocks replaced by air with their drops (each stack survives with probability 1 / power).
 *> Approximations (open): the sight test of EXPLODE-SEEN steps along the ray by 0.1 block instead of an exact voxel walk; the random draws are the
-*> deterministic hash of xp.cob, not the level's random source; mobs are hurt in whole points and are not pushed; item entities and fire are left out.
+*> deterministic hash of xp.cob, not the level's random source; mobs are hurt in whole points and pushed through EN-VX, EN-VY and EN-VZ (spent by STDMOB-STEP); item entities and fire are left out.
 *>
 *> Entry points:
 *>   EXPLODE-RUN USING dim, x, y, z, power (FLOAT-LONG), destroy blocks (BINARY-LONG 0/1), source tracker row (BINARY-LONG, 0 none)
@@ -459,6 +459,18 @@
                      COMPUTE WS-POINTS = FUNCTION INTEGER(WS-DAMAGE)
                      MOVE 0 TO EN-HURT(WS-E)
                      CALL "HEALTH-MOB-DAMAGE" USING WS-E WS-POINTS WS-CAUSE WS-NONE
+*>                   The push: s x the direction from the centre to the mob's eyes (0.85 of its height), carried by STDMOB-STEP.
+                     IF EN-HEALTH(WS-E) > 0
+                         COMPUTE WS-DY = EN-Y(WS-E) + WS-HEIGHT * 0.85 - L-Y
+                         COMPUTE WS-DX = EN-X(WS-E) - L-X
+                         COMPUTE WS-DZ = EN-Z(WS-E) - L-Z
+                         COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+                         IF WS-LEN > 0
+                             COMPUTE EN-VX(WS-E) = EN-VX(WS-E) + WS-DX / WS-LEN * WS-S
+                             COMPUTE EN-VY(WS-E) = EN-VY(WS-E) + WS-DY / WS-LEN * WS-S
+                             COMPUTE EN-VZ(WS-E) = EN-VZ(WS-E) + WS-DZ / WS-LEN * WS-S
+                         END-IF
+                     END-IF
                  END-IF
              END-IF
          END-IF

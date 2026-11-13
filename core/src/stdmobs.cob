@@ -968,6 +968,16 @@
                  CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
+*>   The push of an explosion (EN-VX, EN-VZ; EN-VY is the vertical speed itself) adds to the walk and decays by 0.546 a tick on the ground, 0.91 in the air.
+     COMPUTE WS-HX = WS-HX + EN-VX(WS-ROW)
+     COMPUTE WS-HZ = WS-HZ + EN-VZ(WS-ROW)
+     IF EN-ON-GROUND(WS-ROW) = 1
+         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.546
+         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.546
+     ELSE
+         COMPUTE EN-VX(WS-ROW) = EN-VX(WS-ROW) * 0.91
+         COMPUTE EN-VZ(WS-ROW) = EN-VZ(WS-ROW) * 0.91
+     END-IF
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
      GOBACK.
  END PROGRAM STDMOB-STEP.

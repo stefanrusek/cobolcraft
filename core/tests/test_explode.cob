@@ -200,6 +200,23 @@
      MOVE 5 TO TL-EXPECTED-N
      MOVE EN-HEALTH(WS-PIG) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   And is pushed away from the centre (x and up), the push carried by its next tick.
+     MOVE "test explode: the pig is pushed along +x" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-VX(WS-PIG) > 0.05
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE EN-X(WS-PIG) TO WS-X
+     CALL "MOB-STEP" USING WS-PIG
+     MOVE "test explode: its next tick moves it along the push" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-X(WS-PIG) > WS-X + 0.04
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-PIG
 
 *>   The seen fraction: 1 in the open, 0 behind a wall that covers the box.
