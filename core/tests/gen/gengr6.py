@@ -326,3 +326,38 @@ SND={1045:"block.pointed_dripstone.land",1052:"block.sulfur_spike.land",1046:"bl
 g.extra=" 01 WS-NAME               PIC X(64).\n"
 g.case('sound keys (8.2): the sound of each level event of the part',[(str(e),'CALL "GC6-LEVEL-SOUND" USING WS-I(1) WS-NAME\nMOVE WS-NAME TO WS-T1\nMOVE SPACES TO WS-T2','TEXT') for e in (1045,1052,1046,1047,1504)]," ".join(SND[e]+"|" for e in (1045,1052,1046,1047,1504)))
 W(g,8)
+# ===== 9
+g=GG(9,'Sulfur spike differences and the behaviour rows','T0643','the sulfur spike against the pointed dripstone, the behaviour rows and the potent sulfur block.')
+g.extra=" 01 WS-NAME               PIC X(16).\n"
+def diff(k):
+    if k==1: return (1,1,7,1,2,1,1,1045,1,8)
+    return (2,0,2,0,1,0,0,1052,1,3)
+g.run('SulfurSpikeBlock against PointedDripstoneBlock (9.1): blockToGrowOn (1 dripstone_block, 2 sulfur), a water source two above (1 or none), getMaxGrowthLength 7 or 2, blocksStalagmiteScan (not canDripThrough or never), nextFloat draws per random tick 2 or 1, drip and cauldron and mud (yes or none), fallOn damage (yes or none), landing event 1045 or 1052, damage source falling_stalactite for both, piece cap 8 or 3',["1","2"],'CALL "GC6-SULFUR-DIFF" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6) WS-R(7) WS-R(8) WS-R(9) WS-R(10)',10," ".join(show(*diff(k)) for k in (1,2)))
+def tagcall(k): return 'MOVE "minecraft:%s" TO WS-T1\nMOVE 3 TO WS-I(15)\nCALL "GC6-TAG" USING WS-I(15) WS-T1 WS-R(1)'%k
+g.case('tag for world generation replacement (9.1): sulfur_spike_replaceable_blocks is exactly sulfur and cinnabar',[("0",tagcall(k),1) for k in ("sulfur","cinnabar","dripstone_block","stone")],"1 1 0 0")
+ROWS9=[(1,3,0),(2,0,0),(3,0,0),(2,0,0),(4,3,1045),(1,3,0),(1,3,1504),(4,3,1047),(4,3,0),(4,3,0),(4,0,0),(0,0,3006)]
+g.run('behaviour rows (9.2): trigger (1 RT, 2 SU, 3 EV, 4 ST, 0 driven by the spreader), setBlock flags (0 via the update or none) and the level event: budding RT 3, cluster SU, chime EV, speleothem SU, speleothem ST 3 with 1045 or 1052 on landing, RT 3, drip RT 3 with 1504, cauldron ST 3 with 1046 or 1047, shrieker ST, catalyst ST, sensor ST, sculk spreader 3006',[str(i) for i in range(1,13)],'CALL "GC6-ROW" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*r) for r in ROWS9))
+def pot(w,bc,bp,bf,cur):
+    if not w: return (0,0)
+    if bc and bf: return (4,0)
+    if bp and bf:
+        rs=int(cur not in (3,2))
+        return (3 if cur==3 else 2,rs)
+    return (1,0)
+ptc=[(0,1,0,1,0),(0,0,0,0,3),(1,1,0,1,0),(1,1,0,0,0),(1,0,1,1,3),(1,0,1,1,2),(1,0,1,1,0),(1,0,1,1,4),(1,0,1,0,2),(1,0,0,1,0),(1,1,1,1,0),(1,0,0,0,3)]
+g.run('PotentSulfurBlock.validBlockState (9.3): no water source above gives dry (0); lava below with an empty or source fluid gives continuous (4); magma_block below gives erupting when the state is erupting else dormant (resetCountdown first when the state is neither erupting nor dormant); otherwise wet (1) (state 0 dry, 1 wet, 2 dormant, 3 erupting, 4 continuous; new state, resetCountdown)',[S(*c) for c in ptc],'CALL "GC6-POTENT-STATE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2)',2," ".join(show(*pot(*c)) for c in ptc))
+def pl(s):
+    return (int(s in (3,4)),{3:2,4:1}.get(s,0),int(s in (3,4)))
+g.run('onPlace (9.3): an erupting or continuous state sends blockEvent (pos, block, 0, 0), the sound geyser_eruption_start (2) or geyser_continuous_start (1) at volume 1 pitch 1 and the game event block_activate (blockEvent, sound, game event)',[str(i) for i in range(5)],'CALL "GC6-POTENT-PLACE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*pl(s)) for s in range(5)))
+TK={0:(0,0,0),1:(1,1,0),2:(1,2,0),3:(2,3,1),4:(2,4,2)}
+g.run('getTicker (9.3): dry none; wet client noxious gas, server nausea; dormant client noxious gas, server waiting countdown then nausea; erupting client plume then launch, server launch then waiting countdown; continuous client plume then launch, server launch alone (client code 0 none 1 noxious gas 2 plume and launch, server code 0 none 1 nausea 2 countdown and nausea 3 launch and countdown 4 launch, plume sound 1 geyser_eruption_active 2 geyser_continuous_active)',[str(i) for i in range(5)],'CALL "GC6-POTENT-TICKER" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*TK[s]) for s in range(5)))
+PC=[4,10,80,30,25,20,40,3,2,-904011478,6]
+g.run('constants (9.3): ALLOWED_WATER_BLOCKS_ABOVE 4, nausea every 10 ticks for 80 ticks, effect range 3.0 and box 2.5 (x 10), particle period 20, sound period 40, geyser base launch speed 0.3 and launch force 0.2 (x 10), geyser salt -904011478, scan limit 6',[str(i) for i in range(1,12)],'CALL "GC6-POTENT-CONST" USING WS-I(1) WS-R(1)',1," ".join(map(str,PC)))
+def an(s,w,d):
+    if s==0 or not w: return (0,0)
+    return (2,int(d==0))
+anc=[(0,1,0),(1,0,0),(1,1,0),(2,1,3),(3,1,0),(4,1,9)]
+g.run('animateTick (9.3, client): nothing when dry or without a water source above; otherwise two sulfur_bubbles bursts at the cell above and, with nextInt(10) of 0, the ambient sound noxious_gas (bursts, sound)',[S(*c) for c in anc],'CALL "GC6-POTENT-ANIM" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join(show(*an(*c)) for c in anc))
+NM=["dry","wet","dormant","erupting","continuous"]
+g.case('the property state (9.3): serialized names dry, wet, dormant, erupting, continuous; default dry',[(str(i),'CALL "GC6-POTENT-NAME" USING WS-I(1) WS-NAME\nMOVE WS-NAME TO WS-T1\nMOVE SPACES TO WS-T2','TEXT') for i in range(5)]," ".join(n+"|" for n in NM))
+W(g,9)
