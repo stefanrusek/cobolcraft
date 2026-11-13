@@ -310,7 +310,7 @@ Both use the region container (§6) and the same compression ids. Each chunk pay
 | Folder | Top-level keys |
 |---|---|
 | `entities/` | `DataVersion` (Int); `Position` (chunk position via `ChunkPos.CODEC`, an int stream, so an Int Array `[chunkX, chunkZ]` (inferred)); `Entities` (List of Compound, contents out of scope). On read, a `Position` mismatch is logged as "in the wrong location". |
-| `poi/` | `DataVersion` (Int); `Sections` (Compound keyed by section Y, contents out of scope) |
+| `poi/` | `DataVersion` (Int); `Sections` (Compound keyed by section Y; contents in §10.6) |
 
 ---
 
@@ -577,6 +577,281 @@ Everything in the first table that the artifact does and CobolCraft does not is 
 
 ---
 
+## 10. The vanilla 26.3 world folder as the game writes it
+
+Source artifact: `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in README), data version 5023. Method: static reading of the shipped bytecode (`javap`), with no execution. Classes read: `PrimaryLevelData`, `LevelStorageSource` and its `LevelStorageAccess`, `LevelResource`, `LevelVersion`, `LevelSettings`, `LevelData$RespawnData`, `WorldDataConfiguration`, `SavedDataStorage`, `SavedDataType` and the saved-data classes named in §10.4, `PlayerDataStorage`, `SectionStorage`, `PoiSection$Packed`, `PoiRecord$Packed`, `EntityStorage`, `DimensionType.getStorageFolder`, `GameRules`, `ItemStack`, and the file fixers under `net.minecraft.util.filefix`.
+
+Purpose: this section is the reference for a reader or writer that must open a real vanilla 26.3 save and save it back without losing data. §9 stays the description of CobolCraft's own folder; where a CobolCraft file shares a name with a vanilla file (`level.dat`, `players/`, region folders), only §9 applies to a CobolCraft world and only §10 to a vanilla one. All NBT is read and written as the gzip-wrapped, named-root form of §3 and §5 (`NbtIo.readCompressed`, `NbtIo.writeCompressed`) unless a row says otherwise. "Byte" for a boolean means a Byte tag with 0 or 1 (`NbtOps.createBoolean` writes a Byte tag).
+
+### 10.1 Folder layout
+
+```text
+<world>/
+  level.dat                      root {Data: {...}}                 (§10.2)
+  level.dat_old                  previous level.dat                 (§10.2)
+  session.lock, icon.png         not NBT; ignore
+  datapacks/, resourcepacks/resources.zip, generated/<ns>/structure/   not traced further
+  data/<ns>/<id>.dat             server-wide saved data             (§10.3, §10.4)
+  data/<ns>/maps/<n>.dat, data/minecraft/maps/last_id.dat            map items and their counter (names only)
+  players/data/<uuid>.dat        player entity compounds            (§10.5)
+  players/advancements/<uuid>.json, players/stats/<uuid>.json        45-3 sections 8 and 9
+  dimensions/<ns>/<path>/
+      region/ entities/ poi/     Anvil region folders               (§10.6, §6)
+      data/<ns>/<id>.dat         per-dimension saved data           (§10.3, §10.4)
+```
+
+The fixed names are the constants of `LevelResource` (`players/data`, `players/stats`, `players/advancements`, `level.dat`, `level.dat_old`, `icon.png`, `session.lock`, `generated`, `datapacks`, `resourcepacks/resources.zip`, `data`) and `DimensionType.getStorageFolder`, which returns `<world>/dimensions/<namespace>/<path>` for a dimension key. The overworld is `dimensions/minecraft/overworld`, the nether `dimensions/minecraft/the_nether`, the end `dimensions/minecraft/the_end`. There is no `DIM-1`, `DIM1` or root-level `region/` in this layout; those names exist only as inputs of the migration of §10.7.
+
+### 10.2 `level.dat`
+
+**Container.** Gzip, named root with an empty name, one root key: `Data` (Compound). Nothing else is written at the root (`LevelStorageAccess.saveDataTag` builds a fresh root, puts the compound under `Data`). `DataVersion` is inside `Data`, not at the root. The write is atomic: a temporary file `level*.dat` in the world folder is written, then `Util.safeReplaceFile` makes the old `level.dat` the new `level.dat_old` and the temporary file the new `level.dat` (same step sequence as 45-3 §1.2). Reading uses `NbtAccounter.uncompressedQuota` (§4). A missing `Data` key reads as an empty compound, so every key below falls back to its default.
+
+**Keys written by `PrimaryLevelData.setTagData`, in write order.** All keys are children of `Data`.
+
+| Key | NBT type | Written | Read default / rule |
+|---|---|---|---|
+| `ServerBrands` | List of String | always (may be empty) | strings that fail to read are skipped; set semantics, insertion order kept (a linked set) |
+| `WasModded` | Byte | always | 0 |
+| `removed_features` | List of String | only when the set is non-empty | empty set |
+| `Version` | Compound | always | see below |
+| `version_history` | List of Int | always | empty list |
+| `DataVersion` | Int | always | -1 when missing (`NbtUtils.getDataVersion`) |
+| `GameType` | Int | always | 0 (survival); id out of range reads as 0 (`ByIdMap` ZERO strategy). 0 survival, 1 creative, 2 adventure, 3 spectator |
+| `spawn` | Compound | always | whole compound missing or invalid: overworld, (0,0,0), yaw 0, pitch 0 |
+| `Time` | Long | always | 0. This is the game time (ticks since world creation), not the time of day |
+| `LastPlayed` | Long | always (`Util.getEpochMillis` at save) | 0 |
+| `LevelName` | String | always | empty string |
+| `version` | Int | always, constant 19133 | 0; see rule below |
+| `allowCommands` | Byte | always | true when `GameType` is creative, else false |
+| `initialized` | Byte | always | true |
+| `difficulty_settings` | Compound | always | see below; invalid or missing: normal, not hardcore, not locked |
+| `singleplayer_uuid` | Int Array [4] | only when a single-player owner UUID is known | absent: null |
+| `DataPacks` | Compound | always (merged from `WorldDataConfiguration.MAP_CODEC`) | see below |
+| `enabled_features` | List of String | always (same codec) | the vanilla-only set |
+
+`Version` (written by `writeVersionTag`, read only by `LevelVersion.parse`): `Name` String (game version name), `Id` Int (the data version of the saving game), `Snapshot` Byte (1 when the build is not a stable release), `Series` String. Read defaults: `Name` current version name, `Id` current data version, `Series` `main`, `Snapshot` per the current build. The whole key missing: the summary uses version id 0 and unknown name.
+
+`version_history`: the previous list plus the current data version appended when the last entry is not already the current data version.
+
+`spawn` (`LevelData$RespawnData.CODEC`, a map codec used as a field): `dimension` String (dimension key, `minecraft:overworld`), `pos` Int Array [x, y, z] (`BlockPos.CODEC`, an int stream of exactly 3), `yaw` Float in [-180, 180], `pitch` Float in [-90, 90]. All four required; any failure makes the whole `spawn` fall back to the default above.
+
+`difficulty_settings` (`LevelSettings$DifficultySettings.CODEC`): `difficulty` String (`peaceful`, `easy`, `normal`, `hard`), `hardcore` Byte, `locked` Byte. All three required (the codec has no optional members, so a missing member invalidates the compound and the default applies).
+
+`DataPacks` and `enabled_features`: `DataPacks` is `{Enabled: List of String, Disabled: List of String}`, default Enabled `["vanilla"]`, Disabled `[]`. `enabled_features` is a List of String holding feature-flag ids (the registered vanilla flags are `vanilla`, `trade_rebalance`, `redstone_experiments`, `minecart_improvements`; the string form is the namespaced identifier, for example `minecraft:vanilla` (inferred from the identifier codec of the flag registry)). Both members are lenient optional: an invalid value reads as the default (`WorldDataConfiguration.MAP_CODEC`).
+
+**Required to read.** Nothing is individually required, but `version` must be 19133 (or 19132, which the dedicated server refuses with "must be opened in an older version ... to be safely converted"); any other value makes the level summary fail with an `NbtFormatException` ("Unknown data version"). Opening also checks `Version.Series` against the game's series (`DataVersion.isCompatible`: equal series strings); a mismatch is "created by an incompatible version" and the dedicated server stops.
+
+**What is not in `level.dat` any more.** The pre-5023 keys `Player`, `WorldGenSettings`, `DayTime`, `Raining`, `rainTime`, `thundering`, `thunderTime`, `clearWeatherTime`, `BorderCenterX`/`BorderSize`/..., `GameRules`, `CustomBossEvents`, `ScheduledEvents`, `DragonFight`, `WanderingTraderSpawn*`, `SpawnX/Y/Z/Angle`, `Difficulty`, `hardcore` and similar are gone; their data live in the saved-data files of §10.4. `level.dat` is rebuilt from the loaded fields at every save: a key of `Data` that the game does not model is not written back by `saveDataTag` (it is kept only by the paths that edit the compound in place, such as renaming the world).
+
+### 10.3 Saved-data files (`data/<namespace>/<id>.dat`)
+
+`SavedDataStorage` stores one file per saved-data type. The type id is a namespaced identifier; the file is `<dataFolder>/<namespace>/<path>.dat` (an id path may contain `/`, as `maps/last_id`). All 26.3 vanilla ids use the namespace `minecraft`.
+
+| Item | Rule |
+|---|---|
+| Root | Compound with exactly `data` (the payload; any tag form the type's codec accepts, almost always a Compound) and `DataVersion` (Int, the saving game's data version). Written by `SavedDataStorage.encodeUnchecked` and `LevelStorageSource.writeSavedData`. |
+| Framing | Gzip NBT on write. On read `SavedDataStorage.readTagFromDisk` peeks the first two bytes: gzip magic reads as gzip, anything else as raw uncompressed NBT. The server-wide `world_gen_settings` and `game_rules` readers in `LevelStorageSource` accept gzip only. |
+| `DataVersion` missing | read as 1343, then the data fixer for the type runs from that version to 5023 (`DataFixTypes.SAVED_DATA_*`). |
+| File missing | not an error: `computeIfAbsent` creates the type's default object (its constructor), `get` returns nothing. |
+| Parse failure | logged "Failed to parse saved data"; the codec's partial result is used when it has one, otherwise the default object is created. A damaged file is not renamed or deleted. |
+| Write | Only objects marked dirty are written, on the periodic and shutdown save, each with `NbtIo.writeCompressed` straight to the final name (no `.dat_old`, no temporary file for these files). |
+
+Which storage a type uses (read from the call sites):
+
+| Storage | Folder | Types |
+|---|---|---|
+| Server-wide (`MinecraftServer.getDataStorage`) | `<world>/data/` | `world_gen_settings`, `random_sequences`, `weather`, `game_rules`, `world_clocks`, `custom_boss_events`, `scheduled_events`, `scoreboard`, `stopwatches`, `wandering_trader`, `maps/last_id`, `maps/<n>`, and command storage (`<ns>/command_storage`) |
+| Per dimension (`ServerChunkCache.getDataStorage`, created by `ServerLevel`) | `<world>/dimensions/<ns>/<path>/data/` | `chunk_tickets`, `raids`, `ender_dragon_fight` (read by the end dimension's level), `world_border` |
+
+So the vanilla file list is, with `<d>` standing for `dimensions/<ns>/<path>`:
+
+| File | Content |
+|---|---|
+| `data/minecraft/weather.dat` | §10.4.1 |
+| `data/minecraft/world_clocks.dat` | §10.4.2 |
+| `data/minecraft/game_rules.dat` | §10.4.3 |
+| `data/minecraft/world_gen_settings.dat` | §10.4.5 |
+| `data/minecraft/wandering_trader.dat` | §10.4.6 |
+| `data/minecraft/scheduled_events.dat` | §10.4.7 |
+| `data/minecraft/custom_boss_events.dat` | §10.4.8 |
+| `data/minecraft/random_sequences.dat`, `scoreboard.dat`, `stopwatches.dat` | present; contents not traced (Open question 20) |
+| `data/minecraft/maps/last_id.dat`, `data/minecraft/maps/<n>.dat` | map counter and map items; contents not traced beyond the key names `dimension`, `xCenter`, `zCenter`, `scale`, `colors`, `trackingPosition`, `unlimitedTracking`, `locked`, `banners`, `frames` |
+| `data/<ns>/command_storage.dat` | `/data storage` containers, one file per namespace; contents not traced |
+| `<d>/data/minecraft/world_border.dat` | §10.4.4, one per dimension |
+| `<d>/data/minecraft/raids.dat` | §10.4.9, one per dimension |
+| `<d>/data/minecraft/chunk_tickets.dat` | §10.4.11 |
+| `dimensions/minecraft/the_end/data/minecraft/ender_dragon_fight.dat` | §10.4.10 |
+
+### 10.4 File schemas
+
+Booleans are Byte tags. "Req" means a missing member fails the whole codec (the file then loads as the default object, §10.3). "Opt(x)" means optional with default x. Members are listed in codec order, which is the write order.
+
+#### 10.4.1 `weather.dat` (`WeatherData.CODEC`)
+
+| Member | NBT | Req/Opt |
+|---|---|---|
+| `clear_weather_time` | Int | Req |
+| `rain_time` | Int | Req |
+| `thunder_time` | Int | Req |
+| `raining` | Byte | Req |
+| `thundering` | Byte | Req |
+
+A missing file or a missing member gives the default object: all Ints 0 and both booleans false (the no-argument constructor leaves the fields at their Java defaults).
+
+#### 10.4.2 `world_clocks.dat` (`ServerClockManager.TYPE`, `PackedClockStates.CODEC`)
+
+`data` is a Compound whose keys are world-clock ids (strings, for example `minecraft:overworld`, `minecraft:the_end`; the two vanilla clocks of `WorldClocks`) and whose values are:
+
+| Member | NBT | Req/Opt |
+|---|---|---|
+| `total_ticks` | Long | Req, no range check read (the clock's tick count; the overworld day time is this value for the overworld clock (inferred from the migration of §10.7, which creates this file from the old `DayTime`)) |
+| `partial_tick` | Float | Opt(0.0), no range check read |
+| `rate` | Float | Opt(1.0); must be positive (`ExtraCodecs.POSITIVE_FLOAT`): 0 or a negative value fails that clock entry |
+| `paused` | Byte | Opt(false) |
+
+The default object has no entries (`PackedClockStates.EMPTY`). Which clocks the writer lists when the manager holds more or fewer clocks than the file has was not traced (Open question 21).
+
+#### 10.4.3 `game_rules.dat` (`GameRuleMap.CODEC`, `GameRules` static registrations)
+
+`data` is a Compound mapping a rule id to a value. The key is the full registry id **with namespace**, for example `minecraft:advance_time` (the codec is `Registry.byNameCodec` keys of the game-rule registry; every rule is registered by `Registry.register(registry, String, ...)`, which puts it in `minecraft`). The old camel-case names (`doDaylightCycle` and so on) are not valid keys; the data fixer for `SAVED_DATA_GAME_RULES` renames them. Value tag by rule type (`GameRuleType`): BOOL rules are a Byte, INT rules are an Int that must lie in the rule's range (an out-of-range value fails that entry). There are 59 rules, 47 boolean and 12 integer:
+
+| Rule id (all prefixed `minecraft:`) | Type | Default |
+|---|---|---|
+| `advance_time`, `advance_weather` | Bool | true (false only when the debug-world-recreate constant is set) |
+| `allow_entering_nether_using_portals`, `block_drops`, `block_explosion_drop_decay`, `command_blocks_work`, `command_block_output`, `drowning_damage`, `elytra_movement_check`, `ender_pearls_vanish_on_death`, `entity_drops`, `fall_damage`, `fire_damage`, `forgive_dead_players`, `freeze_damage`, `global_sound_events`, `locator_bar`, `log_admin_commands`, `mob_drops`, `mob_explosion_drop_decay`, `mob_griefing`, `natural_health_regeneration`, `player_movement_check`, `projectiles_can_break_blocks`, `pvp`, `raids`, `send_command_feedback`, `show_advancement_messages`, `show_death_messages`, `spawner_blocks_work`, `spawn_mobs`, `spawn_monsters`, `spawn_patrols`, `spawn_phantoms`, `spawn_wandering_traders`, `spawn_wardens`, `spectators_generate_chunks`, `spread_vines`, `tnt_explodes`, `water_source_conversion` | Bool | true |
+| `immediate_respawn`, `keep_inventory`, `lava_source_conversion`, `limited_crafting`, `reduced_debug_info`, `tnt_explosion_drop_decay`, `universal_anger` | Bool | false |
+| `fire_spread_radius_around_player` | Int | 128, range -1 to 2147483647 |
+| `max_block_modifications` | Int | 32768, range 1 to 2147483647 |
+| `max_command_forks`, `max_command_sequence_length` | Int | 65536, range 0 to 2147483647 |
+| `max_entity_cramming` | Int | 24, range 0 to 2147483647 |
+| `max_minecart_speed` | Int | 8, range 1 to 1000; only exists when feature flag `minecart_improvements` is enabled |
+| `max_snow_accumulation_height` | Int | 1, range 0 to 8 |
+| `players_nether_portal_creative_delay` | Int | 0, range 0 to 2147483647 |
+| `players_nether_portal_default_delay` | Int | 80, range 0 to 2147483647 |
+| `players_sleeping_percentage` | Int | 100, range 0 to 2147483647 |
+| `random_tick_speed` | Int | 3, range 0 to 2147483647 |
+| `respawn_radius` | Int | 10, range 0 to 2147483647 |
+
+A rule absent from the file takes its default (the game builds its rule set from all registered rules and overlays the stored map (inferred)). How an unknown key (a rule of a later version or a mod) is treated by the dispatched-map decoder was not traced (Open question 22); a conservative reader keeps unknown keys verbatim.
+
+#### 10.4.4 `world_border.dat` (`WorldBorder$Settings.CODEC`)
+
+One file per dimension. All members Req:
+
+| Member | NBT | Default of a new border | Constraint |
+|---|---|---|---|
+| `center_x` | Double | 0.0 | range -29999984.0 to 29999984.0 |
+| `center_z` | Double | 0.0 | same |
+| `damage_per_block` | Double | 0.2 | none |
+| `safe_zone` | Double | 5.0 | none |
+| `warning_blocks` | Int | 5 | none |
+| `warning_time` | Int | 300 | none |
+| `size` | Double | 59999968.0 | none |
+| `lerp_time` | Long | 0 | remaining ticks of a size change |
+| `lerp_target` | Double | 0.0 | target size of the change |
+
+A missing file gives these defaults (`WorldBorder$Settings.DEFAULT`). The migration of §10.7 writes the overworld file from the old border keys and the nether file with the centre divided by 8 (inferred from the constant 8.0 in `LevelDatToSavedDataFileFix`; the exact input keys were not traced).
+
+#### 10.4.5 `world_gen_settings.dat` (`WorldGenSettings.CODEC`)
+
+`data` is a Compound whose members are the world options merged with the dimensions:
+
+| Member | NBT | Req/Opt |
+|---|---|---|
+| `seed` | Long | Req |
+| `generate_structures` | Byte | Opt(true), always written |
+| `bonus_chest` | Byte | Opt(false), always written |
+| `legacy_custom_options` | String | lenient optional, written only when present |
+| `dimensions` | Compound | Req (`WorldDimensions.CODEC`) |
+
+`dimensions` maps a dimension (level-stem) id string to `{type, generator}` (`LevelStem.CODEC`, both Req): `type` is a dimension-type reference (id string such as `minecraft:overworld`, or an inline definition); `generator` is a Compound with a `type` String (`minecraft:noise`, `minecraft:flat` or `minecraft:debug`, the keys of `ChunkGenerators`) and the generator's own members at the same level (inferred from the dispatched map codec): `noise` has `biome_source` (a Compound with its own `type`) and `settings` (noise-settings id string or inline Compound); `flat` has `settings` with `layers` (the only required member), `structure_overrides` and `biome` (lenient optional, no default; an unknown biome logs "Unknown biome, defaulting to plains" instead of failing), and `lakes` and `features` (always-present optional members, always written; their defaults were not read, Open question 31); `debug` has none. The overworld stem must be present ("Overworld settings missing" otherwise). A reader that does not generate terrain from these should keep the `dimensions` compound verbatim. The standard stems are `minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`. When the file cannot be read the game logs "Unable to read or access the world gen settings file" and falls back to default settings **with a random seed**, so the file must be preserved.
+
+#### 10.4.6 `wandering_trader.dat` (`WanderingTraderData.CODEC`)
+
+`spawn_delay` Int, Opt(24000); `spawn_chance` Int, Opt(25). Missing file: these defaults.
+
+#### 10.4.7 `scheduled_events.dat` (`TimerQueue$Packed.CODEC`)
+
+`events`: List of Compound (Req). Each event: `trigger_time` Long (Req), `id` String (Req, the event name), `callback` Compound (Req) whose `type` key (inferred, from the dispatched codec of `TimerCallbacks`) selects `function` (member `id`, a function identifier) or `function_tag` (member `id`, a tag identifier; the written id has no `#`, inferred).
+
+#### 10.4.8 `custom_boss_events.dat` (`CustomBossEvents.CODEC`, `CustomBossEvent$Packed.CODEC`)
+
+`data` is a Compound mapping a bar id (identifier string) to a Compound: `Name` (text component, Req), `Visible` Byte Opt(false), `Value` Int Opt(0), `Max` Int Opt(100), `Color` String Opt(`white`; accepted `pink`, `blue`, `red`, `green`, `yellow`, `purple`, `white`), `Overlay` String Opt(`progress`; accepted `progress`, `notched_6`, `notched_10`, `notched_12`, `notched_20`), `DarkenScreen` Byte Opt(false), `PlayBossMusic` Byte Opt(false), `CreateWorldFog` Byte Opt(false), `Players` List of Int Array [4] (UUIDs) Opt(empty).
+
+#### 10.4.9 `raids.dat` (`Raids.CODEC`), per dimension
+
+`raids` List of Compound Opt(empty); `next_id` Int Req; `tick` Int Req. Each raid (`Raid.MAP_CODEC` plus `id`): `id` Int, `started` Byte, `active` Byte, `ticks_active` Long, `raid_omen_level` Int, `groups_spawned` Int, `cooldown_ticks` Int, `post_raid_ticks` Int, `total_health` Float, `group_count` Int, `status` String (`ongoing`, `victory`, `loss`, `stopped`), `center` Int Array [3], `heroes_of_the_village` List of Int Array [4]. All read as Req by the codec (none uses an optional wrapper in the part read).
+
+#### 10.4.10 `ender_dragon_fight.dat` (`EnderDragonFight` codec), end dimension only
+
+| Member | NBT | Kind, default | Written |
+|---|---|---|---|
+| `needs_state_scanning` | Byte | always-present optional, true | always |
+| `dragon_killed` | Byte | always-present optional, false | always |
+| `previously_killed` | Byte | always-present optional, false | always |
+| `respawn_stage` | String | plain optional, absent | when set; values `start`, `preparing_to_summon_pillars`, `summoning_pillars`, `summoning_dragon`, `end` |
+| `respawn_time` | Int | always-present optional, 0 | always |
+| `dragon_uuid` | Int Array [4] | lenient optional, absent | when known |
+| `exit_portal_location` | Int Array [3] | lenient optional, absent | when known |
+| `gateways` | List of Int | lenient optional, empty list | see write rule |
+| `respawn_crystals` | List of entity references (UUID form) | plain optional, empty list | see write rule |
+
+Four members are always written: the three Bytes and `respawn_time` (the always-present helper `ExtraCodecs.optionalAlwaysPresentFieldOf` was read). For the other optionals the codec uses DFU's `optionalFieldOf` or `lenientOptionalFieldOf`; that these omit a member equal to its default is DFU behaviour (recalled, not verified; Open question 29), so a reader must accept both presence and absence of them.
+
+#### 10.4.11 `chunk_tickets.dat` (`TicketStorage.CODEC`), per dimension
+
+`tickets`: List of Compound, plain optional (default empty list (inferred)). Each entry merges the chunk position with the ticket members at one level (pair codec; flattening inferred): `chunk_pos` Int Array [x, z] (Req); `type` String (Req; the registered ticket type names are `player_spawn`, `spawn_search`, `dragon`, `player_loading`, `player_simulation`, `forced`, `portal`, `ender_pearl`, `unknown`, written with the `minecraft:` namespace (inferred)); `level` Int (Req, non-negative, `ExtraCodecs.NON_NEGATIVE_INT`); `ticks_left` Long, Opt(0). Forced chunks use the `forced` type. Which types are persisted (some may be transient) was not traced (Open question 30).
+
+### 10.5 Player files
+
+All paths are relative to the world folder; the file semantics (temporary file, `.dat_old`, `_corrupted_` copy, load order, first join) are 45-3 §1. This section adds what that document leaves implicit.
+
+| Item | Rule |
+|---|---|
+| Path | `players/data/<uuid>.dat`, `<uuid>` the hyphenated lower-case string of `Player.getStringUUID` (45-3 §1.1). |
+| Online-mode server | the Mojang account UUID of the profile. |
+| Offline-mode server | the UUID is the name-based (version 3) UUID of the UTF-8 bytes of `OfflinePlayer:<name>` (`UUIDUtil.createOfflinePlayerUUID`, `UUID.nameUUIDFromBytes`). The name case is preserved as typed. |
+| Single-player (integrated) owner | `isSingleplayerOwner` is true for the integrated server when the name equals (ignoring case) the single-player profile name, and `PlayerList` then loads the file named by `level.dat` `singleplayer_uuid` (45-3 §1.5). The dedicated server always answers false, so it never uses `singleplayer_uuid`; it preserves the key if present. |
+| Root | the compound of `Player.saveWithoutId`; no `id` key at the root; `DataVersion` Int is written by `Player.addAdditionalSaveData` and read with default -1 before `DataFixTypes.PLAYER` runs. Key tables: 45-3 §2 and §3. |
+| Item stack | `{id: String (item id with namespace, for example `minecraft:snowball`; the codec is the item registry's by-name codec, so an id is always written with its namespace), count: Int in 1 to 99 (default 1, **always written**, never omitted), components: Compound (omitted when the patch is empty)}`; inventory and `EnderItems` elements add `Slot` Byte (45-3 §4.1). |
+| Equipment | `equipment` Compound with slot-name keys and bare item stacks (no `Slot`) (45-3 §4.3). |
+| Ender chest | `EnderItems`, List of slot elements, 27 slots (45-3 §5). |
+| Other per-player files | `players/advancements/<uuid>.json` and `players/stats/<uuid>.json` (45-3 §8, §9); same UUID rule. |
+
+### 10.6 Dimension folder contents
+
+`<d>/region/r.<x>.<z>.mca` holds chunk payloads (§7), `<d>/entities/r.<x>.<z>.mca` entity payloads and `<d>/poi/r.<x>.<z>.mca` point-of-interest payloads, all in the container of §6; `<d>/data/` holds the per-dimension saved data of §10.3. When a chunk's entity list is empty the game does not write a payload with an empty `Entities` list; it writes through its "store empty" supplier (`IOWorker.STORE_EMPTY`), an empty entry (inferred).
+
+**`entities/` payload** (`EntityStorage`): `DataVersion` Int; `Position` Int Array [chunkX, chunkZ] (`ChunkPos.CODEC`, a 2-element int stream); `Entities` List of Compound. Each entity compound carries `id` String (namespaced entity-type id) and the keys of 45-1 to 45-9, with `Pos`, `UUID`, `Passengers` and the rest of the entity layer. A `Position` that does not equal the file slot's chunk is logged as "in the wrong location" (07 §8; what is then done with the payload was not traced).
+
+**`poi/` payload** (`SectionStorage`, `PoiSection$Packed`, `PoiRecord$Packed`): `DataVersion` Int; `Sections` Compound whose keys are the decimal section Y strings (for example `"4"`, `"-1"`), limited on read to the dimension's minimum and maximum section Y (the bounds come from the dimension's height, not from the file). A section key appears only when the section object packs to a value. Each value is a Compound:
+
+| Member | NBT | Req/Opt |
+|---|---|---|
+| `Valid` | Byte | lenient optional, default 0 (false) |
+| `Records` | List of Compound | Req |
+
+Each record: `pos` Int Array [x, y, z] (absolute block position, Req), `type` String (point-of-interest type id with namespace such as `minecraft:home`, Req; a registry holder, so an inline definition is also accepted), `free_tickets` Int, Opt(0). A section whose `Valid` is false is rescanned from the chunk when next needed, so a reader that does not keep POI may drop the `poi/` folder without losing player-visible data (inferred from the flag name; the rescan code was not read).
+
+**`block_entities`** in a chunk payload (§7 `block_entities`): each entry holds `id` String (namespaced type), `x`, `y`, `z` Int (absolute coordinates), `components` Compound (always present, empty compound when no component data (inferred)), the type's own keys (31-2 to 31-8), and `keepPacked` Byte (0 for a live entity, 1 for one the game could not instantiate; 31-1 §6). A reader that cannot interpret a type keeps the compound verbatim and sets nothing else.
+
+### 10.7 What the game does at load, and what must survive a round trip
+
+1. **Data version.** The game reads `Data.DataVersion` of `level.dat` (default -1) and runs the data fixers for the level type up to 5023. The codecs read here do not reject a **newer** data version than 5023. The series check of §10.2 and the version recorded in `Version` drive the downgrade warning (`LevelSummary.backupStatus`, not read in full; Open question 23). Every payload (chunk, entity, POI, saved data, player) carries its own `DataVersion`; the fixers run per payload from that payload's own value.
+2. **File fixer.** Before any of this, `FileFixerUpper.requiresFileFixing` compares the level's data version (values below 4772 count as 0) with the newest registered file fix. The file fixes are registered at data versions 1493 (legacy structures), 4772 (resource-pack location `resources.zip` to `resourcepacks/resources.zip`; dimension storage; `playerdata`, `stats`, `advancements` to `players/data`, `players/stats`, `players/advancements`; `level.dat` content to the saved-data files; obsolete files removed), 4773 (`generated/<ns>/structures` to `structure`) and 4899 (spectators-generate-chunks re-enabled in hardcore worlds). A world whose `level.dat` data version is at or above 4899 already has the layout of §10.1 to §10.6 (4899 is the newest registered fix, read in `DataFixers`); an older world is rewritten on disk by the game (the dedicated server `Main` calls the fixer at start-up and the fixer logs "Starting upgrade for world"; whether it asks for confirmation was not read). The dimension fix moves `DIM-1` and `DIM1` into `dimensions/minecraft/the_nether` and `the_end`, root `region`, `entities` and `poi` into the overworld folder, and `data/<name>.dat` files (`raids`, `raids_end`, `chunks`, `world_border`, `idcounts`, `map_<n>`, `random_sequences`, `scoreboard`, `stopwatches`, `command_storage_<ns>`) into the `data/minecraft/...` names of §10.3. CobolCraft can therefore accept a vanilla world only at data version 4899 or later without implementing these migrations (inferred policy, not a game rule).
+3. **Unknown keys.** Codec-based files ignore members they do not know (a record codec reads only its own members) and the game does not write them back, so a loaded and re-saved vanilla file loses unknown members. `level.dat` is rebuilt from fields (§10.2). For the lossless round trip this section's reader asked for, a CobolCraft implementation must keep and rewrite: the whole `Data` compound including unknown children, `ServerBrands` (adding its own brand is what `setModdedInfo` does), `version_history` (append the saving data version only when it differs from the last entry), `Version` (rewrite with the writer's name, id, series), `DataVersion` (the writer's own; a writer that saves entities, chunks or block entities it did not interpret must keep each payload's original `DataVersion` next to it, since the payload is only valid for that version), every saved-data file it does not interpret (byte-for-byte, including its own `DataVersion`), all `block_entities` compounds it cannot interpret with `keepPacked` unchanged, `Entities` compounds it cannot interpret, and the `poi/` and `entities/` folders as a whole. Chunk, entity and POI payloads are read and written under §6 and §7.
+4. **Missing optional files** are never errors: absent saved-data files mean defaults (§10.3), absent `players/data/<uuid>.dat` is a first join (45-3 §1.6), absent `poi/` or `entities/` region files mean no POIs and no entities in those chunks (the chunk files alone define the terrain), absent `level.dat` is not a world, and an unreadable `level.dat` (read exception or NBT format error) falls back to `level.dat_old`; the game then restores the old file as `level.dat` and moves the bad file to a timestamped corrupted-copy name (`LevelDirectory.corruptedDataFile`, `Util.safeReplaceOrMoveFile`; the exact name was not read).
+5. **Integer, Byte and boolean tolerance.** Writers always use Byte for booleans, Int for the Ints above and Long for `Time`, `LastPlayed`, `seed`, `trigger_time`, `ticks_active`, `total_ticks`, `lerp_time`. The `...Or` accessors and the DFU primitive codecs accept any numeric tag where a number is expected (inferred from `NbtOps` conventions; not traced), so a reader should accept Byte, Short, Int, Long, Float or Double for a numeric member and write the canonical type.
+
+**Worked examples.**
+
+1. Minimal `level.dat` of a fresh survival world named `Alpha`, written by the 26.3 dedicated server: root `{Data: {ServerBrands: ["vanilla"], WasModded: 0b, Version: {Name: "26.3", Id: 5023, Snapshot: 0b, Series: "main"}, version_history: [5023], DataVersion: 5023, GameType: 0, spawn: {dimension: "minecraft:overworld", pos: [I; 0, 64, 0], yaw: 0.0f, pitch: 0.0f}, Time: 0L, LastPlayed: <epoch ms>L, LevelName: "Alpha", version: 19133, allowCommands: 0b, initialized: 1b, difficulty_settings: {difficulty: "normal", hardcore: 0b, locked: 0b}, DataPacks: {Enabled: ["vanilla"], Disabled: []}, enabled_features: ["minecraft:vanilla"]}}`. The example values `64` (the rule that picks a new world's spawn Y was not traced), `"vanilla"` (the brand a dedicated server writes in `ServerBrands` was not read), `"26.3"` and the namespaced feature string are illustrative (inferred), not read constants. `removed_features` and `singleplayer_uuid` are absent.
+2. `data/minecraft/weather.dat` for clear weather, 12000 ticks until the next change: `{data: {clear_weather_time: 12000, rain_time: 0, thunder_time: 0, raining: 0b, thundering: 0b}, DataVersion: 5023}` (12000 is illustrative).
+3. `data/minecraft/game_rules.dat` with keep-inventory on: `{data: {"minecraft:keep_inventory": 1b}, DataVersion: 5023}`; every other rule has its default.
+4. Offline-mode server, player `Steve`: the file is `players/data/<uuid>.dat` with `<uuid>` the version-3 UUID of the bytes `OfflinePlayer:Steve`.
+
+---
+
 ## Composite types introduced here
 
 None beyond those defined inline above. This file describes byte formats, not packet fields.
@@ -615,3 +890,18 @@ None beyond those defined inline above. This file describes byte formats, not pa
 15. §9.7 rule 6: WT-23 fails a chunk closed for a key "not in the world type's registries". Whether a key unknown to both types should instead be skipped
     like an invalid entity (§9.3) is a decision for the owners of world-types; until then WT-23 applies as written.
 16. Inventory size of `players/<offline-uuid>.dat` (§9.2 `Inventory`): §9.2 stores the 36 storage slots (0 to 35) and writes armor and off-hand through `equipment`, while design README C5 says container 0 is the 46-slot inventory menu. These are consistent only if the 46 counts menu slots (crafting, armor, off-hand) that are not saved as `Inventory`; that reading is (inferred) and is not confirmed by the owners of 45-3 and 13. Also world-types Open question 12.
+17. §10.2 `Version` read defaults, and the exact failure when `Version.Series` differs from the game's series: only the call chain was read, not the user-facing flow. The dedicated server stops on "incompatible version" (`LevelSummary.isCompatible`); the downgrade backup flag (`backupStatus`) was not read in full.
+18. §10.2: `Data` keys the game does not model are dropped by `saveDataTag`; whether any 26.3 path (a plugin point, `modifyLevelDataWithoutDatafix`) preserves them was only seen for rename and drop-player. A lossless CobolCraft round trip therefore keeps them by its own rule, which is a CobolCraft choice, not game behaviour.
+19. §10.2: the constant 19133 is what `LevelStorageSource.getStorageVersion` returns and 19132 is the other accepted value (what each stands for is (recalled, not verified) and not needed here); the refusal text for 19132 comes from the dedicated server `Main`. The write order of `Data` keys is the order in `PrimaryLevelData.setTagData`; compound key order in the file is the order of the in-memory map and was not checked in a real file.
+20. §10.3: the payloads of `random_sequences.dat`, `scoreboard.dat`, `stopwatches.dat`, `maps/last_id.dat`, `maps/<n>.dat` (beyond the member names listed) and `<ns>/command_storage.dat` were not traced.
+21. §10.4.2: which clock entries are written when a dimension's clock was never touched, and what a missing entry means for the overworld day time (0 or the dimension type's default), were not traced.
+22. §10.4.3: the decoder's behaviour for an unknown rule id or a rule gated by a disabled feature flag (`max_minecart_speed`) was not traced; neither was whether the writer lists every rule or only changed ones.
+23. §10.7: behaviour for a `level.dat` or saved-data file with a data version newer than 5023 (the game's downgrade warning) was not traced.
+24. §10.4.5: the contents of `generator.settings` and `biome_source` are given by the registries and the world-generation documents (10, 35, 37), and the flattening of the dispatched `generator` compound is inferred, not read from a real file.
+25. §10.4.7: the `callback` dispatch key name (`type`) and the identifier form of `function_tag` are inferred from the codec structure.
+26. §10.6: the rescan behaviour for a POI section with `Valid` false, and the exact conditions under which a `Sections` entry is omitted, were not read.
+27. §10.4.4: the nether border centre scaling on migration (division by 8) is inferred from a constant; whether live nether borders are linked to the overworld border at run time was not traced.
+28. §10.7 item 5: numeric-tag tolerance on read (accepting Byte, Short, Int, Long, Float or Double for a number) was not traced and is inferred from the data-codec conventions.
+29. §10.4.10: whether `optionalFieldOf` / `lenientOptionalFieldOf` omit a member that equals its default on write (DFU behaviour) was not read; the same applies to every plain optional member in §10.4 (`Valid`, `free_tickets`, `spawn_delay`, `ticks_left` and similar).
+30. §10.4.11: which ticket types are saved to `chunk_tickets.dat` and which are transient was not traced.
+31. §10.4.5: the default values of the flat generator settings members `lakes` and `features` were not read, nor the element form of `layers`.
