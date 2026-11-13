@@ -1272,3 +1272,100 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SWING.
+*> swing <targets> mainhand|offhand | none|whack|stab <duration> (16 §5.14, level 2): the living targets (players and mobs; a ground item is not living)
+*> swing; commands.swing.success.single [name] (one) or .multiple [count] is broadcast; none living is commands.swing.failed.notliving; the result is
+*> the number of living targets. BLOCKED: no animation packet is sent (05a gives no Animate action for an arm swing) and the animation and duration
+*> are only parsed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-LIVING              BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-LIVING WS-LAST
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             MOVE 1 TO WS-ENTITY
+             IF WS-ROW < 0
+                 COMPUTE WS-ENTITY = 0 - WS-ROW
+                 IF EN-TYPE(WS-ENTITY) = CR-LOOSE-ITEM
+                     MOVE 0 TO WS-ENTITY
+                 END-IF
+             END-IF
+             IF WS-ENTITY > 0
+                 ADD 1 TO WS-LIVING
+                 MOVE WS-ROW TO WS-LAST
+             END-IF
+         END-PERFORM
+         IF WS-LIVING = 0
+             MOVE "commands.swing.failed.notliving" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         ELSE
+             IF WS-LIVING = 1
+                 MOVE "commands.swing.success.single" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CXB-SHOWN" USING WS-LAST WS-SHOWN WS-SHOWN-LENGTH
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+             ELSE
+                 MOVE "commands.swing.success.multiple" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-LIVING
+             END-IF
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE WS-LIVING TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-SWING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SWING.
+*> The forms of swing (16 §5.14).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SWING.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "swing <targets:entities> mainhand" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> offhand" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> none <duration:time:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> whack <duration:time:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> stab <duration:time:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SWING.

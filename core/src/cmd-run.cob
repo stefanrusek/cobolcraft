@@ -172,6 +172,8 @@
              CALL "CX-ROTATE"
          WHEN BC-TAG
              CALL "CX-TAG"
+         WHEN BC-SWING
+             CALL "CX-SWING"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE
