@@ -170,7 +170,7 @@
      INITIALIZE WS-DRAW
      MOVE 0 TO WS-NONE
 *>   The neighbours: pass 1 the four sides, the cell above and below (face selection, 10.1); pass 2, only when a face is
-*>   drawn, the four diagonals (the corner heights, 10.2).
+*>   drawn, the four diagonals and the heights of the eight (the corner heights, 10.2): a cell with nothing to draw costs six reads.
      PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2 OR WS-NONE = 1
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
              IF (WS-PASS = 1 AND (WS-I < 5 OR WS-I > 8)) OR (WS-PASS = 2 AND WS-I > 4 AND WS-I < 9)
@@ -184,32 +184,34 @@
                      MOVE 1 TO WS-N-KIND(WS-I)
                  END-IF
                  MOVE ST-OPAQUE(WS-N-STATE(WS-I) + 1) TO WS-N-OPAQUE(WS-I)
+             END-IF
+*>           In pass 2, for each side and diagonal: its render height (1.0 under the same fluid, else its own height; another fluid or
+*>           none 0.0, an opaque block -1.0) and its own height (the flow of 1.4).
+             IF WS-PASS = 2 AND WS-I < 9
+                 COMPUTE WS-NX = L-X + WS-DX(WS-I)
+                 COMPUTE WS-NY = L-Y + 1
+                 COMPUTE WS-NZ = L-Z + WS-DZ(WS-I)
                  MOVE 0 TO WS-N-OWN(WS-I)
-                 IF WS-I < 9
-*>                   A side: its render height (1.0 under the same fluid, else its own height; another fluid or none 0.0,
-*>                   an opaque block -1.0) and its own height (the flow of 1.4).
-                     MOVE 0.0 TO WS-N-H(WS-I)
-                     IF WS-N-OPAQUE(WS-I) = 1
-                         MOVE -1.0 TO WS-N-H(WS-I)
+                 MOVE 0.0 TO WS-N-H(WS-I)
+                 IF WS-N-OPAQUE(WS-I) = 1
+                     MOVE -1.0 TO WS-N-H(WS-I)
+                 END-IF
+                 IF WS-N-KIND(WS-I) = WS-KIND
+                     MOVE 8 TO WS-NAMT
+                     MOVE ST-LEVEL(WS-N-STATE(WS-I) + 1) TO WS-A-AMOUNT
+                     IF WS-A-AMOUNT > 0 AND WS-A-AMOUNT < 8
+                         COMPUTE WS-NAMT = 8 - WS-A-AMOUNT
                      END-IF
-                     IF WS-N-KIND(WS-I) = WS-KIND
-                         MOVE 8 TO WS-NAMT
-                         MOVE ST-LEVEL(WS-N-STATE(WS-I) + 1) TO WS-A-AMOUNT
-                         IF WS-A-AMOUNT > 0 AND WS-A-AMOUNT < 8
-                             COMPUTE WS-NAMT = 8 - WS-A-AMOUNT
-                         END-IF
-                         COMPUTE WS-N-OWN(WS-I) = WS-NAMT / 9
-                         MOVE WS-N-OWN(WS-I) TO WS-N-H(WS-I)
-                         COMPUTE WS-NY = WS-NY + 1
-                         CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-A-STATE WS-A-SKY
-                             WS-A-BLOCK
-                         MOVE ST-FLUID(WS-A-STATE + 1) TO WS-A-KIND
-                         IF WS-A-KIND > 2
-                             MOVE 1 TO WS-A-KIND
-                         END-IF
-                         IF WS-A-KIND = WS-KIND
-                             MOVE 1.0 TO WS-N-H(WS-I)
-                         END-IF
+                     COMPUTE WS-N-OWN(WS-I) = WS-NAMT / 9
+                     MOVE WS-N-OWN(WS-I) TO WS-N-H(WS-I)
+                     CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-A-STATE WS-A-SKY
+                         WS-A-BLOCK
+                     MOVE ST-FLUID(WS-A-STATE + 1) TO WS-A-KIND
+                     IF WS-A-KIND > 2
+                         MOVE 1 TO WS-A-KIND
+                     END-IF
+                     IF WS-A-KIND = WS-KIND
+                         MOVE 1.0 TO WS-N-H(WS-I)
                      END-IF
                  END-IF
              END-IF
