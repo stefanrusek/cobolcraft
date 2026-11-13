@@ -18,6 +18,7 @@
      CALL "SV-START"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
      MOVE "acceptance US13-1 given no world folder when the server starts then the console shows "
          & "Created new world in ./world and Ready: accepting players on 0.0.0.0:<port>" TO TL-CASE
      MOVE "T" TO TL-MODE
@@ -32,6 +33,7 @@
      CALL "SV-START"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
      MOVE "acceptance US13-1 given the saved world when the server starts again then the console "
          & "shows only the ready line" TO TL-CASE
      MOVE "Ready: accepting players on 0.0.0.0:25574" TO TL-EXPECTED

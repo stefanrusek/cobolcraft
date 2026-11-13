@@ -114,6 +114,7 @@
      CALL "SV-START"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
      MOVE "acceptance US2 given a cobolcraft world and world-type standard when the server starts then the world opens as "
          & "cobolcraft and the setting is reported ignored" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED

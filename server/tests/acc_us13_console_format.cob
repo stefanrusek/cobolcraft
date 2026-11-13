@@ -28,7 +28,10 @@
          TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED
-     STRING WS-STAMP-BEFORE "Created new world in ./world | " WS-STAMP-BEFORE
+     STRING WS-STAMP-BEFORE "World type: cobolcraft | " WS-STAMP-BEFORE
+         "Generated directory: ../../contract/fixtures/content/valid | " WS-STAMP-BEFORE
+         "Registries: 13 blocks, 19 block states, 19 items, 4 entity types | " WS-STAMP-BEFORE
+         "Created new world in ./world | " WS-STAMP-BEFORE
          "Ready: accepting players on 0.0.0.0:25575" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      IF WS-STAMP-AFTER NOT = WS-STAMP-BEFORE

@@ -43,6 +43,7 @@
          CALL "SV-START"
          CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
          CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
          MOVE SPACES TO TL-CASE TL-EXPECTED
          STRING "acceptance US1-3 given packs " FUNCTION TRIM(WS-DIR(WS-I)) " when a cobolcraft server starts then it prints "
              "the packs status and still starts" DELIMITED BY SIZE INTO TL-CASE
@@ -68,6 +69,7 @@
      CALL "SV-START"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
      MOVE "acceptance US1-4 given world-type auto and stale packs when the server creates a world then it is cobolcraft "
          & "and the auto_fallback line says why" TO TL-CASE
      MOVE "world-type=auto: Minecraft content is not usable (stale), created a cobolcraft world | Created new world in ./world "
@@ -82,6 +84,7 @@
      CALL "SV-START"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
+     CALL "SVT-DROP-INFO" USING WS-CAPTURED
      MOVE "acceptance US1-4 given a cobolcraft world and stale packs when the server starts again then the unavailable line "
          & "is printed and the world opens" TO TL-CASE
      MOVE "Standard worlds are unavailable: The Minecraft content was made for another version. Run the extraction tool again. "

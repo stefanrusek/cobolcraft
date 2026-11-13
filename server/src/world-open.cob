@@ -40,6 +40,10 @@
  01 WS-TEXT                PIC X(512).
  01 WS-CONFIGURED          PIC X(10).
  01 WS-ACTUAL              PIC X(10).
+ 01 WS-BLOCKS              PIC Z(9)9.
+ 01 WS-STATES              PIC Z(9)9.
+ 01 WS-ITEMS               PIC Z(9)9.
+ 01 WS-ENTITIES            PIC Z(9)9.
  LINKAGE SECTION.
  01 L-WORLD                PIC X.
  01 L-SETTINGS             PIC X(3829).
@@ -115,5 +119,21 @@
              FUNCTION TRIM(WS-ACTUAL) DELIMITED BY SIZE INTO WS-TEXT
          CALL "SV-NOTE" USING WS-TEXT
      END-IF
+*>   The start-up lines of the manual run (core-host-delta section 5): type, generated directory, registry counts.
+     MOVE SPACES TO WS-TEXT
+     STRING "World type: " FUNCTION TRIM(WS-ACTUAL) DELIMITED BY SIZE INTO WS-TEXT
+     CALL "SV-NOTE" USING WS-TEXT
+     MOVE SPACES TO WS-TEXT
+     STRING "Generated directory: " FUNCTION TRIM(CS-GENERATED-DIR) DELIMITED BY SIZE INTO WS-TEXT
+     CALL "SV-NOTE" USING WS-TEXT
+     MOVE CT-BLOCK-COUNT TO WS-BLOCKS
+     MOVE CT-STATE-COUNT TO WS-STATES
+     MOVE CT-ITEM-COUNT TO WS-ITEMS
+     MOVE CT-ENTITY-COUNT TO WS-ENTITIES
+     MOVE SPACES TO WS-TEXT
+     STRING "Registries: " FUNCTION TRIM(WS-BLOCKS) " blocks, " FUNCTION TRIM(WS-STATES) " block states, "
+         FUNCTION TRIM(WS-ITEMS) " items, " FUNCTION TRIM(WS-ENTITIES) " entity types" DELIMITED BY SIZE
+         INTO WS-TEXT
+     CALL "SV-NOTE" USING WS-TEXT
      GOBACK.
  END PROGRAM SV-WORLD-OPEN.

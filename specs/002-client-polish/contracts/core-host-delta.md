@@ -39,3 +39,12 @@ WT-23). The save layout question between 07 and 33 (world-types.md Open question
 and `client/tests/contract_coreapi_consumer.cob` (extended: the new fields are filled and the new statuses are
 handled), `core/tests/contract_world_folder_provider.cob` and `client/tests/contract_world_folder_client.cob`
 (extended for the new keys and the three dimensions).
+
+## 5. Server start-up lines (US21-server; added by the 002-lane-sdd implement run)
+
+No document gave the dedicated server's start-up lines beyond 22 §9.2 and world-types §3.5 (packs notices), so this is a
+design record, not behaviour read from an artifact (no clean-room round applies). After the packs notice, if any, and
+before `Created new world in ./world`, the server prints `World type: <standard|cobolcraft|debug>`,
+`Generated directory: <path>` and `Registries: <n> blocks, <n> block states, <n> items, <n> entity types` (the counts of the
+open content set, `CT-SET`). The ready line of the 001 operator surface ends start-up: it is the "Done" line of
+quickstart §9. Operator may replace the wording.
