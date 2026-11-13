@@ -228,18 +228,63 @@
      MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   the chunk border: the leaves of a tree at x = 17 would reach x = 15 (the chunk of x 16 to 31 starts at 16)
+*>   the chunk border: an oak at x = 17 has leaves reaching x = 15, outside the chunk of x 16 to 31 (the level writes one chunk): the tree is placed, its trunk and the leaves inside
+*>   the chunk are written with the distances of the whole tree, the leaves outside are not
      PERFORM NEW-WORLD
      MOVE 17 TO WS-X
      PERFORM PLACE-TREE
-     MOVE "test feat tree a tree whose leaves would cross the chunk border is not placed" TO TL-CASE
+     MOVE "test feat tree a tree at the chunk border is placed (its trunk stands in the chunk)" TO TL-CASE
      MOVE WS-RESULT TO TL-OBSERVED-N
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     PERFORM COUNT-NON-AIR
-     MOVE "test feat tree a refused tree writes nothing (no logs, leaves or soil)" TO TL-CASE
-     MOVE WS-NONAIR TO TL-OBSERVED-N
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "test feat tree the leaves of a border tree outside the chunk are discarded by the level, not stored" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF FL-DISCARDED > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-H
+     PERFORM VARYING WS-LY FROM 63 BY 1 UNTIL WS-LY > 80
+         MOVE 17 TO WS-LX
+         MOVE 40 TO WS-LZ
+         CALL "FL-GET-STATE" USING WS-LX WS-LY WS-LZ WS-STATE
+         CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+         IF WS-BLOCK = 5 AND WS-H = WS-LY - 63
+             ADD 1 TO WS-H
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-BAD
+     MOVE 0 TO WS-LEAVES
+     PERFORM VARYING WS-LY FROM 63 BY 1 UNTIL WS-LY > 80
+         PERFORM VARYING WS-LX FROM 16 BY 1 UNTIL WS-LX > 31
+             PERFORM VARYING WS-LZ FROM 32 BY 1 UNTIL WS-LZ > 47
+                 CALL "FL-GET-STATE" USING WS-LX WS-LY WS-LZ WS-STATE
+                 CALL "FL-BLOCK-OF" USING WS-STATE WS-BLOCK
+                 IF WS-BLOCK = 6
+                     ADD 1 TO WS-LEAVES
+                     COMPUTE WS-STATE-NO = WS-STATE - CB-FIRST-STATE(6)
+                     COMPUTE WS-D = WS-STATE-NO / 4 + 1
+                     MOVE 7 TO WS-BEST
+                     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-H
+                         COMPUTE WS-DX = FUNCTION ABS(WS-LX - 17) + FUNCTION ABS(WS-LZ - 40) + FUNCTION ABS(WS-LY - 63 - WS-I)
+                         IF WS-DX < WS-BEST
+                             MOVE WS-DX TO WS-BEST
+                         END-IF
+                     END-PERFORM
+                     IF WS-D NOT = WS-BEST
+                         ADD 1 TO WS-BAD
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE "test feat tree the border tree keeps its leaves inside the chunk (more than 25) with correct distances" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-LEAVES > 25 AND WS-BAD = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   an obstruction at y = 3 above the origin gives a free height of 1: not placed

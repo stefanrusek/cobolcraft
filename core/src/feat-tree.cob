@@ -2,8 +2,8 @@
 *> tree feature into FD-TR (FEATDATA.cpy), FR-TREE places it. The supported tree is the straight trunk with the blob, spruce or pine foliage and the two layers feature size, which
 *> is every oak, birch and spruce of the data except the fancy and the fallen variants; anything else (another placer, a root placer, a decorator other than the beehive) marks the
 *> feature unsupported (FD-BAD).
-*> Deviations (the lane's notes, docs/design/world-types.md "Trees"): the tree is built in the grid of TREEWORK.cpy and written only when every log, leaf and soil block lies in the chunk
-*> being generated (the write window of the level is one chunk): a tree that would cross the border places nothing, after its draws, so the later draws are those of the vanilla order;
+*> Deviations (the lane's notes, docs/design/world-types.md "Trees"): the tree is built in the grid of TREEWORK.cpy and written through the level, whose write window is one chunk: the trunk stands in the
+*> chunk of its origin and the leaves that fall in a neighbouring chunk are cut off (a neighbour's terrain is not known here, so a tree cannot be completed from the other side);
 *> the beehive decorator is ignored (no bees, no nest); the leaf distances of section 2.4 are the breadth first distances from this tree's logs through its own leaves (the hash set
 *> order of the layers is not reproduced, Open question 1 there) and neighbouring blocks outside the tree do not lower them; the shape update at the edge (2.5) only schedules leaf
 *> ticks and is not run; leaves are written not persistent and not waterlogged; states are the default states of the blocks.
@@ -266,7 +266,7 @@
      COMPUTE WS-GY = L-Y - TW-Y0 + 1
      COMPUTE WS-GZ = L-Z - TW-Z0 + 7
      MOVE 0 TO L-CELL
-     IF WS-GX >= 0 AND WS-GX < TW-GX AND WS-GY >= 0 AND WS-GY < TW-GY AND WS-GZ >= 0 AND WS-GZ < TW-GZ
+     IF WS-GX >= 1 AND WS-GX < TW-GX - 1 AND WS-GY >= 1 AND WS-GY < TW-GY - 1 AND WS-GZ >= 1 AND WS-GZ < TW-GZ - 1
          COMPUTE L-CELL = (WS-GX * TW-GY + WS-GY) * TW-GZ + WS-GZ + 1
      ELSE
          MOVE 1 TO TW-OUT
@@ -296,7 +296,7 @@
          IF TW-GRID(WS-CELL) = 0
              CALL "FL-GET-STATE" USING L-X L-Y L-Z WS-STATE
              CALL "FR-TREE-OK" USING TW-REPL-START TW-REPL-N WS-STATE WS-OK
-             IF WS-OK = 1 AND TW-NLEAF < 1536
+             IF WS-OK = 1
                  ADD 1 TO TW-NLEAF
                  MOVE L-X TO TW-LEAF-X(TW-NLEAF)
                  MOVE L-Y TO TW-LEAF-Y(TW-NLEAF)
@@ -430,12 +430,10 @@
                      WHEN 6
                          COMPUTE WS-NB = WS-CELL + 1
                  END-EVALUATE
-                 IF WS-NB >= 1 AND WS-NB <= 9000
-                     IF TW-GRID(WS-NB) = 2 AND TW-DIST(WS-NB) > WS-D
-                         MOVE WS-D TO TW-DIST(WS-NB)
-                         ADD 1 TO WS-TAIL
-                         MOVE WS-NB TO TW-QUEUE(WS-TAIL)
-                     END-IF
+                 IF TW-GRID(WS-NB) = 2 AND TW-DIST(WS-NB) > WS-D
+                     MOVE WS-D TO TW-DIST(WS-NB)
+                     ADD 1 TO WS-TAIL
+                     MOVE WS-NB TO TW-QUEUE(WS-TAIL)
                  END-IF
              END-PERFORM
          END-IF
@@ -498,8 +496,6 @@
  01 WS-HI                  BINARY-LONG.
  01 WS-LOW                 BINARY-LONG.
  01 WS-END                 BINARY-LONG.
- 01 WS-CX0                 BINARY-LONG.
- 01 WS-CZ0                 BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -643,24 +639,11 @@
                  END-IF
              END-PERFORM
      END-EVALUATE
-     IF TW-OUT = 1 OR (TW-NLOG = 0 AND TW-NLEAF = 0)
+     IF TW-OUT = 1
          GOBACK
      END-IF
-*>   the whole tree must lie in the chunk being generated
-     COMPUTE WS-CX0 = FL-CX * 16
-     COMPUTE WS-CZ0 = FL-CZ * 16
-     MOVE 1 TO WS-OK
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TW-NLEAF
-         IF TW-LEAF-X(WS-I) < WS-CX0 OR TW-LEAF-X(WS-I) > WS-CX0 + 15 OR TW-LEAF-Z(WS-I) < WS-CZ0 OR TW-LEAF-Z(WS-I) > WS-CZ0 + 15
-             MOVE 0 TO WS-OK
-         END-IF
-     END-PERFORM
-     IF L-X < WS-CX0 OR L-X > WS-CX0 + 15 OR L-Z < WS-CZ0 OR L-Z > WS-CZ0 + 15
-         MOVE 0 TO WS-OK
-     END-IF
-     IF WS-OK = 1
-         CALL "FR-TREE-COMMIT" USING WS-ROW
-         MOVE 1 TO L-RESULT
-     END-IF
+*>   the level writes one chunk: the trunk stands in it (the origin is in the chunk) and the leaves outside are discarded by FL-SET-STATE
+     CALL "FR-TREE-COMMIT" USING WS-ROW
+     MOVE 1 TO L-RESULT
      GOBACK.
  END PROGRAM FR-TREE.
