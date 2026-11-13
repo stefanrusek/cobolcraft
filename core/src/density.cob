@@ -331,7 +331,8 @@
     05 WS-RX               BINARY-LONG OCCURS 16 TIMES.
     05 WS-QY               BINARY-LONG OCCURS 384 TIMES.
     05 WS-RY               BINARY-LONG OCCURS 384 TIMES.
-    05 WS-COL              BINARY-LONG OCCURS 25 TIMES.
+    05 WS-COL-I            OCCURS 5 TIMES.
+       10 WS-COL            BINARY-LONG OCCURS 5 TIMES.
     05 WS-BASE             BINARY-LONG OCCURS 16 TIMES.
  01 WS-I                   BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
@@ -408,7 +409,7 @@
          END-PERFORM
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 4
              PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 4
-                 COMPUTE WS-COL(WS-I * 5 + WS-K + 1) = (WS-I * 5 + WS-K) * 49
+                 COMPUTE WS-COL(WS-I + 1, WS-K + 1) = (WS-I * 5 + WS-K) * 49
              END-PERFORM
          END-PERFORM
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
@@ -429,7 +430,7 @@
      MOVE WS-RX(WS-LZ + 1) TO WS-RZI
      MOVE WS-QY(WS-LY + 1) TO WS-K
      MOVE WS-RY(WS-LY + 1) TO WS-RYI
-     MOVE WS-COL(WS-CI * 5 + WS-CK + 1) TO WS-GI
+     MOVE WS-COL(WS-CI + 1, WS-CK + 1) TO WS-GI
      ADD WS-BASE(WS-SLOT) TO WS-GI
      ADD WS-K TO WS-GI
      IF WS-RXI = 0 AND WS-RYI = 0 AND WS-RZI = 0
@@ -673,6 +674,7 @@
  LOCAL-STORAGE SECTION.
  01 LS-STAMP               BINARY-LONG.
  01 LS-NODE                BINARY-LONG.
+ 01 LS-DONE                BINARY-LONG.
  01 LS-X                   BINARY-LONG.
  01 LS-Y                   BINARY-LONG.
  01 LS-Z                   BINARY-LONG.
@@ -730,18 +732,19 @@
 *>   A reference (its root already resolved) or blend_density node only passes its input's value (and flags) on: follow it
 *>   here instead of paying two evaluator calls and a memo entry per hop.
      MOVE L-NODE TO LS-NODE
-     PERFORM UNTIL 1 = 0
+     MOVE 0 TO LS-DONE
+     PERFORM UNTIL LS-DONE = 1
          EVALUATE WGN-TYPE(LS-NODE)
              WHEN 0
                  IF DM-REF-STAMP(LS-NODE) = LS-STAMP
                      MOVE DM-REF(LS-NODE) TO LS-NODE
                  ELSE
-                     EXIT PERFORM
+                     MOVE 1 TO LS-DONE
                  END-IF
              WHEN 20
                  MOVE WGN-CHILD(LS-NODE, 1) TO LS-NODE
              WHEN OTHER
-                 EXIT PERFORM
+                 MOVE 1 TO LS-DONE
          END-EVALUATE
      END-PERFORM
      IF LS-NODE = 0
@@ -1098,3 +1101,205 @@
      CALL "DENSITY-NODE" USING WS-ROOT L-X L-Y L-Z L-RESULT
      GOBACK.
  END PROGRAM DENSITY-EVAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DENSITY-HULL RECURSIVE.
+*> USING node, cell i, cell k, cell j (BINARY-LONG: the cell of the chunk grids, x i, z k, y j, as in DENSITY-INTERP-GRID), lower, upper (FLOAT-LONG,
+*> out): bounds of the value of the node at every block of that cell, from the corners of the interpolated nodes (a trilinear value lies between
+*> its corners) through the arithmetic of the node types it knows (constants, sum, difference, product, minimum, maximum, absolute value,
+*> squeeze, range choice, references, cache and blend nodes); a node of another type gives the bounds of 1E12 either way. The bounds are
+*> meant to be used with a margin: the values are float32 results, the bounds are computed in double from the corners.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ COPY NOISE.
+ COPY DENSITY.
+ COPY DMEMO.
+ 01 DG-GRID BASED.
+ COPY GENGRID REPLACING LEADING ==GJ-== BY ==DG-==.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-BIG                 FLOAT-LONG VALUE 1000000000000.
+ 01 WS-MINUS-BIG           FLOAT-LONG VALUE -1000000000000.
+ 01 WS-MARGIN              FLOAT-LONG VALUE 0.001.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-MINUS-ONE           FLOAT-LONG VALUE -1.
+ 01 WS-24                  FLOAT-LONG VALUE 24.
+ 01 WS-TWO                 FLOAT-LONG VALUE 2.
+ 01 WS-KEY                 PIC X(112).
+ LOCAL-STORAGE SECTION.
+ 01 LS-N                   BINARY-LONG.
+ 01 LS-CHILD               BINARY-LONG.
+ 01 LS-ROOT                BINARY-LONG.
+ 01 LS-STAMP               BINARY-LONG.
+ 01 LS-SLOT                BINARY-LONG.
+ 01 LS-I                   BINARY-LONG.
+ 01 LS-GI                  BINARY-LONG.
+ 01 LS-L1                  FLOAT-LONG.
+ 01 LS-H1                  FLOAT-LONG.
+ 01 LS-L2                  FLOAT-LONG.
+ 01 LS-H2                  FLOAT-LONG.
+ 01 LS-L3                  FLOAT-LONG.
+ 01 LS-H3                  FLOAT-LONG.
+ 01 LS-A                   FLOAT-LONG.
+ 01 LS-B                   FLOAT-LONG.
+ 01 LS-V                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-CI                   BINARY-LONG.
+ 01 L-CK                   BINARY-LONG.
+ 01 L-CJ                   BINARY-LONG.
+ 01 L-LO                   FLOAT-LONG.
+ 01 L-HI                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-NODE L-CI L-CK L-CJ L-LO L-HI.
+     MOVE WS-MINUS-BIG TO L-LO
+     MOVE WS-BIG TO L-HI
+     MOVE L-NODE TO LS-N
+     IF LS-N = 0
+         MOVE 0 TO L-LO L-HI
+         GOBACK
+     END-IF
+     EVALUATE WGN-TYPE(LS-N)
+         WHEN 0
+             MOVE WG-LOAD-GEN TO LS-STAMP
+             ADD NZ-GEN TO LS-STAMP
+             ADD 1 TO LS-STAMP
+             IF DM-REF-STAMP(LS-N) = LS-STAMP
+                 MOVE DM-REF(LS-N) TO LS-ROOT
+             ELSE
+                 MOVE WGN-TEXT-1(LS-N)(1:112) TO WS-KEY
+                 CALL "WG-FIND" USING WS-KIND WS-KEY LS-ROOT
+             END-IF
+             CALL "DENSITY-HULL" USING LS-ROOT L-CI L-CK L-CJ L-LO L-HI
+         WHEN 19
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ L-LO L-HI
+         WHEN 20
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ L-LO L-HI
+         WHEN 1
+             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(LS-N, 1) L-LO
+             MOVE L-LO TO L-HI
+         WHEN 33
+             MOVE WS-ONE TO L-LO L-HI
+         WHEN 34
+             MOVE 0 TO L-LO L-HI
+         WHEN 35
+             MOVE 0 TO L-LO L-HI
+         WHEN 2 THRU 4
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 2) L-CI L-CK L-CJ LS-L2 LS-H2
+             EVALUATE WGN-TYPE(LS-N)
+                 WHEN 2
+                     COMPUTE L-LO = LS-L1 + LS-L2
+                     COMPUTE L-HI = LS-H1 + LS-H2
+                 WHEN 3
+                     COMPUTE L-LO = LS-L1 - LS-H2
+                     COMPUTE L-HI = LS-H1 - LS-L2
+                 WHEN OTHER
+                     COMPUTE LS-A = LS-L1 * LS-L2
+                     MOVE LS-A TO L-LO L-HI
+                     COMPUTE LS-A = LS-L1 * LS-H2
+                     IF LS-A < L-LO MOVE LS-A TO L-LO END-IF
+                     IF LS-A > L-HI MOVE LS-A TO L-HI END-IF
+                     COMPUTE LS-A = LS-H1 * LS-L2
+                     IF LS-A < L-LO MOVE LS-A TO L-LO END-IF
+                     IF LS-A > L-HI MOVE LS-A TO L-HI END-IF
+                     COMPUTE LS-A = LS-H1 * LS-H2
+                     IF LS-A < L-LO MOVE LS-A TO L-LO END-IF
+                     IF LS-A > L-HI MOVE LS-A TO L-HI END-IF
+             END-EVALUATE
+         WHEN 6 THRU 7
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 2) L-CI L-CK L-CJ LS-L2 LS-H2
+             IF WGN-TYPE(LS-N) = 6
+                 MOVE LS-L1 TO L-LO
+                 IF LS-L2 < L-LO MOVE LS-L2 TO L-LO END-IF
+                 MOVE LS-H1 TO L-HI
+                 IF LS-H2 < L-HI MOVE LS-H2 TO L-HI END-IF
+             ELSE
+                 MOVE LS-L1 TO L-LO
+                 IF LS-L2 > L-LO MOVE LS-L2 TO L-LO END-IF
+                 MOVE LS-H1 TO L-HI
+                 IF LS-H2 > L-HI MOVE LS-H2 TO L-HI END-IF
+             END-IF
+         WHEN 8
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
+             EVALUATE TRUE
+                 WHEN LS-L1 >= 0
+                     MOVE LS-L1 TO L-LO
+                     MOVE LS-H1 TO L-HI
+                 WHEN LS-H1 <= 0
+                     COMPUTE L-LO = 0 - LS-H1
+                     COMPUTE L-HI = 0 - LS-L1
+                 WHEN OTHER
+                     MOVE 0 TO L-LO
+                     COMPUTE L-HI = 0 - LS-L1
+                     IF LS-H1 > L-HI MOVE LS-H1 TO L-HI END-IF
+             END-EVALUATE
+         WHEN 18
+*>           squeeze: c / 2 - c * c * c / 24 of c = clamp(v, -1, 1), increasing in c
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
+             IF LS-L1 < WS-MINUS-ONE MOVE WS-MINUS-ONE TO LS-L1 END-IF
+             IF LS-L1 > WS-ONE MOVE WS-ONE TO LS-L1 END-IF
+             IF LS-H1 < WS-MINUS-ONE MOVE WS-MINUS-ONE TO LS-H1 END-IF
+             IF LS-H1 > WS-ONE MOVE WS-ONE TO LS-H1 END-IF
+             COMPUTE L-LO = LS-L1 / 2 - LS-L1 * LS-L1 * LS-L1 / 24
+             COMPUTE L-HI = LS-H1 / 2 - LS-H1 * LS-H1 * LS-H1 / 24
+         WHEN 23
+*>           range_choice: the input's bounds against [min, max) with a margin; inside both branches when it straddles an end
+             CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 1) L-CI L-CK L-CJ LS-L1 LS-H1
+             COMPUTE LS-A = WGN-NUM(LS-N, 1) + WS-MARGIN
+             COMPUTE LS-B = WGN-NUM(LS-N, 2) - WS-MARGIN
+             MOVE 0 TO LS-I
+             IF LS-L1 >= LS-A AND LS-H1 < LS-B
+                 MOVE 1 TO LS-I
+             END-IF
+             COMPUTE LS-A = WGN-NUM(LS-N, 1) - WS-MARGIN
+             COMPUTE LS-B = WGN-NUM(LS-N, 2) + WS-MARGIN
+             IF LS-H1 < LS-A OR LS-L1 >= LS-B
+                 MOVE 2 TO LS-I
+             END-IF
+             IF LS-I NOT = 2
+                 CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 2) L-CI L-CK L-CJ LS-L2 LS-H2
+                 MOVE LS-L2 TO L-LO
+                 MOVE LS-H2 TO L-HI
+             END-IF
+             IF LS-I NOT = 1
+                 CALL "DENSITY-HULL" USING WGN-CHILD(LS-N, 3) L-CI L-CK L-CJ LS-L3 LS-H3
+                 IF LS-I = 2
+                     MOVE LS-L3 TO L-LO
+                     MOVE LS-H3 TO L-HI
+                 ELSE
+                     IF LS-L3 < L-LO MOVE LS-L3 TO L-LO END-IF
+                     IF LS-H3 > L-HI MOVE LS-H3 TO L-HI END-IF
+                 END-IF
+             END-IF
+         WHEN 32
+             IF DNG-ACTIVE = 1 AND WGN-INT(LS-N, 1) = 4 AND WGN-INT(LS-N, 2) = 8
+                 SET ADDRESS OF DG-GRID TO DNG-PTR
+                 MOVE 0 TO LS-SLOT
+                 PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > DG-G-COUNT OR LS-SLOT > 0
+                     IF DG-G-NODE(LS-I) = LS-N
+                         MOVE LS-I TO LS-SLOT
+                     END-IF
+                 END-PERFORM
+                 IF LS-SLOT > 0
+                     COMPUTE LS-GI = (LS-SLOT - 1) * 1225 + (L-CI * 5 + L-CK) * 49 + L-CJ + 1
+                     MOVE DG-G-VAL(LS-GI) TO L-LO L-HI
+                     PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I > 7
+                         EVALUATE LS-I
+                             WHEN 0 MOVE DG-G-VAL(LS-GI) TO LS-V
+                             WHEN 1 MOVE DG-G-VAL(LS-GI + 245) TO LS-V
+                             WHEN 2 MOVE DG-G-VAL(LS-GI + 1) TO LS-V
+                             WHEN 3 MOVE DG-G-VAL(LS-GI + 246) TO LS-V
+                             WHEN 4 MOVE DG-G-VAL(LS-GI + 49) TO LS-V
+                             WHEN 5 MOVE DG-G-VAL(LS-GI + 294) TO LS-V
+                             WHEN 6 MOVE DG-G-VAL(LS-GI + 50) TO LS-V
+                             WHEN OTHER MOVE DG-G-VAL(LS-GI + 295) TO LS-V
+                         END-EVALUATE
+                         IF LS-V < L-LO MOVE LS-V TO L-LO END-IF
+                         IF LS-V > L-HI MOVE LS-V TO L-HI END-IF
+                     END-PERFORM
+                 END-IF
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DENSITY-HULL.

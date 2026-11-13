@@ -1001,7 +1001,9 @@
      COMPUTE WS-ZHI = FUNCTION MAX(WS-A, WS-ZLO)
 *>   the squared distances along y and along z do not depend on the other axes: each once per layer, not once per block
      PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
-         COMPUTE WS-K = WS-Y - WS-YLO + 1
+         MOVE WS-Y TO WS-K
+         SUBTRACT WS-YLO FROM WS-K
+         ADD 1 TO WS-K
          MOVE WS-Y TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
          CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BY WS-A
@@ -1010,7 +1012,9 @@
          CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-YD2T-ITEM(WS-K)
      END-PERFORM
      PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
-         COMPUTE WS-K = WS-Z - WS-ZLO + 1
+         MOVE WS-Z TO WS-K
+         SUBTRACT WS-ZLO FROM WS-K
+         ADD 1 TO WS-K
          MOVE WS-Z TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
          CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BZ WS-A
@@ -1028,12 +1032,16 @@
          CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-XD2 WS-BITS-U
          IF WS-BITS-U < WS-ONE-BITS
              PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
-                 COMPUTE WS-K = WS-Y - WS-YLO + 1
+                 MOVE WS-Y TO WS-K
+                 SUBTRACT WS-YLO FROM WS-K
+                 ADD 1 TO WS-K
                  CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2T-ITEM(WS-K) WS-S2
                  CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S2 WS-BITS-U
                  IF WS-BITS-U < WS-ONE-BITS
                      PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
-                         COMPUTE WS-K = WS-Z - WS-ZLO + 1
+                         MOVE WS-Z TO WS-K
+                         SUBTRACT WS-ZLO FROM WS-K
+                         ADD 1 TO WS-K
                          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-S2 WS-ZD2T-ITEM(WS-K) WS-S3
                          CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S3 WS-BITS-U
                          IF WS-BITS-U < WS-ONE-BITS AND WS-Y >= -64 AND WS-Y <= 319
