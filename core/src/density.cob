@@ -719,10 +719,6 @@
     05 B-UY                BINARY-LONG.
     05 B-RES               FLOAT-LONG.
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
-     IF L-NODE = 0
-         MOVE 0 TO L-RESULT
-         GOBACK
-     END-IF
      MOVE L-X TO LS-X
      MOVE L-Y TO LS-Y
      MOVE L-Z TO LS-Z
@@ -733,7 +729,7 @@
 *>   here instead of paying two evaluator calls and a memo entry per hop.
      MOVE L-NODE TO LS-NODE
      MOVE 0 TO LS-DONE
-     PERFORM UNTIL LS-DONE = 1
+     PERFORM UNTIL LS-DONE = 1 OR LS-NODE = 0
          EVALUATE WGN-TYPE(LS-NODE)
              WHEN 0
                  IF DM-REF-STAMP(LS-NODE) = LS-STAMP
@@ -790,15 +786,12 @@
              MOVE WG-LOAD-GEN TO LS-STAMP
              ADD NZ-GEN TO LS-STAMP
              ADD 1 TO LS-STAMP
-             IF DM-REF-STAMP(LS-NODE) = LS-STAMP
-                 MOVE DM-REF(LS-NODE) TO LS-ROOT
-             ELSE
-                 MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
-                 CALL "WG-FIND" USING WS-KIND LS-KEY LS-ROOT
-                 IF LS-ROOT > 0
-                     MOVE LS-STAMP TO DM-REF-STAMP(LS-NODE)
-                     MOVE LS-ROOT TO DM-REF(LS-NODE)
-                 END-IF
+*>           (the loop above follows a root already resolved: here it is looked up and remembered)
+             MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
+             CALL "WG-FIND" USING WS-KIND LS-KEY LS-ROOT
+             IF LS-ROOT > 0
+                 MOVE LS-STAMP TO DM-REF-STAMP(LS-NODE)
+                 MOVE LS-ROOT TO DM-REF(LS-NODE)
              END-IF
              CALL "DENSITY-NODE" USING LS-ROOT L-X L-Y L-Z L-RESULT
          WHEN 1
@@ -888,8 +881,6 @@
              CALL "DENSITY-F32" USING LS-OP-DIV LS-V WS-24 LS-U
              CALL "DENSITY-F32" USING LS-OP-SUB LS-T LS-U L-RESULT
          WHEN 19
-             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z L-RESULT
-         WHEN 20
              CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z L-RESULT
          WHEN 21
              CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A

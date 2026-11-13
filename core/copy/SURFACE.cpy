@@ -21,11 +21,6 @@
        10 SF-N-VG-READY     BINARY-LONG.
        10 SF-N-VG-LO        BINARY-DOUBLE UNSIGNED.
        10 SF-N-VG-HI        BINARY-DOUBLE UNSIGNED.
-*>     the vein density's range of y outside which it is a constant of at most 0 (ORE-VEIN-RULE): mode 0 not looked at, 1 there is
-*>     one (SF-N-Y-LO inclusive, SF-N-Y-HI exclusive), 2 there is none
-       10 SF-N-Y-MODE       BINARY-LONG.
-       10 SF-N-Y-LO         FLOAT-LONG.
-       10 SF-N-Y-HI         FLOAT-LONG.
  01 SURFACE-CTX EXTERNAL.
     05 SC-X                 BINARY-LONG.
     05 SC-Y                 BINARY-LONG.
