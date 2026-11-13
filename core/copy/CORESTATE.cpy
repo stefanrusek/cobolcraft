@@ -260,6 +260,11 @@
        10 EN-TARGET-ID       BINARY-LONG.
        10 EN-COOLDOWN        BINARY-LONG.
        10 EN-BURN            BINARY-LONG.        *> ticks left on fire (a daylight-burning standard mob: 160, 1 damage every 20)
+       10 EN-WAY-X           FLOAT-LONG.         *> the next path waypoint (cell centre) of a walking standard mob (core/src/stdmobs.cob STDMOB-HEAD)
+       10 EN-WAY-Z           FLOAT-LONG.
+       10 EN-DEST-X          BINARY-LONG.        *> the cell a stroll is walking to (EN-COOLDOWN ticks left)
+       10 EN-DEST-Z          BINARY-LONG.
+       10 EN-PATH-TICKS      BINARY-LONG.        *> ticks until the path is searched again
        10 EN-KILLER          BINARY-LONG.        *> player row that last hit a mob (0 none): the killed_by_player loot condition (core/src/stdmobs.cob)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while

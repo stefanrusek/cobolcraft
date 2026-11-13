@@ -79,6 +79,7 @@
 *> 3 to 10 blocks along one heading, then it stands.
  78 SM-STROLL-ODDS           VALUE 120.
  78 SM-STROLL-BLOCKS         VALUE 10.
+ 78 SM-STROLL-TICKS          VALUE 200.
 *> Natural spawning of the creature category (18 sections 6.1, 6.3, 6.5, 6.8): the friendly cycle runs when Time mod 400 = 0; a
 *> player's local cap is 10 creatures in the chunks within 5 chunks of the player; the animal rule needs grass_block below and a
 *> raw brightness above 8; a pack is 1 to 4 mobs, each placed by a cursor that moves up to 5 blocks per axis from the start.

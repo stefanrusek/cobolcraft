@@ -474,6 +474,112 @@
  END PROGRAM STDMOB-BURN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-HEAD.
+*> USING tracker row, table row, dest x, y, z (BINARY-LONG: the cell the mob wants to stand in), hx, hz out (FLOAT-LONG: the horizontal velocity of this tick,
+*> blocks per tick), arrived out (BINARY-LONG): how a walking mob moves toward a cell (18 sections 5.2 and 5.5). Every EN-PATH-TICKS ticks (4 + a draw
+*> of 0 to 6, +5 when the destination is more than 16 blocks away, +10 when more than 32: the recalculation delay of MeleeAttackGoal in 4.2) and
+*> whenever the waypoint is reached, STDMOB-PATH searches a new path from the mob's feet cell (a budget of 100 nodes), and the waypoint EN-WAY-X/-Z
+*> becomes the centre of the path's second cell; a path of one cell (the mob is at its closest) or none (no floor, nothing found) sends it straight at the
+*> destination. The velocity is the walk speed toward the waypoint. The mob has arrived when it is in the destination cell column.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY STDMOBS.
+ 01 WS-MX                  BINARY-LONG.
+ 01 WS-MY                  BINARY-LONG.
+ 01 WS-MZ                  BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-BUDGET              BINARY-LONG VALUE 100.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-REACHED             BINARY-LONG.
+ 01 WS-PATH-TABLE.
+    05 WS-PATH OCCURS 128 TIMES.
+       10 WS-PX            BINARY-LONG.
+       10 WS-PY            BINARY-LONG.
+       10 WS-PZ            BINARY-LONG.
+ 01 WS-ARGS-COUNT          BINARY-LONG VALUE 3.
+ 01 WS-ARGS.
+    05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
+ 01 WS-R                   BINARY-DOUBLE.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-HX                   FLOAT-LONG.
+ 01 L-HZ                   FLOAT-LONG.
+ 01 L-ARRIVED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M L-DX L-DY L-DZ L-HX L-HZ L-ARRIVED.
+     MOVE 0 TO L-HX L-HZ L-ARRIVED
+     COMPUTE WS-MX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-MY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-MZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     IF WS-MX = L-DX AND WS-MZ = L-DZ
+         MOVE 1 TO L-ARRIVED
+         GOBACK
+     END-IF
+     IF EN-PATH-TICKS(L-ROW) > 0
+         SUBTRACT 1 FROM EN-PATH-TICKS(L-ROW)
+     END-IF
+     COMPUTE WS-DX = EN-WAY-X(L-ROW) - EN-X(L-ROW)
+     COMPUTE WS-DZ = EN-WAY-Z(L-ROW) - EN-Z(L-ROW)
+     IF EN-WAY-X(L-ROW) = 0 AND EN-WAY-Z(L-ROW) = 0
+         MOVE 0 TO EN-PATH-TICKS(L-ROW)
+     END-IF
+     IF WS-DX * WS-DX + WS-DZ * WS-DZ < 0.2
+         MOVE 0 TO EN-PATH-TICKS(L-ROW)
+     END-IF
+     IF EN-PATH-TICKS(L-ROW) = 0
+         MOVE 1 TO WS-HEIGHT
+         COMPUTE WS-TYPE = EN-TYPE(L-ROW) + 1
+         IF ET-HEIGHT-MILLI(WS-TYPE) > 1000
+             MOVE 2 TO WS-HEIGHT
+         END-IF
+         CALL "STDMOB-PATH" USING EN-DIM(L-ROW) WS-MX WS-MY WS-MZ L-DX L-DY L-DZ WS-HEIGHT WS-BUDGET
+             WS-PATH-TABLE WS-COUNT WS-REACHED
+         IF WS-COUNT >= 2
+             COMPUTE EN-WAY-X(L-ROW) = WS-PX(2) + 0.5
+             COMPUTE EN-WAY-Z(L-ROW) = WS-PZ(2) + 0.5
+         ELSE
+             COMPUTE EN-WAY-X(L-ROW) = L-DX + 0.5
+             COMPUTE EN-WAY-Z(L-ROW) = L-DZ + 0.5
+         END-IF
+         MOVE EN-ID(L-ROW) TO WS-ARG(1)
+         MOVE CW-TIME TO WS-ARG(2)
+         MOVE 13 TO WS-ARG(3)
+         CALL "RNG-HASH" USING WS-ARGS-COUNT WS-ARGS WS-R
+         COMPUTE EN-PATH-TICKS(L-ROW) = 4 + FUNCTION MOD(WS-R, 7)
+         COMPUTE WS-D2 = (L-DX - WS-MX) ** 2 + (L-DZ - WS-MZ) ** 2
+         IF WS-D2 > 1024
+             ADD 10 TO EN-PATH-TICKS(L-ROW)
+         ELSE
+             IF WS-D2 > 256
+                 ADD 5 TO EN-PATH-TICKS(L-ROW)
+             END-IF
+         END-IF
+     END-IF
+     COMPUTE WS-DX = EN-WAY-X(L-ROW) - EN-X(L-ROW)
+     COMPUTE WS-DZ = EN-WAY-Z(L-ROW) - EN-Z(L-ROW)
+     COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     IF WS-H > 0.05
+         COMPUTE WS-SPEED = SM-WALK-MILLI(L-M) / 1000
+         COMPUTE L-HX = WS-SPEED * WS-DX / WS-H
+         COMPUTE L-HZ = WS-SPEED * WS-DZ / WS-H
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-HEAD.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-STEP.
 *> USING tracker row: nothing for a row that is no standard mob. A hostile mob is removed while the difficulty is Peaceful or the hostile-mobs
 *> setting is off. A dying mob (health 0) counts its death ticks (EN-COOLDOWN) and vanishes at the 20th (STDMOB-VANISH). Nothing else happens in a
@@ -482,8 +588,9 @@
 *>   target at the walk speed until its box is within the melee reach, and with the timer at 0 and the target in reach hits it (HEALTH-MOB-HIT, the
 *>   attack damage of the row), the timer becoming SM-ATTACK-TICKS; with no target it strolls like the animals;
 *> - a mob that was hit panics (EN-FLEE ticks left, away from the attacker at the panic speed);
-*> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time),
-*>   along a random heading for 3 to 10 blocks at the walk speed (EN-COOLDOWN = the ticks left, EN-WANDER-X/-Z the velocity);
+*> - otherwise a standing mob (EN-COOLDOWN 0) starts a stroll with probability 1 / SM-STROLL-ODDS on a tick (hash of the entity id and the time):
+*>   it picks a cell up to 10 blocks away on each axis (RandomStrollGoal: 10 horizontally; EN-DEST-X/-Z), and walks to it by STDMOB-HEAD for at most
+*>   SM-STROLL-TICKS ticks (EN-COOLDOWN = the ticks left) or until it is in the cell;
 *> then MOB-PHYSICS moves it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -513,6 +620,10 @@
  01 WS-RADIANS             FLOAT-LONG.
  01 WS-BLOCKS              BINARY-LONG.
  01 WS-CHASE               BINARY-LONG.
+ 01 WS-GX                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-GZ                  BINARY-LONG.
+ 01 WS-ARRIVED             BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -570,10 +681,10 @@
              CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
              COMPUTE WS-REACH = SM-REACH-MILLI / 1000
              IF FUNCTION ABS(WS-DX) > WS-REACH OR FUNCTION ABS(WS-DZ) > WS-REACH
-                 COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
-                 COMPUTE WS-SPEED = SM-WALK-MILLI(WS-M) / 1000
-                 COMPUTE WS-HX = WS-SPEED * WS-DX / WS-H
-                 COMPUTE WS-HZ = WS-SPEED * WS-DZ / WS-H
+                 COMPUTE WS-GX = FUNCTION INTEGER(PL-X(WS-P))
+                 COMPUTE WS-GY = FUNCTION INTEGER(PL-Y(WS-P))
+                 COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
+                 CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
              END-IF
              IF EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
@@ -605,20 +716,22 @@
                  CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
                  IF FUNCTION MOD(WS-R, SM-STROLL-ODDS) = 0
                      COMPUTE WS-Q = WS-R / SM-STROLL-ODDS
-                     COMPUTE WS-YAW = FUNCTION MOD(WS-Q, 360)
-                     COMPUTE WS-Q = WS-Q / 360
-                     COMPUTE WS-BLOCKS = 3 + FUNCTION MOD(WS-Q, SM-STROLL-BLOCKS - 2)
-                     COMPUTE WS-SPEED = SM-WALK-MILLI(WS-M) / 1000
-                     COMPUTE EN-COOLDOWN(WS-ROW) = WS-BLOCKS / WS-SPEED + 1
-                     COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
-                     COMPUTE EN-WANDER-X(WS-ROW) = - FUNCTION SIN(WS-RADIANS) * WS-SPEED
-                     COMPUTE EN-WANDER-Z(WS-ROW) = FUNCTION COS(WS-RADIANS) * WS-SPEED
+                     COMPUTE EN-DEST-X(WS-ROW) = FUNCTION INTEGER(EN-X(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
+                     COMPUTE WS-Q = WS-Q / 21
+                     COMPUTE EN-DEST-Z(WS-ROW) = FUNCTION INTEGER(EN-Z(WS-ROW)) + FUNCTION MOD(WS-Q, 21) - 10
+                     MOVE SM-STROLL-TICKS TO EN-COOLDOWN(WS-ROW)
+                     MOVE 0 TO EN-PATH-TICKS(WS-ROW) EN-WAY-X(WS-ROW) EN-WAY-Z(WS-ROW)
                  END-IF
              END-IF
              IF EN-COOLDOWN(WS-ROW) > 0
                  SUBTRACT 1 FROM EN-COOLDOWN(WS-ROW)
-                 MOVE EN-WANDER-X(WS-ROW) TO WS-HX
-                 MOVE EN-WANDER-Z(WS-ROW) TO WS-HZ
+                 COMPUTE WS-GY = FUNCTION INTEGER(EN-Y(WS-ROW))
+                 CALL "STDMOB-HEAD" USING WS-ROW WS-M EN-DEST-X(WS-ROW) WS-GY EN-DEST-Z(WS-ROW) WS-HX WS-HZ
+                     WS-ARRIVED
+                 IF WS-ARRIVED = 1
+                     MOVE 0 TO EN-COOLDOWN(WS-ROW)
+                 END-IF
+                 CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
