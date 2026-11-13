@@ -167,6 +167,49 @@
  END PROGRAM WORLD-PLAY.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLD-OPEN-ARG.
+*> USING CLIENT-STATE (CL-WORLD from --world or CC_WORLD): opens that save folder of saves/ the way
+*> selecting it in the world list and pressing Play does (WORLD-PLAY: standard-or-cobolcraft detection, the
+*> packs check, the core's refusals). CL-WORLD-LENGTH 0: nothing. When no such save exists or the
+*> world is refused, the reason goes to standard error and the client stays on the title screen.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CL-WORLD-LENGTH = 0
+         GOBACK
+     END-IF
+     MOVE CL-WORLD-LENGTH TO WS-LEN
+     CALL "WORLDS-LIST" USING CLIENT-STATE
+     MOVE 0 TO SM-SELECTED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WL-COUNT OR SM-SELECTED > 0
+         IF WL-FOLDER-LENGTH(WS-I) = WS-LEN AND WL-FOLDER(WS-I)(1:WS-LEN) = CL-WORLD(1:WS-LEN)
+             MOVE WS-I TO SM-SELECTED
+         END-IF
+     END-PERFORM
+     IF SM-SELECTED = 0
+         DISPLAY "ERROR world: no save folder " CL-WORLD(1:WS-LEN) " in saves/" UPON STDERR
+         GOBACK
+     END-IF
+     CALL "WORLD-PLAY" USING CLIENT-STATE
+     MOVE 0 TO SM-SELECTED
+     EVALUATE SP-CREATE-REFUSED
+         WHEN 0
+             CONTINUE
+         WHEN 1
+             DISPLAY "ERROR world: " CL-WORLD(1:WS-LEN) " needs the Minecraft content (generated packs not ok)"
+                 UPON STDERR
+         WHEN OTHER
+             DISPLAY "ERROR world: " CL-WORLD(1:WS-LEN) " cannot be opened (refused by the core)" UPON STDERR
+     END-EVALUATE
+     MOVE 0 TO SP-CREATE-REFUSED
+     GOBACK.
+ END PROGRAM WORLD-OPEN-ARG.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-TYPE-ID.
 *> USING world type text (PIC X(16), level.dat WorldType), type out (BINARY-LONG, CT-TYPE-*): standard,
 *> debug or, for any other text, cobolcraft.
