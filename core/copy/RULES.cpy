@@ -48,7 +48,9 @@
 *> CAUSE-MOB (002-lane-mobs): a standard mob's melee hit on a player (damage type mob_attack, armor applies, 17 section 4.12).
  78 CAUSE-MOB                VALUE 7.
  78 CAUSE-DROWN               VALUE 8.
- 78 CAUSE-COUNT               VALUE 8.
+ *> CAUSE-EXPLOSION (002-lane-mobs2): an explosion (damage type explosion, 20 section 6.2); armor applies.
+ 78 CAUSE-EXPLOSION           VALUE 9.
+ 78 CAUSE-COUNT               VALUE 9.
 *> Per cause: the damage type id, the fixed amount (0: the fall formula, the attacker's held item
 *> (§10.4), or the command sets health to 0 directly) and the damage type's exhaustion in thousandths
 *> (17 section 4.12: 0.1 for mob_attack, player_attack and hail, 0 for fall, starve and generic).
@@ -77,8 +79,11 @@
     05 FILLER BINARY-LONG VALUE 6.              *> drown: minecraft:drown (the sixth of the 51 types sorted by path, 17 4.12)
     05 FILLER BINARY-LONG VALUE 2.
     05 FILLER BINARY-LONG VALUE 0.             *> exhaustion
+    05 FILLER BINARY-LONG VALUE 0.             *> explosion: the standard set looks the id up by key (DAMAGE-TYPE-ID)
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 100.           *> exhaustion
  01 RULE-CAUSE-TABLE REDEFINES RULE-CAUSE-DATA.
-    05 RULE-CAUSE OCCURS 8 TIMES.
+    05 RULE-CAUSE OCCURS 9 TIMES.
        10 RULE-CAUSE-TYPE    BINARY-LONG.
        10 RULE-CAUSE-AMOUNT  BINARY-LONG.
        10 RULE-CAUSE-EXHAUST BINARY-LONG.

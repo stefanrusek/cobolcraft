@@ -1,0 +1,363 @@
+*> Implementation test (002-lane-mobs2, T4110; docs/protocol/20 section 6.2 ServerExplosion): the ray-marched block selection (blast resistance
+*> reduces a ray, dirt falls near the centre, obsidian never), no block change without block destruction, the damage of an entity
+*> ((s * s + s) / 2 * 7 * 2R + 1 with s = (1 - dist / 2R) * seen), the seen fraction through a wall (0) and in the open (1), mob damage, and the
+*> Explode packet (0x24) to the player.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EXPLODE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY PROTO.
+ COPY CBLOCKS.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-OBSIDIAN            BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FILL                BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CY                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-POWER               FLOAT-LONG VALUE 3.
+ 01 WS-DESTROY             BINARY-LONG VALUE 1.
+ 01 WS-KEEP                BINARY-LONG VALUE 0.
+ 01 WS-NO-SOURCE           BINARY-LONG VALUE 0.
+ 01 WS-SEEN                FLOAT-LONG.
+ 01 WS-MINX                FLOAT-LONG.
+ 01 WS-MINY                FLOAT-LONG.
+ 01 WS-MINZ                FLOAT-LONG.
+ 01 WS-MAXX                FLOAT-LONG.
+ 01 WS-MAXY                FLOAT-LONG.
+ 01 WS-MAXZ                FLOAT-LONG.
+ 01 WS-PIG-TYPE            BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-HEALTH              FLOAT-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-CHAT                PIC X(4096).
+ 01 WS-PADDED              PIC X(1030).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-RES                 BINARY-LONG.
+ 01 WS-BID                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE "minecraft:dirt" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-DIRT = FUNCTION NUMVAL(WS-STATE-TEXT)
+     MOVE "minecraft:obsidian" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-OBSIDIAN = FUNCTION NUMVAL(WS-STATE-TEXT)
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STONE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "N" TO TL-MODE
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 16
+     COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-CX = WS-BX + 0.5
+     MOVE WS-BY TO WS-CY
+     COMPUTE WS-CZ = WS-BZ + 0.5
+
+*>   Blast resistances (thousandths) from the block rows: air has none, dirt 0.5, stone 6, obsidian 1200.
+     MOVE CB-S-BLOCK(1) TO WS-BID
+     CALL "EXPLODE-RESIST" USING WS-BID WS-RES
+     MOVE "test explode: air has no resistance (-1)" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE WS-RES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CB-S-BLOCK(WS-DIRT + 1) TO WS-BID
+     CALL "EXPLODE-RESIST" USING WS-BID WS-RES
+     MOVE "test explode: dirt resists 0.5" TO TL-CASE
+     MOVE 500 TO TL-EXPECTED-N
+     MOVE WS-RES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CB-S-BLOCK(WS-STONE + 1) TO WS-BID
+     CALL "EXPLODE-RESIST" USING WS-BID WS-RES
+     MOVE "test explode: stone resists 6" TO TL-CASE
+     MOVE 6000 TO TL-EXPECTED-N
+     MOVE WS-RES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CB-S-BLOCK(WS-OBSIDIAN + 1) TO WS-BID
+     CALL "EXPLODE-RESIST" USING WS-BID WS-RES
+     MOVE "test explode: obsidian resists 1200" TO TL-CASE
+     MOVE 1200000 TO TL-EXPECTED-N
+     MOVE WS-RES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Damage to a player in the open air 5 blocks from the centre: dist 5/6, seen 1: 4.0833 + 1 = 5.0833 points.
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 5.5
+     MOVE WS-BY TO PL-Y(WS-PLAYER)
+     COMPUTE PL-Z(WS-PLAYER) = WS-BZ + 0.5
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     MOVE "test explode: a player 5 blocks from a power 3 blast in the open loses 5.083 points" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HEALTH > 14.90 AND WS-HEALTH < 14.93
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-PADDED
+     STRING " " DELIMITED BY SIZE WS-TEXT DELIMITED BY SIZE INTO WS-PADDED
+     MOVE 0 TO WS-FOUND
+     INSPECT WS-PADDED TALLYING WS-FOUND FOR ALL " 36 "
+     INSPECT WS-PADDED TALLYING WS-FOUND FOR ALL " 36x"
+     MOVE "test explode: the player is sent the Explode packet (36)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-FOUND > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Out of reach (dist above 1): no damage.
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 9.5
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     MOVE "test explode: a player 9 blocks away takes nothing" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HEALTH > 19.99
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A pig 5 blocks away loses 5 of its 10 points.
+     COMPUTE WS-X = WS-BX + 5.5
+     MOVE WS-BY TO WS-Y
+     COMPUTE WS-Z = WS-BZ + 0.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE "test explode: a pig 5 blocks from the blast has 5 of 10 health left" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-PIG
+
+*>   The seen fraction: 1 in the open, 0 behind a wall that covers the box.
+     COMPUTE WS-MINX = WS-BX + 5.2
+     COMPUTE WS-MAXX = WS-BX + 5.8
+     MOVE WS-BY TO WS-MINY
+     COMPUTE WS-MAXY = WS-BY + 1.8
+     COMPUTE WS-MINZ = WS-BZ + 0.2
+     COMPUTE WS-MAXZ = WS-BZ + 0.8
+     CALL "EXPLODE-SEEN" USING WS-DIM WS-CX WS-CY WS-CZ WS-MINX WS-MINY WS-MINZ WS-MAXX WS-MAXY WS-MAXZ WS-SEEN
+     MOVE "test explode: an unobstructed box is seen at 1.0" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SEEN > 0.999
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-I = WS-BX + 2
+     PERFORM VARYING WS-J FROM -4 BY 1 UNTIL WS-J > 6
+         PERFORM VARYING WS-K FROM -4 BY 1 UNTIL WS-K > 4
+             COMPUTE WS-N = WS-BY + WS-J
+             COMPUTE WS-STATE = WS-BZ + WS-K
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-N WS-STATE WS-STONE
+         END-PERFORM
+     END-PERFORM
+     CALL "EXPLODE-SEEN" USING WS-DIM WS-CX WS-CY WS-CZ WS-MINX WS-MINY WS-MINZ WS-MAXX WS-MAXY WS-MAXZ WS-SEEN
+     MOVE "test explode: a box behind a wall is seen at 0" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SEEN < 0.001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Behind the wall the blast only does the 1 point of the damage formula.
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 5.5
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+     MOVE "test explode: behind the wall the player loses 1 point" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HEALTH > 18.99 AND WS-HEALTH < 19.01
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Clear the wall.
+     COMPUTE WS-I = WS-BX + 2
+     PERFORM VARYING WS-J FROM -4 BY 1 UNTIL WS-J > 6
+         PERFORM VARYING WS-K FROM -4 BY 1 UNTIL WS-K > 4
+             COMPUTE WS-N = WS-BY + WS-J
+             COMPUTE WS-STATE = WS-BZ + WS-K
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-N WS-STATE WS-AIR
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 40.5
+
+*>   Blocks: dirt around the centre falls near it, with and without block destruction.
+     MOVE WS-DIRT TO WS-FILL
+     MOVE 5 TO WS-HALF
+     PERFORM FILL-CUBE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     COMPUTE WS-I = WS-BX + 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-I WS-BY WS-BZ WS-STATE
+     MOVE "test explode: without block destruction the dirt beside the centre stays" TO TL-CASE
+     MOVE WS-DIRT TO TL-EXPECTED-N
+     MOVE WS-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-NO-SOURCE
+     PERFORM COUNT-FACE-NEIGHBOURS
+     MOVE "test explode: all six dirt blocks around the centre are destroyed" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-I = WS-BX + 5
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-I WS-BY WS-BZ WS-STATE
+     MOVE "test explode: dirt 5 blocks away is out of reach" TO TL-CASE
+     MOVE WS-DIRT TO TL-EXPECTED-N
+     MOVE WS-STATE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Obsidian resists a power 3 blast.
+     MOVE WS-OBSIDIAN TO WS-FILL
+     MOVE 3 TO WS-HALF
+     PERFORM FILL-CUBE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-NO-SOURCE
+     PERFORM COUNT-FACE-NEIGHBOURS
+     MOVE "test explode: obsidian survives" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-AIR TO WS-FILL
+     MOVE 6 TO WS-HALF
+     PERFORM FILL-CUBE
+*>   An explosion in an unloaded chunk or above the world changes nothing and finds nothing to hurt.
+     COMPUTE WS-X = WS-CX + 800
+     CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-CY WS-CZ WS-POWER WS-DESTROY WS-NO-SOURCE
+     MOVE 1000 TO WS-Y
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-Y WS-CZ WS-POWER WS-DESTROY WS-NO-SOURCE
+*>   A creative player flying is not pushed; a creative player on the ground is not hurt but is pushed.
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     MOVE 1 TO PL-FLYING(WS-PLAYER)
+     COMPUTE PL-X(WS-PLAYER) = WS-BX + 1.5
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE 0 TO PL-FLYING(WS-PLAYER)
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE 3 TO PL-MODE(WS-PLAYER)
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     MOVE "test explode: a creative player takes no damage" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-PLAYER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A kill by a blast with a mob as source is death.attack.explosion.player (the mob's name), without one death.attack.explosion.
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE 6 TO WS-POWER
+     COMPUTE WS-X = WS-BX + 100.5
+     MOVE WS-BY TO WS-Y
+     COMPUTE WS-Z = WS-BZ + 0.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "TEST-DRAIN-CHAT" USING WS-CONN WS-CHAT
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-PIG
+     CALL "TEST-DRAIN-CHAT" USING WS-CONN WS-CHAT
+     MOVE "T" TO TL-MODE
+     MOVE "test explode: a blast of a mob kills with death.attack.explosion.player" TO TL-CASE
+     MOVE "death.attack.explosion.player(Stefan,Pig)" TO TL-EXPECTED
+     MOVE WS-CHAT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE PS-ALIVE TO PL-STATE(WS-PLAYER)
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-KEEP WS-NO-SOURCE
+     CALL "TEST-DRAIN-CHAT" USING WS-CONN WS-CHAT
+     MOVE "test explode: a blast without a source kills with death.attack.explosion" TO TL-CASE
+     MOVE "death.attack.explosion(Stefan)" TO TL-EXPECTED
+     MOVE WS-CHAT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+ FILL-CUBE.
+*>   A cube of WS-FILL with half width WS-HALF around the block cell (WS-BX, WS-BY, WS-BZ), the centre cell itself air.
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2 * WS-HALF
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2 * WS-HALF
+             PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K > 2 * WS-HALF
+                 COMPUTE WS-STATE = WS-BX - WS-HALF + WS-I
+                 COMPUTE WS-N = WS-BY - WS-HALF + WS-J
+                 COMPUTE WS-FOUND = WS-BZ - WS-HALF + WS-K
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-STATE WS-N WS-FOUND WS-FILL
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR.
+ COUNT-FACE-NEIGHBOURS.
+*>   WS-N = how many of the six face neighbours of the centre cell are air now.
+     MOVE 0 TO WS-N
+     COMPUTE WS-I = WS-BX + 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-I WS-BY WS-BZ WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-I = WS-BX - 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-I WS-BY WS-BZ WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-I = WS-BY + 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-I WS-BZ WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-I = WS-BY - 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-I WS-BZ WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-I = WS-BZ + 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-I WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF
+     COMPUTE WS-I = WS-BZ - 1
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-I WS-STATE
+     IF WS-STATE = 0
+         ADD 1 TO WS-N
+     END-IF.
+ END PROGRAM TEST-EXPLODE.
+ COPY CORETEST.
