@@ -1,0 +1,338 @@
+*> Test of 29b part 2 section 4, Pitcher crop (core/src/growth-29b-2.cob; T0541): the double-block pitcher crop of 4.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-ISG), calls the program with the input group (and the key) and shows the first outputs of WS-RSG joined by "/", one group per
+*> call; expected values come from the rules, tables and worked cases of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-2-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A                   PIC X(48).
+ 01 WS-B                   PIC X(48).
+ 01 WS-C                   PIC X(48).
+ 01 WS-STEM                BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: shapes of the lower half (4.2): outline to y 3, 14, 16, 16, 16; collision column(6, -1, 3) at age 0, column(10, -1, 5) otherwise" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/6/-1/3/6/-1/3 0/1/10/-1/14/10/-1/5 0/1/10/-1/16/10/-1/5 1/1/10/-1/16/10/-1/5 1/0/10/-1/16/10/-1/5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: shapes of the upper half: y1 0, 0, 0, 11, 15 and no collision; only a lower half below age 4 random ticks (14.3)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-STATE" USING WS-ISG WS-RSG
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/6/0/0/0/0/0 0/0/10/0/0/0/0/0 0/0/10/0/0/0/0/0 1/0/10/0/11/0/0/0 1/0/10/0/15/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: survival (4.1): the lower half needs light 8 and supports_crops below; the upper half only a lower half of this block below; placement is on supports_crops; never replaceable" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 8 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 7 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 15 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 15 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0 0/1/0 0/0/0 1/0/0 0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: updateShape of a single block (age below 3): the state when it can survive, else air, from every direction" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: updateShape of a double block (4.1): rule a (the partner half is missing or has the same half), rule b (lower half cannot survive from below), rule c" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 3 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 3 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-SHAPE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 1 0 1 0 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: canGrow and grow (4.3, 14.3): age below 4, light 8, room above, air or pitcher crop above for a double result; the lower half is written with flags 2, the upper with flags 3" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 8 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 7 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 8 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 8 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 8 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 8 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 8 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 8 0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 8 1 1 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 8 1 1 0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-GROW" USING WS-ISG WS-RSG
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/1/1 0/2/0/0 0/2/0/0 1/3/1/1 1/4/1/1 1/2/0/1 0/4/0/0 0/0/0/0 1/4/1/1 1/4/1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: random tick (4.3): lower half below age 4, one draw nextInt(int(25 / speed) + 1), grow on 0; no light test" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-TICK" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1000 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-TICK" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 200 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-TICK" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-TICK" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-TICK" USING WS-ISG WS-RSG
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/1 1/3/0 1/13/1 0/0/0 0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§4 Pitcher crop: bone meal (4.4, 14.3): the lower half is found from either half; valid when canGrow for age + 1; always succeeds; a stone above stops it" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 2 8 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 3 8 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 2 8 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 3 8 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-PITCHER-BONE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/3/1 1/1/1/4/1 1/0/1/2/0 0/0/1/3/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-A) "|" FUNCTION TRIM(WS-B) "|" FUNCTION TRIM(WS-C) "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T1 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T2 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-2-4.
