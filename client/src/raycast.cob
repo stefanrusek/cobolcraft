@@ -2,7 +2,7 @@
 *> RAYCAST follows the look ray from the local player's eye (yaw 0 faces +Z, 90 faces -X; positive
 *> pitch looks down, as render-list.cob) cell by cell through the replica (a voxel walk: the next
 *> cell boundary crossed along any axis comes first) for at most CL-REACH blocks. The first cell
-*> that is not void is the target; the face the ray enters it through is the clicked face (05c
+*> whose outline shape the ray meets (a full cube for most blocks; docs/protocol/51) is the target; the face the ray enters it through is the clicked face (05c
 *> Direction: crossing a boundary towards +x enters the west face 4, towards -x the east face 5,
 *> towards +y the bottom 0, towards -y the top 1, towards +z the north face 2, towards -z the south
 *> face 3), and the point where it enters, relative to the block's lowest corner, is the cursor of
@@ -51,6 +51,15 @@
  01 WS-NEAR                FLOAT-LONG.
  01 WS-FAR                 FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-HT                  FLOAT-LONG.
+ 01 WS-HAX                 BINARY-LONG.
+ 01 WS-RT                  FLOAT-LONG.
+ 01 WS-RAX                 BINARY-LONG.
+ 01 WS-RORG.
+    05 WS-RO               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-RDIR.
+    05 WS-RD               FLOAT-LONG OCCURS 3 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -64,6 +73,10 @@
      MOVE PL-X TO WS-EYE(1)
      COMPUTE WS-EYE(2) = PL-Y + 1.6
      MOVE PL-Z TO WS-EYE(3)
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+         MOVE WS-EYE(WS-A) TO WS-RO(WS-A)
+         MOVE WS-DIR(WS-A) TO WS-RD(WS-A)
+     END-PERFORM
 *>   Per axis: the step direction, the ray distance to the first boundary and between boundaries
 *>   (an axis the ray does not move along is never crossed).
      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
@@ -100,7 +113,11 @@
          MOVE WS-CELL(3) TO WS-CZ
          CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
 *>       A liquid block has no outline shape (29a 1.2): the ray goes through water and lava (a wet plant or a waterlogged block is hit).
+*>       Any other block is hit where the ray meets a box of its outline shape (51 block shapes: a slab, a stair, a torch, a fence
+*>       and the rest are targeted where they are; the full cube is entered at the cell's face).
          MOVE WS-STATE TO WS-SEEN
+         MOVE WS-T TO WS-HT
+         MOVE WS-A TO WS-HAX
          IF WS-STATE NOT = 0
              CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
              IF ST-FLUID(WS-STATE + 1) = 1 OR ST-FLUID(WS-STATE + 1) = 2
@@ -108,18 +125,33 @@
              END-IF
          END-IF
          IF WS-SEEN NOT = 0
+             CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+             EVALUATE TRUE
+                 WHEN WS-SHAPE = 0
+                     MOVE 0 TO WS-SEEN
+                 WHEN WS-SHAPE > 1
+                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-RORG WS-RDIR WS-RT WS-RAX
+                     IF WS-RT < 0 OR WS-RT > CL-REACH
+                         MOVE 0 TO WS-SEEN
+                     ELSE
+                         MOVE WS-RT TO WS-HT
+                         MOVE WS-RAX TO WS-HAX
+                     END-IF
+             END-EVALUATE
+         END-IF
+         IF WS-SEEN NOT = 0
              MOVE 1 TO TG-HIT
-             MOVE WS-T TO WS-BLOCK-T
+             MOVE WS-HT TO WS-BLOCK-T
              MOVE WS-CX TO TG-X
              MOVE WS-CY TO TG-Y
              MOVE WS-CZ TO TG-Z
-             COMPUTE TG-FACE = FUNCTION NUMVAL(WS-FACE-BASES(WS-A:1))
-                 + (1 - WS-STEP(WS-A)) / 2
-             COMPUTE WS-HIT = WS-EYE(1) + WS-DIR(1) * WS-T - TG-X
+             COMPUTE TG-FACE = FUNCTION NUMVAL(WS-FACE-BASES(WS-HAX:1))
+                 + (1 - WS-STEP(WS-HAX)) / 2
+             COMPUTE WS-HIT = WS-EYE(1) + WS-DIR(1) * WS-HT - TG-X
              COMPUTE TG-CX = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
-             COMPUTE WS-HIT = WS-EYE(2) + WS-DIR(2) * WS-T - TG-Y
+             COMPUTE WS-HIT = WS-EYE(2) + WS-DIR(2) * WS-HT - TG-Y
              COMPUTE TG-CY = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
-             COMPUTE WS-HIT = WS-EYE(3) + WS-DIR(3) * WS-T - TG-Z
+             COMPUTE WS-HIT = WS-EYE(3) + WS-DIR(3) * WS-HT - TG-Z
              COMPUTE TG-CZ = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
          END-IF
      END-PERFORM

@@ -4422,6 +4422,15 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3801 [US12-core] Keep the keys of known entities and known block entities that the core does not model across a save (`core/src/extras.cob`, tests `test_entity_merge`, `test_be_extras_real`); poi sections of saved chunks are marked not valid (`core/src/poi.cob`, `test_poi_invalidate`) so the game rescans them. Not done: writing poi records from the blocks
 - [x] T3800 Gate: run `make gate-core` and record the command and real output. Recorded at 9563b74: exit 0, `passed 6327 failed 0`, `coverage: 169 objects, 0 uncovered lines`. After the merges of genthread and fluids and the later lane work: `passed 6416 failed 0`, 3 uncovered lines in `growth-29b-1b.cob` (a random-dependent test, fixed by seeding the level random in `acc_us12_growth_crops`, coverage of those lines re-checked with a targeted coverage run); a final full `make gate-core` is left to the integrator
 - [x] T3802 [US12-core] New standard worlds are created in the 26.3 layout (`acc_vanfmt_new_world`); `test_real_vanilla_roundtrip` (needs `CC_REAL_SAVE`) opens, saves and reopens a real 26.3 snapshot save
+### Block shapes (operator feedback: hit boxes)
+
+- [x] T4500 [US7-docs] docs/protocol/51-block-shapes.md: per-state collision and outline shapes consolidated from the registry documents (24 parts 1 to 8, 29, 30, 31), rules by class and property; open questions listed
+- [x] T4501 [US7-content] contract/copy/CTBSHAPE.cpy, content/src/block-shapes.cob (BSH-BUILD and the queries BSH-COLL-ID, BSH-OUT-ID, BSH-OVERLAPS, BSH-CLIP, BSH-RAY), content/copy/CTBSDATA.cpy rule rows; test_block_shapes first observed red (the builder absent)
+- [x] T4502 [US7-client] Player collision by collision shape: PHYS-SOLID, PHYS-COLLIDES, PHYS-MOVE through the shape tables, step-up 0.6 (slabs, stairs), ground check on slab tops; tests first
+- [x] T4503 [US7-client] Targeting by outline shape: RAYCAST tests the boxes of the cell's outline, so torches, buttons, ladders, slabs and stairs are targeted where they are; tests first
+- [x] T4504 [US7-core] Server movement check by collision shape: MOVE-COLLIDES, MOVE-SUPPORTED, MOVE-CLIMBING agree with the client; BLOCKS-OPEN builds the shape tables; tests first
+- [ ] T4506 [US7-client] Shapes not yet in the tables (51 open questions and rule rows still to add): cauldron, hopper, bell, scaffolding, piston and head, chest joins, bed legs, skull variants, shulker box, offset plants (outline drawn without the XZ offset), stem width; mobs and ground items still read CB-SOLID (full cubes)
+- [ ] T4505 [US7-docs] Open questions of 51 (offset plants, tall plants, hopper, cauldron, bell, scaffolding, shulker box, piston, chest joins, bed legs, skull variants): clean-room round when the operator reports a block that is still wrong
 
 ---
 

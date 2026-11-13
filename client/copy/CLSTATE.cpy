@@ -1061,7 +1061,7 @@
           15 RL-UT-BLUE      FLOAT-SHORT.
        10 RL-HL-COUNT        BINARY-LONG.
        10 RL-HL-UPLOADED     BINARY-LONG.
-       10 RL-HL-VERTEX OCCURS 144 TIMES.
+       10 RL-HL-VERTEX OCCURS 1728 TIMES.
           15 RL-HL-X         FLOAT-SHORT.
           15 RL-HL-Y         FLOAT-SHORT.
           15 RL-HL-Z         FLOAT-SHORT.
