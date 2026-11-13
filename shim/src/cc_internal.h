@@ -80,6 +80,7 @@ struct cc_vk_state {
     VkPipelineLayout layout;
     VkPipeline pipelines[4];
     float daylight;           /* cc_vk_daylight: pushed with every draw (default 1) */
+    float fog[8];             /* cc_vk_fog: colour rgb, strength, start, end, p00, p11 (strength 0 and p00 = p11 = 1 until set) */
     VkSampler sampler;        /* clamp-to-edge */
     VkSampler repeat_sampler; /* repeat (cc_vk_texture_wrap) */
     VkSampler mip_sampler;        /* linear through the mip chain, clamp-to-edge */

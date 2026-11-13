@@ -103,6 +103,23 @@
      COMPUTE RL-PROJ(11) = WS-FAR / (WS-NEAR - WS-FAR)
      MOVE -1 TO RL-PROJ(12)
      COMPUTE RL-PROJ(15) = WS-NEAR * WS-FAR / (WS-NEAR - WS-FAR)
+*>   The fog of an eye in a fluid (12 section 3.3 environments; cc_vk_fog): the fog colour is the clear colour set above, strength 1, lava
+*>   from 0.25 to 1.0 blocks (no Fire Resistance), water from -8 to 96 (water vision 1); the focal terms of the projection.
+     MOVE 0 TO RL-FOG(1) RL-FOG(2) RL-FOG(3) RL-FOG(4) RL-FOG(5) RL-FOG(6)
+     MOVE RL-PROJ(1) TO RL-FOG(7)
+     MOVE RL-PROJ(6) TO RL-FOG(8)
+     IF PL-EYE-LAVA = 1 OR PL-EYE-WATER = 1
+         MOVE RL-CLEAR(1) TO RL-FOG(1)
+         MOVE RL-CLEAR(2) TO RL-FOG(2)
+         MOVE RL-CLEAR(3) TO RL-FOG(3)
+         MOVE 1 TO RL-FOG(4)
+         MOVE -8 TO RL-FOG(5)
+         MOVE 96 TO RL-FOG(6)
+         IF PL-EYE-LAVA = 1
+             MOVE 0.25 TO RL-FOG(5)
+             MOVE 1 TO RL-FOG(6)
+         END-IF
+     END-IF
 *>   View: rows right, up and -forward.
      COMPUTE WS-YAW = WS-VIEW-YAW * FUNCTION PI / 180
      COMPUTE WS-PITCH = WS-VIEW-PITCH * FUNCTION PI / 180

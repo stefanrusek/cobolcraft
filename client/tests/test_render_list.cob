@@ -32,6 +32,13 @@
  01 WS-E                   PIC -9.9999.
  01 WS-E2                  PIC -9.9999.
  01 WS-E3                  PIC -9.9999.
+ 01 WS-N                   FLOAT-SHORT.
+ 01 WS-N2                  FLOAT-SHORT.
+ 01 WS-N3                  FLOAT-SHORT.
+ 01 WS-N4                  PIC 9.
+ 01 WS-NE                  PIC -(3)9.99.
+ 01 WS-NE2                 PIC -(3)9.99.
+ 01 WS-NE3                 PIC -(3)9.99.
  01 WS-PIPES               PIC X(64).
  01 WS-OK                  BINARY-LONG.
  01 WS-PS.
@@ -279,6 +286,11 @@
      COMPUTE WS-E3 ROUNDED = RL-CLEAR(3)
      STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FOG-TEXT
+     MOVE "render list the eye under water has fog: the water fog colour, strength 1, start -8, end 96, the projection's focal terms"
+         TO TL-CASE
+     MOVE "0.0196  0.0196  0.2000 1.00 -8.00 96.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO PL-EYE-WATER
      MOVE 1 TO PL-EYE-LAVA
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
@@ -293,7 +305,41 @@
      COMPUTE WS-E3 ROUNDED = RL-CLEAR(3)
      STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FOG-TEXT
+     MOVE "render list the eye in lava has fog: the lava fog colour, strength 1, start 0.25, end 1" TO TL-CASE
+     MOVE "0.6000  0.0980  0.0000 1.00 0.25 1.00 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO PL-EYE-LAVA
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     MOVE "render list an eye in no fluid has no fog (strength 0)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RL-FOG(4) TO WS-E
+     MOVE WS-E TO TL-OBSERVED
+     MOVE " 0.0000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+*> TL-OBSERVED: "r g b strength start end p00-and-p11-match" of the fog of the frame.
+ FOG-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE RL-FOG(1) TO WS-E
+     MOVE RL-FOG(2) TO WS-E2
+     MOVE RL-FOG(3) TO WS-E3
+     STRING WS-E " " WS-E2 " " WS-E3 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
+     MOVE RL-FOG(4) TO WS-N
+     MOVE RL-FOG(5) TO WS-N2
+     MOVE RL-FOG(6) TO WS-N3
+     MOVE 0 TO WS-N4
+     IF RL-FOG(7) = RL-PROJ(1) AND RL-FOG(8) = RL-PROJ(6)
+         MOVE 1 TO WS-N4
+     END-IF
+     MOVE WS-N TO WS-NE
+     MOVE WS-N2 TO WS-NE2
+     MOVE WS-N3 TO WS-NE3
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-NE) " " FUNCTION TRIM(WS-NE2) " " FUNCTION TRIM(WS-NE3) " " WS-N4
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     EXIT PARAGRAPH.
  END PROGRAM TEST-RENDER-LIST.
 
  IDENTIFICATION DIVISION.

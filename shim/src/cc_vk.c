@@ -393,7 +393,7 @@ static void create_layouts(void) {
         .pBindings = &binding,
     };
     check(vkCreateDescriptorSetLayout(cc_vk_state.device, &set_info, NULL, &cc_vk_state.set_layout), "cc_vk_init: vkCreateDescriptorSetLayout failed");
-    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT, 0, 17 * sizeof(float)}; /* matrix, daylight */
+    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 28 * sizeof(float)}; /* matrix, daylight, pad, fog colour, fog range */
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
@@ -556,6 +556,8 @@ static void create_frame_objects(void) {
 
 int32_t cc_vk_init(void) {
     cc_vk_state.daylight = 1.0f;
+    memset(cc_vk_state.fog, 0, sizeof cc_vk_state.fog);
+    cc_vk_state.fog[6] = cc_vk_state.fog[7] = 1.0f;
     create_instance();
     create_device();
     create_render_pass();
@@ -835,14 +837,21 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
     vkCmdBindPipeline(cc_vk_state.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.pipelines[pipeline]);
     vkCmdBindDescriptorSets(cc_vk_state.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.layout, 0, 1, &cc_vk_state.textures[tex_id].set, 0, NULL);
     vkCmdBindVertexBuffers(cc_vk_state.cmd, 0, 1, &m->buffer, &offset);
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 16 * sizeof(float), matrix);
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, VK_SHADER_STAGE_VERTEX_BIT, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
+    const VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 0, 16 * sizeof(float), matrix);
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 20 * sizeof(float), 8 * sizeof(float), cc_vk_state.fog);
     vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
 }
 
 /* The daylight factor of the draws that follow (shim-abi §9). */
 void cc_vk_daylight(const float *daylight) {
     cc_vk_state.daylight = *daylight;
+}
+
+/* The fog of the draws that follow (shim-abi §9). */
+void cc_vk_fog(const float *fog) {
+    memcpy(cc_vk_state.fog, fog, sizeof cc_vk_state.fog);
 }
 
 /* Clears the depth attachment inside the open render pass (the hand pass of 12 §6 draws over the world). */
