@@ -213,11 +213,14 @@
      CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
-             IF CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
-                 CALL "ENTITY-ORB-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
-             ELSE
-                 CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
-             END-IF
+             EVALUATE TRUE
+                 WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
+                     CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
+                     CALL "ENTITY-ORB-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN OTHER
+                     CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             END-EVALUATE
 *>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
              MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
              IF CL-MD-EXTRA(WS-SAVED-MODEL) > 0
