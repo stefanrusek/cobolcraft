@@ -153,7 +153,7 @@
          CALL "GEN-QUEUE-TICK"
          CALL "GEN-SPAWN-TICK"
          ADD 1 TO WS-TICKS
-         IF GQ-SP-STATE = 1
+         IF GQ-SP-STATE NOT = 0
              CALL "C$SLEEP" USING WS-SLEEP
          END-IF
      END-PERFORM

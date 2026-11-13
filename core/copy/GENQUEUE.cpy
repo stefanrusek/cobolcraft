@@ -44,8 +44,11 @@
        10 GW-CZ             BINARY-LONG.
        10 GW-GOT            BINARY-LONG.
        10 GW-ADDR           USAGE POINTER.
-*> The asynchronous initial spawn search (core/src/worldsim-33c.cob): GQ-SP-STATE 1 while it runs (a joining player is held), the spiral chunk
-*> it is on (GQ-SP-CHUNK, 1 to 121), the next column of that chunk (GQ-SP-COLUMN) and the chunks done (progress for a loading screen).
+*> The asynchronous initial spawn search and the spawn area (core/src/worldsim-33c.cob; docs/protocol/50): GQ-SP-STATE 1 while the search runs, 2 while the
+*> spawn area (the 7 x 7 square of chunks around the spawn chunk, 50 section 5.1) is made, 0 otherwise; a joining player is held in both. The spiral chunk the
+*> search is on (GQ-SP-CHUNK, 1 to 121), the next column of that chunk (GQ-SP-COLUMN) and the chunks done (GQ-SP-DONE); the spawn chunk (GQ-SP-FX, GQ-SP-FZ)
+*> and the chunks of the spawn area that are loaded (GQ-SP-READY of GQ-SP-RING).
+ 78 GQ-SP-RING             VALUE 49.
  78 GQ-SP-COLUMNS          VALUE 16.
  01 GEN-SPAWN EXTERNAL.
     05 GQ-SP-STATE          BINARY-LONG.
@@ -53,3 +56,6 @@
     05 GQ-SP-COLUMN         BINARY-LONG.
     05 GQ-SP-DONE           BINARY-LONG.
     05 GQ-SP-TOTAL          BINARY-LONG.
+    05 GQ-SP-FX             BINARY-LONG.
+    05 GQ-SP-FZ             BINARY-LONG.
+    05 GQ-SP-READY          BINARY-LONG.

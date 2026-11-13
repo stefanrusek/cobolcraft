@@ -185,17 +185,53 @@
      MOVE WS-Z TO CW-SPAWN-Z
      MOVE 0 TO CW-SPAWN-YAW
      MOVE 1 TO GQ-SP-STATE GQ-SP-CHUNK GQ-SP-COLUMN
-     MOVE 0 TO GQ-SP-DONE
+     MOVE 0 TO GQ-SP-DONE GQ-SP-FX GQ-SP-FZ GQ-SP-READY
      MOVE 121 TO GQ-SP-TOTAL
      GOBACK.
  END PROGRAM GEN-SPAWN-BEGIN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-SPAWN-RING.
+*> No parameters: one tick of the spawn area (GQ-SP-STATE 2; docs/protocol/50 section 5.1): the 7 x 7 chunks around the spawn chunk (GQ-SP-FX, GQ-SP-FZ), counted
+*> in the order of the square spiral so that the middle comes first; those not loaded are asked of the queue. The chunks loaded are kept in GQ-SP-READY. When all
+*> GQ-SP-RING are loaded the state is 0 and the connections held at the end of configuration join (CONFIG-RELEASE-HELD).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY GENQUEUE.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE CW-DIM(1) TO WS-DIM
+     MOVE 0 TO GQ-SP-READY
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > GQ-SP-RING
+         CALL "WP-SPIRAL" USING WS-K WS-CX WS-CZ
+         ADD GQ-SP-FX TO WS-CX
+         ADD GQ-SP-FZ TO WS-CZ
+         CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+         IF WS-ROW > 0
+             ADD 1 TO GQ-SP-READY
+         ELSE
+             CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+         END-IF
+     END-PERFORM
+     IF GQ-SP-READY = GQ-SP-RING
+         MOVE 0 TO GQ-SP-STATE
+         CALL "CONFIG-RELEASE-HELD"
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-SPAWN-RING.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-SPAWN-TICK.
-*> No parameters: one tick of the asynchronous spawn search (CORE-TICK, after the queue's share). The chunks of the spiral from the current one (as many ahead as
-*> there are workers, at least one) are asked of the queue; when the current chunk is loaded, its next GQ-SP-COLUMNS columns are scanned (WORLDSIM-CHUNK-SCAN); a
-*> chunk that is done without a spawn moves on to the next of the 121. The search ends at the first spawn or after the last chunk (the provisional spawn stays);
-*> the connections held at the end of configuration then join (CONFIG-RELEASE-HELD).
+*> No parameters: one tick of the asynchronous spawn search and of the spawn area after it (CORE-TICK, after the queue's share). The chunks of the spiral from the
+*> current one (as many ahead as there are workers, at least one) are asked of the queue; when the current chunk is loaded, its next GQ-SP-COLUMNS columns are
+*> scanned (WORLDSIM-CHUNK-SCAN); a chunk that is done without a spawn moves on to the next of the 121. The search ends at the first spawn or after the last
+*> chunk (the provisional spawn stays); the spawn chunk becomes the focus of the spawn area (GEN-SPAWN-RING), which is made before the connections held at the
+*> end of configuration join.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -210,6 +246,10 @@
  01 WS-FOUND               BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE GQ-SP-COLUMNS.
  PROCEDURE DIVISION.
+     IF GQ-SP-STATE = 2
+         CALL "GEN-SPAWN-RING"
+         GOBACK
+     END-IF
      IF GQ-SP-STATE NOT = 1
          GOBACK
      END-IF
@@ -238,8 +278,11 @@
          ADD 1 TO GQ-SP-DONE
      END-IF
      IF WS-FOUND = 1 OR GQ-SP-CHUNK > 121
-         MOVE 0 TO GQ-SP-STATE
-         CALL "CONFIG-RELEASE-HELD"
+         MOVE 2 TO GQ-SP-STATE
+         COMPUTE GQ-SP-FX = FUNCTION INTEGER(CW-SPAWN-X / 16)
+         COMPUTE GQ-SP-FZ = FUNCTION INTEGER(CW-SPAWN-Z / 16)
+         MOVE 0 TO GQ-SP-READY
+         CALL "GEN-SPAWN-RING"
      END-IF
      GOBACK.
  END PROGRAM GEN-SPAWN-TICK.

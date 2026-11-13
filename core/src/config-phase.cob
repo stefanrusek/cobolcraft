@@ -155,7 +155,7 @@
              EVALUATE TRUE
                  WHEN CF-STEP(L-ID) NOT = 2
                      CALL "CORE-BAD-PACKET" USING L-ID
-                 WHEN GQ-SP-STATE = 1
+                 WHEN GQ-SP-STATE > 0
 *>                   the world's spawn is still being searched: the join waits (CONFIG-RELEASE-HELD)
                      MOVE 4 TO CF-STEP(L-ID)
                  WHEN OTHER
