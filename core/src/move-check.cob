@@ -10,7 +10,8 @@
 *> Entry points:
 *>   MOVE-SUPPORTED USING dim, x, y, z (FLOAT-LONG feet position), result out (BINARY-LONG 1 or 0)
 *>   MOVE-CLIMBING USING dim, x, y, z (FLOAT-LONG), result out: 1 when the player box at that position
-*>     overlaps a block of the tag minecraft:climbable
+*>     overlaps a block of the tag minecraft:climbable (or one of its known keys, MOVE-CLIMB-KEY)
+*>   MOVE-CLIMB-KEY USING block id, result out: 1 for ladder, vine, scaffolding, twisting_vines(_plant), weeping_vines(_plant), cave_vines(_plant)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-SUPPORTED.
@@ -30,6 +31,27 @@
      MOVE WS-HIT TO L-RESULT
      GOBACK.
  END PROGRAM MOVE-SUPPORTED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOVE-CLIMB-KEY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ LINKAGE SECTION.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BLOCK L-RESULT.
+     MOVE 0 TO L-RESULT
+     MOVE CB-KEY(L-BLOCK + 1) TO WS-KEY
+     CALL "KEY-BARE" USING WS-KEY WS-BARE
+     IF WS-BARE = "ladder" OR "vine" OR "scaffolding" OR "twisting_vines" OR "twisting_vines_plant" OR "weeping_vines"
+             OR "weeping_vines_plant" OR "cave_vines" OR "cave_vines_plant"
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM MOVE-CLIMB-KEY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOVE-CLIMBING.
@@ -78,6 +100,10 @@
                      MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
                      CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-TAGGED
                      MOVE WS-TAGGED TO L-RESULT
+*>                   The tag may not be loaded (a set without tag data): the known climbable keys count as well.
+                     IF L-RESULT = 0
+                         CALL "MOVE-CLIMB-KEY" USING WS-BLOCK L-RESULT
+                     END-IF
                  END-IF
              END-PERFORM
          END-PERFORM
