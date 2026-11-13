@@ -196,6 +196,101 @@
  END PROGRAM DEATH-TEXT-BUILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DEATH-TEXT-STD.
+*> USING player row, cause (RULES.cpy CAUSE-*), PB-TEXT out: the death message of a player in a standard world (17 section 4.13.2 and 4.13.3). A kill by a
+*> player or a mob (CAUSE-PLAYER, CAUSE-MOB) is death.attack.player or death.attack.mob with the victim and PL-KILLER-NAME, the .item form
+*> with the held item's custom name in brackets as third argument when PL-KILLER-ITEM is set. Every other cause has no entity: it takes the .player form
+*> with the kill credit (PL-CREDIT-NAME, valid while CW-TICKS - PL-CREDIT-TICK is at most 100) as second argument, else the plain key with the victim only. A
+*> fall of more than 5 blocks (PL-FALL-DISTANCE, thousandths) is death.fell.accident.generic, or death.fell.assist with the credit; a fall of at most 5 is
+*> death.attack.fall, or death.attack.fall.player with the credit. The fall location variants (ladder, vines, water) are not modelled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ 01 WS-CREDIT              PIC 9.
+ 01 WS-KEY                 PIC X(40).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-ARGS                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-CAUSE PB-TEXT.
+     MOVE 0 TO WS-CREDIT
+     IF PL-CREDIT-LENGTH(L-ROW) > 0 AND CW-TICKS - PL-CREDIT-TICK(L-ROW) <= 100
+         MOVE 1 TO WS-CREDIT
+     END-IF
+     MOVE SPACES TO WS-KEY
+     MOVE 1 TO WS-ARGS
+     EVALUATE L-CAUSE
+         WHEN CAUSE-PLAYER
+             MOVE "death.attack.player" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-MOB
+             MOVE "death.attack.mob" TO WS-KEY
+             MOVE 2 TO WS-ARGS
+         WHEN CAUSE-FALL
+             IF PL-FALL-DISTANCE(L-ROW) > 5000
+                 IF WS-CREDIT = 1
+                     MOVE "death.fell.assist" TO WS-KEY
+                     MOVE 2 TO WS-ARGS
+                 ELSE
+                     MOVE "death.fell.accident.generic" TO WS-KEY
+                 END-IF
+             ELSE
+                 IF WS-CREDIT = 1
+                     MOVE "death.attack.fall.player" TO WS-KEY
+                     MOVE 2 TO WS-ARGS
+                 ELSE
+                     MOVE "death.attack.fall" TO WS-KEY
+                 END-IF
+             END-IF
+         WHEN OTHER
+             EVALUATE L-CAUSE
+                 WHEN CAUSE-STARVATION
+                     MOVE "death.attack.starve" TO WS-KEY
+                 WHEN CAUSE-DROWN
+                     MOVE "death.attack.drown" TO WS-KEY
+                 WHEN CAUSE-COMMAND
+                     MOVE "death.attack.genericKill" TO WS-KEY
+                 WHEN OTHER
+                     MOVE "death.attack.generic" TO WS-KEY
+             END-EVALUATE
+             IF WS-CREDIT = 1
+                 STRING FUNCTION TRIM(WS-KEY) ".player" DELIMITED BY SIZE INTO WS-KEY
+                 MOVE 2 TO WS-ARGS
+             END-IF
+     END-EVALUATE
+     IF (L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB) AND PL-KILLER-ITEM-LENGTH(L-ROW) > 0
+         STRING FUNCTION TRIM(WS-KEY) ".item" DELIMITED BY SIZE INTO WS-KEY
+         MOVE 3 TO WS-ARGS
+     END-IF
+     INITIALIZE PB-TEXT
+     MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
+     MOVE WS-KEY TO PB-TX-VALUE
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-KEY)) TO PB-TX-LENGTH
+     MOVE WS-ARGS TO PB-TX-ARG-COUNT
+     MOVE PL-NAME(L-ROW) TO PB-TX-ARG-VALUE(1)
+     MOVE PL-NAME-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(1)
+     IF WS-ARGS > 1
+         IF L-CAUSE = CAUSE-PLAYER OR L-CAUSE = CAUSE-MOB
+             MOVE PL-KILLER-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
+             MOVE PL-KILLER-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
+         ELSE
+             MOVE PL-CREDIT-NAME(L-ROW) TO PB-TX-ARG-VALUE(2)
+             MOVE PL-CREDIT-LENGTH(L-ROW) TO PB-TX-ARG-LENGTH(2)
+         END-IF
+     END-IF
+     IF WS-ARGS = 3
+         MOVE SPACES TO PB-TX-ARG-VALUE(3)
+         STRING "[" PL-KILLER-ITEM(L-ROW)(1:PL-KILLER-ITEM-LENGTH(L-ROW)) "]" DELIMITED BY SIZE
+             INTO PB-TX-ARG-VALUE(3)
+         COMPUTE PB-TX-ARG-LENGTH(3) = PL-KILLER-ITEM-LENGTH(L-ROW) + 2
+     END-IF
+     GOBACK.
+ END PROGRAM DEATH-TEXT-STD.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-VIEWERS-SEND.
 *> USING entity row (BINARY-LONG), PB-BUFFER: sends the packet to every player whose client has the
 *> entity (CORE-VIEWS).
@@ -263,6 +358,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CONTENT.
  COPY CMENU.
  COPY RULES.
  COPY PROTO.
@@ -295,8 +391,12 @@
      CALL "HUNGER-CANCEL" USING WS-ROW
      MOVE 0 TO PL-SPRINTING(WS-ROW)
      CALL "HEALTH-DEATH-SCREEN" USING WS-ROW
-     CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
-         PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         CALL "DEATH-TEXT-BUILD" USING PL-DEATH-CAUSE(WS-ROW) PL-NAME(WS-ROW) PL-NAME-LENGTH(WS-ROW)
+             PL-KILLER-NAME(WS-ROW) PL-KILLER-LENGTH(WS-ROW) PB-TEXT
+     ELSE
+         CALL "DEATH-TEXT-STD" USING WS-ROW PL-DEATH-CAUSE(WS-ROW) PB-TEXT
+     END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
      PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
@@ -451,6 +551,10 @@
              COMPUTE WS-MILLI = L-AMOUNT * 1500
      END-EVALUATE
      CALL "STDMOB-NAME" USING EN-TYPE(L-MOB) PL-KILLER-NAME(L-PLAYER) PL-KILLER-LENGTH(L-PLAYER)
+     MOVE 0 TO PL-KILLER-ITEM-LENGTH(L-PLAYER)
+     MOVE PL-KILLER-NAME(L-PLAYER) TO PL-CREDIT-NAME(L-PLAYER)
+     MOVE PL-KILLER-LENGTH(L-PLAYER) TO PL-CREDIT-LENGTH(L-PLAYER)
+     MOVE CW-TICKS TO PL-CREDIT-TICK(L-PLAYER)
      CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MOB EN-ID(L-MOB) WS-NO-ATTACKER WS-RESULT
      GOBACK.
  END PROGRAM HEALTH-MOB-HIT.

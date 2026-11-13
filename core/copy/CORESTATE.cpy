@@ -182,6 +182,12 @@
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
        10 PL-KILLER-LENGTH   BINARY-LONG.
+       10 PL-KILLER-ITEM     PIC X(64).          *> the custom name of the attacker's held item at the last hit (the .item death message)
+       10 PL-KILLER-ITEM-LENGTH BINARY-LONG.
+       10 PL-CREDIT-NAME     PIC X(16).          *> kill credit (17 section 4.13.2): the player or mob that last hurt this player
+       10 PL-CREDIT-LENGTH   BINARY-LONG.
+       10 PL-CREDIT-TICK     BINARY-DOUBLE.      *> CW-TICKS of that hit: valid for 100 ticks
+       10 PL-FALL-DISTANCE   BINARY-LONG.        *> the last fall damage's distance in thousandths of a block (the fall death message)
 *>     Travel (standin §15.5; core/src/dimensions.cob): 1 once the player has travelled this
 *>     session, and the CW-TICKS of that travel (a use within TRAVEL-COOLDOWN ticks is ignored).
        10 PL-TRAVELLED       PIC 9.
