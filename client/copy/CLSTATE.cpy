@@ -617,6 +617,12 @@
           15 EN-VANILLA      PIC 9.
           15 EN-KEY          PIC X(24).
           15 EN-MODEL        BINARY-LONG.
+*>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
+*>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
+          15 EN-VALUE        BINARY-LONG.
+          15 EN-SWELL-DIR    BINARY-LONG.
+          15 EN-SWELL-BASE   BINARY-LONG.
+          15 EN-SWELL-MS     BINARY-DOUBLE.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.

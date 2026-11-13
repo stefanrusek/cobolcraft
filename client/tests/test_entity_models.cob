@@ -272,6 +272,10 @@
          IF RL-EN-COUNT >= 36 AND FUNCTION MOD(RL-EN-COUNT, 36) = 0
              ADD 1 TO WS-OK
          END-IF
+*>       The experience orb row (family 0) is one quad of 6 vertices (test_entity_orb_swell).
+         IF CL-MD-FAMILY(WS-I) = 0 AND RL-EN-COUNT = 6
+             ADD 1 TO WS-OK
+         END-IF
 *>       A row that is the extra layer of another (the sheep's wool) is no entity type: it is drawn with its base row (below).
          IF WS-STATUS NOT = CT-OK AND RL-EN-COUNT = 0
              ADD 1 TO WS-OK
@@ -449,11 +453,13 @@
  PROCEDURE DIVISION USING L-OK.
      MOVE 1 TO L-OK
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CL-MODEL-COUNT
-         CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-I WS-BUILT
-         MOVE MM-TEXW TO WS-W
-         MOVE MM-TEXH TO WS-H
-         IF WS-BUILT = 0 OR WS-W NOT = CL-MD-TEXW(WS-I) OR WS-H NOT = CL-MD-TEXH(WS-I)
-             MOVE 0 TO L-OK
+         IF CL-MD-FAMILY(WS-I) > 0
+             CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-I WS-BUILT
+             MOVE MM-TEXW TO WS-W
+             MOVE MM-TEXH TO WS-H
+             IF WS-BUILT = 0 OR WS-W NOT = CL-MD-TEXW(WS-I) OR WS-H NOT = CL-MD-TEXH(WS-I)
+                 MOVE 0 TO L-OK
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.

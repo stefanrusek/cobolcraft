@@ -69,6 +69,22 @@
  END PROGRAM ENTITY-MODEL-BUILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREEPER-SWELL.
+*> USING CLIENT-STATE, replica row, swell out (FLOAT-LONG): the creeper's swell counter now (20 section 6.1: it runs 1 a tick, 50 ms, in the direction
+*> EN-SWELL-DIR from its value EN-SWELL-BASE when the direction was set at EN-SWELL-MS; at least 0, at most 30 = maxSwell).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SWELL                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-SWELL.
+     COMPUTE L-SWELL = EN-SWELL-BASE(L-ROW) + EN-SWELL-DIR(L-ROW) * (CL-NOW-MS - EN-SWELL-MS(L-ROW)) / 50
+     COMPUTE L-SWELL = FUNCTION MAX(0, FUNCTION MIN(30, L-SWELL))
+     GOBACK.
+ END PROGRAM CREEPER-SWELL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-MODEL-SLOTS.
 *> USING CLIENT-STATE: every used replica row with a model gets an atlas slot (EA-MT, at most 16: a model beyond them is not
 *> drawn); the atlas is rebuilt once when a slot was added.
@@ -175,6 +191,12 @@
  01 WS-T                   FLOAT-LONG.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-BRIGHT              FLOAT-LONG.
+ 01 WS-SWELL               FLOAT-LONG.
+ 01 WS-KSWELL              FLOAT-LONG.
+ 01 WS-FSW                 FLOAT-LONG.
+ 01 WS-C4                  FLOAT-LONG.
+ 01 WS-HOOK-X              FLOAT-LONG.
+ 01 WS-HOOK-Y              FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
@@ -316,6 +338,17 @@
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW))
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE-ID WS-SKY WS-BLOCK
      COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, WS-BLOCK) / 15
+*>   The creeper's swell scale (34-6 2): k = swell / 28, f = 1 + sin(100 k) k / 100, c = clamp(k, 0, 1): x and z (1 + c^4 0.4) f, y (1 + c^4 0.1) / f.
+     MOVE 1 TO WS-HOOK-X WS-HOOK-Y
+     IF CL-MD-ANIM(EN-MODEL(WS-ROW)) = "C"
+         CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
+         COMPUTE WS-KSWELL = WS-SWELL / 28
+         COMPUTE WS-FSW = 1 + FUNCTION SIN(WS-KSWELL * 100) * WS-KSWELL / 100
+         COMPUTE WS-C4 = FUNCTION MIN(FUNCTION MAX(WS-KSWELL, 0), 1)
+         COMPUTE WS-C4 = WS-C4 * WS-C4 * WS-C4 * WS-C4
+         COMPUTE WS-HOOK-X = (1 + WS-C4 * 0.4) * WS-FSW
+         COMPUTE WS-HOOK-Y = (1 + WS-C4 * 0.1) / WS-FSW
+     END-IF
      MOVE MM-TEXW TO WS-RI(6)
      MOVE MM-TEXH TO WS-RI(7)
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
@@ -374,6 +407,10 @@
                                  COMPUTE WS-Y = WS-Y + WS-SRO(WS-OB + 2)
                                  COMPUTE WS-Z = WS-Z + WS-SRO(WS-OB + 3)
                              WHEN 2
+*>                               The renderer's own scale (the creeper's swell, 34-6 2) acts after the translate and before this one.
+                                 COMPUTE WS-X = WS-X * WS-HOOK-X
+                                 COMPUTE WS-Y = WS-Y * WS-HOOK-Y
+                                 COMPUTE WS-Z = WS-Z * WS-HOOK-X
                                  COMPUTE WS-X = WS-X * WS-SRO(WS-OB + 1)
                                  COMPUTE WS-Y = WS-Y * WS-SRO(WS-OB + 2)
                                  COMPUTE WS-Z = WS-Z * WS-SRO(WS-OB + 3)
@@ -428,3 +465,116 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ENTITY-MODEL-EMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ORB-EMIT.
+*> USING CLIENT-STATE, replica row (an experience_orb with its CL-MODELS slot), eye (3 FLOAT-LONG): appends the orb's quad to RL-EN-VERTEX
+*> (34-9 section 14): 0.3 wide from y + 0.025 to y + 0.325, across the camera's right, on the icon of its value (tiers 3, 7, 17, 37, 73, 149, 307, 617, 1237,
+*> 2477 give icons 1 to 10, below 3 icon 0) of the 4 x 4 sheet of 16-pixel icons of the 64 x 64 image; tint r = (sin t + 1) / 2, g = 1,
+*> b = (sin (t + 4.1887903) + 1) / 10 with t = ageInTicks / 2 (ticks from the clock, CL-NOW-MS / 50); lit by max(sky x daylight, min(block + 7, 15)) / 15.
+*> The orb is opaque here and alpha 128 in the game (the entity pipeline has no blending): open.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CLMODELS.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-ICON                BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-RX                  FLOAT-LONG.
+ 01 WS-RZ                  FLOAT-LONG.
+ 01 WS-SIDE                FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-LIGHT               FLOAT-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-U64                 FLOAT-LONG.
+ 01 WS-V64                 FLOAT-LONG.
+ 01 WS-CORNERS.
+    05 WS-C OCCURS 4 TIMES.
+       10 WS-C-X           FLOAT-SHORT.
+       10 WS-C-Y           FLOAT-SHORT.
+       10 WS-C-Z           FLOAT-SHORT.
+       10 WS-C-U           FLOAT-SHORT.
+       10 WS-C-V           FLOAT-SHORT.
+ 01 WS-ORDER-DATA          PIC X(6) VALUE "123134".
+ 01 WS-ORDER REDEFINES WS-ORDER-DATA.
+    05 WS-ORD              PIC 9 OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EYE-TABLE.
+    05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
+     MOVE 0 TO WS-SLOT
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+         IF EA-MT-MODEL(WS-S) = EN-MODEL(L-ROW)
+             MOVE WS-S TO WS-SLOT
+         END-IF
+     END-PERFORM
+     IF WS-SLOT = 0 OR RL-EN-COUNT + 6 > CL-MAX-ENTITY-VERTICES
+         GOBACK
+     END-IF
+     EVALUATE TRUE
+         WHEN EN-VALUE(L-ROW) >= 2477 MOVE 10 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 1237 MOVE 9 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 617 MOVE 8 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 307 MOVE 7 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 149 MOVE 6 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 73 MOVE 5 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 37 MOVE 4 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 17 MOVE 3 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 7 MOVE 2 TO WS-ICON
+         WHEN EN-VALUE(L-ROW) >= 3 MOVE 1 TO WS-ICON
+         WHEN OTHER MOVE 0 TO WS-ICON
+     END-EVALUATE
+     COMPUTE WS-RX = - FUNCTION COS(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-RZ = - FUNCTION SIN(PL-YAW * FUNCTION PI / 180)
+     COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
+     COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
+     COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
+     CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
+     COMPUTE WS-LIGHT = FUNCTION MAX(WS-SKY * SK-U / 1000, FUNCTION MIN(WS-BLOCK + 7, 15)) / 15
+     COMPUTE WS-T = CL-NOW-MS / 50 / 2
+*>   Corner k: left (-0.15) for 1 and 4, right (+0.15) for 2 and 3; top (y + 0.325) for 1 and 2, bottom (y + 0.025) for 3 and 4.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         MOVE -0.15 TO WS-SIDE
+         MOVE 0 TO WS-U64
+         IF WS-K = 2 OR WS-K = 3
+             MOVE 0.15 TO WS-SIDE
+             MOVE 1 TO WS-U64
+         END-IF
+         COMPUTE WS-C-X(WS-K) = EN-X(L-ROW) - L-EYE(1) + WS-SIDE * WS-RX
+         COMPUTE WS-C-Z(WS-K) = EN-Z(L-ROW) - L-EYE(3) + WS-SIDE * WS-RZ
+         COMPUTE WS-C-Y(WS-K) = EN-Y(L-ROW) - L-EYE(2) + 0.325
+         MOVE 0 TO WS-V64
+         IF WS-K >= 3
+             COMPUTE WS-C-Y(WS-K) = EN-Y(L-ROW) - L-EYE(2) + 0.025
+             MOVE 1 TO WS-V64
+         END-IF
+*>       The icon's rectangle in the image, in fractions of 64: x (icon mod 4) / 4, y (icon div 4) / 4, 1/4 each.
+         COMPUTE WS-C-U(WS-K) = (EA-MT-X(WS-SLOT) + (FUNCTION MOD(WS-ICON, 4) / 4 + WS-U64 / 4) * EA-MT-W(WS-SLOT)) / EA-W
+         COMPUTE WS-C-V(WS-K) = (EA-MT-Y(WS-SLOT) + (FUNCTION INTEGER(WS-ICON / 4) / 4 + WS-V64 / 4) * EA-MT-H(WS-SLOT)) / EA-H
+     END-PERFORM
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+         MOVE WS-ORD(WS-K) TO WS-N
+         ADD 1 TO RL-EN-COUNT
+         MOVE WS-C-X(WS-N) TO RL-EN-X(RL-EN-COUNT)
+         MOVE WS-C-Y(WS-N) TO RL-EN-Y(RL-EN-COUNT)
+         MOVE WS-C-Z(WS-N) TO RL-EN-Z(RL-EN-COUNT)
+         MOVE WS-C-U(WS-N) TO RL-EN-U(RL-EN-COUNT)
+         MOVE WS-C-V(WS-N) TO RL-EN-V(RL-EN-COUNT)
+         MOVE WS-LIGHT TO RL-EN-B(RL-EN-COUNT)
+         MOVE 1 TO RL-EN-A(RL-EN-COUNT)
+         MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
+         COMPUTE RL-EN-R(RL-EN-COUNT) = FUNCTION INTEGER((FUNCTION SIN(WS-T) + 1) * 0.5 * 255) / 255
+         MOVE 1 TO RL-EN-G(RL-EN-COUNT)
+         COMPUTE RL-EN-BLUE(RL-EN-COUNT) = FUNCTION INTEGER((FUNCTION SIN(WS-T + 4.1887903) + 1) * 0.1 * 255) / 255
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ENTITY-ORB-EMIT.
