@@ -165,3 +165,224 @@ def dec(e): return "%d/%d/%d/%d"%(e&15,(e>>4)&63,(e>>10)&1,(e>>11)&1)
 g.run('entry fields (3): from level 0-15, direction bits (mask 1008 >> 4), from-empty-shape flag, increase-from-emission flag',[str(e) for e in dc],'CALL "L32-ENTRY-DECODE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(dec(e) for e in dc))
 g.run('constants (3): PULL_LIGHT_IN_ENTRY is decreaseAllDirections(1); REMOVE_TOP_SKY_SOURCE_ENTRY decreaseAllDirections(15); REMOVE_SKY_SOURCE_ENTRY decreaseSkipOneDirection(15, UP); ADD_SKY_SOURCE_ENTRY increaseSkipOneDirection(15, false, UP)',["1","2","3","4"],'CALL "L32-ENTRY-CONST" USING WS-I(1) WS-R(1)',1,"%d %d %d %d"%(entry(1,1,0,0),entry(1,15,0,0),entry(2,15,0,1),entry(4,15,0,1)))
 W(g,3)
+# ===================== 6 (model of the section storage, 6.1 to 6.8)
+INF=2147483647
+class Store:
+    """Independent model of LayerLightSectionStorage (+ sky variant) over the window: sections (sx, sy, sz) with sx, sz -1..2 and sy -1..4."""
+    def __init__(s,sky):
+        s.sky=sky; s.state={}; s.work={}; s.vis={}; s.queue={}; s.pending=set(); s.changed=set(); s.aff=set(); s.incons=False
+        s.retain=set(); s.on=set(); s.lowest=INF; s.top={}; s.vlowest=INF; s.vtop={}; s.notify={}; s.queued_same=set()
+    @staticmethod
+    def ok(p): return -1<=p[0]<=2 and -1<=p[2]<=2 and -1<=p[1]<=4
+    def stores(s,p): return p in s.work
+    def nbrs(s,p):
+        for dx in (-1,0,1):
+            for dy in (-1,0,1):
+                for dz in (-1,0,1):
+                    if (dx,dy,dz)!=(0,0,0):
+                        q=(p[0]+dx,p[1]+dy,p[2]+dz)
+                        if s.ok(q): yield q
+    def create(s,p):
+        if p in s.queue: s.queued_same.add(p); return list(s.queue[p])
+        if not s.sky: return [0]*4096
+        col=(p[0],p[2]); has=col in s.top
+        if not has or p[1]>=s.top[col]:
+            return [15]*4096 if col in s.on else [0]*4096
+        for y in range(p[1]+1,5):
+            q=(p[0],y,p[2])
+            if q in s.work:
+                row=s.work[q][:256]; return row*16
+        return [0]*4096
+    def node_added(s,p):
+        if not s.sky: return
+        if p[1]<s.lowest: s.lowest=p[1]
+        col=(p[0],p[2])
+        if col not in s.top or s.top[col]<p[1]+1: s.top[col]=p[1]+1
+    def node_removed(s,p):
+        if not s.sky: return
+        col=(p[0],p[2])
+        if col in s.top and s.top[col]==p[1]+1:
+            y=p[1]
+            while not ((p[0],y,p[2]) in s.work) and y>=s.lowest: y-=1
+            if (p[0],y,p[2]) in s.work: s.top[col]=y+1
+            else: del s.top[col]
+    def init(s,p):
+        if p in s.pending: s.pending.discard(p); return
+        s.work[p]=s.create(p); s.changed.add(p); s.node_added(p)
+        s.aff.add(p)
+        for q in s.nbrs(p): s.aff.add(q)
+        s.incons=True
+    def setbyte(s,p,v):
+        old=s.state.get(p,0)
+        if v==old: return
+        if v==0: s.state.pop(p,None)
+        else: s.state[p]=v
+        if old==0: s.init(p)
+        elif v==0: s.pending.add(p); s.incons=True
+    def status(s,p,empty):
+        old=s.state.get(p,0)
+        new=(old&31)|(0 if empty else 32)
+        if new==old: return
+        s.setbyte(p,new)
+        d=-1 if empty else 1
+        for q in s.nbrs(p):
+            o=s.state.get(q,0); s.setbyte(q,(o&32)|((o&31)+d))
+    def queue_data(s,p,fill):
+        if fill<0: s.queue.pop(p,None); s.queued_same.discard(p)
+        else: s.queue[p]=[fill]*4096; s.queued_same.discard(p); s.incons=True
+    def finish(s):
+        if s.incons:
+            s.incons=False
+            held={}
+            for p in sorted(s.pending):
+                q=s.queue.pop(p,None); r=s.work.pop(p,None)
+                col=(p[0],p[2])
+                if col in s.retain:
+                    if q is not None and p not in s.queued_same: held[p]=q
+                    elif p in s.queued_same: held[p]=r
+                    elif r is not None: held[p]=r
+                s.queued_same.discard(p)
+            for p,v in held.items(): s.queue[p]=v
+            for p in sorted(s.pending):
+                s.node_removed(p); s.changed.add(p)
+            s.pending=set()
+            for p in sorted(list(s.queue)):
+                if p in s.work:
+                    if p not in s.queued_same: s.work[p]=list(s.queue[p]); s.changed.add(p)
+                    del s.queue[p]; s.queued_same.discard(p)
+        if s.changed:
+            s.vis={p:list(v) for p,v in s.work.items()}; s.vtop=dict(s.top); s.vlowest=s.lowest; s.changed=set()
+        for p in sorted(s.aff): s.notify[p]=s.notify.get(p,0)+1
+        s.aff=set()
+    def setlevel(s,x,y,z,v):
+        p=(x>>4,y>>4,z>>4); s.work[p][(y&15)*256+(z&15)*16+(x&15)]=v; s.changed.add(p)
+        for dx in (-1,0,1):
+            for dy in (-1,0,1):
+                for dz in (-1,0,1):
+                    q=((x+dx)>>4,(y+dy)>>4,(z+dz)>>4)
+                    if s.ok(q): s.aff.add(q)
+    def pub(s,x,y,z):
+        p=(x>>4,y>>4,z>>4); idx=(y&15)*256+(z&15)*16+(x&15)
+        if not s.sky: return s.vis[p][idx] if p in s.vis else 0
+        col=(p[0],p[2])
+        if col not in s.vtop or p[1]>=s.vtop[col]: return 15
+        sy=p[1]
+        while True:
+            q=(p[0],sy,p[2])
+            if q in s.vis: return s.vis[q][idx if sy==p[1] else (z&15)*16+(x&15)]
+            sy+=1
+            if sy>=s.vtop[col]: return 15
+    def wlevel(s,x,y,z):
+        p=(x>>4,y>>4,z>>4); idx=(y&15)*256+(z&15)*16+(x&15); col=(p[0],p[2])
+        if not s.sky: return s.work[p][idx] if p in s.work else 0
+        if col not in s.top or p[1]>=s.top[col]: return 15 if col in s.on else 0
+        sy=p[1]
+        while True:
+            q=(p[0],sy,p[2])
+            if q in s.work: return s.work[q][idx if sy==p[1] else (z&15)*16+(x&15)]
+            sy+=1
+            if sy>=s.top[col]: return 15 if col in s.on else 0
+    def info(s,p):
+        return (s.state.get(p,0),int(p in s.work),int(p in s.vis),int(p in s.queue),int(p in s.pending),s.notify.get(p,0))
+def colidx(p): return (p[2]+1)*4+p[0]+2
+class Scn:
+    def __init__(self,k,sky=1):
+        self.k=k; self.m=Store(k==2); self.calls=[]; self.exp=[]
+        self.calls.append(("%d"%sky,'CALL "L32-INIT" USING WS-I(1)',None))
+    def op(self,inp,call,n=None): self.calls.append((inp,call,n))
+    def status(self,sx,sy,sz,empty):
+        self.m.status((sx,sy,sz),empty); self.op(S(self.k,sx,sy,sz,empty),'CALL "L32-STORAGE-STATUS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def queue(self,sx,sy,sz,fill):
+        self.m.queue_data((sx,sy,sz),fill); self.op(S(self.k,sx,sy,sz,fill),'CALL "L32-QUEUE-DATA" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def finish(self):
+        self.m.finish(); self.op(S(self.k),'CALL "L32-STORAGE-FINISH" USING WS-I(1)')
+    def retain(self,cx,cz,f):
+        col=(cx,cz)
+        (self.m.retain.add if f else self.m.retain.discard)(col); self.op(S(self.k,colidx((cx,0,cz)),f),'CALL "L32-STORAGE-RETAIN" USING WS-I(1) WS-I(2) WS-I(3)')
+    def enable(self,cx,cz,f):
+        col=(cx,cz)
+        (self.m.on.add if f else self.m.on.discard)(col); self.op(S(self.k,colidx((cx,0,cz)),f),'CALL "L32-STORAGE-ENABLE" USING WS-I(1) WS-I(2) WS-I(3)')
+    def setl(self,x,y,z,v):
+        self.m.setlevel(x,y,z,v); self.op(S(self.k,x,y,z,v),'CALL "L32-SET-STORED" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5)')
+    def obs(self,sx,sy,sz):
+        self.exp.append("/".join(map(str,self.m.info((sx,sy,sz))))); self.op(S(self.k,sx,sy,sz),'CALL "L32-SECTION-INFO" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6)',6)
+    def pub(self,x,y,z):
+        self.exp.append(str(self.m.pub(x,y,z))); self.op(S(self.k,x,y,z),'CALL "L32-GET-PUBLISHED" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
+    def wl(self,x,y,z):
+        self.exp.append(str(self.m.wlevel(x,y,z))); self.op(S(self.k,x,y,z),'CALL "L32-GET-WORKING" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
+    def below(self,y):
+        self.exp.append(str(int(y>=self.m.lowest))); self.op(S(y),'CALL "L32-DATA-AT-OR-BELOW" USING WS-I(1) WS-R(1)',1)
+    def above(self,cx,cz,sy):
+        col=(cx,cz); self.exp.append(str(int(col not in self.m.top or sy>=self.m.top[col]))); self.op(S(colidx((cx,0,cz)),sy),'CALL "L32-IS-ABOVE-DATA" USING WS-I(1) WS-I(2) WS-R(1)',1)
+    def top(self,cx,cz):
+        col=(cx,cz); self.exp.append(str(self.m.top.get(col,self.m.lowest))); self.op(S(self.k,colidx((cx,0,cz))),'CALL "L32-TOP-SECTION" USING WS-I(1) WS-I(2) WS-R(1)',1)
+    def lowest(self):
+        self.exp.append(str(self.m.lowest)); self.op(S(self.k),'CALL "L32-BOTTOM-SECTION" USING WS-I(1) WS-R(1)',1)
+    def run(self,g,text): g.case(text,self.calls," ".join(self.exp))
+g=GL(6,'Section storage','T0689','section states and neighbour counts, layer creation, pending data, double buffering and notification, column flags, reading a level, the sky predicates.')
+s=Scn(1)
+s.status(0,1,0,0)
+for p in [(0,1,0),(0,0,0),(1,2,1),(-1,0,-1),(0,3,0),(2,2,2)]: s.obs(*p)
+s.finish()
+for p in [(0,1,0),(0,0,0),(1,2,1),(0,3,0)]: s.obs(*p)
+s.run(g,'updateSectionStatus (6.2): the section gets bit 5 and its 26 neighbours a count of 1, each stores a layer from initialise; after the run the layers are published; a section outside the 27 does not store light')
+s=Scn(1)
+s.status(0,1,0,0); s.finish(); s.status(0,1,0,1)
+for p in [(0,1,0),(0,0,0),(1,2,1)]: s.obs(*p)
+s.finish()
+for p in [(0,1,0),(0,0,0),(1,2,1)]: s.obs(*p)
+s.status(0,1,0,1); s.status(0,1,0,0); s.status(0,1,0,0)
+s.obs(0,1,0)
+s.run(g,'remove (6.2, 6.3): a section whose byte went to 0 keeps its layer (stores light) until the pending removal is processed at the end of the next run; an unchanged state byte does nothing; the same section again before the run is taken out of the pending set')
+s=Scn(1)
+s.queue(1,1,0,7); s.obs(1,1,0); s.finish(); s.obs(1,1,0)
+s.status(1,1,0,0); s.obs(1,1,0); s.finish(); s.obs(1,1,0); s.pub(17,17,2); s.pub(17,17,3)
+s.queue(2,2,2,5); s.finish(); s.obs(2,2,2); s.queue(2,2,2,-1); s.obs(2,2,2)
+s.run(g,'queued data (6.3, 6.6): a queued layer for a section that does not store light stays queued through a run; initialise takes the queued layer as the new layer and the run removes it from the queue; a null layer removes the queued entry')
+s=Scn(1)
+s.retain(0,0,1); s.status(0,1,0,0); s.finish(); s.queue(0,1,0,9); s.finish(); s.pub(1,17,2)
+s.setl(1,17,2,3); s.finish(); s.pub(1,17,2); s.status(0,1,0,1); s.finish(); s.obs(0,1,0); s.status(0,1,0,0); s.finish(); s.obs(0,1,0); s.pub(1,17,2)
+s.status(0,1,0,1); s.queue(0,1,0,6); s.finish(); s.obs(0,1,0)
+s.queue(0,1,0,4); s.status(0,1,0,0); s.status(0,1,0,1); s.finish(); s.obs(0,1,0)
+s.run(g,'retain data (6.3 step 1, 6.5): while the column is retained the removed layer (or a queued one) goes back into the queue, so initialising the section again gets its old levels; a queued layer for a storing section is installed by the run')
+s=Scn(1)
+s.status(0,1,0,0); s.finish()
+s.setl(5,21,5,3); s.wl(5,21,5); s.pub(5,21,5); s.wl(100,21,5); s.setl(15,21,5,4); s.setl(15,31,5,5); s.setl(15,31,15,6); s.finish()
+for p in [(0,1,0),(1,1,0),(0,2,0),(1,2,0),(0,1,1),(1,1,1),(0,2,1),(1,2,1),(-1,1,0)]: s.obs(*p)
+s.pub(5,21,5); s.pub(15,31,15)
+s.run(g,'notification (6.4): initialise marks the 27 sections around the new one; a written level marks its own section and the ones its faces, edges and corner touch (1, 2, 3 and 7 sections); the published map shows a write only after the run; each marked section is notified once per run')
+# sky storage
+s=Scn(2)
+s.enable(0,0,1); s.status(0,1,0,0)
+for p in [(0,1,0),(0,0,0),(0,2,0),(1,1,0),(-1,1,-1)]: s.obs(*p)
+s.top(0,0); s.top(1,0); s.lowest()
+s.finish()
+s.wl(1,17,2); s.wl(1,200,2); s.wl(33,17,2); s.below(0); s.below(-1); s.below(5); s.above(0,0,2); s.above(0,0,3); s.above(1,1,0); s.above(2,2,0)
+s.pub(1,17,2); s.pub(1,1,2); s.pub(1,200,2); s.pub(33,17,2); s.pub(-1,17,-1)
+s.run(g,'sky storage (6.6, 6.7, 6.8): a section at or above the column top, or without an entry, is created all 15 when the column has light enabled; a section below it takes the first row of the first section above; the top table is highest storing section + 1, the lowest section the lowest ever initialised')
+s=Scn(2)
+s.enable(0,0,1); s.status(0,2,0,0); s.finish(); s.setl(3,16,4,5); s.finish(); s.pub(3,2,4); s.pub(4,2,4); s.wl(3,2,4); s.status(0,1,0,0); s.finish()
+s.obs(0,0,0); s.pub(3,2,4); s.pub(3,9,4); s.pub(4,9,4); s.pub(3,2,5); s.top(0,0); s.lowest()
+s.setl(3,16,4,8); s.pub(3,16,4); s.finish(); s.pub(3,16,4)
+s.run(g,'sky layer below the top (6.6): the new layer repeats the first Y row (256 nibbles) of the first layer above 16 times, so every Y row equals it; a write is read back only once published')
+s=Scn(2)
+s.enable(0,0,1); s.status(0,1,0,0); s.status(0,2,0,0); s.finish(); s.top(0,0); s.lowest()
+s.status(0,2,0,1); s.status(0,1,0,1); s.finish()
+s.top(0,0); s.top(1,1); s.lowest(); s.pub(1,17,2); s.pub(1,50,2); s.obs(0,1,0); s.obs(0,0,0)
+s.run(g,'sky storage removal (6.3 step 2, 6.8): removing the highest storing section rewrites the column top by walking down while the section stores no light and hasLightDataAtOrBelow holds, else drops the entry; the lowest section is never raised')
+s=Scn(2)
+s.status(2,1,2,0); s.wl(33,17,34); s.wl(33,45,34); s.finish(); s.pub(33,17,34); s.pub(33,40,34); s.obs(2,1,2); s.enable(2,2,1); s.status(2,3,2,0); s.finish(); s.pub(33,56,34); s.top(2,2); s.obs(2,3,2)
+s.run(g,'sky layer of a column without light enabled (6.6): all zero below the top and above it; with the column enabled a new top section is all 15; a read at or above the top is 15')
+
+import itertools
+def lo(bp,sp,bon,son):
+    if not bp: return 1
+    if not bon: return 0
+    return int((not sp) or son)
+cl=[("1",'CALL "L32-INIT" USING WS-I(1)',None)]; ce=[]
+for bp,sp,bon,son in itertools.product((0,1),repeat=4):
+    cl.append((S(1,1,bon),'CALL "L32-STORAGE-ENABLE" USING WS-I(1) WS-I(2) WS-I(3)',None))
+    cl.append((S(2,1,son),'CALL "L32-STORAGE-ENABLE" USING WS-I(1) WS-I(2) WS-I(3)',None))
+    cl.append((S(bp,sp,1),'CALL "L32-LIGHT-ON-IN-COLUMN" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1)); ce.append(str(lo(bp,sp,bon,son)))
+g.case('lightOnInColumn (6.5): no block engine gives true; with a block engine and its column not enabled false (even without a sky engine); otherwise true when the sky engine is absent or has the column enabled',cl," ".join(ce))
+W(g,6)

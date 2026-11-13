@@ -29,6 +29,10 @@
        10 LY-RETAIN            BINARY-LONG OCCURS 16 TIMES.
        10 LY-TOP               BINARY-LONG OCCURS 16 TIMES.
        10 LY-TOPSET            BINARY-LONG OCCURS 16 TIMES.
+       10 LY-NOTIFY            BINARY-LONG OCCURS 96 TIMES.
+       10 LY-VTOP              BINARY-LONG OCCURS 16 TIMES.
+       10 LY-VTOPSET           BINARY-LONG OCCURS 16 TIMES.
+       10 LY-VLOWEST           BINARY-LONG.
        10 LY-INCONS            BINARY-LONG.
        10 LY-LOWEST            BINARY-LONG.
        10 LY-WD                OCCURS 96 TIMES.
