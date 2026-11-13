@@ -278,6 +278,10 @@
        10 EN-DEST-Z          BINARY-LONG.
        10 EN-PATH-TICKS      BINARY-LONG.        *> ticks until the path is searched again
        10 EN-KILLER          BINARY-LONG.        *> player row that last hit a mob (0 none): the killed_by_player loot condition (core/src/stdmobs.cob)
+*>     --- 002-lane-mobs2: creeper (core/src/stdmobs.cob STDMOB-SWELL) ---
+       10 EN-SWELL           BINARY-LONG.        *> the swell counter (20 section 6.1), 0 to the fuse
+       10 EN-SWELL-DIR       BINARY-LONG.        *> the last swell direction sent to the viewers (0 = none yet, the default -1)
+*>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

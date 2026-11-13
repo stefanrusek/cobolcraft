@@ -24,7 +24,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 7 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 8 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -694,6 +694,105 @@
  END PROGRAM STDMOB-HEAD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SET-ENTITY-DATA-INT-BUILD.
+*> USING entity id, entry index, value (BINARY-LONG), PB-BUFFER: Set Entity Data 0x65 with one INT entry (a creeper's swell direction is entry 16, 20 section 6.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY-ID L-INDEX L-VALUE PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE L-INDEX TO MD-MD-INDEX
+     MOVE MD-MDS-INT TO MD-MD-SERIALIZER
+     MOVE L-VALUE TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     GOBACK.
+ END PROGRAM SET-ENTITY-DATA-INT-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-SWELL.
+*> USING tracker row, table row of a mob with a fuse (SM-FUSE above 0: the creeper, 20 section 6.1), stop out (BINARY-LONG): the swell goal. The swell
+*> direction is 1 while the swell is above 0 and the target is within 7 blocks (distance squared 49), or from 0 while the target is within 3 blocks
+*> (distance squared 9); otherwise -1. The swell moves by the direction (not below 0). A change of direction goes to the viewers (Set Entity Data,
+*> entry 16). At the fuse the mob explodes at its position with its blast power (EXPLODE-RUN, source this mob, destroying blocks) and the row is removed
+*> without loot or experience. stop out: 0 nothing, 1 the mob stands still (it is swelling), 2 it exploded and the row is gone. The line of sight is
+*> not tested yet (open).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-INDEX               BINARY-LONG VALUE 16.
+ 01 WS-POWER               FLOAT-LONG.
+ 01 WS-DESTROY             BINARY-LONG VALUE 1.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-M                    BINARY-LONG.
+ 01 L-STOP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-M L-STOP.
+     MOVE 0 TO L-STOP
+     MOVE -1 TO WS-DIR
+     MOVE EN-TARGET(L-ROW) TO WS-P
+     IF WS-P > 0
+         COMPUTE WS-DX = PL-X(WS-P) - EN-X(L-ROW)
+         COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
+         COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(L-ROW)
+         COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+         IF (EN-SWELL(L-ROW) > 0 AND WS-D2 <= 49) OR (EN-SWELL(L-ROW) = 0 AND WS-D2 < 9)
+             MOVE 1 TO WS-DIR
+         END-IF
+     END-IF
+     ADD WS-DIR TO EN-SWELL(L-ROW)
+     IF EN-SWELL(L-ROW) < 0
+         MOVE 0 TO EN-SWELL(L-ROW)
+     END-IF
+     IF WS-DIR NOT = EN-SWELL-DIR(L-ROW) AND NOT (EN-SWELL-DIR(L-ROW) = 0 AND WS-DIR = -1)
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "SET-ENTITY-DATA-INT-BUILD" USING EN-ID(L-ROW) WS-INDEX WS-DIR PB-BUFFER
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     MOVE WS-DIR TO EN-SWELL-DIR(L-ROW)
+     IF EN-SWELL(L-ROW) >= SM-FUSE(L-M)
+         MOVE EN-DIM(L-ROW) TO WS-DIM
+         MOVE EN-X(L-ROW) TO WS-X
+         MOVE EN-Y(L-ROW) TO WS-Y
+         MOVE EN-Z(L-ROW) TO WS-Z
+         MOVE SM-BLAST(L-M) TO WS-POWER
+         MOVE L-ROW TO WS-ROW
+         CALL "EXPLODE-RUN" USING WS-DIM WS-X WS-Y WS-Z WS-POWER WS-DESTROY WS-ROW
+         CALL "ENTITY-REMOVE" USING L-ROW
+         MOVE 2 TO L-STOP
+         GOBACK
+     END-IF
+     IF EN-SWELL(L-ROW) > 0
+         MOVE 1 TO L-STOP
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-SWELL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-STEP.
 *> USING tracker row: nothing for a row that is no standard mob. A hostile mob is removed while the difficulty is Peaceful or the hostile-mobs
 *> setting is off. A dying mob (health 0) counts its death ticks (EN-COOLDOWN) and vanishes at the 20th (STDMOB-VANISH). Nothing else happens in a
@@ -738,6 +837,7 @@
  01 WS-GY                  BINARY-LONG.
  01 WS-GZ                  BINARY-LONG.
  01 WS-ARRIVED             BINARY-LONG.
+ 01 WS-STOP                BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -786,7 +886,20 @@
              MOVE 1 TO WS-CHASE
          END-IF
      END-IF
+     MOVE 0 TO WS-STOP
+     IF SM-FUSE(WS-M) > 0
+         CALL "STDMOB-SWELL" USING WS-ROW WS-M WS-STOP
+         IF WS-STOP = 2
+             GOBACK
+         END-IF
+     END-IF
      EVALUATE TRUE
+         WHEN WS-STOP = 1
+*>           A swelling creeper stands still, facing its target.
+             MOVE EN-TARGET(WS-ROW) TO WS-P
+             COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
+             COMPUTE WS-DZ = PL-Z(WS-P) - EN-Z(WS-ROW)
+             CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
          WHEN WS-CHASE = 1
              MOVE EN-TARGET(WS-ROW) TO WS-P
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
@@ -800,7 +913,7 @@
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
              END-IF
-             IF EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
+             IF SM-FUSE(WS-M) = 0 AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
                  MOVE SM-ATTACK-TICKS TO EN-COOLDOWN(WS-ROW)
