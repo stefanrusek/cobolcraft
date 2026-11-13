@@ -509,6 +509,7 @@
 *> debug type builds its grid without them: nothing is loaded for them.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY FEATINDEX.
  01 WS-GEN-STATUS          BINARY-LONG.
  01 WS-GEN-DIR             PIC X(1100).
  LINKAGE SECTION.
@@ -523,6 +524,9 @@
          CALL "DENSITY-FUNCTIONS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "MATERIAL-RULES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
          CALL "CARVERS-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+*>       the feature lists of the biomes; the stage runs only their tree features (FI-ONLY)
+         CALL "BIOMES-LOAD" USING WS-GEN-DIR WS-GEN-STATUS
+         MOVE 1 TO FI-ONLY
          CALL "GEN-QUEUE-RESET"
      END-IF
      GOBACK.
