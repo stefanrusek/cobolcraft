@@ -10,7 +10,7 @@
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
 *>   blockstate, blockpred, item, itempred, component, style, message, nbt (compound), nbttag, nbtpath; objective, criteria,
 *>   operation, particle, team, slot, slots, resloc, function, anchor, intrange, floatrange, dimension, gamemode, uuid,
-*>   hexcolor, teamcolor; time (min ticks); entitytype and effecttype and enchanttype and recipetype (a resource of the registry minecraft:entity_type, minecraft:mob_effect, minecraft:enchantment, minecraft:recipe).
+*>   hexcolor, teamcolor, dslot (a scoreboard display slot); time (min ticks); entitytype and effecttype and enchanttype and recipetype (a resource of the registry minecraft:entity_type, minecraft:mob_effect, minecraft:enchantment, minecraft:recipe).
 *>
 *> Entry points:
 *>   BR-REG USING level (of the first word), command id, line (PIC X(256)): adds the nodes and sets the command of the last
@@ -191,6 +191,7 @@
          WHEN "uuid"        MOVE BR-P-UUID TO WS-TYPE-ID
          WHEN "hexcolor"    MOVE BR-P-HEX-COLOR TO WS-TYPE-ID
          WHEN "teamcolor"   MOVE BR-P-TEAM-COLOR TO WS-TYPE-ID
+         WHEN "dslot"       MOVE BR-P-SLOT-DISPLAY TO WS-TYPE-ID
          WHEN "entitytype"
              MOVE BR-P-RESOURCE TO WS-TYPE-ID
              MOVE "minecraft:entity_type" TO WS-REGISTRY

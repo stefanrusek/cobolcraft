@@ -96,3 +96,14 @@
  78 BC-PLACE             VALUE 306.
  78 BC-PLAYSOUND         VALUE 307.
  78 BC-STOPSOUND         VALUE 308.
+*> The commands of core/src/cmds-scoreboard.cob and core/src/cmds-data.cob added in the lane cmds-d (run by CX-DISPATCH-D).
+ 78 BC-SCOREBOARD       VALUE 401.
+ 78 BC-TEAM             VALUE 402.
+ 78 BC-TRIGGER          VALUE 403.
+ 78 BC-DATA             VALUE 404.
+ 78 BC-FUNCTION         VALUE 405.
+ 78 BC-SCHEDULE         VALUE 406.
+ 78 BC-RETURN           VALUE 407.
+ 78 BC-COMPUTE          VALUE 408.
+ 78 BC-STOPWATCH        VALUE 409.
+ 78 BC-DATAPACK         VALUE 410.
