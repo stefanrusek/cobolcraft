@@ -9,7 +9,7 @@
 *>   STDMOB-PANIC USING entity type id, panic milli out     the panic speed (blocks per tick x 1000), 0 for no row
 *>   STDMOB-DIE USING tracker row                           death: loot, Entity Event 3, dying for 20 ticks
 *>   STDMOB-VANISH USING tracker row                        Entity Event 60 and removal
-*>   STDMOB-DROPS USING dim, x, y, z, type, killed        the loot table of the type on the ground (18 section 7.5, 7.6)
+*>   STDMOB-DROPS USING dim, x, y, z, type, killer row    the loot table of the type on the ground (18 section 7.5, 7.6)
 *>   STDMOB-STEP USING tracker row                          one tick of one mob: stroll or panic, then the physics
 *>   STDMOB-NAME USING entity type id, name out (PIC X(16)), length out   the display name of the type ("Zombie")
 *>   STDMOB-SPAWN-RULE USING dim, x, z, top, r              one natural pack of animals on the block at (x, top)
@@ -111,7 +111,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DROPS.
-*> USING dim, x, y, z (FLOAT-LONG), entity type (BINARY-LONG), killed by a player (BINARY-LONG, 0 or 1): the loot table of the type,
+*> USING dim, x, y, z (FLOAT-LONG), entity type (BINARY-LONG), the player row that killed it (BINARY-LONG, 0 none): the loot table of the type,
 *> minecraft:entities/<key> (18 sections 7.5 and 7.6, rolled by LOOT-ROLL of docs 26), with this_entity the mob's type key and
 *> last_damage_player set when a player killed it; every stack it yields lands on the ground at the mob's position as
 *> Entity.spawnAtLocation does (IP-AT-LOCATION). A set without the table drops nothing. The type must be a table mob (the caller, STDMOB-DIE, has checked).
@@ -131,8 +131,8 @@
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
  01 L-TYPE                 BINARY-LONG.
- 01 L-KILLED               BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLED.
+ 01 L-KILLER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER.
      CALL "STDMOB-INDEX" USING L-TYPE WS-M
      MOVE SPACES TO WS-KEY
      STRING "minecraft:entities/" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO WS-KEY
@@ -142,7 +142,11 @@
      MOVE L-Y TO LC-Y
      MOVE L-Z TO LC-Z
      STRING "minecraft:" DELIMITED BY SIZE SM-KEY(WS-M) DELIMITED BY SPACE INTO LC-THIS-TYPE
-     MOVE L-KILLED TO LC-KILLER
+     MOVE 0 TO LC-KILLER
+     IF L-KILLER > 0
+         MOVE 1 TO LC-KILLER
+         CALL "STDMOB-LOOTING" USING L-KILLER LC-ATTACKER-SET LC-ATTACKER-ENCH-COUNT LC-AE-ID(1) LC-AE-LEVEL(1)
+     END-IF
      MOVE CW-SEED TO LC-WORLD-SEED
      CALL "LOOT-ROLL" USING WS-KEY LOOT-CONTEXT LOOT-RESULT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LR-COUNT
@@ -151,6 +155,71 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STDMOB-DROPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-LOOTING.
+*> USING player row, attacker set out, enchantment count out, id out, level out (BINARY-LONG): the looting level of the item in the player's
+*> main hand (18 section 7.6: the loot functions read it from the killer's weapon). The four outputs are the loot context's attacker fields:
+*> set to 1 with one enchantment (looting) when the level is above 0, else all 0 (and the registry lacking looting counts as level 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:looting".
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-LEVEL                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-SET L-COUNT L-ID L-LEVEL.
+     MOVE 0 TO L-SET L-COUNT L-ID L-LEVEL WS-LEVEL
+     CALL "LOOT-ENCH-ID" USING WS-KEY WS-ID
+     COMPUTE WS-SLOT = PL-HELD(L-PLAYER) + 1
+     IF WS-ID >= 0 AND PL-SLOT-COUNT(L-PLAYER, WS-SLOT) > 0 AND PL-SLOT-VAR(L-PLAYER, WS-SLOT) > 0
+         CALL "SP-ENCHANT-LEVEL" USING PL-SLOT-VAR(L-PLAYER, WS-SLOT) WS-ID WS-LEVEL
+     END-IF
+     IF WS-LEVEL > 0
+         MOVE 1 TO L-SET L-COUNT
+         MOVE WS-ID TO L-ID
+         MOVE WS-LEVEL TO L-LEVEL
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-LOOTING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-XP.
+*> USING dim, x, y, z (FLOAT-LONG), type, killer player row (BINARY-LONG): the experience of a defeated standard mob (18 section 7.5 dropExperience):
+*> only when a player killed it, SM-XP points (an animal, SM-XP 0: 1 + nextInt(3)) as orbs at its position (XP-AWARD). Equipment bonuses and
+*> the mob_drops game rule are not modelled yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-POINTS              BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 4.
+ 01 WS-BOUND               BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KILLER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE L-KILLER.
+     IF L-KILLER > 0
+         CALL "STDMOB-INDEX" USING L-TYPE WS-M
+         MOVE SM-XP(WS-M) TO WS-POINTS
+         IF WS-POINTS = 0
+             CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-POINTS
+             ADD 1 TO WS-POINTS
+         END-IF
+         CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-POINTS
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-XP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-DIE.
@@ -184,11 +253,9 @@
      CALL "ENTITY-EVENT-BUILD" USING WS-ID WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
-     MOVE 0 TO WS-KILLED
-     IF EN-KILLER(L-ROW) > 0
-         MOVE 1 TO WS-KILLED
-     END-IF
+     MOVE EN-KILLER(L-ROW) TO WS-KILLED
      CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
+     CALL "STDMOB-XP" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED
      GOBACK.
  END PROGRAM STDMOB-DIE.
 

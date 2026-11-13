@@ -192,6 +192,12 @@
 *>     session, and the CW-TICKS of that travel (a use within TRAVEL-COOLDOWN ticks is ignored).
        10 PL-TRAVELLED       PIC 9.
        10 PL-TRAVEL-TICK     BINARY-DOUBLE.
+*>     --- 002-lane-mobs2: experience (core/src/xp.cob; 17 section 4.10) ---
+       10 PL-XP-LEVEL        BINARY-LONG.        *> experience level
+       10 PL-XP-POINTS       BINARY-LONG.        *> points into the current level
+       10 PL-XP-TOTAL        BINARY-LONG.        *> total experience points
+       10 PL-XP-DELAY        BINARY-LONG.        *> takeXpDelay: ticks until the next orb pickup
+*>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes laid out as contract/copy/CELLS.cpy (2-byte states, 4-bit light, biomes). The
