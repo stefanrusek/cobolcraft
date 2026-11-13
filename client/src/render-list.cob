@@ -59,6 +59,20 @@
  01 WS-PV-TABLE.
     05 WS-PV               FLOAT-LONG OCCURS 16 TIMES.
  01 WS-SUM                 FLOAT-LONG.
+ 01 WS-TANX                FLOAT-LONG.
+ 01 WS-TANY                FLOAT-LONG.
+ 01 WS-NORM                FLOAT-LONG.
+ 01 WS-PLANE-TABLE.
+    05 WS-PLANE            FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-VIS                 BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-P1                  BINARY-LONG.
+ 01 WS-P2                  BINARY-LONG.
+ 01 WS-P3                  BINARY-LONG.
+ 01 WS-HALF-H              FLOAT-LONG.
+ 01 WS-NX                  FLOAT-LONG.
+ 01 WS-NY                  FLOAT-LONG.
+ 01 WS-NZ                  FLOAT-LONG.
  01 WS-TCOUNT              BINARY-LONG.
  01 WS-TSLOT               BINARY-LONG OCCURS 4096 TIMES.
  01 WS-TROW                BINARY-LONG OCCURS 4096 TIMES.
@@ -193,6 +207,23 @@
      IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-PAUSE
          MOVE 1 TO WS-WORLD
      END-IF
+*>   The four side planes of the view frustum as unit normals in the world (inside: the normal dotted with the offset from the
+*>   eye is not negative): left and right from the horizontal tangent, bottom and top from the vertical one. A chunk column
+*>   wholly outside one is not drawn (its sections are still uploaded); this keeps the draws, the matrices and the sort to
+*>   the few columns in view.
+     COMPUTE WS-TANX = WS-ASPECT / WS-F
+     COMPUTE WS-TANY = 1 / WS-F
+     COMPUTE WS-NORM = FUNCTION SQRT(1 + WS-TANX * WS-TANX)
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 3
+         COMPUTE WS-PLANE(WS-C) = (WS-RIGHT(WS-C) + WS-FWD(WS-C) * WS-TANX) / WS-NORM
+         COMPUTE WS-PLANE(WS-C + 3) = (WS-FWD(WS-C) * WS-TANX - WS-RIGHT(WS-C)) / WS-NORM
+     END-PERFORM
+     COMPUTE WS-NORM = FUNCTION SQRT(1 + WS-TANY * WS-TANY)
+     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 3
+         COMPUTE WS-PLANE(WS-C + 6) = (WS-UP(WS-C) + WS-FWD(WS-C) * WS-TANY) / WS-NORM
+         COMPUTE WS-PLANE(WS-C + 9) = (WS-FWD(WS-C) * WS-TANY - WS-UP(WS-C)) / WS-NORM
+     END-PERFORM
+     COMPUTE WS-HALF-H = PL-HEIGHT / 2 + 1
 *>   Uploads of changed meshes; opaque draws; translucent candidates.
      MOVE 0 TO WS-TCOUNT
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
@@ -214,6 +245,26 @@
              END-PERFORM
              MOVE 0 TO WR-RELEASE(WS-R)
          END-IF
+*>       Is the column (a box of 18 x height x 18 blocks around the chunk) in view?
+         MOVE 1 TO WS-VIS
+         IF WS-WORLD = 1 AND WR-USED(WS-R) = 1
+             COMPUTE WS-DX = WR-CX(WS-R) * 16 + 8 - WS-EYE(1)
+             COMPUTE WS-DY = PL-MIN-Y + WS-HALF-H - 1 - WS-EYE(2)
+             COMPUTE WS-DZ = WR-CZ(WS-R) * 16 + 8 - WS-EYE(3)
+             PERFORM VARYING WS-P FROM 0 BY 3 UNTIL WS-P > 9 OR WS-VIS = 0
+                 COMPUTE WS-P1 = WS-P + 1
+                 COMPUTE WS-P2 = WS-P + 2
+                 COMPUTE WS-P3 = WS-P + 3
+                 MOVE WS-PLANE(WS-P1) TO WS-NX
+                 MOVE WS-PLANE(WS-P2) TO WS-NY
+                 MOVE WS-PLANE(WS-P3) TO WS-NZ
+                 COMPUTE WS-SUM = WS-NX * WS-DX + WS-NY * WS-DY + WS-NZ * WS-DZ
+                     + FUNCTION ABS(WS-NX) * 9 + FUNCTION ABS(WS-NY) * WS-HALF-H + FUNCTION ABS(WS-NZ) * 9
+                 IF WS-SUM < 0
+                     MOVE 0 TO WS-VIS
+                 END-IF
+             END-PERFORM
+         END-IF
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
              COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * CL-MAX-SECTIONS + WS-S - 1) * 2
              IF WR-UPLOAD(WS-R, WS-S) = 1
@@ -228,7 +279,7 @@
                  MOVE WR-TR-COUNT(WS-R, WS-S) TO RL-U-COUNT(RL-UPLOAD-COUNT)
                  MOVE 0 TO WR-UPLOAD(WS-R, WS-S)
              END-IF
-             IF WS-WORLD = 1 AND WR-USED(WS-R) = 1
+             IF WS-WORLD = 1 AND WR-USED(WS-R) = 1 AND WS-VIS = 1
                  IF WR-OP-COUNT(WS-R, WS-S) > 0
                          AND RL-DRAW-COUNT < CL-MAX-DRAWS - CL-DRAW-RESERVE
                      ADD 1 TO RL-DRAW-COUNT

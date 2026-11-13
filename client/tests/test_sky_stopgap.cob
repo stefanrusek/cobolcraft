@@ -22,6 +22,11 @@
  01 WS-LEVEL               BINARY-LONG.
  01 WS-LEVEL-E             PIC 99.
  01 WS-ROW2                BINARY-LONG.
+ 01 WS-ROW3                BINARY-LONG.
+ 01 WS-MINUS1              BINARY-LONG VALUE -1.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-FLAGS               PIC X(12).
+ 01 WS-D1                  PIC 9.
  01 WS-ONE-CX              BINARY-LONG VALUE 1.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.
@@ -132,15 +137,17 @@
      MOVE SPACES TO TL-OBSERVED
      CALL "TEST-FACE" USING CLIENT-STATE WS-ROW "05.5 04.0 05.5 0" TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO WR-SURF(WS-ROW, 86)
 
-*>   A block set drops the cache; the new top block raises the surface and its top face is lit.
+*>   A block set finds its column's surface again; the new top block raises the surface and its top face is lit.
      MOVE 1 TO WS-BX
      MOVE 10 TO WS-BY
      MOVE 1 TO WS-BZ
      CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
      MOVE WR-SURF-OK(WS-ROW) TO WS-NUM
-     MOVE "sky-stopgap given a block set in the row when the cache is asked then it is no longer current" TO TL-CASE
-     MOVE "+000" TO TL-EXPECTED
+     MOVE "sky-stopgap given a block set in the row when the cache is asked then it is still current, the column found "
+         & "again (the surface is 11 at once)" TO TL-CASE
+     MOVE "+001" TO TL-EXPECTED
      MOVE WS-NUM TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-FOUR
@@ -299,6 +306,197 @@
      MOVE "15" TO TL-EXPECTED
      MOVE WS-LEVEL-E TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   ---- A block edit that moves a column's surface has the sections it lights meshed again ----
+     MOVE 1 TO PL-HAS-SKY
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-MINUS1 WS-ZERO WS-ROW3
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW3
+     MOVE 1 TO WS-BX
+     MOVE 30 TO WS-BY
+     MOVE 1 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE WR-SURF(WS-ROW, 18) TO WS-NUM
+     MOVE "sky-stopgap given a stone placed at y 30 on a column whose surface was 11 when the row's sections are asked "
+         & "then 1 and 2 are to be meshed (not 3) and the surface is 31" TO TL-CASE
+     MOVE "110 +031" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-FLAGS(1:3) " " WS-NUM DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-AIR
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE WR-SURF(WS-ROW, 18) TO WS-NUM
+     MOVE "sky-stopgap given that stone removed when the row's sections are asked then 1 and 2 are to be meshed and the "
+         & "surface is 11 again" TO TL-CASE
+     MOVE "110 +011" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-FLAGS(1:3) " " WS-NUM DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     MOVE 5 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-AIR
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE "sky-stopgap given a block removed inside the column when the sections are asked then only its own section "
+         & "(1) is to be meshed: the surface did not move" TO TL-CASE
+     MOVE "100" TO TL-EXPECTED
+     MOVE WS-FLAGS(1:3) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+
+*>   A column on the west edge of the chunk: the chunk beside it is meshed again from the old to the new level.
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW3
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     PERFORM VARYING WS-LY FROM 0 BY 1 UNTIL WS-LY > 3
+         COMPUTE CE-STATE(WS-LY * 256 + 8 * 16 + 0 + 1) = 2
+     END-PERFORM
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     MOVE 0 TO WS-BX
+     MOVE 30 TO WS-BY
+     MOVE 8 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW3 WS-FLAGS
+     MOVE "sky-stopgap given a stone placed high on the west edge column when the chunk to the west is asked then its "
+         & "sections 1 and 2 are to be meshed" TO TL-CASE
+     MOVE "110" TO TL-EXPECTED
+     MOVE WS-FLAGS(1:3) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   And on the east edge (x 15, the chunk beside it is row 2) and the north and south edges (z 0 and 15, no chunk loaded there).
+     PERFORM VARYING WS-LY FROM 0 BY 1 UNTIL WS-LY > 3
+         COMPUTE CE-STATE(WS-LY * 256 + 8 * 16 + 15 + 1) = 2
+         COMPUTE CE-STATE(WS-LY * 256 + 0 * 16 + 3 + 1) = 2
+         COMPUTE CE-STATE(WS-LY * 256 + 15 * 16 + 3 + 1) = 2
+     END-PERFORM
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW2
+     MOVE 15 TO WS-BX
+     MOVE 8 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW2 WS-FLAGS
+     MOVE "sky-stopgap given a stone placed high on the east edge column when the chunk to the east is asked then its "
+         & "sections 1 and 2 are to be meshed" TO TL-CASE
+     MOVE "110" TO TL-EXPECTED
+     MOVE WS-FLAGS(1:3) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-BX
+     MOVE 0 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     MOVE 15 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     MOVE WR-SURF(WS-ROW, 244) TO WS-NUM
+     MOVE "sky-stopgap given stone placed on the north and south edge columns when the surface of (3, 15) is asked "
+         & "then it is 31" TO TL-CASE
+     MOVE "+031" TO TL-EXPECTED
+     MOVE WS-NUM TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Water: the top of the water over (9, 9) moves when its top cell is removed, and the sections of the old and new level are meshed.
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     MOVE 9 TO WS-BX WS-BZ
+     MOVE 9 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-AIR
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE WR-WTOP(WS-ROW, 154) TO WS-NUM
+     MOVE "sky-stopgap given the top water cell removed when the water top is asked then it is 9 and section 1 is to be meshed"
+         TO TL-CASE
+     MOVE "100 +009" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-FLAGS(1:3) " " WS-NUM DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     MOVE WR-SURF(WS-ROW, 154) TO WS-NUM
+     MOVE "sky-stopgap given a stone placed in the water when the surface is asked then it is 7" TO TL-CASE
+     MOVE "+007" TO TL-EXPECTED
+     MOVE WS-NUM TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A column with no opaque block at all gets its first one: nothing below it to darken, only the block's own sections.
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     MOVE 99 TO WR-SURF(WS-ROW, 18)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     MOVE WR-SURF(WS-ROW, 18) TO WS-NUM
+     MOVE "sky-stopgap given the surfaces current when they are asked again then they are not scanned again (99 stays)"
+         TO TL-CASE
+     MOVE "+099" TO TL-EXPECTED
+     MOVE WS-NUM TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW
+     MOVE 12 TO WS-BX WS-BZ
+     MOVE 40 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE "sky-stopgap given the first block of a column placed at y 40 when the sections are asked then only its own "
+         & "section 3 is to be meshed" TO TL-CASE
+     MOVE "001" TO TL-EXPECTED
+     MOVE WS-FLAGS(1:3) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A surface that moves far up through sections that hold no block: those are not meshed again (row 2: blocks in section 1 only).
+     MOVE 1 TO PL-HAS-SKY
+     MOVE 0 TO WR-SURF-OK(WS-ROW2)
+     CALL "SKY-STOPGAP-SURFACE" USING CLIENT-STATE WS-ROW2
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW2
+     MOVE 16 TO WS-BX
+     MOVE 50 TO WS-BY
+     MOVE 5 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW2 WS-FLAGS
+     MOVE "sky-stopgap given a stone placed at y 50 on a column whose surface was 10 when the chunk's sections are asked "
+         & "then 1 and 4 are to be meshed and the empty 2 and 3 are not" TO TL-CASE
+     MOVE "1001" TO TL-EXPECTED
+     MOVE WS-FLAGS(1:4) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block at the very top of the dimension: the sections to mesh end at the last one.
+     CALL "TEST-CLEAR-DIRTY" USING CLIENT-STATE WS-ROW2
+     MOVE 255 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     CALL "TEST-DIRTY-FLAGS" USING CLIENT-STATE WS-ROW WS-FLAGS
+     MOVE "sky-stopgap given a block at y 255 when the sections are asked then section 16 is not past the last "
+         & "(WR-DIRTY of 17 is not touched)" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE WR-DIRTY(WS-ROW2, 17) TO WS-D1
+     MOVE WS-D1 TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Surfaces not current (a chunk just loaded): a block set leaves them to be found when meshing.
+     MOVE 0 TO WR-SURF-OK(WS-ROW)
+     MOVE 7 TO WR-SURF(WS-ROW, 18)
+     MOVE 1 TO WS-BX
+     MOVE 1 TO WS-BZ
+     MOVE 3 TO WS-BY
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     MOVE WR-SURF(WS-ROW, 18) TO WS-NUM
+     MOVE "sky-stopgap given surfaces not current when a block is set then the cached value is left alone (7)" TO TL-CASE
+     MOVE "+007" TO TL-EXPECTED
+     MOVE WS-NUM TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A dimension without sky light keeps no surfaces: a block set leaves the cache alone.
+     MOVE 0 TO PL-HAS-SKY
+     MOVE 1 TO WR-SURF-OK(WS-ROW)
+     MOVE 99 TO WR-SURF(WS-ROW, 18)
+     MOVE 1 TO WS-BX
+     MOVE 20 TO WS-BY
+     MOVE 1 TO WS-BZ
+     CALL "WORLD-BLOCK-SET" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STONE
+     MOVE WR-SURF(WS-ROW, 18) TO WS-NUM
+     MOVE "sky-stopgap given a dimension without sky light when a block is set then the cached surface is left as it was"
+         TO TL-CASE
+     MOVE "+099" TO TL-EXPECTED
+     MOVE WS-NUM TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PL-HAS-SKY
      STOP RUN.
  END PROGRAM TEST-SKY-STOPGAP.
 
@@ -417,3 +615,37 @@
      GOBACK.
  END PROGRAM TEST-FACE.
  COPY CLTEST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CLEAR-DIRTY.
+*> USING CLIENT-STATE, row: no section of the row is to be meshed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-S                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW.
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+         MOVE 0 TO WR-DIRTY(L-ROW, WS-S)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-CLEAR-DIRTY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DIRTY-FLAGS.
+*> USING CLIENT-STATE, row, text out (PIC X(12)): the dirty flags of sections 1 to 12 as 0 and 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-TEXT                 PIC X(12).
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-TEXT.
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 12
+         MOVE WR-DIRTY(L-ROW, WS-S) TO L-TEXT(WS-S:1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TEST-DIRTY-FLAGS.

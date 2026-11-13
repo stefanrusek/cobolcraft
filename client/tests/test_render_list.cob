@@ -89,6 +89,17 @@
      SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
      MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
      MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+*>   Two more, outside the view: chunk (-5, 0) lies behind the camera (it looks east), chunk (2, 5) far off to its right.
+     MOVE -5 TO WS-I
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-I WS-ZERO WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
+     MOVE 5 TO WS-K
+     CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-TWO WS-K WS-ROW
+     SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
+     MOVE 12 TO CE-STATE(58 * 256 + 8 * 16 + 8 + 1)
+     MOVE 1 TO WR-DIRTY(WS-ROW, 4)
      MOVE 1000000000 TO MB-BUDGET-US
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
      CALL "SKY-UPDATE" USING CLIENT-STATE
@@ -156,6 +167,20 @@
          MOVE "order broken" TO TL-OBSERVED
      END-IF
      MOVE "112 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "render list sections of chunks behind the camera or far outside its view are not drawn (3 translucent draws, "
+         & "not 5) though their meshes are uploaded" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE RL-UPLOAD-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO WS-K
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
+         IF RL-D-PIPELINE(WS-I) = 1
+             ADD 1 TO WS-K
+         END-IF
+     END-PERFORM
+     MOVE WS-K TO TL-OBSERVED-N
+     MOVE 3 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "render list translucent sections are drawn back to front: chunk 2, then -1, then 0"
