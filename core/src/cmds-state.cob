@@ -1257,3 +1257,671 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CMDS-REG-GAMERULE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BT-SEND.
+*> USING kind (1 Ticking State 0x82: the target rate as a float and the frozen flag; 2 Ticking Step 0x83: the ticks of the step, BT-STEP-LEFT):
+*> the packet is sent to every player in play (16 §4.9, 05b).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMDA.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ID-STATE            BINARY-LONG VALUE 130.
+ 01 WS-ID-STEP             BINARY-LONG VALUE 131.
+ 01 WS-RATE                FLOAT-SHORT.
+ 01 WS-EVERY               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     IF L-KIND = 1
+         MOVE BT-RATE TO WS-RATE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID-STATE
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-RATE
+         CALL "PB-PUT-BOOL" USING PB-BUFFER BT-FROZEN
+     ELSE
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID-STEP
+         CALL "PB-PUT-VARINT" USING PB-BUFFER BT-STEP-LEFT
+     END-IF
+     CALL "BA-SEND" USING PB-BUFFER WS-EVERY
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM BT-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-TICK.
+*> tick query | rate <rate> | step [<time> | stop] | sprint <time> | sprint stop | freeze | unfreeze (16 §4.9, level 3): the state of the tick manager
+*> (BRCMDA.cpy; the tick loop of the core does not read it yet: BLOCKED outside this file). query tells the state line, the rate lines and the percentiles
+*> (not broadcast; no tick is measured here, so the average and the percentiles are 0.0 and the sample count 0; the result is the rate as an integer);
+*> rate sets it (Ticking State sent; commands.tick.rate.success; the result is the rate as an integer); step needs a frozen game (else
+*> commands.tick.step.fail), sends Ticking Step and tells commands.tick.step.success [ticks]; step stop and sprint stop fail with .stop.fail when nothing is
+*> in progress; sprint tells commands.tick.status.sprinting; freeze and unfreeze first end a sprint and a step, send Ticking State and tell
+*> commands.tick.status.frozen / .running; the results of the others are 1 (freeze 1, unfreeze 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY BRCMDA.
+ COPY PROTO.
+ 01 WS-NAME-QUERY          PIC X(32) VALUE "query".
+ 01 WS-NAME-RATE           PIC X(32) VALUE "rate".
+ 01 WS-NAME-STEP           PIC X(32) VALUE "step".
+ 01 WS-NAME-STOP           PIC X(32) VALUE "stop".
+ 01 WS-NAME-SPRINT         PIC X(32) VALUE "sprint".
+ 01 WS-NAME-FREEZE         PIC X(32) VALUE "freeze".
+ 01 WS-NAME-TIME           PIC X(32) VALUE "time".
+ 01 WS-L-QUERY             BINARY-LONG.
+ 01 WS-L-RATE              BINARY-LONG.
+ 01 WS-L-STEP              BINARY-LONG.
+ 01 WS-L-STOP              BINARY-LONG.
+ 01 WS-L-SPRINT            BINARY-LONG.
+ 01 WS-L-FREEZE            BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-KIND-FLOAT          BINARY-LONG VALUE 1.
+ 01 WS-INT-ZERO            BINARY-DOUBLE VALUE 0.
+ 01 WS-ZERO-INF            BINARY-LONG VALUE 0.
+ 01 WS-NUMBER              PIC X(32).
+ 01 WS-NUMBER-LENGTH       BINARY-LONG.
+ 01 WS-TARGET              PIC X(32).
+ 01 WS-TARGET-LENGTH       BINARY-LONG.
+ 01 WS-ZERO-TEXT           PIC X(32) VALUE "0.0".
+ 01 WS-ZERO-LENGTH         BINARY-LONG VALUE 3.
+ 01 WS-ZERO-COUNT          PIC X(32) VALUE "0".
+ 01 WS-ONE-LENGTH          BINARY-LONG VALUE 1.
+ 01 WS-SCALED              BINARY-DOUBLE.
+ 01 WS-DECIMALS            BINARY-LONG VALUE 1.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-STATE-KIND          BINARY-LONG VALUE 1.
+ 01 WS-STEP-KIND           BINARY-LONG VALUE 2.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The rate of BT-RATE as text in WS-NUMBER (a float: 20.0) and the target milliseconds per tick in WS-TARGET.
+ RATE-TEXTS.
+     CALL "BR-NUMBER-TEXT" USING WS-KIND-FLOAT WS-INT-ZERO BT-RATE WS-ZERO-INF WS-NUMBER WS-NUMBER-LENGTH
+     COMPUTE WS-SCALED ROUNDED = 10000 / BT-RATE
+     CALL "BA-FIXED" USING WS-SCALED WS-DECIMALS WS-TARGET WS-TARGET-LENGTH.
+
+ QUERY-STATE.
+     PERFORM RATE-TEXTS
+     EVALUATE TRUE
+         WHEN BT-SPRINT-LEFT > 0
+             MOVE "commands.tick.status.sprinting" TO WS-KEY
+         WHEN BT-FROZEN = 1
+             MOVE "commands.tick.status.frozen" TO WS-KEY
+         WHEN OTHER
+             MOVE "commands.tick.status.running" TO WS-KEY
+     END-EVALUATE
+     CALL "BA-SAY" USING WS-KEY WS-QUIET
+     IF BT-SPRINT-LEFT > 0
+         MOVE "commands.tick.query.rate.sprinting" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-TEXT WS-ZERO-LENGTH
+     ELSE
+         MOVE "commands.tick.query.rate.running" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-TEXT WS-ZERO-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TARGET WS-TARGET-LENGTH
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     MOVE "commands.tick.query.percentiles" TO WS-KEY
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-TEXT WS-ZERO-LENGTH
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-TEXT WS-ZERO-LENGTH
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-TEXT WS-ZERO-LENGTH
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ZERO-COUNT WS-ONE-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     MOVE BT-RATE TO BR-R-RESULT.
+
+ SET-RATE.
+     CALL "BX-FIND" USING WS-NAME-RATE WS-INDEX
+     MOVE BA-DVAL(WS-INDEX) TO BT-RATE
+     CALL "BT-SEND" USING WS-STATE-KIND
+     PERFORM RATE-TEXTS
+     MOVE "commands.tick.rate.success" TO WS-KEY
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+     MOVE BT-RATE TO BR-R-RESULT.
+
+ STEP-GAME.
+     IF BT-FROZEN = 0
+         MOVE "commands.tick.step.fail" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE 1 TO BT-STEP-LEFT
+         CALL "BX-FIND" USING WS-NAME-TIME WS-INDEX
+         IF WS-INDEX > 0
+             MOVE BA-IVAL(WS-INDEX) TO BT-STEP-LEFT
+         END-IF
+         CALL "BT-SEND" USING WS-STEP-KIND
+         MOVE "commands.tick.step.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-INT" USING PB-TEXT BT-STEP-LEFT
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF.
+
+ STEP-STOP.
+     IF BT-STEP-LEFT = 0
+         MOVE "commands.tick.step.stop.fail" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE 0 TO BT-STEP-LEFT
+         MOVE "commands.tick.step.stop.success" TO WS-KEY
+         CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF.
+
+ SPRINT-STOP.
+     IF BT-SPRINT-LEFT = 0
+         MOVE "commands.tick.sprint.stop.fail" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE 0 TO BT-SPRINT-LEFT
+         MOVE "commands.tick.sprint.stop.success" TO WS-KEY
+         CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+         MOVE 1 TO BR-R-RESULT
+     END-IF.
+
+ SPRINT-START.
+     CALL "BX-FIND" USING WS-NAME-TIME WS-INDEX
+     MOVE BA-IVAL(WS-INDEX) TO BT-SPRINT-LEFT
+     MOVE "commands.tick.status.sprinting" TO WS-KEY
+     CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+     MOVE 1 TO BR-R-RESULT.
+
+*> freeze (WS-L-FREEZE 1 with the literal freeze) or unfreeze: a sprint and a step end first.
+ FREEZE-GAME.
+     MOVE 0 TO BT-SPRINT-LEFT BT-STEP-LEFT
+     CALL "BX-LIT" USING WS-NAME-FREEZE WS-L-FREEZE
+     IF WS-L-FREEZE > 0
+         MOVE 1 TO BT-FROZEN
+         MOVE "commands.tick.status.frozen" TO WS-KEY
+     ELSE
+         MOVE 0 TO BT-FROZEN
+         MOVE "commands.tick.status.running" TO WS-KEY
+     END-IF
+     CALL "BT-SEND" USING WS-STATE-KIND
+     CALL "BA-SAY" USING WS-KEY WS-BROADCAST
+     MOVE BT-FROZEN TO BR-R-RESULT.
+
+ MAIN-LINE.
+     CALL "BA-ENSURE"
+     CALL "BX-LIT" USING WS-NAME-QUERY WS-L-QUERY
+     CALL "BX-LIT" USING WS-NAME-RATE WS-L-RATE
+     CALL "BX-LIT" USING WS-NAME-STEP WS-L-STEP
+     CALL "BX-LIT" USING WS-NAME-STOP WS-L-STOP
+     CALL "BX-LIT" USING WS-NAME-SPRINT WS-L-SPRINT
+     EVALUATE TRUE
+         WHEN WS-L-QUERY > 0
+             PERFORM QUERY-STATE
+         WHEN WS-L-RATE > 0
+             PERFORM SET-RATE
+         WHEN WS-L-STEP > 0 AND WS-L-STOP > 0
+             PERFORM STEP-STOP
+         WHEN WS-L-STEP > 0
+             PERFORM STEP-GAME
+         WHEN WS-L-SPRINT > 0 AND WS-L-STOP > 0
+             PERFORM SPRINT-STOP
+         WHEN WS-L-SPRINT > 0
+             PERFORM SPRINT-START
+         WHEN OTHER
+             PERFORM FREEZE-GAME
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-TICK.
+*> The forms of tick (16 §4.9).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 3.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-TICK.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "tick query" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick rate <rate:float:1:10000>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick step" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick step stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick step <time:time:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick sprint <time:time:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick sprint stop" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick freeze" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tick unfreeze" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BB-ENSURE.
+*> No arguments: the borders of BRBORDER.cpy get the defaults of 33 §7.1 the first time.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRBORDER.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     IF BB-INIT = 0
+         MOVE 1 TO BB-INIT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             MOVE 0 TO BB-CX(WS-I) BB-CZ(WS-I) BB-LEFT(WS-I) BB-TOTAL(WS-I)
+             MOVE 59999968 TO BB-SIZE(WS-I) BB-FROM(WS-I) BB-TARGET(WS-I)
+             MOVE 0.2 TO BB-DAMAGE(WS-I)
+             MOVE 5 TO BB-BUFFER(WS-I) BB-WARN-BLOCKS(WS-I)
+             MOVE 300 TO BB-WARN-TIME(WS-I)
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM BB-ENSURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BB-TICK.
+*> No arguments: every border that is moving takes one tick (33 §7.3): the ticks left drop by one and the size is the point of the line from the start to
+*> the target at the ticks done; at 0 the border is static at the target. (Not called by the tick loop of the core yet.)
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRBORDER.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "BB-ENSURE"
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         IF BB-LEFT(WS-I) > 0
+             SUBTRACT 1 FROM BB-LEFT(WS-I)
+             COMPUTE WS-DONE = BB-TOTAL(WS-I) - BB-LEFT(WS-I)
+             IF BB-LEFT(WS-I) = 0
+                 MOVE BB-TARGET(WS-I) TO BB-SIZE(WS-I)
+             ELSE
+                 COMPUTE BB-SIZE(WS-I) = BB-FROM(WS-I) + (BB-TARGET(WS-I) - BB-FROM(WS-I)) * WS-DONE / BB-TOTAL(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BB-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BB-PACKET.
+*> USING kind (1 Set Border Center 0x5A, 2 Set Border Lerp Size 0x5B: the size before and the target, the length in milliseconds (ticks * 50), 3 Set
+*> Border Size 0x5C, 4 Set Border Warning Delay 0x5D, 5 Set Border Warning Distance 0x5E), dimension row: the packet is sent to the players of that
+*> dimension (16 §4.11).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRBORDER.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-MILLIS              BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-DIM.
+     COMPUTE WS-ID = 89 + L-KIND
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     EVALUATE L-KIND
+         WHEN 1
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER BB-CX(L-DIM)
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER BB-CZ(L-DIM)
+         WHEN 2
+             COMPUTE WS-MILLIS = BB-TOTAL(L-DIM) * 50
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER BB-FROM(L-DIM)
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER BB-TARGET(L-DIM)
+             CALL "PB-PUT-VARLONG" USING PB-BUFFER WS-MILLIS
+         WHEN 3
+             CALL "PB-PUT-DOUBLE" USING PB-BUFFER BB-SIZE(L-DIM)
+         WHEN 4
+             CALL "PB-PUT-VARINT" USING PB-BUFFER BB-WARN-TIME(L-DIM)
+         WHEN OTHER
+             CALL "PB-PUT-VARINT" USING PB-BUFFER BB-WARN-BLOCKS(L-DIM)
+     END-EVALUATE
+     CALL "BA-SEND" USING PB-BUFFER L-DIM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM BB-PACKET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-WORLDBORDER.
+*> worldborder get | set <size> [<time>] | add <size> [<time>] | center <x z> | damage amount <n> | damage buffer <n> | warning distance <n> | warning time <time>
+*> (16 §4.11, level 2) on the border of the source's dimension (BRBORDER.cpy, 33 §7): get tells the size with one decimal (not broadcast; the result is the
+*> size rounded); set and add (the size plus the distance, or the target of a move in progress plus it, with the ticks left plus the time) check the size
+*> (the same: set.failed.nochange; under 1: .small; over 59999968: .big [59999968]) and then change it at once (Set Border Size, .set.immediate) or, with a time
+*> over 0 ticks, move it (Set Border Lerp Size, .set.grow or .set.shrink [size, seconds with two decimals]); the result is the change of the size truncated;
+*> center takes x and z (relative to the source allowed; beyond 29999984: set.failed.far; the same centre: center.failed; Set Border Center; result 0);
+*> damage amount and buffer (result: the value truncated) and warning distance (Set Border Warning Distance) and warning time (ticks; Set Border Warning
+*> Delay: the ticks; the message shows seconds; result: the argument) refuse the value they have (....failed). The changes are broadcast.
+*> Initialize Border at the join is BLOCKED outside this file (the join sequence).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ COPY BRBORDER.
+ COPY PROTO.
+ 01 WS-NAMES.
+    05 WS-NAME-GET         PIC X(32) VALUE "get".
+    05 WS-NAME-SET         PIC X(32) VALUE "set".
+    05 WS-NAME-ADD         PIC X(32) VALUE "add".
+    05 WS-NAME-CENTER      PIC X(32) VALUE "center".
+    05 WS-NAME-DAMAGE      PIC X(32) VALUE "damage".
+    05 WS-NAME-AMOUNT      PIC X(32) VALUE "amount".
+    05 WS-NAME-DISTANCE    PIC X(32) VALUE "distance".
+    05 WS-NAME-TIME        PIC X(32) VALUE "time".
+    05 WS-NAME-POS         PIC X(32) VALUE "pos".
+    05 WS-NAME-DAMAGE-ARG  PIC X(32) VALUE "damagePerBlock".
+ 01 WS-LITS.
+    05 WS-L-GET            BINARY-LONG.
+    05 WS-L-SET            BINARY-LONG.
+    05 WS-L-ADD            BINARY-LONG.
+    05 WS-L-CENTER         BINARY-LONG.
+    05 WS-L-DAMAGE         BINARY-LONG.
+    05 WS-L-AMOUNT         BINARY-LONG.
+    05 WS-L-DISTANCE       BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-KIND-FLOAT          BINARY-LONG VALUE 1.
+ 01 WS-KIND-DOUBLE         BINARY-LONG VALUE 2.
+ 01 WS-INT-ZERO            BINARY-DOUBLE VALUE 0.
+ 01 WS-ZERO-INF            BINARY-LONG VALUE 0.
+ 01 WS-NUMBER              PIC X(32).
+ 01 WS-NUMBER-LENGTH       BINARY-LONG.
+ 01 WS-NUMBER2             PIC X(32).
+ 01 WS-NUMBER2-LENGTH      BINARY-LONG.
+ 01 WS-SCALED              BINARY-DOUBLE.
+ 01 WS-D1                  BINARY-LONG VALUE 1.
+ 01 WS-D2                  BINARY-LONG VALUE 2.
+ 01 WS-NEW                 FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-MAX-SIZE            FLOAT-LONG VALUE 59999968.
+ 01 WS-XK                 BINARY-DOUBLE.
+ 01 WS-ZK                 BINARY-DOUBLE.
+ 01 WS-MAX-K               BINARY-DOUBLE VALUE 29999984000.
+ 01 WS-MIN-K               BINARY-DOUBLE VALUE -29999984000.
+*> (a float comparison of GnuCOBOL is fuzzy by 1e-7: the limit is checked on whole thousandths)
+ 01 WS-FAR                 BINARY-LONG.
+ 01 WS-MAX-TEXT            PIC X(64) VALUE "59999968".
+ 01 WS-CENTER-TEXT         PIC X(64) VALUE "29999984".
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-N-ARGS              BINARY-LONG VALUE 1.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-PACKET-CENTER       BINARY-LONG VALUE 1.
+ 01 WS-PACKET-LERP         BINARY-LONG VALUE 2.
+ 01 WS-PACKET-SIZE         BINARY-LONG VALUE 3.
+ 01 WS-PACKET-DELAY        BINARY-LONG VALUE 4.
+ 01 WS-PACKET-DISTANCE     BINARY-LONG VALUE 5.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The text WS-KEY with the arguments WS-NUMBER and, when WS-NUMBER2-LENGTH > 0, WS-NUMBER2, broadcast.
+ TELL-NUMBERS.
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+     IF WS-NUMBER2-LENGTH > 0
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER2 WS-NUMBER2-LENGTH
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+*> WS-NUMBER: WS-NEW with one decimal.
+ SIZE-TEXT.
+     COMPUTE WS-SCALED ROUNDED = WS-NEW * 10
+     CALL "BA-FIXED" USING WS-SCALED WS-D1 WS-NUMBER WS-NUMBER-LENGTH.
+
+ GET-SIZE.
+     MOVE BB-SIZE(WS-DIM) TO WS-NEW
+     PERFORM SIZE-TEXT
+     MOVE "commands.worldborder.get" TO WS-KEY
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+     COMPUTE BR-R-RESULT = WS-NEW + 0.5.
+
+*> set or add: the new size WS-NEW and the ticks WS-TICKS are checked and applied.
+ SET-SIZE.
+     CALL "BX-FIND" USING WS-NAME-DISTANCE WS-INDEX
+     MOVE 0 TO WS-TICKS
+     IF WS-L-ADD > 0
+         MOVE BB-SIZE(WS-DIM) TO WS-NEW
+         IF BB-LEFT(WS-DIM) > 0
+             MOVE BB-TARGET(WS-DIM) TO WS-NEW
+         END-IF
+         ADD BA-DVAL(WS-INDEX) TO WS-NEW
+     ELSE
+         MOVE BA-DVAL(WS-INDEX) TO WS-NEW
+     END-IF
+     CALL "BX-FIND" USING WS-NAME-TIME WS-INDEX
+     IF WS-INDEX > 0
+         MOVE BA-IVAL(WS-INDEX) TO WS-TICKS
+         IF WS-L-ADD > 0
+             ADD BB-LEFT(WS-DIM) TO WS-TICKS
+         END-IF
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-NEW = BB-SIZE(WS-DIM)
+             MOVE "commands.worldborder.set.failed.nochange" TO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN WS-NEW < 1
+             MOVE "commands.worldborder.set.failed.small" TO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN WS-NEW > WS-MAX-SIZE
+             MOVE "commands.worldborder.set.failed.big" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-MAX-TEXT TO WS-A1
+             MOVE 8 TO WS-L1
+             CALL "BA-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+         WHEN OTHER
+             PERFORM APPLY-SIZE
+     END-EVALUATE.
+
+ APPLY-SIZE.
+     PERFORM SIZE-TEXT
+     MOVE 0 TO WS-NUMBER2-LENGTH
+     COMPUTE BR-R-RESULT = WS-NEW - BB-SIZE(WS-DIM)
+     IF WS-TICKS > 0
+         MOVE BB-SIZE(WS-DIM) TO BB-FROM(WS-DIM)
+         MOVE WS-NEW TO BB-TARGET(WS-DIM)
+         MOVE WS-TICKS TO BB-TOTAL(WS-DIM) BB-LEFT(WS-DIM)
+         COMPUTE WS-SCALED = WS-TICKS * 5
+         CALL "BA-FIXED" USING WS-SCALED WS-D2 WS-NUMBER2 WS-NUMBER2-LENGTH
+         IF WS-NEW < BB-SIZE(WS-DIM)
+             MOVE "commands.worldborder.set.shrink" TO WS-KEY
+         ELSE
+             MOVE "commands.worldborder.set.grow" TO WS-KEY
+         END-IF
+         CALL "BB-PACKET" USING WS-PACKET-LERP WS-DIM
+     ELSE
+         MOVE WS-NEW TO BB-SIZE(WS-DIM) BB-FROM(WS-DIM) BB-TARGET(WS-DIM)
+         MOVE 0 TO BB-LEFT(WS-DIM) BB-TOTAL(WS-DIM)
+         MOVE "commands.worldborder.set.immediate" TO WS-KEY
+         CALL "BB-PACKET" USING WS-PACKET-SIZE WS-DIM
+     END-IF
+     PERFORM TELL-NUMBERS.
+
+*> WS-NUMBER: WS-NEW as a double (Java text).
+ DOUBLE-TEXT.
+     CALL "BR-NUMBER-TEXT" USING WS-KIND-DOUBLE WS-INT-ZERO WS-NEW WS-ZERO-INF WS-NUMBER WS-NUMBER-LENGTH.
+
+ SET-CENTER.
+     CALL "BX-FIND" USING WS-NAME-POS WS-INDEX
+     MOVE BA-NUM(WS-INDEX, 1) TO WS-X
+     IF BA-KIND(WS-INDEX, 1) = 1
+         ADD BS-X TO WS-X
+     END-IF
+     MOVE BA-NUM(WS-INDEX, 2) TO WS-Z
+     IF BA-KIND(WS-INDEX, 2) = 1
+         ADD BS-Z TO WS-Z
+     END-IF
+     COMPUTE WS-XK = WS-X * 1000
+     COMPUTE WS-ZK = WS-Z * 1000
+     MOVE 0 TO WS-FAR
+     IF WS-XK > WS-MAX-K OR WS-XK < WS-MIN-K OR WS-ZK > WS-MAX-K OR WS-ZK < WS-MIN-K
+         MOVE 1 TO WS-FAR
+     END-IF
+     EVALUATE TRUE
+         WHEN WS-FAR = 1
+             MOVE "commands.worldborder.set.failed.far" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-CENTER-TEXT TO WS-A1
+             MOVE 8 TO WS-L1
+             CALL "BA-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+         WHEN WS-X = BB-CX(WS-DIM) AND WS-Z = BB-CZ(WS-DIM)
+             MOVE "commands.worldborder.center.failed" TO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN OTHER
+             MOVE WS-X TO BB-CX(WS-DIM)
+             MOVE WS-Z TO BB-CZ(WS-DIM)
+             CALL "BB-PACKET" USING WS-PACKET-CENTER WS-DIM
+             MOVE WS-X TO WS-NEW
+             PERFORM DOUBLE-TEXT
+             MOVE WS-NUMBER TO WS-NUMBER2
+             MOVE WS-NUMBER-LENGTH TO WS-NUMBER2-LENGTH
+             MOVE WS-Z TO WS-NEW
+             PERFORM DOUBLE-TEXT
+             MOVE "commands.worldborder.center.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER2 WS-NUMBER2-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NUMBER WS-NUMBER-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE 0 TO BR-R-RESULT
+     END-EVALUATE.
+
+*> damage amount (WS-L-AMOUNT 1) or damage buffer: a float of at least 0.
+ SET-DAMAGE.
+     IF WS-L-AMOUNT > 0
+         CALL "BX-FIND" USING WS-NAME-DAMAGE-ARG WS-INDEX
+     ELSE
+         CALL "BX-FIND" USING WS-NAME-DISTANCE WS-INDEX
+     END-IF
+     MOVE BA-DVAL(WS-INDEX) TO WS-NEW
+     CALL "BR-NUMBER-TEXT" USING WS-KIND-FLOAT WS-INT-ZERO WS-NEW WS-ZERO-INF WS-NUMBER WS-NUMBER-LENGTH
+     MOVE 0 TO WS-NUMBER2-LENGTH
+     EVALUATE TRUE
+         WHEN WS-L-AMOUNT > 0 AND WS-NEW = BB-DAMAGE(WS-DIM)
+             MOVE "commands.worldborder.damage.amount.failed" TO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN WS-L-AMOUNT > 0
+             MOVE WS-NEW TO BB-DAMAGE(WS-DIM)
+             MOVE "commands.worldborder.damage.amount.success" TO WS-KEY
+             PERFORM TELL-NUMBERS
+             MOVE WS-NEW TO BR-R-RESULT
+         WHEN WS-NEW = BB-BUFFER(WS-DIM)
+             MOVE "commands.worldborder.damage.buffer.failed" TO WS-KEY
+             CALL "BA-RAISE-PLAIN" USING WS-KEY
+         WHEN OTHER
+             MOVE WS-NEW TO BB-BUFFER(WS-DIM)
+             MOVE "commands.worldborder.damage.buffer.success" TO WS-KEY
+             PERFORM TELL-NUMBERS
+             MOVE WS-NEW TO BR-R-RESULT
+     END-EVALUATE.
+
+ SET-WARNING-DISTANCE.
+     CALL "BX-FIND" USING WS-NAME-DISTANCE WS-INDEX
+     MOVE BA-IVAL(WS-INDEX) TO WS-INT
+     IF WS-INT = BB-WARN-BLOCKS(WS-DIM)
+         MOVE "commands.worldborder.warning.distance.failed" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE WS-INT TO BB-WARN-BLOCKS(WS-DIM)
+         CALL "BB-PACKET" USING WS-PACKET-DISTANCE WS-DIM
+         MOVE "commands.worldborder.warning.distance.success" TO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-INT
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-INT TO BR-R-RESULT
+     END-IF.
+
+ SET-WARNING-TIME.
+     CALL "BX-FIND" USING WS-NAME-TIME WS-INDEX
+     MOVE BA-IVAL(WS-INDEX) TO WS-INT
+     IF WS-INT = BB-WARN-TIME(WS-DIM)
+         MOVE "commands.worldborder.warning.time.failed" TO WS-KEY
+         CALL "BA-RAISE-PLAIN" USING WS-KEY
+     ELSE
+         MOVE WS-INT TO BB-WARN-TIME(WS-DIM)
+         CALL "BB-PACKET" USING WS-PACKET-DELAY WS-DIM
+         COMPUTE WS-SCALED = WS-INT * 5
+         CALL "BA-FIXED" USING WS-SCALED WS-D2 WS-NUMBER WS-NUMBER-LENGTH
+         MOVE 0 TO WS-NUMBER2-LENGTH
+         MOVE "commands.worldborder.warning.time.success" TO WS-KEY
+         PERFORM TELL-NUMBERS
+         MOVE WS-INT TO BR-R-RESULT
+     END-IF.
+
+ MAIN-LINE.
+     CALL "BB-ENSURE"
+     MOVE BS-DIM TO WS-DIM
+     CALL "BX-LIT" USING WS-NAME-GET WS-L-GET
+     CALL "BX-LIT" USING WS-NAME-SET WS-L-SET
+     CALL "BX-LIT" USING WS-NAME-ADD WS-L-ADD
+     CALL "BX-LIT" USING WS-NAME-CENTER WS-L-CENTER
+     CALL "BX-LIT" USING WS-NAME-DAMAGE WS-L-DAMAGE
+     CALL "BX-LIT" USING WS-NAME-AMOUNT WS-L-AMOUNT
+     CALL "BX-LIT" USING WS-NAME-DISTANCE WS-L-DISTANCE
+     EVALUATE TRUE
+         WHEN WS-L-GET > 0
+             PERFORM GET-SIZE
+         WHEN WS-L-SET > 0 OR WS-L-ADD > 0
+             PERFORM SET-SIZE
+         WHEN WS-L-CENTER > 0
+             PERFORM SET-CENTER
+         WHEN WS-L-DAMAGE > 0
+             PERFORM SET-DAMAGE
+         WHEN WS-L-DISTANCE > 0
+             PERFORM SET-WARNING-DISTANCE
+         WHEN OTHER
+             PERFORM SET-WARNING-TIME
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-WORLDBORDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-WORLDBORDER.
+*> The forms of worldborder (16 §4.11).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-WORLDBORDER.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "worldborder get" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder set <distance:double:-59999968:59999968>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder set <distance:double:-59999968:59999968> <time:time:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder add <distance:double:-59999968:59999968>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder add <distance:double:-59999968:59999968> <time:time:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder center <pos:vec2>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder damage amount <damagePerBlock:float:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder damage buffer <distance:float:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder warning distance <distance:int:0:>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "worldborder warning time <time:time:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-WORLDBORDER.
