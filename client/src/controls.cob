@@ -90,13 +90,13 @@
      IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-ITEM > 0
          CALL "BOOK-USE-CHECK" USING CLIENT-STATE WS-ITEM
      END-IF
-*>   Use: a block item placed against the face, a glowtube toggled, a goto_pad used; otherwise
-*>   a food item held on the world screen is eaten.
+*>   Use: Use Item On is sent for any block aimed at, whatever the hand holds (the server decides: it opens a menu, toggles a switch,
+*>   places the held block or does nothing; the sneaking rule is the server's, 29 section 9). A food item or a bucket held on the
+*>   world screen then also sends Use Item (eaten, or the fluid ray), which the server answers when the block did not take the click.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
+         CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
+     END-IF
      EVALUATE TRUE
-         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND TG-HIT = 1
-                 AND (WS-IBLOCK = 1 OR WS-STATE = 13 OR WS-STATE = 14
-                 OR WS-STATE = 16)
-             CALL "CONTROLS-SEND-USE" USING CLIENT-STATE
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD
                  AND WS-IFOOD > 0 AND PL-EATING = 0
              CALL "CONTROLS-SEND-EAT" USING CLIENT-STATE

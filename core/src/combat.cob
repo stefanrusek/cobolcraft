@@ -628,6 +628,48 @@
  END PROGRAM COMBAT-SWEEP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-MOB-KNOCKBACK.
+*> USING mob entity row, attacker player row, extra knockback K (thousandths, 0 none): the knockback of a fresh hit on a mob (17 section 4.6): the mob's motion is
+*> halved and 0.4 away from the attacker is added horizontally (the line from the attacker to the mob; the attacker's facing when they stand on one
+*> spot), then K along the attacker's facing; a mob on the ground also rises (vertical speed min(0.4, speed / 2 + 0.4)). The motion decays in the mob's step
+*> (EN-VX, EN-VZ, EN-VY of core/copy/CORESTATE.cpy). The mob's knockback resistance is not applied (no attribute table of it is kept).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-RAD                 FLOAT-LONG.
+ 01 WS-PI                  FLOAT-LONG VALUE 3.14159265358979.
+ LINKAGE SECTION.
+ 01 L-MOB                  BINARY-LONG.
+ 01 L-ATTACKER             BINARY-LONG.
+ 01 L-K                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-MOB L-ATTACKER L-K.
+     MOVE PL-YAW(L-ATTACKER) TO WS-YAW
+     COMPUTE WS-RAD = WS-YAW * WS-PI / 180
+     COMPUTE WS-DX = EN-X(L-MOB) - PL-X(L-ATTACKER)
+     COMPUTE WS-DZ = EN-Z(L-MOB) - PL-Z(L-ATTACKER)
+     COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
+     IF WS-LEN < 0.0001
+         COMPUTE WS-DX = 0 - FUNCTION SIN(WS-RAD)
+         COMPUTE WS-DZ = FUNCTION COS(WS-RAD)
+         MOVE 1 TO WS-LEN
+     END-IF
+     COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) / 2 + WS-DX / WS-LEN * 0.4
+     COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) / 2 + WS-DZ / WS-LEN * 0.4
+     IF L-K > 0
+         COMPUTE EN-VX(L-MOB) = EN-VX(L-MOB) - FUNCTION SIN(WS-RAD) * L-K / 1000
+         COMPUTE EN-VZ(L-MOB) = EN-VZ(L-MOB) + FUNCTION COS(WS-RAD) * L-K / 1000
+     END-IF
+     IF EN-ON-GROUND(L-MOB) = 1
+         COMPUTE EN-VY(L-MOB) = FUNCTION MIN(0.4, EN-VY(L-MOB) / 2 + 0.4)
+     END-IF
+     GOBACK.
+ END PROGRAM COMBAT-MOB-KNOCKBACK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. COMBAT-ATTACK.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -685,6 +727,7 @@
  01 WS-K                   BINARY-LONG.
  01 WS-KB-LEVEL            BINARY-LONG.
  01 WS-MOB-AMOUNT          BINARY-LONG.
+ 01 WS-HEALTH-BEFORE       BINARY-LONG.
  01 WS-COMPONENT           PIC X(48).
  01 WS-FALLM               BINARY-LONG.
  01 WS-SMASH               BINARY-LONG.
@@ -793,8 +836,18 @@
      IF WS-TARGET = 0
          MOVE CAUSE-PLAYER TO WS-CAUSE
          COMPUTE WS-MOB-AMOUNT ROUNDED = FUNCTION MAX(1, WS-TOTAL / 1000)
+         MOVE EN-HEALTH(L-ENTITY) TO WS-HEALTH-BEFORE
          CALL "HEALTH-MOB-DAMAGE" USING L-ENTITY WS-MOB-AMOUNT WS-CAUSE L-ROW
          MOVE 1 TO WS-RESULT
+*>       A fresh hit pushes the mob (17 section 4.6): the health fell and the hurt window was just opened.
+         IF EN-HEALTH(L-ENTITY) < WS-HEALTH-BEFORE AND EN-HEALTH(L-ENTITY) > 0
+             MOVE "minecraft:knockback" TO WS-COMPONENT
+             MOVE 0 TO WS-START
+             CALL "COMBAT-ENCHANT-SUM" USING WS-HANDLE WS-COMPONENT ENCH-CTX WS-START WS-SUM
+             COMPUTE WS-KB-LEVEL = WS-SUM / 10000
+             CALL "TOOL-ATTACK-KNOCKBACK" USING WS-ZERO WS-KB-LEVEL WS-SPRINT-KB WS-K
+             CALL "COMBAT-MOB-KNOCKBACK" USING L-ENTITY L-ROW WS-K
+         END-IF
      ELSE
          CALL "HEALTH-HURT" USING WS-TARGET WS-TOTAL CAUSE-PLAYER PL-ENTITY-ID(L-ROW) L-ROW WS-RESULT
      END-IF

@@ -193,6 +193,12 @@
      IF WS-WET = 1
          MOVE PL-Y(WS-ROW) TO PL-FALL-START(WS-ROW)
      END-IF
+*>   A player whose box is inside a climbable block (ladder, vines, scaffolding; 13 section 1.3) has no fall either: the fall distance is
+*>   reset while the player climbs, so landing after climbing down costs nothing (Entity.checkFallDamage; a flying or creative player has none).
+     CALL "MOVE-CLIMBING" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW) WS-CLIMBING
+     IF WS-CLIMBING = 1
+         MOVE PL-Y(WS-ROW) TO PL-FALL-START(WS-ROW)
+     END-IF
      MOVE 0 TO WS-FALL
      IF PL-ON-GROUND(WS-ROW) = 1
          COMPUTE WS-FALL = PL-FALL-START(WS-ROW) - PL-Y(WS-ROW)

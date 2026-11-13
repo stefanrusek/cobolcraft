@@ -349,6 +349,7 @@
  01 WS-OPENED              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
+ 01 WS-SWITCH              BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -381,8 +382,12 @@
      ELSE
          CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
      END-IF
+*>   A lever, button, door, trapdoor or fence gate takes the click (core/src/use-switch.cob).
+     CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
      EVALUATE TRUE
          WHEN WS-TOOL = 1
+             CONTINUE
+         WHEN WS-SWITCH = 1
              CONTINUE
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
