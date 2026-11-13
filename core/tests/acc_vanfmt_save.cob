@@ -80,8 +80,11 @@
      MOVE "data.minecraft:overworld.total_ticks" TO WS-PATH PERFORM ADD-GET
      MOVE "data.minecraft:the_end.total_ticks" TO WS-PATH PERFORM ADD-GET
      MOVE "DataVersion" TO WS-PATH PERFORM ADD-GET
-     MOVE "acceptance vanfmt when saved then the overworld clock counts 100 ticks and the end clock is kept" TO TL-CASE
-     MOVE "50100 999 5023" TO TL-EXPECTED
+     MOVE "data.minecraft:overworld.rate" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.minecraft:overworld.partial_tick" TO WS-PATH PERFORM ADD-GET
+     MOVE "data.minecraft:overworld.paused" TO WS-PATH PERFORM ADD-GET
+     MOVE "acceptance vanfmt when saved then the overworld clock counts 100 ticks, keeps its rate, partial tick and paused, and the end clock is kept" TO TL-CASE
+     MOVE "50100 999 5023 2.000 0.500 1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "build/vanfmt-folder/data/minecraft/game_rules.dat" TO WS-FILE

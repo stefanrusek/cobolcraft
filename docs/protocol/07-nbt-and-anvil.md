@@ -317,8 +317,10 @@ Both use the region container (§6) and the same compression ids. Each chunk pay
 ## 9. CobolCraft world folder
 
 Sections 1 to 8 describe the vanilla formats. This section is **CobolCraft's own** world folder. It reuses those formats,
-but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it and CobolCraft does not open vanilla saves
-(design README Part 7, decision 9: vanilla-loadable saves are not a goal). Server worlds and single-player worlds use this
+but its `.dat` schemas are not the vanilla ones, so a vanilla server cannot open it. This section is the folder of the **cobolcraft** world type
+(and of the hidden `debug` type, and of standard worlds made by feature 001); a world of the **standard** type, and any folder from a real 26.3 game, is in
+the game's own layout of §10, which CobolCraft opens and writes back (operator request; reconciled with design README Part 7, decision 9, which
+still describes the CobolCraft schemas of this section). Server worlds and single-player worlds use this
 one format (FR-004). The folder holds all of a world's dimensions and is copied as a unit. Everything FR-014 lists as world
 state is saved here and nowhere else.
 
@@ -558,8 +560,8 @@ the one of §9.1 to §9.6, with these fixed points:
 7. Existing feature-001 worlds, which have no `WorldType`, open as `cobolcraft` (world-types §2.1; specs/002-client-polish
    data-model §6), unless the folder holds `dimensions/minecraft/` (world-types §2.1 rule 3). The 26.3 migration of `Time`, weather, clocks and game rules out of `level.dat` is **not** performed.
 
-A vanilla server cannot open a CobolCraft folder and CobolCraft does not open vanilla saves (README Part 7, decision 9).
-Everything in the first table that the artifact does and CobolCraft does not is therefore a documented difference, not a gap.
+A vanilla server cannot open a folder of the CobolCraft layout; CobolCraft opens and writes back the 26.3 layout of §10, and writes it for new standard worlds.
+Everything in the first table that the artifact does and the CobolCraft layout does not is a documented difference of that layout, not a gap.
 
 **Worked examples.**
 
@@ -852,6 +854,21 @@ Each record: `pos` Int Array [x, y, z] (absolute block position, Req), `type` St
 
 ---
 
+### 10.8 What CobolCraft writes in this layout (CobolCraft's own choices, not read from the artifact)
+
+A standard world made by CobolCraft, and any folder opened in this layout, is saved as follows. These are design choices of the vanfmt lane (operator rule: the standard type uses the game's own layout, §9 intro); where a value was never read from the artifact it is the least surprising one.
+
+| Item | Rule |
+|---|---|
+| New standard world | Created in this layout. `level.dat` gets `LevelName`, `GameType`, `spawn`, `Time`, `DataVersion` 5023, `LastPlayed` and the defaults `ServerBrands` (empty list), `WasModded` 0, `Version` (`Name` "26.3", `Id` 5023, `Snapshot` 0, `Series` "main": the name and series are not read from this artifact's runtime, only from its `version.json`), `version_history` [5023], `version` 19133, `allowCommands` (1 in creative), `initialized` 1, `difficulty_settings` (normal, not hardcore, not locked), `DataPacks` (Enabled ["vanilla"], Disabled []) and `enabled_features` ["minecraft:vanilla"] (the namespaced form is inferred; a real snapshot save was seen without this key). No `WorldType`, no `ContentJar`: the type is standard because `Data` is present (world-types §2.1 rule 3a). |
+| Existing folder | `level.dat` is rewritten with the keys CobolCraft owns (`DataVersion`, `GameType`, `spawn`, `Time` = loaded game time + ticks run, `LastPlayed`, `LevelName`) and every other child of `Data` copied unchanged; the old file becomes `level.dat_old`. |
+| Saved-data files | `weather.dat`, `world_clocks.dat` (the overworld `total_ticks` is the core's day time on top of the days read; `partial_tick`, `rate`, `paused` and the other clocks are kept), `game_rules.dat` (rules not at their default, with `minecraft:`; unknown rules kept) and `world_gen_settings.dat` (`seed`; a new file also gets `generate_structures` true and `bonus_chest` false; the `dimensions` map is **not** written for a new world, so the game itself would refuse such a folder, Open question 32) are written at every save. `world_border.dat`, `raids.dat`, `chunk_tickets.dat`, `scoreboard.dat` and the rest are never touched. |
+| Chunks | Saved with the keys CobolCraft models (`DataVersion`, positions, `LastUpdate`, `Status`, `sections` with block states and biomes, `block_entities`, `Heightmaps` of three types, `PostProcessing`); `InhabitedTime`, `structures`, `block_ticks`, `fluid_ticks` and any other key of the chunk as the region file holds it are kept; `isLightOn` is dropped (no light arrays are written). |
+| Entities, block entities | A known entity or block entity keeps the keys of its saved compound that the new compound lacks (the whole compound is held in memory up to 2048 bytes; a larger one loses its extra keys). Entities and block entities of types the core does not hold are written back unchanged (at most 256 per chunk). |
+| poi | A saved chunk's `poi/` payload is rewritten with every section `Valid` 0 and the records unchanged, so the game rescans the sections from the blocks. |
+| Players | `players/data/<offline uuid>.dat`; a file at `players/<uuid>.dat` is still read when the new place has none. |
+| Not kept | `access.dat` is still written (CobolCraft's own, ignored by the game); the real lists live in other files this section does not cover. |
+
 ## Composite types introduced here
 
 None beyond those defined inline above. This file describes byte formats, not packet fields.
@@ -905,3 +922,4 @@ None beyond those defined inline above. This file describes byte formats, not pa
 29. §10.4.10: whether `optionalFieldOf` / `lenientOptionalFieldOf` omit a member that equals its default on write (DFU behaviour) was not read; the same applies to every plain optional member in §10.4 (`Valid`, `free_tickets`, `spawn_delay`, `ticks_left` and similar).
 30. §10.4.11: which ticket types are saved to `chunk_tickets.dat` and which are transient was not traced.
 31. §10.4.5: the default values of the flat generator settings members `lakes` and `features` were not read, nor the element form of `layers`.
+32. §10.8: a new standard world is written without the `dimensions` map of `world_gen_settings.dat`, which §10.4.5 says the game requires; what the game does with such a file (refuse, or rebuild the default dimensions) was not read. The shape of that map for the default standard dimensions is §10.4.5, but CobolCraft does not yet write it.
