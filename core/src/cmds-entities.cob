@@ -2373,3 +2373,124 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SPREADPLAYERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-SET-CAMERA.
+*> USING player row, camera entity id: Set Camera (05b 0x5F, the VarInt network entity id the client views from) sent to the player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 16.
+ 01 WS-PACKET              BINARY-LONG VALUE 95.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ENTITY-ID.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-SET-CAMERA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SPECTATE.
+*> spectate | spectate <target> | spectate <target> <player> (16 §5.4, level 2): the spectating player is the named player, else the source (the console
+*> raises permissions.requires.player). Checks in the order of the catalog: the target is the spectating player itself: commands.spectate.self (only when a
+*> target is typed); the spectating player is not in spectator mode (PL-MODE 3): commands.spectate.not_spectator [its name]; then Set Camera (05b 0x5F) with
+*> the target's entity id (the player's own entity id when there is no target) goes to the spectating player and commands.spectate.success.started [target
+*> name] (or .stopped) is told to the source only (not broadcast). The result is 1. The cannot_spectate check (a client tracking range of 0) is not made:
+*> no cobolcraft entity type has such a range. The spectating player's camera is not kept anywhere else.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-PLAYER         PIC X(32) VALUE "player".
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TARGET-ROWS.
+    05 WS-TARGET-COUNT      BINARY-LONG.
+    05 WS-TARGET-ROW        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SPECTATOR           BINARY-LONG.
+ 01 WS-TARGET              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-TARGETS-OR-SELF" USING WS-NAME-PLAYER WS-ROWS
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-INDEX
+     IF BR-R-FAILED = 0 AND WS-INDEX > 0
+         CALL "BX-RESOLVE" USING WS-INDEX WS-TARGET-ROWS
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE BX-ROW(1) TO WS-SPECTATOR
+         MOVE WS-SPECTATOR TO WS-TARGET
+         IF WS-INDEX > 0
+             MOVE WS-TARGET-ROW(1) TO WS-TARGET
+         END-IF
+         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+         MOVE SPACES TO WS-A1 WS-A2
+         IF WS-INDEX > 0 AND WS-TARGET = WS-SPECTATOR
+             MOVE "commands.spectate.self" TO WS-KEY
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0 AND PL-MODE(WS-SPECTATOR) NOT = 3
+         MOVE "commands.spectate.not_spectator" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+         MOVE PL-NAME(WS-SPECTATOR) TO WS-A1
+         MOVE PL-NAME-LENGTH(WS-SPECTATOR) TO WS-L1
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "CXB-ENTITY-ID" USING WS-TARGET WS-ID
+         CALL "CXB-SET-CAMERA" USING WS-SPECTATOR WS-ID
+         IF WS-INDEX > 0
+             MOVE "commands.spectate.success.started" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CXB-SHOWN" USING WS-TARGET WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+         ELSE
+             MOVE "commands.spectate.success.stopped" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         MOVE 1 TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-SPECTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SPECTATE.
+*> The forms of spectate (16 §5.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SPECTATE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "spectate" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spectate <target:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spectate <target:entity> <player:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SPECTATE.

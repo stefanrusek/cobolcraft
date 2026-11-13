@@ -76,6 +76,8 @@
      MOVE "spectate Alice" TO WS-LINE
      MOVE "commands.spectate.success.started(Alice)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "spectate Alice" TO WS-LINE
+     CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
      MOVE "acceptance US13 /spectate sends Set Camera with the entity id of the target" TO TL-CASE
      CALL "TEST-ID-HEX" USING PL-ENTITY-ID(WS-ALICE-ROW) WS-EXPECTED
      CALL "TA-CHECK-HEX" USING WS-ID-OPAL TL-CASE WS-WANTED WS-EXPECTED
@@ -99,6 +101,8 @@
              MOVE EN-ID(WS-I) TO WS-MOB-ID
          END-IF
      END-PERFORM
+     MOVE "spectate @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1]" TO WS-LINE
+     CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
      MOVE "acceptance US13 /spectate Set Camera carries the id of the mob" TO TL-CASE
      CALL "TEST-ID-HEX" USING WS-MOB-ID WS-EXPECTED
      CALL "TA-CHECK-HEX" USING WS-ID-OPAL TL-CASE WS-WANTED WS-EXPECTED
@@ -117,6 +121,8 @@
      MOVE "spectate" TO WS-LINE
      MOVE "commands.spectate.success.stopped()" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "spectate" TO WS-LINE
+     CALL "TEST-COMMAND" USING WS-ID-OPAL WS-LINE
      MOVE "acceptance US13 /spectate stopping sends Set Camera with the own entity id" TO TL-CASE
      CALL "TEST-ID-HEX" USING PL-ENTITY-ID(WS-OPAL-ROW) WS-EXPECTED
      CALL "TA-CHECK-HEX" USING WS-ID-OPAL TL-CASE WS-WANTED WS-EXPECTED

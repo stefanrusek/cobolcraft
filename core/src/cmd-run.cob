@@ -188,6 +188,8 @@
              CALL "CX-LOOT"
          WHEN BC-ADVANCEMENT
              CALL "CX-ADVANCEMENT"
+         WHEN BC-SPECTATE
+             CALL "CX-SPECTATE"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE
