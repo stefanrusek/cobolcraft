@@ -35,6 +35,8 @@
 *>     the file's lines joined by " | ". No TEST line may be printed between start and stop.
 *>   SVT-UNSTAMP USING text (PIC X(4096)): removes every console time stamp "[HH:MM:SS] "
 *>     (operator-surface §3) from captured text, so a test can compare the lines themselves.
+*>   SVT-FREE-PORT USING port out (BINARY-LONG): a TCP port nothing listens on (listens on port 0 to let
+*>     the system choose, then closes), so a test never binds the default 25565 (CC-0005).
 *>   SVT-HOME: makes the repository root the current directory again (after SVT-SCRATCH).
 *>   SVT-WRITE-CONF USING text (PIC X(4096)): writes ./cobolcraft-server.conf with that text, "|"
 *>     separating lines (trailing spaces of the text dropped, a newline after the last line).
@@ -650,3 +652,19 @@
      MOVE WS-TEXT TO L-TEXT
      GOBACK.
  END PROGRAM SVT-UNSTAMP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-FREE-PORT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PORT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PORT.
+     CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE WS-HANDLE
+         BY REFERENCE L-PORT RETURNING WS-RC
+     CALL STATIC "cc_net_close" USING BY VALUE WS-HANDLE
+     GOBACK.
+ END PROGRAM SVT-FREE-PORT.

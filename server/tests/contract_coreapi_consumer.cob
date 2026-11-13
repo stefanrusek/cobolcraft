@@ -17,7 +17,8 @@
  01 WS-WORLD-DIR           PIC X(16) VALUE "world".
  01 WS-FILE-INFO           PIC X(16).
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
- 01 WS-PORT                BINARY-LONG VALUE 25565.
+ 01 WS-PORT                BINARY-LONG.
+ 01 WS-CONF                PIC X(4096).
  01 WS-CLIENT              BINARY-LONG.
  01 WS-STATUS-CLIENT       BINARY-LONG.
  01 WS-ALICE               BINARY-LONG.
@@ -61,15 +62,23 @@
 
 *>   Start: CORE-WORLD-OPEN of ./world, then listening on the configured port.
      CALL "SVT-SCRATCH" USING WS-SCRATCH
+*>   A free port, never the default (CC-0005).
+     CALL "SVT-FREE-PORT" USING WS-PORT
+     MOVE WS-PORT TO WS-EDIT
+     MOVE SPACES TO WS-CONF
+     STRING "port=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-CONF
+     CALL "SVT-WRITE-CONF" USING WS-CONF
      CALL "SV-START"
      CALL "CORE-STATUS-GET" USING CORE-STATUS
      CALL "SVT-CONNECT" USING WS-PORT WS-CLIENT
      CALL STATIC "cc_net_status" USING BY VALUE WS-CLIENT RETURNING WS-OUTCOME
      MOVE "contract server coreapi consumer SV-START opens ./world with CORE-WORLD-OPEN, then listens "
-         & "on port 25565; the core runs (state 0, nobody online)" TO TL-CASE
+         & "on the configured port; the core runs (state 0, nobody online)" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "world port 25565 accepting run 0 online 0" TO TL-EXPECTED
-     MOVE SPACES TO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     MOVE WS-PORT TO WS-EDIT
+     STRING "world port " FUNCTION TRIM(WS-EDIT) " accepting run 0 online 0" DELIMITED BY SIZE
+         INTO TL-EXPECTED
      CALL "CBL_CHECK_FILE_EXIST" USING WS-WORLD-DIR WS-FILE-INFO
      IF RETURN-CODE = 0
          MOVE "world" TO TL-OBSERVED

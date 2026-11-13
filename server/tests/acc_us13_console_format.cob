@@ -7,7 +7,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  01 WS-SCRATCH             PIC X(256) VALUE "build/server-test-console-format".
- 01 WS-CONF                PIC X(4096) VALUE "port=25575".
+ 01 WS-CONF                PIC X(4096) VALUE "port=25575|world-type=cobolcraft|generated-dir=../../contract/fixtures/content/valid".
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
  01 WS-CAPTURED            PIC X(4096).
  01 WS-COMMAND             PIC X(64) VALUE Z"nosuchcommand".
