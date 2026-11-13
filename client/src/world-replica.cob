@@ -148,6 +148,7 @@
      END-IF
      MOVE 1 TO WR-USED(L-ROW)
      MOVE 0 TO WR-RELEASE(L-ROW)
+     MOVE 0 TO WR-SURF-OK(L-ROW)
      MOVE L-CX TO WR-CX(L-ROW)
      MOVE L-CZ TO WR-CZ(L-ROW)
      SET ADDRESS OF B-CELLS TO WR-ADDR(L-ROW)
@@ -444,6 +445,8 @@
              MOVE CE-STATE(WS-CELL) TO L-STATE
              CALL "LIGHT-GET" USING WR-ADDR(WS-ROW) WS-KIND-SKY WS-LY WS-LX WS-LZ L-SKY
              CALL "LIGHT-GET" USING WR-ADDR(WS-ROW) WS-KIND-BLOCK WS-LY WS-LX WS-LZ L-BLOCK
+*>           CC-0007 stopgap (sky-stopgap.cob): the sky light assumed where the section has none; remove with it.
+             CALL "SKY-STOPGAP-LIGHT" USING CLIENT-STATE WS-ROW WS-LX WS-LY WS-LZ L-SKY
      END-EVALUATE
      GOBACK.
  END PROGRAM WORLD-CELL.
@@ -509,6 +512,8 @@
  01 WS-NZ                  BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -527,6 +532,12 @@
          MOVE L-STATE TO CE-STATE(WS-CELL)
          IF L-STATE < 0 OR L-STATE >= WS-LIMIT
              MOVE 0 TO CE-STATE(WS-CELL)
+         END-IF
+*>       CC-0007 stopgap (sky-stopgap.cob): the column's surface again, the sections its change lights meshed again.
+         IF PL-HAS-SKY = 1
+             COMPUTE WS-LX = L-X - WS-CX * 16
+             COMPUTE WS-LZ = L-Z - WS-CZ * 16
+             CALL "SKY-STOPGAP-RESURFACE" USING CLIENT-STATE WS-ROW WS-LX WS-LZ
          END-IF
          PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 6
              MOVE L-X TO WS-NX

@@ -1291,6 +1291,7 @@ survey (GAP-27). The screen names follow the screen model of data-model §13. Ke
 | `cobolcraft.screen.pack_policy.disabled` | — | Never accept |
 | `cobolcraft.screen.connecting.title` | address | Connecting to %s |
 | `cobolcraft.screen.connecting.joining` | — | Joining the world |
+| `cobolcraft.screen.connecting.loading` | — | Loading terrain... |
 | `cobolcraft.screen.connecting.failed` | address | Could not connect to %s |
 | `cobolcraft.screen.connecting.lost` | — | The connection was lost |
 | `cobolcraft.screen.connecting.timed_out` | — | The server stopped answering |

@@ -471,13 +471,13 @@ All values are per tick. Player rules (13 §1) are the same code path: a mob mov
 
 `MoveControl` (4.4) does not move the mob. It sets `speed` (`setSpeed`, a float) and `zza` (forward input 0 or 1), `xxa` (strafe) and rotates the mob's yaw. `LivingEntity.aiStep` then calls `travel(Vec3(xxa, yya, zza))`. In `travelInAir` and the fluid variants, the input vector is rotated by yaw and added to the velocity scaled by:
 
-- on ground: `speed` x 0.21600002 / F^3 where F is the ground friction value described below, when F > 0.6; when F <= 0.6 it is simply `speed` (read: the bytecode applies the friction division only when the modified friction is above 0.6);
+- on ground: `getFrictionInfluencedSpeed(F)` = `speed` x 0.21600002 / F^3 where F is the ground friction value described below, when F > 0.6; when F <= 0.6 it is simply `speed` (read, `LivingEntity.getFrictionInfluencedSpeed`: the division is applied only when the modified friction is above 0.6). This scalar is only half of the acceleration: `moveRelative` multiplies the (rotated) input vector by it, and for a mob the forward input `zza` is itself `speed` (`Mob.setSpeed` also stores `zza`), so a mob's forward acceleration is `speed` x `speed`, not `speed`;
 - in air: `getFlyingSpeed()`, which **ignores** the `flying_speed` attribute (read): it returns `getSpeed() x 0.1` when the controlling passenger is a Player, otherwise the constant **0.02**. Mobs that fly use `FlyingMoveControl`, which sets `speed` itself (4.4);
 - in water (`travelInWater`) the acceleration is 0.02 (see 3.2).
 
 The input vector length is normalised if above 1 (standard `moveRelative` behaviour, 13 §1.3).
 
-`speed` = `movement_speed` attribute x the goal's `speedModifier` (MoveControl, operation MOVE_TO or JUMPING), so a goal "walk at speed 1.0" moves at the attribute value and a panic goal at 1.25 moves 25% faster. Strafe mode uses `movement_speed x speedModifier` too with speedModifier forced to 0.25 by `strafe()`.
+`speed` = `movement_speed` attribute x the goal's `speedModifier` (MoveControl, operation MOVE_TO or JUMPING). The motion scales with `speed` squared (3.2.1), so a panic goal at 1.25 moves 1.5625 times as fast as a walk goal at 1.0, not 1.25 times. Strafe mode uses `movement_speed x speedModifier` too with speedModifier forced to 0.25 by `strafe()`.
 
 ### 3.2 `travel`
 
@@ -495,7 +495,7 @@ Flying mobs use `travelFlying(input, ...)` from their own `travel` override (see
 3. Vertical: with Levitation, `y += (0.05 x (amplifier + 1) - y) x 0.2`. Otherwise `y -= effective gravity` where effective gravity is the `gravity` attribute (0.08), capped at 0.01 while descending with Slow Falling. For an entity in an unloaded chunk (server side) vertical velocity is -0.1 (or 0 below the world) as a guard.
 4. Drag: unless `discardFriction`, horizontal velocity is multiplied by `F_h = F x modified(0.91, air_drag_modifier)` and vertical velocity by `modified(0.98, air_drag_modifier)`, where modified(b, m) = clamp(1 - (1 - b) x m, 0, 1). For entities that are `omnidirectionalAirMover` (bees, ghasts, flying mobs) the vertical factor is `modified(0.91, air_drag_modifier)` (read: the same factor as the horizontal air drag without ground friction) instead of `modified(0.98, ...)`.
 
-Steady-state numbers on friction 0.6 ground: horizontal factor 0.6 x 0.91 = 0.546 per tick, so a mob with speed s moves at about s x 0.98 / 0.454 per tick toward its target (for the player: 13 §1.3).
+Steady-state numbers on friction 0.6 ground: horizontal drag factor 0.6 x 0.91 = 0.546 per tick. For a mob (input `zza = speed`) the steady displacement is `speed^2 / 0.454` blocks per tick (3.2.1); the form `s x 0.98 / 0.454` holds only for a player, whose input is 0.98 and whose `speed` is the attribute value.
 
 **`travelInFluid`** (water or lava, read): remember whether the entity is falling (vy <= 0), the start y and effective gravity, then `travelInWater` or `travelInLava`; afterwards if the entity is in a floatable fluid and ridden, `floatInLiquidWhileRidden`.
 - `travelInWater`: slowdown factor = 0.9 if sprinting else `getWaterSlowDown` (0.8; dolphins override with 0.9, see per-mob); acceleration 0.02; `water_movement_efficiency` e (attribute, 0 default) is halved when not on the ground; if e > 0: slowdown += (0.54600006 - slowdown) x e and acceleration += (speed - acceleration) x e (`speed` = the entity's `getSpeed()`); Dolphin's Grace sets slowdown 0.96. Then `moveRelative(acceleration)`, `move`, velocity x (slowdown, slowdown_vertical = same factor per the `Vec3.multiply(f, 0.8, f)` pattern: horizontal factor = slowdown, vertical 0.8), a horizontal collision while climbing makes y = 0.2, then `getFluidFallingAdjustedMovement` (when not sprinting and falling: `y - gravity/16`, with a floor of -0.003 when |y - 0.005| >= 0.003 and |y - gravity/16| < 0.003), then `jumpOutOfFluid`: if horizontally collided and the position one step up (y + 0.6 - current y + 0.1) is free, set vy = 0.3.
@@ -510,6 +510,98 @@ Steady-state numbers on friction 0.6 ground: horizontal factor 0.6 x 0.91 = 0.54
 **Step height**: `step_height` attribute (0.6 default; `maxUpStep`). A collision that is blocked horizontally but passable if the entity rises by <= step height is resolved by stepping up (3.3). Mobs that should climb whole blocks (e.g. horses 1.0) raise the attribute.
 
 **Fall damage**: `causeFallDamage(distance, multiplier)`: the damage is `floor((distance - safe_fall_distance) x multiplier x fall_damage_multiplier)` (safe distance 3 by default; types in tag `fall_damage_immune` take none); applied as a fall damage type; a mob's AI also uses `getMaxFallDistance` when pathing (5.3).
+
+### 3.2.1 Walking speed of a land mob, worked
+
+Read from the artifact `minecraft-26.3-client.jar` (SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, Minecraft Java Edition 26.3, the artifact recorded in [README](README.md)), by static reading of `MoveControl`, `Mob`, `LivingEntity`, `Entity`, `PathNavigation`, `BodyRotationControl`, `LookControl`, `JumpControl`, `Attributes` and the per-mob `createAttributes` methods. All values are per game tick, on the server, for a mob that has a path and is on flat ground.
+
+**A. From goal to `speed` and `zza`.**
+
+1. A goal calls `PathNavigation.moveTo(..., speed modifier m)`. Every tick `PathNavigation.tick` (called from `Mob.serverAiStep`, which runs navigation before the controls) calls `MoveControl.setWantedPosition(x, y, z, m)` on the next node (5.5). `Mob.serverAiStep` then runs `MoveControl.tick`, which consumes the request (operation back to WAIT). So a walking mob is in MOVE_TO every tick.
+2. In MOVE_TO (`MoveControl.tick`): `speed = (float)(m x movement_speed)`, computed from the **final** attribute value (`getAttributeValue`, with all modifiers) in double then narrowed to float. It is stored with `Mob.setSpeed`, and **`Mob.setSpeed` also stores the same float into the forward input `zza`** (it calls `LivingEntity.setSpeed` and then `setZza`). `getSpeed()` returns the stored `speed` float; it is not recomputed from the attribute. There is no separate "1.0" forward input and no further scaling: **`zza = speed`**, `xxa = 0`, `yya = 0`.
+3. The factor 0.98: `LivingEntity.applyInput` multiplies the stored `xxa` and `zza` by 0.98f at the start of `aiStep`, **before** `serverAiStep` runs. For an AI mob that is a no-op in effect, because MOVE_TO (and JUMPING) overwrite `zza` with `speed` in the same tick after that multiplication. The 0.98 therefore applies to a mob only if some control leaves `zza` untouched; it does not apply to the walking chain. For a player the input comes from the client (`LocalPlayer.modifyInput`, doc 13 section 1.3) with the 0.98 and `Player` stores `speed` = the attribute value (`Player` calls `setSpeed` from `MOVEMENT_SPEED`).
+4. Slowdown near the target: none. There is no ramp-down of `speed` as the mob approaches a node. The only stop is the arrival test in step 5. Players and mobs differ only in where the input vector comes from (above).
+5. Arrival within `MoveControl.tick` (MOVE_TO): if `dx^2 + dy^2 + dz^2 < 2.5000002779052011E-7` (3-D squared distance to the wanted point, including the vertical difference), only `zza` is set to 0 (`speed` keeps its old value); nothing else happens. Otherwise: target yaw = `atan2(dz, dx)` in degrees (using the constant 57.2957763671875) minus 90, applied with `rotlerp` limit 90 (3.2.1 C).
+6. When no wanted position was set this tick (operation WAIT, for example after the path ended, or the goal stopped), `MoveControl.tick` sets `zza = 0` and leaves `speed` untouched. Nothing in the navigation sets `speed` to 0 at the end of a path: the mob stops because `zza` is 0 (acceleration 0); the remaining velocity decays by the drag factor.
+7. STRAFE (`MoveControl.tick` with operation STRAFE; the operation is set by `MoveControl.strafe(forward, right)`, which also sets `speedModifier = 0.25`, and is one-shot: it is reset to WAIT at the end of the same tick, so the caller must request it again each tick). The products are computed in float: `moveSpeed = (float)speedModifier x (float)movement_speed` (MOVE_TO and JUMPING instead multiply in double and then narrow to float). For the walkability probe only, the requested (forward, right) pair is divided by `max(1, length)` and multiplied by `moveSpeed` (so the probe vector has length `moveSpeed x min(length, 1)`), then rotated by the yaw (dx = forward x cos - right x sin, dz = right x cos + forward x sin, `Mth.sin`/`Mth.cos` of yaw x 0.017453292); the probe asks the navigation's node evaluator for the path type (`getPathType`) of the block at (mob x + dx, mob block y, mob z + dz). The probe passes if it is WALKABLE, or if the mob has no navigation or no node evaluator. The scaled and rotated values are used for nothing else. The values stored into the mob are: `speed = moveSpeed`; if the probe passes, `zza` = the **originally requested** forward input and `xxa` = the originally requested right input, both unscaled; if it fails, `zza = 1` and `xxa = 0`. (The store of `zza` by `setSpeed` is overwritten by the forward input.) STRAFE performs no yaw turn and no arrival test. By 3.2.1 B the acceleration is input x `speed`: when the probe passes it is requested forward x `moveSpeed` forward and requested right x `moveSpeed` sideways (not proportional to `moveSpeed` squared); when it fails it is `1 x moveSpeed` forward.
+
+**Order inside `LivingEntity.aiStep` (server, relevant steps).**
+1. If `noJumpDelay` > 0, decrement it.
+2. Tiny-velocity cutoff (after the equipment tick, before `applyInput`; read): for a Player, if the horizontal squared speed `vx^2 + vz^2` is below 9.0E-6 then `vx` and `vz` are set to 0; for every other entity, `vx` is set to 0 if `|vx| < 0.003` and `vz` to 0 if `|vz| < 0.003`, independently; for all entities `vy` is set to 0 if `|vy| < 0.003`.
+3. `applyInput`: `xxa` and `zza` are multiplied by 0.98f (for the controlled local player `LocalPlayer.applyInput` replaces this: it takes the movement vector from the input through `modifyInput`, sets `xxa`, `zza` and `jumping` from it).
+4. If the entity is immobile: `jumping = false`, `xxa = 0`, `zza = 0`. Otherwise, on the server for an AI-driven entity, `serverAiStep` runs (for a `Mob`: goals, navigation, move, look, jump controls as in E.2); it sets `speed`, `zza`, `xxa` and `jumping`.
+5. The jump handling of E.2 (reads `jumping` set in step 4).
+6. `travel(xxa, yya, zza)` (B).
+
+**B. Acceleration, move, drag (`LivingEntity.travelInAir`, `handleRelativeFrictionAndCalculateMovement`, `getFrictionInfluencedSpeed`, `Entity.moveRelative`, `Entity.getInputVector`).** In order, each tick:
+
+1. Ground test: the mob is on ground (`onGround`) = the vertical move of the previous tick was blocked while descending. Block friction `bf` from the block 0.500001 below the feet (default 0.6, ice 0.98, blue ice 0.989, slime 0.8, see 3.2); `F = clamp(1 - (1 - bf) x friction_modifier, 0, 1)` when on ground, else `F = 1.0`.
+2. Acceleration scalar `k`: on ground, `k = speed x 0.21600002 / F^3` if `F > 0.6`, else `k = speed`. In air (`onGround` false), `k = getFlyingSpeed()` = 0.02 for a mob (0.1 x `speed` only if the controlling passenger is a Player).
+3. Input vector `(xxa, yya, zza)` = `(0, 0, speed)`; if its squared length is below 1.0E-7 it becomes zero; if it exceeds 1 it is normalised (never for walking mobs, `speed` < 1). It is scaled by `k` and rotated about the vertical axis by the mob's current `yRot` (x' = x cos - z sin, z' = z cos + x sin, using `Mth.sin`/`Mth.cos` of `yRot` x 0.017453292), and **added** to the velocity. So the acceleration magnitude on ground (F <= 0.6) is `a = speed x speed`; for F > 0.6 it is `speed^2 x 0.21600002 / F^3`; in air it is `0.02 x speed`.
+4. Ladder clamp, then `move(velocity)` (3.3). The position changes by the velocity **after** the acceleration was added and **before** the drag. The y velocity is set to 0.2 only if (horizontal collision OR `jumping`) AND (`onClimbable` OR (was in powder snow AND can walk on powder snow)); an ordinary land mob that is not on a ladder, vine or other climbable block and not in powder snow never gets this rule.
+5. Vertical: `vy = vy - gravity` (0.08), as 3.2.
+6. Drag: horizontal velocity is multiplied by `F x 0.91` (air drag attribute modifier 1.0), vertical by 0.98.
+
+Steady state on ground with F <= 0.6, with `H = F x 0.91` (0.546 for F = 0.6): the displacement per tick is `D = a / (1 - H)`, which for F = 0.6 is `a / 0.454 = 2.2026 x a`; the velocity stored after the drag is `0.546 x D`. So **D = speed^2 / 0.454 blocks per tick for a mob on friction 0.6 ground** (F > 0.6 uses the larger `a` formula and a larger `H`; for F < 0.6, `a = speed^2` stays and only `H` shrinks). Players: `a = 0.98 x speed`, `D = 0.98 x speed / 0.454`.
+
+Worked numbers on friction 0.6 ground (steady state; the attribute values were read from the `createAttributes` method of each class: pig 0.25, sheep 0.23000000417232513 (a float-rounded 0.23), `AbstractCow` (cow) 0.20000000298023224, chicken 0.25, zombie 0.23000000417232513, default 0.7 only as the `Attributes.MOVEMENT_SPEED` fallback base):
+
+| Case | attribute | modifier | `speed` | a = speed^2 | D per tick | blocks per second |
+|---|---|---|---|---|---|---|
+| pig, walk | 0.25 | 1.0 | 0.25 | 0.0625 | 0.1377 | 2.75 |
+| pig, panic | 0.25 | 1.25 | 0.3125 | 0.09766 | 0.2151 | 4.30 |
+| cow | 0.20 | 1.0 | 0.20 | 0.0400 | 0.0881 | 1.76 |
+| cow, panic | 0.20 | 2.0 | 0.40 | 0.1600 | 0.3524 | 7.05 |
+| sheep | 0.23 | 1.0 | 0.23 | 0.0529 | 0.1165 | 2.33 |
+| sheep, panic | 0.23 | 1.25 | 0.2875 | 0.08266 | 0.1821 | 3.64 |
+| chicken, panic | 0.25 | 1.4 | 0.35 | 0.1225 | 0.2698 | 5.40 |
+| zombie, melee chase (`ZombieAttackGoal`, modifier 1.0) | 0.23 | 1.0 | 0.23 | 0.0529 | 0.1165 | 2.33 |
+| player, walking | 0.1 | n/a | 0.1 | 0.098 (0.98 x 0.1) | 0.2159 | 4.32 |
+
+The player line equals the 13 section 1.3 figure (4.317 blocks per second), which cross-checks the friction and drag chain. (Mob flat-ground values above are computed from the read formula, not observed; the zombie's chase modifier 1.0 was traced to the `Zombie` goal registration (`ZombieAttackGoal(zombie, 1.0, false)`, passed on to `moveTo`), and attribute modifiers such as baby, sprint or speed effects are not included.)
+
+Goal speed modifiers `m` read from the constructors that register the goals (`Pig`, `AbstractCow`, `Sheep`, `Chicken`, `Zombie` `registerGoals`); the goals themselves are in 4.2 and the per-mob documents:
+
+| Goal | pig | cow | sheep | chicken | zombie |
+|---|---|---|---|---|---|
+| stroll (`WaterAvoidingRandomStrollGoal`) | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| panic (`PanicGoal`) | 1.25 | 2.0 | 1.25 | 1.4 | n/a |
+| tempt (`TemptGoal`) | 1.2 | 1.25 | 1.1 | 1.0 | n/a |
+| follow parent (`FollowParentGoal`) | 1.1 | 1.25 | 1.1 | 1.1 | n/a |
+| melee chase (`ZombieAttackGoal`) | n/a | n/a | n/a | n/a | 1.0 |
+
+Multiply `speed = m x attribute` and use `D = speed^2 / 0.454` for any of them.
+
+Acceleration ramp of a pig from standstill (a = 0.0625, F = 0.6, one MOVE_TO tick per step, flat ground, facing the target, ignoring collisions): displacement in tick n is `a x (1 - 0.546^n) / 0.454`.
+
+| tick n | displacement | cumulative | fraction of steady |
+|---|---|---|---|
+| 1 | 0.0625 | 0.0625 | 45% |
+| 2 | 0.0966 | 0.1591 | 70% |
+| 3 | 0.1153 | 0.2744 | 84% |
+| 4 | 0.1254 | 0.3998 | 91% |
+| 5 | 0.1310 | 0.5308 | 95% |
+| steady | 0.1377 | | 100% |
+
+In the air (`onGround` false): `a = 0.02 x speed` (pig walk: 0.005), horizontal drag 0.91 (F = 1.0), so a mob that leaves the ground keeps most of its velocity and is accelerated only weakly.
+
+**C. Turning versus moving (`MoveControl.tick`, `MoveControl.rotlerp`, `LookControl`, `BodyRotationControl`).**
+
+1. A mob does **not** turn first and then walk: in the same tick the yaw `yRot` turns toward the target by at most **90 degrees per tick** (`MoveControl.MAX_TURN` = 90, `rotlerp`), and the acceleration of that tick is applied along the **already-turned** yaw (MoveControl runs before `travel`). So a mob that is up to 90 degrees off its target faces it after one tick and accelerates at full strength along the new facing in that same tick; at 180 degrees off it needs 2 ticks (90 degrees each), and in the first of them the acceleration is directed 90 degrees off the target. There is no reduction of the forward input based on the angle (unlike `SmoothSwimmingMoveControl` out of water, 4.4). Existing velocity is not rotated, only drag acts on it, so a sharp turn produces a curved path.
+2. The yaw is the entity yaw sent to clients; the head yaw (`yHeadRot`) is separate, turned by `LookControl` by at most `getHeadRotSpeed()` = **10 degrees per tick** (pitch limit `getMaxHeadXRot()` = 40), and kept within `getMaxHeadYRot()` = **75 degrees** of the body while the navigation is not done. `BodyRotationControl.clientTick` (called through `Mob.tickHeadTurn`): when the mob moved (squared horizontal displacement above 2.5000002779052011E-7) the body yaw is set to the entity yaw `yRot` (thus the body follows at once, no separate body turn rate while walking); when still, constants 15 degrees, 10 ticks and 10 ticks (`HEAD_STABLE_ANGLE`, `DELAY_UNTIL_STARTING_TO_FACE_FORWARD`, `HOW_LONG_IT_TAKES_TO_FACE_FORWARD`) govern the lazy turn (4.4).
+
+**D. Reaching nodes and the last node (`PathNavigation.followThePath`, `PathNavigation.tick`, `Path.isDone`).** The rule is the one in 5.5. A node is reached when `|x - (node.x + 0.5)| < w`, `|z - (node.z + 0.5)| < w` and `|y - node.y| < 1.0` (`getMaxVerticalDistanceToWaypoint` returns 1.0), with `w = bbWidth > 0.75 ? bbWidth / 2 : 0.75 - bbWidth / 2` (e.g. pig, cow, sheep: bbWidth 0.9, `w` = 0.45; zombie 0.6: `w` = 0.45; chicken 0.4: `w` = 0.55). The next node's reach test uses the mob's position at the time of the call, so a fast mob can overshoot (derived). On reaching it, the path index advances. When the last node is reached, `Path.isDone` becomes true; `PathNavigation.tick` then returns immediately without calling `setWantedPosition` (it checks `isDone` right after `followThePath`), so that tick and all later ticks have operation WAIT, `zza = 0`, acceleration 0, `speed` unchanged (stale), and the mob coasts with drag only: with `H = 0.546` the velocity left after the last drag (0.546 x D) decays geometrically, so the mob still travels `0.546 x D / 0.454` more blocks (pig walk: 0.0752 / 0.454 = about 0.166 blocks, derived). The tiny-velocity cutoff of the `aiStep` list above zeroes each horizontal component once its magnitude is below 0.003, so the coast ends slightly earlier than pure geometric decay (by at most about 0.003 / 0.454 = 0.0066 blocks per axis, derived). The mob may stop up to a fraction of a block past the node centre (inferred; nothing pulls it back).
+
+**E. Jumping (`MoveControl.tick`, `JumpControl`, `LivingEntity.aiStep`, `LivingEntity.jumpFromGround`, `LivingEntity.getJumpPower`).**
+
+1. The move control requests a jump (`JumpControl.jump()`, operation becomes JUMPING) in MOVE_TO when either (a) the wanted point's y minus the mob's y is greater than `maxUpStep()` (the `step_height` attribute, 0.6) **and** the horizontal squared distance to the wanted point is below `max(1.0, bbWidth)`; or (b) the block at the mob's block position has a non-empty collision shape whose top (shape max y plus block y) is above the mob's feet (`mob.y < shape top + blockY`) and the block is not in tag `doors` or `fences`.
+2. `Mob.serverAiStep` runs, in this order (read): sensing, target selector, goal selector, running goals, `PathNavigation.tick`, `customServerAiStep`, then the controls: `MoveControl.tick`, `LookControl.tick`, `JumpControl.tick`. `JumpControl.tick` sets `jumping` to the requested flag for this tick and clears the request; `LivingEntity.aiStep` reads `jumping` in the jump handling of the **same** tick (list below). Jump handling: only if `jumping` is true and the entity is affected by fluids (always true for `LivingEntity`, `isAffectedByFluids`), with `h` = height of the fluid the entity is in (lava if in lava, else water) and `T = getFluidJumpThreshold()` = 0 if the eye height is below 0.4, else 0.4:
+   - in water with `h > 0`, and (not on ground or `h > T`): `jumpInLiquid(water)`, which adds (0, 0.03999999910593033, 0) to the velocity;
+   - else in lava, and (not on ground or not in shallow lava, i.e. `h > T`): `jumpInLiquid(lava)` with the same +0.04;
+   - else if on the ground, or in water with `h <= T`: when `noJumpDelay` is 0, `jumpFromGround` and `noJumpDelay = 10`;
+   - if `jumping` is false, or the entity is not affected by fluids, the branch is skipped and `noJumpDelay` is set to 0. `noJumpDelay` is decremented by one at the start of each `aiStep` while above 0.
+3. `jumpFromGround`: `jumpPower = jump_strength x 1.0 x blockJumpFactor + jumpBoostPower`, with `jump_strength` default **0.41999998688697815** (`Attributes` default; none of pig, cow, sheep, chicken, zombie override it), `blockJumpFactor` the block jump factor (3.3), jump boost 0.1 per level. If `jumpPower <= 1.0E-5` nothing happens. Otherwise the vertical velocity becomes `max(jumpPower, vy)` (it is set, not added, and horizontal velocity is untouched); only a sprinting entity adds 0.2 horizontally along its yaw (mobs normally are not sprinting).
+4. JUMPING operation: `speed = m x movement_speed` as in MOVE_TO and `zza` follows `speed`; the operation returns to WAIT when the mob is on the ground (or in a liquid and affected by fluids).
 
 ### 3.3 Collision, push and block effects
 
@@ -661,7 +753,7 @@ Other target goals (OwnerHurtByTargetGoal, OwnerHurtTargetGoal, NonTameRandomTar
 ### 4.4 Controls
 
 **MoveControl** (ground mobs). State: `operation` (WAIT, MOVE_TO, STRAFE, JUMPING), the wanted position, `speedModifier`, the strafe inputs. `setWantedPosition(x, y, z, speed)` stores them and sets MOVE_TO (unless the control is JUMPING); `strafe(forward, right)` sets STRAFE with those inputs and `speedModifier = 0.25`. Rules each tick (`MoveControl.tick`, read):
-- **STRAFE**: `moveSpeed = movement_speed x speedModifier`. The input `(forward, right)` is scaled so its length is at most 1 and multiplied by `moveSpeed`; it is rotated by the mob's yaw (`dx = right x cos - forward x sin`, `dz = forward x cos + right x sin`). If the block at `(mob.x + dx, mob.y, mob.z + dz)` is not WALKABLE for the mob's node evaluator, the inputs are replaced by forward 1, right 0. The mob's `speed`, `zza` (forward) and `xxa` (right) are set, and the operation becomes WAIT.
+- **STRAFE**: `moveSpeed = movement_speed x speedModifier` (float). For a walkability probe only, the input `(forward, right)` is scaled to length at most `moveSpeed` and rotated by the mob's yaw (`dx = forward x cos - right x sin`, `dz = right x cos + forward x sin`). If the block at `(mob.x + dx, mob.y, mob.z + dz)` is not WALKABLE for the mob's node evaluator, the stored inputs become forward 1, right 0; otherwise the stored inputs are the originally requested forward and right values, unscaled. The mob's `speed` (= `moveSpeed`), `zza` (forward) and `xxa` (right) are set to these, and the operation becomes WAIT. Details: 3.2.1 A.7.
 - **MOVE_TO**: the operation becomes WAIT. With `(dx, dy, dz)` to the wanted position: if `dx^2 + dy^2 + dz^2 < 2.5000002779052011E-7` the forward input is set to 0 and nothing else happens (arrived). Otherwise the yaw turns toward `atan2(dz, dx) in degrees - 90` by at most 90 degrees per tick (`rotlerp`), `speed = speedModifier x movement_speed`, and the mob **jumps** (`JumpControl.jump()`, operation becomes JUMPING) when either: the wanted point is higher than `step_height` and the horizontal squared distance is below `max(1.0, bbWidth)`; or the block at the mob's position has a non-empty collision shape whose top (plus the block y) is above the mob's feet and the block is not in tag `doors` or `fences`.
 - **JUMPING**: `speed = speedModifier x movement_speed`; when the mob is on the ground, or is in a liquid and affected by fluids, the operation returns to WAIT.
 - **WAIT**: the forward input is 0.
@@ -1398,7 +1490,7 @@ Read directly from bytecode or data in the jar (high confidence): the entity typ
 
 A conforming implementation can be tested with: the worked examples in section 10 (feed the fixture random values); the mob-cap formula `max x chunks / 289`; the goal-arbitration fixture; A* costs on small grids; the attribute value formula (base 10, ADD_VALUE +2, ADD_MULTIPLIED_BASE +0.5 and +0.25, ADD_MULTIPLIED_TOTAL +0.1 and +0.2: `v = 12; r = 12 + 12 x 0.75 = 21; r = 21 x 1.1 x 1.2 = 27.72`); fall damage `floor((distance - 3) x multiplier)`; entity-type id and category checks against the table.
 
-**Remaining uncertainty markers in this document**: **(inferred)** 3 occurrences in the body (not counting the legend and this paragraph): the default seat for types without declared attachments, the `monsters_burn` step change, and the pairing of the two width conditions in `getPathTypeOfMob`. There are **no** `(recalled, not verified)` marks left; every earlier recalled value (block friction, soul sand, honey, cactus, magma, cobweb, sweet berry bush, lava ignition, the tame flag bit, the armor formula, the feeding speed-up) was read and is stated as read. What is **not** covered is listed in the Open questions and in the unread lists of 4.6 and 4.7.
+**Remaining uncertainty markers in this document**: **(inferred)** 6 occurrences in the body (not counting the legend and this paragraph; some written as "inferred as a step" or "inferred; ..."): the default seat for types without declared attachments, the `monsters_burn` step change, the pairing of the two width conditions in `getPathTypeOfMob`, the overshoot past the last path node (3.2.1 D), the easing-ratio form of `BodyRotationControl`, and one in the worked examples of section 10. No value in this document is marked `(recalled, not verified)`. What is **not** covered is listed in the Open questions and in the unread lists of 4.6 and 4.7.
 
 ## Open questions
 
@@ -1421,6 +1513,8 @@ A conforming implementation can be tested with: the worked examples in section 1
 17. Structure `spawn_overrides` replacement rule and the "piece" versus "full" bounding-box semantics used by `mobsAt` (6.5 step 4 uses the fortress case only).
 18. `GateBehavior` and `TriggerGate` order and running policies beyond `RunOne` (4.6).
 19. Internals not expanded beyond the shape given in 4.7: `TryFindLand`, `TryFindLandNearLiquid`, `TryFindLiquid` (the candidate tests are given; the scan order is not), `GoToWantedItem`, `Croak`, `SetHiddenState`, `CopyMemoryWithExpiry`.
+20. 3.2.1: `Mth.sin` and `Mth.cos` use a lookup table in the artifact; its size and precision were not examined, so the rotated acceleration components may differ from exact trigonometry in the last digits.
+21. 3.2.1: players are specified as `Player` speed = attribute and client input 0.98 (doc 13 section 1.3); the server-side handling of client movement packets was not examined. Moving platforms, water, ice (F > 0.6 uses `speed^2 x 0.21600002 / F^3`, not walked through with numbers) and the knockback interaction were not worked.
 
 ## Appendix A. Natural spawn data per biome (`gameplay/natural_mob_spawns`, `gameplay/creature_world_gen_spawn_probability`)
 

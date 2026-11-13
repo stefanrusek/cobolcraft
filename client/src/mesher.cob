@@ -60,6 +60,18 @@
  01 L-BUDGET               BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-BUDGET.
      MOVE 0 TO MB-MESHED
+*>   With the credit on (the running client), a frame whose meshing ran long (one section of a dense chunk can take 100 ms) is paid back by
+*>   frames that mesh nothing: the average is CL-MESH-CREDIT-US a frame, and the frame rate holds while the world loads.
+     IF MB-CREDIT-ON = 1
+         ADD CL-MESH-CREDIT-US TO MB-CREDIT
+         IF MB-CREDIT > CL-MESH-CREDIT-US
+             MOVE CL-MESH-CREDIT-US TO MB-CREDIT
+         END-IF
+         IF MB-CREDIT < 0
+             MOVE 0 TO MB-LAST-US
+             GOBACK
+         END-IF
+     END-IF
      CALL "MESH-CLOCK" USING CLIENT-STATE WS-T0
      MOVE FUNCTION MIN(L-BUDGET, 64) TO WS-K
      COMPUTE WS-PCX = FUNCTION INTEGER(PL-X / 16)
@@ -120,6 +132,9 @@
      END-PERFORM
      CALL "MESH-CLOCK" USING CLIENT-STATE WS-T1
      COMPUTE MB-LAST-US = WS-T1 - WS-T0
+     IF MB-CREDIT-ON = 1
+         SUBTRACT MB-LAST-US FROM MB-CREDIT
+     END-IF
      GOBACK.
  END PROGRAM MESH-DIRTY.
 
@@ -133,6 +148,7 @@
  COPY CLCONST.
  COPY CELLS.
  COPY CLTINTQ.
+ COPY CLFLUID.
  01 WS-NEIGHBOURS.
     05 WS-NROW             BINARY-LONG OCCURS 4 TIMES.   *> west, east, north, south rows (0 none)
  01 WS-OPAQUE.
@@ -308,6 +324,48 @@
                  MOVE BM-SLOT(WS-STATE + 1) TO WS-BM
                  IF WS-BM = 0
                      CALL "MODEL-SLOT-OF" USING CLIENT-STATE WS-STATE WS-BM
+                 END-IF
+             END-IF
+         END-IF
+*>       A cell of water or lava draws the fluid mesh (MESH-FLUID, 29a section 10); a liquid block has no baked model.
+         IF WS-STATE > 0
+             IF ST-FLUID(WS-STATE + 1) > 0
+                 COMPUTE WS-Y = WS-SEC-Y + WS-LY
+                 CALL "MESH-FLUID" USING CLIENT-STATE L-ROW WS-X WS-Y WS-Z WS-LY WS-HEIGHT WS-STATE FLUID-OUT
+                 PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > FO-COUNT
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                         MOVE WS-CORNER(WS-K) TO WS-C
+                         IF FO-TRANSLUCENT(WS-Q) = 1
+                             ADD 1 TO WS-TCOUNT
+                             MOVE FO-X(WS-Q, WS-C) TO WS-TV-X(WS-TCOUNT)
+                             MOVE FO-Y(WS-Q, WS-C) TO WS-TV-Y(WS-TCOUNT)
+                             MOVE FO-Z(WS-Q, WS-C) TO WS-TV-Z(WS-TCOUNT)
+                             MOVE FO-U(WS-Q, WS-C) TO WS-TV-U(WS-TCOUNT)
+                             MOVE FO-V(WS-Q, WS-C) TO WS-TV-V(WS-TCOUNT)
+                             MOVE FO-BRIGHT(WS-Q) TO WS-TV-B(WS-TCOUNT)
+                             MOVE WS-FONE TO WS-TV-A(WS-TCOUNT)
+                             MOVE FO-SKY(WS-Q) TO WS-TV-S(WS-TCOUNT)
+                             MOVE FO-R(WS-Q) TO WS-TV-R(WS-TCOUNT)
+                             MOVE FO-G(WS-Q) TO WS-TV-G(WS-TCOUNT)
+                             MOVE FO-B(WS-Q) TO WS-TV-BL(WS-TCOUNT)
+                         ELSE
+                             ADD 1 TO WS-OCOUNT
+                             MOVE FO-X(WS-Q, WS-C) TO WS-OV-X(WS-OCOUNT)
+                             MOVE FO-Y(WS-Q, WS-C) TO WS-OV-Y(WS-OCOUNT)
+                             MOVE FO-Z(WS-Q, WS-C) TO WS-OV-Z(WS-OCOUNT)
+                             MOVE FO-U(WS-Q, WS-C) TO WS-OV-U(WS-OCOUNT)
+                             MOVE FO-V(WS-Q, WS-C) TO WS-OV-V(WS-OCOUNT)
+                             MOVE FO-BRIGHT(WS-Q) TO WS-OV-B(WS-OCOUNT)
+                             MOVE WS-FONE TO WS-OV-A(WS-OCOUNT)
+                             MOVE FO-SKY(WS-Q) TO WS-OV-S(WS-OCOUNT)
+                             MOVE FO-R(WS-Q) TO WS-OV-R(WS-OCOUNT)
+                             MOVE FO-G(WS-Q) TO WS-OV-G(WS-OCOUNT)
+                             MOVE FO-B(WS-Q) TO WS-OV-BL(WS-OCOUNT)
+                         END-IF
+                     END-PERFORM
+                 END-PERFORM
+                 IF ST-FLUID(WS-STATE + 1) < 3
+                     MOVE 0 TO WS-BM
                  END-IF
              END-IF
          END-IF
@@ -637,6 +695,10 @@
                  DIVIDE WS-BYTE BY 16 GIVING WS-NIB REMAINDER L-BLOCK
              ELSE
                  DIVIDE WS-BYTE BY 16 GIVING L-BLOCK
+             END-IF
+*>           CC-0007 stopgap (sky-stopgap.cob): the sky light assumed where the core sent none (0); remove with it.
+             IF L-SKY = 0
+                 CALL "SKY-STOPGAP-LIGHT" USING CLIENT-STATE WS-ROW WS-NX WS-NY WS-NZ L-SKY
              END-IF
      END-EVALUATE
      GOBACK.

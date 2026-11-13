@@ -42,6 +42,9 @@
                                        *> of the UI atlas (pack-select.cob); never clicked
  78 WK-SPRITE               VALUE 8.   *> a GUI sprite (GSP-* row in the argument) drawn 1:1 at x, y; never clicked
  78 WK-IMAGE                VALUE 11.  *> a clickable GUI sprite: the sprite row in SM-W-SPRITE, the action's argument in the argument
+ 78 WK-LOADGRID             VALUE 12.  *> the loading screen's chunk status grid (docs/protocol/50 section 2.5): x, y, width and height of the 35 x 35 cells, 2 GUI pixels each, SM-LOAD-CELLS
+ 78 WK-CLIP                 VALUE 13.  *> the left w pixels of a GUI sprite (GSP-* row in the argument) at x, y, h tall, w at most the sprite's own width, not stretched
+                                       *> (the experience bar's progress); never clicked
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
                                        *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
@@ -249,7 +252,7 @@
  78 CL-MAX-UI-VERTICES      VALUE 24576.
  78 CL-MAX-ENTITIES         VALUE 256.
  78 CL-MAX-PLAYER-INFO      VALUE 64.
- 78 CL-MAX-ENTITY-VERTICES  VALUE 9216.
+ 78 CL-MAX-ENTITY-VERTICES  VALUE 49152.
  78 CL-MAX-GI-VERTICES      VALUE 1536.
  78 CL-MAX-BIOMES           VALUE 255.  *> biome ids are one byte; 255 is none known
 *> Weather quads (standin-content §14.5): 17 x 17 columns of two quads.
@@ -262,7 +265,8 @@
  78 CL-TICK-MS              VALUE 50.
  78 CL-MAX-PUMP-TICKS       VALUE 3.    *> core ticks SP-PUMP runs in one frame
  78 CL-PUMP-DEBT-MS         VALUE 250.  *> owed time SP-PUMP keeps after those ticks; more is dropped
- 78 CL-MESH-BUDGET-US       VALUE 8000. *> microseconds of meshing per frame (MESH-DIRTY)
+ 78 CL-MESH-BUDGET-US       VALUE 4000. *> microseconds of meshing per frame (MESH-DIRTY)
+ 78 CL-MESH-CREDIT-US       VALUE 7000. *> microseconds of meshing credit each frame earns, and the most it keeps (MB-CREDIT)
  78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
@@ -388,7 +392,9 @@
  78 GSP-CSLOT-SHIELD        VALUE 149.  *> container/slot/shield (the empty off-hand slot)
  78 GSP-FURNACE-LIT          VALUE 150.  *> container/furnace/lit_progress and burn_progress
  78 GSP-FURNACE-BURN         VALUE 151.
- 78 GSP-COUNT               VALUE 151.
+ 78 GSP-XP-BACK             VALUE 152.  *> hud/experience_bar_background and experience_bar_progress, 182 x 5 (12 section 5)
+ 78 GSP-XP-PROGRESS         VALUE 153.
+ 78 GSP-COUNT               VALUE 153.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 
@@ -404,6 +410,7 @@
  78 SW-BLACK                VALUE 7.
  78 SW-BAR-0                VALUE 8.   *> 24 swatches SW-BAR-0 to SW-BAR-0 + 23: the durability bar colours, red to green
  78 SW-COUNT                VALUE 32.
+ 78 LOAD-GREEN              VALUE 65280. *> the loading screen's bar fill, #00ff00 (docs/protocol/50 section 2.3): an overlay's colour tints its white swatch
 
 *> Items (standin-content §2): for item id i, row i + 1: key path (the item definition file name,
 *> 08 §10.7), maximum stack size, the block state its item places (0 = places no block; cardstack

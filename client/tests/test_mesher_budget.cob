@@ -31,6 +31,8 @@
  01 WS-N                   PIC Z(3)9.
  01 WS-N2                  PIC Z(3)9.
  01 WS-N3                  PIC Z(3)9.
+ 01 WS-CNUM                PIC -(4)9.
+ 01 WS-CNUM2               PIC -(9)9.
  01 WS-TEXT                PIC X(1024).
  01 WS-MARKED              BINARY-LONG.
  PROCEDURE DIVISION.
@@ -184,6 +186,33 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE MB-MESHED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The meshing credit (the running client): a frame with the credit below 0 meshes nothing and the frame's credit is added to it; a
+*>   credit above the cap is cut to it, and what the meshing took is taken from it.
+     MOVE 1 TO MB-CREDIT-ON
+     PERFORM MARK-TEN
+     MOVE -20000 TO MB-CREDIT
+     MOVE 0 TO MB-FAKE-NOW
+     CALL "MESH-DIRTY" USING CLIENT-STATE WS-BIG
+     MOVE MB-MESHED TO WS-CNUM
+     MOVE MB-CREDIT TO WS-CNUM2
+     MOVE "mesher credit given a credit of -20000 when a frame is meshed then nothing is meshed and the credit is -13000" TO TL-CASE
+     MOVE "meshed 0 credit -13000" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "meshed " FUNCTION TRIM(WS-CNUM) " credit " FUNCTION TRIM(WS-CNUM2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 50000 TO MB-CREDIT
+     MOVE 0 TO MB-FAKE-NOW
+     CALL "MESH-DIRTY" USING CLIENT-STATE WS-BIG
+     MOVE MB-MESHED TO WS-CNUM
+     MOVE MB-CREDIT TO WS-CNUM2
+     MOVE "mesher credit given more credit than the cap when a frame of two sections of 4000 us is meshed then the credit "
+         & "left is the cap 7000 less 8000" TO TL-CASE
+     MOVE "meshed 2 credit -1000" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "meshed " FUNCTION TRIM(WS-CNUM) " credit " FUNCTION TRIM(WS-CNUM2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO MB-CREDIT-ON
      STOP RUN.
 
  MARK-TEN.

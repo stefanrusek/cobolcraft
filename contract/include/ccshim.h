@@ -200,10 +200,24 @@ void cc_f64_lerp_f64(const double *t, const double *a, const double *b, double *
  * regenerates the mip levels it touches. Both return 0 or call cc_fatal. */
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels);
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba);
+/* Between cc_vk_texture_update_begin and cc_vk_texture_update_end the updates are recorded and submitted together, waited for once
+ * (each alone waits for the GPU to be idle, which costs a frame's work for every animated sprite); the pixels read back the same
+ * after the end. The end with no begin, or with no update between, does nothing. */
+void cc_vk_texture_update_begin(void);
+void cc_vk_texture_update_end(void);
 
 /* §9 addition: the daylight factor (0 to 1, default 1) that scales every vertex's sky term in the draws that
  * follow; read through a pointer (a COBOL FLOAT-SHORT is passed BY REFERENCE). */
 void cc_vk_daylight(const float *daylight);
+
+/* §9 addition: the fog of the draws that follow (12 section 3.3), read through a pointer to 13 floats: the fog colour r, g, b, its strength a
+ * (0 to 1: 0 is no fog, the default and the state after cc_vk_init), the start and end distance in blocks and the two focal terms p00 and p11
+ * of the projection (the matrix entries that scale x and y: the shader recovers the camera-relative position from the clip coordinates).
+ * A fragment's colour becomes lerp(colour, rgb, value x a) with value 0 up to start, 1 from end and (d - start) / (end - start) between, d the
+ * distance from the camera (spherical); the last five floats are the world up direction in view space (x, y, z) and the render-distance
+ * start and end: the fog value is the larger of the spherical value and the cylindrical one (distance max(horizontal, |vertical|), 12 section 3.3)
+ * between those (default start 1e9: none). Applies to the world and entity pipelines (not the UI). */
+void cc_vk_fog(const float *fog);
 
 /* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */
 void cc_vk_clear_depth(void);
@@ -230,5 +244,21 @@ void cc_u64_mul(const uint64_t *a, const uint64_t *b, uint64_t *r);
 void cc_u64_shl(const uint64_t *a, const int32_t *n, uint64_t *r);
 void cc_u64_shr(const uint64_t *a, const int32_t *n, uint64_t *r);
 void cc_u64_rotl(const uint64_t *a, const int32_t *n, uint64_t *r);
+
+/* §15 cc_wk: worker processes (core generation worker). cc_wk_spawn forks the caller: the parent gets a slot id (1 to 8, or -1
+ * when none is free or fork fails), the child gets 0 and talks to the parent only through cc_wk_child_read / cc_wk_child_write
+ * and ends with cc_wk_child_exit (_exit). cc_wk_send writes n bytes to the worker (n, or -1); cc_wk_recv reads without blocking
+ * (bytes read, 0 when nothing is there yet, -1 at end of file or for an unknown slot); cc_wk_stop frees the slot and reaps the
+ * process (force 1 kills it first, 0 waits for it to end after end of input; -1 for an unknown slot). cc_wk_child_read reads
+ * exactly n bytes (n, 0 at end of input, -1 on error); cc_wk_child_write writes all n (n, or -1). */
+int32_t cc_wk_spawn(void);
+int32_t cc_wk_send(int32_t slot, const uint8_t *buf, int32_t n);
+int32_t cc_wk_recv(int32_t slot, uint8_t *buf, int32_t n);
+int32_t cc_wk_stop(int32_t slot, int32_t force);
+int32_t cc_wk_child_read(uint8_t *buf, int32_t n);
+int32_t cc_wk_child_write(const uint8_t *buf, int32_t n);
+void cc_wk_child_exit(void);
+/* cc_wk_cpus: the number of processors online (at least 1), for sizing the worker pool. */
+int32_t cc_wk_cpus(void);
 
 #endif

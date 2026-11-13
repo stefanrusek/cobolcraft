@@ -42,6 +42,9 @@
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
      MOVE 1 TO WS-CX
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-EAST
+*>   This is about which sections a block change meshes. The sky light stopgap (CC-0007, sky-stopgap.cob) meshes the sections
+*>   below a column whose surface moved as well, to light them; it has its own tests (test_sky_stopgap), so it is off here.
+     MOVE 0 TO PL-HAS-SKY
 
      MOVE "contract/fixtures/wire/play-s2c-08-block-update.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH

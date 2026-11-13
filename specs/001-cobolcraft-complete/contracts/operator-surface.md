@@ -31,6 +31,7 @@ and uses them.
 | `pack-id` | UUID text, or empty | empty | opaque pack identifier; empty with `pack-url` set: derived from `pack-url` + `pack-sha1` (name-based version 3 UUID, RFC 4122 §4.3, URL namespace, name `<pack-url> <pack-sha1 in lower case>`), so a new pack version gets a new id |
 | `pack-required` | `true`, `false` | `false` | required |
 | `pack-prompt` | text, or empty | empty | prompt message |
+| `generation-workers` | `auto`, or 0 to 4 | `auto` | chunk generation worker processes of a standard world (002 operator decision, docs/design/generation-worker.md): `auto` is half the processors online (at least 1, at most 4), 0 generates inside the tick; a world that is not of the standard type never starts one |
 
 A missing key takes its default. An unknown key or an invalid value is a fatal error (research R14): the
 console shows `FATAL configuration: <key>: <problem>` and the server exits with status 1.

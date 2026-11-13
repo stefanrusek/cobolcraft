@@ -31,3 +31,5 @@
        10 TB-FOLIAGE        BINARY-DOUBLE.
        10 TB-DRY            BINARY-DOUBLE.
        10 TB-MOD            BINARY-LONG.
+       10 TB-FOG            BINARY-DOUBLE.  *> attributes visual/water_fog_color (ARGB), 0 none
+       10 TB-FOG-END        COMP-1.         *> visual/water_fog_end_distance multiply argument, 0 none

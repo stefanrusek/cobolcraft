@@ -37,7 +37,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
-     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-DARK
+     MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-DARK RL-UI-TINT
      CALL "HB-RNG-SEED" USING CLIENT-STATE
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
@@ -76,6 +76,24 @@
                          MOVE 0 TO RL-UI-FADE
                      END-IF
                  END-IF
+*>               A pack stack without the experience bar's background (the built-in pack has none) shows the black swatch.
+                 IF WS-SPRITE-ROW = GSP-XP-BACK AND GS-W(GSP-XP-BACK) = 0
+                     MOVE SW-BLACK TO WS-SWATCH
+                 END-IF
+                 MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-CLIP
+                 MOVE SM-W-ARG(WS-W) TO WS-SPRITE-ROW
+                 IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
+                     IF GS-W(WS-SPRITE-ROW) > 0
+                         CALL "UI-CLIP-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
+                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                     END-IF
+                 END-IF
+*>               Without the sprite the progress is the white swatch tinted #80ff20 (the colour of the level number).
+                 IF WS-SPRITE-ROW = GSP-XP-PROGRESS AND GS-W(GSP-XP-PROGRESS) = 0
+                     MOVE SW-WHITE TO WS-SWATCH
+                     MOVE 8454176 TO SM-W-COLOUR(WS-W)
+                 END-IF
                  MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-IMAGE
                  MOVE SM-W-SPRITE(WS-W) TO WS-SPRITE-ROW
@@ -90,7 +108,13 @@
              WHEN SM-W-KIND(WS-W) = WK-SHEET
                  CALL "UI-SHEET-QUAD" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-LOADGRID
+                 CALL "UI-LOADGRID" USING CLIENT-STATE WS-W
+                 MOVE 0 TO WS-LENGTH
          END-EVALUATE
+         IF SM-W-KIND(WS-W) = WK-OVERLAY OR (SM-W-KIND(WS-W) = WK-CLIP AND WS-SWATCH >= 0)
+             MOVE SM-W-COLOUR(WS-W) TO RL-UI-TINT
+         END-IF
          IF WS-SWATCH >= 0
              IF SM-W-KIND(WS-W) = WK-BUTTON AND GS-W(GSP-BUTTON) > 0
                  MOVE GSP-BUTTON TO WS-SPRITE-ROW
@@ -101,6 +125,7 @@
                      SM-W-H(WS-W) WS-SWATCH
              END-IF
          END-IF
+         MOVE 0 TO RL-UI-TINT
          MOVE SM-W-X(WS-W) TO WS-X
          MOVE SM-W-Y(WS-W) TO WS-Y
          IF SM-W-KIND(WS-W) NOT = WK-LABEL
@@ -428,6 +453,83 @@
  END PROGRAM UI-TEXT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-LOADGRID.
+*> USING CLIENT-STATE, widget (a chunk status grid): the 35 x 35 cells of SM-LOAD-CELLS, 2 GUI pixels each without a gap, from the widget's top-left (50 section
+*> 2.5). A cell's byte holds status code + 1: 0 none is black (SW-BLACK), 1 to 9 the white swatch tinted with the status colour, 10 FULL white (SW-WHITE). Each run of equal cells
+*> in a row is one quad.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-COL                 BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-CODE2               BINARY-LONG.
+ 01 WS-GO                  BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-SWATCH              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-WIDTH               BINARY-LONG.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+*> the colours of the chunk statuses EMPTY to SPAWN (50 section 2.6, RGB integers as in the jar); FULL is white, no status black
+ 01 WS-STATUS-COLOURS.
+    05 FILLER              BINARY-LONG VALUE 5526612.
+    05 FILLER              BINARY-LONG VALUE 10066329.
+    05 FILLER              BINARY-LONG VALUE 6250897.
+    05 FILLER              BINARY-LONG VALUE 8434258.
+    05 FILLER              BINARY-LONG VALUE 3159410.
+    05 FILLER              BINARY-LONG VALUE 2213376.
+    05 FILLER              BINARY-LONG VALUE 13421772.
+    05 FILLER              BINARY-LONG VALUE 16769184.
+    05 FILLER              BINARY-LONG VALUE 15884384.
+ 01 WS-STATUS-TABLE REDEFINES WS-STATUS-COLOURS.
+    05 WS-STATUS-RGB       BINARY-LONG OCCURS 9 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-W                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-W.
+     PERFORM VARYING WS-ROW FROM 0 BY 1 UNTIL WS-ROW > 34
+         MOVE 0 TO WS-COL
+         PERFORM UNTIL WS-COL > 34
+             COMPUTE WS-AT = WS-ROW * 35 + WS-COL + 1
+             COMPUTE WS-CODE = FUNCTION ORD(SM-LOAD-CELLS(WS-AT:1)) - 1
+             MOVE 1 TO WS-RUN
+             MOVE 1 TO WS-GO
+             COMPUTE WS-NEXT = WS-COL + 1
+             PERFORM UNTIL WS-NEXT > 34 OR WS-GO = 0
+                 COMPUTE WS-AT = WS-ROW * 35 + WS-NEXT + 1
+                 COMPUTE WS-CODE2 = FUNCTION ORD(SM-LOAD-CELLS(WS-AT:1)) - 1
+                 IF WS-CODE2 = WS-CODE
+                     ADD 1 TO WS-RUN
+                     ADD 1 TO WS-NEXT
+                 ELSE
+                     MOVE 0 TO WS-GO
+                 END-IF
+             END-PERFORM
+             MOVE SW-WHITE TO WS-SWATCH
+             MOVE 0 TO RL-UI-TINT
+             EVALUATE TRUE
+                 WHEN WS-CODE >= 1 AND WS-CODE <= 9
+                     MOVE WS-STATUS-RGB(WS-CODE) TO RL-UI-TINT
+                 WHEN WS-CODE = 10
+                     CONTINUE
+                 WHEN OTHER
+                     MOVE SW-BLACK TO WS-SWATCH
+             END-EVALUATE
+             COMPUTE WS-X = SM-W-X(L-W) + WS-COL * 2
+             COMPUTE WS-Y = SM-W-Y(L-W) + WS-ROW * 2
+             COMPUTE WS-WIDTH = WS-RUN * 2
+             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-WIDTH WS-TWO WS-SWATCH
+             MOVE 0 TO RL-UI-TINT
+             ADD WS-RUN TO WS-COL
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM UI-LOADGRID.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SWATCH-QUAD.
 *> USING CLIENT-STATE, x, y, width, height (GUI pixels), swatch: a quad on the swatch's centre
 *> texel.
@@ -461,6 +563,44 @@
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U WS-V WS-U2 WS-V2
      GOBACK.
  END PROGRAM UI-SWATCH-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-CLIP-QUAD.
+*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels): the left width pixels of the sprite (at most its own width) and
+*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CW                  BINARY-LONG.
+ 01 WS-CH                  BINARY-LONG.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H.
+     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW))
+     COMPUTE WS-CH = FUNCTION MIN(L-H, GS-H(L-ROW))
+     COMPUTE WS-X0 = L-X * CL-GUI-SCALE
+     COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
+     COMPUTE WS-X1 = (L-X + WS-CW) * CL-GUI-SCALE
+     COMPUTE WS-Y1 = (L-Y + WS-CH) * CL-GUI-SCALE
+     COMPUTE WS-U0 = GS-X(L-ROW) / UA-W
+     COMPUTE WS-V0 = GS-Y(L-ROW) / UA-H
+     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-CW) / UA-W
+     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-CH) / UA-H
+     CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+     GOBACK.
+ END PROGRAM UI-CLIP-QUAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SPRITE-QUAD.
@@ -559,6 +699,12 @@
  01 WS-C                   BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
+ 01 WS-RED                 BINARY-LONG.
+ 01 WS-GREEN               BINARY-LONG.
+ 01 WS-BLUE                BINARY-LONG.
+ 01 WS-TR                  FLOAT-SHORT.
+ 01 WS-TG                  FLOAT-SHORT.
+ 01 WS-TB                  FLOAT-SHORT.
  01 B-LAYER BASED.
     05 B-VERTEX OCCURS 24576 TIMES.
        10 B-X              FLOAT-SHORT.
@@ -597,6 +743,15 @@
              MOVE RL-UI-COUNT TO WS-COUNT
              MOVE CL-MAX-UI-VERTICES TO WS-MAX
      END-EVALUATE
+     MOVE 1 TO WS-TR WS-TG WS-TB
+     IF RL-UI-TINT > 0
+         COMPUTE WS-RED = RL-UI-TINT / 65536
+         COMPUTE WS-GREEN = (RL-UI-TINT - WS-RED * 65536) / 256
+         COMPUTE WS-BLUE = RL-UI-TINT - WS-RED * 65536 - WS-GREEN * 256
+         COMPUTE WS-TR = WS-RED / 255
+         COMPUTE WS-TG = WS-GREEN / 255
+         COMPUTE WS-TB = WS-BLUE / 255
+     END-IF
      IF WS-COUNT + 6 <= WS-MAX
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
              ADD 1 TO WS-COUNT
@@ -617,7 +772,9 @@
              COMPUTE B-B(WS-COUNT) = 1 - RL-UI-DARK
              COMPUTE B-A(WS-COUNT) = 1 - RL-UI-FADE
              MOVE 0 TO B-SKY(WS-COUNT)
-             MOVE 1 TO B-R(WS-COUNT) B-G(WS-COUNT) B-BLUE(WS-COUNT)
+             MOVE WS-TR TO B-R(WS-COUNT)
+             MOVE WS-TG TO B-G(WS-COUNT)
+             MOVE WS-TB TO B-BLUE(WS-COUNT)
          END-PERFORM
      END-IF
      EVALUATE RL-UI-LAYER

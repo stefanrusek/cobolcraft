@@ -11,6 +11,7 @@
 *> non-empty pack-url sets CS-PACK-OFFERED; the Resource Pack Push carries a pack UUID, so with an
 *> empty pack-id it is derived from pack-url and pack-sha1 (SV-PACK-ID-DERIVE: a new pack version
 *> gets a new id).
+*> generation-workers: auto (the default: half the processors, at least 1, at most 4) or 0 to 4 (docs/design/generation-worker.md); 0 keeps the generation in the tick.
 *> The description limit of 256 is counted in bytes: CS-DESCRIPTION holds 256 bytes of UTF-8.
 
  IDENTIFICATION DIVISION.
@@ -86,6 +87,7 @@
  01 WS-ID-PROBLEM          PIC X(128) VALUE "must be empty or a UUID (8-4-4-4-12 hex digits)".
  01 WS-TYPE-PROBLEM        PIC X(128).
  01 WS-DIR-PROBLEM         PIC X(128) VALUE "longer than 1024 characters".
+ 01 WS-WORKERS-PROBLEM     PIC X(128) VALUE "must be auto or a number from 0 to 4".
  01 WS-I                   BINARY-LONG.
  01 WS-HEX                 BINARY-LONG.
  01 WS-DASHES              BINARY-LONG.
@@ -187,6 +189,15 @@
              IF WS-VALUE-LENGTH > 0
                  MOVE WS-VALUE TO CS-GENERATED-DIR
              END-IF
+         WHEN "generation-workers"
+             EVALUATE TRUE
+                 WHEN WS-VALUE = "auto"
+                     CALL "GEN-WORKERS-AUTO"
+                 WHEN WS-VALID = 1 AND WS-NUMBER <= 4
+                     CALL "GEN-WORKERS-CONFIG" USING WS-NUMBER
+                 WHEN OTHER
+                     CALL "SV-CONFIG-FATAL" USING WS-KEY WS-WORKERS-PROBLEM
+             END-EVALUATE
          WHEN "pack-url"
              IF WS-VALUE-LENGTH > 1024
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-URL-LENGTH-PROBLEM
@@ -301,8 +312,11 @@
     05 FILLER PIC X(128) VALUE "world-type=auto".
     05 FILLER PIC X(128) VALUE "# Folder of the generated Minecraft content, empty for ./generated".
     05 FILLER PIC X(128) VALUE "generated-dir=".
+    05 FILLER PIC X(128) VALUE "# Chunk generation worker processes of the standard world: auto (half the pr"
+        & "ocessors), or 0 to 4 (0 generates inside the tick)".
+    05 FILLER PIC X(128) VALUE "generation-workers=auto".
  01 WS-DEFAULT-TABLE REDEFINES WS-DEFAULTS.
-    05 WS-DEFAULT          PIC X(128) OCCURS 32 TIMES.
+    05 WS-DEFAULT          PIC X(128) OCCURS 34 TIMES.
  PROCEDURE DIVISION.
      OPEN OUTPUT CONF-FILE
      IF WS-STATUS NOT = "00"
@@ -310,7 +324,7 @@
          CALL "SV-PRINT" USING WS-PTR WS-ERROR-LENGTH
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 34
          WRITE CONF-LINE FROM WS-DEFAULT(WS-I)
      END-PERFORM
      CLOSE CONF-FILE
@@ -354,6 +368,7 @@
      MOVE "auto" TO CS-WORLD-TYPE
      MOVE "." TO CS-GAME-DIR
      MOVE "./generated" TO CS-GENERATED-DIR
+     CALL "GEN-WORKERS-AUTO"
      OPEN INPUT CONF-FILE
      EVALUATE WS-STATUS
          WHEN "00"

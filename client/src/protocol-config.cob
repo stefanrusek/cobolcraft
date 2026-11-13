@@ -256,6 +256,11 @@
  01 WS-MOD                 PIC X(16).
  01 WS-BIOME-ID            BINARY-LONG.
  01 WS-TYPE2               BINARY-LONG.
+ 01 WS-TYPE3               BINARY-LONG.
+ 01 WN3                    PIC X(64).
+ 01 WL3                    BINARY-LONG.
+ 01 WS-FOG                 BINARY-DOUBLE.
+ 01 WS-FOG-END             COMP-2.
  01 WN2                    PIC X(64).
  01 WL2                    BINARY-LONG.
  01 WS-TEXT                PIC X(64).
@@ -319,6 +324,7 @@
                      MOVE 0.5 TO WS-TEMP WS-DOWN
                      MOVE 4282349284 TO WS-WATER
                      MOVE -1 TO WS-GRASS WS-FOLIAGE WS-DRY
+                     MOVE 0 TO WS-FOG WS-FOG-END
                      MOVE "none" TO WS-MOD
                      MOVE 1 TO WS-TYPE
                      PERFORM UNTIL WS-TYPE = 0
@@ -380,6 +386,52 @@
                                              CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE2
                                      END-EVALUATE
                                  END-PERFORM
+                             WHEN WN = "attributes"
+*>                               The environment attributes: visual/water_fog_color (a "#RRGGBB" String or an Int) and the multiply
+*>                               argument (a Float) of visual/water_fog_end_distance (43 section 5); the others are skipped.
+                                 MOVE 1 TO WS-TYPE2
+                                 PERFORM UNTIL WS-TYPE2 = 0
+                                     MOVE SPACES TO WN2
+                                     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE2 WN2 WS-CAP WL2
+                                     EVALUATE TRUE
+                                         WHEN WS-TYPE2 = 0
+                                             CONTINUE
+                                         WHEN WN2 = "minecraft:visual/water_fog_color" AND (WS-TYPE2 = 8 OR WS-TYPE2 = 3)
+                                             MOVE SPACES TO WS-TEXT
+                                             IF WS-TYPE2 = 8
+                                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP
+                                                     WS-TEXT-LENGTH
+                                             ELSE
+                                                 CALL "PB-GET-INT" USING PB-BUFFER WS-INT
+                                                 MOVE WS-INT TO WS-EDIT
+                                                 MOVE FUNCTION TRIM(WS-EDIT) TO WS-TEXT
+                                                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-TEXT-LENGTH
+                                             END-IF
+                                             CALL "TINT-COLOR-PARSE" USING WS-KIND WS-TEXT WS-TEXT-LENGTH
+                                                 WS-COLOUR WS-OK
+                                             IF WS-OK = 1
+                                                 MOVE WS-COLOUR TO WS-FOG
+                                             END-IF
+                                         WHEN WN2 = "minecraft:visual/water_fog_end_distance" AND WS-TYPE2 = 10
+                                             MOVE 1 TO WS-TYPE3
+                                             PERFORM UNTIL WS-TYPE3 = 0
+                                                 MOVE SPACES TO WN3
+                                                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE3 WN3 WS-CAP WL3
+                                                 IF WS-TYPE3 = 0
+                                                     CONTINUE
+                                                 ELSE
+                                                     IF WN3 = "argument" AND WS-TYPE3 = 5
+                                                         CALL "PB-GET-FLOAT" USING PB-BUFFER WS-FLOAT
+                                                         MOVE WS-FLOAT TO WS-FOG-END
+                                                     ELSE
+                                                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE3
+                                                     END-IF
+                                                 END-IF
+                                             END-PERFORM
+                                         WHEN OTHER
+                                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE2
+                                     END-EVALUATE
+                                 END-PERFORM
                              WHEN OTHER
                                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                          END-EVALUATE
@@ -387,6 +439,7 @@
                      COMPUTE WS-BIOME-ID = WS-B - 1
                      CALL "TINT-BIOME-SET" USING WS-BIOME-ID WS-TEMP WS-DOWN WS-WATER WS-GRASS
                          WS-FOLIAGE WS-DRY WS-MOD
+                     CALL "TINT-BIOME-FOG" USING WS-BIOME-ID WS-FOG WS-FOG-END
                      IF WS-NAME = "minecraft:plains"
                          MOVE WS-BIOME-ID TO TT-PLAINS
                      END-IF

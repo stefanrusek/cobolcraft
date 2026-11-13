@@ -76,6 +76,8 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-BIT                 BINARY-LONG.
  01 WS-PLAYER-KEY          PIC X(16) VALUE "minecraft:player".
+ 01 WS-TYPE-KEY            PIC X(48).
+ 01 WS-SAME                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ALLOWED              BINARY-LONG.
  PROCEDURE DIVISION USING L-ALLOWED.
@@ -672,8 +674,11 @@
      IF WS-NAME(1:WS-NAME-LENGTH) = WS-PLAYER-KEY
          MOVE 1 TO WS-OK
      END-IF
+*>   A standard set's entity rows have no namespace ("zombie"); WS-NAME is minecraft:zombie.
+     MOVE WS-NAME(1:48) TO WS-TYPE-KEY
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
-         IF ET-KEY(WS-I) = WS-NAME
+         CALL "KEY-SAME" USING ET-KEY(WS-I) WS-TYPE-KEY WS-SAME
+         IF WS-SAME = 1
              MOVE 1 TO WS-OK
          END-IF
      END-PERFORM

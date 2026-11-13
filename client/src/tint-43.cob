@@ -664,7 +664,7 @@
  PROGRAM-ID. TINT-BIOME-AT.
 *> Section 4 (the level's getBiome, without the fuzzy zoom of 10 §7.7): USING CLIENT-STATE, block x,
 *> y, z, biome id out: the replica's biome of the 4 x 4 x 4 cell holding the block; a position in a
-*> chunk that is not loaded, or outside the world's height, is the plains biome.
+*> chunk that is not loaded, or outside the world's height, or whose biome has no colours in the table, is the plains biome.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CELLS.
@@ -695,6 +695,11 @@
          COMPUTE WS-LY = WS-LY / 4
          COMPUTE WS-I = WS-LY * 16 + WS-LZ * 4 + WS-LX + 1
          MOVE CE-BIOME(WS-I) TO L-BIOME
+*>       A biome the registry sync gave no colours (a standard world's generated chunks name more biomes than the
+*>       sync describes, and their water and grass would tint black) is the plains biome, as an unloaded cell is.
+         IF L-BIOME >= TT-BIOMES
+             MOVE TT-PLAINS TO L-BIOME
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM TINT-BIOME-AT.
@@ -921,6 +926,25 @@
      END-IF
      GOBACK.
  END PROGRAM TINT-BIOME-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TINT-BIOME-FOG.
+*> USING biome id, water fog colour (ARGB, 0 = none), water fog end distance multiplier (COMP-2, 0 = none): the attributes
+*> visual/water_fog_color and the multiply argument of visual/water_fog_end_distance of the biome's row (43 section 5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLTINT.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BIOME                BINARY-LONG.
+ 01 L-COLOUR               BINARY-DOUBLE.
+ 01 L-END                  COMP-2.
+ PROCEDURE DIVISION USING L-BIOME L-COLOUR L-END.
+     COMPUTE WS-I = L-BIOME + 1
+     MOVE L-COLOUR TO TB-FOG(WS-I)
+     MOVE L-END TO TB-FOG-END(WS-I)
+     GOBACK.
+ END PROGRAM TINT-BIOME-FOG.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TINT-HEX6.

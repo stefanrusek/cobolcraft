@@ -17,6 +17,10 @@
  01 WS-REST-Z              FLOAT-LONG.
  01 WS-MINX                FLOAT-LONG.
  01 WS-MAXY                FLOAT-LONG.
+ 01 WS-MINU                FLOAT-LONG.
+ 01 WS-MAXU                FLOAT-LONG.
+ 01 WS-MINV                FLOAT-LONG.
+ 01 WS-MAXV                FLOAT-LONG.
  01 WS-SPRITE-SAVED        BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-EVENTS.
@@ -81,6 +85,23 @@
      MOVE "acceptance US20-1 a tool in the slot: a flat icon, 36 vertices" TO TL-CASE
      MOVE 36 TO TL-EXPECTED-N
      MOVE RL-HAND-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The icon's four corners take four different texels of its sprite: a corner coordinate that was read as a whole number instead of
+*>   a float collapsed every corner onto the sprite's top-left texel (a black quad in the live client).
+     MOVE 9 TO WS-MINU WS-MINV
+     MOVE -9 TO WS-MAXU WS-MAXV
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
+         MOVE FUNCTION MIN(WS-MINU, RL-HAND-U(WS-I)) TO WS-MINU
+         MOVE FUNCTION MAX(WS-MAXU, RL-HAND-U(WS-I)) TO WS-MAXU
+         MOVE FUNCTION MIN(WS-MINV, RL-HAND-V(WS-I)) TO WS-MINV
+         MOVE FUNCTION MAX(WS-MAXV, RL-HAND-V(WS-I)) TO WS-MAXV
+     END-PERFORM
+     MOVE "acceptance US20-1 a flat icon spans its sprite: the corners differ in u and in v" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-MAXU - WS-MINU > 0.0001 AND WS-MAXV - WS-MINV > 0.0001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO PL-SLOT-ITEM(PL-HELD + 1)
 

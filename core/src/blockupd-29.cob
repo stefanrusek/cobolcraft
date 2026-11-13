@@ -1785,8 +1785,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-ADD-CLASS.
-*> USING row, section (1-based), class, sign (1 or -1) (BINARY-LONG): adds or removes one state of that class (BR-CLASS) to the
-*> counts of the section.
+*> USING row, section (1-based), class, sign (BINARY-LONG; 1 or -1, or the number of states with a minus for removing them): adds or removes
+*> states of that class (BR-CLASS) to the counts of the section.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCOUNT.
@@ -1835,7 +1835,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BR-COUNT-ROW.
 *> USING row (BINARY-LONG): establishes the section counts of a chunk that was just loaded or generated, by counting its cells
-*> (each distinct state is classified once).
+*> (each distinct state is classified once). The cells of a section are tallied by class in a small table and added to the counts
+*> once per class (BR-ADD-CLASS takes the number of states as its sign), not once per cell: a chunk arriving from a generation
+*> worker is installed inside a tick.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -1844,30 +1846,45 @@
  COPY BRCOUNT.
  01 WS-CACHE               PIC X(40001).
  01 WS-CELL                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
  01 WS-SECTION             BINARY-LONG.
+ 01 WS-SECTIONS            BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-CLASS               BINARY-LONG.
- 01 WS-DIGIT               PIC 99.
- 01 WS-UP                  BINARY-LONG VALUE 1.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-TALLY-TABLE.
+    05 WS-TALLY            BINARY-LONG OCCURS 16 TIMES.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      INITIALIZE BR-ROW(L-ROW)
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
      MOVE ALL "~" TO WS-CACHE
-     COMPUTE WS-LAST = DM-HEIGHT(CK-DIM(L-ROW)) * 256
-     PERFORM VARYING WS-CELL FROM 1 BY 1 UNTIL WS-CELL > WS-LAST
-         MOVE CE-STATE(WS-CELL) TO WS-STATE
-         IF WS-STATE NOT = 0
-             IF WS-CACHE(WS-STATE + 1:1) = "~"
-                 CALL "BR-CLASS" USING WS-STATE WS-CLASS
-                 MOVE FUNCTION CHAR(WS-CLASS + 49) TO WS-CACHE(WS-STATE + 1:1)
+     COMPUTE WS-SECTIONS = DM-HEIGHT(CK-DIM(L-ROW)) / 16
+     PERFORM VARYING WS-SECTION FROM 1 BY 1 UNTIL WS-SECTION > WS-SECTIONS
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+             MOVE 0 TO WS-TALLY(WS-K)
+         END-PERFORM
+         COMPUTE WS-FIRST = (WS-SECTION - 1) * 4096 + 1
+         COMPUTE WS-LAST = WS-FIRST + 4095
+         PERFORM VARYING WS-CELL FROM WS-FIRST BY 1 UNTIL WS-CELL > WS-LAST
+             MOVE CE-STATE(WS-CELL) TO WS-STATE
+             IF WS-STATE NOT = 0
+                 IF WS-CACHE(WS-STATE + 1:1) = "~"
+                     CALL "BR-CLASS" USING WS-STATE WS-CLASS
+                     MOVE FUNCTION CHAR(WS-CLASS + 49) TO WS-CACHE(WS-STATE + 1:1)
+                 END-IF
+                 COMPUTE WS-CLASS = FUNCTION ORD(WS-CACHE(WS-STATE + 1:1)) - 49
+                 ADD 1 TO WS-TALLY(WS-CLASS + 1)
              END-IF
-             COMPUTE WS-CLASS = FUNCTION ORD(WS-CACHE(WS-STATE + 1:1)) - 49
-             COMPUTE WS-SECTION = (WS-CELL - 1) / 4096 + 1
-             CALL "BR-ADD-CLASS" USING L-ROW WS-SECTION WS-CLASS WS-UP
-         END-IF
+         END-PERFORM
+         PERFORM VARYING WS-K FROM 2 BY 1 UNTIL WS-K > 16
+             IF WS-TALLY(WS-K) > 0
+                 COMPUTE WS-CLASS = WS-K - 1
+                 CALL "BR-ADD-CLASS" USING L-ROW WS-SECTION WS-CLASS WS-TALLY(WS-K)
+             END-IF
+         END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM BR-COUNT-ROW.
@@ -1953,6 +1970,65 @@
      END-IF
      GOBACK.
  END PROGRAM BR-RANDOM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-RANDOM-TICK-ROW.
+*> USING dimension row, chunk row, x, y, z (BINARY-LONG; the position lies in that chunk): BR-RANDOM-TICK for a position of a loaded chunk
+*> row, without the world lookup, and with the marks of a state (BU-MARKED walks every rule) kept for the run of the random ticks:
+*> chunk row 0 forgets them (WORLDSIM-RANDOM does it before each run, so rules added between runs count).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 K-8                    BINARY-LONG VALUE 8.
+ 01 K-11B                  BINARY-LONG VALUE 11.
+ 01 K-11                   BINARY-LONG VALUE 11.
+ 01 K-13                   BINARY-LONG VALUE 13.
+ 01 WS-CACHE               PIC X(65536).
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-MARK                BINARY-LONG.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-OUT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-ROW L-X L-Y L-Z.
+     IF L-ROW = 0
+         MOVE ALL "~" TO WS-CACHE
+         GOBACK
+     END-IF
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
+     COMPUTE WS-CELL = (L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - CK-Z(L-ROW) * 16) * 16 + L-X - CK-X(L-ROW) * 16 + 1
+     MOVE CE-STATE(WS-CELL) TO WS-STATE
+*>   The marks of the state: 1 the block ticks, 2 the fluid ticks (kept as the characters 0 to 3).
+     IF WS-CACHE(WS-STATE + 1:1) = "~"
+         MOVE 0 TO WS-BITS
+         CALL "BU-MARKED" USING K-11B WS-STATE WS-MARK
+         IF WS-MARK = 1
+             ADD 1 TO WS-BITS
+         END-IF
+         CALL "BU-MARKED" USING K-13 WS-STATE WS-MARK
+         IF WS-MARK = 1
+             ADD 2 TO WS-BITS
+         END-IF
+         MOVE FUNCTION CHAR(WS-BITS + 49) TO WS-CACHE(WS-STATE + 1:1)
+     END-IF
+     COMPUTE WS-BITS = FUNCTION ORD(WS-CACHE(WS-STATE + 1:1)) - 49
+     IF WS-BITS = 1 OR WS-BITS = 3
+         CALL "BU-HOOK" USING K-8 L-DIM L-X L-Y L-Z WS-STATE WS-ZERO WS-ZERO2 WS-OUT
+     END-IF
+     IF WS-BITS = 2 OR WS-BITS = 3
+         CALL "BU-HOOK" USING K-11 L-DIM L-X L-Y L-Z WS-STATE WS-ZERO WS-ZERO2 WS-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM BR-RANDOM-TICK-ROW.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-ADD.

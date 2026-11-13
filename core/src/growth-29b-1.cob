@@ -11,36 +11,39 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-N                   BINARY-LONG.
+ 01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(48).
  01 L-PART                 BINARY-LONG.
  01 L-SECTION              BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-PART L-SECTION.
      MOVE 0 TO L-PART L-SECTION
-     COMPUTE WS-N = FUNCTION LENGTH(FUNCTION TRIM(L-KEY))
+*>   The standard set keeps its keys without the namespace ("sand"): the table below names them minecraft:<name>.
+     CALL "KEY-NAMESPACED" USING L-KEY WS-FULL
+     COMPUTE WS-N = FUNCTION LENGTH(FUNCTION TRIM(WS-FULL))
      EVALUATE TRUE
-         WHEN L-KEY = "minecraft:sand" OR L-KEY = "minecraft:red_sand" OR L-KEY = "minecraft:gravel"
+         WHEN WS-FULL = "minecraft:sand" OR WS-FULL = "minecraft:red_sand" OR WS-FULL = "minecraft:gravel"
              MOVE 1 TO L-PART
              MOVE 32 TO L-SECTION
-         WHEN L-KEY = "minecraft:suspicious_sand" OR L-KEY = "minecraft:suspicious_gravel"
+         WHEN WS-FULL = "minecraft:suspicious_sand" OR WS-FULL = "minecraft:suspicious_gravel"
              MOVE 1 TO L-PART
              MOVE 35 TO L-SECTION
-         WHEN WS-N > 26 AND L-KEY(WS-N - 15:16) = "_concrete_powder"
+         WHEN WS-N > 26 AND WS-FULL(WS-N - 15:16) = "_concrete_powder"
              MOVE 1 TO L-PART
              MOVE 33 TO L-SECTION
-         WHEN L-KEY = "minecraft:anvil" OR L-KEY = "minecraft:chipped_anvil" OR L-KEY = "minecraft:damaged_anvil"
+         WHEN WS-FULL = "minecraft:anvil" OR WS-FULL = "minecraft:chipped_anvil" OR WS-FULL = "minecraft:damaged_anvil"
              MOVE 1 TO L-PART
              MOVE 34 TO L-SECTION
-         WHEN L-KEY = "minecraft:dragon_egg"
+         WHEN WS-FULL = "minecraft:dragon_egg"
              MOVE 1 TO L-PART
              MOVE 36 TO L-SECTION
-         WHEN L-KEY = "minecraft:scaffolding"
+         WHEN WS-FULL = "minecraft:scaffolding"
              MOVE 1 TO L-PART
              MOVE 37 TO L-SECTION
-         WHEN L-KEY = "minecraft:pointed_dripstone" OR L-KEY = "minecraft:sulfur_spike"
+         WHEN WS-FULL = "minecraft:pointed_dripstone" OR WS-FULL = "minecraft:sulfur_spike"
              MOVE 6 TO L-PART
              MOVE 38 TO L-SECTION
-         WHEN L-KEY = "minecraft:mangrove_propagule"
+         WHEN WS-FULL = "minecraft:mangrove_propagule"
              MOVE 2 TO L-PART
              MOVE 74 TO L-SECTION
      END-EVALUATE

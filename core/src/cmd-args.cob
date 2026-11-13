@@ -101,6 +101,8 @@
  01 WS-DEFAULT-NS          PIC X(10) VALUE "minecraft:".
  01 WS-ENTITY              BINARY-LONG.
  01 WS-ET                  BINARY-LONG.
+ 01 WS-ET-FULL             PIC X(48).
+ 01 WS-ET-LENGTH           BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-TALL                FLOAT-LONG.
  LINKAGE SECTION.
@@ -451,10 +453,13 @@
 *> type=: the entity's type key must be one of the positive types, and none of the negated.
  TEST-ENTITY-TYPES.
      MOVE 0 TO WS-ANY-POSITIVE WS-MATCHED
+*>   A standard set's entity rows have no namespace ("zombie"); the selector's identifiers are minecraft:zombie.
+     CALL "KEY-NAMESPACED" USING ET-KEY(WS-ET) WS-ET-FULL
+     COMPUTE WS-ET-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-ET-FULL))
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SL-TYPE-COUNT
          MOVE 0 TO WS-N
-         IF SL-TYPE-TAG(WS-I) = 0 AND SL-TYPE-LENGTH(WS-I) = ET-KEY-LENGTH(WS-ET)
-                 AND SL-TYPE-TEXT(WS-I)(1:ET-KEY-LENGTH(WS-ET)) = ET-KEY(WS-ET)(1:ET-KEY-LENGTH(WS-ET))
+         IF SL-TYPE-TAG(WS-I) = 0 AND SL-TYPE-LENGTH(WS-I) = WS-ET-LENGTH
+                 AND SL-TYPE-TEXT(WS-I)(1:WS-ET-LENGTH) = WS-ET-FULL(1:WS-ET-LENGTH)
              MOVE 1 TO WS-N
          END-IF
          IF SL-TYPE-NEG(WS-I) = 1

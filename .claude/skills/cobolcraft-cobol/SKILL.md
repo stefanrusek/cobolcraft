@@ -12,7 +12,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 ## Language and build
 
 - GnuCOBOL 3.2, **free format**. Every build uses `-free -debug -std=default -fstatic-call`
-  (`tools/package.mk`). Comments are `*>`.
+  (`tools/package.mk`); `make build RELEASE=1` (output under `build/release`) swaps `-debug` for `-O2`
+  (gates and coverage stay `-debug`). Comments are `*>`.
 - `-fstatic-call` is required: without it a `CALL "X"` does not pull program X out of a package `.a`.
 - Calls to C use `CALL STATIC` (research R2). COBOL may call any C library directly; C glue
   (`shim/`) exists only where a call can't be expressed cleanly (callbacks, struct layouts, variadics),

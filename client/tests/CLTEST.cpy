@@ -1072,7 +1072,8 @@
      MOVE 1 TO WS-PTR
      MOVE 0 TO WS-SHOWN
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-I) = WK-SPRITE
+         IF SM-W-KIND(WS-I) = WK-SPRITE OR (SM-W-KIND(WS-I) = WK-OVERLAY AND SM-W-H(WS-I) = 5)
+*>           (the experience bar's overlays of height 5 are no screen text, like the sprites: test_hud_xp reads them)
              CONTINUE
          ELSE
              ADD 1 TO WS-SHOWN

@@ -40,7 +40,7 @@
 *>   Beside: on the hotbar's row of labels, right of the health label.
      MOVE "acceptance US8-1 the food label is beside the health label: same row, to its right"
          TO TL-CASE
-     MOVE SM-WIDGET-COUNT TO WS-I
+     COMPUTE WS-I = SM-WIDGET-COUNT - 1
      COMPUTE WS-HEALTH-W = WS-I - 1
      MOVE "same row, right" TO TL-EXPECTED
      MOVE "elsewhere" TO TL-OBSERVED

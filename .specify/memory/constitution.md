@@ -25,6 +25,8 @@ work separated from the reverse-engineering that produced the spec.
 ## Technology Constraints
 
 - Language and compiler: GnuCOBOL 3.x for all game logic (Principle I).
+- Operator decision, 2026-11-13 (stefanrusek): non-debug builds (`make build RELEASE=1`) compile with `-O2`
+  in place of `-debug`; debug builds, gates and coverage keep their flags.
 - C is allowed only as the thin glue layer described in Principle I (adaptation only, no logic).
 - Build scripts and test harnesses are not restricted in language.
 

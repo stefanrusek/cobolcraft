@@ -14,6 +14,8 @@
      MOVE 0 TO GQ-GENERATED
      MOVE 0 TO GQ-SETUP-DONE
      MOVE 0 TO GQ-STEPS
+     MOVE 0 TO GQ-SP-STATE GQ-SP-CHUNK GQ-SP-COLUMN GQ-SP-DONE GQ-SP-TOTAL GQ-SP-FX GQ-SP-FZ GQ-SP-READY
+     CALL "GEN-WORKERS-STOP"
      IF GJ-ACTIVE NOT = 0 AND GJ-ADDR NOT = NULL
          CALL "GEN-JOB-FREE" USING GQ-JOB
      END-IF
@@ -47,6 +49,11 @@
      IF GJ-ACTIVE NOT = 0 AND GJ-DIM = L-DIM AND GJ-CX = L-CX AND GJ-CZ = L-CZ
          GOBACK
      END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GW-MAX
+         IF GW-BUSY(WS-I) NOT = 0 AND GW-DIM(WS-I) = L-DIM AND GW-CX(WS-I) = L-CX AND GW-CZ(WS-I) = L-CZ
+             GOBACK
+         END-IF
+     END-PERFORM
      IF GQ-COUNT >= GQ-CAPACITY
          GOBACK
      END-IF
@@ -58,13 +65,16 @@
  END PROGRAM GEN-QUEUE-WANT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. GEN-QUEUE-PICK.
-*> USING index out (BINARY-LONG): the queue entry nearest to a player (squared distance in chunks to the nearest alive player
+ PROGRAM-ID. GEN-QUEUE-PICK-MODE.
+*> USING mode (BINARY-LONG), index out (BINARY-LONG): mode 0 considers every entry, mode 1 only the chunks of the standard pipeline (the generation
+*> workers' share), mode 2 only the others (the in-tick path while the workers serve the standard ones). The queue entry nearest to a player (squared distance in chunks to the nearest alive player
 *> of its dimension; with no such player every chunk is equally far and the oldest goes first); 0 for an empty queue.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY GENQUEUE.
+ COPY DIMENSIONS.
+ 01 WS-STANDARD            BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-BEST-D              BINARY-DOUBLE.
@@ -74,15 +84,19 @@
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  LINKAGE SECTION.
+ 01 L-MODE                 BINARY-LONG.
  01 L-BEST                 BINARY-LONG.
- PROCEDURE DIVISION USING L-BEST.
+ PROCEDURE DIVISION USING L-MODE L-BEST.
      MOVE 0 TO L-BEST
      IF GQ-COUNT = 0
          GOBACK
      END-IF
-     MOVE 1 TO L-BEST
      MOVE 999999999999 TO WS-BEST-D
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GQ-COUNT
+         MOVE 0 TO WS-STANDARD
+         IF DM-GENERATOR(GQ-DIM(WS-I)) = DIM-GEN-STANDARD
+             MOVE 1 TO WS-STANDARD
+         END-IF
          MOVE 999999999999 TO WS-D
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
              IF PL-USED(WS-P) = 1 AND PL-STATE(WS-P) = PS-ALIVE AND PL-DIM(WS-P) = GQ-DIM(WS-I)
@@ -95,11 +109,25 @@
                  END-IF
              END-IF
          END-PERFORM
-         IF WS-D < WS-BEST-D
+         IF (L-MODE = 0 OR (L-MODE = 1 AND WS-STANDARD = 1) OR (L-MODE = 2 AND WS-STANDARD = 0))
+                 AND (L-BEST = 0 OR WS-D < WS-BEST-D)
              MOVE WS-D TO WS-BEST-D
              MOVE WS-I TO L-BEST
          END-IF
      END-PERFORM
+     GOBACK.
+ END PROGRAM GEN-QUEUE-PICK-MODE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-QUEUE-PICK.
+*> USING index out (BINARY-LONG): the queue entry nearest to a player (GEN-QUEUE-PICK-MODE, mode 0); 0 for an empty queue.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MODE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-BEST                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BEST.
+     CALL "GEN-QUEUE-PICK-MODE" USING WS-MODE L-BEST
      GOBACK.
  END PROGRAM GEN-QUEUE-PICK.
 
@@ -180,6 +208,7 @@
  01 WS-CLOCK               PIC X(21).
  01 WS-START               BINARY-LONG.
  01 WS-NOW                 BINARY-LONG.
+ 01 WS-PICK-MODE           BINARY-LONG.
  LINKAGE SECTION.
  01 L-STEPS                BINARY-LONG.
  01 L-CHUNKS               BINARY-LONG.
@@ -224,7 +253,12 @@
                      END-IF
                  END-IF
              WHEN OTHER
-                 CALL "GEN-QUEUE-PICK" USING WS-BEST
+*>               while the workers serve the standard chunks only the other generators' chunks are the tick's
+                 MOVE 0 TO WS-PICK-MODE
+                 IF GQ-WORKERS > 0 AND GW-ACTIVE = 1
+                     MOVE 2 TO WS-PICK-MODE
+                 END-IF
+                 CALL "GEN-QUEUE-PICK-MODE" USING WS-PICK-MODE WS-BEST
                  IF WS-BEST = 0
                      MOVE 1 TO WS-STOP
                  ELSE
@@ -260,11 +294,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-STANDARD-INSTALL.
-*> USING dimension row, chunk x, chunk z, chunk memory, marker-y out: the chunk of the standard pipeline: the queue's finished
-*> job when it is this chunk's (installed and freed), else every step run back to back (GEN-JOB-RUN-ALL).
+*> USING dimension row, chunk x, chunk z, chunk memory, marker-y out: the chunk of the standard pipeline: a generation worker's finished
+*> answer when it is this chunk's (GEN-STANDARD-TAKE), else the queue's finished job when it is this chunk's (installed and freed), else
+*> every step run back to back (GEN-JOB-RUN-ALL).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY GENQUEUE.
+ 01 WS-TAKEN               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -272,12 +308,16 @@
  01 L-CHUNK                PIC X.
  01 L-MARKER-Y             BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y.
-     IF GJ-ACTIVE = 2 AND GJ-DIM = L-DIM AND GJ-CX = L-CX AND GJ-CZ = L-CZ
-         CALL "GEN-JOB-INSTALL" USING GQ-JOB L-CHUNK L-MARKER-Y
-         CALL "GEN-JOB-FREE" USING GQ-JOB
-     ELSE
-         CALL "GEN-JOB-RUN-ALL" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
-     END-IF
+     CALL "GEN-STANDARD-TAKE" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y WS-TAKEN
+     EVALUATE TRUE
+         WHEN WS-TAKEN = 1
+             CONTINUE
+         WHEN GJ-ACTIVE = 2 AND GJ-DIM = L-DIM AND GJ-CX = L-CX AND GJ-CZ = L-CZ
+             CALL "GEN-JOB-INSTALL" USING GQ-JOB L-CHUNK L-MARKER-Y
+             CALL "GEN-JOB-FREE" USING GQ-JOB
+         WHEN OTHER
+             CALL "GEN-JOB-RUN-ALL" USING L-DIM L-CX L-CZ L-CHUNK L-MARKER-Y
+     END-EVALUATE
      GOBACK.
  END PROGRAM GEN-STANDARD-INSTALL.
 
@@ -294,6 +334,9 @@
  01 WS-RUN                 BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
  PROCEDURE DIVISION.
+     IF GQ-WORKERS > 0
+         CALL "GEN-WORKERS-TICK"
+     END-IF
      CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE
      GOBACK.
  END PROGRAM GEN-QUEUE-TICK.

@@ -209,7 +209,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLD-GET-BLOCK.
 *> USING dim, x, y, z, state out (BINARY-LONG; world block position): the block state there; 0 (void)
-*> outside the dimension's height range. Loads (generates) the chunk without lighting it.
+*> outside the dimension's height range. Loads (generates) the chunk without lighting it, unless the generation workers will make it (void then).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -218,6 +218,7 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-DEFER               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -231,6 +232,14 @@
      END-IF
      COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
      COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+     IF WS-ROW = 0
+*>       a chunk the generation workers will make is not made here: the read is void and the chunk is queued (WORLD-GET-DEFER)
+         CALL "WORLD-GET-DEFER" USING L-DIM WS-CX WS-CZ WS-DEFER
+         IF WS-DEFER = 1
+             GOBACK
+         END-IF
+     END-IF
      CALL "WORLD-CHUNK-LOAD" USING L-DIM WS-CX WS-CZ WS-ROW
      SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      MOVE CE-STATE((L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)

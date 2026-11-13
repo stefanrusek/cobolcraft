@@ -25,6 +25,9 @@
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-BIOME               PIC X(24) VALUE "minecraft:worldgen/biome".
+ 01 WS-NBT-LENGTH          BINARY-LONG.
+ 01 WS-NBT-STATUS          BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-NUMBER               BINARY-LONG.
@@ -47,7 +50,13 @@
              WS-CAPACITY WS-LENGTH WS-STATUS
          CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-KEY WS-KEY-LENGTH
          CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
-         CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
+*>       The entry of a standard set is the JSON of the vanilla-data pack: a biome goes out as the network NBT of the
+*>       biome codec (registry-biome.cob), as the client reads it.
+         IF WS-REGISTRY = WS-BIOME AND WS-LENGTH > 0 AND WS-PAYLOAD(1:1) = "{"
+             CALL "BIOME-NBT" USING WS-PAYLOAD WS-LENGTH PB-BUFFER WS-NBT-STATUS
+         ELSE
+             CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-PAYLOAD WS-LENGTH
+         END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM REGISTRY-PACKET-BUILD.

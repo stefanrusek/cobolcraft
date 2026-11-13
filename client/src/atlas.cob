@@ -439,8 +439,16 @@
  01 WS-I                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
- 01 WS-A-BYTE              BINARY-LONG.
- 01 WS-B-BYTE              BINARY-LONG.
+ 01 WS-PTR-A               USAGE POINTER.
+ 01 WS-PTR-B               USAGE POINTER.
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ 01 B-BYTES-A BASED.
+    05 BA-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
+ 01 B-BYTES-B BASED.
+    05 BB-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
+ 01 B-BYTES-O BASED.
+    05 BO-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
  01 B-PIXELS               PIC X(1073741824) BASED.
  01 B-OUT                  PIC X(1073741824) BASED.
  01 B-ATLAS                PIC X(1073741824) BASED.
@@ -481,13 +489,20 @@
              IF WS-SHARE = 0
                  MOVE B-PIXELS(WS-PICTURE * WS-BYTES + 1:WS-BYTES) TO B-OUT(1:WS-BYTES)
              ELSE
+*>               The blend of two pictures, byte by byte on unsigned views (the intrinsic ORD and CHAR calls cost most of a
+*>               frame when several sprites interpolate).
+                 SET WS-PTR-A TO AN-PIXELS(WS-A)
+                 COMPUTE WS-OFFSET = WS-PICTURE * WS-BYTES
+                 SET WS-PTR-A UP BY WS-OFFSET
+                 SET WS-PTR-B TO AN-PIXELS(WS-A)
+                 COMPUTE WS-OFFSET = WS-NEXT-PICTURE * WS-BYTES
+                 SET WS-PTR-B UP BY WS-OFFSET
+                 SET ADDRESS OF B-BYTES-A TO WS-PTR-A
+                 SET ADDRESS OF B-BYTES-B TO WS-PTR-B
+                 SET ADDRESS OF B-BYTES-O TO AN-OUT(WS-A)
+                 COMPUTE WS-KEEP = 1000 - WS-SHARE
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BYTES
-                     COMPUTE WS-A-BYTE = FUNCTION ORD(B-PIXELS(WS-PICTURE * WS-BYTES + WS-I:1)) - 1
-                     COMPUTE WS-B-BYTE =
-                         FUNCTION ORD(B-PIXELS(WS-NEXT-PICTURE * WS-BYTES + WS-I:1)) - 1
-                     COMPUTE WS-A-BYTE = (WS-A-BYTE * (1000 - WS-SHARE) + WS-B-BYTE * WS-SHARE)
-                         / 1000
-                     MOVE FUNCTION CHAR(WS-A-BYTE + 1) TO B-OUT(WS-I:1)
+                     COMPUTE BO-BYTE(WS-I) = (BA-BYTE(WS-I) * WS-KEEP + BB-BYTE(WS-I) * WS-SHARE) / 1000
                  END-PERFORM
              END-IF
              MOVE AN-SPRITE(WS-A) TO WS-S

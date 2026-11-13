@@ -31,6 +31,8 @@
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-WORLD              PIC X(80).       *> --world <save folder> / CC_WORLD: opened right after start-up (WORLD-OPEN-ARG)
+    05 CL-WORLD-LENGTH       BINARY-LONG.     *> 0 = none
     05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
     05 CL-OPENER-LENGTH      BINARY-LONG.
     05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
@@ -43,8 +45,16 @@
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
     05 CL-FRAMES             BINARY-DOUBLE.
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
+    05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
+    05 CL-CMD-TEXT           PIC X(1024).
     05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
     05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
+    05 CL-CAM-X              FLOAT-LONG.
+    05 CL-CAM-Y              FLOAT-LONG.
+    05 CL-CAM-Z              FLOAT-LONG.
+    05 CL-CAM-YAW            FLOAT-LONG.
+    05 CL-CAM-PITCH          FLOAT-LONG.
     05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
     05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
     05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)
@@ -112,6 +122,11 @@
        10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
        10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
+       10 SM-LOAD-CELLS      PIC X(1225).    *> the loading screen grid (docs/protocol/50 section 2.5): 35 x 35 cells, row by row, each one byte holding status code + 1 (GEN-LOAD-GRID)
+       10 SM-LOAD-SMOOTH     BINARY-LONG.    *> the loading bar's smoothed progress in millionths (0.2 of the gap per 50 ms tick, 50 section 2.2)
+       10 SM-LOAD-TICK-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last smoothing tick, 0 before the first
+       10 SM-LOAD-GRID-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last read of the grid
+       10 SM-LOAD-SHOWN      BINARY-LONG.    *> 1 once the loading screen has been shown for the hosted world being opened
        10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
@@ -229,6 +244,10 @@
        10 BM-STATE-ID        BINARY-LONG.
        10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
        10 PL-XP-LEVEL        BINARY-LONG.    *> the player's experience level (Set Experience 05b 0x69)
+       10 PL-XP-PROGRESS     FLOAT-LONG.     *> its progress 0 to 1 and the total points (002-lane-mobs2)
+       10 PL-XP-TOTAL        BINARY-LONG.
+       10 PL-KB-X            FLOAT-LONG.     *> the horizontal push of an Explode packet's knockback, decaying each tick (physics.cob)
+       10 PL-KB-Z            FLOAT-LONG.
        10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
 *>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
 *>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
@@ -415,6 +434,10 @@
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
+       10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
+       10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
+       10 PL-READY-AT        BINARY-DOUBLE.  *> CL-NOW-MS at which the wait ended
+       10 PL-CLOSE-DELAY     BINARY-LONG.    *> ms between the end of the wait and Player Loaded: 500 for a newly created local world, else 0
        10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
        10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
@@ -443,6 +466,18 @@
        10 PL-VY              FLOAT-LONG.
        10 PL-ON-GROUND       PIC 9.
        10 PL-COLLIDED        PIC 9.
+*>     Fluids (29a section 8; client/src/physics-fluid.cob): the box touches water or lava, the eye is inside one, the fluid's
+*>     height above the feet (0 none), and the horizontal speed in blocks per tick kept while in a fluid.
+       10 PL-IN-WATER        PIC 9.
+       10 PL-IN-LAVA         PIC 9.
+       10 PL-EYE-WATER       PIC 9.
+       10 PL-EYE-LAVA        PIC 9.
+       10 PL-WATER-H         FLOAT-LONG.
+       10 PL-LAVA-H          FLOAT-LONG.
+       10 PL-VX              FLOAT-LONG.
+       10 PL-VZ              FLOAT-LONG.
+       10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
+       10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.
@@ -543,6 +578,9 @@
           15 WR-CZ           BINARY-LONG.
           15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
+          15 WR-SURF-OK      PIC 9.          *> 1 = WR-SURF and WR-WTOP are current (SKY-STOPGAP-SURFACE, CC-0007 stopgap)
+          15 WR-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
+          15 WR-WTOP         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> one above the topmost fluid cell above WR-SURF, 0 = none
           15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
              20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (44 bytes each)
@@ -579,6 +617,12 @@
           15 EN-VANILLA      PIC 9.
           15 EN-KEY          PIC X(24).
           15 EN-MODEL        BINARY-LONG.
+*>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
+*>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
+          15 EN-VALUE        BINARY-LONG.
+          15 EN-SWELL-DIR    BINARY-LONG.
+          15 EN-SWELL-BASE   BINARY-LONG.
+          15 EN-SWELL-MS     BINARY-DOUBLE.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -829,7 +873,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 151 TIMES.
+       10 GS-ROW OCCURS 153 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
@@ -902,6 +946,9 @@
        10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
        10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
        10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
+       10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
+       10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
 *>  ---- baked block models (08 §4, §5): quads per block state ----
     05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
@@ -945,10 +992,14 @@
        10 MB-FAKE-STEP       BINARY-LONG.    *> microseconds the injected clock advances per section meshed
        10 MB-MESHED          BINARY-LONG.    *> sections meshed by the last MESH-DIRTY
        10 MB-EMPTY           BINARY-LONG.    *> sections found all air (meshed at once, no vertices) since CL-INIT
+       10 MB-LIGHT-OFF       PIC 9.          *> 1 = MF-AT reads states only (MESH-FLUID's first look at a cell: most draw nothing)
        10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
+       10 MB-CREDIT-ON       PIC 9.          *> 1 = meshing is paid for from a credit that each frame refills (CL-RUN sets it; 0 in tests)
+       10 MB-CREDIT          BINARY-DOUBLE.  *> microseconds of meshing the next frames may spend; below 0 the frame meshes nothing
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.
@@ -964,7 +1015,7 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
-       10 RL-EN-VERTEX OCCURS 9216 TIMES.
+       10 RL-EN-VERTEX OCCURS 49152 TIMES.
           15 RL-EN-X         FLOAT-SHORT.
           15 RL-EN-Y         FLOAT-SHORT.
           15 RL-EN-Z         FLOAT-SHORT.
@@ -1100,6 +1151,7 @@
           15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
        10 RL-UI-DARK         FLOAT-SHORT.    *> brightness taken off the next UI quads (0 white; a coloured text's grey)
+       10 RL-UI-TINT         BINARY-LONG.    *> RGB integer multiplied into the next UI quads (0 none): the loading screen's status colours and bar
        10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.

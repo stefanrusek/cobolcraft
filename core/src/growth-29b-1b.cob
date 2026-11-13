@@ -10,16 +10,19 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-N                   BINARY-LONG.
+ 01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(48).
  01 L-KIND                 BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-KIND.
      MOVE 0 TO L-KIND
-     COMPUTE WS-N = FUNCTION LENGTH(FUNCTION TRIM(L-KEY))
-     IF L-KEY = "minecraft:wheat" OR L-KEY = "minecraft:carrots" OR L-KEY = "minecraft:potatoes" OR L-KEY = "minecraft:beetroots"
+*>   The standard set keeps its keys without the namespace ("wheat", "oak_sapling").
+     CALL "KEY-NAMESPACED" USING L-KEY WS-FULL
+     COMPUTE WS-N = FUNCTION LENGTH(FUNCTION TRIM(WS-FULL))
+     IF WS-FULL = "minecraft:wheat" OR WS-FULL = "minecraft:carrots" OR WS-FULL = "minecraft:potatoes" OR WS-FULL = "minecraft:beetroots"
          MOVE 1 TO L-KIND
      END-IF
-     IF WS-N > 17 AND L-KEY(WS-N - 7:8) = "_sapling"
+     IF WS-N > 17 AND WS-FULL(WS-N - 7:8) = "_sapling"
          MOVE 2 TO L-KIND
      END-IF
      GOBACK.
@@ -121,7 +124,8 @@
          CALL "WORLD-GET-BLOCK" USING L-DIM WS-CX WS-CY WS-CZ WS-NB
          MOVE 0 TO WS-CLASS(WS-I)
          MOVE CB-KEY(CB-S-BLOCK(WS-NB + 1) + 1) TO WS-KEY
-         IF WS-KEY = WS-FARM
+         CALL "KEY-SAME" USING WS-KEY WS-FARM WS-IS-FARM
+         IF WS-IS-FARM = 1
              MOVE 1 TO WS-CLASS(WS-I)
              IF WS-NB > CB-FIRST-STATE(CB-S-BLOCK(WS-NB + 1) + 1)
                  MOVE 3 TO WS-CLASS(WS-I)
@@ -299,13 +303,14 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BONE                PIC X(48) VALUE "minecraft:bone_meal".
  LINKAGE SECTION.
  01 L-ITEM                 BINARY-LONG.
  01 L-BONE                 BINARY-LONG.
  PROCEDURE DIVISION USING L-ITEM L-BONE.
      MOVE 0 TO L-BONE
-     IF IT-KEY(L-ITEM + 1) = "minecraft:bone_meal"
-         MOVE 1 TO L-BONE
-     END-IF
+     MOVE IT-KEY(L-ITEM + 1) TO WS-KEY
+     CALL "KEY-SAME" USING WS-KEY WS-BONE L-BONE
      GOBACK.
  END PROGRAM GB-HELD-BONEMEAL.

@@ -32,4 +32,6 @@ Nothing needs attention.
 
 ## Recently Closed
 
-Nothing closed yet.
+| ID | Title | Resolution |
+|---|---|---|
+| [CC-0008](../CC-0008-gravity-blocks-fall.md) | Gravity blocks fall when the block beneath them is broken | done |

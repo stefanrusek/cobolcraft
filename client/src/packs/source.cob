@@ -194,12 +194,12 @@
  PROGRAM-ID. PACK-FOLDER-SCAN.
 *> USING CLIENT-STATE, pack (a folder), file table (PACK-SOURCE-FILES layout), layer prefix
 *> (PIC X(80): "" or "<overlay>/"), prefix length, overlay: every file under
-*> <root>/<prefix>assets, depth first (cc_fs_list; at most 64 directories pending), offered to
+*> <root>/<prefix>assets, depth first (cc_fs_list; at most 512 directories pending: the vanilla textures/entity directory alone has 79 sub-directories), offered to
 *> PACK-FILE-ADD with its path relative to the root.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STACK.
-    05 WS-DIR OCCURS 64 TIMES.
+    05 WS-DIR OCCURS 512 TIMES.
        10 WS-DIR-PATH      PIC X(256).
        10 WS-DIR-LENGTH    BINARY-LONG.
  01 WS-DEPTH               BINARY-LONG.
@@ -253,7 +253,7 @@
                  WHEN WS-ENTRY(1:1) = "F"
                      CALL "PACK-FILE-ADD" USING CLIENT-STATE L-PACK L-TABLE WS-PATH
                          WS-PATH-LENGTH L-PREFIX-LENGTH WS-ZERO L-OVERLAY
-                 WHEN WS-DEPTH < 64
+                 WHEN WS-DEPTH < 512
                      ADD 1 TO WS-DEPTH
                      MOVE WS-PATH TO WS-DIR-PATH(WS-DEPTH)
                      MOVE WS-PATH-LENGTH TO WS-DIR-LENGTH(WS-DEPTH)

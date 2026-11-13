@@ -114,6 +114,7 @@
  01 WS-PROPS               BINARY-LONG.
  01 WS-STEPS               BINARY-LONG.
  01 WS-TICKS               BINARY-LONG.
+ 01 WS-SWELL               FLOAT-LONG.
  01 WS-ACTIONS             BINARY-LONG.
  01 WS-PRESENT             BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG.
@@ -192,7 +193,8 @@
                  MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW)
 *>               A world of the standard set: EN-TYPE is the entity_type registry id, so keep its key and the model row
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
-                 MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW)
+                 MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
+                 MOVE -1 TO EN-SWELL-DIR(WS-ROW)
                  MOVE SPACES TO EN-KEY(WS-ROW)
                  IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
                      MOVE 1 TO EN-VANILLA(WS-ROW)
@@ -217,6 +219,19 @@
                  IF WS-ROW > 0 AND MD-MD-INDEX = 0 AND MD-MD-SERIALIZER = PB-MDS-ITEM-STACK
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
+                 END-IF
+*>               The orb's value (entry 8) and the creeper's swell direction (entry 16), both INT: the swell counter is kept as it was when
+*>               the direction changes (CREEPER-SWELL), then runs from there.
+                 IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-INT
+                     IF MD-MD-INDEX = 8 AND EN-KEY(WS-ROW) = "experience_orb"
+                         MOVE MD-MD-INT TO EN-VALUE(WS-ROW)
+                     END-IF
+                     IF MD-MD-INDEX = 16 AND EN-KEY(WS-ROW) = "creeper"
+                         CALL "CREEPER-SWELL" USING CLIENT-STATE WS-ROW WS-SWELL
+                         COMPUTE EN-SWELL-BASE(WS-ROW) = WS-SWELL
+                         MOVE CL-NOW-MS TO EN-SWELL-MS(WS-ROW)
+                         MOVE MD-MD-INT TO EN-SWELL-DIR(WS-ROW)
+                     END-IF
                  END-IF
              END-PERFORM
          WHEN 103

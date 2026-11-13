@@ -37,6 +37,7 @@
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-HIT                 FLOAT-LONG.
@@ -98,7 +99,15 @@
          MOVE WS-CELL(2) TO WS-CY
          MOVE WS-CELL(3) TO WS-CZ
          CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
+*>       A liquid block has no outline shape (29a 1.2): the ray goes through water and lava (a wet plant or a waterlogged block is hit).
+         MOVE WS-STATE TO WS-SEEN
          IF WS-STATE NOT = 0
+             CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+             IF ST-FLUID(WS-STATE + 1) = 1 OR ST-FLUID(WS-STATE + 1) = 2
+                 MOVE 0 TO WS-SEEN
+             END-IF
+         END-IF
+         IF WS-SEEN NOT = 0
              MOVE 1 TO TG-HIT
              MOVE WS-T TO WS-BLOCK-T
              MOVE WS-CX TO TG-X
