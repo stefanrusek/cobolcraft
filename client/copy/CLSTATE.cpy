@@ -755,6 +755,9 @@
        10 PK-ERROR OCCURS 8 TIMES.
           15 PK-ERROR-TEXT   PIC X(256).
           15 PK-ERROR-LENGTH BINARY-LONG.
+       10 LG-FILES           BINARY-LONG.
+       10 LG-FAILED          BINARY-LONG.
+       10 LG-OVERFLOW        BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
        10 LG-ENTRY OCCURS 12000 TIMES.
           15 LG-KEY          PIC X(80).

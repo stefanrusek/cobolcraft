@@ -319,6 +319,12 @@ def big_lang():
     return ("{\n" + ",\n".join(lines) + "\n}\n").encode()
 
 
+def huge_lang(keys, pad):
+    """A language file of `keys` keys, each text padded to `pad` characters."""
+    lines = ['  "huge.key.%05d": "%s"' % (n, "x" * pad) for n in range(keys)]
+    return ("{\n" + ",\n".join(lines) + "\n}\n").encode()
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "packs")
     for name, (kind, files) in PACKS.items():
@@ -332,6 +338,11 @@ def main():
     write(os.path.join(os.path.dirname(out), "biglang", "pack.mcmeta"),
           b'{"pack":{"description":"test fixture: a large language file","min_format":[97,1],"max_format":97}}')
     write(os.path.join(os.path.dirname(out), "biglang", "assets", "minecraft", "lang", "en_us.json"), big_lang())
+    for name, data in (("hugelang", huge_lang(12100, 20)), ("oversizelang", huge_lang(2000, 600))):
+        base = os.path.join(os.path.dirname(out), name)
+        write(os.path.join(base, "pack.mcmeta"),
+              b'{"pack":{"description":"test fixture: a language file past the limits","min_format":[97,1],"max_format":97}}')
+        write(os.path.join(base, "assets", "minecraft", "lang", "en_us.json"), data)
     write(os.path.join(out, "broken.zip"), b"this is not a zip archive")
     write(os.path.join(out, "readme.txt"), b"not a pack")
 
