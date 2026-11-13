@@ -110,3 +110,143 @@ def tcall(ab,bl,s,d): return setarr('A6',s)+'MOVE %d TO WS-I(1)\nMOVE %d TO WS-I
 g.case('topper (3.4 steps 1, 4): air when the cell above is a carpet with base true, or a block that is not a carpet and cannot be replaced; with the constant true side chance no side is removed; air also without any face or with the same state as at A',[("0",tcall(*c),1) for c in tc]," ".join(str(top(*c)) for c in tc))
 g.run('carpet bone meal (3.4): valid when base is true and the topper is not air; always successful; performBonemeal sets the topper at pos.above() when it is not air',["1 1","1 0","0 1","0 0"],'CALL "GC5-CARPET-BONE" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2) WS-R(3)',3,"1/1/1 0/1/0 0/1/0 0/1/0")
 W(g,3)
+# ===== 4
+g=GG(4,'The oxidation engine','T0617','the constants, the neighbour scan, the probability and the draws of changeOverTime.')
+g.extra=TBL('NB',16)
+GATE=0.05688889
+g.run('constants (4.1): SCAN_DISTANCE 4 and the gate 0.05688889 (x 1e8)',["0"],'CALL "GC5-OX-CONST" USING WS-R(1) WS-R(2)',2,"4/5688889")
+g.run('chance modifier (4.1, V5): 0.75 (x 1000) for an unaffected block, 1.0 for exposed, weathered and oxidized',["0","1","2","3"],'CALL "GC5-OX-MODIFIER" USING WS-I(1) WS-R(1)',1,"750 1000 1000 1000")
+dg=[0,0.01,0.05688,0.05688889,0.0569,0.5,0.99999]
+g.run('first draw (4.1 step 1, V1): nextFloat below 0.05688889 passes; one draw is consumed either way',[str(d) for d in dg],'CALL "GC5-OX-GATE" USING WS-FX(1) WS-R(1) WS-R(2)',2," ".join(show(int(d<GATE),1) for d in dg))
+def region():
+    by=[0]*5
+    for x in range(-5,6):
+        for y in range(-5,6):
+            for z in range(-5,6):
+                d=abs(x)+abs(y)+abs(z)
+                if d<=4: by[d]+=1
+    t=sum(by)
+    return [t,t-1]+by
+g.run('Manhattan region (4.2 step 1, V3): offsets with |dx| + |dy| + |dz| <= 4 are 129 including the centre, 128 examined; by depth 1, 6, 18, 38, 66',["0"],'CALL "GC5-OX-REGION" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6) WS-R(7)',7,show(*region()))
+def scan(a,nb):
+    H=S=0
+    for b in nb:
+        if b<0: continue
+        if b<a: return 1,H,S
+        if b>a: H+=1
+        else: S+=1
+    return 0,H,S
+sc=[(0,[]),(1,[1,1,1,2,-1]),(1,[2,1,3]),(0,[3,3,2,-1,-1,1]),(2,[2,1,3]),(2,[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]),(3,[3,3,-1,-1]),(1,[-1,-1,-1]),(0,[0,0,0,1,2,3,3,0,-1,0,0,0,0,0,0,3])]
+def scall(a,nb):
+    return setarr('NB',nb+[0]*(16-len(nb)))+'MOVE %d TO WS-I(1)\nMOVE %d TO WS-I(2)\nCALL "GC5-OX-SCAN" USING WS-I(1) WS-I(2) WS-NBG WS-R(1) WS-R(2) WS-R(3)'%(a,len(nb))
+g.case('neighbour scan (4.2 steps 2, 3, V2, V4): a counted neighbour younger than the block aborts; older adds to H, equal to S; waxed or non-copper cells (-1) count nothing; the result is aborted, H, S',[("0",scall(*c),3) for c in sc]," ".join(show(*scan(*c)) for c in sc))
+def prob(H,S,a):
+    f=f32((H+1)/(H+S+1)); p=f32(f32(f*f)*(f32(0.75) if a==0 else 1.0))
+    return p
+pr=[(0,0,0),(3,0,2),(1,3,1),(0,5,1),(2,2,0),(4,0,1),(0,7,3)]
+g.run('probability (4.2 step 4): f = (H + 1) / (H + S + 1) in single precision, p = f x f x modifier (x 1e6): isolated unaffected block 0.75 (9.1); exposed with H 1, S 3: 0.16 (9.2)',[S(*c) for c in pr],'CALL "GC5-OX-PROB" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-RF(1)',1," ".join(str(int(math.floor(prob(*c)*1e6+0.5))) for c in pr))
+def rate(H,S,a):
+    p=prob(H,S,a); ch=GATE*p
+    return int(math.floor(ch*1e6+0.5)),int(math.floor(10/ch+0.5))
+g.run('per random tick chance (x 1e6) and the expected wait in random ticks (x 10): 9.1 isolated copper 0.04266667 per tick, about 23.4 ticks; 9.2 crowded exposed copper 0.0091022',[S(*c) for c in pr[:2]],'CALL "GC5-OX-RATE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join(show(*rate(*c)) for c in pr[:2]))
+def engine(d1,a,nb,d2):
+    if not d1<GATE: return 0,1
+    ab,H,S=scan(a,nb)
+    if ab: return 0,1
+    return int(d2<prob(H,S,a)),2
+ec=[(0.9,0,[],0.1),(0.02,0,[],0.5),(0.02,0,[],0.9),(0.02,1,[0,2],0.0),(0.02,1,[1,1,1,2,-1],0.1),(0.02,1,[1,1,1,2,-1],0.2),(0.02,2,[-1],0.74),(0.02,0,[],0.74)]
+def ecall(d1,a,nb,d2):
+    return setarr('NB',nb+[0]*(16-len(nb)))+'MOVE %s TO WS-FX(1)\nMOVE %d TO WS-I(2)\nMOVE %d TO WS-I(3)\nMOVE %s TO WS-FX(4)\nCALL "GC5-OX-ENGINE" USING WS-FX(1) WS-I(2) WS-I(3) WS-NBG WS-FX(4) WS-R(1) WS-R(2)'%(d1,a,len(nb),d2)
+g.case('changeOverTime (4.1, 4.2, V1, V2): draw 1 at or above the gate stops after one draw; an abort makes no second draw; otherwise the second draw below p advances the block (changed, draws made)',[("0",ecall(*c),2) for c in ec]," ".join(show(*engine(*c)) for c in ec))
+g.run('isRandomlyTicking (4.3, V6): a weathering block ticks only when it has a next block; oxidized blocks and waxed blocks do not',["1","0"],'CALL "GC5-OX-TICKING" USING WS-I(1) WS-R(1)',1,"1 0")
+W(g,4)
+# ===== 5
+g=GG(5,'The ladder, the families and the tables','T0619','the weather state ladder, the 15 families, the block ids and names and the next, previous, first and waxed lookups.')
+FAM=[("copper_block",1124,"WeatheringCopperFullBlock","Block"),("cut_copper",1134,"WeatheringCopperFullBlock","Block"),("chiseled_copper",1142,"WeatheringCopperFullBlock","Block"),
+("cut_copper_stairs",1150,"WeatheringCopperStairBlock","StairBlock"),("cut_copper_slab",1158,"WeatheringCopperSlabBlock","SlabBlock"),("copper_door",1166,"WeatheringCopperDoorBlock","DoorBlock"),
+("copper_trapdoor",1174,"WeatheringCopperTrapDoorBlock","TrapDoorBlock"),("copper_grate",1182,"WeatheringCopperGrateBlock","WaterloggedTransparentBlock"),("copper_bulb",1190,"WeatheringCopperBulbBlock","CopperBulbBlock"),
+("copper_chest",1198,"WeatheringCopperChestBlock","CopperChestBlock"),("copper_golem_statue",1206,"WeatheringCopperGolemStatueBlock","CopperGolemStatueBlock"),("lightning_rod",1214,"WeatheringLightningRodBlock","LightningRodBlock"),
+("copper_bars",392,"WeatheringCopperBarsBlock","IronBarsBlock"),("copper_chain",401,"WeatheringCopperChainBlock","ChainBlock"),("copper_lantern",941,"WeatheringLanternBlock","LanternBlock")]
+g.extra=" 01 WS-NAME               PIC X(48).\n"
+WP=["","exposed_","weathered_","oxidized_"]
+def bname(f,o):
+    base=FAM[f-1][0]
+    if base=="copper_block":
+        return ["copper_block","exposed_copper","weathered_copper","oxidized_copper"][o%4] if o<4 else ["waxed_copper_block","waxed_exposed_copper","waxed_weathered_copper","waxed_oxidized_copper"][o%4]
+    return ("waxed_" if o>=4 else "")+WP[o%4]+base
+def clamp(x): return max(0,min(3,x))
+g.run('WeatherState (5.1): unaffected 0, exposed 1, weathered 2, oxidized 3; next and previous are ordinal plus or minus one clamped at the ends',["0","1","2","3"],'CALL "GC5-LADDER-STEP" USING WS-I(1) WS-R(1) WS-R(2)',2," ".join(show(clamp(s+1),clamp(s-1)) for s in range(4)))
+g.run('counts (5.2): 15 collections, 15 x 4 = 60 wax pairs, 15 x 3 = 45 oxidation steps, 8 blocks per family',["0"],'CALL "GC5-LADDER-COUNTS" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"15/60/45/8")
+g.run('families (5.2 table): the first block id of each of the 15 collections, in the table order',[str(i) for i in range(1,16)],'CALL "GC5-FAMILY-FIRST" USING WS-I(1) WS-R(1)',1," ".join(str(f[1]) for f in FAM))
+def cl(f,k): return 'MOVE %d TO WS-I(2)\nCALL "GC5-FAMILY-CLASS" USING WS-I(1) WS-I(2) WS-NAME\nMOVE WS-NAME TO WS-T1\nMOVE SPACES TO WS-T2'%k
+for k,lab in ((1,'weathering class'),(2,'waxed class')):
+    for a in range(0,15,5):
+        g.case(lab+' of the families %d to %d (5.2 table; the waxed lantern is a LanternBlock)'%(a+1,a+5),[(str(i+1),cl(i+1,k),'TEXT') for i in range(a,a+5)]," ".join(FAM[i][1+k]+"|" for i in range(a,a+5)))
+ids=[(1,0),(1,7),(2,3),(5,4),(13,2),(15,5),(12,1),(4,6),(10,0),(14,7),(3,3),(6,2),(7,1),(8,0),(9,5),(11,6)]
+g.run('block id (5.2): the first id plus the offset 0 to 7 (unaffected, exposed, weathered, oxidized, then the four waxed)',[S(*c) for c in ids],'CALL "GC5-BLOCK-ID" USING WS-I(1) WS-I(2) WS-R(1)',1," ".join(str(FAM[f-1][1]+o) for f,o in ids))
+def nm(f,o): return 'MOVE %d TO WS-I(2)\nCALL "GC5-BLOCK-NAME" USING WS-I(1) WS-I(2) WS-NAME\nMOVE WS-NAME TO WS-T1\nMOVE SPACES TO WS-T2'%o
+g.case('names of the copper_block family (5.2): copper_block, exposed_copper, weathered_copper, oxidized_copper, waxed_copper_block, waxed_exposed_copper, waxed_weathered_copper, waxed_oxidized_copper',[("1",nm(1,o),'TEXT') for o in range(8)]," ".join(bname(1,o)+"|" for o in range(8)))
+nms=[(f,o) for f in range(2,16) for o in (0,5)]+[(4,3),(4,7),(13,2),(15,6)]
+for a in range(0,len(nms),6):
+    ch=nms[a:a+6]
+    g.case('names of the other families (5.2) %d: prefixes "", exposed_, weathered_, oxidized_ and waxed_ in front'%(a//6+1),[(str(f),nm(f,o),'TEXT') for f,o in ch]," ".join(bname(f,o)+"|" for f,o in ch))
+def lookup(i):
+    for n,(nmx,first,_,_) in enumerate(FAM):
+        if first<=i<first+8: return n+1,i-first,1
+    return 0,0,0
+lk=[1124,1131,1132,1133,1141,1142,1213,1221,392,408,409,941,948,400,1123,1222,0,780]
+g.run('lookup by id: family 1 to 15 and offset for the 8 blocks of a family; ids outside every family (copper ore, stone, 1133 between families) are not found (found 0)',[str(i) for i in lk],'CALL "GC5-BLOCK-LOOKUP" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*lookup(i)) for i in lk))
+def nxt(i):
+    f,o,fd=lookup(i)
+    if not fd: return (0,0,0,0,0,0)
+    st=o%4; wx=o>=4
+    nx=i+1 if (not wx and st<3) else 0
+    pv=i-1 if (not wx and st>0) else 0
+    first=i-st if not wx else i
+    waxed=i+4 if not wx else 0
+    off=i-4 if wx else 0
+    tick=int((not wx) and st<3)
+    return nx,pv,first,waxed,off,tick
+nl=[1124,1125,1126,1127,1128,1131,1135,1210,1214,392,395,396,399,941,942,945,1132,5,0]
+for a in range(0,len(nl),5):
+    ch=nl[a:a+5]
+    g.run('getNext, getPrevious, getFirst (5.1, 4.3), the waxed block (wax on), the unwaxed block (wax off) and isRandomlyTicking, group %d; 0 when there is none: an oxidized block has no next, a waxed block has no previous, getFirst of a waxed block is itself'%(a//5+1),[str(i) for i in ch],'CALL "GC5-BLOCK-NEXT" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6)',6," ".join(show(*nxt(i)) for i in ch))
+W(g,5)
+# ===== 6
+g=GG(6,'Per-class hooks','T0621','the conditions of the random tick per class, the door shape update, the chest partner flow and the statue use.')
+def runs(cl_,half,tp,be,op):
+    if cl_==2: return int(half==0)
+    if cl_==3: return int(tp!=2 and be==1 and op==0)
+    return 1
+rc=[(1,0,0,0,0),(5,0,0,0,0),(2,0,0,0,0),(2,1,0,0,0),(3,0,0,1,0),(3,0,1,1,0),(3,0,2,1,0),(3,0,0,0,0),(3,0,0,1,1),(3,0,1,1,2),(4,0,0,0,0),(1,1,2,0,5)]
+g.run('which classes run changeOverTime (6, V7): a door only for the lower half (0; upper 1), a chest when its type is not right (0 single, 1 left, 2 right), the block entity is a chest and no entity has the container open; the statue and the other classes always',[S(*c) for c in rc],'CALL "GC5-HOOK-RUNS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1)',1," ".join(str(runs(*c)) for c in rc))
+def dsu(half,d,isd,df,sv):
+    other=2 if half==0 else 1
+    if d==other:
+        return 1 if (isd and df) else 2
+    if half==0 and d==1 and not sv: return 2
+    return 0
+dc=[(0,2,1,1,1),(1,1,1,1,1),(0,2,0,1,1),(0,2,1,0,1),(1,1,0,0,1),(1,1,1,0,1),(0,1,0,0,0),(0,1,0,0,1),(1,2,0,0,0),(0,3,1,1,0),(1,3,0,0,0),(1,1,1,1,0)]
+g.run('door shape update (6.1, 9.3): from the other half\'s direction a door of the other half gives the neighbour state with this half; a non-door or the same half gives air; the lower half with a down update that cannot survive gives air; else unchanged (0 unchanged, 1 neighbour state, 2 air)',[S(*c) for c in dc],'CALL "GC5-DOOR-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1)',1," ".join(str(dsu(*c)) for c in dc))
+csu=[(1,1,1),(0,1,1),(1,0,1),(1,1,0),(0,0,0)]
+g.run('chest shape update (6.2 (a)): the result is the neighbour\'s block with this chest\'s properties when the changed neighbour is a copper chest, this chest\'s type is not single and the direction is the connected one',[S(*c) for c in csu],'CALL "GC5-CHEST-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1,"1 0 0 0 0")
+def least(both,ns,tw,ow,to,oo):
+    if not (both and ns): return (0,0,tw)
+    un=int(tw!=ow)
+    win=1 if to<=oo else 2
+    wx=(tw if win==1 else ow)
+    if un: wx=0
+    return (un,win,wx)
+lc=[(1,1,0,0,0,0),(1,1,1,0,0,1),(1,1,0,1,1,0),(1,1,1,1,3,2),(1,1,1,1,1,1),(1,1,0,0,2,2),(1,1,0,1,0,3),(1,0,1,0,0,0),(0,1,0,1,0,0),(1,1,1,0,2,1)]
+g.run('least oxidized chest (6.2 (b), V19, 9.7): for a double chest of two copper chests, exactly one waxed unwaxes both first; the smaller or equal ordinal wins (this chest on a tie); a pair stays waxed only when both were waxed (unwaxed flag, winner 1 this 2 other 0 none, result waxed)',[S(*c) for c in lc],'CALL "GC5-CHEST-LEAST" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*least(*c)) for c in lc))
+def stu(be,ax,un,hc,prod):
+    if not be: return (0,0,0,0,0)
+    if ax:
+        if un: return (1,1,1,prod,1)
+        return (0,0,0,0,0)
+    if hc: return (0,0,0,0,0)
+    return (1,2,0,0,0)
+sc_=[(1,1,1,0,1),(1,1,1,0,0),(1,1,0,0,0),(1,0,0,1,0),(1,0,0,0,0),(1,0,1,0,0),(0,1,1,0,0),(1,1,0,1,0)]
+g.run('golem statue use (6.3): an axe on an unaffected statue removes the statue, damages the axe by 1, adds the produced entity and removes the block (success); an axe on an aged statue passes; honeycomb passes; any other item changes the pose (result 1 success 0 pass, action 1 remove 2 pose, damage, entity added, block removed)',[S(*c) for c in sc_],'CALL "GC5-STATUE-USE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*stu(*c)) for c in sc_))
+g.run('door oxidation (9.3 example): the lower half becomes the next weather state and the upper half takes it with half = upper: the lower half ticks (1), the upper never (0)',["2 0 0 0 0","2 1 0 0 0"],'CALL "GC5-HOOK-RUNS" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1)',1,"1 0")
+W(g,6)
