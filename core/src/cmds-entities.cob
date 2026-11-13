@@ -3435,3 +3435,278 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CMDS-REG-ATTRIBUTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-WP-CLEAN.
+*> Frees the entries of CORE-WAYPOINTS (WPSTORE.cpy) whose entity is no longer in the world.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WPSTORE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WP-MAX
+         IF WP-ID(WS-I) > 0
+             CALL "CXB-ROW-OF-ID" USING WP-ID(WS-I) WS-ROW
+             IF WS-ROW = 0
+                 MOVE 0 TO WP-ID(WS-I)
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-WP-CLEAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-WP-ENTRY.
+*> USING entity id, entry out (BINARY-LONG): the entry of CORE-WAYPOINTS of the entity; an entity without one gets the first free entry, with no colour and the default style.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WPSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WP-MAX OR L-ENTRY > 0
+         IF WP-ID(WS-I) = L-ID
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     IF L-ENTRY = 0
+         MOVE 1 TO L-ENTRY
+         PERFORM UNTIL WP-ID(L-ENTRY) = 0
+             ADD 1 TO L-ENTRY
+         END-PERFORM
+         MOVE L-ID TO WP-ID(L-ENTRY)
+         MOVE 0 TO WP-COLOR-KIND(L-ENTRY) WP-COLOR(L-ENTRY) WP-STYLE-LENGTH(L-ENTRY)
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-WP-ENTRY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-WAYPOINT.
+*> waypoint list | waypoint modify <waypoint> color <team colour> | color hex <hex> | color reset | style reset | style set <style> (16 §5.15, level 2). A waypoint is a living entity (a ground
+*> item is no waypoint: argument.entity.notfound.entity). list: the waypoints of the source's dimension are the living entities there whose waypoint_transmit_range (CXB-ATTR-EFFECTIVE; 0
+*> unless /attribute raised it) is above 0, in the order of CORE-ENTITIES; commands.waypoint.list.success [count, dimension id, the block coordinates "x, y, z" of each joined by ", "] or
+*> .list.empty [dimension id]; the result is the count. modify keeps colour and style of the entity (WPSTORE.cpy) and tells commands.waypoint.modify.color [team colour name or #RRGGBB] /
+*> .color.reset / .style, all told to the source only; the result is 1 (the catalog gives none). BLOCKED: nothing draws, sends (Tracked Waypoint 05b 0x8D) or saves the settings,
+*> and the locator_bar rule is not read; the click-to-teleport hover text of a list entry is not made.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY DIMENSIONS.
+ COPY WPSTORE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-WAYPOINT       PIC X(32) VALUE "waypoint".
+ 01 WS-NAME-COLOR          PIC X(32) VALUE "color".
+ 01 WS-NAME-STYLE          PIC X(32) VALUE "style".
+ 01 WS-NAME-LIST           PIC X(32) VALUE "list".
+ 01 WS-NAME-HEX            PIC X(32) VALUE "hex".
+ 01 WS-NAME-RESET          PIC X(32) VALUE "reset".
+ 01 WS-RANGE-ID            PIC X(64) VALUE "minecraft:waypoint_transmit_range".
+ 01 WS-RANGE-LENGTH        BINARY-LONG VALUE 33.
+ 01 WS-COLORS.
+    05 FILLER              PIC X(16) VALUE "black".
+    05 FILLER              PIC X(16) VALUE "dark_blue".
+    05 FILLER              PIC X(16) VALUE "dark_green".
+    05 FILLER              PIC X(16) VALUE "dark_aqua".
+    05 FILLER              PIC X(16) VALUE "dark_red".
+    05 FILLER              PIC X(16) VALUE "dark_purple".
+    05 FILLER              PIC X(16) VALUE "gold".
+    05 FILLER              PIC X(16) VALUE "gray".
+    05 FILLER              PIC X(16) VALUE "dark_gray".
+    05 FILLER              PIC X(16) VALUE "blue".
+    05 FILLER              PIC X(16) VALUE "green".
+    05 FILLER              PIC X(16) VALUE "aqua".
+    05 FILLER              PIC X(16) VALUE "red".
+    05 FILLER              PIC X(16) VALUE "light_purple".
+    05 FILLER              PIC X(16) VALUE "yellow".
+    05 FILLER              PIC X(16) VALUE "white".
+ 01 WS-COLOR-TABLE REDEFINES WS-COLORS.
+    05 WS-COLOR-NAME       PIC X(16) OCCURS 16 TIMES.
+ 01 WS-DIGITS              PIC X(16) VALUE "0123456789ABCDEF".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-LIT-LIST            BINARY-LONG.
+ 01 WS-LIT-COLOR           BINARY-LONG.
+ 01 WS-LIT-HEX             BINARY-LONG.
+ 01 WS-LIT-RESET           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-ENTITY-ID           BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-LIST                PIC X(1024).
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-LIST-LENGTH         BINARY-LONG.
+ 01 WS-REMAINDER           BINARY-LONG.
+ 01 WS-DIGIT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-STYLE               PIC X(64).
+ 01 WS-STYLE-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "CXB-WP-CLEAN"
+     CALL "BX-LIT" USING WS-NAME-LIST WS-LIT-LIST
+     IF WS-LIT-LIST > 0
+         MOVE 0 TO WS-COUNT
+         MOVE SPACES TO WS-LIST
+         MOVE 1 TO WS-POINTER
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+             MOVE 0 TO WS-HAS
+             IF EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = BS-DIM AND EN-TYPE(WS-I) NOT = CR-LOOSE-ITEM
+                 MOVE EN-PLAYER(WS-I) TO WS-ROW
+                 IF WS-ROW = 0
+                     COMPUTE WS-ROW = 0 - WS-I
+                 END-IF
+                 CALL "CXB-ATTR-EFFECTIVE" USING WS-ROW WS-RANGE-ID WS-RANGE-LENGTH WS-HAS WS-RANGE
+             END-IF
+             IF WS-HAS = 1 AND WS-RANGE > 0
+                 CALL "CXB-PLACE" USING WS-ROW WS-DIM WS-X WS-Y WS-Z WS-YAW WS-PITCH
+                 IF WS-COUNT > 0
+                     STRING ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 END-IF
+                 ADD 1 TO WS-COUNT
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-X)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-Y)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) ", " DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+                 COMPUTE WS-ENTITY = FUNCTION INTEGER(WS-Z)
+                 MOVE WS-ENTITY TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-LIST WITH POINTER WS-POINTER
+             END-IF
+         END-PERFORM
+         COMPUTE WS-LIST-LENGTH = FUNCTION MIN(WS-POINTER - 1, 1024)
+         IF WS-COUNT = 0
+             MOVE "commands.waypoint.list.empty" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+         ELSE
+             MOVE "commands.waypoint.list.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNT
+         END-IF
+         CALL "CMD-TEXT-ARG" USING PB-TEXT DM-KEY(BS-DIM) DM-KEY-LENGTH(BS-DIM)
+         IF WS-COUNT > 0
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-LIST WS-LIST-LENGTH
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         MOVE WS-COUNT TO BR-R-RESULT
+     ELSE
+         CALL "BX-FIND" USING WS-NAME-WAYPOINT WS-INDEX
+         CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+         IF BR-R-FAILED = 0
+             MOVE BX-ROW(1) TO WS-ROW
+             IF WS-ROW < 0
+                 COMPUTE WS-ENTITY = 0 - WS-ROW
+                 IF EN-TYPE(WS-ENTITY) = CR-LOOSE-ITEM
+                     MOVE "argument.entity.notfound.entity" TO WS-KEY
+                     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+                     MOVE SPACES TO WS-A1 WS-A2
+                     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+                     MOVE 1 TO BR-R-FAILED
+                 END-IF
+             END-IF
+         END-IF
+         IF BR-R-FAILED = 0
+             CALL "CXB-ENTITY-ID" USING WS-ROW WS-ENTITY-ID
+             CALL "CXB-WP-ENTRY" USING WS-ENTITY-ID WS-ENTRY
+             CALL "BX-LIT" USING WS-NAME-COLOR WS-LIT-COLOR
+             CALL "BX-LIT" USING WS-NAME-HEX WS-LIT-HEX
+             CALL "BX-LIT" USING WS-NAME-RESET WS-LIT-RESET
+             MOVE 1 TO BR-R-RESULT
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR > 0 AND WS-LIT-RESET > 0
+             MOVE 0 TO WP-COLOR-KIND(WS-ENTRY) WP-COLOR(WS-ENTRY)
+             MOVE "commands.waypoint.modify.color.reset" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR > 0 AND WS-LIT-RESET = 0
+             CALL "BX-FIND" USING WS-NAME-COLOR WS-INDEX
+             MOVE SPACES TO WS-TEXT
+             IF WS-LIT-HEX > 0
+                 MOVE 2 TO WP-COLOR-KIND(WS-ENTRY)
+                 MOVE BA-IVAL(WS-INDEX) TO WP-COLOR(WS-ENTRY)
+                 MOVE "#" TO WS-TEXT(1:1)
+                 MOVE WP-COLOR(WS-ENTRY) TO WS-REMAINDER
+                 PERFORM VARYING WS-I FROM 7 BY -1 UNTIL WS-I < 2
+                     DIVIDE WS-REMAINDER BY 16 GIVING WS-REMAINDER REMAINDER WS-DIGIT
+                     MOVE WS-DIGITS(WS-DIGIT + 1:1) TO WS-TEXT(WS-I:1)
+                 END-PERFORM
+                 MOVE 7 TO WS-TEXT-LENGTH
+             ELSE
+                 MOVE 1 TO WP-COLOR-KIND(WS-ENTRY)
+                 MOVE BA-IVAL(WS-INDEX) TO WP-COLOR(WS-ENTRY)
+                 MOVE WS-COLOR-NAME(WP-COLOR(WS-ENTRY) + 1) TO WS-TEXT
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT)) TO WS-TEXT-LENGTH
+             END-IF
+             MOVE "commands.waypoint.modify.color" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+         IF BR-R-FAILED = 0 AND WS-LIT-COLOR = 0
+             MOVE 0 TO WP-STYLE-LENGTH(WS-ENTRY)
+             IF WS-LIT-RESET = 0
+                 CALL "BX-FIND" USING WS-NAME-STYLE WS-INDEX
+                 CALL "BX-NAMESPACED" USING WS-INDEX WS-STYLE WS-STYLE-LENGTH
+                 MOVE WS-STYLE TO WP-STYLE(WS-ENTRY)
+                 MOVE WS-STYLE-LENGTH TO WP-STYLE-LENGTH(WS-ENTRY)
+             END-IF
+             MOVE "commands.waypoint.modify.style" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-WAYPOINT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-WAYPOINT.
+*> The forms of waypoint (16 §5.15).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-WAYPOINT.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "waypoint list" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color <color:teamcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color hex <color:hexcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> color reset" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> style reset" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "waypoint modify <waypoint:entity> style set <style:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-WAYPOINT.
