@@ -2628,7 +2628,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-DISPATCH-C.
-*> The commands of the lane cmds-c that BR-CMD-CALL and CX-DISPATCH-A do not name: any other command id is help.
+*> The commands of the lane cmds-c that BR-CMD-CALL and CX-DISPATCH-A do not name: any other command id goes on to CX-DISPATCH-D (help at the end of the chain).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCMD.
@@ -2652,7 +2652,7 @@
          WHEN BC-STOPSOUND
              CALL "CX-STOPSOUND"
          WHEN OTHER
-             CALL "CX-HELP"
+             CALL "CX-DISPATCH-D"
      END-EVALUATE
      GOBACK.
  END PROGRAM CX-DISPATCH-C.

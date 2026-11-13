@@ -23,10 +23,10 @@
  PROCEDURE DIVISION.
     CALL "TEST-SETTINGS" USING CORE-SETTINGS
     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
-    MOVE "opal" TO WS-NAME
+    MOVE "Opal" TO WS-NAME
     MOVE 4 TO WS-NAME-LENGTH
     CALL "TEST-JOIN-OP" USING WS-NAME WS-NAME-LENGTH WS-ID-OPAL
-    MOVE "alice" TO WS-NAME
+    MOVE "Alice" TO WS-NAME
     MOVE 5 TO WS-NAME-LENGTH
     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ID-ALICE
     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
@@ -183,6 +183,8 @@
     MOVE "scoreboard players remove @a pts 1" TO WS-LINE
     MOVE "commands.scoreboard.players.remove.success.multiple(1,pts,2)" TO WS-EXPECTED
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+    MOVE "scoreboard players set Alice kills 1" TO WS-LINE
+    CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
     MOVE "acceptance US13 /scoreboard players list tracked holders" TO TL-CASE
     MOVE "scoreboard players list" TO WS-LINE
     MOVE "commands.scoreboard.players.list.success(2,Alice, Opal)" TO WS-EXPECTED
@@ -193,7 +195,7 @@
     CALL "TA-CHECK-N" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED-N
     MOVE "acceptance US13 /scoreboard players list one holder" TO TL-CASE
     MOVE "scoreboard players list Alice" TO WS-LINE
-    MOVE "commands.scoreboard.players.list.entity.success(Alice,1) | commands.scoreboard.players.lis" & "t.entity.entry(pts,1)" TO WS-EXPECTED
+    MOVE "commands.scoreboard.players.list.entity.success(Alice,2) | commands.scoreboard.players.lis" & "t.entity.entry(pts,1) | commands.scoreboard.players.list.entity.entry(kills,1)" TO WS-EXPECTED
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "acceptance US13 /scoreboard players list a holder without scores" TO TL-CASE
     MOVE "scoreboard players list Zed" TO WS-LINE
@@ -315,6 +317,8 @@
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "scoreboard players set Alice kills 1" TO WS-LINE
     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
+    MOVE "scoreboard players set Alice pts 1" TO WS-LINE
+    CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
     MOVE "acceptance US13 /scoreboard players reset * resets every tracked holder" TO TL-CASE
     MOVE "scoreboard players reset *" TO WS-LINE
     MOVE "commands.scoreboard.players.reset.all.single(Alice)" TO WS-EXPECTED
@@ -389,7 +393,7 @@
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "acceptance US13 /scoreboard players set a selector that finds nobody" TO TL-CASE
     MOVE "scoreboard players set @a[name=Nobody] pts 1" TO WS-LINE
-    MOVE "argument.entity.notfound.player()" TO WS-EXPECTED
+    MOVE "argument.entity.notfound.entity()" TO WS-EXPECTED
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "summon cobolcraft:sodgrazer 5.0 64.0 5.0" TO WS-LINE
     CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
@@ -408,7 +412,7 @@
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "scoreboard players list" TO WS-LINE
     MOVE SPACES TO WS-EXPECTED
-    STRING "commands.scoreboard.players.list.success(1," DELIMITED BY SIZE WS-UUID-TEXT DELIMITED BY SIZE ")" DELIMITED BY SIZE INTO WS-EXPECTED
+    STRING "commands.scoreboard.players.list.success(3,Alice, Opal, " DELIMITED BY SIZE WS-UUID-TEXT DELIMITED BY SIZE ")" DELIMITED BY SIZE INTO WS-EXPECTED
     MOVE "acceptance US13 /scoreboard players list names a mob holder by its UUID" TO TL-CASE
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "scoreboard players set Alice kills 6" TO WS-LINE
@@ -431,7 +435,7 @@
     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
     MOVE "acceptance US13 /scoreboard a player below level 2 cannot run it" TO TL-CASE
     MOVE "scoreboard objectives list" TO WS-LINE
-    MOVE "command.unknown.argument() |" TO WS-EXPECTED
+    MOVE "command.unknown.command() |" TO WS-EXPECTED
     CALL "TA-CHECK" USING WS-ID-ALICE TL-CASE WS-LINE WS-EXPECTED
     GOBACK.
  END PROGRAM TEST-CMD-SCOREBOARD.
