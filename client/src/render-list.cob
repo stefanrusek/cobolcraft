@@ -266,6 +266,8 @@
              END-PERFORM
          END-IF
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-SECTIONS
+*>           Most sections of a column (the air above the ground) have no mesh and nothing to upload: they are passed over at once.
+           IF WR-UPLOAD(WS-R, WS-S) = 1 OR WR-OP-COUNT(WS-R, WS-S) > 0 OR WR-TR-COUNT(WS-R, WS-S) > 0
              COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-R - 1) * CL-MAX-SECTIONS + WS-S - 1) * 2
              IF WR-UPLOAD(WS-R, WS-S) = 1
                      AND RL-UPLOAD-COUNT <= CL-MAX-UPLOADS - CL-UPLOAD-RESERVE - 2
@@ -299,6 +301,7 @@
                      COMPUTE WS-TDIST(WS-TCOUNT) = WS-DX ** 2 + WS-DY ** 2 + WS-DZ ** 2
                  END-IF
              END-IF
+           END-IF
          END-PERFORM
      END-PERFORM
 *>   The entity figures (eye-relative, so drawn with projection x view alone), after the opaque

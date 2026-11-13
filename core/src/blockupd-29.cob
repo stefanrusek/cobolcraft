@@ -1972,6 +1972,65 @@
  END PROGRAM BR-RANDOM-TICK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BR-RANDOM-TICK-ROW.
+*> USING dimension row, chunk row, x, y, z (BINARY-LONG; the position lies in that chunk): BR-RANDOM-TICK for a position of a loaded chunk
+*> row, without the world lookup, and with the marks of a state (BU-MARKED walks every rule) kept for the run of the random ticks:
+*> chunk row 0 forgets them (WORLDSIM-RANDOM does it before each run, so rules added between runs count).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 K-8                    BINARY-LONG VALUE 8.
+ 01 K-11B                  BINARY-LONG VALUE 11.
+ 01 K-11                   BINARY-LONG VALUE 11.
+ 01 K-13                   BINARY-LONG VALUE 13.
+ 01 WS-CACHE               PIC X(65536).
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-MARK                BINARY-LONG.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-OUT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-ROW L-X L-Y L-Z.
+     IF L-ROW = 0
+         MOVE ALL "~" TO WS-CACHE
+         GOBACK
+     END-IF
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
+     COMPUTE WS-CELL = (L-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - CK-Z(L-ROW) * 16) * 16 + L-X - CK-X(L-ROW) * 16 + 1
+     MOVE CE-STATE(WS-CELL) TO WS-STATE
+*>   The marks of the state: 1 the block ticks, 2 the fluid ticks (kept as the characters 0 to 3).
+     IF WS-CACHE(WS-STATE + 1:1) = "~"
+         MOVE 0 TO WS-BITS
+         CALL "BU-MARKED" USING K-11B WS-STATE WS-MARK
+         IF WS-MARK = 1
+             ADD 1 TO WS-BITS
+         END-IF
+         CALL "BU-MARKED" USING K-13 WS-STATE WS-MARK
+         IF WS-MARK = 1
+             ADD 2 TO WS-BITS
+         END-IF
+         MOVE FUNCTION CHAR(WS-BITS + 49) TO WS-CACHE(WS-STATE + 1:1)
+     END-IF
+     COMPUTE WS-BITS = FUNCTION ORD(WS-CACHE(WS-STATE + 1:1)) - 49
+     IF WS-BITS = 1 OR WS-BITS = 3
+         CALL "BU-HOOK" USING K-8 L-DIM L-X L-Y L-Z WS-STATE WS-ZERO WS-ZERO2 WS-OUT
+     END-IF
+     IF WS-BITS = 2 OR WS-BITS = 3
+         CALL "BU-HOOK" USING K-11 L-DIM L-X L-Y L-Z WS-STATE WS-ZERO WS-ZERO2 WS-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM BR-RANDOM-TICK-ROW.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-ADD.
 *> USING dimension row, x, y, z, block id, parameter a, parameter b (BINARY-LONG): ServerLevel.blockEvent (29 section 6): the event
 *> is appended to the pending set unless an event equal in all seven fields is already there.

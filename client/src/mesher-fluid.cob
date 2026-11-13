@@ -176,7 +176,21 @@
      MOVE 0 TO WS-NONE
 *>   The neighbours: pass 1 the four sides, the cell above and below (face selection, 10.1); pass 2, only when a face is
 *>   drawn, the four diagonals and the heights of the eight (the corner heights, 10.2): a cell with nothing to draw costs six reads.
+     MOVE 1 TO MB-LIGHT-OFF
      PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2 OR WS-NONE = 1
+         IF WS-PASS = 2
+*>           A face is to be drawn: the light of the first look's cells is read now (the six reads of pass 1 had states only).
+             MOVE 0 TO MB-LIGHT-OFF
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+                 IF WS-I < 5 OR WS-I > 8
+                     COMPUTE WS-NX = L-X + WS-DX(WS-I)
+                     COMPUTE WS-NY = L-Y + WS-DY(WS-I)
+                     COMPUTE WS-NZ = L-Z + WS-DZ(WS-I)
+                     CALL "MF-AT" USING CLIENT-STATE L-ROW L-HEIGHT WS-NX WS-NY WS-NZ WS-N-STATE(WS-I)
+                         WS-N-SKY(WS-I) WS-N-BLOCK(WS-I)
+                 END-IF
+             END-PERFORM
+         END-IF
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
              IF (WS-PASS = 1 AND (WS-I < 5 OR WS-I > 8)) OR (WS-PASS = 2 AND WS-I > 4 AND WS-I < 9)
                  COMPUTE WS-NX = L-X + WS-DX(WS-I)
@@ -241,6 +255,7 @@
              END-IF
          END-IF
      END-PERFORM
+     MOVE 0 TO MB-LIGHT-OFF
      IF WS-NONE = 1
          GOBACK
      END-IF
@@ -518,6 +533,10 @@
              SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
              COMPUTE WS-K = L-Y * 256 + WS-NZ * 16 + WS-NX
              MOVE CE-STATE(WS-K + 1) TO L-STATE
+             IF MB-LIGHT-OFF = 1
+                 MOVE 0 TO L-SKY L-BLOCK
+                 GOBACK
+             END-IF
              DIVIDE WS-K BY 2 GIVING WS-HALF REMAINDER WS-ODD
              MOVE CE-SKY(CE-LIGHT-BYTES + WS-HALF + 1) TO WS-BYTE
              IF WS-ODD = 0

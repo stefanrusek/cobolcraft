@@ -45,6 +45,69 @@
  END PROGRAM WORLDSIM-FIND-BLOCK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. WORLDSIM-COLUMN-TOP.
+*> USING dimension row, x, z (BINARY-LONG; the column), top out (BINARY-LONG): one above the highest non-void block of the column (the dimension's lowest
+*> y when it holds none). A column of a loaded chunk is read from the chunk, a section with no block at a time; any other through WORLD-GET-BLOCK from the top
+*> (the precipitation draw of the random ticks does this for every chunk and tick, and the block-by-block walk down from the build limit cost most of a frame).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-MIN-Y               BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-LY                  BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-COLUMN              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 B-CELLS                PIC X(CE-CHUNK-BYTES) BASED.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-TOP.
+     MOVE DM-MIN-Y(L-DIM) TO WS-MIN-Y
+     MOVE WS-MIN-Y TO L-TOP
+     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
+     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
+     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+     IF WS-ROW = 0
+         COMPUTE WS-Y = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
+         PERFORM VARYING WS-Y FROM WS-Y BY -1 UNTIL WS-Y < WS-MIN-Y OR L-TOP > WS-MIN-Y
+             CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-STATE
+             IF WS-STATE NOT = 0
+                 COMPUTE L-TOP = WS-Y + 1
+             END-IF
+         END-PERFORM
+         GOBACK
+     END-IF
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
+     SET ADDRESS OF B-CELLS TO ADDRESS OF CE-CHUNK
+     COMPUTE WS-COLUMN = (L-Z - WS-CZ * 16) * 16 + (L-X - WS-CX * 16) + 1
+     MOVE 0 TO WS-DONE
+     PERFORM VARYING WS-S FROM DM-HEIGHT(L-DIM) BY -16 UNTIL WS-S < 16 OR WS-DONE = 1
+         COMPUTE WS-BASE = (WS-S / 16 - 1) * 8192 + 1
+         IF B-CELLS(WS-BASE:8192) NOT = LOW-VALUES
+             PERFORM VARYING WS-LY FROM WS-S BY -1 UNTIL WS-LY < WS-S - 15 OR WS-DONE = 1
+                 COMPUTE WS-BASE = (WS-LY - 1) * 256 + WS-COLUMN
+                 MOVE CE-STATE(WS-BASE) TO WS-STATE
+                 IF WS-STATE NOT = 0
+                     COMPUTE L-TOP = WS-MIN-Y + WS-LY
+                     MOVE 1 TO WS-DONE
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM WORLDSIM-COLUMN-TOP.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDSIM-PRECIPITATION.
 *> USING dimension row, x, z (BINARY-LONG; the column), raining (BINARY-LONG): tickPrecipitation (33 section 4.4). top is one above the highest non-void block
 *> of the column, below = top - 1, the biome that of the column. 1 Freeze: shouldFreeze at `below` (WW-FREEZE: not warm enough at top, inside the height, block
@@ -115,14 +178,7 @@
  01 L-RAINING              BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Z L-RAINING.
      MOVE DM-MIN-Y(L-DIM) TO WS-MIN-Y
-     COMPUTE WS-Y = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
-     MOVE WS-MIN-Y TO WS-TOP
-     PERFORM VARYING WS-Y FROM WS-Y BY -1 UNTIL WS-Y < WS-MIN-Y OR WS-TOP > WS-MIN-Y
-         CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-STATE
-         IF WS-STATE NOT = 0
-             COMPUTE WS-TOP = WS-Y + 1
-         END-IF
-     END-PERFORM
+     CALL "WORLDSIM-COLUMN-TOP" USING L-DIM L-X L-Z WS-TOP
      COMPUTE WS-BELOW = WS-TOP - 1
      COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
      COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16

@@ -200,6 +200,11 @@ void cc_f64_lerp_f64(const double *t, const double *a, const double *b, double *
  * regenerates the mip levels it touches. Both return 0 or call cc_fatal. */
 int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rgba, int32_t mip_levels);
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba);
+/* Between cc_vk_texture_update_begin and cc_vk_texture_update_end the updates are recorded and submitted together, waited for once
+ * (each alone waits for the GPU to be idle, which costs a frame's work for every animated sprite); the pixels read back the same
+ * after the end. The end with no begin, or with no update between, does nothing. */
+void cc_vk_texture_update_begin(void);
+void cc_vk_texture_update_end(void);
 
 /* §9 addition: the daylight factor (0 to 1, default 1) that scales every vertex's sky term in the draws that
  * follow; read through a pointer (a COBOL FLOAT-SHORT is passed BY REFERENCE). */

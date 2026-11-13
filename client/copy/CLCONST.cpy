@@ -263,7 +263,8 @@
  78 CL-TICK-MS              VALUE 50.
  78 CL-MAX-PUMP-TICKS       VALUE 3.    *> core ticks SP-PUMP runs in one frame
  78 CL-PUMP-DEBT-MS         VALUE 250.  *> owed time SP-PUMP keeps after those ticks; more is dropped
- 78 CL-MESH-BUDGET-US       VALUE 8000. *> microseconds of meshing per frame (MESH-DIRTY)
+ 78 CL-MESH-BUDGET-US       VALUE 4000. *> microseconds of meshing per frame (MESH-DIRTY)
+ 78 CL-MESH-CREDIT-US       VALUE 7000. *> microseconds of meshing credit each frame earns, and the most it keeps (MB-CREDIT)
  78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
  78 CL-MAX-ICON-VERTICES    VALUE 1536.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
