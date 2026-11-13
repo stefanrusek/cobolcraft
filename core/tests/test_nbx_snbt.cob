@@ -245,7 +245,9 @@
      MOVE 9 TO WS-TYPE
      CALL "NBX-NEW" USING WS-TYPE WS-B
      CALL "NBX-ADD" USING WS-B WS-A
-     MOVE "pool: adding the sink to a parent leaves the parent empty" TO WS-CASE
+     MOVE 0 TO WS-I
+     CALL "NBX-INSERT" USING WS-B WS-A WS-I
+     MOVE "pool: adding or inserting the sink to a parent leaves the parent empty" TO WS-CASE
      MOVE 0 TO WS-EXPECTED-N
      MOVE NX-COUNT(WS-B) TO WS-OBSERVED-N
      CALL "TEST-EXPECT-NUMBER" USING WS-CASE WS-EXPECTED-N WS-OBSERVED-N

@@ -355,3 +355,43 @@
      END-PERFORM
      GOBACK.
  END PROGRAM NBX-MERGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NBX-INSERT.
+*> USING list, node, position: the node becomes the child at that 0-based position of the list (appended when the position is at or past the end).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY NBXTREE.
+ 01 WS-PREV                BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LIST                 BINARY-LONG.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-POSITION             BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIST L-NODE L-POSITION.
+     MOVE 0 TO WS-PREV
+     MOVE NX-FIRST(L-LIST) TO WS-CUR
+     MOVE L-POSITION TO WS-I
+     PERFORM UNTIL WS-I <= 0 OR WS-CUR = 0
+         MOVE WS-CUR TO WS-PREV
+         MOVE NX-NEXT(WS-CUR) TO WS-CUR
+         SUBTRACT 1 FROM WS-I
+     END-PERFORM
+     EVALUATE TRUE
+         WHEN L-NODE = NX-SINK
+             CONTINUE
+         WHEN WS-CUR = 0
+             CALL "NBX-ADD" USING L-LIST L-NODE
+         WHEN OTHER
+             MOVE WS-CUR TO NX-NEXT(L-NODE)
+             MOVE L-LIST TO NX-PARENT(L-NODE)
+             IF WS-PREV = 0
+                 MOVE L-NODE TO NX-FIRST(L-LIST)
+             ELSE
+                 MOVE L-NODE TO NX-NEXT(WS-PREV)
+             END-IF
+             ADD 1 TO NX-COUNT(L-LIST)
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM NBX-INSERT.
