@@ -49,6 +49,10 @@
      IF MN-WINDOW(L-ROW) > 0 AND MN-CSIZE(L-ROW) > 0
          MOVE MN-CSIZE(L-ROW) TO WS-OWN
          EVALUATE TRUE
+             WHEN L-SLOT < WS-OWN AND MN-CFAMILY(L-ROW) >= 20 AND L-SLOT = MN-WRES(L-ROW)
+*>               The result slot of a workstation menu is the result slot of the model (kind 4).
+                 MOVE 4 TO L-KIND
+                 MOVE 1 TO L-INDEX
              WHEN L-SLOT < WS-OWN
                  MOVE 6 TO L-KIND
                  COMPUTE L-INDEX = L-SLOT + 1
@@ -429,6 +433,10 @@
                      WHEN 2
                          CALL "FURN-MAY-FUEL" USING L-ITEM L-RESULT
                  END-EVALUATE
+             END-IF
+             IF MN-CFAMILY(L-ROW) >= 20
+                 COMPUTE WS-START = WS-INDEX - 1
+                 CALL "MENU-STATION-MAYPLACE" USING L-ROW WS-START L-ITEM L-RESULT
              END-IF
              IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
                  MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
