@@ -1,0 +1,13947 @@
+*> Test of 30 part 3 section 4, `PistonStructureResolver` (core/src/redstone-30-3.cob; T0734): the resolver on small grids: limit, slime and honey, branches, collisions, destroy list, extension and retraction.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-REDSTONE-30-3-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-SGG.
+    05 WS-SG BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-PLG.
+    05 WS-PL BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-DLG.
+    05 WS-DL BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-GRG.
+    05 WS-GR BINARY-LONG OCCURS 4096 TIMES.
+ 01 WS-OPG.
+    05 WS-OP BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-XLG.
+    05 WS-XL BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-X                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: simple extension (12.1): a stone in front of an east piston is pushed (ok, pushed, destroyed, direction, then the pushed cells, the destroyed" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 821/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: push count (12.2): short lines and a line of 12 split over two rows are all pushed [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(819)
+     MOVE 1 TO WS-GR(820)
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/6/0/5 818/819/820/821/822/823/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: push count (12.2): short lines and a line of 12 split over two rows are all pushed [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(819)
+     MOVE 1 TO WS-GR(820)
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 1 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/6/0/5 818/819/820/821/822/823/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: obsidian and torch (12.3): obsidian blocks, a torch at the start cell is destroyed on an extension and the head moves in [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: obsidian and torch (12.3): obsidian blocks, a torch at the start cell is destroyed on an extension and the head moves in [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/1/5 0/0/0/0/0/0/0/0/0/0/0/0 821/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: obsidian and torch (12.3): obsidian blocks, a torch at the start cell is destroyed on an extension and the head moves in [run 3]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: slime branch (12.4): a slime block drags the stone above it and beside it; a honey block beside slime is not dragged [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(821)
+     MOVE 1 TO WS-GR(837)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/5 821/1077/837/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: slime branch (12.4): a slime block drags the stone above it and beside it; a honey block beside slime is not dragged [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(821)
+     MOVE 3 TO WS-GR(837)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 821/1077/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: slime branch (12.4): a slime block drags the stone above it and beside it; a honey block beside slime is not dragged [run 3]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(821)
+     MOVE 2 TO WS-GR(837)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 821/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: slime branch (12.4): a slime block drags the stone above it and beside it; a honey block beside slime is not dragged [run 4]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(821)
+     MOVE 4 TO WS-GR(837)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 821/1077/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: retraction (4.1, 12.5): the start cell is two ahead, blocks move towards the piston; air resolves to nothing; a torch is never destroyed by a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/4 822/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: retraction (4.1, 12.5): the start cell is two ahead, blocks move towards the piston; air resolves to nothing; a torch is never destroyed by a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: retraction (4.1, 12.5): the start cell is two ahead, blocks move towards the piston; air resolves to nothing; a torch is never destroyed by a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: retraction (4.1, 12.5): the start cell is two ahead, blocks move towards the piston; air resolves to nothing; a torch is never destroyed by a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/4 822/1078/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(821)
+     MOVE 4 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/0/5 821/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 8 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 3]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(821)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 4]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(821)
+     MOVE 10 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/0/5 821/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 5]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/5 821/822/823/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: blocked pushes (4.2, 4.3): an immovable block, an extended piston, a chest, bedrock and the world edge stop the push [run 6]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1588)
+     MOVE 4 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: back chain (4.3 step 5): slime pulls the blocks behind it that stick; the piston cell ends the chain; a stone behind slime joins, a stone behind" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(821)
+     MOVE 2 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 821/822/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: back chain (4.3 step 5): slime pulls the blocks behind it that stick; the piston cell ends the chain; a stone behind slime joins, a stone behind" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 821/822/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: back chain (4.3 step 5): slime pulls the blocks behind it that stick; the piston cell ends the chain; a stone behind slime joins, a stone behind" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(821)
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 3 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: collision (4.3 step 7.1, 4.4): two branches meeting in one line reorder the list and branch from the earlier entries [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(819)
+     MOVE 1 TO WS-GR(835)
+     MOVE 1 TO WS-GR(836)
+     MOVE 1 TO WS-GR(837)
+     MOVE 1 TO WS-GR(820)
+     MOVE 2 TO WS-GR(821)
+     MOVE 2 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/6/0/5 819/820/821/835/836/837/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: collision (4.3 step 7.1, 4.4): two branches meeting in one line reorder the list and branch from the earlier entries [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(819)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(820)
+     MOVE 2 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/4/0/5 819/820/1075/1076/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1896)
+     MOVE 10 TO WS-GR(2453)
+     MOVE 3 TO WS-GR(1899)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/2 1896/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 6 TO WS-GR(1656)
+     MOVE 1 TO WS-GR(1400)
+     MOVE 3 TO WS-GR(1144)
+     MOVE 2 TO WS-GR(888)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 10 TO WS-GR(2471)
+     MOVE 1 TO WS-GR(2667)
+     MOVE 6 TO WS-GR(1350)
+     MOVE 6 TO WS-GR(1397)
+     MOVE 10 TO WS-GR(1861)
+     MOVE 1 TO WS-GR(1609)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/4/0/0 1656/1400/1144/888/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(2168)
+     MOVE 1 TO WS-GR(2424)
+     MOVE 5 TO WS-GR(2680)
+     MOVE 5 TO WS-GR(2936)
+     MOVE 6 TO WS-GR(2457)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/1/1 0/0/0/0/0/0/0/0/0/0/0/0 2168/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(1910)
+     MOVE 1 TO WS-GR(1909)
+     MOVE 1 TO WS-GR(1908)
+     MOVE 6 TO WS-GR(1907)
+     MOVE 1 TO WS-GR(1906)
+     MOVE 5 TO WS-GR(1905)
+     MOVE 4 TO WS-GR(2645)
+     MOVE 4 TO WS-GR(1689)
+     MOVE 4 TO WS-GR(1194)
+     MOVE 4 TO WS-GR(1147)
+     MOVE 2 TO WS-GR(2169)
+     MOVE 10 TO WS-GR(1865)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 1909/1910/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(1896)
+     MOVE 1 TO WS-GR(2731)
+     MOVE 1 TO WS-GR(1674)
+     MOVE 1 TO WS-GR(1957)
+     MOVE 4 TO WS-GR(2651)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1095)
+     MOVE 6 TO WS-GR(1096)
+     MOVE 6 TO WS-GR(1093)
+     MOVE 6 TO WS-GR(1605)
+     MOVE 4 TO WS-GR(2457)
+     MOVE 4 TO WS-GR(2634)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/1/2 0/0/0/0/0/0/0/0/0/0/0/0 1896/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(1913)
+     MOVE 1 TO WS-GR(1914)
+     MOVE 2 TO WS-GR(1915)
+     MOVE 1 TO WS-GR(1916)
+     MOVE 2 TO WS-GR(1917)
+     MOVE 1 TO WS-GR(1918)
+     MOVE 1 TO WS-GR(2455)
+     MOVE 1 TO WS-GR(1096)
+     MOVE 2 TO WS-GR(1450)
+     MOVE 10 TO WS-GR(1927)
+     MOVE 6 TO WS-GR(1669)
+     MOVE 10 TO WS-GR(2169)
+     MOVE 1 TO WS-GR(2475)
+     MOVE 2 TO WS-GR(2438)
+     MOVE 2 TO WS-GR(2122)
+     MOVE 4 TO WS-GR(2198)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1913)
+     MOVE 5 TO WS-GR(1914)
+     MOVE 5 TO WS-GR(1915)
+     MOVE 1 TO WS-GR(1916)
+     MOVE 1 TO WS-GR(1917)
+     MOVE 1 TO WS-GR(2470)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/5 1913/0/0/0/0/0/0/0/0/0/0/0 1914/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(1944)
+     MOVE 6 TO WS-GR(1960)
+     MOVE 6 TO WS-GR(1672)
+     MOVE 4 TO WS-GR(2184)
+     MOVE 10 TO WS-GR(1690)
+     MOVE 10 TO WS-GR(2424)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/2 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(2168)
+     MOVE 2 TO WS-GR(2424)
+     MOVE 6 TO WS-GR(2680)
+     MOVE 2 TO WS-GR(2936)
+     MOVE 2 TO WS-GR(3192)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/5/0/1 2168/2424/2680/2936/3192/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(1400)
+     MOVE 1 TO WS-GR(1144)
+     MOVE 5 TO WS-GR(888)
+     MOVE 3 TO WS-GR(632)
+     MOVE 1 TO WS-GR(376)
+     MOVE 9 TO WS-GR(120)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1911)
+     MOVE 1 TO WS-GR(2153)
+     MOVE 1 TO WS-GR(2135)
+     MOVE 1 TO WS-GR(1096)
+     MOVE 1 TO WS-GR(2443)
+     MOVE 1 TO WS-GR(2666)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/4 1911/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(2168)
+     MOVE 5 TO WS-GR(2424)
+     MOVE 1 TO WS-GR(2680)
+     MOVE 3 TO WS-GR(2936)
+     MOVE 1 TO WS-GR(2153)
+     MOVE 2 TO WS-GR(2664)
+     MOVE 10 TO WS-GR(2118)
+     MOVE 1 TO WS-GR(2377)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 3 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(2471)
+     MOVE 3 TO WS-GR(1399)
+     MOVE 3 TO WS-GR(2437)
+     MOVE 3 TO WS-GR(2166)
+     MOVE 10 TO WS-GR(2165)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1 2168/0/0/0/0/0/0/0/0/0/0/0 2424/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(1880)
+     MOVE 2 TO WS-GR(1864)
+     MOVE 5 TO WS-GR(1848)
+     MOVE 4 TO WS-GR(1832)
+     MOVE 5 TO WS-GR(1816)
+     MOVE 10 TO WS-GR(2709)
+     MOVE 2 TO WS-GR(1863)
+     MOVE 3 TO WS-GR(1130)
+     MOVE 2 TO WS-GR(1653)
+     MOVE 10 TO WS-GR(2171)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1896)
+     MOVE 2 TO WS-GR(1880)
+     MOVE 2 TO WS-GR(1864)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/2 1896/1880/1864/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1928)
+     MOVE 1 TO WS-GR(1944)
+     MOVE 1 TO WS-GR(2632)
+     MOVE 6 TO WS-GR(2153)
+     MOVE 1 TO WS-GR(2710)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/3 1928/1944/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 6 TO WS-GR(1913)
+     MOVE 1 TO WS-GR(2677)
+     MOVE 2 TO WS-GR(2682)
+     MOVE 6 TO WS-GR(2629)
+     MOVE 3 TO WS-GR(1433)
+     MOVE 3 TO WS-GR(1960)
+     MOVE 2 TO WS-GR(1163)
+     MOVE 1 TO WS-GR(2647)
+     MOVE 3 TO WS-GR(2170)
+     MOVE 1 TO WS-GR(2153)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 1913/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(1944)
+     MOVE 9 TO WS-GR(1960)
+     MOVE 1 TO WS-GR(1976)
+     MOVE 4 TO WS-GR(1992)
+     MOVE 2 TO WS-GR(2008)
+     MOVE 3 TO WS-GR(2024)
+     MOVE 2 TO WS-GR(2693)
+     MOVE 6 TO WS-GR(2426)
+     MOVE 4 TO WS-GR(2711)
+     MOVE 6 TO WS-GR(1349)
+     MOVE 1 TO WS-GR(2649)
+     MOVE 2 TO WS-GR(2390)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/2 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(2137)
+     MOVE 10 TO WS-GR(2633)
+     MOVE 2 TO WS-GR(2454)
+     MOVE 1 TO WS-GR(2727)
+     MOVE 10 TO WS-GR(1639)
+     MOVE 3 TO WS-GR(2120)
+     MOVE 1 TO WS-GR(2182)
+     MOVE 6 TO WS-GR(1878)
+     MOVE 6 TO WS-GR(2458)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1913)
+     MOVE 6 TO WS-GR(1863)
+     MOVE 3 TO WS-GR(1689)
+     MOVE 4 TO WS-GR(1899)
+     MOVE 1 TO WS-GR(2201)
+     MOVE 1 TO WS-GR(2696)
+     MOVE 3 TO WS-GR(1640)
+     MOVE 6 TO WS-GR(2423)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 1913/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1910)
+     MOVE 6 TO WS-GR(1909)
+     MOVE 1 TO WS-GR(1908)
+     MOVE 9 TO WS-GR(1907)
+     MOVE 4 TO WS-GR(1674)
+     MOVE 10 TO WS-GR(1627)
+     MOVE 6 TO WS-GR(1688)
+     MOVE 2 TO WS-GR(2122)
+     MOVE 3 TO WS-GR(2374)
+     MOVE 4 TO WS-GR(1163)
+     MOVE 1 TO WS-GR(1370)
+     MOVE 1 TO WS-GR(1450)
+     MOVE 6 TO WS-GR(2661)
+     MOVE 10 TO WS-GR(1446)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 1910/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1656)
+     MOVE 1 TO WS-GR(1400)
+     MOVE 5 TO WS-GR(1144)
+     MOVE 1 TO WS-GR(888)
+     MOVE 1 TO WS-GR(1657)
+     MOVE 10 TO WS-GR(2715)
+     MOVE 10 TO WS-GR(1111)
+     MOVE 3 TO WS-GR(2438)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/1/0 1656/1400/0/0/0/0/0/0/0/0/0/0 1144/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1880)
+     MOVE 1 TO WS-GR(1864)
+     MOVE 2 TO WS-GR(1848)
+     MOVE 2 TO WS-GR(1832)
+     MOVE 2 TO WS-GR(1816)
+     MOVE 6 TO WS-GR(2373)
+     MOVE 3 TO WS-GR(2426)
+     MOVE 1 TO WS-GR(1703)
+     MOVE 3 TO WS-GR(2186)
+     MOVE 1 TO WS-GR(2681)
+     MOVE 2 TO WS-GR(2170)
+     MOVE 2 TO WS-GR(1705)
+     MOVE 2 TO WS-GR(2647)
+     MOVE 3 TO WS-GR(1640)
+     MOVE 1 TO WS-GR(2729)
+     MOVE 4 TO WS-GR(1429)
+     MOVE 2 TO WS-GR(1434)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/5/0/3 1816/1832/1848/1864/1880/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1913)
+     MOVE 5 TO WS-GR(1914)
+     MOVE 1 TO WS-GR(1915)
+     MOVE 9 TO WS-GR(1916)
+     MOVE 9 TO WS-GR(1917)
+     MOVE 2 TO WS-GR(1918)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/5 1913/0/0/0/0/0/0/0/0/0/0/0 1914/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(2168)
+     MOVE 1 TO WS-GR(2424)
+     MOVE 5 TO WS-GR(2680)
+     MOVE 6 TO WS-GR(1109)
+     MOVE 4 TO WS-GR(2181)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/1/1 2168/2424/0/0/0/0/0/0/0/0/0/0 2680/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/2 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(1896)
+     MOVE 2 TO WS-GR(1880)
+     MOVE 4 TO WS-GR(1864)
+     MOVE 6 TO WS-GR(1848)
+     MOVE 1 TO WS-GR(1832)
+     MOVE 1 TO WS-GR(1816)
+     MOVE 9 TO WS-GR(1800)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/2/0/2 1896/1880/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 5 TO WS-GR(1914)
+     MOVE 5 TO WS-GR(1915)
+     MOVE 4 TO WS-GR(1916)
+     MOVE 2 TO WS-GR(1879)
+     MOVE 1 TO WS-GR(1145)
+     MOVE 6 TO WS-GR(2185)
+     MOVE 4 TO WS-GR(2394)
+     MOVE 6 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1946)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1928)
+     MOVE 1 TO WS-GR(1944)
+     MOVE 1 TO WS-GR(1451)
+     MOVE 1 TO WS-GR(2137)
+     MOVE 6 TO WS-GR(1927)
+     MOVE 10 TO WS-GR(2165)
+     MOVE 6 TO WS-GR(1400)
+     MOVE 1 TO WS-GR(2217)
+     MOVE 1 TO WS-GR(1704)
+     MOVE 1 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(2376)
+     MOVE 4 TO WS-GR(1194)
+     MOVE 1 TO WS-GR(1369)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/3 1928/1944/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(2168)
+     MOVE 1 TO WS-GR(1163)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/1 2168/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1880)
+     MOVE 6 TO WS-GR(1898)
+     MOVE 10 TO WS-GR(2714)
+     MOVE 10 TO WS-GR(1914)
+     MOVE 6 TO WS-GR(1433)
+     MOVE 4 TO WS-GR(1653)
+     MOVE 4 TO WS-GR(1141)
+     MOVE 10 TO WS-GR(1685)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/3 1880/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1911)
+     MOVE 2 TO WS-GR(1910)
+     MOVE 5 TO WS-GR(1909)
+     MOVE 1 TO WS-GR(1908)
+     MOVE 1 TO WS-GR(1907)
+     MOVE 9 TO WS-GR(1906)
+     MOVE 1 TO WS-GR(1863)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/1/4 1911/1910/0/0/0/0/0/0/0/0/0/0 1909/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(2136)
+     MOVE 3 TO WS-GR(1369)
+     MOVE 1 TO WS-GR(2679)
+     MOVE 10 TO WS-GR(1957)
+     MOVE 2 TO WS-GR(2378)
+     MOVE 1 TO WS-GR(1609)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1896)
+     MOVE 3 TO WS-GR(1880)
+     MOVE 1 TO WS-GR(1864)
+     MOVE 1 TO WS-GR(1848)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/4/0/2 1896/1880/1864/1848/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1400)
+     MOVE 5 TO WS-GR(1144)
+     MOVE 5 TO WS-GR(888)
+     MOVE 4 TO WS-GR(632)
+     MOVE 1 TO WS-GR(376)
+     MOVE 4 TO WS-GR(120)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/1 1400/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1400)
+     MOVE 1 TO WS-GR(1144)
+     MOVE 2 TO WS-GR(888)
+     MOVE 2 TO WS-GR(632)
+     MOVE 1 TO WS-GR(2474)
+     MOVE 10 TO WS-GR(1160)
+     MOVE 3 TO WS-GR(2709)
+     MOVE 2 TO WS-GR(2409)
+     MOVE 4 TO WS-GR(1111)
+     MOVE 4 TO WS-GR(1659)
+     MOVE 6 TO WS-GR(2697)
+     MOVE 10 TO WS-GR(1419)
+     MOVE 1 TO WS-GR(2185)
+     MOVE 10 TO WS-GR(2665)
+     MOVE 1 TO WS-GR(2727)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/1 1400/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(2168)
+     MOVE 2 TO WS-GR(2424)
+     MOVE 4 TO WS-GR(2680)
+     MOVE 4 TO WS-GR(2936)
+     MOVE 9 TO WS-GR(3192)
+     MOVE 10 TO WS-GR(2200)
+     MOVE 1 TO WS-GR(1896)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/2/0/1 2168/2424/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(2168)
+     MOVE 6 TO WS-GR(2424)
+     MOVE 2 TO WS-GR(2680)
+     MOVE 1 TO WS-GR(2936)
+     MOVE 2 TO WS-GR(3192)
+     MOVE 5 TO WS-GR(3448)
+     MOVE 1 TO WS-GR(1867)
+     MOVE 1 TO WS-GR(2712)
+     MOVE 1 TO WS-GR(2682)
+     MOVE 2 TO WS-GR(1099)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/5/1/1 2168/2424/2680/2936/3192/0/0/0/0/0/0/0 3448/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(2168)
+     MOVE 1 TO WS-GR(2424)
+     MOVE 9 TO WS-GR(2680)
+     MOVE 6 TO WS-GR(2936)
+     MOVE 1 TO WS-GR(3192)
+     MOVE 10 TO WS-GR(2426)
+     MOVE 4 TO WS-GR(2454)
+     MOVE 6 TO WS-GR(2409)
+     MOVE 10 TO WS-GR(1691)
+     MOVE 4 TO WS-GR(1192)
+     MOVE 1 TO WS-GR(1162)
+     MOVE 3 TO WS-GR(1865)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(1656)
+     MOVE 1 TO WS-GR(1400)
+     MOVE 1 TO WS-GR(1144)
+     MOVE 4 TO WS-GR(888)
+     MOVE 10 TO WS-GR(1962)
+     MOVE 4 TO WS-GR(1640)
+     MOVE 2 TO WS-GR(1690)
+     MOVE 6 TO WS-GR(1177)
+     MOVE 1 TO WS-GR(2629)
+     MOVE 2 TO WS-GR(1961)
+     MOVE 2 TO WS-GR(2118)
+     MOVE 6 TO WS-GR(1195)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: line grids (4): 40 runs with a line of blocks in front of (or two cells ahead of) the piston and scattered neighbours agree with the model [run" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1913)
+     MOVE 3 TO WS-GR(1914)
+     MOVE 1 TO WS-GR(1915)
+     MOVE 1 TO WS-GR(1916)
+     MOVE 2 TO WS-GR(1917)
+     MOVE 6 TO WS-GR(1142)
+     MOVE 10 TO WS-GR(1877)
+     MOVE 4 TO WS-GR(1174)
+     MOVE 1 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1352)
+     MOVE 4 TO WS-GR(2203)
+     MOVE 3 TO WS-GR(2662)
+     MOVE 3 TO WS-GR(1863)
+     MOVE 1 TO WS-GR(1611)
+     MOVE 1 TO WS-GR(1925)
+     MOVE 8 TO WS-I1
+     MOVE 8 TO WS-I2
+     MOVE 8 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 16 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/5/0/5 1913/1914/1915/1916/1917/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(17)
+     MOVE 6 TO WS-GR(81)
+     MOVE 10 TO WS-GR(273)
+     MOVE 1 TO WS-GR(305)
+     MOVE 5 TO WS-GR(529)
+     MOVE 1 TO WS-GR(561)
+     MOVE 1 TO WS-GR(577)
+     MOVE 9 TO WS-GR(817)
+     MOVE 2 TO WS-GR(849)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 4 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1057)
+     MOVE 10 TO WS-GR(1073)
+     MOVE 10 TO WS-GR(1089)
+     MOVE 4 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 9 TO WS-GR(1361)
+     MOVE 9 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1585)
+     MOVE 3 TO WS-GR(1633)
+     MOVE 7 TO WS-GR(18)
+     MOVE 6 TO WS-GR(66)
+     MOVE 9 TO WS-GR(258)
+     MOVE 10 TO WS-GR(274)
+     MOVE 2 TO WS-GR(290)
+     MOVE 3 TO WS-GR(338)
+     MOVE 4 TO WS-GR(354)
+     MOVE 9 TO WS-GR(802)
+     MOVE 8 TO WS-GR(834)
+     MOVE 6 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 9 TO WS-GR(1074)
+     MOVE 7 TO WS-GR(1090)
+     MOVE 3 TO WS-GR(1122)
+     MOVE 9 TO WS-GR(1362)
+     MOVE 9 TO WS-GR(1554)
+     MOVE 3 TO WS-GR(1586)
+     MOVE 6 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 1 TO WS-GR(3)
+     MOVE 10 TO WS-GR(19)
+     MOVE 2 TO WS-GR(35)
+     MOVE 5 TO WS-GR(259)
+     MOVE 3 TO WS-GR(275)
+     MOVE 2 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 10 TO WS-GR(339)
+     MOVE 2 TO WS-GR(355)
+     MOVE 3 TO WS-GR(515)
+     MOVE 7 TO WS-GR(531)
+     MOVE 6 TO WS-GR(563)
+     MOVE 1 TO WS-GR(611)
+     MOVE 8 TO WS-GR(787)
+     MOVE 1 TO WS-GR(819)
+     MOVE 8 TO WS-GR(835)
+     MOVE 1 TO WS-GR(867)
+     MOVE 9 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 10 TO WS-GR(1075)
+     MOVE 9 TO WS-GR(1091)
+     MOVE 3 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 4 TO WS-GR(1315)
+     MOVE 8 TO WS-GR(1347)
+     MOVE 6 TO WS-GR(1379)
+     MOVE 10 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 6 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(4)
+     MOVE 5 TO WS-GR(36)
+     MOVE 2 TO WS-GR(68)
+     MOVE 5 TO WS-GR(84)
+     MOVE 4 TO WS-GR(100)
+     MOVE 10 TO WS-GR(324)
+     MOVE 3 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(516)
+     MOVE 10 TO WS-GR(532)
+     MOVE 9 TO WS-GR(548)
+     MOVE 1 TO WS-GR(788)
+     MOVE 1 TO WS-GR(836)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 7 TO WS-GR(1060)
+     MOVE 3 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 3 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1332)
+     MOVE 2 TO WS-GR(1364)
+     MOVE 3 TO WS-GR(1540)
+     MOVE 3 TO WS-GR(5)
+     MOVE 8 TO WS-GR(101)
+     MOVE 9 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 7 TO WS-GR(325)
+     MOVE 2 TO WS-GR(341)
+     MOVE 2 TO WS-GR(357)
+     MOVE 3 TO WS-GR(517)
+     MOVE 2 TO WS-GR(565)
+     MOVE 2 TO WS-GR(597)
+     MOVE 1 TO WS-GR(613)
+     MOVE 7 TO WS-GR(805)
+     MOVE 8 TO WS-GR(869)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 7 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 4 TO WS-GR(1109)
+     MOVE 6 TO WS-GR(1349)
+     MOVE 7 TO WS-GR(1541)
+     MOVE 6 TO WS-GR(1573)
+     MOVE 9 TO WS-GR(1589)
+     MOVE 5 TO WS-GR(1605)
+     MOVE 2 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(6)
+     MOVE 1 TO WS-GR(70)
+     MOVE 9 TO WS-GR(102)
+     MOVE 7 TO WS-GR(262)
+     MOVE 6 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 4 TO WS-GR(518)
+     MOVE 6 TO WS-GR(534)
+     MOVE 9 TO WS-GR(550)
+     MOVE 2 TO WS-GR(566)
+     MOVE 1 TO WS-GR(582)
+     MOVE 1 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 7 TO WS-GR(790)
+     MOVE 4 TO WS-GR(822)
+     MOVE 1 TO WS-GR(870)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 8 TO WS-GR(1078)
+     MOVE 3 TO WS-GR(1094)
+     MOVE 5 TO WS-GR(1286)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 7 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1382)
+     MOVE 8 TO WS-GR(1574)
+     MOVE 9 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 2 TO WS-GR(23)
+     MOVE 1 TO WS-GR(39)
+     MOVE 2 TO WS-GR(279)
+     MOVE 9 TO WS-GR(295)
+     MOVE 7 TO WS-GR(327)
+     MOVE 7 TO WS-GR(343)
+     MOVE 9 TO WS-GR(519)
+     MOVE 6 TO WS-GR(535)
+     MOVE 3 TO WS-GR(567)
+     MOVE 4 TO WS-GR(599)
+     MOVE 2 TO WS-GR(615)
+     MOVE 3 TO WS-GR(807)
+     MOVE 5 TO WS-GR(1031)
+     MOVE 8 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 10 TO WS-GR(1111)
+     MOVE 5 TO WS-GR(1287)
+     MOVE 6 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 3 TO WS-GR(1591)
+     MOVE 4 TO WS-GR(1623)
+     MOVE 5 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 6 TO WS-GR(1)
+     MOVE 2 TO WS-GR(49)
+     MOVE 1 TO WS-GR(65)
+     MOVE 7 TO WS-GR(81)
+     MOVE 5 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 3 TO WS-GR(273)
+     MOVE 10 TO WS-GR(321)
+     MOVE 1 TO WS-GR(513)
+     MOVE 2 TO WS-GR(561)
+     MOVE 1 TO WS-GR(609)
+     MOVE 1 TO WS-GR(785)
+     MOVE 3 TO WS-GR(801)
+     MOVE 3 TO WS-GR(833)
+     MOVE 6 TO WS-GR(849)
+     MOVE 10 TO WS-GR(1025)
+     MOVE 8 TO WS-GR(1057)
+     MOVE 9 TO WS-GR(1089)
+     MOVE 2 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 9 TO WS-GR(1345)
+     MOVE 7 TO WS-GR(1361)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1569)
+     MOVE 4 TO WS-GR(1585)
+     MOVE 2 TO WS-GR(1617)
+     MOVE 8 TO WS-GR(2)
+     MOVE 1 TO WS-GR(98)
+     MOVE 2 TO WS-GR(338)
+     MOVE 4 TO WS-GR(530)
+     MOVE 2 TO WS-GR(562)
+     MOVE 1 TO WS-GR(578)
+     MOVE 3 TO WS-GR(770)
+     MOVE 2 TO WS-GR(786)
+     MOVE 2 TO WS-GR(802)
+     MOVE 1 TO WS-GR(834)
+     MOVE 3 TO WS-GR(1074)
+     MOVE 4 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1314)
+     MOVE 9 TO WS-GR(1538)
+     MOVE 10 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 3 TO WS-GR(1602)
+     MOVE 4 TO WS-GR(3)
+     MOVE 7 TO WS-GR(35)
+     MOVE 3 TO WS-GR(51)
+     MOVE 7 TO WS-GR(83)
+     MOVE 5 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 6 TO WS-GR(323)
+     MOVE 5 TO WS-GR(531)
+     MOVE 1 TO WS-GR(547)
+     MOVE 1 TO WS-GR(563)
+     MOVE 7 TO WS-GR(771)
+     MOVE 2 TO WS-GR(819)
+     MOVE 3 TO WS-GR(835)
+     MOVE 3 TO WS-GR(851)
+     MOVE 10 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 8 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 5 TO WS-GR(1363)
+     MOVE 9 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 4 TO WS-GR(1555)
+     MOVE 3 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 2 TO WS-GR(20)
+     MOVE 3 TO WS-GR(36)
+     MOVE 8 TO WS-GR(52)
+     MOVE 2 TO WS-GR(68)
+     MOVE 1 TO WS-GR(84)
+     MOVE 8 TO WS-GR(260)
+     MOVE 7 TO WS-GR(276)
+     MOVE 9 TO WS-GR(292)
+     MOVE 2 TO WS-GR(308)
+     MOVE 5 TO WS-GR(356)
+     MOVE 3 TO WS-GR(532)
+     MOVE 2 TO WS-GR(580)
+     MOVE 8 TO WS-GR(788)
+     MOVE 3 TO WS-GR(804)
+     MOVE 1 TO WS-GR(836)
+     MOVE 3 TO WS-GR(1028)
+     MOVE 6 TO WS-GR(1044)
+     MOVE 7 TO WS-GR(1060)
+     MOVE 3 TO WS-GR(1124)
+     MOVE 10 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1332)
+     MOVE 4 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 10 TO WS-GR(1556)
+     MOVE 6 TO WS-GR(1572)
+     MOVE 4 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 5 TO WS-GR(1636)
+     MOVE 4 TO WS-GR(21)
+     MOVE 2 TO WS-GR(53)
+     MOVE 5 TO WS-GR(85)
+     MOVE 1 TO WS-GR(277)
+     MOVE 1 TO WS-GR(309)
+     MOVE 1 TO WS-GR(341)
+     MOVE 9 TO WS-GR(357)
+     MOVE 1 TO WS-GR(597)
+     MOVE 7 TO WS-GR(789)
+     MOVE 3 TO WS-GR(821)
+     MOVE 1 TO WS-GR(837)
+     MOVE 8 TO WS-GR(869)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 10 TO WS-GR(1109)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 6 TO WS-GR(1317)
+     MOVE 10 TO WS-GR(1333)
+     MOVE 9 TO WS-GR(1381)
+     MOVE 2 TO WS-GR(1541)
+     MOVE 5 TO WS-GR(1573)
+     MOVE 3 TO WS-GR(1637)
+     MOVE 6 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 2 TO WS-GR(54)
+     MOVE 5 TO WS-GR(86)
+     MOVE 1 TO WS-GR(262)
+     MOVE 8 TO WS-GR(342)
+     MOVE 3 TO WS-GR(550)
+     MOVE 6 TO WS-GR(774)
+     MOVE 1 TO WS-GR(806)
+     MOVE 2 TO WS-GR(838)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 3 TO WS-GR(1062)
+     MOVE 9 TO WS-GR(1302)
+     MOVE 2 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1334)
+     MOVE 2 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 6 TO WS-GR(1558)
+     MOVE 8 TO WS-GR(1574)
+     MOVE 9 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(23)
+     MOVE 6 TO WS-GR(39)
+     MOVE 2 TO WS-GR(71)
+     MOVE 2 TO WS-GR(327)
+     MOVE 1 TO WS-GR(359)
+     MOVE 1 TO WS-GR(519)
+     MOVE 3 TO WS-GR(551)
+     MOVE 1 TO WS-GR(567)
+     MOVE 1 TO WS-GR(583)
+     MOVE 5 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 6 TO WS-GR(823)
+     MOVE 10 TO WS-GR(839)
+     MOVE 9 TO WS-GR(855)
+     MOVE 1 TO WS-GR(1047)
+     MOVE 5 TO WS-GR(1079)
+     MOVE 6 TO WS-GR(1095)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 7 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 2 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/3 1029/1045/1030/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(273)
+     MOVE 10 TO WS-GR(289)
+     MOVE 7 TO WS-GR(337)
+     MOVE 3 TO WS-GR(513)
+     MOVE 3 TO WS-GR(529)
+     MOVE 4 TO WS-GR(545)
+     MOVE 10 TO WS-GR(561)
+     MOVE 5 TO WS-GR(609)
+     MOVE 8 TO WS-GR(849)
+     MOVE 4 TO WS-GR(865)
+     MOVE 6 TO WS-GR(1041)
+     MOVE 8 TO WS-GR(1105)
+     MOVE 9 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 2 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 2 TO WS-GR(1377)
+     MOVE 3 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1601)
+     MOVE 2 TO WS-GR(1633)
+     MOVE 6 TO WS-GR(50)
+     MOVE 4 TO WS-GR(98)
+     MOVE 5 TO WS-GR(258)
+     MOVE 5 TO WS-GR(354)
+     MOVE 2 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 3 TO WS-GR(594)
+     MOVE 1 TO WS-GR(610)
+     MOVE 2 TO WS-GR(786)
+     MOVE 1 TO WS-GR(818)
+     MOVE 6 TO WS-GR(834)
+     MOVE 2 TO WS-GR(850)
+     MOVE 10 TO WS-GR(866)
+     MOVE 5 TO WS-GR(1026)
+     MOVE 4 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 10 TO WS-GR(1554)
+     MOVE 3 TO WS-GR(1586)
+     MOVE 6 TO WS-GR(1602)
+     MOVE 9 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(3)
+     MOVE 2 TO WS-GR(35)
+     MOVE 7 TO WS-GR(51)
+     MOVE 8 TO WS-GR(275)
+     MOVE 2 TO WS-GR(291)
+     MOVE 3 TO WS-GR(307)
+     MOVE 6 TO WS-GR(339)
+     MOVE 6 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 10 TO WS-GR(531)
+     MOVE 1 TO WS-GR(547)
+     MOVE 8 TO WS-GR(563)
+     MOVE 5 TO WS-GR(595)
+     MOVE 2 TO WS-GR(611)
+     MOVE 1 TO WS-GR(787)
+     MOVE 5 TO WS-GR(803)
+     MOVE 10 TO WS-GR(819)
+     MOVE 3 TO WS-GR(835)
+     MOVE 4 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 8 TO WS-GR(1283)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 4 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 7 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(260)
+     MOVE 3 TO WS-GR(340)
+     MOVE 3 TO WS-GR(564)
+     MOVE 3 TO WS-GR(596)
+     MOVE 9 TO WS-GR(804)
+     MOVE 7 TO WS-GR(820)
+     MOVE 3 TO WS-GR(852)
+     MOVE 2 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 8 TO WS-GR(1108)
+     MOVE 3 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 9 TO WS-GR(1540)
+     MOVE 6 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 9 TO WS-GR(37)
+     MOVE 2 TO WS-GR(69)
+     MOVE 4 TO WS-GR(261)
+     MOVE 7 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 3 TO WS-GR(325)
+     MOVE 1 TO WS-GR(533)
+     MOVE 3 TO WS-GR(549)
+     MOVE 10 TO WS-GR(805)
+     MOVE 6 TO WS-GR(837)
+     MOVE 3 TO WS-GR(853)
+     MOVE 9 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1333)
+     MOVE 6 TO WS-GR(1381)
+     MOVE 3 TO WS-GR(1541)
+     MOVE 8 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1605)
+     MOVE 3 TO WS-GR(22)
+     MOVE 4 TO WS-GR(54)
+     MOVE 8 TO WS-GR(86)
+     MOVE 1 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 6 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 1 TO WS-GR(550)
+     MOVE 5 TO WS-GR(566)
+     MOVE 1 TO WS-GR(790)
+     MOVE 1 TO WS-GR(870)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 4 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 4 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 5 TO WS-GR(1606)
+     MOVE 5 TO WS-GR(7)
+     MOVE 9 TO WS-GR(23)
+     MOVE 2 TO WS-GR(55)
+     MOVE 2 TO WS-GR(87)
+     MOVE 9 TO WS-GR(103)
+     MOVE 1 TO WS-GR(263)
+     MOVE 9 TO WS-GR(279)
+     MOVE 10 TO WS-GR(311)
+     MOVE 1 TO WS-GR(519)
+     MOVE 2 TO WS-GR(551)
+     MOVE 4 TO WS-GR(567)
+     MOVE 9 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 8 TO WS-GR(807)
+     MOVE 6 TO WS-GR(823)
+     MOVE 9 TO WS-GR(855)
+     MOVE 8 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 7 TO WS-GR(1127)
+     MOVE 7 TO WS-GR(1335)
+     MOVE 8 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1575)
+     MOVE 3 TO WS-GR(1623)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 6 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1)
+     MOVE 6 TO WS-GR(17)
+     MOVE 2 TO WS-GR(33)
+     MOVE 3 TO WS-GR(49)
+     MOVE 2 TO WS-GR(65)
+     MOVE 10 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 6 TO WS-GR(273)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(305)
+     MOVE 1 TO WS-GR(321)
+     MOVE 2 TO WS-GR(337)
+     MOVE 1 TO WS-GR(353)
+     MOVE 3 TO WS-GR(513)
+     MOVE 9 TO WS-GR(545)
+     MOVE 2 TO WS-GR(577)
+     MOVE 5 TO WS-GR(609)
+     MOVE 1 TO WS-GR(769)
+     MOVE 8 TO WS-GR(801)
+     MOVE 6 TO WS-GR(849)
+     MOVE 10 TO WS-GR(1041)
+     MOVE 5 TO WS-GR(1057)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 10 TO WS-GR(1361)
+     MOVE 6 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(18)
+     MOVE 5 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 1 TO WS-GR(98)
+     MOVE 4 TO WS-GR(258)
+     MOVE 6 TO WS-GR(274)
+     MOVE 1 TO WS-GR(306)
+     MOVE 7 TO WS-GR(562)
+     MOVE 3 TO WS-GR(594)
+     MOVE 9 TO WS-GR(802)
+     MOVE 2 TO WS-GR(818)
+     MOVE 5 TO WS-GR(834)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 9 TO WS-GR(1058)
+     MOVE 3 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 10 TO WS-GR(1314)
+     MOVE 10 TO WS-GR(1378)
+     MOVE 2 TO WS-GR(1554)
+     MOVE 2 TO WS-GR(1634)
+     MOVE 2 TO WS-GR(3)
+     MOVE 1 TO WS-GR(19)
+     MOVE 6 TO WS-GR(35)
+     MOVE 4 TO WS-GR(83)
+     MOVE 10 TO WS-GR(275)
+     MOVE 1 TO WS-GR(291)
+     MOVE 10 TO WS-GR(307)
+     MOVE 2 TO WS-GR(323)
+     MOVE 8 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 2 TO WS-GR(547)
+     MOVE 9 TO WS-GR(563)
+     MOVE 3 TO WS-GR(579)
+     MOVE 1 TO WS-GR(611)
+     MOVE 4 TO WS-GR(771)
+     MOVE 7 TO WS-GR(787)
+     MOVE 2 TO WS-GR(819)
+     MOVE 9 TO WS-GR(835)
+     MOVE 1 TO WS-GR(851)
+     MOVE 3 TO WS-GR(867)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 9 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1379)
+     MOVE 3 TO WS-GR(1571)
+     MOVE 8 TO WS-GR(1619)
+     MOVE 3 TO WS-GR(36)
+     MOVE 1 TO WS-GR(52)
+     MOVE 3 TO WS-GR(68)
+     MOVE 8 TO WS-GR(84)
+     MOVE 1 TO WS-GR(100)
+     MOVE 1 TO WS-GR(276)
+     MOVE 8 TO WS-GR(340)
+     MOVE 1 TO WS-GR(532)
+     MOVE 10 TO WS-GR(564)
+     MOVE 7 TO WS-GR(852)
+     MOVE 10 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 10 TO WS-GR(1060)
+     MOVE 10 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 2 TO WS-GR(1300)
+     MOVE 3 TO WS-GR(1348)
+     MOVE 5 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 9 TO WS-GR(1572)
+     MOVE 6 TO WS-GR(1588)
+     MOVE 7 TO WS-GR(1604)
+     MOVE 10 TO WS-GR(21)
+     MOVE 2 TO WS-GR(53)
+     MOVE 2 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 1 TO WS-GR(341)
+     MOVE 1 TO WS-GR(517)
+     MOVE 8 TO WS-GR(533)
+     MOVE 1 TO WS-GR(581)
+     MOVE 1 TO WS-GR(613)
+     MOVE 2 TO WS-GR(773)
+     MOVE 9 TO WS-GR(805)
+     MOVE 10 TO WS-GR(837)
+     MOVE 1 TO WS-GR(853)
+     MOVE 7 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1045)
+     MOVE 4 TO WS-GR(1061)
+     MOVE 3 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 6 TO WS-GR(1285)
+     MOVE 7 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 6 TO WS-GR(1605)
+     MOVE 10 TO WS-GR(6)
+     MOVE 3 TO WS-GR(22)
+     MOVE 2 TO WS-GR(38)
+     MOVE 8 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(86)
+     MOVE 3 TO WS-GR(262)
+     MOVE 7 TO WS-GR(278)
+     MOVE 2 TO WS-GR(326)
+     MOVE 2 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 3 TO WS-GR(518)
+     MOVE 2 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 3 TO WS-GR(582)
+     MOVE 4 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 1 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(838)
+     MOVE 4 TO WS-GR(854)
+     MOVE 3 TO WS-GR(1062)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1382)
+     MOVE 2 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 9 TO WS-GR(1638)
+     MOVE 5 TO WS-GR(55)
+     MOVE 2 TO WS-GR(71)
+     MOVE 7 TO WS-GR(87)
+     MOVE 8 TO WS-GR(103)
+     MOVE 2 TO WS-GR(295)
+     MOVE 1 TO WS-GR(311)
+     MOVE 1 TO WS-GR(359)
+     MOVE 2 TO WS-GR(519)
+     MOVE 2 TO WS-GR(535)
+     MOVE 1 TO WS-GR(551)
+     MOVE 4 TO WS-GR(567)
+     MOVE 1 TO WS-GR(599)
+     MOVE 3 TO WS-GR(775)
+     MOVE 1 TO WS-GR(807)
+     MOVE 1 TO WS-GR(839)
+     MOVE 1 TO WS-GR(871)
+     MOVE 3 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1079)
+     MOVE 5 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 4 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1543)
+     MOVE 5 TO WS-GR(1575)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 8 TO WS-GR(1639)
+     MOVE 6 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/3 1078/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(17)
+     MOVE 1 TO WS-GR(33)
+     MOVE 3 TO WS-GR(65)
+     MOVE 2 TO WS-GR(81)
+     MOVE 2 TO WS-GR(97)
+     MOVE 1 TO WS-GR(273)
+     MOVE 6 TO WS-GR(305)
+     MOVE 2 TO WS-GR(513)
+     MOVE 4 TO WS-GR(545)
+     MOVE 1 TO WS-GR(561)
+     MOVE 10 TO WS-GR(593)
+     MOVE 4 TO WS-GR(769)
+     MOVE 2 TO WS-GR(833)
+     MOVE 3 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 7 TO WS-GR(1073)
+     MOVE 6 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 10 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(18)
+     MOVE 1 TO WS-GR(66)
+     MOVE 2 TO WS-GR(98)
+     MOVE 9 TO WS-GR(290)
+     MOVE 2 TO WS-GR(306)
+     MOVE 6 TO WS-GR(354)
+     MOVE 6 TO WS-GR(530)
+     MOVE 2 TO WS-GR(562)
+     MOVE 6 TO WS-GR(578)
+     MOVE 2 TO WS-GR(594)
+     MOVE 1 TO WS-GR(610)
+     MOVE 3 TO WS-GR(770)
+     MOVE 1 TO WS-GR(850)
+     MOVE 2 TO WS-GR(866)
+     MOVE 9 TO WS-GR(1026)
+     MOVE 4 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 10 TO WS-GR(1090)
+     MOVE 3 TO WS-GR(1106)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 4 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(1634)
+     MOVE 8 TO WS-GR(19)
+     MOVE 10 TO WS-GR(67)
+     MOVE 8 TO WS-GR(83)
+     MOVE 1 TO WS-GR(275)
+     MOVE 3 TO WS-GR(291)
+     MOVE 2 TO WS-GR(355)
+     MOVE 2 TO WS-GR(531)
+     MOVE 1 TO WS-GR(563)
+     MOVE 9 TO WS-GR(579)
+     MOVE 7 TO WS-GR(611)
+     MOVE 1 TO WS-GR(819)
+     MOVE 3 TO WS-GR(851)
+     MOVE 4 TO WS-GR(867)
+     MOVE 6 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 2 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 3 TO WS-GR(1123)
+     MOVE 9 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 2 TO WS-GR(1379)
+     MOVE 5 TO WS-GR(1539)
+     MOVE 9 TO WS-GR(1571)
+     MOVE 2 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 10 TO WS-GR(20)
+     MOVE 1 TO WS-GR(36)
+     MOVE 1 TO WS-GR(68)
+     MOVE 3 TO WS-GR(100)
+     MOVE 9 TO WS-GR(260)
+     MOVE 9 TO WS-GR(276)
+     MOVE 4 TO WS-GR(340)
+     MOVE 8 TO WS-GR(356)
+     MOVE 2 TO WS-GR(564)
+     MOVE 2 TO WS-GR(612)
+     MOVE 4 TO WS-GR(804)
+     MOVE 3 TO WS-GR(820)
+     MOVE 1 TO WS-GR(836)
+     MOVE 2 TO WS-GR(852)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 5 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 7 TO WS-GR(1540)
+     MOVE 4 TO WS-GR(1556)
+     MOVE 5 TO WS-GR(1588)
+     MOVE 8 TO WS-GR(1620)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 1 TO WS-GR(69)
+     MOVE 2 TO WS-GR(277)
+     MOVE 10 TO WS-GR(357)
+     MOVE 7 TO WS-GR(549)
+     MOVE 3 TO WS-GR(773)
+     MOVE 1 TO WS-GR(821)
+     MOVE 2 TO WS-GR(837)
+     MOVE 10 TO WS-GR(853)
+     MOVE 8 TO WS-GR(869)
+     MOVE 9 TO WS-GR(1029)
+     MOVE 7 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 9 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 1 TO WS-GR(1573)
+     MOVE 2 TO WS-GR(1605)
+     MOVE 7 TO WS-GR(1621)
+     MOVE 2 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 2 TO WS-GR(86)
+     MOVE 4 TO WS-GR(102)
+     MOVE 1 TO WS-GR(278)
+     MOVE 2 TO WS-GR(294)
+     MOVE 1 TO WS-GR(326)
+     MOVE 7 TO WS-GR(518)
+     MOVE 2 TO WS-GR(534)
+     MOVE 5 TO WS-GR(550)
+     MOVE 1 TO WS-GR(582)
+     MOVE 2 TO WS-GR(598)
+     MOVE 1 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 4 TO WS-GR(790)
+     MOVE 3 TO WS-GR(838)
+     MOVE 1 TO WS-GR(854)
+     MOVE 7 TO WS-GR(870)
+     MOVE 5 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 9 TO WS-GR(1094)
+     MOVE 9 TO WS-GR(1286)
+     MOVE 9 TO WS-GR(1318)
+     MOVE 3 TO WS-GR(1350)
+     MOVE 6 TO WS-GR(1382)
+     MOVE 4 TO WS-GR(1558)
+     MOVE 4 TO WS-GR(1574)
+     MOVE 9 TO WS-GR(1606)
+     MOVE 6 TO WS-GR(1638)
+     MOVE 4 TO WS-GR(7)
+     MOVE 5 TO WS-GR(23)
+     MOVE 7 TO WS-GR(39)
+     MOVE 3 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 1 TO WS-GR(279)
+     MOVE 5 TO WS-GR(311)
+     MOVE 10 TO WS-GR(343)
+     MOVE 1 TO WS-GR(359)
+     MOVE 2 TO WS-GR(535)
+     MOVE 3 TO WS-GR(583)
+     MOVE 1 TO WS-GR(599)
+     MOVE 1 TO WS-GR(775)
+     MOVE 1 TO WS-GR(791)
+     MOVE 3 TO WS-GR(807)
+     MOVE 1 TO WS-GR(839)
+     MOVE 1 TO WS-GR(1047)
+     MOVE 10 TO WS-GR(1079)
+     MOVE 5 TO WS-GR(1095)
+     MOVE 2 TO WS-GR(1351)
+     MOVE 9 TO WS-GR(1383)
+     MOVE 5 TO WS-GR(1591)
+     MOVE 2 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/5 833/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1)
+     MOVE 1 TO WS-GR(17)
+     MOVE 1 TO WS-GR(33)
+     MOVE 1 TO WS-GR(81)
+     MOVE 1 TO WS-GR(321)
+     MOVE 3 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 2 TO WS-GR(561)
+     MOVE 2 TO WS-GR(593)
+     MOVE 8 TO WS-GR(769)
+     MOVE 2 TO WS-GR(801)
+     MOVE 2 TO WS-GR(833)
+     MOVE 5 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1089)
+     MOVE 9 TO WS-GR(1105)
+     MOVE 7 TO WS-GR(1281)
+     MOVE 7 TO WS-GR(1297)
+     MOVE 6 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 8 TO WS-GR(1361)
+     MOVE 1 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 3 TO WS-GR(1569)
+     MOVE 5 TO WS-GR(1585)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 9 TO WS-GR(2)
+     MOVE 7 TO WS-GR(50)
+     MOVE 10 TO WS-GR(66)
+     MOVE 5 TO WS-GR(82)
+     MOVE 6 TO WS-GR(98)
+     MOVE 1 TO WS-GR(290)
+     MOVE 3 TO WS-GR(306)
+     MOVE 5 TO WS-GR(514)
+     MOVE 7 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 2 TO WS-GR(850)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 2 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1346)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 6 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1554)
+     MOVE 3 TO WS-GR(1586)
+     MOVE 2 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(3)
+     MOVE 2 TO WS-GR(19)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(83)
+     MOVE 4 TO WS-GR(99)
+     MOVE 5 TO WS-GR(259)
+     MOVE 4 TO WS-GR(291)
+     MOVE 6 TO WS-GR(307)
+     MOVE 1 TO WS-GR(515)
+     MOVE 3 TO WS-GR(563)
+     MOVE 3 TO WS-GR(595)
+     MOVE 7 TO WS-GR(771)
+     MOVE 5 TO WS-GR(787)
+     MOVE 2 TO WS-GR(803)
+     MOVE 1 TO WS-GR(819)
+     MOVE 4 TO WS-GR(867)
+     MOVE 2 TO WS-GR(1043)
+     MOVE 8 TO WS-GR(1075)
+     MOVE 5 TO WS-GR(1091)
+     MOVE 3 TO WS-GR(1123)
+     MOVE 5 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 7 TO WS-GR(1347)
+     MOVE 10 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 2 TO WS-GR(1619)
+     MOVE 4 TO WS-GR(36)
+     MOVE 1 TO WS-GR(276)
+     MOVE 2 TO WS-GR(292)
+     MOVE 3 TO WS-GR(308)
+     MOVE 8 TO WS-GR(324)
+     MOVE 3 TO WS-GR(356)
+     MOVE 3 TO WS-GR(516)
+     MOVE 1 TO WS-GR(564)
+     MOVE 4 TO WS-GR(596)
+     MOVE 2 TO WS-GR(788)
+     MOVE 1 TO WS-GR(852)
+     MOVE 1 TO WS-GR(868)
+     MOVE 7 TO WS-GR(1028)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 2 TO WS-GR(1076)
+     MOVE 3 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1300)
+     MOVE 5 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 4 TO WS-GR(5)
+     MOVE 1 TO WS-GR(69)
+     MOVE 2 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 10 TO WS-GR(293)
+     MOVE 4 TO WS-GR(309)
+     MOVE 1 TO WS-GR(341)
+     MOVE 4 TO WS-GR(357)
+     MOVE 3 TO WS-GR(517)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(581)
+     MOVE 8 TO WS-GR(613)
+     MOVE 3 TO WS-GR(773)
+     MOVE 1 TO WS-GR(805)
+     MOVE 1 TO WS-GR(821)
+     MOVE 2 TO WS-GR(853)
+     MOVE 3 TO WS-GR(869)
+     MOVE 10 TO WS-GR(1029)
+     MOVE 6 TO WS-GR(1045)
+     MOVE 10 TO WS-GR(1061)
+     MOVE 2 TO WS-GR(1077)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 9 TO WS-GR(1285)
+     MOVE 4 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1333)
+     MOVE 9 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1605)
+     MOVE 9 TO WS-GR(1621)
+     MOVE 2 TO WS-GR(1637)
+     MOVE 5 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 4 TO WS-GR(102)
+     MOVE 2 TO WS-GR(262)
+     MOVE 1 TO WS-GR(326)
+     MOVE 5 TO WS-GR(342)
+     MOVE 2 TO WS-GR(518)
+     MOVE 3 TO WS-GR(550)
+     MOVE 1 TO WS-GR(774)
+     MOVE 2 TO WS-GR(790)
+     MOVE 3 TO WS-GR(838)
+     MOVE 9 TO WS-GR(854)
+     MOVE 2 TO WS-GR(1062)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 6 TO WS-GR(1126)
+     MOVE 3 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 8 TO WS-GR(1350)
+     MOVE 10 TO WS-GR(1542)
+     MOVE 2 TO WS-GR(1558)
+     MOVE 2 TO WS-GR(1590)
+     MOVE 3 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 10 TO WS-GR(7)
+     MOVE 1 TO WS-GR(39)
+     MOVE 5 TO WS-GR(87)
+     MOVE 2 TO WS-GR(103)
+     MOVE 2 TO WS-GR(263)
+     MOVE 3 TO WS-GR(295)
+     MOVE 1 TO WS-GR(311)
+     MOVE 2 TO WS-GR(327)
+     MOVE 10 TO WS-GR(359)
+     MOVE 6 TO WS-GR(519)
+     MOVE 8 TO WS-GR(551)
+     MOVE 1 TO WS-GR(567)
+     MOVE 9 TO WS-GR(583)
+     MOVE 9 TO WS-GR(615)
+     MOVE 7 TO WS-GR(807)
+     MOVE 10 TO WS-GR(839)
+     MOVE 2 TO WS-GR(855)
+     MOVE 8 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 2 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1111)
+     MOVE 10 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 8 TO WS-GR(1543)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/3 595/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1)
+     MOVE 4 TO WS-GR(97)
+     MOVE 2 TO WS-GR(273)
+     MOVE 7 TO WS-GR(337)
+     MOVE 8 TO WS-GR(513)
+     MOVE 3 TO WS-GR(529)
+     MOVE 5 TO WS-GR(593)
+     MOVE 9 TO WS-GR(609)
+     MOVE 4 TO WS-GR(769)
+     MOVE 5 TO WS-GR(801)
+     MOVE 3 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 5 TO WS-GR(1057)
+     MOVE 5 TO WS-GR(1073)
+     MOVE 2 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 2 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 6 TO WS-GR(1329)
+     MOVE 3 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1585)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 7 TO WS-GR(1617)
+     MOVE 6 TO WS-GR(1633)
+     MOVE 7 TO WS-GR(2)
+     MOVE 5 TO WS-GR(50)
+     MOVE 6 TO WS-GR(274)
+     MOVE 8 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 9 TO WS-GR(546)
+     MOVE 10 TO WS-GR(578)
+     MOVE 6 TO WS-GR(770)
+     MOVE 9 TO WS-GR(786)
+     MOVE 7 TO WS-GR(818)
+     MOVE 4 TO WS-GR(850)
+     MOVE 3 TO WS-GR(866)
+     MOVE 9 TO WS-GR(1042)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 2 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1570)
+     MOVE 9 TO WS-GR(1586)
+     MOVE 5 TO WS-GR(1618)
+     MOVE 2 TO WS-GR(1634)
+     MOVE 8 TO WS-GR(3)
+     MOVE 4 TO WS-GR(35)
+     MOVE 8 TO WS-GR(51)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(83)
+     MOVE 2 TO WS-GR(307)
+     MOVE 5 TO WS-GR(323)
+     MOVE 2 TO WS-GR(339)
+     MOVE 3 TO WS-GR(355)
+     MOVE 3 TO WS-GR(515)
+     MOVE 1 TO WS-GR(579)
+     MOVE 3 TO WS-GR(595)
+     MOVE 3 TO WS-GR(787)
+     MOVE 2 TO WS-GR(835)
+     MOVE 1 TO WS-GR(851)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 9 TO WS-GR(1315)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 3 TO WS-GR(1571)
+     MOVE 6 TO WS-GR(1603)
+     MOVE 9 TO WS-GR(20)
+     MOVE 10 TO WS-GR(52)
+     MOVE 3 TO WS-GR(292)
+     MOVE 1 TO WS-GR(324)
+     MOVE 5 TO WS-GR(340)
+     MOVE 8 TO WS-GR(356)
+     MOVE 10 TO WS-GR(516)
+     MOVE 5 TO WS-GR(612)
+     MOVE 10 TO WS-GR(788)
+     MOVE 1 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 7 TO WS-GR(1060)
+     MOVE 10 TO WS-GR(1076)
+     MOVE 8 TO WS-GR(1092)
+     MOVE 6 TO WS-GR(1108)
+     MOVE 4 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1332)
+     MOVE 3 TO WS-GR(1348)
+     MOVE 5 TO WS-GR(1364)
+     MOVE 3 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(1588)
+     MOVE 5 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 2 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(21)
+     MOVE 1 TO WS-GR(37)
+     MOVE 3 TO WS-GR(53)
+     MOVE 3 TO WS-GR(261)
+     MOVE 1 TO WS-GR(277)
+     MOVE 3 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 6 TO WS-GR(325)
+     MOVE 6 TO WS-GR(341)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(613)
+     MOVE 10 TO WS-GR(805)
+     MOVE 2 TO WS-GR(837)
+     MOVE 5 TO WS-GR(853)
+     MOVE 5 TO WS-GR(1077)
+     MOVE 7 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 8 TO WS-GR(1301)
+     MOVE 3 TO WS-GR(1317)
+     MOVE 9 TO WS-GR(1333)
+     MOVE 9 TO WS-GR(1349)
+     MOVE 6 TO WS-GR(1541)
+     MOVE 3 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(1605)
+     MOVE 6 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(22)
+     MOVE 2 TO WS-GR(38)
+     MOVE 3 TO WS-GR(70)
+     MOVE 1 TO WS-GR(86)
+     MOVE 10 TO WS-GR(102)
+     MOVE 2 TO WS-GR(310)
+     MOVE 2 TO WS-GR(326)
+     MOVE 8 TO WS-GR(358)
+     MOVE 2 TO WS-GR(534)
+     MOVE 1 TO WS-GR(550)
+     MOVE 1 TO WS-GR(598)
+     MOVE 9 TO WS-GR(614)
+     MOVE 9 TO WS-GR(806)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1126)
+     MOVE 1 TO WS-GR(1286)
+     MOVE 8 TO WS-GR(1542)
+     MOVE 3 TO WS-GR(1558)
+     MOVE 2 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(23)
+     MOVE 3 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 10 TO WS-GR(295)
+     MOVE 1 TO WS-GR(343)
+     MOVE 3 TO WS-GR(535)
+     MOVE 1 TO WS-GR(567)
+     MOVE 3 TO WS-GR(599)
+     MOVE 10 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 8 TO WS-GR(823)
+     MOVE 1 TO WS-GR(871)
+     MOVE 4 TO WS-GR(1031)
+     MOVE 10 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1127)
+     MOVE 2 TO WS-GR(1287)
+     MOVE 7 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 3 TO WS-GR(1335)
+     MOVE 6 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1367)
+     MOVE 3 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1543)
+     MOVE 2 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 7 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(65)
+     MOVE 3 TO WS-GR(97)
+     MOVE 8 TO WS-GR(257)
+     MOVE 2 TO WS-GR(321)
+     MOVE 6 TO WS-GR(513)
+     MOVE 1 TO WS-GR(593)
+     MOVE 8 TO WS-GR(609)
+     MOVE 3 TO WS-GR(801)
+     MOVE 1 TO WS-GR(817)
+     MOVE 2 TO WS-GR(833)
+     MOVE 2 TO WS-GR(849)
+     MOVE 3 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 7 TO WS-GR(1057)
+     MOVE 6 TO WS-GR(1105)
+     MOVE 8 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 6 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1377)
+     MOVE 10 TO WS-GR(1553)
+     MOVE 9 TO WS-GR(1585)
+     MOVE 6 TO WS-GR(1617)
+     MOVE 7 TO WS-GR(2)
+     MOVE 6 TO WS-GR(34)
+     MOVE 1 TO WS-GR(50)
+     MOVE 8 TO WS-GR(258)
+     MOVE 3 TO WS-GR(274)
+     MOVE 2 TO WS-GR(306)
+     MOVE 1 TO WS-GR(322)
+     MOVE 7 TO WS-GR(338)
+     MOVE 1 TO WS-GR(354)
+     MOVE 2 TO WS-GR(514)
+     MOVE 6 TO WS-GR(546)
+     MOVE 5 TO WS-GR(562)
+     MOVE 1 TO WS-GR(578)
+     MOVE 4 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 4 TO WS-GR(786)
+     MOVE 4 TO WS-GR(802)
+     MOVE 2 TO WS-GR(850)
+     MOVE 8 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 7 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1298)
+     MOVE 5 TO WS-GR(1330)
+     MOVE 6 TO WS-GR(1538)
+     MOVE 9 TO WS-GR(1554)
+     MOVE 8 TO WS-GR(1570)
+     MOVE 2 TO WS-GR(1586)
+     MOVE 7 TO WS-GR(1618)
+     MOVE 2 TO WS-GR(1634)
+     MOVE 6 TO WS-GR(3)
+     MOVE 9 TO WS-GR(19)
+     MOVE 5 TO WS-GR(35)
+     MOVE 1 TO WS-GR(51)
+     MOVE 1 TO WS-GR(67)
+     MOVE 8 TO WS-GR(83)
+     MOVE 7 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 8 TO WS-GR(275)
+     MOVE 4 TO WS-GR(339)
+     MOVE 7 TO WS-GR(515)
+     MOVE 7 TO WS-GR(531)
+     MOVE 7 TO WS-GR(579)
+     MOVE 1 TO WS-GR(595)
+     MOVE 7 TO WS-GR(611)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(835)
+     MOVE 6 TO WS-GR(867)
+     MOVE 3 TO WS-GR(1027)
+     MOVE 3 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 9 TO WS-GR(1107)
+     MOVE 6 TO WS-GR(1123)
+     MOVE 3 TO WS-GR(1283)
+     MOVE 8 TO WS-GR(1331)
+     MOVE 8 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 3 TO WS-GR(1571)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 6 TO WS-GR(1635)
+     MOVE 5 TO WS-GR(52)
+     MOVE 1 TO WS-GR(260)
+     MOVE 1 TO WS-GR(292)
+     MOVE 1 TO WS-GR(308)
+     MOVE 1 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(516)
+     MOVE 2 TO WS-GR(548)
+     MOVE 2 TO WS-GR(564)
+     MOVE 1 TO WS-GR(580)
+     MOVE 7 TO WS-GR(804)
+     MOVE 4 TO WS-GR(868)
+     MOVE 10 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 9 TO WS-GR(1092)
+     MOVE 8 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1124)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 8 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 7 TO WS-GR(1572)
+     MOVE 10 TO WS-GR(1588)
+     MOVE 8 TO WS-GR(1620)
+     MOVE 7 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(21)
+     MOVE 2 TO WS-GR(37)
+     MOVE 1 TO WS-GR(53)
+     MOVE 6 TO WS-GR(69)
+     MOVE 9 TO WS-GR(85)
+     MOVE 2 TO WS-GR(261)
+     MOVE 3 TO WS-GR(277)
+     MOVE 2 TO WS-GR(293)
+     MOVE 8 TO WS-GR(309)
+     MOVE 1 TO WS-GR(325)
+     MOVE 3 TO WS-GR(341)
+     MOVE 3 TO WS-GR(357)
+     MOVE 9 TO WS-GR(565)
+     MOVE 1 TO WS-GR(581)
+     MOVE 1 TO WS-GR(597)
+     MOVE 5 TO WS-GR(773)
+     MOVE 9 TO WS-GR(789)
+     MOVE 2 TO WS-GR(805)
+     MOVE 1 TO WS-GR(837)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 4 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 7 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1333)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1621)
+     MOVE 5 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(22)
+     MOVE 5 TO WS-GR(102)
+     MOVE 1 TO WS-GR(278)
+     MOVE 2 TO WS-GR(358)
+     MOVE 5 TO WS-GR(518)
+     MOVE 3 TO WS-GR(534)
+     MOVE 4 TO WS-GR(550)
+     MOVE 2 TO WS-GR(566)
+     MOVE 1 TO WS-GR(598)
+     MOVE 1 TO WS-GR(774)
+     MOVE 8 TO WS-GR(790)
+     MOVE 5 TO WS-GR(806)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1382)
+     MOVE 5 TO WS-GR(1542)
+     MOVE 3 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 6 TO WS-GR(7)
+     MOVE 7 TO WS-GR(39)
+     MOVE 10 TO WS-GR(55)
+     MOVE 3 TO WS-GR(103)
+     MOVE 9 TO WS-GR(263)
+     MOVE 5 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 1 TO WS-GR(359)
+     MOVE 6 TO WS-GR(519)
+     MOVE 6 TO WS-GR(535)
+     MOVE 1 TO WS-GR(551)
+     MOVE 3 TO WS-GR(599)
+     MOVE 2 TO WS-GR(615)
+     MOVE 4 TO WS-GR(775)
+     MOVE 1 TO WS-GR(791)
+     MOVE 3 TO WS-GR(807)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-GR(855)
+     MOVE 9 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 3 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 4 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 7 TO WS-GR(1367)
+     MOVE 4 TO WS-GR(1383)
+     MOVE 1 TO WS-GR(1543)
+     MOVE 5 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 2 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 7 TO WS-GR(1)
+     MOVE 4 TO WS-GR(17)
+     MOVE 3 TO WS-GR(33)
+     MOVE 1 TO WS-GR(49)
+     MOVE 10 TO WS-GR(65)
+     MOVE 1 TO WS-GR(81)
+     MOVE 6 TO WS-GR(257)
+     MOVE 6 TO WS-GR(305)
+     MOVE 1 TO WS-GR(513)
+     MOVE 9 TO WS-GR(561)
+     MOVE 2 TO WS-GR(577)
+     MOVE 6 TO WS-GR(609)
+     MOVE 9 TO WS-GR(769)
+     MOVE 1 TO WS-GR(849)
+     MOVE 1 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 10 TO WS-GR(1073)
+     MOVE 2 TO WS-GR(1105)
+     MOVE 7 TO WS-GR(1361)
+     MOVE 8 TO WS-GR(1601)
+     MOVE 3 TO WS-GR(1633)
+     MOVE 3 TO WS-GR(50)
+     MOVE 3 TO WS-GR(66)
+     MOVE 2 TO WS-GR(322)
+     MOVE 2 TO WS-GR(338)
+     MOVE 2 TO WS-GR(578)
+     MOVE 3 TO WS-GR(610)
+     MOVE 9 TO WS-GR(770)
+     MOVE 4 TO WS-GR(850)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 10 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 2 TO WS-GR(1362)
+     MOVE 6 TO WS-GR(1378)
+     MOVE 2 TO WS-GR(1538)
+     MOVE 1 TO WS-GR(1554)
+     MOVE 6 TO WS-GR(1570)
+     MOVE 2 TO WS-GR(1586)
+     MOVE 8 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 9 TO WS-GR(51)
+     MOVE 8 TO WS-GR(67)
+     MOVE 2 TO WS-GR(83)
+     MOVE 6 TO WS-GR(99)
+     MOVE 4 TO WS-GR(259)
+     MOVE 5 TO WS-GR(515)
+     MOVE 3 TO WS-GR(563)
+     MOVE 2 TO WS-GR(595)
+     MOVE 8 TO WS-GR(771)
+     MOVE 2 TO WS-GR(787)
+     MOVE 1 TO WS-GR(803)
+     MOVE 1 TO WS-GR(851)
+     MOVE 1 TO WS-GR(867)
+     MOVE 10 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 9 TO WS-GR(1107)
+     MOVE 5 TO WS-GR(1299)
+     MOVE 3 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 5 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 9 TO WS-GR(4)
+     MOVE 1 TO WS-GR(20)
+     MOVE 1 TO WS-GR(100)
+     MOVE 8 TO WS-GR(260)
+     MOVE 4 TO WS-GR(308)
+     MOVE 1 TO WS-GR(324)
+     MOVE 2 TO WS-GR(516)
+     MOVE 1 TO WS-GR(548)
+     MOVE 1 TO WS-GR(772)
+     MOVE 4 TO WS-GR(788)
+     MOVE 1 TO WS-GR(820)
+     MOVE 2 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 10 TO WS-GR(1060)
+     MOVE 9 TO WS-GR(1076)
+     MOVE 8 TO WS-GR(1092)
+     MOVE 4 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 4 TO WS-GR(1316)
+     MOVE 4 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 5 TO WS-GR(1556)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 5 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 10 TO WS-GR(37)
+     MOVE 10 TO WS-GR(261)
+     MOVE 2 TO WS-GR(293)
+     MOVE 5 TO WS-GR(309)
+     MOVE 2 TO WS-GR(517)
+     MOVE 1 TO WS-GR(597)
+     MOVE 7 TO WS-GR(613)
+     MOVE 2 TO WS-GR(789)
+     MOVE 1 TO WS-GR(805)
+     MOVE 5 TO WS-GR(821)
+     MOVE 3 TO WS-GR(1045)
+     MOVE 3 TO WS-GR(1093)
+     MOVE 3 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1349)
+     MOVE 9 TO WS-GR(1365)
+     MOVE 8 TO WS-GR(1541)
+     MOVE 3 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1621)
+     MOVE 4 TO WS-GR(1637)
+     MOVE 2 TO WS-GR(22)
+     MOVE 1 TO WS-GR(38)
+     MOVE 6 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(102)
+     MOVE 2 TO WS-GR(278)
+     MOVE 9 TO WS-GR(310)
+     MOVE 9 TO WS-GR(326)
+     MOVE 8 TO WS-GR(342)
+     MOVE 1 TO WS-GR(518)
+     MOVE 7 TO WS-GR(534)
+     MOVE 6 TO WS-GR(566)
+     MOVE 2 TO WS-GR(614)
+     MOVE 9 TO WS-GR(790)
+     MOVE 6 TO WS-GR(822)
+     MOVE 2 TO WS-GR(854)
+     MOVE 4 TO WS-GR(870)
+     MOVE 10 TO WS-GR(1286)
+     MOVE 10 TO WS-GR(1334)
+     MOVE 8 TO WS-GR(1382)
+     MOVE 7 TO WS-GR(1542)
+     MOVE 3 TO WS-GR(1558)
+     MOVE 10 TO WS-GR(1606)
+     MOVE 5 TO WS-GR(1622)
+     MOVE 5 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 3 TO WS-GR(87)
+     MOVE 1 TO WS-GR(103)
+     MOVE 2 TO WS-GR(263)
+     MOVE 1 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 1 TO WS-GR(519)
+     MOVE 1 TO WS-GR(567)
+     MOVE 10 TO WS-GR(599)
+     MOVE 8 TO WS-GR(775)
+     MOVE 9 TO WS-GR(791)
+     MOVE 2 TO WS-GR(855)
+     MOVE 1 TO WS-GR(871)
+     MOVE 4 TO WS-GR(1079)
+     MOVE 6 TO WS-GR(1111)
+     MOVE 3 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 9 TO WS-GR(1319)
+     MOVE 4 TO WS-GR(1335)
+     MOVE 3 TO WS-GR(1351)
+     MOVE 9 TO WS-GR(1383)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 6 TO WS-GR(1575)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 5 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 8 TO WS-GR(1)
+     MOVE 9 TO WS-GR(33)
+     MOVE 8 TO WS-GR(97)
+     MOVE 3 TO WS-GR(305)
+     MOVE 2 TO WS-GR(337)
+     MOVE 4 TO WS-GR(353)
+     MOVE 2 TO WS-GR(545)
+     MOVE 8 TO WS-GR(561)
+     MOVE 7 TO WS-GR(577)
+     MOVE 1 TO WS-GR(593)
+     MOVE 7 TO WS-GR(769)
+     MOVE 1 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 3 TO WS-GR(1073)
+     MOVE 4 TO WS-GR(1121)
+     MOVE 5 TO WS-GR(1361)
+     MOVE 7 TO WS-GR(1585)
+     MOVE 8 TO WS-GR(1633)
+     MOVE 9 TO WS-GR(2)
+     MOVE 6 TO WS-GR(18)
+     MOVE 5 TO WS-GR(258)
+     MOVE 3 TO WS-GR(274)
+     MOVE 2 TO WS-GR(290)
+     MOVE 2 TO WS-GR(354)
+     MOVE 2 TO WS-GR(514)
+     MOVE 5 TO WS-GR(546)
+     MOVE 3 TO WS-GR(562)
+     MOVE 4 TO WS-GR(578)
+     MOVE 2 TO WS-GR(610)
+     MOVE 5 TO WS-GR(770)
+     MOVE 9 TO WS-GR(786)
+     MOVE 9 TO WS-GR(850)
+     MOVE 6 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 9 TO WS-GR(1058)
+     MOVE 5 TO WS-GR(1074)
+     MOVE 7 TO WS-GR(1106)
+     MOVE 7 TO WS-GR(1282)
+     MOVE 4 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1314)
+     MOVE 8 TO WS-GR(1346)
+     MOVE 6 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 2 TO WS-GR(3)
+     MOVE 7 TO WS-GR(19)
+     MOVE 4 TO WS-GR(35)
+     MOVE 2 TO WS-GR(83)
+     MOVE 7 TO WS-GR(99)
+     MOVE 1 TO WS-GR(275)
+     MOVE 6 TO WS-GR(323)
+     MOVE 7 TO WS-GR(339)
+     MOVE 9 TO WS-GR(515)
+     MOVE 3 TO WS-GR(547)
+     MOVE 2 TO WS-GR(611)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(835)
+     MOVE 1 TO WS-GR(851)
+     MOVE 1 TO WS-GR(867)
+     MOVE 6 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 8 TO WS-GR(1123)
+     MOVE 7 TO WS-GR(1299)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 9 TO WS-GR(1379)
+     MOVE 4 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 4 TO WS-GR(1619)
+     MOVE 7 TO WS-GR(52)
+     MOVE 1 TO WS-GR(84)
+     MOVE 8 TO WS-GR(100)
+     MOVE 7 TO WS-GR(260)
+     MOVE 9 TO WS-GR(276)
+     MOVE 1 TO WS-GR(324)
+     MOVE 9 TO WS-GR(340)
+     MOVE 1 TO WS-GR(516)
+     MOVE 7 TO WS-GR(532)
+     MOVE 6 TO WS-GR(596)
+     MOVE 9 TO WS-GR(804)
+     MOVE 1 TO WS-GR(820)
+     MOVE 7 TO WS-GR(852)
+     MOVE 3 TO WS-GR(868)
+     MOVE 10 TO WS-GR(1028)
+     MOVE 10 TO WS-GR(1044)
+     MOVE 7 TO WS-GR(1092)
+     MOVE 9 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1316)
+     MOVE 3 TO WS-GR(1332)
+     MOVE 10 TO WS-GR(1348)
+     MOVE 8 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(1620)
+     MOVE 10 TO WS-GR(1636)
+     MOVE 2 TO WS-GR(53)
+     MOVE 2 TO WS-GR(69)
+     MOVE 1 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 1 TO WS-GR(293)
+     MOVE 2 TO WS-GR(309)
+     MOVE 6 TO WS-GR(341)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(565)
+     MOVE 1 TO WS-GR(581)
+     MOVE 1 TO WS-GR(789)
+     MOVE 3 TO WS-GR(805)
+     MOVE 6 TO WS-GR(821)
+     MOVE 6 TO WS-GR(837)
+     MOVE 1 TO WS-GR(853)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 3 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 6 TO WS-GR(1317)
+     MOVE 9 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 10 TO WS-GR(1381)
+     MOVE 5 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 2 TO WS-GR(1605)
+     MOVE 2 TO WS-GR(1621)
+     MOVE 2 TO WS-GR(1637)
+     MOVE 6 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 7 TO WS-GR(54)
+     MOVE 2 TO WS-GR(70)
+     MOVE 6 TO WS-GR(86)
+     MOVE 1 TO WS-GR(102)
+     MOVE 8 TO WS-GR(294)
+     MOVE 6 TO WS-GR(310)
+     MOVE 1 TO WS-GR(358)
+     MOVE 10 TO WS-GR(518)
+     MOVE 10 TO WS-GR(550)
+     MOVE 9 TO WS-GR(566)
+     MOVE 2 TO WS-GR(598)
+     MOVE 2 TO WS-GR(614)
+     MOVE 2 TO WS-GR(838)
+     MOVE 1 TO WS-GR(870)
+     MOVE 10 TO WS-GR(1030)
+     MOVE 6 TO WS-GR(1078)
+     MOVE 10 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 3 TO WS-GR(1334)
+     MOVE 10 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 5 TO WS-GR(1590)
+     MOVE 2 TO WS-GR(1606)
+     MOVE 9 TO WS-GR(1622)
+     MOVE 10 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(23)
+     MOVE 2 TO WS-GR(39)
+     MOVE 5 TO WS-GR(71)
+     MOVE 2 TO WS-GR(87)
+     MOVE 2 TO WS-GR(103)
+     MOVE 4 TO WS-GR(263)
+     MOVE 1 TO WS-GR(295)
+     MOVE 1 TO WS-GR(311)
+     MOVE 1 TO WS-GR(327)
+     MOVE 2 TO WS-GR(343)
+     MOVE 8 TO WS-GR(535)
+     MOVE 4 TO WS-GR(551)
+     MOVE 9 TO WS-GR(567)
+     MOVE 8 TO WS-GR(599)
+     MOVE 5 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 10 TO WS-GR(839)
+     MOVE 8 TO WS-GR(871)
+     MOVE 1 TO WS-GR(1031)
+     MOVE 2 TO WS-GR(1063)
+     MOVE 3 TO WS-GR(1079)
+     MOVE 8 TO WS-GR(1127)
+     MOVE 3 TO WS-GR(1287)
+     MOVE 2 TO WS-GR(1303)
+     MOVE 4 TO WS-GR(1319)
+     MOVE 10 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 4 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 2 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 7 TO WS-GR(1)
+     MOVE 1 TO WS-GR(33)
+     MOVE 1 TO WS-GR(49)
+     MOVE 2 TO WS-GR(65)
+     MOVE 6 TO WS-GR(289)
+     MOVE 1 TO WS-GR(353)
+     MOVE 3 TO WS-GR(513)
+     MOVE 10 TO WS-GR(529)
+     MOVE 5 TO WS-GR(561)
+     MOVE 1 TO WS-GR(609)
+     MOVE 4 TO WS-GR(785)
+     MOVE 2 TO WS-GR(817)
+     MOVE 6 TO WS-GR(833)
+     MOVE 2 TO WS-GR(849)
+     MOVE 10 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1057)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 8 TO WS-GR(1297)
+     MOVE 8 TO WS-GR(1377)
+     MOVE 7 TO WS-GR(1537)
+     MOVE 3 TO WS-GR(1569)
+     MOVE 6 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(18)
+     MOVE 7 TO WS-GR(34)
+     MOVE 2 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 1 TO WS-GR(258)
+     MOVE 2 TO WS-GR(290)
+     MOVE 2 TO WS-GR(306)
+     MOVE 3 TO WS-GR(322)
+     MOVE 1 TO WS-GR(338)
+     MOVE 1 TO WS-GR(546)
+     MOVE 7 TO WS-GR(578)
+     MOVE 3 TO WS-GR(802)
+     MOVE 1 TO WS-GR(818)
+     MOVE 8 TO WS-GR(1074)
+     MOVE 5 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 2 TO WS-GR(1314)
+     MOVE 4 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1554)
+     MOVE 5 TO WS-GR(1602)
+     MOVE 4 TO WS-GR(1618)
+     MOVE 5 TO WS-GR(3)
+     MOVE 6 TO WS-GR(35)
+     MOVE 10 TO WS-GR(83)
+     MOVE 3 TO WS-GR(259)
+     MOVE 5 TO WS-GR(323)
+     MOVE 6 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 1 TO WS-GR(531)
+     MOVE 2 TO WS-GR(547)
+     MOVE 2 TO WS-GR(563)
+     MOVE 7 TO WS-GR(579)
+     MOVE 5 TO WS-GR(771)
+     MOVE 1 TO WS-GR(835)
+     MOVE 5 TO WS-GR(851)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 10 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1363)
+     MOVE 8 TO WS-GR(1379)
+     MOVE 9 TO WS-GR(1539)
+     MOVE 7 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1571)
+     MOVE 10 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(4)
+     MOVE 9 TO WS-GR(20)
+     MOVE 8 TO WS-GR(68)
+     MOVE 1 TO WS-GR(84)
+     MOVE 4 TO WS-GR(260)
+     MOVE 2 TO WS-GR(292)
+     MOVE 8 TO WS-GR(324)
+     MOVE 10 TO WS-GR(356)
+     MOVE 9 TO WS-GR(612)
+     MOVE 9 TO WS-GR(772)
+     MOVE 2 TO WS-GR(788)
+     MOVE 2 TO WS-GR(820)
+     MOVE 4 TO WS-GR(868)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 2 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 4 TO WS-GR(1556)
+     MOVE 10 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 10 TO WS-GR(85)
+     MOVE 3 TO WS-GR(101)
+     MOVE 10 TO WS-GR(293)
+     MOVE 1 TO WS-GR(325)
+     MOVE 9 TO WS-GR(341)
+     MOVE 5 TO WS-GR(357)
+     MOVE 2 TO WS-GR(517)
+     MOVE 3 TO WS-GR(533)
+     MOVE 1 TO WS-GR(565)
+     MOVE 10 TO WS-GR(581)
+     MOVE 4 TO WS-GR(597)
+     MOVE 6 TO WS-GR(789)
+     MOVE 5 TO WS-GR(853)
+     MOVE 9 TO WS-GR(869)
+     MOVE 9 TO WS-GR(1045)
+     MOVE 5 TO WS-GR(1125)
+     MOVE 6 TO WS-GR(1301)
+     MOVE 7 TO WS-GR(1333)
+     MOVE 4 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 8 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(1605)
+     MOVE 5 TO WS-GR(1637)
+     MOVE 8 TO WS-GR(38)
+     MOVE 9 TO WS-GR(54)
+     MOVE 3 TO WS-GR(86)
+     MOVE 2 TO WS-GR(102)
+     MOVE 6 TO WS-GR(262)
+     MOVE 2 TO WS-GR(278)
+     MOVE 7 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 8 TO WS-GR(518)
+     MOVE 1 TO WS-GR(534)
+     MOVE 1 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 1 TO WS-GR(582)
+     MOVE 1 TO WS-GR(598)
+     MOVE 7 TO WS-GR(774)
+     MOVE 2 TO WS-GR(790)
+     MOVE 3 TO WS-GR(822)
+     MOVE 1 TO WS-GR(838)
+     MOVE 3 TO WS-GR(870)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 3 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 6 TO WS-GR(1286)
+     MOVE 3 TO WS-GR(1302)
+     MOVE 3 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1350)
+     MOVE 6 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 10 TO WS-GR(1606)
+     MOVE 8 TO WS-GR(1622)
+     MOVE 9 TO WS-GR(1638)
+     MOVE 4 TO WS-GR(23)
+     MOVE 1 TO WS-GR(71)
+     MOVE 2 TO WS-GR(103)
+     MOVE 2 TO WS-GR(343)
+     MOVE 3 TO WS-GR(359)
+     MOVE 4 TO WS-GR(519)
+     MOVE 1 TO WS-GR(535)
+     MOVE 1 TO WS-GR(551)
+     MOVE 1 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 7 TO WS-GR(855)
+     MOVE 1 TO WS-GR(871)
+     MOVE 7 TO WS-GR(1031)
+     MOVE 3 TO WS-GR(1047)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 10 TO WS-GR(1111)
+     MOVE 3 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 6 TO WS-GR(1351)
+     MOVE 8 TO WS-GR(1367)
+     MOVE 8 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1543)
+     MOVE 4 TO WS-GR(1559)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 2 TO WS-GR(1607)
+     MOVE 4 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1/0/4 598/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(65)
+     MOVE 7 TO WS-GR(257)
+     MOVE 2 TO WS-GR(273)
+     MOVE 6 TO WS-GR(289)
+     MOVE 9 TO WS-GR(513)
+     MOVE 8 TO WS-GR(529)
+     MOVE 5 TO WS-GR(561)
+     MOVE 2 TO WS-GR(577)
+     MOVE 3 TO WS-GR(769)
+     MOVE 6 TO WS-GR(801)
+     MOVE 2 TO WS-GR(833)
+     MOVE 2 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1057)
+     MOVE 7 TO WS-GR(1073)
+     MOVE 5 TO WS-GR(1089)
+     MOVE 8 TO WS-GR(1105)
+     MOVE 10 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 7 TO WS-GR(1585)
+     MOVE 5 TO WS-GR(1601)
+     MOVE 8 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(2)
+     MOVE 4 TO WS-GR(18)
+     MOVE 2 TO WS-GR(66)
+     MOVE 10 TO WS-GR(258)
+     MOVE 3 TO WS-GR(290)
+     MOVE 4 TO WS-GR(322)
+     MOVE 1 TO WS-GR(338)
+     MOVE 2 TO WS-GR(514)
+     MOVE 1 TO WS-GR(562)
+     MOVE 10 TO WS-GR(578)
+     MOVE 1 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 3 TO WS-GR(802)
+     MOVE 8 TO WS-GR(866)
+     MOVE 5 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1314)
+     MOVE 2 TO WS-GR(1330)
+     MOVE 1 TO WS-GR(1346)
+     MOVE 9 TO WS-GR(1362)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 6 TO WS-GR(1538)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 1 TO WS-GR(1586)
+     MOVE 8 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 2 TO WS-GR(3)
+     MOVE 2 TO WS-GR(19)
+     MOVE 9 TO WS-GR(67)
+     MOVE 3 TO WS-GR(99)
+     MOVE 10 TO WS-GR(259)
+     MOVE 3 TO WS-GR(323)
+     MOVE 1 TO WS-GR(515)
+     MOVE 3 TO WS-GR(531)
+     MOVE 6 TO WS-GR(547)
+     MOVE 7 TO WS-GR(563)
+     MOVE 7 TO WS-GR(579)
+     MOVE 1 TO WS-GR(595)
+     MOVE 10 TO WS-GR(771)
+     MOVE 7 TO WS-GR(787)
+     MOVE 2 TO WS-GR(803)
+     MOVE 1 TO WS-GR(819)
+     MOVE 2 TO WS-GR(1043)
+     MOVE 7 TO WS-GR(1075)
+     MOVE 3 TO WS-GR(1283)
+     MOVE 8 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 1 TO WS-GR(1363)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 6 TO WS-GR(1587)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 3 TO WS-GR(4)
+     MOVE 4 TO WS-GR(36)
+     MOVE 2 TO WS-GR(52)
+     MOVE 1 TO WS-GR(84)
+     MOVE 3 TO WS-GR(100)
+     MOVE 1 TO WS-GR(260)
+     MOVE 1 TO WS-GR(308)
+     MOVE 4 TO WS-GR(340)
+     MOVE 3 TO WS-GR(356)
+     MOVE 10 TO WS-GR(516)
+     MOVE 5 TO WS-GR(548)
+     MOVE 1 TO WS-GR(564)
+     MOVE 6 TO WS-GR(596)
+     MOVE 1 TO WS-GR(612)
+     MOVE 8 TO WS-GR(804)
+     MOVE 1 TO WS-GR(820)
+     MOVE 4 TO WS-GR(836)
+     MOVE 3 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1028)
+     MOVE 3 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(1108)
+     MOVE 6 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 8 TO WS-GR(1348)
+     MOVE 7 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 6 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(21)
+     MOVE 1 TO WS-GR(53)
+     MOVE 2 TO WS-GR(69)
+     MOVE 9 TO WS-GR(261)
+     MOVE 9 TO WS-GR(277)
+     MOVE 3 TO WS-GR(357)
+     MOVE 1 TO WS-GR(517)
+     MOVE 5 TO WS-GR(549)
+     MOVE 2 TO WS-GR(565)
+     MOVE 8 TO WS-GR(789)
+     MOVE 3 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 4 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1125)
+     MOVE 3 TO WS-GR(1285)
+     MOVE 9 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 1 TO WS-GR(1573)
+     MOVE 3 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(38)
+     MOVE 8 TO WS-GR(54)
+     MOVE 2 TO WS-GR(70)
+     MOVE 1 TO WS-GR(102)
+     MOVE 4 TO WS-GR(278)
+     MOVE 9 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 1 TO WS-GR(534)
+     MOVE 3 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 9 TO WS-GR(614)
+     MOVE 1 TO WS-GR(806)
+     MOVE 3 TO WS-GR(822)
+     MOVE 9 TO WS-GR(854)
+     MOVE 1 TO WS-GR(870)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 4 TO WS-GR(1094)
+     MOVE 3 TO WS-GR(1110)
+     MOVE 9 TO WS-GR(1126)
+     MOVE 10 TO WS-GR(1318)
+     MOVE 7 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 7 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 1 TO WS-GR(39)
+     MOVE 4 TO WS-GR(103)
+     MOVE 3 TO WS-GR(279)
+     MOVE 9 TO WS-GR(311)
+     MOVE 9 TO WS-GR(327)
+     MOVE 1 TO WS-GR(359)
+     MOVE 1 TO WS-GR(535)
+     MOVE 3 TO WS-GR(551)
+     MOVE 1 TO WS-GR(583)
+     MOVE 4 TO WS-GR(599)
+     MOVE 3 TO WS-GR(807)
+     MOVE 4 TO WS-GR(823)
+     MOVE 1 TO WS-GR(839)
+     MOVE 1 TO WS-GR(1031)
+     MOVE 6 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 2 TO WS-GR(1079)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 4 TO WS-GR(1287)
+     MOVE 4 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 6 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1559)
+     MOVE 6 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(33)
+     MOVE 1 TO WS-GR(49)
+     MOVE 9 TO WS-GR(65)
+     MOVE 3 TO WS-GR(81)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(353)
+     MOVE 1 TO WS-GR(545)
+     MOVE 2 TO WS-GR(561)
+     MOVE 6 TO WS-GR(593)
+     MOVE 1 TO WS-GR(609)
+     MOVE 8 TO WS-GR(769)
+     MOVE 3 TO WS-GR(1057)
+     MOVE 10 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 7 TO WS-GR(1313)
+     MOVE 10 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 3 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 9 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1617)
+     MOVE 2 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(2)
+     MOVE 4 TO WS-GR(98)
+     MOVE 3 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 7 TO WS-GR(290)
+     MOVE 1 TO WS-GR(322)
+     MOVE 10 TO WS-GR(338)
+     MOVE 3 TO WS-GR(354)
+     MOVE 1 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 4 TO WS-GR(562)
+     MOVE 3 TO WS-GR(770)
+     MOVE 3 TO WS-GR(786)
+     MOVE 1 TO WS-GR(802)
+     MOVE 10 TO WS-GR(834)
+     MOVE 7 TO WS-GR(866)
+     MOVE 2 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 5 TO WS-GR(1314)
+     MOVE 5 TO WS-GR(1330)
+     MOVE 2 TO WS-GR(1346)
+     MOVE 3 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1554)
+     MOVE 10 TO WS-GR(1634)
+     MOVE 8 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 8 TO WS-GR(67)
+     MOVE 10 TO WS-GR(259)
+     MOVE 1 TO WS-GR(291)
+     MOVE 5 TO WS-GR(339)
+     MOVE 2 TO WS-GR(355)
+     MOVE 1 TO WS-GR(531)
+     MOVE 6 TO WS-GR(547)
+     MOVE 8 TO WS-GR(563)
+     MOVE 1 TO WS-GR(595)
+     MOVE 1 TO WS-GR(851)
+     MOVE 2 TO WS-GR(867)
+     MOVE 4 TO WS-GR(1059)
+     MOVE 9 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 2 TO WS-GR(1347)
+     MOVE 6 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 7 TO WS-GR(1635)
+     MOVE 1 TO WS-GR(52)
+     MOVE 2 TO WS-GR(68)
+     MOVE 8 TO WS-GR(100)
+     MOVE 8 TO WS-GR(260)
+     MOVE 7 TO WS-GR(276)
+     MOVE 3 TO WS-GR(308)
+     MOVE 5 TO WS-GR(324)
+     MOVE 1 TO WS-GR(340)
+     MOVE 3 TO WS-GR(516)
+     MOVE 1 TO WS-GR(532)
+     MOVE 2 TO WS-GR(548)
+     MOVE 1 TO WS-GR(580)
+     MOVE 4 TO WS-GR(612)
+     MOVE 5 TO WS-GR(820)
+     MOVE 3 TO WS-GR(1044)
+     MOVE 9 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 3 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 6 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(5)
+     MOVE 1 TO WS-GR(37)
+     MOVE 4 TO WS-GR(85)
+     MOVE 5 TO WS-GR(261)
+     MOVE 2 TO WS-GR(293)
+     MOVE 6 TO WS-GR(325)
+     MOVE 1 TO WS-GR(357)
+     MOVE 8 TO WS-GR(517)
+     MOVE 1 TO WS-GR(533)
+     MOVE 10 TO WS-GR(549)
+     MOVE 9 TO WS-GR(565)
+     MOVE 6 TO WS-GR(581)
+     MOVE 2 TO WS-GR(597)
+     MOVE 1 TO WS-GR(613)
+     MOVE 2 TO WS-GR(805)
+     MOVE 1 TO WS-GR(821)
+     MOVE 6 TO WS-GR(837)
+     MOVE 8 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 7 TO WS-GR(1109)
+     MOVE 2 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 3 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 3 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 7 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(1621)
+     MOVE 4 TO WS-GR(1637)
+     MOVE 2 TO WS-GR(38)
+     MOVE 5 TO WS-GR(278)
+     MOVE 1 TO WS-GR(294)
+     MOVE 1 TO WS-GR(342)
+     MOVE 4 TO WS-GR(358)
+     MOVE 5 TO WS-GR(518)
+     MOVE 1 TO WS-GR(550)
+     MOVE 5 TO WS-GR(614)
+     MOVE 2 TO WS-GR(806)
+     MOVE 4 TO WS-GR(822)
+     MOVE 7 TO WS-GR(870)
+     MOVE 8 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1062)
+     MOVE 3 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 3 TO WS-GR(1302)
+     MOVE 2 TO WS-GR(1334)
+     MOVE 2 TO WS-GR(1350)
+     MOVE 2 TO WS-GR(1382)
+     MOVE 3 TO WS-GR(1542)
+     MOVE 8 TO WS-GR(1606)
+     MOVE 2 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 4 TO WS-GR(23)
+     MOVE 6 TO WS-GR(39)
+     MOVE 8 TO WS-GR(87)
+     MOVE 2 TO WS-GR(295)
+     MOVE 8 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 2 TO WS-GR(359)
+     MOVE 2 TO WS-GR(519)
+     MOVE 4 TO WS-GR(535)
+     MOVE 1 TO WS-GR(567)
+     MOVE 2 TO WS-GR(583)
+     MOVE 1 TO WS-GR(599)
+     MOVE 6 TO WS-GR(615)
+     MOVE 6 TO WS-GR(823)
+     MOVE 7 TO WS-GR(839)
+     MOVE 2 TO WS-GR(871)
+     MOVE 1 TO WS-GR(1031)
+     MOVE 8 TO WS-GR(1047)
+     MOVE 6 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 8 TO WS-GR(1319)
+     MOVE 8 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1607)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 10 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(1)
+     MOVE 3 TO WS-GR(17)
+     MOVE 2 TO WS-GR(49)
+     MOVE 9 TO WS-GR(65)
+     MOVE 2 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 1 TO WS-GR(289)
+     MOVE 5 TO WS-GR(321)
+     MOVE 10 TO WS-GR(337)
+     MOVE 2 TO WS-GR(513)
+     MOVE 1 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 2 TO WS-GR(561)
+     MOVE 1 TO WS-GR(577)
+     MOVE 2 TO WS-GR(593)
+     MOVE 2 TO WS-GR(801)
+     MOVE 9 TO WS-GR(817)
+     MOVE 1 TO WS-GR(865)
+     MOVE 8 TO WS-GR(1057)
+     MOVE 3 TO WS-GR(1073)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1313)
+     MOVE 9 TO WS-GR(1345)
+     MOVE 2 TO WS-GR(1377)
+     MOVE 4 TO WS-GR(1553)
+     MOVE 10 TO WS-GR(1569)
+     MOVE 4 TO WS-GR(1601)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 2 TO WS-GR(2)
+     MOVE 1 TO WS-GR(18)
+     MOVE 4 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 3 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 8 TO WS-GR(322)
+     MOVE 1 TO WS-GR(514)
+     MOVE 2 TO WS-GR(530)
+     MOVE 2 TO WS-GR(802)
+     MOVE 8 TO WS-GR(818)
+     MOVE 1 TO WS-GR(834)
+     MOVE 7 TO WS-GR(866)
+     MOVE 8 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 6 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1330)
+     MOVE 3 TO WS-GR(19)
+     MOVE 1 TO WS-GR(51)
+     MOVE 3 TO WS-GR(67)
+     MOVE 3 TO WS-GR(259)
+     MOVE 10 TO WS-GR(275)
+     MOVE 8 TO WS-GR(307)
+     MOVE 2 TO WS-GR(323)
+     MOVE 8 TO WS-GR(339)
+     MOVE 4 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 1 TO WS-GR(547)
+     MOVE 2 TO WS-GR(563)
+     MOVE 6 TO WS-GR(611)
+     MOVE 1 TO WS-GR(771)
+     MOVE 9 TO WS-GR(787)
+     MOVE 1 TO WS-GR(803)
+     MOVE 3 TO WS-GR(819)
+     MOVE 2 TO WS-GR(867)
+     MOVE 2 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1043)
+     MOVE 4 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 6 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 7 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 1 TO WS-GR(36)
+     MOVE 6 TO WS-GR(52)
+     MOVE 1 TO WS-GR(84)
+     MOVE 1 TO WS-GR(100)
+     MOVE 3 TO WS-GR(276)
+     MOVE 7 TO WS-GR(292)
+     MOVE 1 TO WS-GR(324)
+     MOVE 6 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 3 TO WS-GR(516)
+     MOVE 3 TO WS-GR(532)
+     MOVE 1 TO WS-GR(564)
+     MOVE 8 TO WS-GR(596)
+     MOVE 3 TO WS-GR(612)
+     MOVE 1 TO WS-GR(788)
+     MOVE 4 TO WS-GR(804)
+     MOVE 8 TO WS-GR(836)
+     MOVE 3 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1060)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1108)
+     MOVE 9 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1556)
+     MOVE 5 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(53)
+     MOVE 1 TO WS-GR(69)
+     MOVE 9 TO WS-GR(85)
+     MOVE 3 TO WS-GR(277)
+     MOVE 10 TO WS-GR(325)
+     MOVE 3 TO WS-GR(341)
+     MOVE 1 TO WS-GR(517)
+     MOVE 10 TO WS-GR(533)
+     MOVE 7 TO WS-GR(581)
+     MOVE 3 TO WS-GR(597)
+     MOVE 2 TO WS-GR(789)
+     MOVE 1 TO WS-GR(853)
+     MOVE 4 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 10 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(278)
+     MOVE 3 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 3 TO WS-GR(326)
+     MOVE 8 TO WS-GR(358)
+     MOVE 1 TO WS-GR(566)
+     MOVE 2 TO WS-GR(598)
+     MOVE 9 TO WS-GR(790)
+     MOVE 2 TO WS-GR(806)
+     MOVE 7 TO WS-GR(838)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 8 TO WS-GR(1110)
+     MOVE 3 TO WS-GR(1302)
+     MOVE 9 TO WS-GR(1382)
+     MOVE 2 TO WS-GR(1558)
+     MOVE 4 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(7)
+     MOVE 5 TO WS-GR(39)
+     MOVE 9 TO WS-GR(71)
+     MOVE 1 TO WS-GR(103)
+     MOVE 1 TO WS-GR(295)
+     MOVE 10 TO WS-GR(311)
+     MOVE 7 TO WS-GR(327)
+     MOVE 10 TO WS-GR(343)
+     MOVE 1 TO WS-GR(519)
+     MOVE 1 TO WS-GR(535)
+     MOVE 1 TO WS-GR(567)
+     MOVE 8 TO WS-GR(615)
+     MOVE 10 TO WS-GR(775)
+     MOVE 5 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 4 TO WS-GR(855)
+     MOVE 5 TO WS-GR(1031)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 5 TO WS-GR(1063)
+     MOVE 7 TO WS-GR(1079)
+     MOVE 4 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 2 TO WS-GR(1319)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 2 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 10 TO WS-GR(1)
+     MOVE 4 TO WS-GR(65)
+     MOVE 10 TO WS-GR(81)
+     MOVE 2 TO WS-GR(97)
+     MOVE 3 TO WS-GR(273)
+     MOVE 1 TO WS-GR(305)
+     MOVE 2 TO WS-GR(513)
+     MOVE 10 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 1 TO WS-GR(833)
+     MOVE 3 TO WS-GR(1041)
+     MOVE 8 TO WS-GR(1105)
+     MOVE 2 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 4 TO WS-GR(1329)
+     MOVE 6 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 2 TO WS-GR(1377)
+     MOVE 2 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1569)
+     MOVE 8 TO WS-GR(18)
+     MOVE 1 TO WS-GR(258)
+     MOVE 7 TO WS-GR(274)
+     MOVE 5 TO WS-GR(290)
+     MOVE 3 TO WS-GR(514)
+     MOVE 2 TO WS-GR(610)
+     MOVE 6 TO WS-GR(770)
+     MOVE 1 TO WS-GR(802)
+     MOVE 9 TO WS-GR(818)
+     MOVE 9 TO WS-GR(834)
+     MOVE 4 TO WS-GR(850)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 10 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 6 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1282)
+     MOVE 3 TO WS-GR(1298)
+     MOVE 7 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 3 TO WS-GR(1570)
+     MOVE 7 TO WS-GR(1586)
+     MOVE 2 TO WS-GR(1618)
+     MOVE 2 TO WS-GR(1634)
+     MOVE 6 TO WS-GR(19)
+     MOVE 1 TO WS-GR(99)
+     MOVE 3 TO WS-GR(275)
+     MOVE 10 TO WS-GR(307)
+     MOVE 1 TO WS-GR(323)
+     MOVE 5 TO WS-GR(355)
+     MOVE 2 TO WS-GR(547)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(803)
+     MOVE 8 TO WS-GR(851)
+     MOVE 6 TO WS-GR(1027)
+     MOVE 7 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 7 TO WS-GR(1123)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 3 TO WS-GR(1315)
+     MOVE 6 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 2 TO WS-GR(4)
+     MOVE 9 TO WS-GR(36)
+     MOVE 1 TO WS-GR(68)
+     MOVE 2 TO WS-GR(100)
+     MOVE 8 TO WS-GR(260)
+     MOVE 10 TO WS-GR(308)
+     MOVE 7 TO WS-GR(324)
+     MOVE 1 TO WS-GR(516)
+     MOVE 8 TO WS-GR(772)
+     MOVE 1 TO WS-GR(804)
+     MOVE 9 TO WS-GR(820)
+     MOVE 1 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1060)
+     MOVE 6 TO WS-GR(1076)
+     MOVE 3 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 5 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 3 TO WS-GR(1556)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 2 TO WS-GR(37)
+     MOVE 2 TO WS-GR(53)
+     MOVE 7 TO WS-GR(101)
+     MOVE 6 TO WS-GR(277)
+     MOVE 1 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 4 TO WS-GR(341)
+     MOVE 9 TO WS-GR(357)
+     MOVE 7 TO WS-GR(517)
+     MOVE 10 TO WS-GR(533)
+     MOVE 4 TO WS-GR(549)
+     MOVE 2 TO WS-GR(565)
+     MOVE 1 TO WS-GR(789)
+     MOVE 2 TO WS-GR(821)
+     MOVE 4 TO WS-GR(869)
+     MOVE 3 TO WS-GR(1045)
+     MOVE 8 TO WS-GR(1061)
+     MOVE 3 TO WS-GR(1125)
+     MOVE 1 TO WS-GR(1285)
+     MOVE 1 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 6 TO WS-GR(1621)
+     MOVE 3 TO WS-GR(1637)
+     MOVE 4 TO WS-GR(38)
+     MOVE 6 TO WS-GR(70)
+     MOVE 1 TO WS-GR(86)
+     MOVE 1 TO WS-GR(262)
+     MOVE 6 TO WS-GR(342)
+     MOVE 3 TO WS-GR(518)
+     MOVE 2 TO WS-GR(534)
+     MOVE 5 TO WS-GR(550)
+     MOVE 1 TO WS-GR(582)
+     MOVE 6 TO WS-GR(774)
+     MOVE 3 TO WS-GR(822)
+     MOVE 7 TO WS-GR(838)
+     MOVE 9 TO WS-GR(870)
+     MOVE 3 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 9 TO WS-GR(1126)
+     MOVE 7 TO WS-GR(1286)
+     MOVE 3 TO WS-GR(1350)
+     MOVE 3 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 3 TO WS-GR(1606)
+     MOVE 6 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 5 TO WS-GR(39)
+     MOVE 1 TO WS-GR(55)
+     MOVE 2 TO WS-GR(263)
+     MOVE 6 TO WS-GR(279)
+     MOVE 6 TO WS-GR(311)
+     MOVE 10 TO WS-GR(343)
+     MOVE 2 TO WS-GR(359)
+     MOVE 3 TO WS-GR(535)
+     MOVE 5 TO WS-GR(567)
+     MOVE 1 TO WS-GR(599)
+     MOVE 1 TO WS-GR(791)
+     MOVE 7 TO WS-GR(839)
+     MOVE 2 TO WS-GR(1063)
+     MOVE 4 TO WS-GR(1079)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 10 TO WS-GR(1335)
+     MOVE 7 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1367)
+     MOVE 10 TO WS-GR(1383)
+     MOVE 6 TO WS-GR(1575)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 3 TO WS-GR(1623)
+     MOVE 3 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1)
+     MOVE 5 TO WS-GR(33)
+     MOVE 9 TO WS-GR(49)
+     MOVE 6 TO WS-GR(65)
+     MOVE 10 TO WS-GR(81)
+     MOVE 9 TO WS-GR(97)
+     MOVE 4 TO WS-GR(273)
+     MOVE 2 TO WS-GR(289)
+     MOVE 8 TO WS-GR(305)
+     MOVE 6 TO WS-GR(545)
+     MOVE 3 TO WS-GR(561)
+     MOVE 9 TO WS-GR(609)
+     MOVE 3 TO WS-GR(785)
+     MOVE 8 TO WS-GR(817)
+     MOVE 2 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1073)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 5 TO WS-GR(1281)
+     MOVE 8 TO WS-GR(1297)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 9 TO WS-GR(1361)
+     MOVE 5 TO WS-GR(1377)
+     MOVE 6 TO WS-GR(1537)
+     MOVE 7 TO WS-GR(1553)
+     MOVE 2 TO WS-GR(1569)
+     MOVE 6 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(18)
+     MOVE 2 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 3 TO WS-GR(98)
+     MOVE 3 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 9 TO WS-GR(338)
+     MOVE 8 TO WS-GR(354)
+     MOVE 10 TO WS-GR(514)
+     MOVE 2 TO WS-GR(530)
+     MOVE 7 TO WS-GR(562)
+     MOVE 7 TO WS-GR(802)
+     MOVE 4 TO WS-GR(818)
+     MOVE 10 TO WS-GR(834)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 4 TO WS-GR(1074)
+     MOVE 7 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1122)
+     MOVE 3 TO WS-GR(1282)
+     MOVE 10 TO WS-GR(1314)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 2 TO WS-GR(1346)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 1 TO WS-GR(1586)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 8 TO WS-GR(1618)
+     MOVE 6 TO WS-GR(19)
+     MOVE 2 TO WS-GR(35)
+     MOVE 7 TO WS-GR(51)
+     MOVE 3 TO WS-GR(67)
+     MOVE 1 TO WS-GR(83)
+     MOVE 2 TO WS-GR(259)
+     MOVE 1 TO WS-GR(291)
+     MOVE 3 TO WS-GR(307)
+     MOVE 4 TO WS-GR(339)
+     MOVE 1 TO WS-GR(355)
+     MOVE 9 TO WS-GR(515)
+     MOVE 4 TO WS-GR(563)
+     MOVE 2 TO WS-GR(579)
+     MOVE 1 TO WS-GR(595)
+     MOVE 10 TO WS-GR(611)
+     MOVE 2 TO WS-GR(851)
+     MOVE 2 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 9 TO WS-GR(1091)
+     MOVE 9 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 3 TO WS-GR(1539)
+     MOVE 6 TO WS-GR(1571)
+     MOVE 2 TO WS-GR(1603)
+     MOVE 2 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 6 TO WS-GR(4)
+     MOVE 1 TO WS-GR(52)
+     MOVE 4 TO WS-GR(100)
+     MOVE 1 TO WS-GR(308)
+     MOVE 3 TO WS-GR(324)
+     MOVE 1 TO WS-GR(532)
+     MOVE 9 TO WS-GR(548)
+     MOVE 1 TO WS-GR(596)
+     MOVE 1 TO WS-GR(788)
+     MOVE 1 TO WS-GR(820)
+     MOVE 3 TO WS-GR(836)
+     MOVE 7 TO WS-GR(1028)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 8 TO WS-GR(1092)
+     MOVE 8 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 7 TO WS-GR(1284)
+     MOVE 7 TO WS-GR(1380)
+     MOVE 8 TO WS-GR(1556)
+     MOVE 7 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1588)
+     MOVE 6 TO WS-GR(1620)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 3 TO WS-GR(21)
+     MOVE 1 TO WS-GR(85)
+     MOVE 1 TO WS-GR(101)
+     MOVE 1 TO WS-GR(277)
+     MOVE 6 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 3 TO WS-GR(325)
+     MOVE 1 TO WS-GR(517)
+     MOVE 2 TO WS-GR(597)
+     MOVE 8 TO WS-GR(773)
+     MOVE 1 TO WS-GR(805)
+     MOVE 2 TO WS-GR(821)
+     MOVE 4 TO WS-GR(837)
+     MOVE 1 TO WS-GR(853)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 1 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1333)
+     MOVE 7 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1381)
+     MOVE 8 TO WS-GR(1541)
+     MOVE 5 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 7 TO WS-GR(1637)
+     MOVE 6 TO WS-GR(22)
+     MOVE 1 TO WS-GR(38)
+     MOVE 1 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(86)
+     MOVE 1 TO WS-GR(102)
+     MOVE 4 TO WS-GR(278)
+     MOVE 3 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 1 TO WS-GR(342)
+     MOVE 10 TO WS-GR(358)
+     MOVE 5 TO WS-GR(518)
+     MOVE 2 TO WS-GR(550)
+     MOVE 3 TO WS-GR(598)
+     MOVE 7 TO WS-GR(774)
+     MOVE 7 TO WS-GR(838)
+     MOVE 4 TO WS-GR(854)
+     MOVE 5 TO WS-GR(870)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 6 TO WS-GR(1046)
+     MOVE 8 TO WS-GR(1078)
+     MOVE 8 TO WS-GR(1094)
+     MOVE 7 TO WS-GR(1286)
+     MOVE 9 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1382)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 8 TO WS-GR(1622)
+     MOVE 5 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(39)
+     MOVE 1 TO WS-GR(103)
+     MOVE 1 TO WS-GR(279)
+     MOVE 1 TO WS-GR(343)
+     MOVE 3 TO WS-GR(359)
+     MOVE 1 TO WS-GR(599)
+     MOVE 3 TO WS-GR(775)
+     MOVE 5 TO WS-GR(839)
+     MOVE 3 TO WS-GR(855)
+     MOVE 4 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 2 TO WS-GR(1383)
+     MOVE 9 TO WS-GR(1543)
+     MOVE 6 TO WS-GR(1559)
+     MOVE 2 TO WS-GR(1575)
+     MOVE 7 TO WS-GR(1607)
+     MOVE 4 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/4 532/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(65)
+     MOVE 2 TO WS-GR(81)
+     MOVE 1 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 1 TO WS-GR(289)
+     MOVE 3 TO WS-GR(305)
+     MOVE 1 TO WS-GR(321)
+     MOVE 2 TO WS-GR(337)
+     MOVE 7 TO WS-GR(529)
+     MOVE 1 TO WS-GR(561)
+     MOVE 2 TO WS-GR(593)
+     MOVE 1 TO WS-GR(609)
+     MOVE 2 TO WS-GR(785)
+     MOVE 10 TO WS-GR(801)
+     MOVE 2 TO WS-GR(817)
+     MOVE 2 TO WS-GR(833)
+     MOVE 5 TO WS-GR(849)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 8 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1633)
+     MOVE 5 TO WS-GR(2)
+     MOVE 1 TO WS-GR(50)
+     MOVE 4 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 3 TO WS-GR(258)
+     MOVE 5 TO WS-GR(290)
+     MOVE 10 TO WS-GR(306)
+     MOVE 8 TO WS-GR(322)
+     MOVE 2 TO WS-GR(338)
+     MOVE 2 TO WS-GR(354)
+     MOVE 10 TO WS-GR(530)
+     MOVE 7 TO WS-GR(578)
+     MOVE 10 TO WS-GR(594)
+     MOVE 6 TO WS-GR(834)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 4 TO WS-GR(1314)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 10 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1586)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 10 TO WS-GR(19)
+     MOVE 10 TO WS-GR(35)
+     MOVE 6 TO WS-GR(99)
+     MOVE 10 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 7 TO WS-GR(323)
+     MOVE 8 TO WS-GR(547)
+     MOVE 3 TO WS-GR(579)
+     MOVE 6 TO WS-GR(771)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(803)
+     MOVE 10 TO WS-GR(819)
+     MOVE 2 TO WS-GR(851)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1075)
+     MOVE 8 TO WS-GR(1107)
+     MOVE 6 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 6 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 9 TO WS-GR(1555)
+     MOVE 6 TO WS-GR(1587)
+     MOVE 9 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(68)
+     MOVE 1 TO WS-GR(84)
+     MOVE 2 TO WS-GR(324)
+     MOVE 9 TO WS-GR(340)
+     MOVE 2 TO WS-GR(532)
+     MOVE 9 TO WS-GR(564)
+     MOVE 1 TO WS-GR(596)
+     MOVE 10 TO WS-GR(788)
+     MOVE 1 TO WS-GR(804)
+     MOVE 4 TO WS-GR(820)
+     MOVE 6 TO WS-GR(836)
+     MOVE 7 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1028)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 5 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 7 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 8 TO WS-GR(1300)
+     MOVE 3 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1588)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 4 TO WS-GR(21)
+     MOVE 1 TO WS-GR(53)
+     MOVE 10 TO WS-GR(69)
+     MOVE 1 TO WS-GR(85)
+     MOVE 10 TO WS-GR(101)
+     MOVE 1 TO WS-GR(261)
+     MOVE 8 TO WS-GR(293)
+     MOVE 7 TO WS-GR(309)
+     MOVE 7 TO WS-GR(549)
+     MOVE 9 TO WS-GR(565)
+     MOVE 2 TO WS-GR(613)
+     MOVE 2 TO WS-GR(837)
+     MOVE 2 TO WS-GR(853)
+     MOVE 1 TO WS-GR(869)
+     MOVE 4 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 7 TO WS-GR(1605)
+     MOVE 8 TO WS-GR(1621)
+     MOVE 4 TO WS-GR(38)
+     MOVE 1 TO WS-GR(54)
+     MOVE 7 TO WS-GR(102)
+     MOVE 2 TO WS-GR(262)
+     MOVE 2 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 2 TO WS-GR(534)
+     MOVE 10 TO WS-GR(550)
+     MOVE 1 TO WS-GR(598)
+     MOVE 1 TO WS-GR(774)
+     MOVE 1 TO WS-GR(790)
+     MOVE 4 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 9 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1286)
+     MOVE 1 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1382)
+     MOVE 7 TO WS-GR(1558)
+     MOVE 5 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 3 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 2 TO WS-GR(103)
+     MOVE 2 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 1 TO WS-GR(359)
+     MOVE 9 TO WS-GR(519)
+     MOVE 1 TO WS-GR(535)
+     MOVE 2 TO WS-GR(551)
+     MOVE 1 TO WS-GR(583)
+     MOVE 10 TO WS-GR(775)
+     MOVE 3 TO WS-GR(791)
+     MOVE 6 TO WS-GR(855)
+     MOVE 1 TO WS-GR(1047)
+     MOVE 10 TO WS-GR(1063)
+     MOVE 6 TO WS-GR(1079)
+     MOVE 9 TO WS-GR(1287)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 2 TO WS-GR(1351)
+     MOVE 8 TO WS-GR(1367)
+     MOVE 3 TO WS-GR(1383)
+     MOVE 4 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1607)
+     MOVE 5 TO WS-GR(1639)
+     MOVE 6 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/2 598/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 10 TO WS-GR(1)
+     MOVE 7 TO WS-GR(257)
+     MOVE 5 TO WS-GR(273)
+     MOVE 5 TO WS-GR(289)
+     MOVE 8 TO WS-GR(305)
+     MOVE 1 TO WS-GR(353)
+     MOVE 3 TO WS-GR(561)
+     MOVE 1 TO WS-GR(609)
+     MOVE 2 TO WS-GR(769)
+     MOVE 4 TO WS-GR(785)
+     MOVE 8 TO WS-GR(801)
+     MOVE 9 TO WS-GR(833)
+     MOVE 1 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 5 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1313)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 10 TO WS-GR(1345)
+     MOVE 8 TO WS-GR(1601)
+     MOVE 5 TO WS-GR(2)
+     MOVE 3 TO WS-GR(18)
+     MOVE 5 TO WS-GR(66)
+     MOVE 2 TO WS-GR(82)
+     MOVE 7 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 2 TO WS-GR(290)
+     MOVE 3 TO WS-GR(306)
+     MOVE 2 TO WS-GR(322)
+     MOVE 9 TO WS-GR(338)
+     MOVE 7 TO WS-GR(354)
+     MOVE 1 TO WS-GR(546)
+     MOVE 3 TO WS-GR(594)
+     MOVE 3 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 6 TO WS-GR(802)
+     MOVE 6 TO WS-GR(1042)
+     MOVE 2 TO WS-GR(1058)
+     MOVE 7 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 9 TO WS-GR(1538)
+     MOVE 5 TO WS-GR(3)
+     MOVE 1 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 1 TO WS-GR(99)
+     MOVE 4 TO WS-GR(291)
+     MOVE 10 TO WS-GR(323)
+     MOVE 8 TO WS-GR(339)
+     MOVE 6 TO WS-GR(355)
+     MOVE 2 TO WS-GR(531)
+     MOVE 8 TO WS-GR(547)
+     MOVE 1 TO WS-GR(611)
+     MOVE 2 TO WS-GR(835)
+     MOVE 7 TO WS-GR(851)
+     MOVE 7 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1123)
+     MOVE 6 TO WS-GR(1283)
+     MOVE 3 TO WS-GR(1299)
+     MOVE 10 TO WS-GR(1347)
+     MOVE 5 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 7 TO WS-GR(1619)
+     MOVE 4 TO WS-GR(4)
+     MOVE 1 TO WS-GR(84)
+     MOVE 3 TO WS-GR(100)
+     MOVE 2 TO WS-GR(260)
+     MOVE 5 TO WS-GR(276)
+     MOVE 1 TO WS-GR(324)
+     MOVE 1 TO WS-GR(340)
+     MOVE 7 TO WS-GR(516)
+     MOVE 8 TO WS-GR(548)
+     MOVE 3 TO WS-GR(564)
+     MOVE 1 TO WS-GR(772)
+     MOVE 3 TO WS-GR(788)
+     MOVE 1 TO WS-GR(820)
+     MOVE 10 TO WS-GR(836)
+     MOVE 1 TO WS-GR(868)
+     MOVE 8 TO WS-GR(1044)
+     MOVE 10 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 7 TO WS-GR(1588)
+     MOVE 10 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(1620)
+     MOVE 7 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 4 TO WS-GR(21)
+     MOVE 1 TO WS-GR(53)
+     MOVE 2 TO WS-GR(101)
+     MOVE 3 TO WS-GR(293)
+     MOVE 5 TO WS-GR(309)
+     MOVE 4 TO WS-GR(325)
+     MOVE 5 TO WS-GR(357)
+     MOVE 4 TO WS-GR(533)
+     MOVE 9 TO WS-GR(581)
+     MOVE 1 TO WS-GR(597)
+     MOVE 2 TO WS-GR(773)
+     MOVE 1 TO WS-GR(789)
+     MOVE 1 TO WS-GR(805)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 7 TO WS-GR(1045)
+     MOVE 8 TO WS-GR(1061)
+     MOVE 8 TO WS-GR(1077)
+     MOVE 7 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 4 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1285)
+     MOVE 4 TO WS-GR(1301)
+     MOVE 5 TO WS-GR(1317)
+     MOVE 6 TO WS-GR(1349)
+     MOVE 5 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(6)
+     MOVE 3 TO WS-GR(22)
+     MOVE 3 TO WS-GR(38)
+     MOVE 10 TO WS-GR(102)
+     MOVE 4 TO WS-GR(310)
+     MOVE 3 TO WS-GR(534)
+     MOVE 1 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 2 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 3 TO WS-GR(1046)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 5 TO WS-GR(1110)
+     MOVE 9 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 8 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 5 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 5 TO WS-GR(7)
+     MOVE 3 TO WS-GR(23)
+     MOVE 6 TO WS-GR(71)
+     MOVE 2 TO WS-GR(295)
+     MOVE 5 TO WS-GR(311)
+     MOVE 1 TO WS-GR(343)
+     MOVE 3 TO WS-GR(551)
+     MOVE 1 TO WS-GR(583)
+     MOVE 2 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 3 TO WS-GR(823)
+     MOVE 6 TO WS-GR(855)
+     MOVE 2 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 3 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 3 TO WS-GR(1351)
+     MOVE 4 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 4 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1)
+     MOVE 10 TO WS-GR(17)
+     MOVE 1 TO WS-GR(49)
+     MOVE 5 TO WS-GR(97)
+     MOVE 2 TO WS-GR(257)
+     MOVE 1 TO WS-GR(321)
+     MOVE 1 TO WS-GR(337)
+     MOVE 6 TO WS-GR(353)
+     MOVE 1 TO WS-GR(513)
+     MOVE 3 TO WS-GR(529)
+     MOVE 10 TO WS-GR(545)
+     MOVE 9 TO WS-GR(769)
+     MOVE 5 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 5 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1041)
+     MOVE 5 TO WS-GR(1089)
+     MOVE 6 TO WS-GR(1105)
+     MOVE 4 TO WS-GR(1121)
+     MOVE 10 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 3 TO WS-GR(1361)
+     MOVE 4 TO WS-GR(1553)
+     MOVE 5 TO WS-GR(1585)
+     MOVE 9 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1617)
+     MOVE 5 TO WS-GR(1633)
+     MOVE 3 TO WS-GR(34)
+     MOVE 4 TO WS-GR(50)
+     MOVE 2 TO WS-GR(66)
+     MOVE 2 TO WS-GR(82)
+     MOVE 10 TO WS-GR(322)
+     MOVE 2 TO WS-GR(354)
+     MOVE 2 TO WS-GR(514)
+     MOVE 5 TO WS-GR(530)
+     MOVE 1 TO WS-GR(578)
+     MOVE 6 TO WS-GR(594)
+     MOVE 2 TO WS-GR(770)
+     MOVE 5 TO WS-GR(818)
+     MOVE 9 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1122)
+     MOVE 8 TO WS-GR(1282)
+     MOVE 5 TO WS-GR(1298)
+     MOVE 5 TO WS-GR(1314)
+     MOVE 2 TO WS-GR(1330)
+     MOVE 9 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 5 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 9 TO WS-GR(1602)
+     MOVE 2 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 3 TO WS-GR(3)
+     MOVE 3 TO WS-GR(19)
+     MOVE 2 TO WS-GR(35)
+     MOVE 7 TO WS-GR(51)
+     MOVE 1 TO WS-GR(83)
+     MOVE 4 TO WS-GR(259)
+     MOVE 2 TO WS-GR(307)
+     MOVE 2 TO WS-GR(323)
+     MOVE 9 TO WS-GR(355)
+     MOVE 3 TO WS-GR(515)
+     MOVE 3 TO WS-GR(531)
+     MOVE 6 TO WS-GR(563)
+     MOVE 1 TO WS-GR(803)
+     MOVE 1 TO WS-GR(819)
+     MOVE 1 TO WS-GR(851)
+     MOVE 7 TO WS-GR(1043)
+     MOVE 9 TO WS-GR(1091)
+     MOVE 10 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1347)
+     MOVE 9 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 3 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(20)
+     MOVE 3 TO WS-GR(52)
+     MOVE 2 TO WS-GR(68)
+     MOVE 8 TO WS-GR(84)
+     MOVE 5 TO WS-GR(100)
+     MOVE 2 TO WS-GR(276)
+     MOVE 1 TO WS-GR(292)
+     MOVE 1 TO WS-GR(356)
+     MOVE 3 TO WS-GR(548)
+     MOVE 8 TO WS-GR(580)
+     MOVE 1 TO WS-GR(596)
+     MOVE 2 TO WS-GR(612)
+     MOVE 1 TO WS-GR(804)
+     MOVE 4 TO WS-GR(836)
+     MOVE 2 TO WS-GR(852)
+     MOVE 3 TO WS-GR(868)
+     MOVE 3 TO WS-GR(1028)
+     MOVE 4 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 3 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1556)
+     MOVE 10 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(53)
+     MOVE 9 TO WS-GR(85)
+     MOVE 1 TO WS-GR(101)
+     MOVE 1 TO WS-GR(277)
+     MOVE 2 TO WS-GR(341)
+     MOVE 1 TO WS-GR(549)
+     MOVE 9 TO WS-GR(565)
+     MOVE 5 TO WS-GR(597)
+     MOVE 2 TO WS-GR(789)
+     MOVE 1 TO WS-GR(837)
+     MOVE 6 TO WS-GR(853)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 9 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 6 TO WS-GR(1365)
+     MOVE 2 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(6)
+     MOVE 3 TO WS-GR(54)
+     MOVE 5 TO WS-GR(70)
+     MOVE 10 TO WS-GR(262)
+     MOVE 2 TO WS-GR(310)
+     MOVE 1 TO WS-GR(358)
+     MOVE 9 TO WS-GR(518)
+     MOVE 2 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 1 TO WS-GR(582)
+     MOVE 4 TO WS-GR(598)
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(838)
+     MOVE 8 TO WS-GR(870)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 9 TO WS-GR(1062)
+     MOVE 6 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 5 TO WS-GR(1126)
+     MOVE 3 TO WS-GR(1286)
+     MOVE 2 TO WS-GR(1302)
+     MOVE 9 TO WS-GR(1318)
+     MOVE 5 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 4 TO WS-GR(1382)
+     MOVE 9 TO WS-GR(1574)
+     MOVE 8 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 8 TO WS-GR(7)
+     MOVE 10 TO WS-GR(23)
+     MOVE 10 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 1 TO WS-GR(263)
+     MOVE 10 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 2 TO WS-GR(343)
+     MOVE 1 TO WS-GR(583)
+     MOVE 8 TO WS-GR(791)
+     MOVE 3 TO WS-GR(855)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1079)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 10 TO WS-GR(1335)
+     MOVE 2 TO WS-GR(1351)
+     MOVE 6 TO WS-GR(1575)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 4 TO WS-GR(1623)
+     MOVE 2 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/2/0/5 803/804/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(33)
+     MOVE 4 TO WS-GR(65)
+     MOVE 2 TO WS-GR(81)
+     MOVE 1 TO WS-GR(97)
+     MOVE 3 TO WS-GR(257)
+     MOVE 5 TO WS-GR(273)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(321)
+     MOVE 4 TO WS-GR(337)
+     MOVE 8 TO WS-GR(353)
+     MOVE 2 TO WS-GR(513)
+     MOVE 2 TO WS-GR(529)
+     MOVE 10 TO WS-GR(577)
+     MOVE 2 TO WS-GR(593)
+     MOVE 2 TO WS-GR(769)
+     MOVE 5 TO WS-GR(785)
+     MOVE 1 TO WS-GR(833)
+     MOVE 7 TO WS-GR(1089)
+     MOVE 3 TO WS-GR(1105)
+     MOVE 5 TO WS-GR(1121)
+     MOVE 3 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1329)
+     MOVE 9 TO WS-GR(1345)
+     MOVE 7 TO WS-GR(1361)
+     MOVE 3 TO WS-GR(1537)
+     MOVE 10 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 2 TO WS-GR(2)
+     MOVE 2 TO WS-GR(66)
+     MOVE 2 TO WS-GR(82)
+     MOVE 1 TO WS-GR(98)
+     MOVE 1 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 1 TO WS-GR(338)
+     MOVE 10 TO WS-GR(354)
+     MOVE 8 TO WS-GR(530)
+     MOVE 2 TO WS-GR(562)
+     MOVE 8 TO WS-GR(578)
+     MOVE 1 TO WS-GR(594)
+     MOVE 6 TO WS-GR(770)
+     MOVE 8 TO WS-GR(818)
+     MOVE 10 TO WS-GR(834)
+     MOVE 7 TO WS-GR(850)
+     MOVE 2 TO WS-GR(1058)
+     MOVE 6 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 4 TO WS-GR(1282)
+     MOVE 7 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1330)
+     MOVE 8 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 3 TO WS-GR(1586)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 5 TO WS-GR(1634)
+     MOVE 8 TO WS-GR(3)
+     MOVE 1 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 1 TO WS-GR(531)
+     MOVE 1 TO WS-GR(563)
+     MOVE 5 TO WS-GR(579)
+     MOVE 10 TO WS-GR(867)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 4 TO WS-GR(1299)
+     MOVE 2 TO WS-GR(1315)
+     MOVE 4 TO WS-GR(1363)
+     MOVE 4 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 4 TO WS-GR(1587)
+     MOVE 6 TO WS-GR(1619)
+     MOVE 3 TO WS-GR(36)
+     MOVE 6 TO WS-GR(52)
+     MOVE 1 TO WS-GR(276)
+     MOVE 10 TO WS-GR(292)
+     MOVE 6 TO WS-GR(308)
+     MOVE 1 TO WS-GR(324)
+     MOVE 1 TO WS-GR(516)
+     MOVE 8 TO WS-GR(596)
+     MOVE 2 TO WS-GR(612)
+     MOVE 1 TO WS-GR(772)
+     MOVE 10 TO WS-GR(804)
+     MOVE 2 TO WS-GR(820)
+     MOVE 2 TO WS-GR(836)
+     MOVE 2 TO WS-GR(1028)
+     MOVE 6 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 8 TO WS-GR(1300)
+     MOVE 9 TO WS-GR(1316)
+     MOVE 10 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 3 TO WS-GR(1556)
+     MOVE 6 TO WS-GR(1604)
+     MOVE 10 TO WS-GR(1636)
+     MOVE 7 TO WS-GR(5)
+     MOVE 1 TO WS-GR(37)
+     MOVE 4 TO WS-GR(53)
+     MOVE 4 TO WS-GR(85)
+     MOVE 1 TO WS-GR(101)
+     MOVE 1 TO WS-GR(277)
+     MOVE 2 TO WS-GR(293)
+     MOVE 2 TO WS-GR(325)
+     MOVE 2 TO WS-GR(357)
+     MOVE 6 TO WS-GR(533)
+     MOVE 2 TO WS-GR(613)
+     MOVE 1 TO WS-GR(805)
+     MOVE 3 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 8 TO WS-GR(1109)
+     MOVE 3 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 10 TO WS-GR(1317)
+     MOVE 3 TO WS-GR(1333)
+     MOVE 1 TO WS-GR(1349)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(6)
+     MOVE 6 TO WS-GR(38)
+     MOVE 3 TO WS-GR(70)
+     MOVE 4 TO WS-GR(86)
+     MOVE 8 TO WS-GR(102)
+     MOVE 8 TO WS-GR(262)
+     MOVE 6 TO WS-GR(278)
+     MOVE 1 TO WS-GR(310)
+     MOVE 1 TO WS-GR(326)
+     MOVE 1 TO WS-GR(342)
+     MOVE 9 TO WS-GR(358)
+     MOVE 1 TO WS-GR(534)
+     MOVE 4 TO WS-GR(550)
+     MOVE 1 TO WS-GR(582)
+     MOVE 3 TO WS-GR(598)
+     MOVE 7 TO WS-GR(838)
+     MOVE 1 TO WS-GR(854)
+     MOVE 3 TO WS-GR(870)
+     MOVE 3 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 8 TO WS-GR(1062)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 5 TO WS-GR(1126)
+     MOVE 5 TO WS-GR(1318)
+     MOVE 8 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 2 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(23)
+     MOVE 2 TO WS-GR(39)
+     MOVE 2 TO WS-GR(71)
+     MOVE 5 TO WS-GR(279)
+     MOVE 2 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 10 TO WS-GR(359)
+     MOVE 1 TO WS-GR(583)
+     MOVE 3 TO WS-GR(615)
+     MOVE 4 TO WS-GR(775)
+     MOVE 1 TO WS-GR(807)
+     MOVE 9 TO WS-GR(871)
+     MOVE 7 TO WS-GR(1047)
+     MOVE 2 TO WS-GR(1063)
+     MOVE 4 TO WS-GR(1127)
+     MOVE 2 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 7 TO WS-GR(1335)
+     MOVE 7 TO WS-GR(1383)
+     MOVE 10 TO WS-GR(1543)
+     MOVE 3 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1607)
+     MOVE 7 TO WS-GR(1639)
+     MOVE 4 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(33)
+     MOVE 1 TO WS-GR(81)
+     MOVE 1 TO WS-GR(97)
+     MOVE 9 TO WS-GR(273)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(305)
+     MOVE 3 TO WS-GR(337)
+     MOVE 10 TO WS-GR(353)
+     MOVE 3 TO WS-GR(513)
+     MOVE 6 TO WS-GR(545)
+     MOVE 5 TO WS-GR(561)
+     MOVE 1 TO WS-GR(593)
+     MOVE 9 TO WS-GR(769)
+     MOVE 10 TO WS-GR(785)
+     MOVE 2 TO WS-GR(801)
+     MOVE 3 TO WS-GR(849)
+     MOVE 3 TO WS-GR(1057)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 3 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 2 TO WS-GR(1537)
+     MOVE 6 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1569)
+     MOVE 9 TO WS-GR(1601)
+     MOVE 7 TO WS-GR(1633)
+     MOVE 4 TO WS-GR(18)
+     MOVE 2 TO WS-GR(34)
+     MOVE 6 TO WS-GR(50)
+     MOVE 2 TO WS-GR(66)
+     MOVE 8 TO WS-GR(82)
+     MOVE 7 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 6 TO WS-GR(322)
+     MOVE 9 TO WS-GR(338)
+     MOVE 1 TO WS-GR(354)
+     MOVE 7 TO WS-GR(530)
+     MOVE 6 TO WS-GR(546)
+     MOVE 1 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 5 TO WS-GR(802)
+     MOVE 3 TO WS-GR(834)
+     MOVE 2 TO WS-GR(850)
+     MOVE 4 TO WS-GR(1042)
+     MOVE 10 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1282)
+     MOVE 10 TO WS-GR(1346)
+     MOVE 6 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 5 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 9 TO WS-GR(19)
+     MOVE 7 TO WS-GR(51)
+     MOVE 1 TO WS-GR(67)
+     MOVE 2 TO WS-GR(99)
+     MOVE 2 TO WS-GR(259)
+     MOVE 3 TO WS-GR(291)
+     MOVE 3 TO WS-GR(307)
+     MOVE 2 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 6 TO WS-GR(531)
+     MOVE 6 TO WS-GR(547)
+     MOVE 9 TO WS-GR(579)
+     MOVE 6 TO WS-GR(611)
+     MOVE 7 TO WS-GR(787)
+     MOVE 1 TO WS-GR(803)
+     MOVE 2 TO WS-GR(851)
+     MOVE 3 TO WS-GR(867)
+     MOVE 6 TO WS-GR(1027)
+     MOVE 7 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 7 TO WS-GR(1283)
+     MOVE 9 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 2 TO WS-GR(1587)
+     MOVE 3 TO WS-GR(1603)
+     MOVE 8 TO WS-GR(1635)
+     MOVE 9 TO WS-GR(36)
+     MOVE 6 TO WS-GR(68)
+     MOVE 1 TO WS-GR(100)
+     MOVE 5 TO WS-GR(260)
+     MOVE 6 TO WS-GR(276)
+     MOVE 6 TO WS-GR(292)
+     MOVE 2 TO WS-GR(308)
+     MOVE 4 TO WS-GR(324)
+     MOVE 7 TO WS-GR(356)
+     MOVE 1 TO WS-GR(580)
+     MOVE 3 TO WS-GR(596)
+     MOVE 1 TO WS-GR(612)
+     MOVE 9 TO WS-GR(772)
+     MOVE 1 TO WS-GR(804)
+     MOVE 5 TO WS-GR(852)
+     MOVE 10 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 2 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 7 TO WS-GR(1316)
+     MOVE 5 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(21)
+     MOVE 7 TO WS-GR(53)
+     MOVE 2 TO WS-GR(85)
+     MOVE 10 TO WS-GR(277)
+     MOVE 3 TO WS-GR(517)
+     MOVE 9 TO WS-GR(549)
+     MOVE 2 TO WS-GR(565)
+     MOVE 9 TO WS-GR(773)
+     MOVE 8 TO WS-GR(789)
+     MOVE 2 TO WS-GR(805)
+     MOVE 10 TO WS-GR(821)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 4 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1285)
+     MOVE 6 TO WS-GR(1317)
+     MOVE 4 TO WS-GR(1333)
+     MOVE 3 TO WS-GR(1349)
+     MOVE 5 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 7 TO WS-GR(1589)
+     MOVE 10 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(22)
+     MOVE 1 TO WS-GR(54)
+     MOVE 3 TO WS-GR(86)
+     MOVE 2 TO WS-GR(102)
+     MOVE 9 TO WS-GR(278)
+     MOVE 2 TO WS-GR(326)
+     MOVE 1 TO WS-GR(342)
+     MOVE 1 TO WS-GR(518)
+     MOVE 2 TO WS-GR(582)
+     MOVE 3 TO WS-GR(614)
+     MOVE 7 TO WS-GR(774)
+     MOVE 1 TO WS-GR(790)
+     MOVE 1 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 5 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 10 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 4 TO WS-GR(1366)
+     MOVE 6 TO WS-GR(1542)
+     MOVE 8 TO WS-GR(1558)
+     MOVE 8 TO WS-GR(1574)
+     MOVE 5 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 1 TO WS-GR(39)
+     MOVE 2 TO WS-GR(55)
+     MOVE 1 TO WS-GR(87)
+     MOVE 3 TO WS-GR(103)
+     MOVE 5 TO WS-GR(279)
+     MOVE 10 TO WS-GR(311)
+     MOVE 3 TO WS-GR(519)
+     MOVE 2 TO WS-GR(535)
+     MOVE 6 TO WS-GR(551)
+     MOVE 6 TO WS-GR(583)
+     MOVE 6 TO WS-GR(599)
+     MOVE 9 TO WS-GR(791)
+     MOVE 6 TO WS-GR(823)
+     MOVE 5 TO WS-GR(839)
+     MOVE 4 TO WS-GR(1047)
+     MOVE 2 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1111)
+     MOVE 5 TO WS-GR(1127)
+     MOVE 5 TO WS-GR(1303)
+     MOVE 3 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 2 TO WS-GR(1623)
+     MOVE 4 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(17)
+     MOVE 10 TO WS-GR(49)
+     MOVE 1 TO WS-GR(257)
+     MOVE 1 TO WS-GR(289)
+     MOVE 3 TO WS-GR(337)
+     MOVE 8 TO WS-GR(513)
+     MOVE 1 TO WS-GR(577)
+     MOVE 3 TO WS-GR(593)
+     MOVE 1 TO WS-GR(769)
+     MOVE 1 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 3 TO WS-GR(817)
+     MOVE 1 TO WS-GR(849)
+     MOVE 5 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(34)
+     MOVE 1 TO WS-GR(50)
+     MOVE 8 TO WS-GR(66)
+     MOVE 9 TO WS-GR(258)
+     MOVE 10 TO WS-GR(274)
+     MOVE 2 TO WS-GR(290)
+     MOVE 3 TO WS-GR(322)
+     MOVE 10 TO WS-GR(338)
+     MOVE 10 TO WS-GR(514)
+     MOVE 3 TO WS-GR(562)
+     MOVE 3 TO WS-GR(578)
+     MOVE 5 TO WS-GR(610)
+     MOVE 10 TO WS-GR(786)
+     MOVE 4 TO WS-GR(834)
+     MOVE 6 TO WS-GR(850)
+     MOVE 1 TO WS-GR(866)
+     MOVE 8 TO WS-GR(1042)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 9 TO WS-GR(1090)
+     MOVE 8 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1314)
+     MOVE 7 TO WS-GR(1330)
+     MOVE 10 TO WS-GR(1346)
+     MOVE 2 TO WS-GR(1538)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 8 TO WS-GR(1586)
+     MOVE 7 TO WS-GR(3)
+     MOVE 5 TO WS-GR(19)
+     MOVE 2 TO WS-GR(99)
+     MOVE 2 TO WS-GR(259)
+     MOVE 1 TO WS-GR(291)
+     MOVE 10 TO WS-GR(323)
+     MOVE 2 TO WS-GR(339)
+     MOVE 1 TO WS-GR(355)
+     MOVE 1 TO WS-GR(547)
+     MOVE 7 TO WS-GR(563)
+     MOVE 2 TO WS-GR(771)
+     MOVE 1 TO WS-GR(787)
+     MOVE 9 TO WS-GR(819)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 9 TO WS-GR(1091)
+     MOVE 9 TO WS-GR(1299)
+     MOVE 10 TO WS-GR(1331)
+     MOVE 3 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(68)
+     MOVE 2 TO WS-GR(276)
+     MOVE 3 TO WS-GR(324)
+     MOVE 2 TO WS-GR(340)
+     MOVE 4 TO WS-GR(516)
+     MOVE 1 TO WS-GR(548)
+     MOVE 3 TO WS-GR(596)
+     MOVE 7 TO WS-GR(612)
+     MOVE 1 TO WS-GR(772)
+     MOVE 1 TO WS-GR(788)
+     MOVE 3 TO WS-GR(804)
+     MOVE 6 TO WS-GR(820)
+     MOVE 1 TO WS-GR(836)
+     MOVE 6 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 3 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 6 TO WS-GR(1332)
+     MOVE 7 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1364)
+     MOVE 5 TO WS-GR(1380)
+     MOVE 9 TO WS-GR(1556)
+     MOVE 5 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 9 TO WS-GR(1636)
+     MOVE 2 TO WS-GR(5)
+     MOVE 2 TO WS-GR(69)
+     MOVE 1 TO WS-GR(85)
+     MOVE 1 TO WS-GR(261)
+     MOVE 2 TO WS-GR(293)
+     MOVE 9 TO WS-GR(309)
+     MOVE 8 TO WS-GR(325)
+     MOVE 6 TO WS-GR(517)
+     MOVE 4 TO WS-GR(533)
+     MOVE 8 TO WS-GR(565)
+     MOVE 2 TO WS-GR(581)
+     MOVE 1 TO WS-GR(597)
+     MOVE 7 TO WS-GR(853)
+     MOVE 3 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 2 TO WS-GR(1061)
+     MOVE 7 TO WS-GR(1077)
+     MOVE 3 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1333)
+     MOVE 5 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 3 TO WS-GR(1573)
+     MOVE 7 TO WS-GR(1605)
+     MOVE 4 TO WS-GR(1621)
+     MOVE 5 TO WS-GR(54)
+     MOVE 4 TO WS-GR(102)
+     MOVE 3 TO WS-GR(326)
+     MOVE 2 TO WS-GR(518)
+     MOVE 2 TO WS-GR(550)
+     MOVE 1 TO WS-GR(582)
+     MOVE 4 TO WS-GR(790)
+     MOVE 9 TO WS-GR(806)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 4 TO WS-GR(1046)
+     MOVE 9 TO WS-GR(1078)
+     MOVE 6 TO WS-GR(1094)
+     MOVE 4 TO WS-GR(1126)
+     MOVE 8 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1366)
+     MOVE 8 TO WS-GR(1382)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 7 TO WS-GR(1558)
+     MOVE 7 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(7)
+     MOVE 8 TO WS-GR(39)
+     MOVE 4 TO WS-GR(71)
+     MOVE 8 TO WS-GR(103)
+     MOVE 1 TO WS-GR(279)
+     MOVE 6 TO WS-GR(343)
+     MOVE 4 TO WS-GR(359)
+     MOVE 1 TO WS-GR(519)
+     MOVE 4 TO WS-GR(551)
+     MOVE 10 TO WS-GR(567)
+     MOVE 10 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 3 TO WS-GR(839)
+     MOVE 7 TO WS-GR(855)
+     MOVE 8 TO WS-GR(1031)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 3 TO WS-GR(1079)
+     MOVE 2 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1319)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 8 TO WS-GR(1351)
+     MOVE 4 TO WS-GR(1367)
+     MOVE 4 TO WS-GR(1383)
+     MOVE 6 TO WS-GR(1559)
+     MOVE 3 TO WS-GR(1575)
+     MOVE 7 TO WS-GR(1607)
+     MOVE 6 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(17)
+     MOVE 2 TO WS-GR(97)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(305)
+     MOVE 8 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 6 TO WS-GR(577)
+     MOVE 4 TO WS-GR(593)
+     MOVE 8 TO WS-GR(609)
+     MOVE 3 TO WS-GR(769)
+     MOVE 4 TO WS-GR(785)
+     MOVE 9 TO WS-GR(801)
+     MOVE 4 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 4 TO WS-GR(1057)
+     MOVE 7 TO WS-GR(1073)
+     MOVE 2 TO WS-GR(1089)
+     MOVE 10 TO WS-GR(1105)
+     MOVE 5 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 6 TO WS-GR(1345)
+     MOVE 9 TO WS-GR(1377)
+     MOVE 3 TO WS-GR(1537)
+     MOVE 10 TO WS-GR(1553)
+     MOVE 5 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(18)
+     MOVE 2 TO WS-GR(82)
+     MOVE 1 TO WS-GR(274)
+     MOVE 10 TO WS-GR(306)
+     MOVE 1 TO WS-GR(514)
+     MOVE 5 TO WS-GR(530)
+     MOVE 2 TO WS-GR(562)
+     MOVE 1 TO WS-GR(594)
+     MOVE 1 TO WS-GR(786)
+     MOVE 1 TO WS-GR(802)
+     MOVE 2 TO WS-GR(818)
+     MOVE 8 TO WS-GR(834)
+     MOVE 5 TO WS-GR(850)
+     MOVE 8 TO WS-GR(866)
+     MOVE 10 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 2 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 1 TO WS-GR(1362)
+     MOVE 9 TO WS-GR(1378)
+     MOVE 3 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1554)
+     MOVE 7 TO WS-GR(1570)
+     MOVE 3 TO WS-GR(1602)
+     MOVE 9 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(3)
+     MOVE 1 TO WS-GR(35)
+     MOVE 2 TO WS-GR(51)
+     MOVE 8 TO WS-GR(67)
+     MOVE 2 TO WS-GR(83)
+     MOVE 5 TO WS-GR(307)
+     MOVE 4 TO WS-GR(323)
+     MOVE 7 TO WS-GR(339)
+     MOVE 10 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 2 TO WS-GR(531)
+     MOVE 1 TO WS-GR(563)
+     MOVE 1 TO WS-GR(579)
+     MOVE 9 TO WS-GR(611)
+     MOVE 2 TO WS-GR(771)
+     MOVE 3 TO WS-GR(787)
+     MOVE 1 TO WS-GR(835)
+     MOVE 5 TO WS-GR(867)
+     MOVE 2 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 4 TO WS-GR(1347)
+     MOVE 7 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 3 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 8 TO WS-GR(36)
+     MOVE 9 TO WS-GR(100)
+     MOVE 3 TO WS-GR(260)
+     MOVE 2 TO WS-GR(276)
+     MOVE 3 TO WS-GR(324)
+     MOVE 1 TO WS-GR(356)
+     MOVE 5 TO WS-GR(548)
+     MOVE 3 TO WS-GR(564)
+     MOVE 5 TO WS-GR(596)
+     MOVE 1 TO WS-GR(804)
+     MOVE 5 TO WS-GR(868)
+     MOVE 5 TO WS-GR(1044)
+     MOVE 7 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 6 TO WS-GR(1364)
+     MOVE 10 TO WS-GR(1380)
+     MOVE 10 TO WS-GR(21)
+     MOVE 2 TO WS-GR(37)
+     MOVE 10 TO WS-GR(69)
+     MOVE 2 TO WS-GR(85)
+     MOVE 6 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 2 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 8 TO WS-GR(517)
+     MOVE 1 TO WS-GR(549)
+     MOVE 2 TO WS-GR(581)
+     MOVE 1 TO WS-GR(613)
+     MOVE 2 TO WS-GR(789)
+     MOVE 7 TO WS-GR(805)
+     MOVE 6 TO WS-GR(869)
+     MOVE 3 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 7 TO WS-GR(1109)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(54)
+     MOVE 8 TO WS-GR(102)
+     MOVE 1 TO WS-GR(262)
+     MOVE 6 TO WS-GR(278)
+     MOVE 8 TO WS-GR(326)
+     MOVE 6 TO WS-GR(342)
+     MOVE 2 TO WS-GR(518)
+     MOVE 10 TO WS-GR(534)
+     MOVE 1 TO WS-GR(550)
+     MOVE 5 TO WS-GR(582)
+     MOVE 1 TO WS-GR(614)
+     MOVE 6 TO WS-GR(774)
+     MOVE 4 TO WS-GR(838)
+     MOVE 1 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 8 TO WS-GR(1062)
+     MOVE 6 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1286)
+     MOVE 2 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 9 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 2 TO WS-GR(1606)
+     MOVE 3 TO WS-GR(7)
+     MOVE 5 TO WS-GR(23)
+     MOVE 9 TO WS-GR(39)
+     MOVE 7 TO WS-GR(55)
+     MOVE 7 TO WS-GR(71)
+     MOVE 10 TO WS-GR(87)
+     MOVE 6 TO WS-GR(103)
+     MOVE 3 TO WS-GR(279)
+     MOVE 2 TO WS-GR(343)
+     MOVE 7 TO WS-GR(359)
+     MOVE 7 TO WS-GR(519)
+     MOVE 3 TO WS-GR(535)
+     MOVE 3 TO WS-GR(551)
+     MOVE 4 TO WS-GR(567)
+     MOVE 5 TO WS-GR(599)
+     MOVE 7 TO WS-GR(615)
+     MOVE 2 TO WS-GR(791)
+     MOVE 10 TO WS-GR(823)
+     MOVE 10 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 7 TO WS-GR(1111)
+     MOVE 9 TO WS-GR(1127)
+     MOVE 4 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 6 TO WS-GR(1607)
+     MOVE 6 TO WS-GR(1623)
+     MOVE 4 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(81)
+     MOVE 2 TO WS-GR(257)
+     MOVE 2 TO WS-GR(273)
+     MOVE 1 TO WS-GR(513)
+     MOVE 2 TO WS-GR(545)
+     MOVE 1 TO WS-GR(609)
+     MOVE 1 TO WS-GR(769)
+     MOVE 1 TO WS-GR(785)
+     MOVE 3 TO WS-GR(817)
+     MOVE 2 TO WS-GR(849)
+     MOVE 1 TO WS-GR(865)
+     MOVE 10 TO WS-GR(1025)
+     MOVE 8 TO WS-GR(1041)
+     MOVE 5 TO WS-GR(1073)
+     MOVE 9 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1377)
+     MOVE 7 TO WS-GR(1537)
+     MOVE 3 TO WS-GR(1569)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 9 TO WS-GR(50)
+     MOVE 2 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 1 TO WS-GR(98)
+     MOVE 2 TO WS-GR(258)
+     MOVE 1 TO WS-GR(290)
+     MOVE 2 TO WS-GR(354)
+     MOVE 4 TO WS-GR(530)
+     MOVE 9 TO WS-GR(562)
+     MOVE 7 TO WS-GR(578)
+     MOVE 6 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 2 TO WS-GR(818)
+     MOVE 1 TO WS-GR(866)
+     MOVE 7 TO WS-GR(1074)
+     MOVE 8 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1330)
+     MOVE 2 TO WS-GR(1346)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 9 TO WS-GR(1570)
+     MOVE 5 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 1 TO WS-GR(3)
+     MOVE 2 TO WS-GR(19)
+     MOVE 3 TO WS-GR(35)
+     MOVE 2 TO WS-GR(67)
+     MOVE 4 TO WS-GR(83)
+     MOVE 2 TO WS-GR(259)
+     MOVE 7 TO WS-GR(275)
+     MOVE 7 TO WS-GR(291)
+     MOVE 2 TO WS-GR(307)
+     MOVE 4 TO WS-GR(323)
+     MOVE 1 TO WS-GR(355)
+     MOVE 6 TO WS-GR(515)
+     MOVE 1 TO WS-GR(547)
+     MOVE 7 TO WS-GR(563)
+     MOVE 10 TO WS-GR(595)
+     MOVE 10 TO WS-GR(611)
+     MOVE 1 TO WS-GR(771)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(819)
+     MOVE 5 TO WS-GR(835)
+     MOVE 1 TO WS-GR(867)
+     MOVE 2 TO WS-GR(1027)
+     MOVE 9 TO WS-GR(1059)
+     MOVE 8 TO WS-GR(1091)
+     MOVE 3 TO WS-GR(1107)
+     MOVE 2 TO WS-GR(1123)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 3 TO WS-GR(1347)
+     MOVE 3 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 3 TO WS-GR(1555)
+     MOVE 8 TO WS-GR(1571)
+     MOVE 10 TO WS-GR(1603)
+     MOVE 6 TO WS-GR(1619)
+     MOVE 2 TO WS-GR(1635)
+     MOVE 9 TO WS-GR(4)
+     MOVE 1 TO WS-GR(36)
+     MOVE 2 TO WS-GR(68)
+     MOVE 1 TO WS-GR(84)
+     MOVE 9 TO WS-GR(276)
+     MOVE 9 TO WS-GR(292)
+     MOVE 2 TO WS-GR(308)
+     MOVE 1 TO WS-GR(340)
+     MOVE 3 TO WS-GR(516)
+     MOVE 3 TO WS-GR(596)
+     MOVE 1 TO WS-GR(612)
+     MOVE 3 TO WS-GR(788)
+     MOVE 1 TO WS-GR(804)
+     MOVE 1 TO WS-GR(820)
+     MOVE 3 TO WS-GR(836)
+     MOVE 9 TO WS-GR(852)
+     MOVE 3 TO WS-GR(868)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 4 TO WS-GR(1108)
+     MOVE 5 TO WS-GR(1124)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 9 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 5 TO WS-GR(1556)
+     MOVE 10 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 9 TO WS-GR(5)
+     MOVE 2 TO WS-GR(21)
+     MOVE 7 TO WS-GR(53)
+     MOVE 4 TO WS-GR(309)
+     MOVE 2 TO WS-GR(805)
+     MOVE 8 TO WS-GR(853)
+     MOVE 10 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 7 TO WS-GR(1125)
+     MOVE 4 TO WS-GR(1285)
+     MOVE 3 TO WS-GR(1301)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 4 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(6)
+     MOVE 6 TO WS-GR(54)
+     MOVE 3 TO WS-GR(262)
+     MOVE 4 TO WS-GR(294)
+     MOVE 1 TO WS-GR(326)
+     MOVE 1 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 6 TO WS-GR(518)
+     MOVE 3 TO WS-GR(534)
+     MOVE 1 TO WS-GR(566)
+     MOVE 2 TO WS-GR(582)
+     MOVE 2 TO WS-GR(598)
+     MOVE 4 TO WS-GR(774)
+     MOVE 6 TO WS-GR(790)
+     MOVE 1 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 2 TO WS-GR(838)
+     MOVE 7 TO WS-GR(870)
+     MOVE 5 TO WS-GR(1030)
+     MOVE 7 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 9 TO WS-GR(1350)
+     MOVE 5 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 2 TO WS-GR(1590)
+     MOVE 5 TO WS-GR(1606)
+     MOVE 7 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(87)
+     MOVE 6 TO WS-GR(263)
+     MOVE 2 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 1 TO WS-GR(343)
+     MOVE 2 TO WS-GR(551)
+     MOVE 1 TO WS-GR(583)
+     MOVE 2 TO WS-GR(823)
+     MOVE 1 TO WS-GR(1031)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 6 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1127)
+     MOVE 8 TO WS-GR(1303)
+     MOVE 3 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 1 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 2 TO WS-GR(1575)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 7 TO WS-GR(1607)
+     MOVE 2 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(17)
+     MOVE 2 TO WS-GR(33)
+     MOVE 9 TO WS-GR(65)
+     MOVE 2 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 1 TO WS-GR(273)
+     MOVE 4 TO WS-GR(289)
+     MOVE 10 TO WS-GR(305)
+     MOVE 5 TO WS-GR(513)
+     MOVE 1 TO WS-GR(545)
+     MOVE 1 TO WS-GR(561)
+     MOVE 1 TO WS-GR(593)
+     MOVE 10 TO WS-GR(769)
+     MOVE 6 TO WS-GR(785)
+     MOVE 1 TO WS-GR(817)
+     MOVE 2 TO WS-GR(833)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 10 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 5 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 7 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 9 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(1601)
+     MOVE 2 TO WS-GR(1617)
+     MOVE 4 TO WS-GR(1633)
+     MOVE 2 TO WS-GR(18)
+     MOVE 4 TO WS-GR(34)
+     MOVE 2 TO WS-GR(98)
+     MOVE 10 TO WS-GR(274)
+     MOVE 8 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 9 TO WS-GR(322)
+     MOVE 1 TO WS-GR(338)
+     MOVE 8 TO WS-GR(354)
+     MOVE 6 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 2 TO WS-GR(866)
+     MOVE 3 TO WS-GR(1090)
+     MOVE 10 TO WS-GR(1106)
+     MOVE 3 TO WS-GR(1362)
+     MOVE 3 TO WS-GR(1378)
+     MOVE 3 TO WS-GR(1570)
+     MOVE 2 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(35)
+     MOVE 2 TO WS-GR(51)
+     MOVE 1 TO WS-GR(259)
+     MOVE 1 TO WS-GR(291)
+     MOVE 1 TO WS-GR(339)
+     MOVE 6 TO WS-GR(515)
+     MOVE 1 TO WS-GR(531)
+     MOVE 2 TO WS-GR(547)
+     MOVE 3 TO WS-GR(563)
+     MOVE 8 TO WS-GR(579)
+     MOVE 3 TO WS-GR(595)
+     MOVE 2 TO WS-GR(611)
+     MOVE 8 TO WS-GR(771)
+     MOVE 1 TO WS-GR(787)
+     MOVE 1 TO WS-GR(835)
+     MOVE 6 TO WS-GR(851)
+     MOVE 4 TO WS-GR(867)
+     MOVE 9 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 6 TO WS-GR(1123)
+     MOVE 9 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 7 TO WS-GR(1347)
+     MOVE 6 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 4 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 7 TO WS-GR(1635)
+     MOVE 5 TO WS-GR(20)
+     MOVE 1 TO WS-GR(36)
+     MOVE 3 TO WS-GR(260)
+     MOVE 1 TO WS-GR(276)
+     MOVE 8 TO WS-GR(292)
+     MOVE 2 TO WS-GR(308)
+     MOVE 3 TO WS-GR(340)
+     MOVE 8 TO WS-GR(548)
+     MOVE 5 TO WS-GR(580)
+     MOVE 2 TO WS-GR(596)
+     MOVE 1 TO WS-GR(772)
+     MOVE 1 TO WS-GR(804)
+     MOVE 1 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 3 TO WS-GR(1092)
+     MOVE 9 TO WS-GR(1316)
+     MOVE 9 TO WS-GR(1332)
+     MOVE 9 TO WS-GR(1348)
+     MOVE 8 TO WS-GR(1540)
+     MOVE 2 TO WS-GR(1556)
+     MOVE 9 TO WS-GR(1588)
+     MOVE 7 TO WS-GR(37)
+     MOVE 4 TO WS-GR(53)
+     MOVE 2 TO WS-GR(69)
+     MOVE 10 TO WS-GR(101)
+     MOVE 2 TO WS-GR(293)
+     MOVE 5 TO WS-GR(325)
+     MOVE 1 TO WS-GR(341)
+     MOVE 1 TO WS-GR(357)
+     MOVE 3 TO WS-GR(565)
+     MOVE 2 TO WS-GR(581)
+     MOVE 6 TO WS-GR(597)
+     MOVE 1 TO WS-GR(789)
+     MOVE 8 TO WS-GR(805)
+     MOVE 4 TO WS-GR(837)
+     MOVE 10 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1333)
+     MOVE 1 TO WS-GR(1381)
+     MOVE 2 TO WS-GR(1541)
+     MOVE 5 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1573)
+     MOVE 4 TO WS-GR(1621)
+     MOVE 6 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 2 TO WS-GR(70)
+     MOVE 3 TO WS-GR(86)
+     MOVE 10 TO WS-GR(102)
+     MOVE 10 TO WS-GR(278)
+     MOVE 10 TO WS-GR(310)
+     MOVE 1 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 4 TO WS-GR(518)
+     MOVE 1 TO WS-GR(550)
+     MOVE 9 TO WS-GR(566)
+     MOVE 2 TO WS-GR(582)
+     MOVE 9 TO WS-GR(614)
+     MOVE 3 TO WS-GR(774)
+     MOVE 1 TO WS-GR(790)
+     MOVE 2 TO WS-GR(838)
+     MOVE 6 TO WS-GR(1030)
+     MOVE 4 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 10 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1126)
+     MOVE 9 TO WS-GR(1318)
+     MOVE 7 TO WS-GR(1334)
+     MOVE 7 TO WS-GR(1350)
+     MOVE 2 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(7)
+     MOVE 7 TO WS-GR(23)
+     MOVE 2 TO WS-GR(103)
+     MOVE 2 TO WS-GR(263)
+     MOVE 6 TO WS-GR(295)
+     MOVE 4 TO WS-GR(311)
+     MOVE 2 TO WS-GR(327)
+     MOVE 10 TO WS-GR(343)
+     MOVE 9 TO WS-GR(359)
+     MOVE 10 TO WS-GR(567)
+     MOVE 4 TO WS-GR(583)
+     MOVE 1 TO WS-GR(599)
+     MOVE 2 TO WS-GR(823)
+     MOVE 8 TO WS-GR(839)
+     MOVE 1 TO WS-GR(871)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 10 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 6 TO WS-GR(1303)
+     MOVE 7 TO WS-GR(1335)
+     MOVE 5 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 2 TO WS-GR(1607)
+     MOVE 9 TO WS-GR(1639)
+     MOVE 6 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/2 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(1)
+     MOVE 5 TO WS-GR(17)
+     MOVE 1 TO WS-GR(49)
+     MOVE 8 TO WS-GR(65)
+     MOVE 2 TO WS-GR(97)
+     MOVE 9 TO WS-GR(273)
+     MOVE 2 TO WS-GR(289)
+     MOVE 3 TO WS-GR(337)
+     MOVE 1 TO WS-GR(353)
+     MOVE 1 TO WS-GR(529)
+     MOVE 2 TO WS-GR(577)
+     MOVE 1 TO WS-GR(609)
+     MOVE 2 TO WS-GR(769)
+     MOVE 1 TO WS-GR(785)
+     MOVE 1 TO WS-GR(849)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 6 TO WS-GR(1041)
+     MOVE 7 TO WS-GR(1089)
+     MOVE 6 TO WS-GR(1297)
+     MOVE 10 TO WS-GR(1313)
+     MOVE 5 TO WS-GR(1345)
+     MOVE 2 TO WS-GR(1361)
+     MOVE 10 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1553)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 9 TO WS-GR(1617)
+     MOVE 2 TO WS-GR(1633)
+     MOVE 2 TO WS-GR(2)
+     MOVE 8 TO WS-GR(18)
+     MOVE 1 TO WS-GR(34)
+     MOVE 8 TO WS-GR(66)
+     MOVE 6 TO WS-GR(274)
+     MOVE 1 TO WS-GR(290)
+     MOVE 2 TO WS-GR(306)
+     MOVE 1 TO WS-GR(354)
+     MOVE 1 TO WS-GR(514)
+     MOVE 10 TO WS-GR(530)
+     MOVE 9 TO WS-GR(578)
+     MOVE 8 TO WS-GR(610)
+     MOVE 9 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 7 TO WS-GR(850)
+     MOVE 3 TO WS-GR(866)
+     MOVE 3 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 3 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1298)
+     MOVE 3 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1362)
+     MOVE 9 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1570)
+     MOVE 7 TO WS-GR(1634)
+     MOVE 2 TO WS-GR(259)
+     MOVE 1 TO WS-GR(307)
+     MOVE 1 TO WS-GR(323)
+     MOVE 5 TO WS-GR(355)
+     MOVE 1 TO WS-GR(547)
+     MOVE 5 TO WS-GR(563)
+     MOVE 1 TO WS-GR(579)
+     MOVE 4 TO WS-GR(787)
+     MOVE 3 TO WS-GR(867)
+     MOVE 7 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 6 TO WS-GR(1075)
+     MOVE 7 TO WS-GR(1091)
+     MOVE 10 TO WS-GR(1123)
+     MOVE 6 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 10 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 8 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(4)
+     MOVE 3 TO WS-GR(20)
+     MOVE 1 TO WS-GR(36)
+     MOVE 3 TO WS-GR(52)
+     MOVE 1 TO WS-GR(100)
+     MOVE 4 TO WS-GR(260)
+     MOVE 5 TO WS-GR(308)
+     MOVE 2 TO WS-GR(324)
+     MOVE 1 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 7 TO WS-GR(516)
+     MOVE 6 TO WS-GR(532)
+     MOVE 6 TO WS-GR(548)
+     MOVE 10 TO WS-GR(564)
+     MOVE 9 TO WS-GR(580)
+     MOVE 3 TO WS-GR(596)
+     MOVE 4 TO WS-GR(612)
+     MOVE 1 TO WS-GR(772)
+     MOVE 4 TO WS-GR(788)
+     MOVE 10 TO WS-GR(804)
+     MOVE 10 TO WS-GR(820)
+     MOVE 1 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1028)
+     MOVE 6 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 8 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 5 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 3 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(21)
+     MOVE 2 TO WS-GR(37)
+     MOVE 8 TO WS-GR(53)
+     MOVE 5 TO WS-GR(101)
+     MOVE 6 TO WS-GR(277)
+     MOVE 3 TO WS-GR(293)
+     MOVE 1 TO WS-GR(325)
+     MOVE 1 TO WS-GR(341)
+     MOVE 6 TO WS-GR(357)
+     MOVE 5 TO WS-GR(533)
+     MOVE 6 TO WS-GR(549)
+     MOVE 1 TO WS-GR(565)
+     MOVE 6 TO WS-GR(581)
+     MOVE 3 TO WS-GR(597)
+     MOVE 6 TO WS-GR(613)
+     MOVE 1 TO WS-GR(773)
+     MOVE 2 TO WS-GR(837)
+     MOVE 7 TO WS-GR(853)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 6 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1285)
+     MOVE 7 TO WS-GR(1301)
+     MOVE 10 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 3 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(38)
+     MOVE 3 TO WS-GR(102)
+     MOVE 3 TO WS-GR(262)
+     MOVE 2 TO WS-GR(278)
+     MOVE 3 TO WS-GR(294)
+     MOVE 2 TO WS-GR(310)
+     MOVE 6 TO WS-GR(326)
+     MOVE 10 TO WS-GR(358)
+     MOVE 2 TO WS-GR(566)
+     MOVE 4 TO WS-GR(582)
+     MOVE 1 TO WS-GR(614)
+     MOVE 6 TO WS-GR(806)
+     MOVE 2 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 7 TO WS-GR(1094)
+     MOVE 5 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1350)
+     MOVE 5 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 4 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 1 TO WS-GR(23)
+     MOVE 9 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 6 TO WS-GR(103)
+     MOVE 2 TO WS-GR(263)
+     MOVE 2 TO WS-GR(279)
+     MOVE 2 TO WS-GR(295)
+     MOVE 1 TO WS-GR(359)
+     MOVE 7 TO WS-GR(535)
+     MOVE 8 TO WS-GR(551)
+     MOVE 1 TO WS-GR(583)
+     MOVE 6 TO WS-GR(599)
+     MOVE 7 TO WS-GR(807)
+     MOVE 3 TO WS-GR(823)
+     MOVE 6 TO WS-GR(871)
+     MOVE 4 TO WS-GR(1063)
+     MOVE 6 TO WS-GR(1079)
+     MOVE 3 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 7 TO WS-GR(1319)
+     MOVE 10 TO WS-GR(1367)
+     MOVE 7 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 9 TO WS-GR(1607)
+     MOVE 10 TO WS-GR(1623)
+     MOVE 2 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(33)
+     MOVE 3 TO WS-GR(49)
+     MOVE 7 TO WS-GR(337)
+     MOVE 1 TO WS-GR(513)
+     MOVE 1 TO WS-GR(529)
+     MOVE 1 TO WS-GR(545)
+     MOVE 7 TO WS-GR(561)
+     MOVE 8 TO WS-GR(577)
+     MOVE 3 TO WS-GR(817)
+     MOVE 10 TO WS-GR(849)
+     MOVE 3 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 6 TO WS-GR(1073)
+     MOVE 8 TO WS-GR(1089)
+     MOVE 2 TO WS-GR(1105)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 4 TO WS-GR(1281)
+     MOVE 8 TO WS-GR(1297)
+     MOVE 5 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 9 TO WS-GR(34)
+     MOVE 5 TO WS-GR(50)
+     MOVE 3 TO WS-GR(290)
+     MOVE 1 TO WS-GR(338)
+     MOVE 9 TO WS-GR(354)
+     MOVE 1 TO WS-GR(514)
+     MOVE 9 TO WS-GR(530)
+     MOVE 5 TO WS-GR(546)
+     MOVE 10 TO WS-GR(562)
+     MOVE 9 TO WS-GR(578)
+     MOVE 9 TO WS-GR(594)
+     MOVE 6 TO WS-GR(610)
+     MOVE 5 TO WS-GR(770)
+     MOVE 1 TO WS-GR(802)
+     MOVE 4 TO WS-GR(834)
+     MOVE 3 TO WS-GR(850)
+     MOVE 2 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 6 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1090)
+     MOVE 3 TO WS-GR(1122)
+     MOVE 10 TO WS-GR(1298)
+     MOVE 2 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1330)
+     MOVE 7 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1554)
+     MOVE 9 TO WS-GR(1634)
+     MOVE 7 TO WS-GR(35)
+     MOVE 9 TO WS-GR(83)
+     MOVE 2 TO WS-GR(99)
+     MOVE 4 TO WS-GR(259)
+     MOVE 8 TO WS-GR(275)
+     MOVE 7 TO WS-GR(307)
+     MOVE 2 TO WS-GR(323)
+     MOVE 9 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 2 TO WS-GR(531)
+     MOVE 10 TO WS-GR(547)
+     MOVE 9 TO WS-GR(563)
+     MOVE 5 TO WS-GR(595)
+     MOVE 10 TO WS-GR(611)
+     MOVE 5 TO WS-GR(771)
+     MOVE 1 TO WS-GR(851)
+     MOVE 9 TO WS-GR(867)
+     MOVE 9 TO WS-GR(1043)
+     MOVE 7 TO WS-GR(1059)
+     MOVE 3 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1123)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 1 TO WS-GR(1363)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 10 TO WS-GR(1571)
+     MOVE 4 TO WS-GR(1587)
+     MOVE 9 TO WS-GR(1603)
+     MOVE 8 TO WS-GR(1619)
+     MOVE 2 TO WS-GR(1635)
+     MOVE 1 TO WS-GR(4)
+     MOVE 2 TO WS-GR(20)
+     MOVE 1 TO WS-GR(84)
+     MOVE 5 TO WS-GR(100)
+     MOVE 10 TO WS-GR(260)
+     MOVE 7 TO WS-GR(276)
+     MOVE 3 TO WS-GR(308)
+     MOVE 10 TO WS-GR(324)
+     MOVE 6 TO WS-GR(356)
+     MOVE 1 TO WS-GR(548)
+     MOVE 3 TO WS-GR(564)
+     MOVE 1 TO WS-GR(580)
+     MOVE 6 TO WS-GR(612)
+     MOVE 2 TO WS-GR(772)
+     MOVE 6 TO WS-GR(820)
+     MOVE 5 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 9 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 10 TO WS-GR(1332)
+     MOVE 6 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 8 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1572)
+     MOVE 4 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(5)
+     MOVE 1 TO WS-GR(85)
+     MOVE 6 TO WS-GR(261)
+     MOVE 1 TO WS-GR(293)
+     MOVE 1 TO WS-GR(309)
+     MOVE 5 TO WS-GR(517)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(581)
+     MOVE 1 TO WS-GR(597)
+     MOVE 1 TO WS-GR(613)
+     MOVE 1 TO WS-GR(773)
+     MOVE 1 TO WS-GR(789)
+     MOVE 7 TO WS-GR(821)
+     MOVE 2 TO WS-GR(837)
+     MOVE 2 TO WS-GR(869)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 10 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 8 TO WS-GR(1125)
+     MOVE 1 TO WS-GR(1301)
+     MOVE 10 TO WS-GR(1317)
+     MOVE 4 TO WS-GR(1333)
+     MOVE 7 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 9 TO WS-GR(1557)
+     MOVE 2 TO WS-GR(1573)
+     MOVE 3 TO WS-GR(1637)
+     MOVE 9 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 9 TO WS-GR(38)
+     MOVE 2 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(102)
+     MOVE 5 TO WS-GR(310)
+     MOVE 9 TO WS-GR(326)
+     MOVE 2 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 1 TO WS-GR(550)
+     MOVE 7 TO WS-GR(566)
+     MOVE 2 TO WS-GR(582)
+     MOVE 3 TO WS-GR(614)
+     MOVE 3 TO WS-GR(806)
+     MOVE 5 TO WS-GR(822)
+     MOVE 6 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 6 TO WS-GR(1078)
+     MOVE 5 TO WS-GR(1094)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 9 TO WS-GR(1302)
+     MOVE 3 TO WS-GR(1334)
+     MOVE 3 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 3 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 3 TO WS-GR(1638)
+     MOVE 5 TO WS-GR(7)
+     MOVE 5 TO WS-GR(39)
+     MOVE 3 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 10 TO WS-GR(103)
+     MOVE 1 TO WS-GR(263)
+     MOVE 2 TO WS-GR(295)
+     MOVE 3 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 10 TO WS-GR(519)
+     MOVE 2 TO WS-GR(567)
+     MOVE 6 TO WS-GR(599)
+     MOVE 2 TO WS-GR(615)
+     MOVE 2 TO WS-GR(775)
+     MOVE 3 TO WS-GR(807)
+     MOVE 2 TO WS-GR(823)
+     MOVE 8 TO WS-GR(839)
+     MOVE 1 TO WS-GR(855)
+     MOVE 2 TO WS-GR(871)
+     MOVE 10 TO WS-GR(1031)
+     MOVE 3 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1127)
+     MOVE 2 TO WS-GR(1319)
+     MOVE 4 TO WS-GR(1351)
+     MOVE 3 TO WS-GR(1383)
+     MOVE 1 TO WS-GR(1543)
+     MOVE 7 TO WS-GR(1591)
+     MOVE 8 TO WS-GR(1623)
+     MOVE 6 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/1/2 0/0/0/0/0/0/0/0/0/0/0/0 771/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(17)
+     MOVE 9 TO WS-GR(33)
+     MOVE 3 TO WS-GR(49)
+     MOVE 9 TO WS-GR(81)
+     MOVE 1 TO WS-GR(97)
+     MOVE 5 TO WS-GR(289)
+     MOVE 2 TO WS-GR(337)
+     MOVE 2 TO WS-GR(353)
+     MOVE 6 TO WS-GR(513)
+     MOVE 1 TO WS-GR(529)
+     MOVE 10 TO WS-GR(545)
+     MOVE 9 TO WS-GR(561)
+     MOVE 1 TO WS-GR(593)
+     MOVE 3 TO WS-GR(609)
+     MOVE 3 TO WS-GR(769)
+     MOVE 5 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 2 TO WS-GR(833)
+     MOVE 1 TO WS-GR(849)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 7 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1121)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 7 TO WS-GR(1345)
+     MOVE 8 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1569)
+     MOVE 2 TO WS-GR(1585)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 7 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 3 TO WS-GR(2)
+     MOVE 7 TO WS-GR(18)
+     MOVE 2 TO WS-GR(34)
+     MOVE 6 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 7 TO WS-GR(82)
+     MOVE 2 TO WS-GR(338)
+     MOVE 5 TO WS-GR(514)
+     MOVE 10 TO WS-GR(562)
+     MOVE 6 TO WS-GR(578)
+     MOVE 8 TO WS-GR(610)
+     MOVE 4 TO WS-GR(786)
+     MOVE 1 TO WS-GR(802)
+     MOVE 5 TO WS-GR(818)
+     MOVE 1 TO WS-GR(834)
+     MOVE 4 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 10 TO WS-GR(1282)
+     MOVE 9 TO WS-GR(1314)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 3 TO WS-GR(1346)
+     MOVE 10 TO WS-GR(1378)
+     MOVE 9 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 8 TO WS-GR(35)
+     MOVE 4 TO WS-GR(67)
+     MOVE 8 TO WS-GR(83)
+     MOVE 3 TO WS-GR(275)
+     MOVE 1 TO WS-GR(291)
+     MOVE 9 TO WS-GR(307)
+     MOVE 9 TO WS-GR(323)
+     MOVE 10 TO WS-GR(339)
+     MOVE 7 TO WS-GR(355)
+     MOVE 8 TO WS-GR(515)
+     MOVE 9 TO WS-GR(595)
+     MOVE 10 TO WS-GR(611)
+     MOVE 3 TO WS-GR(771)
+     MOVE 3 TO WS-GR(803)
+     MOVE 8 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 4 TO WS-GR(1091)
+     MOVE 8 TO WS-GR(1107)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 8 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 6 TO WS-GR(1587)
+     MOVE 7 TO WS-GR(1603)
+     MOVE 7 TO WS-GR(1619)
+     MOVE 2 TO WS-GR(20)
+     MOVE 2 TO WS-GR(84)
+     MOVE 2 TO WS-GR(100)
+     MOVE 7 TO WS-GR(276)
+     MOVE 2 TO WS-GR(292)
+     MOVE 1 TO WS-GR(308)
+     MOVE 10 TO WS-GR(340)
+     MOVE 1 TO WS-GR(548)
+     MOVE 2 TO WS-GR(564)
+     MOVE 1 TO WS-GR(580)
+     MOVE 8 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 8 TO WS-GR(1060)
+     MOVE 3 TO WS-GR(1076)
+     MOVE 9 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 5 TO WS-GR(1556)
+     MOVE 9 TO WS-GR(1572)
+     MOVE 10 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 8 TO WS-GR(21)
+     MOVE 4 TO WS-GR(37)
+     MOVE 7 TO WS-GR(53)
+     MOVE 9 TO WS-GR(69)
+     MOVE 4 TO WS-GR(85)
+     MOVE 6 TO WS-GR(261)
+     MOVE 1 TO WS-GR(309)
+     MOVE 1 TO WS-GR(325)
+     MOVE 3 TO WS-GR(357)
+     MOVE 6 TO WS-GR(549)
+     MOVE 7 TO WS-GR(581)
+     MOVE 9 TO WS-GR(597)
+     MOVE 8 TO WS-GR(613)
+     MOVE 2 TO WS-GR(773)
+     MOVE 9 TO WS-GR(821)
+     MOVE 10 TO WS-GR(837)
+     MOVE 3 TO WS-GR(853)
+     MOVE 4 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 9 TO WS-GR(1109)
+     MOVE 3 TO WS-GR(1285)
+     MOVE 1 TO WS-GR(1301)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 4 TO WS-GR(1557)
+     MOVE 7 TO WS-GR(1605)
+     MOVE 3 TO WS-GR(1621)
+     MOVE 7 TO WS-GR(1637)
+     MOVE 4 TO WS-GR(38)
+     MOVE 1 TO WS-GR(54)
+     MOVE 3 TO WS-GR(70)
+     MOVE 2 TO WS-GR(102)
+     MOVE 1 TO WS-GR(262)
+     MOVE 7 TO WS-GR(294)
+     MOVE 9 TO WS-GR(342)
+     MOVE 2 TO WS-GR(518)
+     MOVE 3 TO WS-GR(534)
+     MOVE 1 TO WS-GR(566)
+     MOVE 6 TO WS-GR(598)
+     MOVE 3 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 1 TO WS-GR(806)
+     MOVE 1 TO WS-GR(854)
+     MOVE 3 TO WS-GR(1046)
+     MOVE 2 TO WS-GR(1094)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 8 TO WS-GR(1126)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 4 TO WS-GR(1382)
+     MOVE 6 TO WS-GR(1558)
+     MOVE 9 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 6 TO WS-GR(7)
+     MOVE 3 TO WS-GR(23)
+     MOVE 6 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 2 TO WS-GR(103)
+     MOVE 5 TO WS-GR(295)
+     MOVE 1 TO WS-GR(359)
+     MOVE 10 TO WS-GR(551)
+     MOVE 1 TO WS-GR(567)
+     MOVE 2 TO WS-GR(583)
+     MOVE 10 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 2 TO WS-GR(807)
+     MOVE 2 TO WS-GR(839)
+     MOVE 1 TO WS-GR(855)
+     MOVE 3 TO WS-GR(1031)
+     MOVE 7 TO WS-GR(1047)
+     MOVE 10 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 5 TO WS-GR(1367)
+     MOVE 3 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 6 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1607)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(33)
+     MOVE 7 TO WS-GR(49)
+     MOVE 3 TO WS-GR(81)
+     MOVE 1 TO WS-GR(97)
+     MOVE 9 TO WS-GR(305)
+     MOVE 10 TO WS-GR(321)
+     MOVE 5 TO WS-GR(353)
+     MOVE 2 TO WS-GR(529)
+     MOVE 10 TO WS-GR(577)
+     MOVE 1 TO WS-GR(609)
+     MOVE 1 TO WS-GR(785)
+     MOVE 2 TO WS-GR(801)
+     MOVE 1 TO WS-GR(849)
+     MOVE 8 TO WS-GR(1041)
+     MOVE 8 TO WS-GR(1057)
+     MOVE 6 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1377)
+     MOVE 5 TO WS-GR(1537)
+     MOVE 5 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1585)
+     MOVE 3 TO WS-GR(1601)
+     MOVE 3 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 2 TO WS-GR(2)
+     MOVE 1 TO WS-GR(18)
+     MOVE 10 TO WS-GR(98)
+     MOVE 6 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 4 TO WS-GR(322)
+     MOVE 6 TO WS-GR(338)
+     MOVE 2 TO WS-GR(546)
+     MOVE 1 TO WS-GR(562)
+     MOVE 1 TO WS-GR(578)
+     MOVE 3 TO WS-GR(770)
+     MOVE 2 TO WS-GR(802)
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(834)
+     MOVE 8 TO WS-GR(850)
+     MOVE 2 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 5 TO WS-GR(1122)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 7 TO WS-GR(1538)
+     MOVE 8 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 3 TO WS-GR(1602)
+     MOVE 6 TO WS-GR(1618)
+     MOVE 4 TO WS-GR(1634)
+     MOVE 5 TO WS-GR(19)
+     MOVE 8 TO WS-GR(35)
+     MOVE 5 TO WS-GR(259)
+     MOVE 1 TO WS-GR(275)
+     MOVE 2 TO WS-GR(547)
+     MOVE 1 TO WS-GR(611)
+     MOVE 5 TO WS-GR(771)
+     MOVE 1 TO WS-GR(803)
+     MOVE 9 TO WS-GR(819)
+     MOVE 10 TO WS-GR(851)
+     MOVE 9 TO WS-GR(1043)
+     MOVE 2 TO WS-GR(1059)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 3 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 7 TO WS-GR(1635)
+     MOVE 1 TO WS-GR(36)
+     MOVE 1 TO WS-GR(84)
+     MOVE 9 TO WS-GR(100)
+     MOVE 1 TO WS-GR(276)
+     MOVE 1 TO WS-GR(308)
+     MOVE 2 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 2 TO WS-GR(516)
+     MOVE 2 TO WS-GR(532)
+     MOVE 1 TO WS-GR(548)
+     MOVE 1 TO WS-GR(564)
+     MOVE 2 TO WS-GR(580)
+     MOVE 7 TO WS-GR(852)
+     MOVE 1 TO WS-GR(868)
+     MOVE 2 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 9 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 5 TO WS-GR(5)
+     MOVE 6 TO WS-GR(37)
+     MOVE 3 TO WS-GR(53)
+     MOVE 9 TO WS-GR(69)
+     MOVE 1 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 5 TO WS-GR(293)
+     MOVE 5 TO WS-GR(309)
+     MOVE 2 TO WS-GR(325)
+     MOVE 6 TO WS-GR(341)
+     MOVE 2 TO WS-GR(357)
+     MOVE 3 TO WS-GR(517)
+     MOVE 9 TO WS-GR(549)
+     MOVE 1 TO WS-GR(565)
+     MOVE 1 TO WS-GR(789)
+     MOVE 2 TO WS-GR(805)
+     MOVE 5 TO WS-GR(869)
+     MOVE 7 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 2 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 1 TO WS-GR(1349)
+     MOVE 9 TO WS-GR(1381)
+     MOVE 3 TO WS-GR(1557)
+     MOVE 6 TO WS-GR(1573)
+     MOVE 4 TO WS-GR(1637)
+     MOVE 5 TO WS-GR(22)
+     MOVE 10 TO WS-GR(54)
+     MOVE 2 TO WS-GR(102)
+     MOVE 1 TO WS-GR(294)
+     MOVE 2 TO WS-GR(326)
+     MOVE 1 TO WS-GR(358)
+     MOVE 2 TO WS-GR(566)
+     MOVE 1 TO WS-GR(582)
+     MOVE 2 TO WS-GR(614)
+     MOVE 2 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 7 TO WS-GR(1078)
+     MOVE 3 TO WS-GR(1286)
+     MOVE 3 TO WS-GR(1318)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 6 TO WS-GR(1558)
+     MOVE 7 TO WS-GR(1590)
+     MOVE 8 TO WS-GR(1622)
+     MOVE 2 TO WS-GR(1638)
+     MOVE 3 TO WS-GR(7)
+     MOVE 7 TO WS-GR(23)
+     MOVE 1 TO WS-GR(39)
+     MOVE 2 TO WS-GR(55)
+     MOVE 3 TO WS-GR(263)
+     MOVE 1 TO WS-GR(279)
+     MOVE 7 TO WS-GR(295)
+     MOVE 1 TO WS-GR(327)
+     MOVE 1 TO WS-GR(583)
+     MOVE 1 TO WS-GR(599)
+     MOVE 1 TO WS-GR(775)
+     MOVE 1 TO WS-GR(1031)
+     MOVE 3 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 3 TO WS-GR(1095)
+     MOVE 4 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 5 TO WS-GR(1351)
+     MOVE 2 TO WS-GR(1367)
+     MOVE 2 TO WS-GR(1559)
+     MOVE 8 TO WS-GR(1575)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 2 TO WS-GR(1623)
+     MOVE 7 TO WS-GR(1639)
+     MOVE 2 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1)
+     MOVE 5 TO WS-GR(17)
+     MOVE 9 TO WS-GR(49)
+     MOVE 2 TO WS-GR(97)
+     MOVE 9 TO WS-GR(257)
+     MOVE 1 TO WS-GR(289)
+     MOVE 10 TO WS-GR(305)
+     MOVE 9 TO WS-GR(513)
+     MOVE 3 TO WS-GR(529)
+     MOVE 3 TO WS-GR(545)
+     MOVE 5 TO WS-GR(561)
+     MOVE 5 TO WS-GR(577)
+     MOVE 1 TO WS-GR(593)
+     MOVE 2 TO WS-GR(609)
+     MOVE 8 TO WS-GR(769)
+     MOVE 2 TO WS-GR(849)
+     MOVE 7 TO WS-GR(1105)
+     MOVE 9 TO WS-GR(1121)
+     MOVE 5 TO WS-GR(1297)
+     MOVE 6 TO WS-GR(1313)
+     MOVE 3 TO WS-GR(1537)
+     MOVE 3 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1569)
+     MOVE 8 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(18)
+     MOVE 5 TO WS-GR(34)
+     MOVE 3 TO WS-GR(66)
+     MOVE 6 TO WS-GR(82)
+     MOVE 7 TO WS-GR(258)
+     MOVE 6 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 1 TO WS-GR(338)
+     MOVE 6 TO WS-GR(514)
+     MOVE 2 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(610)
+     MOVE 2 TO WS-GR(866)
+     MOVE 2 TO WS-GR(1026)
+     MOVE 2 TO WS-GR(1122)
+     MOVE 5 TO WS-GR(1282)
+     MOVE 8 TO WS-GR(1298)
+     MOVE 6 TO WS-GR(1330)
+     MOVE 1 TO WS-GR(1346)
+     MOVE 8 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 1 TO WS-GR(3)
+     MOVE 1 TO WS-GR(35)
+     MOVE 2 TO WS-GR(51)
+     MOVE 1 TO WS-GR(67)
+     MOVE 6 TO WS-GR(83)
+     MOVE 1 TO WS-GR(259)
+     MOVE 3 TO WS-GR(275)
+     MOVE 10 TO WS-GR(291)
+     MOVE 2 TO WS-GR(307)
+     MOVE 1 TO WS-GR(355)
+     MOVE 4 TO WS-GR(515)
+     MOVE 1 TO WS-GR(563)
+     MOVE 9 TO WS-GR(595)
+     MOVE 4 TO WS-GR(611)
+     MOVE 6 TO WS-GR(771)
+     MOVE 10 TO WS-GR(787)
+     MOVE 1 TO WS-GR(835)
+     MOVE 3 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1043)
+     MOVE 8 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 9 TO WS-GR(1123)
+     MOVE 6 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 7 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 9 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 9 TO WS-GR(1587)
+     MOVE 5 TO WS-GR(4)
+     MOVE 9 TO WS-GR(36)
+     MOVE 2 TO WS-GR(68)
+     MOVE 1 TO WS-GR(260)
+     MOVE 10 TO WS-GR(324)
+     MOVE 1 TO WS-GR(356)
+     MOVE 10 TO WS-GR(532)
+     MOVE 1 TO WS-GR(564)
+     MOVE 10 TO WS-GR(580)
+     MOVE 6 TO WS-GR(596)
+     MOVE 5 TO WS-GR(788)
+     MOVE 1 TO WS-GR(820)
+     MOVE 9 TO WS-GR(852)
+     MOVE 2 TO WS-GR(868)
+     MOVE 8 TO WS-GR(1028)
+     MOVE 5 TO WS-GR(1044)
+     MOVE 9 TO WS-GR(1092)
+     MOVE 3 TO WS-GR(1108)
+     MOVE 4 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1316)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 8 TO WS-GR(1588)
+     MOVE 3 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 5 TO WS-GR(21)
+     MOVE 6 TO WS-GR(69)
+     MOVE 4 TO WS-GR(101)
+     MOVE 4 TO WS-GR(261)
+     MOVE 6 TO WS-GR(293)
+     MOVE 4 TO WS-GR(325)
+     MOVE 1 TO WS-GR(357)
+     MOVE 1 TO WS-GR(533)
+     MOVE 8 TO WS-GR(549)
+     MOVE 1 TO WS-GR(565)
+     MOVE 2 TO WS-GR(773)
+     MOVE 1 TO WS-GR(837)
+     MOVE 2 TO WS-GR(853)
+     MOVE 3 TO WS-GR(1285)
+     MOVE 10 TO WS-GR(1301)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1349)
+     MOVE 6 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1621)
+     MOVE 8 TO WS-GR(1637)
+     MOVE 3 TO WS-GR(54)
+     MOVE 8 TO WS-GR(70)
+     MOVE 1 TO WS-GR(102)
+     MOVE 4 TO WS-GR(262)
+     MOVE 1 TO WS-GR(310)
+     MOVE 7 TO WS-GR(326)
+     MOVE 1 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 7 TO WS-GR(518)
+     MOVE 7 TO WS-GR(550)
+     MOVE 4 TO WS-GR(582)
+     MOVE 10 TO WS-GR(598)
+     MOVE 3 TO WS-GR(790)
+     MOVE 2 TO WS-GR(822)
+     MOVE 2 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 7 TO WS-GR(1126)
+     MOVE 5 TO WS-GR(1318)
+     MOVE 3 TO WS-GR(1350)
+     MOVE 10 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(7)
+     MOVE 2 TO WS-GR(23)
+     MOVE 3 TO WS-GR(39)
+     MOVE 6 TO WS-GR(55)
+     MOVE 2 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 1 TO WS-GR(103)
+     MOVE 1 TO WS-GR(279)
+     MOVE 3 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 1 TO WS-GR(327)
+     MOVE 6 TO WS-GR(343)
+     MOVE 1 TO WS-GR(567)
+     MOVE 8 TO WS-GR(583)
+     MOVE 5 TO WS-GR(599)
+     MOVE 10 TO WS-GR(775)
+     MOVE 10 TO WS-GR(791)
+     MOVE 2 TO WS-GR(807)
+     MOVE 1 TO WS-GR(823)
+     MOVE 7 TO WS-GR(839)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 2 TO WS-GR(1063)
+     MOVE 2 TO WS-GR(1079)
+     MOVE 7 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 2 TO WS-GR(1367)
+     MOVE 2 TO WS-GR(1383)
+     MOVE 8 TO WS-GR(1543)
+     MOVE 10 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1591)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 2 TO WS-GR(1623)
+     MOVE 9 TO WS-GR(1639)
+     MOVE 2 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1)
+     MOVE 2 TO WS-GR(33)
+     MOVE 7 TO WS-GR(49)
+     MOVE 9 TO WS-GR(81)
+     MOVE 5 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 7 TO WS-GR(289)
+     MOVE 3 TO WS-GR(305)
+     MOVE 8 TO WS-GR(353)
+     MOVE 1 TO WS-GR(513)
+     MOVE 2 TO WS-GR(529)
+     MOVE 5 TO WS-GR(561)
+     MOVE 3 TO WS-GR(785)
+     MOVE 1 TO WS-GR(801)
+     MOVE 8 TO WS-GR(1057)
+     MOVE 2 TO WS-GR(1073)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 2 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 2 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1569)
+     MOVE 2 TO WS-GR(1601)
+     MOVE 3 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(34)
+     MOVE 5 TO WS-GR(50)
+     MOVE 10 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 9 TO WS-GR(98)
+     MOVE 3 TO WS-GR(258)
+     MOVE 5 TO WS-GR(322)
+     MOVE 4 TO WS-GR(354)
+     MOVE 1 TO WS-GR(514)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(562)
+     MOVE 3 TO WS-GR(802)
+     MOVE 2 TO WS-GR(818)
+     MOVE 2 TO WS-GR(1090)
+     MOVE 6 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1122)
+     MOVE 9 TO WS-GR(1330)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 7 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 6 TO WS-GR(3)
+     MOVE 7 TO WS-GR(35)
+     MOVE 5 TO WS-GR(51)
+     MOVE 5 TO WS-GR(99)
+     MOVE 1 TO WS-GR(275)
+     MOVE 8 TO WS-GR(307)
+     MOVE 1 TO WS-GR(323)
+     MOVE 5 TO WS-GR(531)
+     MOVE 2 TO WS-GR(771)
+     MOVE 1 TO WS-GR(803)
+     MOVE 1 TO WS-GR(835)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 1 TO WS-GR(1123)
+     MOVE 3 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 4 TO WS-GR(1331)
+     MOVE 4 TO WS-GR(1347)
+     MOVE 8 TO WS-GR(1363)
+     MOVE 2 TO WS-GR(1555)
+     MOVE 10 TO WS-GR(1571)
+     MOVE 2 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(68)
+     MOVE 1 TO WS-GR(260)
+     MOVE 10 TO WS-GR(308)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(532)
+     MOVE 5 TO WS-GR(564)
+     MOVE 1 TO WS-GR(596)
+     MOVE 3 TO WS-GR(612)
+     MOVE 1 TO WS-GR(772)
+     MOVE 8 TO WS-GR(820)
+     MOVE 2 TO WS-GR(852)
+     MOVE 3 TO WS-GR(1044)
+     MOVE 5 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1124)
+     MOVE 7 TO WS-GR(1380)
+     MOVE 3 TO WS-GR(1540)
+     MOVE 4 TO WS-GR(1556)
+     MOVE 2 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 4 TO WS-GR(5)
+     MOVE 10 TO WS-GR(21)
+     MOVE 8 TO WS-GR(37)
+     MOVE 1 TO WS-GR(85)
+     MOVE 1 TO WS-GR(261)
+     MOVE 4 TO WS-GR(325)
+     MOVE 2 TO WS-GR(357)
+     MOVE 1 TO WS-GR(533)
+     MOVE 10 TO WS-GR(565)
+     MOVE 2 TO WS-GR(581)
+     MOVE 6 TO WS-GR(853)
+     MOVE 4 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 9 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 10 TO WS-GR(1301)
+     MOVE 4 TO WS-GR(1333)
+     MOVE 10 TO WS-GR(86)
+     MOVE 2 TO WS-GR(102)
+     MOVE 1 TO WS-GR(294)
+     MOVE 10 TO WS-GR(326)
+     MOVE 6 TO WS-GR(342)
+     MOVE 3 TO WS-GR(358)
+     MOVE 3 TO WS-GR(518)
+     MOVE 1 TO WS-GR(566)
+     MOVE 2 TO WS-GR(598)
+     MOVE 2 TO WS-GR(614)
+     MOVE 2 TO WS-GR(806)
+     MOVE 1 TO WS-GR(822)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 10 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 3 TO WS-GR(1382)
+     MOVE 3 TO WS-GR(1558)
+     MOVE 2 TO WS-GR(1574)
+     MOVE 6 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 6 TO WS-GR(7)
+     MOVE 1 TO WS-GR(55)
+     MOVE 4 TO WS-GR(103)
+     MOVE 1 TO WS-GR(263)
+     MOVE 3 TO WS-GR(295)
+     MOVE 4 TO WS-GR(327)
+     MOVE 7 TO WS-GR(519)
+     MOVE 10 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 1 TO WS-GR(791)
+     MOVE 8 TO WS-GR(823)
+     MOVE 4 TO WS-GR(855)
+     MOVE 1 TO WS-GR(871)
+     MOVE 2 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 5 TO WS-GR(1127)
+     MOVE 2 TO WS-GR(1287)
+     MOVE 6 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 2 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 9 TO WS-GR(1543)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 4 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/2 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(17)
+     MOVE 2 TO WS-GR(65)
+     MOVE 9 TO WS-GR(81)
+     MOVE 6 TO WS-GR(337)
+     MOVE 7 TO WS-GR(513)
+     MOVE 3 TO WS-GR(577)
+     MOVE 4 TO WS-GR(593)
+     MOVE 5 TO WS-GR(609)
+     MOVE 1 TO WS-GR(785)
+     MOVE 1 TO WS-GR(833)
+     MOVE 7 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1057)
+     MOVE 4 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1281)
+     MOVE 3 TO WS-GR(1377)
+     MOVE 2 TO WS-GR(1537)
+     MOVE 7 TO WS-GR(1553)
+     MOVE 5 TO WS-GR(1569)
+     MOVE 3 TO WS-GR(1601)
+     MOVE 5 TO WS-GR(1617)
+     MOVE 2 TO WS-GR(18)
+     MOVE 1 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 1 TO WS-GR(98)
+     MOVE 4 TO WS-GR(290)
+     MOVE 1 TO WS-GR(306)
+     MOVE 2 TO WS-GR(322)
+     MOVE 8 TO WS-GR(514)
+     MOVE 1 TO WS-GR(562)
+     MOVE 7 TO WS-GR(578)
+     MOVE 2 TO WS-GR(610)
+     MOVE 5 TO WS-GR(786)
+     MOVE 1 TO WS-GR(834)
+     MOVE 7 TO WS-GR(850)
+     MOVE 6 TO WS-GR(1042)
+     MOVE 3 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 5 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1330)
+     MOVE 3 TO WS-GR(1346)
+     MOVE 2 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1554)
+     MOVE 2 TO WS-GR(1570)
+     MOVE 3 TO WS-GR(1586)
+     MOVE 3 TO WS-GR(259)
+     MOVE 2 TO WS-GR(275)
+     MOVE 10 TO WS-GR(291)
+     MOVE 6 TO WS-GR(323)
+     MOVE 8 TO WS-GR(531)
+     MOVE 1 TO WS-GR(547)
+     MOVE 2 TO WS-GR(579)
+     MOVE 5 TO WS-GR(611)
+     MOVE 1 TO WS-GR(771)
+     MOVE 8 TO WS-GR(819)
+     MOVE 3 TO WS-GR(835)
+     MOVE 1 TO WS-GR(851)
+     MOVE 9 TO WS-GR(867)
+     MOVE 3 TO WS-GR(1059)
+     MOVE 8 TO WS-GR(1091)
+     MOVE 6 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 7 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 8 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 8 TO WS-GR(1571)
+     MOVE 4 TO WS-GR(1635)
+     MOVE 2 TO WS-GR(52)
+     MOVE 1 TO WS-GR(84)
+     MOVE 9 TO WS-GR(260)
+     MOVE 1 TO WS-GR(276)
+     MOVE 1 TO WS-GR(308)
+     MOVE 4 TO WS-GR(340)
+     MOVE 2 TO WS-GR(516)
+     MOVE 5 TO WS-GR(548)
+     MOVE 2 TO WS-GR(612)
+     MOVE 9 TO WS-GR(772)
+     MOVE 6 TO WS-GR(788)
+     MOVE 6 TO WS-GR(820)
+     MOVE 10 TO WS-GR(852)
+     MOVE 3 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 3 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1348)
+     MOVE 3 TO WS-GR(1364)
+     MOVE 3 TO WS-GR(1380)
+     MOVE 4 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1572)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 7 TO WS-GR(21)
+     MOVE 1 TO WS-GR(37)
+     MOVE 1 TO WS-GR(53)
+     MOVE 1 TO WS-GR(85)
+     MOVE 3 TO WS-GR(101)
+     MOVE 10 TO WS-GR(261)
+     MOVE 4 TO WS-GR(277)
+     MOVE 1 TO WS-GR(309)
+     MOVE 1 TO WS-GR(325)
+     MOVE 8 TO WS-GR(533)
+     MOVE 6 TO WS-GR(565)
+     MOVE 5 TO WS-GR(581)
+     MOVE 10 TO WS-GR(597)
+     MOVE 2 TO WS-GR(613)
+     MOVE 1 TO WS-GR(805)
+     MOVE 1 TO WS-GR(853)
+     MOVE 9 TO WS-GR(1029)
+     MOVE 4 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1285)
+     MOVE 8 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1365)
+     MOVE 6 TO WS-GR(1381)
+     MOVE 3 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 6 TO WS-GR(1589)
+     MOVE 5 TO WS-GR(1621)
+     MOVE 2 TO WS-GR(1637)
+     MOVE 8 TO WS-GR(38)
+     MOVE 3 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 1 TO WS-GR(518)
+     MOVE 6 TO WS-GR(534)
+     MOVE 1 TO WS-GR(550)
+     MOVE 4 TO WS-GR(566)
+     MOVE 2 TO WS-GR(598)
+     MOVE 9 TO WS-GR(614)
+     MOVE 3 TO WS-GR(774)
+     MOVE 2 TO WS-GR(806)
+     MOVE 8 TO WS-GR(822)
+     MOVE 1 TO WS-GR(854)
+     MOVE 3 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 8 TO WS-GR(1302)
+     MOVE 7 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 2 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 3 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(7)
+     MOVE 1 TO WS-GR(23)
+     MOVE 6 TO WS-GR(39)
+     MOVE 1 TO WS-GR(343)
+     MOVE 1 TO WS-GR(535)
+     MOVE 4 TO WS-GR(583)
+     MOVE 1 TO WS-GR(775)
+     MOVE 1 TO WS-GR(807)
+     MOVE 7 TO WS-GR(871)
+     MOVE 7 TO WS-GR(1031)
+     MOVE 8 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 1 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1111)
+     MOVE 5 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 7 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 3 TO WS-GR(1607)
+     MOVE 3 TO WS-GR(1623)
+     MOVE 3 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 10 TO WS-GR(1)
+     MOVE 8 TO WS-GR(17)
+     MOVE 2 TO WS-GR(33)
+     MOVE 2 TO WS-GR(97)
+     MOVE 1 TO WS-GR(353)
+     MOVE 2 TO WS-GR(513)
+     MOVE 2 TO WS-GR(561)
+     MOVE 4 TO WS-GR(769)
+     MOVE 3 TO WS-GR(801)
+     MOVE 2 TO WS-GR(817)
+     MOVE 2 TO WS-GR(849)
+     MOVE 1 TO WS-GR(865)
+     MOVE 9 TO WS-GR(1025)
+     MOVE 3 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1089)
+     MOVE 5 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1281)
+     MOVE 5 TO WS-GR(1313)
+     MOVE 9 TO WS-GR(1329)
+     MOVE 5 TO WS-GR(1345)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 7 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 4 TO WS-GR(1585)
+     MOVE 3 TO WS-GR(1633)
+     MOVE 4 TO WS-GR(2)
+     MOVE 5 TO WS-GR(50)
+     MOVE 4 TO WS-GR(82)
+     MOVE 8 TO WS-GR(98)
+     MOVE 2 TO WS-GR(258)
+     MOVE 4 TO WS-GR(274)
+     MOVE 2 TO WS-GR(306)
+     MOVE 2 TO WS-GR(514)
+     MOVE 2 TO WS-GR(546)
+     MOVE 3 TO WS-GR(578)
+     MOVE 1 TO WS-GR(594)
+     MOVE 10 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 5 TO WS-GR(818)
+     MOVE 8 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 9 TO WS-GR(1106)
+     MOVE 7 TO WS-GR(1282)
+     MOVE 2 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 8 TO WS-GR(1618)
+     MOVE 3 TO WS-GR(1634)
+     MOVE 3 TO WS-GR(3)
+     MOVE 2 TO WS-GR(19)
+     MOVE 2 TO WS-GR(67)
+     MOVE 1 TO WS-GR(83)
+     MOVE 6 TO WS-GR(275)
+     MOVE 1 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 2 TO WS-GR(323)
+     MOVE 5 TO WS-GR(515)
+     MOVE 2 TO WS-GR(547)
+     MOVE 4 TO WS-GR(611)
+     MOVE 4 TO WS-GR(819)
+     MOVE 2 TO WS-GR(835)
+     MOVE 1 TO WS-GR(851)
+     MOVE 3 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 7 TO WS-GR(1299)
+     MOVE 9 TO WS-GR(1315)
+     MOVE 5 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 9 TO WS-GR(1539)
+     MOVE 4 TO WS-GR(1555)
+     MOVE 4 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 8 TO WS-GR(20)
+     MOVE 10 TO WS-GR(36)
+     MOVE 1 TO WS-GR(52)
+     MOVE 1 TO WS-GR(84)
+     MOVE 1 TO WS-GR(276)
+     MOVE 1 TO WS-GR(324)
+     MOVE 10 TO WS-GR(340)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(564)
+     MOVE 1 TO WS-GR(580)
+     MOVE 3 TO WS-GR(612)
+     MOVE 8 TO WS-GR(772)
+     MOVE 1 TO WS-GR(788)
+     MOVE 3 TO WS-GR(804)
+     MOVE 1 TO WS-GR(836)
+     MOVE 2 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1124)
+     MOVE 4 TO WS-GR(1284)
+     MOVE 8 TO WS-GR(1316)
+     MOVE 1 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 10 TO WS-GR(1540)
+     MOVE 6 TO WS-GR(1604)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 1 TO WS-GR(69)
+     MOVE 6 TO WS-GR(85)
+     MOVE 1 TO WS-GR(261)
+     MOVE 2 TO WS-GR(293)
+     MOVE 1 TO WS-GR(357)
+     MOVE 1 TO WS-GR(533)
+     MOVE 6 TO WS-GR(613)
+     MOVE 2 TO WS-GR(805)
+     MOVE 1 TO WS-GR(821)
+     MOVE 2 TO WS-GR(837)
+     MOVE 5 TO WS-GR(1029)
+     MOVE 7 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 2 TO WS-GR(1109)
+     MOVE 5 TO WS-GR(1285)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 10 TO WS-GR(1541)
+     MOVE 8 TO WS-GR(1573)
+     MOVE 8 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 8 TO WS-GR(22)
+     MOVE 8 TO WS-GR(342)
+     MOVE 1 TO WS-GR(358)
+     MOVE 1 TO WS-GR(534)
+     MOVE 3 TO WS-GR(582)
+     MOVE 1 TO WS-GR(598)
+     MOVE 2 TO WS-GR(614)
+     MOVE 4 TO WS-GR(790)
+     MOVE 5 TO WS-GR(806)
+     MOVE 2 TO WS-GR(822)
+     MOVE 1 TO WS-GR(838)
+     MOVE 4 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1046)
+     MOVE 9 TO WS-GR(1062)
+     MOVE 3 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1286)
+     MOVE 3 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 6 TO WS-GR(1622)
+     MOVE 9 TO WS-GR(23)
+     MOVE 1 TO WS-GR(71)
+     MOVE 8 TO WS-GR(87)
+     MOVE 9 TO WS-GR(263)
+     MOVE 9 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 4 TO WS-GR(327)
+     MOVE 7 TO WS-GR(359)
+     MOVE 1 TO WS-GR(535)
+     MOVE 7 TO WS-GR(551)
+     MOVE 8 TO WS-GR(583)
+     MOVE 10 TO WS-GR(599)
+     MOVE 8 TO WS-GR(775)
+     MOVE 1 TO WS-GR(791)
+     MOVE 6 TO WS-GR(871)
+     MOVE 3 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1047)
+     MOVE 9 TO WS-GR(1079)
+     MOVE 4 TO WS-GR(1127)
+     MOVE 2 TO WS-GR(1319)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 10 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1607)
+     MOVE 3 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(1)
+     MOVE 5 TO WS-GR(81)
+     MOVE 5 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 1 TO WS-GR(273)
+     MOVE 8 TO WS-GR(289)
+     MOVE 1 TO WS-GR(321)
+     MOVE 2 TO WS-GR(337)
+     MOVE 10 TO WS-GR(353)
+     MOVE 10 TO WS-GR(561)
+     MOVE 1 TO WS-GR(577)
+     MOVE 7 TO WS-GR(593)
+     MOVE 1 TO WS-GR(609)
+     MOVE 3 TO WS-GR(769)
+     MOVE 8 TO WS-GR(801)
+     MOVE 1 TO WS-GR(817)
+     MOVE 2 TO WS-GR(1041)
+     MOVE 4 TO WS-GR(1057)
+     MOVE 6 TO WS-GR(1073)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 6 TO WS-GR(1281)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 3 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 4 TO WS-GR(1345)
+     MOVE 3 TO WS-GR(1585)
+     MOVE 6 TO WS-GR(1601)
+     MOVE 2 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(2)
+     MOVE 2 TO WS-GR(34)
+     MOVE 6 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 7 TO WS-GR(82)
+     MOVE 5 TO WS-GR(290)
+     MOVE 1 TO WS-GR(322)
+     MOVE 5 TO WS-GR(338)
+     MOVE 2 TO WS-GR(354)
+     MOVE 1 TO WS-GR(514)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(562)
+     MOVE 1 TO WS-GR(834)
+     MOVE 2 TO WS-GR(850)
+     MOVE 2 TO WS-GR(1042)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 9 TO WS-GR(1122)
+     MOVE 9 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 10 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 2 TO WS-GR(99)
+     MOVE 2 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 10 TO WS-GR(323)
+     MOVE 4 TO WS-GR(339)
+     MOVE 3 TO WS-GR(531)
+     MOVE 2 TO WS-GR(547)
+     MOVE 3 TO WS-GR(579)
+     MOVE 2 TO WS-GR(595)
+     MOVE 2 TO WS-GR(787)
+     MOVE 6 TO WS-GR(835)
+     MOVE 3 TO WS-GR(851)
+     MOVE 7 TO WS-GR(1027)
+     MOVE 3 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 10 TO WS-GR(1363)
+     MOVE 6 TO WS-GR(1379)
+     MOVE 6 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1555)
+     MOVE 2 TO WS-GR(1619)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 5 TO WS-GR(4)
+     MOVE 5 TO WS-GR(52)
+     MOVE 3 TO WS-GR(68)
+     MOVE 2 TO WS-GR(308)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(516)
+     MOVE 3 TO WS-GR(564)
+     MOVE 2 TO WS-GR(580)
+     MOVE 2 TO WS-GR(612)
+     MOVE 6 TO WS-GR(820)
+     MOVE 1 TO WS-GR(852)
+     MOVE 5 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 2 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 4 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 8 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(1636)
+     MOVE 9 TO WS-GR(37)
+     MOVE 3 TO WS-GR(69)
+     MOVE 1 TO WS-GR(85)
+     MOVE 1 TO WS-GR(293)
+     MOVE 2 TO WS-GR(309)
+     MOVE 9 TO WS-GR(325)
+     MOVE 6 TO WS-GR(341)
+     MOVE 9 TO WS-GR(357)
+     MOVE 9 TO WS-GR(517)
+     MOVE 10 TO WS-GR(533)
+     MOVE 2 TO WS-GR(581)
+     MOVE 3 TO WS-GR(597)
+     MOVE 6 TO WS-GR(613)
+     MOVE 2 TO WS-GR(805)
+     MOVE 2 TO WS-GR(821)
+     MOVE 7 TO WS-GR(853)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1077)
+     MOVE 8 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 3 TO WS-GR(1317)
+     MOVE 4 TO WS-GR(1573)
+     MOVE 10 TO WS-GR(1605)
+     MOVE 2 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(38)
+     MOVE 7 TO WS-GR(70)
+     MOVE 2 TO WS-GR(86)
+     MOVE 5 TO WS-GR(262)
+     MOVE 8 TO WS-GR(278)
+     MOVE 1 TO WS-GR(294)
+     MOVE 4 TO WS-GR(582)
+     MOVE 1 TO WS-GR(598)
+     MOVE 3 TO WS-GR(614)
+     MOVE 5 TO WS-GR(806)
+     MOVE 1 TO WS-GR(838)
+     MOVE 1 TO WS-GR(870)
+     MOVE 7 TO WS-GR(1046)
+     MOVE 3 TO WS-GR(1062)
+     MOVE 4 TO WS-GR(1078)
+     MOVE 2 TO WS-GR(1094)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 1 TO WS-GR(1286)
+     MOVE 4 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1350)
+     MOVE 2 TO WS-GR(1366)
+     MOVE 10 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 4 TO WS-GR(1574)
+     MOVE 5 TO WS-GR(1590)
+     MOVE 9 TO WS-GR(23)
+     MOVE 1 TO WS-GR(39)
+     MOVE 1 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 5 TO WS-GR(103)
+     MOVE 3 TO WS-GR(327)
+     MOVE 5 TO WS-GR(359)
+     MOVE 1 TO WS-GR(519)
+     MOVE 2 TO WS-GR(551)
+     MOVE 5 TO WS-GR(567)
+     MOVE 8 TO WS-GR(583)
+     MOVE 1 TO WS-GR(599)
+     MOVE 2 TO WS-GR(807)
+     MOVE 1 TO WS-GR(855)
+     MOVE 3 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 9 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 3 TO WS-GR(1335)
+     MOVE 7 TO WS-GR(1351)
+     MOVE 5 TO WS-GR(1367)
+     MOVE 3 TO WS-GR(1383)
+     MOVE 6 TO WS-GR(1591)
+     MOVE 7 TO WS-GR(1607)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 4 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/4 1331/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(17)
+     MOVE 1 TO WS-GR(97)
+     MOVE 1 TO WS-GR(289)
+     MOVE 9 TO WS-GR(321)
+     MOVE 1 TO WS-GR(337)
+     MOVE 7 TO WS-GR(353)
+     MOVE 4 TO WS-GR(513)
+     MOVE 2 TO WS-GR(545)
+     MOVE 1 TO WS-GR(577)
+     MOVE 1 TO WS-GR(593)
+     MOVE 2 TO WS-GR(769)
+     MOVE 1 TO WS-GR(801)
+     MOVE 4 TO WS-GR(1057)
+     MOVE 1 TO WS-GR(1073)
+     MOVE 9 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 5 TO WS-GR(1377)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 1 TO WS-GR(18)
+     MOVE 7 TO WS-GR(98)
+     MOVE 9 TO WS-GR(258)
+     MOVE 7 TO WS-GR(274)
+     MOVE 3 TO WS-GR(290)
+     MOVE 4 TO WS-GR(306)
+     MOVE 7 TO WS-GR(338)
+     MOVE 1 TO WS-GR(354)
+     MOVE 1 TO WS-GR(530)
+     MOVE 4 TO WS-GR(546)
+     MOVE 3 TO WS-GR(770)
+     MOVE 2 TO WS-GR(818)
+     MOVE 2 TO WS-GR(850)
+     MOVE 5 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 2 TO WS-GR(1058)
+     MOVE 7 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 10 TO WS-GR(1314)
+     MOVE 4 TO WS-GR(1362)
+     MOVE 3 TO WS-GR(1538)
+     MOVE 5 TO WS-GR(1570)
+     MOVE 2 TO WS-GR(1602)
+     MOVE 4 TO WS-GR(1618)
+     MOVE 4 TO WS-GR(1634)
+     MOVE 4 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(83)
+     MOVE 8 TO WS-GR(99)
+     MOVE 2 TO WS-GR(259)
+     MOVE 2 TO WS-GR(323)
+     MOVE 1 TO WS-GR(339)
+     MOVE 10 TO WS-GR(355)
+     MOVE 8 TO WS-GR(579)
+     MOVE 4 TO WS-GR(835)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 2 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 9 TO WS-GR(1363)
+     MOVE 2 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 8 TO WS-GR(1555)
+     MOVE 5 TO WS-GR(4)
+     MOVE 6 TO WS-GR(52)
+     MOVE 1 TO WS-GR(100)
+     MOVE 5 TO WS-GR(260)
+     MOVE 3 TO WS-GR(308)
+     MOVE 6 TO WS-GR(324)
+     MOVE 2 TO WS-GR(340)
+     MOVE 9 TO WS-GR(356)
+     MOVE 5 TO WS-GR(564)
+     MOVE 1 TO WS-GR(596)
+     MOVE 7 TO WS-GR(772)
+     MOVE 1 TO WS-GR(820)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 9 TO WS-GR(1092)
+     MOVE 3 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1316)
+     MOVE 3 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1364)
+     MOVE 4 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(21)
+     MOVE 5 TO WS-GR(53)
+     MOVE 7 TO WS-GR(69)
+     MOVE 10 TO WS-GR(85)
+     MOVE 2 TO WS-GR(101)
+     MOVE 1 TO WS-GR(261)
+     MOVE 3 TO WS-GR(277)
+     MOVE 1 TO WS-GR(517)
+     MOVE 10 TO WS-GR(565)
+     MOVE 1 TO WS-GR(613)
+     MOVE 3 TO WS-GR(773)
+     MOVE 7 TO WS-GR(805)
+     MOVE 10 TO WS-GR(837)
+     MOVE 9 TO WS-GR(869)
+     MOVE 8 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 7 TO WS-GR(1109)
+     MOVE 5 TO WS-GR(1285)
+     MOVE 3 TO WS-GR(1317)
+     MOVE 7 TO WS-GR(1365)
+     MOVE 8 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1573)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(22)
+     MOVE 2 TO WS-GR(38)
+     MOVE 1 TO WS-GR(70)
+     MOVE 10 TO WS-GR(278)
+     MOVE 2 TO WS-GR(294)
+     MOVE 2 TO WS-GR(326)
+     MOVE 3 TO WS-GR(518)
+     MOVE 1 TO WS-GR(550)
+     MOVE 5 TO WS-GR(566)
+     MOVE 1 TO WS-GR(598)
+     MOVE 2 TO WS-GR(774)
+     MOVE 1 TO WS-GR(790)
+     MOVE 7 TO WS-GR(870)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 1 TO WS-GR(1126)
+     MOVE 5 TO WS-GR(1286)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 7 TO WS-GR(1622)
+     MOVE 9 TO WS-GR(1638)
+     MOVE 6 TO WS-GR(7)
+     MOVE 1 TO WS-GR(23)
+     MOVE 9 TO WS-GR(39)
+     MOVE 9 TO WS-GR(55)
+     MOVE 7 TO WS-GR(311)
+     MOVE 7 TO WS-GR(327)
+     MOVE 2 TO WS-GR(567)
+     MOVE 1 TO WS-GR(599)
+     MOVE 2 TO WS-GR(615)
+     MOVE 7 TO WS-GR(775)
+     MOVE 10 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 3 TO WS-GR(1031)
+     MOVE 5 TO WS-GR(1079)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 3 TO WS-GR(1127)
+     MOVE 9 TO WS-GR(1303)
+     MOVE 6 TO WS-GR(1335)
+     MOVE 5 TO WS-GR(1543)
+     MOVE 5 TO WS-GR(1559)
+     MOVE 8 TO WS-GR(1575)
+     MOVE 9 TO WS-GR(1591)
+     MOVE 10 TO WS-GR(1607)
+     MOVE 7 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(1)
+     MOVE 9 TO WS-GR(17)
+     MOVE 1 TO WS-GR(33)
+     MOVE 3 TO WS-GR(81)
+     MOVE 1 TO WS-GR(273)
+     MOVE 3 TO WS-GR(289)
+     MOVE 1 TO WS-GR(305)
+     MOVE 4 TO WS-GR(337)
+     MOVE 3 TO WS-GR(529)
+     MOVE 3 TO WS-GR(561)
+     MOVE 3 TO WS-GR(577)
+     MOVE 2 TO WS-GR(609)
+     MOVE 2 TO WS-GR(769)
+     MOVE 10 TO WS-GR(785)
+     MOVE 10 TO WS-GR(833)
+     MOVE 3 TO WS-GR(849)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 8 TO WS-GR(1553)
+     MOVE 3 TO WS-GR(2)
+     MOVE 4 TO WS-GR(18)
+     MOVE 5 TO WS-GR(34)
+     MOVE 3 TO WS-GR(66)
+     MOVE 3 TO WS-GR(82)
+     MOVE 4 TO WS-GR(98)
+     MOVE 2 TO WS-GR(258)
+     MOVE 1 TO WS-GR(290)
+     MOVE 2 TO WS-GR(306)
+     MOVE 1 TO WS-GR(322)
+     MOVE 4 TO WS-GR(338)
+     MOVE 2 TO WS-GR(354)
+     MOVE 6 TO WS-GR(514)
+     MOVE 4 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(562)
+     MOVE 10 TO WS-GR(594)
+     MOVE 6 TO WS-GR(802)
+     MOVE 3 TO WS-GR(834)
+     MOVE 9 TO WS-GR(1026)
+     MOVE 9 TO WS-GR(1058)
+     MOVE 8 TO WS-GR(1074)
+     MOVE 10 TO WS-GR(1090)
+     MOVE 8 TO WS-GR(1122)
+     MOVE 2 TO WS-GR(1282)
+     MOVE 1 TO WS-GR(1314)
+     MOVE 10 TO WS-GR(1362)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 5 TO WS-GR(1538)
+     MOVE 2 TO WS-GR(1570)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 10 TO WS-GR(3)
+     MOVE 5 TO WS-GR(51)
+     MOVE 3 TO WS-GR(67)
+     MOVE 7 TO WS-GR(83)
+     MOVE 10 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 2 TO WS-GR(275)
+     MOVE 4 TO WS-GR(307)
+     MOVE 2 TO WS-GR(355)
+     MOVE 2 TO WS-GR(515)
+     MOVE 1 TO WS-GR(531)
+     MOVE 1 TO WS-GR(579)
+     MOVE 1 TO WS-GR(595)
+     MOVE 3 TO WS-GR(611)
+     MOVE 7 TO WS-GR(771)
+     MOVE 2 TO WS-GR(803)
+     MOVE 3 TO WS-GR(819)
+     MOVE 9 TO WS-GR(835)
+     MOVE 1 TO WS-GR(867)
+     MOVE 9 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 8 TO WS-GR(1347)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 10 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(4)
+     MOVE 6 TO WS-GR(100)
+     MOVE 6 TO WS-GR(276)
+     MOVE 1 TO WS-GR(308)
+     MOVE 5 TO WS-GR(340)
+     MOVE 1 TO WS-GR(564)
+     MOVE 1 TO WS-GR(580)
+     MOVE 8 TO WS-GR(612)
+     MOVE 10 TO WS-GR(852)
+     MOVE 4 TO WS-GR(868)
+     MOVE 5 TO WS-GR(1044)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 10 TO WS-GR(1284)
+     MOVE 7 TO WS-GR(1300)
+     MOVE 10 TO WS-GR(1316)
+     MOVE 4 TO WS-GR(1332)
+     MOVE 5 TO WS-GR(1348)
+     MOVE 2 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1540)
+     MOVE 9 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 2 TO WS-GR(37)
+     MOVE 4 TO WS-GR(85)
+     MOVE 2 TO WS-GR(101)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(549)
+     MOVE 1 TO WS-GR(565)
+     MOVE 1 TO WS-GR(597)
+     MOVE 2 TO WS-GR(613)
+     MOVE 2 TO WS-GR(773)
+     MOVE 8 TO WS-GR(805)
+     MOVE 1 TO WS-GR(821)
+     MOVE 7 TO WS-GR(853)
+     MOVE 5 TO WS-GR(869)
+     MOVE 4 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1045)
+     MOVE 9 TO WS-GR(1061)
+     MOVE 3 TO WS-GR(1077)
+     MOVE 6 TO WS-GR(1093)
+     MOVE 4 TO WS-GR(1109)
+     MOVE 10 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 3 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 1 TO WS-GR(6)
+     MOVE 7 TO WS-GR(22)
+     MOVE 1 TO WS-GR(70)
+     MOVE 3 TO WS-GR(86)
+     MOVE 1 TO WS-GR(278)
+     MOVE 1 TO WS-GR(534)
+     MOVE 2 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 3 TO WS-GR(582)
+     MOVE 1 TO WS-GR(598)
+     MOVE 10 TO WS-GR(614)
+     MOVE 2 TO WS-GR(774)
+     MOVE 1 TO WS-GR(806)
+     MOVE 10 TO WS-GR(822)
+     MOVE 2 TO WS-GR(854)
+     MOVE 10 TO WS-GR(870)
+     MOVE 7 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1062)
+     MOVE 6 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 5 TO WS-GR(1286)
+     MOVE 6 TO WS-GR(1302)
+     MOVE 4 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 2 TO WS-GR(1606)
+     MOVE 10 TO WS-GR(1622)
+     MOVE 4 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 1 TO WS-GR(39)
+     MOVE 4 TO WS-GR(55)
+     MOVE 6 TO WS-GR(87)
+     MOVE 2 TO WS-GR(103)
+     MOVE 1 TO WS-GR(295)
+     MOVE 2 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 2 TO WS-GR(359)
+     MOVE 5 TO WS-GR(583)
+     MOVE 3 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 1 TO WS-GR(775)
+     MOVE 4 TO WS-GR(855)
+     MOVE 1 TO WS-GR(871)
+     MOVE 3 TO WS-GR(1047)
+     MOVE 9 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 7 TO WS-GR(1559)
+     MOVE 4 TO WS-GR(1607)
+     MOVE 4 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/0 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(1)
+     MOVE 2 TO WS-GR(257)
+     MOVE 1 TO WS-GR(289)
+     MOVE 5 TO WS-GR(305)
+     MOVE 1 TO WS-GR(337)
+     MOVE 3 TO WS-GR(353)
+     MOVE 10 TO WS-GR(513)
+     MOVE 5 TO WS-GR(529)
+     MOVE 1 TO WS-GR(545)
+     MOVE 3 TO WS-GR(769)
+     MOVE 5 TO WS-GR(801)
+     MOVE 4 TO WS-GR(817)
+     MOVE 5 TO WS-GR(833)
+     MOVE 9 TO WS-GR(849)
+     MOVE 1 TO WS-GR(865)
+     MOVE 8 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1057)
+     MOVE 2 TO WS-GR(1089)
+     MOVE 3 TO WS-GR(1105)
+     MOVE 4 TO WS-GR(1281)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 3 TO WS-GR(1361)
+     MOVE 1 TO WS-GR(1377)
+     MOVE 10 TO WS-GR(1601)
+     MOVE 4 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(2)
+     MOVE 1 TO WS-GR(34)
+     MOVE 1 TO WS-GR(50)
+     MOVE 9 TO WS-GR(82)
+     MOVE 10 TO WS-GR(98)
+     MOVE 1 TO WS-GR(258)
+     MOVE 8 TO WS-GR(306)
+     MOVE 1 TO WS-GR(322)
+     MOVE 4 TO WS-GR(338)
+     MOVE 1 TO WS-GR(354)
+     MOVE 6 TO WS-GR(562)
+     MOVE 8 TO WS-GR(578)
+     MOVE 4 TO WS-GR(770)
+     MOVE 4 TO WS-GR(786)
+     MOVE 1 TO WS-GR(818)
+     MOVE 2 TO WS-GR(866)
+     MOVE 9 TO WS-GR(1042)
+     MOVE 7 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 3 TO WS-GR(1298)
+     MOVE 4 TO WS-GR(1314)
+     MOVE 3 TO WS-GR(1330)
+     MOVE 3 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1362)
+     MOVE 3 TO WS-GR(1554)
+     MOVE 9 TO WS-GR(1570)
+     MOVE 2 TO WS-GR(1602)
+     MOVE 2 TO WS-GR(3)
+     MOVE 8 TO WS-GR(51)
+     MOVE 4 TO WS-GR(99)
+     MOVE 8 TO WS-GR(259)
+     MOVE 1 TO WS-GR(291)
+     MOVE 5 TO WS-GR(307)
+     MOVE 2 TO WS-GR(355)
+     MOVE 7 TO WS-GR(515)
+     MOVE 1 TO WS-GR(563)
+     MOVE 8 TO WS-GR(595)
+     MOVE 1 TO WS-GR(771)
+     MOVE 1 TO WS-GR(819)
+     MOVE 2 TO WS-GR(835)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 3 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1603)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 8 TO WS-GR(20)
+     MOVE 3 TO WS-GR(36)
+     MOVE 2 TO WS-GR(52)
+     MOVE 3 TO WS-GR(68)
+     MOVE 9 TO WS-GR(84)
+     MOVE 1 TO WS-GR(100)
+     MOVE 9 TO WS-GR(292)
+     MOVE 2 TO WS-GR(532)
+     MOVE 1 TO WS-GR(548)
+     MOVE 2 TO WS-GR(596)
+     MOVE 10 TO WS-GR(772)
+     MOVE 7 TO WS-GR(804)
+     MOVE 3 TO WS-GR(836)
+     MOVE 2 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 3 TO WS-GR(1284)
+     MOVE 2 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 10 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 3 TO WS-GR(1540)
+     MOVE 6 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 5 TO WS-GR(21)
+     MOVE 2 TO WS-GR(37)
+     MOVE 9 TO WS-GR(85)
+     MOVE 7 TO WS-GR(261)
+     MOVE 2 TO WS-GR(277)
+     MOVE 4 TO WS-GR(325)
+     MOVE 9 TO WS-GR(357)
+     MOVE 10 TO WS-GR(517)
+     MOVE 5 TO WS-GR(533)
+     MOVE 4 TO WS-GR(549)
+     MOVE 6 TO WS-GR(597)
+     MOVE 2 TO WS-GR(613)
+     MOVE 5 TO WS-GR(773)
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(853)
+     MOVE 7 TO WS-GR(1045)
+     MOVE 3 TO WS-GR(1077)
+     MOVE 3 TO WS-GR(1109)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 9 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 5 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 2 TO WS-GR(1381)
+     MOVE 5 TO WS-GR(1541)
+     MOVE 1 TO WS-GR(1557)
+     MOVE 3 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 8 TO WS-GR(54)
+     MOVE 1 TO WS-GR(86)
+     MOVE 1 TO WS-GR(278)
+     MOVE 1 TO WS-GR(294)
+     MOVE 2 TO WS-GR(310)
+     MOVE 7 TO WS-GR(342)
+     MOVE 4 TO WS-GR(358)
+     MOVE 1 TO WS-GR(534)
+     MOVE 6 TO WS-GR(550)
+     MOVE 1 TO WS-GR(582)
+     MOVE 10 TO WS-GR(614)
+     MOVE 2 TO WS-GR(790)
+     MOVE 10 TO WS-GR(806)
+     MOVE 1 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 1 TO WS-GR(870)
+     MOVE 3 TO WS-GR(1030)
+     MOVE 8 TO WS-GR(1046)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 8 TO WS-GR(1286)
+     MOVE 8 TO WS-GR(1318)
+     MOVE 9 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 2 TO WS-GR(1382)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 3 TO WS-GR(1574)
+     MOVE 3 TO WS-GR(1590)
+     MOVE 10 TO WS-GR(1606)
+     MOVE 4 TO WS-GR(1622)
+     MOVE 6 TO WS-GR(7)
+     MOVE 4 TO WS-GR(23)
+     MOVE 2 TO WS-GR(39)
+     MOVE 5 TO WS-GR(71)
+     MOVE 3 TO WS-GR(103)
+     MOVE 8 TO WS-GR(263)
+     MOVE 2 TO WS-GR(279)
+     MOVE 3 TO WS-GR(343)
+     MOVE 6 TO WS-GR(359)
+     MOVE 7 TO WS-GR(535)
+     MOVE 2 TO WS-GR(567)
+     MOVE 3 TO WS-GR(583)
+     MOVE 4 TO WS-GR(599)
+     MOVE 5 TO WS-GR(855)
+     MOVE 4 TO WS-GR(871)
+     MOVE 3 TO WS-GR(1047)
+     MOVE 6 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 3 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 4 TO WS-GR(1351)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 5 TO WS-GR(1623)
+     MOVE 6 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(65)
+     MOVE 2 TO WS-GR(81)
+     MOVE 2 TO WS-GR(97)
+     MOVE 10 TO WS-GR(273)
+     MOVE 1 TO WS-GR(289)
+     MOVE 1 TO WS-GR(337)
+     MOVE 7 TO WS-GR(353)
+     MOVE 1 TO WS-GR(513)
+     MOVE 1 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 3 TO WS-GR(561)
+     MOVE 1 TO WS-GR(769)
+     MOVE 1 TO WS-GR(801)
+     MOVE 8 TO WS-GR(849)
+     MOVE 1 TO WS-GR(865)
+     MOVE 9 TO WS-GR(1281)
+     MOVE 10 TO WS-GR(1313)
+     MOVE 5 TO WS-GR(1377)
+     MOVE 10 TO WS-GR(1553)
+     MOVE 9 TO WS-GR(1585)
+     MOVE 9 TO WS-GR(1633)
+     MOVE 3 TO WS-GR(34)
+     MOVE 5 TO WS-GR(258)
+     MOVE 1 TO WS-GR(274)
+     MOVE 9 TO WS-GR(546)
+     MOVE 3 TO WS-GR(610)
+     MOVE 1 TO WS-GR(802)
+     MOVE 4 TO WS-GR(834)
+     MOVE 4 TO WS-GR(850)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1090)
+     MOVE 5 TO WS-GR(1282)
+     MOVE 3 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 1 TO WS-GR(1586)
+     MOVE 5 TO WS-GR(1602)
+     MOVE 9 TO WS-GR(3)
+     MOVE 3 TO WS-GR(19)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(259)
+     MOVE 6 TO WS-GR(275)
+     MOVE 2 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 4 TO WS-GR(355)
+     MOVE 2 TO WS-GR(531)
+     MOVE 7 TO WS-GR(563)
+     MOVE 1 TO WS-GR(595)
+     MOVE 1 TO WS-GR(611)
+     MOVE 2 TO WS-GR(771)
+     MOVE 8 TO WS-GR(787)
+     MOVE 2 TO WS-GR(819)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1043)
+     MOVE 4 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 2 TO WS-GR(1123)
+     MOVE 9 TO WS-GR(1299)
+     MOVE 2 TO WS-GR(1315)
+     MOVE 6 TO WS-GR(1331)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1619)
+     MOVE 7 TO WS-GR(1635)
+     MOVE 9 TO WS-GR(4)
+     MOVE 7 TO WS-GR(20)
+     MOVE 2 TO WS-GR(52)
+     MOVE 7 TO WS-GR(68)
+     MOVE 9 TO WS-GR(260)
+     MOVE 1 TO WS-GR(292)
+     MOVE 1 TO WS-GR(324)
+     MOVE 1 TO WS-GR(580)
+     MOVE 3 TO WS-GR(772)
+     MOVE 3 TO WS-GR(804)
+     MOVE 1 TO WS-GR(852)
+     MOVE 2 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 2 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 3 TO WS-GR(1620)
+     MOVE 5 TO WS-GR(5)
+     MOVE 4 TO WS-GR(37)
+     MOVE 8 TO WS-GR(69)
+     MOVE 10 TO WS-GR(85)
+     MOVE 3 TO WS-GR(101)
+     MOVE 1 TO WS-GR(261)
+     MOVE 1 TO WS-GR(293)
+     MOVE 1 TO WS-GR(341)
+     MOVE 1 TO WS-GR(357)
+     MOVE 10 TO WS-GR(517)
+     MOVE 6 TO WS-GR(565)
+     MOVE 1 TO WS-GR(613)
+     MOVE 1 TO WS-GR(773)
+     MOVE 3 TO WS-GR(805)
+     MOVE 1 TO WS-GR(837)
+     MOVE 3 TO WS-GR(853)
+     MOVE 1 TO WS-GR(869)
+     MOVE 2 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1285)
+     MOVE 6 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1381)
+     MOVE 3 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 9 TO WS-GR(1605)
+     MOVE 5 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 1 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 1 TO WS-GR(86)
+     MOVE 7 TO WS-GR(262)
+     MOVE 3 TO WS-GR(278)
+     MOVE 2 TO WS-GR(550)
+     MOVE 3 TO WS-GR(566)
+     MOVE 6 TO WS-GR(598)
+     MOVE 3 TO WS-GR(774)
+     MOVE 5 TO WS-GR(854)
+     MOVE 4 TO WS-GR(1046)
+     MOVE 7 TO WS-GR(1062)
+     MOVE 6 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 10 TO WS-GR(1110)
+     MOVE 5 TO WS-GR(1126)
+     MOVE 1 TO WS-GR(1286)
+     MOVE 3 TO WS-GR(1366)
+     MOVE 8 TO WS-GR(1542)
+     MOVE 9 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1590)
+     MOVE 9 TO WS-GR(1606)
+     MOVE 1 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(7)
+     MOVE 10 TO WS-GR(39)
+     MOVE 10 TO WS-GR(87)
+     MOVE 6 TO WS-GR(263)
+     MOVE 1 TO WS-GR(279)
+     MOVE 4 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 1 TO WS-GR(327)
+     MOVE 2 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 7 TO WS-GR(775)
+     MOVE 2 TO WS-GR(791)
+     MOVE 8 TO WS-GR(871)
+     MOVE 2 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 8 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 10 TO WS-GR(1367)
+     MOVE 4 TO WS-GR(1559)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 6 TO WS-I1
+     MOVE 2 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/4/0/4 293/292/291/307/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(1)
+     MOVE 2 TO WS-GR(49)
+     MOVE 1 TO WS-GR(65)
+     MOVE 6 TO WS-GR(257)
+     MOVE 1 TO WS-GR(337)
+     MOVE 1 TO WS-GR(529)
+     MOVE 4 TO WS-GR(561)
+     MOVE 1 TO WS-GR(577)
+     MOVE 5 TO WS-GR(593)
+     MOVE 10 TO WS-GR(609)
+     MOVE 7 TO WS-GR(785)
+     MOVE 1 TO WS-GR(817)
+     MOVE 10 TO WS-GR(833)
+     MOVE 1 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 5 TO WS-GR(1073)
+     MOVE 6 TO WS-GR(1297)
+     MOVE 7 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1361)
+     MOVE 10 TO WS-GR(1377)
+     MOVE 8 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(2)
+     MOVE 3 TO WS-GR(18)
+     MOVE 4 TO WS-GR(50)
+     MOVE 2 TO WS-GR(66)
+     MOVE 1 TO WS-GR(98)
+     MOVE 2 TO WS-GR(274)
+     MOVE 6 TO WS-GR(306)
+     MOVE 6 TO WS-GR(530)
+     MOVE 1 TO WS-GR(546)
+     MOVE 1 TO WS-GR(594)
+     MOVE 8 TO WS-GR(610)
+     MOVE 2 TO WS-GR(770)
+     MOVE 1 TO WS-GR(802)
+     MOVE 2 TO WS-GR(850)
+     MOVE 3 TO WS-GR(866)
+     MOVE 2 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1090)
+     MOVE 2 TO WS-GR(1106)
+     MOVE 3 TO WS-GR(1282)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 7 TO WS-GR(1314)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 3 TO WS-GR(1538)
+     MOVE 3 TO WS-GR(1570)
+     MOVE 5 TO WS-GR(1634)
+     MOVE 2 TO WS-GR(67)
+     MOVE 3 TO WS-GR(275)
+     MOVE 5 TO WS-GR(291)
+     MOVE 9 TO WS-GR(339)
+     MOVE 3 TO WS-GR(355)
+     MOVE 10 TO WS-GR(515)
+     MOVE 6 TO WS-GR(563)
+     MOVE 3 TO WS-GR(595)
+     MOVE 4 TO WS-GR(771)
+     MOVE 1 TO WS-GR(819)
+     MOVE 2 TO WS-GR(835)
+     MOVE 4 TO WS-GR(851)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 9 TO WS-GR(1075)
+     MOVE 8 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 7 TO WS-GR(1347)
+     MOVE 5 TO WS-GR(1555)
+     MOVE 3 TO WS-GR(1603)
+     MOVE 9 TO WS-GR(4)
+     MOVE 2 TO WS-GR(20)
+     MOVE 1 TO WS-GR(36)
+     MOVE 1 TO WS-GR(52)
+     MOVE 2 TO WS-GR(68)
+     MOVE 10 TO WS-GR(84)
+     MOVE 10 TO WS-GR(260)
+     MOVE 1 TO WS-GR(292)
+     MOVE 1 TO WS-GR(308)
+     MOVE 10 TO WS-GR(340)
+     MOVE 3 TO WS-GR(516)
+     MOVE 3 TO WS-GR(532)
+     MOVE 3 TO WS-GR(564)
+     MOVE 3 TO WS-GR(596)
+     MOVE 9 TO WS-GR(868)
+     MOVE 2 TO WS-GR(1076)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 7 TO WS-GR(1108)
+     MOVE 10 TO WS-GR(1124)
+     MOVE 7 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 3 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1604)
+     MOVE 10 TO WS-GR(1636)
+     MOVE 5 TO WS-GR(5)
+     MOVE 7 TO WS-GR(21)
+     MOVE 1 TO WS-GR(53)
+     MOVE 1 TO WS-GR(85)
+     MOVE 9 TO WS-GR(101)
+     MOVE 10 TO WS-GR(261)
+     MOVE 1 TO WS-GR(341)
+     MOVE 3 TO WS-GR(357)
+     MOVE 6 TO WS-GR(549)
+     MOVE 8 TO WS-GR(565)
+     MOVE 1 TO WS-GR(581)
+     MOVE 1 TO WS-GR(597)
+     MOVE 4 TO WS-GR(613)
+     MOVE 2 TO WS-GR(789)
+     MOVE 5 TO WS-GR(805)
+     MOVE 2 TO WS-GR(821)
+     MOVE 1 TO WS-GR(853)
+     MOVE 5 TO WS-GR(1045)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 1 TO WS-GR(1301)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 5 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1605)
+     MOVE 3 TO WS-GR(1621)
+     MOVE 10 TO WS-GR(38)
+     MOVE 5 TO WS-GR(54)
+     MOVE 1 TO WS-GR(86)
+     MOVE 10 TO WS-GR(102)
+     MOVE 9 TO WS-GR(262)
+     MOVE 2 TO WS-GR(278)
+     MOVE 1 TO WS-GR(342)
+     MOVE 10 TO WS-GR(358)
+     MOVE 6 TO WS-GR(518)
+     MOVE 5 TO WS-GR(550)
+     MOVE 2 TO WS-GR(806)
+     MOVE 9 TO WS-GR(822)
+     MOVE 4 TO WS-GR(854)
+     MOVE 1 TO WS-GR(1046)
+     MOVE 9 TO WS-GR(1078)
+     MOVE 2 TO WS-GR(1094)
+     MOVE 1 TO WS-GR(1110)
+     MOVE 10 TO WS-GR(1126)
+     MOVE 10 TO WS-GR(1350)
+     MOVE 2 TO WS-GR(1366)
+     MOVE 4 TO WS-GR(1382)
+     MOVE 8 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(55)
+     MOVE 2 TO WS-GR(103)
+     MOVE 7 TO WS-GR(295)
+     MOVE 3 TO WS-GR(359)
+     MOVE 1 TO WS-GR(551)
+     MOVE 6 TO WS-GR(599)
+     MOVE 3 TO WS-GR(775)
+     MOVE 3 TO WS-GR(839)
+     MOVE 2 TO WS-GR(855)
+     MOVE 5 TO WS-GR(1063)
+     MOVE 5 TO WS-GR(1079)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 10 TO WS-GR(1303)
+     MOVE 4 TO WS-GR(1367)
+     MOVE 2 TO WS-GR(1559)
+     MOVE 4 TO WS-GR(1575)
+     MOVE 5 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/5 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(1)
+     MOVE 1 TO WS-GR(33)
+     MOVE 1 TO WS-GR(49)
+     MOVE 7 TO WS-GR(97)
+     MOVE 9 TO WS-GR(273)
+     MOVE 9 TO WS-GR(289)
+     MOVE 1 TO WS-GR(321)
+     MOVE 9 TO WS-GR(353)
+     MOVE 1 TO WS-GR(513)
+     MOVE 1 TO WS-GR(561)
+     MOVE 1 TO WS-GR(609)
+     MOVE 1 TO WS-GR(769)
+     MOVE 1 TO WS-GR(833)
+     MOVE 1 TO WS-GR(849)
+     MOVE 2 TO WS-GR(865)
+     MOVE 5 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1089)
+     MOVE 8 TO WS-GR(1361)
+     MOVE 2 TO WS-GR(1569)
+     MOVE 8 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 4 TO WS-GR(2)
+     MOVE 6 TO WS-GR(18)
+     MOVE 1 TO WS-GR(50)
+     MOVE 6 TO WS-GR(66)
+     MOVE 6 TO WS-GR(98)
+     MOVE 1 TO WS-GR(306)
+     MOVE 2 TO WS-GR(338)
+     MOVE 1 TO WS-GR(546)
+     MOVE 6 TO WS-GR(578)
+     MOVE 7 TO WS-GR(594)
+     MOVE 1 TO WS-GR(610)
+     MOVE 1 TO WS-GR(770)
+     MOVE 5 TO WS-GR(786)
+     MOVE 3 TO WS-GR(802)
+     MOVE 8 TO WS-GR(818)
+     MOVE 1 TO WS-GR(850)
+     MOVE 1 TO WS-GR(866)
+     MOVE 5 TO WS-GR(1042)
+     MOVE 3 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 10 TO WS-GR(1362)
+     MOVE 4 TO WS-GR(1378)
+     MOVE 7 TO WS-GR(1538)
+     MOVE 6 TO WS-GR(1570)
+     MOVE 8 TO WS-GR(1586)
+     MOVE 1 TO WS-GR(1618)
+     MOVE 7 TO WS-GR(1634)
+     MOVE 7 TO WS-GR(3)
+     MOVE 1 TO WS-GR(19)
+     MOVE 1 TO WS-GR(35)
+     MOVE 1 TO WS-GR(51)
+     MOVE 3 TO WS-GR(67)
+     MOVE 7 TO WS-GR(275)
+     MOVE 1 TO WS-GR(323)
+     MOVE 7 TO WS-GR(339)
+     MOVE 1 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 9 TO WS-GR(531)
+     MOVE 6 TO WS-GR(563)
+     MOVE 10 TO WS-GR(595)
+     MOVE 5 TO WS-GR(787)
+     MOVE 9 TO WS-GR(819)
+     MOVE 6 TO WS-GR(835)
+     MOVE 4 TO WS-GR(851)
+     MOVE 1 TO WS-GR(867)
+     MOVE 4 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1075)
+     MOVE 5 TO WS-GR(1107)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 10 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1379)
+     MOVE 4 TO WS-GR(1539)
+     MOVE 3 TO WS-GR(1555)
+     MOVE 2 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 3 TO WS-GR(20)
+     MOVE 1 TO WS-GR(84)
+     MOVE 9 TO WS-GR(276)
+     MOVE 8 TO WS-GR(292)
+     MOVE 7 TO WS-GR(308)
+     MOVE 8 TO WS-GR(324)
+     MOVE 1 TO WS-GR(356)
+     MOVE 1 TO WS-GR(548)
+     MOVE 8 TO WS-GR(580)
+     MOVE 2 TO WS-GR(596)
+     MOVE 10 TO WS-GR(612)
+     MOVE 4 TO WS-GR(788)
+     MOVE 4 TO WS-GR(836)
+     MOVE 4 TO WS-GR(1028)
+     MOVE 10 TO WS-GR(1044)
+     MOVE 8 TO WS-GR(1092)
+     MOVE 3 TO WS-GR(1124)
+     MOVE 1 TO WS-GR(1284)
+     MOVE 3 TO WS-GR(1300)
+     MOVE 2 TO WS-GR(1348)
+     MOVE 1 TO WS-GR(1364)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(1604)
+     MOVE 7 TO WS-GR(1636)
+     MOVE 8 TO WS-GR(5)
+     MOVE 2 TO WS-GR(37)
+     MOVE 1 TO WS-GR(69)
+     MOVE 1 TO WS-GR(101)
+     MOVE 9 TO WS-GR(293)
+     MOVE 1 TO WS-GR(341)
+     MOVE 2 TO WS-GR(533)
+     MOVE 10 TO WS-GR(581)
+     MOVE 7 TO WS-GR(613)
+     MOVE 7 TO WS-GR(789)
+     MOVE 2 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1029)
+     MOVE 4 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1125)
+     MOVE 1 TO WS-GR(1285)
+     MOVE 10 TO WS-GR(1333)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 8 TO WS-GR(1573)
+     MOVE 2 TO WS-GR(1637)
+     MOVE 1 TO WS-GR(22)
+     MOVE 1 TO WS-GR(54)
+     MOVE 7 TO WS-GR(86)
+     MOVE 1 TO WS-GR(102)
+     MOVE 5 TO WS-GR(262)
+     MOVE 2 TO WS-GR(278)
+     MOVE 1 TO WS-GR(310)
+     MOVE 4 TO WS-GR(358)
+     MOVE 1 TO WS-GR(534)
+     MOVE 3 TO WS-GR(582)
+     MOVE 3 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 1 TO WS-GR(822)
+     MOVE 3 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 2 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1046)
+     MOVE 2 TO WS-GR(1286)
+     MOVE 1 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1318)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 10 TO WS-GR(1574)
+     MOVE 2 TO WS-GR(1590)
+     MOVE 3 TO WS-GR(1606)
+     MOVE 2 TO WS-GR(7)
+     MOVE 8 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 3 TO WS-GR(87)
+     MOVE 6 TO WS-GR(103)
+     MOVE 2 TO WS-GR(263)
+     MOVE 1 TO WS-GR(279)
+     MOVE 3 TO WS-GR(295)
+     MOVE 1 TO WS-GR(311)
+     MOVE 2 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 2 TO WS-GR(359)
+     MOVE 1 TO WS-GR(583)
+     MOVE 9 TO WS-GR(599)
+     MOVE 6 TO WS-GR(775)
+     MOVE 1 TO WS-GR(855)
+     MOVE 4 TO WS-GR(871)
+     MOVE 2 TO WS-GR(1031)
+     MOVE 5 TO WS-GR(1063)
+     MOVE 2 TO WS-GR(1079)
+     MOVE 4 TO WS-GR(1095)
+     MOVE 8 TO WS-GR(1127)
+     MOVE 3 TO WS-GR(1335)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 4 TO WS-GR(1543)
+     MOVE 9 TO WS-GR(1559)
+     MOVE 7 TO WS-GR(1575)
+     MOVE 4 TO WS-I1
+     MOVE 6 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/3 1284/1300/1556/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(17)
+     MOVE 4 TO WS-GR(49)
+     MOVE 2 TO WS-GR(97)
+     MOVE 10 TO WS-GR(273)
+     MOVE 8 TO WS-GR(289)
+     MOVE 2 TO WS-GR(337)
+     MOVE 3 TO WS-GR(353)
+     MOVE 8 TO WS-GR(529)
+     MOVE 8 TO WS-GR(545)
+     MOVE 6 TO WS-GR(593)
+     MOVE 9 TO WS-GR(609)
+     MOVE 1 TO WS-GR(785)
+     MOVE 8 TO WS-GR(817)
+     MOVE 6 TO WS-GR(1089)
+     MOVE 3 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1281)
+     MOVE 3 TO WS-GR(1297)
+     MOVE 2 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 2 TO WS-GR(1553)
+     MOVE 6 TO WS-GR(1569)
+     MOVE 7 TO WS-GR(1601)
+     MOVE 5 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(18)
+     MOVE 6 TO WS-GR(66)
+     MOVE 4 TO WS-GR(82)
+     MOVE 1 TO WS-GR(98)
+     MOVE 2 TO WS-GR(274)
+     MOVE 10 TO WS-GR(306)
+     MOVE 3 TO WS-GR(322)
+     MOVE 8 TO WS-GR(338)
+     MOVE 3 TO WS-GR(354)
+     MOVE 1 TO WS-GR(514)
+     MOVE 3 TO WS-GR(546)
+     MOVE 1 TO WS-GR(562)
+     MOVE 3 TO WS-GR(578)
+     MOVE 2 TO WS-GR(610)
+     MOVE 6 TO WS-GR(786)
+     MOVE 7 TO WS-GR(802)
+     MOVE 4 TO WS-GR(834)
+     MOVE 1 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 7 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1090)
+     MOVE 9 TO WS-GR(1106)
+     MOVE 6 TO WS-GR(1122)
+     MOVE 1 TO WS-GR(1330)
+     MOVE 3 TO WS-GR(1346)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 2 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 10 TO WS-GR(1618)
+     MOVE 9 TO WS-GR(1634)
+     MOVE 4 TO WS-GR(259)
+     MOVE 1 TO WS-GR(275)
+     MOVE 4 TO WS-GR(307)
+     MOVE 10 TO WS-GR(355)
+     MOVE 1 TO WS-GR(531)
+     MOVE 1 TO WS-GR(579)
+     MOVE 7 TO WS-GR(595)
+     MOVE 1 TO WS-GR(611)
+     MOVE 1 TO WS-GR(771)
+     MOVE 1 TO WS-GR(803)
+     MOVE 8 TO WS-GR(819)
+     MOVE 2 TO WS-GR(851)
+     MOVE 3 TO WS-GR(867)
+     MOVE 4 TO WS-GR(1043)
+     MOVE 2 TO WS-GR(1075)
+     MOVE 4 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1299)
+     MOVE 8 TO WS-GR(1315)
+     MOVE 4 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 8 TO WS-GR(1555)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 8 TO WS-GR(1635)
+     MOVE 9 TO WS-GR(4)
+     MOVE 2 TO WS-GR(36)
+     MOVE 6 TO WS-GR(52)
+     MOVE 5 TO WS-GR(84)
+     MOVE 2 TO WS-GR(276)
+     MOVE 3 TO WS-GR(292)
+     MOVE 3 TO WS-GR(308)
+     MOVE 2 TO WS-GR(340)
+     MOVE 1 TO WS-GR(532)
+     MOVE 1 TO WS-GR(564)
+     MOVE 7 TO WS-GR(820)
+     MOVE 4 TO WS-GR(1044)
+     MOVE 3 TO WS-GR(1076)
+     MOVE 5 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1332)
+     MOVE 4 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1540)
+     MOVE 7 TO WS-GR(1556)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 4 TO WS-GR(5)
+     MOVE 4 TO WS-GR(53)
+     MOVE 9 TO WS-GR(101)
+     MOVE 1 TO WS-GR(293)
+     MOVE 7 TO WS-GR(517)
+     MOVE 4 TO WS-GR(597)
+     MOVE 1 TO WS-GR(613)
+     MOVE 2 TO WS-GR(773)
+     MOVE 10 TO WS-GR(789)
+     MOVE 2 TO WS-GR(805)
+     MOVE 1 TO WS-GR(837)
+     MOVE 6 TO WS-GR(853)
+     MOVE 7 TO WS-GR(869)
+     MOVE 7 TO WS-GR(1029)
+     MOVE 2 TO WS-GR(1077)
+     MOVE 3 TO WS-GR(1125)
+     MOVE 4 TO WS-GR(1285)
+     MOVE 6 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1333)
+     MOVE 6 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 8 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(22)
+     MOVE 3 TO WS-GR(38)
+     MOVE 6 TO WS-GR(326)
+     MOVE 5 TO WS-GR(342)
+     MOVE 2 TO WS-GR(358)
+     MOVE 2 TO WS-GR(518)
+     MOVE 1 TO WS-GR(534)
+     MOVE 4 TO WS-GR(774)
+     MOVE 2 TO WS-GR(790)
+     MOVE 7 TO WS-GR(806)
+     MOVE 1 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 4 TO WS-GR(870)
+     MOVE 4 TO WS-GR(1046)
+     MOVE 5 TO WS-GR(1062)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 9 TO WS-GR(1126)
+     MOVE 1 TO WS-GR(1302)
+     MOVE 4 TO WS-GR(1318)
+     MOVE 1 TO WS-GR(1350)
+     MOVE 2 TO WS-GR(1366)
+     MOVE 2 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 1 TO WS-GR(7)
+     MOVE 3 TO WS-GR(71)
+     MOVE 1 TO WS-GR(103)
+     MOVE 1 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 1 TO WS-GR(311)
+     MOVE 7 TO WS-GR(359)
+     MOVE 4 TO WS-GR(535)
+     MOVE 2 TO WS-GR(567)
+     MOVE 3 TO WS-GR(583)
+     MOVE 1 TO WS-GR(775)
+     MOVE 1 TO WS-GR(791)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-GR(855)
+     MOVE 3 TO WS-GR(1063)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 8 TO WS-GR(1351)
+     MOVE 8 TO WS-GR(1383)
+     MOVE 8 TO WS-GR(1607)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 6 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 2 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3/0/2 534/518/517/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(33)
+     MOVE 6 TO WS-GR(49)
+     MOVE 1 TO WS-GR(97)
+     MOVE 1 TO WS-GR(257)
+     MOVE 4 TO WS-GR(273)
+     MOVE 2 TO WS-GR(289)
+     MOVE 2 TO WS-GR(305)
+     MOVE 4 TO WS-GR(337)
+     MOVE 1 TO WS-GR(353)
+     MOVE 2 TO WS-GR(529)
+     MOVE 1 TO WS-GR(593)
+     MOVE 1 TO WS-GR(609)
+     MOVE 2 TO WS-GR(769)
+     MOVE 4 TO WS-GR(785)
+     MOVE 2 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 2 TO WS-GR(1105)
+     MOVE 3 TO WS-GR(1121)
+     MOVE 5 TO WS-GR(1313)
+     MOVE 6 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 7 TO WS-GR(1361)
+     MOVE 1 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1553)
+     MOVE 8 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1585)
+     MOVE 4 TO WS-GR(1601)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 2 TO WS-GR(2)
+     MOVE 2 TO WS-GR(66)
+     MOVE 1 TO WS-GR(82)
+     MOVE 7 TO WS-GR(98)
+     MOVE 4 TO WS-GR(258)
+     MOVE 10 TO WS-GR(290)
+     MOVE 7 TO WS-GR(354)
+     MOVE 6 TO WS-GR(562)
+     MOVE 6 TO WS-GR(594)
+     MOVE 1 TO WS-GR(770)
+     MOVE 1 TO WS-GR(786)
+     MOVE 7 TO WS-GR(802)
+     MOVE 2 TO WS-GR(866)
+     MOVE 1 TO WS-GR(1042)
+     MOVE 10 TO WS-GR(1074)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 2 TO WS-GR(1298)
+     MOVE 2 TO WS-GR(1330)
+     MOVE 4 TO WS-GR(1362)
+     MOVE 7 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(1618)
+     MOVE 2 TO WS-GR(3)
+     MOVE 2 TO WS-GR(35)
+     MOVE 7 TO WS-GR(67)
+     MOVE 3 TO WS-GR(83)
+     MOVE 1 TO WS-GR(259)
+     MOVE 1 TO WS-GR(275)
+     MOVE 1 TO WS-GR(291)
+     MOVE 7 TO WS-GR(323)
+     MOVE 1 TO WS-GR(339)
+     MOVE 1 TO WS-GR(355)
+     MOVE 3 TO WS-GR(531)
+     MOVE 2 TO WS-GR(547)
+     MOVE 2 TO WS-GR(579)
+     MOVE 3 TO WS-GR(611)
+     MOVE 2 TO WS-GR(771)
+     MOVE 1 TO WS-GR(803)
+     MOVE 3 TO WS-GR(819)
+     MOVE 7 TO WS-GR(1027)
+     MOVE 2 TO WS-GR(1059)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 1 TO WS-GR(1123)
+     MOVE 10 TO WS-GR(1283)
+     MOVE 6 TO WS-GR(1315)
+     MOVE 1 TO WS-GR(1331)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 3 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 1 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 3 TO WS-GR(36)
+     MOVE 5 TO WS-GR(52)
+     MOVE 1 TO WS-GR(68)
+     MOVE 4 TO WS-GR(84)
+     MOVE 2 TO WS-GR(276)
+     MOVE 6 TO WS-GR(308)
+     MOVE 7 TO WS-GR(324)
+     MOVE 8 TO WS-GR(340)
+     MOVE 7 TO WS-GR(532)
+     MOVE 7 TO WS-GR(548)
+     MOVE 6 TO WS-GR(612)
+     MOVE 9 TO WS-GR(788)
+     MOVE 1 TO WS-GR(820)
+     MOVE 4 TO WS-GR(852)
+     MOVE 1 TO WS-GR(868)
+     MOVE 3 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 10 TO WS-GR(1572)
+     MOVE 4 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 7 TO WS-GR(5)
+     MOVE 2 TO WS-GR(21)
+     MOVE 7 TO WS-GR(37)
+     MOVE 1 TO WS-GR(69)
+     MOVE 5 TO WS-GR(85)
+     MOVE 1 TO WS-GR(101)
+     MOVE 9 TO WS-GR(261)
+     MOVE 6 TO WS-GR(325)
+     MOVE 6 TO WS-GR(517)
+     MOVE 3 TO WS-GR(533)
+     MOVE 1 TO WS-GR(549)
+     MOVE 1 TO WS-GR(565)
+     MOVE 6 TO WS-GR(597)
+     MOVE 10 TO WS-GR(869)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 8 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 2 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1349)
+     MOVE 3 TO WS-GR(1365)
+     MOVE 3 TO WS-GR(1541)
+     MOVE 2 TO WS-GR(1557)
+     MOVE 10 TO WS-GR(1589)
+     MOVE 8 TO WS-GR(1621)
+     MOVE 2 TO WS-GR(6)
+     MOVE 7 TO WS-GR(22)
+     MOVE 2 TO WS-GR(38)
+     MOVE 6 TO WS-GR(70)
+     MOVE 3 TO WS-GR(86)
+     MOVE 7 TO WS-GR(294)
+     MOVE 3 TO WS-GR(326)
+     MOVE 2 TO WS-GR(342)
+     MOVE 7 TO WS-GR(358)
+     MOVE 1 TO WS-GR(518)
+     MOVE 4 TO WS-GR(582)
+     MOVE 7 TO WS-GR(838)
+     MOVE 2 TO WS-GR(854)
+     MOVE 5 TO WS-GR(870)
+     MOVE 7 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1062)
+     MOVE 8 TO WS-GR(1078)
+     MOVE 9 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1126)
+     MOVE 10 TO WS-GR(1302)
+     MOVE 6 TO WS-GR(1318)
+     MOVE 3 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 3 TO WS-GR(1574)
+     MOVE 3 TO WS-GR(1606)
+     MOVE 9 TO WS-GR(1622)
+     MOVE 3 TO WS-GR(1638)
+     MOVE 8 TO WS-GR(23)
+     MOVE 6 TO WS-GR(39)
+     MOVE 3 TO WS-GR(55)
+     MOVE 1 TO WS-GR(71)
+     MOVE 8 TO WS-GR(87)
+     MOVE 9 TO WS-GR(263)
+     MOVE 7 TO WS-GR(311)
+     MOVE 6 TO WS-GR(327)
+     MOVE 1 TO WS-GR(343)
+     MOVE 8 TO WS-GR(567)
+     MOVE 5 TO WS-GR(615)
+     MOVE 7 TO WS-GR(775)
+     MOVE 2 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 10 TO WS-GR(855)
+     MOVE 5 TO WS-GR(1079)
+     MOVE 8 TO WS-GR(1287)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 9 TO WS-GR(1559)
+     MOVE 3 TO WS-GR(1591)
+     MOVE 2 TO WS-GR(1607)
+     MOVE 2 TO WS-GR(1623)
+     MOVE 5 TO WS-GR(1639)
+     MOVE 2 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 4 TO WS-GR(17)
+     MOVE 2 TO WS-GR(49)
+     MOVE 1 TO WS-GR(65)
+     MOVE 1 TO WS-GR(81)
+     MOVE 10 TO WS-GR(273)
+     MOVE 9 TO WS-GR(289)
+     MOVE 3 TO WS-GR(305)
+     MOVE 2 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 2 TO WS-GR(561)
+     MOVE 1 TO WS-GR(785)
+     MOVE 8 TO WS-GR(801)
+     MOVE 8 TO WS-GR(817)
+     MOVE 8 TO WS-GR(849)
+     MOVE 8 TO WS-GR(1025)
+     MOVE 4 TO WS-GR(1041)
+     MOVE 6 TO WS-GR(1073)
+     MOVE 3 TO WS-GR(1089)
+     MOVE 5 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1313)
+     MOVE 10 TO WS-GR(1329)
+     MOVE 10 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(2)
+     MOVE 1 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 4 TO WS-GR(82)
+     MOVE 3 TO WS-GR(98)
+     MOVE 1 TO WS-GR(290)
+     MOVE 9 TO WS-GR(306)
+     MOVE 10 TO WS-GR(322)
+     MOVE 7 TO WS-GR(338)
+     MOVE 2 TO WS-GR(514)
+     MOVE 2 TO WS-GR(578)
+     MOVE 6 TO WS-GR(594)
+     MOVE 3 TO WS-GR(610)
+     MOVE 1 TO WS-GR(786)
+     MOVE 3 TO WS-GR(802)
+     MOVE 1 TO WS-GR(1026)
+     MOVE 2 TO WS-GR(1058)
+     MOVE 2 TO WS-GR(1074)
+     MOVE 6 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1282)
+     MOVE 1 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1314)
+     MOVE 6 TO WS-GR(1346)
+     MOVE 3 TO WS-GR(1362)
+     MOVE 1 TO WS-GR(1378)
+     MOVE 8 TO WS-GR(1554)
+     MOVE 1 TO WS-GR(1570)
+     MOVE 9 TO WS-GR(1586)
+     MOVE 2 TO WS-GR(3)
+     MOVE 9 TO WS-GR(19)
+     MOVE 2 TO WS-GR(67)
+     MOVE 2 TO WS-GR(83)
+     MOVE 8 TO WS-GR(259)
+     MOVE 2 TO WS-GR(291)
+     MOVE 1 TO WS-GR(307)
+     MOVE 1 TO WS-GR(355)
+     MOVE 3 TO WS-GR(515)
+     MOVE 8 TO WS-GR(531)
+     MOVE 7 TO WS-GR(579)
+     MOVE 2 TO WS-GR(595)
+     MOVE 1 TO WS-GR(771)
+     MOVE 1 TO WS-GR(787)
+     MOVE 2 TO WS-GR(803)
+     MOVE 6 TO WS-GR(835)
+     MOVE 2 TO WS-GR(851)
+     MOVE 6 TO WS-GR(1027)
+     MOVE 9 TO WS-GR(1043)
+     MOVE 7 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 7 TO WS-GR(1123)
+     MOVE 3 TO WS-GR(1299)
+     MOVE 6 TO WS-GR(1315)
+     MOVE 6 TO WS-GR(1331)
+     MOVE 1 TO WS-GR(1347)
+     MOVE 9 TO WS-GR(1363)
+     MOVE 5 TO WS-GR(1539)
+     MOVE 1 TO WS-GR(1635)
+     MOVE 5 TO WS-GR(4)
+     MOVE 4 TO WS-GR(20)
+     MOVE 3 TO WS-GR(52)
+     MOVE 9 TO WS-GR(84)
+     MOVE 5 TO WS-GR(276)
+     MOVE 1 TO WS-GR(308)
+     MOVE 10 TO WS-GR(340)
+     MOVE 3 TO WS-GR(356)
+     MOVE 2 TO WS-GR(532)
+     MOVE 10 TO WS-GR(548)
+     MOVE 1 TO WS-GR(580)
+     MOVE 4 TO WS-GR(596)
+     MOVE 1 TO WS-GR(612)
+     MOVE 6 TO WS-GR(788)
+     MOVE 7 TO WS-GR(804)
+     MOVE 3 TO WS-GR(852)
+     MOVE 6 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 3 TO WS-GR(1092)
+     MOVE 1 TO WS-GR(1108)
+     MOVE 3 TO WS-GR(1124)
+     MOVE 1 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1316)
+     MOVE 10 TO WS-GR(1332)
+     MOVE 6 TO WS-GR(1364)
+     MOVE 9 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1540)
+     MOVE 6 TO WS-GR(1556)
+     MOVE 3 TO WS-GR(21)
+     MOVE 4 TO WS-GR(53)
+     MOVE 2 TO WS-GR(69)
+     MOVE 7 TO WS-GR(85)
+     MOVE 10 TO WS-GR(293)
+     MOVE 1 TO WS-GR(533)
+     MOVE 7 TO WS-GR(565)
+     MOVE 2 TO WS-GR(597)
+     MOVE 6 TO WS-GR(789)
+     MOVE 10 TO WS-GR(805)
+     MOVE 9 TO WS-GR(853)
+     MOVE 3 TO WS-GR(869)
+     MOVE 8 TO WS-GR(1061)
+     MOVE 2 TO WS-GR(1077)
+     MOVE 1 TO WS-GR(1109)
+     MOVE 2 TO WS-GR(1317)
+     MOVE 10 TO WS-GR(1365)
+     MOVE 10 TO WS-GR(1381)
+     MOVE 7 TO WS-GR(1541)
+     MOVE 3 TO WS-GR(1573)
+     MOVE 5 TO WS-GR(1605)
+     MOVE 8 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 5 TO WS-GR(38)
+     MOVE 1 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 2 TO WS-GR(262)
+     MOVE 2 TO WS-GR(278)
+     MOVE 1 TO WS-GR(294)
+     MOVE 2 TO WS-GR(326)
+     MOVE 8 TO WS-GR(534)
+     MOVE 8 TO WS-GR(550)
+     MOVE 9 TO WS-GR(566)
+     MOVE 9 TO WS-GR(598)
+     MOVE 3 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 1 TO WS-GR(1286)
+     MOVE 2 TO WS-GR(1318)
+     MOVE 5 TO WS-GR(1334)
+     MOVE 9 TO WS-GR(1350)
+     MOVE 3 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 3 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 8 TO WS-GR(1622)
+     MOVE 10 TO WS-GR(7)
+     MOVE 9 TO WS-GR(23)
+     MOVE 5 TO WS-GR(39)
+     MOVE 1 TO WS-GR(71)
+     MOVE 1 TO WS-GR(87)
+     MOVE 3 TO WS-GR(263)
+     MOVE 2 TO WS-GR(279)
+     MOVE 1 TO WS-GR(295)
+     MOVE 2 TO WS-GR(311)
+     MOVE 2 TO WS-GR(327)
+     MOVE 2 TO WS-GR(359)
+     MOVE 3 TO WS-GR(519)
+     MOVE 2 TO WS-GR(551)
+     MOVE 9 TO WS-GR(583)
+     MOVE 2 TO WS-GR(791)
+     MOVE 1 TO WS-GR(807)
+     MOVE 1 TO WS-GR(839)
+     MOVE 1 TO WS-GR(855)
+     MOVE 1 TO WS-GR(871)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1319)
+     MOVE 2 TO WS-GR(1335)
+     MOVE 2 TO WS-GR(1367)
+     MOVE 3 TO WS-GR(1383)
+     MOVE 1 TO WS-GR(1543)
+     MOVE 1 TO WS-GR(1575)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 3 TO WS-GR(1639)
+     MOVE 4 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(1)
+     MOVE 8 TO WS-GR(33)
+     MOVE 5 TO WS-GR(49)
+     MOVE 6 TO WS-GR(81)
+     MOVE 8 TO WS-GR(97)
+     MOVE 2 TO WS-GR(257)
+     MOVE 6 TO WS-GR(289)
+     MOVE 6 TO WS-GR(321)
+     MOVE 10 TO WS-GR(353)
+     MOVE 7 TO WS-GR(529)
+     MOVE 2 TO WS-GR(561)
+     MOVE 6 TO WS-GR(609)
+     MOVE 5 TO WS-GR(785)
+     MOVE 3 TO WS-GR(801)
+     MOVE 1 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 2 TO WS-GR(1057)
+     MOVE 2 TO WS-GR(1073)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 2 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1281)
+     MOVE 8 TO WS-GR(1297)
+     MOVE 2 TO WS-GR(1345)
+     MOVE 9 TO WS-GR(1537)
+     MOVE 1 TO WS-GR(1569)
+     MOVE 2 TO WS-GR(1585)
+     MOVE 3 TO WS-GR(1601)
+     MOVE 10 TO WS-GR(1633)
+     MOVE 8 TO WS-GR(18)
+     MOVE 7 TO WS-GR(34)
+     MOVE 3 TO WS-GR(50)
+     MOVE 1 TO WS-GR(258)
+     MOVE 5 TO WS-GR(274)
+     MOVE 3 TO WS-GR(290)
+     MOVE 2 TO WS-GR(306)
+     MOVE 6 TO WS-GR(514)
+     MOVE 6 TO WS-GR(546)
+     MOVE 10 TO WS-GR(594)
+     MOVE 4 TO WS-GR(610)
+     MOVE 1 TO WS-GR(786)
+     MOVE 3 TO WS-GR(834)
+     MOVE 3 TO WS-GR(866)
+     MOVE 4 TO WS-GR(1042)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 8 TO WS-GR(1090)
+     MOVE 5 TO WS-GR(1298)
+     MOVE 2 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 10 TO WS-GR(3)
+     MOVE 8 TO WS-GR(51)
+     MOVE 1 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 3 TO WS-GR(307)
+     MOVE 1 TO WS-GR(339)
+     MOVE 5 TO WS-GR(515)
+     MOVE 3 TO WS-GR(531)
+     MOVE 1 TO WS-GR(563)
+     MOVE 1 TO WS-GR(579)
+     MOVE 9 TO WS-GR(595)
+     MOVE 10 TO WS-GR(611)
+     MOVE 3 TO WS-GR(787)
+     MOVE 4 TO WS-GR(851)
+     MOVE 10 TO WS-GR(867)
+     MOVE 4 TO WS-GR(1043)
+     MOVE 6 TO WS-GR(1059)
+     MOVE 3 TO WS-GR(1075)
+     MOVE 1 TO WS-GR(1107)
+     MOVE 2 TO WS-GR(1299)
+     MOVE 3 TO WS-GR(1315)
+     MOVE 3 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 7 TO WS-GR(1539)
+     MOVE 9 TO WS-GR(1555)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 5 TO WS-GR(1619)
+     MOVE 1 TO WS-GR(4)
+     MOVE 7 TO WS-GR(36)
+     MOVE 6 TO WS-GR(52)
+     MOVE 9 TO WS-GR(68)
+     MOVE 2 TO WS-GR(84)
+     MOVE 7 TO WS-GR(260)
+     MOVE 6 TO WS-GR(292)
+     MOVE 7 TO WS-GR(340)
+     MOVE 6 TO WS-GR(356)
+     MOVE 1 TO WS-GR(516)
+     MOVE 10 TO WS-GR(548)
+     MOVE 8 TO WS-GR(564)
+     MOVE 9 TO WS-GR(596)
+     MOVE 7 TO WS-GR(612)
+     MOVE 5 TO WS-GR(788)
+     MOVE 2 TO WS-GR(836)
+     MOVE 1 TO WS-GR(852)
+     MOVE 3 TO WS-GR(1060)
+     MOVE 1 TO WS-GR(1124)
+     MOVE 3 TO WS-GR(1300)
+     MOVE 1 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1348)
+     MOVE 3 TO WS-GR(1364)
+     MOVE 9 TO WS-GR(1380)
+     MOVE 1 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 4 TO WS-GR(1604)
+     MOVE 7 TO WS-GR(5)
+     MOVE 3 TO WS-GR(21)
+     MOVE 8 TO WS-GR(69)
+     MOVE 2 TO WS-GR(85)
+     MOVE 8 TO WS-GR(261)
+     MOVE 3 TO WS-GR(325)
+     MOVE 7 TO WS-GR(517)
+     MOVE 1 TO WS-GR(533)
+     MOVE 1 TO WS-GR(565)
+     MOVE 10 TO WS-GR(773)
+     MOVE 1 TO WS-GR(789)
+     MOVE 7 TO WS-GR(821)
+     MOVE 3 TO WS-GR(837)
+     MOVE 1 TO WS-GR(853)
+     MOVE 2 TO WS-GR(1045)
+     MOVE 2 TO WS-GR(1061)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 4 TO WS-GR(1109)
+     MOVE 3 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1333)
+     MOVE 2 TO WS-GR(1541)
+     MOVE 4 TO WS-GR(1573)
+     MOVE 2 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(1621)
+     MOVE 10 TO WS-GR(1637)
+     MOVE 4 TO WS-GR(54)
+     MOVE 9 TO WS-GR(86)
+     MOVE 1 TO WS-GR(102)
+     MOVE 1 TO WS-GR(262)
+     MOVE 3 TO WS-GR(278)
+     MOVE 10 TO WS-GR(326)
+     MOVE 8 TO WS-GR(358)
+     MOVE 5 TO WS-GR(534)
+     MOVE 10 TO WS-GR(550)
+     MOVE 1 TO WS-GR(566)
+     MOVE 9 TO WS-GR(582)
+     MOVE 9 TO WS-GR(598)
+     MOVE 7 TO WS-GR(790)
+     MOVE 1 TO WS-GR(806)
+     MOVE 3 TO WS-GR(822)
+     MOVE 2 TO WS-GR(854)
+     MOVE 2 TO WS-GR(870)
+     MOVE 1 TO WS-GR(1030)
+     MOVE 2 TO WS-GR(1046)
+     MOVE 1 TO WS-GR(1078)
+     MOVE 4 TO WS-GR(1094)
+     MOVE 4 TO WS-GR(1110)
+     MOVE 8 TO WS-GR(1126)
+     MOVE 8 TO WS-GR(1318)
+     MOVE 3 TO WS-GR(1334)
+     MOVE 4 TO WS-GR(1366)
+     MOVE 5 TO WS-GR(1542)
+     MOVE 10 TO WS-GR(1558)
+     MOVE 5 TO WS-GR(1574)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(39)
+     MOVE 6 TO WS-GR(55)
+     MOVE 1 TO WS-GR(103)
+     MOVE 10 TO WS-GR(279)
+     MOVE 3 TO WS-GR(295)
+     MOVE 3 TO WS-GR(327)
+     MOVE 1 TO WS-GR(535)
+     MOVE 9 TO WS-GR(551)
+     MOVE 1 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 2 TO WS-GR(807)
+     MOVE 6 TO WS-GR(839)
+     MOVE 2 TO WS-GR(855)
+     MOVE 8 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1047)
+     MOVE 5 TO WS-GR(1063)
+     MOVE 1 TO WS-GR(1095)
+     MOVE 3 TO WS-GR(1287)
+     MOVE 5 TO WS-GR(1303)
+     MOVE 3 TO WS-GR(1319)
+     MOVE 1 TO WS-GR(1335)
+     MOVE 3 TO WS-GR(1351)
+     MOVE 10 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1383)
+     MOVE 3 TO WS-GR(1559)
+     MOVE 2 TO WS-GR(1591)
+     MOVE 6 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 5 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/12/0/5 836/837/852/853/854/855/821/822/870/599/566/1078 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 10 TO WS-GR(1)
+     MOVE 8 TO WS-GR(33)
+     MOVE 2 TO WS-GR(65)
+     MOVE 1 TO WS-GR(97)
+     MOVE 5 TO WS-GR(257)
+     MOVE 9 TO WS-GR(577)
+     MOVE 3 TO WS-GR(593)
+     MOVE 5 TO WS-GR(609)
+     MOVE 10 TO WS-GR(769)
+     MOVE 3 TO WS-GR(865)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1057)
+     MOVE 1 TO WS-GR(1105)
+     MOVE 6 TO WS-GR(1121)
+     MOVE 2 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 6 TO WS-GR(1553)
+     MOVE 1 TO WS-GR(1633)
+     MOVE 1 TO WS-GR(2)
+     MOVE 1 TO WS-GR(50)
+     MOVE 1 TO WS-GR(66)
+     MOVE 5 TO WS-GR(82)
+     MOVE 10 TO WS-GR(290)
+     MOVE 7 TO WS-GR(306)
+     MOVE 5 TO WS-GR(322)
+     MOVE 10 TO WS-GR(338)
+     MOVE 1 TO WS-GR(354)
+     MOVE 4 TO WS-GR(530)
+     MOVE 5 TO WS-GR(546)
+     MOVE 2 TO WS-GR(562)
+     MOVE 1 TO WS-GR(786)
+     MOVE 2 TO WS-GR(802)
+     MOVE 1 TO WS-GR(818)
+     MOVE 3 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 3 TO WS-GR(1314)
+     MOVE 8 TO WS-GR(1330)
+     MOVE 2 TO WS-GR(1346)
+     MOVE 3 TO WS-GR(1362)
+     MOVE 6 TO WS-GR(1378)
+     MOVE 10 TO WS-GR(1634)
+     MOVE 9 TO WS-GR(19)
+     MOVE 7 TO WS-GR(83)
+     MOVE 1 TO WS-GR(275)
+     MOVE 3 TO WS-GR(291)
+     MOVE 10 TO WS-GR(307)
+     MOVE 1 TO WS-GR(323)
+     MOVE 2 TO WS-GR(563)
+     MOVE 1 TO WS-GR(787)
+     MOVE 7 TO WS-GR(819)
+     MOVE 1 TO WS-GR(851)
+     MOVE 2 TO WS-GR(867)
+     MOVE 2 TO WS-GR(1027)
+     MOVE 3 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 1 TO WS-GR(1123)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 6 TO WS-GR(1315)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 8 TO WS-GR(1379)
+     MOVE 3 TO WS-GR(1539)
+     MOVE 5 TO WS-GR(1587)
+     MOVE 8 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(1635)
+     MOVE 5 TO WS-GR(4)
+     MOVE 1 TO WS-GR(20)
+     MOVE 2 TO WS-GR(36)
+     MOVE 4 TO WS-GR(52)
+     MOVE 7 TO WS-GR(68)
+     MOVE 3 TO WS-GR(84)
+     MOVE 2 TO WS-GR(308)
+     MOVE 10 TO WS-GR(516)
+     MOVE 1 TO WS-GR(532)
+     MOVE 6 TO WS-GR(596)
+     MOVE 2 TO WS-GR(612)
+     MOVE 4 TO WS-GR(788)
+     MOVE 3 TO WS-GR(804)
+     MOVE 8 TO WS-GR(820)
+     MOVE 1 TO WS-GR(836)
+     MOVE 3 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 5 TO WS-GR(1300)
+     MOVE 9 TO WS-GR(1316)
+     MOVE 4 TO WS-GR(1364)
+     MOVE 5 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1572)
+     MOVE 3 TO WS-GR(1588)
+     MOVE 8 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(101)
+     MOVE 1 TO WS-GR(261)
+     MOVE 8 TO WS-GR(293)
+     MOVE 4 TO WS-GR(325)
+     MOVE 7 TO WS-GR(341)
+     MOVE 1 TO WS-GR(533)
+     MOVE 7 TO WS-GR(549)
+     MOVE 1 TO WS-GR(581)
+     MOVE 5 TO WS-GR(597)
+     MOVE 5 TO WS-GR(789)
+     MOVE 7 TO WS-GR(821)
+     MOVE 1 TO WS-GR(837)
+     MOVE 9 TO WS-GR(869)
+     MOVE 10 TO WS-GR(1029)
+     MOVE 10 TO WS-GR(1045)
+     MOVE 7 TO WS-GR(1061)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 6 TO WS-GR(1109)
+     MOVE 3 TO WS-GR(1317)
+     MOVE 3 TO WS-GR(1333)
+     MOVE 4 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 6 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 2 TO WS-GR(1605)
+     MOVE 2 TO WS-GR(6)
+     MOVE 7 TO WS-GR(22)
+     MOVE 6 TO WS-GR(54)
+     MOVE 1 TO WS-GR(70)
+     MOVE 7 TO WS-GR(262)
+     MOVE 3 TO WS-GR(294)
+     MOVE 3 TO WS-GR(326)
+     MOVE 3 TO WS-GR(518)
+     MOVE 6 TO WS-GR(534)
+     MOVE 4 TO WS-GR(566)
+     MOVE 1 TO WS-GR(614)
+     MOVE 8 TO WS-GR(774)
+     MOVE 2 TO WS-GR(806)
+     MOVE 3 TO WS-GR(822)
+     MOVE 10 TO WS-GR(854)
+     MOVE 10 TO WS-GR(870)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1286)
+     MOVE 2 TO WS-GR(1334)
+     MOVE 2 TO WS-GR(1350)
+     MOVE 3 TO WS-GR(1366)
+     MOVE 7 TO WS-GR(1542)
+     MOVE 9 TO WS-GR(1558)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 7 TO WS-GR(1622)
+     MOVE 1 TO WS-GR(7)
+     MOVE 3 TO WS-GR(71)
+     MOVE 5 TO WS-GR(103)
+     MOVE 9 TO WS-GR(263)
+     MOVE 10 TO WS-GR(279)
+     MOVE 10 TO WS-GR(311)
+     MOVE 1 TO WS-GR(327)
+     MOVE 8 TO WS-GR(551)
+     MOVE 9 TO WS-GR(583)
+     MOVE 1 TO WS-GR(615)
+     MOVE 9 TO WS-GR(775)
+     MOVE 1 TO WS-GR(791)
+     MOVE 3 TO WS-GR(823)
+     MOVE 4 TO WS-GR(871)
+     MOVE 4 TO WS-GR(1047)
+     MOVE 3 TO WS-GR(1079)
+     MOVE 1 TO WS-GR(1095)
+     MOVE 2 TO WS-GR(1111)
+     MOVE 2 TO WS-GR(1351)
+     MOVE 1 TO WS-GR(1367)
+     MOVE 6 TO WS-GR(1543)
+     MOVE 5 TO WS-GR(1559)
+     MOVE 4 TO WS-GR(1623)
+     MOVE 6 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 3 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/3 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 3 TO WS-GR(1)
+     MOVE 4 TO WS-GR(17)
+     MOVE 1 TO WS-GR(257)
+     MOVE 2 TO WS-GR(289)
+     MOVE 1 TO WS-GR(305)
+     MOVE 1 TO WS-GR(321)
+     MOVE 8 TO WS-GR(513)
+     MOVE 2 TO WS-GR(529)
+     MOVE 8 TO WS-GR(545)
+     MOVE 2 TO WS-GR(561)
+     MOVE 1 TO WS-GR(577)
+     MOVE 6 TO WS-GR(593)
+     MOVE 1 TO WS-GR(609)
+     MOVE 3 TO WS-GR(785)
+     MOVE 7 TO WS-GR(801)
+     MOVE 5 TO WS-GR(817)
+     MOVE 1 TO WS-GR(865)
+     MOVE 2 TO WS-GR(1025)
+     MOVE 1 TO WS-GR(1041)
+     MOVE 1 TO WS-GR(1057)
+     MOVE 3 TO WS-GR(1073)
+     MOVE 9 TO WS-GR(1089)
+     MOVE 2 TO WS-GR(1105)
+     MOVE 7 TO WS-GR(1121)
+     MOVE 9 TO WS-GR(1297)
+     MOVE 1 TO WS-GR(1313)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 3 TO WS-GR(1377)
+     MOVE 9 TO WS-GR(1553)
+     MOVE 6 TO WS-GR(1585)
+     MOVE 1 TO WS-GR(1601)
+     MOVE 2 TO WS-GR(82)
+     MOVE 7 TO WS-GR(98)
+     MOVE 1 TO WS-GR(258)
+     MOVE 6 TO WS-GR(338)
+     MOVE 3 TO WS-GR(578)
+     MOVE 2 TO WS-GR(594)
+     MOVE 10 TO WS-GR(786)
+     MOVE 6 TO WS-GR(834)
+     MOVE 1 TO WS-GR(850)
+     MOVE 4 TO WS-GR(1058)
+     MOVE 2 TO WS-GR(1074)
+     MOVE 2 TO WS-GR(1090)
+     MOVE 10 TO WS-GR(1282)
+     MOVE 3 TO WS-GR(1298)
+     MOVE 6 TO WS-GR(1314)
+     MOVE 9 TO WS-GR(1346)
+     MOVE 9 TO WS-GR(1362)
+     MOVE 10 TO WS-GR(1602)
+     MOVE 1 TO WS-GR(1634)
+     MOVE 3 TO WS-GR(3)
+     MOVE 1 TO WS-GR(19)
+     MOVE 7 TO WS-GR(35)
+     MOVE 1 TO WS-GR(51)
+     MOVE 1 TO WS-GR(83)
+     MOVE 1 TO WS-GR(99)
+     MOVE 1 TO WS-GR(275)
+     MOVE 10 TO WS-GR(291)
+     MOVE 1 TO WS-GR(323)
+     MOVE 2 TO WS-GR(515)
+     MOVE 9 TO WS-GR(531)
+     MOVE 7 TO WS-GR(547)
+     MOVE 1 TO WS-GR(579)
+     MOVE 7 TO WS-GR(595)
+     MOVE 3 TO WS-GR(803)
+     MOVE 2 TO WS-GR(819)
+     MOVE 3 TO WS-GR(851)
+     MOVE 10 TO WS-GR(867)
+     MOVE 3 TO WS-GR(1027)
+     MOVE 3 TO WS-GR(1043)
+     MOVE 3 TO WS-GR(1059)
+     MOVE 7 TO WS-GR(1075)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 7 TO WS-GR(1283)
+     MOVE 6 TO WS-GR(1299)
+     MOVE 1 TO WS-GR(1379)
+     MOVE 3 TO WS-GR(1619)
+     MOVE 9 TO WS-GR(4)
+     MOVE 3 TO WS-GR(20)
+     MOVE 1 TO WS-GR(68)
+     MOVE 5 TO WS-GR(84)
+     MOVE 8 TO WS-GR(276)
+     MOVE 2 TO WS-GR(292)
+     MOVE 9 TO WS-GR(308)
+     MOVE 5 TO WS-GR(356)
+     MOVE 1 TO WS-GR(532)
+     MOVE 8 TO WS-GR(612)
+     MOVE 9 TO WS-GR(772)
+     MOVE 1 TO WS-GR(788)
+     MOVE 1 TO WS-GR(804)
+     MOVE 3 TO WS-GR(836)
+     MOVE 1 TO WS-GR(868)
+     MOVE 1 TO WS-GR(1028)
+     MOVE 1 TO WS-GR(1076)
+     MOVE 2 TO WS-GR(1092)
+     MOVE 3 TO WS-GR(1124)
+     MOVE 5 TO WS-GR(1316)
+     MOVE 7 TO WS-GR(1364)
+     MOVE 1 TO WS-GR(1540)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 1 TO WS-GR(21)
+     MOVE 1 TO WS-GR(37)
+     MOVE 10 TO WS-GR(53)
+     MOVE 3 TO WS-GR(69)
+     MOVE 8 TO WS-GR(85)
+     MOVE 4 TO WS-GR(261)
+     MOVE 1 TO WS-GR(357)
+     MOVE 2 TO WS-GR(533)
+     MOVE 9 TO WS-GR(597)
+     MOVE 1 TO WS-GR(613)
+     MOVE 1 TO WS-GR(773)
+     MOVE 9 TO WS-GR(805)
+     MOVE 1 TO WS-GR(821)
+     MOVE 2 TO WS-GR(853)
+     MOVE 6 TO WS-GR(1029)
+     MOVE 1 TO WS-GR(1045)
+     MOVE 1 TO WS-GR(1061)
+     MOVE 7 TO WS-GR(1093)
+     MOVE 2 TO WS-GR(1109)
+     MOVE 10 TO WS-GR(1125)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1333)
+     MOVE 7 TO WS-GR(1365)
+     MOVE 2 TO WS-GR(1589)
+     MOVE 8 TO WS-GR(1605)
+     MOVE 5 TO WS-GR(6)
+     MOVE 1 TO WS-GR(54)
+     MOVE 6 TO WS-GR(70)
+     MOVE 1 TO WS-GR(102)
+     MOVE 1 TO WS-GR(326)
+     MOVE 4 TO WS-GR(342)
+     MOVE 10 TO WS-GR(566)
+     MOVE 9 TO WS-GR(614)
+     MOVE 8 TO WS-GR(822)
+     MOVE 9 TO WS-GR(838)
+     MOVE 10 TO WS-GR(854)
+     MOVE 3 TO WS-GR(1126)
+     MOVE 2 TO WS-GR(1302)
+     MOVE 1 TO WS-GR(1350)
+     MOVE 1 TO WS-GR(1366)
+     MOVE 3 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1606)
+     MOVE 8 TO WS-GR(1638)
+     MOVE 8 TO WS-GR(23)
+     MOVE 10 TO WS-GR(39)
+     MOVE 7 TO WS-GR(55)
+     MOVE 8 TO WS-GR(71)
+     MOVE 6 TO WS-GR(263)
+     MOVE 3 TO WS-GR(311)
+     MOVE 1 TO WS-GR(343)
+     MOVE 9 TO WS-GR(359)
+     MOVE 2 TO WS-GR(519)
+     MOVE 2 TO WS-GR(535)
+     MOVE 4 TO WS-GR(551)
+     MOVE 1 TO WS-GR(871)
+     MOVE 2 TO WS-GR(1031)
+     MOVE 1 TO WS-GR(1063)
+     MOVE 3 TO WS-GR(1079)
+     MOVE 5 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1287)
+     MOVE 3 TO WS-GR(1335)
+     MOVE 9 TO WS-GR(1367)
+     MOVE 1 TO WS-GR(1623)
+     MOVE 6 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 4 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/4 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 9 TO WS-GR(17)
+     MOVE 3 TO WS-GR(65)
+     MOVE 4 TO WS-GR(257)
+     MOVE 1 TO WS-GR(273)
+     MOVE 2 TO WS-GR(289)
+     MOVE 1 TO WS-GR(513)
+     MOVE 2 TO WS-GR(529)
+     MOVE 2 TO WS-GR(545)
+     MOVE 1 TO WS-GR(801)
+     MOVE 5 TO WS-GR(833)
+     MOVE 9 TO WS-GR(1041)
+     MOVE 8 TO WS-GR(1057)
+     MOVE 2 TO WS-GR(1537)
+     MOVE 8 TO WS-GR(1569)
+     MOVE 1 TO WS-GR(1617)
+     MOVE 9 TO WS-GR(18)
+     MOVE 10 TO WS-GR(98)
+     MOVE 6 TO WS-GR(274)
+     MOVE 2 TO WS-GR(354)
+     MOVE 1 TO WS-GR(530)
+     MOVE 2 TO WS-GR(562)
+     MOVE 4 TO WS-GR(770)
+     MOVE 8 TO WS-GR(786)
+     MOVE 9 TO WS-GR(802)
+     MOVE 1 TO WS-GR(866)
+     MOVE 10 TO WS-GR(1026)
+     MOVE 1 TO WS-GR(1058)
+     MOVE 1 TO WS-GR(1074)
+     MOVE 3 TO WS-GR(1090)
+     MOVE 5 TO WS-GR(1282)
+     MOVE 4 TO WS-GR(1314)
+     MOVE 9 TO WS-GR(1346)
+     MOVE 5 TO WS-GR(1586)
+     MOVE 6 TO WS-GR(1602)
+     MOVE 3 TO WS-GR(1634)
+     MOVE 2 TO WS-GR(3)
+     MOVE 1 TO WS-GR(35)
+     MOVE 1 TO WS-GR(51)
+     MOVE 5 TO WS-GR(67)
+     MOVE 3 TO WS-GR(83)
+     MOVE 2 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 1 TO WS-GR(307)
+     MOVE 8 TO WS-GR(323)
+     MOVE 1 TO WS-GR(531)
+     MOVE 1 TO WS-GR(579)
+     MOVE 1 TO WS-GR(611)
+     MOVE 1 TO WS-GR(787)
+     MOVE 5 TO WS-GR(803)
+     MOVE 3 TO WS-GR(819)
+     MOVE 4 TO WS-GR(867)
+     MOVE 1 TO WS-GR(1027)
+     MOVE 1 TO WS-GR(1059)
+     MOVE 1 TO WS-GR(1075)
+     MOVE 3 TO WS-GR(1091)
+     MOVE 5 TO WS-GR(1123)
+     MOVE 7 TO WS-GR(1283)
+     MOVE 3 TO WS-GR(1299)
+     MOVE 2 TO WS-GR(1331)
+     MOVE 5 TO WS-GR(1363)
+     MOVE 10 TO WS-GR(1379)
+     MOVE 2 TO WS-GR(1539)
+     MOVE 6 TO WS-GR(1587)
+     MOVE 2 TO WS-GR(1603)
+     MOVE 3 TO WS-GR(4)
+     MOVE 1 TO WS-GR(20)
+     MOVE 2 TO WS-GR(68)
+     MOVE 9 TO WS-GR(84)
+     MOVE 4 TO WS-GR(276)
+     MOVE 1 TO WS-GR(292)
+     MOVE 1 TO WS-GR(308)
+     MOVE 3 TO WS-GR(516)
+     MOVE 7 TO WS-GR(564)
+     MOVE 1 TO WS-GR(612)
+     MOVE 1 TO WS-GR(788)
+     MOVE 8 TO WS-GR(820)
+     MOVE 3 TO WS-GR(852)
+     MOVE 4 TO WS-GR(1028)
+     MOVE 3 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1060)
+     MOVE 2 TO WS-GR(1076)
+     MOVE 4 TO WS-GR(1092)
+     MOVE 8 TO WS-GR(1124)
+     MOVE 2 TO WS-GR(1284)
+     MOVE 1 TO WS-GR(1300)
+     MOVE 6 TO WS-GR(1316)
+     MOVE 5 TO WS-GR(1332)
+     MOVE 1 TO WS-GR(1380)
+     MOVE 2 TO WS-GR(1604)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 3 TO WS-GR(37)
+     MOVE 2 TO WS-GR(53)
+     MOVE 2 TO WS-GR(69)
+     MOVE 1 TO WS-GR(85)
+     MOVE 2 TO WS-GR(277)
+     MOVE 7 TO WS-GR(325)
+     MOVE 1 TO WS-GR(517)
+     MOVE 2 TO WS-GR(533)
+     MOVE 1 TO WS-GR(565)
+     MOVE 9 TO WS-GR(581)
+     MOVE 1 TO WS-GR(821)
+     MOVE 3 TO WS-GR(837)
+     MOVE 7 TO WS-GR(1077)
+     MOVE 2 TO WS-GR(1093)
+     MOVE 1 TO WS-GR(1125)
+     MOVE 6 TO WS-GR(1285)
+     MOVE 10 TO WS-GR(1301)
+     MOVE 1 TO WS-GR(1317)
+     MOVE 7 TO WS-GR(1333)
+     MOVE 3 TO WS-GR(1349)
+     MOVE 6 TO WS-GR(1381)
+     MOVE 1 TO WS-GR(1541)
+     MOVE 3 TO WS-GR(1605)
+     MOVE 2 TO WS-GR(1621)
+     MOVE 1 TO WS-GR(1637)
+     MOVE 6 TO WS-GR(6)
+     MOVE 2 TO WS-GR(22)
+     MOVE 6 TO WS-GR(262)
+     MOVE 3 TO WS-GR(278)
+     MOVE 5 TO WS-GR(294)
+     MOVE 1 TO WS-GR(310)
+     MOVE 2 TO WS-GR(518)
+     MOVE 2 TO WS-GR(566)
+     MOVE 1 TO WS-GR(614)
+     MOVE 2 TO WS-GR(774)
+     MOVE 4 TO WS-GR(790)
+     MOVE 2 TO WS-GR(822)
+     MOVE 3 TO WS-GR(854)
+     MOVE 8 TO WS-GR(1030)
+     MOVE 3 TO WS-GR(1062)
+     MOVE 2 TO WS-GR(1078)
+     MOVE 2 TO WS-GR(1302)
+     MOVE 8 TO WS-GR(1334)
+     MOVE 1 TO WS-GR(1350)
+     MOVE 5 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1382)
+     MOVE 10 TO WS-GR(1542)
+     MOVE 1 TO WS-GR(1574)
+     MOVE 2 TO WS-GR(1590)
+     MOVE 1 TO WS-GR(1638)
+     MOVE 2 TO WS-GR(7)
+     MOVE 1 TO WS-GR(39)
+     MOVE 2 TO WS-GR(55)
+     MOVE 3 TO WS-GR(71)
+     MOVE 5 TO WS-GR(263)
+     MOVE 1 TO WS-GR(295)
+     MOVE 4 TO WS-GR(327)
+     MOVE 1 TO WS-GR(359)
+     MOVE 1 TO WS-GR(519)
+     MOVE 10 TO WS-GR(567)
+     MOVE 5 TO WS-GR(599)
+     MOVE 3 TO WS-GR(615)
+     MOVE 2 TO WS-GR(791)
+     MOVE 4 TO WS-GR(823)
+     MOVE 7 TO WS-GR(839)
+     MOVE 1 TO WS-GR(855)
+     MOVE 3 TO WS-GR(1031)
+     MOVE 6 TO WS-GR(1047)
+     MOVE 3 TO WS-GR(1079)
+     MOVE 2 TO WS-GR(1095)
+     MOVE 1 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1351)
+     MOVE 2 TO WS-GR(1367)
+     MOVE 4 TO WS-GR(1383)
+     MOVE 2 TO WS-GR(1543)
+     MOVE 6 TO WS-GR(1623)
+     MOVE 7 TO WS-GR(1639)
+     MOVE 5 TO WS-I1
+     MOVE 5 TO WS-I2
+     MOVE 3 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/1 1317/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: random grids (4): 48 resolver runs on 7 x 7 x 7 grids of stone, slime, honey, obsidian, torch, glazed, pistons, chest and bedrock agree with the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 2 TO WS-GR(17)
+     MOVE 4 TO WS-GR(33)
+     MOVE 1 TO WS-GR(65)
+     MOVE 4 TO WS-GR(81)
+     MOVE 6 TO WS-GR(97)
+     MOVE 7 TO WS-GR(257)
+     MOVE 1 TO WS-GR(273)
+     MOVE 1 TO WS-GR(305)
+     MOVE 2 TO WS-GR(545)
+     MOVE 1 TO WS-GR(561)
+     MOVE 1 TO WS-GR(593)
+     MOVE 2 TO WS-GR(833)
+     MOVE 9 TO WS-GR(849)
+     MOVE 9 TO WS-GR(1025)
+     MOVE 8 TO WS-GR(1073)
+     MOVE 8 TO WS-GR(1089)
+     MOVE 1 TO WS-GR(1121)
+     MOVE 6 TO WS-GR(1281)
+     MOVE 7 TO WS-GR(1297)
+     MOVE 7 TO WS-GR(1313)
+     MOVE 10 TO WS-GR(1329)
+     MOVE 1 TO WS-GR(1345)
+     MOVE 2 TO WS-GR(1377)
+     MOVE 10 TO WS-GR(1537)
+     MOVE 2 TO WS-GR(1553)
+     MOVE 10 TO WS-GR(1601)
+     MOVE 1 TO WS-GR(18)
+     MOVE 7 TO WS-GR(34)
+     MOVE 9 TO WS-GR(82)
+     MOVE 7 TO WS-GR(306)
+     MOVE 3 TO WS-GR(514)
+     MOVE 1 TO WS-GR(530)
+     MOVE 3 TO WS-GR(546)
+     MOVE 1 TO WS-GR(578)
+     MOVE 8 TO WS-GR(594)
+     MOVE 2 TO WS-GR(610)
+     MOVE 3 TO WS-GR(786)
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(834)
+     MOVE 2 TO WS-GR(866)
+     MOVE 3 TO WS-GR(1026)
+     MOVE 2 TO WS-GR(1042)
+     MOVE 4 TO WS-GR(1058)
+     MOVE 10 TO WS-GR(1090)
+     MOVE 1 TO WS-GR(1106)
+     MOVE 1 TO WS-GR(1122)
+     MOVE 6 TO WS-GR(1298)
+     MOVE 1 TO WS-GR(1362)
+     MOVE 6 TO WS-GR(1378)
+     MOVE 1 TO WS-GR(1538)
+     MOVE 4 TO WS-GR(1554)
+     MOVE 4 TO WS-GR(1602)
+     MOVE 9 TO WS-GR(3)
+     MOVE 1 TO WS-GR(67)
+     MOVE 1 TO WS-GR(99)
+     MOVE 1 TO WS-GR(259)
+     MOVE 5 TO WS-GR(307)
+     MOVE 2 TO WS-GR(355)
+     MOVE 1 TO WS-GR(515)
+     MOVE 10 TO WS-GR(531)
+     MOVE 6 TO WS-GR(547)
+     MOVE 1 TO WS-GR(579)
+     MOVE 1 TO WS-GR(611)
+     MOVE 3 TO WS-GR(771)
+     MOVE 2 TO WS-GR(819)
+     MOVE 2 TO WS-GR(851)
+     MOVE 10 TO WS-GR(867)
+     MOVE 7 TO WS-GR(1043)
+     MOVE 1 TO WS-GR(1091)
+     MOVE 2 TO WS-GR(1107)
+     MOVE 1 TO WS-GR(1283)
+     MOVE 1 TO WS-GR(1315)
+     MOVE 3 TO WS-GR(1347)
+     MOVE 2 TO WS-GR(1363)
+     MOVE 7 TO WS-GR(1379)
+     MOVE 1 TO WS-GR(1539)
+     MOVE 2 TO WS-GR(1571)
+     MOVE 1 TO WS-GR(1587)
+     MOVE 4 TO WS-GR(1635)
+     MOVE 1 TO WS-GR(4)
+     MOVE 8 TO WS-GR(20)
+     MOVE 4 TO WS-GR(52)
+     MOVE 1 TO WS-GR(68)
+     MOVE 1 TO WS-GR(276)
+     MOVE 9 TO WS-GR(292)
+     MOVE 2 TO WS-GR(308)
+     MOVE 10 TO WS-GR(340)
+     MOVE 2 TO WS-GR(516)
+     MOVE 2 TO WS-GR(532)
+     MOVE 5 TO WS-GR(564)
+     MOVE 2 TO WS-GR(580)
+     MOVE 5 TO WS-GR(772)
+     MOVE 1 TO WS-GR(788)
+     MOVE 2 TO WS-GR(820)
+     MOVE 10 TO WS-GR(852)
+     MOVE 1 TO WS-GR(1044)
+     MOVE 1 TO WS-GR(1092)
+     MOVE 10 TO WS-GR(1284)
+     MOVE 2 TO WS-GR(1316)
+     MOVE 2 TO WS-GR(1380)
+     MOVE 3 TO WS-GR(1540)
+     MOVE 1 TO WS-GR(1556)
+     MOVE 9 TO WS-GR(1572)
+     MOVE 1 TO WS-GR(1588)
+     MOVE 2 TO WS-GR(1620)
+     MOVE 3 TO WS-GR(1636)
+     MOVE 1 TO WS-GR(5)
+     MOVE 1 TO WS-GR(37)
+     MOVE 3 TO WS-GR(53)
+     MOVE 1 TO WS-GR(69)
+     MOVE 1 TO WS-GR(85)
+     MOVE 2 TO WS-GR(101)
+     MOVE 1 TO WS-GR(261)
+     MOVE 1 TO WS-GR(277)
+     MOVE 2 TO WS-GR(293)
+     MOVE 4 TO WS-GR(325)
+     MOVE 8 TO WS-GR(341)
+     MOVE 3 TO WS-GR(357)
+     MOVE 4 TO WS-GR(517)
+     MOVE 4 TO WS-GR(533)
+     MOVE 3 TO WS-GR(613)
+     MOVE 9 TO WS-GR(789)
+     MOVE 6 TO WS-GR(821)
+     MOVE 1 TO WS-GR(837)
+     MOVE 5 TO WS-GR(853)
+     MOVE 6 TO WS-GR(1077)
+     MOVE 1 TO WS-GR(1093)
+     MOVE 7 TO WS-GR(1125)
+     MOVE 6 TO WS-GR(1285)
+     MOVE 2 TO WS-GR(1301)
+     MOVE 5 TO WS-GR(1317)
+     MOVE 1 TO WS-GR(1365)
+     MOVE 1 TO WS-GR(1381)
+     MOVE 9 TO WS-GR(1557)
+     MOVE 1 TO WS-GR(1573)
+     MOVE 1 TO WS-GR(1589)
+     MOVE 7 TO WS-GR(1605)
+     MOVE 1 TO WS-GR(38)
+     MOVE 2 TO WS-GR(54)
+     MOVE 6 TO WS-GR(70)
+     MOVE 10 TO WS-GR(102)
+     MOVE 3 TO WS-GR(262)
+     MOVE 1 TO WS-GR(310)
+     MOVE 2 TO WS-GR(358)
+     MOVE 2 TO WS-GR(518)
+     MOVE 10 TO WS-GR(582)
+     MOVE 9 TO WS-GR(614)
+     MOVE 1 TO WS-GR(774)
+     MOVE 10 TO WS-GR(790)
+     MOVE 6 TO WS-GR(806)
+     MOVE 4 TO WS-GR(854)
+     MOVE 3 TO WS-GR(1030)
+     MOVE 1 TO WS-GR(1094)
+     MOVE 2 TO WS-GR(1110)
+     MOVE 2 TO WS-GR(1126)
+     MOVE 9 TO WS-GR(1366)
+     MOVE 1 TO WS-GR(1382)
+     MOVE 1 TO WS-GR(1558)
+     MOVE 2 TO WS-GR(1574)
+     MOVE 8 TO WS-GR(1606)
+     MOVE 8 TO WS-GR(7)
+     MOVE 2 TO WS-GR(23)
+     MOVE 1 TO WS-GR(55)
+     MOVE 10 TO WS-GR(87)
+     MOVE 8 TO WS-GR(103)
+     MOVE 10 TO WS-GR(263)
+     MOVE 2 TO WS-GR(279)
+     MOVE 10 TO WS-GR(295)
+     MOVE 1 TO WS-GR(327)
+     MOVE 3 TO WS-GR(359)
+     MOVE 4 TO WS-GR(519)
+     MOVE 6 TO WS-GR(551)
+     MOVE 1 TO WS-GR(567)
+     MOVE 3 TO WS-GR(599)
+     MOVE 1 TO WS-GR(615)
+     MOVE 6 TO WS-GR(807)
+     MOVE 9 TO WS-GR(871)
+     MOVE 3 TO WS-GR(1031)
+     MOVE 8 TO WS-GR(1047)
+     MOVE 1 TO WS-GR(1079)
+     MOVE 6 TO WS-GR(1111)
+     MOVE 1 TO WS-GR(1127)
+     MOVE 1 TO WS-GR(1303)
+     MOVE 1 TO WS-GR(1559)
+     MOVE 10 TO WS-GR(1575)
+     MOVE 6 TO WS-GR(1607)
+     MOVE 7 TO WS-GR(1623)
+     MOVE 1 TO WS-GR(1639)
+     MOVE 3 TO WS-I1
+     MOVE 3 TO WS-I2
+     MOVE 6 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/1 0/0/0/0/0/0/0/0/0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: push limit exact (12.2, 4.3 step 4): 12 stones east of the piston push, a 13th makes the resolver fail [run 1]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(819)
+     MOVE 1 TO WS-GR(820)
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-GR(824)
+     MOVE 1 TO WS-GR(825)
+     MOVE 1 TO WS-GR(826)
+     MOVE 1 TO WS-GR(827)
+     MOVE 1 TO WS-GR(828)
+     MOVE 1 TO WS-GR(829)
+     MOVE 1 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/12/0/5 818/819/820/821/822/823/824/825/826/827/828/829 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-3§4 `PistonStructureResolver`: push limit exact (12.2, 4.3 step 4): 12 stones east of the piston push, a 13th makes the resolver fail [run 2]" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     PERFORM VARYING WS-X FROM 1 BY 1 UNTIL WS-X > 4096
+     MOVE 0 TO WS-GR(WS-X)
+     END-PERFORM
+     MOVE 1 TO WS-GR(818)
+     MOVE 1 TO WS-GR(819)
+     MOVE 1 TO WS-GR(820)
+     MOVE 1 TO WS-GR(821)
+     MOVE 1 TO WS-GR(822)
+     MOVE 1 TO WS-GR(823)
+     MOVE 1 TO WS-GR(824)
+     MOVE 1 TO WS-GR(825)
+     MOVE 1 TO WS-GR(826)
+     MOVE 1 TO WS-GR(827)
+     MOVE 1 TO WS-GR(828)
+     MOVE 1 TO WS-GR(829)
+     MOVE 1 TO WS-GR(830)
+     MOVE 1 TO WS-I1
+     MOVE 4 TO WS-I2
+     MOVE 4 TO WS-I3
+     MOVE 5 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 7 TO WS-I7
+     CALL "RS1-PISTON-RESOLVE" USING WS-GRG WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-R1 WS-R2 WS-PLG WS-R3 WS-DLG WS-R4
+     
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-PL(1) TO WS-R1
+     MOVE WS-PL(2) TO WS-R2
+     MOVE WS-PL(3) TO WS-R3
+     MOVE WS-PL(4) TO WS-R4
+     MOVE WS-PL(5) TO WS-R5
+     MOVE WS-PL(6) TO WS-R6
+     MOVE WS-PL(7) TO WS-R7
+     MOVE WS-PL(8) TO WS-R8
+     MOVE WS-PL(9) TO WS-R9
+     MOVE WS-PL(10) TO WS-R10
+     MOVE WS-PL(11) TO WS-R11
+     MOVE WS-PL(12) TO WS-R12
+     MOVE 12 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-DL(1) TO WS-R1
+     MOVE WS-DL(2) TO WS-R2
+     MOVE WS-DL(3) TO WS-R3
+     MOVE WS-DL(4) TO WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/12/0/5 818/819/820/821/822/823/824/825/826/827/828/829 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-REDSTONE-30-3-4.
