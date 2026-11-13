@@ -195,9 +195,10 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-READY.
-*> USING dim, chunk x, chunk z (BINARY-LONG), ready out (BINARY-LONG): 1 when the chunk is in the cache and its light is computed,
-*> i.e. it has been generated and prepared; a chunk that is not (never loaded, or still being generated) has no contents to rely
-*> on, so no mob spawns or moves in it.
+*> USING dim, chunk x, chunk z (BINARY-LONG), ready out (BINARY-LONG): 1 when the chunk is generated, 0 when it is not. A chunk enters the cache only when
+*> its generation is done (the generation queue and the worker pool install a finished chunk, gen-queue.cob), so a cache row means generated; a chunk that
+*> was never loaded, or is still being made, has no contents to rely on, so no mob spawns or moves in it. The light of an installed chunk is computed
+*> on demand here (LIGHT-CHUNK, as WORLD-CHUNK does), because the dark and daylight rules read it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -210,7 +211,10 @@
  PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-READY.
      MOVE 0 TO L-READY
      CALL "WORLD-FIND" USING L-DIM L-CX L-CZ WS-CHUNK
-     IF WS-CHUNK > 0 AND CK-LIT(WS-CHUNK) = 1
+     IF WS-CHUNK > 0
+         IF CK-LIT(WS-CHUNK) = 0
+             CALL "LIGHT-CHUNK" USING WS-CHUNK
+         END-IF
          MOVE 1 TO L-READY
      END-IF
      GOBACK.

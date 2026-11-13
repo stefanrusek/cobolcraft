@@ -51,6 +51,8 @@
  01 WS-FARX                BINARY-LONG VALUE 100000.
  01 WS-X0                  FLOAT-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-NEW-CX              BINARY-LONG.
+ 01 WS-LIT-BEFORE          BINARY-LONG.
  01 WS-ANIMALS             BINARY-LONG VALUE 1.
  01 WS-HASH-COUNT          BINARY-LONG.
  01 WS-H                   BINARY-DOUBLE.
@@ -121,6 +123,20 @@
      MOVE "test stdmob extra: a chunk that is not loaded is not ready" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A chunk that is in the cache but not lit yet (just installed) is ready after STDMOB-READY lit it: its light is needed by the dark and
+*>   daylight rules.
+     MOVE 60 TO WS-NEW-CX
+     CALL "WORLD-CHUNK-LOAD" USING WS-DIM WS-NEW-CX WS-NEW-CX WS-ROW
+     MOVE CK-LIT(WS-ROW) TO WS-LIT-BEFORE
+     CALL "STDMOB-READY" USING WS-DIM WS-NEW-CX WS-NEW-CX WS-INDEX
+     MOVE "test stdmob extra: a loaded chunk that was not lit is ready" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob extra: and it has been lit on demand" TO TL-CASE
+     MOVE CK-LIT(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Light: an unloaded cell is 0; a loaded sky cell reads on both nibbles (cells x and x + 1).
