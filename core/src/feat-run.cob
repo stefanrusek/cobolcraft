@@ -30,6 +30,7 @@
  PROGRAM-ID. FR-INT-SAMPLE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY FEATDATA.
  01 WS-BOUND               BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
@@ -45,6 +46,22 @@
      EVALUATE L-V(1)
          WHEN 1
              MOVE L-V(2) TO L-VALUE
+         WHEN 6
+*>           weighted_list of constants: one draw below the total weight, the first entry whose running weight exceeds it
+             MOVE 0 TO L-VALUE
+             IF L-V(4) > 0
+                 CALL "FR-NEXT-INT" USING L-STATE L-V(4) WS-A
+                 MOVE 0 TO WS-B WS-SIDE
+                 PERFORM VARYING WS-RANGE FROM 0 BY 1 UNTIL WS-RANGE >= L-V(3) OR WS-SIDE = 1
+                     COMPUTE WS-BOUND = L-V(2) + WS-RANGE * 2
+                     COMPUTE WS-SLOPE = WS-BOUND + 1
+                     ADD FD-POOL(WS-SLOPE) TO WS-B
+                     IF WS-A < WS-B
+                         MOVE FD-POOL(WS-BOUND) TO L-VALUE
+                         MOVE 1 TO WS-SIDE
+                     END-IF
+                 END-PERFORM
+             END-IF
          WHEN 2
              COMPUTE WS-BOUND = L-V(3) - L-V(2) + 1
              CALL "FR-NEXT-INT" USING L-STATE WS-BOUND WS-A
@@ -287,6 +304,12 @@
                  CALL "FR-PRED-TEST" USING LS-CHILD L-X L-Y L-Z L-RESULT
                  MOVE PR-NEXT(LS-CHILD) TO LS-CHILD
              END-PERFORM
+         WHEN 7
+*>           would_survive of a sapling (BushBlock.canSurvive): the block below is in the tag supports_vegetation (the pool of the predicate)
+             COMPUTE LS-Y = LS-Y - 1
+             CALL "FL-GET-STATE" USING LS-X LS-Y LS-Z LS-STATE
+             CALL "FL-BLOCK-OF" USING LS-STATE LS-BLOCK
+             CALL "FR-POOL-HAS" USING PR-POOL(L-PRED) PR-N(L-PRED) LS-BLOCK L-RESULT
          WHEN 11
              CALL "FR-PRED-TEST" USING PR-CHILD(L-PRED) L-X L-Y L-Z LS-R
              COMPUTE L-RESULT = 1 - LS-R
@@ -834,6 +857,32 @@
  END PROGRAM FR-PLACE-PF.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. FR-TREE-FALLBACK.
+*> USING chosen placed feature (in and out), default placed feature of the selector: a random_selector whose default is a tree and whose chosen child cannot be placed (a
+*> variant the compiler does not know: the fancy and the fallen trees) places its default tree instead; every other choice stays as it is.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FEATDATA.
+ LINKAGE SECTION.
+ 01 L-CHOSEN               BINARY-LONG.
+ 01 L-DEFAULT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHOSEN L-DEFAULT.
+     IF L-DEFAULT > 0
+         CALL "FD-ENSURE-PF" USING L-CHOSEN
+         IF PF-STATUS(L-CHOSEN) NOT = 1
+             CALL "FD-ENSURE-PF" USING L-DEFAULT
+             IF PF-STATUS(L-DEFAULT) = 1
+                 CALL "FD-ENSURE-FT" USING PF-FT(L-DEFAULT)
+                 IF FT-TYPE(PF-FT(L-DEFAULT)) = 51
+                     MOVE L-DEFAULT TO L-CHOSEN
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM FR-TREE-FALLBACK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-PLACE-FT IS RECURSIVE.
 *> USING state, feature index, x, y, z, result out (1 or 0): the leaf and combinator features of 35-1 section 9 and simple_block (35-4 section 4, with canSurvive
 *> approximated by "a block that is not air lies below"). A feature type that is not compiled places nothing and returns false.
@@ -858,6 +907,7 @@
  01 LS-FLAGS               BINARY-LONG VALUE 2.
  01 LS-ZERO                BINARY-LONG VALUE 0.
  01 LS-CH                  BINARY-LONG.
+ 01 LS-PFX                BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-FT                   BINARY-LONG.
@@ -882,7 +932,9 @@
                  END-IF
              END-PERFORM
              IF LS-CHOSEN > 0
-                 CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CHOSEN) LS-ZERO L-X L-Y L-Z L-RESULT
+                 MOVE CH-PF(LS-CHOSEN) TO LS-PFX
+                 CALL "FR-TREE-FALLBACK" USING LS-PFX FT-C(L-FT)
+                 CALL "FR-PLACE-PF" USING L-STATE LS-PFX LS-ZERO L-X L-Y L-Z L-RESULT
              ELSE
                  CALL "FR-PLACE-PF" USING L-STATE FT-C(L-FT) LS-ZERO L-X L-Y L-Z L-RESULT
              END-IF
@@ -900,6 +952,8 @@
                  COMPUTE LS-CH = FT-A(L-FT) + 1
              END-IF
              CALL "FR-PLACE-PF" USING L-STATE CH-PF(LS-CH) LS-ZERO L-X L-Y L-Z L-RESULT
+         WHEN 51
+             CALL "FR-TREE" USING L-STATE L-FT L-X L-Y L-Z L-RESULT
          WHEN 57
              MOVE 0 TO LS-TOTAL
              PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= FT-B(L-FT)

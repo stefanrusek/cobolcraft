@@ -842,3 +842,24 @@ respawn, not a later join: the known-player rule of PLAYER-CREATE decides) of a 
 bare `oak_log`; core/src/keys.cob), a key the set lacks leaves its slot empty. The server key `starter-kit` (`true` by default, `false` for an
 empty inventory; operator-surface section 2) switches it. The cobolcraft type keeps the stand-in starting inventory of standin section 2; the
 standard type no longer receives it.
+
+## Trees in the standard type (002 operator decision)
+
+The standard generator places trees by the biome feature lists of the data pack (the step 9 vegetal decoration, docs/protocol/35-worldgen-features-3 and 35-4), through
+the feature stage of core/src/feat-stage.cob. The biome lists are loaded with the terrain data (WORLD-GEN-DATA-OPEN) and the stage runs only the placed features whose
+id starts with `minecraft:trees_` (`FI-ONLY`; the other vegetation, flowers, grass patches, mushrooms, stays off until it is reviewed). No clean-room round was needed:
+the docs above specify the tree feature, the straight trunk, the blob, spruce and pine foliage and the two layer size.
+
+Supported: the `tree` feature (type 51) with `straight_trunk_placer`, `blob_foliage_placer`, `spruce_foliage_placer`, `pine_foliage_placer`, `two_layers_feature_size`,
+the `soil_beneath_tree` provider and the `beehive` decorator (ignored). That is every plain oak, birch and spruce and pine of the data. Also compiled for this: the
+`weighted_list` int provider of constants (the tree counts of the biomes), the `would_survive` predicate of a sapling (the block below is in the tag `supports_vegetation`, 24 part 4: VegetationBlock.canSurvive).
+
+Deviations, all in the header of core/src/feat-tree.cob:
+
+| Subject | Deviation |
+|---|---|
+| Chunk borders | The write window of the feature level is one chunk. A tree is built in a work grid first and is written only when every log, leaf and soil block lies in the chunk being generated; otherwise it places nothing (after its draws, so the draws of later features keep the vanilla order). Trees near a chunk edge are therefore missing, a stripe a few blocks wide on each side of every chunk. Carrying the overflow into the neighbour chunk is the open item. |
+| Variants | A `random_selector` whose default is a tree places that default when the chosen child cannot be compiled (the fancy and fallen trees), so plains and forests have plain oaks and birches where vanilla has some large oaks. Trees with other trunk or foliage placers (dark oak, jungle, acacia, mangrove, cherry, large spruce) place nothing. |
+| Bees | The beehive decorator is ignored: no nests. |
+| Leaf distance | Section 2.4 of 35-3 is replaced by the breadth first distance from the tree's own logs through its own leaves; the hash set order of the layers is not reproduced and blocks outside the tree do not lower a distance. Leaves are written not persistent, not waterlogged. The shape update at the edge (2.5) only schedules leaf ticks and is not run. |
+| States | Block states are the default states of the blocks; the leaf distance state is derived from the 28 state layout (distance, persistent, waterlogged) when the leaf block has 28 states. |

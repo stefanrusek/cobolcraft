@@ -4440,3 +4440,5 @@ US7 to US10 and US16 to US20 (controls and screens) next; US11 to US15 (the stan
 ## Lane 002-lane-trees (T4400+)
 
 - [x] T4400 Starter kit for first-time survival players of a standard world (1 crafting table, 16 oak logs, 8 oak planks, 8 sticks) replacing the stand-in starting items for the standard type only, server key `starter-kit` (default true), documented in operator-surface section 2 and world-types "Starter kit"; tests `core/tests/test_starter_kit.cob`, `server/tests/test_config_starter.cob`
+- [x] T4401 Tree feature of the standard generator: feature type 51 (`core/src/feat-tree.cob`, `core/copy/TREEWORK.cpy`, FEATDATA tree rows), `weighted_list` int provider, `would_survive` sapling predicate, the `random_selector` fallback to the default tree, biome feature lists loaded with the terrain data and the stage limited to `minecraft:trees_` placed features (`FI-ONLY`); tests `core/tests/test_feat_tree.cob`, `core/tests/test_feat_gen.cob`; no clean-room round (docs/protocol/35-3 suffices); deviations in `docs/design/world-types.md` "Trees in the standard type"
+
