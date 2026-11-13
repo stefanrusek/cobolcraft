@@ -73,7 +73,6 @@
  COPY CORESTATE.
  COPY CONFIGPKT.
  COPY MESSAGES.
- COPY GENQUEUE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 CONFIG-STEPS EXTERNAL.
     05 CF-STEP               PIC 9 OCCURS 64 TIMES.
@@ -127,10 +126,10 @@
                  IF CS-PACK-OFFERED = 1
                      MOVE 3 TO CF-STEP(L-ID)
                      CALL "CONFIG-PACK-PUSH-BUILD" USING CORE-SETTINGS PK-BUFFER
+                     CALL "CORE-SEND" USING L-ID PK-BUFFER
                  ELSE
-                     CALL "CONFIG-FINISH-BUILD" USING PK-BUFFER
+                     CALL "CONFIG-FINISH-SEND" USING L-ID
                  END-IF
-                 CALL "CORE-SEND" USING L-ID PK-BUFFER
                  CALL "PB-FREE" USING PK-BUFFER
              END-IF
          WHEN L-PACKET-ID = 6
@@ -145,19 +144,12 @@
                      CALL "CMD-TEXT-KEY" USING PK-TEXT WS-MSG
                      CALL "CORE-SEND-DISCONNECT" USING L-ID PK-TEXT
                  WHEN OTHER
-                     MOVE 2 TO CF-STEP(L-ID)
-                     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
-                     CALL "CONFIG-FINISH-BUILD" USING PK-BUFFER
-                     CALL "CORE-SEND" USING L-ID PK-BUFFER
-                     CALL "PB-FREE" USING PK-BUFFER
+                     CALL "CONFIG-FINISH-SEND" USING L-ID
              END-EVALUATE
          WHEN L-PACKET-ID = 3
              EVALUATE TRUE
                  WHEN CF-STEP(L-ID) NOT = 2
                      CALL "CORE-BAD-PACKET" USING L-ID
-                 WHEN GQ-SP-STATE > 0
-*>                   the world's spawn is still being searched: the join waits (CONFIG-RELEASE-HELD)
-                     MOVE 4 TO CF-STEP(L-ID)
                  WHEN OTHER
                      CALL "CONFIG-JOIN" USING L-ID
              END-EVALUATE
@@ -451,9 +443,36 @@
  END PROGRAM CONFIG-JOIN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONFIG-FINISH-SEND.
+*> USING connection id: the end of configuration. While the world's spawn is searched and its spawn area made (GQ-SP-STATE, docs/protocol/50 section 5.3) the server's
+*> Finish Configuration is held back (step 4: the client stays in configuration, its keep-alives answered, as the vanilla server's spawn preparation task does);
+*> otherwise it is sent (step 2) and the client's own Finish Configuration moves the connection to play (CONFIG-JOIN).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==FS-==.
+ 01 CONFIG-STEPS EXTERNAL.
+    05 CF-STEP               PIC 9 OCCURS 64 TIMES.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     IF GQ-SP-STATE > 0
+         MOVE 4 TO CF-STEP(L-ID)
+         GOBACK
+     END-IF
+     MOVE 2 TO CF-STEP(L-ID)
+     CALL "PB-INIT" USING FS-BUFFER WS-CAPACITY
+     CALL "CONFIG-FINISH-BUILD" USING FS-BUFFER
+     CALL "CORE-SEND" USING L-ID FS-BUFFER
+     CALL "PB-FREE" USING FS-BUFFER
+     GOBACK.
+ END PROGRAM CONFIG-FINISH-SEND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CONFIG-RELEASE-HELD.
-*> No parameters: every connection whose Finish Configuration was held while the spawn was searched (step 4) joins now (GEN-SPAWN-TICK), its player placed at
-*> the spawn the search found (the world is new while the search runs, so a joining player has no position of its own).
+*> No parameters: every connection whose end of configuration was held while the spawn was searched and its area made (step 4) is sent its Finish Configuration now
+*> (GEN-SPAWN-RING), its player placed at the spawn the search found (the world is new while the search runs, so a joining player has no position of its own).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -469,7 +488,7 @@
              MOVE CW-SPAWN-Y TO PL-Y(WS-ROW) PL-FALL-START(WS-ROW)
              MOVE CW-SPAWN-Z TO PL-Z(WS-ROW)
              MOVE CW-SPAWN-YAW TO PL-YAW(WS-ROW)
-             CALL "CONFIG-JOIN" USING WS-ID
+             CALL "CONFIG-FINISH-SEND" USING WS-ID
          END-IF
      END-PERFORM
      GOBACK.

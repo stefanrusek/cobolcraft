@@ -1,5 +1,6 @@
 *> The state a loading screen shows while a new world's spawn is searched and its spawn area made (docs/protocol/50 sections 2.5, 2.6, 4, 5; docs/design/generation-worker.md).
-*> A CobolCraft chunk is made whole, so of the ten chunk statuses of 50 section 2.6 a cell shows two: EMPTY (a chunk of the area that is still to be made) and FULL.
+*> A CobolCraft chunk is made whole and a worker reports no stage, so of the ten chunk statuses of 50 section 2.6 a cell shows three: EMPTY (a chunk of the area that is
+*> still to be made), TERRAIN (a chunk a worker is making) and FULL.
 *> Status codes of a grid cell: 0 none (black), 1 EMPTY, 2 to 9 the statuses between, 10 FULL (the number of the status in 50 section 2.6, plus 1).
 *>
 *> Entry points:
@@ -57,6 +58,7 @@
  01 WS-LAST                BINARY-LONG.
  01 WS-AHEAD               BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-GRID                 PIC X(1225).
  PROCEDURE DIVISION USING L-GRID.
@@ -84,6 +86,15 @@
              END-PERFORM
          END-PERFORM
      END-IF
+*>   chunks a generation worker is making: the chunk is somewhere in the pipeline, shown as TERRAIN (code 5; the worker reports no stage)
+     PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > GW-MAX
+         COMPUTE WS-DX = GW-CX(WS-W) - WS-FX
+         COMPUTE WS-DZ = GW-CZ(WS-W) - WS-FZ
+         IF GW-BUSY(WS-W) NOT = 0 AND GW-DIM(WS-W) = WS-DIM AND WS-DX >= -5 AND WS-DX <= 5 AND WS-DZ >= -5 AND WS-DZ <= 5
+             COMPUTE WS-CELL = (WS-DZ + 17) * 35 + WS-DX + 17 + 1
+             MOVE FUNCTION CHAR(6) TO L-GRID(WS-CELL:1)
+         END-IF
+     END-PERFORM
 *>   chunks that are loaded
      PERFORM VARYING WS-DZ FROM -5 BY 1 UNTIL WS-DZ > 5
          PERFORM VARYING WS-DX FROM -5 BY 1 UNTIL WS-DX > 5

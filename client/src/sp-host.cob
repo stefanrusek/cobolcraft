@@ -114,7 +114,11 @@
          CALL "CORE-SAVE"
      END-IF
      MOVE 1 TO SP-ACTIVE
-     MOVE 0 TO SM-LOAD-SHOWN SM-LOAD-SMOOTH SM-LOAD-TICK-MS SM-LOAD-GRID-MS
+     MOVE 0 TO SM-LOAD-SHOWN SM-LOAD-SMOOTH SM-LOAD-TICK-MS SM-LOAD-GRID-MS PL-WAIT PL-CLOSE-DELAY
+*>   a newly created local world waits 500 ms after the level is ready before Player Loaded (docs/protocol/50 section 7.3)
+     IF WS-CREATED = 1
+         MOVE 500 TO PL-CLOSE-DELAY
+     END-IF
      MOVE 0 TO SP-TICKS SP-PAUSED
      COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
      MOVE SPACES TO SM-CONNECT-ADDR

@@ -34,6 +34,8 @@
  01 WS-FZ                  BINARY-LONG.
  01 WS-GRID-FLAG           BINARY-LONG VALUE 1.
  01 WS-PROGRESS-FLAG       BINARY-LONG VALUE 1.
+ 01 WS-NO-GRID             BINARY-LONG VALUE 0.
+ 01 WS-NO-PROGRESS         BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
@@ -41,6 +43,16 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
 *>   A hosted world whose spawn is searched and spawn area made shows the level-loading screen (docs/protocol/50) from the start, and keeps it until
 *>   the world replaces it at the play Login.
+     IF PL-WAIT > 0
+*>       the wait for the level after Login: the text alone, and for a hosted world the grid and the full bar (50 sections 5.4, 7)
+         IF SP-ACTIVE = 1 AND SM-LOAD-SHOWN = 1
+             MOVE 1000000 TO SM-LOAD-SMOOTH
+             CALL "LOADING-LAYOUT" USING CLIENT-STATE L-GW L-GH WS-GRID-FLAG WS-PROGRESS-FLAG
+         ELSE
+             CALL "LOADING-LAYOUT" USING CLIENT-STATE L-GW L-GH WS-NO-GRID WS-NO-PROGRESS
+         END-IF
+         GOBACK
+     END-IF
      IF SP-ACTIVE = 1
          CALL "GEN-LOAD-PROGRESS" USING WS-STATE WS-READY WS-TOTAL WS-PERMILLE WS-FX WS-FZ
          IF WS-STATE > 0

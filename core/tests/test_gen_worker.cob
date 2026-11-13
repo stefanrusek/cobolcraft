@@ -41,6 +41,9 @@
  01 WS-T1                  BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-WORKERS             BINARY-LONG.
+ 01 WS-GRID                PIC X(1225).
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-SAVE-DIM            BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "TEST-GEN-FIXTURE"
@@ -68,6 +71,15 @@
      MOVE GQ-COUNT TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the loading screen's grid (of the world's first dimension, here row 3) shows the chunk a worker is making as TERRAIN (code 5), then as FULL (10)
+     MOVE CW-DIM(1) TO WS-SAVE-DIM
+     MOVE 3 TO CW-DIM(1)
+     CALL "GEN-LOAD-GRID" USING WS-GRID
+     COMPUTE WS-CELL = (WS-CZ + 17) * 35 + WS-CX + 17 + 1
+     MOVE "test gen worker the grid shows the chunk a worker is making as status TERRAIN (code 5)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FUNCTION ORD(WS-GRID(WS-CELL:1)) - 1
+     MOVE 5 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "test gen worker no job runs in the tick" TO TL-CASE
      MOVE GJ-ACTIVE TO TL-OBSERVED-N
      MOVE 0 TO TL-EXPECTED-N
@@ -81,6 +93,12 @@
          MOVE 0 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "GEN-LOAD-GRID" USING WS-GRID
+     MOVE "test gen worker the grid shows the finished chunk as FULL (code 10)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FUNCTION ORD(WS-GRID(WS-CELL:1)) - 1
+     MOVE 10 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-SAVE-DIM TO CW-DIM(1)
      SET ADDRESS OF WS-A TO CK-ADDR(WS-ROW)
      MOVE "test gen worker the worker's chunk equals the atomic reference byte for byte" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N

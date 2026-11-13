@@ -232,6 +232,7 @@
 *>   then Client Tick End, and the day advances one tick.
      IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK AND SP-PAUSED = 0
          MOVE CONN-GAME TO WS-CONN
+         CALL "LOAD-WAIT-TICK" USING CLIENT-STATE
          IF PL-LOADED = 1
              MOVE PL-X TO WS-PX
              MOVE PL-Y TO WS-PY

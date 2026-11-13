@@ -32,7 +32,7 @@
      CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
      CALL "WORLDSIM-NEW-WORLD-SPAWN"
      PERFORM CONFIGURE-CLIENT
-     MOVE "acceptance gen join given a spawn search in progress when the client finishes configuration then it is not in play and stays in configuration" TO TL-CASE
+     MOVE "acceptance gen join given a spawn search in progress when the client finishes configuration then it is still in configuration, its Finish Configuration held back" TO TL-CASE
      MOVE CN-PHASE(WS-CONN) TO TL-OBSERVED-N
      MOVE PH-CONFIG TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -45,6 +45,7 @@
              CALL "C$SLEEP" USING WS-SLEEP
          END-IF
      END-PERFORM
+     PERFORM FINISH-CLIENT
      MOVE "acceptance gen join given the search ended when the tick released the client then it is in play with a player" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      IF CN-PHASE(WS-CONN) = PH-PLAY AND CN-PLAYER(WS-CONN) > 0
@@ -67,10 +68,15 @@
      CALL "CONFIG-RELEASE-HELD"
      MOVE "acceptance gen join given no search when the client finishes configuration then it joins at once" TO TL-CASE
      PERFORM CONFIGURE-CLIENT
+     PERFORM FINISH-CLIENT
      COMPUTE TL-OBSERVED-N = CN-PHASE(WS-CONN) * 100 + FUNCTION MIN(CN-PLAYER(WS-CONN), 1)
      COMPUTE TL-EXPECTED-N = PH-PLAY * 100 + 1
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ FINISH-CLIENT.
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-FEED" USING WS-CONN WS-PATH.
 
  CONFIGURE-CLIENT.
      MOVE CORE-CONN-MEMORY TO WS-KIND
@@ -89,8 +95,6 @@
      MOVE "contract/fixtures/wire/config-c2s-00-client-information.hex" TO WS-PATH
      CALL "TEST-FEED" USING WS-CONN WS-PATH
      MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
-     CALL "TEST-FEED" USING WS-CONN WS-PATH
-     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
      CALL "TEST-FEED" USING WS-CONN WS-PATH
      CALL "PB-FREE" USING PB-BUFFER.
  END PROGRAM ACC-GEN-JOIN-HOLD.

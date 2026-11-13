@@ -191,6 +191,31 @@
  END PROGRAM GEN-SPAWN-BEGIN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-SPAWN-OPEN.
+*> No parameters: CORE-WORLD-OPEN of an existing world: when generation workers serve its standard terrain (the same test as GEN-SPAWN-BEGIN), the spawn area is made around
+*> the chunk of the world spawn before a connection joins (docs/protocol/50 section 5.3; the saved position of a player is not known yet, so the world spawn is the focus).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY GENQUEUE.
+ 01 WS-DEBUG               BINARY-LONG.
+ 01 WS-READY               BINARY-LONG.
+ PROCEDURE DIVISION.
+     IF CW-WORLD-TYPE = "standard"
+         CALL "WORLD-IS-DEBUG" USING WS-DEBUG
+         CALL "GEN-DATA-READY" USING WS-READY
+         IF GQ-WORKERS > 0 AND WS-DEBUG = 0 AND WS-READY = 1
+             MOVE 2 TO GQ-SP-STATE
+             COMPUTE GQ-SP-FX = FUNCTION INTEGER(CW-SPAWN-X / 16)
+             COMPUTE GQ-SP-FZ = FUNCTION INTEGER(CW-SPAWN-Z / 16)
+             MOVE 0 TO GQ-SP-READY GQ-SP-DONE
+             MOVE 121 TO GQ-SP-TOTAL
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-SPAWN-OPEN.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-SPAWN-RING.
 *> No parameters: one tick of the spawn area (GQ-SP-STATE 2; docs/protocol/50 section 5.1): the 7 x 7 chunks around the spawn chunk (GQ-SP-FX, GQ-SP-FZ), counted
 *> in the order of the square spiral so that the middle comes first; those not loaded are asked of the queue. The chunks loaded are kept in GQ-SP-READY. When all
