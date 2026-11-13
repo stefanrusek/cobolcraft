@@ -275,10 +275,10 @@
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US4-4: in creative (the mode command; the host is an operator) a break is instant and no item
+*>   US4-4: in creative (the standard gamemode command; the host is an operator) a break is instant and no item
 *>   appears: the greystone at (6, 54, 8).
-     MOVE "/mode Alice creative" TO WS-SAY
-     MOVE 20 TO WS-SAY-LENGTH
+     MOVE "/gamemode creative" TO WS-SAY
+     MOVE 18 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
      MOVE 5 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
