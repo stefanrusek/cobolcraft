@@ -10,6 +10,7 @@
  WORKING-STORAGE SECTION.
  COPY CLSTATE.
  COPY CLCONST.
+ COPY CLTINT.
  COPY CELLS.
  COPY PROTO.
  COPY TESTLIB.
@@ -291,6 +292,17 @@
          TO TL-CASE
      MOVE "0.0196  0.0196  0.2000 1.00 -8.00 96.00 1" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The biome's attributes override it: the biome under the eye (here the unloaded plains) with fog colour #112244 and an end multiplier 0.85.
+     MOVE 0 TO TT-PLAINS
+     MOVE 4279312964 TO TB-FOG(1)
+     MOVE 0.85 TO TB-FOG-END(1)
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     PERFORM FOG-TEXT
+     MOVE "render list the eye under water in a biome with water_fog_color #112244 and end multiplier 0.85: that colour, end 81.60"
+         TO TL-CASE
+     MOVE "0.0666  0.1333  0.2666 1.00 -8.00 81.60 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO TB-FOG(1) TB-FOG-END(1)
      MOVE 0 TO PL-EYE-WATER
      MOVE 1 TO PL-EYE-LAVA
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
