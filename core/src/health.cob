@@ -150,11 +150,15 @@
  PROGRAM-ID. DEATH-TEXT-BUILD.
 *> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), victim name (PIC X(16)), its length, attacker name
 *> (PIC X(16)), its length, PB-TEXT out: the cause's death message of MESSAGES.cpy, a `translate`
-*> component whose arguments are the victim's and the attacker's names as the message lists them.
+*> component whose arguments are the victim's and the attacker's names as the message lists them. A cobolcraft set uses the DTH- table, a standard
+*> set the vanilla keys of the DTS- table (17 section 4.13.2: death.attack.<message_id>; the .player and .item variants need a kill credit and a weapon
+*> name, which the core does not track yet).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY MESSAGES.
+ COPY CONTENT.
  01 WS-I                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-CAUSE                BINARY-LONG.
@@ -165,11 +169,22 @@
  PROCEDURE DIVISION USING L-CAUSE L-VICTIM L-VICTIM-LENGTH L-ATTACKER L-ATTACKER-LENGTH PB-TEXT.
      INITIALIZE PB-TEXT
      MOVE PB-TEXT-TRANSLATE TO PB-TX-KIND
-     MOVE DTH-KEY(L-CAUSE) TO PB-TX-VALUE
-     MOVE DTH-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
-     MOVE DTH-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         MOVE DTH-KEY(L-CAUSE) TO PB-TX-VALUE
+         MOVE DTH-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
+         MOVE DTH-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     ELSE
+         MOVE DTS-KEY(L-CAUSE) TO PB-TX-VALUE
+         MOVE DTS-KEY-LENGTH(L-CAUSE) TO PB-TX-LENGTH
+         MOVE DTS-ARG-COUNT(L-CAUSE) TO PB-TX-ARG-COUNT
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-TX-ARG-COUNT
-         IF DTH-ARG-KIND(L-CAUSE, WS-I) = MSG-ARG-VICTIM
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+             MOVE DTH-ARG-KIND(L-CAUSE, WS-I) TO WS-KIND
+         ELSE
+             MOVE DTS-ARG-KIND(L-CAUSE, WS-I) TO WS-KIND
+         END-IF
+         IF WS-KIND = MSG-ARG-VICTIM
              MOVE L-VICTIM TO PB-TX-ARG-VALUE(WS-I)
              MOVE L-VICTIM-LENGTH TO PB-TX-ARG-LENGTH(WS-I)
          ELSE
@@ -343,17 +358,19 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DAMAGE-TYPE-ID.
 *> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), damage type id out (BINARY-LONG): the id of the cause's damage type in the open content set. The
-*> cobolcraft set numbers its types in RULES.cpy, and so do the older causes in every set (the acc_us14 tests of the standard set pin them: their
-*> ids are an open item of the combat lane). CAUSE-MOB, new for standard mobs, finds minecraft:mob_attack in the open set's damage_type registry (a
-*> synchronized registry: the id is the entry's position, 04 section 3); 0 when the registry has no such entry.
+*> cobolcraft set numbers its types in RULES.cpy. A standard (or debug) set has the vanilla damage_type registry, a synchronized registry whose ids are
+*> the entries' positions (17 section 4.13.4): the cause's type is found there by key (fall, mob_attack for the abend and mob causes, player_attack,
+*> starve, generic for hail, generic_kill for the command). Where the open set's registry has no such entry the RULES.cpy id is kept.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
  COPY RULES.
  01 WS-REGISTRY            PIC X(112) VALUE "minecraft:damage_type".
+ 01 WS-WANTED              PIC X(112).
  01 WS-COUNT               BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
  01 WS-KEY                 PIC X(112).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-PAYLOAD             PIC X(4096).
@@ -363,17 +380,35 @@
  01 L-CAUSE                BINARY-LONG.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CAUSE L-ID.
-     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT OR L-CAUSE NOT = CAUSE-MOB
-         MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+     MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
          GOBACK
      END-IF
-     MOVE 0 TO L-ID
+     MOVE SPACES TO WS-WANTED
+     EVALUATE L-CAUSE
+         WHEN CAUSE-FALL
+             MOVE "minecraft:fall" TO WS-WANTED
+         WHEN CAUSE-ABEND
+             MOVE "minecraft:mob_attack" TO WS-WANTED
+         WHEN CAUSE-MOB
+             MOVE "minecraft:mob_attack" TO WS-WANTED
+         WHEN CAUSE-PLAYER
+             MOVE "minecraft:player_attack" TO WS-WANTED
+         WHEN CAUSE-STARVATION
+             MOVE "minecraft:starve" TO WS-WANTED
+         WHEN CAUSE-COMMAND
+             MOVE "minecraft:generic_kill" TO WS-WANTED
+         WHEN OTHER
+             MOVE "minecraft:generic" TO WS-WANTED
+     END-EVALUATE
      CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-COUNT
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-COUNT OR WS-FOUND = 1
          CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-I WS-KEY WS-KEY-LENGTH WS-PAYLOAD
              WS-CAPACITY WS-LENGTH WS-STATUS
-         IF WS-KEY = "minecraft:mob_attack"
+         IF WS-KEY = WS-WANTED
              MOVE WS-I TO L-ID
+             MOVE 1 TO WS-FOUND
          END-IF
      END-PERFORM
      GOBACK.
