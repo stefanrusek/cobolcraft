@@ -1,0 +1,232 @@
+*> Test of 29b part 2 section 12, Can-survive rules in one table (core/src/growth-29b-2c.cob; T0557): the survive table of 12.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-ISG), calls the program with the input group (and the key) and shows the first outputs of WS-RSG joined by "/", one group per
+*> call; expected values come from the rules, tables and worked cases of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-2-12.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A                   PIC X(48).
+ 01 WS-B                   PIC X(48).
+ 01 WS-C                   PIC X(48).
+ 01 WS-STEM                BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-2§12 Can-survive rules in one table: crops, pitcher lower: raw brightness 8 and supports_crops below; the pitcher upper half needs only the lower half below" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 8 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 7 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 15 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 8 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 7 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 15 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/1 0/1 1/0 0/1 1/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§12 Can-survive rules in one table: stems, nether wart, cocoa, berry bush, saplings: one tag test, no light test; the VegetationBlock update turns a failing block into air" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "4 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 15 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 15 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "6 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "6 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "8 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "8 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/1 1/0 0/1 1/0 0/1 1/0 0/1 1/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§12 Can-survive rules in one table: mangrove propagule standing and hanging, azalea: the tag of the block below or above" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "9 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "10 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "10 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "11 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "11 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/1 1/0 0/1 1/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§12 Can-survive rules in one table: farmland and dirt path: above not solid or in the listed set (maintains_farmland, fence gate); mud and rooted dirt have no rule" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "12 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "12 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "12 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "13 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "13 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "13 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "14 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-SURVIVE" USING WS-ISG WS-RSG
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/0 1/0 1/0 0/0 1/0 1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-A) "|" FUNCTION TRIM(WS-B) "|" FUNCTION TRIM(WS-C) "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T1 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T2 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-2-12.

@@ -1,0 +1,235 @@
+*> Test of 29b part 2 section 8, Sweet berry bush (core/src/growth-29b-2b.cob; T0549): the sweet berry bush of 8.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-ISG), calls the program with the input group (and the key) and shows the first outputs of WS-RSG joined by "/", one group per
+*> call; expected values come from the rules, tables and worked cases of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-2-8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-A                   PIC X(48).
+ 01 WS-B                   PIC X(48).
+ 01 WS-C                   PIC X(48).
+ 01 WS-STEM                BINARY-LONG.
+ 01 WS-T1                  BINARY-LONG.
+ 01 WS-T2                  BINARY-LONG.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: random tick (8): the nextInt(5) draw first, then raw brightness 9 at pos.above(); success writes age + 1 and fires block_change; bone meal valid below 3" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-TICK" USING WS-ISG WS-RSG
+     MOVE 7 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-TICK" USING WS-ISG WS-RSG
+     MOVE 7 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-TICK" USING WS-ISG WS-RSG
+     MOVE 7 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 15" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-TICK" USING WS-ISG WS-RSG
+     MOVE 7 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1/1/1/1 1/1/0/0/0/1/1 1/1/0/1/0/1/2 0/0/0/3/0/0/3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: entityInside (8, 14.8): slowed by (0.8, 0.75, 0.8) when living and not a fox or bee; hurt 1.0 only on the server at age above 0 with horizontal movement of 0.003 or more" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 1 3 200000000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 3 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 200000000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 3 200000000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 3 200000000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 3 200000000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/800/750/800/1 1/800/750/800/0 1/800/750/800/0 0/0/0/0/0 0/0/0/0/0 1/800/750/800/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: movement threshold (8): the float 0.003 widened is 0.003000000026077032, so 0.003 does not hurt and 0.003000001 does; either axis, either sign" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 1 3 3000000 3000000" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 3 3000001 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 3 -3000001 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 3 0 5000000" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-INSIDE" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/800/750/800/0 1/800/750/800/1 1/800/750/800/1 1/800/750/800/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: useItemOn (8, 14.8): PASS when age is not 3 and bone meal is held, so that bone meal proceeds; else the generic path" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-USE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-USE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-USE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-USE" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: harvest (8): age above 1 pops loot, plays the pick sound with pitch 0.8 + 0.4 r, writes age 1 and fires block_change; success also on the client; age 0 or 1 passes" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1 500" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-HARVEST" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-HARVEST" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-HARVEST" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-HARVEST" USING WS-ISG WS-RSG
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1000/1 1/1/1/800/1 1/0/2/0/0 0/0/1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-2§8 Sweet berry bush: loot (8): harvest gives 1 at age 3 plus U(1, 2); breaking gives U(2, 3) at age 3 or U(1, 2) at age 2 plus the Fortune bonus, nothing below age 2" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0 5 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 1 2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GB2-BERRY-LOOT" USING WS-ISG WS-RSG
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 2 2 5 3 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-A) "|" FUNCTION TRIM(WS-B) "|" FUNCTION TRIM(WS-C) "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T1 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-T2 TO WS-SHOW
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-2-8.
