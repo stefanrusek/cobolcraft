@@ -664,7 +664,7 @@
  PROGRAM-ID. TINT-BIOME-AT.
 *> Section 4 (the level's getBiome, without the fuzzy zoom of 10 §7.7): USING CLIENT-STATE, block x,
 *> y, z, biome id out: the replica's biome of the 4 x 4 x 4 cell holding the block; a position in a
-*> chunk that is not loaded, or outside the world's height, is the plains biome.
+*> chunk that is not loaded, or outside the world's height, or whose biome has no colours in the table, is the plains biome.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CELLS.
@@ -695,6 +695,11 @@
          COMPUTE WS-LY = WS-LY / 4
          COMPUTE WS-I = WS-LY * 16 + WS-LZ * 4 + WS-LX + 1
          MOVE CE-BIOME(WS-I) TO L-BIOME
+*>       A biome the registry sync gave no colours (a standard world's generated chunks name more biomes than the
+*>       sync describes, and their water and grass would tint black) is the plains biome, as an unloaded cell is.
+         IF L-BIOME >= TT-BIOMES
+             MOVE TT-PLAINS TO L-BIOME
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM TINT-BIOME-AT.
