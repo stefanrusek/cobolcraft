@@ -46,6 +46,13 @@
  01 WS-SAVE-DIM            BINARY-LONG.
  01 WS-EXPECT              BINARY-LONG.
  01 WS-BUSY                BINARY-LONG.
+ 01 WS-SIZES               PIC X(80).
+ 01 WS-ONE-SIZE            PIC X(20).
+ 01 WS-A1                  PIC X(8).
+ 01 WS-A2                  PIC X(8).
+ 01 WS-A3                  PIC X(8).
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "TEST-GEN-FIXTURE"
@@ -395,6 +402,24 @@
      MOVE WS-N TO TL-OBSERVED-N
      MOVE WS-WORKERS TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the automatic sizes for processor counts of any kind (processors, pool, loading pool)
+     MOVE "1 1 1|2 1 1|3 1 1|4 2 2|6 3 4|8 4 6|10 4 8|14 4 8|100 4 8|0 1 1" TO WS-SIZES
+     MOVE 0 TO WS-BAD
+     MOVE 1 TO WS-PTR
+     PERFORM 10 TIMES
+         UNSTRING WS-SIZES DELIMITED BY "|" INTO WS-ONE-SIZE WITH POINTER WS-PTR
+         UNSTRING WS-ONE-SIZE DELIMITED BY " " INTO WS-A1 WS-A2 WS-A3
+         MOVE FUNCTION NUMVAL(WS-A1) TO WS-N
+         CALL "GEN-WORKERS-SIZES" USING WS-N WS-ROW WS-I
+         IF WS-ROW NOT = FUNCTION NUMVAL(WS-A2) OR WS-I NOT = FUNCTION NUMVAL(WS-A3)
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "test gen worker the automatic sizes for 1, 2, 3, 4, 6, 8, 10, 14, 100 and 0 processors" TO TL-CASE
+     MOVE WS-BAD TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   the pool used while a world's spawn area is made: processors - 2 (at least the pool, at most GW-MAX = 8) for the automatic size, else the size asked for
      CALL "GEN-WORKERS-LOADING" USING WS-N
      COMPUTE WS-EXPECT = WS-RC - 2
