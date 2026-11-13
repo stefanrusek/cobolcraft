@@ -1,8 +1,8 @@
 import sys,math
 sys.path.insert(0,'core/tests/gen')
 from gentest import *
-OUT=sys.argv[1] if len(sys.argv)>1 else "core/tests"
-ONLY=set(int(a) for a in sys.argv[2:])
+OUT="core/tests"
+ONLY=set(int(a) for a in sys.argv[1:])
 def S(*a): return " ".join(str(x) for x in a)
 def m(x,n=1000000): return int(math.floor(x*n+0.5))
 def GG(n,subj,tasks,desc): return Gen('TEST-GROWTH-29B-3-%d'%n,'29b-3§%d'%n,subj,'Test of 29b part 3 section %d, %s (core/src/growth-29b-3.cob; %s): %s'%(n,subj,tasks,desc),'')
@@ -91,3 +91,68 @@ def bexp(*a):
     return "%d/%d/"%(c,len([x for x in o if x]))+"/".join(map(str,o))
 g.case('breadth-first traversal (2.4): FIFO queue, a position taken twice is dropped, SKIP is visited but not counted or expanded, STOP returns the count, count >= maxCount returns at once, depth >= maxDepth is not expanded; count, nodes taken, then their order',[("0",bcall(*c),8) for c in bc]," ".join(bexp(*c) for c in bc))
 W(g,2)
+# ===== 3
+g=GG(3,'Snowy blocks, grass, mycelium, podzol','T0565','the snowy property (3.1), survival, decay and spread (3.2), grass bone meal (3.3).')
+snc=[(2,1,0),(2,0,1),(2,0,0),(2,1,1),(1,1,0),(3,1,0),(6,1,1),(4,0,1)]
+g.run('snowy block shape update (3.1): from UP the state takes snowy = the neighbour is in tag snow; every other direction leaves the state (the new snowy, or -1 for unchanged); placement takes the block above',[S(*c) for c in snc],'CALL "GC3-SNOWY-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(c[1] if c[0]==2 else -1) for c in snc))
+g.run('snowy placement (3.1): snowy is whether the block at clickedPos.above() is in tag snow',["0","1"],'CALL "GC3-SNOWY-PLACE" USING WS-I(1) WS-R(1)',1,"0 1")
+def alive(snow,lay,full,d):
+    if snow and lay==1: return 1
+    if full: return 0
+    return int(d<15)
+ac=[(1,1,0,16),(1,2,0,16),(1,1,1,16),(0,0,1,0),(0,0,0,0),(0,0,0,14),(0,0,0,15),(0,0,0,16),(1,8,0,16),(1,1,1,0)]
+g.run('canStayAlive (3.2): one layer of snow above passes at once; a source fluid above fails; else the light-into result must be below 15 (two layers give 16: dead)',[S(*c) for c in ac],'CALL "GC3-STAY-ALIVE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1," ".join(str(alive(*c)) for c in ac))
+g.run('canPropagate (3.2): canStayAlive and the fluid above is not water',["1 0","1 1","0 0","0 1"],'CALL "GC3-PROPAGATE" USING WS-I(1) WS-I(2) WS-R(1)',1,"1 0 0 0")
+def st(dirt,al,br):
+    if not dirt: return 0
+    if not al: return 1
+    if br<9: return 2
+    return 3
+stc=[(1,0,15),(1,0,0),(1,1,8),(1,1,9),(1,1,15),(0,1,15),(0,0,0)]
+g.run('spreading random tick (3.2): no dirt key does nothing; step 1 decays to dirt when it cannot stay alive; step 2 stops under light 9 at the cell above; else the four attempts (0 nothing, 1 decay, 2 dark, 3 spread)',[S(*c) for c in stc],'CALL "GC3-SPREAD-TICK" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(st(*c)) for c in stc))
+def tg(dx,dy,dz,dirt,prop,sn):
+    place=int(dirt and prop)
+    return dx-1,dy-3,dz-1,place,(sn if place else 0)
+tgc=[(0,0,0,1,1,0),(2,4,2,1,1,1),(1,3,1,1,1,1),(1,2,1,1,1,0),(0,4,2,0,1,0),(2,0,0,1,0,1),(1,1,1,0,0,0)]
+g.run('target of an attempt (3.2): the draws nextInt(3), nextInt(5), nextInt(3) give dx -1..1, dy -3..1, dz -1..1; the target changes only for plain dirt that canPropagate, with snowy = the block above it is in tag snow',[S(*c) for c in tgc],'CALL "GC3-SPREAD-TARGET" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join("%d/%d/%d/%d/%d"%tg(*c) for c in tgc))
+g.run('mycelium client particle (3.2): nextInt(10) of 0 adds a particle at y + 1.1 (x 10: 11), any other draw none',["0","1","9"],'CALL "GC3-MYCELIUM-ANIM" USING WS-I(1) WS-R(1) WS-R(2)',2,"1/11 0/0 0/0")
+g.run('grass bone meal target (3.3): valid when the block above is air and the position above is inside the build height; success is always true',["1 1","1 0","0 1","0 0"],'CALL "GC3-GRASS-VALID" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2,"1/1 0/1 0/1 0/1")
+g.run('grass bone meal steps (3.3): i / 16 steps, 0 for 0 to 15, 1 for 16 to 31, 7 for 112 to 127',["0","15","16","31","32","111","112","127"],'CALL "GC3-GRASS-STEPS" USING WS-I(1) WS-R(1)',1,"0 0 1 1 2 6 7 7")
+def trunc(a,b): return int(a/b)
+gsc=[(0,0,0,0),(2,2,2,2),(1,1,1,1),(0,0,2,0),(0,2,2,2),(2,0,2,0),(0,2,1,1),(2,2,0,0),(1,0,2,1),(1,2,2,1)]
+g.run('grass walk step (3.3): dx = between(-1, 1), dy = (between(-1, 1) x nextInt(3)) / 2 truncated toward zero (-1 for -2, +1 for 2, else 0), dz = between(-1, 1); draws given as the nextInt values',[S(*c) for c in gsc],'CALL "GC3-GRASS-STEP" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%(c[0]-1,trunc((c[1]-1)*c[2],2),c[3]-1) for c in gsc))
+g.run('grass stopBonemealSpread (3.3): true when the block below p is not this grass block or the collision shape at p is a full block',["1 0","0 0","1 1","0 1"],'CALL "GC3-GRASS-STOP" USING WS-I(1) WS-I(2) WS-R(1)',1,"0 1 1 1")
+def ge(air,short,d1,valid,inh,d2,empty,pf):
+    draws=0; grow=0; res=0
+    if short:
+        draws+=1
+        if d1<0.1 and valid: grow=1
+    if air and inh:
+        draws+=1
+        if d2<0.125: res=3 if empty else 1
+        elif pf: res=2
+    return grow,res,draws
+gec=[(1,0,0.5,0,1,0.5,0,1),(1,0,0.5,0,1,0.1,0,1),(1,0,0.5,0,1,0.124,1,1),(1,0,0.5,0,1,0.125,0,1),(1,0,0.5,0,1,0.9,0,0),(1,0,0.5,0,0,0.1,0,1),(0,0,0.5,0,1,0.1,0,1),(0,1,0.05,1,1,0.5,0,1),(0,1,0.05,0,1,0.5,0,1),(0,1,0.1,1,1,0.5,0,1),(0,1,0.5,1,0,0.5,0,1)]
+g.run('grass placeBonemealEffect (3.3): short grass draws nextFloat() < 0.1 and grows when valid, then only air inside the height goes on (the state read before); a draw below 0.125 places a biome flower (an empty list stops), else the grass_bonemeal feature when present; results 1 flower, 2 patch, 3 empty list; grow, result, draws',[S(*c) for c in gec],'CALL "GC3-GRASS-EFFECT" USING WS-I(1) WS-I(2) WS-FX(3) WS-I(4) WS-I(5) WS-FX(6) WS-I(7) WS-I(8) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%ge(*c) for c in gec))
+W(g,3)
+# ===== 4
+g=GG(4,'Nylium and netherrack','T0567','canBeNylium decay (4.1), nylium bone meal (4.2), netherrack bone meal (4.3).')
+g.run('canBeNylium (4.1): the light-into result below 15 keeps nylium (no snow exception: one snow layer gives 16 and reverts it); a result of 15 or more reverts it to netherrack on the random tick',["0","1","14","15","16"],'CALL "GC3-NYLIUM-TICK" USING WS-I(1) WS-R(1) WS-R(2)',2,"0/1 0/1 0/1 1/0 1/0")
+g.extra=" 01 WS-CUBE.\n    05 WS-CB BINARY-LONG OCCURS 27 TIMES.\n"
+g.run('nylium bone meal (4.2): valid when the block above is air and inside the build height, success always; the feature nylium_bonemeal is placed above when it is inside the height and the feature exists',["1 1 1","1 1 0","0 1 1","1 0 1","0 0 0"],'CALL "GC3-NYLIUM-BONE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3,"1/1/1 1/1/0 0/1/1 0/1/0 0/1/0")
+cubes=[[0]*27,[1]+[0]*26,[2]+[0]*26,[0]*13+[1]+[0]*13,[0]*13+[1]+[0]*12+[2],[3]*27,[0]*26+[2]]
+def cube(c): return int(1 in c)+int(2 in c), int(1 in c), int(2 in c)
+def ccall(c):
+    s='INITIALIZE WS-CUBE\n'
+    for i,v in enumerate(c): s+='MOVE %d TO WS-CB(%d)\n'%(v,i+1)
+    return s+'CALL "GC3-CUBE-NYLIUM" USING WS-CUBE WS-R(1) WS-R(2) WS-R(3)'
+g.case('netherrack cube scan (4.3): the 27 positions of pos +- 1, a cell is 1 warped_nylium, 2 crimson_nylium, else another block; count of nylium blocks, warped found, crimson found',[("0",ccall(c),3) for c in cubes]," ".join("%d/%d/%d"%cube(c) for c in cubes))
+g.run('netherrack bone meal target (4.3): valid when the state above propagates skylight down and the cube holds a nylium block; success always',["1 1","1 0","0 1","1 5","0 0"],'CALL "GC3-NETHERRACK-VALID" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2,"1/1 0/1 0/1 1/1 0/1")
+def nr(w,c,b):
+    if w and c: return (1 if b else 2),1
+    if w: return 1,0
+    if c: return 2,0
+    return 0,0
+nrc=[(1,1,1),(1,1,0),(1,0,0),(1,0,1),(0,1,1),(0,1,0),(0,0,0),(0,0,1)]
+g.run('netherrack bone meal (4.3): both kinds found: nextBoolean() true gives warped, false crimson (one draw); only warped: warped; only crimson: crimson; neither: nothing (1 warped, 2 crimson; draws)',[S(*c) for c in nrc],'CALL "GC3-NETHERRACK-PERFORM" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%nr(*c) for c in nrc))
+W(g,4)

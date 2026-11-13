@@ -328,3 +328,374 @@
      END-PERFORM
      GOBACK.
  END PROGRAM GC3-BFS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOWY-SU.
+*> USING direction of the shape update (1 down, 2 up, 3 north ...: the order of 2.3), the neighbour is in tag snow, the current snowy (BINARY-LONG), the new snowy out
+*> (-1 for the state unchanged): SnowyBlock shape update (3.1): from UP the state takes snowy = the neighbour is in tag snow; every other direction leaves it.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-NEIGHBOUR-SNOW       BINARY-LONG.
+ 01 L-SNOWY                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIRECTION L-NEIGHBOUR-SNOW L-SNOWY L-NEW.
+     MOVE -1 TO L-NEW
+     IF L-DIRECTION = 2
+         MOVE L-NEIGHBOUR-SNOW TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SNOWY-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SNOWY-PLACE.
+*> USING the block above the clicked position is in tag snow (BINARY-LONG), snowy out: getStateForPlacement of 3.1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ABOVE-SNOW           BINARY-LONG.
+ 01 L-SNOWY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ABOVE-SNOW L-SNOWY.
+     MOVE L-ABOVE-SNOW TO L-SNOWY
+     GOBACK.
+ END PROGRAM GC3-SNOWY-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-STAY-ALIVE.
+*> USING above is a snow layer, its layers, the fluid above is a full source, the light-into result of 2.1 (BINARY-LONG), alive out: canStayAlive of 3.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SNOW                 BINARY-LONG.
+ 01 L-LAYERS               BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-ALIVE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SNOW L-LAYERS L-FULL L-RESULT L-ALIVE.
+     MOVE 0 TO L-ALIVE
+     IF L-SNOW = 1 AND L-LAYERS = 1
+         MOVE 1 TO L-ALIVE
+         GOBACK
+     END-IF
+     IF L-FULL = 1
+         GOBACK
+     END-IF
+     IF L-RESULT < 15
+         MOVE 1 TO L-ALIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-STAY-ALIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-PROPAGATE.
+*> USING canStayAlive, the fluid above is in tag water (BINARY-LONG), canPropagate out (3.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ALIVE                BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ALIVE L-WATER L-CAN.
+     MOVE 0 TO L-CAN
+     IF L-ALIVE = 1 AND L-WATER = 0
+         MOVE 1 TO L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-PROPAGATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SPREAD-TICK.
+*> USING dirt resolved from the registry, canStayAlive, max local raw brightness at the cell above (BINARY-LONG), action out: the random tick of 3.2: 0 nothing (no dirt),
+*> 1 the block decays to dirt, 2 stops (brightness below 9), 3 runs the four spread attempts.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIRT                 BINARY-LONG.
+ 01 L-ALIVE                BINARY-LONG.
+ 01 L-BRIGHTNESS           BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIRT L-ALIVE L-BRIGHTNESS L-ACTION.
+     MOVE 0 TO L-ACTION
+     IF L-DIRT = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-ACTION
+     IF L-ALIVE = 0
+         GOBACK
+     END-IF
+     MOVE 2 TO L-ACTION
+     IF L-BRIGHTNESS < 9
+         GOBACK
+     END-IF
+     MOVE 3 TO L-ACTION
+     GOBACK.
+ END PROGRAM GC3-SPREAD-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-SPREAD-TARGET.
+*> USING the draws nextInt(3), nextInt(5), nextInt(3) in that order, the target is plain dirt, canPropagate for the target, the block above the target is in tag snow
+*> (BINARY-LONG), dx, dy, dz, place, snowy out: one of the four attempts of 3.2 (dx -1..1, dy -3..1, dz -1..1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW-X               BINARY-LONG.
+ 01 L-DRAW-Y               BINARY-LONG.
+ 01 L-DRAW-Z               BINARY-LONG.
+ 01 L-DIRT                 BINARY-LONG.
+ 01 L-PROPAGATE            BINARY-LONG.
+ 01 L-SNOW                 BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-PLACE                BINARY-LONG.
+ 01 L-SNOWY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW-X L-DRAW-Y L-DRAW-Z L-DIRT L-PROPAGATE L-SNOW L-DX L-DY L-DZ L-PLACE L-SNOWY.
+     COMPUTE L-DX = L-DRAW-X - 1
+     COMPUTE L-DY = L-DRAW-Y - 3
+     COMPUTE L-DZ = L-DRAW-Z - 1
+     MOVE 0 TO L-PLACE L-SNOWY
+     IF L-DIRT = 1 AND L-PROPAGATE = 1
+         MOVE 1 TO L-PLACE
+         MOVE L-SNOW TO L-SNOWY
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-SPREAD-TARGET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-MYCELIUM-ANIM.
+*> USING the draw nextInt(10) (BINARY-LONG), spawn, particle height above the block x 10 (BINARY-LONG out): MyceliumBlock.animateTick (3.2, client only).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-SPAWN                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-SPAWN L-HEIGHT.
+     MOVE 0 TO L-SPAWN L-HEIGHT
+     IF L-DRAW = 0
+         MOVE 1 TO L-SPAWN
+         MOVE 11 TO L-HEIGHT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-MYCELIUM-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-GRASS-VALID.
+*> USING the block above is air, the position above is inside the build height (BINARY-LONG), valid, success out: grass block bone meal target (3.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-INSIDE L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-AIR = 1 AND L-INSIDE = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-GRASS-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-GRASS-STEPS.
+*> USING i (0 to 127), steps out (i / 16, integer division): the walk length of 3.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-I                    BINARY-LONG.
+ 01 L-STEPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-I L-STEPS.
+     DIVIDE L-I BY 16 GIVING L-STEPS
+     GOBACK.
+ END PROGRAM GC3-GRASS-STEPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-GRASS-STEP.
+*> USING the draws nextInt(3) of dx, of the between of dy, of the nextInt(3) of dy, of dz (BINARY-LONG), dx, dy, dz out: one step of the cumulative walk of 3.3:
+*> between(-1, 1) is the draw minus 1; dy = (between x nextInt(3)) / 2 truncated toward zero.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PRODUCT             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DRAW-X               BINARY-LONG.
+ 01 L-DRAW-BETWEEN         BINARY-LONG.
+ 01 L-DRAW-Y               BINARY-LONG.
+ 01 L-DRAW-Z               BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW-X L-DRAW-BETWEEN L-DRAW-Y L-DRAW-Z L-DX L-DY L-DZ.
+     COMPUTE L-DX = L-DRAW-X - 1
+     COMPUTE WS-PRODUCT = (L-DRAW-BETWEEN - 1) * L-DRAW-Y
+     DIVIDE WS-PRODUCT BY 2 GIVING L-DY
+     COMPUTE L-DZ = L-DRAW-Z - 1
+     GOBACK.
+ END PROGRAM GC3-GRASS-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-GRASS-STOP.
+*> USING the state below p is this grass block, the collision shape at p is a full block (BINARY-LONG), stop out: stopBonemealSpread of 3.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BELOW-GRASS          BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-STOP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BELOW-GRASS L-FULL L-STOP.
+     MOVE 0 TO L-STOP
+     IF L-BELOW-GRASS = 0 OR L-FULL = 1
+         MOVE 1 TO L-STOP
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-GRASS-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-GRASS-EFFECT.
+*> USING the state at p is air, it is short_grass, nextFloat for the short grass test (FLOAT-LONG), short grass isValidBonemealTarget, p is inside the build height, nextFloat
+*> of step 3 (FLOAT-LONG), the biome flower list is empty, the placed feature grass_bonemeal exists, short grass grown, result (1 flower placed, 2 grass patch placed, 3
+*> empty list, 0 nothing), floats drawn (BINARY-LONG out): placeBonemealEffect of 3.3 (the short grass draw is made only for short grass; step 3 only for air in range).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ 01 L-DRAW-SHORT           FLOAT-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ 01 L-DRAW-FLOWER          FLOAT-LONG.
+ 01 L-EMPTY                BINARY-LONG.
+ 01 L-FEATURE              BINARY-LONG.
+ 01 L-GROWN                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-SHORT L-DRAW-SHORT L-VALID L-INSIDE L-DRAW-FLOWER L-EMPTY L-FEATURE L-GROWN L-RESULT L-DRAWS.
+     MOVE 0 TO L-GROWN L-RESULT L-DRAWS
+     IF L-SHORT = 1
+         MOVE 1 TO L-DRAWS
+         IF L-DRAW-SHORT < 0.1 AND L-VALID = 1
+             MOVE 1 TO L-GROWN
+         END-IF
+     END-IF
+     IF L-AIR = 0 OR L-INSIDE = 0
+         GOBACK
+     END-IF
+     ADD 1 TO L-DRAWS
+     IF L-DRAW-FLOWER < 0.125
+         MOVE 1 TO L-RESULT
+         IF L-EMPTY = 1
+             MOVE 3 TO L-RESULT
+         END-IF
+         GOBACK
+     END-IF
+     IF L-FEATURE = 1
+         MOVE 2 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-GRASS-EFFECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-NYLIUM-TICK.
+*> USING the light-into result of 2.1 (BINARY-LONG), reverts, survives out: NyliumBlock random tick (4.1): canBeNylium is a result below 15, with no snow exception and no fluid
+*> test; when false the block becomes netherrack.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-REVERTS              BINARY-LONG.
+ 01 L-SURVIVES             BINARY-LONG.
+ PROCEDURE DIVISION USING L-RESULT L-REVERTS L-SURVIVES.
+     MOVE 0 TO L-REVERTS
+     MOVE 1 TO L-SURVIVES
+     IF L-RESULT >= 15
+         MOVE 1 TO L-REVERTS
+         MOVE 0 TO L-SURVIVES
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-NYLIUM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-NYLIUM-BONE.
+*> USING the block above is air, the position above is inside the build height, the feature nylium_bonemeal exists (BINARY-LONG), valid, success, place out: nylium bone meal (4.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-INSIDE               BINARY-LONG.
+ 01 L-FEATURE              BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-PLACE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-INSIDE L-FEATURE L-VALID L-SUCCESS L-PLACE.
+     MOVE 0 TO L-VALID L-PLACE
+     MOVE 1 TO L-SUCCESS
+     IF L-AIR = 1 AND L-INSIDE = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     IF L-INSIDE = 1 AND L-FEATURE = 1
+         MOVE 1 TO L-PLACE
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-NYLIUM-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-CUBE-NYLIUM.
+*> USING the 27 cells of pos +- 1 (BINARY-LONG: 1 warped_nylium, 2 crimson_nylium, else another block), nylium count, warped found, crimson found out: the cube scan of 4.3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CUBE.
+    05 L-CELL              BINARY-LONG OCCURS 27 TIMES.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-WARPED               BINARY-LONG.
+ 01 L-CRIMSON              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CUBE L-COUNT L-WARPED L-CRIMSON.
+     MOVE 0 TO L-COUNT L-WARPED L-CRIMSON
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 27
+         EVALUATE L-CELL(WS-I)
+             WHEN 1
+                 ADD 1 TO L-COUNT
+                 MOVE 1 TO L-WARPED
+             WHEN 2
+                 ADD 1 TO L-COUNT
+                 MOVE 1 TO L-CRIMSON
+         END-EVALUATE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GC3-CUBE-NYLIUM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-NETHERRACK-VALID.
+*> USING the state above propagates skylight down, the number of nylium blocks in the cube (BINARY-LONG), valid, success out: netherrack bone meal target (4.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SKY                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-SKY L-COUNT L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-SKY = 1 AND L-COUNT > 0
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-NETHERRACK-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-NETHERRACK-PERFORM.
+*> USING a warped_nylium was found, a crimson_nylium was found, nextBoolean (BINARY-LONG), the block placed (1 warped, 2 crimson, 0 nothing), draws out: 4.3 performBonemeal; both
+*> kinds make one draw: true gives warped, false crimson.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WARPED               BINARY-LONG.
+ 01 L-CRIMSON              BINARY-LONG.
+ 01 L-BOOLEAN              BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WARPED L-CRIMSON L-BOOLEAN L-BLOCK L-DRAWS.
+     MOVE 0 TO L-BLOCK L-DRAWS
+     EVALUATE TRUE
+         WHEN L-WARPED = 1 AND L-CRIMSON = 1
+             MOVE 1 TO L-DRAWS
+             MOVE 2 TO L-BLOCK
+             IF L-BOOLEAN = 1
+                 MOVE 1 TO L-BLOCK
+             END-IF
+         WHEN L-WARPED = 1
+             MOVE 1 TO L-BLOCK
+         WHEN L-CRIMSON = 1
+             MOVE 2 TO L-BLOCK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC3-NETHERRACK-PERFORM.
