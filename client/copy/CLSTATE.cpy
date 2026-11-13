@@ -31,6 +31,8 @@
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-WORLD              PIC X(80).       *> --world <save folder> / CC_WORLD: opened right after start-up (WORLD-OPEN-ARG)
+    05 CL-WORLD-LENGTH       BINARY-LONG.     *> 0 = none
     05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
     05 CL-OPENER-LENGTH      BINARY-LONG.
     05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
@@ -543,6 +545,13 @@
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+*>  ---- SKY-STOPGAP (CC-0007 stopgap; sky-stopgap.cob): per mesh call, the rows whose sky light is to be assumed ----
+    05 SKG-STATE.
+       10 SKG-COUNT           BINARY-LONG.    *> entries in use (0 = real light only)
+       10 SKG-ENTRY OCCURS 5 TIMES.
+          15 SKG-ROW          BINARY-LONG.    *> the world replica row
+          15 SKG-FAKE         PIC 9 OCCURS 24 TIMES.   *> 1 = block section s has no sky light data
+          15 SKG-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.

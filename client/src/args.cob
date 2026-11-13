@@ -1,7 +1,9 @@
 *> Command line of the client (contracts/client-surface.md §1; research R14; wire-profile.md §1):
 *> ARGS-PARSE takes --name <name> (required: 1 to 16 characters of A-Z a-z 0-9 _) and
 *> --gamedir <path> (default $HOME/.cobolcraft) and --generated-dir <path> (the generated packs of the
-*> extraction tool, 22 section 5.1; default <game directory>/generated). Other words are ignored. A missing or invalid name
+*> extraction tool, 22 section 5.1; default <game directory>/generated) and --world <save folder name> (or the
+*> environment variable CC_WORLD; the option wins): the single-player save opened right after start-up
+*> (WORLD-OPEN-ARG, world-list.cob). Other words are ignored. A missing or invalid name
 *> is fatal: "FATAL arguments: ...", exit status 1.
 
  IDENTIFICATION DIVISION.
@@ -16,6 +18,7 @@
  01 WS-HOME                PIC X(1024).
  01 WS-WHAT                PIC X(128).
  01 WS-CHAR                PIC X.
+ 01 WS-ENV-WORLD           PIC X(80).
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY CLARGS.
@@ -29,6 +32,15 @@
      MOVE SPACES TO CL-GENERATED-DIR
      MOVE 0 TO CL-GENERATED-DIR-LENGTH
      MOVE -1 TO WS-BAD
+     MOVE SPACES TO CL-WORLD WS-ENV-WORLD
+     MOVE 0 TO CL-WORLD-LENGTH
+     ACCEPT WS-ENV-WORLD FROM ENVIRONMENT "CC_WORLD"
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ENV-WORLD TRAILING)) TO CL-WORLD-LENGTH
+     IF WS-ENV-WORLD = SPACES
+         MOVE 0 TO CL-WORLD-LENGTH
+     ELSE
+         MOVE WS-ENV-WORLD TO CL-WORLD
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= AR-COUNT
          EVALUATE TRUE
              WHEN AR-TEXT(WS-I) = "--name"
@@ -50,6 +62,11 @@
                  ADD 1 TO WS-I
                  MOVE AR-TEXT(WS-I) TO CL-GAME-DIR
                  MOVE AR-LENGTH(WS-I) TO CL-GAME-DIR-LENGTH
+             WHEN AR-TEXT(WS-I) = "--world"
+                 ADD 1 TO WS-I
+                 MOVE SPACES TO CL-WORLD
+                 MOVE AR-TEXT(WS-I)(1:80) TO CL-WORLD
+                 MOVE FUNCTION MIN(AR-LENGTH(WS-I), 80) TO CL-WORLD-LENGTH
              WHEN AR-TEXT(WS-I) = "--generated-dir"
                  ADD 1 TO WS-I
                  MOVE AR-TEXT(WS-I) TO CL-GENERATED-DIR
