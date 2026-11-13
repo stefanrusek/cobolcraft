@@ -15,6 +15,8 @@
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
+ 01 WS-ALICE-ROW           BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-BX                  BINARY-LONG.
  01 WS-BY                  BINARY-LONG.

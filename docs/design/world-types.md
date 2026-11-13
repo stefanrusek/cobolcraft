@@ -253,7 +253,7 @@ For each area, the standard world type's source, the cobolcraft world type's sou
 | Synchronized registries (Registry Data, Update Tags) | Every registry the loaded data pack defines, order of 04 §3 | The set of 09 §3.1 as re-scoped, plus the standard core (README C3) | |
 | Dimensions | `minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`; overworld Y -64 to 319 | `cobolcraft:main`, `cobolcraft:subroutine`; Y 0 to 255 (standin §4.6, §5, §15) | Travel: portals (standard); `cobolcraft:goto_pad` (cobolcraft) |
 | Biomes and world generation | 10, 11 and the later worldgen documents | standin §5.2, §15.2 | |
-| Starting state | Empty inventory (README decision 6) | The starting inventory of standin §2 (README S23) and spec US4 to US8; the generator is standin §5.2 | |
+| Starting state | The starter kit (Decision WT-STARTER below; README decision 6 held an empty inventory) | The starting inventory of standin §2 (README S23) and spec US4 to US8; the generator is standin §5.2 | |
 | Textures, models, fonts, language | Generated resource pack, then Faithful or other user packs | The built-in `cobolcraft` pack (08 §10, the UI art of ui) | Packs are stacked for both types by README C7 |
 | Names in commands | `minecraft:` keys | `cobolcraft:` keys for the type's own content (section 6.3) | |
 | Extra-dimension setting `extra-dimensions` (FR-009) | Applies to Nether and End | Applies to `cobolcraft:subroutine` | README decision 16 |
@@ -286,7 +286,7 @@ Both world types use these unchanged. A document that states one of them must no
 **Decision WT-21 (save layout is not decided here; outside the world-type mechanism).** This document adds three keys to
 `level.dat` (section 2.1) and nothing else to the save format. It does **not** adopt the 33 §10 layout, does not change `Time`,
 does not move clocks or weather out of `level.dat`, and adds no migration. README Part 7, decision 9 says to keep the CobolCraft
-schemas of 07 §9. The only rule stated is that a per-type save schema would hide a difference (Decision WT-8), so whatever
+schemas of 07 §9 for the cobolcraft type; for the standard type the layout is now the game's own (07 §10, operator request, see the edit of decision 9). The only rule stated is that a per-type save schema would hide a difference (Decision WT-8), so whatever
 07 §9 holds applies to both types. Where the three keys sit if 07 and 33 adopt the 26.3 layout (33 §10 puts the seed in
 `world_gen_settings.dat` and the game time in a `Data` compound of `level.dat`) is for their owners: Open question 12. Likewise
 the `players/` inventory (07 §9.2 covers slots 0 to 35, README C5 makes it 46 slots) is a matter of 07, noted in Open question 12.
@@ -804,6 +804,10 @@ pause screen does not stop the simulation. Closing, changing the port, saving an
     and 33 §10 (game time, clocks, weather, game rules and border outside `level.dat`, seed in `world_gen_settings.dat`, a `Data`
     compound) disagree, and README Part 7 decision 9 says to keep the CobolCraft schemas. Whether to adopt the 26.3 layout, with a
     migration, and where `WorldType`, `Seed` and `ContentJar` then sit, belongs to the owners of 07 and 33. This document does not decide it.
+    **Superseded for the standard type (vanfmt lane, operator request):** a standard world is created, read and saved in the 26.3 layout of 07 §10
+    (`level.dat` `Data`, saved-data files, `players/data/`). That layout has no `WorldType` and no `ContentJar` key: a folder whose `level.dat` holds `Data` is
+    standard (reading rule 3a); the seed is `data/minecraft/world_gen_settings.dat`; `ContentJar` is not stored for such a world. The cobolcraft and debug types
+    keep the flat layout of 07 §9.
     **Closed for the layout question (clean-room round SAVE):** 07 §9.7 records what the 26.3 artifact does (flat `Data` wrapper in
     `level.dat`, `dimensions/<namespace>/<path>/{region,entities,poi,data}`, world-wide `data/`, `players/data/<uuid>.dat`, the seed in
     `world_gen_settings.dat`) and fixes the CobolCraft contract: no adoption of the 26.3 `level.dat` tree and no migration; the three keys sit
@@ -833,3 +837,33 @@ pause screen does not stop the simulation. Closing, changing the port, saving an
 20. **Quirks of the artifact not copied** (section 11): the port 0 recorded by `/publish` (WT-30 departs from it); the operator list
     being ignored for guests while cheats are on (WT-29 copies it as the only rule); the Online scope strings with no scope. The
     sender address in the LAN list is inferred, not read.
+
+## Starter kit (002 operator decision, standard type)
+
+A standard world has no trees until the tree features of generation land, and a player needs wood to craft. A first-time survival player (not a
+respawn, not a later join: the known-player rule of PLAYER-CREATE decides) of a **standard** world is given, in hotbar slots 0 to 3: 1
+`crafting_table`, 16 `oak_log`, 8 `oak_planks`, 8 `stick`. The item rows are found by key whichever form the set stores (`minecraft:oak_log` or the
+bare `oak_log`; core/src/keys.cob), a key the set lacks leaves its slot empty. The server key `starter-kit` (`true` by default, `false` for an
+empty inventory; operator-surface section 2) switches it. The cobolcraft type keeps the stand-in starting inventory of standin section 2; the
+standard type no longer receives it.
+
+## Trees in the standard type (002 operator decision)
+
+The standard generator places trees by the biome feature lists of the data pack (the step 9 vegetal decoration, docs/protocol/35-worldgen-features-3 and 35-4), through
+the feature stage of core/src/feat-stage.cob. The biome lists are loaded with the terrain data (WORLD-GEN-DATA-OPEN) and the stage runs only the placed features whose
+id starts with `minecraft:trees_` (`FI-ONLY`; the other vegetation, flowers, grass patches, mushrooms, stays off until it is reviewed). No clean-room round was needed:
+the docs above specify the tree feature, the straight trunk, the blob, spruce and pine foliage and the two layer size.
+
+Supported: the `tree` feature (type 51) with `straight_trunk_placer`, `blob_foliage_placer`, `spruce_foliage_placer`, `pine_foliage_placer`, `two_layers_feature_size`,
+the `soil_beneath_tree` provider and the `beehive` decorator (ignored). That is every plain oak, birch and spruce and pine of the data. Also compiled for this: the
+`weighted_list` int provider of constants (the tree counts of the biomes), the `would_survive` predicate of a sapling (the block below is in the tag `supports_vegetation`, 24 part 4: VegetationBlock.canSurvive).
+
+Deviations, all in the header of core/src/feat-tree.cob:
+
+| Subject | Deviation |
+|---|---|
+| Chunk borders | The write window of the feature level is one chunk and the terrain of a neighbour is not known while a chunk is generated, so a tree cannot be completed from the other side. A tree is placed at its origin in the chunk being generated and the blocks that fall in a neighbouring chunk are cut off: the trunk is always whole, the canopy of a tree within two or three blocks of a chunk edge is cut flat at the edge. Completing it would need the ground height, top block, biome and cave carving of the neighbour's column, which only the neighbour's full generation gives (stages biomes to surface are about 80 percent of a chunk's cost, measured in the lane); a cheaper estimate disagrees with the real ground by a block or two and would leave floating or sunken canopies. Proposal if the cut canopies are not acceptable: carry the overflow blocks of a finished chunk in the install step of the game process (a pending list per chunk, applied when the neighbour is installed or loaded), which needs the worker protocol to return them. |
+| Variants | A `random_selector` whose default is a tree places that default when the chosen child cannot be compiled (the fancy and fallen trees), so plains and forests have plain oaks and birches where vanilla has some large oaks. Trees with other trunk or foliage placers (dark oak, jungle, acacia, mangrove, cherry, large spruce) place nothing. |
+| Bees | The beehive decorator is ignored: no nests. |
+| Leaf distance | Section 2.4 of 35-3 is replaced by the breadth first distance from the tree's own logs through its own leaves; the hash set order of the layers is not reproduced and blocks outside the tree do not lower a distance. Leaves are written not persistent, not waterlogged. The shape update at the edge (2.5) only schedules leaf ticks and is not run. |
+| States | Block states are the default states of the blocks; the leaf distance state is derived from the 28 state layout (distance, persistent, waterlogged) when the leaf block has 28 states. |

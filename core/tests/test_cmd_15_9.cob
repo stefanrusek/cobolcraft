@@ -367,7 +367,7 @@
  COPY COREAPI.
  COPY CBLOCKS.
  COPY CITEMS.
- 01 WS-PROPS               PIC X(64).
+ 01 WS-PROPS               PIC X(160).
  01 WS-BLOCK               BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-LEN                 BINARY-LONG.

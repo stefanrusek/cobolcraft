@@ -46,6 +46,11 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
+*>   A world opened in the 26.3 layout is saved back in it (07 §10, level-vanilla.cob).
+     IF CW-LAYOUT = 1
+         CALL "VANILLA-LEVEL-WRITE"
+         GOBACK
+     END-IF
      CALL "PB-RESET" USING PB-BUFFER
      MOVE SPACES TO WN
      MOVE 0 TO WL
@@ -188,6 +193,9 @@
  01 WS-PATH                PIC X(1100).
  01 WS-PATH-LENGTH         BINARY-LONG.
  01 WS-VANILLA             PIC 9 VALUE 0.
+ 01 WS-FILE-CLOCK          BINARY-LONG.
+ 01 WS-FILE-TICKS          BINARY-DOUBLE.
+ 01 WS-FILE-WEATHER        BINARY-LONG.
  01 WS-INT-CAPACITY        BINARY-LONG VALUE 3.
  01 WS-INT-COUNT           BINARY-LONG.
  01 WS-POS-INTS.
@@ -199,6 +207,7 @@
      END-IF
      CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
      MOVE 0 TO WS-HAS-TIME WS-HAS-CLOCK WS-HAS-WEATHER WS-LEGACY-KIND WS-VANILLA
+     MOVE 0 TO CW-LAYOUT CW-GAME-TIME CW-CLOCK-BASE
      CALL "RULES-RESET"
      CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
      PERFORM UNTIL PB-ERROR = 1
@@ -378,6 +387,19 @@
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
          END-EVALUATE
      END-PERFORM
+*>   The saved-data files of a 26.3 world: the overworld clock, the weather and the rules (07 §10.4).
+     IF WS-VANILLA = 1
+         MOVE 1 TO CW-LAYOUT
+         MOVE WS-OLD-TIME TO CW-GAME-TIME
+         CALL "VANILLA-SAVED-READ" USING WS-FILE-CLOCK WS-FILE-TICKS WS-FILE-WEATHER
+         IF WS-FILE-CLOCK = 1
+             MOVE 1 TO WS-HAS-CLOCK
+             MOVE WS-FILE-TICKS TO WS-TICKS
+         END-IF
+         IF WS-FILE-WEATHER = 1
+             MOVE 1 TO WS-HAS-WEATHER
+         END-IF
+     END-IF
 *>   A weather of the cobolcraft form of before the shared state: the kind is the flags, the remaining time the clear time or
 *>   the rain and thunder time (until changed: the longest time).
      IF WS-HAS-WEATHER = 0 AND WS-LEGACY-KIND > 0

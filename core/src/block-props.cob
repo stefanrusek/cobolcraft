@@ -6,7 +6,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCKS-STATE-PROPS.
-*> USING state id (BINARY-LONG), text out (PIC X(64)): the property values of the state as "name=value" pairs
+*> USING state id (BINARY-LONG), text out (PIC X(160)): the property values of the state as "name=value" pairs
 *> separated by commas in the block's list order (sorted by name); spaces for a state with none or an unknown state.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -19,7 +19,7 @@
  01 WS-VALUE-LENGTH        BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
- 01 L-TEXT                 PIC X(64).
+ 01 L-TEXT                 PIC X(160).
  PROCEDURE DIVISION USING L-STATE L-TEXT.
      MOVE SPACES TO L-TEXT
      CALL "CONTENT-STATE-PROPS" USING L-STATE CT-PROPS WS-STATUS
@@ -72,7 +72,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCKS-STATE-OF.
-*> USING key (PIC X(112)), pairs (PIC X(64): "name=value" pairs separated by commas, spaces for none), state
+*> USING key (PIC X(112)), pairs (PIC X(160): "name=value" pairs separated by commas, spaces for none), state
 *> out (BINARY-LONG): the state of that block whose properties are exactly the pairs; the block's default state
 *> when no pair is given or none matches; 0 for a key the set does not hold.
  DATA DIVISION.
@@ -81,12 +81,12 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
- 01 WS-TEXT                PIC X(64).
- 01 WS-WANT                PIC X(66).
- 01 WS-HAVE                PIC X(66).
- 01 WS-PAIR                PIC X(40).
+ 01 WS-TEXT                PIC X(160).
+ 01 WS-WANT                PIC X(164).
+ 01 WS-HAVE                PIC X(164).
+ 01 WS-PAIR                PIC X(48).
  01 WS-PAIR-LENGTH         BINARY-LONG.
- 01 WS-NEEDLE              PIC X(44).
+ 01 WS-NEEDLE              PIC X(64).
  01 WS-NEEDLE-LENGTH       BINARY-LONG.
  01 WS-POINTER             BINARY-LONG.
  01 WS-WANTED              BINARY-LONG.
@@ -95,7 +95,7 @@
  01 WS-FOUND               BINARY-LONG.
  LINKAGE SECTION.
  01 L-KEY                  PIC X(112).
- 01 L-PAIRS                PIC X(64).
+ 01 L-PAIRS                PIC X(160).
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-PAIRS L-STATE.
      MOVE 0 TO L-STATE
@@ -318,7 +318,7 @@
  01 WS-ROW                 PIC X(819).
  01 WS-STATUS              BINARY-LONG.
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  PROCEDURE DIVISION.
      MOVE CB-EPOCH TO WS-EPOCH
      MOVE LOW-VALUES TO CORE-BLOCKS

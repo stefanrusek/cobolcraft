@@ -25,6 +25,24 @@
  COPY RULES.
  COPY CITEMS.
  COPY STARTKIT.
+ COPY STARTERCFG.
+ 01 WS-KIT-KEY             PIC X(48).
+ 01 WS-KIT-SAME            BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-KIT-TABLE.
+    05 FILLER PIC X(48) VALUE "minecraft:crafting_table".
+    05 FILLER PIC X(48) VALUE "minecraft:oak_log".
+    05 FILLER PIC X(48) VALUE "minecraft:oak_planks".
+    05 FILLER PIC X(48) VALUE "minecraft:stick".
+ 01 WS-KIT-KEYS REDEFINES WS-KIT-TABLE.
+    05 WS-KIT-NAME            PIC X(48) OCCURS 4 TIMES.
+ 01 WS-KIT-COUNTS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 16.
+    05 FILLER BINARY-LONG VALUE 8.
+    05 FILLER BINARY-LONG VALUE 8.
+ 01 WS-KIT-COUNT-TABLE REDEFINES WS-KIT-COUNTS.
+    05 WS-KIT-N               BINARY-LONG OCCURS 4 TIMES.
  01 WS-ROW                 BINARY-LONG.
  01 WS-HOST                PIC 9.
  01 WS-KNOWN               BINARY-LONG.
@@ -114,10 +132,27 @@
              END-IF
          END-PERFORM
          IF WS-KNOWN = 0 AND PL-MODE(L-ROW) = 0
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
-                 MOVE SI-ITEM(WS-I) TO PL-SLOT-ITEM(L-ROW, SI-SLOT(WS-I) + 1)
-                 MOVE SI-COUNT(WS-I) TO PL-SLOT-COUNT(L-ROW, SI-SLOT(WS-I) + 1)
-             END-PERFORM
+             IF CW-WORLD-TYPE = "standard"
+*>               The standard type's own kit (world-types "Starter kit"): table, logs, planks, sticks in hotbar slots 0 to 3,
+*>               each item row found by key; a key the set lacks leaves its slot empty. Off with starter-kit=false.
+                 IF SK-OFF NOT = 1
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > IT-COUNT
+                             CALL "KEY-SAME" USING IT-KEY(WS-J) WS-KIT-NAME(WS-I) WS-KIT-SAME
+                             IF WS-KIT-SAME = 1
+                                 COMPUTE PL-SLOT-ITEM(L-ROW, WS-I) = WS-J - 1
+                                 MOVE WS-KIT-N(WS-I) TO PL-SLOT-COUNT(L-ROW, WS-I)
+                                 MOVE IT-COUNT TO WS-J
+                             END-IF
+                         END-PERFORM
+                     END-PERFORM
+                 END-IF
+             ELSE
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > START-ITEM-COUNT
+                     MOVE SI-ITEM(WS-I) TO PL-SLOT-ITEM(L-ROW, SI-SLOT(WS-I) + 1)
+                     MOVE SI-COUNT(WS-I) TO PL-SLOT-COUNT(L-ROW, SI-SLOT(WS-I) + 1)
+                 END-PERFORM
+             END-IF
          END-IF
          IF WS-KNOWN = 0 AND KN-COUNT < CORE-MAX-KNOWN
              ADD 1 TO KN-COUNT
@@ -268,3 +303,38 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PLAYER-REMEMBER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STARTER-KIT-CONFIG.
+*> USING flag (BINARY-LONG): 1 gives a first-time survival player of a standard world the starter kit (the default), 0 turns it off
+*> (server key starter-kit).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STARTERCFG.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     IF L-FLAG = 0
+         MOVE 1 TO SK-OFF
+     ELSE
+         MOVE 0 TO SK-OFF
+     END-IF
+     GOBACK.
+ END PROGRAM STARTER-KIT-CONFIG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STARTER-KIT-GET.
+*> USING flag out (BINARY-LONG): 1 when the starter kit is on.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STARTERCFG.
+ LINKAGE SECTION.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAG.
+     IF SK-OFF = 1
+         MOVE 0 TO L-FLAG
+     ELSE
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM STARTER-KIT-GET.

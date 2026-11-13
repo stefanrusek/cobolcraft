@@ -46,7 +46,7 @@
     05 CL-FRAMES             BINARY-DOUBLE.
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
     05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
-    05 CL-CMD-TEXT           PIC X(256).
+    05 CL-CMD-TEXT           PIC X(1024).
     05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
     05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
     05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
@@ -620,6 +620,12 @@
           15 EN-VANILLA      PIC 9.
           15 EN-KEY          PIC X(24).
           15 EN-MODEL        BINARY-LONG.
+*>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
+*>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
+          15 EN-VALUE        BINARY-LONG.
+          15 EN-SWELL-DIR    BINARY-LONG.
+          15 EN-SWELL-BASE   BINARY-LONG.
+          15 EN-SWELL-MS     BINARY-DOUBLE.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
@@ -870,7 +876,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 151 TIMES.
+       10 GS-ROW OCCURS 153 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
@@ -1012,7 +1018,7 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
-       10 RL-EN-VERTEX OCCURS 9216 TIMES.
+       10 RL-EN-VERTEX OCCURS 49152 TIMES.
           15 RL-EN-X         FLOAT-SHORT.
           15 RL-EN-Y         FLOAT-SHORT.
           15 RL-EN-Z         FLOAT-SHORT.

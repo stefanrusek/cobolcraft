@@ -2,10 +2,11 @@
 *> A player holds a level, the points into that level and the total (PL-XP-*). An orb is a tracker row of the standard entity type
 *> experience_orb (found by key, once): EN-ITEM its value, EN-ITEM-COUNT its count (how many orbs of that value it stands for),
 *> EN-AGE its age, EN-COOLDOWN its tick count, EN-VX to EN-VZ its velocity; EN-WAY-X, EN-FLEE-X and EN-WAY-Z hold the position the viewers
-*> were last told. Water and lava effects, Mending and slippery blocks are not done yet (open, see tasks T4100).
+*> were last told. Water and lava effects and slippery blocks are not done yet (open, see tasks T4100); Mending: XP-MEND (T4210).
 *>
 *> Entry points:
 *>   XP-NEEDED USING level, points out                  points to go from the level to the next (17 section 4.10)
+*>   XP-MEND USING player row, points, points out        Mending: repairs a damaged Mending item, the points left over
 *>   XP-GIVE USING player row, points                   adds points (levels, Set Experience to the player)
 *>   XP-ORB-VALUE USING total, value out                the largest orb tier not above the total (21 section 8.2)
 *>   XP-ORB-TYPE USING type id out                      the entity type id of experience_orb, 0 outside a standard world
@@ -460,6 +461,112 @@
  END PROGRAM XP-ORB-STEP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. XP-MEND.
+*> USING player row, points in, points out (BINARY-LONG): ExperienceOrb.repairPlayerItems (28 section 9.4, 17 section 5.3, 21 section 8.2). The candidates
+*> are the damaged items with Mending among the main hand, the off-hand and the four armor pieces; one is drawn uniformly (XP-RANDOM); its durability
+*> repair is points x 2, repaired = min(that, its damage), the damage falls by it and the points left are points - repaired x points / (points x 2)
+*> (integer arithmetic); with points left the draw is made again. No candidate returns the points unchanged; a candidate that repairs nothing uses
+*> all of them (0 returned).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ 01 WS-SALT                BINARY-LONG VALUE 5.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:mending".
+ 01 WS-CANDIDATES.
+    05 WS-CAND             BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-DURABILITY          BINARY-LONG.
+ 01 WS-REPAIRED            BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
+ 01 WS-HELD                BINARY-LONG.
+ 01 WS-MENU-SLOT           BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-PRODUCT             BINARY-DOUBLE.
+ 01 WS-USED                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-POINTS               BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-POINTS L-LEFT.
+     MOVE L-POINTS TO L-LEFT
+     CALL "LOOT-ENCH-ID" USING WS-KEY WS-ID
+     IF WS-ID < 0
+         GOBACK
+     END-IF
+     COMPUTE WS-HELD = PL-HELD(L-PLAYER) + 1
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-DONE = 1 OR L-LEFT <= 0
+         MOVE 0 TO WS-N
+*>       Slot 0 is the main hand, 1 to 4 the armor pieces, 5 the off-hand.
+         PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > 5
+             MOVE 0 TO WS-HANDLE WS-ITEM
+             IF WS-S = 0
+                 IF PL-SLOT-COUNT(L-PLAYER, WS-HELD) > 0
+                     MOVE PL-SLOT-ITEM(L-PLAYER, WS-HELD) TO WS-ITEM
+                     MOVE PL-SLOT-VAR(L-PLAYER, WS-HELD) TO WS-HANDLE
+                 END-IF
+             ELSE
+                 IF MN-EQUIP-COUNT(L-PLAYER, WS-S) > 0
+                     MOVE MN-EQUIP-ITEM(L-PLAYER, WS-S) TO WS-ITEM
+                     MOVE MN-EQUIP-VAR(L-PLAYER, WS-S) TO WS-HANDLE
+                 END-IF
+             END-IF
+             IF WS-ITEM > 0
+                 CALL "SP-ENCHANT-LEVEL" USING WS-HANDLE WS-ID WS-LEVEL
+                 CALL "SP-GET-DAMAGE" USING WS-ITEM WS-HANDLE WS-DAMAGE
+                 IF WS-LEVEL > 0 AND WS-DAMAGE > 0
+                     ADD 1 TO WS-N
+                     MOVE WS-S TO WS-CAND(WS-N)
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-N = 0
+             MOVE 1 TO WS-DONE
+         ELSE
+             CALL "XP-RANDOM" USING WS-SALT WS-N WS-PICK
+             MOVE WS-CAND(WS-PICK + 1) TO WS-S
+             IF WS-S = 0
+                 MOVE PL-SLOT-ITEM(L-PLAYER, WS-HELD) TO WS-ITEM
+                 MOVE PL-SLOT-VAR(L-PLAYER, WS-HELD) TO WS-HANDLE
+             ELSE
+                 MOVE MN-EQUIP-ITEM(L-PLAYER, WS-S) TO WS-ITEM
+                 MOVE MN-EQUIP-VAR(L-PLAYER, WS-S) TO WS-HANDLE
+             END-IF
+             CALL "SP-GET-DAMAGE" USING WS-ITEM WS-HANDLE WS-DAMAGE
+             COMPUTE WS-DURABILITY = L-LEFT * 2
+             COMPUTE WS-REPAIRED = FUNCTION MIN(WS-DURABILITY, WS-DAMAGE)
+             COMPUTE WS-NEW = WS-DAMAGE - WS-REPAIRED
+             CALL "SP-SET-DAMAGE" USING WS-HANDLE WS-NEW
+             IF WS-S = 0
+                 MOVE WS-HANDLE TO PL-SLOT-VAR(L-PLAYER, WS-HELD)
+                 COMPUTE WS-MENU-SLOT = 36 + PL-HELD(L-PLAYER)
+             ELSE
+                 MOVE WS-HANDLE TO MN-EQUIP-VAR(L-PLAYER, WS-S)
+                 COMPUTE WS-MENU-SLOT = 9 - WS-S
+                 IF WS-S = 5
+                     MOVE 45 TO WS-MENU-SLOT
+                 END-IF
+             END-IF
+             IF MN-WINDOW(L-PLAYER) = 0
+                 CALL "MENU-SLOT-SEND" USING PL-CONN(L-PLAYER) WS-MENU-SLOT
+             END-IF
+             COMPUTE WS-PRODUCT = WS-REPAIRED * L-LEFT
+             DIVIDE WS-PRODUCT BY WS-DURABILITY GIVING WS-USED
+             SUBTRACT WS-USED FROM L-LEFT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM XP-MEND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. XP-PICKUP.
 *> USING player row: Player.aiStep's pickup for experience (41 section 4.1, 21 section 8.2): takeXpDelay falls by 1; the orbs in reach (the player's
 *> box inflated by 1.0 on x and z and 0.5 on y) are listed and one of them, drawn at random, is touched when the delay is 0: the delay becomes
@@ -476,6 +583,7 @@
  01 WS-PICK                BINARY-LONG.
  01 WS-SALT                BINARY-LONG VALUE 3.
  01 WS-AMOUNT              BINARY-LONG VALUE 1.
+ 01 WS-MENDED              BINARY-LONG.
  01 WS-LIST.
     05 WS-LISTED           BINARY-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
@@ -509,7 +617,8 @@
          CALL "PB-RESET" USING PB-BUFFER
          CALL "TAKE-ITEM-ENTITY-BUILD" USING EN-ID(WS-E) PL-ENTITY-ID(L-PLAYER) WS-AMOUNT PB-BUFFER
          CALL "GI-VIEWERS-SEND" USING WS-E PB-BUFFER
-         CALL "XP-GIVE" USING L-PLAYER EN-ITEM(WS-E)
+         CALL "XP-MEND" USING L-PLAYER EN-ITEM(WS-E) WS-MENDED
+         CALL "XP-GIVE" USING L-PLAYER WS-MENDED
          SUBTRACT 1 FROM EN-ITEM-COUNT(WS-E)
          IF EN-ITEM-COUNT(WS-E) <= 0
              CALL "ENTITY-REMOVE" USING WS-E

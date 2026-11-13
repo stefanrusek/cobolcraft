@@ -40,7 +40,7 @@
  01 WS-HEX65               PIC X(60).
  01 WS-HEX78               PIC X(60).
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  01 WS-STATE               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG VALUE 0.
  01 WS-COUNT               BINARY-LONG.

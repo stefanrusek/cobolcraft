@@ -279,6 +279,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
+ COPY EXTRAS.
  01 WS-OK                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  LINKAGE SECTION.
@@ -303,6 +304,7 @@
      END-PERFORM
      IF L-INDEX > 0
          INITIALIZE BE-ENTRY(L-INDEX)
+         MOVE 0 TO EX-B-LEN(L-INDEX)
          MOVE 1 TO BE-USED(L-INDEX)
          MOVE L-DIM TO BE-DIM(L-INDEX)
          MOVE L-X TO BE-X(L-INDEX)
@@ -801,6 +803,7 @@
  01 WS-BE-TYPE             BINARY-LONG.
  01 WS-SHORT               PIC X(24).
  01 WS-SHORT-LENGTH        BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
@@ -860,6 +863,9 @@
      MOVE WS-START TO PB-POS
      CALL "BE-LOAD" USING L-INDEX PB-BUFFER
      MOVE WS-END TO PB-POS
+*>   The keys of the entry that the core does not model are kept for the next save of a 26.3 world (07 section 10.7).
+     MOVE 1 TO WS-KIND
+     CALL "EXTRA-CAPTURE" USING WS-KIND L-INDEX PB-BUFFER WS-START WS-END
      GOBACK.
  END PROGRAM BE-LOAD-CHUNK-ENTRY.
 
