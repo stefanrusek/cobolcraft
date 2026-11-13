@@ -527,3 +527,356 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-RECIPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ITEM-SLOT.
+*> USING player row, slot id (15 §6.6 numbering), index out: the PL-SLOT index of the slot a player owns here (ids 0 to 35 are the hotbar, inventory and container
+*> slots; 98, weapon.mainhand, is the held hotbar slot), 0 for any other id and for a row that is not a player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-INDEX.
+     MOVE 0 TO L-INDEX
+     EVALUATE TRUE
+         WHEN L-ROW <= 0
+             CONTINUE
+         WHEN L-SLOT >= 0 AND L-SLOT <= 35
+             COMPUTE L-INDEX = L-SLOT + 1
+         WHEN L-SLOT = 98
+             COMPUTE L-INDEX = PL-HELD(L-ROW) + 1
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CXB-ITEM-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-ITEM.
+*> item replace|fill|override entity|block <holder> <slots> with <item> [<count>] | from entity|block <source> <sourceSlots> [<modifier>] and item modify (16 §6.3, level 2).
+*> The source is a list of stacks (with: the one stack; from: the stack of each source slot, empty ones too) laid on the selected slots in order: replace puts them on the
+*> first slots and leaves the rest, fill repeats them over every slot, override also empties the slots after them. Each player target takes the slots it owns (CXB-ITEM-SLOT) and
+*> is sent the inventory; commands.item.entity.replace.success.single[.known_item] [slots, name (, item)] (one target changed) or .multiple[.known_item] [entities (, item)] is
+*> broadcast, known_item for with; the result is the slots set. No target with any slot is commands.item.target.no_such_slot [slot name] (.unnamed for a range), a source
+*> without the slot commands.item.source.no_such_slot[.unnamed], a block holder commands.item.target.not_a_container / .source.not_a_container [x, y, z]. Not done: block holders
+*> (no live container block exists), the equipment, cursor, crafting and ender chest slots, and item modifiers (any modifier is cobolcraft.item.modifier_unsupported, so
+*> modify and the modify messages are unreachable); .target.failed is not reachable (an owned slot always accepts).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-POS            PIC X(32) VALUE "pos".
+ 01 WS-NAME-SLOTS          PIC X(32) VALUE "slots".
+ 01 WS-NAME-SOURCES        PIC X(32) VALUE "sourceEntities".
+ 01 WS-NAME-SOURCE-POS     PIC X(32) VALUE "sourcePos".
+ 01 WS-NAME-SOURCE-SLOTS   PIC X(32) VALUE "sourceSlots".
+ 01 WS-NAME-MODIFIER       PIC X(32) VALUE "modifier".
+ 01 WS-NAME-ITEM           PIC X(32) VALUE "item".
+ 01 WS-NAME-COUNT          PIC X(32) VALUE "count".
+ 01 WS-NAME-WITH           PIC X(32) VALUE "with".
+ 01 WS-NAME-FILL           PIC X(32) VALUE "fill".
+ 01 WS-NAME-OVERRIDE       PIC X(32) VALUE "override".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-SOURCE-ROWS.
+    05 WS-SOURCE-COUNT      BINARY-LONG.
+    05 WS-SOURCE-ROW        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-MODIFIER            BINARY-LONG.
+ 01 WS-WITH                BINARY-LONG.
+ 01 WS-FILL                BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-TARGET-INDEX        BINARY-LONG.
+ 01 WS-SLOTS-INDEX         BINARY-LONG.
+ 01 WS-SLOT-COUNT          BINARY-LONG.
+ 01 WS-SLOTS.
+    05 WS-SLOT              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-SRC-COUNT           BINARY-LONG.
+ 01 WS-SRC-SLOT-COUNT      BINARY-LONG.
+ 01 WS-SRC-SLOTS.
+    05 WS-SRC-SLOT          BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-STACKS.
+    05 WS-STACK OCCURS 64 TIMES.
+       10 WS-ST-ITEM        BINARY-LONG.
+       10 WS-ST-COUNT       BINARY-LONG.
+       10 WS-ST-VAR         BINARY-LONG.
+ 01 WS-STACK-COUNT         BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-TRACKED             BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-LAST-CHANGED        BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-A3                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-L3                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The slot argument WS-SLOTS-INDEX read as slot ids in WS-SLOTS (WS-SLOT-COUNT of them) and its text in WS-TEXT.
+ READ-SLOTS.
+     COMPUTE WS-TEXT-LENGTH = BA-END(WS-SLOTS-INDEX) - BA-START(WS-SLOTS-INDEX)
+     MOVE SPACES TO WS-TEXT
+     MOVE BR-R-LINE(BA-START(WS-SLOTS-INDEX) + 1:WS-TEXT-LENGTH) TO WS-TEXT
+     CALL "BR-SLOT-LOOKUP" USING WS-TEXT WS-TEXT-LENGTH WS-SLOT-COUNT WS-SLOTS.
+
+*> Raises WS-KEY: with the slot text as its argument when the slot argument names one slot, else the key plus ".unnamed" is the caller's.
+ RAISE-SLOT.
+     MOVE SPACES TO WS-A1 WS-A2
+     IF WS-SLOT-COUNT = 1
+         MOVE WS-TEXT(1:WS-TEXT-LENGTH) TO WS-A1
+         MOVE WS-TEXT-LENGTH TO WS-L1
+         MOVE 1 TO WS-N-ARGS
+     ELSE
+         MOVE 0 TO WS-N-ARGS WS-L1
+         STRING FUNCTION TRIM(WS-KEY) ".unnamed" DELIMITED BY SIZE INTO WS-A2
+         MOVE WS-A2 TO WS-KEY
+         MOVE SPACES TO WS-A2
+     END-IF
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> Raises WS-KEY with the block position of the argument WS-INDEX (the floor of each coordinate).
+ RAISE-BLOCK.
+     CALL "BX-POSITION" USING WS-INDEX WS-X WS-Y WS-Z
+     MOVE SPACES TO WS-A1 WS-A2 WS-A3
+     COMPUTE WS-I = FUNCTION INTEGER(WS-X)
+     MOVE WS-I TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L1
+     COMPUTE WS-I = FUNCTION INTEGER(WS-Y)
+     MOVE WS-I TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A2
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L2
+     COMPUTE WS-I = FUNCTION INTEGER(WS-Z)
+     MOVE WS-I TO WS-EDIT
+     MOVE FUNCTION TRIM(WS-EDIT) TO WS-A3
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L3
+     MOVE 3 TO WS-N-ARGS
+     CALL "BR-RAISE-3" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> The stacks to lay on the slots, in WS-STACKS: the item of with, or the stacks of the source slots of the first source entity.
+ GET-SOURCE.
+     MOVE 0 TO WS-STACK-COUNT
+     IF WS-WITH > 0
+         CALL "BX-FIND" USING WS-NAME-ITEM WS-INDEX
+         MOVE 1 TO WS-STACK-COUNT
+         MOVE BA-IVAL(WS-INDEX) TO WS-ST-ITEM(1)
+         MOVE 0 TO WS-ST-VAR(1)
+         MOVE 1 TO WS-ST-COUNT(1)
+         IF BA-AUX(WS-INDEX) >= 2
+             MOVE "cobolcraft.item.components_unsupported" TO WS-KEY
+             MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+             MOVE SPACES TO WS-A1 WS-A2
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+         CALL "BX-FIND" USING WS-NAME-COUNT WS-INDEX
+         IF WS-INDEX > 0
+             MOVE BA-IVAL(WS-INDEX) TO WS-ST-COUNT(1)
+         END-IF
+     ELSE
+         CALL "BX-FIND" USING WS-NAME-SOURCES WS-INDEX
+         IF WS-INDEX > 0
+             CALL "BX-RESOLVE" USING WS-INDEX WS-SOURCE-ROWS
+         END-IF
+         IF WS-INDEX > 0 AND BR-R-FAILED = 0
+             CALL "BX-FIND" USING WS-NAME-SOURCE-SLOTS WS-SLOTS-INDEX
+             PERFORM READ-SLOTS
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-SLOT-COUNT OR BR-R-FAILED = 1
+                 CALL "CXB-ITEM-SLOT" USING WS-SOURCE-ROW(1) WS-SLOT(WS-J) WS-AT
+                 IF WS-AT = 0
+                     MOVE "commands.item.source.no_such_slot" TO WS-KEY
+                     PERFORM RAISE-SLOT
+                 ELSE
+                     ADD 1 TO WS-STACK-COUNT
+                     MOVE PL-SLOT-ITEM(WS-SOURCE-ROW(1), WS-AT) TO WS-ST-ITEM(WS-STACK-COUNT)
+                     MOVE PL-SLOT-COUNT(WS-SOURCE-ROW(1), WS-AT) TO WS-ST-COUNT(WS-STACK-COUNT)
+                     MOVE PL-SLOT-VAR(WS-SOURCE-ROW(1), WS-AT) TO WS-ST-VAR(WS-STACK-COUNT)
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF.
+
+*> The selected slots of the player WS-ROW set from the stacks; WS-CHANGED counts the slots set.
+ SET-ONE.
+     MOVE 0 TO WS-CHANGED
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-SLOT-COUNT
+         MOVE 0 TO WS-AT
+         IF WS-J <= WS-STACK-COUNT
+             MOVE WS-J TO WS-AT
+         END-IF
+         IF WS-FILL > 0
+             COMPUTE WS-AT = FUNCTION MOD(WS-J - 1, WS-STACK-COUNT) + 1
+         END-IF
+         MOVE WS-AT TO WS-SRC-COUNT
+         CALL "CXB-ITEM-SLOT" USING WS-ROW WS-SLOT(WS-J) WS-AT
+         IF WS-AT > 0 AND WS-SRC-COUNT > 0
+             MOVE WS-ST-ITEM(WS-SRC-COUNT) TO PL-SLOT-ITEM(WS-ROW, WS-AT)
+             MOVE WS-ST-COUNT(WS-SRC-COUNT) TO PL-SLOT-COUNT(WS-ROW, WS-AT)
+             MOVE WS-ST-VAR(WS-SRC-COUNT) TO PL-SLOT-VAR(WS-ROW, WS-AT)
+             ADD 1 TO WS-CHANGED
+         END-IF
+         IF WS-AT > 0 AND WS-SRC-COUNT = 0 AND WS-OVERRIDE > 0
+             MOVE 0 TO PL-SLOT-ITEM(WS-ROW, WS-AT) PL-SLOT-COUNT(WS-ROW, WS-AT) PL-SLOT-VAR(WS-ROW, WS-AT)
+             ADD 1 TO WS-CHANGED
+         END-IF
+     END-PERFORM
+     IF WS-CHANGED > 0
+         CALL "CMD-SEND-INVENTORY" USING WS-ROW
+     END-IF.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-MODIFIER WS-MODIFIER
+     CALL "BX-LIT" USING WS-NAME-WITH WS-WITH
+     CALL "BX-LIT" USING WS-NAME-FILL WS-FILL
+     CALL "BX-LIT" USING WS-NAME-OVERRIDE WS-OVERRIDE
+     IF WS-MODIFIER > 0
+         MOVE "cobolcraft.item.modifier_unsupported" TO WS-KEY
+         MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+         MOVE SPACES TO WS-A1 WS-A2
+         CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+         MOVE 1 TO BR-R-FAILED
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-SOURCE-POS WS-INDEX
+         IF WS-INDEX > 0
+             MOVE "commands.item.source.not_a_container" TO WS-KEY
+             PERFORM RAISE-BLOCK
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         PERFORM GET-SOURCE
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-POS WS-INDEX
+         IF WS-INDEX > 0
+             MOVE "commands.item.target.not_a_container" TO WS-KEY
+             PERFORM RAISE-BLOCK
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+         CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     END-IF
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-SLOTS WS-SLOTS-INDEX
+         PERFORM READ-SLOTS
+         MOVE 0 TO WS-TRACKED WS-TOTAL WS-LAST WS-LAST-CHANGED
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             IF WS-ROW > 0
+                 PERFORM SET-ONE
+                 IF WS-CHANGED > 0
+                     ADD 1 TO WS-TRACKED
+                     ADD WS-CHANGED TO WS-TOTAL
+                     MOVE WS-ROW TO WS-LAST
+                     MOVE WS-CHANGED TO WS-LAST-CHANGED
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-TRACKED = 0
+             MOVE "commands.item.target.no_such_slot" TO WS-KEY
+             PERFORM RAISE-SLOT
+         ELSE
+             IF WS-TRACKED = 1
+                 MOVE "commands.item.entity.replace.success.single" TO WS-KEY
+             ELSE
+                 MOVE "commands.item.entity.replace.success.multiple" TO WS-KEY
+             END-IF
+             IF WS-WITH > 0
+                 MOVE SPACES TO WS-A1
+                 STRING FUNCTION TRIM(WS-KEY) ".known_item" DELIMITED BY SIZE INTO WS-A1
+                 MOVE WS-A1 TO WS-KEY
+             END-IF
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             IF WS-TRACKED = 1
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-LAST-CHANGED
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+             ELSE
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+             END-IF
+             IF WS-WITH > 0
+                 MOVE WS-ST-ITEM(1) TO WS-ITEM
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT IT-KEY(WS-ITEM + 1) IT-KEY-LENGTH(WS-ITEM + 1)
+             END-IF
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE WS-TOTAL TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-ITEM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-ITEM.
+*> The forms of item (16 §6.3): replace, fill and override with each holder (entity, block) and source (with, from entity, from block, each with or without its count
+*> or modifier), then modify.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-ITEM.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-VERBS.
+    05 FILLER              PIC X(8) VALUE "replace".
+    05 FILLER              PIC X(8) VALUE "fill".
+    05 FILLER              PIC X(8) VALUE "override".
+ 01 WS-VERB-TABLE REDEFINES WS-VERBS.
+    05 WS-VERB             PIC X(8) OCCURS 3 TIMES.
+ 01 WS-HOLDERS.
+    05 FILLER              PIC X(48) VALUE "entity <targets:entities> <slots:slots>".
+    05 FILLER              PIC X(48) VALUE "block <pos:pos> <slots:slots>".
+ 01 WS-HOLDER-TABLE REDEFINES WS-HOLDERS.
+    05 WS-HOLDER           PIC X(48) OCCURS 2 TIMES.
+ 01 WS-TAILS.
+    05 FILLER              PIC X(96) VALUE "with <item:item>".
+    05 FILLER              PIC X(96) VALUE "with <item:item> <count:int:1:99>".
+    05 FILLER              PIC X(96) VALUE "from entity <sourceEntities:entities> <sourceSlots:slots>".
+    05 FILLER              PIC X(96) VALUE "from entity <sourceEntities:entities> <sourceSlots:slots> <modifier:modifier>".
+    05 FILLER              PIC X(96) VALUE "from block <sourcePos:pos> <sourceSlots:slots>".
+    05 FILLER              PIC X(96) VALUE "from block <sourcePos:pos> <sourceSlots:slots> <modifier:modifier>".
+ 01 WS-TAIL-TABLE REDEFINES WS-TAILS.
+    05 WS-TAIL             PIC X(96) OCCURS 6 TIMES.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 3
+         PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
+             PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 6
+                 MOVE SPACES TO WS-PATH
+                 STRING "item " FUNCTION TRIM(WS-VERB(WS-V)) " " FUNCTION TRIM(WS-HOLDER(WS-H)) " " FUNCTION TRIM(WS-TAIL(WS-T))
+                     DELIMITED BY SIZE INTO WS-PATH
+                 CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE "item modify entity <targets:entities> <slots:slots> <modifier:modifier>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "item modify block <pos:pos> <slots:slots> <modifier:modifier>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-ITEM.

@@ -182,6 +182,8 @@
              CALL "CX-SPREADPLAYERS"
          WHEN BC-RECIPE
              CALL "CX-RECIPE"
+         WHEN BC-ITEM
+             CALL "CX-ITEM"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE
