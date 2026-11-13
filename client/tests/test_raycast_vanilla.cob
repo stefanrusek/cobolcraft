@@ -1,0 +1,184 @@
+*> Acceptance test of play2 defect 1, the client half (docs/protocol/21 section 2 entity sizes; 13 section 3 attack): in a world of the standard set the entity
+*> type is the entity_type registry id, whose box (width x height) and category come from the registry rows; pressing the left button while the look ray
+*> from the eye meets a zombie (id 154, 0.6 x 1.95), a creeper or a player within 4 blocks sends Attack with its entity id and starts no break; a dropped
+*> item (id 72 is not attackable: category MISC) is not attacked.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-RAYCAST-VANILLA.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG VALUE 0.
+ 01 WS-X                   FLOAT-LONG VALUE 0.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 11.0.
+ 01 WS-Z                   FLOAT-LONG VALUE 3.0.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE 7 TO PL-ENTITY-ID
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     MOVE "T" TO TL-MODE
+
+     MOVE 40 TO WS-ID
+     MOVE 154 TO WS-TYPE
+     CALL "TEST-ADD-TYPED" USING CLIENT-STATE WS-CONN WS-ID WS-TYPE WS-X WS-Y WS-Z
+     CALL "TEST-STEP" USING CLIENT-STATE
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given a zombie (type 154) 2.5 blocks ahead when the left button is pressed then Attack with entity id 40 is sent" TO TL-CASE
+     MOVE "0128" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 3.0 TO WS-Z
+     MOVE 0.5 TO WS-X
+     MOVE 12.0 TO WS-Y
+     CALL "TEST-TELEPORT-ENTITY" USING CLIENT-STATE WS-CONN WS-ID WS-X WS-Y WS-Z WS-GROUND
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given the zombie standing a block above the eye line (box 12 to 13.95) then the ray passes under it and nothing is sent" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 11.0 TO WS-Y
+     MOVE 6.0 TO WS-Z
+     CALL "TEST-TELEPORT-ENTITY" USING CLIENT-STATE WS-CONN WS-ID WS-X WS-Y WS-Z WS-GROUND
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given the zombie 5.5 blocks ahead then nothing is sent (out of reach)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 41 TO WS-ID
+     MOVE 72 TO WS-TYPE
+     MOVE 11.5 TO WS-Y
+     MOVE 3.0 TO WS-Z
+     CALL "TEST-ADD-TYPED" USING CLIENT-STATE WS-CONN WS-ID WS-TYPE WS-X WS-Y WS-Z
+     CALL "TEST-STEP" USING CLIENT-STATE
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given a MISC entity (item, type 72) ahead then nothing is sent" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 42 TO WS-ID
+     MOVE 159 TO WS-TYPE
+     MOVE 11.0 TO WS-Y
+     MOVE 2.0 TO WS-Z
+     CALL "TEST-ADD-TYPED" USING CLIENT-STATE WS-CONN WS-ID WS-TYPE WS-X WS-Y WS-Z
+     CALL "TEST-STEP" USING CLIENT-STATE
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given a player (type 159, 1.8 high) nearer than the item when the left button is pressed then Attack with id 42 is sent" TO TL-CASE
+     MOVE "012a" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-REMOVE-ENTITY" USING CLIENT-STATE WS-CONN WS-ID
+     MOVE 43 TO WS-ID
+     MOVE 90 TO WS-TYPE
+     MOVE 11.2 TO WS-Y
+     MOVE 2.0 TO WS-Z
+     CALL "TEST-ADD-TYPED" USING CLIENT-STATE WS-CONN WS-ID WS-TYPE WS-X WS-Y WS-Z
+     CALL "TEST-STEP" USING CLIENT-STATE
+     PERFORM PRESS-LEFT
+     MOVE "test raycast vanilla: given an oak boat (type 90, MISC but hittable) ahead then Attack with id 43 is sent" TO TL-CASE
+     MOVE "012b" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ PRESS-LEFT.
+     CALL "TEST-LEFT" USING CLIENT-STATE
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
+     .
+ END PROGRAM TEST-RAYCAST-VANILLA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-LEFT.
+*> USING CLIENT-STATE: one CL-STEP with the left button going down, then one with it going up.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-EVENT.
+    05 WS-KIND             BINARY-LONG.
+    05 WS-A                BINARY-LONG.
+    05 WS-B                BINARY-LONG.
+    05 WS-C                BINARY-LONG.
+    05 WS-X                FLOAT-SHORT.
+    05 WS-Y                FLOAT-SHORT.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     INITIALIZE WS-EVENT
+     MOVE CC-EV-BUTTON-DOWN TO WS-KIND
+     MOVE CC-BUTTON-LEFT TO WS-A
+     CALL "TEST-EVENTS" USING CLIENT-STATE WS-EVENT WS-ONE
+     MOVE CC-EV-BUTTON-UP TO WS-KIND
+     CALL "TEST-EVENTS" USING CLIENT-STATE WS-EVENT WS-ONE
+     GOBACK.
+ END PROGRAM TEST-LEFT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ADD-TYPED.
+*> USING CLIENT-STATE, connection, entity id, entity type, x, y, z: feeds Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID.
+    05 WS-UUID-HI          PIC X(8).
+    05 WS-UUID-LO          PIC X(8).
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-LONG-X REDEFINES WS-LONG PIC X(8).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-ANGLE               FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-ID L-TYPE L-X L-Y L-Z.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE LOW-VALUES TO WS-UUID
+     MOVE L-ID TO WS-LONG
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
+         MOVE WS-LONG-X(9 - WS-I:1) TO WS-UUID-LO(WS-I:1)
+     END-PERFORM
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     PERFORM 3 TIMES
+         CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-ANGLE
+     END-PERFORM
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM TEST-ADD-TYPED.
+ COPY CLTEST.
