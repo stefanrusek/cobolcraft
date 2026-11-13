@@ -978,3 +978,309 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STDMOB-SPAWN-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-CELL.
+*> USING dim, x, y, z (BINARY-LONG), type out (BINARY-LONG): what a walking mob meets in a cell: 0 passable (air or a block without collision), 1 solid
+*> (CB-SOLID), 2 hazard (water, lava or fire: a land mob does not path through it; 18 section 5.1 gives liquids a malus that keeps a land mob out). A cell
+*> outside the dimension's height reads as passable air above and solid below.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-TYPE.
+     MOVE 0 TO L-TYPE
+     IF L-Y < DM-MIN-Y(L-DIM)
+         MOVE 1 TO L-TYPE
+         GOBACK
+     END-IF
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+     IF WS-STATE = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+     IF CB-SOLID(WS-BLOCK) = 1
+         MOVE 1 TO L-TYPE
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-N
+     INSPECT CB-KEY(WS-BLOCK) TALLYING WS-N FOR ALL "water" ALL "lava" ALL "fire"
+     IF WS-N > 0
+         MOVE 2 TO L-TYPE
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-CELL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-STANDABLE.
+*> USING dim, x, y, z, height (cells the mob needs, 1 or 2), ok out (BINARY-LONG): 1 when a mob can stand with its feet in the cell: the cell (and, for a
+*> height of 2, the one above it) is passable and the cell below is solid.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HEIGHT L-OK.
+     MOVE 0 TO L-OK
+     CALL "STDMOB-CELL" USING L-DIM L-X L-Y L-Z WS-TYPE
+     IF WS-TYPE NOT = 0
+         GOBACK
+     END-IF
+     IF L-HEIGHT > 1
+         COMPUTE WS-Y = L-Y + 1
+         CALL "STDMOB-CELL" USING L-DIM L-X WS-Y L-Z WS-TYPE
+         IF WS-TYPE NOT = 0
+             GOBACK
+         END-IF
+     END-IF
+     COMPUTE WS-Y = L-Y - 1
+     CALL "STDMOB-CELL" USING L-DIM L-X WS-Y L-Z WS-TYPE
+     IF WS-TYPE = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-STANDABLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-PATH.
+*> USING dim, start x, y, z, target x, y, z (BINARY-LONG feet cells), height (1 or 2), budget (BINARY-LONG: nodes it may expand), path (128 x, y, z cells),
+*> count out (cells in the path, start first; 0 = no path), reached out (1 when the last cell is the target).
+*> The weighted A* of 18 section 5.2 over the walk neighbours of 5.3, simplified: a node is a standable feet cell (STDMOB-STANDABLE); its neighbours
+*> are the four horizontal ones, the same level when standable, one up when the cell ahead is solid and standable above it with head room
+*> over the current cell, and down by 1 to 3 when the cell ahead is passable with no floor; no diagonals. Step cost sqrt(1 + dy squared), heuristic 1.5 x
+*> the Euclidean distance to the target, nodes never farther than 15 blocks horizontally from the start or 8 below / 15 above it. The search pops
+*> the open node of the least f at most `budget` times; it ends at the target, or when the open set is empty or the budget used, with the path to
+*> the node that came closest (the least heuristic). A start that is not standable moves down to a floor within 3 cells, else there is no path.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NODES.
+    05 WS-NODE OCCURS 1024 TIMES.
+       10 WN-X             BINARY-LONG.
+       10 WN-Y             BINARY-LONG.
+       10 WN-Z             BINARY-LONG.
+       10 WN-G             FLOAT-LONG.
+       10 WN-F             FLOAT-LONG.
+       10 WN-H             FLOAT-LONG.
+       10 WN-PARENT        BINARY-LONG.
+       10 WN-STATE         BINARY-LONG.
+ 01 WS-GRID-TABLE.
+    05 WS-GRID             BINARY-LONG OCCURS 24576 TIMES.
+ 01 WS-NODE-COUNT          BINARY-LONG.
+ 01 WS-POPPED              BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-CAND                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-GX                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-GZ                  BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-LEAST               FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-TENT                FLOAT-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-CHAIN.
+    05 WS-LINK             BINARY-LONG OCCURS 1024 TIMES.
+ 01 WS-DIRX-DATA.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE -1.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+ 01 WS-DIRX REDEFINES WS-DIRX-DATA.
+    05 WS-DX-OF            BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-DIRZ-DATA.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 0.
+    05 FILLER              BINARY-LONG VALUE 1.
+    05 FILLER              BINARY-LONG VALUE -1.
+ 01 WS-DIRZ REDEFINES WS-DIRZ-DATA.
+    05 WS-DZ-OF            BINARY-LONG OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SY                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-TX                   BINARY-LONG.
+ 01 L-TY                   BINARY-LONG.
+ 01 L-TZ                   BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-BUDGET               BINARY-LONG.
+ 01 L-PATH.
+    05 L-CELL OCCURS 128 TIMES.
+       10 L-PX             BINARY-LONG.
+       10 L-PY             BINARY-LONG.
+       10 L-PZ             BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-REACHED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-SX L-SY L-SZ L-TX L-TY L-TZ L-HEIGHT L-BUDGET L-PATH L-COUNT L-REACHED.
+     MOVE 0 TO L-COUNT L-REACHED
+     MOVE L-SY TO WS-NY
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 3 OR WS-FOUND = 1
+         COMPUTE WS-Y = L-SY - WS-D
+         CALL "STDMOB-STANDABLE" USING L-DIM L-SX WS-Y L-SZ L-HEIGHT WS-OK
+         IF WS-OK = 1
+             MOVE WS-Y TO WS-NY
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     IF WS-FOUND = 0
+         GOBACK
+     END-IF
+     INITIALIZE WS-GRID-TABLE
+     MOVE 1 TO WS-NODE-COUNT
+     MOVE L-SX TO WN-X(1)
+     MOVE WS-NY TO WN-Y(1)
+     MOVE L-SZ TO WN-Z(1)
+     MOVE 0 TO WN-G(1) WN-PARENT(1) WN-STATE(1)
+     COMPUTE WS-DX = WN-X(1) - L-TX
+     COMPUTE WS-DY = WN-Y(1) - L-TY
+     COMPUTE WS-DZ = WN-Z(1) - L-TZ
+     COMPUTE WN-H(1) = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+     COMPUTE WN-F(1) = 1.5 * WN-H(1)
+     MOVE 1 TO WS-GRID(((16 * 32) + 16) * 24 + 8 + 1)
+     MOVE 1 TO WS-BEST
+     MOVE WN-H(1) TO WS-LEAST
+     MOVE 0 TO WS-POPPED WS-DONE
+     PERFORM UNTIL WS-DONE = 1
+         MOVE 0 TO WS-CUR
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NODE-COUNT
+             IF WN-STATE(WS-I) = 0 AND (WS-CUR = 0 OR WN-F(WS-I) < WN-F(WS-CUR))
+                 MOVE WS-I TO WS-CUR
+             END-IF
+         END-PERFORM
+         IF WS-CUR = 0 OR WS-POPPED >= L-BUDGET
+             MOVE 1 TO WS-DONE
+         ELSE
+             ADD 1 TO WS-POPPED
+             MOVE 1 TO WN-STATE(WS-CUR)
+             IF WN-X(WS-CUR) = L-TX AND WN-Y(WS-CUR) = L-TY AND WN-Z(WS-CUR) = L-TZ
+                 MOVE WS-CUR TO WS-BEST
+                 MOVE 1 TO L-REACHED
+                 MOVE 1 TO WS-DONE
+             ELSE
+                 PERFORM VARYING WS-DIR FROM 1 BY 1 UNTIL WS-DIR > 4
+                     COMPUTE WS-NX = WN-X(WS-CUR) + WS-DX-OF(WS-DIR)
+                     COMPUTE WS-NZ = WN-Z(WS-CUR) + WS-DZ-OF(WS-DIR)
+                     MOVE -1000 TO WS-CAND
+                     MOVE WN-Y(WS-CUR) TO WS-Y
+                     CALL "STDMOB-STANDABLE" USING L-DIM WS-NX WS-Y WS-NZ L-HEIGHT WS-OK
+                     IF WS-OK = 1
+                         MOVE WS-Y TO WS-CAND
+                     ELSE
+                         CALL "STDMOB-CELL" USING L-DIM WS-NX WS-Y WS-NZ WS-TYPE
+                         EVALUATE WS-TYPE
+                             WHEN 1
+                                 COMPUTE WS-NY = WN-Y(WS-CUR) + 1
+                                 COMPUTE WS-Y = WN-Y(WS-CUR) + L-HEIGHT
+                                 CALL "STDMOB-CELL" USING L-DIM WN-X(WS-CUR) WS-Y WN-Z(WS-CUR) WS-TYPE
+                                 IF WS-TYPE = 0
+                                     CALL "STDMOB-STANDABLE" USING L-DIM WS-NX WS-NY WS-NZ L-HEIGHT WS-OK
+                                     IF WS-OK = 1
+                                         MOVE WS-NY TO WS-CAND
+                                     END-IF
+                                 END-IF
+                             WHEN 0
+                                 MOVE 0 TO WS-FOUND
+                                 PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 3 OR WS-FOUND = 1
+                                     COMPUTE WS-NY = WN-Y(WS-CUR) - WS-D
+                                     CALL "STDMOB-STANDABLE" USING L-DIM WS-NX WS-NY WS-NZ L-HEIGHT WS-OK
+                                     IF WS-OK = 1
+                                         MOVE WS-NY TO WS-CAND
+                                         MOVE 1 TO WS-FOUND
+                                     ELSE
+                                         CALL "STDMOB-CELL" USING L-DIM WS-NX WS-NY WS-NZ WS-TYPE
+                                         IF WS-TYPE NOT = 0
+                                             MOVE 1 TO WS-FOUND
+                                         END-IF
+                                     END-IF
+                                 END-PERFORM
+                         END-EVALUATE
+                     END-IF
+                     IF WS-CAND > -1000
+                         COMPUTE WS-GX = WS-NX - L-SX + 16
+                         COMPUTE WS-GZ = WS-NZ - L-SZ + 16
+                         COMPUTE WS-GY = WS-CAND - WN-Y(1) + 8
+                         IF WS-GX >= 0 AND WS-GX < 32 AND WS-GZ >= 0 AND WS-GZ < 32 AND WS-GY >= 0 AND WS-GY < 24
+                             COMPUTE WS-KEY = (WS-GX * 32 + WS-GZ) * 24 + WS-GY + 1
+                             COMPUTE WS-DY = WS-CAND - WN-Y(WS-CUR)
+                             COMPUTE WS-TENT = WN-G(WS-CUR) + FUNCTION SQRT(1 + WS-DY * WS-DY)
+                             IF WS-GRID(WS-KEY) = 0
+                                 IF WS-NODE-COUNT < 1024
+                                     ADD 1 TO WS-NODE-COUNT
+                                     MOVE WS-NODE-COUNT TO WS-GRID(WS-KEY)
+                                     MOVE WS-NX TO WN-X(WS-NODE-COUNT)
+                                     MOVE WS-CAND TO WN-Y(WS-NODE-COUNT)
+                                     MOVE WS-NZ TO WN-Z(WS-NODE-COUNT)
+                                     MOVE WS-TENT TO WN-G(WS-NODE-COUNT)
+                                     MOVE WS-CUR TO WN-PARENT(WS-NODE-COUNT)
+                                     MOVE 0 TO WN-STATE(WS-NODE-COUNT)
+                                     COMPUTE WS-DX = WS-NX - L-TX
+                                     COMPUTE WS-DY = WS-CAND - L-TY
+                                     COMPUTE WS-DZ = WS-NZ - L-TZ
+                                     COMPUTE WN-H(WS-NODE-COUNT) = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
+                                     COMPUTE WN-F(WS-NODE-COUNT) = WS-TENT + 1.5 * WN-H(WS-NODE-COUNT)
+                                     IF WN-H(WS-NODE-COUNT) < WS-LEAST
+                                         MOVE WN-H(WS-NODE-COUNT) TO WS-LEAST
+                                         MOVE WS-NODE-COUNT TO WS-BEST
+                                     END-IF
+                                 END-IF
+                             ELSE
+                                 MOVE WS-GRID(WS-KEY) TO WS-I
+                                 IF WN-STATE(WS-I) = 0 AND WS-TENT < WN-G(WS-I)
+                                     MOVE WS-TENT TO WN-G(WS-I)
+                                     MOVE WS-CUR TO WN-PARENT(WS-I)
+                                     COMPUTE WN-F(WS-I) = WS-TENT + 1.5 * WN-H(WS-I)
+                                 END-IF
+                             END-IF
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-PERFORM
+*>   The path: the chain of parents from the best node to the start, reversed.
+     MOVE 0 TO WS-LEN
+     MOVE WS-BEST TO WS-CUR
+     PERFORM UNTIL WS-CUR = 0
+         ADD 1 TO WS-LEN
+         MOVE WS-CUR TO WS-LINK(WS-LEN)
+         MOVE WN-PARENT(WS-CUR) TO WS-CUR
+     END-PERFORM
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-I FROM WS-LEN BY -1 UNTIL WS-I < 1 OR L-COUNT >= 128
+         ADD 1 TO L-COUNT
+         MOVE WN-X(WS-LINK(WS-I)) TO L-PX(L-COUNT)
+         MOVE WN-Y(WS-LINK(WS-I)) TO L-PY(L-COUNT)
+         MOVE WN-Z(WS-LINK(WS-I)) TO L-PZ(L-COUNT)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STDMOB-PATH.
