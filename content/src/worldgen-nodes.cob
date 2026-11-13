@@ -742,13 +742,13 @@
              END-IF
              IF LS-MEMBER = 0
 *>               A field that is left out: an error when it is required, else its slot takes the default (the
-*>               optional forms in use are D R K Q J L V S U W Y F M, I B E P C and T X H).
+*>               optional forms in use are D R K Q J L V S U W Y Z F M, I B E P C and T X H).
                  IF LS-LETTER = LS-UP
                      MOVE 0 TO LS-OK
                  ELSE
                      EVALUATE LS-UP
                          WHEN "D" WHEN "R" WHEN "K" WHEN "Q" WHEN "J" WHEN "L" WHEN "V" WHEN "S" WHEN "U"
-                         WHEN "W" WHEN "Y" WHEN "F"
+                         WHEN "W" WHEN "Y" WHEN "F" WHEN "Z"
                              ADD 1 TO LS-CI
                          WHEN "M"
                              ADD 1 TO LS-CI LS-II
@@ -788,8 +788,10 @@
                          CALL "WG-READ-NODE" USING JSON-DOC LS-MEMBER LS-CDOM L-KEY LS-CHILD L-STATUS
                          ADD 1 TO LS-CI
                          MOVE LS-CHILD TO WGN-CHILD(LS-IDX, LS-CI)
-                     WHEN "S" WHEN "U" WHEN "W" WHEN "Y" WHEN "M"
+                     WHEN "S" WHEN "U" WHEN "W" WHEN "Y" WHEN "M" WHEN "Z"
                          EVALUATE LS-UP
+                             WHEN "Z"
+                                 MOVE 1 TO LS-CDOM
                              WHEN "S"
                                  MOVE 2 TO LS-CDOM
                              WHEN "U"
