@@ -253,7 +253,7 @@
          "s_needed:0}} 2 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "acceptance US12 31-7§5 Vault: config rules (5.2): activation_range above deactivation_range rejects the config (the default); a config without key_item has the empty stack (not written); no config keeps the default; a display" TO TL-CASE
+     MOVE "acceptance US12 31-7§5 Vault: config rules (5.2): activation_range above deactivation_range rejects the config (the default); no config keeps the default" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "minecraft:vault" TO WS-KEY
      MOVE 15 TO WS-SVL
@@ -291,6 +291,27 @@
      MOVE 5 TO WS-Z
      CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE "{config:{loot_table:minecraft:chests/trial_chambers/reward,activation_range:4.000,deactivation_range" &
+         ":4.500,key_item:{id:minecraft:trial_key,count:1}},shared_data:{connected_players:[],connected_partic" &
+         "les_range:4.500},server_data:{rewarded_players:[],state_updating_resumes_at:0,items_to_eject:[],tota" &
+         "l_ejections_needed:0}} {config:{loot_table:minecraft:chests/trial_chambers/reward,activation_range:4" &
+         ".000,deactivation_range:4.500,key_item:{id:minecraft:trial_key,count:1}},shared_data:{connected_play" &
+         "ers:[],connected_particles_range:4.500},server_data:{rewarded_players:[],state_updating_resumes_at:0" &
+         ",items_to_eject:[],total_ejections_needed:0}}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-7§5 Vault: config rules (5.2): a config without key_item has the empty stack (not written); a display item without a count has count 1" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:vault" TO WS-KEY
+     MOVE 15 TO WS-SVL
+     MOVE 44 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE "config" TO WS-NM
      MOVE 6 TO WS-NML
      PERFORM NB-C
@@ -301,16 +322,7 @@
      PERFORM NB-S
      PERFORM NB-E
      PERFORM LOAD-BUFFER
-     PERFORM SAVE-RENDER
-     MOVE "minecraft:vault" TO WS-KEY
-     MOVE 15 TO WS-SVL
-     MOVE 44 TO WS-NV
-     MOVE 5 TO WS-X
-     MOVE 70 TO WS-Y
-     MOVE 5 TO WS-Z
-     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
-     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
      PERFORM SAVE-RENDER
      MOVE "minecraft:vault" TO WS-KEY
      MOVE 15 TO WS-SVL
@@ -335,19 +347,12 @@
      PERFORM NB-E
      PERFORM LOAD-BUFFER
      PERFORM SAVE-RENDER
-     MOVE "{config:{loot_table:minecraft:chests/trial_chambers/reward,activation_range:4.000,deactivation_range" &
-         ":4.500,key_item:{id:minecraft:trial_key,count:1}},shared_data:{connected_players:[],connected_partic" &
-         "les_range:4.500},server_data:{rewarded_players:[],state_updating_resumes_at:0,items_to_eject:[],tota" &
-         "l_ejections_needed:0}} {config:{loot_table:a:ok,activation_range:4.000,deactivation_range:4.500},sha" &
-         "red_data:{connected_players:[],connected_particles_range:4.500},server_data:{rewarded_players:[],sta" &
-         "te_updating_resumes_at:0,items_to_eject:[],total_ejections_needed:0}} {config:{loot_table:minecraft:" &
-         "chests/trial_chambers/reward,activation_range:4.000,deactivation_range:4.500,key_item:{id:minecraft:" &
-         "trial_key,count:1}},shared_data:{connected_players:[],connected_particles_range:4.500},server_data:{" &
-         "rewarded_players:[],state_updating_resumes_at:0,items_to_eject:[],total_ejections_needed:0}} {config" &
-         ":{loot_table:minecraft:chests/trial_chambers/reward,activation_range:4.000,deactivation_range:4.500," &
-         "key_item:{id:minecraft:trial_key,count:1}},shared_data:{display_item:{id:a:g,count:1},connected_play" &
-         "ers:[],connected_particles_range:4.500},server_data:{rewarded_players:[],state_updating_resumes_at:0" &
-         ",items_to_eject:[],total_ejections_needed:0}}" TO TL-EXPECTED
+     MOVE "{config:{loot_table:a:ok,activation_range:4.000,deactivation_range:4.500},shared_data:{connected_pla" &
+         "yers:[],connected_particles_range:4.500},server_data:{rewarded_players:[],state_updating_resumes_at:" &
+         "0,items_to_eject:[],total_ejections_needed:0}} {config:{loot_table:minecraft:chests/trial_chambers/r" &
+         "eward,activation_range:4.000,deactivation_range:4.500,key_item:{id:minecraft:trial_key,count:1}},sha" &
+         "red_data:{display_item:{id:a:g,count:1},connected_players:[],connected_particles_range:4.500},server" &
+         "_data:{rewarded_players:[],state_updating_resumes_at:0,items_to_eject:[],total_ejections_needed:0}}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US12 31-7§5 Vault: update tag (5.4): a compound with the single key shared_data; the client config is the default config" TO TL-CASE
@@ -1282,7 +1287,7 @@
      MOVE 1 TO WS-A
      MOVE 0 TO WS-B
      MOVE 1 TO WS-C
-     CALL "BE7-VAULT-HOOK" USING WS-IDX WS-B WS-A WS-B WS-E WS-F WS-G WS-H WS-P
+     CALL "BE7-VAULT-HOOK" USING WS-IDX WS-B WS-A WS-C WS-E WS-F WS-G WS-H WS-P
      MOVE WS-P TO WS-SHOW
      PERFORM ADD-N
      MOVE "0" TO TL-EXPECTED
