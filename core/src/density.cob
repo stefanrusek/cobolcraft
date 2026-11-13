@@ -656,7 +656,6 @@
        10 WS-COL-X         BINARY-LONG.
        10 WS-COL-Z         BINARY-LONG.
        10 WS-COL-RES       FLOAT-LONG.
- 01 WS-SLOT                BINARY-LONG.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
  01 WS-ONE                 FLOAT-LONG VALUE 1.
  01 WS-HALF                FLOAT-LONG VALUE 0.5.
@@ -675,6 +674,7 @@
  01 LS-STAMP               BINARY-LONG.
  01 LS-NODE                BINARY-LONG.
  01 LS-DONE                BINARY-LONG.
+ 01 LS-SLOT                BINARY-LONG.
  01 LS-X                   BINARY-LONG.
  01 LS-Y                   BINARY-LONG.
  01 LS-Z                   BINARY-LONG.
@@ -760,12 +760,12 @@
 *>   A cache node (a cache_2d, flat cache or cache once of the data) whose value did not read y and reached no grid or blend node is
 *>   also kept by column in a larger table (WS-COLUMNS), so that the next position of the column, at any y, takes it from there
 *>   after the single entry above (one per node, the last position) was overwritten by another column.
-     MOVE 0 TO WS-SLOT
+     MOVE 0 TO LS-SLOT
      IF WGN-TYPE(LS-NODE) = 19
-         COMPUTE WS-SLOT = FUNCTION MOD(LS-X * 31 + LS-Z * 17 + LS-NODE * 131, 65536) + 1
-         IF WS-COL-STAMP(WS-SLOT) = LS-STAMP AND WS-COL-NODE(WS-SLOT) = LS-NODE
-                 AND WS-COL-X(WS-SLOT) = LS-X AND WS-COL-Z(WS-SLOT) = LS-Z
-             MOVE WS-COL-RES(WS-SLOT) TO L-RESULT
+         COMPUTE LS-SLOT = FUNCTION MOD(LS-X * 31 + LS-Z * 17 + LS-NODE * 131, 65536) + 1
+         IF WS-COL-STAMP(LS-SLOT) = LS-STAMP AND WS-COL-NODE(LS-SLOT) = LS-NODE
+                 AND WS-COL-X(LS-SLOT) = LS-X AND WS-COL-Z(LS-SLOT) = LS-Z
+             MOVE WS-COL-RES(LS-SLOT) TO L-RESULT
              SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
              MOVE LS-STAMP TO B-STAMP
              MOVE LS-X TO B-X
@@ -990,12 +990,12 @@
 *>           terrain does not use (after 35) evaluate to 0 here.
              MOVE WS-ZERO TO L-RESULT
      END-EVALUATE
-     IF WS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
-         MOVE LS-STAMP TO WS-COL-STAMP(WS-SLOT)
-         MOVE LS-NODE TO WS-COL-NODE(WS-SLOT)
-         MOVE LS-X TO WS-COL-X(WS-SLOT)
-         MOVE LS-Z TO WS-COL-Z(WS-SLOT)
-         MOVE L-RESULT TO WS-COL-RES(WS-SLOT)
+     IF LS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
+         MOVE LS-STAMP TO WS-COL-STAMP(LS-SLOT)
+         MOVE LS-NODE TO WS-COL-NODE(LS-SLOT)
+         MOVE LS-X TO WS-COL-X(LS-SLOT)
+         MOVE LS-Z TO WS-COL-Z(LS-SLOT)
+         MOVE L-RESULT TO WS-COL-RES(LS-SLOT)
      END-IF
      IF DM-IMPURE = 0
          SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
