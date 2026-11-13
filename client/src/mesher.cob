@@ -290,6 +290,8 @@
          CALL "WORLD-ROW" USING CLIENT-STATE WR-CX(L-ROW) WS-CZ WS-NROW(3)
          COMPUTE WS-CZ = WR-CZ(L-ROW) + 1
          CALL "WORLD-ROW" USING CLIENT-STATE WR-CX(L-ROW) WS-CZ WS-NROW(4)
+*>       CC-0007 stopgap: the sky light to assume where the core sent none (sky-stopgap.cob).
+         CALL "SKY-STOPGAP-PREPARE" USING CLIENT-STATE L-ROW WS-NEIGHBOURS
      END-IF
      MOVE 0 TO WS-CELL
      PERFORM VARYING WS-LY FROM 0 BY 1 UNTIL WS-LY > WS-LAST
@@ -637,6 +639,10 @@
                  DIVIDE WS-BYTE BY 16 GIVING WS-NIB REMAINDER L-BLOCK
              ELSE
                  DIVIDE WS-BYTE BY 16 GIVING L-BLOCK
+             END-IF
+*>           CC-0007 stopgap (sky-stopgap.cob): assumed sky light where the section has none; remove with it.
+             IF SKG-COUNT > 0
+                 CALL "SKY-STOPGAP-CELL" USING CLIENT-STATE WS-ROW WS-NX WS-NY WS-NZ L-SKY
              END-IF
      END-EVALUATE
      GOBACK.
