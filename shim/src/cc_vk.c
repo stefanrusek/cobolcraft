@@ -729,6 +729,36 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
 /* Replaces the rectangle (x, y, w, h) of the base level and regenerates the mip levels (12 §2.3): only the pixels of
  * each level that depend on the rectangle are recomputed (a pixel of level n + 1 reads a 2 x 2 block of level n) and
  * only those rectangles are uploaded; the result equals a rebuild of the whole chain. */
+/* A batch of texture updates (cc_vk_texture_update_begin / _end): the updates between them are recorded into one command buffer and
+ * submitted, and waited for, once at the end instead of once each. */
+#define CC_UPDATE_BATCH_MAX 256
+static VkCommandBuffer update_batch_cmd = VK_NULL_HANDLE;
+static int update_batching = 0;
+static int update_batch_count = 0;
+static VkBuffer update_batch_buffer[CC_UPDATE_BATCH_MAX];
+static VkDeviceMemory update_batch_memory[CC_UPDATE_BATCH_MAX];
+
+static void update_batch_flush(void) {
+    if (update_batch_cmd != VK_NULL_HANDLE) {
+        submit_wait(update_batch_cmd, "cc_vk_texture_update_end");
+        update_batch_cmd = VK_NULL_HANDLE;
+    }
+    for (int i = 0; i < update_batch_count; i++) {
+        vkDestroyBuffer(cc_vk_state.device, update_batch_buffer[i], NULL);
+        vkFreeMemory(cc_vk_state.device, update_batch_memory[i], NULL);
+    }
+    update_batch_count = 0;
+}
+
+void cc_vk_texture_update_begin(void) {
+    update_batching = 1;
+}
+
+void cc_vk_texture_update_end(void) {
+    update_batching = 0;
+    update_batch_flush();
+}
+
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
     if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_PARTICLES || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
     texture_t *t = &cc_vk_state.textures[tex_id];
@@ -773,13 +803,26 @@ int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, in
             .imageOffset = {x0[i], y0[i], 0},
             .imageExtent = {(uint32_t)(x1[i] - x0[i] + 1), (uint32_t)(y1[i] - y0[i] + 1), 1},
         };
-    VkCommandBuffer cmd = command_buffer();
-    begin(cmd);
+    if (update_batching && update_batch_count == CC_UPDATE_BATCH_MAX) update_batch_flush();
+    VkCommandBuffer cmd;
+    if (update_batching && update_batch_cmd != VK_NULL_HANDLE) {
+        cmd = update_batch_cmd;
+    } else {
+        cmd = command_buffer();
+        begin(cmd);
+        if (update_batching) update_batch_cmd = cmd;
+    }
     barrier_levels(cmd, t->image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT,
                    VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, t->mips);
     vkCmdCopyBufferToImage(cmd, staging, t->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, t->mips, regions);
     barrier_levels(cmd, t->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
                    VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, t->mips);
+    if (update_batching) {
+        update_batch_buffer[update_batch_count] = staging;
+        update_batch_memory[update_batch_count] = staging_memory;
+        update_batch_count++;
+        return 0;
+    }
     submit_wait(cmd, "cc_vk_texture_update");
     vkDestroyBuffer(cc_vk_state.device, staging, NULL);
     vkFreeMemory(cc_vk_state.device, staging_memory, NULL);

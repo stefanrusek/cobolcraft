@@ -986,7 +986,10 @@
        10 MB-FAKE-STEP       BINARY-LONG.    *> microseconds the injected clock advances per section meshed
        10 MB-MESHED          BINARY-LONG.    *> sections meshed by the last MESH-DIRTY
        10 MB-EMPTY           BINARY-LONG.    *> sections found all air (meshed at once, no vertices) since CL-INIT
+       10 MB-LIGHT-OFF       PIC 9.          *> 1 = MF-AT reads states only (MESH-FLUID's first look at a cell: most draw nothing)
        10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
+       10 MB-CREDIT-ON       PIC 9.          *> 1 = meshing is paid for from a credit that each frame refills (CL-RUN sets it; 0 in tests)
+       10 MB-CREDIT          BINARY-DOUBLE.  *> microseconds of meshing the next frames may spend; below 0 the frame meshes nothing
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
