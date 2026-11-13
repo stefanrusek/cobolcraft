@@ -891,3 +891,32 @@
      END-PERFORM
      GOBACK.
  END PROGRAM L32-LOAD-STORED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. L32-PACKET-STATE.
+*> USING layer, section x, y, z; gives how the published layer of a section goes into a Light Update or chunk packet (9 item 4, 06 section 7): 0 no layer (no bit
+*> in any mask; also the sky layer of a dimension without a sky engine), 1 all 4096 values 0 (the empty mask), 2 anything else (the 2048-byte array).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY L32.
+ 01 WS-SID                 BINARY-LONG.
+ 01 WS-COL                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-K                    BINARY-LONG.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SY                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-K L-SX L-SY L-SZ L-STATE.
+     MOVE 0 TO L-STATE
+     CALL "L32-SECTION-ID" USING L-SX L-SY L-SZ WS-SID WS-COL
+     IF WS-SID > 0 AND (L-K = 1 OR EN-SKY-ON = 1)
+         IF LY-VP(L-K, WS-SID) = 1
+             MOVE 2 TO L-STATE
+             IF LY-VD(L-K, WS-SID) = LOW-VALUES
+                 MOVE 1 TO L-STATE
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM L32-PACKET-STATE.

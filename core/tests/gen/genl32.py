@@ -844,6 +844,7 @@ assert e.m.cksum(1,*SBOX)==h0
 e.cell(20,45,20,2); e.skyupdate(20,45,20); e.check(2,20,45,20); e.run(2); e.probe(2,*SBOX); e.level(2,20,44,20); e.level(2,20,46,20); e.level(2,21,44,20); e.level(2,20,35,20)
 e.cell(20,45,20,0); e.skyupdate(20,45,20); e.check(2,20,45,20); e.run(2); e.probe(2,*SBOX)
 assert e.m.cksum(1,*SBOX)==h0
+e.check(2,12,20,12); e.check(2,13,31,12); e.run(2); e.probe(2,*SBOX); assert e.m.cksum(1,*SBOX)==h0
 e.cell(6,40,6,0); e.skyupdate(6,40,6); e.check(2,6,40,6); e.run(2); e.probe(2,*SBOX); e.level(2,6,35,6); e.level(2,6,40,6)
 e.cell(6,40,6,2); e.skyupdate(6,40,6); e.check(2,6,40,6); e.run(2); e.probe(2,*SBOX)
 assert e.m.cksum(1,*SBOX)==h0
@@ -855,9 +856,17 @@ for cz in range(-1,3):
 e.status(2,0,0,0,0); e.status(2,2,3,0,0); e.finish(2)
 e.rawset(2,32,32,5,15); e.rawinc(2,32,32,5,ADD_SKY); e.run(2)
 e.probe(2,28,36,-16,40,2,8); e.level(2,31,32,5); e.level(2,31,31,5); e.level(2,31,-16,5); e.level(2,31,-17,5); e.level(2,30,31,5); e.level(2,33,32,5); e.level(2,32,32,4)
-e.rawdec(2,32,32,5,E_dec_all(15)); e.rawset(2,32,32,5,0); e.run(2)
+e.rawdec(2,32,32,5,E_dec_all(15)); e.rawset(2,32,32,5,0); e.qpeek(2,2,0); e.qpeek(2,2,1); e.run(2)
 e.probe(2,28,36,-16,40,2,8)
 e.run_case(g,'empty sections below a column edge (5.2 worked example): a lit cell on a section bottom edge counts k = 3 sections that store no light but have data below; the neighbour that crosses the section column edge (WEST, local x 15) writes its level into those sections of its own column, 16 Y values each, and the decrease clears them again; EAST and NORTH do not cross')
+e=EScn(1); e.standard()
+for cz in range(-1,3):
+    for cx in range(-1,3): e.avail(cx,cz,1)
+e.status(2,0,0,0,0); e.status(2,2,3,0,0); e.finish(2)
+e.cell(36,10,5,2); e.fill(2,0); e.enable(2,2,0,1); e.check(2,36,40,5); e.run(2)
+e.probe(2,34,38,-16,80,3,7); e.level(2,36,40,5); e.level(2,36,32,5); e.level(2,36,31,5); e.level(2,36,11,5)
+e.cell(36,10,5,0); e.skyupdate(36,10,5); e.check(2,36,10,5); e.run(2); e.probe(2,34,38,-16,80,3,7); e.tab(36,5)
+e.run_case(g,'updateSourcesInColumn passes over sections that store no light (5.2 removal and addition steps): with layers only around two sections, a source column whose lowest source is in a section without a layer skips down and up to the next storing section and ends at the world bottom or the top')
 # chunk start worked example (5.2)
 e=EScn(1); e.standard()
 for cz in range(-1,3):
@@ -1145,8 +1154,8 @@ e.run_case(g,'client frame (8.2): ClientLevel.update polls the task deque (enabl
 
 e=f8()
 e.cell(5,20,5,4); e.cell(6,20,5,2)
-e.needs(); e.submit(0,2,0,1,0,0,0); e.submit(0,3,0,0,1,0,0); e.submit(0,1,5,20,5,0,0); e.submit(1,6,0,0,1,0,0); e.needs()
-e.srun(); e.needs(); e.level(1,5,20,5); e.level(1,6,20,5); e.level(1,5,21,5); e.level(1,4,20,5); e.flags(1,0,0); e.flags(2,0,0)
+e.needs(); e.submit(0,2,0,1,0,0,0); e.submit(0,5,1,0,1,0,9); e.submit(0,3,0,0,1,0,0); e.submit(0,1,5,20,5,0,0); e.submit(1,6,0,0,1,0,0); e.needs()
+e.srun(); e.needs(); e.pub(1,1,17,2); e.level(1,5,20,5); e.level(1,6,20,5); e.level(1,5,21,5); e.level(1,4,20,5); e.flags(1,0,0); e.flags(2,0,0)
 for i in range(1005): e.submit(1 if i%2 else 0,6,0,1,i%2,0,0)
 e.needs(); e.srun(); e.needs(); e.srun(); e.needs(); e.flags(1,0,1)
 e.run_case(g,'server batches (8.3): every call is a task; runUpdate processes at most 1000 tasks: the PRE_UPDATE ones first, then one light update run, then the POST_UPDATE ones of the same batch; tasks are removed once processed; scheduling is needed while tasks wait or the engines have work')
@@ -1172,3 +1181,97 @@ e.status(1,0,0,0,0); e.finish(1); e.obs8(5,5,5); e.pub(1,5,5,5); e.pub(2,5,5,5)
 e.setblock(0,5,20,5,2); e.obs8(5,20,5)
 e.run_case(g,'a dimension without sky light (1.1, 8.4): a stored sky layer is ignored, the sky engine does not exist (no sky state, no sky check, sky reads 0) while block light still loads')
 W(g,8)
+# ===================== 9
+import heapq, random
+g=GL(9,'Summary for an implementer','T0695','the four rules of the summary: tables, block change feeding, the light formula (independent shortest-path check) and the packet state of a layer.')
+g.extra=EXTRA+" 01 WS-DATA              PIC X(24576).\n"
+def dijkstra(m,sources,box):
+    """independent field: level(cell) = max over sources of start - sum of the opacity of every cell entered (never below 0); sources: {(x,y,z): level}"""
+    lv={}; heap=[(-l,c) for c,l in sources.items()]; heapq.heapify(heap); best=dict(sources)
+    while heap:
+        nl,c=heapq.heappop(heap); l=-nl
+        if best.get(c,0)>l: continue
+        for d in DIRS:
+            n=(c[0]+d[0],c[1]+d[1],c[2]+d[2])
+            if not(-16<=n[0]<=47 and -16<=n[2]<=47 and -16<=n[1]<=79): continue
+            nl2=l-m.opacity(m.state(*n))
+            if nl2>best.get(n,0): best[n]=nl2; heapq.heappush(heap,(-nl2,n))
+    return best
+def cks(best,x0,x1,y0,y1,z0,z1):
+    c=w=0
+    for x in range(x0,x1+1):
+        for y in range(y0,y1+1):
+            for z in range(z0,z1+1):
+                v=best.get((x,y,z),0)
+                if v>0: c+=1; w+=v*(1+(x*7+y*13+z*31)%97)
+    return c,w
+e=f8(sky=1)
+e.setblock(0,5,20,5,4); e.run(1); e.run(2); e.level(1,5,20,5); e.level(1,8,20,5); e.level(1,5,20,9)
+e.setblock(0,5,20,5,0); e.run(1); e.run(2); e.level(1,5,20,5); e.level(1,8,20,5); e.probe(1,-10,20,10,30,-10,20)
+e.m.chunk_start_block(0,0); e.op(S(0,0),'CALL "L32-CHUNK-START-BLOCK" USING WS-I(1) WS-I(2)')
+e.run_case(g,'summary 1 and 2: a block change goes through the section emptiness and light-property hooks of 8.1 and then the check, the decrease queue and the increase queue of 4 (place and remove a torch through the hook)')
+rnd=random.Random(32)
+e=f8(sky=0); e.everything((1,)); e.enable_all(1)
+src={}
+for i in range(60):
+    x,y,z=rnd.randrange(0,32),rnd.randrange(10,31),rnd.randrange(0,32)
+    st=rnd.choice([2,3,11,2,11,3,3,11])
+    e.cell(x,y,z,st)
+for i in range(9):
+    x,y,z=rnd.randrange(0,32),rnd.randrange(10,31),rnd.randrange(0,32)
+    st=rnd.choice([4,12,10]); e.cell(x,y,z,st)
+for cx,cz in [(0,0),(1,0),(0,1),(1,1)]: e.chunk_block(cx,cz)
+e.run(1)
+for (x,y,z),i in e.m.blocks.items():
+    if e.m.states[i][0]>0: src[(x,y,z)]=e.m.states[i][0]
+best=dijkstra(e.m,src,None)
+B9=(-14,45,-4,44,-14,45)
+e.probe(1,*B9)
+assert e.exp[-1]=="%d/%d"%cks(best,*B9) and cks(best,*B9)[0]>1000
+e.run_case(g,'summary 3 (block light): the level at a cell is the maximum over the sources of emission minus the sum of the opacities of the cells entered along a path, never below 0 (checked against an independent shortest-path search over 60 random obstacles of opacity 1, 3 and 15 and 9 emitters)')
+e=EScn(1); e.standard(); e.everything((1,2)); e.floor(30)
+for x in range(4,10):
+    for z in range(4,10): e.cell(x,40,z,2)
+e.cell(20,35,20,2); e.cell(21,35,20,11); e.cell(20,36,21,3)
+e.fill_all()
+for cx,cz in [(0,0),(1,0),(0,1),(1,1)]: e.chunk_sky(cx,cz)
+e.run(2)
+srcs={}
+for cx,cz in [(0,0),(1,0),(0,1),(1,1)]:
+    for lx in range(16):
+        for lz in range(16):
+            ls=e.m.ls[(cx,cz)][lx+16*lz]
+            for y in range(max(ls,-16),80): srcs[(cx*16+lx,y,cz*16+lz)]=15
+best=dijkstra(e.m,srcs,None)
+SB=(0,31,25,60,0,31)
+e.probe(2,*SB)
+assert e.exp[-1]=="%d/%d"%cks(best,*SB)
+e.run_case(g,'summary 3 (sky light): 15 at and above the column lowest source, spreading like block light below it (shortest-path check over a roof, a floor and obstacles of opacity 15, 3 and 1)')
+e=f8(sky=1)
+for sy in (0,1,2): e.status(1,0,sy,0,0); e.status(2,0,sy,0,0)
+e.finish(1); e.finish(2)
+e.op("0",'MOVE ALL X"00" TO WS-DATA(1:2048)\nMOVE ALL X"35" TO WS-DATA(2049:2048)\nMOVE ALL X"00" TO WS-DATA(4097:2048)\nMOVE ALL X"21" TO WS-DATA(6145:2048)',None)
+arr9=[arr_of(0),arr_of(0x35),arr_of(0),arr_of(0x21)]
+e.m.apply_light(0,0,0,0b000011,0b000100,0b000110,0b001000,arr9)
+e.op(S(0,0,0,3,4,6,8),'CALL "L32-APPLY-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-DATA',None)
+e.run(1); e.run(2)
+def pstate(L,p):
+    if p not in L.vis: return 0
+    return 1 if not any(L.vis[p]) else 2
+for k in (1,2):
+    for p_ in [(0,-1,0),(0,0,0),(0,1,0),(0,2,0),(0,3,0),(0,4,0),(3,0,3)]:
+        e.exp.append(str(pstate(e.m.lay[k-1],p_))); e.op(S(k,*p_),'CALL "L32-PACKET-STATE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
+e.run_case(g,'summary 4 (06 section 7): a published layer with all 4096 values 0 is sent through the empty mask, anything else as the 2048-byte array, a section without a layer has no bit; validation 9')
+e=f8(sky=0)
+for sy in (0,1): e.status(1,0,sy,0,0); e.status(2,0,sy,0,0)
+e.finish(1); e.finish(2)
+e.op("0",'MOVE ALL X"00" TO WS-DATA(1:2048)\nMOVE ALL X"35" TO WS-DATA(2049:2048)',None)
+e.m.apply_light(0,0,0,0b000011,0b000011,0b000000,0b000000,[arr_of(0),arr_of(0x35)])
+e.op(S(0,0,0,3,3,0,0),'CALL "L32-APPLY-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-DATA',None)
+e.run(1)
+for k in (1,2):
+    for p_ in [(0,0,0),(0,1,0),(0,2,0)]:
+        e.exp.append(str(pstate(e.m.lay[k-1],p_) if k==1 else 0)); e.op(S(k,*p_),'CALL "L32-PACKET-STATE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1)
+e.pub(2,5,5,5); e.pub(2,5,100,5)
+e.run_case(g,'validation 7: a dimension without sky light has no sky layer: sky reads 0 everywhere and the sky arrays are absent from packets (no bit in any mask)')
+W(g,9)
