@@ -51,6 +51,7 @@
  01 WS-FARX                BINARY-LONG VALUE 100000.
  01 WS-X0                  FLOAT-LONG.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-ANIMALS             BINARY-LONG VALUE 1.
  01 WS-HASH-COUNT          BINARY-LONG.
  01 WS-H                   BINARY-DOUBLE.
  01 WS-Q                   BINARY-DOUBLE.
@@ -231,7 +232,7 @@
 *>   Attempts around the player: many times, none crashes, and the cycle runs on ticks of 400 only.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
          MOVE WS-I TO CW-TIME
-         CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER
+         CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-ANIMALS
      END-PERFORM
 *>   An attempt whose column has ground: the same hash as STDMOB-SPAWN-TRY picks the column of the first time that is far enough,
 *>   which gets a stone floor at y = 5; the attempt reaches the rule and the stone is no ground for an animal.
@@ -258,7 +259,7 @@
      PERFORM COUNT-ALL
      MOVE WS-COUNT TO WS-BEFORE
      MOVE WS-I TO CW-TIME
-     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER
+     CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-ANIMALS
      PERFORM COUNT-ALL
      MOVE "test stdmob extra: an attempt on a stone floor spawns nothing" TO TL-CASE
      MOVE "N" TO TL-MODE
@@ -270,7 +271,7 @@
      MOVE WS-FAR TO PL-X(WS-PLAYER)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 40
          MOVE WS-I TO CW-TIME
-         CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER
+         CALL "STDMOB-SPAWN-TRY" USING WS-DIM WS-PLAYER WS-ANIMALS
      END-PERFORM
      MOVE WS-X0 TO PL-X(WS-PLAYER)
      MOVE 401 TO CW-TIME
