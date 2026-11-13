@@ -203,12 +203,8 @@
 *>   the layer: quart y + 16 clamped to 0 .. 95
      MOVE L-QY TO WS-LAYER
      ADD 16 TO WS-LAYER
-     IF WS-LAYER < 0
-         MOVE 0 TO WS-LAYER
-     END-IF
-     IF WS-LAYER > 95
-         MOVE 95 TO WS-LAYER
-     END-IF
+     IF WS-LAYER < 0 MOVE 0 TO WS-LAYER END-IF
+     IF WS-LAYER > 95 MOVE 95 TO WS-LAYER END-IF
      IF WS-RX >= 0 AND WS-RX <= 3 AND WS-RZ >= 0 AND WS-RZ <= 3
          SET ADDRESS OF CE-CHUNK TO J-ADDR
          MOVE WS-CBASE(WS-LAYER + 1) TO WS-CELL
@@ -300,14 +296,9 @@
          MOVE L-X TO WS-LAST-X
          MOVE L-Z TO WS-LAST-Z
      END-IF
-     IF L-Y >= -66 AND L-Y <= 413
-         MOVE L-Y TO WS-I
-         ADD 67 TO WS-I
-         MOVE WS-QYT(WS-I) TO WS-QY
-     ELSE
-         COMPUTE WS-Y1 = L-Y - 2
-         COMPUTE WS-QY = FUNCTION INTEGER(WS-Y1 / 4)
-     END-IF
+*>   (a y outside the table, which no column reaches, takes the decimal way on one line)
+     IF L-Y >= -66 AND L-Y <= 413 MOVE L-Y TO WS-I ADD 67 TO WS-I MOVE WS-QYT(WS-I) TO WS-QY
+     ELSE COMPUTE WS-QY = FUNCTION INTEGER((L-Y - 2) / 4) END-IF
      IF WS-QY = SC-BIO-Q AND SC-BIO-ID >= 0
          MOVE SC-BIO-ID TO L-ID
          GOBACK
