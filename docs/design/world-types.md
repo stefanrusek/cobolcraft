@@ -253,7 +253,7 @@ For each area, the standard world type's source, the cobolcraft world type's sou
 | Synchronized registries (Registry Data, Update Tags) | Every registry the loaded data pack defines, order of 04 §3 | The set of 09 §3.1 as re-scoped, plus the standard core (README C3) | |
 | Dimensions | `minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`; overworld Y -64 to 319 | `cobolcraft:main`, `cobolcraft:subroutine`; Y 0 to 255 (standin §4.6, §5, §15) | Travel: portals (standard); `cobolcraft:goto_pad` (cobolcraft) |
 | Biomes and world generation | 10, 11 and the later worldgen documents | standin §5.2, §15.2 | |
-| Starting state | Empty inventory (README decision 6) | The starting inventory of standin §2 (README S23) and spec US4 to US8; the generator is standin §5.2 | |
+| Starting state | The starter kit (Decision WT-STARTER below; README decision 6 held an empty inventory) | The starting inventory of standin §2 (README S23) and spec US4 to US8; the generator is standin §5.2 | |
 | Textures, models, fonts, language | Generated resource pack, then Faithful or other user packs | The built-in `cobolcraft` pack (08 §10, the UI art of ui) | Packs are stacked for both types by README C7 |
 | Names in commands | `minecraft:` keys | `cobolcraft:` keys for the type's own content (section 6.3) | |
 | Extra-dimension setting `extra-dimensions` (FR-009) | Applies to Nether and End | Applies to `cobolcraft:subroutine` | README decision 16 |
@@ -833,3 +833,12 @@ pause screen does not stop the simulation. Closing, changing the port, saving an
 20. **Quirks of the artifact not copied** (section 11): the port 0 recorded by `/publish` (WT-30 departs from it); the operator list
     being ignored for guests while cheats are on (WT-29 copies it as the only rule); the Online scope strings with no scope. The
     sender address in the LAN list is inferred, not read.
+
+## Starter kit (002 operator decision, standard type)
+
+A standard world has no trees until the tree features of generation land, and a player needs wood to craft. A first-time survival player (not a
+respawn, not a later join: the known-player rule of PLAYER-CREATE decides) of a **standard** world is given, in hotbar slots 0 to 3: 1
+`crafting_table`, 16 `oak_log`, 8 `oak_planks`, 8 `stick`. The item rows are found by key whichever form the set stores (`minecraft:oak_log` or the
+bare `oak_log`; core/src/keys.cob), a key the set lacks leaves its slot empty. The server key `starter-kit` (`true` by default, `false` for an
+empty inventory; operator-surface section 2) switches it. The cobolcraft type keeps the stand-in starting inventory of standin section 2; the
+standard type no longer receives it.

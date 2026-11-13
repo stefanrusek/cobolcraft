@@ -4436,3 +4436,7 @@ US7 to US10 and US16 to US20 (controls and screens) next; US11 to US15 (the stan
 - `[P]` = different files, no dependency on an incomplete task. Commit at every phase boundary after its Gate (constitution 5.3).
 - A task that discovers a missing document value stops its slice; the orchestrator runs a clean-room round and the slice resumes (plan "Docs-first obligations").
 - Q-1 and Q-2 are recorded operator decisions (see header); neither is reopened by tasks.
+
+## Lane 002-lane-trees (T4400+)
+
+- [x] T4400 Starter kit for first-time survival players of a standard world (1 crafting table, 16 oak logs, 8 oak planks, 8 sticks) replacing the stand-in starting items for the standard type only, server key `starter-kit` (default true), documented in operator-surface section 2 and world-types "Starter kit"; tests `core/tests/test_starter_kit.cob`, `server/tests/test_config_starter.cob`

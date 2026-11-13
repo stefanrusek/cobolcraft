@@ -75,6 +75,7 @@
  01 WS-NUMBER              BINARY-LONG.
  01 WS-VALID               PIC 9.
  01 WS-FLAG                PIC 9.
+ 01 WS-KIT-FLAG            BINARY-LONG.
  01 WS-PORT-PROBLEM        PIC X(64) VALUE "must be a number from 1 to 65535".
  01 WS-VIEW-PROBLEM        PIC X(64) VALUE "must be a number from 2 to 32".
  01 WS-MODE-PROBLEM        PIC X(64) VALUE "must be creative or survival".
@@ -208,6 +209,7 @@
          WHEN "extra-dimensions"
          WHEN "allow-list"
          WHEN "pack-required"
+         WHEN "starter-kit"
              IF WS-FLAG = 2
                  CALL "SV-CONFIG-FATAL" USING WS-KEY WS-BOOLEAN-PROBLEM
              END-IF
@@ -222,6 +224,9 @@
                      MOVE WS-FLAG TO CS-EXTRA-DIMENSIONS
                  WHEN "pack-required"
                      MOVE WS-FLAG TO CS-PACK-REQUIRED
+                 WHEN "starter-kit"
+                     MOVE WS-FLAG TO WS-KIT-FLAG
+                     CALL "STARTER-KIT-CONFIG" USING WS-KIT-FLAG
                  WHEN OTHER
                      MOVE WS-FLAG TO CS-ALLOW-LIST-ENFORCED
              END-EVALUATE
@@ -289,8 +294,10 @@
     05 FILLER PIC X(128) VALUE "# Chunk generation worker processes of the standard world: auto (half the pr"
         & "ocessors), or 0 to 4 (0 generates inside the tick)".
     05 FILLER PIC X(128) VALUE "generation-workers=auto".
+    05 FILLER PIC X(128) VALUE "# New survival players of a standard world start with a crafting table and wood: true or false".
+    05 FILLER PIC X(128) VALUE "starter-kit=true".
  01 WS-DEFAULT-TABLE REDEFINES WS-DEFAULTS.
-    05 WS-DEFAULT          PIC X(128) OCCURS 30 TIMES.
+    05 WS-DEFAULT          PIC X(128) OCCURS 32 TIMES.
  PROCEDURE DIVISION.
      OPEN OUTPUT CONF-FILE
      IF WS-STATUS NOT = "00"
@@ -298,7 +305,7 @@
          CALL "SV-PRINT" USING WS-PTR WS-ERROR-LENGTH
          GOBACK
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32
          WRITE CONF-LINE FROM WS-DEFAULT(WS-I)
      END-PERFORM
      CLOSE CONF-FILE
@@ -327,6 +334,7 @@
  01 WS-STATUS              PIC XX.
  01 WS-KEY                 PIC X(256) VALUE "cobolcraft-server.conf".
  01 WS-PROBLEM             PIC X(64).
+ 01 WS-KIT-FLAG            BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-PORT                 BINARY-LONG.
@@ -340,6 +348,8 @@
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
      CALL "GEN-WORKERS-AUTO"
+     MOVE 1 TO WS-KIT-FLAG
+     CALL "STARTER-KIT-CONFIG" USING WS-KIT-FLAG
      OPEN INPUT CONF-FILE
      EVALUATE WS-STATUS
          WHEN "00"
