@@ -140,9 +140,8 @@
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE "-" TO WS-STEP-TEXT(4)
      MOVE "acceptance US4-5 client half given no block item held when the right button is used "
-         & "then every targeted block gets Use Item On (a plain block, a glowtube toggle, a goto_pad "
-         & "travel; T4800: the server decides what a block does when used, so the bench, a chest or a "
-         & "door opens with an empty hand too)" TO TL-CASE
+         & "then every targeted block gets Use Item On: a plain block, a glowtube, a goto_pad (T4800)"
+         TO TL-CASE
      PERFORM STEPS-TEXT
      MOVE "4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
          & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | "
