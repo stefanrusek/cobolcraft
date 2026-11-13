@@ -1951,3 +1951,424 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-ENCHANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-SPREAD-HEIGHT.
+*> USING dimension row, block x, block z, maxHeight, height out (BINARY-LONG each): the spawn height of the column (16 §5.3 rule 8): from y = maxHeight + 1 down, the first
+*> block that is not air (state 0) with two air blocks above it gives the y above it; none down to the world minimum gives maxHeight + 1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-AIR1                BINARY-LONG.
+ 01 WS-AIR2                BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-MAX L-HEIGHT.
+     COMPUTE L-HEIGHT = L-MAX + 1
+     COMPUTE WS-AT = L-MAX + 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-AT L-Z WS-STATE
+     MOVE 0 TO WS-AIR2
+     IF WS-STATE = 0
+         MOVE 1 TO WS-AIR2
+     END-IF
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-MAX L-Z WS-STATE
+     MOVE 0 TO WS-AIR1 WS-FOUND
+     IF WS-STATE = 0
+         MOVE 1 TO WS-AIR1
+     END-IF
+     COMPUTE WS-TOP = DM-MIN-Y(L-DIM) + DM-HEIGHT(L-DIM) - 1
+     COMPUTE WS-Y = FUNCTION MIN(L-MAX - 1, WS-TOP)
+     PERFORM UNTIL WS-Y < DM-MIN-Y(L-DIM) OR WS-FOUND = 1
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-STATE
+         IF WS-STATE NOT = 0 AND WS-AIR1 = 1 AND WS-AIR2 = 1
+             COMPUTE L-HEIGHT = WS-Y + 1
+             MOVE 1 TO WS-FOUND
+         END-IF
+         MOVE WS-AIR1 TO WS-AIR2
+         MOVE 0 TO WS-AIR1
+         IF WS-STATE = 0
+             MOVE 1 TO WS-AIR1
+         END-IF
+         SUBTRACT 1 FROM WS-Y
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-SPREAD-HEIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-TWO-DECIMALS.
+*> USING value (FLOAT-LONG), text out (PIC X(32)), length out: the value with two decimals, rounded ("%.2f").
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-EDIT                PIC -(15)9.99.
+ LINKAGE SECTION.
+ 01 L-VALUE                FLOAT-LONG.
+ 01 L-TEXT                 PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUE L-TEXT L-LENGTH.
+     COMPUTE WS-EDIT ROUNDED = L-VALUE
+     MOVE FUNCTION TRIM(WS-EDIT) TO L-TEXT
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO L-LENGTH
+     GOBACK.
+ END PROGRAM CXB-TWO-DECIMALS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-SPREADPLAYERS.
+*> spreadplayers <center> <spreadDistance> <maxRange> [under <maxHeight>] <respectTeams> <targets> (16 §5.3, level 2): the piles (one per target; with respectTeams
+*> one for all, the core keeps no teams) start at random in the box of maxRange around the centre, then each iteration (at most 10000, ending when none moves) moves
+*> a pile with neighbours closer than spreadDistance away from them by 1 (a random place when the neighbours cancel out) and clamps it to the box; when nothing moved
+*> each pile's ground must be solid, below maxHeight (else it gets a new random place). Each target is teleported to floor + 0.5 at the spawn height (CXB-SPREAD-HEIGHT)
+*> of its pile's column, keeping its rotation (a player by CMD-MOVE-PLAYER, a mob by ENTITY-MOVE). commands.spreadplayers.success.entities / .teams [piles, x, z, average
+*> distance %.2f] is broadcast (the average is 0 for fewer than 2 targets and Infinity when all targets share one pile); 10000 iterations is .failed.entities / .teams
+*> [piles, x, z, smallest distance of the last iteration]; maxHeight under the dimension's minimum is .failed.invalid.height [maxHeight, minimum]; the result is the
+*> number of piles. Not done: the block tag entities_can_teleport_to and liquids (a solid block stands for the ground check) and a pile for each team.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY DIMENSIONS.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-CENTER         PIC X(32) VALUE "center".
+ 01 WS-NAME-SPREAD         PIC X(32) VALUE "spreadDistance".
+ 01 WS-NAME-RANGE          PIC X(32) VALUE "maxRange".
+ 01 WS-NAME-HEIGHT         PIC X(32) VALUE "maxHeight".
+ 01 WS-NAME-TEAMS          PIC X(32) VALUE "respectTeams".
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-PILE-TABLE.
+    05 WS-PILE OCCURS 64 TIMES.
+       10 WS-PX             FLOAT-LONG.
+       10 WS-PZ             FLOAT-LONG.
+       10 WS-PH             BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-CENTER              BINARY-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-SPREAD              FLOAT-LONG.
+ 01 WS-RANGE               FLOAT-LONG.
+ 01 WS-MINX                FLOAT-LONG.
+ 01 WS-MAXX                FLOAT-LONG.
+ 01 WS-MINZ                FLOAT-LONG.
+ 01 WS-MAXZ                FLOAT-LONG.
+ 01 WS-MAX-HEIGHT          BINARY-LONG.
+ 01 WS-TEAMS               BINARY-LONG.
+ 01 WS-PILES               BINARY-LONG.
+ 01 WS-ITER                BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-MIN-D               FLOAT-LONG.
+ 01 WS-SAW                 BINARY-LONG.
+ 01 WS-NEAR                FLOAT-LONG.
+ 01 WS-SUM                 FLOAT-LONG.
+ 01 WS-AVERAGE             FLOAT-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-DIM-ROW             BINARY-LONG.
+ 01 WS-ON-GROUND           BINARY-LONG VALUE 1.
+ 01 WS-KIND                PIC X(8).
+ 01 WS-KIND-LENGTH         BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-TEXT-X              PIC X(32).
+ 01 WS-LEN-X               BINARY-LONG.
+ 01 WS-TEXT-Z              PIC X(32).
+ 01 WS-LEN-Z               BINARY-LONG.
+ 01 WS-TEXT-D              PIC X(32).
+ 01 WS-LEN-D               BINARY-LONG.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-A3                  PIC X(64).
+ 01 WS-A4                  PIC X(64).
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-L3                  BINARY-LONG.
+ 01 WS-L4                  BINARY-LONG.
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-HUGE                FLOAT-LONG VALUE 1.0E+300.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> A new random place for the pile WS-P inside the box.
+ RANDOMIZE.
+     COMPUTE WS-PX(WS-P) = WS-MINX + FUNCTION RANDOM * (WS-MAXX - WS-MINX)
+     COMPUTE WS-PZ(WS-P) = WS-MINZ + FUNCTION RANDOM * (WS-MAXZ - WS-MINZ).
+
+*> The distance of pile WS-P to pile WS-Q in WS-D, with the dx and dz from P to Q.
+ DISTANCE.
+     COMPUTE WS-DX = WS-PX(WS-Q) - WS-PX(WS-P)
+     COMPUTE WS-DZ = WS-PZ(WS-Q) - WS-PZ(WS-P)
+     COMPUTE WS-D = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ).
+
+*> One pile WS-P of an iteration: moved away from the neighbours, then clamped into the box.
+ RELAX-ONE.
+     MOVE 0 TO WS-N
+     MOVE 0 TO WS-AX WS-AZ
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > WS-PILES
+         IF WS-Q NOT = WS-P
+             PERFORM DISTANCE
+             IF WS-SAW = 0 OR WS-D < WS-MIN-D
+                 MOVE WS-D TO WS-MIN-D
+                 MOVE 1 TO WS-SAW
+             END-IF
+             IF WS-D < WS-SPREAD
+                 ADD 1 TO WS-N
+                 ADD WS-DX TO WS-AX
+                 ADD WS-DZ TO WS-AZ
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-N > 0
+         COMPUTE WS-AX = WS-AX / WS-N
+         COMPUTE WS-AZ = WS-AZ / WS-N
+         COMPUTE WS-LEN = FUNCTION SQRT(WS-AX * WS-AX + WS-AZ * WS-AZ)
+         IF WS-LEN > 0
+             COMPUTE WS-PX(WS-P) = WS-PX(WS-P) - WS-AX / WS-LEN
+             COMPUTE WS-PZ(WS-P) = WS-PZ(WS-P) - WS-AZ / WS-LEN
+         END-IF
+         IF WS-LEN = 0 PERFORM RANDOMIZE END-IF
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF WS-PX(WS-P) < WS-MINX
+         MOVE WS-MINX TO WS-PX(WS-P)
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF WS-PX(WS-P) > WS-MAXX
+         MOVE WS-MAXX TO WS-PX(WS-P)
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF WS-PZ(WS-P) < WS-MINZ
+         MOVE WS-MINZ TO WS-PZ(WS-P)
+         MOVE 1 TO WS-MOVED
+     END-IF
+     IF WS-PZ(WS-P) > WS-MAXZ
+         MOVE WS-MAXZ TO WS-PZ(WS-P)
+         MOVE 1 TO WS-MOVED
+     END-IF.
+
+*> The spawn height of pile WS-P in WS-PH(WS-P).
+ HEIGHT-OF.
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-PX(WS-P))
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-PZ(WS-P))
+     CALL "CXB-SPREAD-HEIGHT" USING WS-DIM WS-BX WS-BZ WS-MAX-HEIGHT WS-PH(WS-P).
+
+*> Nothing moved: the ground below each pile must be solid and below maxHeight, else the pile gets a new place and the iteration counts as moved.
+ GROUND-CHECK.
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-PILES
+         PERFORM HEIGHT-OF
+         COMPUTE WS-BY = WS-PH(WS-P) - 1
+         CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+         COMPUTE WS-I = CB-S-BLOCK(WS-STATE + 1) + 1
+         IF WS-BY >= WS-MAX-HEIGHT OR CB-SOLID(WS-I) = 0
+             PERFORM RANDOMIZE
+             MOVE 1 TO WS-MOVED
+         END-IF
+     END-PERFORM.
+
+*> The target WS-ROW teleported to the middle of the column of pile WS-P, at the pile's height.
+ TELEPORT-ONE.
+     COMPUTE WS-TX = FUNCTION INTEGER(WS-PX(WS-P)) + 0.5
+     COMPUTE WS-TZ = FUNCTION INTEGER(WS-PZ(WS-P)) + 0.5
+     MOVE WS-PH(WS-P) TO WS-TY
+     IF WS-ROW > 0
+         CALL "CMD-MOVE-PLAYER" USING WS-ROW WS-DIM WS-TX WS-TY WS-TZ
+     ELSE
+         COMPUTE WS-ENTITY = 0 - WS-ROW
+         MOVE EN-YAW(WS-ENTITY) TO WS-YAW
+         MOVE EN-PITCH(WS-ENTITY) TO WS-PITCH
+         CALL "ENTITY-MOVE" USING WS-ENTITY WS-TX WS-TY WS-TZ WS-YAW WS-PITCH WS-ON-GROUND
+     END-IF.
+
+*> WS-NEAR: the distance of pile WS-P to the nearest other pile (a huge number when there is none).
+ NEAREST.
+     MOVE WS-HUGE TO WS-NEAR
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > WS-PILES
+         IF WS-Q NOT = WS-P
+             PERFORM DISTANCE
+             IF WS-D < WS-NEAR
+                 MOVE WS-D TO WS-NEAR
+             END-IF
+         END-IF
+     END-PERFORM.
+
+*> The texts of the centre and a distance for a message, WS-TEXT-D from WS-MIN-D or WS-AVERAGE as given in WS-D.
+ CENTRE-TEXTS.
+     CALL "CXB-FLOAT" USING WS-CX WS-TEXT-X WS-LEN-X
+     CALL "CXB-FLOAT" USING WS-CZ WS-TEXT-Z WS-LEN-Z
+     CALL "CXB-TWO-DECIMALS" USING WS-D WS-TEXT-D WS-LEN-D.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-CENTER WS-CENTER
+     CALL "BX-FIND" USING WS-NAME-SPREAD WS-INDEX
+     MOVE BA-DVAL(WS-INDEX) TO WS-SPREAD
+     CALL "BX-FIND" USING WS-NAME-RANGE WS-INDEX
+     MOVE BA-DVAL(WS-INDEX) TO WS-RANGE
+     CALL "BX-FIND" USING WS-NAME-TEAMS WS-INDEX
+     MOVE BA-IVAL(WS-INDEX) TO WS-TEAMS
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     MOVE BS-DIM TO WS-DIM
+     COMPUTE WS-MAX-HEIGHT = DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM)
+     CALL "BX-FIND" USING WS-NAME-HEIGHT WS-INDEX
+     IF BR-R-FAILED = 0 AND WS-INDEX > 0
+         MOVE BA-IVAL(WS-INDEX) TO WS-MAX-HEIGHT
+         IF WS-MAX-HEIGHT < DM-MIN-Y(WS-DIM)
+             MOVE "commands.spreadplayers.failed.invalid.height" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-MAX-HEIGHT TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L1
+             MOVE DM-MIN-Y(WS-DIM) TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO WS-A2
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L2
+             MOVE 2 TO WS-N-ARGS
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE BA-NUM(WS-CENTER, 1) TO WS-CX
+         IF BA-KIND(WS-CENTER, 1) = 1
+             ADD BS-X TO WS-CX
+         END-IF
+         MOVE BA-NUM(WS-CENTER, 2) TO WS-CZ
+         IF BA-KIND(WS-CENTER, 2) = 1
+             ADD BS-Z TO WS-CZ
+         END-IF
+         COMPUTE WS-MINX = WS-CX - WS-RANGE
+         COMPUTE WS-MAXX = WS-CX + WS-RANGE
+         COMPUTE WS-MINZ = WS-CZ - WS-RANGE
+         COMPUTE WS-MAXZ = WS-CZ + WS-RANGE
+         IF WS-TEAMS = 1
+             MOVE 1 TO WS-PILES
+             MOVE "teams" TO WS-KIND
+             MOVE 5 TO WS-KIND-LENGTH
+         ELSE
+             MOVE BX-COUNT TO WS-PILES
+             MOVE "entities" TO WS-KIND
+             MOVE 8 TO WS-KIND-LENGTH
+         END-IF
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-PILES
+             PERFORM RANDOMIZE
+         END-PERFORM
+         MOVE 1 TO WS-MOVED
+         MOVE 0 TO WS-ITER WS-MIN-D
+         PERFORM UNTIL WS-MOVED = 0 OR WS-ITER >= 10000
+             MOVE 0 TO WS-MOVED WS-SAW
+             PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-PILES
+                 PERFORM RELAX-ONE
+             END-PERFORM
+             IF WS-MOVED = 0
+                 PERFORM GROUND-CHECK
+             END-IF
+             ADD 1 TO WS-ITER
+         END-PERFORM
+         MOVE SPACES TO WS-A1 WS-A2 WS-A3 WS-A4
+         MOVE WS-PILES TO WS-EDIT
+         MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L1
+         IF WS-ITER >= 10000
+             MOVE WS-MIN-D TO WS-D
+             IF WS-SAW = 0
+                 MOVE 0 TO WS-D
+             END-IF
+             PERFORM CENTRE-TEXTS
+             MOVE WS-TEXT-X TO WS-A2
+             MOVE WS-LEN-X TO WS-L2
+             MOVE WS-TEXT-Z TO WS-A3
+             MOVE WS-LEN-Z TO WS-L3
+             MOVE WS-TEXT-D TO WS-A4
+             MOVE WS-LEN-D TO WS-L4
+             MOVE SPACES TO WS-KEY
+             STRING "commands.spreadplayers.failed." WS-KIND(1:WS-KIND-LENGTH) DELIMITED BY SIZE INTO WS-KEY
+             MOVE 4 TO WS-N-ARGS
+             CALL "BR-RAISE-4" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-A3 WS-L3 WS-A4 WS-L4 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-PILES
+             PERFORM HEIGHT-OF
+         END-PERFORM
+         MOVE 0 TO WS-SUM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             MOVE WS-I TO WS-P
+             IF WS-TEAMS = 1
+                 MOVE 1 TO WS-P
+             END-IF
+             PERFORM TELEPORT-ONE
+             PERFORM NEAREST
+             ADD WS-NEAR TO WS-SUM
+         END-PERFORM
+         MOVE 0 TO WS-AVERAGE
+         IF BX-COUNT >= 2 AND WS-PILES >= 2
+             COMPUTE WS-AVERAGE = WS-SUM / BX-COUNT
+         END-IF
+         MOVE WS-AVERAGE TO WS-D
+         PERFORM CENTRE-TEXTS
+         IF BX-COUNT >= 2 AND WS-PILES = 1
+             MOVE "Infinity" TO WS-TEXT-D
+             MOVE 8 TO WS-LEN-D
+         END-IF
+         MOVE SPACES TO WS-KEY
+         STRING "commands.spreadplayers.success." WS-KIND(1:WS-KIND-LENGTH) DELIMITED BY SIZE INTO WS-KEY
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-PILES
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT-X WS-LEN-X
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT-Z WS-LEN-Z
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT-D WS-LEN-D
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE WS-PILES TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-SPREADPLAYERS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-SPREADPLAYERS.
+*> The forms of spreadplayers (16 §5.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-SPREADPLAYERS.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "spreadplayers <center:vec2> <spreadDistance:float:0> <maxRange:float:1> <respectTeams:bool> <targets:entities>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "spreadplayers <center:vec2> <spreadDistance:float:0> <maxRange:float:1> under <maxHeight:int> <respectTeams:bool> <targets:entities>"
+         TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-SPREADPLAYERS.

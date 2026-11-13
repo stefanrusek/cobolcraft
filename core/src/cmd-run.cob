@@ -178,6 +178,8 @@
              CALL "CX-EXPERIENCE"
          WHEN BC-ENCHANT
              CALL "CX-ENCHANT"
+         WHEN BC-SPREADPLAYERS
+             CALL "CX-SPREADPLAYERS"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE

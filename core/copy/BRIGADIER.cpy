@@ -108,12 +108,12 @@
     05 BR-IN-CURSOR         BINARY-LONG.
     05 BR-IN-LEVEL          BINARY-LONG.    *> permission level of the source
     05 BR-IN-TEXT           PIC X(1024).
-*> The exception being raised: translation key (spaces = none), up to two string arguments, cursor.
+*> The exception being raised: translation key (spaces = none), up to four string arguments, cursor.
  01 BR-ERR EXTERNAL.
     05 BR-E-KEY             PIC X(48).
     05 BR-E-ARG-COUNT       BINARY-LONG.
-    05 BR-E-ARG-LENGTH      BINARY-LONG OCCURS 3 TIMES.
-    05 BR-E-ARG             PIC X(64) OCCURS 3 TIMES.
+    05 BR-E-ARG-LENGTH      BINARY-LONG OCCURS 4 TIMES.
+    05 BR-E-ARG             PIC X(64) OCCURS 4 TIMES.
     05 BR-E-CURSOR          BINARY-LONG.
 *> Usage lines (15a §7): BR-ALL-USAGE fills one entry per full usage line; BR-SMART-USAGE one entry per
 *> usable child of the node, BR-U-NODE being that child.

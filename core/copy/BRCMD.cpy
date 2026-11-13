@@ -47,6 +47,7 @@
  78 BC-SWING             VALUE 204.
  78 BC-EXPERIENCE        VALUE 205.
  78 BC-ENCHANT           VALUE 206.
+ 78 BC-SPREADPLAYERS     VALUE 207.
 *> The commands of core/src/cmds-admin.cob, cmds-state.cob and cmds-chat.cob added in the lane cmds-a (run by CX-DISPATCH-A).
  78 BC-CHASE             VALUE 101.
  78 BC-DEBUG             VALUE 102.
