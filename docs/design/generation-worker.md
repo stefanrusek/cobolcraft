@@ -42,6 +42,12 @@ thread would need a second copy of the COBOL runtime state, which a process give
   of a game process that died ends by end of file. No thread is ever created.
 - Pool size: 3 in the client, the game process keeps the other cores.
 
+## Reads of unloaded chunks
+
+Profiling showed the random-tick precipitation reading blocks across a chunk border into an unloaded chunk, which generated it inside
+the tick (5 s). With workers serving the dimension, WORLD-GET-BLOCK on an unloaded chunk returns void and queues the chunk
+(WORLD-GET-DEFER), as a read outside the loaded world does. Without workers the read generates the chunk where it stands.
+
 ## Initial spawn (docs/protocol/33 section 6.2)
 
 The spawn search keeps its rules and result. With workers on, CORE-WORLD-OPEN stores the provisional spawn and starts
