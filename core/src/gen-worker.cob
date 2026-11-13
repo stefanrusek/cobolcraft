@@ -361,31 +361,49 @@
  END PROGRAM GEN-WORKERS-GET.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GEN-WORKERS-SIZES.
+*> USING processors, pool out, loading pool out (BINARY-LONG): the automatic sizes. The pool is half the processors, at least 1, at most GW-POOL-MAX; the loading pool (while a
+*> world's spawn area is made, the player waiting) is all but two processors, at least the pool, at most GW-MAX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ LINKAGE SECTION.
+ 01 L-CPUS                 BINARY-LONG.
+ 01 L-POOL                 BINARY-LONG.
+ 01 L-LOADING              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CPUS L-POOL L-LOADING.
+     COMPUTE L-POOL = L-CPUS / 2
+     IF L-POOL < 1
+         MOVE 1 TO L-POOL
+     END-IF
+     IF L-POOL > GW-POOL-MAX
+         MOVE GW-POOL-MAX TO L-POOL
+     END-IF
+     COMPUTE L-LOADING = L-CPUS - 2
+     IF L-LOADING < L-POOL
+         MOVE L-POOL TO L-LOADING
+     END-IF
+     IF L-LOADING > GW-MAX
+         MOVE GW-MAX TO L-LOADING
+     END-IF
+     GOBACK.
+ END PROGRAM GEN-WORKERS-SIZES.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-WORKERS-AUTO.
-*> No parameters: sizes the pool from the processors online (cc_wk_cpus): half of them, at least 1 and at most GW-MAX, so the game loop, the renderer and
-*> the rest of the machine keep the other half (docs/design/generation-worker.md).
+*> No parameters: sizes the pool from the processors online (cc_wk_cpus, GEN-WORKERS-SIZES), so the game loop, the renderer and the rest of the machine keep the other half
+*> (docs/design/generation-worker.md).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY GENQUEUE.
  01 WS-CPUS                BINARY-LONG.
- 01 WS-SIZE                BINARY-LONG.
+ 01 WS-POOL                BINARY-LONG.
+ 01 WS-LOADING             BINARY-LONG.
  PROCEDURE DIVISION.
      CALL STATIC "cc_wk_cpus" RETURNING WS-CPUS
-     COMPUTE WS-SIZE = WS-CPUS / 2
-     CALL "GEN-WORKERS-CONFIG" USING WS-SIZE
-     IF GQ-WORKERS < 1
-         MOVE 1 TO WS-SIZE
-         CALL "GEN-WORKERS-CONFIG" USING WS-SIZE
-     END-IF
-*>   while a world's spawn area is made the player waits for it, so more of the machine is used: all but two processors (at least the pool, at most GW-MAX)
-     COMPUTE WS-SIZE = WS-CPUS - 2
-     IF WS-SIZE < GQ-WORKERS
-         MOVE GQ-WORKERS TO WS-SIZE
-     END-IF
-     IF WS-SIZE > GW-MAX
-         MOVE GW-MAX TO WS-SIZE
-     END-IF
-     MOVE WS-SIZE TO GQ-LOAD-WORKERS
+     CALL "GEN-WORKERS-SIZES" USING WS-CPUS WS-POOL WS-LOADING
+     CALL "GEN-WORKERS-CONFIG" USING WS-POOL
+     MOVE WS-LOADING TO GQ-LOAD-WORKERS
      GOBACK.
  END PROGRAM GEN-WORKERS-AUTO.
 
