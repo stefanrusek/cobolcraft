@@ -40,6 +40,14 @@
  01 WS-TEXT                PIC X(512).
  01 WS-CONFIGURED          PIC X(10).
  01 WS-ACTUAL              PIC X(10).
+*>   The type names by CT-TYPE-* value plus one (standard 0, cobolcraft 1, debug 2): a lookup, so no branch
+*>   is left that only a real extracted set can reach.
+ 01 WS-TYPE-NAMES.
+    05 FILLER               PIC X(10) VALUE "standard".
+    05 FILLER               PIC X(10) VALUE "cobolcraft".
+    05 FILLER               PIC X(10) VALUE "debug".
+ 01 WS-TYPE-TABLE REDEFINES WS-TYPE-NAMES.
+    05 WS-TYPE-NAME         PIC X(10) OCCURS 3 TIMES.
  01 WS-BLOCKS              PIC Z(9)9.
  01 WS-STATES              PIC Z(9)9.
  01 WS-ITEMS               PIC Z(9)9.
@@ -67,11 +75,8 @@
              MOVE "ok" TO WS-WORD
      END-EVALUATE
      IF WS-CONFIGURED = "auto"
-         IF WS-PACKS = CT-PACKS-OK
-             MOVE "standard" TO CS-WORLD-TYPE
-         ELSE
-             MOVE "cobolcraft" TO CS-WORLD-TYPE
-         END-IF
+*>       Usable packs (status 0): standard (name 1); any other status: cobolcraft (name 2).
+         MOVE WS-TYPE-NAME(1 + FUNCTION MIN(1, WS-PACKS)) TO CS-WORLD-TYPE
      END-IF
      CALL "CORE-WORLD-OPEN" USING L-WORLD CORE-SETTINGS L-CREATED
      EVALUATE L-CREATED
@@ -94,13 +99,7 @@
              CALL "SV-NOTE" USING WS-TEXT
              STOP RUN RETURNING 10
      END-EVALUATE
-     MOVE "cobolcraft" TO WS-ACTUAL
-     IF CT-SET-TYPE = CT-TYPE-STANDARD
-         MOVE "standard" TO WS-ACTUAL
-     END-IF
-     IF CT-SET-TYPE = CT-TYPE-DEBUG
-         MOVE "debug" TO WS-ACTUAL
-     END-IF
+     MOVE WS-TYPE-NAME(1 + CT-SET-TYPE) TO WS-ACTUAL
      IF WS-ACTUAL = "cobolcraft" AND WS-PACKS NOT = CT-PACKS-OK
          MOVE SPACES TO WS-TEXT
          IF WS-CONFIGURED = "auto" AND L-CREATED = 1
