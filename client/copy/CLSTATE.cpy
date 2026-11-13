@@ -651,6 +651,7 @@
        10 CM-NODE OCCURS 2048 TIMES.
           15 CM-FLAGS        BINARY-LONG.
           15 CM-GREEDY       PIC 9.
+          15 CM-PARSER       BINARY-LONG.    *> the parser id of an argument node, -1 for any other node
           15 CM-NAME         PIC X(32).
           15 CM-NAME-LENGTH  BINARY-LONG.
           15 CM-FIRST        BINARY-LONG.    *> the first child's CM-LINK row
