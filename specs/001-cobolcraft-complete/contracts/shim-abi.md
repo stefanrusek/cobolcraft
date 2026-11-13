@@ -151,6 +151,16 @@ unless `cc_vk_texture_wrap` sets repeat for the texture id (`CC_WRAP_CLAMP = 0`,
 | `void cc_vk_frame_end(void)` | Submits and presents (FIFO). |
 | `void cc_vk_shutdown(void)` | Waits idle and destroys everything. |
 
+## 15. `cc_wk` — worker processes (002 generation worker)
+
+Added by the 002 operator decision (docs/design/generation-worker.md): chunk generation runs outside the game loop. A
+thread cannot share the COBOL runtime, so the glue forks. `cc_wk_spawn` returns a slot id (1 to 8) in the parent, 0 in the
+child, -1 when no slot is free or the fork fails. The parent: `cc_wk_send` (write n bytes: n or -1), `cc_wk_recv` (read
+without blocking: bytes, 0 when nothing yet, -1 at end of file or unknown slot), `cc_wk_stop(slot, force)` (reap; force 1
+kills first; -1 unknown slot). The child: `cc_wk_child_read` (exactly n bytes; 0 at end of input; -1 error),
+`cc_wk_child_write` (all n bytes or -1), `cc_wk_child_exit` (`_exit` after dumping coverage counters when instrumented). A
+`cc_wk_cpus` returns the processors online (at least 1). A child closes the pipe ends of every other slot, so end of input reaches it when the parent ends. SIGPIPE is ignored.
+
 ## 10. Contract tests
 
 - `shim/tests/contract_shim_provider.c`: every function above, against the real libraries (loopback
