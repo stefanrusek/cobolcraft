@@ -1,5 +1,5 @@
 *> Standard (minecraft:) mobs (002-lane-mobs; docs/protocol/18 sections 2 to 7, 19 sections 2.1 and 2.2). A standard mob is a
-*> tracker row of a vanilla entity type id that has a row in core/copy/STDMOBS.cpy (pig and cow in the first slice); the stand-in table
+*> tracker row of a vanilla entity type id that has a row in core/copy/STDMOBS.cpy (pig, cow, sheep, chicken); the stand-in table
 *> (MOBS.cpy, core/src/mobs.cob) describes the cobolcraft types only. The type ids are found by key in the open standard set, once.
 *> Viewers see the row like any tracked entity (core/src/entities.cob); the client draws the vanilla model of the type.
 *>
@@ -20,7 +20,7 @@
  COPY CONTENT.
  COPY STDMOBS.
  01 WS-IDS.
-    05 WS-ID               BINARY-LONG OCCURS 2 TIMES.
+    05 WS-ID               BINARY-LONG OCCURS 4 TIMES.
  01 WS-LOADED              BINARY-LONG VALUE 0.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).

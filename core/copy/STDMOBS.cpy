@@ -4,7 +4,7 @@
 *> and the panic speed of the mob's goal list: movement_speed x speedModifier x 0.98 / 0.454 (18 section 3.1, the steady state on
 *> ground with friction 0.6). SM-DROP-KEY / MIN / MAX: the loot pools (an empty key = no pool). The mob category is creature
 *> (18 section 1.2) for every row of this table.
- 78 SM-COUNT                 VALUE 2.
+ 78 SM-COUNT                 VALUE 4.
  01 STD-MOB-DATA.
     05 FILLER.
        10 FILLER PIC X(24) VALUE "pig".
@@ -28,8 +28,30 @@
        10 FILLER PIC X(24) VALUE "beef".
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 3.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "sheep".
+       10 FILLER BINARY-LONG VALUE 8.
+       10 FILLER BINARY-LONG VALUE 496.            *> 0.23 x 1.0
+       10 FILLER BINARY-LONG VALUE 620.            *> 0.23 x 1.25
+       10 FILLER PIC X(24) VALUE "mutton".
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER PIC X(24) VALUE "white_wool".
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+    05 FILLER.
+       10 FILLER PIC X(24) VALUE "chicken".
+       10 FILLER BINARY-LONG VALUE 4.
+       10 FILLER BINARY-LONG VALUE 540.            *> 0.25 x 1.0
+       10 FILLER BINARY-LONG VALUE 755.            *> 0.25 x 1.4
+       10 FILLER PIC X(24) VALUE "feather".
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER PIC X(24) VALUE "chicken".
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
  01 STD-MOB-TABLE REDEFINES STD-MOB-DATA.
-    05 SM-ENTRY OCCURS 2 TIMES.
+    05 SM-ENTRY OCCURS 4 TIMES.
        10 SM-KEY                PIC X(24).
        10 SM-HEALTH             BINARY-LONG.
        10 SM-WALK-MILLI         BINARY-LONG.
