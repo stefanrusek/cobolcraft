@@ -1205,3 +1205,311 @@
      MOVE 1 TO L-TOOL
      GOBACK.
  END PROGRAM GC3-SNOW-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ICE-TICK.
+*> USING the block light at the position, the light dampening of the state (BINARY-LONG), melts out: IceBlock random tick (7.1): block light above 11 - dampening.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-DAMPENING            BINARY-LONG.
+ 01 L-MELTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LIGHT L-DAMPENING L-MELTS.
+     MOVE 0 TO L-MELTS
+     IF L-LIGHT > 11 - L-DAMPENING
+         MOVE 1 TO L-MELTS
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-ICE-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ICE-MELT.
+*> USING the attribute water_evaporates at the position (BINARY-LONG), action (1 removeBlock with no event, 2 water), neighbour update, game event block_destroy out: melt (7.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EVAPORATES           BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-NEIGHBOUR            BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-EVAPORATES L-ACTION L-NEIGHBOUR L-EVENT.
+     MOVE 0 TO L-NEIGHBOUR L-EVENT
+     IF L-EVAPORATES = 1
+         MOVE 1 TO L-ACTION
+         GOBACK
+     END-IF
+     MOVE 2 TO L-ACTION
+     MOVE 1 TO L-NEIGHBOUR L-EVENT
+     GOBACK.
+ END PROGRAM GC3-ICE-MELT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ICE-DESTROY.
+*> USING the tool has an enchantment in tag prevents_ice_melting, water_evaporates, the block below is in ice_melts_when_destroyed_above, the block below is a liquid
+*> (BINARY-LONG), action out (0 nothing, 1 removeBlock, 2 water): playerDestroy (7.1); the last test is an OR of the tag and the liquid.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PREVENTS             BINARY-LONG.
+ 01 L-EVAPORATES           BINARY-LONG.
+ 01 L-IN-TAG               BINARY-LONG.
+ 01 L-LIQUID               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PREVENTS L-EVAPORATES L-IN-TAG L-LIQUID L-ACTION.
+     MOVE 0 TO L-ACTION
+     IF L-PREVENTS = 1
+         GOBACK
+     END-IF
+     IF L-EVAPORATES = 1
+         MOVE 1 TO L-ACTION
+         GOBACK
+     END-IF
+     IF L-IN-TAG = 1 OR L-LIQUID = 1
+         MOVE 2 TO L-ACTION
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-ICE-DESTROY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ICE-LOOT.
+*> USING the tool has silk touch (BINARY-LONG), ice dropped out: the loot table of ice (7.1) is one pool conditioned on silk touch.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SILK                 BINARY-LONG.
+ 01 L-DROPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SILK L-DROPS.
+     MOVE L-SILK TO L-DROPS
+     GOBACK.
+ END PROGRAM GC3-ICE-LOOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ICE-PLAIN.
+*> USING block (1 packed_ice, 2 blue_ice), friction x 1000, strength x 10, random tick, face culled against the same block (BINARY-LONG out): 7.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-FRICTION             BINARY-LONG.
+ 01 L-STRENGTH             BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-CULL                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BLOCK L-FRICTION L-STRENGTH L-RANDOM L-CULL.
+     MOVE 0 TO L-RANDOM L-CULL
+     MOVE 980 TO L-FRICTION
+     MOVE 5 TO L-STRENGTH
+     IF L-BLOCK = 2
+         MOVE 989 TO L-FRICTION
+         MOVE 28 TO L-STRENGTH
+         MOVE 1 TO L-CULL
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-ICE-PLAIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-CONST.
+*> USING MAX_AGE, NEIGHBORS_TO_AGE, NEIGHBORS_TO_MELT, states, random-ticking (BINARY-LONG out): the constants of FrostedIceBlock (7.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MAX-AGE              BINARY-LONG.
+ 01 L-TO-AGE               BINARY-LONG.
+ 01 L-TO-MELT              BINARY-LONG.
+ 01 L-STATES               BINARY-LONG.
+ 01 L-RANDOM               BINARY-LONG.
+ PROCEDURE DIVISION USING L-MAX-AGE L-TO-AGE L-TO-MELT L-STATES L-RANDOM.
+     MOVE 3 TO L-MAX-AGE
+     MOVE 4 TO L-TO-AGE
+     MOVE 2 TO L-TO-MELT
+     COMPUTE L-STATES = L-MAX-AGE + 1
+     MOVE 0 TO L-RANDOM
+     GOBACK.
+ END PROGRAM GC3-FROSTED-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-FEWER.
+*> USING which of the six neighbours in Direction.values() order are frosted_ice (BINARY-LONG x 6), limit, fewer out: fewerNeighboursThan (7.3): false as soon as the count
+*> reaches the limit, true after the loop.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NEIGHBOURS.
+    05 L-N                 BINARY-LONG OCCURS 6 TIMES.
+ 01 L-LIMIT                BINARY-LONG.
+ 01 L-FEWER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-NEIGHBOURS L-LIMIT L-FEWER.
+     MOVE 0 TO WS-COUNT
+     MOVE 1 TO L-FEWER
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 6 OR L-FEWER = 0
+         IF L-N(WS-STEP) = 1
+             ADD 1 TO WS-COUNT
+             IF WS-COUNT >= L-LIMIT
+                 MOVE 0 TO L-FEWER
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM GC3-FROSTED-FEWER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-SLIGHT.
+*> USING age (BINARY-LONG), new age, melted out: slightlyMelt (7.3): below 3 the age rises (flags 2) and false is returned; at 3 it melts and true is returned.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-NEW-AGE              BINARY-LONG.
+ 01 L-MELTED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-AGE L-NEW-AGE L-MELTED.
+     MOVE L-AGE TO L-NEW-AGE
+     MOVE 0 TO L-MELTED
+     IF L-AGE < 3
+         COMPUTE L-NEW-AGE = L-AGE + 1
+         GOBACK
+     END-IF
+     MOVE 1 TO L-MELTED
+     GOBACK.
+ END PROGRAM GC3-FROSTED-SLIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-DELAY.
+*> USING kind (1 placement U(60, 120), 2 reschedule U(20, 40)), the draw nextInt(range) (BINARY-LONG), delay out (7.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-DRAW L-DELAY.
+     COMPUTE L-DELAY = 20 + L-DRAW
+     IF L-KIND = 1
+         COMPUTE L-DELAY = 60 + L-DRAW
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-FROSTED-DELAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-LIGHT.
+*> USING the dimension is the End, the block light, getMaxLocalRawBrightness (BINARY-LONG), light out: step 2 of the scheduled tick (7.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-END                  BINARY-LONG.
+ 01 L-BLOCK-LIGHT          BINARY-LONG.
+ 01 L-RAW                  BINARY-LONG.
+ 01 L-LIGHT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-END L-BLOCK-LIGHT L-RAW L-LIGHT.
+     MOVE L-RAW TO L-LIGHT
+     IF L-END = 1
+         MOVE L-BLOCK-LIGHT TO L-LIGHT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-FROSTED-LIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-TICK.
+*> USING the draw nextInt(3), fewerNeighboursThan(4), the light of step 2, age, light dampening (BINARY-LONG), outcome (1 reschedule only, 2 aged then reschedule, 3 melted:
+*> neighbours aged, no reschedule), age after, the neighbour test was evaluated out: the scheduled tick of 7.3 (the neighbour test is not evaluated when the draw is 0).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-FEWER                BINARY-LONG.
+ 01 L-LIGHT                BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-DAMPENING            BINARY-LONG.
+ 01 L-OUTCOME              BINARY-LONG.
+ 01 L-NEW-AGE              BINARY-LONG.
+ 01 L-EVALUATED            BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-FEWER L-LIGHT L-AGE L-DAMPENING L-OUTCOME L-NEW-AGE L-EVALUATED.
+     MOVE 1 TO L-OUTCOME
+     MOVE L-AGE TO L-NEW-AGE
+     MOVE 0 TO L-EVALUATED
+     IF L-DRAW NOT = 0
+         MOVE 1 TO L-EVALUATED
+         IF L-FEWER = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF L-LIGHT > 11 - L-AGE - L-DAMPENING
+         IF L-AGE < 3
+             MOVE 2 TO L-OUTCOME
+             COMPUTE L-NEW-AGE = L-AGE + 1
+         ELSE
+             MOVE 3 TO L-OUTCOME
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-FROSTED-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-NEIGHBOUR.
+*> USING the neighbour is frosted_ice, its age (BINARY-LONG), action (0 nothing, 1 aged and its tick scheduled with U(20, 40), 2 melted), age after out: step 4 of 7.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FROSTED              BINARY-LONG.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-NEW-AGE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-FROSTED L-AGE L-ACTION L-NEW-AGE.
+     MOVE 0 TO L-ACTION
+     MOVE L-AGE TO L-NEW-AGE
+     IF L-FROSTED = 0
+         GOBACK
+     END-IF
+     IF L-AGE < 3
+         MOVE 1 TO L-ACTION
+         COMPUTE L-NEW-AGE = L-AGE + 1
+         GOBACK
+     END-IF
+     MOVE 2 TO L-ACTION
+     GOBACK.
+ END PROGRAM GC3-FROSTED-NEIGHBOUR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-FROSTED-NU.
+*> USING the changed neighbour is frosted_ice, fewerNeighboursThan(2) (BINARY-LONG), melts out (1 melts at once, 0 the generic rule): neighbour update of 7.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FROSTED              BINARY-LONG.
+ 01 L-FEWER                BINARY-LONG.
+ 01 L-MELTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-FROSTED L-FEWER L-MELTS.
+     MOVE 0 TO L-MELTS
+     IF L-FROSTED = 1 AND L-FEWER = 1
+         MOVE 1 TO L-MELTS
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-FROSTED-NU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-POWDER-REG.
+*> USING random-ticking, strength x 100, dynamicShape, noOcclusion, redstone conductor, in tag snow (BINARY-LONG out): the registry facts of powder snow (8).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RANDOM               BINARY-LONG.
+ 01 L-STRENGTH             BINARY-LONG.
+ 01 L-DYNAMIC              BINARY-LONG.
+ 01 L-NO-OCCLUSION         BINARY-LONG.
+ 01 L-CONDUCTOR            BINARY-LONG.
+ 01 L-SNOW                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-RANDOM L-STRENGTH L-DYNAMIC L-NO-OCCLUSION L-CONDUCTOR L-SNOW.
+     MOVE 0 TO L-RANDOM L-CONDUCTOR
+     MOVE 25 TO L-STRENGTH
+     MOVE 1 TO L-DYNAMIC L-NO-OCCLUSION L-SNOW
+     GOBACK.
+ END PROGRAM GC3-POWDER-REG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-DAMPENING.
+*> USING the state is solid-render, it propagates skylight down (BINARY-LONG), light dampening out: the default rule (8): 15 when solid-render, else 0 when it propagates
+*> skylight down, else 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SOLID                BINARY-LONG.
+ 01 L-SKY                  BINARY-LONG.
+ 01 L-DAMPENING            BINARY-LONG.
+ PROCEDURE DIVISION USING L-SOLID L-SKY L-DAMPENING.
+     MOVE 1 TO L-DAMPENING
+     IF L-SOLID = 1
+         MOVE 15 TO L-DAMPENING
+         GOBACK
+     END-IF
+     IF L-SKY = 1
+         MOVE 0 TO L-DAMPENING
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-DAMPENING.

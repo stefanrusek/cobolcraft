@@ -227,3 +227,52 @@ drc=[(0,1,1),(0,1,8),(1,1,3),(1,1,7),(1,1,8),(0,0,4),(1,0,8)]
 g.run('snow drops (6.4): the pool needs an entity (a player break; the block-light melt has none); without silk touch snowball x layers, with it the snow item x layers (1 to 7) or snow_block at 8 (item 1 snowball, 2 snow, 3 snow_block; count 1 for the block as the table names no count)',[S(*c) for c in drc],'CALL "GC3-SNOW-DROPS" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%dr(*c) for c in drc))
 g.run('snow block (6.5): a plain block that requires the correct tool for drops; no random tick, no melting (random tick, correct tool)',["0"],'CALL "GC3-SNOW-BLOCK" USING WS-R(1) WS-R(2)',2,"0/1")
 W(g,6)
+# ===== 7
+g=GG(7,'Ice','T0573','IceBlock (7.1), packed and blue ice (7.2), FrostedIceBlock (7.3).')
+g.extra=" 01 WS-NBRS.\n    05 WS-NB BINARY-LONG OCCURS 6 TIMES.\n"
+g.run('ice random tick (7.1): block light above 11 minus the dampening (1) melts it, so above 10; sky light never melts',[S(l,1) for l in (0,10,11,12,15)],'CALL "GC3-ICE-TICK" USING WS-I(1) WS-I(2) WS-R(1)',1,"0 0 1 1 1")
+g.run('ice melt (7.1): water_evaporates removes the block with no event; otherwise water, neighborChanged and the game event block_destroy (action 1 removed, 2 water; neighbour update; event)',["1","0"],'CALL "GC3-ICE-MELT" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3)',3,"1/0/0 2/1/1")
+def idst(pr,ev,tag,liq):
+    if pr: return 0
+    if ev: return 1
+    return 2 if (tag or liq) else 0
+icc=[(1,1,1,1),(1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1),(0,0,1,1),(0,0,0,0)]
+g.run('ice playerDestroy (7.1): a prevents_ice_melting tool (silk touch) leaves it; else evaporation removes it; else water when the block below is in ice_melts_when_destroyed_above OR a liquid (0 nothing, 1 removed, 2 water)',[S(*c) for c in icc],'CALL "GC3-ICE-DESTROY" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-R(1)',1," ".join(str(idst(*c)) for c in icc))
+g.run('ice loot (7.1): the table yields ice only with silk touch (1 ice, 0 nothing)',["1","0"],'CALL "GC3-ICE-LOOT" USING WS-I(1) WS-R(1)',1,"1 0")
+g.run('packed and blue ice (7.2): friction x 1000 0.98 and 0.989, strength x 10 0.5 and 2.8; neither random-ticks, melts or reacts; a face is culled against the same block for blue ice (HalfTransparentBlock) only (packed 1, blue 2)',["1","2"],'CALL "GC3-ICE-PLAIN" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"980/5/0/0 989/28/0/1")
+g.run('frosted ice constants (7.3): MAX_AGE 3, NEIGHBORS_TO_AGE 4, NEIGHBORS_TO_MELT 2, 4 states (age 0 to 3), not random-ticking',["0"],'CALL "GC3-FROSTED-CONST" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5,"3/4/2/4/0")
+def few(fl,lim):
+    c=0
+    for f in fl:
+        if f:
+            c+=1
+            if c>=lim: return 0
+    return 1
+fwc=[([0]*6,4),([1,1,1,0,0,0],4),([1,1,1,1,0,0],4),([1,1,1,1,1,1],4),([0,0,0,0,0,1],2),([1,0,0,0,0,1],2),([1,0,0,0,0,0],2),([0]*6,2)]
+g.run('fewerNeighboursThan (7.3): counts frosted_ice neighbours over Direction.values(); false as soon as the count reaches the limit, else true',[S(*(c[0]+[c[1]])) for c in fwc],'CALL "GC3-FROSTED-FEWER" USING WS-ISG WS-I(7) WS-R(1)',1," ".join(str(few(*c)) for c in fwc))
+g.run('slightlyMelt (7.3): below age 3 the age rises by 1 (flags 2) and false is returned; at age 3 it melts and returns true (new age, melted)',["0","1","2","3"],'CALL "GC3-FROSTED-SLIGHT" USING WS-I(1) WS-R(1) WS-R(2)',2,"1/0 2/0 3/0 3/1")
+g.run('frosted ice delays (7.3): placement U(60, 120) and every reschedule U(20, 40): kind 1 or 2 with the draw nextInt(range)',["1 0","1 60","2 0","2 20"],'CALL "GC3-FROSTED-DELAY" USING WS-I(1) WS-I(2) WS-R(1)',1,"60 120 20 40")
+g.run('frosted ice light (7.3 step 2): the block light in the End, else getMaxLocalRawBrightness',["1 3 9","0 3 9","1 12 2","0 12 2"],'CALL "GC3-FROSTED-LIGHT" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1,"3 9 12 2")
+def ft(draw,f4,L,age,damp):
+    ev=int(draw!=0)
+    if not (draw==0 or f4): return 1,age,ev
+    if L>11-age-damp:
+        if age<3: return 2,age+1,ev
+        return 3,age,ev
+    return 1,age,ev
+ftc=[(0,0,15,0,1),(0,0,10,0,1),(0,0,11,0,1),(0,0,9,1,1),(0,0,10,1,1),(1,0,15,0,1),(1,1,15,0,1),(2,1,15,2,1),(1,1,15,3,1),(0,0,15,3,1),(1,1,0,0,1),(0,1,2,2,1)]
+g.run('frosted ice scheduled tick (7.3 ST): nextInt(3) is drawn; continue on a 0 or fewer than 4 frosted neighbours (the neighbour test only when the draw is not 0); then light above 11 - age - dampening ages the block (outcome 2, reschedule) or at age 3 melts it (outcome 3, neighbours aged, no reschedule); else outcome 1 reschedules (outcome, age, neighbour test made)',[S(*c) for c in ftc],'CALL "GC3-FROSTED-TICK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%ft(*c) for c in ftc))
+def fn(fr,age):
+    if not fr: return 0,age
+    if age<3: return 1,age+1
+    return 2,age
+fnc=[(0,0),(1,0),(1,2),(1,3)]
+g.run('frosted ice neighbour of a melt (7.3 ST step 4): a frosted_ice neighbour is slightly melted at once: aged and its tick scheduled with U(20, 40) (1), or melted (2, no tick); other blocks nothing (action, age)',[S(*c) for c in fnc],'CALL "GC3-FROSTED-NEIGHBOUR" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2," ".join("%d/%d"%fn(*c) for c in fnc))
+g.run('frosted ice neighbour update (7.3 NU): a changed frosted_ice neighbour with fewer than 2 frosted neighbours melts the block at once; otherwise the generic rule',["1 1","1 0","0 1","0 0"],'CALL "GC3-FROSTED-NU" USING WS-I(1) WS-I(2) WS-R(1)',1,"1 0 0 0")
+W(g,7)
+# ===== 8
+g=GG(8,'Powder snow','T0575','the registry facts and the snow-tag and dampening consequences this part adds (the rest is 44 part x1 section 2.2).')
+g.run('powder snow registry (8): not random-ticking, strength 0.25 (x 100), dynamicShape, noOcclusion, never a redstone conductor; in tag snow',["0"],'CALL "GC3-POWDER-REG" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5) WS-R(6)',6,"0/25/1/1/0/1")
+g.run('default light dampening (8): a solid-render state 15, else 0 when it propagates skylight down, else 1 (powder snow, a full outline shape, is 1)',["1 0","0 1","0 0"],'CALL "GC3-DAMPENING" USING WS-I(1) WS-I(2) WS-R(1)',1,"15 0 1")
+g.run('powder snow above grass (8, 3.1): the snowy property turns on from UP (shape update 2); light-into gives the above state its own dampening 1 (noOcclusion makes both shapes empty), below 15, so the spreader stays alive (snowy, result, alive)',["2 1 0"],'CALL "GC3-SNOWY-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)\nMOVE 1 TO WS-I(5)\nMOVE 1 TO WS-I(6)\nMOVE 0 TO WS-I(7)\nMOVE 1 TO WS-I(8)\nCALL "GC3-LIGHT-INTO" USING WS-I(5) WS-I(6) WS-I(7) WS-I(8) WS-R(2)\nCALL "GC3-STAY-ALIVE" USING WS-I(9) WS-I(10) WS-I(11) WS-R(2) WS-R(3)',3,"1/1/1")
+W(g,8)
