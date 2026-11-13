@@ -18,6 +18,8 @@
  COPY TESTLIB.
  01 WS-KEY                 PIC X(112).
  01 WS-COW-ID              BINARY-LONG.
+ 01 WS-ROW-N               BINARY-LONG.
+ 01 WS-FKEY                PIC X(24).
  01 WS-CREEPER-ID          BINARY-LONG.
  01 WS-ROW-AREA            PIC X(66).
  01 WS-STATUS              BINARY-LONG.
@@ -358,6 +360,17 @@
      MOVE "entity models every table row builds its layer, whose texture size is the row's" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The sheep's extra layer is its own wool row (sheep_wool, 34-4 5.3), not the sheep row itself (which drew the skin twice and never the wool).
+     MOVE "sheep" TO WS-FKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-FKEY WS-ROW-N
+     MOVE "the sheep's extra layer is the row of key sheep_wool" TO TL-CASE
+     MOVE "sheep_wool" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-ROW-N > 0 AND CL-MD-EXTRA(WS-ROW-N) > 0
+         MOVE CL-MD-KEY(CL-MD-EXTRA(WS-ROW-N)) TO TL-OBSERVED
+     END-IF
+     MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-ENTITY-MODELS.
