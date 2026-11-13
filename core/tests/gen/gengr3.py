@@ -276,3 +276,50 @@ g.run('powder snow registry (8): not random-ticking, strength 0.25 (x 100), dyna
 g.run('default light dampening (8): a solid-render state 15, else 0 when it propagates skylight down, else 1 (powder snow, a full outline shape, is 1)',["1 0","0 1","0 0"],'CALL "GC3-DAMPENING" USING WS-I(1) WS-I(2) WS-R(1)',1,"15 0 1")
 g.run('powder snow above grass (8, 3.1): the snowy property turns on from UP (shape update 2); light-into gives the above state its own dampening 1 (noOcclusion makes both shapes empty), below 15, so the spreader stays alive (snowy, result, alive)',["2 1 0"],'CALL "GC3-SNOWY-SU" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)\nMOVE 1 TO WS-I(5)\nMOVE 1 TO WS-I(6)\nMOVE 0 TO WS-I(7)\nMOVE 1 TO WS-I(8)\nCALL "GC3-LIGHT-INTO" USING WS-I(5) WS-I(6) WS-I(7) WS-I(8) WS-R(2)\nCALL "GC3-STAY-ALIVE" USING WS-I(9) WS-I(10) WS-I(11) WS-R(2) WS-R(3)',3,"1/1/1")
 W(g,8)
+# ===== 9
+g=GG(9,'Weather-driven changes and lightning','T0577','the lightning rod (9.2), the copper clean-up walk (9.3) and the bolt tick order (9.4); 9.1 only points to other documents.')
+g.extra=" 01 WS-CELLS.\n    05 WS-CE BINARY-LONG OCCURS 10 TIMES.\n"
+g.run('lightning rod constants (9.2): ACTIVATION_TICKS 8, RANGE 128, SPARK_CYCLE 200, default facing UP (2) and powered false',["0"],'CALL "GC3-ROD-CONST" USING WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5,"8/128/200/2/0")
+AX={1:1,2:1,3:2,4:2,5:0,6:0}; OP={1:2,2:1,3:4,4:3,5:6,6:5}
+g.run('rod strike (9.2): powered true, neighbours updated at pos.relative(facing.opposite), a tick scheduled with delay 8, level event 3002 with the axis ordinal of facing (X 0, Y 1, Z 2); facing 1 to 6 is down, up, north, south, west, east (powered, update direction, delay, event, data)',[str(f) for f in range(1,7)],'CALL "GC3-ROD-STRIKE" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join("1/%d/8/3002/%d"%(OP[f],AX[f]) for f in range(1,7)))
+g.run('rod scheduled tick (9.2 ST): powered false and the neighbours updated (powered, updates)',["0"],'CALL "GC3-ROD-TICK" USING WS-R(1) WS-R(2)',2,"0/1")
+def rp(old,pw,sc): return int((not old) and pw and (not sc)),8 if ((not old) and pw and (not sc)) else 0
+rpc=[(0,1,0),(0,1,1),(0,0,0),(1,1,0),(1,0,1)]
+g.run('rod placement (9.2 PL): a powered rod that is new there with no tick scheduled schedules one with delay 8 (restores the timer after a chunk reload) (scheduled, delay)',[S(*c) for c in rpc],'CALL "GC3-ROD-PLACE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%rp(*c) for c in rpc))
+g.run('rod removal (9.2): updateNeighbours only when the state was powered',["1","0"],'CALL "GC3-ROD-REMOVE" USING WS-I(1) WS-R(1)',1,"1 0")
+sg=[(1,2,2),(1,2,1),(0,2,2),(1,3,3),(0,3,4)]
+g.run('rod signals (9.2): a signal source; own signal 15 when powered else 0; direct signal 15 toward the direction equal to facing while powered, else 0 (own, direct)',[S(*c) for c in sg],'CALL "GC3-ROD-SIGNAL" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2)',2," ".join("%d/%d"%(15*c[0],15*int(c[0] and c[1]==c[2])) for c in sg))
+def an(th,d,mod,top,cd):
+    if not th: return 0,125,0
+    if d>mod: return 0,125,1
+    if not top: return 0,125,1
+    return 1+cd,125,2
+anc=[(0,0,0,1,0),(1,150,10,1,0),(1,10,10,1,1),(1,9,10,0,0),(1,0,0,1,0),(1,5,199,1,1),(1,5,20,0,1)]
+g.run('rod client animateTick (9.2): only when thundering; nextInt(200) must be at most gameTime mod 200 (<=), then the block must be the top of its column, then UniformInt(1, 2) electric_spark particles with spacing 0.125 (x 1000) (particles, spacing, draws)',[S(*c) for c in anc],'CALL "GC3-ROD-ANIM" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%an(*c) for c in anc))
+fl=lambda v:int(math.floor(v))
+sbc=[(10.5,64.0,-3.2),(0.0,64.5,0.0),(5.0,70.0,5.0),(-0.5,1.0,-0.5),(100.9,2.5,-100.1)]
+g.run('strike position (9.3): the block containing (x, y - 1.0E-6, z): a bolt on the bottom face of a cell strikes the block below it',[S(*c) for c in sbc],'CALL "GC3-STRIKE-BLOCK" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%(fl(x),fl(y-1e-6),fl(z)) for x,y,z in sbc))
+cst=[(1,0,0),(0,1,0),(0,0,1),(0,1,1),(0,0,0),(1,1,1)]
+g.run('copper start (9.3): a LightningRodBlock at the strike gets onLightningStrike; with neither a waxed nor a weathering block nothing more happens; a weathering block is reset to the unaffected variant; waxed or weathering starts the walks (rod, reset, walks)',[S(*c) for c in cst],'CALL "GC3-COPPER-START" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join("%d/%d/%d"%(c[0],c[2],int(c[1] or c[2])) for c in cst))
+g.run('copper walks (9.3): walks = 3 + nextInt(3) (3 to 5) and steps = 1 + nextInt(8) (1 to 8): kind 1 walks, 2 steps',["1 0","1 2","2 0","2 7"],'CALL "GC3-COPPER-COUNT" USING WS-I(1) WS-I(2) WS-R(1)',1,"3 5 1 8")
+def cs(cl):
+    for i,c in enumerate(cl):
+        if c:
+            return i+1,int(c==1),1,i+1,3*(i+1)
+    return 0,0,0,10,30
+def ccall2(cl):
+    s='INITIALIZE WS-CELLS\n'
+    for i,c in enumerate(cl): s+='MOVE %d TO WS-CE(%d)\n'%(c,i+1)
+    return s+'CALL "GC3-COPPER-STEP" USING WS-CELLS WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)'
+csc=[[0]*10,[1]+[0]*9,[2]+[0]*9,[0,0,1]+[0]*7,[0]*9+[2],[0]*9+[1],[0,0,0,2,1,1,0,0,0,0]]
+g.case('copper step (9.3 randomStep): the 10 candidates (0 not weathering copper, 1 with a previous state, 2 without) are taken in order; the first weathering one is returned, set to its previous state when there is one, with level event 3002 data -1, even without a previous state; none gives nothing (index, set, event, positions taken, draws of 3 per position)',[("0",ccall2(c),5) for c in csc]," ".join("%d/%d/%d/%d/%d"%cs(c) for c in csc))
+def cw(steps,suc):
+    calls=steps if suc>=steps else suc+1
+    return calls,min(suc,steps)
+cwc=[(1,0),(1,1),(3,0),(3,2),(3,3),(8,8),(8,5),(4,9)]
+g.run('copper walk (9.3 randomWalk): the cursor starts at the strike and up to steps steps are taken, the walk ending at the first step that returns nothing (steps taken including the failed one, moves)',[S(*c) for c in cwc],'CALL "GC3-COPPER-WALK" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2," ".join("%d/%d"%cw(*c) for c in cwc))
+def bo(df,vo):
+    return int(df>=2 and not vo),1,1,1
+boc=[(0,0),(1,0),(2,0),(3,0),(2,1),(3,1),(0,1)]
+g.run('bolt tick order (9.4): at life 2 spawnFire(4) only on Normal (2) or Hard (3) and when the bolt is not visual-only; then powerLightningRod, clearCopperOnLightningStrike and the game event lightning_strike, also for a visual-only bolt (fire, rod, copper, event)',[S(*c) for c in boc],'CALL "GC3-BOLT-ORDER" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join("%d/%d/%d/%d"%bo(*c) for c in boc))
+W(g,9)

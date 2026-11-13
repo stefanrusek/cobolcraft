@@ -1513,3 +1513,284 @@
      END-IF
      GOBACK.
  END PROGRAM GC3-DAMPENING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-CONST.
+*> USING ACTIVATION_TICKS, RANGE, SPARK_CYCLE, default facing (2 up), default powered (BINARY-LONG out): the constants of LightningRodBlock (9.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ACTIVATION           BINARY-LONG.
+ 01 L-RANGE                BINARY-LONG.
+ 01 L-CYCLE                BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-POWERED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ACTIVATION L-RANGE L-CYCLE L-FACING L-POWERED.
+     MOVE 8 TO L-ACTIVATION
+     MOVE 128 TO L-RANGE
+     MOVE 200 TO L-CYCLE
+     MOVE 2 TO L-FACING
+     MOVE 0 TO L-POWERED
+     GOBACK.
+ END PROGRAM GC3-ROD-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-STRIKE.
+*> USING facing (1 down, 2 up, 3 north, 4 south, 5 west, 6 east: Direction.values()), powered, direction of the neighbour update (the opposite of facing), tick delay, level event,
+*> its data (the axis ordinal of facing: X 0, Y 1, Z 2) (BINARY-LONG out): onLightningStrike (9.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-OPPOSITE             BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-DATA                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-FACING L-POWERED L-OPPOSITE L-DELAY L-EVENT L-DATA.
+     MOVE 1 TO L-POWERED
+     MOVE 8 TO L-DELAY
+     MOVE 3002 TO L-EVENT
+     EVALUATE L-FACING
+         WHEN 1
+             MOVE 2 TO L-OPPOSITE
+             MOVE 1 TO L-DATA
+         WHEN 2
+             MOVE 1 TO L-OPPOSITE
+             MOVE 1 TO L-DATA
+         WHEN 3
+             MOVE 4 TO L-OPPOSITE
+             MOVE 2 TO L-DATA
+         WHEN 4
+             MOVE 3 TO L-OPPOSITE
+             MOVE 2 TO L-DATA
+         WHEN 5
+             MOVE 6 TO L-OPPOSITE
+             MOVE 0 TO L-DATA
+         WHEN OTHER
+             MOVE 5 TO L-OPPOSITE
+             MOVE 0 TO L-DATA
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC3-ROD-STRIKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-TICK.
+*> USING powered, neighbours updated (BINARY-LONG out): the scheduled tick of the lightning rod (9.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-UPDATES              BINARY-LONG.
+ PROCEDURE DIVISION USING L-POWERED L-UPDATES.
+     MOVE 0 TO L-POWERED
+     MOVE 1 TO L-UPDATES
+     GOBACK.
+ END PROGRAM GC3-ROD-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-PLACE.
+*> USING the old block is this block, the state is powered, a tick is scheduled at the position (BINARY-LONG), schedules a tick, its delay out: placement (9.2 PL).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OLD-SAME             BINARY-LONG.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-SCHEDULED            BINARY-LONG.
+ 01 L-SCHEDULES            BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-OLD-SAME L-POWERED L-SCHEDULED L-SCHEDULES L-DELAY.
+     MOVE 0 TO L-SCHEDULES L-DELAY
+     IF L-OLD-SAME = 0 AND L-POWERED = 1 AND L-SCHEDULED = 0
+         MOVE 1 TO L-SCHEDULES
+         MOVE 8 TO L-DELAY
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-ROD-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-REMOVE.
+*> USING the removed state was powered (BINARY-LONG), neighbours updated out (9.2 removal).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-UPDATES              BINARY-LONG.
+ PROCEDURE DIVISION USING L-POWERED L-UPDATES.
+     MOVE L-POWERED TO L-UPDATES
+     GOBACK.
+ END PROGRAM GC3-ROD-REMOVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-SIGNAL.
+*> USING powered, facing, the direction asked (BINARY-LONG), own signal, direct signal out: the signals of the lightning rod (9.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POWERED              BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-OWN                  BINARY-LONG.
+ 01 L-DIRECT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-POWERED L-FACING L-DIRECTION L-OWN L-DIRECT.
+     MOVE 0 TO L-OWN L-DIRECT
+     IF L-POWERED = 1
+         MOVE 15 TO L-OWN
+     END-IF
+     IF L-POWERED = 1 AND L-FACING = L-DIRECTION
+         MOVE 15 TO L-DIRECT
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-ROD-SIGNAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-ROD-ANIM.
+*> USING thundering, the draw nextInt(200), gameTime mod 200, the block is the top of its column (Y = WORLD_SURFACE height - 1), the draw of UniformInt(1, 2) as nextInt(2)
+*> (BINARY-LONG), particles, spacing x 1000, draws made out: animateTick (9.2, client only); the draw must be at most the remainder.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-THUNDER              BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-MOD                  BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ 01 L-COUNT-DRAW           BINARY-LONG.
+ 01 L-PARTICLES            BINARY-LONG.
+ 01 L-SPACING              BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-THUNDER L-DRAW L-MOD L-TOP L-COUNT-DRAW L-PARTICLES L-SPACING L-DRAWS.
+     MOVE 0 TO L-PARTICLES L-DRAWS
+     MOVE 125 TO L-SPACING
+     IF L-THUNDER = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-DRAWS
+     IF L-DRAW > L-MOD OR L-TOP = 0
+         GOBACK
+     END-IF
+     MOVE 2 TO L-DRAWS
+     COMPUTE L-PARTICLES = 1 + L-COUNT-DRAW
+     GOBACK.
+ END PROGRAM GC3-ROD-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-STRIKE-BLOCK.
+*> USING the bolt position x, y, z (FLOAT-LONG), the block x, y, z (BINARY-LONG out): the block containing (x, y - 1.0E-6, z) (9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BY                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-BX L-BY L-BZ.
+     COMPUTE L-BX = FUNCTION INTEGER(L-X)
+     COMPUTE L-BY = FUNCTION INTEGER(L-Y - 0.000001)
+     COMPUTE L-BZ = FUNCTION INTEGER(L-Z)
+     GOBACK.
+ END PROGRAM GC3-STRIKE-BLOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-COPPER-START.
+*> USING the block at the strike is a LightningRodBlock, it is waxed (a key of the wax-off map), it is a WeatheringCopper (BINARY-LONG), the rod is struck, a weathering block
+*> is reset to the unaffected variant, the walks run out: powerLightningRod and the start of clearCopperOnLightningStrike (9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROD                  BINARY-LONG.
+ 01 L-WAXED                BINARY-LONG.
+ 01 L-WEATHERING           BINARY-LONG.
+ 01 L-STRIKES              BINARY-LONG.
+ 01 L-RESET                BINARY-LONG.
+ 01 L-WALKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROD L-WAXED L-WEATHERING L-STRIKES L-RESET L-WALKS.
+     MOVE L-ROD TO L-STRIKES
+     MOVE L-WEATHERING TO L-RESET
+     MOVE 0 TO L-WALKS
+     IF L-WAXED = 1 OR L-WEATHERING = 1
+         MOVE 1 TO L-WALKS
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-COPPER-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-COPPER-COUNT.
+*> USING kind (1 the number of walks 3 + nextInt(3), 2 the steps of a walk 1 + nextInt(8)), the draw (BINARY-LONG), the count out (9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-DRAW L-COUNT.
+     COMPUTE L-COUNT = 1 + L-DRAW
+     IF L-KIND = 1
+         COMPUTE L-COUNT = 3 + L-DRAW
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-COPPER-COUNT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-COPPER-STEP.
+*> USING the 10 candidate positions of BlockPos.randomInCube in order (BINARY-LONG x 10: 0 not a WeatheringCopper, 1 one with a previous state, 2 one without), the index
+*> returned (0 for nothing), the previous state is set, level event 3002 with data -1 sent, positions taken, nextInt(3) draws made out: randomStep (9.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STEP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CELLS.
+    05 L-CELL              BINARY-LONG OCCURS 10 TIMES.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SET                  BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-TAKEN                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CELLS L-INDEX L-SET L-EVENT L-TAKEN L-DRAWS.
+     MOVE 0 TO L-INDEX L-SET L-EVENT L-TAKEN
+     PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 10 OR L-INDEX > 0
+         ADD 1 TO L-TAKEN
+         IF L-CELL(WS-STEP) > 0
+             MOVE WS-STEP TO L-INDEX
+             MOVE 1 TO L-EVENT
+         END-IF
+         IF L-CELL(WS-STEP) = 1
+             MOVE 1 TO L-SET
+         END-IF
+     END-PERFORM
+     COMPUTE L-DRAWS = 3 * L-TAKEN
+     GOBACK.
+ END PROGRAM GC3-COPPER-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-COPPER-WALK.
+*> USING the steps of the walk, how many consecutive randomStep calls from the strike return a position (BINARY-LONG), randomStep calls made, moves out: randomWalk (9.3):
+*> the walk ends at the first call that returns nothing.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STEPS                BINARY-LONG.
+ 01 L-SUCCEED              BINARY-LONG.
+ 01 L-CALLS                BINARY-LONG.
+ 01 L-MOVES                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STEPS L-SUCCEED L-CALLS L-MOVES.
+     MOVE L-STEPS TO L-CALLS
+     MOVE L-SUCCEED TO L-MOVES
+     IF L-SUCCEED < L-STEPS
+         COMPUTE L-CALLS = L-SUCCEED + 1
+     ELSE
+         MOVE L-STEPS TO L-MOVES
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-COPPER-WALK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC3-BOLT-ORDER.
+*> USING difficulty (0 peaceful, 1 easy, 2 normal, 3 hard), the bolt is visual-only (BINARY-LONG), fire step, powerLightningRod, clearCopper, game event lightning_strike out
+*> (1 when it runs): the order of 9.4 at life 2; spawnFire needs Normal or Hard and a bolt that is not visual-only, the other three always run.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIFFICULTY           BINARY-LONG.
+ 01 L-VISUAL               BINARY-LONG.
+ 01 L-FIRE                 BINARY-LONG.
+ 01 L-ROD                  BINARY-LONG.
+ 01 L-COPPER               BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIFFICULTY L-VISUAL L-FIRE L-ROD L-COPPER L-EVENT.
+     MOVE 0 TO L-FIRE
+     MOVE 1 TO L-ROD L-COPPER L-EVENT
+     IF L-DIFFICULTY >= 2 AND L-VISUAL = 0
+         MOVE 1 TO L-FIRE
+     END-IF
+     GOBACK.
+ END PROGRAM GC3-BOLT-ORDER.
