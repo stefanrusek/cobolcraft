@@ -173,6 +173,29 @@
      MOVE "T" TO TL-MODE
      MOVE "11100" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A block whose flags say nothing but whose shape does not fill the cube does not occlude (T5001): redstone dust (a flat line
+*>   a sixteenth high) did, so it hid the top face of the block under it; a chest, a bed, an enchanting table and a daylight
+*>   detector are shapes of their own; the cube-shaped dispenser and furnace still do.
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
+         EVALUATE WS-I
+             WHEN 1 MOVE "redstone_wire" TO WS-KEY
+             WHEN 2 MOVE "chest" TO WS-KEY
+             WHEN 3 MOVE "ender_chest" TO WS-KEY
+             WHEN 4 MOVE "white_bed" TO WS-KEY
+             WHEN 5 MOVE "enchanting_table" TO WS-KEY
+             WHEN 6 MOVE "furnace" TO WS-KEY
+             WHEN OTHER MOVE "dispenser" TO WS-KEY
+         END-EVALUATE
+         CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+         CALL "CONTENT-STATE-DEFAULT" USING WS-ID WS-STATE WS-STATUS
+         STRING FUNCTION TRIM(TL-OBSERVED) ST-OPAQUE(WS-STATE + 1) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-PERFORM
+     MOVE "state tables redstone dust, chests, a bed and an enchanting table do not occlude; a furnace and a dispenser do"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "0000011" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CT-OPEN
      STOP RUN.
  END PROGRAM TEST-STATE-TABLES.
