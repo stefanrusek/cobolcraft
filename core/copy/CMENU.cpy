@@ -38,6 +38,17 @@
        10 MN-CBE2            BINARY-LONG.
        10 MN-CDATA           BINARY-LONG OCCURS 4 TIMES.   *> the data slots (furnace: lit, lit total, cook, cook total) as last sent
        10 MN-COPEN           BINARY-LONG OCCURS 2 TIMES.   *> the entities that count the openers (an ender chest's own block entity, else the same as MN-CBE1 and 2)
+       10 MN-WRES            BINARY-LONG.            *> a workstation menu (MN-CFAMILY >= 20, core/src/menu-station.cob): the own slot that is the result slot
+       10 MN-WSLOT OCCURS 5 TIMES.                  *> its own slots other than the result slot, by own slot index + 1
+          15 MN-WSLOT-ITEM    BINARY-LONG.
+          15 MN-WSLOT-COUNT   BINARY-LONG.
+          15 MN-WSLOT-VAR     BINARY-LONG.
+       10 MN-WSEL            BINARY-LONG.            *> the selected list entry (stonecutter, loom), -1 none
+       10 MN-WKEEP           BINARY-LONG.            *> the input item last seen (stonecutter list reset rule)
+       10 MN-WDATA           BINARY-LONG OCCURS 10 TIMES.   *> the data slot values
+       10 MN-WSENT           BINARY-LONG OCCURS 10 TIMES.   *> the data slot values as last sent
+       10 MN-WSOUND          BINARY-LONG.            *> the game tick of the last take sound
+       10 MN-WLIST           BINARY-LONG.            *> the input item of the list last sent to the client (stonecutter), -1 none sent
        10 MN-DRAG-ACTIVE     PIC 9.
        10 MN-DRAG-TYPE       BINARY-LONG.
        10 MN-DRAG-COUNT      BINARY-LONG.

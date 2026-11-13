@@ -14,7 +14,7 @@
  01 WS-BZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64).
+ 01 WS-PAIRS               PIC X(160).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.

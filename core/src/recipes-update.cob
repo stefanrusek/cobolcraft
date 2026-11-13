@@ -10,7 +10,10 @@
 *>
 *> Entry points:
 *>   RECIPES-UPDATE-BUILD USING PB-UPDATE-RECIPES, PB-SLOT-DISPLAY-TABLE   fills both from the store
+*>   RECIPES-UPDATE-BUILD-FOR USING input item, PB-UPDATE-RECIPES, PB-SLOT-DISPLAY-TABLE   as BUILD with the stonecutter entries of one input item
 *>   RECIPES-UPDATE-SEND USING connection id                                the packet 0x88 to the connection
+*>   RECIPES-UPDATE-SEND-FOR USING connection id, input item                the same with the stonecutter entries of one input item only (an open
+*>     stonecutter menu sends it whenever its input item changes: the client's list of the menu is the entries of the latest packet)
 *>   RECIPES-UPDATE-TAG USING registry, tag key, set number, PB-UPDATE-RECIPES   adds the members of a tag to a set
 *>   RECIPES-UPDATE-INGREDIENT USING ingredient, set number, PB-UPDATE-RECIPES   adds the items of an ingredient text to a set
 
@@ -197,6 +200,21 @@
 *> feeds it) and the stonecutter entries of the recipe store, as the header describes.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-ALL                 BINARY-LONG VALUE -1.
+ LINKAGE SECTION.
+ COPY PROTO.
+ PROCEDURE DIVISION USING PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE.
+     CALL "RECIPES-UPDATE-BUILD-FOR" USING WS-ALL PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     GOBACK.
+ END PROGRAM RECIPES-UPDATE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPES-UPDATE-BUILD-FOR.
+*> USING input item (BINARY-LONG; -1 every stonecutting recipe, 0 or more only the recipes whose ingredient takes that item: the list of an open
+*> stonecutter menu, which the table of 32 entries could not hold for the whole store), PB-UPDATE-RECIPES out, PB-SLOT-DISPLAY-TABLE out: as
+*> RECIPES-UPDATE-BUILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
  COPY CTRECIPE.
  01 WS-KEYS.
     05 FILLER              PIC X(32) VALUE "minecraft:smithing_base".
@@ -211,9 +229,11 @@
  01 WS-K                   BINARY-LONG.
  01 WS-SET                 BINARY-LONG.
  01 WS-SERIALIZER          BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
  LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
  COPY PROTO.
- PROCEDURE DIVISION USING PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE.
+ PROCEDURE DIVISION USING L-ITEM PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE.
      INITIALIZE PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
      MOVE 7 TO PB-UR-SET-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
@@ -235,11 +255,38 @@
                  MOVE 3 TO WS-SET
                  CALL "RECIPES-UPDATE-INGREDIENT" USING RR-ING(WS-K, 3) WS-SET PB-UPDATE-RECIPES
              WHEN WS-SERIALIZER = 18
-                 CALL "RECIPES-UPDATE-CUT" USING WS-K PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+                 MOVE 1 TO WS-OK
+                 IF L-ITEM >= 0
+                     CALL "CRAFT-ING-TEST" USING L-ITEM RR-ING(WS-K, 1) WS-OK
+                 END-IF
+                 IF WS-OK = 1
+                     CALL "RECIPES-UPDATE-CUT" USING WS-K PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+                 END-IF
          END-EVALUATE
      END-PERFORM
      GOBACK.
- END PROGRAM RECIPES-UPDATE-BUILD.
+ END PROGRAM RECIPES-UPDATE-BUILD-FOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RECIPES-UPDATE-SEND-FOR.
+*> USING connection id, input item (as RECIPES-UPDATE-BUILD-FOR): Update Recipes (0x88) with the stonecutter entries of that item, sent to the connection.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 136.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-ITEM.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "RECIPES-UPDATE-BUILD-FOR" USING L-ITEM PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM RECIPES-UPDATE-SEND-FOR.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPES-UPDATE-SEND.
