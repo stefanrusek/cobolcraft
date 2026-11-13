@@ -52,6 +52,10 @@
  01 WS-STONE               BINARY-LONG.
  01 WS-DIRT                BINARY-LONG.
  01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-ARROWS-BEFORE       BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
 
  01 WS-CHAT                PIC X(4096).
  01 WS-NEG                 FLOAT-LONG VALUE -1.6.
@@ -268,6 +272,13 @@
      MOVE EN-KILLER(WS-PIG) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A skeleton 10 blocks from the player: it sees the target for 20 ticks, draws for 20, shoots; it stands still.
+*>   The stone wall of the arrow test is taken away: it would block the line of sight.
+     COMPUTE WS-I = WS-BX + 5
+     PERFORM VARYING WS-N FROM -3 BY 1 UNTIL WS-N > 3
+         COMPUTE WS-VX = WS-BY + WS-N
+         MOVE WS-VX TO WS-INDEX
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-INDEX WS-BZ WS-AIR
+     END-PERFORM
      COMPUTE WS-X = WS-BX + 0.5
      COMPUTE PL-X(WS-PLAYER) = WS-BX + 10.5
      MOVE WS-BY TO WS-Y
@@ -277,7 +288,10 @@
      PERFORM VARYING WS-INDEX FROM -1 BY 1 UNTIL WS-INDEX > 12
          COMPUTE WS-VX = WS-BX + WS-INDEX
          MOVE WS-VX TO WS-I
-         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-N WS-BZ WS-DIRT
+         PERFORM VARYING WS-J FROM -10 BY 1 UNTIL WS-J > 10
+             COMPUTE WS-K = WS-BZ + WS-J
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-N WS-K WS-DIRT
+         END-PERFORM
      END-PERFORM
      MOVE 0 TO PL-MODE(WS-PLAYER)
      MOVE 20 TO PL-HEALTH(WS-PLAYER)
@@ -298,12 +312,20 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Strafing (20 section 5 bow goal, T4230): with the target seen for 20 ticks within 15 blocks the skeleton stands off its path and walks forward 0.5 and
+*>   sideways (counter-clockwise: to the left of its facing) 0.5 of its walking speed; the target is at +x, so it moves toward +x and to -z. At 10
+*>   blocks (d2 100: between a quarter and three quarters of the radius squared) it is neither backing off nor closing the gap on its own.
+     COMPUTE EN-X(WS-SKELETON) = PL-X(WS-PLAYER) - 10
+     MOVE PL-Z(WS-PLAYER) TO EN-Z(WS-SKELETON)
+     MOVE 0 TO EN-STRAFE-BACK(WS-SKELETON) EN-STRAFE-CW(WS-SKELETON)
+     MOVE 5 TO EN-STRAFE-TIME(WS-SKELETON)
      MOVE EN-X(WS-SKELETON) TO WS-VX
+     MOVE EN-Z(WS-SKELETON) TO WS-VZ
      CALL "MOB-STEP" USING WS-SKELETON
-     MOVE "test stdmob skeleton: it stands still while it has a target in range" TO TL-CASE
+     MOVE "test stdmob skeleton: it strafes: forward (+x) and to the left of its facing (-z) while it shoots" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(EN-X(WS-SKELETON) - WS-VX) < 0.001
+     IF EN-X(WS-SKELETON) > WS-VX + 0.001 AND EN-Z(WS-SKELETON) < WS-VZ - 0.001
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -324,6 +346,45 @@
      MOVE 2 TO TL-EXPECTED-N
      MOVE WS-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Line of sight (20 section 5 step 1, 18 Sensing, T4230): a wall of stone between the skeleton and the player stops the shots: the seeTime
+*>   falls below 0 (it counts down while the target is not seen) and no arrow is drawn; once the wall is gone the target is seen again.
+     MOVE 1 TO WS-N
+     PERFORM COUNT-ARROWS
+     MOVE WS-N TO WS-ARROWS-BEFORE
+     COMPUTE WS-I = WS-BX + 5
+     PERFORM VARYING WS-INDEX FROM -8 BY 1 UNTIL WS-INDEX > 8
+         COMPUTE WS-K = WS-BZ + WS-INDEX
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-L = WS-BY + WS-J
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-L WS-K WS-STONE
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO EN-DRAW(WS-SKELETON)
+     MOVE 0 TO EN-SHOOT-TIME(WS-SKELETON)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 50
+         CALL "MOB-STEP" USING WS-SKELETON
+     END-PERFORM
+     PERFORM COUNT-ARROWS
+     MOVE "test stdmob skeleton: behind a wall it shoots no arrow in 50 ticks" TO TL-CASE
+     MOVE WS-ARROWS-BEFORE TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob skeleton: and its seeTime counts down below 0" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-SWELL(WS-SKELETON) < 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-I = WS-BX + 5
+     PERFORM VARYING WS-INDEX FROM -8 BY 1 UNTIL WS-INDEX > 8
+         COMPUTE WS-K = WS-BZ + WS-INDEX
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-L = WS-BY + WS-J
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-I WS-L WS-K WS-AIR
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO EN-SWELL(WS-SKELETON)
 *>   Alone (no player in reach) the goal resets; on Hard the interval is 20.
      MOVE 3 TO BW-DIFFICULTY
      COMPUTE PL-X(WS-PLAYER) = WS-BX + 400.5

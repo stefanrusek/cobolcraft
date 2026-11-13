@@ -283,6 +283,12 @@
        10 EN-SWELL-DIR       BINARY-LONG.        *> the last swell direction sent to the viewers (0 = none yet, the default -1)
        10 EN-SHOOT-TIME      BINARY-LONG.        *> a bow mob's attackTime: ticks until it draws the bow again (20 section 5; EN-SWELL is its seeTime)
        10 EN-DRAW            BINARY-LONG.        *> 0 = bow not drawn, else 1 + the ticks the bow has been drawn
+*>     --- 002-lane-mobs3: bow goal strafing (20 section 5) ---
+       10 EN-STRAFE-TIME     BINARY-LONG.        *> strafingTime (-1 = not strafing)
+       10 EN-STRAFE-CW       BINARY-LONG.        *> strafingClockwise 0 or 1
+       10 EN-STRAFE-BACK     BINARY-LONG.        *> strafingBackwards 0 or 1
+       10 EN-STRAFE-X        FLOAT-LONG.         *> the strafe walk of this tick
+       10 EN-STRAFE-Z        FLOAT-LONG.
 *>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while

@@ -13,6 +13,9 @@ layout(location = 0) out vec4 out_colour;
 
 void main() {
     vec4 texel = texture(atlas, in_uv);
+    // Cut-out: a texel with alpha under 0.1 is dropped on every pipeline, as the crumbling shader does (the transparent texels of an
+    // entity skin or of its overlay layer, the empty corners of a block sprite).
+    if (texel.a * in_alpha < 0.1) discard;
     float d = length(in_view);
     // The environment fog is spherical; the render-distance fog cylindrical: max(horizontal distance, |height|), the height being the
     // component of the view position along the world up direction.

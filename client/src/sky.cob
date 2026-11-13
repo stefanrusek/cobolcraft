@@ -1,6 +1,6 @@
 *> Sky colour and daylight factor (standin-content §4.8, §15.3): SKY-UPDATE derives the daylight u
-*> (thousandths) from the time of day: 1000 by day, falling by 4/5 per tick from 15000 to 200 at
-*> 16000, 200 by night, rising again from 29000; and the clear colour, each channel
+*> (thousandths) from the time of day of the 24000-tick day (12 section 3.2): 1000 by day, falling linearly
+*> from tick 11867 to 200 at 13670, 200 by night, rising again from 22330 to 1000 at 24133; and the clear colour, each channel
 *> N + trunc((D - N) (u - 200) / 800) between night #0E1222 and day #8FB8E6. A dimension without sky
 *> light has the fixed sky #100C12 (its faces have no sky light to scale) and no weather. Weather
 *> (§14.5), with sky light only: the colour is tinted, each channel (c x 60 + t x 40) div 100 with
@@ -32,18 +32,24 @@
      MOVE 18 TO WS-NIGHT(2)
      MOVE 34 TO WS-NIGHT(3)
      MOVE PL-TIME TO WS-T
+*>   The sky_color track of the overworld timeline (12 section 3.2, 24000-tick day): factor 1 from tick 133 to 11867, linear to 0 at 13670, 0
+*>   to 22330, linear back to 1 at 24133 (the wrap); u = 200 + trunc(800 f).
      EVALUATE TRUE
-         WHEN WS-T < 15000
+         WHEN WS-T < 133
+             COMPUTE WS-STEP = (WS-T + 1670) * 800
+             DIVIDE WS-STEP BY 1803 GIVING WS-STEP
+             COMPUTE SK-U = 200 + WS-STEP
+         WHEN WS-T <= 11867
              MOVE 1000 TO SK-U
-         WHEN WS-T < 16000
-             COMPUTE WS-STEP = (WS-T - 15000) * 4
-             DIVIDE WS-STEP BY 5 GIVING WS-STEP
-             COMPUTE SK-U = 1000 - WS-STEP
-         WHEN WS-T < 29000
+         WHEN WS-T < 13670
+             COMPUTE WS-STEP = (13670 - WS-T) * 800
+             DIVIDE WS-STEP BY 1803 GIVING WS-STEP
+             COMPUTE SK-U = 200 + WS-STEP
+         WHEN WS-T <= 22330
              MOVE 200 TO SK-U
          WHEN OTHER
-             COMPUTE WS-STEP = (WS-T - 29000) * 4
-             DIVIDE WS-STEP BY 5 GIVING WS-STEP
+             COMPUTE WS-STEP = (WS-T - 22330) * 800
+             DIVIDE WS-STEP BY 1803 GIVING WS-STEP
              COMPUTE SK-U = 200 + WS-STEP
      END-EVALUATE
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3

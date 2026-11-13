@@ -76,6 +76,24 @@
                          MOVE 0 TO RL-UI-FADE
                      END-IF
                  END-IF
+*>               A pack stack without the experience bar's background (the built-in pack has none) shows the black swatch.
+                 IF WS-SPRITE-ROW = GSP-XP-BACK AND GS-W(GSP-XP-BACK) = 0
+                     MOVE SW-BLACK TO WS-SWATCH
+                 END-IF
+                 MOVE 0 TO WS-LENGTH
+             WHEN SM-W-KIND(WS-W) = WK-CLIP
+                 MOVE SM-W-ARG(WS-W) TO WS-SPRITE-ROW
+                 IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
+                     IF GS-W(WS-SPRITE-ROW) > 0
+                         CALL "UI-CLIP-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
+                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                     END-IF
+                 END-IF
+*>               Without the sprite the progress is the white swatch tinted #80ff20 (the colour of the level number).
+                 IF WS-SPRITE-ROW = GSP-XP-PROGRESS AND GS-W(GSP-XP-PROGRESS) = 0
+                     MOVE SW-WHITE TO WS-SWATCH
+                     MOVE 8454176 TO SM-W-COLOUR(WS-W)
+                 END-IF
                  MOVE 0 TO WS-LENGTH
              WHEN SM-W-KIND(WS-W) = WK-IMAGE
                  MOVE SM-W-SPRITE(WS-W) TO WS-SPRITE-ROW
@@ -94,7 +112,7 @@
                  CALL "UI-LOADGRID" USING CLIENT-STATE WS-W
                  MOVE 0 TO WS-LENGTH
          END-EVALUATE
-         IF SM-W-KIND(WS-W) = WK-OVERLAY
+         IF SM-W-KIND(WS-W) = WK-OVERLAY OR (SM-W-KIND(WS-W) = WK-CLIP AND WS-SWATCH >= 0)
              MOVE SM-W-COLOUR(WS-W) TO RL-UI-TINT
          END-IF
          IF WS-SWATCH >= 0
@@ -545,6 +563,44 @@
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U WS-V WS-U2 WS-V2
      GOBACK.
  END PROGRAM UI-SWATCH-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-CLIP-QUAD.
+*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels): the left width pixels of the sprite (at most its own width) and
+*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CW                  BINARY-LONG.
+ 01 WS-CH                  BINARY-LONG.
+ 01 WS-X0                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-U0                  FLOAT-SHORT.
+ 01 WS-V0                  FLOAT-SHORT.
+ 01 WS-U1                  FLOAT-SHORT.
+ 01 WS-V1                  FLOAT-SHORT.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H.
+     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW))
+     COMPUTE WS-CH = FUNCTION MIN(L-H, GS-H(L-ROW))
+     COMPUTE WS-X0 = L-X * CL-GUI-SCALE
+     COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
+     COMPUTE WS-X1 = (L-X + WS-CW) * CL-GUI-SCALE
+     COMPUTE WS-Y1 = (L-Y + WS-CH) * CL-GUI-SCALE
+     COMPUTE WS-U0 = GS-X(L-ROW) / UA-W
+     COMPUTE WS-V0 = GS-Y(L-ROW) / UA-H
+     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-CW) / UA-W
+     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-CH) / UA-H
+     CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+     GOBACK.
+ END PROGRAM UI-CLIP-QUAD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SPRITE-QUAD.

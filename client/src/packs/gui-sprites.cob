@@ -231,7 +231,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GUI-SPRITE-PATH-X.
-*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites are the last 23 rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49): the 40 mob_effect
+*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites are the last 23 rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
 *> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
 *> the hunger food sprites.
  DATA DIVISION.
@@ -363,6 +363,10 @@
              MOVE "container/furnace/lit_progress" TO WS-NAME
          WHEN L-ROW = GSP-FURNACE-BURN
              MOVE "container/furnace/burn_progress" TO WS-NAME
+         WHEN L-ROW = GSP-XP-BACK
+             MOVE "hud/experience_bar_background" TO WS-NAME
+         WHEN L-ROW = GSP-XP-PROGRESS
+             MOVE "hud/experience_bar_progress" TO WS-NAME
          WHEN OTHER
              MOVE "hud/food_full_hunger" TO WS-NAME
      END-EVALUATE

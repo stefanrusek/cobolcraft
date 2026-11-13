@@ -16,6 +16,7 @@
  01 WS-MODE                BINARY-LONG VALUE 0.
  01 WS-JOINED              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SP-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
@@ -45,6 +46,33 @@
      MOVE "test startup commands: and only once" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE CL-CMD-AT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A long list (T4200: 1024 bytes): thirty filler commands, then the one that counts after byte 400.
+     MOVE SPACES TO CL-CMD-TEXT
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 29
+         COMPUTE WS-POS = WS-I * 14 + 1
+         MOVE "time set noon;" TO CL-CMD-TEXT(WS-POS:14)
+     END-PERFORM
+     MOVE "gamemode survival @a" TO CL-CMD-TEXT(421:20)
+     MOVE 1 TO CL-CMD-AT
+     PERFORM 10 TIMES
+         CALL "TEST-STEP" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "test startup commands: a command past byte 256 runs" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-MODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   One command longer than a line (300 bytes) is cut at 256 and does not overflow.
+     MOVE SPACES TO CL-CMD-TEXT
+     MOVE "gamemode creative @a" TO CL-CMD-TEXT(1:20)
+     MOVE "x" TO CL-CMD-TEXT(300:1)
+     MOVE 1 TO CL-CMD-AT
+     PERFORM 10 TIMES
+         CALL "TEST-STEP" USING CLIENT-STATE
+     END-PERFORM
+     MOVE "test startup commands: a line over 256 bytes is cut, not run past" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-MODE TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SP-QUIT" USING CLIENT-STATE
      STOP RUN.
