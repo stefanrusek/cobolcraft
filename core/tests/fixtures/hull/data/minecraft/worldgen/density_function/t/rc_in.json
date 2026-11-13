@@ -1,0 +1,1 @@
+{"type": "minecraft:range_choice", "input": "minecraft:t/grid", "min_inclusive": -10.0, "max_exclusive": 10.0, "when_in_range": {"type": "minecraft:add", "left": "minecraft:t/grid", "right": 1.0}, "when_out_of_range": 3.0}
