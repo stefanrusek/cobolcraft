@@ -44,6 +44,12 @@
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-MOB: the vanilla message of the mob_attack damage type (standard worlds)
+       10 FILLER PIC X(40) VALUE "death.attack.mob".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
     05 FILLER.                                  *> CAUSE-DROWN (the vanilla translate key, 17 4.12: death.attack.drown has the victim)
        10 FILLER PIC X(40) VALUE "death.attack.drown".
        10 FILLER BINARY-LONG VALUE 18.
@@ -51,7 +57,7 @@
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 0.
  01 DEATH-MESSAGE-TABLE REDEFINES DEATH-MESSAGE-DATA.
-    05 DTH-ENTRY OCCURS 7 TIMES.
+    05 DTH-ENTRY OCCURS 8 TIMES.
        10 DTH-KEY               PIC X(40).
        10 DTH-KEY-LENGTH        BINARY-LONG.
        10 DTH-ARG-COUNT         BINARY-LONG.

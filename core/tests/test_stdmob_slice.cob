@@ -1,0 +1,308 @@
+*> Implementation test (002-lane-mobs, the first vertical slice: pig and cow in a standard world; docs/protocol/18 sections 2, 3.1, 6
+*> and 7.5, 19 sections 2.1 and 2.2). The standard (minecraft:) mobs are rows of the entity tracker of a vanilla entity type id, described
+*> by the table core/copy/STDMOBS.cpy and found by STDMOB-INDEX; the stand-in table (MOBS.cpy) does not apply to them.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STDMOB-SLICE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-PIG-TYPE            BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-ZOMBIE-TYPE         BINARY-LONG.
+ 01 WS-PLAYER-TYPE         BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-PORK                BINARY-LONG.
+ 01 WS-BEEF                BINARY-LONG.
+ 01 WS-GRASS               BINARY-LONG.
+ 01 WS-GRASS-STATE         BINARY-LONG.
+ 01 WS-STONE-STATE         BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-R                   BINARY-DOUBLE VALUE 0.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-CAUSE               BINARY-LONG VALUE 1.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG VALUE 400.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-TYPE-TEXT           PIC Z(5)9.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-LOOT-DIR            PIC X(1100) VALUE "core/tests/fixtures/stdmob-loot".
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "LOOT-LOAD" USING WS-LOOT-DIR WS-STATUS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-ROW
+     MOVE EN-TYPE(WS-ROW) TO WS-PLAYER-TYPE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:skeleton" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:porkchop" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-PORK WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:beef" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-BEEF WS-ITEM-ROW WS-STATUS
+
+*>   The table: pig and cow have rows, the player and a zombie (no row yet) do not.
+     MOVE "N" TO TL-MODE
+     MOVE "test stdmob slice: STDMOB-INDEX of the pig is row 1" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-PIG-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: STDMOB-INDEX of the cow is row 2" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-COW-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: STDMOB-INDEX of the player and of a skeleton is 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-PLAYER-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Sheep and chicken: rows 3 and 4 by key, with the max_health of 19 sections 2.4 and 2.5.
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:sheep" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "test stdmob slice: STDMOB-INDEX of the sheep is row 3" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: a sheep has 8 health" TO TL-CASE
+     MOVE 8 TO TL-EXPECTED-N
+     CALL "STDMOB-HEALTH" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:chicken" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "test stdmob slice: STDMOB-INDEX of the chicken is row 4" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: a chicken has 4 health" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     CALL "STDMOB-HEALTH" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+
+*>   The mooshroom is row 5 (as a cow, 19 section 2.3) and is not in the grass spawn cycle.
+     MOVE "minecraft:mooshroom" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "test stdmob slice: STDMOB-INDEX of the mooshroom is row 5" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:skeleton" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
+
+*>   A pig spawned by MOB-SPAWN has the full health of its row (19 section 2.1: max_health 10).
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
+     MOVE "test stdmob slice: a spawned pig has 10 health" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW-TYPE WS-X WS-Y WS-Z WS-YAW WS-COW
+     MOVE "test stdmob slice: a spawned cow has 10 health" TO TL-CASE
+     MOVE EN-HEALTH(WS-COW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The viewer is sent an Add Entity of the vanilla type id for the pig (the client draws its model from that id's key).
+     CALL "TEST-DRAIN-ENTITIES" USING WS-CONN WS-TEXT
+     MOVE WS-PIG-TYPE TO WS-TYPE-TEXT
+     MOVE SPACES TO WS-NEEDLE
+     STRING "," FUNCTION TRIM(WS-TYPE-TEXT) "@" DELIMITED BY SIZE INTO WS-NEEDLE
+     MOVE 0 TO WS-FOUND
+     INSPECT WS-TEXT TALLYING WS-FOUND FOR ALL FUNCTION TRIM(WS-NEEDLE)
+     MOVE "test stdmob slice: the viewer gets an Add Entity of the pig's type id" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "yes" TO TL-EXPECTED
+     MOVE "no" TO TL-OBSERVED
+     IF WS-FOUND > 0
+         MOVE "yes" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+
+*>   A hit of 3 by the player leaves 7 and makes the pig panic for 40 ticks away from the player.
+     MOVE 3 TO WS-AMOUNT
+     CALL "HEALTH-MOB-DAMAGE" USING WS-PIG WS-AMOUNT WS-CAUSE WS-PLAYER
+     MOVE "test stdmob slice: a pig hit for 3 has 7 health" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: a hurt pig panics for 40 ticks" TO TL-CASE
+     MOVE 40 TO TL-EXPECTED-N
+     MOVE EN-FLEE(WS-PIG) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Defeat: the pig is removed and drops 1 to 3 porkchops (19 section 2.1 drops).
+     MOVE 0 TO EN-HURT(WS-PIG)
+     MOVE 7 TO WS-AMOUNT
+     CALL "HEALTH-MOB-DAMAGE" USING WS-PIG WS-AMOUNT WS-CAUSE WS-PLAYER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         CALL "MOB-STEP" USING WS-PIG
+     END-PERFORM
+     MOVE "test stdmob slice: a defeated pig is removed after its death ticks" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-USED(WS-PIG) = 1 AND EN-TYPE(WS-PIG) = WS-PIG-TYPE
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-PORK TO WS-I
+     PERFORM COUNT-ITEM
+     MOVE "test stdmob slice: a defeated pig drops 1 to 3 porkchops" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "yes" TO TL-EXPECTED
+     MOVE "no" TO TL-OBSERVED
+     IF WS-COUNT >= 1 AND WS-COUNT <= 3
+         MOVE "yes" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A cow drops 1 to 3 beef (and 0 to 2 leather).
+     MOVE 0 TO EN-HURT(WS-COW)
+     MOVE 10 TO WS-AMOUNT
+     CALL "HEALTH-MOB-DAMAGE" USING WS-COW WS-AMOUNT WS-CAUSE WS-PLAYER
+     MOVE WS-BEEF TO WS-I
+     PERFORM COUNT-ITEM
+     MOVE "test stdmob slice: a defeated cow drops 1 to 3 beef" TO TL-CASE
+     MOVE "no" TO TL-OBSERVED
+     IF WS-COUNT >= 1 AND WS-COUNT <= 3
+         MOVE "yes" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Wandering: a pig on the player's cell moves within 400 ticks and stays near.
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-TYPE WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE "test stdmob slice: a pig wanders in 400 ticks" TO TL-CASE
+     MOVE "no" TO TL-OBSERVED
+     IF EN-USED(WS-PIG) = 1 AND (EN-X(WS-PIG) NOT = WS-X OR EN-Z(WS-PIG) NOT = WS-Z)
+         MOVE "yes" TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Natural spawning on grass (18 section 6.8, animal rule: grass_block below, bright): a column of grass high above the terrain.
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:grass_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-GRASS WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-GRASS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-INDEX WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STONE-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X) + 3
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-TOP = FUNCTION INTEGER(WS-Y) + 30
+     PERFORM VARYING WS-BY FROM WS-TOP BY 1 UNTIL WS-BY > WS-TOP + 3
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+     END-PERFORM
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-TOP WS-BZ WS-GRASS-STATE
+     PERFORM COUNT-ALL
+     MOVE WS-COUNT TO WS-BEFORE
+     CALL "STDMOB-SPAWN-RULE" USING WS-DIM WS-BX WS-BZ WS-TOP WS-R
+     PERFORM COUNT-ALL
+     MOVE "test stdmob slice: a spawn attempt on a lit grass block makes one mob" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = WS-BEFORE + 1
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: the new mob is a table mob standing on the block" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "yes" TO TL-EXPECTED
+     MOVE "no" TO TL-OBSERVED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-I) WS-INDEX
+             IF WS-INDEX > 0 AND EN-Y(WS-I) = WS-TOP + 1 AND EN-X(WS-I) = WS-BX + 0.5
+                 MOVE "yes" TO TL-OBSERVED
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Stone is no ground for an animal.
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-TOP WS-BZ WS-STONE-STATE
+     PERFORM COUNT-ALL
+     MOVE WS-COUNT TO WS-BEFORE
+     CALL "STDMOB-SPAWN-RULE" USING WS-DIM WS-BX WS-BZ WS-TOP WS-R
+     PERFORM COUNT-ALL
+     MOVE "test stdmob slice: no animal spawns on stone" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-BEFORE TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+ COUNT-ITEM.
+*>   WS-COUNT = the total count of ground items of item WS-I.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > EN-COUNT
+         IF EN-USED(WS-INDEX) = 1 AND EN-ITEM(WS-INDEX) = WS-I
+             ADD EN-ITEM-COUNT(WS-INDEX) TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ COUNT-ALL.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > EN-COUNT
+         IF EN-USED(WS-INDEX) = 1
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-STDMOB-SLICE.
+ COPY CORETEST.

@@ -47,6 +47,12 @@
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
     05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
     05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
+    05 CL-CAM-X              FLOAT-LONG.
+    05 CL-CAM-Y              FLOAT-LONG.
+    05 CL-CAM-Z              FLOAT-LONG.
+    05 CL-CAM-YAW            FLOAT-LONG.
+    05 CL-CAM-PITCH          FLOAT-LONG.
     05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
     05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
     05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)

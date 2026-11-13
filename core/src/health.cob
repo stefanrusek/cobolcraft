@@ -268,8 +268,10 @@
      CALL "EFFECT-CLEAR-ALL" USING WS-ROW
      MOVE PS-DEAD TO PL-STATE(WS-ROW)
      MOVE L-CAUSE TO PL-DEATH-CAUSE(WS-ROW)
-     MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
-     MOVE 0 TO PL-KILLER-LENGTH(WS-ROW)
+     IF L-CAUSE NOT = CAUSE-MOB
+         MOVE SPACES TO PL-KILLER-NAME(WS-ROW)
+         MOVE 0 TO PL-KILLER-LENGTH(WS-ROW)
+     END-IF
      IF L-ATTACKER > 0
          MOVE PL-NAME(L-ATTACKER) TO PL-KILLER-NAME(WS-ROW)
          MOVE PL-NAME-LENGTH(L-ATTACKER) TO PL-KILLER-LENGTH(WS-ROW)
@@ -339,6 +341,89 @@
  END PROGRAM HEALTH-DAMAGE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. DAMAGE-TYPE-ID.
+*> USING cause (BINARY-LONG, RULES.cpy CAUSE-*), damage type id out (BINARY-LONG): the id of the cause's damage type in the open content set. The
+*> cobolcraft set numbers its types in RULES.cpy, and so do the older causes in every set (the acc_us14 tests of the standard set pin them: their
+*> ids are an open item of the combat lane). CAUSE-MOB (minecraft:mob_attack) and CAUSE-DROWN (minecraft:drown), the causes of standard worlds, find their key in the open set's damage_type registry (a
+*> synchronized registry: the id is the entry's position, 04 section 3); 0 when the registry has no such entry.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY RULES.
+ 01 WS-REGISTRY            PIC X(112) VALUE "minecraft:damage_type".
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-WANT                PIC X(112).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-PAYLOAD             PIC X(4096).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CAUSE                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CAUSE L-ID.
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT OR (L-CAUSE NOT = CAUSE-MOB AND L-CAUSE NOT = CAUSE-DROWN)
+         MOVE RULE-CAUSE-TYPE(L-CAUSE) TO L-ID
+         GOBACK
+     END-IF
+     MOVE "minecraft:mob_attack" TO WS-WANT
+     IF L-CAUSE = CAUSE-DROWN
+         MOVE "minecraft:drown" TO WS-WANT
+     END-IF
+     MOVE 0 TO L-ID
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-COUNT
+         CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-I WS-KEY WS-KEY-LENGTH WS-PAYLOAD
+             WS-CAPACITY WS-LENGTH WS-STATUS
+         IF WS-KEY = WS-WANT
+             MOVE WS-I TO L-ID
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DAMAGE-TYPE-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEALTH-MOB-HIT.
+*> USING player row, amount (BINARY-LONG points), mob tracker row: a mob's melee hit on a player (20 section 3.1: the difficulty scaling of a damage
+*> source that scales with difficulty: Peaceful 0, Easy min(d / 2 + 1, d), Normal d, Hard 3d / 2; the difficulty is BW-DIFFICULTY of the commands).
+*> The killer name for the death message is the mob's display name (STDMOB-NAME); the hurt itself is HEALTH-HURT with CAUSE-MOB (armor and Resistance
+*> apply, the damage type is mob_attack, the source entity is the mob).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY RULES.
+ COPY BRWORLD.
+ 01 WS-MILLI               BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-MOB                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-AMOUNT L-MOB.
+     CALL "BR-WORLD-READY"
+     COMPUTE WS-FULL = L-AMOUNT * 1000
+     COMPUTE WS-HALF = L-AMOUNT * 500 + 1000
+     EVALUATE BW-DIFFICULTY
+         WHEN 0
+             GOBACK
+         WHEN 1
+             COMPUTE WS-MILLI = FUNCTION MIN(WS-HALF, WS-FULL)
+         WHEN 2
+             MOVE WS-FULL TO WS-MILLI
+         WHEN OTHER
+             COMPUTE WS-MILLI = L-AMOUNT * 1500
+     END-EVALUATE
+     CALL "STDMOB-NAME" USING EN-TYPE(L-MOB) PL-KILLER-NAME(L-PLAYER) PL-KILLER-LENGTH(L-PLAYER)
+     CALL "HEALTH-HURT" USING L-PLAYER WS-MILLI CAUSE-MOB EN-ID(L-MOB) WS-NO-ATTACKER WS-RESULT
+     GOBACK.
+ END PROGRAM HEALTH-MOB-HIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-MOB-DAMAGE.
 *> USING mob tracker row, amount, cause (RULES.cpy CAUSE-*), attacker player row (0 = none)
 *> (BINARY-LONG each): the mob damage rules above.
@@ -353,6 +438,7 @@
  01 WS-SOURCE              BINARY-LONG.
  01 WS-APPLY               BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-DTYPE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-AMOUNT               BINARY-LONG.
@@ -360,6 +446,15 @@
  01 L-ATTACKER             BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-AMOUNT L-CAUSE L-ATTACKER.
      MOVE L-ROW TO WS-ROW
+     IF EN-HEALTH(WS-ROW) = 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+         IF WS-M > 0
+             GOBACK
+         END-IF
+     END-IF
+     IF L-ATTACKER > 0
+         MOVE L-ATTACKER TO EN-KILLER(WS-ROW)
+     END-IF
      IF EN-HURT(WS-ROW) > RULE-HURT-FRESH
          IF L-AMOUNT > EN-LAST-HURT(WS-ROW)
              COMPUTE WS-APPLY = L-AMOUNT - EN-LAST-HURT(WS-ROW)
@@ -382,7 +477,8 @@
          COMPUTE WS-SOURCE = PL-ENTITY-ID(L-ATTACKER) + 1
      END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) RULE-CAUSE-TYPE(L-CAUSE) WS-SOURCE
+     CALL "DAMAGE-TYPE-ID" USING L-CAUSE WS-DTYPE
+     CALL "DAMAGE-EVENT-BUILD" USING EN-ID(WS-ROW) WS-DTYPE WS-SOURCE
          PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING WS-ROW PB-BUFFER
      CALL "PB-RESET" USING PB-BUFFER
@@ -393,6 +489,8 @@
      MOVE 0 TO WS-APPLY
      IF WS-M > 0
          MOVE MB-FLEE-MILLI(WS-M) TO WS-APPLY
+     ELSE
+         CALL "STDMOB-PANIC" USING EN-TYPE(WS-ROW) WS-APPLY
      END-IF
      IF L-ATTACKER > 0 AND WS-APPLY > 0
          MOVE MOB-FLEE-TICKS TO EN-FLEE(WS-ROW)
