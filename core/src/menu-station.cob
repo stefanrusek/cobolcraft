@@ -5,7 +5,8 @@
 *> slot are the bench's: the whole stack leaves, MENU-RESULT-TAKEN is called, nothing may be placed). The pure rules of the documents are the MN2- to MN4-
 *> and ENCH- programs of menu-40-2.cob to menu-enchanting.cob; this file reads the live state, calls them and applies what they decide.
 *>
-*> Station kinds: 1 stonecutter, 2 grindstone, 3 smithing table, 4 anvil, 5 loom, 6 cartography table, 7 enchanting table, 8 brewing stand.
+*> Station kinds: 1 stonecutter, 2 grindstone, 3 smithing table, 4 anvil, 5 loom, 6 cartography table, 7 enchanting table, 8 brewing stand. MENU-STATION-KIND
+*> names only the stations that are built (the stonecutter and the smithing table): a block of another kind does not open a menu yet.
 *>
 *> Opening (Use Item On on the block, BLOCK-USE-ON, not sneaking with an item held): the menu already open is closed first, the container id is the next
 *> of the cycle, Open Screen carries the menu type and the translatable title (container.stonecutter ...), Container Set Content and the data slots follow.
@@ -46,22 +47,8 @@
      EVALUATE WS-BARE
          WHEN "stonecutter"
              MOVE 1 TO L-KIND
-         WHEN "grindstone"
-             MOVE 2 TO L-KIND
          WHEN "smithing_table"
              MOVE 3 TO L-KIND
-         WHEN "anvil"
-         WHEN "chipped_anvil"
-         WHEN "damaged_anvil"
-             MOVE 4 TO L-KIND
-         WHEN "loom"
-             MOVE 5 TO L-KIND
-         WHEN "cartography_table"
-             MOVE 6 TO L-KIND
-         WHEN "enchanting_table"
-             MOVE 7 TO L-KIND
-         WHEN "brewing_stand"
-             MOVE 8 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM MENU-STATION-KIND.
@@ -312,9 +299,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STATION-MAYPLACE.
-*> USING row, own slot, item, result out: the stonecutter's input slot takes any item (40-4 section 4.2); the other stations' rules follow with each station.
+*> USING row, own slot, item, result out: the stonecutter's input slot takes any item (40-4 section 4.2); the smithing table's slot s takes the items of the
+*> ingredient s of the smithing recipes (40-3 section 5.1: the sets smithing_template, smithing_base, smithing_addition).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CMENU.
+ 01 WS-SET                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -322,6 +312,10 @@
  01 L-RESULT               BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-ITEM L-RESULT.
      MOVE 1 TO L-RESULT
+     IF MN-CFAMILY(L-ROW) = 23
+         COMPUTE WS-SET = L-SLOT + 1
+         CALL "MENU-SMITH-SET" USING WS-SET L-ITEM L-RESULT
+     END-IF
      GOBACK.
  END PROGRAM MENU-STATION-MAYPLACE.
 
@@ -354,6 +348,143 @@
  END PROGRAM MENU-STONE-SETUP.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SMITH-SET.
+*> USING ingredient number (1 template, 2 base, 3 addition), item, ok out: the item is in the property set of that ingredient: the union of the
+*> ingredient items of the smithing recipes (smithing_transform and smithing_trim, serializers 19 and 21 of the recipe store) (40-3 section 5.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTRECIPE.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-N                    BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-N L-ITEM L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-ITEM <= 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT OR L-RESULT = 1
+         IF (RR-SERIALIZER(WS-K) = 19 OR RR-SERIALIZER(WS-K) = 21) AND RR-ING(WS-K, L-N) NOT = SPACES
+             CALL "CRAFT-ING-TEST" USING L-ITEM RR-ING(WS-K, L-N) WS-OK
+             IF WS-OK = 1
+                 MOVE 1 TO L-RESULT
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MENU-SMITH-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SMITH-MATCH.
+*> USING row, result item out, result count out, result patch out (the base's: smithing_transform copies the components of the base, 40-3 section
+*> 5.3 and 27 section 3.3): the first smithing_transform recipe in store order whose template, base and addition ingredients each take their slot (an
+*> absent ingredient needs an empty slot). 0 when none.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ COPY CTRECIPE.
+ COPY CONTENT.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-X               PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ITEM L-COUNT L-VAR.
+     MOVE 0 TO L-ITEM L-COUNT L-VAR
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT OR L-ITEM > 0
+         IF RR-SERIALIZER(WS-K) = 19
+             MOVE 1 TO WS-OK
+             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 3
+                 IF RR-ING(WS-K, WS-S) = SPACES
+                     IF MN-WSLOT-COUNT(L-ROW, WS-S) > 0
+                         MOVE 0 TO WS-OK
+                     END-IF
+                 ELSE
+                     IF MN-WSLOT-COUNT(L-ROW, WS-S) = 0
+                         MOVE 0 TO WS-OK
+                     ELSE
+                         CALL "CRAFT-ING-TEST" USING MN-WSLOT-ITEM(L-ROW, WS-S) RR-ING(WS-K, WS-S) WS-STATUS
+                         IF WS-STATUS = 0
+                             MOVE 0 TO WS-OK
+                         END-IF
+                     END-IF
+                 END-IF
+             END-PERFORM
+             IF WS-OK = 1
+                 MOVE RR-RESULT-ID(WS-K) TO WS-KEY
+                 CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY L-ITEM WS-ROW-X WS-STATUS
+                 IF WS-STATUS = CT-OK
+                     COMPUTE L-COUNT = FUNCTION MAX(RR-RESULT-COUNT(WS-K), 1)
+                     MOVE MN-WSLOT-VAR(L-ROW, 2) TO L-VAR
+                 ELSE
+                     MOVE 0 TO L-ITEM
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MENU-SMITH-MATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-STATION-COMBINER-QUICK.
+*> USING row, menu slot, result slot R, can move into the inputs (1 or 0), item out, count out: quickMoveStack of the item combiner base, 40-3 section 2.5
+*> (MN3-COMBINER-QUICK): the result moves to the inventory from the end (what does not fit is thrown, the take is run), an input to the inventory, an
+*> inventory stack to the inputs when it can go there, else between the main inventory and the hotbar.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-MOVED               BINARY-LONG.
+ 01 WS-BRANCH              BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-REV                 BINARY-LONG.
+ 01 WS-ONQ                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-R                    BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-RET-ITEM             BINARY-LONG.
+ 01 L-RET-COUNT            BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-R L-CAN L-RET-ITEM L-RET-COUNT.
+     MOVE 0 TO L-RET-ITEM L-RET-COUNT
+*>   The slot holds a stack (the calling station checked).
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
+     CALL "MN3-COMBINER-QUICK" USING L-R L-SLOT L-CAN WS-BRANCH WS-FIRST WS-END WS-REV WS-ONQ
+     MOVE WS-COUNT TO WS-LEFT
+     MOVE 0 TO WS-MOVED
+     CALL "MENU-MOVE-TO-X" USING L-ROW WS-ITEM WS-LEFT WS-FIRST WS-END WS-REV WS-MOVED WS-VAR
+     IF WS-MOVED = 0
+         GOBACK
+     END-IF
+     IF L-SLOT = L-R
+         IF WS-LEFT > 0
+             CALL "GI-THROW-STACK-X" USING L-ROW WS-ITEM WS-LEFT WS-VAR
+         END-IF
+         CALL "MENU-SET-X" USING L-ROW L-SLOT WS-ITEM WS-ZERO WS-VAR
+         CALL "MENU-STATION-TAKEN" USING L-ROW
+         MOVE WS-ITEM TO L-RET-ITEM
+         MOVE WS-COUNT TO L-RET-COUNT
+     ELSE
+         CALL "MENU-QUICK-FINISH" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-LEFT WS-MOVED L-RET-ITEM L-RET-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM MENU-STATION-COMBINER-QUICK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STATION-UPDATE.
 *> USING row: slotsChanged of the station. The stonecutter (40-4 section 4.4): the list and the selection reset when the kind of the input item
 *> differs from the one remembered, the selection is data slot 0.
@@ -368,9 +499,22 @@
  01 WS-CLEARED             BINARY-LONG.
  01 WS-FROMSET             BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-RCOUNT              BINARY-LONG.
+ 01 WS-RVAR                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   The smithing table (40-3 section 5.2 and 5.3): the result of the first matching recipe, the error flag when the three inputs are full and no recipe fits.
+     IF MN-CFAMILY(L-ROW) = 23
+         CALL "MENU-SMITH-MATCH" USING L-ROW WS-ITEM WS-RCOUNT WS-RVAR
+         MOVE WS-ITEM TO MN-RESULT-ITEM(L-ROW)
+         MOVE WS-RCOUNT TO MN-RESULT-COUNT(L-ROW)
+         MOVE WS-RVAR TO MN-RESULT-VAR(L-ROW)
+         MOVE 0 TO MN-WDATA(L-ROW, 1)
+         IF WS-ITEM = 0 AND MN-WSLOT-COUNT(L-ROW, 1) > 0 AND MN-WSLOT-COUNT(L-ROW, 2) > 0 AND MN-WSLOT-COUNT(L-ROW, 3) > 0
+             MOVE 1 TO MN-WDATA(L-ROW, 1)
+         END-IF
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-ITEM
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
@@ -405,9 +549,33 @@
  01 WS-NSEL                BINARY-LONG.
  01 WS-RES                 BINARY-LONG.
  01 WS-SIZE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-C0                  BINARY-LONG.
+ 01 WS-C1                  BINARY-LONG.
+ 01 WS-C2                  BINARY-LONG.
+ 01 WS-N0                  BINARY-LONG.
+ 01 WS-N1                  BINARY-LONG.
+ 01 WS-N2                  BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+*>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
+     IF MN-CFAMILY(L-ROW) = 23
+         MOVE MN-WSLOT-COUNT(L-ROW, 1) TO WS-C0
+         MOVE MN-WSLOT-COUNT(L-ROW, 2) TO WS-C1
+         MOVE MN-WSLOT-COUNT(L-ROW, 3) TO WS-C2
+         CALL "MN3-SMITH-TAKE" USING WS-C0 WS-C1 WS-C2 WS-N0 WS-N1 WS-N2 WS-EVENT
+         MOVE WS-N0 TO MN-WSLOT-COUNT(L-ROW, 1)
+         MOVE WS-N1 TO MN-WSLOT-COUNT(L-ROW, 2)
+         MOVE WS-N2 TO MN-WSLOT-COUNT(L-ROW, 3)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             IF MN-WSLOT-COUNT(L-ROW, WS-I) = 0
+                 MOVE 0 TO MN-WSLOT-ITEM(L-ROW, WS-I) MN-WSLOT-VAR(L-ROW, WS-I)
+             END-IF
+         END-PERFORM
+         CALL "MENU-STATION-UPDATE" USING L-ROW
+     END-IF
      IF MN-CFAMILY(L-ROW) = 21
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
              CALL "MENU-STONE-COUNT" USING MN-WSLOT-ITEM(L-ROW, 1) WS-SIZE
@@ -424,6 +592,47 @@
      END-IF
      GOBACK.
  END PROGRAM MENU-STATION-TAKEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-SMITH-QUICK.
+*> USING row, menu slot, item out, count out: quickMoveStack of the smithing table (40-3 section 5.4): canMoveIntoInputSlots is a set that takes the stack
+*> while its slot is empty; the rest is the combiner's (MENU-STATION-COMBINER-QUICK, R = 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CMENU.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-R                   BINARY-LONG VALUE 3.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-N1                  BINARY-LONG VALUE 1.
+ 01 WS-N2                  BINARY-LONG VALUE 2.
+ 01 WS-N3                  BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-RET-ITEM             BINARY-LONG.
+ 01 L-RET-COUNT            BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT.
+     MOVE 0 TO L-RET-ITEM L-RET-COUNT
+     CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
+     IF WS-COUNT = 0
+         GOBACK
+     END-IF
+     CALL "MENU-SMITH-SET" USING WS-N1 WS-ITEM WS-T
+     CALL "MENU-SMITH-SET" USING WS-N2 WS-ITEM WS-B
+     CALL "MENU-SMITH-SET" USING WS-N3 WS-ITEM WS-A
+     MOVE 0 TO WS-CAN
+     IF (WS-T = 1 AND MN-WSLOT-COUNT(L-ROW, 1) = 0) OR (WS-B = 1 AND MN-WSLOT-COUNT(L-ROW, 2) = 0)
+             OR (WS-A = 1 AND MN-WSLOT-COUNT(L-ROW, 3) = 0)
+         MOVE 1 TO WS-CAN
+     END-IF
+     CALL "MENU-STATION-COMBINER-QUICK" USING L-ROW L-SLOT WS-R WS-CAN L-RET-ITEM L-RET-COUNT
+     GOBACK.
+ END PROGRAM MENU-SMITH-QUICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STATION-QUICK.
@@ -451,6 +660,11 @@
  01 L-RET-COUNT            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT.
      MOVE 0 TO L-RET-ITEM L-RET-COUNT
+*>   The smithing table is its own program (the item combiner rules, 40-3 section 2.5).
+     IF MN-CFAMILY(L-ROW) = 23
+         CALL "MENU-SMITH-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-COUNT WS-VAR
      IF WS-COUNT = 0
          GOBACK

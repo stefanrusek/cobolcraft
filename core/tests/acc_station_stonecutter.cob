@@ -136,14 +136,14 @@
      MOVE 0 TO WS-I
      CALL "MENU-STONE-NTH" USING WS-DIRT WS-I WS-RITEM WS-RCOUNT
      MOVE WS-RCOUNT TO WS-E3
-     MOVE 0 TO WS-I
+     MOVE 1 TO WS-I
      MOVE "minecraft:no_such_item" TO RR-RESULT-ID(2)
      CALL "MENU-STONE-NTH" USING WS-STONE WS-I WS-RITEM WS-RCOUNT
      MOVE WS-RCOUNT TO WS-E4
      MOVE "minecraft:stone_slab" TO RR-RESULT-ID(2)
      MOVE SPACES TO WS-TEXT
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO WS-TEXT
-     MOVE "0 0 0 1" TO TL-EXPECTED
+     MOVE "0 0 0 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance station stonecutter identity: kinds of blocks and the identity tables of the eight stations" TO TL-CASE
@@ -193,6 +193,24 @@
      STRING "type " FUNCTION TRIM(WS-E1) " size " FUNCTION TRIM(WS-E2) " open " FUNCTION TRIM(WS-E3) " sel " FUNCTION TRIM(WS-E4)
          DELIMITED BY SIZE INTO WS-TEXT
      MOVE "type 24 size 2 open 1 sel -1" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE MN-WINDOW(WS-ROW) TO WS-WINDOW
+     MOVE "acceptance station stonecutter open again: using the block while the menu is open closes it and opens a new one (next container id); a shift "
+         & "click on the empty input slot does nothing" TO TL-CASE
+     PERFORM USE-BLOCK
+     MOVE MN-WINDOW(WS-ROW) TO WS-E1
+     MOVE WS-WINDOW TO WS-E2
+     MOVE 0 TO WS-BUTTON
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     COMPUTE WS-N = WS-WINDOW + 1
+     MOVE WS-N TO WS-E2
+     STRING "window " FUNCTION TRIM(WS-E1) " expected " FUNCTION TRIM(WS-E2) " input " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE SPACES TO TL-EXPECTED
+     STRING "window " FUNCTION TRIM(WS-E2) " expected " FUNCTION TRIM(WS-E2) " input 0" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
      MOVE MN-WINDOW(WS-ROW) TO WS-WINDOW
 
@@ -325,6 +343,36 @@
      STRING "input " FUNCTION TRIM(WS-E1) " slabs " FUNCTION TRIM(WS-E2) " result " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
      MOVE "input 0 slabs 16 result 0" TO TL-EXPECTED
      PERFORM CHECK
+
+     MOVE "acceptance station stonecutter quick move with no room: one slab fits the inventory, the other is dropped, then nothing moves and the loop ends" TO TL-CASE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, WS-I)
+         MOVE 64 TO PL-SLOT-COUNT(WS-ROW, WS-I)
+         MOVE 0 TO PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM
+     MOVE WS-SLAB TO PL-SLOT-ITEM(WS-ROW, 36)
+     MOVE 63 TO PL-SLOT-COUNT(WS-ROW, 36)
+     MOVE WS-STONE TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 5 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE 0 TO MN-WKEEP(WS-ROW)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE 1 TO WS-I
+     CALL "MENU-STATION-BUTTON" USING WS-ROW WS-I WS-RET
+     MOVE 1 TO WS-TYPE
+     MOVE 1 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE PL-SLOT-COUNT(WS-ROW, 36) TO WS-E1
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "slabs " FUNCTION TRIM(WS-E1) " input " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "slabs 64 input 4" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE 0 TO PL-SLOT-COUNT(WS-ROW, WS-I) PL-SLOT-ITEM(WS-ROW, WS-I)
+     END-PERFORM
+     MOVE 0 TO MN-WSLOT-COUNT(WS-ROW, 1) MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 0 TO WS-I
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
 
      MOVE "acceptance station stonecutter take: when the last input item is used up the selection resets to -1 and the result is empty" TO TL-CASE
      MOVE WS-STONE TO MN-WSLOT-ITEM(WS-ROW, 1)
