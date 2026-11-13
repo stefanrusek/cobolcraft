@@ -11,6 +11,8 @@
 *>     read; f2 < R and G < 0: float f3, f3 < raw_ore_chance (a float) the raw ore block else the ore block; else the filler block.
 *>     What a node remembers (SURFACE.cpy, per node): SF-N-STATE the ore block (-2 until the three states are looked up), SF-N-BIOME the
 *>     raw ore block, SF-N-ANSWER the filler block, SF-N-VG-READY and SF-N-VG-LO/HI the positional factory.
+*>     A vein density that is a range_choice on y (the function minecraft:y, the identity on the block rows) whose value outside the range is a
+*>     constant of at most 0 gives d <= 0 outside that range: the rule answers -1 there without evaluating anything (SF-N-Y-MODE).
 *> The caller (SURFACE-RULE in surface.cob) keeps the evaluation of the grids: GEN-STAGE-SURFACE turns the grid mode on for the stage.
 
  IDENTIFICATION DIVISION.
@@ -85,6 +87,69 @@
  END PROGRAM ORE-VEIN-ROOTS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ORE-VEIN-YRANGE.
+*> USING rule node (an ore_vein): sets SF-N-Y-MODE of the node (1 when its density function, seen through references, cache and blend_density
+*> nodes, is a range_choice (type 23) whose input is a gradient on y that is the identity (from_value = from_coordinate, to_value =
+*> to_coordinate) and whose out-of-range branch is a constant of at most 0: SF-N-Y-LO and SF-N-Y-HI then hold the range; else 2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTWORLDGEN.
+ COPY SURFACE.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-IN                  BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-WHICH               BINARY-LONG.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-NODE.
+     MOVE 2 TO SF-N-Y-MODE(L-NODE)
+     MOVE 0 TO WS-IN WS-OUT
+     MOVE WGN-CHILD(L-NODE, 1) TO WS-N
+     PERFORM VARYING WS-WHICH FROM 1 BY 1 UNTIL WS-WHICH > 3
+         PERFORM VARYING WS-STEP FROM 1 BY 1 UNTIL WS-STEP > 16 OR WS-N = 0
+             EVALUATE TRUE
+                 WHEN WGN-TYPE(WS-N) = 0
+                     MOVE WGN-TEXT-1(WS-N)(1:112) TO WS-KEY
+                     CALL "WG-FIND" USING WS-KIND WS-KEY WS-FOUND
+                     MOVE WS-FOUND TO WS-N
+                 WHEN WGN-TYPE(WS-N) = 19 OR WGN-TYPE(WS-N) = 20
+                     MOVE WGN-CHILD(WS-N, 1) TO WS-N
+                 WHEN OTHER
+                     MOVE 17 TO WS-STEP
+             END-EVALUATE
+         END-PERFORM
+         EVALUATE WS-WHICH
+             WHEN 1
+                 IF WS-N = 0 OR WGN-TYPE(WS-N) NOT = 23
+                     GOBACK
+                 END-IF
+                 MOVE WS-N TO WS-ROOT
+                 MOVE WGN-CHILD(WS-ROOT, 1) TO WS-N
+             WHEN 2
+                 IF WS-N = 0 OR WGN-TYPE(WS-N) NOT = 24 OR WGN-TEXT-1(WS-N)(1:1) NOT = "y"
+                         OR WGN-NUM(WS-N, 1) NOT = WGN-INT(WS-N, 1) OR WGN-NUM(WS-N, 2) NOT = WGN-INT(WS-N, 2)
+                         OR WGN-INT(WS-N, 1) >= WGN-INT(WS-N, 2)
+                     GOBACK
+                 END-IF
+                 MOVE WGN-CHILD(WS-ROOT, 3) TO WS-N
+             WHEN OTHER
+                 IF WS-N = 0 OR WGN-TYPE(WS-N) NOT = 1 OR WGN-NUM(WS-N, 1) > 0
+                     GOBACK
+                 END-IF
+         END-EVALUATE
+     END-PERFORM
+     MOVE WGN-NUM(WS-ROOT, 1) TO SF-N-Y-LO(L-NODE)
+     MOVE WGN-NUM(WS-ROOT, 2) TO SF-N-Y-HI(L-NODE)
+     MOVE 1 TO SF-N-Y-MODE(L-NODE)
+     GOBACK.
+ END PROGRAM ORE-VEIN-YRANGE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ORE-VEIN-RULE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -112,6 +177,12 @@
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-JOB L-NODE L-STATE.
      MOVE -1 TO L-STATE
+     IF SF-N-Y-MODE(L-NODE) = 0
+         CALL "ORE-VEIN-YRANGE" USING L-NODE
+     END-IF
+     IF SF-N-Y-MODE(L-NODE) = 1 AND (SC-Y < SF-N-Y-LO(L-NODE) OR SC-Y >= SF-N-Y-HI(L-NODE))
+         GOBACK
+     END-IF
      CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) SC-X SC-Y SC-Z WS-D
      IF WS-D <= 0
          GOBACK

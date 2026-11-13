@@ -191,6 +191,11 @@
  WORKING-STORAGE SECTION.
  COPY CLIMATE.
  01 WS-D                   BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-F                   BINARY-DOUBLE.
+ 01 WS-BEST                BINARY-LONG.
+ 01 WS-BEST-F              BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-TARGET.
     05 L-T                 BINARY-DOUBLE OCCURS 6 TIMES.
@@ -200,18 +205,23 @@
  01 L-F                    BINARY-DOUBLE.
  01 L-K                    BINARY-LONG.
  PROCEDURE DIVISION USING L-TARGET L-I L-BEST L-BEST-F L-F L-K.
-     COMPUTE L-F = CL-OFFSET(L-I) * CL-OFFSET(L-I)
-     PERFORM VARYING L-K FROM 1 BY 1 UNTIL L-K > 6 OR (L-BEST > 0 AND (L-F > L-BEST-F OR (L-F = L-BEST-F AND L-I > L-BEST)))
+     MOVE L-I TO WS-I
+     MOVE L-BEST TO WS-BEST
+     MOVE L-BEST-F TO WS-BEST-F
+     COMPUTE WS-F = CL-OFFSET(WS-I) * CL-OFFSET(WS-I)
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6 OR (WS-BEST > 0 AND (WS-F > WS-BEST-F OR (WS-F = WS-BEST-F AND WS-I > WS-BEST)))
          EVALUATE TRUE
-             WHEN L-T(L-K) > CL-MAX(L-I, L-K)
-                 COMPUTE WS-D = L-T(L-K) - CL-MAX(L-I, L-K)
-             WHEN L-T(L-K) < CL-MIN(L-I, L-K)
-                 COMPUTE WS-D = CL-MIN(L-I, L-K) - L-T(L-K)
+             WHEN L-T(WS-K) > CL-MAX(WS-I, WS-K)
+                 COMPUTE WS-D = L-T(WS-K) - CL-MAX(WS-I, WS-K)
+             WHEN L-T(WS-K) < CL-MIN(WS-I, WS-K)
+                 COMPUTE WS-D = CL-MIN(WS-I, WS-K) - L-T(WS-K)
              WHEN OTHER
                  MOVE 0 TO WS-D
          END-EVALUATE
-         COMPUTE L-F = L-F + WS-D * WS-D
+         COMPUTE WS-F = WS-F + WS-D * WS-D
      END-PERFORM
+     MOVE WS-K TO L-K
+     MOVE WS-F TO L-F
      GOBACK.
  END PROGRAM CLIMATE-FITNESS.
 

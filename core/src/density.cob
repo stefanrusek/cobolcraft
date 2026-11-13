@@ -334,6 +334,7 @@
     05 WS-COL              BINARY-LONG OCCURS 25 TIMES.
     05 WS-BASE             BINARY-LONG OCCURS 16 TIMES.
  01 WS-I                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-GI                  BINARY-LONG.
@@ -368,8 +369,9 @@
  01 L-RESULT               FLOAT-LONG.
  01 L-HANDLED              BINARY-LONG.
  PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT L-HANDLED.
+     MOVE L-NODE TO WS-NODE
      MOVE 0 TO L-HANDLED
-     IF DNG-ACTIVE NOT = 1 OR WGN-INT(L-NODE, 1) NOT = 4 OR WGN-INT(L-NODE, 2) NOT = 8
+     IF DNG-ACTIVE NOT = 1 OR WGN-INT(WS-NODE, 1) NOT = 4 OR WGN-INT(WS-NODE, 2) NOT = 8
          GOBACK
      END-IF
      MOVE L-X TO WS-LX
@@ -385,7 +387,7 @@
      MOVE 0 TO WS-SLOT
      MOVE 1 TO WS-I
      PERFORM UNTIL WS-I > DG-G-COUNT OR WS-SLOT > 0
-         IF DG-G-NODE(WS-I) = L-NODE
+         IF DG-G-NODE(WS-I) = WS-NODE
              MOVE WS-I TO WS-SLOT
          END-IF
          ADD 1 TO WS-I
@@ -644,6 +646,7 @@
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
  COPY NOISE.
+ COPY GENSTAGE.
  COPY DMEMO.
  01 WS-COLUMNS.
     05 WS-COL-ENTRY OCCURS 65536 TIMES.
@@ -653,12 +656,53 @@
        10 WS-COL-Z         BINARY-LONG.
        10 WS-COL-RES       FLOAT-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
+ 01 WS-FOUR                FLOAT-LONG VALUE 4.
+ 01 WS-TWO                 FLOAT-LONG VALUE 2.
+ 01 WS-24                  FLOAT-LONG VALUE 24.
+ 01 WS-MINUS-ONE           FLOAT-LONG VALUE -1.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 LS-OP-ADD              BINARY-LONG VALUE 1.
+ 01 LS-OP-SUB              BINARY-LONG VALUE 2.
+ 01 LS-OP-MUL              BINARY-LONG VALUE 3.
+ 01 LS-OP-DIV              BINARY-LONG VALUE 4.
+ 01 LS-KEY                 PIC X(112).
  LOCAL-STORAGE SECTION.
  01 LS-STAMP               BINARY-LONG.
  01 LS-NODE                BINARY-LONG.
+ 01 LS-X                   BINARY-LONG.
+ 01 LS-Y                   BINARY-LONG.
+ 01 LS-Z                   BINARY-LONG.
  01 LS-OUTER-Y             BINARY-LONG.
  01 LS-OUTER-IMPURE        BINARY-LONG.
  01 LS-ENTRY-PTR           USAGE POINTER.
+ 01 LS-A                   FLOAT-LONG.
+ 01 LS-B                   FLOAT-LONG.
+ 01 LS-C                   FLOAT-LONG.
+ 01 LS-T                   FLOAT-LONG.
+ 01 LS-U                   FLOAT-LONG.
+ 01 LS-V                   FLOAT-LONG.
+ 01 LS-LO                  FLOAT-LONG.
+ 01 LS-HI                  FLOAT-LONG.
+ 01 LS-XD                  FLOAT-LONG.
+ 01 LS-YD                  FLOAT-LONG.
+ 01 LS-ZD                  FLOAT-LONG.
+ 01 LS-SX                  FLOAT-LONG.
+ 01 LS-SY                  FLOAT-LONG.
+ 01 LS-SZ                  FLOAT-LONG.
+ 01 LS-AX                  FLOAT-LONG.
+ 01 LS-AY                  FLOAT-LONG.
+ 01 LS-AZ                  FLOAT-LONG.
+ 01 LS-HANDLE              BINARY-LONG.
+ 01 LS-ROOT                BINARY-LONG.
+ 01 LS-COORD               BINARY-LONG.
+ 01 LS-FROM                BINARY-LONG.
+ 01 LS-TO                  BINARY-LONG.
+ 01 LS-OP                  BINARY-LONG.
+ 01 LS-TYPE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-NODE                 BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -677,6 +721,9 @@
          MOVE 0 TO L-RESULT
          GOBACK
      END-IF
+     MOVE L-X TO LS-X
+     MOVE L-Y TO LS-Y
+     MOVE L-Z TO LS-Z
      MOVE WG-LOAD-GEN TO LS-STAMP
      ADD NZ-GEN TO LS-STAMP
      ADD 1 TO LS-STAMP
@@ -703,8 +750,8 @@
      END-IF
      SET LS-ENTRY-PTR TO ADDRESS OF DM-ENTRY(LS-NODE)
      SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
-     IF B-STAMP = LS-STAMP AND B-X = L-X AND B-Z = L-Z
-             AND (B-UY = 0 OR B-Y = L-Y)
+     IF B-STAMP = LS-STAMP AND B-X = LS-X AND B-Z = LS-Z
+             AND (B-UY = 0 OR B-Y = LS-Y)
          MOVE B-RES TO L-RESULT
          IF B-UY = 1
              MOVE 1 TO DM-USES-Y
@@ -716,15 +763,15 @@
 *>   after the single entry above (one per node, the last position) was overwritten by another column.
      MOVE 0 TO WS-SLOT
      IF WGN-TYPE(LS-NODE) = 19
-         COMPUTE WS-SLOT = FUNCTION MOD(L-X * 31 + L-Z * 17 + LS-NODE * 131, 65536) + 1
+         COMPUTE WS-SLOT = FUNCTION MOD(LS-X * 31 + LS-Z * 17 + LS-NODE * 131, 65536) + 1
          IF WS-COL-STAMP(WS-SLOT) = LS-STAMP AND WS-COL-NODE(WS-SLOT) = LS-NODE
-                 AND WS-COL-X(WS-SLOT) = L-X AND WS-COL-Z(WS-SLOT) = L-Z
+                 AND WS-COL-X(WS-SLOT) = LS-X AND WS-COL-Z(WS-SLOT) = LS-Z
              MOVE WS-COL-RES(WS-SLOT) TO L-RESULT
              SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
              MOVE LS-STAMP TO B-STAMP
-             MOVE L-X TO B-X
-             MOVE L-Y TO B-Y
-             MOVE L-Z TO B-Z
+             MOVE LS-X TO B-X
+             MOVE LS-Y TO B-Y
+             MOVE LS-Z TO B-Z
              MOVE 0 TO B-UY
              MOVE L-RESULT TO B-RES
              GOBACK
@@ -733,165 +780,95 @@
      MOVE DM-USES-Y TO LS-OUTER-Y
      MOVE DM-IMPURE TO LS-OUTER-IMPURE
      MOVE 0 TO DM-USES-Y DM-IMPURE
-     CALL "DENSITY-NODE-RAW" USING LS-NODE L-X L-Y L-Z L-RESULT
-     IF WS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
-         MOVE LS-STAMP TO WS-COL-STAMP(WS-SLOT)
-         MOVE LS-NODE TO WS-COL-NODE(WS-SLOT)
-         MOVE L-X TO WS-COL-X(WS-SLOT)
-         MOVE L-Z TO WS-COL-Z(WS-SLOT)
-         MOVE L-RESULT TO WS-COL-RES(WS-SLOT)
-     END-IF
-     IF DM-IMPURE = 0
-         SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
-         MOVE LS-STAMP TO B-STAMP
-         MOVE L-X TO B-X
-         MOVE L-Y TO B-Y
-         MOVE L-Z TO B-Z
-         MOVE DM-USES-Y TO B-UY
-         MOVE L-RESULT TO B-RES
-     END-IF
-     IF LS-OUTER-Y = 1
-         MOVE 1 TO DM-USES-Y
-     END-IF
-     IF LS-OUTER-IMPURE = 1
-         MOVE 1 TO DM-IMPURE
-     END-IF
-     GOBACK.
- END PROGRAM DENSITY-NODE.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. DENSITY-NODE-RAW RECURSIVE.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CTWORLDGEN.
- COPY NOISE.
- COPY GENSTAGE.
- COPY DMEMO.
- 01 WS-ZERO                FLOAT-LONG VALUE 0.
- 01 WS-ONE                 FLOAT-LONG VALUE 1.
- 01 WS-HALF                FLOAT-LONG VALUE 0.5.
- 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
- 01 WS-FOUR                FLOAT-LONG VALUE 4.
- 01 WS-TWO                 FLOAT-LONG VALUE 2.
- 01 WS-24                  FLOAT-LONG VALUE 24.
- 01 WS-MINUS-ONE           FLOAT-LONG VALUE -1.
- 01 WS-KIND                BINARY-LONG VALUE 1.
- 01 LS-OP-ADD              BINARY-LONG VALUE 1.
- 01 LS-OP-SUB              BINARY-LONG VALUE 2.
- 01 LS-OP-MUL              BINARY-LONG VALUE 3.
- 01 LS-OP-DIV              BINARY-LONG VALUE 4.
- 01 LS-KEY                 PIC X(112).
- LOCAL-STORAGE SECTION.
- 01 LS-A                   FLOAT-LONG.
- 01 LS-B                   FLOAT-LONG.
- 01 LS-C                   FLOAT-LONG.
- 01 LS-T                   FLOAT-LONG.
- 01 LS-U                   FLOAT-LONG.
- 01 LS-V                   FLOAT-LONG.
- 01 LS-LO                  FLOAT-LONG.
- 01 LS-HI                  FLOAT-LONG.
- 01 LS-XD                  FLOAT-LONG.
- 01 LS-YD                  FLOAT-LONG.
- 01 LS-ZD                  FLOAT-LONG.
- 01 LS-SX                  FLOAT-LONG.
- 01 LS-SY                  FLOAT-LONG.
- 01 LS-SZ                  FLOAT-LONG.
- 01 LS-AX                  FLOAT-LONG.
- 01 LS-AY                  FLOAT-LONG.
- 01 LS-AZ                  FLOAT-LONG.
- 01 LS-HANDLE              BINARY-LONG.
- 01 LS-ROOT                BINARY-LONG.
- 01 LS-COORD               BINARY-LONG.
- 01 LS-FROM                BINARY-LONG.
- 01 LS-TO                  BINARY-LONG.
- 01 LS-OP                  BINARY-LONG.
- 01 LS-STAMP               BINARY-LONG.
- LINKAGE SECTION.
- 01 L-NODE                 BINARY-LONG.
- 01 L-X                    BINARY-LONG.
- 01 L-Y                    BINARY-LONG.
- 01 L-Z                    BINARY-LONG.
- 01 L-RESULT               FLOAT-LONG.
- PROCEDURE DIVISION USING L-NODE L-X L-Y L-Z L-RESULT.
+     MOVE WGN-TYPE(LS-NODE) TO LS-TYPE
      MOVE 0 TO L-RESULT
-     EVALUATE WGN-TYPE(L-NODE)
+     EVALUATE LS-TYPE
          WHEN 0
              MOVE WG-LOAD-GEN TO LS-STAMP
              ADD NZ-GEN TO LS-STAMP
              ADD 1 TO LS-STAMP
-             IF DM-REF-STAMP(L-NODE) = LS-STAMP
-                 MOVE DM-REF(L-NODE) TO LS-ROOT
+             IF DM-REF-STAMP(LS-NODE) = LS-STAMP
+                 MOVE DM-REF(LS-NODE) TO LS-ROOT
              ELSE
-                 MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
+                 MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
                  CALL "WG-FIND" USING WS-KIND LS-KEY LS-ROOT
                  IF LS-ROOT > 0
-                     MOVE LS-STAMP TO DM-REF-STAMP(L-NODE)
-                     MOVE LS-ROOT TO DM-REF(L-NODE)
+                     MOVE LS-STAMP TO DM-REF-STAMP(LS-NODE)
+                     MOVE LS-ROOT TO DM-REF(LS-NODE)
                  END-IF
              END-IF
              CALL "DENSITY-NODE" USING LS-ROOT L-X L-Y L-Z L-RESULT
          WHEN 1
-             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) L-RESULT
+             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(LS-NODE, 1) L-RESULT
          WHEN 2 THRU 5
-             MOVE WGN-TYPE(L-NODE) TO LS-OP
-             SUBTRACT 1 FROM LS-OP
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-B
-             CALL "DENSITY-F32" USING LS-OP LS-A LS-B L-RESULT
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z LS-B
+*>           DENSITY-F32 inline: the double operation, then the rounding to float32
+             EVALUATE LS-TYPE
+                 WHEN 2
+                     CALL STATIC "cc_f64_add" USING BY REFERENCE LS-A LS-B LS-T
+                 WHEN 3
+                     CALL STATIC "cc_f64_sub" USING BY REFERENCE LS-A LS-B LS-T
+                 WHEN 4
+                     CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-A LS-B LS-T
+                 WHEN OTHER
+                     CALL STATIC "cc_f64_div" USING BY REFERENCE LS-A LS-B LS-T
+             END-EVALUATE
+             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE LS-T L-RESULT
          WHEN 6
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-B
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z LS-B
              IF LS-B < LS-A
                  MOVE LS-B TO L-RESULT
              ELSE
                  MOVE LS-A TO L-RESULT
              END-IF
          WHEN 7
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-B
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z LS-B
              IF LS-B > LS-A
                  MOVE LS-B TO L-RESULT
              ELSE
                  MOVE LS-A TO L-RESULT
              END-IF
          WHEN 8
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_abs_f32" USING BY REFERENCE LS-A L-RESULT
          WHEN 9
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              MOVE LS-A TO LS-B
              CALL "DENSITY-F32" USING LS-OP-MUL LS-A LS-B L-RESULT
          WHEN 10
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              MOVE LS-A TO LS-C
              CALL "DENSITY-F32" USING LS-OP-MUL LS-A LS-C LS-B
              CALL "DENSITY-F32" USING LS-OP-MUL LS-B LS-A L-RESULT
          WHEN 11
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-A WS-MINUS-ONE L-RESULT
          WHEN 12
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_sqrt" USING BY REFERENCE LS-A LS-B
              CALL STATIC "cc_f64_f32_round" USING BY REFERENCE LS-B L-RESULT
          WHEN 13
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL "DENSITY-F32" USING LS-OP-DIV WS-ONE LS-A L-RESULT
          WHEN 14
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_log" USING BY REFERENCE LS-A LS-B
              CALL STATIC "cc_f64_f32_round" USING BY REFERENCE LS-B L-RESULT
          WHEN 15
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_signum" USING BY REFERENCE LS-A L-RESULT
          WHEN 16
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              IF LS-A > 0
                  MOVE LS-A TO L-RESULT
              ELSE
                  CALL "DENSITY-F32" USING LS-OP-MUL LS-A WS-HALF L-RESULT
              END-IF
          WHEN 17
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              IF LS-A > 0
                  MOVE LS-A TO L-RESULT
              ELSE
@@ -899,7 +876,7 @@
              END-IF
          WHEN 18
 *>           squeeze: c = clamp(v, -1, 1); c / 2 - c * c * c / 24
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              CALL STATIC "cc_f64_clamp_f32" USING BY REFERENCE LS-A WS-MINUS-ONE WS-ONE LS-C
              CALL "DENSITY-F32" USING LS-OP-DIV LS-C WS-TWO LS-T
              MOVE LS-C TO LS-B
@@ -908,103 +885,101 @@
              CALL "DENSITY-F32" USING LS-OP-DIV LS-V WS-24 LS-U
              CALL "DENSITY-F32" USING LS-OP-SUB LS-T LS-U L-RESULT
          WHEN 19
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z L-RESULT
          WHEN 20
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z L-RESULT
          WHEN 21
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 1) LS-LO
-             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(L-NODE, 2) LS-HI
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(LS-NODE, 1) LS-LO
+             CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WGN-NUM(LS-NODE, 2) LS-HI
              CALL STATIC "cc_f64_clamp_f32" USING BY REFERENCE LS-A LS-LO LS-HI L-RESULT
          WHEN 22
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
              EVALUATE TRUE
                  WHEN LS-A = 0
-                     CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z L-RESULT
+                     CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z L-RESULT
                  WHEN LS-A = 1
-                     CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 3) L-X L-Y L-Z L-RESULT
+                     CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 3) L-X L-Y L-Z L-RESULT
                  WHEN OTHER
-                     CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-B
-                     CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 3) L-X L-Y L-Z LS-C
+                     CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z LS-B
+                     CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 3) L-X L-Y L-Z LS-C
                      CALL STATIC "cc_f64_lerp_f32" USING BY REFERENCE LS-A LS-B LS-C L-RESULT
              END-EVALUATE
          WHEN 23
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             IF LS-A >= WGN-NUM(L-NODE, 1) AND LS-A < WGN-NUM(L-NODE, 2)
-                 CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             IF LS-A >= WGN-NUM(LS-NODE, 1) AND LS-A < WGN-NUM(LS-NODE, 2)
+                 CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z L-RESULT
              ELSE
-                 CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 3) L-X L-Y L-Z L-RESULT
+                 CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 3) L-X L-Y L-Z L-RESULT
              END-IF
          WHEN 24
-             CALL "DENSITY-GRADIENT" USING L-NODE L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-GRADIENT" USING LS-NODE L-X L-Y L-Z L-RESULT
          WHEN 25
 *>           noise: N.get(x * xz_scale + shift_x, y * y_scale + shift_y, z * xz_scale + shift_z)
-             MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
+             MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
              CALL "DENSITY-NOISE-HANDLE" USING LS-KEY LS-HANDLE
-             IF LS-HANDLE = 0
-                 GOBACK
+             IF LS-HANDLE NOT = 0
+                 IF WGN-NUM(LS-NODE, 2) NOT = 0
+                     MOVE 1 TO DM-USES-Y
+                 END-IF
+                 CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-SX
+                 CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 2) L-X L-Y L-Z LS-SY
+                 CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 3) L-X L-Y L-Z LS-SZ
+                 MOVE L-X TO LS-XD
+                 MOVE L-Y TO LS-YD
+                 MOVE L-Z TO LS-ZD
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-XD WGN-NUM(LS-NODE, 1) LS-T
+                 CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SX LS-AX
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-YD WGN-NUM(LS-NODE, 2) LS-T
+                 CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SY LS-AY
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-ZD WGN-NUM(LS-NODE, 1) LS-T
+                 CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SZ LS-AZ
+                 CALL "NOISE-GET" USING LS-HANDLE LS-AX LS-AY LS-AZ L-RESULT
              END-IF
-             IF WGN-NUM(L-NODE, 2) NOT = 0
-                 MOVE 1 TO DM-USES-Y
-             END-IF
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-SX
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 2) L-X L-Y L-Z LS-SY
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 3) L-X L-Y L-Z LS-SZ
-             MOVE L-X TO LS-XD
-             MOVE L-Y TO LS-YD
-             MOVE L-Z TO LS-ZD
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-XD WGN-NUM(L-NODE, 1) LS-T
-             CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SX LS-AX
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-YD WGN-NUM(L-NODE, 2) LS-T
-             CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SY LS-AY
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-ZD WGN-NUM(L-NODE, 1) LS-T
-             CALL STATIC "cc_f64_add" USING BY REFERENCE LS-T LS-SZ LS-AZ
-             CALL "NOISE-GET" USING LS-HANDLE LS-AX LS-AY LS-AZ L-RESULT
          WHEN 26 THRU 28
 *>           shift_a (x/4, 0, z/4), shift_b (z/4, x/4, 0), shift (x/4, y/4, z/4): 4 * noise, float32
-             MOVE WGN-TEXT-1(L-NODE)(1:112) TO LS-KEY
+             MOVE WGN-TEXT-1(LS-NODE)(1:112) TO LS-KEY
              CALL "DENSITY-NOISE-HANDLE" USING LS-KEY LS-HANDLE
-             IF LS-HANDLE = 0
-                 GOBACK
+             IF LS-HANDLE NOT = 0
+                 MOVE L-X TO LS-XD
+                 MOVE L-Y TO LS-YD
+                 MOVE L-Z TO LS-ZD
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-XD WS-QUARTER LS-SX
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-YD WS-QUARTER LS-SY
+                 CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-ZD WS-QUARTER LS-SZ
+                 EVALUATE WGN-TYPE(LS-NODE)
+                     WHEN 26
+                         CALL "NOISE-GET" USING LS-HANDLE LS-SX WS-ZERO LS-SZ LS-A
+                     WHEN 27
+                         CALL "NOISE-GET" USING LS-HANDLE LS-SZ LS-SX WS-ZERO LS-A
+                     WHEN OTHER
+                         MOVE 1 TO DM-USES-Y
+                         CALL "NOISE-GET" USING LS-HANDLE LS-SX LS-SY LS-SZ LS-A
+                 END-EVALUATE
+                 CALL "DENSITY-F32" USING LS-OP-MUL WS-FOUR LS-A L-RESULT
              END-IF
-             MOVE L-X TO LS-XD
-             MOVE L-Y TO LS-YD
-             MOVE L-Z TO LS-ZD
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-XD WS-QUARTER LS-SX
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-YD WS-QUARTER LS-SY
-             CALL STATIC "cc_f64_mul" USING BY REFERENCE LS-ZD WS-QUARTER LS-SZ
-             EVALUATE WGN-TYPE(L-NODE)
-                 WHEN 26
-                     CALL "NOISE-GET" USING LS-HANDLE LS-SX WS-ZERO LS-SZ LS-A
-                 WHEN 27
-                     CALL "NOISE-GET" USING LS-HANDLE LS-SZ LS-SX WS-ZERO LS-A
-                 WHEN OTHER
-                     MOVE 1 TO DM-USES-Y
-                     CALL "NOISE-GET" USING LS-HANDLE LS-SX LS-SY LS-SZ LS-A
-             END-EVALUATE
-             CALL "DENSITY-F32" USING LS-OP-MUL WS-FOUR LS-A L-RESULT
          WHEN 29
-             CALL "DENSITY-SPLINE" USING WGN-INT(L-NODE, 1) L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-SPLINE" USING WGN-INT(LS-NODE, 1) L-X L-Y L-Z L-RESULT
          WHEN 30
              MOVE 1 TO DM-IMPURE
-             CALL "DENSITY-BLENDED" USING L-NODE L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-BLENDED" USING LS-NODE L-X L-Y L-Z L-RESULT
          WHEN 31
              MOVE 1 TO DM-IMPURE
-             CALL "DENSITY-TOP-SURFACE" USING L-NODE L-X L-Y L-Z L-RESULT
+             CALL "DENSITY-TOP-SURFACE" USING LS-NODE L-X L-Y L-Z L-RESULT
          WHEN 32
              MOVE 1 TO DM-IMPURE
-             CALL "DENSITY-INTERP-GRID" USING L-NODE L-X L-Y L-Z L-RESULT LS-OP
+             CALL "DENSITY-INTERP-GRID" USING LS-NODE L-X L-Y L-Z L-RESULT LS-OP
              IF LS-OP = 0
-                 CALL "DENSITY-INTERPOLATED" USING L-NODE L-X L-Y L-Z L-RESULT
+                 CALL "DENSITY-INTERPOLATED" USING LS-NODE L-X L-Y L-Z L-RESULT
              END-IF
          WHEN 33
              MOVE WS-ONE TO L-RESULT
          WHEN 36
 *>           interval_select (11 section 2.3): the input, then only the function at the first threshold strictly above it, the last
 *>           function when the input is at or above every threshold (WGN-CHILD 1 input, 2 the thresholds, 3 the functions: chains)
-             CALL "DENSITY-NODE" USING WGN-CHILD(L-NODE, 1) L-X L-Y L-Z LS-A
-             MOVE WGN-CHILD(L-NODE, 2) TO LS-ROOT
-             MOVE WGN-CHILD(L-NODE, 3) TO LS-COORD
+             CALL "DENSITY-NODE" USING WGN-CHILD(LS-NODE, 1) L-X L-Y L-Z LS-A
+             MOVE WGN-CHILD(LS-NODE, 2) TO LS-ROOT
+             MOVE WGN-CHILD(LS-NODE, 3) TO LS-COORD
              PERFORM UNTIL LS-ROOT = 0
                  IF WGN-NUM(LS-ROOT, 1) > LS-A
                      MOVE 0 TO LS-ROOT
@@ -1021,8 +996,30 @@
 *>           terrain does not use (after 35) evaluate to 0 here.
              MOVE WS-ZERO TO L-RESULT
      END-EVALUATE
+     IF WS-SLOT > 0 AND DM-IMPURE = 0 AND DM-USES-Y = 0
+         MOVE LS-STAMP TO WS-COL-STAMP(WS-SLOT)
+         MOVE LS-NODE TO WS-COL-NODE(WS-SLOT)
+         MOVE LS-X TO WS-COL-X(WS-SLOT)
+         MOVE LS-Z TO WS-COL-Z(WS-SLOT)
+         MOVE L-RESULT TO WS-COL-RES(WS-SLOT)
+     END-IF
+     IF DM-IMPURE = 0
+         SET ADDRESS OF B-ENTRY TO LS-ENTRY-PTR
+         MOVE LS-STAMP TO B-STAMP
+         MOVE LS-X TO B-X
+         MOVE LS-Y TO B-Y
+         MOVE LS-Z TO B-Z
+         MOVE DM-USES-Y TO B-UY
+         MOVE L-RESULT TO B-RES
+     END-IF
+     IF LS-OUTER-Y = 1
+         MOVE 1 TO DM-USES-Y
+     END-IF
+     IF LS-OUTER-IMPURE = 1
+         MOVE 1 TO DM-IMPURE
+     END-IF
      GOBACK.
- END PROGRAM DENSITY-NODE-RAW.
+ END PROGRAM DENSITY-NODE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DENSITY-GRADIENT.
