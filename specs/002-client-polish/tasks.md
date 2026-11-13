@@ -3280,6 +3280,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T4141 [US15-client] Explode knockback on the client player (physics.cob EXPLODE-READ, PHYS-TICK; 05a 0x24): the knockback vector adds x and z to a decaying push (PL-KB-X, PL-KB-Z; 0.546 a tick on the ground, 0.91 in the air) and y to PL-VY, and lifts the player off the ground (test_explode_knockback; test written before the code but its first observed run was already green)
 - [x] T4133 [US15-core] Game rules for a mob's blast: mob_griefing false leaves the blocks (STDMOB-SWELL reads it), mob_explosion_drop_decay false keeps every drop (EXPLODE-RUN; test_stdmob_creeper; first observed run green)
 - [x] T4134 [US15-core] Explosion knockback for standard mobs: the push s x direction (centre to 0.85 of the mob's height) goes into EN-VX/EN-VY/EN-VZ and STDMOB-STEP carries it, decaying 0.546 on the ground and 0.91 in the air (red: scratchpad/mobkb_red.log; test_explode)
+- [x] T4142 [US15-client] Screenshot runs can run console commands without typing: CC_COMMANDS ("cmd;cmd", no leading slash) with CC_COMMANDS_AT_FRAME=N runs them once through CORE-CONSOLE from frame N on the world screen (STARTUP-COMMANDS in screenshot.cob, CL-CMD-AT / CL-CMD-TEXT; red: compile failure; test_startup_commands). Use "gamemode creative @a", not "gamemode creative", since the console has no entity
 
 #### Phase 50: US19-core — off-hand swap
 
