@@ -110,7 +110,7 @@
     05 BR-IN-TEXT           PIC X(1024).
 *> The exception being raised: translation key (spaces = none), up to four string arguments, cursor.
  01 BR-ERR EXTERNAL.
-    05 BR-E-KEY             PIC X(48).
+    05 BR-E-KEY             PIC X(52).   *> BR-RAISE keys are 48 wide; a command may set the longer key itself (commands.attribute.failed.modifier_already_present)
     05 BR-E-ARG-COUNT       BINARY-LONG.
     05 BR-E-ARG-LENGTH      BINARY-LONG OCCURS 4 TIMES.
     05 BR-E-ARG             PIC X(64) OCCURS 4 TIMES.

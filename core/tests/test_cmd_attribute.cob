@@ -69,7 +69,7 @@
      MOVE "commands.attribute.value.get.success(minecraft:max_health,Alice,20.0)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /attribute get with a scale: the result is (int)(value x scale)" TO TL-CASE
-     MOVE "attribute Alice minecraft:max_health get 0.55" TO WS-LINE
+     MOVE "attribute Alice minecraft:max_health get 0.57" TO WS-LINE
      MOVE 11 TO WS-EXPECTED-N
      CALL "TA-CHECK-N" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED-N
      MOVE "acceptance US13 /attribute get with a huge scale: the result stops at the largest integer" TO TL-CASE
@@ -268,6 +268,30 @@
      MOVE "attribute @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] minecraft:max_health base set 3" TO WS-LINE
      MOVE "commands.attribute.base_value.set.success(minecraft:max_health,cobolcraft:sodgrazer,3.0)" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute a sodgrazer's movement speed" TO TL-CASE
+     MOVE "attribute @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] minecraft:movement_speed get" TO WS-LINE
+     MOVE "commands.attribute.value.get.success(minecraft:movement_speed,cobolcraft:sodgrazer,0.1)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute a sodgrazer's step height" TO TL-CASE
+     MOVE "attribute @e[type=cobolcraft:sodgrazer,x=5,y=64,z=5,sort=nearest,limit=1] minecraft:step_height get" TO WS-LINE
+     MOVE "commands.attribute.value.get.success(minecraft:step_height,cobolcraft:sodgrazer,1.0)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute an abend's max health" TO TL-CASE
+     MOVE "attribute @e[type=cobolcraft:abend,x=8,y=64,z=8,sort=nearest,limit=1] minecraft:max_health get" TO WS-LINE
+     MOVE "commands.attribute.value.get.success(minecraft:max_health,cobolcraft:abend,12.0)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute an abend's movement speed" TO TL-CASE
+     MOVE "attribute @e[type=cobolcraft:abend,x=8,y=64,z=8,sort=nearest,limit=1] minecraft:movement_speed get" TO WS-LINE
+     MOVE "commands.attribute.value.get.success(minecraft:movement_speed,cobolcraft:abend,0.12)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute an abend's step height" TO TL-CASE
+     MOVE "attribute @e[type=cobolcraft:abend,x=8,y=64,z=8,sort=nearest,limit=1] minecraft:step_height get" TO WS-LINE
+     MOVE "commands.attribute.value.get.success(minecraft:step_height,cobolcraft:abend,1.0)" TO WS-EXPECTED
+     CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
+     MOVE "acceptance US13 /attribute get with a huge negative scale: the result stops at the smallest integer" TO TL-CASE
+     MOVE "attribute Alice minecraft:max_health get -1000000000" TO WS-LINE
+     MOVE -2147483648 TO WS-EXPECTED-N
+     CALL "TA-CHECK-N" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED-N
      MOVE "acceptance US13 /attribute the mob's entries are in the tables before it is removed" TO TL-CASE
      PERFORM COUNT-HELD
      MOVE 2 TO WS-EXPECTED-N
@@ -286,7 +310,7 @@
      CALL "TA-CHECK" USING WS-ID-ALICE TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /attribute the console prints the English text" TO TL-CASE
      MOVE "attribute Alice minecraft:max_health get" TO WS-LINE
-     MOVE "The value of attribute minecraft:max_health for entity Alice is 20.0" TO WS-EXPECTED
+     MOVE "The value of attribute minecraft:max_health for entity Alice is 45.0" TO WS-EXPECTED
      CALL "TA-CHECK-CONSOLE" USING TL-CASE WS-LINE WS-EXPECTED
      GOBACK.
 
