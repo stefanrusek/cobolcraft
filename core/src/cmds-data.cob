@@ -798,7 +798,7 @@
  END PROGRAM DTX-HOLDERS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. DTX-LOAD.
+ PROGRAM-ID. DTX-STORAGE-LOAD.
 *> USING kind, holder argument index, root out: the data of a holder as a tree of its own (the caller frees it, or hands it to DTX-STORE). A storage that does not exist is an empty
 *> compound.
  DATA DIVISION.
@@ -828,10 +828,10 @@
          CALL "NBX-NEW" USING WS-T-COMPOUND L-ROOT
      END-IF
      GOBACK.
- END PROGRAM DTX-LOAD.
+ END PROGRAM DTX-STORAGE-LOAD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. DTX-STORE.
+ PROGRAM-ID. DTX-STORAGE-STORE.
 *> USING kind, holder argument index, root, stored out (1: the tree is now the holder's data and the caller must not free it; 0: no room for another storage, the caller frees it).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -872,7 +872,7 @@
              MOVE 0 TO L-STORED
      END-EVALUATE
      GOBACK.
- END PROGRAM DTX-STORE.
+ END PROGRAM DTX-STORAGE-STORE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DTX-KEY.
@@ -900,7 +900,7 @@
  END PROGRAM DTX-KEY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. DTX-HOLDER-ARGS.
+ PROGRAM-ID. DTX-STORAGE-ARGS.
 *> USING PB-TEXT, kind, holder argument index: the message arguments that name the holder (storage: its id).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -915,7 +915,7 @@
      CALL "SDX-ID" USING L-ARG WS-ID WS-LENGTH WS-TAG
      CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-LENGTH
      GOBACK.
- END PROGRAM DTX-HOLDER-ARGS.
+ END PROGRAM DTX-STORAGE-ARGS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DTX-SHOW.
@@ -1004,7 +1004,7 @@
      IF NX-FULL = 0
          CALL "DTX-STORE" USING L-KIND L-ARG L-ROOT WS-STORED
      END-IF
-     IF WS-STORED = 1
+     IF WS-STORED > 0
          CALL "DTX-KEY" USING L-KIND WS-WHAT WS-KEY
          CALL "BX-KEY" USING PB-TEXT WS-KEY
          CALL "DTX-HOLDER-ARGS" USING PB-TEXT L-KIND L-ARG
@@ -1012,6 +1012,8 @@
      ELSE
          MOVE "cobolcraft.data.too_large" TO WS-KEY
          CALL "SBX-RAISE-PLAIN" USING WS-KEY
+     END-IF
+     IF WS-STORED NOT = 1
          CALL "NBX-FREE" USING L-ROOT
      END-IF
      GOBACK.
@@ -1461,13 +1463,25 @@
  01 WS-TA                  BINARY-LONG.
  01 WS-SK                  BINARY-LONG.
  01 WS-SA                  BINARY-LONG.
+ 01 WS-WRITE               BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE 0 TO NX-FULL
      CALL "DTX-HOLDERS" USING WS-TK WS-TA WS-SK WS-SA
      CALL "BX-LIT" USING WS-N-GET WS-GET
      CALL "BX-LIT" USING WS-N-MODIFY WS-MODIFY
      CALL "BX-LIT" USING WS-N-REMOVE WS-REMOVE
+     MOVE 1 TO WS-WRITE
+     IF WS-GET > 0
+         MOVE 0 TO WS-WRITE
+     END-IF
+     CALL "DTX-CHECK-ONE" USING WS-TK WS-TA WS-WRITE
+     IF WS-SK > 0 AND BR-R-FAILED = 0
+         MOVE 0 TO WS-WRITE
+         CALL "DTX-CHECK-ONE" USING WS-SK WS-SA WS-WRITE
+     END-IF
      EVALUATE TRUE
+         WHEN BR-R-FAILED = 1
+             MOVE 0 TO WS-WRITE
          WHEN WS-GET > 0
              CALL "DTX-GET" USING WS-TK WS-TA
          WHEN WS-MODIFY > 0
@@ -1588,3 +1602,489 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CMDS-REG-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-BLOCK-POS.
+*> USING block position argument index, x, y, z (BINARY-LONG): the block the argument names in the world of the source (the floor of the coordinates).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-ARG L-X L-Y L-Z.
+     CALL "BX-POSITION" USING L-ARG WS-X WS-Y WS-Z
+     COMPUTE L-X = FUNCTION INTEGER(WS-X)
+     COMPUTE L-Y = FUNCTION INTEGER(WS-Y)
+     COMPUTE L-Z = FUNCTION INTEGER(WS-Z)
+     GOBACK.
+ END PROGRAM DTX-BLOCK-POS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-BLOCK-INDEX.
+*> USING block position argument index, block entity index out (0 when the block has none).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY BRRUN.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ARG L-INDEX.
+     CALL "DTX-BLOCK-POS" USING L-ARG WS-X WS-Y WS-Z
+     MOVE 0 TO L-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BE-MAX
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) = BS-DIM AND BE-X(WS-I) = WS-X AND BE-Y(WS-I) = WS-Y AND BE-Z(WS-I) = WS-Z
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DTX-BLOCK-INDEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-BLOCK-TREE.
+*> USING block entity index, root out: the save form of the block entity (31-1 2.2, with its id and position) read into a tree.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ROOT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING L-INDEX WS-FORM PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "NBX-FROM-BUFFER" USING PB-BUFFER L-ROOT
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM DTX-BLOCK-TREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-BLOCK-WRITE.
+*> USING block entity index, root: the tree is written as NBT and loaded into the block entity (BE-LOAD skips the id and position keys), which is marked changed (BE-SET-CHANGED
+*> sends nothing to the clients).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-NEIGHBOURS          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ROOT.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "NBX-TO-BUFFER" USING PB-BUFFER L-ROOT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING L-INDEX PB-BUFFER
+     CALL "BE-SET-CHANGED" USING L-INDEX WS-AIR WS-NEIGHBOURS
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM DTX-BLOCK-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-ENTITY-TREE.
+*> USING code (a player row, or the negated row of CORE-ENTITIES), root out: the data of an entity built from its live state, after the saved form of 07 §9.3 and 45 §3.5: id, UUID,
+*> Pos, Motion, Rotation, OnGround; a mob adds Health, a ground item Item {id, count}, Age and PickupDelay, a player Health, foodLevel, playerGameType, SelectedItemSlot and
+*> Inventory ({Slot, id, count} of each stack). The id of a player is the type key of its entity row (not minecraft:player: gap).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY MOBS.
+ COPY NBXTREE.
+ 01 WS-K-ID                PIC X(16) VALUE "id".
+ 01 WS-K-UUID              PIC X(16) VALUE "UUID".
+ 01 WS-K-POS               PIC X(16) VALUE "Pos".
+ 01 WS-K-MOTION            PIC X(16) VALUE "Motion".
+ 01 WS-K-ROTATION          PIC X(16) VALUE "Rotation".
+ 01 WS-K-ON-GROUND         PIC X(16) VALUE "OnGround".
+ 01 WS-K-HEALTH            PIC X(16) VALUE "Health".
+ 01 WS-K-ITEM              PIC X(16) VALUE "Item".
+ 01 WS-K-COUNT             PIC X(16) VALUE "count".
+ 01 WS-K-AGE               PIC X(16) VALUE "Age".
+ 01 WS-K-DELAY             PIC X(16) VALUE "PickupDelay".
+ 01 WS-K-FOOD              PIC X(16) VALUE "foodLevel".
+ 01 WS-K-MODE              PIC X(16) VALUE "playerGameType".
+ 01 WS-K-SELECTED          PIC X(16) VALUE "SelectedItemSlot".
+ 01 WS-K-INVENTORY         PIC X(16) VALUE "Inventory".
+ 01 WS-K-SLOT              PIC X(16) VALUE "Slot".
+ 01 WS-T-BYTE              BINARY-LONG VALUE 1.
+ 01 WS-T-SHORT             BINARY-LONG VALUE 2.
+ 01 WS-T-INT               BINARY-LONG VALUE 3.
+ 01 WS-T-FLOAT             BINARY-LONG VALUE 5.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-T-LIST              BINARY-LONG VALUE 9.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-N2                  BINARY-LONG VALUE 2.
+ 01 WS-N3                  BINARY-LONG VALUE 3.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-STACK               BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-TEXT                PIC X(256).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-INT                 BINARY-DOUBLE.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-VX                  FLOAT-LONG.
+ 01 WS-VY                  FLOAT-LONG.
+ 01 WS-VZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ 01 WS-HEALTH              FLOAT-LONG.
+ 01 WS-GROUND              BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-IT                  BINARY-LONG.
+ 01 WS-ZERO-D              FLOAT-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16).
+ LINKAGE SECTION.
+ 01 L-CODE                 BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-CODE L-ROOT.
+     MOVE 0 TO WS-PLAYER
+     MOVE 0 TO WS-VX WS-VY WS-VZ
+     EVALUATE TRUE
+         WHEN L-CODE > 0
+             MOVE L-CODE TO WS-PLAYER
+             MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-ROW
+             MOVE PL-X(WS-PLAYER) TO WS-X
+             MOVE PL-Y(WS-PLAYER) TO WS-Y
+             MOVE PL-Z(WS-PLAYER) TO WS-Z
+             MOVE PL-YAW(WS-PLAYER) TO WS-YAW
+             MOVE PL-PITCH(WS-PLAYER) TO WS-PITCH
+             MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH
+             MOVE PL-ON-GROUND(WS-PLAYER) TO WS-GROUND
+             MOVE PL-UUID(WS-PLAYER) TO WS-UUID
+         WHEN OTHER
+             COMPUTE WS-ROW = 0 - L-CODE
+             MOVE EN-X(WS-ROW) TO WS-X
+             MOVE EN-Y(WS-ROW) TO WS-Y
+             MOVE EN-Z(WS-ROW) TO WS-Z
+             MOVE EN-YAW(WS-ROW) TO WS-YAW
+             MOVE EN-PITCH(WS-ROW) TO WS-PITCH
+             MOVE EN-VX(WS-ROW) TO WS-VX
+             MOVE EN-VY(WS-ROW) TO WS-VY
+             MOVE EN-VZ(WS-ROW) TO WS-VZ
+             MOVE EN-HEALTH(WS-ROW) TO WS-HEALTH
+             MOVE EN-ON-GROUND(WS-ROW) TO WS-GROUND
+             MOVE EN-UUID(WS-ROW) TO WS-UUID
+     END-EVALUATE
+     CALL "NBX-NEW" USING WS-T-COMPOUND L-ROOT
+     COMPUTE WS-I = EN-TYPE(WS-ROW) + 1
+     MOVE SPACES TO WS-TEXT
+     MOVE ET-KEY(WS-I) TO WS-TEXT
+     MOVE ET-KEY-LENGTH(WS-I) TO WS-LENGTH
+     CALL "NBX-PUT-STR-N" USING L-ROOT WS-K-ID WS-TEXT WS-LENGTH
+     CALL "NBX-UUID-BYTES" USING WS-UUID WS-NODE
+     CALL "NBX-SET-N" USING L-ROOT WS-K-UUID WS-NODE
+     CALL "NBX-PUT-NUMS" USING L-ROOT WS-K-POS WS-T-DOUBLE WS-N3 WS-X WS-Y WS-Z
+     CALL "NBX-PUT-NUMS" USING L-ROOT WS-K-MOTION WS-T-DOUBLE WS-N3 WS-VX WS-VY WS-VZ
+     CALL "NBX-PUT-NUMS" USING L-ROOT WS-K-ROTATION WS-T-FLOAT WS-N2 WS-YAW WS-PITCH WS-ZERO-D
+     CALL "NBX-PUT-N" USING L-ROOT WS-K-ON-GROUND WS-T-BYTE WS-GROUND WS-ZERO-D WS-NODE
+     IF WS-PLAYER > 0
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-HEALTH WS-T-FLOAT WS-INT WS-HEALTH WS-NODE
+         MOVE PL-FOOD(WS-PLAYER) TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-FOOD WS-T-INT WS-INT WS-ZERO-D WS-NODE
+         MOVE PL-MODE(WS-PLAYER) TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-MODE WS-T-INT WS-INT WS-ZERO-D WS-NODE
+         MOVE PL-HELD(WS-PLAYER) TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-SELECTED WS-T-INT WS-INT WS-ZERO-D WS-NODE
+         MOVE 0 TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-INVENTORY WS-T-LIST WS-INT WS-ZERO-D WS-LIST
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+             IF PL-SLOT-COUNT(WS-PLAYER, WS-I) > 0
+                 CALL "NBX-NEW" USING WS-T-COMPOUND WS-STACK
+                 CALL "NBX-ADD" USING WS-LIST WS-STACK
+                 COMPUTE WS-INT = WS-I - 1
+                 CALL "NBX-PUT-N" USING WS-STACK WS-K-SLOT WS-T-BYTE WS-INT WS-ZERO-D WS-NODE
+                 COMPUTE WS-IT = PL-SLOT-ITEM(WS-PLAYER, WS-I) + 1
+                 MOVE SPACES TO WS-TEXT
+                 MOVE IT-KEY(WS-IT) TO WS-TEXT
+                 MOVE IT-KEY-LENGTH(WS-IT) TO WS-LENGTH
+                 CALL "NBX-PUT-STR-N" USING WS-STACK WS-K-ID WS-TEXT WS-LENGTH
+                 MOVE PL-SLOT-COUNT(WS-PLAYER, WS-I) TO WS-INT
+                 CALL "NBX-PUT-N" USING WS-STACK WS-K-COUNT WS-T-INT WS-INT WS-ZERO-D WS-NODE
+             END-IF
+         END-PERFORM
+     END-IF
+     IF WS-PLAYER = 0 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-HEALTH WS-T-FLOAT WS-INT WS-HEALTH WS-NODE
+     END-IF
+     IF WS-PLAYER = 0 AND EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
+         MOVE 0 TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-ITEM WS-T-COMPOUND WS-INT WS-ZERO-D WS-STACK
+         COMPUTE WS-IT = EN-ITEM(WS-ROW) + 1
+         MOVE SPACES TO WS-TEXT
+         MOVE IT-KEY(WS-IT) TO WS-TEXT
+         MOVE IT-KEY-LENGTH(WS-IT) TO WS-LENGTH
+         CALL "NBX-PUT-STR-N" USING WS-STACK WS-K-ID WS-TEXT WS-LENGTH
+         MOVE EN-ITEM-COUNT(WS-ROW) TO WS-INT
+         CALL "NBX-PUT-N" USING WS-STACK WS-K-COUNT WS-T-INT WS-INT WS-ZERO-D WS-NODE
+         MOVE EN-AGE(WS-ROW) TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-AGE WS-T-INT WS-INT WS-ZERO-D WS-NODE
+         MOVE EN-DELAY(WS-ROW) TO WS-INT
+         CALL "NBX-PUT-N" USING L-ROOT WS-K-DELAY WS-T-SHORT WS-INT WS-ZERO-D WS-NODE
+     END-IF
+     GOBACK.
+ END PROGRAM DTX-ENTITY-TREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-ENTITY-WRITE.
+*> USING entity row (CORE-ENTITIES), root: the values of an edited tree go back to a mob or ground item: Health, Age, PickupDelay, Item.count, Motion, and Pos and Rotation
+*> (the entity is moved: ENTITY-MOVE sends the change to its viewers). Other keys, among them id and UUID, are ignored (gap: no entity can change its type).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY NBXTREE.
+ 01 WS-K-POS               PIC X(16) VALUE "Pos".
+ 01 WS-K-MOTION            PIC X(16) VALUE "Motion".
+ 01 WS-K-ROTATION          PIC X(16) VALUE "Rotation".
+ 01 WS-K-HEALTH            PIC X(16) VALUE "Health".
+ 01 WS-K-ITEM              PIC X(16) VALUE "Item".
+ 01 WS-K-COUNT             PIC X(16) VALUE "count".
+ 01 WS-K-AGE               PIC X(16) VALUE "Age".
+ 01 WS-K-DELAY             PIC X(16) VALUE "PickupDelay".
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-VALUE               FLOAT-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ 01 WS-YAW-S               FLOAT-SHORT.
+ 01 WS-PITCH-S             FLOAT-SHORT.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ROOT.
+     CALL "NBX-GET-NUM-N" USING L-ROOT WS-K-HEALTH WS-VALUE WS-FOUND
+     IF WS-FOUND = 1
+         COMPUTE EN-HEALTH(L-ROW) ROUNDED = WS-VALUE
+     END-IF
+     CALL "NBX-GET-NUM-N" USING L-ROOT WS-K-AGE WS-VALUE WS-FOUND
+     IF WS-FOUND = 1
+         COMPUTE EN-AGE(L-ROW) ROUNDED = WS-VALUE
+     END-IF
+     CALL "NBX-GET-NUM-N" USING L-ROOT WS-K-DELAY WS-VALUE WS-FOUND
+     IF WS-FOUND = 1
+         COMPUTE EN-DELAY(L-ROW) ROUNDED = WS-VALUE
+     END-IF
+     CALL "NBX-FIND-N" USING L-ROOT WS-K-ITEM WS-ITEM
+     IF WS-ITEM > 0
+         CALL "NBX-GET-NUM-N" USING WS-ITEM WS-K-COUNT WS-VALUE WS-FOUND
+         IF WS-FOUND = 1
+             COMPUTE EN-ITEM-COUNT(L-ROW) ROUNDED = WS-VALUE
+         END-IF
+     END-IF
+     CALL "NBX-FIND-N" USING L-ROOT WS-K-MOTION WS-LIST
+     IF WS-LIST > 0
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-ONE WS-VALUE WS-FOUND
+         IF WS-FOUND = 1
+             MOVE WS-VALUE TO EN-VX(L-ROW)
+         END-IF
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-TWO WS-VALUE WS-FOUND
+         IF WS-FOUND = 1
+             MOVE WS-VALUE TO EN-VY(L-ROW)
+         END-IF
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-THREE WS-VALUE WS-FOUND
+         IF WS-FOUND = 1
+             MOVE WS-VALUE TO EN-VZ(L-ROW)
+         END-IF
+     END-IF
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     MOVE EN-YAW(L-ROW) TO WS-YAW
+     MOVE EN-PITCH(L-ROW) TO WS-PITCH
+     CALL "NBX-FIND-N" USING L-ROOT WS-K-POS WS-LIST
+     IF WS-LIST > 0
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-ONE WS-X WS-FOUND
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-TWO WS-Y WS-FOUND
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-THREE WS-Z WS-FOUND
+     END-IF
+     CALL "NBX-FIND-N" USING L-ROOT WS-K-ROTATION WS-LIST
+     IF WS-LIST > 0
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-ONE WS-YAW WS-FOUND
+         CALL "NBX-GET-ELEM" USING WS-LIST WS-TWO WS-PITCH WS-FOUND
+     END-IF
+     MOVE WS-YAW TO WS-YAW-S
+     MOVE WS-PITCH TO WS-PITCH-S
+     IF WS-X NOT = EN-X(L-ROW) OR WS-Y NOT = EN-Y(L-ROW) OR WS-Z NOT = EN-Z(L-ROW)
+             OR WS-YAW-S NOT = EN-YAW(L-ROW) OR WS-PITCH-S NOT = EN-PITCH(L-ROW)
+         CALL "ENTITY-MOVE" USING L-ROW WS-X WS-Y WS-Z WS-YAW-S WS-PITCH-S EN-ON-GROUND(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM DTX-ENTITY-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-ENTITY-ARGS.
+*> USING PB-TEXT, entity argument index: the message argument that names the entity: a player's name, else the type key of the entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-ROWS.
+    05 WS-COUNT             BINARY-LONG.
+    05 WS-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-TEXT L-ARG.
+     CALL "BX-RESOLVE" USING L-ARG WS-ROWS
+     MOVE WS-ROW(1) TO WS-CODE
+     MOVE SPACES TO WS-TEXT
+     IF WS-CODE > 0
+         MOVE PL-NAME(WS-CODE) TO WS-TEXT
+         MOVE PL-NAME-LENGTH(WS-CODE) TO WS-LENGTH
+     ELSE
+         COMPUTE WS-I = EN-TYPE(0 - WS-CODE) + 1
+         MOVE ET-KEY(WS-I) TO WS-TEXT
+         MOVE ET-KEY-LENGTH(WS-I) TO WS-LENGTH
+     END-IF
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-LENGTH
+     GOBACK.
+ END PROGRAM DTX-ENTITY-ARGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-HOLDER-ARGS.
+*> USING PB-TEXT, kind, holder argument index: the message arguments that name the holder (entity: its name, block: x, y, z, storage: its id).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-TEXT L-KIND L-ARG.
+     EVALUATE L-KIND
+         WHEN 1
+             CALL "DTX-ENTITY-ARGS" USING PB-TEXT L-ARG
+         WHEN 2
+             CALL "DTX-BLOCK-POS" USING L-ARG WS-X WS-Y WS-Z
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-X
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-Y
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-Z
+         WHEN OTHER
+             CALL "DTX-STORAGE-ARGS" USING PB-TEXT L-KIND L-ARG
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DTX-HOLDER-ARGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-LOAD.
+*> USING kind, holder argument index, root out: the data of a holder as a tree of its own (the caller frees it, or hands it to DTX-STORE). DTX-CHECK has made sure the holder exists.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 WS-COUNT             BINARY-LONG.
+    05 WS-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ARG L-ROOT.
+     EVALUATE L-KIND
+         WHEN 1
+             CALL "BX-RESOLVE" USING L-ARG WS-ROWS
+             CALL "DTX-ENTITY-TREE" USING WS-ROW(1) L-ROOT
+         WHEN 2
+             CALL "DTX-BLOCK-INDEX" USING L-ARG WS-INDEX
+             CALL "DTX-BLOCK-TREE" USING WS-INDEX L-ROOT
+         WHEN OTHER
+             CALL "DTX-STORAGE-LOAD" USING L-KIND L-ARG L-ROOT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DTX-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-STORE.
+*> USING kind, holder argument index, root, stored out (1: the tree is now a storage and the caller must not free it; 2: it went into the entity or block entity and the caller
+*> frees it; 0: no room for another storage).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 WS-COUNT             BINARY-LONG.
+    05 WS-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-ROOT                 BINARY-LONG.
+ 01 L-STORED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ARG L-ROOT L-STORED.
+     EVALUATE L-KIND
+         WHEN 1
+             CALL "BX-RESOLVE" USING L-ARG WS-ROWS
+             COMPUTE WS-ENTITY = 0 - WS-ROW(1)
+             CALL "DTX-ENTITY-WRITE" USING WS-ENTITY L-ROOT
+             MOVE 2 TO L-STORED
+         WHEN 2
+             CALL "DTX-BLOCK-INDEX" USING L-ARG WS-INDEX
+             CALL "DTX-BLOCK-WRITE" USING WS-INDEX L-ROOT
+             MOVE 2 TO L-STORED
+         WHEN OTHER
+             CALL "DTX-STORAGE-STORE" USING L-KIND L-ARG L-ROOT L-STORED
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DTX-STORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DTX-CHECK-ONE.
+*> USING kind, holder argument index, write (1 when the command changes the holder): an entity selector must select one entity (the selector raises its own failure), a changed entity must not
+*> be a player (commands.data.entity.invalid) and a block must have a block entity (commands.data.block.invalid).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ 01 WS-ROWS.
+    05 WS-COUNT             BINARY-LONG.
+    05 WS-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-KEY-PLAYER          PIC X(72) VALUE "commands.data.entity.invalid".
+ 01 WS-KEY-BLOCK           PIC X(72) VALUE "commands.data.block.invalid".
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-WRITE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-ARG L-WRITE.
+     EVALUATE L-KIND
+         WHEN 1
+             CALL "BX-RESOLVE" USING L-ARG WS-ROWS
+             IF BR-R-FAILED = 0 AND L-WRITE = 1 AND WS-ROW(1) > 0
+                 CALL "SBX-RAISE-PLAIN" USING WS-KEY-PLAYER
+             END-IF
+         WHEN 2
+             CALL "DTX-BLOCK-INDEX" USING L-ARG WS-INDEX
+             IF WS-INDEX = 0
+                 CALL "SBX-RAISE-PLAIN" USING WS-KEY-BLOCK
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM DTX-CHECK-ONE.
