@@ -2189,6 +2189,18 @@
              CALL "CX-TICK"
          WHEN BC-WORLDBORDER
              CALL "CX-WORLDBORDER"
+         WHEN BC-BOSSBAR
+             CALL "CX-BOSSBAR"
+         WHEN BC-DIALOG
+             CALL "CX-DIALOG"
+         WHEN BC-POSTEFFECT
+             CALL "CX-POSTEFFECT"
+         WHEN BC-TEAMMSG
+             CALL "CX-TEAMMSG"
+         WHEN BC-TELLRAW
+             CALL "CX-TELLRAW"
+         WHEN BC-TITLE
+             CALL "CX-TITLE"
          WHEN BC-WARDEN-SPAWN-TRACKER
              CALL "CX-WARDEN-SPAWN-TRACKER"
          WHEN OTHER
