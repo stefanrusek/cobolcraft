@@ -70,6 +70,7 @@ int main(void) {
     tl_int("contract ccshim CC_SMALL", 5, CC_SMALL);
     tl_int("contract ccshim CC_BADDATA", 6, CC_BADDATA);
     tl_int("contract ccshim CC_NOTFOUND", 7, CC_NOTFOUND);
+    tl_int("contract ccshim CC_FAILED", 8, CC_FAILED);
     tl_int("contract ccshim CC_ZLIB", 0, CC_ZLIB);
     tl_int("contract ccshim CC_GZIP", 1, CC_GZIP);
     tl_int("contract ccshim CC_RAW", 2, CC_RAW);

@@ -1,4 +1,4 @@
-*> Implementation test of the key table (13 §7.3; OPTIONS-APPLY, controls and screens): the defaults of the 22 bindings the client reads
+*> Implementation test of the key table (13 §7.3; OPTIONS-APPLY, controls and screens): the defaults of the 25 bindings the client reads
 *> are the GLFW codes of the table; a rebinding read from options.txt takes the place of the default (inventory on I opens the
 *> inventory, E no longer does; chat on B) and is persisted in options.txt (key_key.inventory:key.keyboard.i); a mouse button
 *> binding is no keyboard key (code 0).
@@ -35,8 +35,9 @@
     05 FILLER PIC 9(3) VALUE 294.
     05 FILLER PIC 9(3) VALUE 067.
     05 FILLER PIC 9(3) VALUE 088.
+    05 FILLER PIC 9(3) VALUE 291.
  01 WS-TABLE REDEFINES WS-EXPECTED-CODES.
-    05 WS-CODE             PIC 9(3) OCCURS 24 TIMES.
+    05 WS-CODE             PIC 9(3) OCCURS 25 TIMES.
  01 WS-DIR                 PIC X(64) VALUE "build/client-test-key-bindings".
  01 WS-DIR-LENGTH          BINARY-LONG VALUE 30.
  01 WS-I                   BINARY-LONG.

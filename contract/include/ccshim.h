@@ -19,6 +19,7 @@
 #define CC_SMALL       5 /* output capacity too small: caller enlarges and retries */
 #define CC_BADDATA     6 /* cc_inflate: corrupt input */
 #define CC_NOTFOUND    7 /* cc_fs_list: directory absent */
+#define CC_FAILED      8 /* cc_png_write, cc_vk_screenshot_result: the file could not be written */
 
 /* Compression modes (§5). */
 #define CC_ZLIB 0 /* zlib wrapper (01 §3, 07 §5.2) */
@@ -210,6 +211,16 @@ void cc_vk_clear_depth(void);
 /* §12 cc_open_path: starts opener with path as its only argument (posix_spawn) and returns 0 at once, or
  * CC_NOTFOUND when the opener cannot be started. Does not wait (US4). */
 int32_t cc_open_path(const char *opener, const char *path);
+
+/* §14 screenshot: cc_png_write writes an 8-bit RGBA image (w * h * 4 bytes, row 0 at the top) as a PNG file (filter 0, one
+ * IDAT, zlib level 6) and returns 0 or CC_FAILED. cc_vk_screenshot(path) asks for the frame that the
+ * next cc_vk_frame_end presents to be saved as a PNG at path (exactly the pixels presented, in RGBA order whatever the swapchain
+ * format) and returns 0, or CC_AGAIN when an earlier request has not been served yet. cc_vk_screenshot_result returns CC_AGAIN
+ * while the request waits for its frame, then 0 (file written) or CC_FAILED (not written, or the swapchain image could not be
+ * read), and 0 when there never was a request. */
+int32_t cc_png_write(const char *path, int32_t w, int32_t h, const uint8_t *rgba);
+int32_t cc_vk_screenshot(const char *path);
+int32_t cc_vk_screenshot_result(void);
 
 /* §13 cc_u64: unsigned 64-bit wrap-around arithmetic by reference (GnuCOBOL has none; BINARY-DOUBLE UNSIGNED items).
  * r = a + b, a * b modulo 2^64, a << n, a >> n (logical), rotate left by n (n is int32_t, 1 to 63; shl and shr give 0 for
