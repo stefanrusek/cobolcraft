@@ -2,9 +2,9 @@
 spile: ticket
 id: CC-0008
 type: bug
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-12
 relations:
