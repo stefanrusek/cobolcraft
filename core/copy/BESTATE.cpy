@@ -64,6 +64,15 @@
        10 BE-XI             BINARY-LONG OCCURS 64 TIMES.
        10 BE-XT             PIC X(64) OCCURS 20 TIMES.
        10 BE-XF             FLOAT-SHORT OCCURS 12 TIMES.
+       10 BE-CMD-LENGTH     BINARY-LONG.
+       10 BE-CMD            PIC X(256).
+*> Data of the types of parts 31-6 to 31-8 (be-31-6.cob, be-31-7.cob, be-31-8.cob; BEX-DEFAULTS sets the defaults). BE-CMD holds the command of a command block (the first 256 bytes).
+*>   command block (23): XI 1 powered, 2 conditionMet, 3 auto, 4 successCount, 5 trackOutput, 6 lastOutput length, 7 updateLastExecution; XT 1 lastOutput; BE-SEED lastExecution (-1 never); BE-NAME the custom name
+*>   structure block (21): XI 1..3 posX..Z, 4..6 sizeX..Z, 7 rotation, 8 mirror, 9 mode (0 SAVE, 1 LOAD, 2 CORNER, 3 DATA), 10 ignoreEntities, 11 strict, 12 powered, 13 showAir, 14 showBoundingBox,
+*>        20, 21, 22 lengths of name, author, metadata; XT 1..3 those texts; XF 1 integrity; BE-SEED the seed. jigsaw (31): XI 1..4 lengths of name, target, pool, final_state, 5 joint (0 rollable,
+*>        1 aligned), 6 placement priority, 7 selection priority, 8 front direction; XT 1..4. test block (45): XI 1 mode, 2 message length, 3 powered, 4 triggered; XT 1 message.
+*>        test instance block (46): XI 1 test key length, 2..4 size, 5 rotation, 6 ignore_entities, 7 status, 8 error message length, 9 marker count, marker i (up to 4): XI 10 + 3 (i - 1).. x, y, z,
+*>        XI 22 + i text length; XT 1 test, 2 error message, 2 + i marker text
 *> The ender chest storage of each player (31-1 section 11, 45-3 section 5): one detached CORE-BE entity (dimension 0, type ender chest)
 *> per player UUID, created on the first open or when the player file is read, and kept while the world is open.
  78 ENDER-MAX             VALUE 64.
