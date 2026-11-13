@@ -1,9 +1,10 @@
 *> Command line of the client (contracts/client-surface.md §1; research R14; wire-profile.md §1):
 *> ARGS-PARSE takes --name <name> (required: 1 to 16 characters of A-Z a-z 0-9 _) and
 *> --gamedir <path> (default $HOME/.cobolcraft) and --generated-dir <path> (the generated packs of the
-*> extraction tool, 22 section 5.1; default <game directory>/generated) and --world <save folder name> (or the
+*> extraction tool, 22 section 5.1; default <game directory>/generated), --world <save folder name> (or the
 *> environment variable CC_WORLD; the option wins): the single-player save opened right after start-up
-*> (WORLD-OPEN-ARG, world-list.cob). Other words are ignored. A missing or invalid name
+*> (WORLD-OPEN-ARG, world-list.cob), and --screenshot-after-frames <N> (one screenshot at frame N,
+*> screenshot.cob) and --screenshot-then-exit (the run ends once it is saved). Other words are ignored. A missing or invalid name
 *> is fatal: "FATAL arguments: ...", exit status 1.
 
  IDENTIFICATION DIVISION.
@@ -41,7 +42,18 @@
      ELSE
          MOVE WS-ENV-WORLD TO CL-WORLD
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= AR-COUNT
+*>   The same two settings from the environment (CC_SCREENSHOT_AT_FRAME = N, CC_SCREENSHOT_THEN_EXIT = 1); the command line wins.
+     MOVE SPACES TO WS-HOME
+     ACCEPT WS-HOME FROM ENVIRONMENT "CC_SCREENSHOT_AT_FRAME"
+     IF WS-HOME NOT = SPACES
+         COMPUTE CL-SHOT-AT = FUNCTION NUMVAL(WS-HOME)
+     END-IF
+     MOVE SPACES TO WS-HOME
+     ACCEPT WS-HOME FROM ENVIRONMENT "CC_SCREENSHOT_THEN_EXIT"
+     IF WS-HOME(1:1) = "1"
+         MOVE 1 TO CL-SHOT-EXIT
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AR-COUNT
          EVALUATE TRUE
              WHEN AR-TEXT(WS-I) = "--name"
                  ADD 1 TO WS-I
@@ -67,6 +79,11 @@
                  MOVE SPACES TO CL-WORLD
                  MOVE AR-TEXT(WS-I)(1:80) TO CL-WORLD
                  MOVE FUNCTION MIN(AR-LENGTH(WS-I), 80) TO CL-WORLD-LENGTH
+             WHEN AR-TEXT(WS-I) = "--screenshot-after-frames"
+                 ADD 1 TO WS-I
+                 COMPUTE CL-SHOT-AT = FUNCTION NUMVAL(AR-TEXT(WS-I)(1:AR-LENGTH(WS-I)))
+             WHEN AR-TEXT(WS-I) = "--screenshot-then-exit"
+                 MOVE 1 TO CL-SHOT-EXIT
              WHEN AR-TEXT(WS-I) = "--generated-dir"
                  ADD 1 TO WS-I
                  MOVE AR-TEXT(WS-I) TO CL-GENERATED-DIR

@@ -489,6 +489,13 @@ static void open_path(void) {
            cc_open_path("/nonexistent/opener", "/tmp"));
 }
 
+/* §14 cc_png_write / cc_vk_screenshot: the call shapes and outcomes of the contract (the file's content is test_cc_png.c). */
+static void screenshot(void) {
+    static const uint8_t rgba[4] = {1, 2, 3, 4};
+    tl_int("contract shim cc_png_write to an unwritable path returns CC_FAILED", CC_FAILED, cc_png_write("/nonexistent-dir/x.png", 1, 1, rgba));
+    tl_int("contract shim cc_vk_screenshot_result without a request returns 0", 0, cc_vk_screenshot_result());
+}
+
 /* §10 cc_f64: every function, operands and result by reference, against the IEEE vectors of
  * f64_vectors.txt computed independently (Python struct and math); the call shapes of the contract. */
 static void f64(void) {
@@ -516,6 +523,7 @@ int main(void) {
     zlib_inflate();
     fs_list();
     open_path();
+    screenshot();
     window();
     vulkan();
     cc_win_close();

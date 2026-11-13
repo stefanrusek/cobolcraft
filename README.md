@@ -121,7 +121,7 @@ does not stop the server; use `shutdown`.
 ## Running the client
 
 ```sh
-build/bin/cobolcraft --name <name> [--gamedir <path>]
+build/bin/cobolcraft --name <name> [--gamedir <path>] [--world <save folder>] [--screenshot-after-frames <N>] [--screenshot-then-exit]
 ```
 
 `--name` is required: your player name, 1 to 16 letters, digits or `_`. `--gamedir` is where the client
@@ -134,6 +134,7 @@ keeps its data (default `~/.cobolcraft`, created if absent):
 | `resourcepacks/` | your resource packs: `<name>.zip` files and `<name>/` folders |
 | `saves/<folder>/` | single-player worlds |
 | `downloads/` | resource packs downloaded from servers (a cache) |
+| `screenshots/` | PNG screenshots, `YYYY-MM-DD_HH.MM.SS.png` (`_1`, `_2` after a name that exists) |
 
 From the title screen, **Multiplayer** opens the server list: add a server by its address (`host` or
 `host:port`, default port 25565); each entry shows its description and players online; select one and
@@ -151,7 +152,7 @@ and pressing Play does (a standard world and a cobolcraft world are told apart t
 refusals). If there is no such folder, or the world is refused (for example a standard world while the
 generated packs are not ok), the reason is printed to standard error and the client stays on the title
 screen. Combined with the screenshot options (`--screenshot-after-frames <N>` and `--screenshot-then-exit`,
-once they are in this tree) an agent can capture a real world frame without touching the window:
+an agent can capture a real world frame without touching the window:
 
 ```sh
 build/bin/cobolcraft --name Agent --gamedir <scratch gamedir> --generated-dir <generated> \
@@ -177,9 +178,24 @@ build/bin/cobolcraft --name Agent --gamedir <scratch gamedir> --generated-dir <g
 | Throw what you carry (inventory screen) | Drag or click it outside the window (right click: one item) |
 | Chat / command | T / `/` (opens chat with `/` typed) |
 | Pause menu | Escape |
+| Screenshot (the `key.screenshot` binding) | F2: saves the whole frame as shown to `<gamedir>/screenshots/` and says `Saved screenshot as <file>` in the chat |
 
 While chat is closed, the 10 most recent messages show for 10 seconds each; with chat open, the scroll
 wheel moves back through the last 100.
+
+### Screenshots for debugging and automated runs
+
+`--screenshot-after-frames <N>` (or the environment variable `CC_SCREENSHOT_AT_FRAME=N`) saves one screenshot
+by itself once frame N has been shown, exactly as F2 does, and prints `screenshot: Saved screenshot as <file>`.
+Add `--screenshot-then-exit` (or `CC_SCREENSHOT_THEN_EXIT=1`) to end the run once it is saved. The window
+opens as usual; use a scratch `--gamedir` so nothing of yours is touched:
+
+```sh
+CC_SCREENSHOT_AT_FRAME=900 CC_SCREENSHOT_THEN_EXIT=1 build/bin/cobolcraft --name Dev --gamedir /tmp/dev-gamedir
+```
+
+The shim calls behind it (`cc_vk_screenshot`, `cc_vk_screenshot_result`, `cc_png_write`) are in
+`specs/002-client-polish/contracts/shim-delta.md`.
 
 ### Single-player and opening to others
 

@@ -27,7 +27,7 @@
     05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
     05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
     05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
-       10 KB-CODE            BINARY-LONG OCCURS 24 TIMES.
+       10 KB-CODE            BINARY-LONG OCCURS 25 TIMES.
     05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
     05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
     05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
@@ -44,6 +44,13 @@
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
     05 CL-FRAMES             BINARY-DOUBLE.
+*>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
+    05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
+    05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
+    05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
+    05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)
+    05 CL-SHOT-NAME-LENGTH   BINARY-LONG.
 *>  ---- input state (shim-abi §8 events) ----
     05 IN-STATE.
        10 IN-KEY-DOWN        PIC 9 OCCURS 400 TIMES.   *> GLFW key code + 1
