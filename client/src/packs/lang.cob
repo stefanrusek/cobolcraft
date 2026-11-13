@@ -6,6 +6,10 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. LANG-LOAD.
 *> USING CLIENT-STATE: fills LG-ENTRY (at most CL-MAX-LANG keys; longer keys and texts are cut).
+*> The generated vanilla en_us.json is over 500 KB with about 8,500 keys, more than one JSON-DOC holds
+*> (JD-MAX-NODES): the text is cut at the top-level commas into slices of at most WS-SLICE-ENTRIES
+*> members, each parsed as an object of its own (the comma before a slice, or the opening brace,
+*> is overwritten by "{" and the comma that ends it by "}"), and a key reached again replaces its text.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -17,8 +21,8 @@
  01 WS-SLASH               BINARY-LONG.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
- 01 WS-TEXT                PIC X(262144).
- 01 WS-CAPACITY            BINARY-LONG VALUE 262144.
+ 01 WS-TEXT                PIC X(1048576).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1048576.
  01 WS-LENGTH              BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
  01 WS-KEY                 PIC X(80).
@@ -26,6 +30,15 @@
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-ENTRY               BINARY-LONG.
  01 WS-TEXT-CAP            BINARY-LONG VALUE 200.
+ 01 WS-SLICE-ENTRIES       BINARY-LONG VALUE 1000.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-DEPTH               BINARY-LONG.
+ 01 WS-MEMBERS             BINARY-LONG.
+ 01 WS-IN-STRING           BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-SLICE-LENGTH        BINARY-LONG.
+ 01 WS-CHAR                PIC X.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -43,40 +56,81 @@
              IF WS-SLASH = 2 AND WS-PATH(WS-PATH-LENGTH - 15:16) = "/lang/en_us.json"
                  CALL "PACK-SOURCE-READ" USING CLIENT-STATE WS-PACK WS-PATH WS-PATH-LENGTH
                      WS-TEXT WS-CAPACITY WS-LENGTH WS-FOUND
-                 CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LENGTH
-                 MOVE 0 TO WS-NODE
-                 IF JD-COUNT > 0
-                     IF JN-TYPE(1) = JT-OBJECT
-                         MOVE JN-FIRST(1) TO WS-NODE
-                     END-IF
-                 END-IF
-                 PERFORM UNTIL WS-NODE = 0
-                     MOVE SPACES TO WS-KEY
-                     CALL "JSON-KEY" USING JSON-DOC WS-NODE WS-KEY WS-KEY-CAP WS-KEY-LENGTH
-                     MOVE 0 TO WS-ENTRY
-                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > LG-COUNT OR WS-ENTRY > 0
-                         IF LG-KEY(WS-K) = WS-KEY AND LG-KEY-LENGTH(WS-K) = WS-KEY-LENGTH
-                             MOVE WS-K TO WS-ENTRY
-                         END-IF
-                     END-PERFORM
-                     IF WS-ENTRY = 0 AND LG-COUNT < CL-MAX-LANG
-                         ADD 1 TO LG-COUNT
-                         MOVE LG-COUNT TO WS-ENTRY
-                     END-IF
-                     IF WS-ENTRY > 0
-                         MOVE WS-KEY TO LG-KEY(WS-ENTRY)
-                         MOVE WS-KEY-LENGTH TO LG-KEY-LENGTH(WS-ENTRY)
-                         MOVE SPACES TO LG-TEXT(WS-ENTRY)
-                         CALL "JSON-STRING" USING JSON-DOC WS-NODE LG-TEXT(WS-ENTRY) WS-TEXT-CAP
-                             LG-TEXT-LENGTH(WS-ENTRY)
-                     END-IF
-                     MOVE JN-NEXT(WS-NODE) TO WS-NODE
-                 END-PERFORM
+                 PERFORM LANG-SLICES
                  MOVE 1 TO WS-FOUND
              END-IF
          END-PERFORM
      END-PERFORM
      GOBACK.
+
+*> Walks WS-TEXT(1:WS-LENGTH): the first "{" starts the first slice; outside strings the nesting depth
+*> follows the braces and brackets, and at depth 1 every comma is the end of a member.
+ LANG-SLICES.
+     MOVE 0 TO WS-START WS-DEPTH WS-MEMBERS WS-IN-STRING WS-DONE
+     PERFORM VARYING WS-POS FROM 1 BY 1 UNTIL WS-POS > WS-LENGTH OR WS-DONE = 1
+         MOVE WS-TEXT(WS-POS:1) TO WS-CHAR
+         EVALUATE TRUE
+             WHEN WS-IN-STRING = 1 AND WS-CHAR = X"5C"
+                 ADD 1 TO WS-POS
+             WHEN WS-CHAR = '"'
+                 COMPUTE WS-IN-STRING = 1 - WS-IN-STRING
+             WHEN WS-IN-STRING = 1
+                 CONTINUE
+             WHEN WS-CHAR = "{" OR WS-CHAR = "["
+                 IF WS-START = 0
+                     MOVE WS-POS TO WS-START
+                 END-IF
+                 ADD 1 TO WS-DEPTH
+             WHEN WS-CHAR = "}" OR WS-CHAR = "]"
+                 SUBTRACT 1 FROM WS-DEPTH
+                 IF WS-DEPTH = 0
+                     MOVE 1 TO WS-DONE
+                     PERFORM LANG-SLICE-LOAD
+                 END-IF
+             WHEN WS-CHAR = "," AND WS-DEPTH = 1
+                 ADD 1 TO WS-MEMBERS
+                 IF WS-MEMBERS >= WS-SLICE-ENTRIES
+                     MOVE "}" TO WS-TEXT(WS-POS:1)
+                     PERFORM LANG-SLICE-LOAD
+                     MOVE "{" TO WS-TEXT(WS-POS:1)
+                     MOVE WS-POS TO WS-START
+                     MOVE 0 TO WS-MEMBERS
+                 END-IF
+         END-EVALUATE
+     END-PERFORM.
+
+*> Parses WS-TEXT(WS-START:WS-POS - WS-START + 1) and merges its members.
+ LANG-SLICE-LOAD.
+     COMPUTE WS-SLICE-LENGTH = WS-POS - WS-START + 1
+     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT(WS-START:WS-SLICE-LENGTH) WS-SLICE-LENGTH
+     MOVE 0 TO WS-NODE
+     IF JD-COUNT > 0
+         IF JN-TYPE(1) = JT-OBJECT
+             MOVE JN-FIRST(1) TO WS-NODE
+         END-IF
+     END-IF
+     PERFORM UNTIL WS-NODE = 0
+         MOVE SPACES TO WS-KEY
+         CALL "JSON-KEY" USING JSON-DOC WS-NODE WS-KEY WS-KEY-CAP WS-KEY-LENGTH
+         MOVE 0 TO WS-ENTRY
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > LG-COUNT OR WS-ENTRY > 0
+             IF LG-KEY-LENGTH(WS-K) = WS-KEY-LENGTH AND LG-KEY(WS-K) = WS-KEY
+                 MOVE WS-K TO WS-ENTRY
+             END-IF
+         END-PERFORM
+         IF WS-ENTRY = 0 AND LG-COUNT < CL-MAX-LANG
+             ADD 1 TO LG-COUNT
+             MOVE LG-COUNT TO WS-ENTRY
+         END-IF
+         IF WS-ENTRY > 0
+             MOVE WS-KEY TO LG-KEY(WS-ENTRY)
+             MOVE WS-KEY-LENGTH TO LG-KEY-LENGTH(WS-ENTRY)
+             MOVE SPACES TO LG-TEXT(WS-ENTRY)
+             CALL "JSON-STRING" USING JSON-DOC WS-NODE LG-TEXT(WS-ENTRY) WS-TEXT-CAP
+                 LG-TEXT-LENGTH(WS-ENTRY)
+         END-IF
+         MOVE JN-NEXT(WS-NODE) TO WS-NODE
+     END-PERFORM.
  END PROGRAM LANG-LOAD.
 
  IDENTIFICATION DIVISION.

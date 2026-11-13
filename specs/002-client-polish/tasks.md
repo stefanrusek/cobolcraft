@@ -3281,6 +3281,7 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [x] T4133 [US15-core] Game rules for a mob's blast: mob_griefing false leaves the blocks (STDMOB-SWELL reads it), mob_explosion_drop_decay false keeps every drop (EXPLODE-RUN; test_stdmob_creeper; first observed run green)
 - [x] T4134 [US15-core] Explosion knockback for standard mobs: the push s x direction (centre to 0.85 of the mob's height) goes into EN-VX/EN-VY/EN-VZ and STDMOB-STEP carries it, decaying 0.546 on the ground and 0.91 in the air (red: scratchpad/mobkb_red.log; test_explode)
 - [x] T4142 [US15-client] Screenshot runs can run console commands without typing: CC_COMMANDS ("cmd;cmd", no leading slash) with CC_COMMANDS_AT_FRAME=N runs them once through CORE-CONSOLE from frame N on the world screen (STARTUP-COMMANDS in screenshot.cob, CL-CMD-AT / CL-CMD-TEXT; red: compile failure; test_startup_commands). Use "gamemode creative @a", not "gamemode creative", since the console has no entity
+- [x] T4700 [US6-client] Chat and death text through the language: LANG-LOAD read nothing of the generated vanilla en_us.json (546 KB, about 8,500 keys: over the 262,144-byte read area, and over the 4,096 nodes of one JSON-DOC), so translate components such as death.attack.mob showed as their key; the file is read whole (1 MiB), parsed in slices of 1,000 members, CL-MAX-LANG 12,000 (red: scratchpad/vis2/lang_red.log; test_lang_big with fixtures/biglang)
 
 #### Phase 50: US19-core — off-hand swap
 

@@ -746,7 +746,7 @@
           15 PK-ERROR-TEXT   PIC X(256).
           15 PK-ERROR-LENGTH BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
-       10 LG-ENTRY OCCURS 640 TIMES.
+       10 LG-ENTRY OCCURS 12000 TIMES.
           15 LG-KEY          PIC X(80).
           15 LG-KEY-LENGTH   BINARY-LONG.
           15 LG-TEXT         PIC X(200).
