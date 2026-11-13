@@ -13,7 +13,7 @@ HEAD='''*> %(comment)s
  COPY PROTO.
  COPY COREAPI.
  COPY CITEMS.
- 01 WS-SHOW                PIC -(9)9.
+ 01 WS-SHOW                PIC -(10)9.
  01 WS-PTR                 BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.

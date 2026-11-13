@@ -56,9 +56,9 @@
 *>        3 cooldown ends at, 4 hitDirection (-1 none), the item is slot 1. beehive (33): XI 1..4 flower_pos set and x, y, z, 5 bee count, bee i at 6 + 4 (i - 1):
 *>        ticks_in_hive, min_ticks_in_hive, HasNectar, id length; XT i the entity id
 *>   beacon (15): XT 1, 2 primary and secondary effect keys, XI 1, 2 their lengths, 3 levels, 4 lastCheckY, 5 section count, section i at 6 + 2 (i - 1): colour, height.
-*>        conduit (25): XI 1 tickCount, 2 isActive, 3 isHunting, 4 frame block count, 5 nextAmbientSoundActivation, 6 target set; XT 1 the target UUID.
+*>        conduit (25): XI 1 tickCount, 2 isActive, 3 isHunting, 4 frame block count, 5 nextAmbientSoundActivation, 6 target set, 7..10 the target UUID as 4 ints.
 *>        end gateway (22): XI 1 Age, 2 exit_portal set, 3..5 x, y, z, 6 ExactTeleport, 7 teleportCooldown. creaking heart (10): XI 1 link set, 2 ticksExisted, 3 ticker,
-*>        4 emitter, 5 outputSignal; XT 1 the UUID
+*>        4 emitter, 5 outputSignal, 6..9 the UUID as 4 ints
 *>   crafter (42): slots 1..9, XI 1 crafting_ticks_remaining, 2 triggered, 3..11 slot disabled. brewing stand (12): slots 1..5, XI 1 BrewTime, 2 total_brew_time,
 *>        3 Fuel, 4 total_fuel, 6 remembered ingredient item, 7..9 bottle flags; XF 1 speed_multiplier
        10 BE-XI             BINARY-LONG OCCURS 64 TIMES.
