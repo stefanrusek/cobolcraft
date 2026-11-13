@@ -155,6 +155,29 @@
  END PROGRAM STDMOB-DROPS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-READY.
+*> USING dim, chunk x, chunk z (BINARY-LONG), ready out (BINARY-LONG): 1 when the chunk is in the cache and its light is computed,
+*> i.e. it has been generated and prepared; a chunk that is not (never loaded, or still being generated) has no contents to rely
+*> on, so no mob spawns or moves in it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-CHUNK               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-READY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-CX L-CZ L-READY.
+     MOVE 0 TO L-READY
+     CALL "WORLD-FIND" USING L-DIM L-CX L-CZ WS-CHUNK
+     IF WS-CHUNK > 0 AND CK-LIT(WS-CHUNK) = 1
+         MOVE 1 TO L-READY
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-READY.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-STEP.
 *> USING tracker row: nothing for a row that is no standard mob or whose chunk is not loaded. Otherwise the hurt window counts down,
 *> then the mob panics (EN-FLEE ticks left, away from the attacker at the panic speed) or strolls: a standing mob (EN-COOLDOWN 0)
@@ -193,7 +216,7 @@
      END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW) / 16)
-     CALL "WORLD-FIND" USING EN-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
+     CALL "STDMOB-READY" USING EN-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
      IF WS-CHUNK = 0
          GOBACK
      END-IF
@@ -376,7 +399,7 @@
          MOVE 1 TO WS-OK
          COMPUTE WS-CX = (WS-X - FUNCTION MOD(WS-X, 16)) / 16
          COMPUTE WS-CZ = (WS-Z - FUNCTION MOD(WS-Z, 16)) / 16
-         CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-ROW
+         CALL "STDMOB-READY" USING L-DIM WS-CX WS-CZ WS-ROW
          IF WS-ROW = 0
              MOVE 0 TO WS-OK
          END-IF
@@ -479,7 +502,7 @@
      COMPUTE WS-Z = WS-ARG(3) + WS-DZ
      COMPUTE WS-CX = (WS-X - FUNCTION MOD(WS-X, 16)) / 16
      COMPUTE WS-CZ = (WS-Z - FUNCTION MOD(WS-Z, 16)) / 16
-     CALL "WORLD-FIND" USING L-DIM WS-CX WS-CZ WS-CHUNK
+     CALL "STDMOB-READY" USING L-DIM WS-CX WS-CZ WS-CHUNK
      IF WS-CHUNK = 0
          GOBACK
      END-IF

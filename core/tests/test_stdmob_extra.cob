@@ -107,6 +107,21 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   Ready: the player's chunk is generated and lit, a far chunk is not in the cache.
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X / 16)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z / 16)
+     CALL "STDMOB-READY" USING WS-DIM WS-BX WS-BZ WS-INDEX
+     MOVE "test stdmob extra: the player's chunk is ready for mobs" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "STDMOB-READY" USING WS-DIM WS-FARX WS-FARX WS-INDEX
+     MOVE "test stdmob extra: a chunk that is not loaded is not ready" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Light: an unloaded cell is 0; a loaded sky cell reads on both nibbles (cells x and x + 1).
      COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
      COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) + 40
