@@ -3252,6 +3252,17 @@ any lane starts (Principle II), the frozen contract surface, the generated table
 - [ ] T2915 [US15-core] Write acceptance test `core/tests/acc_f2us15_mob_rules.cob` (US15-2): where a standard rule and a stand-in value differ, the standard wins in both types (FR-041) [SC-008]
 - [ ] T2916 [US15-core] Gate: run `make gate-core` and record the command and real output
 
+
+**Mobs lane (002-lane-mobs): standard-world mobs, data-driven from the standard entity set** (table `core/copy/STDMOBS.cpy`, programs `core/src/stdmobs.cob`; a vertical slice with pig and cow first, then generalise row by row from docs 18 to 21 and 34):
+
+- [x] T3690 [US15-core] Write test `core/tests/test_stdmob_slice.cob` and `core/tests/test_stdmob_extra.cob` for one passive mob in a standard world: the type found by key (`STDMOB-INDEX`), full health from the row, hurt (health, panic 40 ticks away from the attacker), defeat (removed, loot pools of docs 19 sections 2.1 and 2.2 on the ground), stroll, natural spawn on grass (18 section 6.8 animal rule, 6.3 local cap, 6.5 pack), and every refusal (blocked space, dark cell, cap, unloaded column) (red: link failure on STDMOB-INDEX, saved in the lane scratchpad)
+- [x] T3691 [US15-core] Implement `core/src/stdmobs.cob` and `core/copy/STDMOBS.cpy` (pig, cow) and wire it into `MOB-SPAWN`, `MOB-DEFEAT`, `MOB-STEP`, `MOBS-TICK`, `MOBS-SPAWN-TICK` (mobs.cob) and `HEALTH-MOB-DAMAGE` (health.cob); the stand-in table is untouched and `MOB-INDEX` stays 0 in a standard world
+- [ ] T3692 [US15-core] Add the other passive land mobs (sheep, chicken, mooshroom, horse family, rabbit, goat ...) as rows of `STDMOBS.cpy` with their loot, spawn weights per biome (18 appendix A) and group sizes; chunk-generation spawns (18 section 6.10)
+- [ ] T3693 [US15-core] Panic and stroll by the goal rules of 18 section 4 (pathfinding 5, not straight-line walks), breeding, baby mobs, variants (19 section 1.6)
+- [ ] T3694 [US15-core] Hostile overworld mobs (20): spawn in the dark at night, target and attack the player, daylight burning, loot and experience
+- [ ] T3695 [US15-core] Death tick of 20 ticks with Entity Event 3 and 60 (18 sections 7.5, 2.9), experience orbs, looting; saved mobs in the world file (45)
+- [ ] T3696 [US15-client] Check the client draws the standard mob models (docs 34) in a live standard world; calibrate the walk speeds of `STDMOBS.cpy` (SM-WALK-MILLI follows the steady-state formula of 18 section 3.1 and may be too fast against the real game, a clean-room reader question)
+
 #### Phase 50: US19-core — off-hand swap
 
 - [x] T2917 [US19-core] Write test `core/tests/test_offhand_swap.cob`: the Player Action swap exchanges the held hotbar item with slot 45 and sends Set Slot for both; Container Click swap with the off-hand slot in the inventory menu (13 §4, US19-1, US19-2)
