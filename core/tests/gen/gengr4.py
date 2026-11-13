@@ -258,8 +258,6 @@ W4(g,5)
 g=G4(6,'Bamboo','T0591','states and constants (6.1), the stalk (6.2), the sapling (6.3), worked example 6.')
 rows(g,'bamboo constants (6.1): MAX_HEIGHT 16, age and stage maximum 1, large leaves shape 10 wide, other 6, collision 3, sapling 8 wide to 12, stalk strength 1.0 (x 10)','GC4-BAMBOO-CONST',0,8,[()],lambda :(16,1,1,10,6,3,8,12))
 rows(g,'stalk ticking (6.1): isRandomlyTicking is stage == 0','GC4-BAMBOO-TICKING',1,1,[(0,),(1,)],lambda s:(int(s==0),))
-def bp(fe,bk,bkok,ak,aa,bage):
-    pass
 def bpl(fe,ok,bk,bage,ak,aage):
     if not fe or not ok: return 0,-1
     if bk==1: return 1,0
@@ -431,3 +429,167 @@ rtc=[(0,1,0,1,1,0,0,0,0,0,0),(1,0,0,1,1,0,0,0,0,0,0),(1,1,5,1,1,0,0,0,0,0,0),(1,
 rows(g,'chorus flower random tick (8.2 step 4, example 7): nothing unless the cell above is air and in height and age < 5; growing up places a flower of the same age (event 1033); else at age < 4 nextInt(4) (plus 1 over end stone) side attempts, each valid cell receiving an age + 1 flower (1033), the flower becoming a plant when one grew, else dying (age 5, event 1034); at age 4 it dies (1034) (air above, in height, age, grow, room for growing up, nextInt(4), end stone below, validity of the first four attempts) (action 0 nothing 1 up 2 branched 3 died after branching 4 died, flowers placed, event, age of the flower, direction draws)','GC4-FLOWER-RT',11,5,rtc,rt)
 rows(g,'chorus flower constants (8.2): AGE_5 maximum and DEAD_AGE 5, isRandomlyTicking is age < 5, support shape 14 wide to 15 (max age, dead age, ticking at age 4, ticking at age 5, width, y to)','GC4-FLOWER-CONST',2,6,[(4,5)],lambda a,b:(5,5,1,0,14,15))
 W4(g,8)
+# ===== 9
+g=G4(9,'Seagrass, tall seagrass, double plants, short grass and ferns, tall flowers','T0597','the double plant base (9.1), seagrass (9.2), tall seagrass (9.3), the non-bonemealable list (9.4), short grass and ferns (9.5), tall flowers (9.6), worked examples 9 and 15.')
+rows(g,'double plant placement (9.1 step 1): the lower state when the clicked y is below the maximum build height and the cell above can be replaced, else null (y below max, above replaceable) (placed)','GC4-DOUBLE-PLACE',2,1,[(1,1),(0,1),(1,0),(0,0)],lambda y,r:(int(y and r),))
+def dsp(h,w): return 1,(w if h else -1),3
+rows(g,'double plant setPlacedBy (9.1 step 2): the upper half (1) is written above with waterlogged copied from isWaterAt when the block has the property (-1 otherwise), flags 3 (has property, water at pos) (half, waterlogged, flags)','GC4-DOUBLE-SETPLACED',2,3,[(1,1),(1,0),(0,1),(0,0)],dsp)
+rows(g,'double plant survival (9.1 step 3): the upper half needs this block below with half lower; the lower half the VegetationBlock rule (half 0 lower 1 upper, below is this block and lower, mayPlaceOn of the below) (survive)','GC4-DOUBLE-SURVIVE',3,1,[(1,1,0),(1,0,1),(0,0,1),(0,0,0),(0,1,0)],lambda h,b,m:(int(b) if h else int(m),))
+def dsu(h,d,nb,nh,sv):
+    if d in (1,2) and ((h==0)==(d==2)):
+        return (1,) if (not nb or nh==h) else (0,)
+    if h==0 and d==1 and not sv: return (1,)
+    return (0,) if sv else (1,)
+dsuc=[(0,2,1,1,1),(0,2,0,0,1),(0,2,1,0,1),(0,2,1,0,0),(0,2,1,1,0),(1,1,1,0,1),(1,1,1,1,1),(1,1,0,0,1),(0,1,1,0,0),(0,1,1,0,1),(1,1,1,0,0),(0,3,1,0,0),(0,3,1,0,1),(1,2,1,1,1)]
+rows(g,'double plant shape update (9.1 step 4, example 15): for the partner cell (lower half with UP, upper half with DOWN) air when the neighbour is not this block or has the same half; else the lower half with DOWN gives air when it cannot survive; else the VegetationBlock update (half, direction 1 down 2 up, neighbour is this block, neighbour half, survive) (1 air, 0 unchanged)','GC4-DOUBLE-SU',5,1,dsuc,dsu)
+rows(g,'double plant placeAt (9.1 step 5): the lower half then the upper half with waterlogged copied when the block has the property (has property, water at pos) (lower, upper; -1 for none)','GC4-DOUBLE-PLACEAT',2,2,[(1,1),(1,0),(0,1)],lambda h,w:((w,w) if h else (-1,-1)))
+def dbk(cr,h,bl,ws):
+    if not cr: return 1,0,0,0
+    if h==1 and bl: return (2 if ws else 3),35,2001,0
+    return 0,0,0,0
+dbc=[(0,1,1,0),(0,0,0,0),(1,1,1,1),(1,1,1,0),(1,0,1,1),(1,1,0,0)]
+rows(g,'double plant breaking (9.1 step 6, example 15): a player who is not creative drops the resources (1); a creative player breaking the upper half over its lower half sets the lower position to water (2, when the fluid is the water source) or air (3) with flags 35 and level event 2001; the break itself drops nothing (creative, half, below is the lower half, water source) (action, flags, event, drops of the break)','GC4-DOUBLE-BREAK',4,4,dbc,dbk)
+rows(g,'double plant offset seed (9.1 step 7): both halves use the lower half\'s y (half, y) (y of the seed)','GC4-DOUBLE-SEED',2,1,[(0,64),(1,65),(1,-3)],lambda h,y:(y if h==0 else y-1,))
+rows(g,'seagrass mayPlaceOn (9.2 step 1): the face below is sturdy toward UP and the block is not in cannot_support_seagrass (sturdy, in tag)','GC4-SEAGRASS-PLACEON',2,1,[(1,0),(1,1),(0,0),(0,1)],lambda s,t:(int(s and not t),))
+rows(g,'seagrass placement (9.2 step 2): null unless the clicked fluid is in tag water and full (water, full) (placed)','GC4-SEAGRASS-PLACE',2,1,[(1,1),(1,0),(0,1),(0,0)],lambda w,f:(int(w and f),))
+rows(g,'seagrass shape update (9.2 step 3): the VegetationBlock update; when the result is not air a water tick is scheduled (survive) (1 air, water tick)','GC4-SEAGRASS-SU',1,2,[(1,),(0,)],lambda s:(0,1) if s else (1,0))
+rows(g,'seagrass bone meal (9.2 step 5): valid when the block above is block water (any level); success always; effect tall_seagrass lower and upper, both with flags 2 (above is water) (valid, success, flags)','GC4-SEAGRASS-BONE',1,3,[(1,),(0,)],lambda a:(a,1,2))
+def tsv(h,bl,mp,wf): return (int(bl) if h else int(mp and wf),)
+rows(g,'tall seagrass survival (9.3): the upper half as 9.1; the lower half the DoublePlantBlock rule and the fluid at pos in tag water and full (half, below is the lower half, mayPlaceOn, water and full) (survive)','GC4-TALLSEA-SURVIVE',4,1,[(1,1,0,0),(1,0,1,1),(0,0,1,1),(0,0,1,0),(0,0,0,1)],tsv)
+rows(g,'tall seagrass placement (9.3): the DoublePlantBlock placement and null unless the fluid at clickedPos.above() is in tag water and full (double plant placement ok, fluid above water and full) (placed)','GC4-TALLSEA-PLACE',2,1,[(1,1),(1,0),(0,1)],lambda d,f:(int(d and f),))
+NOB=["tall_grass","large_fern","pitcher_plant","tall_seagrass"]+FLOWERS+["wither_rose","open_eyeblossom","closed_eyeblossom","sugar_cane","cactus","cactus_flower","vine","lily_pad","hanging_roots","spore_blossom","mangrove_roots","dead_bush"]
+YES=["short_grass","fern","sunflower","lilac","rose_bush","peony","seagrass","bush","red_shrub","firefly_bush","short_dry_grass","tall_dry_grass","sea_pickle","big_dripleaf","small_dripleaf","pale_hanging_moss","pink_petals","wildflowers","stone"]
+allk=[(k,1) for k in NOB]+[(k,0) for k in YES]
+for i in range(0,len(allk),24):
+    keycase(g,'not bonemealable (9.4): these blocks are not bone meal targets (1), the others are (0) (part %d)'%(i//24+1),'GC4-NOT-BONE',allk[i:i+24])
+rows(g,'short grass and fern bone meal (9.5, example 9): the grown block is large_fern for fern, else tall_grass; valid when its lower state can survive at pos, the cell above is air and inside the build height; success always; DoublePlantBlock.placeAt with flags 2 (fern, can survive, above air, in height) (valid, success, grown 1 tall_grass 2 large_fern, flags)','GC4-GRASS-BONE',4,4,[(0,1,1,1),(1,1,1,1),(0,0,1,1),(0,1,0,1),(0,1,1,0)],lambda f,s,a,h:(int(s and a and h),1,2 if f else 1,2))
+rows(g,'tall flower bone meal (9.6): always valid and successful; the effect is popResource of the block\'s own item (1), nothing grows (0) (valid, success, item popped, grows)','GC4-TALLFLOWER-BONE',0,4,[()],lambda :(1,1,1,0))
+W4(g,9)
+# ===== 10
+g=G4(10,'Small plants','T0599','flowers (10.1), wither rose (10.2), eyeblossoms (10.3), flower beds (10.4), bush (10.5), dry vegetation (10.6), firefly bush (10.7).')
+rows(g,'suspicious stew effect entry (10.1): (effect, floor(seconds x 20)) ticks for a duration in seconds','GC4-STEW-TICKS',1,1,[(8.0,),(0.35,),(11.0,),(7.0,),(0.5,),(5.5,)],lambda s:(int(math.floor(s*20+1e-9)),),fl=(1,))
+rows(g,'FlowerBlock (10.1): shape column 6 wide 0 to 10, no tick (0), no bone meal (0), no entity effect, getBeeInteractionEffect null (0) (width, y from, y to, ticks, bone meal, bee effect)','GC4-FLOWER10-CONST',0,6,[()],lambda :(6,0,10,0,0,0))
+def wh(sv,df,lv,inv): return int(sv and df!=0 and lv and not inv),40,0
+whc=[(1,2,1,0),(1,0,1,0),(0,2,1,0),(1,2,0,0),(1,2,1,1),(1,3,1,0)]
+rows(g,'wither rose entityInside (10.2): on a server, difficulty not peaceful (0), a LivingEntity not invulnerable to wither damage: the wither effect for 40 ticks, amplifier 0 (server, difficulty, living, invulnerable) (applies, ticks, amplifier)','GC4-WITHER-HIT',4,3,whc,wh)
+EYE={1:(1,1,11,16545810),2:(0,2,7,6250335)}
+rows(g,'eyeblossom types (10.3): OPEN is open with blindness for 11 seconds and colour 16545810, CLOSED is not open with nausea for 7 seconds and colour 6250335; transform() is the other type (type 1 open 2 closed) (open, effect 1 blindness 2 nausea, seconds, colour, transformed type)','GC4-EYE-TYPE',1,5,[(1,),(2,)],lambda t:EYE[t]+(3-t,))
+def ec(a,o):
+    w=o if a==2 else a
+    return w,int(w!=o)
+rows(g,'eyeblossom tryChangingState (10.3 step 1, example 13): want is the environment attribute gameplay/eyeblossom_open (2 for the default of the tri-state, which gives the block\'s own open); nothing changes when want equals the type\'s open (attribute, open) (want, changes)','GC4-EYE-CHANGE',2,2,[(1,0),(0,1),(1,1),(0,0),(2,1),(2,0)],ec)
+def ed(dsq,d):
+    dist=math.sqrt(dsq); lo=int(dist*5); hi=int(dist*10)
+    return lo,hi,lo+d
+edc=[(1,0),(1,5),(2,0),(2,7),(3,3),(4,0),(4,10),(9,0),(9,15),(18,4)]
+rows(g,'eyeblossom neighbour delay (10.3 step 1, example 13): dist = sqrt(distSqr), delay = nextIntBetweenInclusive((int)(dist x 5), (int)(dist x 10)), that is the low bound plus a draw below the range (distSqr, draw) (low, high, delay)','GC4-EYE-DELAY',2,3,edc,ed)
+ebx=[(0,0,0),(3,2,3),(-3,-2,-3),(4,0,0),(0,3,0),(0,-3,0),(0,0,-4),(1,0,0),(0,2,0)]
+rows(g,'eyeblossom scan box (10.3 step 1): the cells from pos + (-3, -2, -3) to pos + (3, 2, 3) other than the changed block itself are candidates (dx, dy, dz) (candidate)','GC4-EYE-SCAN',3,1,ebx,lambda x,y,z:(int(abs(x)<=3 and abs(y)<=2 and abs(z)<=3 and (x,y,z)!=(0,0,0)),))
+rows(g,'eyeblossom sound (10.3 steps 2, 3): a random tick that changed plays the long switch sound (1), a scheduled tick the short one (2), nothing when unchanged (trigger 1 RT 2 ST, changed) (sound)','GC4-EYE-SOUND',2,1,[(1,1),(2,1),(1,0),(2,0)],lambda t,c:((t if c else 0),))
+BEE=["dandelion","open_eyeblossom","poppy","blue_orchid","allium","azure_bluet","red_tulip","orange_tulip","white_tulip","pink_tulip","oxeye_daisy","cornflower","lily_of_the_valley","wither_rose","torchflower","sunflower","lilac","peony","rose_bush","pitcher_plant","flowering_azalea_leaves","flowering_azalea","mangrove_propagule","cherry_leaves","pink_petals","wildflowers","chorus_flower","spore_blossom","cactus_flower"]
+assert len(BEE)==29
+def bee(k,wl,half): return int(k in BEE and wl==0 and (k!="sunflower" or half==1))
+for part,ks in enumerate([[(k,0,0) for k in BEE[:15]],[(k,0,0) for k in BEE[15:]]+[("sunflower",0,1),("sunflower",1,1),("lilac",1,0),("golden_dandelion",0,0),("closed_eyeblossom",0,0),("rose",0,0),("poppy",0,1)]]):
+    g.case('bee attractive tag (10.3 step 5): the 29 members of bee_attractive are true when not waterlogged, sunflower only for its upper half; golden_dandelion and closed_eyeblossom are not members (part %d)'%(part+1),[("%d %d"%(wl,hf),'MOVE "minecraft:%s" TO WS-T1\nCALL "GC4-BEE-ATTRACTS" USING WS-T1 WS-I(1) WS-I(2) WS-R(1)'%k,1) for k,wl,hf in ks]," ".join(str(bee(*x)) for x in ks))
+def ei(sv,df,bee_,att,pois): return int(sv and df!=0 and bee_ and att and not pois),25,0
+eic=[(1,2,1,1,0),(1,0,1,1,0),(0,2,1,1,0),(1,2,0,1,0),(1,2,1,0,0),(1,2,1,1,1)]
+rows(g,'eyeblossom entityInside (10.3 step 5): on a server, difficulty not peaceful, a Bee that is attracted (Bee.attractsBees of the state) and not already poisoned gets poison for 25 ticks, amplifier 0 (server, difficulty, bee, attracts, poisoned) (applies, ticks, amplifier)','GC4-EYE-INSIDE',5,3,eic,ei)
+def bp_(same,a,pd):
+    return (min(4,a+1),-1) if same else (1,{3:4,4:3,5:6,6:5}[pd])
+rows(g,'flower bed placement (10.4 step 1): the same block gives flower_amount min(4, amount + 1) and keeps facing (-1); otherwise the default with facing the opposite of the placer\'s horizontal direction (3 north 4 south 5 west 6 east) (same block, amount, placer direction) (amount, facing)','GC4-BED-PLACE',3,2,[(1,1,3),(1,3,3),(1,4,4),(0,1,3),(0,1,4),(0,1,5),(0,1,6)],bp_)
+rows(g,'segmentable and pickle canBeReplaced (10.4 step 2, 11.1 step 3): true when not secondary use, the item in hand is this block\'s item and the amount is below 4; otherwise the default (secondary use active, item in hand is this block, amount, default)','GC4-SEG-REPLACE',4,1,[(0,1,1,0),(0,1,3,0),(0,1,4,1),(1,1,2,1),(1,1,2,0),(0,0,2,1),(0,0,2,0)],lambda sec,it,a,d:(1 if (not sec and it and a<4) else d,))
+def bb(a): return 1,1,(a+1 if a<4 else -1),2,int(a>=4)
+rows(g,'flower bed bone meal (10.4 step 4, example 14): always valid and successful; below 4 the amount increases by 1 (flags 2), at 4 one item is dropped (amount) (valid, success, amount after or -1, flags, item dropped)','GC4-BED-BONE',1,5,[(1,),(2,),(3,),(4,)],bb)
+rows(g,'flower bed constants (10.4): default facing NORTH (3), default flower_amount 1, amount 1 to 4, shape height 3','GC4-BED-CONST',0,4,[()],lambda :(3,1,4,3))
+rows(g,'bush and red_shrub (10.5): column 16 wide to height 13 (the constructor argument)','GC4-BUSH-SHAPE',1,2,[(13,)],lambda h:(16,h))
+DR={1:(12,0,13,0),2:(12,0,10,2),3:(14,0,16,2)}
+rows(g,'dry vegetation shapes (10.6): dead_bush column 12 wide to 13; short_dry_grass 12 wide to 10 with offset XYZ (2); tall_dry_grass 14 wide to 16 with offset XYZ (kind 1 dead_bush 2 short 3 tall) (width, y from, y to, offset)','GC4-DRY-SHAPE',1,4,[(1,),(2,),(3,)],lambda k:DR[k])
+def db(k,sp):
+    if k==1: return 0,0,0,0
+    if k==2: return 1,1,1,3
+    return int(sp),1,2 if sp else 0,3 if sp else 0
+rows(g,'dry vegetation bone meal (10.6): dead_bush is not a target; short_dry_grass is always valid and grows in place into tall_dry_grass (effect 1, flags 3); tall_dry_grass is valid when a neighbour can take short_dry_grass and spreads one copy to it (effect 2, the plant itself stays) (kind, spreadable neighbour) (valid, success, effect, flags)','GC4-DRY-BONE',2,4,[(1,1),(2,0),(3,1),(3,0)],db)
+rows(g,'firefly bush bone meal (10.7): valid when a neighbour can take a copy, always successful, the neighbour spreader with flags 3 (type GROWER)','GC4-BUSH-BONE',1,4,[(1,),(0,)],lambda s:(s,1,1,3))
+W4(g,10)
+# ===== 11
+g=G4(11,'Sea pickle and lily pad','T0601','sea pickle (11.1) and lily pad (11.2), worked example 8.')
+rows(g,'sea pickle light (11.1): 0 when dead (not waterlogged), else 3 + 3 x pickles (pickles, waterlogged)','GC4-PICKLE-LIGHT',2,1,[(1,1),(2,1),(3,1),(4,1),(4,0),(1,0)],lambda p,w:(3+3*p if w else 0,))
+PS={1:(4,6),2:(10,6),3:(12,6),4:(12,7)}
+rows(g,'sea pickle shapes (11.1): column 4 wide to 6, 10 wide to 6, 12 wide to 6, 12 wide to 7 for 1 to 4 pickles (pickles) (width, height)','GC4-PICKLE-SHAPE',1,2,[(p,) for p in (1,2,3,4)],lambda p:PS[p])
+rows(g,'sea pickle mayPlaceOn (11.1 step 1): the block below has a non-empty collision face toward UP or a sturdy top face (collision face, sturdy) (survives)','GC4-PICKLE-PLACEON',2,1,[(1,0),(0,1),(1,1),(0,0)],lambda c,s:(int(c or s),))
+def pp(same,p,ws): return (min(4,p+1),-1) if same else (1,ws)
+rows(g,'sea pickle placement (11.1 step 2): the same block gives pickles min(4, pickles + 1), all else kept; otherwise the default with waterlogged set from FluidState.is(Fluids.WATER) (a water source) at the clicked position (same block, pickles, water source) (pickles, waterlogged or -1)','GC4-PICKLE-PLACE',3,2,[(1,1,0),(1,4,1),(0,1,1),(0,1,0)],pp)
+rows(g,'sea pickle canBeReplaced (11.1 step 3): below 4 pickles with the matching item and no secondary use','GC4-SEG-REPLACE',4,1,[(0,1,3,0),(0,1,4,0),(1,1,1,1),(0,0,1,0)],lambda sec,it,a,d:(1 if (not sec and it and a<4) else d,))
+rows(g,'sea pickle shape update (11.1 step 4): air when it cannot survive; a water tick when waterlogged (survive, waterlogged) (1 air, water tick)','GC4-PICKLE-SU',2,2,[(1,1),(1,0),(0,1),(0,0)],lambda s,w:(int(not s),int(w and s)))
+rows(g,'sea pickle bone meal validity (11.1 step 5): valid when the pickle is not dead (waterlogged) and the block below is in coral_blocks; success always (waterlogged, coral below) (valid, success)','GC4-PICKLE-BONE-VALID',2,2,[(1,1),(1,0),(0,1),(0,0)],lambda w,c:(int(w and c),1))
+cells=[]
+for dx in range(-2,3):
+    zs={-2:[0],-1:[-1,0,1],0:[-2,-1,0,1,2],1:[-1,0,1],2:[0]}[dx]
+    for dz in zs:
+        for dy in (-1,0): cells.append((dx,dz,dy))
+assert len(cells)==26
+rows(g,'sea pickle scan cells (11.1 step 5): 13 columns, x -2 to 2 with z 0, -1 to 1, -2 to 2, -1 to 1, 0, each at y - 1 then y, x ascending then z ascending (cell number 1 to 26) (dx, dz, dy)','GC4-PICKLE-CELL',1,3,[(i+1,) for i in range(26)],lambda i:cells[i-1])
+def pst(isp,d6,w,c,d4):
+    if isp: return 0,0,0
+    if d6==0 and w and c: return 1,1,d4+1
+    return 1,0,0
+psc=[(1,0,1,1,0),(0,1,1,1,0),(0,0,0,1,0),(0,0,1,0,0),(0,0,1,1,0),(0,0,1,1,3),(0,5,1,1,2)]
+rows(g,'sea pickle one cell (11.1 step 5): the clicked pos is skipped with no draw; otherwise nextInt(6) is drawn and only a 0 over block water with a coral block below draws nextInt(4) and places pickles = draw + 1 (is pos, nextInt(6), water block, coral below, nextInt(4)) (drew nextInt(6), placed, pickles)','GC4-PICKLE-STEP',5,3,psc,pst)
+rows(g,'sea pickle patch totals (11.1 step 5, example 8): 26 cells scanned, 25 of them draw nextInt(6) (13 columns of 2 minus pos), the clicked pickle ends with 4 pickles written with flags 2 (cells, draws, pickles, flags)','GC4-PICKLE-CONST',0,4,[()],lambda :(26,25,4,2))
+def lp(fb,bb_,own): return (int((fb or bb_) and own),)
+lpc=[(1,0,1),(0,1,1),(1,1,1),(0,0,1),(1,0,0),(0,1,0)]
+rows(g,'lily pad mayPlaceOn (11.2): the fluid below in fluid tag supports_lily_pad (still water) or the block below in block tag supports_lily_pad (ice, frosted_ice), and the fluid at its own position empty (fluid below, block below, own fluid empty) (ok)','GC4-LILY-PLACE',3,1,lpc,lp)
+rows(g,'lily pad entityInside (11.2): on a server an AbstractBoat destroys it with drops (server, boat) (destroy, drops)','GC4-LILY-BOAT',2,2,[(1,1),(0,1),(1,0)],lambda s,b:(int(s and b),int(s and b)))
+rows(g,'lily pad shape (11.2): column 14 wide from 0 to 1.5 (height x 10 = 15)','GC4-LILY-SHAPE',0,3,[()],lambda :(14,0,15))
+W4(g,11)
+# ===== 12
+g=G4(12,'Dripleaf','T0603','big dripleaf (12.1), its stem (12.2), placeWithRandomHeight (12.3), small dripleaf (12.4), worked examples 10 and 11.')
+TILT={0:(1,-1,11,15),1:(0,10,11,15),2:(1,10,11,13),3:(1,100,0,0)}
+rows(g,'tilt table (12.1): causesVibration none true, unstable false, partial true, full true; delay until the next tilt step -1, 10, 10, 100; collision y range 11 to 15 for none and unstable, 11 to 13 partial, empty (0, 0) for full (tilt 0 none 1 unstable 2 partial 3 full) (vibration, delay, collision from, collision to)','GC4-DRIP-TILT',1,4,[(t,) for t in range(4)],lambda t:(TILT[t][0],{0:-1,1:10,2:10,3:100}[t],TILT[t][2],TILT[t][3]))
+rows(g,'big dripleaf constants (12.1): NO_TICK -1, MAX_GEN_HEIGHT 5, stem box 6 wide to 13, leaf box 16 wide','GC4-DRIP-CONST',0,4,[()],lambda :(-1,5,6,16))
+rows(g,'big dripleaf survival (12.1 step 1, 12.2 step 1): the head needs a dripleaf, a stem or supports_big_dripleaf below; the stem needs a stem or the tag below and a stem or head above (below is dripleaf or stem, below in tag) (survives)','GC4-DRIP-SURVIVE',2,1,[(1,0),(0,1),(0,0),(1,1)],lambda a,b:(int(a or b),))
+def dpl(bd,bf,pd,src):
+    return (bf if bd else {3:4,4:3,5:6,6:5}[pd]),src
+rows(g,'big dripleaf placement (12.1 step 2): facing is the state below\'s facing when it is a dripleaf or stem, else the opposite of the placer\'s horizontal direction; waterlogged is a water source at the clicked position (below is dripleaf or stem, below facing, placer direction, water source) (facing, waterlogged)','GC4-DRIP-PLACE',4,2,[(1,5,3,1),(0,5,3,0),(0,5,4,1),(0,5,5,0),(0,5,6,1)],dpl)
+def dsu2(d,sv,wl,nb):
+    if d==1 and not sv: return 1,0
+    return (2 if (d==2 and nb) else 0),int(wl)
+dsc=[(1,0,1,0),(1,1,0,0),(2,1,1,1),(2,1,0,0),(2,1,0,1),(3,1,1,0)]
+rows(g,'big dripleaf shape update (12.1 step 3): from DOWN air when it cannot survive; a water tick when waterlogged; from UP with a big_dripleaf neighbour a stem with the same properties (direction 1 down 2 up, survive, waterlogged, neighbour is big_dripleaf) (0 unchanged 1 air 2 stem, water tick)','GC4-DRIP-SU',4,2,dsc,dsu2)
+cgc=[(1,1),(1,2),(1,3),(1,0),(0,1),(0,2)]
+rows(g,'big dripleaf canGrowInto and canPlaceAt (12.1 step 4): inside the build height and the state is air, block water (any level) or small_dripleaf (in height, kind 1 air 2 water 3 small_dripleaf 0 other) (can grow)','GC4-DRIP-CANGROW',2,1,[(h,k) for h,k in cgc],lambda h,k:(int(h and k in (1,2,3)),))
+rows(g,'place (12.1 step 5, 12.2 step 3): setBlockAndUpdate with waterlogged set from a water source of the fluid (flags 3)','GC4-DRIP-WRITE',1,2,[(1,),(0,)],lambda w:(w,3))
+rows(g,'big dripleaf bone meal (12.1 step 6): valid when canGrowInto(above); the effect (this block a stem, a new head above) needs canPlaceAt(above) (can grow, can place) (valid, success, effect)','GC4-DRIP-BONE',2,3,[(1,1),(0,0),(1,0)],lambda c,p:(c,1,int(c and p)))
+def dti(cl,t,og,y,py,sg):
+    if cl: return -1,-1,0
+    can=og and y>py+0.6875
+    if t==0 and can and not sg: return 1,10,0
+    return -1,-1,0
+dtic=[(1,0,1,70.0,64,0),(0,0,1,65.0,64,0),(0,0,1,64.6875,64,0),(0,0,1,64.69,64,0),(0,0,0,70.0,64,0),(0,0,1,70.0,64,1),(0,1,1,70.0,64,0),(0,3,1,70.0,64,0)]
+rows(g,'big dripleaf entityInside (12.1 step 7.1, example 11): server only; with tilt none, the entity on the ground with y strictly above pos.y + 0.6875 and no neighbour signal sets tilt unstable (1) and schedules a tick in 10, no sound (client, tilt, on ground, entity y, pos y, signal) (tilt after or -1, delay or -1, sound)','GC4-DRIP-INSIDE',6,3,dtic,dti,fl=(4,))
+rows(g,'setTilt (12.1 step 7.3): the block is written with flags 2; the game event BLOCK_CHANGE is sent when the new tilt causes vibration (partial or full; none does too) and differs from the old tilt (old, new) (event)','GC4-DRIP-SETTILT',2,1,[(0,1),(1,2),(2,3),(3,0),(0,0),(3,3),(1,1),(2,2)],lambda o,n:(int(n in (0,2,3) and n!=o),))
+rows(g,'resetTilt (12.1 step 7.4, 7.7): the tilt becomes none; the tilt-up sound plays when the given state\'s tilt was not none (tilt) (tilt after, sound 1 up)','GC4-DRIP-RESET',1,2,[(0,),(1,),(2,),(3,)],lambda t:(0,int(t!=0)))
+def dtk(sg,t):
+    if sg: return 0,(2 if t else 0),-1
+    if t==1: return 2,1,10
+    if t==2: return 3,1,100
+    if t==3: return 0,2,-1
+    return 0,0,-1
+rows(g,'big dripleaf tick (12.1 step 7.6, example 11): with a neighbour signal the tilt resets; otherwise unstable becomes partial (sound down 1, next tick 10), partial becomes full (down, next tick 100), full resets (sound up 2), none does nothing (signal, tilt) (tilt after, sound, delay or -1)','GC4-DRIP-TICK',2,3,[(1,2),(1,0),(0,1),(0,2),(0,3),(0,0)],dtk)
+rows(g,'big dripleaf neighbour change (12.1 step 7.7): a redstone signal resets the tilt at once, with the tilt-up sound when it was not none; no signal does nothing (-1) (signal, tilt) (tilt after, sound)','GC4-DRIP-NEIGHBOUR',2,2,[(1,3),(1,0),(0,2)],lambda s,t:(0,int(t!=0)) if s else (-1,0))
+rows(g,'big dripleaf projectile hit (12.1 step 7.8): setTiltAndScheduleTick to full with the tilt-down sound: the leaf drops at once and resets 100 ticks later (tilt, sound, delay)','GC4-DRIP-PROJECTILE',0,3,[()],lambda :(3,1,100))
+rows(g,'stem survival (12.2 step 1): a stem or supports_big_dripleaf below and a stem or head above (below ok, above ok) (survives)','GC4-STEM-SURVIVE',2,1,[(1,1),(1,0),(0,1),(0,0)],lambda a,b:(int(a and b),))
+rows(g,'stem shape update (12.2 step 2): from DOWN or UP a stem that cannot survive schedules a tick (delay 1); a water tick when waterlogged (direction 1 down 2 up 3 other, survive, waterlogged) (tick, water tick)','GC4-STEM-SU',3,2,[(1,0,0),(2,0,1),(3,0,0),(1,1,1),(2,1,0)],lambda d,s,w:(int(d in (1,2) and not s),w))
+rows(g,'stem finding the top (12.2 step 4): from pos move UP over stems; the first other cell must be big_dripleaf (stems from pos including pos, the cell above them is a head) (found, offset of that cell from pos)','GC4-STEM-FIND',2,2,[(1,1),(3,1),(2,0)],lambda r,h:(h,r))
+rows(g,'stem bone meal (12.2 step 4): valid when the head is found and canPlaceAt(top.above()); success always; the top becomes a stem and a new head is placed above it, whichever stem was clicked (found, can place above the top) (valid, success)','GC4-STEM-BONE',2,2,[(1,1),(1,0),(0,1),(0,0)],lambda f,p:(int(f and p),1))
+def hh(raw,free):
+    n=2+raw; i=min(n,free); st=max(i-1,0)
+    return n,i,st,st
+hhc=[(0,5),(3,5),(2,4),(3,2),(1,0),(0,1),(3,1),(2,3),(3,9)]
+rows(g,'placeWithRandomHeight (12.3, example 10): n = Mth.nextInt(2, 5); i counts the cells from pos up that canPlaceAt, at most n; stems fill all but the last used cell and one head sits on top; i can be below n and 0 only when pos cannot be replaced (then the head is placed at pos) (nextInt(4) draw, free cells from pos) (n, cells used, stems, head offset)','GC4-DRIP-HEIGHT',2,4,hhc,hh)
+rows(g,'small dripleaf mayPlaceOn (12.4 step 1): the supporting state in supports_small_dripleaf (clay, moss_block), or a water source in the lower half\'s own cell together with a block in supports_vegetation (in tag, water source in own cell, in supports_vegetation) (ok)','GC4-SMALL-PLACEON',3,1,[(1,0,0),(0,1,1),(0,1,0),(0,0,1),(0,0,0)],lambda t,w,v:(int(t or (w and v)),))
+rows(g,'small dripleaf setPlacedBy (12.4 step 4): on a server only the upper half is placed above, facing from the placed state, waterlogged copied (server) (placed)','GC4-SMALL-PLACED',1,1,[(1,),(0,)],lambda s:(s,))
+rows(g,'small dripleaf shape update (12.4 step 5): a water tick when waterlogged, then the DoublePlantBlock update (waterlogged) (water tick)','GC4-SMALL-SU',1,1,[(1,),(0,)],lambda w:(w,))
+rows(g,'small dripleaf bone meal (12.4 step 6): always valid and successful; from the lower half the upper cell becomes the legacy fluid block (water when it is water, else air) with flags 18, then placeWithRandomHeight at the lower half; from the upper half the same on the lower half\'s position (half 0 lower 1 upper, fluid above is water) (valid, success, y offset of the acting position, replacement 1 water 0 air, flags)','GC4-SMALL-BONE',2,5,[(0,1),(0,0),(1,1),(1,0)],lambda h,w:(1,1,-h,w,18))
+rows(g,'small dripleaf constants (12.4): column 12 wide to 13, maximum vertical offset 0.1 (x 1000)','GC4-SMALL-CONST',0,4,[()],lambda :(12,0,13,100))
+W4(g,12)

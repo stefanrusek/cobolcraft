@@ -2100,3 +2100,1377 @@
      MOVE 15 TO L-TOP
      GOBACK.
  END PROGRAM GC4-FLOWER-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-PLACE.
+*> USING the clicked y is below the maximum build height, the cell above can be replaced (BINARY-LONG), the lower state is placed out (0 null): DoublePlantBlock (9.1 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-REPLACE              BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-HEIGHT L-REPLACE L-PLACED.
+     MOVE 0 TO L-PLACED
+     IF L-HEIGHT = 1 AND L-REPLACE = 1
+         MOVE 1 TO L-PLACED
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-SETPLACED.
+*> USING the block has the property waterlogged, isWaterAt(pos) (BINARY-LONG), the half written above (1 upper), its waterlogged (-1 without the property), the flags out: setPlacedBy (9.1 step 2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAS L-WATER L-HALF L-WATERLOGGED L-FLAGS.
+     MOVE 1 TO L-HALF
+     MOVE 3 TO L-FLAGS
+     CALL "GC4-WATERLOG-COPY" USING L-HAS L-WATER L-WATERLOGGED
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-SETPLACED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-SURVIVE.
+*> USING half (0 lower, 1 upper), the state below is this block with half lower, mayPlaceOn of the state below (BINARY-LONG), canSurvive out: 9.1 step 3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-BELOW-LOWER          BINARY-LONG.
+ 01 L-MAY                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-HALF L-BELOW-LOWER L-MAY L-SURVIVE.
+     MOVE L-MAY TO L-SURVIVE
+     IF L-HALF = 1
+         MOVE L-BELOW-LOWER TO L-SURVIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-SU.
+*> USING half (0 lower, 1 upper), the changed direction (1 down, 2 up, 3 other), the neighbour is this block, its half, canSurvive (BINARY-LONG), the result (1 air, 0 unchanged) out:
+*> DoublePlantBlock.updateShape (9.1 step 4): the partner cell gives air unless the neighbour is this block with the other half; else the lower half over a missing ground gives air.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-NEIGHBOUR-HALF       BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HALF L-DIR L-SAME L-NEIGHBOUR-HALF L-SURVIVE L-AIR.
+     MOVE 0 TO L-AIR
+     EVALUATE TRUE
+         WHEN (L-HALF = 0 AND L-DIR = 2) OR (L-HALF = 1 AND L-DIR = 1)
+             IF L-SAME = 0 OR L-NEIGHBOUR-HALF = L-HALF
+                 MOVE 1 TO L-AIR
+             END-IF
+         WHEN L-SURVIVE = 0
+             MOVE 1 TO L-AIR
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-PLACEAT.
+*> USING the block has the property waterlogged, isWaterAt(pos) (BINARY-LONG), the waterlogged of the lower and of the upper half (-1 without the property) out: placeAt (9.1 step 5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-LOWER                BINARY-LONG.
+ 01 L-UPPER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAS L-WATER L-LOWER L-UPPER.
+     CALL "GC4-WATERLOG-COPY" USING L-HAS L-WATER L-LOWER
+     MOVE L-LOWER TO L-UPPER
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-PLACEAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-BREAK.
+*> USING the player prevents block drops (creative), half (0 lower, 1 upper), the state below is this block with half lower, FluidState.is(Fluids.WATER) of the lower position (BINARY-LONG),
+*> action (0 nothing, 1 dropResources, 2 lower set to water, 3 lower set to air), flags, level event, drops of the break itself out: playerWillDestroy (9.1 step 6).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-BELOW-LOWER          BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-DROPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CREATIVE L-HALF L-BELOW-LOWER L-WATER L-ACTION L-FLAGS L-EVENT L-DROPS.
+     MOVE 0 TO L-ACTION L-FLAGS L-EVENT L-DROPS
+     EVALUATE TRUE
+         WHEN L-CREATIVE = 0
+             MOVE 1 TO L-ACTION
+         WHEN L-HALF = 1 AND L-BELOW-LOWER = 1
+             MOVE 3 TO L-ACTION
+             IF L-WATER = 1
+                 MOVE 2 TO L-ACTION
+             END-IF
+             COMPUTE L-FLAGS = 1 + 2 + 32
+             MOVE 2001 TO L-EVENT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-BREAK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DOUBLE-SEED.
+*> USING half (0 lower, 1 upper), y, the y of the position the offset seed uses out: both halves use the lower half's position (9.1 step 7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-SEED-Y               BINARY-LONG.
+ PROCEDURE DIVISION USING L-HALF L-Y L-SEED-Y.
+     MOVE L-Y TO L-SEED-Y
+     IF L-HALF = 1
+         SUBTRACT 1 FROM L-SEED-Y
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DOUBLE-SEED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SEAGRASS-PLACEON.
+*> USING the block below has a sturdy face toward UP, it is in cannot_support_seagrass (BINARY-LONG), mayPlaceOn out: 9.2 step 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-STURDY L-TAG L-OK.
+     MOVE 0 TO L-OK
+     IF L-STURDY = 1 AND L-TAG = 0
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SEAGRASS-PLACEON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SEAGRASS-PLACE.
+*> USING the clicked fluid is in tag water, it is full (BINARY-LONG), placed out (0 null): 9.2 step 2 and 9.3 (the cell above for tall seagrass).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-FULL                 BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATER L-FULL L-PLACED.
+     MOVE 0 TO L-PLACED
+     IF L-WATER = 1 AND L-FULL = 1
+         MOVE 1 TO L-PLACED
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SEAGRASS-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SEAGRASS-SU.
+*> USING canSurvive (BINARY-LONG), the result is air, a water tick is scheduled out: the shape update of seagrass (9.2 step 3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVE L-AIR L-WATER.
+     MOVE 0 TO L-AIR L-WATER
+     IF L-SURVIVE = 0
+         MOVE 1 TO L-AIR
+     ELSE
+         MOVE 1 TO L-WATER
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SEAGRASS-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SEAGRASS-BONE.
+*> USING the block above is block water (BINARY-LONG), valid, success, the flags of both tall_seagrass writes out: 9.2 step 5.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ABOVE L-VALID L-SUCCESS L-FLAGS.
+     MOVE L-ABOVE TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     MOVE 2 TO L-FLAGS
+     GOBACK.
+ END PROGRAM GC4-SEAGRASS-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-TALLSEA-SURVIVE.
+*> USING half (0 lower, 1 upper), the state below is this block with half lower, mayPlaceOn, the fluid at pos is in tag water and full (BINARY-LONG), canSurvive out: 9.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-BELOW-LOWER          BINARY-LONG.
+ 01 L-MAY                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-HALF L-BELOW-LOWER L-MAY L-WATER L-SURVIVE.
+     MOVE 0 TO L-SURVIVE
+     EVALUATE TRUE
+         WHEN L-HALF = 1
+             MOVE L-BELOW-LOWER TO L-SURVIVE
+         WHEN L-MAY = 1 AND L-WATER = 1
+             MOVE 1 TO L-SURVIVE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-TALLSEA-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-TALLSEA-PLACE.
+*> USING the DoublePlantBlock placement succeeds, the fluid at clickedPos.above() is in tag water and full (BINARY-LONG), placed out: 9.3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DOUBLE               BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DOUBLE L-WATER L-PLACED.
+     MOVE 0 TO L-PLACED
+     IF L-DOUBLE = 1 AND L-WATER = 1
+         MOVE 1 TO L-PLACED
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-TALLSEA-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-NOT-BONE.
+*> USING block key (PIC X(48)), the block is not a bone meal target (BINARY-LONG out 1): the list of 9.4 (plain DoublePlantBlocks, tall seagrass, the flowers, sugar cane, cactus ...).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SECTION             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-NOT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-NOT.
+     MOVE 0 TO L-NOT
+     CALL "GC4-PART" USING L-KEY WS-SECTION
+     IF WS-SECTION = 91 OR WS-SECTION = 93 OR WS-SECTION = 101 OR WS-SECTION = 102 OR WS-SECTION = 103 OR WS-SECTION = 40 OR WS-SECTION = 51
+        OR WS-SECTION = 52 OR WS-SECTION = 70 OR WS-SECTION = 112 OR WS-SECTION = 131 OR WS-SECTION = 132 OR WS-SECTION = 134
+        OR L-KEY = "minecraft:dead_bush"
+         MOVE 1 TO L-NOT
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-NOT-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-GRASS-BONE.
+*> USING the block is a fern (BINARY-LONG; else short_grass), the grown block's lower state can survive at pos, the cell above is air, it is inside the build height, valid, success,
+*> the grown block (1 tall_grass, 2 large_fern), the placeAt flags out: TallGrassBlock bone meal (9.5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FERN                 BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-GROWN                BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-FERN L-SURVIVE L-AIR L-HEIGHT L-VALID L-SUCCESS L-GROWN L-FLAGS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS L-GROWN
+     MOVE 2 TO L-FLAGS
+     IF L-FERN = 1
+         MOVE 2 TO L-GROWN
+     END-IF
+     IF L-SURVIVE = 1 AND L-AIR = 1 AND L-HEIGHT = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-GRASS-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-TALLFLOWER-BONE.
+*> USING valid, success, the block's item is popped, the plant grows (BINARY-LONG out): TallFlowerBlock bone meal (9.6).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-POP                  BINARY-LONG.
+ 01 L-GROWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALID L-SUCCESS L-POP L-GROWS.
+     MOVE 1 TO L-VALID L-SUCCESS L-POP
+     MOVE 0 TO L-GROWS
+     GOBACK.
+ END PROGRAM GC4-TALLFLOWER-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-STEW-TICKS.
+*> USING the duration in seconds (FLOAT-LONG), the ticks out: the suspicious stew effect entry is floor(seconds x 20) (10.1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MILLI               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SECONDS              FLOAT-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SECONDS L-TICKS.
+*> The seconds are decimals of at most three places: 0.35 x 20 must give 7, not 6.99999 of the binary double, so the product is rounded to thousandths of a tick first.
+     COMPUTE WS-MILLI ROUNDED = L-SECONDS * 20000
+     DIVIDE WS-MILLI BY 1000 GIVING L-TICKS
+     GOBACK.
+ END PROGRAM GC4-STEW-TICKS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-FLOWER10-CONST.
+*> USING shape width, y from, y to, ticks (0 none), bone meal (0 none), getBeeInteractionEffect (0 null) (BINARY-LONG out): FlowerBlock (10.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-BONE                 BINARY-LONG.
+ 01 L-BEE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-Y0 L-Y1 L-TICKS L-BONE L-BEE.
+     MOVE 6 TO L-WIDTH
+     MOVE 0 TO L-Y0 L-TICKS L-BONE L-BEE
+     MOVE 10 TO L-Y1
+     GOBACK.
+ END PROGRAM GC4-FLOWER10-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-WITHER-HIT.
+*> USING the level is a server, the difficulty (0 peaceful), the entity is a LivingEntity, it is invulnerable to wither damage (BINARY-LONG), the wither effect is applied, its ticks,
+*> its amplifier out: WitherRoseBlock.entityInside (10.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-DIFFICULTY           BINARY-LONG.
+ 01 L-LIVING               BINARY-LONG.
+ 01 L-INVULNERABLE         BINARY-LONG.
+ 01 L-APPLIES              BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-DIFFICULTY L-LIVING L-INVULNERABLE L-APPLIES L-TICKS L-AMPLIFIER.
+     MOVE 0 TO L-APPLIES L-AMPLIFIER
+     MOVE 40 TO L-TICKS
+     IF L-SERVER = 1 AND L-DIFFICULTY NOT = 0 AND L-LIVING = 1 AND L-INVULNERABLE = 0
+         MOVE 1 TO L-APPLIES
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-WITHER-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-TYPE.
+*> USING the type (1 OPEN, 2 CLOSED), open, effect (1 blindness, 2 nausea), its seconds, the particle colour, the transformed type (BINARY-LONG out): EyeblossomBlock.Type (10.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-OPEN                 BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-SECONDS              BINARY-LONG.
+ 01 L-COLOUR               BINARY-LONG.
+ 01 L-OTHER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-OPEN L-EFFECT L-SECONDS L-COLOUR L-OTHER.
+     IF L-TYPE = 1
+         MOVE 1 TO L-OPEN L-EFFECT
+         MOVE 11 TO L-SECONDS
+         MOVE 16545810 TO L-COLOUR
+         MOVE 2 TO L-OTHER
+     ELSE
+         MOVE 0 TO L-OPEN
+         MOVE 2 TO L-EFFECT
+         MOVE 7 TO L-SECONDS
+         MOVE 6250335 TO L-COLOUR
+         MOVE 1 TO L-OTHER
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-CHANGE.
+*> USING the attribute gameplay/eyeblossom_open (0 false, 1 true, 2 the tri-state default), the type's open (BINARY-LONG), want, the state changes out: tryChangingState (10.3 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ATTRIBUTE            BINARY-LONG.
+ 01 L-OPEN                 BINARY-LONG.
+ 01 L-WANT                 BINARY-LONG.
+ 01 L-CHANGES              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ATTRIBUTE L-OPEN L-WANT L-CHANGES.
+     MOVE L-ATTRIBUTE TO L-WANT
+     IF L-ATTRIBUTE = 2
+         MOVE L-OPEN TO L-WANT
+     END-IF
+     MOVE 0 TO L-CHANGES
+     IF L-WANT NOT = L-OPEN
+         MOVE 1 TO L-CHANGES
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-CHANGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-DELAY.
+*> USING distSqr, the draw of nextInt(high - low + 1) (BINARY-LONG), low (int)(dist x 5), high (int)(dist x 10), the delay out: nextIntBetweenInclusive for a neighbour (10.3 step 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-FIVE                FLOAT-LONG.
+ 01 WS-TEN                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DSQ                  BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-LOW                  BINARY-LONG.
+ 01 L-HIGH                 BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DSQ L-DRAW L-LOW L-HIGH L-DELAY.
+     COMPUTE WS-DIST = FUNCTION SQRT(L-DSQ)
+     COMPUTE WS-FIVE = WS-DIST * 5
+     COMPUTE WS-TEN = WS-DIST * 10
+     COMPUTE L-LOW = FUNCTION INTEGER(WS-FIVE)
+     COMPUTE L-HIGH = FUNCTION INTEGER(WS-TEN)
+     COMPUTE L-DELAY = L-LOW + L-DRAW
+     GOBACK.
+ END PROGRAM GC4-EYE-DELAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-SCAN.
+*> USING the offset dx, dy, dz of a cell from the changed block (BINARY-LONG), the cell is a candidate out: the box of 10.3 step 1, the changed block itself excluded.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-CANDIDATE            BINARY-LONG.
+ PROCEDURE DIVISION USING L-DX L-DY L-DZ L-CANDIDATE.
+     MOVE 0 TO L-CANDIDATE
+     IF L-DX >= -3 AND L-DX <= 3 AND L-DY >= -2 AND L-DY <= 2 AND L-DZ >= -3 AND L-DZ <= 3 AND (L-DX NOT = 0 OR L-DY NOT = 0 OR L-DZ NOT = 0)
+         MOVE 1 TO L-CANDIDATE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-SCAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-SOUND.
+*> USING the trigger (1 random tick, 2 scheduled tick), the state changed (BINARY-LONG), the sound (0 none, 1 long switch sound, 2 short switch sound) out: 10.3 steps 2 and 3.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TRIGGER              BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TRIGGER L-CHANGED L-SOUND.
+     MOVE 0 TO L-SOUND
+     IF L-CHANGED = 1
+         MOVE L-TRIGGER TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-SOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BEE-ATTRACTS.
+*> USING block key (PIC X(48)), waterlogged (0 when the block has no such property), half (1 upper) (BINARY-LONG), attractsBees out: the block is in tag bee_attractive (the 29 members as
+*> shipped, 10.3 step 5) and not waterlogged; sunflower only for its upper half.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MEMBER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-ATTRACTS             BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-WATERLOGGED L-HALF L-ATTRACTS.
+     MOVE 0 TO WS-MEMBER L-ATTRACTS
+     IF L-KEY = "minecraft:dandelion" OR L-KEY = "minecraft:open_eyeblossom" OR L-KEY = "minecraft:poppy" OR L-KEY = "minecraft:blue_orchid"
+        OR L-KEY = "minecraft:allium" OR L-KEY = "minecraft:azure_bluet" OR L-KEY = "minecraft:red_tulip" OR L-KEY = "minecraft:orange_tulip"
+        OR L-KEY = "minecraft:white_tulip" OR L-KEY = "minecraft:pink_tulip" OR L-KEY = "minecraft:oxeye_daisy" OR L-KEY = "minecraft:cornflower"
+        OR L-KEY = "minecraft:lily_of_the_valley" OR L-KEY = "minecraft:wither_rose" OR L-KEY = "minecraft:torchflower" OR L-KEY = "minecraft:sunflower"
+        OR L-KEY = "minecraft:lilac" OR L-KEY = "minecraft:peony" OR L-KEY = "minecraft:rose_bush" OR L-KEY = "minecraft:pitcher_plant"
+        OR L-KEY = "minecraft:flowering_azalea_leaves" OR L-KEY = "minecraft:flowering_azalea" OR L-KEY = "minecraft:mangrove_propagule"
+        OR L-KEY = "minecraft:cherry_leaves" OR L-KEY = "minecraft:pink_petals" OR L-KEY = "minecraft:wildflowers" OR L-KEY = "minecraft:chorus_flower"
+        OR L-KEY = "minecraft:spore_blossom" OR L-KEY = "minecraft:cactus_flower"
+         MOVE 1 TO WS-MEMBER
+     END-IF
+     IF WS-MEMBER = 1 AND L-WATERLOGGED = 0 AND (L-KEY NOT = "minecraft:sunflower" OR L-HALF = 1)
+         MOVE 1 TO L-ATTRACTS
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BEE-ATTRACTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-EYE-INSIDE.
+*> USING the level is a server, the difficulty (0 peaceful), the entity is a Bee, Bee.attractsBees of the state, the bee is already poisoned (BINARY-LONG), poison applied, its ticks,
+*> its amplifier out: EyeblossomBlock.entityInside (10.3 step 5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-DIFFICULTY           BINARY-LONG.
+ 01 L-BEE                  BINARY-LONG.
+ 01 L-ATTRACTS             BINARY-LONG.
+ 01 L-POISONED             BINARY-LONG.
+ 01 L-APPLIES              BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-DIFFICULTY L-BEE L-ATTRACTS L-POISONED L-APPLIES L-TICKS L-AMPLIFIER.
+     MOVE 0 TO L-APPLIES L-AMPLIFIER
+     MOVE 25 TO L-TICKS
+     IF L-SERVER = 1 AND L-DIFFICULTY NOT = 0 AND L-BEE = 1 AND L-ATTRACTS = 1 AND L-POISONED = 0
+         MOVE 1 TO L-APPLIES
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-EYE-INSIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BED-PLACE.
+*> USING the state at the clicked position is this block, its flower_amount, the placer's horizontal direction (3 north, 4 south, 5 west, 6 east) (BINARY-LONG), the new amount, the new
+*> facing (-1 kept) out: SegmentableBlock.getStateForPlacement (10.4 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-PLACER               BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SAME L-AMOUNT L-PLACER L-NEW L-FACING.
+     MOVE -1 TO L-FACING
+     MOVE 1 TO L-NEW
+     IF L-SAME = 1
+         COMPUTE L-NEW = FUNCTION MIN(4, L-AMOUNT + 1)
+         GOBACK
+     END-IF
+     EVALUATE L-PLACER
+         WHEN 3
+             MOVE 4 TO L-FACING
+         WHEN 4
+             MOVE 3 TO L-FACING
+         WHEN 5
+             MOVE 6 TO L-FACING
+         WHEN OTHER
+             MOVE 5 TO L-FACING
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-BED-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SEG-REPLACE.
+*> USING secondary use is active, the item in hand is this block's item, the amount (flower_amount or pickles), the default canBeReplaced (BINARY-LONG), canBeReplaced out:
+*> true when not secondary use, the item matches and the amount is below 4 (10.4 step 2, 11.1 step 3); otherwise the default.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SECONDARY            BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-DEFAULT              BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SECONDARY L-ITEM L-AMOUNT L-DEFAULT L-RESULT.
+     MOVE L-DEFAULT TO L-RESULT
+     IF L-SECONDARY = 0 AND L-ITEM = 1 AND L-AMOUNT < 4
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SEG-REPLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BED-BONE.
+*> USING flower_amount (BINARY-LONG), valid, success, the amount after (-1 for none), the flags, an item is dropped out: FlowerBedBlock bone meal (10.4 step 4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-DROP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-AMOUNT L-VALID L-SUCCESS L-AFTER L-FLAGS L-DROP.
+     MOVE 1 TO L-VALID L-SUCCESS
+     MOVE 2 TO L-FLAGS
+     IF L-AMOUNT < 4
+         COMPUTE L-AFTER = L-AMOUNT + 1
+         MOVE 0 TO L-DROP
+     ELSE
+         MOVE -1 TO L-AFTER
+         MOVE 1 TO L-DROP
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-BED-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-BED-CONST.
+*> USING the default facing (3 north), default flower_amount, its maximum, the shape height (BINARY-LONG out): FlowerBedBlock (10.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-FACING L-AMOUNT L-MAX L-HEIGHT.
+     MOVE 3 TO L-FACING L-HEIGHT
+     MOVE 1 TO L-AMOUNT
+     MOVE 4 TO L-MAX
+     GOBACK.
+ END PROGRAM GC4-BED-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRY-SHAPE.
+*> USING kind (1 dead_bush, 2 short_dry_grass, 3 tall_dry_grass), shape width, y from, y to, offset (0 none, 2 XYZ) (BINARY-LONG out): 10.6.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-WIDTH L-Y0 L-Y1 L-OFFSET.
+     MOVE 0 TO L-Y0
+     EVALUATE L-KIND
+         WHEN 1
+             MOVE 12 TO L-WIDTH
+             MOVE 13 TO L-Y1
+             MOVE 0 TO L-OFFSET
+         WHEN 2
+             MOVE 12 TO L-WIDTH
+             MOVE 10 TO L-Y1
+             MOVE 2 TO L-OFFSET
+         WHEN OTHER
+             MOVE 14 TO L-WIDTH
+             MOVE 16 TO L-Y1
+             MOVE 2 TO L-OFFSET
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DRY-SHAPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRY-BONE.
+*> USING kind (1 dead_bush, 2 short_dry_grass, 3 tall_dry_grass), a horizontal neighbour can take short_dry_grass (BINARY-LONG), valid, success, effect (0 none, 1 grows in place into
+*> tall_dry_grass, 2 spreads short_dry_grass to a neighbour), the flags out: bone meal of the dry vegetation (10.6).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-SPREAD               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-SPREAD L-VALID L-SUCCESS L-EFFECT L-FLAGS.
+     MOVE 0 TO L-VALID L-SUCCESS L-EFFECT L-FLAGS
+     EVALUATE TRUE
+         WHEN L-KIND = 2
+             MOVE 1 TO L-VALID L-SUCCESS L-EFFECT
+             MOVE 3 TO L-FLAGS
+         WHEN L-KIND = 3 AND L-SPREAD = 1
+             MOVE 1 TO L-VALID L-SUCCESS
+             MOVE 2 TO L-EFFECT
+             MOVE 3 TO L-FLAGS
+         WHEN L-KIND = 3
+             MOVE 1 TO L-SUCCESS
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DRY-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-LIGHT.
+*> USING pickles, waterlogged (BINARY-LONG), the light level out: 0 when dead (not waterlogged), else 3 + 3 x pickles (11.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PICKLES              BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-LIGHT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PICKLES L-WATERLOGGED L-LIGHT.
+     MOVE 0 TO L-LIGHT
+     IF L-WATERLOGGED = 1
+         COMPUTE L-LIGHT = 3 + 3 * L-PICKLES
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-LIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-SHAPE.
+*> USING pickles (BINARY-LONG), the shape width and height out: column(4, 0, 6), (10, 0, 6), (12, 0, 6), (12, 0, 7) (11.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PICKLES              BINARY-LONG.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PICKLES L-WIDTH L-HEIGHT.
+     MOVE 6 TO L-HEIGHT
+     EVALUATE L-PICKLES
+         WHEN 1
+             MOVE 4 TO L-WIDTH
+         WHEN 2
+             MOVE 10 TO L-WIDTH
+         WHEN 3
+             MOVE 12 TO L-WIDTH
+         WHEN OTHER
+             MOVE 12 TO L-WIDTH
+             MOVE 7 TO L-HEIGHT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-PICKLE-SHAPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-PLACEON.
+*> USING the block below has a non-empty collision face toward UP, its top face is sturdy (BINARY-LONG), mayPlaceOn out (replaces the vegetation tag rule): 11.1 step 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-COLLISION            BINARY-LONG.
+ 01 L-STURDY               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-COLLISION L-STURDY L-OK.
+     MOVE 0 TO L-OK
+     IF L-COLLISION = 1 OR L-STURDY = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-PLACEON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-PLACE.
+*> USING the state at the clicked position is this block, its pickles, the fluid there is a water source (BINARY-LONG), the new pickles, waterlogged (-1 kept) out: 11.1 step 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-PICKLES              BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ PROCEDURE DIVISION USING L-SAME L-PICKLES L-SOURCE L-NEW L-WATERLOGGED.
+     IF L-SAME = 1
+         COMPUTE L-NEW = FUNCTION MIN(4, L-PICKLES + 1)
+         MOVE -1 TO L-WATERLOGGED
+     ELSE
+         MOVE 1 TO L-NEW
+         MOVE L-SOURCE TO L-WATERLOGGED
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-SU.
+*> USING canSurvive, waterlogged (BINARY-LONG), the result is air, a water tick is scheduled out: the shape update of 11.1 step 4 (air first, no tick for the removed block).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SURVIVE L-WATERLOGGED L-AIR L-WATER.
+     MOVE 0 TO L-AIR L-WATER
+     IF L-SURVIVE = 0
+         MOVE 1 TO L-AIR
+     ELSE
+         MOVE L-WATERLOGGED TO L-WATER
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-BONE-VALID.
+*> USING waterlogged (the pickle is not dead), the block below is in coral_blocks (BINARY-LONG), valid, success out: 11.1 step 5.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-CORAL                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATERLOGGED L-CORAL L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-WATERLOGGED = 1 AND L-CORAL = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-BONE-VALID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-CELL.
+*> USING the cell number 1 to 26 (BINARY-LONG), dx, dz, dy (BINARY-LONG out): the cells of the sea pickle patch scan (11.1 step 5): 13 columns, x ascending then z ascending, the lower
+*> height (y - 1) before the upper (y).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COLUMN              BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SIZES.
+    05 WS-SIZE             BINARY-LONG OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-CELL                 BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CELL L-DX L-DZ L-DY.
+     MOVE 1 TO WS-SIZE(1) WS-SIZE(5)
+     MOVE 3 TO WS-SIZE(2) WS-SIZE(4)
+     MOVE 5 TO WS-SIZE(3)
+     COMPUTE WS-COLUMN = (L-CELL - 1) / 2
+     COMPUTE L-DY = -1 + FUNCTION MOD(L-CELL - 1, 2)
+     PERFORM VARYING L-DX FROM -2 BY 1 UNTIL WS-COLUMN < WS-SIZE(L-DX + 3)
+         SUBTRACT WS-SIZE(L-DX + 3) FROM WS-COLUMN
+     END-PERFORM
+     COMPUTE WS-ROW = WS-COLUMN
+     COMPUTE L-DZ = WS-ROW - (WS-SIZE(L-DX + 3) - 1) / 2
+     GOBACK.
+ END PROGRAM GC4-PICKLE-CELL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-STEP.
+*> USING the cell is the clicked pickle, the nextInt(6) draw, the state at the cell is block water, the block below it is in coral_blocks, the nextInt(4) draw (BINARY-LONG), a nextInt(6)
+*> draw was made, a pickle was placed, its pickles out: one cell of the patch scan (11.1 step 5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-POS                  BINARY-LONG.
+ 01 L-DRAW6                BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-CORAL                BINARY-LONG.
+ 01 L-DRAW4                BINARY-LONG.
+ 01 L-DREW                 BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ 01 L-PICKLES              BINARY-LONG.
+ PROCEDURE DIVISION USING L-POS L-DRAW6 L-WATER L-CORAL L-DRAW4 L-DREW L-PLACED L-PICKLES.
+     MOVE 0 TO L-DREW L-PLACED L-PICKLES
+     IF L-POS = 1
+         GOBACK
+     END-IF
+     MOVE 1 TO L-DREW
+     IF L-DRAW6 = 0 AND L-WATER = 1 AND L-CORAL = 1
+         MOVE 1 TO L-PLACED
+         COMPUTE L-PICKLES = L-DRAW4 + 1
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-PICKLE-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-PICKLE-CONST.
+*> USING the cells scanned, the cells that draw nextInt(6), the pickles of the clicked block after, its flags (BINARY-LONG out): the totals of 11.1 step 5.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CELLS                BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ 01 L-PICKLES              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CELLS L-DRAWS L-PICKLES L-FLAGS.
+     COMPUTE L-CELLS = 13 * 2
+     COMPUTE L-DRAWS = L-CELLS - 1
+     MOVE 4 TO L-PICKLES
+     MOVE 2 TO L-FLAGS
+     GOBACK.
+ END PROGRAM GC4-PICKLE-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-LILY-PLACE.
+*> USING the fluid below is in fluid tag supports_lily_pad, the block below is in block tag supports_lily_pad, the fluid at its own position is empty (BINARY-LONG), mayPlaceOn out: 11.2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FLUID                BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-EMPTY                BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLUID L-BLOCK L-EMPTY L-OK.
+     MOVE 0 TO L-OK
+     IF (L-FLUID = 1 OR L-BLOCK = 1) AND L-EMPTY = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-LILY-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-LILY-BOAT.
+*> USING the level is a server, the entity is an AbstractBoat (BINARY-LONG), destroyBlock, with drops out: LilyPadBlock.entityInside (11.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-BOAT                 BINARY-LONG.
+ 01 L-DESTROY              BINARY-LONG.
+ 01 L-DROPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-BOAT L-DESTROY L-DROPS.
+     MOVE 0 TO L-DESTROY L-DROPS
+     IF L-SERVER = 1 AND L-BOAT = 1
+         MOVE 1 TO L-DESTROY L-DROPS
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-LILY-BOAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-LILY-SHAPE.
+*> USING the shape width, y from and y to x 10 (BINARY-LONG out): column(14, 0, 1.5) (11.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-Y0 L-Y1.
+     MOVE 14 TO L-WIDTH
+     MOVE 0 TO L-Y0
+     MOVE 15 TO L-Y1
+     GOBACK.
+ END PROGRAM GC4-LILY-SHAPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-TILT.
+*> USING tilt (0 none, 1 unstable, 2 partial, 3 full), causesVibration, the delay until the next tilt step (-1 none), the collision shape's y from and y to (0 0 for the empty shape)
+*> (BINARY-LONG out): the Tilt enum and the leaf collision shapes (12.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-VIBRATION            BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TILT L-VIBRATION L-DELAY L-Y0 L-Y1.
+     MOVE 1 TO L-VIBRATION
+     MOVE 11 TO L-Y0
+     MOVE 15 TO L-Y1
+     EVALUATE L-TILT
+         WHEN 0
+             MOVE -1 TO L-DELAY
+         WHEN 1
+             MOVE 0 TO L-VIBRATION
+             MOVE 10 TO L-DELAY
+         WHEN 2
+             MOVE 10 TO L-DELAY
+             MOVE 13 TO L-Y1
+         WHEN OTHER
+             MOVE 100 TO L-DELAY
+             MOVE 0 TO L-Y0 L-Y1
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DRIP-TILT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-CONST.
+*> USING NO_TICK, MAX_GEN_HEIGHT, the stem box width, the leaf box width (BINARY-LONG out): BigDripleafBlock (12.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-NO-TICK              BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-STEM                 BINARY-LONG.
+ 01 L-LEAF                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-NO-TICK L-MAX L-STEM L-LEAF.
+     MOVE -1 TO L-NO-TICK
+     MOVE 5 TO L-MAX
+     MOVE 6 TO L-STEM
+     MOVE 16 TO L-LEAF
+     GOBACK.
+ END PROGRAM GC4-DRIP-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-SURVIVE.
+*> USING the state below is big_dripleaf or big_dripleaf_stem, it is in supports_big_dripleaf (BINARY-LONG), canSurvive out: 12.1 step 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-FAMILY L-TAG L-SURVIVE.
+     MOVE 0 TO L-SURVIVE
+     IF L-FAMILY = 1 OR L-TAG = 1
+         MOVE 1 TO L-SURVIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-PLACE.
+*> USING the state below is big_dripleaf or big_dripleaf_stem, its facing, the placer's horizontal direction (3 north, 4 south, 5 west, 6 east), the clicked fluid is a water source
+*> (BINARY-LONG), facing, waterlogged out: getStateForPlacement (12.1 step 2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FAMILY               BINARY-LONG.
+ 01 L-FACING-BELOW         BINARY-LONG.
+ 01 L-PLACER               BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ PROCEDURE DIVISION USING L-FAMILY L-FACING-BELOW L-PLACER L-SOURCE L-FACING L-WATERLOGGED.
+     MOVE L-SOURCE TO L-WATERLOGGED
+     IF L-FAMILY = 1
+         MOVE L-FACING-BELOW TO L-FACING
+         GOBACK
+     END-IF
+     EVALUATE L-PLACER
+         WHEN 3
+             MOVE 4 TO L-FACING
+         WHEN 4
+             MOVE 3 TO L-FACING
+         WHEN 5
+             MOVE 6 TO L-FACING
+         WHEN OTHER
+             MOVE 5 TO L-FACING
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DRIP-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-SU.
+*> USING the changed direction (1 down, 2 up, 3 other), canSurvive, waterlogged, the neighbour is big_dripleaf (BINARY-LONG), result (0 unchanged, 1 air, 2 a big_dripleaf_stem with the same
+*> properties), a water tick out: BigDripleafBlock.updateShape (12.1 step 3); air is returned before anything else.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-HEAD                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-SURVIVE L-WATERLOGGED L-HEAD L-RESULT L-WATER.
+     MOVE 0 TO L-RESULT L-WATER
+     IF L-DIR = 1 AND L-SURVIVE = 0
+         MOVE 1 TO L-RESULT
+         GOBACK
+     END-IF
+     MOVE L-WATERLOGGED TO L-WATER
+     IF L-DIR = 2 AND L-HEAD = 1
+         MOVE 2 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-CANGROW.
+*> USING the position is inside the build height, the state there (1 air, 2 block water, 3 small_dripleaf, 0 other) (BINARY-LONG), canGrowInto and canPlaceAt out: 12.1 step 4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HEIGHT L-KIND L-CAN.
+     MOVE 0 TO L-CAN
+     IF L-HEIGHT = 1 AND L-KIND >= 1 AND L-KIND <= 3
+         MOVE 1 TO L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-CANGROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-WRITE.
+*> USING the fluid is a water source (BINARY-LONG), waterlogged, the setBlockAndUpdate flags out: place of the head and of the stem (12.1 step 5, 12.2 step 3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SOURCE L-WATERLOGGED L-FLAGS.
+     MOVE L-SOURCE TO L-WATERLOGGED
+     MOVE 3 TO L-FLAGS
+     GOBACK.
+ END PROGRAM GC4-DRIP-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-BONE.
+*> USING canGrowInto(above), canPlaceAt(above) (BINARY-LONG), valid, success, the effect (this block a stem and a new head above) happens out: 12.1 step 6.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-PLACE                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-EFFECT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-CAN L-PLACE L-VALID L-SUCCESS L-EFFECT.
+     MOVE L-CAN TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     MOVE 0 TO L-EFFECT
+     IF L-CAN = 1 AND L-PLACE = 1
+         MOVE 1 TO L-EFFECT
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-INSIDE.
+*> USING the level is a client, the tilt, the entity is on the ground (BINARY-LONG), the entity's y (FLOAT-LONG), the leaf's y (BINARY-LONG), the cell has a neighbour signal (BINARY-LONG),
+*> the tilt after (-1 unchanged), the delay of the scheduled tick (-1 none), the sound (0 none) out: entityInside (12.1 step 7.1): tilt none, on the ground, y above pos.y + 0.6875,
+*> no signal sets unstable and schedules a tick in 10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LIMIT               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-GROUND               BINARY-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-POS-Y                BINARY-LONG.
+ 01 L-SIGNAL               BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLIENT L-TILT L-GROUND L-Y L-POS-Y L-SIGNAL L-AFTER L-DELAY L-SOUND.
+     MOVE -1 TO L-AFTER L-DELAY
+     MOVE 0 TO L-SOUND
+     COMPUTE WS-LIMIT = L-POS-Y + 0.6875
+     IF L-CLIENT = 0 AND L-TILT = 0 AND L-GROUND = 1 AND L-Y > WS-LIMIT AND L-SIGNAL = 0
+         MOVE 1 TO L-AFTER
+         MOVE 10 TO L-DELAY
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-INSIDE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-SETTILT.
+*> USING the old tilt, the new tilt (0 none, 1 unstable, 2 partial, 3 full) (BINARY-LONG), the game event BLOCK_CHANGE is sent out: setTilt (12.1 step 7.3), when the new tilt causes
+*> vibration (every tilt but unstable) and differs from the old one.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-OLD                  BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-OLD L-NEW L-EVENT.
+     MOVE 0 TO L-EVENT
+     IF L-NEW NOT = 1 AND L-NEW NOT = L-OLD
+         MOVE 1 TO L-EVENT
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-SETTILT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-RESET.
+*> USING the given state's tilt (BINARY-LONG), the tilt after (0), the tilt-up sound is played out: resetTilt (12.1 step 7.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TILT L-AFTER L-SOUND.
+     MOVE 0 TO L-AFTER L-SOUND
+     IF L-TILT NOT = 0
+         MOVE 1 TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-RESET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-TICK.
+*> USING the cell has a neighbour signal, the tilt (BINARY-LONG), the tilt after, the sound (0 none, 1 tilt down, 2 tilt up), the delay of the next tick (-1 none) out: tick (12.1 step 7.6).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-UP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SIGNAL               BINARY-LONG.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIGNAL L-TILT L-AFTER L-SOUND L-DELAY.
+     MOVE -1 TO L-DELAY
+     MOVE 0 TO L-AFTER L-SOUND
+     CALL "GC4-DRIP-RESET" USING L-TILT L-AFTER WS-UP
+     IF L-SIGNAL = 1 OR L-TILT = 3
+         IF WS-UP = 1
+             MOVE 2 TO L-SOUND
+         END-IF
+         GOBACK
+     END-IF
+     EVALUATE L-TILT
+         WHEN 1
+             MOVE 2 TO L-AFTER
+             MOVE 1 TO L-SOUND
+             MOVE 10 TO L-DELAY
+         WHEN 2
+             MOVE 3 TO L-AFTER
+             MOVE 1 TO L-SOUND
+             MOVE 100 TO L-DELAY
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM GC4-DRIP-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-NEIGHBOUR.
+*> USING the cell receives a redstone signal, the tilt (BINARY-LONG), the tilt after (-1 for no change), the sound out: the neighbour change of 12.1 step 7.7 resets the tilt.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-UP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SIGNAL               BINARY-LONG.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-AFTER                BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SIGNAL L-TILT L-AFTER L-SOUND.
+     MOVE -1 TO L-AFTER
+     MOVE 0 TO L-SOUND
+     IF L-SIGNAL = 1
+         CALL "GC4-DRIP-RESET" USING L-TILT L-AFTER L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-DRIP-NEIGHBOUR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-PROJECTILE.
+*> USING the tilt, the tilt-down sound (1), the delay of the reset tick out: onProjectileHit (12.1 step 7.8).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TILT                 BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TILT L-SOUND L-DELAY.
+     MOVE 3 TO L-TILT
+     MOVE 1 TO L-SOUND
+     MOVE 100 TO L-DELAY
+     GOBACK.
+ END PROGRAM GC4-DRIP-PROJECTILE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-STEM-SURVIVE.
+*> USING the state below is a stem or in supports_big_dripleaf, the state above is a stem or a head (BINARY-LONG), canSurvive out: 12.2 step 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BELOW                BINARY-LONG.
+ 01 L-ABOVE                BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-BELOW L-ABOVE L-SURVIVE.
+     MOVE 0 TO L-SURVIVE
+     IF L-BELOW = 1 AND L-ABOVE = 1
+         MOVE 1 TO L-SURVIVE
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-STEM-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-STEM-SU.
+*> USING the changed direction (1 down, 2 up, 3 other), canSurvive, waterlogged (BINARY-LONG), a block tick scheduled, a water tick scheduled out: 12.2 step 2.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-SURVIVE              BINARY-LONG.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-TICK                 BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-SURVIVE L-WATERLOGGED L-TICK L-WATER.
+     MOVE 0 TO L-TICK
+     MOVE L-WATERLOGGED TO L-WATER
+     IF (L-DIR = 1 OR L-DIR = 2) AND L-SURVIVE = 0
+         MOVE 1 TO L-TICK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-STEM-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-STEM-FIND.
+*> USING the stems from pos upward including pos, the cell above them is a big_dripleaf (BINARY-LONG), the head was found, its offset from pos out: 12.2 step 4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-RUN                  BINARY-LONG.
+ 01 L-HEAD                 BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-RUN L-HEAD L-FOUND L-OFFSET.
+     MOVE L-HEAD TO L-FOUND
+     MOVE L-RUN TO L-OFFSET
+     GOBACK.
+ END PROGRAM GC4-STEM-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-STEM-BONE.
+*> USING the head was found, canPlaceAt(top.above()) (BINARY-LONG), valid, success out: 12.2 step 4.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-PLACE                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOUND L-PLACE L-VALID L-SUCCESS.
+     MOVE 0 TO L-VALID
+     MOVE 1 TO L-SUCCESS
+     IF L-FOUND = 1 AND L-PLACE = 1
+         MOVE 1 TO L-VALID
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-STEM-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-DRIP-HEIGHT.
+*> USING the nextInt(4) draw (n = Mth.nextInt(2, 5)), the consecutive cells from pos upward that canPlaceAt (BINARY-LONG), n, the cells used, the stems, the head's offset from pos out:
+*> placeWithRandomHeight (12.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-FREE                 BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ 01 L-USED                 BINARY-LONG.
+ 01 L-STEMS                BINARY-LONG.
+ 01 L-HEAD                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DRAW L-FREE L-N L-USED L-STEMS L-HEAD.
+     COMPUTE L-N = 2 + L-DRAW
+     MOVE L-N TO L-USED
+     IF L-FREE < L-N
+         MOVE L-FREE TO L-USED
+     END-IF
+     MOVE 0 TO L-STEMS
+     IF L-USED > 0
+         COMPUTE L-STEMS = L-USED - 1
+     END-IF
+     MOVE L-STEMS TO L-HEAD
+     GOBACK.
+ END PROGRAM GC4-DRIP-HEIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SMALL-PLACEON.
+*> USING the supporting state is in supports_small_dripleaf, the fluid in the lower half's own cell is a water source, the supporting state is in supports_vegetation (BINARY-LONG),
+*> mayPlaceOn out: SmallDripleafBlock (12.4 step 1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-VEGETATION           BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAG L-WATER L-VEGETATION L-OK.
+     MOVE 0 TO L-OK
+     IF L-TAG = 1 OR (L-WATER = 1 AND L-VEGETATION = 1)
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM GC4-SMALL-PLACEON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SMALL-PLACED.
+*> USING the level is a server (BINARY-LONG), the upper half is placed above out: setPlacedBy (12.4 step 4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-PLACED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-PLACED.
+     MOVE L-SERVER TO L-PLACED
+     GOBACK.
+ END PROGRAM GC4-SMALL-PLACED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SMALL-SU.
+*> USING waterlogged (BINARY-LONG), a water tick is scheduled out: the shape update of 12.4 step 5 (then the DoublePlantBlock update, GC4-DOUBLE-SU).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WATERLOGGED          BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ PROCEDURE DIVISION USING L-WATERLOGGED L-WATER.
+     MOVE L-WATERLOGGED TO L-WATER
+     GOBACK.
+ END PROGRAM GC4-SMALL-SU.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SMALL-BONE.
+*> USING half (0 lower, 1 upper), the fluid above the lower half is water (BINARY-LONG), valid, success, the y offset of the acting position, the replacement of the upper cell (1 water,
+*> 0 air), its flags out: small dripleaf bone meal (12.4 step 6); the upper half acts on the lower half's position.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HALF                 BINARY-LONG.
+ 01 L-WATER                BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-SUCCESS              BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-REPLACEMENT          BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-HALF L-WATER L-VALID L-SUCCESS L-OFFSET L-REPLACEMENT L-FLAGS.
+     MOVE 1 TO L-VALID L-SUCCESS
+     COMPUTE L-OFFSET = 0 - L-HALF
+     MOVE L-WATER TO L-REPLACEMENT
+     COMPUTE L-FLAGS = 2 + 16
+     GOBACK.
+ END PROGRAM GC4-SMALL-BONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GC4-SMALL-CONST.
+*> USING the shape width, y from, y to, the maximum vertical offset x 1000 (BINARY-LONG out): SmallDripleafBlock (12.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-WIDTH                BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-WIDTH L-Y0 L-Y1 L-OFFSET.
+     MOVE 12 TO L-WIDTH
+     MOVE 0 TO L-Y0
+     MOVE 13 TO L-Y1
+     MOVE 100 TO L-OFFSET
+     GOBACK.
+ END PROGRAM GC4-SMALL-CONST.
