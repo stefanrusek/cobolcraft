@@ -100,6 +100,8 @@
  PROGRAM-ID. MN2-FURNACE-BUTTON.
 *> USING leftPos, screen height, x out, y out, width out, height out (3.1): the recipe book button.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF BINARY-LONG.
  LINKAGE SECTION.
  01 L-LEFT                 BINARY-LONG.
  01 L-SH                   BINARY-LONG.
@@ -109,7 +111,8 @@
  01 L-H                    BINARY-LONG.
  PROCEDURE DIVISION USING L-LEFT L-SH L-X L-Y L-W L-H.
     COMPUTE L-X = L-LEFT + 20
-    COMPUTE L-Y = L-SH / 2 - 49
+    COMPUTE WS-HALF = L-SH / 2
+    COMPUTE L-Y = WS-HALF - 49
     MOVE 20 TO L-W
     MOVE 18 TO L-H
     GOBACK.
@@ -849,6 +852,8 @@
  PROGRAM-ID. MN2-CRAFTER-POWER.
 *> USING screen width, screen height, powered, x out, y out, sprite out (1 powered, 0 unpowered) (7.3).
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF BINARY-LONG.
  LINKAGE SECTION.
  01 L-SW                   BINARY-LONG.
  01 L-SH                   BINARY-LONG.
@@ -857,8 +862,10 @@
  01 L-Y                    BINARY-LONG.
  01 L-SPR                  BINARY-LONG.
  PROCEDURE DIVISION USING L-SW L-SH L-POW L-X L-Y L-SPR.
-    COMPUTE L-X = L-SW / 2 + 9
-    COMPUTE L-Y = L-SH / 2 - 48
+    COMPUTE WS-HALF = L-SW / 2
+    COMPUTE L-X = WS-HALF + 9
+    COMPUTE WS-HALF = L-SH / 2
+    COMPUTE L-Y = WS-HALF - 48
     MOVE 0 TO L-SPR
     IF L-POW = 1
         MOVE 1 TO L-SPR

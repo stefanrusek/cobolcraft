@@ -130,7 +130,12 @@
      CALL "MN2-FURNACE-BUTTON" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
      MOVE 4 TO WS-N
      PERFORM ADD-N
-     MOVE "359/191/20/18 120/101/20/18 20/-49/20/18" TO TL-EXPECTED
+     MOVE "5 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN2-FURNACE-BUTTON" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "359/191/20/18 120/101/20/18 20/-49/20/18 25/-48/20/18" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US12 40-2§3 The furnace family screens: flame (3.2, E3): lit when data 0 > 0; h = ceil(litProgress x 13) + 1, source (0, 14 - h), destination (leftPos + 56, topPos + 36 + 14 - h);" TO TL-CASE
      PERFORM BEGIN-CASE

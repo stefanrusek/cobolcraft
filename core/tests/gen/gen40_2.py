@@ -14,7 +14,7 @@ def clamp01(x): return max(Fr(0),min(Fr(1),x))
 g=G(3,'The furnace family screens','T1013','frame, recipe book button, flame and arrow arithmetic, per-kind data (core/src/menu-40-2.cob).')
 def frame(sw,sh,tw): return ((sw-176)//2,(sh-166)//2,(176-tw)//2,6,72)
 run(g,'frame (1.1, 3.1): leftPos = (screenWidth - 176) / 2, topPos = (screenHeight - 166) / 2, the title centred at (176 - titleWidth) / 2, y 6, the inventory label at y 72','MN2-FRAME','iii',5,[(854,480,60),(400,300,0),(176,166,176),(1000,700,31)],frame)
-run(g,'recipe book button (3.1): 20 x 18 at (leftPos + 20, screenHeight / 2 - 49), integer division','MN2-FURNACE-BUTTON','ii',4,[(339,480),(100,301),(0,0)],lambda l,h:(l+20,h//2-49,20,18))
+run(g,'recipe book button (3.1): 20 x 18 at (leftPos + 20, screenHeight / 2 - 49), integer division','MN2-FURNACE-BUTTON','ii',4,[(339,480),(100,301),(0,0),(5,3)],lambda l,h:(l+20,h//2-49,20,18))
 def flame(d0,d1,l,t):
     if d0<=0: return (0,0,0,0)
     dd=d1 if d1!=0 else 200
