@@ -277,6 +277,47 @@
  END PROGRAM BREAK-FINISH.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BREAK-TOOL-INPUTS.
+*> USING item id (0 the empty hand), block row (1 based), speed out (thousandths), correct out (1 or 0): the tool inputs of the break
+*> rate and of the drops, from one place. The speed counts when the item is a tool of the block's class (13 section 2.1 step 1); the
+*> tool component's rules (tools.cob, 17 section 1.3) add what the class does not know: the axe, hoe, sword and shears speeds, and a
+*> rule that says correct for drops (a tier that the block tags allow). The items of a standard world carry only the rules.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY CITEMS.
+ 01 WS-CLASS-OK            BINARY-LONG.
+ 01 WS-TIER                BINARY-LONG.
+ 01 WS-BLOCK-ID            BINARY-LONG.
+ 01 WS-RULE-SPEED          BINARY-LONG.
+ 01 WS-RULE-CORRECT        BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-SPEED                BINARY-LONG.
+ 01 L-CORRECT              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ITEM L-BLOCK L-SPEED L-CORRECT.
+     MOVE 1000 TO L-SPEED
+     MOVE 0 TO WS-CLASS-OK
+     MOVE 0 TO WS-TIER
+     IF CB-CLASS(L-BLOCK) NOT = CB-CLASS-NONE
+             AND IT-TOOL-CLASS(L-ITEM + 1) = CB-CLASS(L-BLOCK)
+         MOVE 1 TO WS-CLASS-OK
+         MOVE IT-TOOL-TIER(L-ITEM + 1) TO WS-TIER
+         IF IT-TOOL-SPEED(L-ITEM + 1) > 0
+             MOVE IT-TOOL-SPEED(L-ITEM + 1) TO L-SPEED
+         END-IF
+     END-IF
+     COMPUTE WS-BLOCK-ID = L-BLOCK - 1
+     CALL "TOOL-BLOCK-SPEED" USING L-ITEM WS-BLOCK-ID WS-RULE-SPEED WS-RULE-CORRECT
+     COMPUTE L-SPEED = FUNCTION MAX(L-SPEED, WS-RULE-SPEED)
+     COMPUTE WS-CLASS-OK = FUNCTION MAX(WS-CLASS-OK, WS-RULE-CORRECT)
+     COMPUTE WS-TIER = FUNCTION MAX(WS-TIER, 3 * WS-RULE-CORRECT)
+     CALL "BREAK-CORRECT" USING CB-TOOL-REQ(L-BLOCK) WS-CLASS-OK WS-TIER CB-NEED-TIER(L-BLOCK) L-CORRECT
+     GOBACK.
+ END PROGRAM BREAK-TOOL-INPUTS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-ACTION.
 *> USING connection id, PLAY-SERVERBOUND (a decoded Player Action): the break rules above.
  DATA DIVISION.
@@ -290,17 +331,12 @@
  01 WS-BLOCK               BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-SPEED               BINARY-LONG.
- 01 WS-CLASS-OK            BINARY-LONG.
- 01 WS-TIER                BINARY-LONG.
  01 WS-CORRECT             BINARY-LONG.
  01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-EFFICIENCY          BINARY-LONG.
  01 WS-HASTE               BINARY-LONG.
  01 WS-FATIGUE             BINARY-LONG.
  01 WS-WATER               BINARY-LONG.
- 01 WS-BLOCK-ID            BINARY-LONG.
- 01 WS-RULE-SPEED          BINARY-LONG.
- 01 WS-RULE-CORRECT        BINARY-LONG.
  01 WS-GROUND              BINARY-LONG.
  01 WS-STAGE               BINARY-LONG.
  01 WS-ACCEPTED            BINARY-LONG.
@@ -336,26 +372,7 @@
                  MOVE PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) TO WS-ITEM
              END-IF
 *>           The tool speed counts when the item is a tool of the block's class (13 section 2.1 step 1).
-             MOVE 1000 TO WS-SPEED
-             MOVE 0 TO WS-CLASS-OK
-             MOVE 0 TO WS-TIER
-             IF CB-CLASS(WS-BLOCK) NOT = CB-CLASS-NONE
-                     AND IT-TOOL-CLASS(WS-ITEM + 1) = CB-CLASS(WS-BLOCK)
-                 MOVE 1 TO WS-CLASS-OK
-                 MOVE IT-TOOL-TIER(WS-ITEM + 1) TO WS-TIER
-                 IF IT-TOOL-SPEED(WS-ITEM + 1) > 0
-                     MOVE IT-TOOL-SPEED(WS-ITEM + 1) TO WS-SPEED
-                 END-IF
-             END-IF
-*>           The tool component's rules (tools.cob, 17 section 1.3) add what the class does not know: the axe, hoe,
-*>           sword and shears speeds, and a rule that says correct for drops (a tier that the block tags allow).
-             COMPUTE WS-BLOCK-ID = WS-BLOCK - 1
-             CALL "TOOL-BLOCK-SPEED" USING WS-ITEM WS-BLOCK-ID WS-RULE-SPEED WS-RULE-CORRECT
-             COMPUTE WS-SPEED = FUNCTION MAX(WS-SPEED, WS-RULE-SPEED)
-             COMPUTE WS-CLASS-OK = FUNCTION MAX(WS-CLASS-OK, WS-RULE-CORRECT)
-             COMPUTE WS-TIER = FUNCTION MAX(WS-TIER, 3 * WS-RULE-CORRECT)
-             CALL "BREAK-CORRECT" USING CB-TOOL-REQ(WS-BLOCK) WS-CLASS-OK WS-TIER
-                 CB-NEED-TIER(WS-BLOCK) WS-CORRECT
+             CALL "BREAK-TOOL-INPUTS" USING WS-ITEM WS-BLOCK WS-SPEED WS-CORRECT
 *>           The rate is the one on the ground; every tick adds it divided by 5 while the player is airborne (13 section 2.1
 *>           step 7: vanilla recomputes the progress each tick from the player's state of that tick).
              MOVE 1 TO WS-GROUND
