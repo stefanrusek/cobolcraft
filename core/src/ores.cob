@@ -939,11 +939,25 @@
  01 WS-C                   FLOAT-LONG.
  01 WS-XD2                 FLOAT-LONG.
  01 WS-K                   BINARY-LONG.
+ 01 WS-AI                  BINARY-LONG.
  01 WS-YD2T.
     05 WS-YD2T-ITEM        FLOAT-LONG OCCURS 64 TIMES.
  01 WS-ZD2T.
     05 WS-ZD2T-ITEM        FLOAT-LONG OCCURS 64 TIMES.
  01 WS-S2                  FLOAT-LONG.
+ 01 WS-ZBITT.
+    05 WS-ZBIT-ITEM        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-ZL16T.
+    05 WS-ZL16-ITEM        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-YBITT.
+    05 WS-YBIT-ITEM        BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-YCELLT.
+    05 WS-YCELL-ITEM       BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-CX16                BINARY-LONG.
+ 01 WS-CZ16                BINARY-LONG.
+ 01 WS-XBIT                BINARY-LONG.
+ 01 WS-BASEBIT             BINARY-LONG.
+ 01 WS-BASECELL            BINARY-LONG.
  01 WS-S3                  FLOAT-LONG.
  01 WS-V                   FLOAT-LONG.
 *> The tests "squared distance < 1" are integer compares of the bits (a sum of squares is a non-negative double or a NaN; unsigned,
@@ -981,29 +995,58 @@
  01 L-BITS                 BINARY-LONG.
  PROCEDURE DIVISION USING L-JOB L-STATE L-ROW L-BX L-BY L-BZ L-BR L-BITS.
      SET ADDRESS OF CE-CHUNK TO J-ADDR
+     COMPUTE WS-CX16 = J-CX * 16
+     COMPUTE WS-CZ16 = J-CZ * 16
      CALL STATIC "cc_f64_sub" USING BY REFERENCE L-BX L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-XLO = FUNCTION MAX(WS-A, OB-START-X)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-XLO
+     IF WS-XLO < OB-START-X
+         MOVE OB-START-X TO WS-XLO
+     END-IF
      CALL STATIC "cc_f64_sub" USING BY REFERENCE L-BY L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-YLO = FUNCTION MAX(WS-A, OB-START-Y)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-YLO
+     IF WS-YLO < OB-START-Y
+         MOVE OB-START-Y TO WS-YLO
+     END-IF
      CALL STATIC "cc_f64_sub" USING BY REFERENCE L-BZ L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-ZLO = FUNCTION MAX(WS-A, OB-START-Z)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-ZLO
+     IF WS-ZLO < OB-START-Z
+         MOVE OB-START-Z TO WS-ZLO
+     END-IF
      CALL STATIC "cc_f64_add" USING BY REFERENCE L-BX L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-XHI = FUNCTION MAX(WS-A, WS-XLO)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-XHI
+     IF WS-XHI < WS-XLO
+         MOVE WS-XLO TO WS-XHI
+     END-IF
      CALL STATIC "cc_f64_add" USING BY REFERENCE L-BY L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-YHI = FUNCTION MAX(WS-A, WS-YLO)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-YHI
+     IF WS-YHI < WS-YLO
+         MOVE WS-YLO TO WS-YHI
+     END-IF
      CALL STATIC "cc_f64_add" USING BY REFERENCE L-BZ L-BR WS-T
      CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-A
-     COMPUTE WS-ZHI = FUNCTION MAX(WS-A, WS-ZLO)
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-A WS-AI
+     MOVE WS-AI TO WS-ZHI
+     IF WS-ZHI < WS-ZLO
+         MOVE WS-ZLO TO WS-ZHI
+     END-IF
 *>   the squared distances along y and along z do not depend on the other axes: each once per layer, not once per block
      PERFORM VARYING WS-Y FROM WS-YLO BY 1 UNTIL WS-Y > WS-YHI
          MOVE WS-Y TO WS-K
          SUBTRACT WS-YLO FROM WS-K
          ADD 1 TO WS-K
+*>       the parts of the bit and cell indexes that belong to this layer
+         COMPUTE WS-YBIT-ITEM(WS-K) = (WS-Y - OB-START-Y) * OB-WIDTH
+         COMPUTE WS-YCELL-ITEM(WS-K) = (WS-Y + 64) * 256 + 1
          MOVE WS-Y TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
          CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BY WS-A
@@ -1015,6 +1058,9 @@
          MOVE WS-Z TO WS-K
          SUBTRACT WS-ZLO FROM WS-K
          ADD 1 TO WS-K
+*>       and of this row
+         COMPUTE WS-ZBIT-ITEM(WS-K) = (WS-Z - OB-START-Z) * OB-WIDTH * OB-HEIGHT + 1
+         COMPUTE WS-ZL16-ITEM(WS-K) = (WS-Z - WS-CZ16) * 16
          MOVE WS-Z TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
          CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BZ WS-A
@@ -1023,6 +1069,10 @@
          CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-D WS-C WS-ZD2T-ITEM(WS-K)
      END-PERFORM
      PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         MOVE WS-X TO WS-XBIT
+         SUBTRACT OB-START-X FROM WS-XBIT
+         MOVE WS-X TO WS-LX
+         SUBTRACT WS-CX16 FROM WS-LX
          MOVE WS-X TO WS-V
          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-V WS-HALF WS-T
          CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-T L-BX WS-A
@@ -1035,6 +1085,10 @@
                  MOVE WS-Y TO WS-K
                  SUBTRACT WS-YLO FROM WS-K
                  ADD 1 TO WS-K
+                 MOVE WS-XBIT TO WS-BASEBIT
+                 ADD WS-YBIT-ITEM(WS-K) TO WS-BASEBIT
+                 MOVE WS-YCELL-ITEM(WS-K) TO WS-BASECELL
+                 ADD WS-LX TO WS-BASECELL
                  CALL STATIC "cc_f64_add" USING BY REFERENCE WS-XD2 WS-YD2T-ITEM(WS-K) WS-S2
                  CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S2 WS-BITS-U
                  IF WS-BITS-U < WS-ONE-BITS
@@ -1045,12 +1099,12 @@
                          CALL STATIC "cc_f64_add" USING BY REFERENCE WS-S2 WS-ZD2T-ITEM(WS-K) WS-S3
                          CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-S3 WS-BITS-U
                          IF WS-BITS-U < WS-ONE-BITS AND WS-Y >= -64 AND WS-Y <= 319
-                             COMPUTE WS-BIT = (WS-X - OB-START-X) + (WS-Y - OB-START-Y) * OB-WIDTH
-                                 + (WS-Z - OB-START-Z) * OB-WIDTH * OB-HEIGHT + 1
+                             MOVE WS-BASEBIT TO WS-BIT
+                             ADD WS-ZBIT-ITEM(WS-K) TO WS-BIT
                              IF WS-BIT >= 1 AND WS-BIT <= L-BITS AND OB-BITS(WS-BIT:1) = LOW-VALUE
                                  MOVE "1" TO OB-BITS(WS-BIT:1)
-                                 COMPUTE WS-LX = WS-X - J-CX * 16
-                                 COMPUTE WS-LZ = WS-Z - J-CZ * 16
+                                 MOVE WS-Z TO WS-LZ
+                                 SUBTRACT WS-CZ16 FROM WS-LZ
                                  IF OB-LIST = 1
                                      IF OB-NPOS < 4000
                                          ADD 1 TO OB-NPOS
@@ -1060,7 +1114,8 @@
                                      END-IF
                                  ELSE
                                      IF WS-LX >= 0 AND WS-LX <= 15 AND WS-LZ >= 0 AND WS-LZ <= 15
-                                         COMPUTE WS-CELL = (WS-Y + 64) * 256 + WS-LZ * 16 + WS-LX + 1
+                                         MOVE WS-BASECELL TO WS-CELL
+                                         ADD WS-ZL16-ITEM(WS-K) TO WS-CELL
                                          MOVE CE-STATE(WS-CELL) TO WS-CUR
                                          MOVE 1 TO WS-TGTS
                                          IF OT-KIND(L-ROW) = 1
