@@ -398,7 +398,7 @@
      MOVE "summon zombie 5.0 70.0 5.0" TO WS-LINE
      CALL "TEST-RUN" USING WS-OP WS-LINE WS-TEXT
      STRING FUNCTION TRIM(TL-OBSERVED) FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "commands.execute.conditional.pass_count(2),commands.execute.conditional.pass_count(2),entity.not_summonable(minecraft:zombie)"
+     MOVE "commands.execute.conditional.pass_count(2),commands.execute.conditional.pass_count(2),commands.summon.failed.peaceful()"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

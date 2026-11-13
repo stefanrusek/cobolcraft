@@ -458,6 +458,8 @@
 
      MOVE "contract/fixtures/wire/play-s2c-0c-chunk-batch-start.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+*>   These cases read the sky light the packet stored; the sky light stopgap (CC-0007, sky-stopgap.cob) reads a stored 0 as lit, so it is off here (it has its own tests, test_sky_stopgap).
+     MOVE 0 TO PL-HAS-SKY
      MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract wire client Level Chunk With Light decodes into the replica: the marker "
@@ -1297,6 +1299,8 @@
      MOVE 16 TO WR-BLOCK-BITS
      MOVE 1 TO CT-OPEN
      MOVE 35723 TO CT-STATE-COUNT
+*>   These cases read the sky light the packet stored; the sky light stopgap (CC-0007, sky-stopgap.cob) reads a stored 0 as lit, so it is off here (it has its own tests, test_sky_stopgap).
+     MOVE 0 TO PL-HAS-SKY
      MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-standard-24-sections.hex"
          TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
