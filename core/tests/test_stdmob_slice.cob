@@ -178,7 +178,10 @@
      MOVE 0 TO EN-HURT(WS-PIG)
      MOVE 7 TO WS-AMOUNT
      CALL "HEALTH-MOB-DAMAGE" USING WS-PIG WS-AMOUNT WS-CAUSE WS-PLAYER
-     MOVE "test stdmob slice: a defeated pig is removed" TO TL-CASE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+         CALL "MOB-STEP" USING WS-PIG
+     END-PERFORM
+     MOVE "test stdmob slice: a defeated pig is removed after its death ticks" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
      IF EN-USED(WS-PIG) = 1 AND EN-TYPE(WS-PIG) = WS-PIG-TYPE

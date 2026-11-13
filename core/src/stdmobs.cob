@@ -7,6 +7,8 @@
 *>   STDMOB-INDEX USING entity type id, index out           the STDMOBS.cpy row (1 to SM-COUNT) in a standard world, else 0
 *>   STDMOB-HEALTH USING entity type id, health out         max_health of the row, 0 for no row
 *>   STDMOB-PANIC USING entity type id, panic milli out     the panic speed (blocks per tick x 1000), 0 for no row
+*>   STDMOB-DIE USING tracker row                           death: loot, Entity Event 3, dying for 20 ticks
+*>   STDMOB-VANISH USING tracker row                        Entity Event 60 and removal
 *>   STDMOB-DROPS USING dim, x, y, z, entity id, type       the loot pools of the type on the ground (18 section 7.5, 7.6)
 *>   STDMOB-STEP USING tracker row                          one tick of one mob: stroll or panic, then the physics
 *>   STDMOB-SPAWN-RULE USING dim, x, z, top, r              one natural pack on the block at (x, top)
@@ -155,6 +157,61 @@
  END PROGRAM STDMOB-DROPS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-DIE.
+*> USING tracker row of a standard mob whose health reached 0 (18 section 7.5): its loot lands on the ground now (STDMOB-DROPS), Entity Event 3
+*> (death) goes to the viewers, and the row stays as a dying mob for 20 ticks: health 0, EN-COOLDOWN counts the ticks (deathTime), the
+*> panic and the stroll end. STDMOB-STEP finishes it (Entity Event 60, removal).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 3.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     MOVE EN-DIM(L-ROW) TO WS-DIM
+     MOVE EN-X(L-ROW) TO WS-X
+     MOVE EN-Y(L-ROW) TO WS-Y
+     MOVE EN-Z(L-ROW) TO WS-Z
+     MOVE EN-ID(L-ROW) TO WS-ID
+     MOVE EN-TYPE(L-ROW) TO WS-TYPE
+     MOVE 0 TO EN-HEALTH(L-ROW) EN-COOLDOWN(L-ROW) EN-FLEE(L-ROW)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING WS-ID WS-EVENT PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-ID WS-TYPE
+     GOBACK.
+ END PROGRAM STDMOB-DIE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-VANISH.
+*> USING tracker row of a dying standard mob at the 20th tick (18 section 7.5): Entity Event 60 (poof) to the viewers, then the row is removed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-EVENT               BINARY-LONG VALUE 60.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "ENTITY-REMOVE" USING L-ROW
+     GOBACK.
+ END PROGRAM STDMOB-VANISH.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-READY.
 *> USING dim, chunk x, chunk z (BINARY-LONG), ready out (BINARY-LONG): 1 when the chunk is in the cache and its light is computed,
 *> i.e. it has been generated and prepared; a chunk that is not (never loaded, or still being generated) has no contents to rely
@@ -212,6 +269,13 @@
      MOVE L-ROW TO WS-ROW
      CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
      IF WS-M = 0
+         GOBACK
+     END-IF
+     IF EN-HEALTH(WS-ROW) = 0
+         ADD 1 TO EN-COOLDOWN(WS-ROW)
+         IF EN-COOLDOWN(WS-ROW) >= SM-DEATH-TICKS
+             CALL "STDMOB-VANISH" USING WS-ROW
+         END-IF
          GOBACK
      END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)

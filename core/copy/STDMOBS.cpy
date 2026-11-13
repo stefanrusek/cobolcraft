@@ -76,3 +76,5 @@
  78 SM-PACK-MAX              VALUE 4.
  78 SM-CURSOR-STEP           VALUE 6.
  78 SM-NEAR-BLOCKS           VALUE 24.
+ *> Death (18 sections 7.5 and 2.9): a defeated mob stays 20 ticks (deathTime), then Entity Event 60 and removal.
+ 78 SM-DEATH-TICKS           VALUE 20.
