@@ -3,7 +3,7 @@
 *> from CONTENT-BLOCK-OF-STATE rows, tags and flags for either set; BLOCKS-ID-OF and BLOCKS-STATE-OF turn keys and
 *> property pairs into ids; BLOCKS-STATE-PROPS renders a state's properties. The cobolcraft set is opened here
 *> (the fixture trees hold no data that opens as a standard set). The last cases assert that no program of
-*> core/src names a stand-in table or constant (ST-, BLK-, SB-, BL- identifiers of BLOCKS.cpy).
+*> core/src names a stand-in table or constant (ST-, BLK-, BL- identifiers of the retired BLOCKS.cpy; SB- is the scoreboard state, SBSTATE.cpy).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-BLOCK-LOOKUP.
  DATA DIVISION.
@@ -166,7 +166,7 @@
 
 *>   No stand-in identifier of BLOCKS.cpy in any program of core/src (comment lines excluded).
      MOVE SPACES TO WS-COMMAND
-     STRING "! grep -v '^ *[*]>' core/src/*.cob | grep -qE '(^|[^A-Z-])(ST|BLK|SB|BL)-[A-Z]'"
+     STRING "! grep -v '^ *[*]>' core/src/*.cob | grep -qE '(^|[^A-Z-])(ST|BLK|BL)-[A-Z]'"
          DELIMITED BY SIZE INTO WS-COMMAND
      CALL "SYSTEM" USING WS-COMMAND
      MOVE "N" TO TL-MODE

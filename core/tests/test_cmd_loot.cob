@@ -30,7 +30,7 @@
  01 WS-NUM                 BINARY-DOUBLE.
  01 WS-I                   BINARY-LONG.
  01 WS-KEY                 PIC X(112).
- 01 WS-PAIRS               PIC X(64) VALUE SPACES.
+ 01 WS-PAIRS               PIC X(160) VALUE SPACES.
  01 WS-STATE               BINARY-LONG.
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-BX                  BINARY-LONG VALUE 20.

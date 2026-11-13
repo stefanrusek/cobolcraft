@@ -424,20 +424,17 @@
  01 L-RANGE                BINARY-LONG.
  PROCEDURE DIVISION USING L-EVENT L-KIND L-VOLUME L-PITCH L-RANGE.
      MOVE 0 TO L-KIND L-VOLUME L-PITCH L-RANGE
-     EVALUATE L-EVENT
-         WHEN 1045
-         WHEN 1052
-         WHEN 1046
-         WHEN 1047
+     EVALUATE TRUE
+         WHEN L-EVENT = 1045 OR L-EVENT = 1046 OR L-EVENT = 1047 OR L-EVENT = 1052
              MOVE 1 TO L-KIND
              MOVE 20 TO L-VOLUME
              MOVE 90 TO L-PITCH
              MOVE 10 TO L-RANGE
-         WHEN 1504
+         WHEN L-EVENT = 1504
              MOVE 3 TO L-KIND
-         WHEN 3006
+         WHEN L-EVENT = 3006
              MOVE 2 TO L-KIND
-         WHEN 3007
+         WHEN L-EVENT = 3007
              MOVE 4 TO L-KIND
      END-EVALUATE
      GOBACK.

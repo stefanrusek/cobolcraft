@@ -228,6 +228,7 @@
  01 L-STATE                BINARY-LONG.
  01 L-NAME                 PIC X(16).
  PROCEDURE DIVISION USING L-STATE L-NAME.
+     MOVE "continuous" TO L-NAME
      EVALUATE L-STATE
          WHEN 0
              MOVE "dry" TO L-NAME
@@ -237,7 +238,7 @@
              MOVE "dormant" TO L-NAME
          WHEN 3
              MOVE "erupting" TO L-NAME
-         WHEN OTHER
+         WHEN 4
              MOVE "continuous" TO L-NAME
      END-EVALUATE
      GOBACK.

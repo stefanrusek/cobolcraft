@@ -2185,8 +2185,9 @@
          IF WS-LEN > 0
              COMPUTE WS-PX(WS-P) = WS-PX(WS-P) - WS-AX / WS-LEN
              COMPUTE WS-PZ(WS-P) = WS-PZ(WS-P) - WS-AZ / WS-LEN
+         ELSE
+             PERFORM RANDOMIZE
          END-IF
-         IF WS-LEN = 0 PERFORM RANDOMIZE END-IF
          MOVE 1 TO WS-MOVED
      END-IF
      IF WS-PX(WS-P) < WS-MINX

@@ -11,6 +11,7 @@
  COPY PROTO.
  01 WS-ID-OPAL           BINARY-LONG.
  01 WS-ID-ALICE           BINARY-LONG.
+ 01 WS-ID-MOD             BINARY-LONG.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-LINE                PIC X(768).
@@ -144,6 +145,19 @@
     MOVE "datapack list" TO WS-LINE
     MOVE "command.unknown.command() |" TO WS-EXPECTED
     CALL "TA-CHECK" USING WS-ID-ALICE TL-CASE WS-LINE WS-EXPECTED
+    MOVE "Mod" TO WS-NAME
+    MOVE 3 TO WS-NAME-LENGTH
+    CALL "TEST-JOIN-OP" USING WS-NAME WS-NAME-LENGTH WS-ID-MOD
+    MOVE 2 TO AC-LEVEL(ACCESS-OPERATORS, AC-COUNT(ACCESS-OPERATORS))
+    CALL "TEST-DRAIN-CHAT" USING WS-ID-MOD WS-DISCARD
+    MOVE "acceptance US13 /datapack create needs level 4: a level 2 operator is refused" TO TL-CASE
+    MOVE "datapack create lowlevel ""x""" TO WS-LINE
+    MOVE "command.unknown.argument() |" TO WS-EXPECTED
+    CALL "TA-CHECK" USING WS-ID-MOD TL-CASE WS-LINE WS-EXPECTED
+    MOVE "acceptance US13 /datapack list is still allowed at level 2" TO TL-CASE
+    MOVE "datapack list enabled" TO WS-LINE
+    MOVE 4 TO WS-EXPECTED-N
+    CALL "TA-CHECK-N" USING WS-ID-MOD TL-CASE WS-LINE WS-EXPECTED-N
     GOBACK.
  END PROGRAM TEST-CMD-DATAPACK.
 
