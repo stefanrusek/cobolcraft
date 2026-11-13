@@ -276,7 +276,8 @@
  PROGRAM-ID. CX-SUMMON.
 *> summon <entity> [<pos> [<nbt>]] (16 §5.8, level 2): a mob of the core of that entity type (the key without a namespace is in the
 *> namespace of the content set) appears at the position (the source's without one) in the source's dimension, full health, yaw 0,
-*> and is sent to the players who see it (MOB-SPAWN); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
+*> and is sent to the players who see it (MOB-SPAWN); in a standard world the mobs are the rows of STDMOBS.cpy (the key with or without minecraft:, which
+*> is its namespace); another type is entity.not_summonable [key]; a monster in Peaceful difficulty
 *> or with hostile mobs off is commands.summon.failed.peaceful; a position outside the spawnable bounds is
 *> commands.summon.invalidPosition; NBT other than {} is cobolcraft.entity.nbt_unsupported (BLOCKED); commands.summon.success
 *> [entity key] is broadcast; the result is 1.
@@ -304,6 +305,9 @@
  01 WS-ET                  BINARY-LONG.
  01 WS-MOB-COUNT            BINARY-LONG.
  01 WS-MOB                 BINARY-LONG.
+ 01 WS-STD                 BINARY-LONG.
+ 01 WS-STD-HOSTILE         BINARY-LONG.
+ 01 WS-BARE                PIC X(48).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
@@ -354,13 +358,22 @@
              ADD 10 TO WS-ID-LENGTH
          END-IF
      END-IF
-     MOVE 0 TO WS-ET WS-MOB
+     MOVE 0 TO WS-ET WS-MOB WS-STD WS-STD-HOSTILE
+     MOVE WS-ID TO WS-BARE
+     IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND WS-ID(1:10) = "minecraft:"
+         MOVE WS-ID(11:38) TO WS-BARE
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
          CALL "KEY-SAME" USING ET-KEY(WS-I) WS-ID WS-SAME
          IF WS-SAME = 1
              MOVE WS-I TO WS-ET
          END-IF
      END-PERFORM
+     IF WS-ET > 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         COMPUTE WS-TYPE = WS-ET - 1
+         CALL "STDMOB-INDEX" USING WS-TYPE WS-STD
+         CALL "STDMOB-HOSTILE" USING WS-TYPE WS-STD-HOSTILE
+     END-IF
      CALL "MOB-TABLE-COUNT" USING WS-MOB-COUNT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-MOB-COUNT
          IF MB-ENTITY-TYPE(WS-I) + 1 = WS-ET
@@ -376,7 +389,7 @@
      CALL "BX-FIND" USING WS-NAME-NBT WS-NBT
      PERFORM FIND-TYPE
      EVALUATE TRUE
-         WHEN WS-MOB = 0
+         WHEN WS-MOB = 0 AND WS-STD = 0
              MOVE "entity.not_summonable" TO WS-KEY
              MOVE 1 TO WS-N-ARGS
              MOVE SPACES TO WS-A1 WS-A2
@@ -388,7 +401,10 @@
          WHEN WS-NBT > 0 AND BA-END(WS-NBT) - BA-START(WS-NBT) > 2
              MOVE "cobolcraft.entity.nbt_unsupported" TO WS-KEY
              PERFORM FAIL-PLAIN
-         WHEN MB-KIND(WS-MOB) = MOB-HOSTILE AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
+         WHEN WS-STD-HOSTILE = 1 AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
+             MOVE "commands.summon.failed.peaceful" TO WS-KEY
+             PERFORM FAIL-PLAIN
+         WHEN WS-MOB > 0 AND MB-KIND(WS-MOB) = MOB-HOSTILE AND (BW-DIFFICULTY = 0 OR CS-HOSTILE-MOBS NOT = 1)
              MOVE "commands.summon.failed.peaceful" TO WS-KEY
              PERFORM FAIL-PLAIN
      END-EVALUATE
@@ -409,7 +425,11 @@
          END-IF
      END-IF
      IF BR-R-FAILED = 0
-         MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
+         IF WS-STD > 0
+             COMPUTE WS-TYPE = WS-ET - 1
+         ELSE
+             MOVE MB-ENTITY-TYPE(WS-MOB) TO WS-TYPE
+         END-IF
          CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
          MOVE "commands.summon.success" TO WS-KEY
          CALL "BX-KEY" USING PB-TEXT WS-KEY

@@ -56,12 +56,93 @@
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-EXPLOSION (002-lane-mobs2)
+       10 FILLER PIC X(40) VALUE "death.attack.explosion".
+       10 FILLER BINARY-LONG VALUE 22.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-ARROW (002-lane-mobs2)
+       10 FILLER PIC X(40) VALUE "death.attack.arrow".
+       10 FILLER BINARY-LONG VALUE 18.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
  01 DEATH-MESSAGE-TABLE REDEFINES DEATH-MESSAGE-DATA.
-    05 DTH-ENTRY OCCURS 8 TIMES.
+    05 DTH-ENTRY OCCURS 10 TIMES.
        10 DTH-KEY               PIC X(40).
        10 DTH-KEY-LENGTH        BINARY-LONG.
        10 DTH-ARG-COUNT         BINARY-LONG.
        10 DTH-ARG-KIND          BINARY-LONG OCCURS 2 TIMES.
+*> The death messages of a standard set (17 section 4.13.2: death.attack.<message_id> of the cause's damage type; victim, then attacker), indexed like
+*> DEATH-MESSAGE-TABLE: key, key length, argument count, kinds of arguments 1 and 2.
+ 01 DEATH-STD-DATA.
+    05 FILLER.                                  *> CAUSE-FALL
+       10 FILLER PIC X(40) VALUE "death.attack.fall".
+       10 FILLER BINARY-LONG VALUE 17.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-ABEND
+       10 FILLER PIC X(40) VALUE "death.attack.mob".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+    05 FILLER.                                  *> CAUSE-PLAYER
+       10 FILLER PIC X(40) VALUE "death.attack.player".
+       10 FILLER BINARY-LONG VALUE 19.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+    05 FILLER.                                  *> CAUSE-STARVATION
+       10 FILLER PIC X(40) VALUE "death.attack.starve".
+       10 FILLER BINARY-LONG VALUE 19.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-HAIL
+       10 FILLER PIC X(40) VALUE "death.attack.generic".
+       10 FILLER BINARY-LONG VALUE 20.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-COMMAND
+       10 FILLER PIC X(40) VALUE "death.attack.genericKill".
+       10 FILLER BINARY-LONG VALUE 24.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-MOB
+       10 FILLER PIC X(40) VALUE "death.attack.mob".
+       10 FILLER BINARY-LONG VALUE 16.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+    05 FILLER.                                  *> CAUSE-DROWN
+       10 FILLER PIC X(40) VALUE "death.attack.drown".
+       10 FILLER BINARY-LONG VALUE 18.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-EXPLOSION (002-lane-mobs2)
+       10 FILLER PIC X(40) VALUE "death.attack.explosion".
+       10 FILLER BINARY-LONG VALUE 22.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 0.
+    05 FILLER.                                  *> CAUSE-ARROW (002-lane-mobs2)
+       10 FILLER PIC X(40) VALUE "death.attack.arrow".
+       10 FILLER BINARY-LONG VALUE 18.
+       10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
+ 01 DEATH-STD-TABLE REDEFINES DEATH-STD-DATA.
+    05 DTS-ENTRY OCCURS 10 TIMES.
+       10 DTS-KEY               PIC X(40).
+       10 DTS-KEY-LENGTH        BINARY-LONG.
+       10 DTS-ARG-COUNT         BINARY-LONG.
+       10 DTS-ARG-KIND          BINARY-LONG OCCURS 2 TIMES.
 *> Command and system messages (standin-content §16.2, §16.4, §17), transcribed: the translate key
 *> and the kinds of its arguments, in order (every argument is a plain literal text component,
 *> §16.1 'Arguments in messages'): W a word or name as written, I an integer in decimal, D a double

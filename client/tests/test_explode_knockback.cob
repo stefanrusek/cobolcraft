@@ -1,0 +1,125 @@
+*> Implementation test (002-lane-mobs2, T4141; docs/protocol/20 section 6.2 and 05a 0x24 Explode): the knockback vector of the Explode packet is added
+*> to the client player's velocity: its horizontal part carries the player along and decays (0.546 a tick on the ground, 0.91 in the air), its vertical
+*> part lifts the player off the ground. A packet without knockback changes nothing.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EXPLODE-KNOCKBACK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG VALUE 1.
+ 01 WS-STEPS               BINARY-LONG VALUE 1.
+ 01 WS-KX                  FLOAT-LONG.
+ 01 WS-KY                  FLOAT-LONG.
+ 01 WS-KZ                  FLOAT-LONG.
+ 01 WS-PRESENT             BINARY-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE PL-X TO WS-X0
+*>   No knockback in the packet: the player stays where it is.
+     MOVE 0 TO WS-PRESENT
+     MOVE 0 TO WS-KX WS-KY WS-KZ
+     CALL "TEST-EXPLODE" USING CLIENT-STATE WS-CONN WS-PRESENT WS-KX WS-KY WS-KZ
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-STEPS
+     COMPUTE WS-DX = PL-X - WS-X0
+     MOVE "N" TO TL-MODE
+     MOVE "test explode knockback: a packet without knockback does not move the player" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-DX) < 0.0001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Knockback (0.5, 0.4, 0): the player is carried along +x and leaves the ground.
+     MOVE 1 TO WS-PRESENT
+     MOVE 0.5 TO WS-KX
+     MOVE 0.4 TO WS-KY
+     MOVE PL-X TO WS-X0
+     CALL "TEST-EXPLODE" USING CLIENT-STATE WS-CONN WS-PRESENT WS-KX WS-KY WS-KZ
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-STEPS
+     COMPUTE WS-DX = PL-X - WS-X0
+     MOVE "test explode knockback: the first tick moves the player 0.5 along x" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DX > 0.45 AND WS-DX < 0.55
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test explode knockback: the vertical part lifts the player off the ground" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-ON-GROUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-STEPS
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-STEPS
+     COMPUTE WS-DX = PL-X - WS-X0
+     MOVE "test explode knockback: the push is spent after a while (2 to 5 blocks in all)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DX > 2.0 AND WS-DX < 5.0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-EXPLODE-KNOCKBACK.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-EXPLODE.
+*> USING CLIENT-STATE, connection, knockback present (0/1), kx, ky, kz (FLOAT-LONG): hands PROTO-PACKET an Explode (0x24) at the origin, radius 3, 0 blocks.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET              BINARY-LONG VALUE 36.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-RADIUS              FLOAT-SHORT VALUE 3.
+ 01 WS-BLOCKS              BINARY-LONG VALUE 0.
+ 01 WS-FALSE               BINARY-LONG VALUE 0.
+ 01 WS-TRUE                BINARY-LONG VALUE 1.
+ 01 WS-PARTICLE            BINARY-LONG VALUE 30.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-DATA                PIC X(64).
+ 01 WS-SOUND               PIC X(32) VALUE "minecraft:entity.generic.explode".
+ 01 WS-SOUND-LENGTH        BINARY-LONG VALUE 32.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CONN                 BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-KX                   FLOAT-LONG.
+ 01 L-KY                   FLOAT-LONG.
+ 01 L-KZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CONN L-PRESENT L-KX L-KY L-KZ.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-RADIUS
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-BLOCKS
+     IF L-PRESENT = 1
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-KX
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-KY
+         CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-KZ
+     ELSE
+         CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     END-IF
+     CALL "PB-PUT-PARTICLE" USING PB-BUFFER WS-PARTICLE WS-NONE WS-DATA
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-NONE
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FALSE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-NONE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-TRUE
+     MOVE 0 TO PB-POS
+     CALL "PROTO-PACKET" USING CLIENT-STATE L-CONN PB-BUFFER WS-PACKET
+     GOBACK.
+ END PROGRAM TEST-EXPLODE.
+ COPY CLTEST.

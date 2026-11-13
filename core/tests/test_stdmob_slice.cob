@@ -34,6 +34,7 @@
  01 WS-PORK                BINARY-LONG.
  01 WS-BEEF                BINARY-LONG.
  01 WS-GRASS               BINARY-LONG.
+ 01 WS-BARE-GRASS          BINARY-LONG.
  01 WS-GRASS-STATE         BINARY-LONG.
  01 WS-STONE-STATE         BINARY-LONG.
  01 WS-STATE-TEXT          PIC X(5).
@@ -76,7 +77,7 @@
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:cow" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
-     MOVE "minecraft:skeleton" TO WS-KEY
+     MOVE "minecraft:enderman" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:porkchop" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-PORK WS-ITEM-ROW WS-STATUS
@@ -95,7 +96,7 @@
      CALL "STDMOB-INDEX" USING WS-COW-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "test stdmob slice: STDMOB-INDEX of the player and of a skeleton is 0" TO TL-CASE
+     MOVE "test stdmob slice: STDMOB-INDEX of the player and of an enderman is 0" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      CALL "STDMOB-INDEX" USING WS-PLAYER-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
@@ -141,7 +142,7 @@
      CALL "STDMOB-INDEX" USING WS-ZOMBIE-TYPE WS-INDEX
      MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "minecraft:skeleton" TO WS-KEY
+     MOVE "minecraft:enderman" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZOMBIE-TYPE WS-ENTITY-ROW WS-STATUS
 
 *>   A pig spawned by MOB-SPAWN has the full health of its row (19 section 2.1: max_health 10).
@@ -233,6 +234,33 @@
      IF EN-USED(WS-PIG) = 1 AND (EN-X(WS-PIG) NOT = WS-X OR EN-Z(WS-PIG) NOT = WS-Z)
          MOVE "yes" TO TL-OBSERVED
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Keys in a standard set are un-namespaced (grass_block) and a lookup takes both forms: the grass block found with the prefix is the one found without.
+     MOVE SPACES TO WS-KEY
+     MOVE "grass_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BARE-GRASS WS-BLOCK-ROW WS-STATUS
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:grass_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-GRASS WS-BLOCK-ROW WS-STATUS
+     MOVE "test stdmob slice: grass_block with and without minecraft: is the same block" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-GRASS TO TL-EXPECTED-N
+     MOVE WS-BARE-GRASS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob slice: and it is a real block (not the air at id 0)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-GRASS > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-KEY
+     MOVE "pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-INDEX WS-ENTITY-ROW WS-STATUS
+     MOVE "test stdmob slice: pig without minecraft: is the same entity type as with it" TO TL-CASE
+     MOVE WS-PIG-TYPE TO TL-EXPECTED-N
+     MOVE WS-INDEX TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Natural spawning on grass (18 section 6.8, animal rule: grass_block below, bright): a column of grass high above the terrain.

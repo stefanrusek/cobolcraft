@@ -719,12 +719,14 @@
      MOVE CAUSE-COMMAND TO WS-NUM PERFORM ADD-NUM
      MOVE CAUSE-MOB TO WS-NUM PERFORM ADD-NUM
      MOVE CAUSE-DROWN TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-EXPLOSION TO WS-NUM PERFORM ADD-NUM
+     MOVE CAUSE-ARROW TO WS-NUM PERFORM ADD-NUM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CAUSE-COUNT
          MOVE RULE-CAUSE-TYPE(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE RULE-CAUSE-AMOUNT(WS-I) TO WS-NUM PERFORM ADD-NUM
          MOVE RULE-CAUSE-EXHAUST(WS-I) TO WS-NUM PERFORM ADD-NUM
      END-PERFORM
-     MOVE "1 2 3 4 5 6 7 8 1 0 0 28 3 100 29 0 100 30 1 0 31 1 100 0 0 0 28 0 100 6 2 0" TO TL-EXPECTED
+     MOVE "1 2 3 4 5 6 7 8 9 10 1 0 0 28 3 100 29 0 100 30 1 0 31 1 100 0 0 0 28 0 100 6 2 0 0 0 100 0 0 100" TO TL-EXPECTED
      PERFORM ASSERT-ROW
 
      MOVE "test content tables attacks (§10.4: reach 4.0 from the eye point feet + 1.6)" TO TL-CASE
@@ -777,7 +779,7 @@
      END-PERFORM
      MOVE "cobolcraft.death.fall,v cobolcraft.death.mob.abend,v cobolcraft.death.player,v,a "
          & "cobolcraft.death.starvation,v cobolcraft.death.hail,v cobolcraft.death.command,v death.attack.mob,v,a "
-         & "death.attack.drown,v"
+         & "death.attack.drown,v death.attack.explosion,v death.attack.arrow,v,a"
          TO TL-EXPECTED
      PERFORM ASSERT-ROW
 

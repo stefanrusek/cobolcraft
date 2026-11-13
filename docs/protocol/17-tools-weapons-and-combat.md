@@ -846,6 +846,200 @@ Tags (membership, as listed in the jar; a tag drives the behaviour named in 4.4 
 
 Other tags in the directory (`panic_causes`, `witch_resistant_to`, armor-stand tags, silverfish, `wither_immune_to`, `burn_from_stepping`, `avoids_guardian_thorns` and so on) concern mob AI and block logic (18-21). The sources with a **cause position** (a living attacker or a projectile) knock back from the cause; others (fall, fire) have none.
 
+### 4.13 Death messages and the Damage Event for a player victim
+
+Read from `minecraft-26.3-client.jar` (SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, the artifact recorded in `docs/protocol/README.md`): `DamageSource`, `DamageSources`, `DamageType`, `DeathMessageType`, `CombatTracker`, `CombatEntry`, `FallLocation`, `ClientboundDamageEventPacket`, `ServerLevel.broadcastDamageEvent`, `LivingEntity.hurtServer`, `Player.hurtServer` and `Player.actuallyHurt`, `ServerPlayer.die`, `data/minecraft/damage_type/*.json`, `data/minecraft/tags/damage_type/always_most_significant_fall.json` and `assets/minecraft/lang/en_us.json`. Everything below is for a player victim in a world that uses the standard `minecraft:` damage types. Display text is the English text of `en_us.json`; the translation keys are the contract, the English text is for checking.
+
+#### 4.13.1 Damage type data, one row per type
+
+The ids are the positions in the synchronized `damage_type` registry of a standard world: the registry is filled in sorted order of the element path (23 section 3.4, path compared with `String.compareTo`) and Registry Data is sent in id order (04), so the 51 standard types get the ids 0 to 50 below (inferred from 23 section 3.4 applied to the 51 file names). An additional element (for example a `cobolcraft:` type) shifts the ids of every element that sorts after it. The id in the Damage Event is this position (4.13.4).
+
+The data key of the void type is `out_of_world` (file `out_of_world.json`, `DamageTypes` entry registered under the path `out_of_world`); `fell_out_of_world` is only the name of the Java constant (`DamageTypes.FELL_OUT_OF_WORLD`) and of the `DamageSources.fellOutOfWorld` method.
+
+Columns: `scaling` is `always` or `when_caused_by_living_non_player` (no type uses `never`), `exhaustion` is the food exhaustion (4.12), `effects` and `death_message_type` are blank (`-`) when the file omits them (the defaults are `hurt` and `default`, 04 section 6). `message_id` is case sensitive and is the string used in the death message key (4.13.2).
+
+| Id | Type (file name) | `message_id` | `scaling` | `exhaustion` | `effects` | `death_message_type` |
+|---|---|---|---|---|---|---|
+| 0 | `arrow` | `arrow` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 1 | `bad_respawn_point` | `badRespawnPoint` | `always` | 0.1 | - | `intentional_game_design` |
+| 2 | `cactus` | `cactus` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 3 | `campfire` | `inFire` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 4 | `cramming` | `cramming` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 5 | `dragon_breath` | `dragonBreath` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 6 | `drown` | `drown` | `when_caused_by_living_non_player` | 0.0 | `drowning` | - |
+| 7 | `dry_out` | `dryout` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 8 | `ender_pearl` | `fall` | `when_caused_by_living_non_player` | 0.0 | - | `fall_variants` |
+| 9 | `explosion` | `explosion` | `always` | 0.1 | - | - |
+| 10 | `fall` | `fall` | `when_caused_by_living_non_player` | 0.0 | - | `fall_variants` |
+| 11 | `falling_anvil` | `anvil` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 12 | `falling_block` | `fallingBlock` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 13 | `falling_stalactite` | `fallingStalactite` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 14 | `fireball` | `fireball` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 15 | `fireworks` | `fireworks` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 16 | `fly_into_wall` | `flyIntoWall` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 17 | `freeze` | `freeze` | `when_caused_by_living_non_player` | 0.0 | `freezing` | - |
+| 18 | `generic` | `generic` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 19 | `generic_kill` | `genericKill` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 20 | `hot_floor` | `hotFloor` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 21 | `in_fire` | `inFire` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 22 | `in_wall` | `inWall` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 23 | `indirect_magic` | `indirectMagic` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 24 | `lava` | `lava` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 25 | `lightning_bolt` | `lightningBolt` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 26 | `mace_smash` | `mace_smash` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 27 | `magic` | `magic` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 28 | `mob_attack` | `mob` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 29 | `mob_attack_no_aggro` | `mob` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 30 | `mob_projectile` | `mob` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 31 | `on_fire` | `onFire` | `when_caused_by_living_non_player` | 0.0 | `burning` | - |
+| 32 | `out_of_world` | `outOfWorld` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 33 | `outside_border` | `outsideBorder` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 34 | `player_attack` | `player` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 35 | `player_explosion` | `explosion.player` | `always` | 0.1 | - | - |
+| 36 | `sonic_boom` | `sonic_boom` | `always` | 0.0 | - | - |
+| 37 | `spear` | `spear` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 38 | `spit` | `mob` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 39 | `stalagmite` | `stalagmite` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 40 | `starve` | `starve` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 41 | `sting` | `sting` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 42 | `sulfur_cube_hot` | `sulfurCubeHot` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 43 | `sweet_berry_bush` | `sweetBerryBush` | `when_caused_by_living_non_player` | 0.1 | `poking` | - |
+| 44 | `thorns` | `thorns` | `when_caused_by_living_non_player` | 0.1 | `thorns` | - |
+| 45 | `thrown` | `thrown` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 46 | `trident` | `trident` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 47 | `unattributed_fireball` | `onFire` | `when_caused_by_living_non_player` | 0.1 | `burning` | - |
+| 48 | `wind_charge` | `mob` | `when_caused_by_living_non_player` | 0.1 | - | - |
+| 49 | `wither` | `wither` | `when_caused_by_living_non_player` | 0.0 | - | - |
+| 50 | `wither_skull` | `witherSkull` | `when_caused_by_living_non_player` | 0.1 | - | - |
+
+Notes on the table. (a) Several types share one `message_id`: `campfire` and `in_fire` use `inFire`; `ender_pearl` and `fall` use `fall`; `mob_attack`, `mob_attack_no_aggro`, `mob_projectile`, `spit` and `wind_charge` all use `mob`. (b) `message_id` is not always the snake_case file name (`bad_respawn_point` is `badRespawnPoint`, `out_of_world` is `outOfWorld`, `dry_out` is `dryout`, `player_explosion` is `explosion.player` with a dot, `mace_smash`, `sonic_boom` and `spear` are unchanged). (c) The `DeathMessageType` serialized names are `default`, `fall_variants` and `intentional_game_design` (`DeathMessageType.getSerializedName`).
+
+#### 4.13.2 The death message key for a damage source
+
+`CombatTracker.getDeathMessage` is called by `ServerPlayer.die` while the victim's tracker still holds its entries (the tracker is reset by `recheckStatus` only after the message has been built). The result is sent to the dying player in the Player Combat Kill packet (0x45, id 69, in 05a) and, when the game rule `show_death_messages` is true, broadcast as a system message (overlay flag false). With no team, every player receives the broadcast; with a team the team's `death_message_visibility` decides (`ServerPlayer.die`): `always` (serialized name `always`): everybody; `hideForOtherTeams`: the other online members of the victim's team (found by name among online players; the victim is skipped and gets the message only through its own Combat Kill packet, not as a system message); `hideForOwnTeam`: everybody except the victim's team; `never`: nobody. When the rule is false the Combat Kill packet carries an empty component and nothing is broadcast. The Combat Kill packet is sent with a failure listener: a failure listener on that send builds a replacement packet whose message is the translatable `death.attack.even_more_magic` (one argument, the victim's display name; "Steve was killed by even more magic") with a hover-text style change (the style's hover event is set to show the component `death.attack.message_too_long`, whose one argument is the first 256 characters of the original message's plain text as a yellow literal: "Actually, the message was too long to deliver fully. Sorry! Here's a stripped version: ..."). Only the Combat Kill packet is replaced; the system-message broadcast uses the original component. `death.attack.even_more_magic` is used nowhere else in the artifact (searched all classes of `net/minecraft`: only `ServerPlayer`).
+
+Selection in `CombatTracker.getDeathMessage`, in this order:
+
+1. The victim's tracker has no entry: key `death.attack.generic` with one argument, the victim display name ("Steve died").
+2. Otherwise let L be the last entry (the damage that killed) and S its `DamageSource`. Let T be `S.type().deathMessageType()`.
+3. T is `fall_variants` (types `fall`, `ender_pearl`) and `getMostSignificantFall` (4.13.3) returns an entry F: the message of `getFallMessage(F, S.getEntity())` (4.13.3).
+4. T is `intentional_game_design` (type `bad_respawn_point`): base = `death.attack.` + `message_id`; the key `base.message` with two arguments: the victim display name and the component made from the translatable `base.link` wrapped in square brackets and styled with a click event that opens `https://bugs.mojang.com/browse/MCPE-28723` and a hover text with the literal `MCPE-28723` (`CombatTracker` static initialiser, `CommonLinks.INTENTIONAL_GAME_DESIGN_BUG`). With `en_us`: "Steve was killed by [Intentional Game Design]". Note that no plain key `death.attack.badRespawnPoint` exists.
+5. In every other case (including T `fall_variants` when no significant fall exists, and `default`): `DamageSource.getLocalizedDeathMessage(victim)` on S:
+   - base = `death.attack.` + `message_id` of S's type.
+   - If S has a causing entity or a direct entity (either non-null): the attacker display name is the causing entity's if it is non-null, otherwise the direct entity's. The weapon is the main-hand item of the causing entity when that is a living entity (the direct entity is not asked), otherwise empty. If the weapon is non-empty **and has the `custom_name` component**, the key is `base.item` with three arguments: victim display name, attacker display name, the item's display name; otherwise the key is `base` with two arguments (victim, attacker). An item without a custom name (even a named-by-`item_name` or enchanted one) never gives the `.item` form.
+   - Otherwise (no entity): c = `victim.getKillCredit()`. If c is non-null the key is `base.player` with two arguments (victim, c's display name); otherwise the key is `base` with one argument (victim).
+
+Arguments are positional (`%1$s`, `%2$s`, `%3$s`): the order in the call is always victim, attacker, item, but the English texts do not always print them in that order (`death.attack.sulfurCubeHot.player` is "%2$s showed %1$s that not just the floor is lava"; `death.attack.fireworks.item` is "%1$s went off with a bang due to a firework fired from %3$s by %2$s"). An implementation must substitute by position.
+
+Which variants exist in `en_us.json` per `message_id` (the keys are `death.attack.` + the id plus the suffix; no other `death.attack` keys exist, apart from `badRespawnPoint.link` / `.message`, `message_too_long` and `even_more_magic`):
+
+| Variants present | `message_id` values |
+|---|---|
+| plain and `.player` | `anvil`, `cactus`, `cramming`, `dragonBreath`, `drown`, `dryout`, `explosion`, `fall`, `fallingBlock`, `fallingStalactite`, `flyIntoWall`, `freeze`, `generic`, `genericKill`, `hotFloor`, `inFire`, `inWall`, `lava`, `lightningBolt`, `magic`, `outOfWorld`, `outsideBorder`, `stalagmite`, `starve`, `sweetBerryBush`, `wither` |
+| plain, `.player` and `.item` | `fireworks`, `onFire`, `sonic_boom`, `sting`, `sulfurCubeHot` |
+| plain and `.item` only | `arrow`, `explosion.player`, `fireball`, `indirectMagic`, `mace_smash`, `mob`, `player`, `spear`, `thorns`, `thrown`, `trident`, `witherSkull` |
+| none of the three (the `.message` / `.link` pair only) | `badRespawnPoint` |
+
+For the plain-only-plus-`.item` ids (for example `mob`, `arrow`, `player`) the plain text itself has a `%2$s` (the attacker); there is no `.player` text, so a source with no entity but a kill credit for such an id would name a key that `en_us.json` does not contain (Open question 18). For ids whose plain text has no `%2$s` (`explosion`, `fall`, `onFire`, ...) a source with an entity but no `.player` reading simply drops the attacker ("Steve blew up").
+
+Display names (`DamageSource.getLocalizedDeathMessage` and `Entity.getDisplayName`): an entity's display name is its name (`getName`) formatted with its scoreboard team (prefix, suffix, colour) and decorated with a hover event showing the entity and an insertion of its UUID. `getName` of a player is the profile name as a literal; of any other entity it is the custom name (`custom_name` entity data, with click actions removed) when set, otherwise the entity type's description (for example `entity.minecraft.zombie`: "Zombie"; the type-name branch is inferred from `Entity.getName` calling `getTypeName` when there is no custom name). A mob renamed "Bob" therefore gives "Steve was slain by Bob". The display name of an item is `[` + the item's hover name + `]` (the hover name is the `custom_name` when present, in italics), coloured by rarity and with a hover event showing the item (`ItemStack.getDisplayName`).
+
+Kill credit (`LivingEntity.getKillCredit`): the player recorded as last hurting the victim if one is recorded (even if that entity can no longer be resolved, the result is then null and the mob is not consulted); otherwise the living entity recorded as last hurting the victim; otherwise none. The records are set when the victim is hurt (`LivingEntity.hurtServer`, `resolveMobResponsibleForDamage`, `resolvePlayerResponsibleForDamage`):
+
+| Record | Set when | Cleared |
+|---|---|---|
+| last hurt by mob | the source's causing entity (`getEntity`) is a living entity, the type is not in `no_anger` (`mob_attack_no_aggro`), and (for `wind_charge`) the victim's type is not in `no_anger_from_wind_charge`; set to that entity and the current `tickCount` | in `LivingEntity.baseTick`: when the recorded mob is no longer alive, or when `tickCount - timestamp > 100` (so the record survives while the difference is 100 and is cleared on the first tick where it is 101) |
+| last hurt by player | the causing entity is a player (set to it), or a tamed wolf (set to its owner; if the owner is unknown the record is cleared); memory time 100 | the memory time starts at 100 and `baseTick` decrements it by 1 per tick while it is above 0; on the first `baseTick` where it is at or below 0 the record is cleared (the record is therefore still readable for 100 `baseTick` calls after it is set) |
+
+So the `.player` variant is chosen when a player, or else a living mob, damaged the victim within the last 100 ticks (5 seconds) and the lethal source has no entity of its own.
+
+#### 4.13.3 Fall damage messages (`CombatTracker`, `FallLocation`)
+
+Entries. Each time a player's damage reaches health (`Player.actuallyHurt`: after armour, magic and absorption; skipped when nothing is left to apply) `CombatTracker.recordDamage` first runs `recheckStatus`, then appends an entry (source, damage applied to health, fall location, fall distance). The fall location is `FallLocation.getCurrentFallLocation(victim)`: if the victim has a last climbable position, the block state at that position decides (below), otherwise `water` if the victim is in water, otherwise none (null). The fall distance is the victim's `fallDistance` in blocks at that moment (the fall damage is applied before the distance is reset, `Entity.checkFallDamage`). Combat state: entering combat happens when the source's causing entity is a living entity.
+
+`recheckStatus` runs in `recordDamage` and every 20 ticks in `LivingEntity.tick`. It does nothing unless damage has been taken since the last reset; it then clears all entries when the victim is not alive or when `tickCount - lastDamageTime` exceeds the window, which is 300 ticks while in combat and 100 ticks otherwise (`RESET_COMBAT_STATUS_TIME`, `RESET_DAMAGE_STATUS_TIME`). Entries therefore span from the last quiet period of at least 5 seconds (15 seconds after a living attacker) to the death.
+
+Fall location by block (`FallLocation.blockToFallLocation`), id and key (`death.fell.accident.` + id):
+
+| Block at the last climbable position | Id | Key | English |
+|---|---|---|---|
+| `ladder`, or a block in the `trapdoors` block tag | `ladder` | `death.fell.accident.ladder` | `%1$s fell off a ladder` |
+| `vine` | `vines` | `death.fell.accident.vines` | `%1$s fell off some vines` |
+| `weeping_vines`, `weeping_vines_plant` | `weeping_vines` | `death.fell.accident.weeping_vines` | `%1$s fell off some weeping vines` |
+| `twisting_vines`, `twisting_vines_plant` | `twisting_vines` | `death.fell.accident.twisting_vines` | `%1$s fell off some twisting vines` |
+| `scaffolding` | `scaffolding` | `death.fell.accident.scaffolding` | `%1$s fell off scaffolding` |
+| any other block | `other_climbable` | `death.fell.accident.other_climbable` | `%1$s fell while climbing` |
+| (no climbable position, victim in water) | `water` | `death.fell.accident.water` (no such key in `en_us.json`, Open question 18) | - |
+| (neither; a null location is replaced by `generic` when a message is built) | `generic` | `death.fell.accident.generic` | `%1$s fell from a high place` |
+
+`getMostSignificantFall` picks the entry that describes the fall, scanning the entries from oldest to newest. For the entry E at index i with source S: the distance d is `3.4028235E38` when S is in the damage type tag `always_most_significant_fall` (its only member is `out_of_world`), otherwise the entry's fall distance. If S is in `is_fall` (`fall`, `ender_pearl`, `stalagmite`) or in `always_most_significant_fall`, and d is greater than 0, and either no candidate exists yet or d is greater than the best distance so far, the candidate becomes the entry **before** E (E itself when i is 0) and the best distance becomes d. Independently, if E has a fall location and either no location candidate exists or E's damage is greater than the best location damage so far, E becomes the location candidate. The result is the candidate if the best distance is greater than 5.0, otherwise the location candidate if its damage is greater than 5.0, otherwise none. (Both thresholds are strict.)
+
+`getFallMessage(F, killer)` (killer is the entity of the **last** entry's source):
+
+1. If F's source is in `is_fall` or `always_most_significant_fall`: key `death.fell.accident.` + id of F's fall location (`generic` when null), one argument (victim).
+2. Otherwise let a be the display name of the killer (null when there is none) and b the display name of F's source's causing entity (null when none). If b is non-null and b is not equal to a: the assist message with b's entity (`death.fell.assist`, or `death.fell.assist.item` when that entity is a living entity whose main-hand item has a custom name): arguments victim, b, and for `.item` the item name. English: `%1$s was doomed to fall by %2$s` and `... using %3$s`.
+3. Otherwise, if a is non-null: `death.fell.finish` (`.item`) with the killer entity: `%1$s fell too far and was finished by %2$s` (and `... using %3$s`). (With the standard factories the final `fall` and `ender_pearl` sources carry no entity, so this branch is not reached for them, inferred.)
+4. Otherwise: `death.fell.killer`, one argument: `%1$s was doomed to fall`.
+
+#### 4.13.4 The Damage Event packet for a player victim
+
+The packet (05a, id 0x19) is built by `ClientboundDamageEventPacket(entity, source)` and sent by `ServerLevel.broadcastDamageEvent` to the players tracking the victim **and to the victim itself** (`ServerChunkCache.sendToTrackingPlayersAndSelf`). Fields, in wire order:
+
+| Field | Value for a player victim |
+|---|---|
+| Entity id (VarInt) | the victim's entity id, **not** shifted |
+| Damage type (VarInt) | the registry id of the source's type in the synchronized `damage_type` registry (`DamageType.STREAM_CODEC` is `ByteBufCodecs.holderRegistry`: a plain VarInt id, no inline form, no "+1"); the ids of a standard world are in 4.13.1 |
+| Source cause id (VarInt) | `DamageSource.getEntity()` id **+ 1**; 0 when the source has no causing entity |
+| Source direct id (VarInt) | `DamageSource.getDirectEntity()` id **+ 1**; 0 when the source has no direct entity |
+| Source position | Optional (boolean, then three Double x, y, z): present only when the `DamageSource` was built with an explicit position (`sourcePositionRaw` is non-null) |
+
+The encoding of the two entity fields is `writeOptionalEntityId`: write `id + 1`; the in-memory "none" value is -1, so the wire value is 0. The position is the raw field, not `getSourcePosition()`: a source that only has a direct entity does **not** send that entity's position. The explicit position exists for `DamageSources.badRespawnPointExplosion(pos)` (type `bad_respawn_point`), for sources built by the enchantment `explode` effect (`ExplodeEffect`) and for the `/damage ... at` command (`DamageCommand`); all other standard causes send no position (flag false, one byte). On the client, `getSource` rebuilds a source with only the position when it is present (no entities then), otherwise with the type and the two entities.
+
+When the packet is sent (`LivingEntity.hurtServer`, entered through `Player.hurtServer`): not at all when the victim is invulnerable to the type or dead, when a creative/invulnerable player is hit by a type outside `bypasses_invulnerability`, when fire damage meets Fire Resistance, or when the amount is 0 after difficulty scaling (`Player.hurtServer` returns false). For a hit while `damageCooldownTime` is above 10 and the type is not in the tag `bypasses_cooldown` (the tag file `data/minecraft/tags/damage_type/bypasses_cooldown.json` has no members in this artifact, so every type is subject to the cooldown) the packet is **not** sent: a follow-up hit no greater than the last damage is discarded, a greater one applies only the difference and sends nothing. A type in `bypasses_cooldown` would be applied in full and sent (`LivingEntity.hurtServer`). For a hit that applies in full the packet is sent after `actuallyHurt`, except that when the hit was reduced by a blocking item whose item carries `blocks_attacks`, the item's `onBlocked` effects replace the packet. The Damage Event is therefore sent at the moment of damage, whether or not the hit kills; the death message (4.13.2) follows when health reaches 0.
+
+#### 4.13.5 Worked table: standard causes against a player
+
+Victim "Steve", entity id 7. Entity ids in the examples: zombie 12, skeleton 14, arrow 15, creeper 20, player Alex 9. "Packet" is the Damage Event after the entity id: type id, cause field, direct field, position flag. Source factory is the `DamageSources` method that the cause calls. "Window" means the last-hurt record of 4.13.2 is older than 100 ticks or absent.
+
+| Cause | Factory and type | Packet: type, cause, direct, pos | Key and arguments (no window) | English |
+|---|---|---|---|---|
+| Zombie melee (`Mob.doHurtTarget`, weapon item without a `damage_type` component) | `mobAttack(zombie)`: `mob_attack` (28), causing = direct = zombie | 28, 13, 13, absent | `death.attack.mob` [Steve, Zombie] | Steve was slain by Zombie |
+| Same zombie holding an item named "Excalibur" | same | same | `death.attack.mob.item` [Steve, Zombie, [Excalibur]] | Steve was slain by Zombie using [Excalibur] |
+| Same zombie renamed "Bob", no weapon | same | same | `death.attack.mob` [Steve, Bob] | Steve was slain by Bob |
+| Spider melee | `mobAttack(spider)`: `mob_attack` | 28, spider+1, spider+1, absent | `death.attack.mob` [Steve, Spider] | Steve was slain by Spider |
+| Skeleton arrow (`AbstractArrow.onHitEntity`) | `arrow(arrow, owner)`: `arrow` (0); causing = the owner skeleton, direct = the arrow; if the arrow has no owner both are the arrow | 0, 15, 16, absent | `death.attack.arrow` [Steve, Skeleton] | Steve was shot by Skeleton |
+| Same, bow with a custom name "Zing" in the skeleton's main hand | same | same | `death.attack.arrow.item` [Steve, Skeleton, [Zing]] | Steve was shot by Skeleton using [Zing] |
+| Creeper explosion (`Creeper.explodeCreeper`, `ServerExplosion`) | `explosion(creeper, creeper)`: the indirect source of a living entity is itself, both non-null, so `player_explosion` (35), causing = direct = creeper | 35, 21, 21, absent | `death.attack.explosion.player` [Steve, Creeper] | Steve was blown up by Creeper |
+| Explosion with no entity (null explosion source) | `explosion(null, null)`: `explosion` (9) | 9, 0, 0, absent | `death.attack.explosion` [Steve] | Steve blew up |
+| Explosion with an unowned primed TNT | direct = the TNT, causing null: `explosion` (9) | 9, 0, tnt+1, absent | `death.attack.explosion` [Steve, Primed TNT] (the text has no `%2$s`) | Steve blew up |
+| Fall of 8 blocks, no earlier damage | `fall()`: `fall` (10), no entities | 10, 0, 0, absent | `death.fell.accident.generic` [Steve] (4.13.3 step 1) | Steve fell from a high place |
+| Fall of 4 blocks (distance not above 5), no window | `fall` | 10, 0, 0, absent | `death.attack.fall` [Steve] (no significant fall) | Steve hit the ground too hard |
+| Fall off a ladder (8 blocks, last climbable position is a ladder) | `fall` | 10, 0, 0, absent | `death.fell.accident.ladder` [Steve] | Steve fell off a ladder |
+| Zombie hit 2 s earlier, then a fall of 8 blocks | `fall`; entries [zombie hit, fall]; candidate = the zombie entry | 10, 0, 0, absent | `death.fell.assist` [Steve, Zombie] | Steve was doomed to fall by Zombie |
+| Zombie hit 2 s earlier, then a fall of 4 blocks | `fall`; no significant fall; kill credit = zombie | 10, 0, 0, absent | `death.attack.fall.player` [Steve, Zombie] | Steve hit the ground too hard while trying to escape Zombie |
+| Starvation (`FoodData`) | `starve()`: `starve` (40) | 40, 0, 0, absent | `death.attack.starve` [Steve] | Steve starved to death |
+| Starvation, hit by a zombie 3 s earlier | same; kill credit = zombie | same | `death.attack.starve.player` [Steve, Zombie] | Steve starved to death while fighting Zombie |
+| Drowning (`LivingEntity.baseTick`) | `drown()`: `drown` (6) | 6, 0, 0, absent | `death.attack.drown` [Steve] | Steve drowned |
+| Drowning with kill credit | same | same | `death.attack.drown.player` [Steve, Zombie] | Steve drowned while trying to escape Zombie |
+| Burning (`Entity.baseTick`) | `onFire()`: `on_fire` (31) | 31, 0, 0, absent | `death.attack.onFire` [Steve] | Steve burned to death |
+| Burning with kill credit | same | same | `death.attack.onFire.player` [Steve, Zombie] | Steve was burned to a crisp while fighting Zombie |
+| Standing in fire (`BaseFireBlock`) | `inFire()`: `in_fire` (21) | 21, 0, 0, absent | `death.attack.inFire` [Steve] | Steve went up in flames |
+| In fire with kill credit | same | same | `death.attack.inFire.player` [Steve, Zombie] | Steve walked into fire while fighting Zombie |
+| Lava (`Entity.lavaHurt`) | `lava()`: `lava` (24) | 24, 0, 0, absent | `death.attack.lava` [Steve] | Steve tried to swim in lava |
+| Lava with kill credit | same | same | `death.attack.lava.player` [Steve, Zombie] | Steve tried to swim in lava to escape Zombie |
+| Cactus (`CactusBlock`) | `cactus()`: `cactus` (2) | 2, 0, 0, absent | `death.attack.cactus` [Steve] | Steve was pricked to death |
+| Cactus with kill credit | same | same | `death.attack.cactus.player` [Steve, Zombie] | Steve walked into a cactus while trying to escape Zombie |
+| Player Alex hits Steve (`Player.attack`, weapon without a `damage_type` component) | `playerAttack(alex)`: `player_attack` (34), causing = direct = Alex | 34, 10, 10, absent | `death.attack.player` [Steve, Alex] | Steve was slain by Alex |
+| Same, Alex's main hand holds a sword renamed "Excalibur" | same | same | `death.attack.player.item` [Steve, Alex, [Excalibur]] | Steve was slain by Alex using [Excalibur] |
+| Same, unnamed sword | same | same | `death.attack.player` [Steve, Alex] | Steve was slain by Alex |
+| `/kill Steve` (`KillCommand` then `Entity.kill`, damage `Float.MAX_VALUE`) | `genericKill()`: `generic_kill` (19), no entities, bypasses invulnerability and Resistance | 19, 0, 0, absent | `death.attack.genericKill` [Steve] | Steve was killed |
+| `/kill` with a zombie hit in the last 100 ticks | same; kill credit | same | `death.attack.genericKill.player` [Steve, Zombie] | Steve was killed while fighting Zombie |
+| Void (below the world) | `fellOutOfWorld()`: `out_of_world` (32) | 32, 0, 0, absent | `death.attack.outOfWorld` [Steve] | Steve fell out of the world |
+
+"Kill credit = zombie" rows apply when the zombie hit Steve within the last 100 ticks and no player did (a player in the window takes the place of the zombie as `%2$s`). Entities are counted in the packet only through the source: kill credit never changes the packet.
+
+Ordering example (a combined case). Steve (health 6) is hit by the zombie (entry 1, damage 3, fall distance 0), then falls 10 blocks and takes fall damage 7 (entry 2, distance 10). Packet 1: `7, 28, 13, 13, 0`. Packet 2: `7, 10, 0, 0, 0`. Death message: last entry's type `fall` is `fall_variants`; `getMostSignificantFall` has d = 10 for entry 2 (index 1) so the candidate is entry 1 and the best distance 10 is above 5; entry 1 is not a fall source; a = null (the killer of the fall source), b = Zombie, so `death.fell.assist` [Steve, Zombie]: "Steve was doomed to fall by Zombie".
+
 ---
 
 ## 5. Durability, Unbreaking, Mending and repair
@@ -1101,6 +1295,13 @@ Follow-up round: every item that the first pass marked "recalled" or "not decode
 14. Item components not covered: `food` and `consumable` effect lists (only `milk_bucket`, spider eye and the default drink constants were read), `bundle_contents`, `potion_contents` effects, trim, instruments.
 16. **Verified in earlier rounds only** (not re-read in round 3): crossbow and bow numbers, anvil, grindstone and enchanting table, hunger and regeneration, XP orb behaviour, bucket internals, lead / name tag / saddle, elytra physics, and the resolved tag lists.
 17. **Periodic mob-effect rules (4.9a)**: the `applyEffectTick` overrides of `bad_omen` and `raid_omen` and the exact amplifier range cap were not re-read for 4.9a; the shift-count masking for amplifiers of 32 and above is deduced from the instruction, not tested (inferred).
+18. **Death message keys that `en_us.json` does not contain (4.13)**: `death.fell.accident.water` (location `water`) and the `.player` variants of the ids that only have a plain and an `.item` text (`mob`, `arrow`, `player`, `thrown`, ...). What the client prints for an unknown translation key (the key text itself) is recalled, not verified.
+19. **Last climbable position (4.13.3)**: `FallLocation.getCurrentFallLocation` reads `LivingEntity.getLastClimbablePos`; where that position is set and cleared (and so exactly when a ladder fall is reported rather than a generic one) was not read.
+20. **Weapon-specific damage types (4.13.5)**: `ItemStack.getDamageSource` uses the item's `damage_type` component, then `Item.getItemDamageSource` (null in `Item`; overrides, for example for the mace, were not traced), then the attacker's default (`mob_attack` for a living entity, `player_attack` for a player). Only the default branch is in the worked table.
+21. **Display name decoration (4.13.2)**: the hover event and insertion that `Entity.getDisplayName` adds, and the team formatting (`PlayerTeam.formatNameForTeam`), were read as call structure only; the type-name branch of `Entity.getName` for an entity without a custom name is inferred from the `getTypeName` method.
+22. **Damage Event sources with an explicit position (4.13.4)**: the callers `ExplodeEffect` and `DamageCommand` were found by the constructor reference only; the position values they pass were not read.
+23. **Order of the Damage Event relative to the hurt animation and Entity Event packets** within one tick was not traced.
+
 
 ## Appendix A. `mineable/*` block tags (complete, resolved)
 

@@ -182,10 +182,22 @@
        10 PL-DEATH-CAUSE     BINARY-LONG.
        10 PL-KILLER-NAME     PIC X(16).
        10 PL-KILLER-LENGTH   BINARY-LONG.
+       10 PL-KILLER-ITEM     PIC X(64).          *> the custom name of the attacker's held item at the last hit (the .item death message)
+       10 PL-KILLER-ITEM-LENGTH BINARY-LONG.
+       10 PL-CREDIT-NAME     PIC X(16).          *> kill credit (17 section 4.13.2): the player or mob that last hurt this player
+       10 PL-CREDIT-LENGTH   BINARY-LONG.
+       10 PL-CREDIT-TICK     BINARY-DOUBLE.      *> CW-TICKS of that hit: valid for 100 ticks
+       10 PL-FALL-DISTANCE   BINARY-LONG.        *> the last fall damage's distance in thousandths of a block (the fall death message)
 *>     Travel (standin §15.5; core/src/dimensions.cob): 1 once the player has travelled this
 *>     session, and the CW-TICKS of that travel (a use within TRAVEL-COOLDOWN ticks is ignored).
        10 PL-TRAVELLED       PIC 9.
        10 PL-TRAVEL-TICK     BINARY-DOUBLE.
+*>     --- 002-lane-mobs2: experience (core/src/xp.cob; 17 section 4.10) ---
+       10 PL-XP-LEVEL        BINARY-LONG.        *> experience level
+       10 PL-XP-POINTS       BINARY-LONG.        *> points into the current level
+       10 PL-XP-TOTAL        BINARY-LONG.        *> total experience points
+       10 PL-XP-DELAY        BINARY-LONG.        *> takeXpDelay: ticks until the next orb pickup
+*>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
 *> CORE-CHUNK-BYTES bytes laid out as contract/copy/CELLS.cpy (2-byte states, 4-bit light, biomes). The
@@ -260,7 +272,18 @@
        10 EN-TARGET-ID       BINARY-LONG.
        10 EN-COOLDOWN        BINARY-LONG.
        10 EN-BURN            BINARY-LONG.        *> ticks left on fire (a daylight-burning standard mob: 160, 1 damage every 20)
+       10 EN-WAY-X           FLOAT-LONG.         *> the next path waypoint (cell centre) of a walking standard mob (core/src/stdmobs.cob STDMOB-HEAD)
+       10 EN-WAY-Z           FLOAT-LONG.
+       10 EN-DEST-X          BINARY-LONG.        *> the cell a stroll is walking to (EN-COOLDOWN ticks left)
+       10 EN-DEST-Z          BINARY-LONG.
+       10 EN-PATH-TICKS      BINARY-LONG.        *> ticks until the path is searched again
        10 EN-KILLER          BINARY-LONG.        *> player row that last hit a mob (0 none): the killed_by_player loot condition (core/src/stdmobs.cob)
+*>     --- 002-lane-mobs2: creeper (core/src/stdmobs.cob STDMOB-SWELL) ---
+       10 EN-SWELL           BINARY-LONG.        *> the swell counter (20 section 6.1), 0 to the fuse
+       10 EN-SWELL-DIR       BINARY-LONG.        *> the last swell direction sent to the viewers (0 = none yet, the default -1)
+       10 EN-SHOOT-TIME      BINARY-LONG.        *> a bow mob's attackTime: ticks until it draws the bow again (20 section 5; EN-SWELL is its seeTime)
+       10 EN-DRAW            BINARY-LONG.        *> 0 = bow not drawn, else 1 + the ticks the bow has been drawn
+*>     --- end 002-lane-mobs2 ---
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

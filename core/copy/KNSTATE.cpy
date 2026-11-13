@@ -15,6 +15,11 @@
           15 KX-EQUIP-KP     BINARY-LONG.
        10 KX-SLOT-KP         BINARY-LONG OCCURS 36 TIMES.
        10 KX-SATURATION      FLOAT-LONG.
+*>     --- 002-lane-mobs2: experience (xp.cob) ---
+       10 KX-XP-LEVEL        BINARY-LONG.
+       10 KX-XP-POINTS       BINARY-LONG.
+       10 KX-XP-TOTAL        BINARY-LONG.
+*>     --- end 002-lane-mobs2 ---
        10 KX-BOOK-SET        PIC 9.
        10 KX-BOOK-OPEN       PIC 9 OCCURS 4 TIMES.
        10 KX-BOOK-FILTER     PIC 9 OCCURS 4 TIMES.
