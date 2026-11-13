@@ -176,6 +176,8 @@
              CALL "CX-SWING"
          WHEN BC-EXPERIENCE
              CALL "CX-EXPERIENCE"
+         WHEN BC-ENCHANT
+             CALL "CX-ENCHANT"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE

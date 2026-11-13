@@ -1700,3 +1700,254 @@
      CALL "BR-REG-ALIAS" USING WS-ALIAS WS-ALIAS-LENGTH WS-TARGET WS-TARGET-LENGTH
      GOBACK.
  END PROGRAM CMDS-REG-EXPERIENCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ENCH-DEF.
+*> USING key (PIC X(64), with its namespace), key length, id out (the row of the registry enchantment, -1 when there is none), maximum level out, tag out (PIC X(112),
+*> the item tag of supported_items without its #), tag length out: the definition of an enchantment from its registry entry (an NBT compound: max_level, supported_items).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY PROTO.
+ 01 WS-REGISTRY            PIC X(112) VALUE "enchantment".
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-AREA                PIC X(16384).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 16384.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 0.
+ 01 WS-PB-CAPACITY         BINARY-LONG VALUE 16384.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 112.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(64).
+ 01 L-KEY-LENGTH           BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-MAX                  BINARY-LONG.
+ 01 L-TAG                  PIC X(112).
+ 01 L-TAG-LENGTH           BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-KEY-LENGTH L-ID L-MAX L-TAG L-TAG-LENGTH.
+     MOVE -1 TO L-ID
+     MOVE 0 TO L-MAX L-TAG-LENGTH
+     MOVE SPACES TO L-TAG
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-COUNT OR L-ID >= 0
+         CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-I WS-KEY WS-KEY-LENGTH WS-AREA WS-CAPACITY WS-LENGTH
+             WS-STATUS
+         IF WS-KEY-LENGTH = L-KEY-LENGTH AND WS-KEY(1:WS-KEY-LENGTH) = L-KEY(1:L-KEY-LENGTH)
+             MOVE WS-I TO L-ID
+         END-IF
+     END-PERFORM
+     CALL "PB-INIT" USING PB-BUFFER WS-PB-CAPACITY
+     CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-AREA WS-LENGTH
+     MOVE 0 TO PB-POS
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WS-NAME
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WS-NAME WS-NAME-CAPACITY WS-NAME-LENGTH
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WS-NAME = "max_level"
+                 CALL "PB-GET-INT" USING PB-BUFFER L-MAX
+             WHEN WS-NAME = "supported_items"
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+                 COMPUTE L-TAG-LENGTH = WS-TEXT-LENGTH - 1
+                 MOVE WS-TEXT(2:L-TAG-LENGTH) TO L-TAG
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM CXB-ENCH-DEF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-ENCHANT.
+*> enchant <targets> <enchantment> [<level>] (16 §5.11, level 2): the level (1 by default) must not exceed the maximum level of the enchantment
+*> (commands.enchant.failed.level [level, maximum], before any target). Each living target is looked at in turn: a ground item is skipped (a single target:
+*> commands.enchant.failed.entity [name]); a target holding nothing (a mob holds no item) is skipped (.failed.itemless [name]); an item that is not in the item tag
+*> of supported_items is skipped (.failed.incompatible [item key]); else the enchantment is added at the level to the main-hand stack (SP-ADD-ENCHANT) and the player is
+*> sent the inventory. None changed is commands.enchant.failed; else commands.enchant.success.single [enchantment key, name] or .multiple [enchantment key, count] is
+*> broadcast; the result is the number changed. Not done: the compatibility with the enchantments on the item (no standard enchantment has an exclusive_set) and a
+*> supported_items that is not a tag; the enchantment is named by its registry key (a message argument is a literal text).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-ENCHANT        PIC X(32) VALUE "enchantment".
+ 01 WS-NAME-LEVEL          PIC X(32) VALUE "level".
+ 01 WS-REGISTRY            PIC X(48) VALUE "item".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-ENCH                BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-TAG-LENGTH          BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-WHY                 BINARY-LONG.
+ 01 WS-TRACKED             BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The enchantment on the main-hand item of the target WS-ROW; WS-WHY says why not (1 a ground item, 2 no item, 3 an unsupported item), 0 when it was added.
+ TRY-ONE.
+     MOVE 0 TO WS-WHY
+     IF WS-ROW < 0
+         COMPUTE WS-ENTITY = 0 - WS-ROW
+         IF EN-TYPE(WS-ENTITY) = CR-LOOSE-ITEM
+             MOVE 1 TO WS-WHY
+         ELSE
+             MOVE 2 TO WS-WHY
+         END-IF
+     ELSE
+         COMPUTE WS-SLOT = PL-HELD(WS-ROW) + 1
+         MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT) TO WS-ITEM
+         IF PL-SLOT-COUNT(WS-ROW, WS-SLOT) = 0
+             MOVE 2 TO WS-WHY
+         ELSE
+             CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-ITEM WS-HAS
+             IF WS-HAS = 0
+                 MOVE 3 TO WS-WHY
+             ELSE
+                 MOVE PL-SLOT-VAR(WS-ROW, WS-SLOT) TO WS-HANDLE
+                 CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-ENCH WS-LEVEL
+                 MOVE WS-HANDLE TO PL-SLOT-VAR(WS-ROW, WS-SLOT)
+                 CALL "CMD-SEND-INVENTORY" USING WS-ROW
+                 ADD 1 TO WS-TRACKED
+                 MOVE WS-ROW TO WS-LAST
+             END-IF
+         END-IF
+     END-IF.
+
+*> Raises the failure WS-KEY with the argument WS-A1 (WS-L1 bytes) as the only one.
+ RAISE-ONE.
+     MOVE 1 TO WS-N-ARGS
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     IF BR-R-FAILED = 0
+         CALL "BX-FIND" USING WS-NAME-ENCHANT WS-INDEX
+         CALL "BX-NAMESPACED" USING WS-INDEX WS-ID WS-ID-LENGTH
+         CALL "CXB-ENCH-DEF" USING WS-ID WS-ID-LENGTH WS-ENCH WS-MAX WS-TAG WS-TAG-LENGTH
+         MOVE 1 TO WS-LEVEL
+         CALL "BX-FIND" USING WS-NAME-LEVEL WS-INDEX
+         IF WS-INDEX > 0
+             MOVE BA-IVAL(WS-INDEX) TO WS-LEVEL
+         END-IF
+         IF WS-LEVEL > WS-MAX
+             MOVE "commands.enchant.failed.level" TO WS-KEY
+             MOVE SPACES TO WS-A1 WS-A2
+             MOVE WS-LEVEL TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO WS-A1
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L1
+             MOVE WS-MAX TO WS-EDIT
+             MOVE FUNCTION TRIM(WS-EDIT) TO WS-A2
+             MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-EDIT)) TO WS-L2
+             MOVE 2 TO WS-N-ARGS
+             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+             MOVE 1 TO BR-R-FAILED
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-TRACKED WS-LAST WS-WHY
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             MOVE BX-ROW(WS-I) TO WS-ROW
+             PERFORM TRY-ONE
+         END-PERFORM
+         MOVE SPACES TO WS-A1 WS-A2
+         EVALUATE TRUE
+             WHEN WS-TRACKED = 0 AND BX-COUNT > 1
+                 MOVE "commands.enchant.failed" TO WS-KEY
+                 MOVE 0 TO WS-N-ARGS
+                 CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+                 MOVE 1 TO BR-R-FAILED
+             WHEN WS-TRACKED = 0 AND WS-WHY = 3
+                 MOVE "commands.enchant.failed.incompatible" TO WS-KEY
+                 MOVE IT-KEY(WS-ITEM + 1) TO WS-A1
+                 MOVE IT-KEY-LENGTH(WS-ITEM + 1) TO WS-L1
+                 PERFORM RAISE-ONE
+             WHEN WS-TRACKED = 0
+                 IF WS-WHY = 1
+                     MOVE "commands.enchant.failed.entity" TO WS-KEY
+                 ELSE
+                     MOVE "commands.enchant.failed.itemless" TO WS-KEY
+                 END-IF
+                 CALL "CXB-SHOWN" USING BX-ROW(1) WS-SHOWN WS-SHOWN-LENGTH
+                 MOVE WS-SHOWN TO WS-A1
+                 MOVE WS-SHOWN-LENGTH TO WS-L1
+                 PERFORM RAISE-ONE
+             WHEN OTHER
+                 IF WS-TRACKED = 1
+                     MOVE "commands.enchant.success.single" TO WS-KEY
+                 ELSE
+                     MOVE "commands.enchant.success.multiple" TO WS-KEY
+                 END-IF
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-ID WS-ID-LENGTH
+                 IF WS-TRACKED = 1
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+                 ELSE
+                     CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+                 END-IF
+                 CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+                 MOVE WS-TRACKED TO BR-R-RESULT
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM CX-ENCHANT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-ENCHANT.
+*> The forms of enchant (16 §5.11).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-ENCHANT.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "enchant <targets:entities> <enchantment:enchanttype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "enchant <targets:entities> <enchantment:enchanttype> <level:int:0>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-ENCHANT.
