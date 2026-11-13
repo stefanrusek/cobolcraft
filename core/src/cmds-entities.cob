@@ -957,3 +957,318 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-ENTITY-ID.
+*> USING row (a player row, or the negated row of CORE-ENTITIES), network entity id out (BINARY-LONG).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ENTITY              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ID.
+     IF L-ROW > 0
+         MOVE PL-ENTITY-ID(L-ROW) TO L-ID
+     ELSE
+         COMPUTE WS-ENTITY = 0 - L-ROW
+         MOVE EN-ID(WS-ENTITY) TO L-ID
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-ENTITY-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-TAG-FIND.
+*> USING entity id, name (PIC X(128)), name length (BINARY-LONG), entry out (BINARY-LONG): the entry of CORE-TAGS that holds the tag of the
+*> entity (0 = it has none of that name).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TAGSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-NAME                 PIC X(128).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-NAME L-LENGTH L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TG-COUNT OR L-ENTRY > 0
+         IF TG-ID(WS-I) = L-ID AND TG-LENGTH(WS-I) = L-LENGTH AND TG-NAME(WS-I) = L-NAME
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-TAG-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-TAG-NUMBER.
+*> USING entity id, count out (BINARY-LONG): how many tags the entity has.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TAGSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TG-COUNT
+         IF TG-ID(WS-I) = L-ID
+             ADD 1 TO L-COUNT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CXB-TAG-NUMBER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-TAG-FREE.
+*> USING entry out (BINARY-LONG): a free entry of CORE-TAGS (a released one first), 0 when all TG-MAX are in use.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TAGSTORE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ENTRY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTRY.
+     MOVE 0 TO L-ENTRY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TG-COUNT OR L-ENTRY > 0
+         IF TG-ID(WS-I) = 0
+             MOVE WS-I TO L-ENTRY
+         END-IF
+     END-PERFORM
+     IF L-ENTRY = 0 AND TG-COUNT < TG-MAX
+         ADD 1 TO TG-COUNT
+         MOVE TG-COUNT TO L-ENTRY
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-TAG-FREE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-TAG.
+*> tag <targets> add <name> | remove <name> | list (16 §5.9, level 2): add gives each target the tag unless it has it or already holds 1024 tags
+*> (or the store is full); remove takes it from each target that has it. The tracker counts the entities changed: none is commands.tag.add.failed
+*> or .remove.failed; one is .success.single [tag, name] else .success.multiple [tag, count], broadcast; the result is the count.
+*> list: the union of the tags of all targets in the order they are found; each target with some counts: none is multiple.empty [0], one is
+*> single.success [name, its tag count, tags] else multiple.success [count, tags in the union, tags], not broadcast; the result is the size of
+*> the union. BLOCKED: the selector option tag= does not read this store yet.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY TAGSTORE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-NAME           PIC X(32) VALUE "name".
+ 01 WS-NAME-ADD            PIC X(32) VALUE "add".
+ 01 WS-NAME-REMOVE         PIC X(32) VALUE "remove".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ADD                 BINARY-LONG.
+ 01 WS-REMOVE              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-HAVE                BINARY-LONG.
+ 01 WS-TRACKED             BINARY-LONG.
+ 01 WS-NAME                PIC X(128).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-UNION-COUNT         BINARY-LONG.
+ 01 WS-UNION               BINARY-LONG OCCURS 4096 TIMES.
+ 01 WS-SEEN                BINARY-LONG.
+ 01 WS-TAGS                PIC X(1024).
+ 01 WS-TAGS-LENGTH         BINARY-LONG.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-TAG                 PIC X(128).
+ 01 WS-TAG-LENGTH          BINARY-LONG.
+ 01 WS-SHOWN               PIC X(48).
+ 01 WS-SHOWN-LENGTH        BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The failure WS-KEY with no arguments.
+ FAIL-PLAIN.
+     MOVE 0 TO WS-N-ARGS WS-L1 WS-L2
+     MOVE SPACES TO WS-A1 WS-A2
+     CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+     MOVE 1 TO BR-R-FAILED.
+
+*> add or remove: WS-NAME is the tag; WS-TRACKED the entities changed, WS-LAST the last.
+ CHANGE-TAGS.
+     MOVE 0 TO WS-TRACKED WS-LAST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+         MOVE BX-ROW(WS-I) TO WS-ROW
+         CALL "CXB-ENTITY-ID" USING WS-ROW WS-ID
+         CALL "CXB-TAG-FIND" USING WS-ID WS-NAME WS-NAME-LENGTH WS-SLOT
+         CALL "CXB-TAG-NUMBER" USING WS-ID WS-HAVE
+         IF WS-ADD > 0 AND WS-SLOT = 0 AND WS-HAVE < 1024
+             CALL "CXB-TAG-FREE" USING WS-K
+             IF WS-K > 0
+                 MOVE WS-ID TO TG-ID(WS-K)
+                 MOVE WS-NAME-LENGTH TO TG-LENGTH(WS-K)
+                 MOVE WS-NAME TO TG-NAME(WS-K)
+                 ADD 1 TO WS-TRACKED
+                 MOVE WS-ROW TO WS-LAST
+             END-IF
+         END-IF
+         IF WS-REMOVE > 0 AND WS-SLOT > 0
+             MOVE 0 TO TG-ID(WS-SLOT)
+             ADD 1 TO WS-TRACKED
+             MOVE WS-ROW TO WS-LAST
+         END-IF
+     END-PERFORM.
+
+*> The union of the tags of the targets in WS-UNION (entries of CORE-TAGS) and the targets that have tags in WS-TRACKED.
+ COLLECT-TAGS.
+     MOVE 0 TO WS-TRACKED WS-LAST WS-UNION-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+         MOVE BX-ROW(WS-I) TO WS-ROW
+         CALL "CXB-ENTITY-ID" USING WS-ROW WS-ID
+         CALL "CXB-TAG-NUMBER" USING WS-ID WS-HAVE
+         IF WS-HAVE > 0
+             ADD 1 TO WS-TRACKED
+             MOVE WS-ROW TO WS-LAST
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > TG-COUNT
+             IF TG-ID(WS-J) = WS-ID
+                 MOVE 0 TO WS-SEEN
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-UNION-COUNT
+                     IF TG-LENGTH(WS-UNION(WS-K)) = TG-LENGTH(WS-J) AND TG-NAME(WS-UNION(WS-K)) = TG-NAME(WS-J)
+                         MOVE 1 TO WS-SEEN
+                     END-IF
+                 END-PERFORM
+                 IF WS-SEEN = 0
+                     ADD 1 TO WS-UNION-COUNT
+                     MOVE WS-J TO WS-UNION(WS-UNION-COUNT)
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM.
+
+*> The names of the union joined with ", " in WS-TAGS.
+ JOIN-TAGS.
+     MOVE SPACES TO WS-TAGS
+     MOVE 1 TO WS-POINTER
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-UNION-COUNT
+         MOVE TG-NAME(WS-UNION(WS-K)) TO WS-TAG
+         MOVE TG-LENGTH(WS-UNION(WS-K)) TO WS-TAG-LENGTH
+         IF WS-K > 1
+             STRING ", " DELIMITED BY SIZE INTO WS-TAGS WITH POINTER WS-POINTER
+         END-IF
+         STRING WS-TAG(1:WS-TAG-LENGTH) DELIMITED BY SIZE INTO WS-TAGS WITH POINTER WS-POINTER
+     END-PERFORM
+     COMPUTE WS-TAGS-LENGTH = FUNCTION MIN(WS-POINTER - 1, 1024).
+
+*> The list message.
+ TELL-LIST.
+     EVALUATE TRUE
+         WHEN WS-TRACKED = 0
+             MOVE "commands.tag.list.multiple.empty" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+         WHEN WS-TRACKED = 1
+             MOVE "commands.tag.list.single.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CXB-SHOWN" USING WS-LAST WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+             CALL "CXB-ENTITY-ID" USING WS-LAST WS-ID
+             CALL "CXB-TAG-NUMBER" USING WS-ID WS-HAVE
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-HAVE
+             PERFORM JOIN-TAGS
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TAGS WS-TAGS-LENGTH
+         WHEN OTHER
+             MOVE "commands.tag.list.multiple.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+             CALL "CMD-TEXT-INT" USING PB-TEXT WS-UNION-COUNT
+             PERFORM JOIN-TAGS
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TAGS WS-TAGS-LENGTH
+     END-EVALUATE
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET.
+
+*> The add or remove message: single with the tag and the name of the last entity changed, else multiple with the tag and the count.
+ TELL-CHANGED.
+     CALL "BX-KEY" USING PB-TEXT WS-KEY
+     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NAME WS-NAME-LENGTH
+     IF WS-TRACKED = 1
+         CALL "CXB-SHOWN" USING WS-LAST WS-SHOWN WS-SHOWN-LENGTH
+         CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SHOWN WS-SHOWN-LENGTH
+     ELSE
+         CALL "CMD-TEXT-INT" USING PB-TEXT WS-TRACKED
+     END-IF
+     CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST.
+
+ MAIN-LINE.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-ADD WS-ADD
+     CALL "BX-LIT" USING WS-NAME-REMOVE WS-REMOVE
+     IF BR-R-FAILED = 0 AND WS-ADD + WS-REMOVE = 0
+         PERFORM COLLECT-TAGS
+         PERFORM TELL-LIST
+         MOVE WS-UNION-COUNT TO BR-R-RESULT
+     END-IF
+     IF BR-R-FAILED = 0 AND WS-ADD + WS-REMOVE > 0
+         CALL "BX-FIND" USING WS-NAME-NAME WS-INDEX
+         COMPUTE WS-NAME-LENGTH = BA-END(WS-INDEX) - BA-START(WS-INDEX)
+         COMPUTE WS-NAME-LENGTH = FUNCTION MIN(WS-NAME-LENGTH, 128)
+         MOVE SPACES TO WS-NAME
+         MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-NAME-LENGTH) TO WS-NAME(1:WS-NAME-LENGTH)
+         PERFORM CHANGE-TAGS
+         EVALUATE TRUE
+             WHEN WS-TRACKED = 0 AND WS-ADD > 0
+                 MOVE "commands.tag.add.failed" TO WS-KEY
+                 PERFORM FAIL-PLAIN
+             WHEN WS-TRACKED = 0
+                 MOVE "commands.tag.remove.failed" TO WS-KEY
+                 PERFORM FAIL-PLAIN
+             WHEN WS-ADD > 0 AND WS-TRACKED = 1
+                 MOVE "commands.tag.add.success.single" TO WS-KEY
+             WHEN WS-ADD > 0
+                 MOVE "commands.tag.add.success.multiple" TO WS-KEY
+             WHEN WS-TRACKED = 1
+                 MOVE "commands.tag.remove.success.single" TO WS-KEY
+             WHEN OTHER
+                 MOVE "commands.tag.remove.success.multiple" TO WS-KEY
+         END-EVALUATE
+         IF BR-R-FAILED = 0
+             PERFORM TELL-CHANGED
+             MOVE WS-TRACKED TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-TAG.
+*> The forms of tag (16 §5.9).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-TAG.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "tag <targets:entities> add <name:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tag <targets:entities> remove <name:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "tag <targets:entities> list" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-TAG.

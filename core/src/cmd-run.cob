@@ -170,6 +170,8 @@
              CALL "CX-DAMAGE"
          WHEN BC-ROTATE
              CALL "CX-ROTATE"
+         WHEN BC-TAG
+             CALL "CX-TAG"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE

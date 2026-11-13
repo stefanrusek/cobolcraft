@@ -43,6 +43,7 @@
 *> Ids 201 and up: the commands of entities and items of the lane cmds-b (core/src/cmds-entities.cob, cmds-items.cob).
  78 BC-DAMAGE            VALUE 201.
  78 BC-ROTATE            VALUE 202.
+ 78 BC-TAG               VALUE 203.
 *> The modifier ids of the clauses of execute (BR-N-MODIFIER of the node that ends a clause; core/src/cmds-execute.cob).
  78 MX-AS                 VALUE 1.
  78 MX-AT                 VALUE 2.
