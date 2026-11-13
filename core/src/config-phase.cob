@@ -73,11 +73,11 @@
  COPY CORESTATE.
  COPY CONFIGPKT.
  COPY MESSAGES.
+ COPY GENQUEUE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 CONFIG-STEPS EXTERNAL.
     05 CF-STEP               PIC 9 OCCURS 64 TIMES.
  01 WS-OUTCOME             BINARY-LONG.
- 01 WS-PHASE               BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 4096.
  01 WS-NUMBER              BINARY-LONG.
  01 WS-MSG                 BINARY-LONG.
@@ -152,14 +152,15 @@
                      CALL "PB-FREE" USING PK-BUFFER
              END-EVALUATE
          WHEN L-PACKET-ID = 3
-             IF CF-STEP(L-ID) NOT = 2
-                 CALL "CORE-BAD-PACKET" USING L-ID
-             ELSE
-                 MOVE 0 TO CF-STEP(L-ID)
-                 MOVE PH-PLAY TO WS-PHASE
-                 CALL "CORE-SET-PHASE" USING L-ID WS-PHASE
-                 CALL "PLAY-JOIN" USING L-ID
-             END-IF
+             EVALUATE TRUE
+                 WHEN CF-STEP(L-ID) NOT = 2
+                     CALL "CORE-BAD-PACKET" USING L-ID
+                 WHEN GQ-SP-STATE = 1
+*>                   the world's spawn is still being searched: the join waits (CONFIG-RELEASE-HELD)
+                     MOVE 4 TO CF-STEP(L-ID)
+                 WHEN OTHER
+                     CALL "CONFIG-JOIN" USING L-ID
+             END-EVALUATE
      END-EVALUATE
      GOBACK.
  END PROGRAM CONFIG-PACKET.
@@ -429,3 +430,47 @@
      END-PERFORM
      GOBACK.
  END PROGRAM CONFIG-PACK-UUID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONFIG-JOIN.
+*> USING connection id: the client's Finish Configuration is in: the connection moves to play and joins (PLAY-JOIN).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 CONFIG-STEPS EXTERNAL.
+    05 CF-STEP               PIC 9 OCCURS 64 TIMES.
+ 01 WS-PHASE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     MOVE 0 TO CF-STEP(L-ID)
+     MOVE PH-PLAY TO WS-PHASE
+     CALL "CORE-SET-PHASE" USING L-ID WS-PHASE
+     CALL "PLAY-JOIN" USING L-ID
+     GOBACK.
+ END PROGRAM CONFIG-JOIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONFIG-RELEASE-HELD.
+*> No parameters: every connection whose Finish Configuration was held while the spawn was searched (step 4) joins now (GEN-SPAWN-TICK), its player placed at
+*> the spawn the search found (the world is new while the search runs, so a joining player has no position of its own).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 CONFIG-STEPS EXTERNAL.
+    05 CF-STEP               PIC 9 OCCURS 64 TIMES.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-ID FROM 1 BY 1 UNTIL WS-ID > CORE-MAX-CONNS
+         IF CN-USED(WS-ID) = 1 AND CN-CLOSE(WS-ID) = 0 AND CN-PHASE(WS-ID) = PH-CONFIG AND CF-STEP(WS-ID) = 4
+             MOVE CN-PLAYER(WS-ID) TO WS-ROW
+             MOVE CW-SPAWN-X TO PL-X(WS-ROW)
+             MOVE CW-SPAWN-Y TO PL-Y(WS-ROW) PL-FALL-START(WS-ROW)
+             MOVE CW-SPAWN-Z TO PL-Z(WS-ROW)
+             MOVE CW-SPAWN-YAW TO PL-YAW(WS-ROW)
+             CALL "CONFIG-JOIN" USING WS-ID
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CONFIG-RELEASE-HELD.

@@ -24,3 +24,32 @@
     05 GQ-STEPS             BINARY-DOUBLE.
  01 GQ-JOB EXTERNAL.
     COPY GENJOB.
+*> The generation workers (docs/design/generation-worker.md; core/src/gen-worker.cob): forked processes that make the chunks of the standard
+*> pipeline while the game loop goes on. GQ-WORKERS is the pool size a host asked for (GEN-WORKERS-CONFIG, 0 = none: the in-tick steps above
+*> make the chunks); GW-ACTIVE is 1 while the pool serves the standard chunks (set by each tick: the terrain data are loaded and the world
+*> is not of the debug type), and then the in-tick steps leave those chunks alone. A worker is a slot of the shim (GW-SLOT, 0 = not
+*> started), idle (GW-BUSY 0), with the request in flight (1: GW-DIM, GW-CX, GW-CZ, GW-GOT bytes of the answer received so far) and
+*> the answer buffer GW-ADDR (marker-y, then the chunk). GQ-READY is the worker whose finished answer the chunk installer takes (0 = none).
+ 78 GW-MAX                 VALUE 4.
+ 78 GW-ANSWER-BYTES        VALUE 304644.
+ 01 GEN-WORKERS EXTERNAL.
+    05 GQ-WORKERS           BINARY-LONG.
+    05 GW-ACTIVE            BINARY-LONG.
+    05 GQ-READY             BINARY-LONG.
+    05 GW-ENTRY OCCURS 4 TIMES.
+       10 GW-SLOT           BINARY-LONG.
+       10 GW-BUSY           BINARY-LONG.
+       10 GW-DIM            BINARY-LONG.
+       10 GW-CX             BINARY-LONG.
+       10 GW-CZ             BINARY-LONG.
+       10 GW-GOT            BINARY-LONG.
+       10 GW-ADDR           USAGE POINTER.
+*> The asynchronous initial spawn search (core/src/worldsim-33c.cob): GQ-SP-STATE 1 while it runs (a joining player is held), the spiral chunk
+*> it is on (GQ-SP-CHUNK, 1 to 121), the next column of that chunk (GQ-SP-COLUMN) and the chunks done (progress for a loading screen).
+ 78 GQ-SP-COLUMNS          VALUE 16.
+ 01 GEN-SPAWN EXTERNAL.
+    05 GQ-SP-STATE          BINARY-LONG.
+    05 GQ-SP-CHUNK          BINARY-LONG.
+    05 GQ-SP-COLUMN         BINARY-LONG.
+    05 GQ-SP-DONE           BINARY-LONG.
+    05 GQ-SP-TOTAL          BINARY-LONG.

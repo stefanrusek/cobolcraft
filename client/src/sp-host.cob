@@ -3,7 +3,7 @@
 *> settings of a hosted world (the server defaults of operator-surface §2, the allow-list off);
 *> SP-OPEN opens a world folder under saves/ with CORE-WORLD-OPEN (host kind 1, the Player's name
 *> as host name, the chosen game mode and name for a new world, which is saved at once so the world
-*> list shows it) and joins it (NET-OPEN-MEMORY); SP-PUMP, once per frame while hosting, runs one
+*> list shows it; three generation workers serve the standard chunks) and joins it (NET-OPEN-MEMORY); SP-PUMP, once per frame while hosting, runs one
 *> CORE-TICK per elapsed 50 ms (none while the pause menu is open and the world is not opened to
 *> others, US16-4), prints the core's console lines on the terminal and ends hosting when the core
 *> was told to stop (the shutdown command: the host quitting, after receiving what the core sent
@@ -65,6 +65,7 @@
  01 WS-CREATED             BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-CONNECTING.
+ 01 WS-WORKERS             BINARY-LONG VALUE 3.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-FOLDER               PIC X(80).
@@ -94,6 +95,8 @@
              MOVE "cobolcraft" TO CS-WORLD-TYPE
      END-EVALUATE
      MOVE CORE-SETTINGS TO SP-SETTINGS
+*>   a hosted world makes its standard chunks in generation worker processes, so the frame loop never waits for one (docs/design/generation-worker.md)
+     CALL "GEN-WORKERS-CONFIG" USING WS-WORKERS
      MOVE LOW-VALUES TO WS-PATH
      STRING CL-GAME-DIR(1:CL-GAME-DIR-LENGTH) "/saves/" L-FOLDER(1:L-FOLDER-LENGTH)
          DELIMITED BY SIZE INTO WS-PATH

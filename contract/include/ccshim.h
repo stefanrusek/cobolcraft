@@ -231,4 +231,18 @@ void cc_u64_shl(const uint64_t *a, const int32_t *n, uint64_t *r);
 void cc_u64_shr(const uint64_t *a, const int32_t *n, uint64_t *r);
 void cc_u64_rotl(const uint64_t *a, const int32_t *n, uint64_t *r);
 
+/* §15 cc_wk: worker processes (core generation worker). cc_wk_spawn forks the caller: the parent gets a slot id (1 to 8, or -1
+ * when none is free or fork fails), the child gets 0 and talks to the parent only through cc_wk_child_read / cc_wk_child_write
+ * and ends with cc_wk_child_exit (_exit). cc_wk_send writes n bytes to the worker (n, or -1); cc_wk_recv reads without blocking
+ * (bytes read, 0 when nothing is there yet, -1 at end of file or for an unknown slot); cc_wk_stop frees the slot and reaps the
+ * process (force 1 kills it first, 0 waits for it to end after end of input; -1 for an unknown slot). cc_wk_child_read reads
+ * exactly n bytes (n, 0 at end of input, -1 on error); cc_wk_child_write writes all n (n, or -1). */
+int32_t cc_wk_spawn(void);
+int32_t cc_wk_send(int32_t slot, const uint8_t *buf, int32_t n);
+int32_t cc_wk_recv(int32_t slot, uint8_t *buf, int32_t n);
+int32_t cc_wk_stop(int32_t slot, int32_t force);
+int32_t cc_wk_child_read(uint8_t *buf, int32_t n);
+int32_t cc_wk_child_write(const uint8_t *buf, int32_t n);
+void cc_wk_child_exit(void);
+
 #endif

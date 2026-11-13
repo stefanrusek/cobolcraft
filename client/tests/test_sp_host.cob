@@ -75,6 +75,15 @@
          " online " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "sp host a hosted world generates its standard chunks in the generation workers (docs/design/generation-worker.md)"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "GEN-WORKERS-GET" USING WS-NUMBER
+     MOVE WS-NUMBER TO TL-OBSERVED-N
+     MOVE 3 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE "sp host the settings handed to the core carry the 002 fields: the world type (a new "
          & "world is a cobolcraft one unless the create screen chose), the game directory, no seed text"
