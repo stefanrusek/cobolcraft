@@ -507,6 +507,26 @@
          & "(play-c2s-2c-player-loaded.hex)" TO TL-CASE
      MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+*>   Without a wait for the level (no Game Event 13) Player Loaded goes out at once: on a finished chunk batch when the player is positioned, and on a position
+*>   after a batch (protocol-client.cob).
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+     MOVE 0 TO PL-LOADED PL-WAIT
+     MOVE "contract/fixtures/wire/play-s2c-0b-chunk-batch-finished.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client with no wait a finished batch after the position sends Player Loaded at once" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+     CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
+     MOVE 0 TO PL-LOADED PL-WAIT
+     MOVE "contract/fixtures/wire/play-s2c-49-player-position.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE 2 TO WS-INDEX
+     CALL "TEST-SENT" USING CLIENT-STATE WS-CONN WS-INDEX PB-BUFFER WS-FOUND
+     MOVE "contract wire client with no wait a position after a finished batch sends Player Loaded at once" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
      CALL "TEST-CLEAR-SENT" USING CLIENT-STATE WS-CONN
      MOVE "contract/fixtures/wire/play-s2c-2d-keep-alive.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
