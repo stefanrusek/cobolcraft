@@ -1,0 +1,490 @@
+*> Test of 31-3 section 6, Shelves (core/src/be-31-3.cob; T0899): the three slots and align flag, the always-written Items, the update tag, the hotbar index of a multi-swap and the swap of one slot with the sounds.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-3-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-U16                PIC X(16) VALUE "0123456789abcdef".
+ 01 WS-V16                PIC X(16) VALUE "fedcba9876543210".
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-TX                 PIC X(384).
+ 01 WS-LINES.
+    05 WS-LINE            OCCURS 4 TIMES.
+       10 WS-LINE-LEN     BINARY-LONG.
+       10 WS-LINE-TEXT    PIC X(384).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-3§6 Shelves: state (6.1): Items is always written (an empty list) and align_items_to_bottom (default false) too" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{Items:[],align_items_to_bottom:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-3§6 Shelves: update tag (6.2): the same two keys with no id, x, y, z or components (kind 6 of the sync table)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 6 TO WS-NV
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-FORM
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-TAG-ENTRIES" USING WS-IDX PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE WS-LEN TO WS-A
+     STRING WS-OUT(1:WS-A) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "{Items:[],align_items_to_bottom:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-3§6 Shelves: load (6.1): the list is cleared, slots 0 to 2 load and a slot outside them (5) is ignored; align_items_to_bottom loads and saves back as a byte" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Items" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 10 TO WS-LT
+     MOVE 2 TO WS-LC
+     PERFORM NB-L
+     MOVE "Slot" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 2 TO WS-NV
+     PERFORM NB-B
+     MOVE 2 TO WS-ITEM
+     MOVE 2 TO WS-NV
+     PERFORM NB-STACK
+     PERFORM NB-E
+     MOVE "Slot" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 5 TO WS-NV
+     PERFORM NB-B
+     MOVE 2 TO WS-ITEM
+     MOVE 1 TO WS-NV
+     PERFORM NB-STACK
+     PERFORM NB-E
+     MOVE "align_items_to_bottom" TO WS-NM
+     MOVE 21 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-B
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{Items:[{Slot:2,id:cobolcraft:greystone,count:2}],align_items_to_bottom:1}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-3§6 Shelves: multi-swap (6.3 step 5): the hotbar index is 9 - listSize * 3 + (shelfIndex * 3 + j) for 1, 2 and 3 connected shelves" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 2 TO WS-C
+     CALL "BE3-SHELF-HOTBAR" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "6 7 8 3 4 5 6 7 8 0 1 2 3 4 5 6 7 8" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-3§6 Shelves: swap of one slot (6.3 step 4, worked example 10): the shelf slot and the held stack trade places (a creative player who put into an empty slot keeps the stack); success when the shelf stack is now" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 0 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 7 TO WS-B
+     MOVE 8 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 9 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 7 TO WS-B
+     MOVE 8 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 9 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 0 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 0 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 7 TO WS-B
+     MOVE 8 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:oak_shelf" TO WS-KEY
+     MOVE 19 TO WS-SVL
+     MOVE 39 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 9 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 7 TO WS-B
+     MOVE 8 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE3-SHELF-SWAP" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-H TO WS-FA
+     MOVE BE-SLOT-ITEM(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "7 8 0 0 1 13 7 8 9 1 1 23 0 0 9 1 1 20 0 0 0 0 0 0 7 8 7 8 1 23 7 8 9 1 1 23" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-3-6.
+
+ COPY CORETEST.
