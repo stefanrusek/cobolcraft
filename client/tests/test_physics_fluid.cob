@@ -274,6 +274,20 @@
      MOVE "-0.0250" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   In the Nether (gameplay/fast_lava) lava pushes with 0.007: at rest, 0.007 is not below 0.0045, so x moves by 0.007.
+     MOVE "minecraft:the_nether" TO PL-DIM-NAME
+     MOVE 12.5 TO PL-X
+     MOVE -7.5 TO PL-Z
+     MOVE 10 TO PL-Y
+     MOVE 0 TO PL-VY PL-VX PL-VZ
+     CALL "TEST-TICKS" USING CLIENT-STATE WS-ONE
+     MOVE "minecraft:overworld" TO PL-DIM-NAME
+     MOVE "physics fluid lava in the Nether (fast_lava) pushes with 0.007: x 12.5070" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     CALL "TEST-POSITION" USING CLIENT-STATE TL-OBSERVED
+     MOVE "12.5070/10.0000/-7.5000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   The current (8.3): a water cell of amount 7 between a source and a cell of amount 6 flows east (E8): the Player in it gets
 *>   0.014 of speed east (one cell, height 0.778), moves by it and keeps 0.8 of it.
      MOVE 1.5 TO PL-X

@@ -1130,7 +1130,7 @@
 *> fluid whose surface (cell y + height) is not below the deflated box bottom raises the height of its fluid to max(previous, cell
 *> y + height - the undeflated box bottom). The water flag is set when the water height is above 0. The current (3.2): every counted
 *> cell adds its flow (FLUID-FLOW-AT, 29a 1.4) scaled by the accumulator height while that is below 0.4 (EF-ACCUM); then each fluid's sum
-*> is normalised, times 0.014 (water) or 0.0023333 (lava; fast_lava is not read: 0), lifted to 0.0045 for a slow item (EF-CURRENT), and
+*> is normalised, times 0.014 (water) or 0.0023333 (lava; 0.007 with the dimension's fast_lava), lifted to 0.0045 for a slow item (EF-CURRENT), and
 *> added to the item's velocity.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -1163,7 +1163,7 @@
        10 WS-SY            FLOAT-LONG.
        10 WS-SZ            FLOAT-LONG.
        10 WS-SC            BINARY-LONG.
- 01 WS-NO-FAST             BINARY-LONG VALUE 0.
+ 01 WS-FAST                BINARY-LONG.
  01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  01 WS-STRENGTH            FLOAT-LONG.
  01 WS-PX                  FLOAT-LONG.
@@ -1213,9 +1213,10 @@
      IF IP-I-WATER-H(L-ROW) > 0
          MOVE 1 TO IP-I-WET(L-ROW)
      END-IF
-*>   The current of each fluid (3.2).
+*>   The current of each fluid (3.2); lava's strength depends on the dimension's fast_lava.
+     CALL "FLUID-FAST" USING EN-DIM(L-ROW) WS-FAST
      PERFORM VARYING WS-KIND FROM 1 BY 1 UNTIL WS-KIND > 2
-         CALL "EF-STRENGTH" USING WS-KIND WS-NO-FAST WS-STRENGTH
+         CALL "EF-STRENGTH" USING WS-KIND WS-FAST WS-STRENGTH
          CALL "EF-CURRENT" USING WS-SX(WS-KIND) WS-SY(WS-KIND) WS-SZ(WS-KIND) WS-SC(WS-KIND) WS-NO-PLAYER WS-STRENGTH
              EN-VX(L-ROW) EN-VZ(L-ROW) WS-PX WS-PY WS-PZ
          ADD WS-PX TO EN-VX(L-ROW)
