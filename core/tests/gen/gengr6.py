@@ -220,3 +220,109 @@ g.run('grow (5.4): an opposing unmerged tip of this block merges the tips (1); a
 g.run('createSpeleothem (5.4): waterlogged = the fluid at the position is water; written with setBlockAndUpdate (flags 3), the thickness given (no calculation)',["1","0"],'CALL "GC6-CREATE" USING WS-I(1) WS-R(1) WS-R(2)',2,"1/3 0/3")
 g.run('createMergedTips (5.4, E3): the existing tip direction up: lower = pos, upper = pos + up; down: upper = pos, lower = pos + down; the upper piece is written first (tip down), then the lower (tip up), both tip_merge (1) (upper dy, lower dy, thickness, first written 1 upper)',["2","1"],'CALL "GC6-MERGE-TIPS" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4,"1/0/1/1 0/-1/1/1")
 W(g,5)
+# ===== 6
+g=GG(6,'Falling and breaking','T0637','the block tick, the walk that spawns falling pieces, the landing and damage rules and the projectile break.')
+g.extra=TBL('A12',12)
+g.run('block tick (6.1): an unsupported stalagmite is destroyed with drops (1); every other state runs spawnFallingStalactite (2), which does nothing for a surviving stalagmite',["1 0","1 1","0 0","0 1"],'CALL "GC6-FALL-TICK" USING WS-I(1) WS-I(2) WS-R(1)',1,"1 2 2 2")
+def spawn(cells):
+    n=0;h=0
+    for k,c in enumerate(cells):
+        if c==0: break
+        n+=1
+        if c==2:
+            h=max(1+k,6); break
+    return n,h,100*h if h else 0,40 if h else 0
+spc=[[2],[1,1,2],[1,1,1,1,2],[1,2,2],[1,1,0],[0],[1,1,1,1,1,1,1,1,2],[1,1,1,1,1,1,1,1,1,1,1,1],[2,1]]
+def spcall(cells): return setarr('A12',cells+[0]*(12-len(cells)))+'CALL "GC6-FALL-SPAWN" USING WS-A12G WS-R(1) WS-R(2) WS-R(3) WS-R(4)'
+g.case('spawnFallingStalactite (6.2, E4): from the ticking piece down, one falling entity per stalactite piece until the tip (cell 2, a tip or merged tip); the tip entity hurts: h = max(1 + pos.y - c.y, 6), damage per fall distance 1.0 x h (x 100), maximum 40; a column ending before a tip gives no damage (pieces, h, per distance, maximum)',[("0",spcall(c),4) for c in spc]," ".join(show(*spawn(c)) for c in spc))
+g.run('landing (6.3): onBrokenAfterFall sends level event 1045 (pointed dripstone) or 1052 (sulfur spike) unless the entity is silent; the damage source is falling_stalactite (1) for both; onLand is not overridden',["1 0","2 0","1 1","2 1"],'CALL "GC6-FALL-LAND" USING WS-I(1) WS-I(2) WS-R(1) WS-R(2)',2,"1045/1 1052/1 0/1 0/1")
+def dmg(h,d):
+    n=math.ceil(d-1)
+    return n,min(math.floor(n*h),40)
+dgc=[(6,5),(6,8),(6,2),(6,1),(7,3.5),(6,6.5),(6,30),(10,10)]
+g.run('damage (6.3, E4): n = ceil(fallDistance - 1), damage = min(floor(n x h), 40): h 6 after 5 blocks 24, after 8 blocks 42 capped to 40',[S(*c) for c in dgc],'CALL "GC6-FALL-DAMAGE" USING WS-I(1) WS-FX(2) WS-R(1) WS-R(2)',2," ".join(show(*dmg(*c)) for c in dgc))
+def rest(ok,di,er):
+    return (ok,int(not ok),int((not ok) and di and er))
+rsc=[(0,1,1),(0,0,1),(0,1,0),(1,1,1)]
+g.run('does the piece place itself (6.3): only with a sturdy block or speleothem above (normally no); it is then discarded and the block item drops when dropItem and the entity_drops rule hold (places, discarded, item drops)',[S(*c) for c in rsc],'CALL "GC6-FALL-REST" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*rest(*c)) for c in rsc))
+def inter(o,pm,mg): return pm if o==1 else (mg if o==2 else 1)
+ic=[(0,0,0),(1,1,0),(1,0,1),(2,0,1),(2,1,0),(2,0,0)]
+g.run('mayInteract (6.4): no owner true; a player owner uses the player\'s own mayInteract; another entity needs the game rule mob_griefing',[S(*c) for c in ic],'CALL "GC6-PROJ-INTERACT" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(inter(*c)) for c in ic))
+def adv(o,a,cb):
+    if o==2: return cb
+    return int(not a)
+avc=[(0,0,0),(0,1,0),(1,0,0),(1,1,1),(2,0,0),(2,1,0),(2,0,1)]
+g.run('canBreakBlockInAdventureMode (6.4): no owner true unless the server default is adventure; a player owner unless in adventure; another entity ends at the projectile\'s own canBreak predicate (false for ordinary projectiles)',[S(*c) for c in avc],'CALL "GC6-PROJ-ADVENTURE" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(adv(*c)) for c in avc))
+g.run('mayBreak (6.4): the entity type is in impact_projectiles and the game rule projectiles_can_break_blocks is true and the adventure test passes',["1 1 1","0 1 1","1 0 1","1 1 0"],'CALL "GC6-PROJ-MAYBREAK" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1,"1 0 0 0")
+def brk(sv,mi,mb,tr,sp): return int(sv and mi and mb and tr and sp>0.6)
+bkc=[(1,1,1,1,0.9),(1,1,1,1,0.6),(1,1,1,1,0.61),(1,1,1,0,2.0),(1,1,0,1,2.0),(1,0,1,1,2.0),(0,1,1,1,2.0),(1,1,1,1,0)]
+g.run('projectile break (6.4): the speleothem is destroyed with drops on a server level when the projectile may interact, may break, is a trident and its speed is greater than 0.6',[S(*c) for c in bkc],'CALL "GC6-PROJ-BREAK" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-FX(5) WS-R(1)',1," ".join(str(brk(*c)) for c in bkc))
+W(g,6)
+# ===== 7
+g=GG(7,'Pointed dripstone: fluid, cauldron, mud, damage','T0639','the fluid above a stalactite, the fluid transfer random tick, mud to clay, the search lengths and the stalagmite fall damage.')
+g.extra=TBL('A12',12)
+FLUIDS={0:'empty',1:'water',2:'flowing water',3:'lava',4:'flowing lava'}
+def fa(st,rf,mud,ev,fluid):
+    if not st or not rf: return (0,0,0)
+    f=1 if (mud and not ev) else fluid
+    return (1,f,int(mud))
+fac=[(1,1,0,0,1),(1,1,0,0,2),(1,1,0,0,3),(1,1,0,0,0),(1,1,1,0,0),(1,1,1,1,0),(1,1,1,1,1),(1,0,0,0,1),(0,1,0,0,1),(1,1,1,0,3),(1,1,0,1,4)]
+g.run('getFluidAboveStalactite (7.1): nothing unless a stalactite with a root; mud above the root with water_evaporates false reports still water whatever the mud holds, otherwise the fluid type of the cell (1 water, 2 flowing water, 3 lava, 4 flowing lava, 0 empty): flowing water drips nothing (exists, fluid, source is mud)',[S(*c) for c in fac],'CALL "GC6-FLUID-ABOVE" USING WS-I(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*fa(*c)) for c in fac))
+g.run('getCauldronFillFluidType (7.1): the fluid when it is water (1) or lava (3), else EMPTY (0)',["0","1","2","3","4"],'CALL "GC6-FILL-TYPE" USING WS-I(1) WS-R(1)',1,"0 1 0 3 0")
+def fv(mi,cells):
+    for i in range(1,mi):
+        c=cells[i-1]
+        if c==1: return i
+        if c!=2: return 0
+    return 0
+def fvcall(mi,cells): return setarr('A12',cells+[0]*(12-len(cells)))+'MOVE %d TO WS-I(1)\nCALL "GC6-FIND-VERT" USING WS-I(1) WS-A12G WS-R(1)'%mi
+sr=[(11,[2,2,2,1]),(11,[2]*9+[1]),(11,[2]*10+[1]),(11,[2,2,0,1]),(11,[1]),(11,[2]*11)]
+g.case('the searches of 7.1 and 7.3 use maxIter 11 and examine 10 cells: the root above a column (pass = same block and direction, stop = another block): E6 finds the cauldron 4 below the tip; a column taller than 10 pieces gives nothing',[("0",fvcall(*c),1) for c in sr]," ".join(str(fv(*c)) for c in sr))
+def tr(roll,start,info,fluid,tip,mud,cauldron,dy):
+    z=(0,0,0,0,0)
+    if roll>0.17578125: return z
+    if not start or not info: return z
+    th={1:0.17578125,3:0.05859375}.get(fluid)
+    if th is None or roll>=th: return z
+    if not tip: return z
+    if mud and fluid==1: return (1,1504,0,1,1)
+    if not cauldron: return z
+    return (2,1504,50+dy,0,0)
+trc=[(0.1,1,1,1,1,0,1,4),(0.1,1,1,1,1,1,1,4),(0.1,1,1,1,1,1,0,4),(0.1,1,1,1,1,0,0,4),(0.1,1,1,1,0,0,1,4),(0.17,1,1,1,1,0,1,10),(0.18,1,1,1,1,0,1,4),(0.1,0,1,1,1,0,1,4),(0.1,1,0,1,1,0,1,4),(0.05,1,1,3,1,0,1,8),(0.06,1,1,3,1,0,1,8),(0.1,1,1,2,1,0,1,4),(0.0,1,1,3,1,1,1,4),(0.0,1,1,1,1,1,1,4)]
+g.run('maybeTransferFluid (7.2): a roll above 0.17578125, a piece that is not a start position, no fluid info, a fluid other than water and lava, a roll at or above the fluid threshold (water 0.17578125, lava 0.05859375) or no tip below all stop; mud with water becomes clay (action 1, event 1504, push entities up, game event); else a cauldron below gets event 1504 and a tick after 50 + (tip y - cauldron y) (action 2, event, delay, push, game event)',[S(*c) for c in trc],'CALL "GC6-TRANSFER" USING WS-FX(1) WS-I(2) WS-I(3) WS-I(4) WS-I(5) WS-I(6) WS-I(7) WS-I(8) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*tr(*c)) for c in trc))
+DC=[17578125,5859375,11,25,2,1045,2,12,45,15]
+g.run('constants (7.2, 7.3): water 0.17578125 and lava 0.05859375 (x 1e8), search length 11, STALAGMITE_FALL_DISTANCE_OFFSET 2.5 (x 10), damage modifier 2, landing sound 1045, drip probabilities 0.02 and 0.12 (x 100), water 45/256, lava 15/256',[str(i) for i in range(1,11)],'CALL "GC6-DRIP-CONST" USING WS-I(1) WS-R(1)',1," ".join(map(str,DC)))
+def fo(pt,up,tip,d):
+    if pt and up and tip: return (1,int(round((d+2.5)*1000)),2000)
+    return (0,0,0)
+foc=[(1,1,1,5),(1,1,1,0.5),(1,1,0,5),(1,0,1,5),(0,1,1,5)]
+g.run('fallOn (7.3): a pointed dripstone with tip up and thickness exactly tip calls causeFallDamage(distance + 2.5, 2.0); any other state uses the base rule (special, distance x 1000, modifier x 1000)',[S(*c) for c in foc],'CALL "GC6-FALL-ON" USING WS-I(1) WS-I(2) WS-I(3) WS-FX(4) WS-R(1) WS-R(2) WS-R(3)',3," ".join(show(*fo(*c)) for c in foc))
+def fc(d,mod,safe,mult): return max(0,math.floor((d+0.000001-safe)*mod*mult))
+fcc=[(7.5,2,3,1),(5,1,3,1),(5,2,3,1),(2,1,3,1),(10.5,2,3,1),(7.5,2,3,0.5)]
+g.run('fall damage (7.3, E5): floor((distance + 0.000001 - safe distance) x modifier x multiplier): 7.5 with modifier 2 gives 9, a frustum landing from 5 blocks gives 2',[S(*c) for c in fcc],'CALL "GC6-FALL-CAUSE" USING WS-FX(1) WS-FX(2) WS-FX(3) WS-FX(4) WS-R(1)',1," ".join(str(fc(*c)) for c in fcc))
+W(g,7)
+# ===== 8
+g=GG(8,'The cauldron side, level events and sounds','T0641','the cauldron tick, the three receivers and the level events of the part.')
+def ct(tip,fluid,can): return int(tip and fluid!=0 and can)
+ctc_=[(1,1,1),(1,3,1),(0,1,1),(1,0,1),(1,1,0)]
+g.run('AbstractCauldronBlock.tick (8.1): receives only when a tip is found above, the fill fluid is not EMPTY and canReceiveStalactiteDrip holds',[S(*c) for c in ctc_],'CALL "GC6-CAULDRON-TICK" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1)',1," ".join(str(ct(*c)) for c in ctc_))
+def rv(cl,fl_,lv):
+    can={1:0,2:1,3:int(fl_==1),4:0}[cl]
+    if not can: return (0,0,0,0,0)
+    if cl==2:
+        if fl_==1: return (1,1,1,1047,1)
+        if fl_==3: return (1,2,1,1046,1)
+        return (1,0,0,0,0)
+    if lv==3: return (1,0,lv,0,0)
+    return (1,3,lv+1,1047,1)
+rvc=[(1,1,0),(1,3,0),(2,1,0),(2,3,0),(2,2,0),(3,1,1),(3,1,2),(3,1,3),(3,3,1),(4,1,1),(4,3,2)]
+g.run('receivers (8.1): the lava cauldron never accepts; the empty cauldron takes any fluid but only water and lava change it (water_cauldron level 1 with event 1047, lava_cauldron with 1046, game event block_change); the water cauldron takes water only: level + 1 with event 1047, nothing when full; the powder snow cauldron never accepts (class 1 lava, 2 empty, 3 water, 4 powder snow; can, action 0 none 1 water cauldron 2 lava cauldron 3 level + 1, level, event, game event)',[S(*c) for c in rvc],'CALL "GC6-CAULDRON-RECV" USING WS-I(1) WS-I(2) WS-I(3) WS-R(1) WS-R(2) WS-R(3) WS-R(4) WS-R(5)',5," ".join(show(*rv(*c)) for c in rvc))
+def lvl(e):
+    t={1045:(1,20,90,10),1052:(1,20,90,10),1046:(1,20,90,10),1047:(1,20,90,10),1504:(3,0,0,0),3006:(2,0,0,0),3007:(4,0,0,0)}
+    return t.get(e,(0,0,0,0))
+lec=[1045,1052,1046,1047,1504,3006,3007,1048,0]
+g.run('level events (8.2): 1045, 1052, 1046, 1047 play a local sound at the block with volume 2.0 and pitch 0.9 + nextFloat x 0.1; 1504 spawns the drip particle without sound; 3006 particles only; 3007 belongs to the shrieker; others are not of this part (kind 1 sound 2 particles 3 drip 4 other part, volume x 10, pitch base x 100, pitch range x 100)',[str(e) for e in lec],'CALL "GC6-LEVEL-EVENT" USING WS-I(1) WS-R(1) WS-R(2) WS-R(3) WS-R(4)',4," ".join(show(*lvl(e)) for e in lec))
+SND={1045:"block.pointed_dripstone.land",1052:"block.sulfur_spike.land",1046:"block.pointed_dripstone.drip_lava_into_cauldron",1047:"block.pointed_dripstone.drip_water_into_cauldron",1504:""}
+g.extra=" 01 WS-NAME               PIC X(64).\n"
+g.case('sound keys (8.2): the sound of each level event of the part',[(str(e),'CALL "GC6-LEVEL-SOUND" USING WS-I(1) WS-NAME\nMOVE WS-NAME TO WS-T1\nMOVE SPACES TO WS-T2','TEXT') for e in (1045,1052,1046,1047,1504)]," ".join(SND[e]+"|" for e in (1045,1052,1046,1047,1504)))
+W(g,8)
