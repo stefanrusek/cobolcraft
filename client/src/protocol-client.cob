@@ -285,6 +285,7 @@
                      MOVE WS-LONG TO PL-TIME
                  END-IF
              END-PERFORM
+             MOVE PL-TIME TO PL-DAY-TICKS
              COMPUTE PL-TIME = FUNCTION MOD(PL-TIME, 30000)
          WHEN WS-PHASE = PH-PLAY AND (L-ID = 17 OR L-ID = 18 OR L-ID = 19 OR L-ID = 20 OR L-ID = 42 OR L-ID = 60
                  OR L-ID = 98 OR L-ID = 107 OR L-ID = 110)

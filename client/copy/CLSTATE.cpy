@@ -433,6 +433,7 @@
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
        10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
        10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
