@@ -295,7 +295,7 @@
      MOVE "1 0 0 1 1 0 0 4 2 1 1 1 1 1 6 0 0 0 0 1 1 0 0 0 2 0 1 0 0 0 4 0 2 1 1 0 0 1 1 0 2 0 1 0 0 0 1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "acceptance US12 31-6§5 Command block packets and sync: when commandBlocksWork is off the command still changes, the message is advMode.setCommand.disabled (3) and a switch to AUTO with automatic set schedules the tick; nothing is sent as updated" TO TL-CASE
+     MOVE "acceptance US12 31-6§5 Command block packets and sync: with commandBlocksWork off the message is setCommand.disabled (3) and a switch to AUTO with automatic set schedules the tick" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "minecraft:command_block" TO WS-KEY
      MOVE 23 TO WS-SVL

@@ -1581,7 +1581,7 @@
          "1},event_delay:0}}" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "acceptance US12 31-8§3 The vibration system: full persisted listener (3.4): an event with a source and a projectile owner, a selector whose candidate event also has them with a tick, and unknown keys skipped inside the listener and the selector, are read back and saved" TO TL-CASE
+     MOVE "acceptance US12 31-8§3 The vibration system: full persisted listener (3.4): event and selector candidate with source, owner and tick are read back; unknown keys are skipped" TO TL-CASE
      PERFORM BEGIN-CASE
      MOVE "minecraft:sculk_sensor" TO WS-KEY
      MOVE 22 TO WS-SVL
