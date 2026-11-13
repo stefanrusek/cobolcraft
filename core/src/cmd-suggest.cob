@@ -20,6 +20,7 @@
  COPY BRIGADIER.
  COPY CORESTATE.
  COPY CONTENT.
+ COPY CTRECIPE.
  COPY BRTRAIL REPLACING LEADING ==BT-== BY ==SR-==.
  01 WS-CTX                 BINARY-LONG.
  01 WS-A                   BINARY-LONG.
@@ -185,6 +186,8 @@
                  IF BR-N-REG-LENGTH(WS-CHILD) > 0
                      PERFORM LIST-REGISTRY
                  END-IF
+             WHEN BR-P-RESOURCE-KEY
+                 PERFORM LIST-RECIPES
          END-EVALUATE
      END-IF.
 
@@ -223,6 +226,15 @@
              END-IF
          END-PERFORM
      END-IF.
+
+*> The keys of the recipes of the store (a resource_key argument of the registry minecraft:recipe).
+ LIST-RECIPES.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT
+         MOVE SPACES TO WS-CANDIDATE
+         MOVE RR-KEY(WS-K) TO WS-CANDIDATE
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(RR-KEY(WS-K))) TO WS-CANDIDATE-LENGTH
+         PERFORM OFFER-RESOURCE
+     END-PERFORM.
 
 *> SharedSuggestionProvider.matchesSubStr (14.2): the typed text matches the start of the candidate or the text after a . _ or /.
  MATCH-SUB.

@@ -180,6 +180,8 @@
              CALL "CX-ENCHANT"
          WHEN BC-SPREADPLAYERS
              CALL "CX-SPREADPLAYERS"
+         WHEN BC-RECIPE
+             CALL "CX-RECIPE"
          WHEN OTHER
              CALL "CX-DISPATCH-A"
      END-EVALUATE

@@ -301,3 +301,229 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-CLEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RECIPE-GIVE.
+*> USING player row, recipe row (0 = every recipe), added out: the recipes added to the book (RECBOOK-ADD: a special recipe is not) and, when any, the
+*> Recipe Book Add (0x4B) of them (RECBOOK-SEND).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTRECIPE.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG.
+ 01 WS-NO-REPLACE          BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RECIPE               BINARY-LONG.
+ 01 L-ADDED                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-RECIPE L-ADDED.
+     MOVE 0 TO L-ADDED
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT
+         IF L-RECIPE = 0 OR L-RECIPE = WS-K
+             CALL "RECBOOK-ADD" USING L-ROW WS-K WS-ONE
+             ADD WS-ONE TO L-ADDED
+         END-IF
+     END-PERFORM
+     IF L-ADDED > 0
+         CALL "RECBOOK-SEND" USING L-ROW WS-NO-REPLACE
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-RECIPE-GIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXB-RECIPE-TAKE.
+*> USING player row, recipe row (0 = every recipe), removed out: the known recipes taken out of the book (RECBOOK-REMOVE) and, when any, one Recipe Book Remove
+*> (0x4C) with their display ids.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTRECIPE.
+ COPY RECBOOK.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 76.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-MARKS.
+    05 WS-MARK             PIC 9 OCCURS 4096 TIMES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RECIPE               BINARY-LONG.
+ 01 L-REMOVED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-RECIPE L-REMOVED.
+     MOVE 0 TO L-REMOVED WS-TOTAL
+     INITIALIZE WS-MARKS
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT
+         IF (L-RECIPE = 0 OR L-RECIPE = WS-K) AND RB-KNOWN(L-ROW, WS-K) = 1
+             MOVE 1 TO WS-MARK(WS-K)
+             ADD 1 TO L-REMOVED
+             CALL "RECIPE-DISPLAY-COUNT" USING WS-K WS-N
+             ADD WS-N TO WS-TOTAL
+         END-IF
+     END-PERFORM
+     IF L-REMOVED > 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TOTAL
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT
+             IF WS-MARK(WS-K) = 1
+                 CALL "RECIPE-DISPLAY-FIRST" USING WS-K WS-FIRST
+                 CALL "RECIPE-DISPLAY-COUNT" USING WS-K WS-N
+                 PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D >= WS-N
+                     COMPUTE WS-ID = WS-FIRST + WS-D
+                     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+                 END-PERFORM
+                 CALL "RECBOOK-REMOVE" USING L-ROW WS-K WS-ONE
+             END-IF
+         END-PERFORM
+         CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+         CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     GOBACK.
+ END PROGRAM CXB-RECIPE-TAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-RECIPE.
+*> recipe give|take <targets> <recipe> | * (16 §6.5, level 2): the recipe (its key with the namespace, or the short name of the cobolcraft set) or every recipe is added
+*> to (give: RECBOOK-ADD, the Recipe Book Add sent) or removed from (take: RECBOOK-REMOVE, one Recipe Book Remove sent) the recipe book of each player. A player counts
+*> when at least one recipe changed; none counting is commands.recipe.give.failed / .take.failed, else commands.recipe.give|take.success.single [recipes, name] (one player
+*> counted) or .multiple [recipes, players counted] is broadcast, the recipes being the number the command names (1 or all); the result is the number of recipes changed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTRECIPE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-RECIPE         PIC X(32) VALUE "recipe".
+ 01 WS-NAME-GIVE           PIC X(32) VALUE "give".
+ 01 WS-NAME-ALL            PIC X(32) VALUE "*".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-GIVE                BINARY-LONG.
+ 01 WS-ALL                 BINARY-LONG.
+ 01 WS-RECIPE              BINARY-LONG.
+ 01 WS-SELECTED            BINARY-LONG.
+ 01 WS-ID                  PIC X(64).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-KEY112              PIC X(112).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-COUNTED             BINARY-LONG.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-RC                  BINARY-LONG VALUE -1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     CALL "BX-LIT" USING WS-NAME-GIVE WS-GIVE
+     CALL "BX-LIT" USING WS-NAME-ALL WS-ALL
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-RECIPE
+         MOVE RC-COUNT TO WS-SELECTED
+         IF WS-ALL = 0
+             MOVE 1 TO WS-SELECTED
+             CALL "BX-FIND" USING WS-NAME-RECIPE WS-INDEX
+             CALL "BX-NAMESPACED" USING WS-INDEX WS-ID WS-ID-LENGTH
+             MOVE WS-ID TO WS-KEY112
+             CALL "RECIPE-BY-KEY" USING WS-KEY112 WS-RECIPE
+             IF WS-RECIPE = 0
+                 MOVE SPACES TO WS-KEY112
+                 STRING "cobolcraft:" WS-ID(11:WS-ID-LENGTH - 10) DELIMITED BY SIZE INTO WS-KEY112
+                 CALL "RECIPE-BY-KEY" USING WS-KEY112 WS-RECIPE
+             END-IF
+             IF WS-RECIPE = 0
+                 MOVE "recipe.notFound" TO WS-KEY
+                 MOVE SPACES TO WS-A1 WS-A2
+                 MOVE WS-ID TO WS-A1
+                 MOVE WS-ID-LENGTH TO WS-L1
+                 MOVE 1 TO WS-N-ARGS
+                 CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+                 MOVE 1 TO BR-R-FAILED
+             END-IF
+         END-IF
+         IF BR-R-FAILED = 0
+             MOVE 0 TO WS-COUNTED WS-TOTAL WS-LAST
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+                 MOVE BX-ROW(WS-I) TO WS-ROW
+                 IF WS-GIVE > 0
+                     CALL "CXB-RECIPE-GIVE" USING WS-ROW WS-RECIPE WS-CHANGED
+                 ELSE
+                     CALL "CXB-RECIPE-TAKE" USING WS-ROW WS-RECIPE WS-CHANGED
+                 END-IF
+                 IF WS-CHANGED > 0
+                     ADD 1 TO WS-COUNTED
+                     ADD WS-CHANGED TO WS-TOTAL
+                     MOVE WS-ROW TO WS-LAST
+                 END-IF
+             END-PERFORM
+             EVALUATE TRUE
+                 WHEN WS-COUNTED = 0 AND WS-GIVE > 0
+                     MOVE "commands.recipe.give.failed" TO WS-KEY
+                 WHEN WS-COUNTED = 0
+                     MOVE "commands.recipe.take.failed" TO WS-KEY
+                 WHEN WS-GIVE > 0 AND WS-COUNTED = 1
+                     MOVE "commands.recipe.give.success.single" TO WS-KEY
+                 WHEN WS-GIVE > 0
+                     MOVE "commands.recipe.give.success.multiple" TO WS-KEY
+                 WHEN WS-COUNTED = 1
+                     MOVE "commands.recipe.take.success.single" TO WS-KEY
+                 WHEN OTHER
+                     MOVE "commands.recipe.take.success.multiple" TO WS-KEY
+             END-EVALUATE
+             IF WS-COUNTED = 0
+                 MOVE SPACES TO WS-A1 WS-A2
+                 MOVE 0 TO WS-N-ARGS WS-L1
+                 CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
+                 MOVE 1 TO BR-R-FAILED
+             ELSE
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-SELECTED
+                 IF WS-COUNTED = 1
+                     CALL "CMD-TEXT-ARG" USING PB-TEXT PL-NAME(WS-LAST) PL-NAME-LENGTH(WS-LAST)
+                 ELSE
+                     CALL "CMD-TEXT-INT" USING PB-TEXT WS-COUNTED
+                 END-IF
+                 CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+                 MOVE WS-TOTAL TO BR-R-RESULT
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-RECIPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-RECIPE.
+*> The forms of recipe (16 §6.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-RECIPE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "recipe give <targets:players> *" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "recipe give <targets:players> <recipe:recipetype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "recipe take <targets:players> *" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "recipe take <targets:players> <recipe:recipetype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-RECIPE.
