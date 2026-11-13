@@ -28,6 +28,8 @@
  01 WS-ATTRIBUTE           PIC X(64).
  01 WS-FOG                 BINARY-DOUBLE.
  01 WS-FOG-Q               BINARY-DOUBLE.
+ 01 WS-FOG-END             BINARY-LONG.
+ 01 WS-FOG-SPAN            FLOAT-LONG.
  01 WS-FOG-MUL             FLOAT-LONG VALUE 1.
  01 WS-EX                  BINARY-LONG.
  01 WS-EY                  BINARY-LONG.
@@ -124,8 +126,22 @@
      COMPUTE RL-PROJ(15) = WS-NEAR * WS-FAR / (WS-NEAR - WS-FAR)
 *>   The fog of an eye in a fluid (12 section 3.3 environments; cc_vk_fog): the fog colour is the clear colour set above, strength 1, lava
 *>   from 0.25 to 1.0 blocks (no Fire Resistance), water from -8 to 96 (water vision 1); the focal terms of the projection.
-     MOVE 0 TO RL-FOG(1) RL-FOG(2) RL-FOG(3) RL-FOG(4) RL-FOG(5) RL-FOG(6)
-
+     MOVE 0 TO RL-FOG(1) RL-FOG(2) RL-FOG(3) RL-FOG(4)
+     MOVE 1000000000 TO RL-FOG(5)
+     MOVE 2000000000 TO RL-FOG(6)
+*>   The render-distance fog (cylindrical): end = view distance in blocks, start = end - clamp(end / 10, 4, 64); off until the view distance is known.
+     MOVE 1000000000 TO RL-FOG(12)
+     MOVE 2000000000 TO RL-FOG(13)
+     IF PL-VIEW-DISTANCE > 0
+         COMPUTE WS-FOG-END = PL-VIEW-DISTANCE * 16
+         COMPUTE WS-FOG-SPAN = FUNCTION MAX(4, FUNCTION MIN(64, WS-FOG-END / 10))
+         COMPUTE RL-FOG(12) = WS-FOG-END - WS-FOG-SPAN
+         MOVE WS-FOG-END TO RL-FOG(13)
+         MOVE RL-CLEAR(1) TO RL-FOG(1)
+         MOVE RL-CLEAR(2) TO RL-FOG(2)
+         MOVE RL-CLEAR(3) TO RL-FOG(3)
+         MOVE 1 TO RL-FOG(4)
+     END-IF
      MOVE RL-PROJ(1) TO RL-FOG(7)
      MOVE RL-PROJ(6) TO RL-FOG(8)
      IF PL-EYE-LAVA = 1 OR PL-EYE-WATER = 1
@@ -159,6 +175,9 @@
          COMPUTE RL-VIEW(WS-I + 2) = 0 - WS-FWD(WS-C)
      END-PERFORM
      MOVE 1 TO RL-VIEW(16)
+     MOVE RL-VIEW(5) TO RL-FOG(9)
+     MOVE RL-VIEW(6) TO RL-FOG(10)
+     MOVE RL-VIEW(7) TO RL-FOG(11)
 *>   Projection x view.
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
          PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3

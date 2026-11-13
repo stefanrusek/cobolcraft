@@ -393,7 +393,7 @@ static void create_layouts(void) {
         .pBindings = &binding,
     };
     check(vkCreateDescriptorSetLayout(cc_vk_state.device, &set_info, NULL, &cc_vk_state.set_layout), "cc_vk_init: vkCreateDescriptorSetLayout failed");
-    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 28 * sizeof(float)}; /* matrix, daylight, pad, fog colour, fog range */
+    VkPushConstantRange push = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 30 * sizeof(float)}; /* matrix, daylight, the 13 floats of the fog */
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
@@ -558,6 +558,11 @@ int32_t cc_vk_init(void) {
     cc_vk_state.daylight = 1.0f;
     memset(cc_vk_state.fog, 0, sizeof cc_vk_state.fog);
     cc_vk_state.fog[6] = cc_vk_state.fog[7] = 1.0f;
+    cc_vk_state.fog[9] = 1.0f;
+    cc_vk_state.fog[11] = 1e9f;
+    cc_vk_state.fog[12] = 2e9f;
+    cc_vk_state.fog[4] = 1e9f;
+    cc_vk_state.fog[5] = 2e9f;
     create_instance();
     create_device();
     create_render_pass();
@@ -840,7 +845,7 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
     const VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 0, 16 * sizeof(float), matrix);
     vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 20 * sizeof(float), 8 * sizeof(float), cc_vk_state.fog);
+    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 17 * sizeof(float), 13 * sizeof(float), cc_vk_state.fog);
     vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
 }
 

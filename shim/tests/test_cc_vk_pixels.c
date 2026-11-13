@@ -210,15 +210,17 @@ int main(void) {
     cc_vk_mesh(3, lit, 6);
     static const struct {
         const char *what;
-        float fog[8]; /* r g b alpha start end p00 p11 */
+        float fog[13]; /* r g b alpha start end p00 p11 up.x up.y up.z render-distance start end */
         const char *expect;
     } fogs[] = {
-        {"fog red, start 0, end 4, distance 1: a quarter", {1, 0, 0, 1, 0, 4, 1, 1}, "FFBFBFFF"},
-        {"fog red at alpha 0.5, a quarter: an eighth", {1, 0, 0, 0.5f, 0, 4, 1, 1}, "FFDFDFFF"},
-        {"fog starting beyond the fragment changes nothing", {1, 0, 0, 1, 2, 4, 1, 1}, "FFFFFFFF"},
-        {"fog ending before the fragment is the fog colour", {1, 0, 0, 1, 0, 0.5f, 1, 1}, "FF0000FF"},
-        {"fog with alpha 0 is off", {1, 0, 0, 0, 0, 0.5f, 1, 1}, "FFFFFFFF"},
-        {"the focal terms widen the distance of an off-axis fragment (here the centre: none)", {0, 0, 1, 1, 0, 4, 0.5f, 0.5f}, "BFBFFFFF"},
+        {"fog red, start 0, end 4, distance 1: a quarter", {1, 0, 0, 1, 0, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFBFBFFF"},
+        {"fog red at alpha 0.5, a quarter: an eighth", {1, 0, 0, 0.5f, 0, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFDFDFFF"},
+        {"fog starting beyond the fragment changes nothing", {1, 0, 0, 1, 2, 4, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFFFFFFF"},
+        {"fog ending before the fragment is the fog colour", {1, 0, 0, 1, 0, 0.5f, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FF0000FF"},
+        {"fog with alpha 0 is off", {1, 0, 0, 0, 0, 0.5f, 1, 1, 0, 1, 0, 1e9f, 2e9f}, "FFFFFFFF"},
+        {"render-distance fog red, start 0, end 4 (cylindrical distance 1 at the centre): a quarter", {1, 0, 0, 1, 1e9f, 2e9f, 1, 1, 0, 1, 0, 0, 4}, "FFBFBFFF"},
+        {"render-distance fog counts the larger of the two values: environment a quarter, render distance 0.4", {1, 0, 0, 1, 0, 4, 1, 1, 0, 1, 0, 0, 2.5f}, "FF9999FF"},
+        {"the focal terms widen the distance of an off-axis fragment (here the centre: none)", {0, 0, 1, 1, 0, 4, 0.5f, 0.5f, 0, 1, 0, 1e9f, 2e9f}, "BFBFFFFF"},
     };
     float full = 1;
     cc_vk_daylight(&full);

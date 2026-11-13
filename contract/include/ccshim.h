@@ -205,11 +205,13 @@ int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, in
  * follow; read through a pointer (a COBOL FLOAT-SHORT is passed BY REFERENCE). */
 void cc_vk_daylight(const float *daylight);
 
-/* §9 addition: the fog of the draws that follow (12 section 3.3), read through a pointer to 8 floats: the fog colour r, g, b, its strength a
+/* §9 addition: the fog of the draws that follow (12 section 3.3), read through a pointer to 13 floats: the fog colour r, g, b, its strength a
  * (0 to 1: 0 is no fog, the default and the state after cc_vk_init), the start and end distance in blocks and the two focal terms p00 and p11
  * of the projection (the matrix entries that scale x and y: the shader recovers the camera-relative position from the clip coordinates).
  * A fragment's colour becomes lerp(colour, rgb, value x a) with value 0 up to start, 1 from end and (d - start) / (end - start) between, d the
- * distance from the camera (spherical). Applies to the world and entity pipelines (not the UI). */
+ * distance from the camera (spherical); the last five floats are the world up direction in view space (x, y, z) and the render-distance
+ * start and end: the fog value is the larger of the spherical value and the cylindrical one (distance max(horizontal, |vertical|), 12 section 3.3)
+ * between those (default start 1e9: none). Applies to the world and entity pipelines (not the UI). */
 void cc_vk_fog(const float *fog);
 
 /* §9 addition: clears the depth attachment between the world pass and the hand pass (US20). */

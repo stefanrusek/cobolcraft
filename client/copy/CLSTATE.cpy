@@ -988,7 +988,7 @@
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
-       10 RL-FOG OCCURS 8 TIMES FLOAT-SHORT.     *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.
