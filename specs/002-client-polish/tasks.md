@@ -4328,6 +4328,9 @@ Source: `docs/protocol/29a-fluids.md` §1.2, §8, §10, 13 §1.3, 12 §3.3. Red 
 - [x] T3735 [US12-core] Implement `BREATH-TICK`, `BREATH-EYE-IN-WATER`, `AIR-DATA-BUILD` (`core/src/breath.cob`), `PL-AIR`, `CAUSE-DROWN` (`RULES.cpy`: minecraft:drown, the sixth type sorted by path; MESSAGES.cpy: `death.attack.drown`) (not done: oxygen_bonus, water breathing, bubble columns, Entity Event 67)
 - [x] T3736 [US12-client] The HUD air row (hearts.cob, already there) reads `PL-EYES-WATER`, which `PHYS-FLUID` now sets (it was never set)
 - [x] T3745 [US12-core] Write the fall-into-water case of `core/tests/acc_us12_drowning.cob` (29a 8.3 step 2: touching water resets the fall distance; red: `fluids/red16.txt`) and implement `FLUID-TOUCHES-WATER` (`core/src/breath.cob`) called by `MOVE-PLAYER`
+- [x] T3747 [US12-core] Write `core/tests/acc_us12_bucket.cob` (29a 7.2, 7.3: pick up a water or lava source, ignore a flowing cell, place a source before the hit, lava, creative keeps the stack, stack of 2, guards, the standard rows' short keys; red: `fluids/red18.txt`) and implement `BUCKET-USE` (`core/src/bucket-29a.cob`, called by `PLAY-PACKET` for Use Item before the worn-item and eating paths): the server casts the fluid ray itself
+- [x] T3748 [US12-core] FIX: the core's fluid engine and item physics compared block keys as `minecraft:water` etc. while a standard world's rows (`CB-KEY`) have no namespace, so in a real standard world `FLUID-ROLES` found no liquid (no fluid tick, no current, no air supply): `FLUID-ROLES`, the lava-onto-water stone, `FLUID-KEY-IS` and `IP-BLOCK-KEY` now accept both forms (the tests had faked the prefixed keys)
+- [x] T3749 [US12-client] Write `client/tests/test_bucket_use.cob` and make a bucket in hand send Use Item on the right button (`CONTROLS-SEND-BUCKET`; the target-less case)
 - [ ] T3733 [US12-core] Gate: run `make gate-core` and record the command and real output
 
 ---

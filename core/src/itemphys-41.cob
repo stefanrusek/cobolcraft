@@ -985,6 +985,12 @@
          MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
          MOVE CB-KEY(WS-BLOCK + 1) TO L-KEY
          MOVE CB-KEY-LENGTH(WS-BLOCK + 1) TO L-LENGTH
+*>       The rows of the standard set have no namespace: every rule of 41 names its blocks as minecraft:<name>.
+         IF L-LENGTH > 0 AND L-KEY(1:10) NOT = "minecraft:" AND L-KEY(1:11) NOT = "cobolcraft:"
+             MOVE SPACES TO L-KEY
+             STRING "minecraft:" FUNCTION TRIM(CB-KEY(WS-BLOCK + 1)) DELIMITED BY SIZE INTO L-KEY
+             COMPUTE L-LENGTH = CB-KEY-LENGTH(WS-BLOCK + 1) + 10
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM IP-BLOCK-KEY.
