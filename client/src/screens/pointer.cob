@@ -114,10 +114,18 @@
              MOVE WS-OUTSIDE TO WS-TARGET
          END-IF
      END-IF
-*>   The recipe book's panel (beside the screen, or over it in a narrow window) is no slot and not outside: its cells are its own.
-     IF SM-SCREEN NOT = SCR-CONTAINER AND RK-OPEN(1) = 1 AND WS-GX >= WS-PX AND WS-GX < WS-PX + 147
-             AND WS-GY >= WS-TOP AND WS-GY < WS-TOP + WS-H
-         MOVE -1 TO WS-TARGET WS-WIRE WS-ARG
+*>   The recipe book's panel beside the screen is not outside it, and a recipe book widget over a slot (a cell, tab, button) takes the click, not the slot.
+     IF SM-SCREEN NOT = SCR-CONTAINER AND RK-OPEN(1) = 1
+         IF WS-WIRE < 0 AND WS-GX >= WS-PX AND WS-GX < WS-PX + 147 AND WS-GY >= WS-TOP AND WS-GY < WS-TOP + WS-H
+             MOVE -1 TO WS-TARGET
+         END-IF
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > SM-WIDGET-COUNT
+             IF SM-W-ACTION(WS-J) >= ACT-RB-BOOK AND SM-W-ACTION(WS-J) <= ACT-RB-SEARCH
+                     AND WS-GX >= SM-W-X(WS-J) AND WS-GX < SM-W-X(WS-J) + SM-W-W(WS-J)
+                     AND WS-GY >= SM-W-Y(WS-J) AND WS-GY < SM-W-Y(WS-J) + SM-W-H(WS-J)
+                 MOVE -1 TO WS-TARGET WS-WIRE WS-ARG
+             END-IF
+         END-PERFORM
      END-IF
      .
 
