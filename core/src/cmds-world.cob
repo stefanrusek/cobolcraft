@@ -1690,6 +1690,943 @@
  END PROGRAM CMDS-REG-FORCELOAD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-SOURCE-NAME.
+*> USING index (1 to 11), name out (PIC X(32)): the literal of the sound source with that index; the wire ordinal of a source is its index - 1
+*> (master, music, record, weather, block, hostile, neutral, player, ambient, voice, ui: 16 §7.9 and 05b 0x77).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES.
+    05 FILLER               PIC X(8) VALUE "master".
+    05 FILLER               PIC X(8) VALUE "music".
+    05 FILLER               PIC X(8) VALUE "record".
+    05 FILLER               PIC X(8) VALUE "weather".
+    05 FILLER               PIC X(8) VALUE "block".
+    05 FILLER               PIC X(8) VALUE "hostile".
+    05 FILLER               PIC X(8) VALUE "neutral".
+    05 FILLER               PIC X(8) VALUE "player".
+    05 FILLER               PIC X(8) VALUE "ambient".
+    05 FILLER               PIC X(8) VALUE "voice".
+    05 FILLER               PIC X(8) VALUE "ui".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME              PIC X(8) OCCURS 11 TIMES.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ PROCEDURE DIVISION USING L-INDEX L-NAME.
+     MOVE SPACES TO L-NAME
+     MOVE WS-NAME(L-INDEX) TO L-NAME
+     GOBACK.
+ END PROGRAM CXC-SOURCE-NAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-SOURCE-OF.
+*> USING index out (the index 1 to 11 of the sound source literal of the context, 0 when it has none), name out (PIC X(32)): see CXC-SOURCE-NAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ PROCEDURE DIVISION USING L-INDEX L-NAME.
+     MOVE 0 TO L-INDEX
+     MOVE SPACES TO L-NAME
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11 OR L-INDEX > 0
+         CALL "CXC-SOURCE-NAME" USING WS-I L-NAME
+         CALL "BX-LIT" USING L-NAME WS-FOUND
+         IF WS-FOUND > 0
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     IF L-INDEX = 0
+         MOVE SPACES TO L-NAME
+     END-IF
+     GOBACK.
+ END PROGRAM CXC-SOURCE-OF.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-ID-TEXT.
+*> USING argument index of an identifier argument, text out (PIC X(112)), length out: the identifier as typed, with minecraft: in front when it has no
+*> namespace and the # of a tag kept in front (at most 100 typed bytes).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-HASH                BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-RAW                 PIC X(112).
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TEXT                 PIC X(112).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TEXT L-LENGTH.
+     MOVE BA-START(L-INDEX) TO WS-START
+     COMPUTE WS-LENGTH = BA-END(L-INDEX) - WS-START
+     ADD 1 TO WS-START
+     MOVE 0 TO WS-HASH
+     IF BR-R-LINE(WS-START:1) = "#"
+         MOVE 1 TO WS-HASH
+         ADD 1 TO WS-START
+         SUBTRACT 1 FROM WS-LENGTH
+     END-IF
+     COMPUTE WS-LENGTH = FUNCTION MAX(FUNCTION MIN(WS-LENGTH, 100), 1)
+     MOVE SPACES TO WS-RAW L-TEXT
+     MOVE BR-R-LINE(WS-START:WS-LENGTH) TO WS-RAW
+     MOVE 0 TO WS-COLONS
+     INSPECT WS-RAW(1:WS-LENGTH) TALLYING WS-COLONS FOR ALL ":"
+     MOVE 1 TO L-LENGTH
+     IF WS-HASH = 1
+         MOVE "#" TO L-TEXT(1:1)
+         MOVE 2 TO L-LENGTH
+     END-IF
+     IF WS-COLONS = 0
+         MOVE "minecraft:" TO L-TEXT(L-LENGTH:10)
+         ADD 10 TO L-LENGTH
+     END-IF
+     MOVE WS-RAW(1:WS-LENGTH) TO L-TEXT(L-LENGTH:WS-LENGTH)
+     COMPUTE L-LENGTH = L-LENGTH + WS-LENGTH - 1
+     GOBACK.
+ END PROGRAM CXC-ID-TEXT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CXC-DELTA.
+*> USING argument index of a vec3 argument that is not centred (the delta of particle), x, y, z out (FLOAT-LONG): BX-POSITION less the 0.5 the parser adds to
+*> an absolute x or z written without a decimal point (42-particles-7 §2 centre correction: the delta is built with the flag false).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-TOKEN               BINARY-LONG.
+ 01 WS-DOTS.
+    05 WS-DOT               BINARY-LONG OCCURS 4 TIMES.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-X L-Y L-Z.
+     CALL "BX-POSITION" USING L-INDEX L-X L-Y L-Z
+     MOVE BA-START(L-INDEX) TO WS-START
+     COMPUTE WS-LENGTH = BA-END(L-INDEX) - WS-START
+     ADD 1 TO WS-START
+     INITIALIZE WS-DOTS
+     MOVE 1 TO WS-TOKEN
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-LENGTH
+         COMPUTE WS-POS = WS-START + WS-I
+         EVALUATE BR-R-LINE(WS-POS:1)
+             WHEN SPACE
+                 ADD 1 TO WS-TOKEN
+             WHEN "."
+                 MOVE 1 TO WS-DOT(WS-TOKEN)
+         END-EVALUATE
+     END-PERFORM
+     IF BA-KIND(L-INDEX, 1) = 0 AND WS-DOT(1) = 0
+         SUBTRACT 0.5 FROM L-X
+     END-IF
+     IF BA-KIND(L-INDEX, 3) = 0 AND WS-DOT(3) = 0
+         SUBTRACT 0.5 FROM L-Z
+     END-IF
+     GOBACK.
+ END PROGRAM CXC-DELTA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-STOPSOUND.
+*> stopsound <targets> [* | <source>] [<sound>] (16 §7.10, level 2): each target is sent Stop Sound 0x79 (05b: flags 1 source, 2 sound name; the source's ordinal;
+*> the sound's identifier, minecraft: when it has no namespace). The message is broadcast: source and sound commands.stopsound.success.source.sound [sound, source],
+*> a source alone .source.any [source], * (or nothing) with a sound .sourceless.sound [sound], neither .sourceless.any; the result is the number of targets.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-SOUND          PIC X(32) VALUE "sound".
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-SOURCE              BINARY-LONG.
+ 01 WS-SOURCE-NAME         PIC X(32).
+ 01 WS-SOURCE-LENGTH       BINARY-LONG.
+ 01 WS-SOUND-ARG           BINARY-LONG.
+ 01 WS-SOUND               PIC X(112).
+ 01 WS-SOUND-LENGTH        BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-ORDINAL             BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 121.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+     CALL "BX-RESOLVE" USING WS-INDEX WS-ROWS
+     IF BR-R-FAILED = 0
+         CALL "CXC-SOURCE-OF" USING WS-SOURCE WS-SOURCE-NAME
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-SOURCE-NAME)) TO WS-SOURCE-LENGTH
+         CALL "BX-FIND" USING WS-NAME-SOUND WS-SOUND-ARG
+         MOVE 0 TO WS-FLAGS
+         IF WS-SOURCE > 0
+             ADD 1 TO WS-FLAGS
+         END-IF
+         IF WS-SOUND-ARG > 0
+             ADD 2 TO WS-FLAGS
+             CALL "CXC-ID-TEXT" USING WS-SOUND-ARG WS-SOUND WS-SOUND-LENGTH
+         END-IF
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-BYTE" USING PB-BUFFER WS-FLAGS
+         IF WS-SOURCE > 0
+             COMPUTE WS-ORDINAL = WS-SOURCE - 1
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ORDINAL
+         END-IF
+         IF WS-SOUND-ARG > 0
+             CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
+         END-IF
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             CALL "CORE-SEND" USING PL-CONN(BX-ROW(WS-I)) PB-BUFFER
+         END-PERFORM
+         CALL "PB-FREE" USING PB-BUFFER
+         EVALUATE WS-FLAGS
+             WHEN 3
+                 MOVE "commands.stopsound.success.source.sound" TO WS-KEY
+             WHEN 1
+                 MOVE "commands.stopsound.success.source.any" TO WS-KEY
+             WHEN 2
+                 MOVE "commands.stopsound.success.sourceless.sound" TO WS-KEY
+             WHEN OTHER
+                 MOVE "commands.stopsound.success.sourceless.any" TO WS-KEY
+         END-EVALUATE
+         CALL "BX-KEY" USING PB-TEXT WS-KEY
+         IF WS-SOUND-ARG > 0
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SOUND WS-SOUND-LENGTH
+         END-IF
+         IF WS-SOURCE > 0
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-SOURCE-NAME WS-SOURCE-LENGTH
+         END-IF
+         CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+         MOVE BX-COUNT TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-STOPSOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-STOPSOUND.
+*> The forms of stopsound (16 §7.10): the targets, then * or one of the eleven sources, then a sound.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-STOPSOUND.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SOURCE              PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE "stopsound <targets:players>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "stopsound <targets:players> *" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "stopsound <targets:players> * <sound:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         CALL "CXC-SOURCE-NAME" USING WS-I WS-SOURCE
+         MOVE SPACES TO WS-PATH
+         STRING "stopsound <targets:players> " FUNCTION TRIM(WS-SOURCE) DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         MOVE SPACES TO WS-PATH
+         STRING "stopsound <targets:players> " FUNCTION TRIM(WS-SOURCE) " <sound:resloc>" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-STOPSOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PLAYSOUND.
+*> playsound <sound> <source> [<targets> [<pos> [<volume> [<pitch> [<minVolume>]]]]] (16 §7.9, level 2): each target (the source itself when there are none)
+*> is sent Sound 0x77 (05b): the registry id + 1 of the sound event (minecraft:sound_event; a sound the table does not hold goes inline: 0, the identifier and no fixed
+*> range), the source's ordinal, the position in eighths of a block (the source's position when none; x and z of a plain whole number are centred, 15 §8), the volume
+*> (1.0) and pitch (1.0) and the seed 0. commands.playsound.success.single [sound, player] or .multiple [sound, count] is broadcast and the result is the number of
+*> targets. BLOCKED docs: the audible distance (the volume and minVolume rule behind commands.playsound.failed) is not in the docs, so every target is sent the sound
+*> and minVolume is parsed only.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-SOUND          PIC X(32) VALUE "sound".
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
+ 01 WS-NAME-POS            PIC X(32) VALUE "pos".
+ 01 WS-NAME-VOLUME         PIC X(32) VALUE "volume".
+ 01 WS-NAME-PITCH          PIC X(32) VALUE "pitch".
+ 01 WS-REGISTRY            PIC X(48) VALUE "minecraft:sound_event".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-SOUND-ARG           BINARY-LONG.
+ 01 WS-POS-ARG             BINARY-LONG.
+ 01 WS-VOLUME-ARG          BINARY-LONG.
+ 01 WS-PITCH-ARG           BINARY-LONG.
+ 01 WS-SOURCE              BINARY-LONG.
+ 01 WS-SOURCE-NAME         PIC X(32).
+ 01 WS-SOUND               PIC X(112).
+ 01 WS-SOUND-LENGTH        BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-HOLDER              BINARY-LONG.
+ 01 WS-ORDINAL             BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-VOLUME              FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ 01 WS-OFF                 BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 119.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ 01 WS-MESSAGE-KEY         PIC X(48) VALUE "commands.playsound.success".
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-SOUND WS-SOUND-ARG
+     CALL "BX-FIND" USING WS-NAME-POS WS-POS-ARG
+     CALL "BX-FIND" USING WS-NAME-VOLUME WS-VOLUME-ARG
+     CALL "BX-FIND" USING WS-NAME-PITCH WS-PITCH-ARG
+     CALL "CXC-SOURCE-OF" USING WS-SOURCE WS-SOURCE-NAME
+     CALL "BX-TARGETS-OR-SELF" USING WS-NAME-TARGETS WS-ROWS
+     IF BR-R-FAILED = 0
+         CALL "CXC-ID-TEXT" USING WS-SOUND-ARG WS-SOUND WS-SOUND-LENGTH
+         MOVE BS-X TO WS-X
+         MOVE BS-Y TO WS-Y
+         MOVE BS-Z TO WS-Z
+         IF WS-POS-ARG > 0
+             CALL "BX-POSITION" USING WS-POS-ARG WS-X WS-Y WS-Z
+         END-IF
+         COMPUTE WS-FX = WS-X * 8
+         COMPUTE WS-FY = WS-Y * 8
+         COMPUTE WS-FZ = WS-Z * 8
+         MOVE 1 TO WS-VOLUME WS-PITCH
+         IF WS-VOLUME-ARG > 0
+             MOVE BA-DVAL(WS-VOLUME-ARG) TO WS-VOLUME
+         END-IF
+         IF WS-PITCH-ARG > 0
+             MOVE BA-DVAL(WS-PITCH-ARG) TO WS-PITCH
+         END-IF
+         CALL "CONTENT-STATIC-ID" USING WS-REGISTRY WS-SOUND WS-ID WS-STATUS
+         COMPUTE WS-ORDINAL = WS-SOURCE - 1
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         IF WS-STATUS = CT-OK
+             COMPUTE WS-HOLDER = WS-ID + 1
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
+         ELSE
+             CALL "PB-PUT-VARINT" USING PB-BUFFER WS-OFF
+             CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-SOUND WS-SOUND-LENGTH
+             CALL "PB-PUT-BOOL" USING PB-BUFFER WS-OFF
+         END-IF
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ORDINAL
+         CALL "PB-PUT-INT" USING PB-BUFFER WS-FX
+         CALL "PB-PUT-INT" USING PB-BUFFER WS-FY
+         CALL "PB-PUT-INT" USING PB-BUFFER WS-FZ
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-VOLUME
+         CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
+         CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BX-COUNT
+             CALL "CORE-SEND" USING PL-CONN(BX-ROW(WS-I)) PB-BUFFER
+         END-PERFORM
+         CALL "PB-FREE" USING PB-BUFFER
+         CALL "BX-COUNT-MESSAGE" USING WS-MESSAGE-KEY WS-ROWS WS-BROADCAST WS-SOUND WS-SOUND-LENGTH
+         MOVE BX-COUNT TO BR-R-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM CX-PLAYSOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PLAYSOUND.
+*> The forms of playsound (16 §7.9): the sound and one of the eleven sources, then the optional targets, position, volume, pitch and minimum volume.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PLAYSOUND.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-SOURCE              PIC X(32).
+ 01 WS-TAILS.
+    05 FILLER               PIC X(100) VALUE SPACES.
+    05 FILLER               PIC X(100) VALUE " <targets:players>".
+    05 FILLER               PIC X(100) VALUE " <targets:players> <pos:vec3>".
+    05 FILLER               PIC X(100) VALUE " <targets:players> <pos:vec3> <volume:float:0>".
+    05 FILLER               PIC X(100) VALUE " <targets:players> <pos:vec3> <volume:float:0> <pitch:float:0:2>".
+    05 FILLER               PIC X(100)
+         VALUE " <targets:players> <pos:vec3> <volume:float:0> <pitch:float:0:2> <minVolume:float:0:1>".
+ 01 WS-TAIL-TABLE REDEFINES WS-TAILS.
+    05 WS-TAIL              PIC X(100) OCCURS 6 TIMES.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
+         CALL "CXC-SOURCE-NAME" USING WS-I WS-SOURCE
+         PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 6
+             MOVE SPACES TO WS-PATH
+             MOVE 1 TO WS-PTR
+             STRING "playsound <sound:resloc> " FUNCTION TRIM(WS-SOURCE) DELIMITED BY SIZE INTO WS-PATH POINTER WS-PTR
+             IF WS-T > 1
+                 STRING FUNCTION TRIM(WS-TAIL(WS-T), TRAILING) DELIMITED BY SIZE INTO WS-PATH POINTER WS-PTR
+             END-IF
+             CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CMDS-REG-PLAYSOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PARTICLE.
+*> particle <name> [<pos> [<delta> <speed> <count> [force | normal] [<viewers>]]] (16 §7.8 and 42-particles-7 §2, level 2): the name is an identifier (minecraft: when it
+*> has no namespace) of the registry minecraft:particle_type, else particle.notFound [identifier]; a type that takes options needs them, and the options of {...} are not
+*> decoded (a type with options is particle.invalidOptions [the typed text]; the braces after a type without options are ignored). The position (the source's when none;
+*> centred by the argument), the delta (not centred), the speed and the count (all 0 for the short forms) go into Level Particles 0x30 (the override flag is force,
+*> always show is 0, the delta is the three distances and the speed the three maximum speeds) sent to every viewer (the players of the selector, else all) that is in
+*> the source's dimension and nearer than 32 blocks to the point (512 with force; the distance from the centre of the player's block). commands.particle.success [name]
+*> is broadcast and the result is the number of viewers sent the packet; none is commands.particle.failed.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-NAME           PIC X(32) VALUE "name".
+ 01 WS-NAME-POS            PIC X(32) VALUE "pos".
+ 01 WS-NAME-DELTA          PIC X(32) VALUE "delta".
+ 01 WS-NAME-SPEED          PIC X(32) VALUE "speed".
+ 01 WS-NAME-COUNT          PIC X(32) VALUE "count".
+ 01 WS-NAME-VIEWERS        PIC X(32) VALUE "viewers".
+ 01 WS-NAME-FORCE          PIC X(32) VALUE "force".
+ 01 WS-REGISTRY            PIC X(48) VALUE "minecraft:particle_type".
+ 01 WS-ROWS.
+    05 BX-COUNT             BINARY-LONG.
+    05 BX-ROW               BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-NAME-ARG            BINARY-LONG.
+ 01 WS-POS-ARG             BINARY-LONG.
+ 01 WS-DELTA-ARG           BINARY-LONG.
+ 01 WS-SPEED-ARG           BINARY-LONG.
+ 01 WS-COUNT-ARG           BINARY-LONG.
+ 01 WS-VIEWERS-ARG         BINARY-LONG.
+ 01 WS-FORCE               BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-RAW                 PIC X(112).
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-PARTICLE            PIC X(112).
+ 01 WS-PARTICLE-LENGTH     BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-EXTENT              BINARY-LONG.
+ 01 WS-DATA                PIC X(64).
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-OPTION              BINARY-LONG VALUE -1.
+ 01 WS-ALWAYS              BINARY-LONG VALUE 0.
+ 01 WS-RANDOM              BINARY-LONG VALUE 0.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-SPREADS.
+    05 WS-SPREAD            FLOAT-SHORT OCCURS 6 TIMES.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-SENT                BINARY-LONG.
+ 01 WS-RADIUS-SQUARED      BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-DISTANCE-X          FLOAT-LONG.
+ 01 WS-DISTANCE-Y          FLOAT-LONG.
+ 01 WS-DISTANCE-Z          FLOAT-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 1.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
+ PROCEDURE DIVISION.
+     CALL "BX-FIND" USING WS-NAME-NAME WS-NAME-ARG
+     CALL "BX-FIND" USING WS-NAME-POS WS-POS-ARG
+     CALL "BX-FIND" USING WS-NAME-DELTA WS-DELTA-ARG
+     CALL "BX-FIND" USING WS-NAME-SPEED WS-SPEED-ARG
+     CALL "BX-FIND" USING WS-NAME-COUNT WS-COUNT-ARG
+     CALL "BX-FIND" USING WS-NAME-VIEWERS WS-VIEWERS-ARG
+     CALL "BX-LIT" USING WS-NAME-FORCE WS-FORCE
+     MOVE 1 TO WS-N-ARGS
+     MOVE 0 TO WS-OVERRIDE
+     MOVE BA-START(WS-NAME-ARG) TO WS-START
+     COMPUTE WS-LENGTH = BA-END(WS-NAME-ARG) - WS-START
+     ADD 1 TO WS-START
+     COMPUTE WS-LENGTH = FUNCTION MAX(FUNCTION MIN(WS-LENGTH, 100), 1)
+     MOVE SPACES TO WS-RAW WS-PARTICLE
+     MOVE BR-R-LINE(WS-START:WS-LENGTH) TO WS-RAW
+     MOVE WS-LENGTH TO WS-ID-LENGTH
+     PERFORM VARYING WS-I FROM WS-LENGTH BY -1 UNTIL WS-I < 1
+         IF WS-RAW(WS-I:1) = "{"
+             COMPUTE WS-ID-LENGTH = FUNCTION MAX(WS-I - 1, 1)
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-COLONS
+     INSPECT WS-RAW(1:WS-ID-LENGTH) TALLYING WS-COLONS FOR ALL ":"
+     IF WS-COLONS = 0
+         STRING "minecraft:" WS-RAW(1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-PARTICLE
+         COMPUTE WS-PARTICLE-LENGTH = WS-ID-LENGTH + 10
+     ELSE
+         MOVE WS-RAW(1:WS-ID-LENGTH) TO WS-PARTICLE
+         MOVE WS-ID-LENGTH TO WS-PARTICLE-LENGTH
+     END-IF
+     CALL "CONTENT-STATIC-ID" USING WS-REGISTRY WS-PARTICLE WS-ID WS-STATUS
+     MOVE SPACES TO WS-A1 WS-A2
+     IF WS-STATUS NOT = CT-OK
+         MOVE "particle.notFound" TO WS-KEY
+         MOVE WS-PARTICLE TO WS-A1
+         MOVE WS-PARTICLE-LENGTH TO WS-L1
+         CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+     ELSE
+         MOVE LOW-VALUES TO WS-DATA
+         CALL "PB-PARTICLE-EXTENT" USING WS-ID WS-DATA WS-ZERO WS-EXTENT
+         IF WS-EXTENT NOT = 0
+             MOVE "particle.invalidOptions" TO WS-KEY
+             MOVE WS-RAW TO WS-A1
+             MOVE WS-LENGTH TO WS-L1
+             CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE BS-X TO WS-X
+         MOVE BS-Y TO WS-Y
+         MOVE BS-Z TO WS-Z
+         MOVE 0 TO WS-DX WS-DY WS-DZ WS-SPEED WS-COUNT
+         IF WS-POS-ARG > 0
+             CALL "BX-POSITION" USING WS-POS-ARG WS-X WS-Y WS-Z
+         END-IF
+         IF WS-DELTA-ARG > 0
+             CALL "CXC-DELTA" USING WS-DELTA-ARG WS-DX WS-DY WS-DZ
+             MOVE BA-DVAL(WS-SPEED-ARG) TO WS-SPEED
+             MOVE BA-IVAL(WS-COUNT-ARG) TO WS-COUNT
+         END-IF
+         MOVE WS-DX TO WS-SPREAD(1)
+         MOVE WS-DY TO WS-SPREAD(2)
+         MOVE WS-DZ TO WS-SPREAD(3)
+         MOVE WS-SPEED TO WS-SPREAD(4) WS-SPREAD(5) WS-SPREAD(6)
+         MOVE 1024 TO WS-RADIUS-SQUARED
+         IF WS-FORCE > 0
+             MOVE 262144 TO WS-RADIUS-SQUARED
+             MOVE 1 TO WS-OVERRIDE
+         END-IF
+         IF WS-VIEWERS-ARG > 0
+             CALL "BX-RESOLVE" USING WS-VIEWERS-ARG WS-ROWS
+         ELSE
+             MOVE 0 TO BX-COUNT
+             PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
+                 IF PL-USED(WS-PLAYER) = 1 AND BX-COUNT < 64
+                     ADD 1 TO BX-COUNT
+                     MOVE WS-PLAYER TO BX-ROW(BX-COUNT)
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF
+     IF BR-R-FAILED = 0
+         MOVE 0 TO WS-SENT
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         CALL "PARTICLE-BUILD" USING PB-BUFFER WS-ID WS-OPTION WS-OVERRIDE WS-ALWAYS WS-X WS-Y WS-Z WS-SPREADS WS-COUNT WS-RANDOM
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > BX-COUNT
+             MOVE BX-ROW(WS-J) TO WS-PLAYER
+             COMPUTE WS-DISTANCE-X = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 0.5 - WS-X
+             COMPUTE WS-DISTANCE-Y = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 0.5 - WS-Y
+             COMPUTE WS-DISTANCE-Z = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 0.5 - WS-Z
+             IF PL-DIM(WS-PLAYER) = BS-DIM AND WS-DISTANCE-X * WS-DISTANCE-X + WS-DISTANCE-Y * WS-DISTANCE-Y
+                     + WS-DISTANCE-Z * WS-DISTANCE-Z < WS-RADIUS-SQUARED
+                 CALL "CORE-SEND" USING PL-CONN(WS-PLAYER) PB-BUFFER
+                 ADD 1 TO WS-SENT
+             END-IF
+         END-PERFORM
+         CALL "PB-FREE" USING PB-BUFFER
+         IF WS-SENT = 0
+             MOVE "commands.particle.failed" TO WS-KEY
+             MOVE 0 TO WS-N-ARGS
+             CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+         ELSE
+             MOVE "commands.particle.success" TO WS-KEY
+             CALL "BX-KEY" USING PB-TEXT WS-KEY
+             CALL "CMD-TEXT-ARG" USING PB-TEXT WS-PARTICLE WS-PARTICLE-LENGTH
+             CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+             MOVE WS-SENT TO BR-R-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CX-PARTICLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PARTICLE.
+*> The forms of particle (16 §7.8): the name, the position, the delta with speed and count, then force or normal and the viewers.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PARTICLE.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-BASE                PIC X(120) VALUE "particle <name:particle> <pos:vec3> <delta:vec3> <speed:float:0> <count:int:0>".
+ PROCEDURE DIVISION.
+     MOVE "particle <name:particle>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "particle <name:particle> <pos:vec3>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE WS-BASE TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-BASE) " force" DELIMITED BY SIZE INTO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-BASE) " normal" DELIMITED BY SIZE INTO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-BASE) " <viewers:players>" DELIMITED BY SIZE INTO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-BASE) " force <viewers:players>" DELIMITED BY SIZE INTO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(WS-BASE) " normal <viewers:players>" DELIMITED BY SIZE INTO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-PARTICLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-LOCATE.
+*> locate structure <structure> | biome <biome> | poi <poi> (16 §7.7, level 2). biome searches the dimension's generator (WORLDGEN-DIM-BIOMES) on the rings of a
+*> square around the source with the horizontal step 32, out to the radius 6400, at the source's height (a biome has the same id at every height here, so the 3D
+*> distance is the horizontal one): the nearest sample that has the biome (or a #tag member) is the answer (the rings are searched until the nearest point of the next
+*> ring, 32 blocks times its number, is farther than the best sample), shown as [x, y, z] with the floor of the
+*> distance (commands.locate.biome.success [biome, coordinates, distance], quiet; the result is the distance); a dimension that cannot produce the biome (its single biome,
+*> else lowland and upland, WORLDGEN-BIOMES) or none within the radius is commands.locate.biome.not_found [biome]. structure and poi find nothing: the world has no structure
+*> or point-of-interest store, so they are commands.locate.structure.not_found and commands.locate.poi.not_found [identifier] (an unknown structure or point of interest
+*> is refused by the argument parser, argument.resource.not_found, before the command runs, so commands.locate.structure.invalid is not raised). Not done: the clickable
+*> coordinates (the message arguments are plain text).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY BRRUN.
+ COPY PROTO.
+ 01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
+ 01 WS-NAME-BIOME          PIC X(32) VALUE "biome".
+ 01 WS-NAME-POI            PIC X(32) VALUE "poi".
+ 01 WS-REGISTRY            PIC X(112) VALUE "minecraft:worldgen/biome".
+ 01 WS-STRUCTURE-LIT       BINARY-LONG.
+ 01 WS-POI-LIT             BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-POSSIBLE            BINARY-LONG.
+ 01 WS-CANDIDATE           BINARY-LONG.
+ 01 WS-MATCH               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-STEP-I              BINARY-LONG.
+ 01 WS-FIRST-I             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-BEST-X              BINARY-LONG.
+ 01 WS-BEST-Z              BINARY-LONG.
+ 01 WS-BEST-D2             BINARY-DOUBLE.
+ 01 WS-D2                  BINARY-DOUBLE.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-LOCAL               BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-COLUMNS.
+    05 WS-COLUMN            BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-DISTANCE            BINARY-LONG.
+ 01 WS-VALUE               BINARY-DOUBLE.
+ 01 WS-COORD               PIC X(64).
+ 01 WS-COORD-LENGTH        BINARY-LONG.
+ 01 WS-PART                PIC X(64).
+ 01 WS-PART-LENGTH         BINARY-LONG.
+ 01 WS-RADIUS              BINARY-LONG VALUE 200.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 1.
+ 01 WS-L1                  BINARY-LONG.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ 01 WS-QUIET               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The failure WS-KEY with the identifier WS-TEXT as its argument.
+ FAIL-TEXT.
+     MOVE 1 TO WS-N-ARGS
+     MOVE SPACES TO WS-A1 WS-A2
+     MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WS-L1
+     MOVE WS-TEXT(1:WS-L1) TO WS-A1
+     CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2.
+
+*> WS-MATCH: 1 when the biome of the column at the block position (WS-PX, WS-PZ) is the one asked for.
+ SAMPLE.
+     COMPUTE WS-CX = FUNCTION INTEGER(WS-PX / 16)
+     COMPUTE WS-CZ = FUNCTION INTEGER(WS-PZ / 16)
+     CALL "WORLDGEN-DIM-BIOMES" USING WS-DIM WS-CX WS-CZ WS-COLUMNS
+     COMPUTE WS-LOCAL = FUNCTION MOD(WS-PZ, 16)
+     COMPUTE WS-CELL = FUNCTION INTEGER(WS-LOCAL / 4) * 4 + 1
+     COMPUTE WS-LOCAL = FUNCTION MOD(WS-PX, 16)
+     COMPUTE WS-CELL = WS-CELL + FUNCTION INTEGER(WS-LOCAL / 4)
+     MOVE WS-COLUMN(WS-CELL) TO WS-CANDIDATE
+     CALL "CXC-BIOME-MATCH" USING WS-KIND WS-ID WS-TAG WS-CANDIDATE WS-MATCH.
+
+*> The sample (WS-I, WS-J) of the ring: when it has the biome and is nearer than the best of the ring so far it becomes the best.
+ RING-SAMPLE.
+     COMPUTE WS-PX = WS-SX + WS-I * 32
+     COMPUTE WS-PZ = WS-SZ + WS-J * 32
+     PERFORM SAMPLE
+     IF WS-MATCH = 1
+         COMPUTE WS-DX = WS-PX - WS-SX
+         COMPUTE WS-DZ = WS-PZ - WS-SZ
+         COMPUTE WS-D2 = WS-DX * WS-DX + WS-DZ * WS-DZ
+         IF WS-FOUND = 0 OR WS-D2 < WS-BEST-D2
+             MOVE 1 TO WS-FOUND
+             MOVE WS-D2 TO WS-BEST-D2
+             MOVE WS-PX TO WS-BEST-X
+             MOVE WS-PZ TO WS-BEST-Z
+         END-IF
+     END-IF.
+
+*> The ring WS-K of the square: its top and bottom rows, then its two columns between them.
+ RING.
+     COMPUTE WS-FIRST-I = 0 - WS-K
+     PERFORM VARYING WS-I FROM WS-FIRST-I BY 1 UNTIL WS-I > WS-K
+         COMPUTE WS-J = 0 - WS-K
+         PERFORM RING-SAMPLE
+         IF WS-K > 0
+             MOVE WS-K TO WS-J
+             PERFORM RING-SAMPLE
+         END-IF
+     END-PERFORM
+     COMPUTE WS-STEP-I = 1 - WS-K
+     PERFORM VARYING WS-J FROM WS-STEP-I BY 1 UNTIL WS-J >= WS-K
+         COMPUTE WS-I = 0 - WS-K
+         PERFORM RING-SAMPLE
+         MOVE WS-K TO WS-I
+         PERFORM RING-SAMPLE
+     END-PERFORM.
+
+*> The decimal text of WS-VALUE is appended to WS-COORD (WS-COORD-LENGTH is the next free byte).
+ ADD-NUMBER.
+     CALL "CXC-INT-TEXT" USING WS-VALUE WS-PART WS-PART-LENGTH
+     MOVE WS-PART(1:WS-PART-LENGTH) TO WS-COORD(WS-COORD-LENGTH:WS-PART-LENGTH)
+     ADD WS-PART-LENGTH TO WS-COORD-LENGTH.
+
+ MAIN-LINE.
+     CALL "BX-LIT" USING WS-NAME-STRUCTURE WS-STRUCTURE-LIT
+     CALL "BX-LIT" USING WS-NAME-POI WS-POI-LIT
+     EVALUATE TRUE
+         WHEN WS-STRUCTURE-LIT > 0
+             CALL "BX-FIND" USING WS-NAME-STRUCTURE WS-ARG
+             CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
+             MOVE "commands.locate.structure.not_found" TO WS-KEY
+             PERFORM FAIL-TEXT
+         WHEN WS-POI-LIT > 0
+             CALL "BX-FIND" USING WS-NAME-POI WS-ARG
+             CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
+             MOVE "commands.locate.poi.not_found" TO WS-KEY
+             PERFORM FAIL-TEXT
+         WHEN OTHER
+             CALL "BX-FIND" USING WS-NAME-BIOME WS-ARG
+             CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
+             CALL "CXC-ARG-REF" USING WS-ARG WS-REGISTRY WS-KIND WS-ID WS-TAG
+             MOVE BS-DIM TO WS-DIM
+             MOVE 0 TO WS-POSSIBLE
+             IF DM-BIOME(WS-DIM) >= 0
+                 MOVE DM-BIOME(WS-DIM) TO WS-CANDIDATE
+                 CALL "CXC-BIOME-MATCH" USING WS-KIND WS-ID WS-TAG WS-CANDIDATE WS-POSSIBLE
+             ELSE
+                 MOVE 0 TO WS-CANDIDATE
+                 CALL "CXC-BIOME-MATCH" USING WS-KIND WS-ID WS-TAG WS-CANDIDATE WS-MATCH
+                 MOVE WS-MATCH TO WS-POSSIBLE
+                 MOVE 1 TO WS-CANDIDATE
+                 CALL "CXC-BIOME-MATCH" USING WS-KIND WS-ID WS-TAG WS-CANDIDATE WS-MATCH
+                 COMPUTE WS-POSSIBLE = FUNCTION MAX(WS-POSSIBLE, WS-MATCH)
+             END-IF
+             MOVE 0 TO WS-FOUND
+             COMPUTE WS-SX = FUNCTION INTEGER(BS-X)
+             COMPUTE WS-SY = FUNCTION INTEGER(BS-Y)
+             COMPUTE WS-SZ = FUNCTION INTEGER(BS-Z)
+             IF WS-POSSIBLE = 1
+                 PERFORM VARYING WS-K FROM 0 BY 1
+                         UNTIL WS-K > WS-RADIUS OR (WS-FOUND = 1 AND WS-K * WS-K * 1024 > WS-BEST-D2)
+                     PERFORM RING
+                 END-PERFORM
+             END-IF
+             IF WS-FOUND = 0
+                 MOVE "commands.locate.biome.not_found" TO WS-KEY
+                 PERFORM FAIL-TEXT
+             ELSE
+                 COMPUTE WS-DISTANCE = FUNCTION INTEGER(FUNCTION SQRT(WS-BEST-D2))
+                 MOVE SPACES TO WS-COORD
+                 MOVE "[" TO WS-COORD(1:1)
+                 MOVE 2 TO WS-COORD-LENGTH
+                 MOVE WS-BEST-X TO WS-VALUE
+                 PERFORM ADD-NUMBER
+                 MOVE ", " TO WS-COORD(WS-COORD-LENGTH:2)
+                 ADD 2 TO WS-COORD-LENGTH
+                 MOVE WS-SY TO WS-VALUE
+                 PERFORM ADD-NUMBER
+                 MOVE ", " TO WS-COORD(WS-COORD-LENGTH:2)
+                 ADD 2 TO WS-COORD-LENGTH
+                 MOVE WS-BEST-Z TO WS-VALUE
+                 PERFORM ADD-NUMBER
+                 MOVE "]" TO WS-COORD(WS-COORD-LENGTH:1)
+                 MOVE "commands.locate.biome.success" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-TEXT WS-TEXT-LENGTH
+                 CALL "CMD-TEXT-ARG" USING PB-TEXT WS-COORD WS-COORD-LENGTH
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-DISTANCE
+                 CALL "BR-FEEDBACK" USING PB-TEXT WS-QUIET
+                 MOVE WS-DISTANCE TO BR-R-RESULT
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM CX-LOCATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-LOCATE.
+*> The forms of locate (16 §7.7).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-LOCATE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "locate structure <structure:structortag>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "locate biome <biome:biomeortag>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "locate poi <poi:poiortag>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-LOCATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CX-PLACE.
+*> place feature <feature> [<pos>] | jigsaw <pool> <target> <max_depth> [<position>] | structure <structure> [<pos>] | template <template> [<pos> [<rotation> [<mirror>
+*> [<integrity> [<seed> [strict]]]]]] (16 §7.5, level 2). The world has no template, structure, jigsaw pool or configured feature to place (generation runs its features
+*> only inside the generation stage), so feature, jigsaw and structure are commands.place.<kind>.failed, and a template is commands.place.template.invalid [template id]
+*> (no template exists). The success keys of the catalog are not used.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRRUN.
+ 01 WS-NAME-FEATURE        PIC X(32) VALUE "feature".
+ 01 WS-NAME-JIGSAW         PIC X(32) VALUE "jigsaw".
+ 01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
+ 01 WS-NAME-TEMPLATE       PIC X(32) VALUE "template".
+ 01 WS-FEATURE             BINARY-LONG.
+ 01 WS-JIGSAW              BINARY-LONG.
+ 01 WS-STRUCTURE           BINARY-LONG.
+ 01 WS-ARG                 BINARY-LONG.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-KEY                 PIC X(72).
+ 01 WS-A1                  PIC X(64).
+ 01 WS-A2                  PIC X(64).
+ 01 WS-N-ARGS              BINARY-LONG VALUE 0.
+ 01 WS-L1                  BINARY-LONG VALUE 0.
+ 01 WS-L2                  BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "BX-LIT" USING WS-NAME-FEATURE WS-FEATURE
+     CALL "BX-LIT" USING WS-NAME-JIGSAW WS-JIGSAW
+     CALL "BX-LIT" USING WS-NAME-STRUCTURE WS-STRUCTURE
+     MOVE SPACES TO WS-A1 WS-A2
+     MOVE 0 TO WS-N-ARGS WS-L1
+     EVALUATE TRUE
+         WHEN WS-FEATURE > 0
+             MOVE "commands.place.feature.failed" TO WS-KEY
+         WHEN WS-JIGSAW > 0
+             MOVE "commands.place.jigsaw.failed" TO WS-KEY
+         WHEN WS-STRUCTURE > 0
+             MOVE "commands.place.structure.failed" TO WS-KEY
+         WHEN OTHER
+             MOVE "commands.place.template.invalid" TO WS-KEY
+             MOVE 1 TO WS-N-ARGS
+             CALL "BX-FIND" USING WS-NAME-TEMPLATE WS-ARG
+             CALL "CXC-ID-TEXT" USING WS-ARG WS-TEXT WS-TEXT-LENGTH
+             MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WS-L1
+             MOVE WS-TEXT(1:WS-L1) TO WS-A1
+     END-EVALUATE
+     CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+     GOBACK.
+ END PROGRAM CX-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CMDS-REG-PLACE.
+*> The forms of place (16 §7.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BRCMD.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE BC-PLACE.
+ 01 WS-PATH                PIC X(256).
+ PROCEDURE DIVISION.
+     MOVE "place feature <feature:feature>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place feature <feature:feature> <pos:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place jigsaw <pool:poolkey> <target:resloc> <max_depth:int:1:20>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place jigsaw <pool:poolkey> <target:resloc> <max_depth:int:1:20> <position:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place structure <structure:structkey>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place structure <structure:structkey> <pos:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos> <rotation:templaterot>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos> <rotation:templaterot> <mirror:mirror>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos> <rotation:templaterot> <mirror:mirror> <integrity:float:0:1>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos> <rotation:templaterot> <mirror:mirror> <integrity:float:0:1> <seed:int>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "place template <template:resloc> <pos:pos> <rotation:templaterot> <mirror:mirror> <integrity:float:0:1> <seed:int> strict"
+         TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     GOBACK.
+ END PROGRAM CMDS-REG-PLACE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-DISPATCH-C.
 *> The commands of the lane cmds-c that BR-CMD-CALL and CX-DISPATCH-A do not name: any other command id is help.
  DATA DIVISION.
@@ -1704,6 +2641,16 @@
              CALL "CX-FILLBIOME"
          WHEN BC-FORCELOAD
              CALL "CX-FORCELOAD"
+         WHEN BC-LOCATE
+             CALL "CX-LOCATE"
+         WHEN BC-PARTICLE
+             CALL "CX-PARTICLE"
+         WHEN BC-PLACE
+             CALL "CX-PLACE"
+         WHEN BC-PLAYSOUND
+             CALL "CX-PLAYSOUND"
+         WHEN BC-STOPSOUND
+             CALL "CX-STOPSOUND"
          WHEN OTHER
              CALL "CX-HELP"
      END-EVALUATE
