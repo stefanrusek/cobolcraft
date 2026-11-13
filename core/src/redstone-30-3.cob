@@ -542,6 +542,7 @@
  01 LS-KIND                BINARY-LONG.
  01 LS-PK                  BINARY-LONG.
  01 LS-PUSH                BINARY-LONG.
+ 01 LS-PUSH2               BINARY-LONG.
  01 LS-OPP                 BINARY-LONG.
  01 LS-DX                  BINARY-LONG.
  01 LS-DY                  BINARY-LONG.
@@ -588,6 +589,7 @@
      MOVE 1 TO L-OK
      MOVE 0 TO LS-DONE
      MOVE RSV-PUSHDIR TO LS-PUSH
+     MOVE RSV-PUSHDIR TO LS-PUSH2
      CALL "RS1-OPP" USING LS-PUSH LS-OPP
      CALL "RS1-STEP" USING LS-PUSH LS-DX LS-DY LS-DZ
      CALL "RS1-STEP" USING LS-OPP LS-ODX LS-ODY LS-ODZ
@@ -717,7 +719,7 @@
                      WHEN LS-PK = 0
                          MOVE 1 TO LS-DONE
                      WHEN OTHER
-                         CALL "RS1-PSR-PUSHABLE" USING LS-PK LS-CX LS-CY LS-CZ LS-PUSH 1 LS-PUSH RSV-MINY RSV-MAXY LS-PUSHABLE
+                         CALL "RS1-PSR-PUSHABLE" USING LS-PK LS-CX LS-CY LS-CZ LS-PUSH 1 LS-PUSH2 RSV-MINY RSV-MAXY LS-PUSHABLE
                          IF LS-PUSHABLE = 0 OR (LS-CX = RSV-PX AND LS-CY = RSV-PY AND LS-CZ = RSV-PZ)
                              MOVE 0 TO L-OK
                              MOVE 1 TO LS-DONE
@@ -849,4 +851,1192 @@
      END-PERFORM
      GOBACK.
  END PROGRAM RS1-PISTON-RESOLVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-BLOCKPOS-HASH.
+*> USING x y z, the 32-bit signed BlockPos hash (y + z * 31) * 31 + x, its HashMap bucket out (sections 6.1, 11.7): 16 buckets, spread h ^ (h >>> 16), no resize below 13 entries.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-H                   BINARY-DOUBLE.
+ 01 WS-U                   BINARY-DOUBLE.
+ 01 WS-HI                  BINARY-DOUBLE.
+ 01 WS-LO4                 BINARY-LONG.
+ 01 WS-HI4                 BINARY-LONG.
+ 01 WS-PW                  BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-HASH                 BINARY-LONG.
+ 01 L-BUCKET               BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-HASH L-BUCKET.
+     COMPUTE WS-H = (L-Y + L-Z * 31) * 31 + L-X
+     COMPUTE WS-U = FUNCTION MOD(WS-H, 4294967296)
+     IF WS-U >= 2147483648
+         COMPUTE L-HASH = WS-U - 4294967296
+     ELSE
+         MOVE WS-U TO L-HASH
+     END-IF
+     DIVIDE WS-U BY 65536 GIVING WS-HI
+     COMPUTE WS-LO4 = FUNCTION MOD(WS-U, 16)
+     COMPUTE WS-HI4 = FUNCTION MOD(WS-HI, 16)
+     MOVE 0 TO L-BUCKET
+     MOVE 1 TO WS-PW
+     PERFORM 4 TIMES
+         COMPUTE WS-A = FUNCTION MOD(WS-LO4, 2)
+         COMPUTE WS-B = FUNCTION MOD(WS-HI4, 2)
+         IF WS-A NOT = WS-B
+             ADD WS-PW TO L-BUCKET
+         END-IF
+         DIVIDE WS-LO4 BY 2 GIVING WS-LO4
+         DIVIDE WS-HI4 BY 2 GIVING WS-HI4
+         MULTIPLY 2 BY WS-PW
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RS1-BLOCKPOS-HASH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PISTON-WRITE-FLAGS.
+*> USING the purpose (1 destroyed block 18, 2 moving block 324, 3 vacated cell 82, 4 head removal and moving base 276, 5 extended base and finished block 67, 6 placement turned to air 340, 7 cancelled retraction marker 2), the flags out (sections 6, 11.5).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PURPOSE              BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PURPOSE L-FLAGS.
+     EVALUATE L-PURPOSE
+         WHEN 1
+             MOVE 18 TO L-FLAGS
+         WHEN 2
+             MOVE 324 TO L-FLAGS
+         WHEN 3
+             MOVE 82 TO L-FLAGS
+         WHEN 4
+             MOVE 276 TO L-FLAGS
+         WHEN 5
+             MOVE 67 TO L-FLAGS
+         WHEN 6
+             MOVE 340 TO L-FLAGS
+         WHEN 7
+             MOVE 2 TO L-FLAGS
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RS1-PISTON-WRITE-FLAGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-FLAG-BIT.
+*> USING the flags, the bit value, set out (section 11.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Q                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-FLAGS                BINARY-LONG.
+ 01 L-BIT                  BINARY-LONG.
+ 01 L-SET                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-FLAGS L-BIT L-SET.
+     DIVIDE L-FLAGS BY L-BIT GIVING WS-Q
+     COMPUTE L-SET = FUNCTION MOD(WS-Q, 2)
+     GOBACK.
+ END PROGRAM RS1-FLAG-BIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PISTON-MOVEPLAN.
+*> USING extending, facing, the piston x y z, the head cell is piston_head, the pushed count and cells, the destroyed count and cells, the origin ox oy oz added to the cell coordinates for the position hash,
+*> *> the operation count and the operations out (section 6): op * 10000 + cell, op 1 head removed, 2 destroyed block written, 3 moving block at the destination, 4 head moving block, 5 vacated cell written, 6 shape updates of a vacated cell,
+*> *> 7 destroyed cell notified, 8 pushed cell notified at its old position, 9 head notified. Cells are numbered (y - 1) * 256 + (z - 1) * 16 + x.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MD                   BINARY-LONG.
+ 01 WS-HX                  BINARY-LONG.
+ 01 WS-HY                  BINARY-LONG.
+ 01 WS-HZ                  BINARY-LONG.
+ 01 WS-MX                  BINARY-LONG.
+ 01 WS-MY                  BINARY-LONG.
+ 01 WS-MZ                  BINARY-LONG.
+ 01 WS-HIDX                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-AX                  BINARY-LONG.
+ 01 WS-AY                  BINARY-LONG.
+ 01 WS-AZ                  BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-HASH                BINARY-LONG.
+ 01 WS-BUCKET              BINARY-LONG.
+ 01 WS-OLD.
+    05 WS-OLDX             BINARY-LONG OCCURS 64 TIMES.
+    05 WS-OLDY             BINARY-LONG OCCURS 64 TIMES.
+    05 WS-OLDZ             BINARY-LONG OCCURS 64 TIMES.
+    05 WS-ALIVE            BINARY-LONG OCCURS 64 TIMES.
+    05 WS-KEY              BINARY-LONG OCCURS 64 TIMES.
+ LINKAGE SECTION.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-F                    BINARY-LONG.
+ 01 L-PX                   BINARY-LONG.
+ 01 L-PY                   BINARY-LONG.
+ 01 L-PZ                   BINARY-LONG.
+ 01 L-HEAD                 BINARY-LONG.
+ 01 L-NPUSH                BINARY-LONG.
+ 01 L-PUSH.
+    05 L-PUSH-E BINARY-LONG OCCURS 64 TIMES.
+ 01 L-NDEST                BINARY-LONG.
+ 01 L-DEST.
+    05 L-DEST-E BINARY-LONG OCCURS 64 TIMES.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ 01 L-OPS.
+    05 L-OPS-E BINARY-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-EXT L-F L-PX L-PY L-PZ L-HEAD L-NPUSH L-PUSH L-NDEST L-DEST L-OX L-OY L-OZ L-N L-OPS.
+     MOVE 0 TO L-N
+     MOVE L-F TO WS-MD
+     IF L-EXT = 0
+         CALL "RS1-OPP" USING L-F WS-MD
+     END-IF
+     CALL "RS1-STEP" USING L-F WS-HX WS-HY WS-HZ
+     COMPUTE WS-HX = L-PX + WS-HX
+     COMPUTE WS-HY = L-PY + WS-HY
+     COMPUTE WS-HZ = L-PZ + WS-HZ
+     COMPUTE WS-HIDX = (WS-HY - 1) * 256 + (WS-HZ - 1) * 16 + WS-HX
+     CALL "RS1-STEP" USING WS-MD WS-MX WS-MY WS-MZ
+     IF L-EXT = 0 AND L-HEAD = 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 10000 + WS-HIDX
+     END-IF
+     PERFORM VARYING WS-I FROM L-NDEST BY -1 UNTIL WS-I < 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 20000 + L-DEST-E(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-NPUSH
+         COMPUTE WS-C = L-PUSH-E(WS-I) - 1
+         DIVIDE WS-C BY 256 GIVING WS-Y REMAINDER WS-R
+         DIVIDE WS-R BY 16 GIVING WS-Z REMAINDER WS-X
+         COMPUTE WS-OLDX(WS-I) = WS-X + 1
+         COMPUTE WS-OLDY(WS-I) = WS-Y + 1
+         COMPUTE WS-OLDZ(WS-I) = WS-Z + 1
+         MOVE 1 TO WS-ALIVE(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM L-NPUSH BY -1 UNTIL WS-I < 1
+         COMPUTE WS-DX = WS-OLDX(WS-I) + WS-MX
+         COMPUTE WS-DY = WS-OLDY(WS-I) + WS-MY
+         COMPUTE WS-DZ = WS-OLDZ(WS-I) + WS-MZ
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 30000 + (WS-DY - 1) * 256 + (WS-DZ - 1) * 16 + WS-DX
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > L-NPUSH
+             IF WS-ALIVE(WS-J) = 1 AND WS-OLDX(WS-J) = WS-DX AND WS-OLDY(WS-J) = WS-DY AND WS-OLDZ(WS-J) = WS-DZ
+                 MOVE 0 TO WS-ALIVE(WS-J)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF L-EXT = 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 40000 + WS-HIDX
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > L-NPUSH
+             IF WS-ALIVE(WS-J) = 1 AND WS-OLDX(WS-J) = WS-HX AND WS-OLDY(WS-J) = WS-HY AND WS-OLDZ(WS-J) = WS-HZ
+                 MOVE 0 TO WS-ALIVE(WS-J)
+             END-IF
+         END-PERFORM
+     END-IF
+     MOVE 0 TO WS-NV
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > L-NPUSH
+         IF WS-ALIVE(WS-J) = 1
+             ADD 1 TO WS-NV
+             COMPUTE WS-AX = WS-OLDX(WS-J) + L-OX
+             COMPUTE WS-AY = WS-OLDY(WS-J) + L-OY
+             COMPUTE WS-AZ = WS-OLDZ(WS-J) + L-OZ
+             CALL "RS1-BLOCKPOS-HASH" USING WS-AX WS-AY WS-AZ WS-HASH WS-BUCKET
+             COMPUTE WS-KEY(WS-NV) = WS-BUCKET * 64 + WS-J
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= WS-NV
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-NV - WS-I
+             IF WS-KEY(WS-J) > WS-KEY(WS-J + 1)
+                 MOVE WS-KEY(WS-J) TO WS-T
+                 MOVE WS-KEY(WS-J + 1) TO WS-KEY(WS-J)
+                 MOVE WS-T TO WS-KEY(WS-J + 1)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NV
+         COMPUTE WS-IDX = FUNCTION MOD(WS-KEY(WS-I), 64)
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 50000 + (WS-OLDY(WS-IDX) - 1) * 256 + (WS-OLDZ(WS-IDX) - 1) * 16 + WS-OLDX(WS-IDX)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-NV
+         COMPUTE WS-IDX = FUNCTION MOD(WS-KEY(WS-I), 64)
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 60000 + (WS-OLDY(WS-IDX) - 1) * 256 + (WS-OLDZ(WS-IDX) - 1) * 16 + WS-OLDX(WS-IDX)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM L-NDEST BY -1 UNTIL WS-I < 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 70000 + L-DEST-E(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM L-NPUSH BY -1 UNTIL WS-I < 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 80000 + L-PUSH-E(WS-I)
+     END-PERFORM
+     IF L-EXT = 1
+         ADD 1 TO L-N
+         COMPUTE L-OPS-E(L-N) = 90000 + WS-HIDX
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-PISTON-MOVEPLAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-CONST.
+*> USING TICKS_TO_EXTEND, PUSH_OFFSET x 100, TICK_MOVEMENT x 100 out (section 7.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-MOVEMENT             BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-OFFSET L-MOVEMENT.
+     MOVE 2 TO L-TICKS
+     MOVE 1 TO L-OFFSET
+     MOVE 51 TO L-MOVEMENT
+     GOBACK.
+ END PROGRAM RS1-MBE-CONST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-OFFSET.
+*> USING extending, progress (FLOAT-LONG), direction, the offset from the cell in millionths out (section 7.1): step(direction) * extendedProgress.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-EP                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-D                    BINARY-LONG.
+ 01 L-OX                   BINARY-LONG.
+ 01 L-OY                   BINARY-LONG.
+ 01 L-OZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-EXT L-P L-D L-OX L-OY L-OZ.
+     CALL "RS1-STEP" USING L-D WS-SX WS-SY WS-SZ
+     IF L-EXT = 1
+         COMPUTE WS-EP = L-P - 1
+     ELSE
+         COMPUTE WS-EP = 1 - L-P
+     END-IF
+     COMPUTE L-OX ROUNDED = WS-EP * WS-SX * 1000000
+     COMPUTE L-OY ROUNDED = WS-EP * WS-SY * 1000000
+     COMPUTE L-OZ ROUNDED = WS-EP * WS-SZ * 1000000
+     GOBACK.
+ END PROGRAM RS1-MBE-OFFSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-PROGRESS.
+*> USING progressO, progress, the partial tick (FLOAT-LONG), getProgress in millionths out (section 7.1): lerp(min(partial, 1), progressO, progress).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PO                   FLOAT-LONG.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-PARTIAL              FLOAT-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PO L-P L-PARTIAL L-RESULT.
+     MOVE L-PARTIAL TO WS-T
+     IF L-PARTIAL > 1
+         MOVE 1 TO WS-T
+     END-IF
+     COMPUTE L-RESULT ROUNDED = (L-PO + WS-T * (L-P - L-PO)) * 1000000
+     GOBACK.
+ END PROGRAM RS1-MBE-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-TICK.
+*> USING progressO (FLOAT-LONG), client level, deathTicks, the block is still moving_piston, the shape-updated state is air, step out (1 linger on a client, 2 finish, 3 move on),
+*> *> the new deathTicks out, the finishing action out (0 none, 1 set the moved state with flags 340 and destroy it, 2 place it with flags 67 and neighborChanged) (section 7.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-LT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PO                   FLOAT-LONG.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-DEATH                BINARY-LONG.
+ 01 L-STILL                BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-STEP                 BINARY-LONG.
+ 01 L-NEWDEATH             BINARY-LONG.
+ 01 L-FINISH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PO L-CLIENT L-DEATH L-STILL L-AIR L-STEP L-NEWDEATH L-FINISH.
+     MOVE L-DEATH TO L-NEWDEATH
+     MOVE 0 TO L-FINISH
+     CALL "FCMP-GT" USING WS-ONE L-PO WS-LT
+     EVALUATE TRUE
+         WHEN WS-LT = 1
+             MOVE 3 TO L-STEP
+         WHEN L-CLIENT = 1 AND L-DEATH < 5
+             MOVE 1 TO L-STEP
+             COMPUTE L-NEWDEATH = L-DEATH + 1
+         WHEN OTHER
+             MOVE 2 TO L-STEP
+             IF L-STILL = 1 AND L-AIR = 1
+                 MOVE 1 TO L-FINISH
+             END-IF
+             IF L-STILL = 1 AND L-AIR = 0
+                 MOVE 2 TO L-FINISH
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RS1-MBE-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-ADVANCE.
+*> USING progress in millionths, the new progress out (section 7.2 step 3): progress + 0.5, at most 1.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-P                    BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-P L-NEW.
+     COMPUTE L-NEW = L-P + 500000
+     IF L-NEW > 1000000
+         MOVE 1000000 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-ADVANCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-FINAL.
+*> USING a level exists, progressO (FLOAT-LONG), client level, the block is still moving_piston, isSourcePiston, the action out (section 7.4): 0 nothing, 1 only the entity is removed, 2 air with setBlockAndUpdate and neighborChanged, 3 the shape-updated moved state.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-LT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LEVEL                BINARY-LONG.
+ 01 L-PO                   FLOAT-LONG.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-STILL                BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-PO L-CLIENT L-STILL L-SOURCE L-ACTION.
+     MOVE 0 TO L-ACTION
+     CALL "FCMP-GT" USING WS-ONE L-PO WS-LT
+     IF L-LEVEL = 1 AND (WS-LT = 1 OR L-CLIENT = 1)
+         MOVE 1 TO L-ACTION
+         IF L-STILL = 1 AND L-SOURCE = 1
+             MOVE 2 TO L-ACTION
+         END-IF
+         IF L-STILL = 1 AND L-SOURCE = 0
+             MOVE 3 TO L-ACTION
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-FINAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-HEAD-SHORT.
+*> USING extending, progress (FLOAT-LONG), short out (section 7.5 step 3): extending != ((1 - progress) < 0.25).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-LT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-EXT L-P L-SHORT.
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-ONE L-P WS-V
+     CALL "FCMP-GT" USING WS-QUARTER WS-V WS-LT
+     MOVE 0 TO L-SHORT
+     IF L-EXT NOT = WS-LT
+         MOVE 1 TO L-SHORT
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-HEAD-SHORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-REL-SHORT.
+*> USING progress (FLOAT-LONG), short out (section 7.5): short = progress > 0.25.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-QUARTER             FLOAT-LONG VALUE 0.25.
+ LINKAGE SECTION.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-P L-SHORT.
+     CALL "FCMP-GT" USING L-P WS-QUARTER L-SHORT
+     GOBACK.
+ END PROGRAM RS1-MBE-REL-SHORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-COLLISION.
+*> USING extending, source, moved state is a piston base, progress (FLOAT-LONG), NOCLIP equals the movement direction, the base is the extended base slab out, only the base is returned out (section 7.5 steps 1 and 2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-LT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ 01 L-BASE                 BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-NOCLIP               BINARY-LONG.
+ 01 L-BASEEXT              BINARY-LONG.
+ 01 L-BASEONLY             BINARY-LONG.
+ PROCEDURE DIVISION USING L-EXT L-SOURCE L-BASE L-P L-NOCLIP L-BASEEXT L-BASEONLY.
+     MOVE 0 TO L-BASEEXT L-BASEONLY
+     IF L-EXT = 0 AND L-SOURCE = 1 AND L-BASE = 1
+         MOVE 1 TO L-BASEEXT
+     END-IF
+     CALL "FCMP-GT" USING WS-ONE L-P WS-LT
+     IF WS-LT = 1 AND L-NOCLIP = 1
+         MOVE 1 TO L-BASEONLY
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-COLLISION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-NBT-DEFAULTS.
+*> USING blockState is air, facing, progress, extending, source of an absent key out (section 7.6).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-PROGRESS             BINARY-LONG.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-SOURCE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-FACING L-PROGRESS L-EXT L-SOURCE.
+     MOVE 1 TO L-AIR
+     MOVE 0 TO L-FACING L-PROGRESS L-EXT L-SOURCE
+     GOBACK.
+ END PROGRAM RS1-MBE-NBT-DEFAULTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-NBT-PROGRESS.
+*> USING progressO and progress in millionths, the saved value, the loaded progress and progressO out (section 7.6): the save writes progressO; the load sets both.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PO                   BINARY-LONG.
+ 01 L-P                    BINARY-LONG.
+ 01 L-SAVED                BINARY-LONG.
+ 01 L-LP                   BINARY-LONG.
+ 01 L-LPO                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PO L-P L-SAVED L-LP L-LPO.
+     MOVE L-PO TO L-SAVED L-LP L-LPO
+     GOBACK.
+ END PROGRAM RS1-MBE-NBT-PROGRESS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-SETLEVEL.
+*> USING the registry still holds the moved block, movedState is air out (section 7.6 setLevel).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HOLDS                BINARY-LONG.
+ 01 L-AIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HOLDS L-AIR.
+     MOVE 1 TO L-AIR
+     IF L-HOLDS = 1
+         MOVE 0 TO L-AIR
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-SETLEVEL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-FALLING-MULT.
+*> USING the delta movement multipliers x 1000 for x, y, z and the placement flag out (section 7.7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-PLACES               BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-PLACES.
+     MOVE 700 TO L-X L-Z
+     MOVE -500 TO L-Y
+     MOVE 0 TO L-PLACES
+     GOBACK.
+ END PROGRAM RS1-FALLING-MULT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-BC-CONSIDER.
+*> USING the mode, the state is moving_piston, it has a large collision shape, the cell is considered out (section 7.7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-MOVING               BINARY-LONG.
+ 01 L-LARGE                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-MODE L-MOVING L-LARGE L-RESULT.
+     MOVE 0 TO L-RESULT
+     EVALUATE L-MODE
+         WHEN 0
+             MOVE 1 TO L-RESULT
+         WHEN 1
+             MOVE L-LARGE TO L-RESULT
+         WHEN 2
+             MOVE L-MOVING TO L-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RS1-BC-CONSIDER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-SHULKER-BLOCKED.
+*> USING the cell is not air, it is moving_piston, it is the shulker own position, blocked out (section 7.7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-NONAIR               BINARY-LONG.
+ 01 L-MOVING               BINARY-LONG.
+ 01 L-OWN                  BINARY-LONG.
+ 01 L-BLOCKED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-NONAIR L-MOVING L-OWN L-BLOCKED.
+     MOVE 0 TO L-BLOCKED
+     IF L-NONAIR = 1 AND NOT (L-MOVING = 1 AND L-OWN = 1)
+         MOVE 1 TO L-BLOCKED
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-SHULKER-BLOCKED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PISTON-TAG.
+*> USING the tag (1 dragon_immune, 2 wither_immune, 3 maintains_farmland, 4 mineable/pickaxe, 5 blocks_motion_no_leaves) and the block (1 piston, 2 sticky_piston, 3 piston_head, 4 moving_piston), member out (section 7.7).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-BLOCK                BINARY-LONG.
+ 01 L-MEMBER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAG L-BLOCK L-MEMBER.
+     MOVE 0 TO L-MEMBER
+     EVALUATE L-TAG
+         WHEN 1
+             IF L-BLOCK = 4
+                 MOVE 1 TO L-MEMBER
+             END-IF
+         WHEN 2
+             IF L-BLOCK = 4
+                 MOVE 1 TO L-MEMBER
+             END-IF
+         WHEN 3
+             IF L-BLOCK = 4
+                 MOVE 1 TO L-MEMBER
+             END-IF
+         WHEN 4
+             IF L-BLOCK < 4
+                 MOVE 1 TO L-MEMBER
+             END-IF
+         WHEN 5
+             MOVE 1 TO L-MEMBER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RS1-PISTON-TAG.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PM-AREA.
+*> USING the box (minX minY minZ maxX maxY maxZ), the direction, delta (FLOAT-LONG), the movement area in millionths out (section 8.1 getMovementArea).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-VS.
+    05 WS-V                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-M                   FLOAT-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-BOX.
+    05 L-BOX-E FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-DELTA                FLOAT-LONG.
+ 01 L-O1                   BINARY-LONG.
+ 01 L-O2                   BINARY-LONG.
+ 01 L-O3                   BINARY-LONG.
+ 01 L-O4                   BINARY-LONG.
+ 01 L-O5                   BINARY-LONG.
+ 01 L-O6                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-BOX L-DIR L-DELTA L-O1 L-O2 L-O3 L-O4 L-O5 L-O6.
+     MOVE L-BOX-E(1) TO WS-V(1)
+     MOVE L-BOX-E(2) TO WS-V(2)
+     MOVE L-BOX-E(3) TO WS-V(3)
+     MOVE L-BOX-E(4) TO WS-V(4)
+     MOVE L-BOX-E(5) TO WS-V(5)
+     MOVE L-BOX-E(6) TO WS-V(6)
+     MOVE L-DELTA TO WS-M
+     IF L-DIR = 0 OR L-DIR = 2 OR L-DIR = 4
+         COMPUTE WS-M = 0 - L-DELTA
+     END-IF
+     MOVE 0 TO WS-LO WS-HI
+     IF WS-M < 0
+         MOVE WS-M TO WS-LO
+     ELSE
+         MOVE WS-M TO WS-HI
+     END-IF
+     EVALUATE L-DIR
+         WHEN 4
+             COMPUTE WS-V(4) = WS-V(1) + WS-HI
+             COMPUTE WS-V(1) = WS-V(1) + WS-LO
+         WHEN 5
+             COMPUTE WS-V(1) = WS-V(4) + WS-LO
+             COMPUTE WS-V(4) = WS-V(4) + WS-HI
+         WHEN 0
+             COMPUTE WS-V(5) = WS-V(2) + WS-HI
+             COMPUTE WS-V(2) = WS-V(2) + WS-LO
+         WHEN 1
+             COMPUTE WS-V(2) = WS-V(5) + WS-LO
+             COMPUTE WS-V(5) = WS-V(5) + WS-HI
+         WHEN 2
+             COMPUTE WS-V(6) = WS-V(3) + WS-HI
+             COMPUTE WS-V(3) = WS-V(3) + WS-LO
+         WHEN 3
+             COMPUTE WS-V(3) = WS-V(6) + WS-LO
+             COMPUTE WS-V(6) = WS-V(6) + WS-HI
+     END-EVALUATE
+     COMPUTE L-O1 ROUNDED = WS-V(1) * 1000000
+     COMPUTE L-O2 ROUNDED = WS-V(2) * 1000000
+     COMPUTE L-O3 ROUNDED = WS-V(3) * 1000000
+     COMPUTE L-O4 ROUNDED = WS-V(4) * 1000000
+     COMPUTE L-O5 ROUNDED = WS-V(5) * 1000000
+     COMPUTE L-O6 ROUNDED = WS-V(6) * 1000000
+     GOBACK.
+ END PROGRAM RS1-PM-AREA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PM-MOVEMENT.
+*> USING the area (minX minY minZ maxX maxY maxZ), the entity box in the same order, the direction, the overlap depth in millionths out (section 8.1 getMovement).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AREA.
+    05 L-AREA-E FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-ENT.
+    05 L-ENT-E FLOAT-LONG OCCURS 6 TIMES.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-DEPTH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AREA L-ENT L-DIR L-DEPTH.
+     EVALUATE L-DIR
+         WHEN 5
+             COMPUTE L-DEPTH ROUNDED = (L-AREA-E(4) - L-ENT-E(1)) * 1000000
+         WHEN 4
+             COMPUTE L-DEPTH ROUNDED = (L-ENT-E(4) - L-AREA-E(1)) * 1000000
+         WHEN 1
+             COMPUTE L-DEPTH ROUNDED = (L-AREA-E(5) - L-ENT-E(2)) * 1000000
+         WHEN 0
+             COMPUTE L-DEPTH ROUNDED = (L-ENT-E(5) - L-AREA-E(2)) * 1000000
+         WHEN 3
+             COMPUTE L-DEPTH ROUNDED = (L-AREA-E(6) - L-ENT-E(3)) * 1000000
+         WHEN 2
+             COMPUTE L-DEPTH ROUNDED = (L-ENT-E(6) - L-AREA-E(3)) * 1000000
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM RS1-PM-MOVEMENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-EP-LIMIT.
+*> USING the accumulators x y z, the movement x y z (FLOAT-LONG), the allowed movement x y z and the new accumulators x y z in millionths out (section 8.3 limitPistonMovement).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NS.
+    05 WS-N                FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-SQ                  FLOAT-LONG.
+ 01 WS-AL                  FLOAT-LONG.
+ 01 WS-ABS                 FLOAT-LONG.
+ 01 WS-AX                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ACC.
+    05 L-ACC-E FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-MV.
+    05 L-MV-E FLOAT-LONG OCCURS 3 TIMES.
+ 01 L-A1                   BINARY-LONG.
+ 01 L-A2                   BINARY-LONG.
+ 01 L-A3                   BINARY-LONG.
+ 01 L-N1                   BINARY-LONG.
+ 01 L-N2                   BINARY-LONG.
+ 01 L-N3                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ACC L-MV L-A1 L-A2 L-A3 L-N1 L-N2 L-N3.
+     MOVE 0 TO L-A1 L-A2 L-A3
+     COMPUTE WS-SQ = L-MV-E(1) * L-MV-E(1) + L-MV-E(2) * L-MV-E(2) + L-MV-E(3) * L-MV-E(3)
+     MOVE L-ACC-E(1) TO WS-N(1)
+     MOVE L-ACC-E(2) TO WS-N(2)
+     MOVE L-ACC-E(3) TO WS-N(3)
+     IF WS-SQ > 0.0000001
+         EVALUATE TRUE
+             WHEN L-MV-E(1) NOT = 0
+                 MOVE 1 TO WS-AX
+             WHEN L-MV-E(2) NOT = 0
+                 MOVE 2 TO WS-AX
+             WHEN OTHER
+                 MOVE 3 TO WS-AX
+         END-EVALUATE
+         COMPUTE WS-N(WS-AX) = L-ACC-E(WS-AX) + L-MV-E(WS-AX)
+         IF WS-N(WS-AX) > 0.51
+             MOVE 0.51 TO WS-N(WS-AX)
+         END-IF
+         IF WS-N(WS-AX) < -0.51
+             MOVE -0.51 TO WS-N(WS-AX)
+         END-IF
+         COMPUTE WS-AL = WS-N(WS-AX) - L-ACC-E(WS-AX)
+         IF WS-AL < 0
+             COMPUTE WS-ABS = 0 - WS-AL
+         ELSE
+             MOVE WS-AL TO WS-ABS
+         END-IF
+         IF WS-ABS > 0.000009999999747378752
+             EVALUATE WS-AX
+                 WHEN 1
+                     COMPUTE L-A1 ROUNDED = WS-AL * 1000000
+                 WHEN 2
+                     COMPUTE L-A2 ROUNDED = WS-AL * 1000000
+                 WHEN 3
+                     COMPUTE L-A3 ROUNDED = WS-AL * 1000000
+             END-EVALUATE
+         END-IF
+     END-IF
+     COMPUTE L-N1 ROUNDED = WS-N(1) * 1000000
+     COMPUTE L-N2 ROUNDED = WS-N(2) * 1000000
+     COMPUTE L-N3 ROUNDED = WS-N(3) * 1000000
+     GOBACK.
+ END PROGRAM RS1-EP-LIMIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-EP-COLLIDED.
+*> USING the entity is IGNORE_ENTITY, the moved state is slime, the entity canSimulateMovement, maxPush, delta (FLOAT-LONG), skip out, set the delta movement along dir to step(dir) out, the push amount in millionths out
+*> *> (section 8.1 step 5): push = min(maxPush, delta) + 0.01.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-MIN                 FLOAT-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IGNORE               BINARY-LONG.
+ 01 L-SLIME                BINARY-LONG.
+ 01 L-SIM                  BINARY-LONG.
+ 01 L-MAXPUSH              FLOAT-LONG.
+ 01 L-DELTA                FLOAT-LONG.
+ 01 L-SKIP                 BINARY-LONG.
+ 01 L-SETDELTA             BINARY-LONG.
+ 01 L-PUSH                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-IGNORE L-SLIME L-SIM L-MAXPUSH L-DELTA L-SKIP L-SETDELTA L-PUSH.
+     MOVE 0 TO L-SKIP L-SETDELTA L-PUSH
+     IF L-IGNORE = 1
+         MOVE 1 TO L-SKIP
+     END-IF
+     IF L-IGNORE = 0 AND L-SLIME = 1 AND L-SIM = 1
+         MOVE 1 TO L-SETDELTA
+     END-IF
+     IF L-IGNORE = 0
+         CALL "FCMP-GT" USING L-MAXPUSH WS-ZERO WS-POS
+         IF WS-POS = 0
+             MOVE 1 TO L-SKIP
+         ELSE
+             MOVE L-MAXPUSH TO WS-MIN
+             IF L-DELTA < L-MAXPUSH
+                 MOVE L-DELTA TO WS-MIN
+             END-IF
+             COMPUTE L-PUSH ROUNDED = (WS-MIN + 0.01) * 1000000
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-EP-COLLIDED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-STICKY-MATCH.
+*> USING the push reaction (0 PUSH_PULL), on the ground, supported by the block, x inside the area, z inside the area, matches out (section 8.2 matchesStickyCritera).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-REACT                BINARY-LONG.
+ 01 L-GROUND               BINARY-LONG.
+ 01 L-SUPPORTED            BINARY-LONG.
+ 01 L-XIN                  BINARY-LONG.
+ 01 L-ZIN                  BINARY-LONG.
+ 01 L-MATCH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-REACT L-GROUND L-SUPPORTED L-XIN L-ZIN L-MATCH.
+     MOVE 0 TO L-MATCH
+     IF L-REACT = 0 AND L-GROUND = 1 AND (L-SUPPORTED = 1 OR (L-XIN = 1 AND L-ZIN = 1))
+         MOVE 1 TO L-MATCH
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-STICKY-MATCH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HONEY-PROBE.
+*> USING the moved state is a honey block, the movement direction, active out, the top of the probe box x 1000000 out (section 8.2): only horizontal movement.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HONEY                BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HONEY L-DIR L-ACTIVE L-TOP.
+     MOVE 0 TO L-ACTIVE
+     MOVE 1500001 TO L-TOP
+     IF L-HONEY = 1 AND L-DIR > 1
+         MOVE 1 TO L-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-HONEY-PROBE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-EP-FIX.
+*> USING the overlap depth along back, the depth of the clipped box, delta (FLOAT-LONG), apply out, the amount in millionths out (section 8.4).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D1                   FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-DIFF                FLOAT-LONG.
+ 01 WS-MIN                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-G1                   FLOAT-LONG.
+ 01 L-G2                   FLOAT-LONG.
+ 01 L-DELTA                FLOAT-LONG.
+ 01 L-APPLY                BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-G1 L-G2 L-DELTA L-APPLY L-AMOUNT.
+     MOVE 0 TO L-APPLY L-AMOUNT
+     COMPUTE WS-D1 = L-G1 + 0.01
+     COMPUTE WS-D2 = L-G2 + 0.01
+     COMPUTE WS-DIFF = WS-D1 - WS-D2
+     IF WS-DIFF < 0
+         COMPUTE WS-DIFF = 0 - WS-DIFF
+     END-IF
+     IF WS-DIFF < 0.01
+         MOVE 1 TO L-APPLY
+         MOVE WS-D1 TO WS-MIN
+         IF L-DELTA < WS-D1
+             MOVE L-DELTA TO WS-MIN
+         END-IF
+         COMPUTE L-AMOUNT ROUNDED = (WS-MIN + 0.01) * 1000000
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-EP-FIX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-EP-MOVER.
+*> USING the mover is a piston, NOCLIP set, the stuck speed multiplier applied, the multiplier reset out (section 8.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PISTON               BINARY-LONG.
+ 01 L-NOCLIP               BINARY-LONG.
+ 01 L-APPLIED              BINARY-LONG.
+ 01 L-RESET                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PISTON L-NOCLIP L-APPLIED L-RESET.
+     MOVE 1 TO L-NOCLIP L-RESET
+     MOVE 1 TO L-APPLIED
+     IF L-PISTON = 1
+         MOVE 0 TO L-APPLIED
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-EP-MOVER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PISTON-SHAPE-BASE.
+*> USING facing, extended, x0 y0 z0 x1 y1 z1 in sixteenths out (section 9.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-F                    BINARY-LONG.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-X1                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-Z1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-F L-EXT L-X0 L-Y0 L-Z0 L-X1 L-Y1 L-Z1.
+     MOVE 0 TO L-X0 L-Y0 L-Z0
+     MOVE 16 TO L-X1 L-Y1 L-Z1
+     IF L-EXT = 1
+         EVALUATE L-F
+             WHEN 2
+                 MOVE 4 TO L-Z0
+             WHEN 3
+                 MOVE 12 TO L-Z1
+             WHEN 4
+                 MOVE 4 TO L-X0
+             WHEN 5
+                 MOVE 12 TO L-X1
+             WHEN 0
+                 MOVE 4 TO L-Y0
+             WHEN 1
+                 MOVE 12 TO L-Y1
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-PISTON-SHAPE-BASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-PISTON-SHAPE-HEAD.
+*> USING facing, short, the part (1 platform, 2 arm), x0 y0 z0 x1 y1 z1 in sixteenths out (section 9.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-F                    BINARY-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ 01 L-PART                 BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-X1                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-Z1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-F L-SHORT L-PART L-X0 L-Y0 L-Z0 L-X1 L-Y1 L-Z1.
+     IF L-PART = 1
+         MOVE 0 TO L-X0 L-Y0 L-Z0
+         MOVE 16 TO L-X1 L-Y1 L-Z1
+         EVALUATE L-F
+             WHEN 2
+                 MOVE 4 TO L-Z1
+             WHEN 3
+                 MOVE 12 TO L-Z0
+             WHEN 4
+                 MOVE 4 TO L-X1
+             WHEN 5
+                 MOVE 12 TO L-X0
+             WHEN 0
+                 MOVE 4 TO L-Y1
+             WHEN 1
+                 MOVE 12 TO L-Y0
+         END-EVALUATE
+     ELSE
+         MOVE 6 TO L-X0 L-Y0 L-Z0
+         MOVE 10 TO L-X1 L-Y1 L-Z1
+         EVALUATE L-F ALSO L-SHORT
+             WHEN 2 ALSO 0
+                 MOVE 4 TO L-Z0
+                 MOVE 20 TO L-Z1
+             WHEN 2 ALSO 1
+                 MOVE 4 TO L-Z0
+                 MOVE 16 TO L-Z1
+             WHEN 3 ALSO 0
+                 MOVE -4 TO L-Z0
+                 MOVE 12 TO L-Z1
+             WHEN 3 ALSO 1
+                 MOVE 0 TO L-Z0
+                 MOVE 12 TO L-Z1
+             WHEN 4 ALSO 0
+                 MOVE 4 TO L-X0
+                 MOVE 20 TO L-X1
+             WHEN 4 ALSO 1
+                 MOVE 4 TO L-X0
+                 MOVE 16 TO L-X1
+             WHEN 5 ALSO 0
+                 MOVE -4 TO L-X0
+                 MOVE 12 TO L-X1
+             WHEN 5 ALSO 1
+                 MOVE 0 TO L-X0
+                 MOVE 12 TO L-X1
+             WHEN 0 ALSO 0
+                 MOVE 4 TO L-Y0
+                 MOVE 20 TO L-Y1
+             WHEN 0 ALSO 1
+                 MOVE 4 TO L-Y0
+                 MOVE 16 TO L-Y1
+             WHEN 1 ALSO 0
+                 MOVE -4 TO L-Y0
+                 MOVE 12 TO L-Y1
+             WHEN 1 ALSO 1
+                 MOVE 0 TO L-Y0
+                 MOVE 12 TO L-Y1
+         END-EVALUATE
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-PISTON-SHAPE-HEAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HEAD-FITTING.
+*> USING the head type (0 normal, 1 sticky), the block behind (1 piston, 2 sticky_piston, 0 other), extended, the same facing, fitting out (section 9.3 isFittingBase).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-BEHIND               BINARY-LONG.
+ 01 L-EXT                  BINARY-LONG.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-FIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-BEHIND L-EXT L-SAME L-FIT.
+     MOVE 0 TO L-FIT
+     IF L-EXT = 1 AND L-SAME = 1 AND ((L-TYPE = 0 AND L-BEHIND = 1) OR (L-TYPE = 1 AND L-BEHIND = 2))
+         MOVE 1 TO L-FIT
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-HEAD-FITTING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HEAD-SURVIVE.
+*> USING the block behind is a fitting base, it is moving_piston, it has the same facing, canSurvive out (section 9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FITTING              BINARY-LONG.
+ 01 L-MOVING               BINARY-LONG.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-FITTING L-MOVING L-SAME L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-FITTING = 1 OR (L-MOVING = 1 AND L-SAME = 1)
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-HEAD-SURVIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HEAD-WILL-DESTROY.
+*> USING server level, the player prevents block drops, the block behind is a fitting base, destroy it without drops out (section 9.3 playerWillDestroy).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-CREATIVE             BINARY-LONG.
+ 01 L-FITTING              BINARY-LONG.
+ 01 L-DESTROY              BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-CREATIVE L-FITTING L-DESTROY.
+     MOVE 0 TO L-DESTROY
+     IF L-SERVER = 1 AND L-CREATIVE = 1 AND L-FITTING = 1
+         MOVE 1 TO L-DESTROY
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-HEAD-WILL-DESTROY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HEAD-REMOVED.
+*> USING the block behind is a fitting base, destroy it with drops out (section 9.3 affectNeighborsAfterRemoval).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FITTING              BINARY-LONG.
+ 01 L-DESTROY              BINARY-LONG.
+ PROCEDURE DIVISION USING L-FITTING L-DESTROY.
+     MOVE L-FITTING TO L-DESTROY
+     GOBACK.
+ END PROGRAM RS1-HEAD-REMOVED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-HEAD-CLONE.
+*> USING the head type (0 normal, 1 sticky), the clone item out (1 piston, 2 sticky_piston) (section 9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-ITEM.
+     COMPUTE L-ITEM = L-TYPE + 1
+     GOBACK.
+ END PROGRAM RS1-HEAD-CLONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MOVING-DESTROY.
+*> USING the cell behind is an extended piston base, remove it without drops out (section 9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BEHIND               BINARY-LONG.
+ 01 L-REMOVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-BEHIND L-REMOVE.
+     MOVE L-BEHIND TO L-REMOVE
+     GOBACK.
+ END PROGRAM RS1-MOVING-DESTROY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MOVING-USE.
+*> USING server level, a block entity exists, the use is consumed and the block removed out, the drops are those of the moved state out (section 9.3).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-BE                   BINARY-LONG.
+ 01 L-CONSUMED             BINARY-LONG.
+ 01 L-DROPS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SERVER L-BE L-CONSUMED L-DROPS.
+     MOVE 0 TO L-CONSUMED
+     MOVE L-BE TO L-DROPS
+     IF L-SERVER = 1 AND L-BE = 0
+         MOVE 1 TO L-CONSUMED
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MOVING-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-CLIENT-EVENT.
+*> USING a client level, the power re-check and the cancel rules run out (section 10.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CLIENT               BINARY-LONG.
+ 01 L-RECHECK              BINARY-LONG.
+ 01 L-CANCEL               BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLIENT L-RECHECK L-CANCEL.
+     MOVE 1 TO L-RECHECK L-CANCEL
+     IF L-CLIENT = 1
+         MOVE 0 TO L-RECHECK L-CANCEL
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-CLIENT-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-MBE-LINGER.
+*> USING deathTicks on a client entity at progressO >= 1, step out (1 linger, 2 finish), the new deathTicks out (sections 7.2, 10.1).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DEATH                BINARY-LONG.
+ 01 L-STEP                 BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DEATH L-STEP L-NEW.
+     MOVE L-DEATH TO L-NEW
+     MOVE 2 TO L-STEP
+     IF L-DEATH < 5
+         MOVE 1 TO L-STEP
+         COMPUTE L-NEW = L-DEATH + 1
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-MBE-LINGER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-RENDER-SHORT.
+*> USING the mode (1 pushed block or extending head, 2 retracting source head), progress (FLOAT-LONG), short out (section 10.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-GT                  BINARY-LONG.
+ 01 WS-LT                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-P                    FLOAT-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-MODE L-P L-SHORT.
+     IF L-MODE = 1
+         CALL "FCMP-GT" USING L-P WS-HALF WS-GT
+         COMPUTE L-SHORT = 1 - WS-GT
+     ELSE
+         CALL "FCMP-GT" USING WS-HALF L-P WS-LT
+         COMPUTE L-SHORT = 1 - WS-LT
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-RENDER-SHORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-RENDER-SAMPLE.
+*> USING the part (1 pushed block or extending head, 2 retracting head, 3 retracting base), the movement direction, the view distance, the offset of the sampling cell from the block cell out (section 10.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PART                 BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-VIEW                 BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-PART L-DIR L-VIEW L-DX L-DY L-DZ.
+     MOVE 68 TO L-VIEW
+     CALL "RS1-STEP" USING L-DIR L-DX L-DY L-DZ
+     IF L-PART < 3
+         COMPUTE L-DX = 0 - L-DX
+         COMPUTE L-DY = 0 - L-DY
+         COMPUTE L-DZ = 0 - L-DZ
+     END-IF
+     GOBACK.
+ END PROGRAM RS1-RENDER-SAMPLE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RS1-RENDER-DRAWS.
+*> USING the moved state is air, something is drawn out (section 10.2).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AIR                  BINARY-LONG.
+ 01 L-DRAWS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-AIR L-DRAWS.
+     COMPUTE L-DRAWS = 1 - L-AIR
+     GOBACK.
+ END PROGRAM RS1-RENDER-DRAWS.
 
