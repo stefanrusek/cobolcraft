@@ -27,6 +27,10 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-PASS                BINARY-LONG.
  01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-IN                  PIC X(48).
+ 01 WS-IN-LENGTH           BINARY-LONG.
+ 01 WS-OUT                 PIC X(64).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
@@ -58,8 +62,10 @@
                  AND FUNCTION INTEGER(EN-Z(WS-ROW) / 16) = L-CZ
              CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
              MOVE "id" TO WN MOVE 2 TO WL
-             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL ET-KEY(EN-TYPE(WS-ROW) + 1)
-                 ET-KEY-LENGTH(EN-TYPE(WS-ROW) + 1)
+             MOVE ET-KEY(EN-TYPE(WS-ROW) + 1) TO WS-IN
+             MOVE ET-KEY-LENGTH(EN-TYPE(WS-ROW) + 1) TO WS-IN-LENGTH
+             CALL "PERSIST-NAMESPACED" USING WS-IN WS-IN-LENGTH WS-OUT WS-OUT-LENGTH
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-OUT WS-OUT-LENGTH
              MOVE "Pos" TO WN MOVE 3 TO WL
              CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-DOUBLE WS-THREE
              CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WN WS-ELEMENT EN-X(WS-ROW)
@@ -78,8 +84,10 @@
                  MOVE "Item" TO WN MOVE 4 TO WL
                  CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
                  MOVE "id" TO WN MOVE 2 TO WL
-                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL IT-KEY(EN-ITEM(WS-ROW) + 1)
-                     IT-KEY-LENGTH(EN-ITEM(WS-ROW) + 1)
+                 MOVE IT-KEY(EN-ITEM(WS-ROW) + 1) TO WS-IN
+                 MOVE IT-KEY-LENGTH(EN-ITEM(WS-ROW) + 1) TO WS-IN-LENGTH
+                 CALL "PERSIST-NAMESPACED" USING WS-IN WS-IN-LENGTH WS-OUT WS-OUT-LENGTH
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-OUT WS-OUT-LENGTH
                  MOVE "count" TO WN MOVE 5 TO WL
                  CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-ITEM-COUNT(WS-ROW)
                  CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
@@ -152,11 +160,13 @@
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-CAPACITY            BINARY-LONG VALUE 32.
+ 01 WS-KEY-CAPACITY        BINARY-LONG VALUE 48.
+ 01 WS-BARE                PIC X(48).
  01 WS-TYPE                BINARY-LONG.
  01 WS-INNER-TYPE          BINARY-LONG.
  01 WS-ELEMENT-TYPE        BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-KEY                 PIC X(32).
+ 01 WS-KEY                 PIC X(48).
  01 WS-KEY-LENGTH          BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-ENTITY-TYPE         BINARY-LONG.
@@ -190,9 +200,10 @@
          EVALUATE TRUE
              WHEN WN = "id" AND WS-TYPE = 8
                  MOVE SPACES TO WS-KEY
-                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-CAPACITY WS-KEY-LENGTH
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY WS-KEY-LENGTH
+                 CALL "KEY-BARE" USING WS-KEY WS-BARE
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
-                     IF ET-KEY(WS-I) = WS-KEY
+                     IF ET-KEY(WS-I) = WS-KEY OR ET-KEY(WS-I) = WS-BARE
                          COMPUTE WS-ENTITY-TYPE = WS-I - 1
                      END-IF
                  END-PERFORM
@@ -225,10 +236,12 @@
                      EVALUATE TRUE
                          WHEN WN = "id" AND WS-INNER-TYPE = 8
                              MOVE SPACES TO WS-KEY
-                             CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-CAPACITY
+                             CALL "NBT-READ-STRING" USING PB-BUFFER WS-KEY WS-KEY-CAPACITY
                                  WS-KEY-LENGTH
+*>                           A standard set's rows have no namespace; the folder holds "minecraft:" + path.
+                             CALL "KEY-BARE" USING WS-KEY WS-BARE
                              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IT-COUNT
-                                 IF IT-KEY(WS-I) = WS-KEY
+                                 IF IT-KEY(WS-I) = WS-KEY OR IT-KEY(WS-I) = WS-BARE
                                      COMPUTE WS-ITEM = WS-I - 1
                                  END-IF
                              END-PERFORM

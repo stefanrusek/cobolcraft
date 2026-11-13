@@ -297,6 +297,7 @@
  01 WS-POS                 BINARY-LONG.
  01 WS-NBT                 BINARY-LONG.
  01 WS-ID                  PIC X(48).
+ 01 WS-SAME                BINARY-LONG.
  01 WS-ID-LENGTH           BINARY-LONG.
  01 WS-HAS-COLON           BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -344,12 +345,19 @@
      IF WS-HAS-COLON = 1
          MOVE BR-R-LINE(BA-START(WS-INDEX) + 1:WS-ID-LENGTH) TO WS-ID
      ELSE
-         STRING "cobolcraft:" BR-R-LINE(BA-START(WS-INDEX) + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-ID
-         ADD 11 TO WS-ID-LENGTH
+*>       The default namespace is that of the open set: minecraft: for a standard set, whose rows have no namespace at all.
+         IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+             STRING "cobolcraft:" BR-R-LINE(BA-START(WS-INDEX) + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-ID
+             ADD 11 TO WS-ID-LENGTH
+         ELSE
+             STRING "minecraft:" BR-R-LINE(BA-START(WS-INDEX) + 1:WS-ID-LENGTH) DELIMITED BY SIZE INTO WS-ID
+             ADD 10 TO WS-ID-LENGTH
+         END-IF
      END-IF
      MOVE 0 TO WS-ET WS-MOB
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ET-COUNT
-         IF ET-KEY(WS-I) = WS-ID
+         CALL "KEY-SAME" USING ET-KEY(WS-I) WS-ID WS-SAME
+         IF WS-SAME = 1
              MOVE WS-I TO WS-ET
          END-IF
      END-PERFORM

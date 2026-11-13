@@ -31,13 +31,18 @@
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  01 WS-I                   BINARY-LONG.
+ 01 WS-BARE                PIC X(48).
+ 01 WS-FULL                PIC X(48).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(48).
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-KEY L-STATE.
      MOVE 0 TO L-STATE
+*>   The standard set's rows have no namespace ("ice"): both forms of the key are looked for.
+     CALL "KEY-BARE" USING L-KEY WS-BARE
+     CALL "KEY-NAMESPACED" USING L-KEY WS-FULL
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
-         IF CB-KEY(WS-I) = L-KEY
+         IF CB-KEY(WS-I) = WS-BARE OR CB-KEY(WS-I) = WS-FULL
              MOVE CB-DEFAULT-STATE(WS-I) TO L-STATE
          END-IF
      END-PERFORM
