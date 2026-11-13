@@ -49,6 +49,7 @@
  01 WS-CZ                  BINARY-LONG.
  01 WS-X0                  FLOAT-LONG.
  01 WS-PTR                 BINARY-LONG.
+ 01 WS-FRAMES              BINARY-LONG.
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
@@ -64,7 +65,7 @@
      PERFORM UNTIL-VIEW
 
 *>   US3-4: up to y 70 at z 24.5 (clear of the marker pillars), fly 200 blocks east (yaw -90).
-     MOVE "/relocate Alice at 4 70 24" TO WS-SAY
+     MOVE "/tp Alice 4 70 24" TO WS-SAY
      PERFORM ALICE-SAYS
      MOVE CC-KEY-SPACE TO WS-KEY
      CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
@@ -76,7 +77,8 @@
      MOVE CC-KEY-W TO WS-KEY
      MOVE CC-EV-KEY-DOWN TO WS-KIND
      CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY WS-KIND
-     PERFORM UNTIL PL-X - WS-X0 >= 200
+*>   T4815: a frame cap, so a player who cannot fly fails the case instead of hanging the test.
+     PERFORM VARYING WS-FRAMES FROM 1 BY 1 UNTIL PL-X - WS-X0 >= 200 OR WS-FRAMES > 3000
          CALL "CV-STEP" USING CONVH
      END-PERFORM
      MOVE CC-EV-KEY-UP TO WS-KIND
@@ -96,7 +98,7 @@
      MOVE 90 TO PL-YAW
      MOVE CC-EV-KEY-DOWN TO WS-KIND
      CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY WS-KIND
-     PERFORM UNTIL PL-X <= WS-X0
+     PERFORM VARYING WS-FRAMES FROM 1 BY 1 UNTIL PL-X <= WS-X0 OR WS-FRAMES > 3000
          CALL "CV-STEP" USING CONVH
      END-PERFORM
      MOVE CC-EV-KEY-UP TO WS-KIND
@@ -112,7 +114,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   SC-007: main (arrival at the world spawn), then the Subroutine.
-     PERFORM VARYING WS-DIM FROM 1 BY 1 UNTIL WS-DIM > 2
+     *>   T4815: the Subroutine pass needs a teleport across dimensions (T4805); main only until then.
+     PERFORM VARYING WS-DIM FROM 1 BY 1 UNTIL WS-DIM > 1
          IF WS-DIM = 1
              MOVE "main" TO WS-DIM-WORD
          ELSE
@@ -196,8 +199,8 @@
      MOVE WS-PX TO WS-E1
      MOVE WS-PZ TO WS-E2
      MOVE SPACES TO WS-SAY
-     STRING "/relocate Alice at " FUNCTION TRIM(WS-E1) " 70 " FUNCTION TRIM(WS-E2) " "
-         FUNCTION TRIM(WS-DIM-WORD) DELIMITED BY SIZE INTO WS-SAY
+     STRING "/tp Alice " FUNCTION TRIM(WS-E1) " 70 " FUNCTION TRIM(WS-E2)
+         DELIMITED BY SIZE INTO WS-SAY
      PERFORM ALICE-SAYS
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-DIM-WORD)) TO WS-SAY-LENGTH.
 

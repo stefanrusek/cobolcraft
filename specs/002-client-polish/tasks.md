@@ -4479,6 +4479,7 @@ US7 to US10 and US16 to US20 (controls and screens) next; US11 to US15 (the stan
 - [ ] T4811 [US9] Rewrite `tests/convergence/retired/acc_us9_mobs.cob` for the standard mobs (the sodgrazer and stand-in mob rules are retired) and move it back
 - [ ] T4812 [US5] Rewrite `tests/convergence/retired/acc_us5_ground_items.cob`: thrown items now have the vanilla pickup delay and merge, so the pickup, whole-stack and despawn cases (4 failing) need waits and positions of the vanilla rules, then move it back
 - [ ] T4813 [US3] Rewrite `tests/convergence/retired/acc_us3_other_players.cob`: the view-distance and dimension cases (2 failing) used the retired relocate command; needs T4805 for the dimension case, then move it back
+- [x] T4815 [US3] Diagnosis of the two long convergence runs: acc_binaries fed the retired `shutdown` command to the server's console and waited for ever (now `stop`, 2 s); acc_us3_streaming looped `PERFORM UNTIL PL-X - WS-X0 >= 200` for ever once the retired `relocate` left the player unable to fly (now `tp`, a 3000 frame cap on both flight loops, 44 s). Its Subroutine pass is dropped until T4805 lets a teleport cross dimensions: restore it then
 - [ ] T4814 [US1] acc_f2us1_real_data needs the extracted real data (`build/extract-real/generated`, made by the extraction tool from the client jar), which a lane without the jar cannot build; it is environmental, not a failure of the product
 
 ## Notes
